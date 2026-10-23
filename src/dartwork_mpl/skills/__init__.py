@@ -1,15 +1,15 @@
 """The agent skill bundled with dartwork-mpl, and its installer.
 
 The skill folder ``dartwork-mpl/`` (``SKILL.md`` plus ``references/``) ships
-inside the package, so it always describes the installed version. Claude
-Code reads project skills from ``.claude/skills/`` and Codex from
-``.agents/skills/``; :func:`install_skill` links the folder into either or
-both, or copies it where symlinks are unavailable.
+inside the package, so it always describes the installed version.
+:func:`install_skill` links the folder into every project skill folder in
+:data:`SKILL_DIRS` (``.claude/skills`` and ``.agents/skills``), or copies it
+where symlinks are unavailable. Every agent that reads either folder gets the
+same skill.
 
 Command line::
 
-    python -m dartwork_mpl.skills install             # both agents, this project
-    python -m dartwork_mpl.skills install --claude    # Claude Code only
+    python -m dartwork_mpl.skills install             # this project
     python -m dartwork_mpl.skills install --dest ~    # user-level skills
     python -m dartwork_mpl.skills install --copy      # no symlinks (Windows)
     python -m dartwork_mpl.skills path                # print the skill folder
@@ -47,8 +47,8 @@ from pathlib import Path
 from typing import Literal
 
 __all__ = [
+    "SKILL_DIRS",
     "SKILL_NAME",
-    "TARGETS",
     "InstallResult",
     "SkillInstallError",
     "install_skill",
@@ -58,11 +58,9 @@ __all__ = [
 
 SKILL_NAME = "dartwork-mpl"
 
-# Agent -> its skills directory, relative to a project (or home) directory.
-TARGETS: dict[str, str] = {
-    "claude": ".claude/skills",
-    "codex": ".agents/skills",
-}
+# Skill folders agents read, relative to a project (or home) directory. The
+# skill goes into each one; a folder linked to another is installed once.
+SKILL_DIRS: tuple[str, ...] = (".claude/skills", ".agents/skills")
 
 _SOURCE = Path(__file__).resolve().parent / SKILL_NAME
 # Written into copies: package version and the inventory of what was copied
@@ -79,16 +77,16 @@ Action = Literal["linked", "copied", "replaced", "unchanged", "shared"]
 class SkillInstallError(RuntimeError):
     """The skill could not be installed at a destination.
 
-    What was at that destination before is kept. Targets earlier in the
+    What was at that destination before is kept. Skill folders earlier in the
     same call may already have been installed.
     """
 
 
 @dataclass(frozen=True)
 class InstallResult:
-    """What :func:`install_skill` did for one agent."""
+    """What :func:`install_skill` did for one skill folder."""
 
-    target: str
+    skills_dir: str
     path: Path
     action: Action
     detail: str = ""
@@ -314,15 +312,6 @@ def _swap_in(staged: Path, link: Path, expected: Fingerprint) -> None:
         raise SkillInstallError(
             f"could not replace {link} ({exc}); the previous install was kept."
         ) from exc
-        if backup.exists() or backup.is_symlink():
-            raise SkillInstallError(
-                f"could not replace {link} ({exc}); the previous install "
-                f"was moved to {backup}."
-            ) from exc
-        shutil.rmtree(workdir, ignore_errors=True)
-        raise SkillInstallError(
-            f"could not replace {link} ({exc}); the previous install was kept."
-        ) from exc
     # The old install (if any) sits in workdir as "previous"; rmtree removes a
     # symlink there without following it.
     shutil.rmtree(workdir, ignore_errors=True)
@@ -350,15 +339,15 @@ def _recover(skills_dir: Path) -> list[Path]:
 
 
 def _recover_all(
-    dest: str | os.PathLike[str] = ".", targets: Iterable[str] = TARGETS
+    dest: str | os.PathLike[str] = ".", skill_dirs: Iterable[str] = SKILL_DIRS
 ) -> list[Path]:
-    """:func:`_recover` for each target's skills directory inside ``dest``."""
+    """:func:`_recover` for each skill folder inside ``dest``."""
     base = Path(dest).expanduser()
     root = base.resolve()
     restored: list[Path] = []
     seen: set[Path] = set()
-    for name in targets:
-        skills_dir = base / TARGETS[name]
+    for name in skill_dirs:
+        skills_dir = base / name
         key = skills_dir.resolve()
         inside = key == root or root in key.parents
         if inside and key not in seen and skills_dir.is_dir():
@@ -370,20 +359,19 @@ def _recover_all(
 def install_skill(
     dest: str | os.PathLike[str] = ".",
     *,
-    targets: Iterable[str] = ("claude", "codex"),
+    skill_dirs: Iterable[str] = SKILL_DIRS,
     copy: bool = False,
     force: bool = False,
 ) -> list[InstallResult]:
-    """Install the skill for Claude Code and/or Codex under ``dest``.
+    """Install the skill into every skill folder under ``dest``.
 
     Parameters
     ----------
     dest
         Project directory (default: the current one). ``~`` installs the
-        user-level skills of both agents.
-    targets
-        Keys of :data:`TARGETS`: ``"claude"`` (``.claude/skills``) and/or
-        ``"codex"`` (``.agents/skills``).
+        user-level skills.
+    skill_dirs
+        Folders of :data:`SKILL_DIRS` to install into (default: all).
     copy
         Copy the folder instead of linking it. A copy does not follow
         upgrades; rerun the installer after upgrading. A link follows the
@@ -396,14 +384,14 @@ def install_skill(
     Returns
     -------
     list[InstallResult]
-        One entry per target. ``"shared"`` means the target's skills
-        directory is the same directory as an earlier target's (for
-        example ``.claude/skills`` linked to ``.agents/skills``).
+        One entry per skill folder. ``"shared"`` means the folder is the
+        same directory as an earlier one (for example ``.claude/skills``
+        linked to ``.agents/skills``).
 
     Raises
     ------
     SkillInstallError
-        If a target's skills directory resolves outside ``dest`` (through a
+        If a skill folder resolves outside ``dest`` (through a
         linked ``.claude``, ``.agents`` or ``skills`` folder), if a
         destination holds something else or an edited copy and ``force`` is
         false, or if a link or copy cannot be built. Every
@@ -411,11 +399,11 @@ def install_skill(
         swapped in; a failed swap restores the previous install.
     """
     base = Path(dest).expanduser()
-    names = list(dict.fromkeys(targets))
-    unknown = [t for t in names if t not in TARGETS]
+    names = list(dict.fromkeys(skill_dirs))
+    unknown = [d for d in names if d not in SKILL_DIRS]
     if unknown or not names:
         raise ValueError(
-            f"targets must be a non-empty subset of {sorted(TARGETS)}; "
+            f"skill_dirs must be a non-empty subset of {list(SKILL_DIRS)}; "
             f"got {names!r}"
         )
 
@@ -424,11 +412,11 @@ def install_skill(
     # (``.claude/skills -> ../.agents/skills`` does), or the install would land
     # somewhere the caller did not name.
     root = base.resolve()
-    resolved = {name: (base / TARGETS[name]).resolve() for name in names}
+    resolved = {name: (base / name).resolve() for name in names}
     for name, key in resolved.items():
         if key != root and root not in key.parents:
             raise SkillInstallError(
-                f"{base / TARGETS[name]} resolves to {key}, outside {root}; "
+                f"{base / name} resolves to {key}, outside {root}; "
                 f"nothing was installed. Pass that location as --dest to "
                 f"install there."
             )
@@ -439,8 +427,7 @@ def install_skill(
     inspected: dict[Path, Fingerprint] = {}
     first_by_dir: dict[Path, Path] = {}
     for name in names:
-        skills_dir = base / TARGETS[name]
-        link = skills_dir / SKILL_NAME
+        link = base / name / SKILL_NAME
         key = resolved[name]
         if key in first_by_dir:
             plans.append(

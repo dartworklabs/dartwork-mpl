@@ -173,7 +173,7 @@ underlying `.mplstyle` layers).
 
 ## AI-assisted development (MCP)
 
-**Claude Code / Codex.** The wheel bundles an agent skill. Run
+**Agent skill.** The wheel bundles an agent skill. Run
 
 ```shell
 python -m dartwork_mpl.skills install   # links .claude/skills and .agents/skills

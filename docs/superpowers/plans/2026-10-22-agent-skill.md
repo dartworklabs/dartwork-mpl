@@ -25,12 +25,15 @@ recipe drew panel labels twice, `.cursor/rules` taught removed APIs, and
    user (2026-10-22) no meaningless decimals and value labels at
    `dm.fw(1)`. Generic examples omit `color=`.
    Catalogs (all aspect tokens, pixels, palettes) live in references.
-2. **`/dataviz` guidance, no precedence claim.** Hosts do not rank skills;
-   the text says how to use both when both are active (chart choice there,
-   construction here: preset, static output, physical size).
+2. **Generic chart skill guidance, no precedence claim.** Hosts do not rank
+   skills; the text says how to use both when both are active (chart choice
+   there, construction here: preset, static output, physical size).
 3. **Installer, additions only.** `python -m dartwork_mpl.skills install
-   [--claude] [--codex] [--dest DIR] [--copy] [--force]`, `... path`, and
-   `skill_version()`. Symlinks by default (library-skills convention).
+   [--dest DIR] [--copy] [--force]`, `... path`, and `skill_version()`. It
+   links into both `.claude/skills` and `.agents/skills` and names no agent:
+   every agent gets the same skill (user decision 2026-10-22, which also
+   removed the `--claude`/`--codex` options and per-agent image-tool names).
+   Symlinks by default (library-skills convention).
    Copies record an lstat inventory (types, file SHA-256, link targets); an
    edited or restructured copy, foreign content or an unreadable marker is
    refused without `--force`. Targets resolving outside `--dest` through a
@@ -97,8 +100,9 @@ recipe drew panel labels twice, `.cursor/rules` taught removed APIs, and
 ## Tests added
 
 `src/dartwork_mpl/skills/tests/test_skills.py` (format limits, routing,
-router rules, `/dataviz` text, every Python block run and linted, colour
-names, lists vs runtime, installer safety on real directories, CLI),
+router rules, generic chart skill text, no agent names, every Python block
+run and linted, colour names, lists vs runtime, installer safety on real
+directories, CLI),
 `src/dartwork_mpl/units/tests/test_figsize_ratio_strings.py`,
 `tests/test_agent_docs_runtime.py` (corpus lists, panel-label recipe, MCP
 prompt version, AI hub claims, mirrors, frozen asset paths),

@@ -27,8 +27,7 @@ plt.close(fig)
 
 ## Look at the image
 
-Open `output/figure-v1.png` with the image tool you have (Claude Code: Read
-the file; Codex: view_image). Check that:
+Open `output/figure-v1.png` with your image-viewing tool. Check that:
 
 - every title, label, tick label and legend entry is inside the canvas and
   readable at the printed size;

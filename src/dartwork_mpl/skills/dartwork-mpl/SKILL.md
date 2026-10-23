@@ -87,7 +87,7 @@ target is truly ambiguous.
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
 1. Save `output/figure-v1` (a path the user names gets the final version).
-2. Open the PNG (Claude Code: Read; Codex: view_image) and look: clipped or
+2. Open the PNG with your image-viewing tool and look: clipped or
    overlapping text, legend over data, crowded ticks, wasted space, wrong data.
    If you cannot view images, say the figure was not visually reviewed.
 3. Read `dm.validate_figure(fig, quiet=True)`: fix WARNING, weigh INFO.
@@ -95,7 +95,7 @@ target is truly ambiguous.
 4. Change only what is needed or requested.
 5. Save `figure-v2`, keep v1, look again. Report changes and kept warnings.
 
-## When /dataviz or other generic chart advice is also active
+## When a generic chart skill or chart advice is also active
 
 Use it for chart choice and honest axes. For construction the active preset
 is the design system and the output a static file (print, PDF, slides): skip

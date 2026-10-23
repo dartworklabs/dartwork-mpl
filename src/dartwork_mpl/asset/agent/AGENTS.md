@@ -10,14 +10,13 @@ dartwork-mpl is installed here: a design system on top of matplotlib
 python -m dartwork_mpl.skills install
 ```
 
-This links `.claude/skills/dartwork-mpl` (Claude Code) and
-`.agents/skills/dartwork-mpl` (Codex) to the skill inside the installed
+This links `.claude/skills/dartwork-mpl` and `.agents/skills/dartwork-mpl`,
+the project skill folders agents read, to the skill inside the installed
 package, so it follows upgrades (recreating the environment needs a rerun).
-`--claude` or `--codex` picks one agent, `--dest ~` installs for your user,
-`--copy` copies (no symlinks, or to check it in), `--force` replaces a
-folder you made or edited yourself. Without installing,
-`python -m dartwork_mpl.skills path` prints the folder; read its `SKILL.md`
-and `references/`.
+`--dest ~` installs for your user, `--copy` copies (no symlinks, or to check
+it in), `--force` replaces a folder you made or edited yourself. Without
+installing, `python -m dartwork_mpl.skills path` prints the folder; read its
+`SKILL.md` and `references/`.
 
 ## The rules on one screen
 
