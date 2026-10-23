@@ -2,8 +2,37 @@
 
 ## Canvas size
 
-`dm.figsize(width, second)` returns the inch tuple for matplotlib's
-`figsize=`. Width and height are physical; their units may differ.
+With no size in the request, `dm.figsize_for` returns the active preset's
+canvas, so the same request gets the same size whoever draws it:
+
+| Preset | Widths |
+|---|---|
+| `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
+| `scientific` | 9 or 17 cm (journal columns) |
+| `presentation`, `poster` | report widths × font size / 8 pt |
+
+The kind sets the base (`"default"` 12 cm 3:2, `"barh"` 14.5 cm 4:3,
+`"compact"` 9 cm 4:3, `"matrix"` 12 cm square, `"dense"` 17 cm 2:1, `"strip"`
+17 cm 0.45). Density moves it: 6 or fewer points with 2 or fewer series on one
+axis gives 9 cm; `dual_axis=True`, 4+ series or 13+ points gives 14.5 cm.
+`matrix`, `dense`, `strip` and grids keep theirs; a grid takes 17 cm and
+panels keep the kind's aspect.
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")
+quarters, series = ["Q1", "Q2", "Q3", "Q4"], 3
+dm.figsize_for(n_points=len(quarters), n_series=series)  # 12 x 8 cm
+dm.figsize_for("barh", n_points=10, n_series=1)  # 14.5 cm, long labels
+dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
+dm.figsize_for(nrows=2, ncols=3)  # 17 cm grid of 3:2 panels
+```
+
+A size the user names goes to `dm.figsize(width, second)`, which returns the
+inch tuple for matplotlib's `figsize=`. Width and height are physical; their
+units may differ.
 
 ```python
 import matplotlib.pyplot as plt

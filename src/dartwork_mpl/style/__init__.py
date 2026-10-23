@@ -16,9 +16,12 @@ import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
 from .._rc import rc_lock
+from ._canvas import CANVAS_KINDS, figsize_for
 
 __all__ = [
+    "CANVAS_KINDS",
     "Style",
+    "figsize_for",
     "install_twinx_patch",
     "list_styles",
     "load_style_dict",
@@ -30,6 +33,9 @@ __all__ = [
 # Deep copies of normalized values written by the last successful preset stack.
 # Contexts merge temporary preset writes and restore the immediate outer copy.
 _dm_preset_values: dict[str, object] = {}
+# Preset names of the last successful use() (or the innermost context()); the
+# default canvas (figsize_for) follows them.
+_active_preset: list[str] = []
 
 
 def _did_you_mean(value: str, candidates: list[str]) -> str | None:
@@ -510,6 +516,7 @@ class Style:
                 # Explicit kwargs are known caller intent, even at equal values.
                 for key in validated_overrides:
                     _dm_preset_values.pop(key, None)
+        _active_preset[:] = names
 
     @contextlib.contextmanager
     def context(
@@ -565,6 +572,7 @@ class Style:
         mapping = mcolors.get_named_colors_mapping()
         saved = {t: mapping.get(t) for t in SEMANTIC_TOKEN_NAMES}
         locale = _locale_of_preset(preset_name, names)
+        saved_active = list(_active_preset)
         try:
             with plt.style.context(style_list):
                 # Retain inherited silent-key ownership; snapshot before kwargs.
@@ -579,8 +587,10 @@ class Style:
                     for key in overrides:
                         _dm_preset_values.pop(key, None)
                 apply_semantic(locale)
+                _active_preset[:] = [preset_name]
                 yield
         finally:
+            _active_preset[:] = saved_active
             with rc_lock:
                 _dm_preset_values.clear()
                 _dm_preset_values.update(saved_ownership)

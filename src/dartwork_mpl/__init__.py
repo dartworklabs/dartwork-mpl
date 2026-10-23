@@ -130,6 +130,7 @@ from .scale import dpi, fs, fw, lw
 # Import style module exports
 from .style import (
     Style,
+    figsize_for,
     install_twinx_patch,
     list_styles,
     load_style_dict,
@@ -157,9 +158,9 @@ from .units import (
 
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
-# docs/development/api-stability.md. Empty today because the interactive
-# UI is a subpackage, not an advertised top-level ``dm.ui`` attribute.
-EXPERIMENTAL: frozenset[str] = frozenset()
+# docs/development/api-stability.md. ``figsize_for`` (the preset's default
+# canvas) may still change its kinds, tiers and hints.
+EXPERIMENTAL: frozenset[str] = frozenset({"figsize_for"})
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
 # These wrap the lower-level primitives above so that AI agents and
@@ -249,6 +250,7 @@ __all__ = [  # noqa: RUF022
     "col2",
     "Length",
     "figsize",
+    "figsize_for",
     "figsize_grid",
     "list_aspect_tokens",
     "tokens",

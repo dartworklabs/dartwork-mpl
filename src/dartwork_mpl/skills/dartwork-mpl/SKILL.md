@@ -13,9 +13,10 @@ A thin layer over matplotlib (presets, physical sizes, margins, checks).
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
+x, y = [0, 1, 2], [1, 3, 2]
 dm.style.use("report")                                          # 1. preset first
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))  # 2. physical size
-ax.plot([0, 1, 2], [1, 3, 2])                                  # preset colours
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(x), n_series=1))
+ax.plot(x, y)                                  # 2. the preset's canvas and colours
 ax.set(xlabel="Time (s)", ylabel="Response")
 dm.simple_layout(fig)                                           # 3. after drawing
 dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"))  # 4. save
@@ -39,16 +40,28 @@ from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 
 ## Size, layout, save
 
-- `dm.figsize(width, second)`. width: `"13cm"`, `"5in"`, `"170mm"`, `dm.cm(13)`,
-  `dm.col1` (9 cm), `dm.col2` (17 cm); bare numbers are rejected. second: an
-  aspect token (`standard` default 4:3, `wide` 3:2, `slide` 16:9, ...),
-  `"16:9"` (width:height), a number (height/width) or a height (`"8cm"`).
-- Drafts: paper 9 or 17 cm, report 13–17 cm, slides by ratio and placement.
-  Not limits: keep any size the user asks for, wider than 17 cm included.
-- `dm.simple_layout(fig)` after everything is drawn (labels, legend,
-  colorbar) sets the outer margins; never `plt.tight_layout()`. Room:
-  `margin="2mm"` or `mr="1cm"`. Gaps between panels (`hspace`, `wspace`) stay yours.
+- No size asked: `dm.figsize_for(kind, n_points=, n_series=)` is the preset's
+  canvas (report 9/12/14.5/17 cm by density, paper columns, slides scaled),
+  the same for every agent and run. Count `n_points` (x positions) and
+  `n_series` from the data; `dual_axis=True` with `twinx`; `nrows=`/`ncols=`
+  for a grid; kind `"barh"` for long labels, `"matrix"` for a heatmap.
+- A size the user names wins, any size: `dm.figsize(width, second)`. width
+  `"13cm"`, `"5in"`, `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number;
+  second `standard` 4:3, `wide` 3:2, `slide` 16:9, `"16:9"`, a ratio or `"8cm"`.
+- `dm.simple_layout(fig)` after everything is drawn (labels, legend, colorbar)
+  sets the outer margins (room: `margin="2mm"`, `mr="1cm"`); panel gaps stay yours.
 - `dm.save_formats` keeps the exact canvas and prints `[VISUAL]` findings.
+- Never `figsize=(w, h)`, `plt.tight_layout()`, `plt.style.use()`, bare
+  `fig.savefig()`, `dpi=` on `plt.subplots`, `dm.subplots`/`dm.figure` (removed).
+
+## Look: the preset's, plus only what was asked
+
+Spines, grid, ticks, fonts, background and margins are the preset's; change
+them only on request. No title, subtitle, source note or extra panel unless
+asked (a caption or the slide carries the title); a vague ask gets one panel.
+A generic chart skill gives chart choice and honest axes; the output is a
+static file, so skip hover, tooltips, rounded bar ends, placeholder palettes,
+pixel line widths and a legend on every chart. Size with `dm.figsize_for`.
 
 ## Data
 
@@ -61,9 +74,8 @@ is not the dataset; template numbers are placeholders, never data.
 
 - Leave `color=` out so the preset cycle applies; name one when asked or to
   emphasise (`dc.blue6`: family + step 0–9). More: `references/colors.md`.
-- `dm.fs(n)` = preset font size + n pt, `dm.lw(n)` = preset line width + n pt,
-  `dm.fw(n)` = preset weight + 100·n. They read the preset, not an artist.
-  One step bigger on an artist: `t.set_fontsize(t.get_fontsize() + 1)`.
+- `dm.fs(n)`/`dm.lw(n)`: preset font size/line width + n pt; `dm.fw(n)`: weight
+  + 100·n (the preset, not an artist: `t.set_fontsize(t.get_fontsize() + 1)`).
 - Explicit user values win exactly (`fontsize=12`, `"#235fa4"`), even when
   lint flags literals. Hairlines stay literal (`linewidth=0.3`).
 - No meaningless decimals: `200`, `0`, `1k, 2k`, not `200.0`, `0.0`, `1.0k, 2.0k`;
@@ -80,9 +92,9 @@ is not the dataset; template numbers are placeholders, never data.
 the asked property, keep data, preset, canvas, colours, legend and the rest.
 Axis-label edits touch the label Text objects, not `font.size` or ticks. Keep
 the original script; write the revision as a new script and stem. Broad asks
-("make it look better", "더 보기 좋게") are normal: keep data and preset, fix
-what the image shows, list each change. Ask one short question only when the
-target is truly ambiguous.
+("make it look better", "더 보기 좋게") are normal: keep data, preset and the
+look rules, fix what the image shows, list each change; ask one short
+question only when the target is truly ambiguous.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
@@ -94,18 +106,6 @@ target is truly ambiguous.
    `CHECK_FAILED` means a check did not run: report validation as incomplete.
 4. Change only what is needed or requested.
 5. Save `figure-v2`, keep v1, look again. Report changes and kept warnings.
-
-## When a generic chart skill or chart advice is also active
-
-Use it for chart choice and honest axes. For construction the active preset
-is the design system and the output a static file (print, PDF, slides): skip
-hover, tooltips, rounded bar ends, placeholder palettes, pixel line widths, a
-legend on every chart (2+ series: legend or direct labels). Use `dm.figsize`.
-
-## Never
-
-`figsize=(w, h)` · `plt.tight_layout()` · `plt.style.use()` · `dm.subplots` /
-`dm.figure` (removed) · bare `fig.savefig()` · `dpi=` on `plt.subplots`.
 
 ## References
 
