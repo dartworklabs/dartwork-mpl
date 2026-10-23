@@ -384,6 +384,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
         "the auto-applied validation fix is re-running the content-aware layout"
     ),
+    ("dartwork_mpl.validate", "dartwork_mpl.style"): (
+        "the preset-override check compares a figure with the active preset"
+    ),
 }
 
 # Compatibility shims: public module path -> the unit that owns its contents.

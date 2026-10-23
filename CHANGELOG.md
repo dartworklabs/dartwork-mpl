@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   same canvas from any agent. The bundled skill uses both and states that
   spines, grid, ticks, fonts, background and margins stay the preset's, with
   no figure title or extra panel unless asked. Both are in `dm.EXPERIMENTAL`.
+- **`PRESET_OVERRIDE` validation check (INFO).** `validate_figure()` reports
+  major gridlines, spine visibility and Axes or figure backgrounds that differ
+  from the active dartwork preset, one finding per Axes and property with the
+  preset and figure values in `detail`. The check cannot see the request, so
+  the finding is advisory: keep the change only if the user asked for it.
+  Axis-off, polar, 3-D, colorbar, pie and twin Axes are not inspected, and
+  nothing is reported without an active preset.
+  `dartwork_mpl.style.active_preset_rcparams()` returns the values compared.
 - Font corpus expanded to 20 families (262 files): Noto Serif and IBM Plex Serif
   added, Roboto/Roboto Mono completed with instanced weights + italics;
   registry-backed interactive font browser on the fonts page (faceted filters,

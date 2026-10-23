@@ -663,3 +663,38 @@ def test_explicit_same_value_kwargs_survive_while_native_residue_resets(
             assert mpl.rcParams["axes.edgecolor"] == "#555555"
         dm.style.use("scientific")
         assert mpl.rcParams["axes.edgecolor"] == "black"
+
+
+class TestActivePresetRcparams:
+    """``active_preset_rcparams`` returns the in-force preset values or ``{}``."""
+
+    def test_empty_without_a_preset(self, isolated_style_state) -> None:
+        """No preset bookkeeping means no active preset."""
+        style_module._dm_preset_values.clear()
+        assert style_module.active_preset_rcparams() == {}
+
+    def test_returns_copies_without_caller_overrides(
+        self, isolated_style_state
+    ) -> None:
+        """Values are the preset's; kwargs keys are absent; edits do not leak."""
+        dm.style.use("report", axes_grid=True)
+        values = style_module.active_preset_rcparams()
+        assert values["axes.spines.top"] is False
+        assert "axes.grid" not in values
+        values["axes.spines.top"] = True
+        assert style_module._dm_preset_values["axes.spines.top"] is False
+
+    def test_empty_after_a_native_reset(self, isolated_style_state) -> None:
+        """``rcdefaults`` ends the preset even though bookkeeping remains."""
+        dm.style.use("report")
+        mpl.rcdefaults()
+        assert style_module._dm_preset_values
+        assert style_module.active_preset_rcparams() == {}
+
+    def test_single_native_edit_keeps_the_preset_active(
+        self, isolated_style_state
+    ) -> None:
+        """One rcParams edit does not end the preset; its value is reported."""
+        dm.style.use("report")
+        mpl.rcParams["axes.grid"] = True
+        assert style_module.active_preset_rcparams()["axes.grid"] is False

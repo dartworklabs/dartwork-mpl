@@ -21,6 +21,7 @@ from ._canvas import CANVAS_KINDS, figsize_for, grid_shape
 __all__ = [
     "CANVAS_KINDS",
     "Style",
+    "active_preset_rcparams",
     "figsize_for",
     "grid_shape",
     "install_twinx_patch",
@@ -615,6 +616,32 @@ class Style:
 
 
 style: Style = Style()
+
+
+def active_preset_rcparams() -> dict[str, object]:
+    """Return copies of the rcParams the active dartwork preset set, or ``{}``.
+
+    The values are what the last ``style.use`` / ``style.stack`` (or the
+    innermost ``style.context``) wrote, without the keys the caller passed as
+    overrides; a key the preset does not declare is absent. ``{}`` means no
+    dartwork preset is in force: none was applied, or a native reset
+    (``plt.rcdefaults()``, ``plt.style.use("default")``) has since moved off
+    the preset value every key on which the preset differs from Matplotlib's
+    default.
+    """
+    with rc_lock:
+        values = copy.deepcopy(_dm_preset_values)
+    defaults = plt.rcParamsDefault  # type: ignore[attr-defined]
+    changed = [
+        key
+        for key, value in values.items()
+        if key in defaults and _rcparam_differs(value, defaults[key])
+    ]
+    if changed and all(
+        _rcparam_differs(plt.rcParams[key], values[key]) for key in changed
+    ):
+        return {}
+    return values
 
 
 def install_twinx_patch() -> None:
