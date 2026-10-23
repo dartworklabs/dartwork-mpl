@@ -5,6 +5,9 @@ access, without MCP, a repository checkout or a lint CLI. Use existing APIs;
 matplotlib Figure/Axes and artist setters stay native. A human can request a
 plot or revision in ordinary language; the agent performs this loop.
 
+Claude Code and Codex can load the same guidance as a skill: run
+`python -m dartwork_mpl.skills install` once in the project.
+
 ## Read the installed guidance and template source
 
 ```python

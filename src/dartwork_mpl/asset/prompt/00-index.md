@@ -34,17 +34,19 @@ is not a measurement of a particular display, perceived brightness, or OKLab
   project context and purpose defaults: paper → `scientific`,
   report/document/dashboard → `report`, talk/slides → `presentation`.
   See policy for provisional sizing and when to ask one short context question.
-  Use `-kr` for Korean plot text only. Geometry-only edits retain the preset.
+  Plot text is English unless the user asks for another language; `-kr` for
+  Korean text. Geometry-only edits retain the preset.
 - Create native figures with `plt.subplots(figsize=dm.figsize("<n>cm",
   "<aspect>"))` or `plt.figure(figsize=dm.figsize(...))` with GridSpec as needed.
   Width/height are freely chosen; 17 cm is page-fit advice, not a canvas cap.
   `width` accepts unit strings (`"13cm"`, `"5in"`,
   `"170mm"`, `"24pt"`) or `Length` values (`dm.cm(13)`, `dm.col1`,
   `dm.col2`). Bare `int` / `float` are rejected. The second
-  argument is polymorphic: an aspect token (`"square"`,
-  `"portrait"`, `"standard"`, `"golden"`, `"wide"`, `"cinema"`), a
-  positive float ratio, a unit-string height (`"12cm"`), or a
-  `Length` height (`dm.cm(12)`).
+  argument is polymorphic: an aspect token (`"tall"`, `"portrait"`,
+  `"square"`, `"standard"`, `"a4"`, `"wide"`, `"golden"`, `"slide"`,
+  `"cinema"`, `"panoramic"`; see `dm.list_aspect_tokens()`), a
+  `"W:H"` ratio string (`"16:9"`), a positive float ratio, a
+  unit-string height (`"12cm"`), or a `Length` height (`dm.cm(12)`).
 - Prefer named palette defaults: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`,
   `cu.*`, `pr.*`. Retain user-specified hex or native matplotlib colors.
 - The `dc.*` catalog's construction space is unified around OKLab L and
@@ -124,6 +126,10 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    as needed and save with `dm.save_formats` or `dm.save_and_show`.
 
 ## Installed Python route (no MCP or checkout)
+
+Run `python -m dartwork_mpl.skills install` once in the project: Claude Code
+and Codex then load the bundled skill (`SKILL.md` + references) on demand.
+The calls below read the same guidance directly.
 
 ```python
 from importlib.resources import files
