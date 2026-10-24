@@ -59,6 +59,29 @@ print(sorted(model.properties())[:8])   # every property the artist has
 - If two artists match and the request does not say which, ask one short
   question.
 
+## An asked-for element: named details win, the rest is the preset's
+
+A request that names an element ("add a title", "with gridlines", "legend
+above the plot", "20 cm wide") gets the one call below, in a new figure or an
+edit. Pass only the arguments the request names: the preset sets size,
+weight, colour and spacing, so every agent draws the same element.
+
+| Asked for | Call |
+|---|---|
+| a title | `ax.set_title("…")`; one title over several panels: `fig.suptitle("…")` |
+| gridlines | `ax.grid(True, axis="y")` (horizontal); `axis="x"` vertical; `"both"` |
+| a legend | `dm.place_legend(ax)`; a named side: `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
+| a source or note line | `fig.text(0.01, 0.01, "Source: …", ha="left", va="bottom", fontsize=dm.fs(-1))` |
+| a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps its height, `dm.figsize("16cm", "<old height>cm")` |
+| bigger or smaller text, no amount | one step: `t.set_fontsize(t.get_fontsize() + 1)`; all text: `dm.style.use(preset, font_size=<preset size + 1>)` |
+| a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
+| values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontweight=dm.fw(1))` |
+| a log axis | `ax.set_yscale("log")` |
+
+A detail the user does name wins exactly ("a bold 12 pt title", "dashed grey
+gridlines"). `dm.simple_layout(fig)` after the last element keeps a title
+above an outside legend and the margins around both.
+
 ## Common "only X" requests
 
 | Request | Change |

@@ -40,29 +40,30 @@ from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 
 ## Size, layout, save
 
-- No size asked: `dm.figsize_for(kind, n_points=, n_series=)` is the preset's
-  canvas (report 9/12/14.5/17 cm by density, paper columns, slides scaled),
-  the same for every agent and run. Count `n_points` (x positions) and
-  `n_series` from the data; `dual_axis=True` with `twinx`; kind `"barh"` long
-  labels, `"matrix"` heatmap, `"slide"` a whole 16:9 slide. n panels:
+- No size asked: `dm.figsize_for(kind, n_points=, n_series=)`, the preset's
+  canvas for every agent and run (report 9/12/14.5/17 cm by density, paper
+  columns, slides scaled). Count x positions and series; `dual_axis=True` with
+  `twinx`; kind `"barh"`, `"matrix"`, `"slide"` (a whole 16:9 slide). n panels:
   `nrows, ncols = dm.grid_shape(n)`, then `dm.figsize_for(nrows=, ncols=)`.
 - A size the user names wins, any size: `dm.figsize(width, second)`. width
   `"13cm"`, `"5in"`, `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number;
-  second `standard` 4:3, `wide` 3:2, `slide` 16:9, `"16:9"`, a ratio or `"8cm"`.
+  second `standard` 4:3 (a width alone; an edit keeps its height), `wide` 3:2,
+  `slide` 16:9, `"16:9"`, a ratio or `"8cm"`.
 - `dm.simple_layout(fig)` after everything is drawn (labels, legend, colorbar)
-  sets the outer margins (room: `margin="2mm"`, `mr="1cm"`); panel gaps stay yours.
-- `dm.save_formats` keeps the exact canvas and prints `[VISUAL]` findings.
+  sets outer margins (`margin="2mm"`); `dm.save_formats` keeps the canvas.
 - Never `figsize=(w, h)`, `plt.tight_layout()`, `plt.style.use()`, bare
   `fig.savefig()`, `dpi=` on `plt.subplots`, `dm.subplots`/`dm.figure` (removed).
 
-## Look: the preset's, plus only what was asked
+## Look: the preset's, plus what was asked
 
 Spines, grid, ticks, fonts, background and margins are the preset's; change
-them only on request. No figure title, subtitle, source note or extra panel
-unless asked (a caption or slide carries the title; small multiples name each
-panel); a vague ask gets one panel. A generic chart skill gives chart choice
-and honest axes; the output is a static file, so skip hover, tooltips,
-rounded bar ends, placeholder palettes, pixel widths, a legend on every chart.
+them only on request. No figure title, subtitle, source note, extra panel or
+one-series legend unless asked (small multiples name each panel); a vague ask
+gets one panel. An asked-for element keeps the preset's style in every detail
+not named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.place_legend(ax)`
+(a named side: `loc="above"`); full table: `references/editing.md`.
+A generic chart skill gives chart choice and honest axes; the output is a
+static file: no hover, tooltips, rounded bar ends, placeholder palettes.
 
 ## Data
 
@@ -90,11 +91,10 @@ is not the dataset; template numbers are placeholders, never data.
 ## Edits
 
 "Only X" requests: find that artist (panel, series, label, title), change only
-the asked property, keep data, preset, canvas, colours, legend and the rest.
-Axis-label edits touch the label Text objects, not `font.size` or ticks. Keep
-the original script; write the revision as a new script and stem. Broad asks
-("make it look better", "더 보기 좋게"): keep data, preset and look rules, fix
-what the image shows, list each change; ask only if the target is ambiguous.
+the asked property, keep data, preset, canvas, colours, legend and the rest
+(axis labels are Text objects, not `font.size`); keep the original and write
+the revision as a new script and stem. Broad asks ("make it look better"):
+keep data, preset and look rules, fix what the image shows, list each change.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
@@ -104,8 +104,8 @@ what the image shows, list each change; ask only if the target is ambiguous.
    If you cannot view images, say the figure was not visually reviewed.
 3. Read `dm.validate_figure(fig, quiet=True)`: fix WARNING, weigh INFO.
    `CHECK_FAILED` means a check did not run: report validation as incomplete.
-4. Change only what is needed or requested.
-5. Save `figure-v2`, keep v1, look again. Report changes and kept warnings.
+4. Change only what is needed or requested; save `figure-v2`, keep v1, look
+   again. Report changes and kept warnings.
 
 ## References
 
