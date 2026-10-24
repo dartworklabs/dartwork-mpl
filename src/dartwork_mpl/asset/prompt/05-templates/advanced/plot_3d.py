@@ -27,7 +27,7 @@ Z = np.zeros_like(X)
 for cx, cy, amp, sigma in peaks:
     Z -= amp * np.exp(-((X - cx) ** 2 + (Y - cy) ** 2) / (2 * sigma**2))
 
-fig = plt.figure(figsize=dm.figsize("14.5cm", "standard"))
+fig = plt.figure(figsize=dm.figsize_for("matrix"))
 ax = fig.add_subplot(111, projection="3d")
 
 surf = ax.plot_surface(
@@ -71,32 +71,6 @@ cbar = fig.colorbar(surf, ax=ax, fraction=0.04, pad=0.08, shrink=0.7)
 cbar.set_label("z", fontsize=dm.fs(-1))
 cbar.ax.tick_params(labelsize=dm.fs(-1))
 cbar.outline.set_linewidth(0.3)
-
-ax.set_title(
-    "Twin energy minima dominate the landscape",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-fig.text(
-    0.01,
-    0.94,
-    "Two-gaussian basin; star markers anchor the local minima.",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-    ha="left",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic two-gaussian energy landscape.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 # Skip validate_with_fixes for 3D — it reports many false-positive

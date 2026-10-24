@@ -4,8 +4,8 @@ The package ships 18 chart types, each as a `basic` and an `advanced`
 runnable script: bar, bar_grouped, bar_horizontal, boxplot, contour,
 heatmap, histogram, line, pie, plot_3d, polar, scatter, small_multiples,
 stacked_bar, tornado, twin_axis, violin, waterfall. `basic` is the minimal
-pattern; `advanced` adds annotation and narrative touches. They are
-starting points; any matplotlib chart type is fine without one.
+pattern; `advanced` adds reference lines, value labels and callouts. They
+are starting points; any matplotlib chart type is fine without one.
 
 ```python
 from importlib.resources import files
@@ -30,9 +30,11 @@ When adapting a template:
 
 1. Replace every synthetic array, label and hard-coded summary with the
    user's data. Never keep invented numbers or annotations.
-2. Keep the user's preset and size. The template's `dm.figsize` and title
-   are examples: with no size asked use `dm.figsize_for`, and keep a title
-   only when the user asked for one.
+2. Keep the user's preset. Templates size the canvas with
+   `dm.figsize_for(...)` from their own counts and draw no title, subtitle
+   or source note: recount `n_points` / `n_series` (or the panel grid) for
+   the user's data. A size or title the user names still wins
+   (`dm.figsize(...)`, `ax.set_title(...)`).
 3. Change the output stem in its `dm.save_formats` call, then run the
-   review loop (`references/review-loop.md`). Advanced templates draw long
-   titles and annotations: check them in the PNG.
+   review loop (`references/review-loop.md`). Advanced templates draw many
+   annotations: check them in the PNG.

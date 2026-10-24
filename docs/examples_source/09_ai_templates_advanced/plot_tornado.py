@@ -45,7 +45,9 @@ high = np.array([r[2] for r in data])
 pos_color = dm.color("dc.green5").to_hex()
 neg_color = dm.color("dc.amber5").to_hex()
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for("barh", n_points=len(variables), n_series=2)
+)
 ys = np.arange(len(variables))
 
 # Color by sign of output impact — green = output rises, red = output drops.
@@ -103,34 +105,13 @@ handles = [
         facecolor=neg_color, edgecolor="white", label="Output drops"
     ),
 ]
-ax.legend(handles=handles, loc="lower right", fontsize=dm.fs(-1), frameon=False)
-
-ax.set_title(
-    "Growth dominates model parameter sensitivity",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Each row flexes one parameter by ±10%; bars colored by sign of output impact.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
+ax.legend(
+    handles=handles,
+    loc="lower right",
+    bbox_to_anchor=(1.0, 1.0),
+    ncol=2,
     fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic parameter-sensitivity model.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
+    frameon=False,
 )
 
 dm.simple_layout(fig, margin=dm.inch(0.45))

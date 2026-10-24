@@ -41,7 +41,11 @@ totals = [
 gradient = dm.cspace("dc.teal5", "dc.teal2", n=len(component_names))
 colors = [c.to_hex() for c in gradient]
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(
+        n_points=len(categories), n_series=len(component_names)
+    )
+)
 
 x = np.arange(len(categories))
 bottom = np.zeros(len(categories))
@@ -95,34 +99,6 @@ ax.set_ylim(0, max(totals) * 1.12)
 dm.format_axis_si(ax, axis="y")
 
 ax.legend(loc="upper left", fontsize=dm.fs(-1), frameon=False, ncol=3)
-
-ax.set_title(
-    "Solar share climbs to 60% of generation by P4",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Total annotated above each period; segment labels shown when ≥ 8% of stack.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic generation-mix model.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)

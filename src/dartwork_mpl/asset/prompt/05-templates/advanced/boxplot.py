@@ -34,7 +34,7 @@ market_baseline = 0.45  # synthetic weekly market return
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(labels), n_series=1))
 
 bp = ax.boxplot(data, patch_artist=True, widths=0.55, showfliers=False)
 for patch, color in zip(bp["boxes"], colors, strict=False):
@@ -94,34 +94,6 @@ for i, m in enumerate(medians):
 ax.set_xticklabels(labels)
 ax.set_ylabel("Weekly return (%)")
 ax.set_xlabel("Portfolio variant")
-
-ax.set_title(
-    "Variant D's median lift comes with the widest spread",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "n = 80 per variant — jittered points show the raw return cloud.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic A/B/C/D return panel (rng seed 42).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)

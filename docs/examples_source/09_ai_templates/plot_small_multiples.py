@@ -32,8 +32,13 @@ panels = [
     ("Group D", np.sin(2 * x) * 0.5 + rng.normal(scale=0.1, size=x.size)),
 ]
 
+nrows, ncols = dm.grid_shape(len(panels))
 fig, axes = plt.subplots(
-    2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True, sharey=True
+    nrows,
+    ncols,
+    figsize=dm.figsize_for(nrows=nrows, ncols=ncols),
+    sharex=True,
+    sharey=True,
 )
 for ax, (label, y) in zip(axes.flat, panels, strict=False):
     ax.plot(x, y, color="dc.teal3", linewidth=dm.lw(0))

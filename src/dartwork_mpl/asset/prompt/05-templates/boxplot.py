@@ -18,13 +18,12 @@ rng = np.random.default_rng(42)
 data = [rng.normal(0, std, 100) for std in (1, 2, 3, 4)]
 colors = ["dc.teal2", "dc.green2", "dc.orange2", "dc.red2"]
 
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(data), n_series=1))
 bp = ax.boxplot(data, patch_artist=True)
 for patch, color in zip(bp["boxes"], colors, strict=False):
     patch.set_facecolor(color)
 ax.set_xticklabels(["std=1", "std=2", "std=3", "std=4"])
 ax.set_ylabel("Value")
-ax.set_title("Box plot", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)
 dm.save_formats(fig, "boxplot")

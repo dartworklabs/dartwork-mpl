@@ -16,10 +16,11 @@ dm.style.use("scientific")
 categories = ["A", "B", "C", "D", "E"]
 values = [23, 45, 56, 78, 33]
 
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(categories), n_series=1)
+)
 ax.bar(categories, values, color="dc.teal2", edgecolor="white", linewidth=0.3)
 ax.set_ylabel("Value")
-ax.set_title("Vertical bars", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)
 dm.save_formats(fig, "bar")

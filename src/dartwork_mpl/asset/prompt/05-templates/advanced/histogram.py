@@ -31,7 +31,7 @@ p25, p75 = np.percentile(samples, [25, 75])
 sla_threshold = 250.0
 breach_rate = (samples > sla_threshold).mean() * 100
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
+fig, ax = plt.subplots(figsize=dm.figsize_for())
 
 ax.hist(samples, bins=50, color="dc.teal3", edgecolor="white", linewidth=0.3)
 
@@ -83,34 +83,6 @@ ax.set_xlabel("Response time (ms)")
 ax.set_ylabel("Frequency")
 
 ax.legend(loc="upper right", fontsize=dm.fs(-1), frameon=False)
-
-ax.set_title(
-    f"{breach_rate:.1f}% of requests breach the {sla_threshold:.0f} ms SLA",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Synthetic API latency, n = 4,300 — the heavy tail carries the breach.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic log-normal mixture (rng seed 42).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)

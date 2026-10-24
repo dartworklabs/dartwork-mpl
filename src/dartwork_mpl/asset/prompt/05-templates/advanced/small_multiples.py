@@ -8,7 +8,7 @@
 # data_shape: groups: dict[str, list[float]], x: list[float]
 # tags: small-multiples, panel-ids, shared-axes, narrative
 # narrative: 24-month KPI trend across 6 product lines; sharey reveals the relative wins
-# advanced_apis: plt.subplots(2, 3, sharey=True), dm.label_axes for (a)-(f), per-panel sub-title, fig.supxlabel/supylabel
+# advanced_apis: dm.grid_shape + dm.figsize_for(nrows, ncols) for the 2 x 3 grid, plt.subplots(sharey=True), dm.label_axes for (a)-(f), per-panel sub-title, fig.supxlabel/supylabel
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -34,8 +34,13 @@ lines = {
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(lines))
 colors = [c.to_hex() for c in gradient]
 
+nrows, ncols = dm.grid_shape(len(lines))
 fig, axes = plt.subplots(
-    2, 3, figsize=dm.figsize("17cm", "wide"), sharex=True, sharey=True
+    nrows,
+    ncols,
+    figsize=dm.figsize_for(nrows=nrows, ncols=ncols),
+    sharex=True,
+    sharey=True,
 )
 axes_flat = axes.flatten()
 
@@ -68,35 +73,8 @@ dm.label_axes(axes_flat)
 fig.supxlabel("Month after launch", fontsize=dm.fs(0), y=0.04)
 fig.supylabel("KPI (indexed to 50)", fontsize=dm.fs(0), x=0.04)
 
-fig.suptitle(
-    "Line F outruns the pack while Line D bleeds out",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    x=0.04,
-    y=0.985,
-    ha="left",
-)
-fig.text(
-    0.04,
-    0.945,
-    "Six product lines, 24 months — shared y-axis exposes the relative speeds.",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-    ha="left",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic product-line KPI panel (rng seed 42).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
-
 fig.subplots_adjust(
-    left=0.08, right=0.97, top=0.86, bottom=0.10, wspace=0.10, hspace=0.18
+    left=0.08, right=0.97, top=0.93, bottom=0.10, wspace=0.10, hspace=0.18
 )
 dm.validate_with_fixes(fig)
 

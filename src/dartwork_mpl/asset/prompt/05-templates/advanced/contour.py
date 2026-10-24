@@ -28,7 +28,7 @@ Z = np.zeros_like(X)
 for cx, cy, amp, sigma in peaks:
     Z += amp * np.exp(-((X - cx) ** 2 + (Y - cy) ** 2) / (2 * sigma**2))
 
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
 
 # Filled contour (background) + line contour (foreground) for layering.
 levels = np.linspace(0, Z.max(), 11)
@@ -65,34 +65,6 @@ cbar = fig.colorbar(cf, ax=ax, fraction=0.046, pad=0.04)
 cbar.set_label("z", fontsize=dm.fs(-1))
 cbar.ax.tick_params(labelsize=dm.fs(-1))
 cbar.outline.set_linewidth(0.3)
-
-ax.set_title(
-    "Twin gaussian peaks dominate the landscape",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Filled + line contours; stars mark the local maxima.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic two-gaussian field.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)

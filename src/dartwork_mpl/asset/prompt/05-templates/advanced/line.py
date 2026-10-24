@@ -31,7 +31,7 @@ y_compare = base * 0.95 + rng.normal(0, 1.2, size=24)
 primary_color = dm.color("dc.teal4").to_hex()
 compare_color = dm.color("oc.gray6").to_hex()
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(months), n_series=2))
 
 # Event window — the launch quarter as a context band.
 ax.axvspan(launch_idx, launch_idx + 2, alpha=0.12, color="dc.amber4", zorder=0)
@@ -83,34 +83,6 @@ ax.set_ylabel("MAU (indexed)")
 dm.format_axis_si(ax, axis="y")
 
 ax.legend(loc="upper left", fontsize=dm.fs(-1), frameon=False)
-
-ax.set_title(
-    "Launch quarter shifts MAU growth above industry baseline",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Synthetic monthly cohort, 24 months — divergence opens after the v2 launch.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic monthly KPI series (rng seed 42).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)

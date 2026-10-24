@@ -70,7 +70,7 @@ for d, total in zip(deltas, is_total, strict=False):
     else:
         colors.append(neg_color)
 
-fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(items), n_series=1))
 
 xs = np.arange(len(items))
 ax.bar(
@@ -132,7 +132,7 @@ for i, (d, b, h, total) in enumerate(
         )
 
 ax.set_xticks(xs)
-ax.set_xticklabels(labels, rotation=20, ha="right")
+ax.set_xticklabels(labels, rotation=30, ha="right")
 ax.set_ylabel("Energy (MWh)")
 ax.set_ylim(0, max(tops) * 1.15)
 dm.format_axis_si(ax, axis="y")
@@ -148,34 +148,6 @@ handles = [
     mpatches.Patch(facecolor=tot_color, edgecolor="white", label="Subtotal"),
 ]
 ax.legend(handles=handles, loc="upper right", fontsize=dm.fs(-1), frameon=False)
-
-ax.set_title(
-    "From 1,200 MWh generated to 440 MWh delivered — loss is the biggest leak",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Synthetic bridge; dashed connectors trace the running total.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic energy-bridge model.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 dm.validate_with_fixes(fig)

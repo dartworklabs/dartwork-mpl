@@ -71,6 +71,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Bundled templates size with `dm.figsize_for` and draw no title.** All 36
+  templates (18 basic, 18 advanced) and their gallery pages take the canvas
+  from `dm.figsize_for(...)` with counts read from their own data
+  (`dm.grid_shape` + `nrows=`/`ncols=` for small multiples) instead of
+  hand-picked 9-17 cm sizes, and no longer draw a chart title; the advanced
+  tier also drops its subtitle and source footnote. Panel names in small
+  multiples stay. Agents copy templates, so a size or title now appears only
+  when the user asks for it.
 - `format_axis_year` prints two-digit tick years by default (`2025` -> `25년`,
   `25年`, `25`). Four-digit tick years double the tick width and crowd
   neighbouring labels; the company-analysis harness now rejects them

@@ -29,7 +29,7 @@ centers = [(0, 0, 0), (3, 3, 2), (4, 1, 4)]
 colors = ["dc.teal2", "dc.green2", "dc.orange2"]
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize("13cm", "square"), subplot_kw={"projection": "3d"}
+    figsize=dm.figsize_for("matrix"), subplot_kw={"projection": "3d"}
 )
 for (cx, cy, cz), color in zip(centers, colors, strict=False):
     xs = rng.normal(cx, 0.7, n_per_cluster)
@@ -39,6 +39,5 @@ for (cx, cy, cz), color in zip(centers, colors, strict=False):
 ax.set_xlabel("X axis")
 ax.set_ylabel("Y axis")
 ax.set_zlabel("Z axis")
-ax.set_title("3D clusters", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)

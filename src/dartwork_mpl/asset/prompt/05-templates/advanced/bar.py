@@ -38,8 +38,10 @@ eu_2030_target = 55.0  # EU CO2 fleet target implies ~55% BEV share by 2030
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(countries))
 bar_colors = [c.to_hex() for c in gradient]
 
-# 4. Figure — col1 width keeps the layout dense and reviewer-friendly.
-fig, ax = plt.subplots(figsize=dm.figsize(dm.col1, "standard"))
+# 4. Figure — the preset's canvas for this many bars in one series.
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(countries), n_series=1)
+)
 
 # 5. Bars + per-bar value labels (annotation density carries the story).
 bars = ax.bar(
@@ -77,44 +79,16 @@ ax.set_ylim(0, 105)
 ax.set_ylabel("BEV share of new car sales")
 ax.set_xlabel("Market")
 
-# 8. Title + takeaway subtitle (narrative-led). Pad the title up so the
-#    subtitle line gets clear vertical separation.
-ax.set_title(
-    "Norway leads global BEV adoption by a wide margin",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Top-5 markets, 2024 — only Norway has cleared the EU 2030 trajectory.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
+# No title, subtitle or source note: the caption or slide carries them.
+# Add one only when the user asks for it.
 
-# 9. Source footnote — non-negotiable for real-data plots.
-fig.text(
-    0.01,
-    0.005,
-    "Source: IEA Global EV Outlook 2024 (illustrative).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
-
-# 10. Layout — simple_layout is flush (margin=0); a small inch margin
-#     gives subtitle / source footnote / x-label room to breathe.
-#     Pair with validate_with_fixes to catch anything left.
+# 8. Layout — simple_layout is flush (margin=0); a small inch margin
+#    gives the value labels and x-label room to breathe.
+#    Pair with validate_with_fixes to catch anything left.
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)
 
-# 11. Self-check — surfaces remaining clipping / overlap / contrast
+# 9. Self-check — surfaces remaining clipping / overlap / contrast
 #     issues before the agent reports "done". Returns [] when clean.
 issues = dm.check_figure_quality(fig)
 if issues:
