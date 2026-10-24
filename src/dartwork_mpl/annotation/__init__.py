@@ -708,6 +708,7 @@ def label_line_ends(
     Returns the labels in the order of ``lines``.
     """
     import matplotlib as mpl
+    import matplotlib.colors as mcolors
 
     from .._colors.contrast import ensure_contrast
 
@@ -718,9 +719,9 @@ def label_line_ends(
             if ln.get_visible() and not str(ln.get_label()).startswith("_")
         ]
     gap = float(mpl.rcParams["axes.labelpad"] if gap_pt is None else gap_pt)
-    background = ax.patch.get_facecolor()
+    background = mcolors.to_rgba(ax.patch.get_facecolor())
     if not ax.patch.get_visible() or background[3] == 0:
-        background = ax.figure.get_facecolor()
+        background = mcolors.to_rgba(ax.figure.get_facecolor())
     legend = ax.get_legend()
     if legend is not None:
         legend.remove()
@@ -737,7 +738,7 @@ def label_line_ends(
             "annotation_clip": False,
         }
         style.update(kw)
-        text = ax.annotate(
+        label = ax.annotate(
             str(line.get_label()),
             xy=end,
             xycoords="data",
@@ -745,15 +746,15 @@ def label_line_ends(
             textcoords="offset points",
             **style,
         )
-        placed.append((text, end))
+        placed.append((label, end))
     if len(placed) < 2:
         return [t for t, _ in placed]
 
     # Vertical spacing in points: one text line plus a sliver.
     fig, renderer = _renderer_for_axes(ax)
     heights = []
-    for text, _ in placed:
-        bbox = text.get_window_extent(renderer)
+    for placed_label, _ in placed:
+        bbox = placed_label.get_window_extent(renderer)
         heights.append(bbox.height * 72.0 / fig.dpi)
     height = max(heights) * 1.1
     to_pt = 72.0 / fig.dpi
@@ -761,8 +762,7 @@ def label_line_ends(
     order = sorted(range(len(placed)), key=lambda i: wanted[i])
     spread = _spread([wanted[i] for i in order], height)
     for i, y_pt in zip(order, spread, strict=True):
-        text, _ = placed[i]
-        _set_annotation_offset(text, (gap, y_pt - wanted[i]))
+        _set_annotation_offset(placed[i][0], (gap, y_pt - wanted[i]))
     return [t for t, _ in placed]
 
 
