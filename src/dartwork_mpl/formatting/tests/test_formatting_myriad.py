@@ -30,7 +30,7 @@ def test_format_axis_myriad_ko_units() -> None:
         assert fmt(1_0000_0000_0000_0000) == "1경"
         assert fmt(8_000) == "8,000"
         assert fmt(0) == "0"
-        assert fmt(-150_000_000) == "-1.5억"
+        assert fmt(-150_000_000) == "\N{MINUS SIGN}1.5억"
         assert fmt(100_000_000) == "1억"
     finally:
         plt.close(fig)
@@ -56,6 +56,6 @@ def test_format_axis_myriad_currency_prefix() -> None:
     fig, fmt = _myriad_formatter(currency="₩")
     try:
         assert fmt(150_000_000) == "₩1.5억"
-        assert fmt(-150_000_000) == "-₩1.5억"
+        assert fmt(-150_000_000) == "\N{MINUS SIGN}₩1.5억"
     finally:
         plt.close(fig)

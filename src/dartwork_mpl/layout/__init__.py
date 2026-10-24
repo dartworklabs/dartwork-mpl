@@ -632,6 +632,7 @@ def simple_layout(
     mb: Length | str | float | None = None,
     use_all_axes: bool = True,
     adopt_orphan_tick_font: bool | None = None,
+    format_ticks: bool = True,
     verbose: bool = False,
 ) -> None:
     """Place axes content at the requested distance from each figure edge.
@@ -678,6 +679,15 @@ def simple_layout(
         defaulting to ``False``), so set ``dm.config.adopt_orphan_tick_font
         = True`` once to opt in at every call site. Pass ``True`` /
         ``False`` explicitly to override per call.
+    format_ticks : bool, optional
+        If ``True`` (default), an axis still on matplotlib's default number
+        formatter whose visible ticks reach 1,000 gets the library's tick
+        numbers before measuring: thousands separators (``1,750``;
+        ``34,000``), and from one million the largest tick's SI unit
+        (``0.5M … 2.5M``). Smaller axes, x axes of years (every tick in
+        1000-2999), log, date and category axes, colorbars and any axis
+        with a formatter you set are left alone. ``False`` keeps
+        matplotlib's numbers.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -711,6 +721,11 @@ def simple_layout(
     """
     if not fig.axes:
         return
+
+    if format_ticks:
+        from ..formatting import apply_default_tick_format
+
+        apply_default_tick_format(fig)
 
     if adopt_orphan_tick_font is None:
         from ..config import config

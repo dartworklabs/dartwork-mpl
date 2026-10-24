@@ -73,7 +73,7 @@ weight, colour and spacing, so every agent draws the same element.
 | a legend, no side named | `dm.place_legend(ax)`: inside where it covers no data, otherwise above the plot by itself; no `loc=` or `ncols=` of your own |
 | a legend on a named side | `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
 | a source or note line | `dm.add_note(fig, "Source: …")`, then `dm.simple_layout(fig)` |
-| a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps its height, `dm.figsize("16cm", "<old height>cm")` |
+| a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
 | bigger or smaller text, no amount | one step: `t.set_fontsize(t.get_fontsize() + 1)`; all text: `dm.style.use(preset, font_size=<preset size + 1>)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
 | values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontweight=dm.fw(1))` |
@@ -90,7 +90,7 @@ above an outside legend and the margins around both.
 | axis labels one step bigger | each label: `t.set_fontsize(t.get_fontsize() + 1)` |
 | ticks smaller | `ax.tick_params(labelsize=dm.fs(-1))` |
 | one line thicker | `line.set_linewidth(line.get_linewidth() + 0.5)` |
-| emphasise one series | others `set_color("dc.gray4")`, target `set_zorder(3)`; the legend stays |
+| emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays, redrawn after recolouring |
 | move the legend | `ax.legend(loc="lower right")` or `dm.place_legend(ax)` |
 | legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
 | label line ends instead of a legend | `ax.annotate(...)` at each last point, remove legend |
@@ -138,17 +138,20 @@ plt.close(fig)
 
 1. Render and look. Name the two or three biggest problems.
 2. Fix in this order, only what the image shows:
-   - clipped or overlapping text: `dm.simple_layout(fig)`,
-     `dm.wrap_axis_labels(fig)`, shorter tick labels (`dm.format_axis_si`),
-     fewer ticks, `dm.rotate_tick_labels(ax)` as a last resort;
+   - clipped or overlapping text: dates read as dates and the library's tick
+     numbers and dates (`dm.simple_layout(fig)`; no formatter or locator of
+     your own), `dm.wrap_axis_labels(fig)`, `dm.rotate_tick_labels(ax)` as a
+     last resort;
    - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
      (one legend for both twins; above the plot by itself when nothing inside
      is free);
    - many competing colours: one accent, the rest `dc.gray4`;
-   - unclear labels: add units, "Time (s)";
+   - unclear labels: the column's name and a unit the data or request gives
+     ("Time (s)"); never an invented unit;
    - cramped panels: `hspace` / `wspace`.
-3. Keep the preset's fonts, spines and grid, the data, the chart type, the
-   canvas size and what the figure already has: its title, legend and the
+3. Keep the preset's fonts, spines and grid, the data, the chart type and
+   its axes (no new twin axis or panel), the axis limits, the canvas size,
+   text sizes and what the figure already has: its title text, legend and the
    legend's place stay unless the image shows a defect in them (the no-title
    default is for new figures).
 4. Save as the next version, look again, and list each change in one line.

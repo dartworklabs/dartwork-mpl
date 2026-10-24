@@ -377,6 +377,24 @@ Set the titles first. An explicit `x=` keeps the old fixed position.
 :file: images/label_axes_slider.html
 ```
 
+### Tick numbers and dates you did not format
+
+`dm.simple_layout(fig)` settles the numbers of every axis still on
+matplotlib's default formatter, so the same data reads the same in every
+figure:
+
+| Axis | Ticks |
+|---|---|
+| reaches 1,000 | `0, 250 … 1,750`; `24,000 … 34,000` |
+| reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
+| below 1,000, or an x axis of years | unchanged: `0, 250 … 750`; `2012, 2014` |
+| dates (every preset) | `2024, Mar, May … 2025` (`date.converter: concise`) |
+
+Log, category and colorbar axes and any axis with a formatter you set keep
+theirs. `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's
+numbers; `dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k`
+or `0.25억` when you want units on the ticks.
+
 ### Consistent tick decimals (`set_decimal`)
 
 Raw matplotlib ticks can sometimes mix integers and floats (e.g. `0.5`, `1`, `1.5`), which looks unprofessional. `dm.set_decimal()` forces consistent decimal places for publication-ready formatting.

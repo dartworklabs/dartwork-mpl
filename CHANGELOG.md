@@ -97,6 +97,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Tick numbers and dates nobody formatted are the library's.**
+  `dm.simple_layout(fig)` gives every axis still on matplotlib's default
+  number formatter whose visible ticks reach 1,000 thousands separators
+  (`1,750`, `34,000`) and, from one million, the largest tick's SI unit
+  (`0.5M … 2.5M`) instead of a `1e6` corner label; decimals are the fewest
+  exact ones. Smaller axes, x axes of years (every tick in 1000-2999), log,
+  date and category axes, colorbars and axes with a formatter you set keep
+  theirs; `format_ticks=False` keeps matplotlib's numbers. Every preset sets
+  `date.converter: concise`, so an unformatted date axis reads `2024, Mar,
+  May … 2025` instead of `2024-01, 2024-03 …`, whose labels collided at
+  column widths. Agents had each picked their own formatter, so the same
+  0-1,750 axis came out as `1750`, `1,750` or `1.75k`.
+- **Negative ticks from the axis-wide formatters use the axis minus.**
+  `dm.format_axis_si`, `_millions`, `_billions` and `_myriad` print U+2212
+  (`−1.0M`) like matplotlib's own ticks unless `axes.unicode_minus` is off,
+  instead of a hyphen beside the minus of the other axis.
 - **No meaningless decimals and no mixed units on scaled axes (#523).**
   `format_axis_si`, `format_axis_myriad`, `format_axis_millions` and
   `format_axis_billions` default to `decimals=None`: one decimal count per
