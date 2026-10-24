@@ -153,7 +153,7 @@ plt.close(fig)
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 for i in range(3):
     ax.plot(x, np.sin(x + i), label=f"Run {i + 1}")
-ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0)
+dm.place_legend(ax, loc="right")  # or "above", "below", "left"
 dm.simple_layout(fig)            # makes room for the outside legend
 plt.close(fig)
 
@@ -167,5 +167,9 @@ plt.close(fig)
 - Legend below everything: `fig.legend(loc="lower center", ncol=3,
   bbox_to_anchor=(0.5, 0))`, then `dm.simple_layout(fig)`.
 - Legend inside, away from the data: `dm.place_legend(ax)`.
+- Legend outside one side ("legend above the plot"):
+  `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
+  the clearance of tick labels, and `dm.simple_layout(fig)` keeps a title
+  above it.
 - A twin pair may report `CROSS_AXES_OVERLAP` for its shared x ticks; that
   finding is a false positive for twins.

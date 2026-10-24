@@ -22,6 +22,7 @@ import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
+import matplotlib as mpl
 from matplotlib.figure import Figure
 from matplotlib.gridspec import (
     GridSpec,
@@ -29,7 +30,7 @@ from matplotlib.gridspec import (
     GridSpecFromSubplotSpec,
     SubplotSpec,
 )
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Bbox, ScaledTranslation
 
 # ``BBOX_ERRORS`` is shared with the validation checks via ``_figure_geometry``
 # — one source for the bbox-measurement exception set (the two modules
@@ -40,6 +41,8 @@ from .._figure_geometry import (
     axes_titles,
     get_renderer,
     iter_figure_level_extents,
+    reanchor_outside,
+    same_position_axes,
 )
 from ..units import Length
 
@@ -684,6 +687,14 @@ def simple_layout(
     The function returns ``None``. It is a no-op on figures with no
     axes.
 
+    Before measuring, a legend placed with ``dm.place_legend(ax,
+    loc="above" | "below" | "right" | "left")`` is re-anchored past the
+    tick and axis labels present now, and the titles of an axes whose
+    legend sits above it (``place_legend(loc="above")`` or a raw
+    ``ax.legend(..., bbox_to_anchor=(x, 1.0))``) get their offset raised
+    so they sit ``axes.titlepad`` above that legend; their text, size and
+    weight are kept.
+
     Examples
     --------
     >>> import matplotlib.pyplot as plt
@@ -856,6 +867,107 @@ def _reservation_edge(
     return min(dists, key=lambda k: dists[k])
 
 
+# Most rounds of re-anchoring and title lifting per layout step. Matplotlib
+# re-places an auto-positioned title on every draw (above top tick labels,
+# say), so a lift can need a second round after the redraw; a third round
+# would only confirm that nothing moves.
+_SETTLE_ROUNDS: int = 3
+
+
+def _legend_extents_above(ax: Axes, renderer: RendererBase) -> list[Bbox]:
+    """Return the extents of the legends of ``ax`` and its twins that sit above it.
+
+    A legend sits above when its vertical centre is above the top of the
+    Axes box — a raw ``ax.legend(loc="lower center", bbox_to_anchor=(0.5,
+    1.0))`` as well as ``dm.place_legend(ax, loc="above")``. Legends of
+    other panels and figure legends are not included.
+    """
+    try:
+        top = ax.get_window_extent(renderer).y1
+    except _BBOX_ERRORS:
+        return []
+    extents: list[Bbox] = []
+    for owner in same_position_axes(ax):
+        legend = owner.get_legend()
+        if legend is None or not legend.get_visible():
+            continue
+        try:
+            ext = legend.get_window_extent(renderer)
+        except _BBOX_ERRORS:
+            continue
+        if ext.width > 0 and ext.height > 0 and (ext.y0 + ext.y1) / 2 > top:
+            extents.append(ext)
+    return extents
+
+
+def _lift_titles_over_legends(ax: Axes, renderer: RendererBase) -> bool:
+    """Raise the titles of ``ax`` above a legend that sits above it.
+
+    A title that overlaps such a legend horizontally (within the title pad)
+    and is not wholly below it gets the pad that puts its baseline
+    ``axes.titlepad`` points above the legend's top, the same gap the
+    preset leaves between a title and the Axes. All three title slots take
+    the new pad so they keep one baseline. Only the title offset changes:
+    text, font size and weight stay. A pad already large enough is kept.
+    Returns whether a pad changed.
+    """
+    titles = [
+        title
+        for title in axes_titles(ax).values()
+        if title.get_visible() and title.get_text().strip()
+    ]
+    root = ax.get_figure(root=True)
+    if not titles or root is None:
+        return False
+    legends = _legend_extents_above(ax, renderer)
+    if not legends:
+        return False
+    gap_px = float(mpl.rcParams["axes.titlepad"]) * root.dpi / 72.0
+    pad_px = 0.0
+    needed_px = 0.0
+    for title in titles:
+        try:
+            ext = title.get_window_extent(renderer)
+        except _BBOX_ERRORS:
+            continue
+        position = title.get_position()
+        base_y = ax.transAxes.transform(position)[1]
+        own_pad = title.get_transform().transform(position)[1] - base_y
+        pad_px = max(pad_px, own_pad)
+        for legend in legends:
+            side_by_side = (
+                ext.x1 <= legend.x0 - gap_px or ext.x0 >= legend.x1 + gap_px
+            )
+            if side_by_side or ext.y1 <= legend.y0:
+                continue
+            needed_px = max(needed_px, legend.y1 + gap_px - base_y)
+    if needed_px <= pad_px + 0.5:
+        return False
+    offset = ScaledTranslation(0.0, needed_px / root.dpi, root.dpi_scale_trans)
+    for title in axes_titles(ax).values():
+        title.set_transform(ax.transAxes + offset)
+    return True
+
+
+def _settle_outside_legends(fig: Figure, renderer: RendererBase) -> bool:
+    """Re-anchor ``dm.place_legend`` outside legends, then lift titles over legends.
+
+    Runs on every Axes of ``fig`` before the layout measures it, so a
+    legend placed before its axis labels existed moves past them and a
+    title never sits on a legend above its Axes. Returns whether anything
+    moved (the caller redraws before measuring).
+    """
+    moved = False
+    for ax in fig.axes:
+        legend = ax.get_legend()
+        if legend is not None and reanchor_outside(legend, ax, renderer):
+            moved = True
+    for ax in fig.axes:
+        if _lift_titles_over_legends(ax, renderer):
+            moved = True
+    return moved
+
+
 def _solve_layout_step(
     fig: Figure,
     *,
@@ -875,9 +987,12 @@ def _solve_layout_step(
     1. Draws the canvas so artist bboxes are populated.
     2. Optionally adopts the axis-label font on orphan-label axes
        (so the measurement reflects the post-restyle ticks).
-    3. Measures the content overhang of every target axes and the room
+    3. Re-anchors outside legends and lifts titles over legends above
+       their axes (:func:`_settle_outside_legends`), redrawing after a
+       move.
+    4. Measures the content overhang of every target axes and the room
        figure-level artists reserve.
-    4. Hands those measurements to the pure :func:`_solve_edges`.
+    5. Hands those measurements to the pure :func:`_solve_edges`.
 
     The caller writes the returned edges into the GridSpec and decides
     whether to stop iterating based on ``delta_px``.
@@ -889,6 +1004,11 @@ def _solve_layout_step(
     if adopt_orphan_tick_font:
         _adopt_axis_label_font_core(fig)
     renderer = get_renderer(fig)
+    for _round in range(_SETTLE_ROUNDS):
+        if not _settle_outside_legends(fig, renderer):
+            break
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
     fbox = fig.bbox
     fw_px, fh_px = fbox.width, fbox.height
 

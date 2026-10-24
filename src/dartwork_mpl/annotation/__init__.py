@@ -33,7 +33,12 @@ from matplotlib.legend import Legend
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, ScaledTranslation
 
-from .._figure_geometry import BBOX_ERRORS, get_renderer
+from .._figure_geometry import (
+    BBOX_ERRORS,
+    OutsideSide,
+    anchor_outside,
+    get_renderer,
+)
 from ..scale import fs, fw
 
 if TYPE_CHECKING:
@@ -842,6 +847,103 @@ def _legend_candidate_ncols(
     return list(range(1, max_ncol + 1))
 
 
+# The legend's own anchor point (matplotlib ``loc``) for each outside side:
+# the legend edge that faces the Axes touches the anchor.
+_OUTSIDE_LEGEND_LOCS: dict[OutsideSide, str] = {
+    "above": "lower center",
+    "below": "upper center",
+    "right": "center left",
+    "left": "center right",
+}
+
+
+def _parse_outside_side(loc: str) -> OutsideSide | None:
+    """Return ``loc`` as an outside side, or ``None`` for a matplotlib ``loc``."""
+    match loc:
+        case "above" | "below" | "right" | "left":
+            return loc
+        case _:
+            return None
+
+
+def _outside_ncols(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    side: OutsideSide,
+    legend_kw: dict[str, Any],
+    renderer: RendererBase,
+) -> int:
+    """Return the column count for an outside legend on ``side`` of ``ax``.
+
+    Right and left legends are one column. Above and below, the fewest
+    rows whose rendered legend is no wider than the Axes win: one row when
+    it fits, otherwise two, and so on; a single column when nothing fits.
+    ``legend_kw`` must not hold ``ncol`` / ``ncols``.
+    """
+    if side in ("right", "left"):
+        return 1
+    try:
+        axes_width = ax.get_window_extent(renderer).width
+    except BBOX_ERRORS:
+        return 1
+    count = len(labels)
+    tried: set[int] = set()
+    for rows in range(1, count + 1):
+        ncols = -(-count // rows)  # ceil(count / rows)
+        if ncols in tried:
+            continue
+        tried.add(ncols)
+        legend = ax.legend(
+            handles,
+            labels,
+            loc=_OUTSIDE_LEGEND_LOCS[side],
+            ncols=ncols,
+            **legend_kw,
+        )
+        try:
+            width = legend.get_window_extent(renderer).width
+        except BBOX_ERRORS:
+            continue
+        if width <= axes_width:
+            return ncols
+    return 1
+
+
+def _place_outside_legend(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    side: OutsideSide,
+    kw: dict[str, Any],
+) -> Legend:
+    """Draw the legend of ``ax`` outside ``side``, past its tick and axis labels."""
+    for key in ("bbox_to_anchor", "bbox_transform"):
+        if key in kw:
+            raise ValueError(
+                f"place_legend(loc={side!r}) anchors the legend itself; "
+                f"remove {key}= or pass a matplotlib loc instead"
+            )
+    legend_kw = dict(kw)
+    explicit = legend_kw.pop("ncols", None)
+    explicit = legend_kw.pop("ncol", explicit)
+    _fig, renderer = _renderer_for_axes(ax)
+    ncols = (
+        int(explicit)
+        if explicit is not None
+        else _outside_ncols(ax, handles, labels, side, legend_kw, renderer)
+    )
+    legend = ax.legend(
+        handles,
+        labels,
+        loc=_OUTSIDE_LEGEND_LOCS[side],
+        ncols=ncols,
+        **legend_kw,
+    )
+    anchor_outside(legend, ax, side, renderer)
+    return legend
+
+
 def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     """Place or reposition an axes legend.
 
@@ -851,6 +953,23 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     selects the least obstructed in-axes location. The returned Legend receives
     ``_dm_collision_free`` and ``_dm_collision_score`` attributes for callers
     that need to detect an unavoidable collision fallback.
+
+    ``loc="above"``, ``"below"``, ``"right"`` or ``"left"`` puts the legend
+    outside the axes, centred on that side, past the side's tick labels and
+    axis label (and a ``twinx`` / ``twiny`` partner's) by the preset's
+    ``legend.borderaxespad`` gap. Above and below it takes one row when that
+    row fits the axes width, otherwise the fewest rows that fit (rows are
+    chosen for the axes width at call time); right and left it is one
+    column. ``ncol`` / ``ncols`` in ``kw`` overrides the count, and
+    ``bbox_to_anchor`` / ``bbox_transform`` raise ``ValueError`` because the
+    side sets the anchor. :func:`dartwork_mpl.simple_layout` re-anchors such
+    a legend to the labels present when it runs, makes room for it, and
+    raises the axes titles above an ``"above"`` legend.
+    ``dm.optimize_legend(ax, outside=True)`` also places a legend outside,
+    at the top of the right side with its own font size and frame; prefer
+    ``loc="right"`` here, which keeps the preset's legend style.
+
+    Any other ``loc`` is passed to ``ax.legend`` unchanged.
     """
     handles, labels = ax.get_legend_handles_labels()
     if not handles:
@@ -864,6 +983,9 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     if not handles:
         return None
 
+    side = _parse_outside_side(loc)
+    if side is not None:
+        return _place_outside_legend(ax, list(handles), list(labels), side, kw)
     if loc != "best":
         return _legend_for_loc(ax, list(handles), list(labels), loc, kw)
 

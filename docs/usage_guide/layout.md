@@ -351,6 +351,7 @@ requested margin from each figure edge. This means:
 | `annotate_corner(ax, s)`      | Adds spine-tight narrative notes in the least obstructed corner |
 | `label_hline(ax, y, s)`       | Attaches text tightly to a horizontal reference-line endpoint  |
 | `place_legend(ax)`            | Places legends around data/text obstacles and can raise ncol   |
+| `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels; `simple_layout` keeps titles above it |
 | `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |

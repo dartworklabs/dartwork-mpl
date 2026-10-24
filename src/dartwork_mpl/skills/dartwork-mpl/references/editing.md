@@ -68,6 +68,7 @@ print(sorted(model.properties())[:8])   # every property the artist has
 | one line thicker | `line.set_linewidth(line.get_linewidth() + 0.5)` |
 | emphasise one series | others `set_color("dc.gray4")`, target `set_zorder(3)` |
 | move the legend | `ax.legend(loc="lower right")` or `dm.place_legend(ax)` |
+| legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
 | label line ends instead of a legend | `ax.annotate(...)` at each last point, remove legend |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
