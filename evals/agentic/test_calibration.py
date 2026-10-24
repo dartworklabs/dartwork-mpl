@@ -142,12 +142,24 @@ def test_fabricated_mutation_of_real_output_fails(label, tmp_path):
 
 
 def test_real_unexecuted_edit_fails(tmp_path):
-    """codex g23: plot.py was edited 20 s after the last saved figure (recorded mtimes)."""
+    """codex g23: plot.py was edited 20 s after the last saved figure (recorded mtimes).
+
+    The saved figure comes from the script before that edit (here: one extra
+    text, so the final script draws a different PNG); a touch that leaves the
+    drawing unchanged is r24b in test_regressions.py.
+    """
     name = "codex-g23-vague-en.plot.txt"
     meta = INDEX[name]
     case = common.load_cases([meta["case"]])[0]
     unit = tmp_path / "unit"
-    project = _project(unit / "project", case, _source(name))
+    before_edit = _source(
+        name,
+        (
+            "dm.save_formats(fig,",
+            'fig.text(0.5, 0.5, "draft"); dm.save_formats(fig,',
+        ),
+    )
+    project = _project(unit / "project", case, before_edit)
     (project / ".venv").symlink_to(REPO / ".venv", target_is_directory=True)
     subprocess.run(
         [str(PYTHON), "plot.py"],
@@ -156,6 +168,7 @@ def test_real_unexecuted_edit_fails(tmp_path):
         env=dict(os.environ, MPLCONFIGDIR=str(tmp_path / "mpl")),
         capture_output=True,
     )
+    (project / "plot.py").write_text(_source(name), encoding="utf-8")
     art, t0 = meta["artifacts"], meta["started_ts"]
     started = time.time() - 300
     for path, key in (
