@@ -300,3 +300,49 @@ class TestBestFallsBackOutside:
             assert not found, [w.message for w in found]
         finally:
             plt.close(fig)
+
+
+def _combo(preset: str = "report"):
+    """Bars on the left axis, a line on its twin, each with its own legend."""
+    dm.style.use(preset)
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    months = np.arange(1, 13)
+    ax.bar(months, 40 + 30 * np.sin(months / 2), label="Sales")
+    twin = ax.twinx()
+    twin.plot(months, 5 + 3 * np.cos(months / 3), color="k", label="Margin")
+    ax.legend(loc="upper left")
+    twin.legend(loc="upper left")  # the draft's two stacked legends
+    return fig, ax, twin
+
+
+class TestTwinAxesOneLegend:
+    """A twin pair gets one legend from one call, whichever twin is passed."""
+
+    @pytest.mark.parametrize("which", ["host", "twin"])
+    def test_one_legend_with_both_entries(self, which: str) -> None:
+        fig, ax, twin = _combo()
+        try:
+            legend = place_legend(ax if which == "host" else twin)
+            assert legend is not None
+            assert [t.get_text() for t in legend.get_texts()] == [
+                "Sales",
+                "Margin",
+            ]
+            legends = [a.get_legend() for a in (ax, twin)]
+            assert legends.count(None) == 1
+            assert twin.get_legend() is legend  # drawn last: above the bars
+        finally:
+            plt.close(fig)
+
+    def test_the_legend_clears_both_twins_data(self) -> None:
+        fig, ax, twin = _combo()
+        try:
+            legend = place_legend(ax)
+            dm.simple_layout(fig)
+            found = dm.validate_figure(
+                fig, checks=("LEGEND_OVERLAP", "OVERLAP"), quiet=True
+            )
+            assert not found, [w.message for w in found]
+            assert legend._dm_collision_free is True
+        finally:
+            plt.close(fig)

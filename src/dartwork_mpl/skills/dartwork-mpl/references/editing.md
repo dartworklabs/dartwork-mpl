@@ -141,8 +141,9 @@ plt.close(fig)
    - clipped or overlapping text: `dm.simple_layout(fig)`,
      `dm.wrap_axis_labels(fig)`, shorter tick labels (`dm.format_axis_si`),
      fewer ticks, `dm.rotate_tick_labels(ax)` as a last resort;
-   - legend over data: `dm.place_legend(ax)` (it moves above the plot by
-     itself when nothing inside is free);
+   - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
+     (one legend for both twins; above the plot by itself when nothing inside
+     is free);
    - many competing colours: one accent, the rest `dc.gray4`;
    - unclear labels: add units, "Time (s)";
    - cramped panels: `hspace` / `wspace`.

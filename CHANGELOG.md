@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   customization eval the same request gave 7 pt from one agent and 8 pt from
   the other. The skill also keeps an existing legend on "highlight one series"
   and keeps canvas, title and legend on "make it look better".
+- **`dm.place_legend(ax)` gives a twin pair one legend.** The entries of every
+  `twinx`/`twiny` partner go into one legend on the twin drawn last, and the
+  partners' own legends are removed, whichever twin is passed.
 - **`dm.place_legend(ax)` goes above the plot when nothing inside is free.**
   With no `loc`, a legend that would cover data in every in-axes spot now takes
   the `loc="above"` placement (`legend._dm_outside_fallback`), so a request

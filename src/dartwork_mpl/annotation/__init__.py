@@ -40,6 +40,7 @@ from .._figure_geometry import (
     anchor_outside,
     axes_titles,
     get_renderer,
+    same_position_axes,
 )
 from ..scale import fs, fw
 
@@ -1063,13 +1064,68 @@ def _may_go_outside(kw: dict[str, Any]) -> bool:
 
 
 def _covers_data(ax: Axes, legend: Legend, renderer: Any) -> bool:
-    """Whether the drawn ``legend`` box overlaps any data artist of ``ax``."""
+    """Whether the drawn ``legend`` box overlaps data of ``ax`` or its twins."""
     ax.figure.canvas.draw()
     try:
         bbox = legend.get_window_extent(renderer)
     except BBOX_ERRORS:
         return False
-    return _collision_area(bbox, _data_occupancy_bboxes(ax, renderer)) > 0
+    return _collision_area(bbox, _pair_occupancy_bboxes(ax, renderer)) > 0
+
+
+def _pair_occupancy_bboxes(ax: Axes, renderer: Any) -> list[Bbox]:
+    """Data occupancy of ``ax`` and every twin drawn in the same box."""
+    return [
+        bbox
+        for owner in same_position_axes(ax)
+        for bbox in _data_occupancy_bboxes(owner, renderer)
+    ]
+
+
+def _legend_entries(ax: Axes) -> tuple[list[Any], list[str]]:
+    """Legend handles and labels of ``ax``, from its artists or its legend."""
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        return list(handles), list(labels)
+    legend = ax.get_legend()
+    if legend is None:
+        return [], []
+    pairs = [
+        (handle, text.get_text())
+        for handle, text in zip(
+            legend.legend_handles, legend.get_texts(), strict=False
+        )
+        if handle is not None
+    ]
+    return [h for h, _ in pairs], [t for _, t in pairs]
+
+
+def _merge_twin_legends(ax: Axes) -> tuple[Axes, list[Any], list[str]]:
+    """One legend for a twin pair: every partner's entries, on the top axes.
+
+    The legend goes on the twin drawn last, so no partner's data is drawn
+    over it; the partners' own legends are removed. A single Axes returns
+    itself and its own entries.
+    """
+    owners = same_position_axes(ax)
+    if len(owners) == 1:
+        handles, labels = _legend_entries(ax)
+        return ax, handles, labels
+    parent = ax.get_figure(root=False)
+    order = parent.axes if parent is not None else owners
+    host = max(owners, key=order.index)
+    handles, labels, seen = [], [], set()
+    for owner in sorted(owners, key=order.index):
+        for handle, label in zip(*_legend_entries(owner), strict=True):
+            if label not in seen:
+                seen.add(label)
+                handles.append(handle)
+                labels.append(label)
+    for owner in owners:
+        legend = owner.get_legend()
+        if owner is not host and legend is not None:
+            legend.remove()
+    return host, handles, labels
 
 
 def _outside_fallback(
@@ -1112,17 +1168,12 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     at the top of the right side with its own font size and frame; prefer
     ``loc="right"`` here, which keeps the preset's legend style.
 
-    Any other ``loc`` is passed to ``ax.legend`` unchanged.
+    A ``twinx`` / ``twiny`` pair gets one legend: the entries of every twin,
+    on the twin drawn last (so no partner's data covers it), and the
+    partners' own legends are removed. Any other ``loc`` is passed to
+    ``ax.legend`` unchanged.
     """
-    handles, labels = ax.get_legend_handles_labels()
-    if not handles:
-        legend = ax.get_legend()
-        if legend is None:
-            return None
-        handles = [
-            handle for handle in legend.legend_handles if handle is not None
-        ]
-        labels = [text.get_text() for text in legend.get_texts()]
+    ax, handles, labels = _merge_twin_legends(ax)
     if not handles:
         return None
 
@@ -1133,7 +1184,8 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
         return _legend_for_loc(ax, list(handles), list(labels), loc, kw)
 
     fig, renderer = _renderer_for_axes(ax)
-    has_obstacles = bool(ax.patches or ax.collections or ax.texts)
+    twins = len(same_position_axes(ax)) > 1
+    has_obstacles = twins or bool(ax.patches or ax.collections or ax.texts)
     ncols = _legend_candidate_ncols(list(labels), kw)
     if not has_obstacles and len(labels) < 5 and ncols == [1]:
         legend = _legend_for_loc(ax, list(handles), list(labels), "best", kw)
@@ -1146,7 +1198,7 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     if old_legend is not None:
         old_legend.remove()
 
-    data_bboxes = _data_occupancy_bboxes(ax, renderer)
+    data_bboxes = _pair_occupancy_bboxes(ax, renderer)
     try:
         axes_bbox = ax.get_window_extent(renderer)
     except BBOX_ERRORS:
