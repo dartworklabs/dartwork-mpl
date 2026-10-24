@@ -91,9 +91,9 @@ is not the dataset; template numbers are placeholders, never data.
 ## Edits
 
 "Only X" requests: find that artist (panel, series, label, title), change only
-the asked property, keep data, preset, canvas, colours, legend and the rest
-(axis labels are Text objects, not `font.size`); keep the original and write
-the revision as a new script and stem. Broad asks ("make it look better"):
+the asked property, keep data, preset, canvas, colours, legend (a highlight
+keeps it too) and the rest (axis labels are Text objects, not `font.size`);
+keep the original and write the revision as a new script and stem. Broad asks ("make it look better"):
 keep data, preset, canvas, title and legend; fix what the image shows, list it.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
