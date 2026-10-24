@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
   preset's figure size when a request names none: report widths 9 / 12 /
   14.5 / 17 cm picked by chart kind and data density (4:3 like `dm.figsize`),
-  journal columns under `scientific`, widths scaled by font size under
+  journal columns under `scientific` (one panel in one 9 cm column, grids
+  and full-width kinds 17 cm), widths scaled by font size under
   `presentation` and `poster`, and `"slide"` for one whole 16:9 slide.
   `dm.grid_shape(n)` lays out `n` small multiples. The same request gets the
   same canvas from any agent. The bundled skill uses both and states that

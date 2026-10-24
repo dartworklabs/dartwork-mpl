@@ -8,7 +8,7 @@ canvas, so the same request gets the same size whoever draws it:
 | Preset | Widths |
 |---|---|
 | `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
-| `scientific` | 9 or 17 cm (journal columns) |
+| `scientific` | one panel 9 cm (a column), grids and `dense`/`strip` 17 cm |
 | `presentation`, `poster` | report widths × font size / 8 pt |
 
 The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`

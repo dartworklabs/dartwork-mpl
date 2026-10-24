@@ -43,7 +43,9 @@ decides: one answer, not a range.
    Hints: `n_points <= 6` and `n_series <= 2` on one axis → 9 cm; a twin y
    axis, `n_series >= 4` or `n_points > 12` → 14.5 cm. A grid takes 17 cm
    and keeps each panel at the kind's aspect, at most 24 cm tall.
-   `scientific` maps 9/12 → 9 cm and 14.5/17 → 17 cm (journal columns).
+   `scientific` keeps one panel in one column (9 cm) whatever its density;
+   grids and the full-width kinds take two (17 cm). (Revised 2026-10-24:
+   mapping 14.5 → 17 cm drew single-panel templates at 17 × 12.75 cm.)
    `presentation` and `poster` scale widths by font size / 8 pt (10.5 pt →
    ×1.31: 12, 16, 19, 22.5 cm), grids at most 16:9. The preset is tracked by
    `dm.style.use` / `context`; a `font_size=` override does not resize.

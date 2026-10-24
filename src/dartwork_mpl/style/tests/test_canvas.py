@@ -75,8 +75,23 @@ class TestPresets:
     def test_paper_uses_journal_columns(self, preset: str) -> None:
         dm.style.use(preset)
         assert _cm(dm.figsize_for()) == (9.0, 6.75)
-        assert _cm(dm.figsize_for(n_points=20, n_series=2))[0] == 17.0
         assert _cm(dm.figsize_for(nrows=2, ncols=2))[0] == 17.0
+        assert _cm(dm.figsize_for("dense"))[0] == 17.0
+        assert _cm(dm.figsize_for("strip"))[0] == 17.0
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"n_points": 100, "n_series": 2},
+            {"n_points": 12, "n_series": 5},
+            {"n_points": 12, "n_series": 2, "dual_axis": True},
+            {"kind": "barh", "n_points": 8, "n_series": 1},
+            {"kind": "matrix"},
+        ],
+    )
+    def test_paper_keeps_one_panel_in_one_column(self, kwargs: dict) -> None:
+        dm.style.use("scientific")
+        assert _cm(dm.figsize_for(**kwargs))[0] == 9.0
 
     def test_presentation_scales_with_its_font(self) -> None:
         dm.style.use("presentation")
@@ -109,7 +124,7 @@ class TestPresets:
 
     def test_context_restores_the_outer_preset(self) -> None:
         with dm.style.context("scientific"):
-            assert _cm(dm.figsize_for(n_points=20, n_series=1))[0] == 17.0
+            assert _cm(dm.figsize_for(n_points=20, n_series=1))[0] == 9.0
         assert _cm(dm.figsize_for(n_points=20, n_series=1))[0] == 14.5
 
 

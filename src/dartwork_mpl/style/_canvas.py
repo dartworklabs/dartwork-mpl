@@ -15,10 +15,11 @@ Every kind but ``matrix``, ``dense``, ``strip`` and ``slide`` is 4:3, the
 (``dm.figsize(dm.col1)``) gets the same shape. ``"slide"`` is one full 16:9
 slide, 25.4 cm wide, under any preset.
 
-``scientific`` presets map the tiers onto journal columns (9 or 17 cm);
-``presentation`` and ``poster`` scale them by their font size over the
-report's 8 pt, so text fills the same share of the canvas. Any other preset,
-or none, uses the report tiers.
+``scientific`` presets use journal columns: one column (9 cm) for a single
+panel whatever its density, two (17 cm) for grids and the full-width kinds
+(``"dense"``, ``"strip"``). ``presentation`` and ``poster`` scale the tiers
+by their font size over the report's 8 pt, so text fills the same share of
+the canvas. Any other preset, or none, uses the report tiers.
 """
 
 from __future__ import annotations
@@ -201,7 +202,9 @@ def figsize_for(
         _MAX_TIER_CM if grid else _tier_cm(spec, n_points, n_series, dual_axis)
     )
     if family == "paper":
-        width = _COLUMNS_CM[0] if width <= 12.0 else _COLUMNS_CM[1]
+        # A journal sets one panel in one column, however dense it is.
+        full = grid or (spec.fixed and spec.width_cm > 12.0)
+        width = _COLUMNS_CM[1] if full else _COLUMNS_CM[0]
     else:
         width = _half_cm(width * scale)
 
