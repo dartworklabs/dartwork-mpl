@@ -60,9 +60,9 @@ categories. No figure title, subtitle, source note, extra panel or one-series
 legend unless asked (small multiples name each panel); a vague ask gets one
 panel. An asked-for element keeps the preset's style in every detail not named:
 `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`,
-`dm.place_legend(ax)` (no `loc=`/`ncols=` unless named). A generic chart skill
-gives chart choice and honest axes; the output is static: no hover, tooltips,
-rounded bar ends, placeholder palettes.
+`dm.place_legend(ax)` (no `loc=`/`ncols=` unless named),
+`dm.label_line_ends(ax)`. A generic chart skill gives chart choice and honest
+axes; static output: no hover, tooltips, rounded bar ends, placeholder palettes.
 
 ## Data
 

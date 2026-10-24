@@ -93,7 +93,7 @@ above an outside legend and the margins around both.
 | emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays, redrawn after recolouring |
 | move the legend | `ax.legend(loc="lower right")` or `dm.place_legend(ax)` |
 | legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
-| label line ends instead of a legend | `ax.annotate(...)` at each last point, remove legend |
+| label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
 | show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontweight=dm.fw(1))`, see below |

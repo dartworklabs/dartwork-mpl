@@ -215,6 +215,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl._colors.verify", "dartwork_mpl._colors._ssot"): (
         "the gates read the quality baseline the validated authority pins"
     ),
+    ("dartwork_mpl.annotation", "dartwork_mpl._colors.contrast"): (
+        "line-end labels keep their line's colour at a readable contrast"
+    ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
     ),

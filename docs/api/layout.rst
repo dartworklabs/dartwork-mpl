@@ -66,6 +66,7 @@ Annotation Functions
 .. autofunction:: dartwork_mpl.annotate_corner
 .. autofunction:: dartwork_mpl.add_note
 .. autofunction:: dartwork_mpl.label_hline
+.. autofunction:: dartwork_mpl.label_line_ends
 .. autofunction:: dartwork_mpl.place_legend
 .. autofunction:: dartwork_mpl.wrap_axis_label
 .. autofunction:: dartwork_mpl.wrap_axis_labels

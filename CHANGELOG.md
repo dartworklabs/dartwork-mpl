@@ -34,6 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   fits the axes width, else the fewest rows that fit; right and left it is one
   column. `ncols=` still wins; `bbox_to_anchor=` with a side raises
   `ValueError`. Other explicit `loc` values behave as before.
+- **`dm.label_line_ends(ax)` (provisional).** Line names instead of a legend
+  in one style for every caller: each named line's label
+  `axes.labelpad` right of its last finite point, vertically centred, in the
+  preset text size and weight and the line's colour made readable on the
+  axes background (`dm.ensure_contrast`, 4.5:1); labels that would overlap
+  move apart vertically in order. The legend is removed and the axis limits
+  stay; `dm.simple_layout` makes room. Agents asked for end labels had drawn
+  them in the line colour, a darker shade or black, at 6 to 8 pt, and some
+  widened the x axis to fit them.
 - **`dm.add_note(fig, text)` (provisional).** A source or note line in one
   style for every caller: the figure's lower-left corner, one point under the
   preset font, the preset text colour; `dm.simple_layout` keeps the axis
