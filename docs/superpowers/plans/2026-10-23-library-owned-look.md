@@ -1,8 +1,9 @@
 # The look a request does not name comes from the library (#523, PoC)
 
-Status: proof of concept on local branch `t3/library-owned-defaults-20261023`
-(stacked on `t3/agent-neutral-skill-20261023`, itself on #539). Nothing here
-is decided until the owner picks on the review page.
+Status: decided 2026-10-24. The owner adopted all seven recommendations on
+the review page (local branch `t3/library-owned-defaults-20261023`, stacked on
+#539 with the agent-neutral change folded in) and added the aim: a basic
+framework that responds well to customization requests.
 
 ## Problem
 
@@ -87,22 +88,26 @@ vs `10⁻¹`) and end-value labels; and a whole slide at 25.4 cm makes the
 `presentation` 10.5 pt text look small. `agreement.py` computes the table;
 figures at physical scale are on the review page.
 
-## Decisions for the owner
+## Decisions (2026-10-24)
 
-1. The rule above (library decides what the request does not name).
-2. Widths: adopt the company-analysis tiers as the dartwork-mpl default.
-3. Slides: font-scaled tiers for charts on a slide, and 25.4 cm (10 in)
-   for a whole slide; or 33.87 cm (13.33 in, PowerPoint's default).
-4. Titles: none unless asked (recommended), or a short axes title.
-5. Templates: 35 of 36 draw titles and use 11–17 cm by hand. Agents copy
-   them, so a follow-up PR would size them with `dm.figsize_for` and drop
-   titles; that changes every template image and needs its own PoC.
-6. Whether the agent-neutral installer change joins #539 before it merges.
+1. Adopted: the library decides what the request does not name.
+2. Adopted: the company-analysis widths 9 / 12 / 14.5 / 17 cm.
+3. Adopted: 4:3 default aspect.
+4. Adopted: font-scaled tiers for charts on a slide; 25.4 cm (10 in) for a
+   whole slide.
+5. Adopted: no title unless asked; small multiples name their panels.
+6. Adopted: templates size with `dm.figsize_for` and drop titles (follow-up
+   branch with its own PoC).
+7. Adopted: the agent-neutral installer change joins #539.
+
+Follow-up from the owner's aim: a requested element keeps the preset's style
+for every detail the request does not name (title, gridlines, legend side,
+width only), and requested elements must compose without collisions.
 
 ## Not in this PoC
 
-- `01-policy.md`, `quickstart.md` and the MCP guide text still give ranges
-  (MCP is frozen; the policy and quickstart follow decision 2).
+- The MCP guide text still gives ranges (MCP is frozen); the policy and
+  quickstart follow decision 2.
 - Value labels, legends and formatters are left to the request; the
   agreement table shows whether they still diverge.
 - The 17 cm `oversize-width` lint stays page-fit advice.
