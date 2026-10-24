@@ -27,6 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Axis-off, polar, 3-D, colorbar, pie and twin Axes are not inspected, and
   nothing is reported without an active preset.
   `dartwork_mpl.style.active_preset_rcparams()` returns the values compared.
+- **Outside legends from one call.** `dm.place_legend(ax, loc="above")` (also
+  `"below"`, `"right"`, `"left"`) puts the legend outside the axes, centred on
+  that side and past its tick labels and axis label (a twin's included) by the
+  preset's `legend.borderaxespad`. Above and below it takes one row when that
+  fits the axes width, else the fewest rows that fit; right and left it is one
+  column. `ncols=` still wins; `bbox_to_anchor=` with a side raises
+  `ValueError`. Existing `loc` values behave as before.
+- **`LEGEND_OVERLAP` validation check (WARNING).** `validate_figure()` reports
+  a legend box that covers a title, an axis label, tick labels or a
+  figure-level text (suptitle, `fig.text`), one finding per legend and covered
+  role, naming both. `OVERLAP` compares text with text only and missed a
+  legend drawn on the title.
 - Font corpus expanded to 20 families (262 files): Noto Serif and IBM Plex Serif
   added, Roboto/Roboto Mono completed with instanced weights + italics;
   registry-backed interactive font browser on the fonts page (faceted filters,
@@ -125,6 +137,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `dm.simple_layout()` no longer leaves an axes title on top of a legend above
+  the axes. Whether the legend came from `dm.place_legend(ax, loc="above")` or
+  a raw `ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0))`, the title
+  offset is raised so the title sits `axes.titlepad` above the legend (all
+  three title slots, one baseline); text, size and weight are unchanged. A
+  `place_legend` outside legend is re-anchored to the labels present when the
+  layout runs, so setting the x label after the legend no longer collides.
 - Colormap registration reuses exact package-owned maps on reload/retry and
   preflights static external collisions before adding missing maps.
 - Preset switches preserve detectable caller edits on incoming-silent keys;
