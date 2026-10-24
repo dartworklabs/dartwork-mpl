@@ -127,8 +127,8 @@ is not a measurement of a particular display, perceived brightness, or OKLab
 
 ## Installed Python route (no MCP or checkout)
 
-Run `python -m dartwork_mpl.skills install` once in the project: Claude Code
-and Codex then load the bundled skill (`SKILL.md` + references) on demand.
+Run `python -m dartwork_mpl.skills install` once in the project: agents then
+load the bundled skill (`SKILL.md` + references) on demand.
 The calls below read the same guidance directly.
 
 ```python

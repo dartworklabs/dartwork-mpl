@@ -23,7 +23,7 @@ For detailed setup instructions, client configuration, verification steps, and t
 
 ### Alternative: File-Based LLM Integration
 
-For Claude Code and Codex, the most direct route is the agent skill bundled in the wheel: run `python -m dartwork_mpl.skills install` once in the project (see the [AI hub](../ai/index.md#30-second-setup)).
+For agents that read project skill folders, the most direct route is the agent skill bundled in the wheel: run `python -m dartwork_mpl.skills install` once in the project (see the [AI hub](../ai/index.md#30-second-setup)).
 
 If your AI assistant doesn't support MCP or skills, point it at dartwork-mpl's bundled, LLM-readable corpus: a one-screen consumer entry (`"AGENTS"`, also returned for `"CLAUDE"`), `llms.txt` (a ~4 KB index), and `llms-full.txt` (the full concatenated reference). They are reachable from Python:
 

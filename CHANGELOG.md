@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **The preset's default canvas (provisional).** `dm.figsize_for(kind,
+  n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
+  preset's figure size when a request names none: report widths 9 / 12 /
+  14.5 / 17 cm picked by chart kind and data density (4:3 like `dm.figsize`),
+  journal columns under `scientific`, widths scaled by font size under
+  `presentation` and `poster`, and `"slide"` for one whole 16:9 slide.
+  `dm.grid_shape(n)` lays out `n` small multiples. The same request gets the
+  same canvas from any agent. The bundled skill uses both and states that
+  spines, grid, ticks, fonts, background and margins stay the preset's, with
+  no figure title or extra panel unless asked. Both are in `dm.EXPERIMENTAL`.
+- **`PRESET_OVERRIDE` validation check (INFO).** `validate_figure()` reports
+  major gridlines, spine visibility and Axes or figure backgrounds that differ
+  from the active dartwork preset, one finding per Axes and property with the
+  preset and figure values in `detail`. The check cannot see the request, so
+  the finding is advisory: keep the change only if the user asked for it.
+  Axis-off, polar, 3-D, colorbar, pie and twin Axes are not inspected, and
+  nothing is reported without an active preset.
+  `dartwork_mpl.style.active_preset_rcparams()` returns the values compared.
 - Font corpus expanded to 20 families (262 files): Noto Serif and IBM Plex Serif
   added, Roboto/Roboto Mono completed with instanced weights + italics;
   registry-backed interactive font browser on the fonts page (faceted filters,
@@ -37,15 +55,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Agent skill in the wheel.** `src/dartwork_mpl/skills/dartwork-mpl/`
   (`SKILL.md` plus references on sizing, editing, colours, Korean text, the
   review loop and templates) ships with the package.
-  `python -m dartwork_mpl.skills install [--claude] [--codex] [--dest DIR]
-  [--copy] [--force]` links it into `.claude/skills` (Claude Code) and
-  `.agents/skills` (Codex) so it follows upgrades; `... skills path` prints
-  the folder. `--copy` copies record an inventory of their entries and are
+  `python -m dartwork_mpl.skills install [--dest DIR] [--copy] [--force]`
+  links it into `.claude/skills` and `.agents/skills`, the project skill
+  folders agents read, so it follows upgrades; every agent gets the same
+  skill. `... skills path` prints the folder. `--copy` copies record an inventory of their entries and are
   never overwritten after local edits without `--force`, nor when they change
   during the install. A link is replaced in one atomic rename; an
   interrupted copy replacement is recovered on the next `install` or `path`
-  run. Linked `.claude`/`.agents` folders may not lead outside `--dest`. The skill also says
-  how to use it alongside Claude Code's `/dataviz` skill.
+  run. Linked `.claude`/`.agents` folders may not lead outside `--dest`. The
+  skill also says how to use it alongside a generic chart skill.
 - `dm.figsize` accepts `"W:H"` ratio strings as its second argument
   (`dm.figsize("13cm", "16:9")`); so do `dm.figsize_grid` and
   `parse_aspect`.

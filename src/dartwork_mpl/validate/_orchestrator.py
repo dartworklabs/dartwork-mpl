@@ -89,7 +89,7 @@ def validate_figure(
         ``CROSS_AXES_OVERLAP``, ``LEGEND_OVERFLOW``, ``TICK_CROWD``,
         ``TICK_ROTATION``, ``TICK_DECIMAL``, ``VALUE_LABEL_DECIMAL``,
         ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
-        ``CLIPPED_TEXT``.
+        ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``.
     quiet : bool, optional
         If True, suppresses stdout output. Default is False.
 

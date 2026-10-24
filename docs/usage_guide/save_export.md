@@ -124,6 +124,7 @@ column is the suggestion delivered by
 | `MARGIN_ASYMMETRY`   | warning  | Left / right or top / bottom margins differ a lot  | Re-run `dm.simple_layout(fig)` (or call it for the first time)      |
 | `PIE_LABEL_OFFSET`   | info     | Pie wedge label sits outside its wedge             | Set `pctdistance = 1.0 - wedge_width / 2`                           |
 | `CLIPPED_TEXT`       | warning  | A text artist is clipped at its axes boundary      | Disable clipping (`text.set_clip_on(False)`) or move into figure    |
+| `PRESET_OVERRIDE`    | info     | Grid, spines or a background differ from the active preset | Unless the user asked for it, delete the call that changed it |
 
 :::{figure} images/validation_example.svg
 :alt: Visual validation error example showing a bounding box overflow overlay

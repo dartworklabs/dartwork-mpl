@@ -28,6 +28,7 @@ from .min_font_size import check_min_font_size
 from .overflow import check_overflow
 from .overlap import check_overlap
 from .pie_label import check_pie_label_offset
+from .preset_override import check_preset_override
 from .text_contrast import check_text_contrast
 from .tick_crowd import check_tick_crowding
 from .tick_decimal import check_tick_decimal
@@ -47,6 +48,7 @@ __all__ = [
     "check_overflow",
     "check_overlap",
     "check_pie_label_offset",
+    "check_preset_override",
     "check_text_contrast",
     "check_tick_crowding",
     "check_tick_decimal",

@@ -38,6 +38,7 @@ SKILL = skill_path()
 SKILL_MD = SKILL / "SKILL.md"
 REFERENCES = sorted((SKILL / "references").glob("*.md"))
 CONSUMER_ENTRY = Path(dm.agent_doc_path("AGENTS"))
+CLAUDE_DIR, AGENTS_DIR = ".claude/skills", ".agents/skills"
 TRIGGERS = (
     "matplotlib",
     "plot",
@@ -171,9 +172,9 @@ def test_value_labels_are_one_weight_step_heavier() -> None:
         assert getter in editing, getter
 
 
-def test_skill_states_how_to_coexist_with_dataviz() -> None:
+def test_skill_states_how_to_coexist_with_generic_chart_advice() -> None:
     text = SKILL_MD.read_text(encoding="utf-8")
-    assert "/dataviz" in text
+    assert "generic chart skill" in text
     for rule in ("static", "dm.figsize", "hover", "rounded bar"):
         assert rule in text
 
@@ -193,6 +194,14 @@ def test_consumer_entry_is_short_and_points_to_the_skill() -> None:
 
 
 _DOCS = [SKILL_MD, *REFERENCES, CONSUMER_ENTRY]
+
+
+def test_skill_names_no_agent() -> None:
+    """User decision 2026-10-22: every agent gets the same instructions."""
+    for doc in _DOCS:
+        text = doc.read_text(encoding="utf-8")
+        for name in ("Claude", "Codex", "Cursor", "view_image", "/dataviz"):
+            assert name not in text, f"{doc.name} names {name}"
 
 
 @pytest.mark.parametrize("doc", _DOCS, ids=lambda p: p.name)
@@ -319,11 +328,13 @@ def _is_link_to_skill(path: Path) -> bool:
     return path.is_symlink() and path.resolve() == SKILL
 
 
-def test_install_links_both_agents_and_is_idempotent(tmp_path: Path) -> None:
+def test_install_links_every_skill_folder_and_is_idempotent(
+    tmp_path: Path,
+) -> None:
     first = install_skill(tmp_path)
-    assert [(r.target, r.action) for r in first] == [
-        ("claude", "linked"),
-        ("codex", "linked"),
+    assert [(r.skills_dir, r.action) for r in first] == [
+        (".claude/skills", "linked"),
+        (".agents/skills", "linked"),
     ]
     assert _is_link_to_skill(tmp_path / ".claude/skills" / SKILL_NAME)
     assert _is_link_to_skill(tmp_path / ".agents/skills" / SKILL_NAME)
@@ -333,8 +344,8 @@ def test_install_links_both_agents_and_is_idempotent(tmp_path: Path) -> None:
     assert [r.action for r in again] == ["unchanged", "unchanged"]
 
 
-def test_install_one_target(tmp_path: Path) -> None:
-    (result,) = install_skill(tmp_path, targets=["codex"])
+def test_install_one_skill_folder(tmp_path: Path) -> None:
+    (result,) = install_skill(tmp_path, skill_dirs=[AGENTS_DIR])
     assert result.action == "linked"
     assert not (tmp_path / ".claude").exists()
 
@@ -348,7 +359,7 @@ def _leftovers(skills_dir: Path) -> list[str]:
 
 
 def test_copy_records_hashes_and_is_idempotent(tmp_path: Path) -> None:
-    (result,) = install_skill(tmp_path, targets=["claude"], copy=True)
+    (result,) = install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
     copy = tmp_path / ".claude/skills" / SKILL_NAME
     assert result.action == "copied"
     assert copy.is_dir() and not copy.is_symlink()
@@ -365,7 +376,7 @@ def test_copy_records_hashes_and_is_idempotent(tmp_path: Path) -> None:
         p.relative_to(SKILL).as_posix() for p in SKILL.rglob("*")
     }
 
-    (again,) = install_skill(tmp_path, targets=["claude"], copy=True)
+    (again,) = install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
     assert again.action == "unchanged"
     assert not _leftovers(copy.parent)
 
@@ -374,7 +385,7 @@ def test_untouched_copy_from_an_older_version_is_refreshed(
     tmp_path: Path,
 ) -> None:
     """A copy whose files still match its own record is safe to replace."""
-    install_skill(tmp_path, targets=["claude"], copy=True)
+    install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
     copy = tmp_path / ".claude/skills" / SKILL_NAME
     old = copy / "references" / "korean.md"
     old.write_text("from an older dartwork-mpl", encoding="utf-8")
@@ -384,7 +395,7 @@ def test_untouched_copy_from_an_older_version_is_refreshed(
     )
     (copy / _MARKER).write_text(json.dumps(marker), encoding="utf-8")
 
-    (refreshed,) = install_skill(tmp_path, targets=["claude"], copy=True)
+    (refreshed,) = install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
     assert refreshed.action == "replaced"
     assert old.read_bytes() == (SKILL / "references" / "korean.md").read_bytes()
     assert not _leftovers(copy.parent)
@@ -394,17 +405,17 @@ def test_untouched_copy_from_an_older_version_is_refreshed(
 def test_edited_copy_is_refused_unless_forced(
     tmp_path: Path, copy_again: bool
 ) -> None:
-    install_skill(tmp_path, targets=["claude"], copy=True)
+    install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
     copy = tmp_path / ".claude/skills" / SKILL_NAME
     edited = copy / "references" / "korean.md"
     edited.write_text("my team's Korean notes", encoding="utf-8")
 
     with pytest.raises(SkillInstallError, match=r"references/korean\.md"):
-        install_skill(tmp_path, targets=["claude"], copy=copy_again)
+        install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=copy_again)
     assert edited.read_text(encoding="utf-8") == "my team's Korean notes"
 
     (forced,) = install_skill(
-        tmp_path, targets=["claude"], copy=copy_again, force=True
+        tmp_path, skill_dirs=[CLAUDE_DIR], copy=copy_again, force=True
     )
     assert forced.action == "replaced"
     assert _is_link_to_skill(copy) is not copy_again
@@ -444,7 +455,7 @@ def test_structural_changes_to_a_copy_count_as_local_edits(
     tmp_path: Path, change: Callable[[Path, Path], str]
 ) -> None:
     """Hashes of regular files alone missed added folders and retyped files."""
-    install_skill(tmp_path, targets=["codex"], copy=True)
+    install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
     copy = tmp_path / ".agents/skills" / SKILL_NAME
     outside = tmp_path / "outside"
     outside.mkdir()
@@ -454,23 +465,23 @@ def test_structural_changes_to_a_copy_count_as_local_edits(
 
     for copy_again in (True, False):
         with pytest.raises(SkillInstallError, match=re.escape(name)):
-            install_skill(tmp_path, targets=["codex"], copy=copy_again)
+            install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=copy_again)
     assert sorted(p.name for p in copy.iterdir()) == before
     assert sorted(p.name for p in outside.iterdir()) == outside_before
 
 
 def test_copy_with_an_unreadable_marker_is_refused(tmp_path: Path) -> None:
-    install_skill(tmp_path, targets=["codex"], copy=True)
+    install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
     copy = tmp_path / ".agents/skills" / SKILL_NAME
     (copy / _MARKER).write_text("not json", encoding="utf-8")
     with pytest.raises(SkillInstallError, match="unreadable"):
-        install_skill(tmp_path, targets=["codex"], copy=True)
+        install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
 
 
 def test_failed_swap_keeps_the_previous_install(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    install_skill(tmp_path, targets=["claude"], copy=True)
+    install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
     copy = tmp_path / ".claude/skills" / SKILL_NAME
     before = {
         p.relative_to(copy).as_posix(): p.read_bytes()
@@ -486,7 +497,7 @@ def test_failed_swap_keeps_the_previous_install(
 
     monkeypatch.setattr(skills_module.os, "replace", fail_into_place)
     with pytest.raises(SkillInstallError, match="previous install was kept"):
-        install_skill(tmp_path, targets=["claude"], force=True)
+        install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], force=True)
 
     after = {
         p.relative_to(copy).as_posix(): p.read_bytes()
@@ -503,7 +514,7 @@ def test_edit_made_while_staging_is_kept_and_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, force: bool
 ) -> None:
     """A user edit between inspection and the swap is never overwritten."""
-    install_skill(tmp_path, targets=["codex"], copy=True)
+    install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
     copy = tmp_path / ".agents/skills" / SKILL_NAME
     real_stage = skills_module._stage
 
@@ -514,7 +525,7 @@ def test_edit_made_while_staging_is_kept_and_refused(
 
     monkeypatch.setattr(skills_module, "_stage", stage_then_edit)
     with pytest.raises(SkillInstallError, match="changed while"):
-        install_skill(tmp_path, targets=["codex"], force=force)
+        install_skill(tmp_path, skill_dirs=[AGENTS_DIR], force=force)
     assert (copy / "SKILL.md").read_text(encoding="utf-8") == (
         "edit made meanwhile"
     )
@@ -525,7 +536,7 @@ def test_edit_made_while_staging_is_kept_and_refused(
 def test_edit_landing_just_before_the_rename_is_put_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    install_skill(tmp_path, targets=["codex"], copy=True)
+    install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
     copy = tmp_path / ".agents/skills" / SKILL_NAME
     real_replace = os.replace
 
@@ -536,7 +547,7 @@ def test_edit_landing_just_before_the_rename_is_put_back(
 
     monkeypatch.setattr(skills_module.os, "replace", edit_then_replace)
     with pytest.raises(SkillInstallError, match="changed while"):
-        install_skill(tmp_path, targets=["codex"])
+        install_skill(tmp_path, skill_dirs=[AGENTS_DIR])
     assert (copy / "SKILL.md").read_text(encoding="utf-8") == "late edit"
     assert not _leftovers(copy.parent)
 
@@ -544,7 +555,7 @@ def test_edit_landing_just_before_the_rename_is_put_back(
 def test_link_repointed_while_staging_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    install_skill(tmp_path, targets=["claude"])
+    install_skill(tmp_path, skill_dirs=[CLAUDE_DIR])
     link = tmp_path / ".claude/skills" / SKILL_NAME
     mine = tmp_path / "my-skill"
     mine.mkdir()
@@ -558,7 +569,7 @@ def test_link_repointed_while_staging_is_refused(
 
     monkeypatch.setattr(skills_module, "_stage", stage_then_repoint)
     with pytest.raises(SkillInstallError, match="changed while"):
-        install_skill(tmp_path, targets=["claude"], copy=True)
+        install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
     assert link.resolve() == mine
 
 
@@ -585,7 +596,7 @@ def test_link_over_link_is_one_atomic_rename(
         real_replace(src, dst)
 
     monkeypatch.setattr(skills_module.os, "replace", record)
-    (result,) = install_skill(tmp_path, targets=["claude"])
+    (result,) = install_skill(tmp_path, skill_dirs=[CLAUDE_DIR])
     assert result.action == "replaced"
     assert [dst for _, dst in calls] == [link]  # never moved aside
     assert _is_link_to_skill(link)
@@ -594,7 +605,7 @@ def test_link_over_link_is_one_atomic_rename(
 def test_interrupt_while_replacing_a_copy_puts_it_back_at_once(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    install_skill(tmp_path, targets=["codex"], copy=True)
+    install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
     copy = tmp_path / ".agents/skills" / SKILL_NAME
     before = _snapshot(copy)
     real_replace = os.replace
@@ -606,7 +617,7 @@ def test_interrupt_while_replacing_a_copy_puts_it_back_at_once(
 
     monkeypatch.setattr(skills_module.os, "replace", interrupt_placing)
     with pytest.raises(KeyboardInterrupt):
-        install_skill(tmp_path, targets=["codex"])
+        install_skill(tmp_path, skill_dirs=[AGENTS_DIR])
     assert not copy.is_symlink()
     assert _snapshot(copy) == before
     assert not _leftovers(copy.parent)
@@ -620,7 +631,7 @@ def test_hard_stop_mid_replacement_is_recovered_on_the_next_run(
     next_run: str,
 ) -> None:
     """A stop that also defeats the immediate restore is fixed next time."""
-    install_skill(tmp_path, targets=["codex"], copy=True)
+    install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
     copy = tmp_path / ".agents/skills" / SKILL_NAME
     before = _snapshot(copy)
     real_replace = os.replace
@@ -633,13 +644,13 @@ def test_hard_stop_mid_replacement_is_recovered_on_the_next_run(
     with monkeypatch.context() as patch:
         patch.setattr(skills_module.os, "replace", stop_hard)
         with pytest.raises(KeyboardInterrupt):
-            install_skill(tmp_path, targets=["codex"])
+            install_skill(tmp_path, skill_dirs=[AGENTS_DIR])
     assert not os.path.lexists(copy)
     stranded = list(copy.parent.glob(".dartwork-mpl-install-*/previous"))
     assert len(stranded) == 1
 
     if next_run == "install":
-        (result,) = install_skill(tmp_path, targets=["codex"], copy=True)
+        (result,) = install_skill(tmp_path, skill_dirs=[AGENTS_DIR], copy=True)
         assert result.action == "unchanged"
         assert "interrupted" in result.detail
     else:
@@ -656,7 +667,7 @@ def test_failed_staging_changes_nothing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A failure while building the new copy leaves every target untouched."""
-    install_skill(tmp_path)  # links for both agents
+    install_skill(tmp_path)  # links into both skill folders
 
     def no_space(*_args: object, **_kwargs: object) -> None:
         raise OSError("disk full")
@@ -670,12 +681,12 @@ def test_failed_staging_changes_nothing(
 
 
 def test_relinking_replaces_a_copy_with_a_link(tmp_path: Path) -> None:
-    install_skill(tmp_path, targets=["claude"], copy=True)
-    (linked,) = install_skill(tmp_path, targets=["claude"])
+    install_skill(tmp_path, skill_dirs=[CLAUDE_DIR], copy=True)
+    (linked,) = install_skill(tmp_path, skill_dirs=[CLAUDE_DIR])
     link = tmp_path / ".claude/skills" / SKILL_NAME
     assert linked.action == "replaced"
     assert _is_link_to_skill(link)
-    (again,) = install_skill(tmp_path, targets=["claude"])
+    (again,) = install_skill(tmp_path, skill_dirs=[CLAUDE_DIR])
     assert again.action == "unchanged"
 
 
@@ -703,7 +714,7 @@ def test_foreign_symlink_is_refused(tmp_path: Path) -> None:
     link.parent.mkdir(parents=True)
     link.symlink_to(other, target_is_directory=True)
     with pytest.raises(SkillInstallError):
-        install_skill(tmp_path, targets=["claude"])
+        install_skill(tmp_path, skill_dirs=[CLAUDE_DIR])
     assert link.resolve() == other
 
 
@@ -713,7 +724,7 @@ def test_link_from_another_environment_is_relinked(tmp_path: Path) -> None:
     link = tmp_path / ".claude/skills" / SKILL_NAME
     link.parent.mkdir(parents=True)
     link.symlink_to(old, target_is_directory=True)
-    (result,) = install_skill(tmp_path, targets=["claude"])
+    (result,) = install_skill(tmp_path, skill_dirs=[CLAUDE_DIR])
     assert result.action == "replaced"
     assert _is_link_to_skill(link)
 
@@ -748,7 +759,7 @@ def test_linked_folder_leading_outside_the_destination_is_refused(
     assert not (project / ".agents/skills" / SKILL_NAME).is_symlink()
 
     # The same place is fine when it is named as the destination itself.
-    (result,) = install_skill(outside, targets=["codex"])
+    (result,) = install_skill(outside, skill_dirs=[AGENTS_DIR])
     assert result.action == "linked"
 
 
@@ -762,31 +773,41 @@ def test_destination_that_is_itself_a_link_is_the_root(tmp_path: Path) -> None:
     assert _is_link_to_skill(real / ".agents/skills" / SKILL_NAME)
 
 
-def test_unknown_target_is_rejected(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="targets"):
-        install_skill(tmp_path, targets=["cursor"])
+def test_unknown_skill_folder_is_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="skill_dirs"):
+        install_skill(tmp_path, skill_dirs=[".cursor/skills"])
+
+
+def test_cli_has_no_per_agent_options() -> None:
+    """Every agent gets the same skill, so the CLI names no agent."""
+    with pytest.raises(SystemExit):
+        main(["install", "--claude"])
 
 
 def test_cli_install_path_and_refusal(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["install", "--claude", "--dest", str(tmp_path)]) == 0
+    assert main(["install", "--dest", str(tmp_path)]) == 0
     out = capsys.readouterr().out.splitlines()
     assert out[0] == f"dartwork-mpl {skill_version()} skill: {SKILL}"
     assert out[1].startswith("linked")
+    assert out[2].startswith("linked")
     assert any("--copy" in line and "environment" in line for line in out)
     assert _is_link_to_skill(tmp_path / ".claude/skills" / SKILL_NAME)
-    assert not (tmp_path / ".agents").exists()
+    assert _is_link_to_skill(tmp_path / ".agents/skills" / SKILL_NAME)
 
-    assert main(["install", "--claude", "--dest", str(tmp_path)]) == 0
-    assert capsys.readouterr().out.splitlines()[1].startswith("unchanged")
+    assert main(["install", "--dest", str(tmp_path)]) == 0
+    again = capsys.readouterr().out.splitlines()
+    assert again[1].startswith("unchanged")
+    assert again[2].startswith("unchanged")
 
     assert main(["path"]) == 0
     assert capsys.readouterr().out.strip() == str(SKILL)
 
     foreign = tmp_path / ".agents/skills" / SKILL_NAME
-    foreign.mkdir(parents=True)
-    assert main(["install", "--codex", "--dest", str(tmp_path)]) == 1
+    foreign.unlink()
+    foreign.mkdir()
+    assert main(["install", "--dest", str(tmp_path)]) == 1
     assert "--force" in capsys.readouterr().err
 
 
@@ -798,5 +819,5 @@ def test_symlink_failure_suggests_copy(
 
     monkeypatch.setattr(Path, "symlink_to", refuse)
     with pytest.raises(SkillInstallError, match="--copy"):
-        install_skill(tmp_path, targets=["claude"])
+        install_skill(tmp_path, skill_dirs=[CLAUDE_DIR])
     assert not _leftovers(tmp_path / ".claude/skills")

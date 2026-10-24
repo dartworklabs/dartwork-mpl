@@ -8,7 +8,6 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from . import (
-    TARGETS,
     SkillInstallError,
     _recover_all,
     install_skill,
@@ -20,24 +19,17 @@ from . import (
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m dartwork_mpl.skills",
-        description="Install the dartwork-mpl skill for Claude Code and Codex.",
+        description="Install the dartwork-mpl agent skill into this project.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
     install = sub.add_parser(
         "install",
-        help="link the skill into .claude/skills and/or .agents/skills",
+        help="link the skill into .claude/skills and .agents/skills",
         description=(
             "Link the skill bundled with this dartwork-mpl into "
-            ".claude/skills/dartwork-mpl (Claude Code) and "
-            ".agents/skills/dartwork-mpl (Codex). Without --claude or "
-            "--codex, both are installed."
+            ".claude/skills/dartwork-mpl and .agents/skills/dartwork-mpl, "
+            "the project skill folders agents read."
         ),
-    )
-    install.add_argument(
-        "--claude", action="store_true", help="install for Claude Code"
-    )
-    install.add_argument(
-        "--codex", action="store_true", help="install for Codex"
     )
     install.add_argument(
         "--dest",
@@ -86,14 +78,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(skill_path())
         return 0
 
-    chosen = [name for name in TARGETS if getattr(args, name)]
     try:
-        results = install_skill(
-            args.dest,
-            targets=chosen or list(TARGETS),
-            copy=args.copy,
-            force=args.force,
-        )
+        results = install_skill(args.dest, copy=args.copy, force=args.force)
     except SkillInstallError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

@@ -30,34 +30,35 @@ images and hand off a separate-stem revision with full reports.
 
 ::::{tab-set}
 
-:::{tab-item} Agent skill (Claude Code, Codex)
+:::{tab-item} Agent skill
 :sync: skill
 
-The wheel ships an agent skill, the `SKILL.md` folder format Claude Code
-and Codex read: a short router plus reference files on sizing, editing, colours, Korean text,
-templates and the render → inspect → revise loop. Link it into the project
-once; the agent loads it whenever a task involves a plot.
+The wheel ships an agent skill in the `SKILL.md` folder format coding agents
+read: a short router plus reference files on sizing, editing, colours,
+Korean text, templates and the render → inspect → revise loop. Link it into
+the project once; the agent loads it whenever a task involves a plot.
 
 ```bash
 pip install dartwork-mpl                 # or:  uv add dartwork-mpl
 python -m dartwork_mpl.skills install    # .claude/skills + .agents/skills
 ```
 
-The command links `.claude/skills/dartwork-mpl` (Claude Code) and
-`.agents/skills/dartwork-mpl` (Codex) to the folder inside the installed
-package, so the skill always matches the installed version; moving or
-recreating that Python environment needs a rerun. `--claude` or `--codex`
-installs for one agent, `--dest ~` for your user account, and `--copy`
-copies instead of linking (no symlinks, or to check the skill into the
-repository; rerun it after upgrading). It never overwrites a folder it did
-not create, or a copy whose files you edited, unless you pass `--force`, and
-never one that changed while it ran. A link is replaced in one atomic
-rename; an interrupted copy replacement is recovered on the next `install`
-or `path` run. `python -m dartwork_mpl.skills path` prints the folder.
+The command links `.claude/skills/dartwork-mpl` and
+`.agents/skills/dartwork-mpl`, the project skill folders agents read, to the
+folder inside the installed package, so the skill always matches the
+installed version; moving or recreating that Python environment needs a
+rerun. Every agent gets the same skill. `--dest ~` installs for your user
+account, and `--copy` copies instead of linking (no symlinks, or to check
+the skill into the repository; rerun it after upgrading). It never
+overwrites a folder it did not create, or a copy whose files you edited,
+unless you pass `--force`, and never one that changed while it ran. A link
+is replaced in one atomic rename; an interrupted copy replacement is
+recovered on the next `install` or `path` run.
+`python -m dartwork_mpl.skills path` prints the folder.
 
-Claude Code also ships a general `/dataviz` skill. The dartwork-mpl skill
-tells the agent how the two fit: for matplotlib figures the active preset is
-the design system and the output is a static, physically sized file.
+If a generic chart skill is also active, the dartwork-mpl skill tells the
+agent how the two fit: for matplotlib figures the active preset is the design
+system and the output is a static, physically sized file.
 :::
 
 :::{tab-item} MCP-native client
@@ -164,7 +165,7 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))
 
 | Tool / Agent | MCP support | Recommended path | File-based fallback |
 |---|---|---|---|
-| **Claude Code** (Anthropic CLI / VS Code / JetBrains) | ✅ first-class | `python -m dartwork_mpl.skills install --claude`; MCP: `claude mcp add dartwork-mpl dartwork-mpl-mcp` | `.claude/skills/dartwork-mpl` (the skill) |
+| **Claude Code** (Anthropic CLI / VS Code / JetBrains) | ✅ first-class | `python -m dartwork_mpl.skills install`; MCP: `claude mcp add dartwork-mpl dartwork-mpl-mcp` | `.claude/skills/dartwork-mpl` (the skill) |
 | **Cursor** (legacy single-file rules) | ✅ Settings → Composer → MCP | Drop JSON in `~/.cursor/mcp.json`, restart | copy `llms-full.txt` into `.cursor/` |
 | **Cursor** (2026 `rules/*.mdc` format) | ✅ | — | copy `llms-full.txt` into `.cursor/rules/` |
 | **Windsurf** (Cascade) | ✅ JSON config | `~/.codeium/windsurf/mcp_config.json` | copy `llms-full.txt` into `.windsurf/rules/` |
@@ -172,7 +173,7 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))
 | **Zed** (Agent panel) | ✅ Settings → Agent → Tools | JSON snippet (`~/.config/zed/settings.json` → `context_servers`) | — |
 | **GitHub Copilot Chat** | ✅ since 2025-Q4 (MCP preview) | VS Code → Copilot → MCP settings | copy `llms-full.txt` into `.github/copilot-instructions.md` |
 | **Antigravity** (Google Gemini CLI) | ✅ JSON config | `~/.gemini/antigravity/mcp_config.json` | copy `dm.agent_doc_path("AGENTS")` into your project's `GEMINI.md` |
-| **OpenAI Codex CLI** | ✅ `codex mcp add` / `~/.codex/config.toml` | `python -m dartwork_mpl.skills install --codex`; MCP: `codex mcp add dartwork-mpl -- dartwork-mpl-mcp` | `.agents/skills/dartwork-mpl` (the skill), or copy `dm.agent_doc_path("AGENTS")` into `AGENTS.md` |
+| **OpenAI Codex CLI** | ✅ `codex mcp add` / `~/.codex/config.toml` | `python -m dartwork_mpl.skills install`; MCP: `codex mcp add dartwork-mpl -- dartwork-mpl-mcp` | `.agents/skills/dartwork-mpl` (the skill), or copy `dm.agent_doc_path("AGENTS")` into `AGENTS.md` |
 | **JetBrains AI Assistant** | 🟡 partial (MCP in 2026.2 preview) | Settings → Tools → AI → MCP | — |
 | **Anthropic API / SDK** (custom agents) | ✅ via `tools=` | Wire `dartwork-mpl-mcp` as a sub-process | — |
 | **Aider** | ❌ | `aider --read $(python -c "import dartwork_mpl; print(dartwork_mpl.agent_doc_path('llms-full'))")` | repo-root `CONVENTIONS.md`, or `--read` the corpus |
@@ -260,7 +261,7 @@ templates remain standalone Python examples.
 
 | Asset | Use it for | Entry point |
 |---|---|---|
-| **Agent skill** | Claude Code / Codex load the rules on demand | `python -m dartwork_mpl.skills install` |
+| **Agent skill** | Agents load the rules on demand | `python -m dartwork_mpl.skills install` |
 | **MCP server** | Live doc access + lint inside the chat | `dartwork-mpl-mcp` console script ([setup](../integrations/mcp_server.md)) |
 | **Prompt corpus** (4 guides + templates) | Anti-patterns, style rules, recipes — paste-able | `dm.list_prompts()` → `["00-index", "01-policy", "02-anti-patterns", "03-recipes"]`; `dm.get_prompt("02-anti-patterns")` |
 | **18 plot templates** | Drop-in patterns for bar / line / scatter / heatmap / dashboards | [AI Plot Templates gallery](../examples_gallery/09_ai_templates/index.rst) |

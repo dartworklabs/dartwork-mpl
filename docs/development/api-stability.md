@@ -20,9 +20,11 @@ deprecation cycle below.
 Names in `dartwork_mpl.EXPERIMENTAL` are provisional. Their shape may change
 in a minor release without the full deprecation cycle.
 
-The current set is empty. The interactive UI exists as the
-`dartwork_mpl.ui` subpackage, but it is not currently an advertised
-top-level `dm.ui` attribute.
+The current set is `figsize_for` (the active preset's default canvas) and
+`grid_shape` (the layout of small multiples): their kinds, width tiers,
+density hints and layouts may still change. The interactive UI
+exists as the `dartwork_mpl.ui` subpackage, but it is not currently an
+advertised top-level `dm.ui` attribute.
 
 ## Deprecation cycle
 

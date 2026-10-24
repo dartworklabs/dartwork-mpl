@@ -16,9 +16,14 @@ import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
 from .._rc import rc_lock
+from ._canvas import CANVAS_KINDS, figsize_for, grid_shape
 
 __all__ = [
+    "CANVAS_KINDS",
     "Style",
+    "active_preset_rcparams",
+    "figsize_for",
+    "grid_shape",
     "install_twinx_patch",
     "list_styles",
     "load_style_dict",
@@ -30,6 +35,9 @@ __all__ = [
 # Deep copies of normalized values written by the last successful preset stack.
 # Contexts merge temporary preset writes and restore the immediate outer copy.
 _dm_preset_values: dict[str, object] = {}
+# Preset names of the last successful use() (or the innermost context()); the
+# default canvas (figsize_for) follows them.
+_active_preset: list[str] = []
 
 
 def _did_you_mean(value: str, candidates: list[str]) -> str | None:
@@ -510,6 +518,7 @@ class Style:
                 # Explicit kwargs are known caller intent, even at equal values.
                 for key in validated_overrides:
                     _dm_preset_values.pop(key, None)
+        _active_preset[:] = names
 
     @contextlib.contextmanager
     def context(
@@ -565,6 +574,7 @@ class Style:
         mapping = mcolors.get_named_colors_mapping()
         saved = {t: mapping.get(t) for t in SEMANTIC_TOKEN_NAMES}
         locale = _locale_of_preset(preset_name, names)
+        saved_active = list(_active_preset)
         try:
             with plt.style.context(style_list):
                 # Retain inherited silent-key ownership; snapshot before kwargs.
@@ -579,8 +589,10 @@ class Style:
                     for key in overrides:
                         _dm_preset_values.pop(key, None)
                 apply_semantic(locale)
+                _active_preset[:] = [preset_name]
                 yield
         finally:
+            _active_preset[:] = saved_active
             with rc_lock:
                 _dm_preset_values.clear()
                 _dm_preset_values.update(saved_ownership)
@@ -604,6 +616,32 @@ class Style:
 
 
 style: Style = Style()
+
+
+def active_preset_rcparams() -> dict[str, object]:
+    """Return copies of the rcParams the active dartwork preset set, or ``{}``.
+
+    The values are what the last ``style.use`` / ``style.stack`` (or the
+    innermost ``style.context``) wrote, without the keys the caller passed as
+    overrides; a key the preset does not declare is absent. ``{}`` means no
+    dartwork preset is in force: none was applied, or a native reset
+    (``plt.rcdefaults()``, ``plt.style.use("default")``) has since moved off
+    the preset value every key on which the preset differs from Matplotlib's
+    default.
+    """
+    with rc_lock:
+        values = copy.deepcopy(_dm_preset_values)
+    defaults = plt.rcParamsDefault  # type: ignore[attr-defined]
+    changed = [
+        key
+        for key, value in values.items()
+        if key in defaults and _rcparam_differs(value, defaults[key])
+    ]
+    if changed and all(
+        _rcparam_differs(plt.rcParams[key], values[key]) for key in changed
+    ):
+        return {}
+    return values
 
 
 def install_twinx_patch() -> None:

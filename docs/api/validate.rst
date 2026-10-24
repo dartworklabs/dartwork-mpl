@@ -59,6 +59,9 @@ Available Checks
    * - ``CLIPPED_TEXT``
      - Text is clipped at an axes or canvas boundary
      - WARNING
+   * - ``PRESET_OVERRIDE``
+     - Grid, spines or a background differ from the active preset (advisory)
+     - INFO
 
 Example
 -------
