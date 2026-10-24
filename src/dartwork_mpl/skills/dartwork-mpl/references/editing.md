@@ -70,7 +70,8 @@ weight, colour and spacing, so every agent draws the same element.
 |---|---|
 | a title | `ax.set_title("…")`; one title over several panels: `fig.suptitle("…")` |
 | gridlines | `ax.grid(True, axis="y")` (horizontal); `axis="x"` vertical; `"both"` |
-| a legend | `dm.place_legend(ax)`; a named side: `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
+| a legend, no side named | `dm.place_legend(ax)`: inside where it covers no data, otherwise above the plot by itself; do not pick a side |
+| a legend on a named side | `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
 | a source or note line | `fig.text(0.01, 0.01, "Source: …", ha="left", va="bottom", fontsize=dm.fs(-1))` |
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps its height, `dm.figsize("16cm", "<old height>cm")` |
 | bigger or smaller text, no amount | one step: `t.set_fontsize(t.get_fontsize() + 1)`; all text: `dm.style.use(preset, font_size=<preset size + 1>)` |

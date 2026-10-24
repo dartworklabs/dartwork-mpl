@@ -33,7 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   preset's `legend.borderaxespad`. Above and below it takes one row when that
   fits the axes width, else the fewest rows that fit; right and left it is one
   column. `ncols=` still wins; `bbox_to_anchor=` with a side raises
-  `ValueError`. Existing `loc` values behave as before.
+  `ValueError`. Other explicit `loc` values behave as before.
+- **`dm.place_legend(ax)` goes above the plot when nothing inside is free.**
+  With no `loc`, a legend that would cover data in every in-axes spot now takes
+  the `loc="above"` placement (`legend._dm_outside_fallback`), so a request
+  that names no side gets one legend from every agent; a caller
+  `bbox_to_anchor=` keeps it inside as before.
 - **`LEGEND_OVERLAP` validation check (WARNING).** `validate_figure()` reports
   a legend box that covers a title, an axis label, tick labels or a
   figure-level text (suptitle, `fig.text`), one finding per legend and covered

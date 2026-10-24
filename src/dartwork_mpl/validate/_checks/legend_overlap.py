@@ -221,9 +221,10 @@ def check_legend_overlap(
 @register_fix("LEGEND_OVERLAP")
 def _fix_legend_overlap(_warning: VisualWarning) -> list[str]:
     return [
-        "# Legend outside one side; simple_layout lifts the title above it\n"
+        "# Inside away from the data, or above the plot when nothing is free\n"
+        "dm.place_legend(ax)\ndm.simple_layout(fig)",
+        "# The side the user named; simple_layout lifts the title above it\n"
         "dm.place_legend(ax, loc='above')  # or 'below', 'right', 'left'\n"
         "dm.simple_layout(fig)",
-        "# Legend inside, away from the data\ndm.place_legend(ax)",
         "# Fewer rows or a smaller legend\nax.legend(ncols=2, fontsize=dm.fs(-1))",
     ]

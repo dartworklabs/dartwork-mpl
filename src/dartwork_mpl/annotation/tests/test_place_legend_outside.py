@@ -227,3 +227,76 @@ class TestOutsideRobustness:
         assert legend.get_title().get_text() == "Country"
         assert legend.get_frame_on()
         plt.close(fig)
+
+
+def _crowded_scatter(preset: str = "report"):
+    """Three clouds that leave no in-axes corner free for a legend."""
+    dm.style.use(preset)
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    rng = np.random.default_rng(3)
+    for i, name in enumerate(("Alpine", "Coastal", "Desert")):
+        xs = rng.uniform(0, 10, 120)
+        ax.scatter(xs, rng.uniform(0, 10, 120) + i * 0.1, s=12, label=name)
+    # No axes margins: the clouds reach every edge, so no corner is free.
+    ax.set(
+        xlabel="Length (cm)", ylabel="Width (cm)", xlim=(0, 10), ylim=(0, 10)
+    )
+    return fig, ax
+
+
+class TestBestFallsBackOutside:
+    """No side named: inside when a spot is free, otherwise above (#523).
+
+    Agents asked for no side still picked one by taste (above, right), so the
+    same request drew different legends; the library now decides.
+    """
+
+    @pytest.mark.parametrize("preset", PRESETS)
+    def test_crowded_axes_put_the_legend_above(self, preset: str) -> None:
+        fig, ax = _crowded_scatter(preset)
+        try:
+            legend = place_legend(ax)
+            assert legend is not None
+            assert legend._dm_outside_fallback is True
+            assert legend._dm_collision_free is True
+            _assert_outside(fig, ax, legend, "above")
+        finally:
+            plt.close(fig)
+
+    def test_a_free_corner_keeps_the_legend_inside(self) -> None:
+        fig, ax = _chart("report", n_series=5)
+        try:
+            ax.set_ylim(-1.2, 4.0)  # the top band is empty
+            legend = place_legend(ax)
+            assert legend is not None
+            assert not getattr(legend, "_dm_outside_fallback", False)
+            renderer = _renderer(fig)
+            box = legend.get_window_extent(renderer)
+            axes_box = ax.get_window_extent(renderer)
+            assert box.y1 <= axes_box.y1 + TOL_PX
+        finally:
+            plt.close(fig)
+
+    def test_a_caller_anchor_keeps_the_legend_where_asked(self) -> None:
+        fig, ax = _crowded_scatter()
+        try:
+            legend = place_legend(ax, bbox_to_anchor=(0.0, 0.0, 1.0, 1.0))
+            assert legend is not None
+            assert not getattr(legend, "_dm_outside_fallback", False)
+        finally:
+            plt.close(fig)
+
+    def test_fallback_then_simple_layout_has_no_findings(self) -> None:
+        fig, ax = _crowded_scatter()
+        try:
+            ax.set_title("Leaf size by species")
+            place_legend(ax)
+            dm.simple_layout(fig)
+            found = dm.validate_figure(
+                fig,
+                checks=("LEGEND_OVERLAP", "OVERLAP", "OVERFLOW"),
+                quiet=True,
+            )
+            assert not found, [w.message for w in found]
+        finally:
+            plt.close(fig)

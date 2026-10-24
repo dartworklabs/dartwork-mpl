@@ -1027,15 +1027,45 @@ def _place_outside_legend(
     return legend
 
 
+def _may_go_outside(kw: dict[str, Any]) -> bool:
+    """Whether a ``best`` legend may fall back outside (no caller anchor)."""
+    return "bbox_to_anchor" not in kw and "bbox_transform" not in kw
+
+
+def _covers_data(ax: Axes, legend: Legend, renderer: Any) -> bool:
+    """Whether the drawn ``legend`` box overlaps any data artist of ``ax``."""
+    ax.figure.canvas.draw()
+    try:
+        bbox = legend.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return False
+    return _collision_area(bbox, _data_occupancy_bboxes(ax, renderer)) > 0
+
+
+def _outside_fallback(
+    ax: Axes, handles: list[Any], labels: list[str], kw: dict[str, Any]
+) -> Legend:
+    """Put the legend above ``ax`` because every in-axes spot covers data."""
+    legend = _place_outside_legend(ax, handles, labels, "above", kw)
+    legend._dm_collision_free = True  # type: ignore[attr-defined]
+    legend._dm_collision_score = 0.0  # type: ignore[attr-defined]
+    legend._dm_outside_fallback = True  # type: ignore[attr-defined]
+    return legend
+
+
 def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     """Place or reposition an axes legend.
 
     ``loc="best"`` delegates to matplotlib for simple line-only axes. When the
     axes contains bars/collections/text obstacles or a tall legend, it scores
     four corners plus upper/lower center across one to three columns and
-    selects the least obstructed in-axes location. The returned Legend receives
-    ``_dm_collision_free`` and ``_dm_collision_score`` attributes for callers
-    that need to detect an unavoidable collision fallback.
+    selects the least obstructed in-axes location. When every in-axes
+    location would cover data, the legend goes outside, above the axes (the
+    ``loc="above"`` placement below), so no caller has to pick a side; a
+    ``bbox_to_anchor`` / ``bbox_transform`` in ``kw`` keeps it inside. The
+    returned Legend receives ``_dm_collision_free`` and
+    ``_dm_collision_score`` attributes; ``_dm_outside_fallback`` is True when
+    the legend went outside for that reason.
 
     ``loc="above"``, ``"below"``, ``"right"`` or ``"left"`` puts the legend
     outside the axes, centred on that side, past the side's tick labels and
@@ -1076,7 +1106,11 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     has_obstacles = bool(ax.patches or ax.collections or ax.texts)
     ncols = _legend_candidate_ncols(list(labels), kw)
     if not has_obstacles and len(labels) < 5 and ncols == [1]:
-        return _legend_for_loc(ax, list(handles), list(labels), "best", kw)
+        legend = _legend_for_loc(ax, list(handles), list(labels), "best", kw)
+        if not _may_go_outside(kw) or not _covers_data(ax, legend, renderer):
+            return legend
+        legend.remove()
+        return _outside_fallback(ax, list(handles), list(labels), kw)
 
     old_legend = ax.get_legend()
     if old_legend is not None:
@@ -1125,6 +1159,10 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
             legend.remove()
 
     best = _best_trial(trials)
+    if _may_go_outside(kw) and not (
+        isinstance(best, _MeasuredLegend) and best.collision_free
+    ):
+        return _outside_fallback(ax, list(handles), list(labels), kw)
     legend_kw = dict(kw)
     legend_kw["ncol"] = best.ncol
     legend = _legend_for_loc(

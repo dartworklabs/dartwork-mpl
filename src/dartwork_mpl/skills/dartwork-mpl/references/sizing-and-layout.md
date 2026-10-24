@@ -166,7 +166,8 @@ plt.close(fig)
 
 - Legend below everything: `fig.legend(loc="lower center", ncol=3,
   bbox_to_anchor=(0.5, 0))`, then `dm.simple_layout(fig)`.
-- Legend inside, away from the data: `dm.place_legend(ax)`.
+- Legend inside, away from the data: `dm.place_legend(ax)`; when every
+  inside spot covers data it goes above the plot by itself.
 - Legend outside one side ("legend above the plot"):
   `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
   the clearance of tick labels, and `dm.simple_layout(fig)` keeps a title
