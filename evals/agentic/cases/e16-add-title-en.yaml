@@ -1,0 +1,43 @@
+# e16-add-title-en — edit / en / report (customization: add a named title)
+id: e16-add-title-en
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Add the title "Real GDP growth by country".
+data: [gdp_growth.csv]
+# b14 is b01 without its title, so the title's size, weight and placement
+# are the agent's choice (b01 already has one).
+base: b14_gdp_untitled.py
+edit_scope: explicit
+# A title takes room at the top: the layout may shrink the axes, which moves
+# the legend, the labels and possibly the automatic tick choice. The title may
+# be an axes title, a suptitle or one figure text.
+target: [ax*.title.*, 'ax*.title_*', 'figure.suptitle.*', 'figure.text:*', ax*.position, ax*.legend.bbox,
+  ax*.xticks, ax*.yticks, ax*.*.pos]
+max_new_texts: 1
+auxiliary: [reference_lines]
+oracle:
+- type: title
+  group: spec
+  name: requested title
+  contains: Real GDP growth by country
+- type: series
+  group: values
+  name: country series
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  - y: United States
+    aliases: [United States, USA, US, 미국]
+  - y: Germany
+    aliases: [Germany, 독일]
+  - y: France
+    aliases: [France, 프랑스]

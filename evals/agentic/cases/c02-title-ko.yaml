@@ -1,0 +1,34 @@
+# c02-title-ko — generate / ko / report (customization: a named title)
+id: c02-title-ko
+kind: generate
+lang: ko
+purpose: report
+held_out: false
+prompt: quarterly_sales.csv로 지역별 분기 매출 묶음 막대그래프를 그려줘. 제목은 '지역별 분기 매출'로 달아줘.
+data: [quarterly_sales.csv]
+oracle:
+- type: bars
+  group: values
+  name: quarter x region -> revenue
+  file: quarterly_sales.csv
+  category:
+    col: quarter
+    aliases:
+      Q1: [1분기]
+      Q2: [2분기]
+      Q3: [3분기]
+      Q4: [4분기]
+  series:
+    col: region
+    aliases:
+      North: [북부, 북]
+      South: [남부, 남]
+      East: [동부, 동]
+      West: [서부, 서]
+  value: revenue
+  orientation: v
+  layout: grouped
+- type: title
+  group: spec
+  name: requested title
+  contains: 지역별 분기 매출

@@ -1,0 +1,29 @@
+# e17-add-grid-ko — edit / ko / report (customization: add horizontal gridlines)
+id: e17-add-grid-ko
+kind: edit
+lang: ko
+purpose: report
+held_out: false
+prompt: 가로 눈금선을 추가해줘.
+data: [korea_monthly_sales.csv]
+base: b02_kr_sales_bar.py
+edit_scope: explicit
+# Only the horizontal (y-axis) gridlines; vertical ones were not requested.
+target: [ax*.grid.y.*]
+oracle:
+- type: gridlines
+  group: spec
+  name: horizontal gridlines
+  axis: y
+- type: series
+  group: values
+  name: sales bars
+  file: korea_monthly_sales.csv
+  x:
+    col: 월
+    kind: order
+  identity: any
+  series:
+  - y: 매출액(억원)
+    aliases: [매출]
+  artists: [bars]

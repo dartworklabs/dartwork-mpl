@@ -1,0 +1,33 @@
+# c05-legend-top-en — generate / en / report (customization: legend above the plot area)
+id: c05-legend-top-en
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Line chart of the energy mix by source over the years from energy_mix.csv, with the legend above the plot area.
+data: [energy_mix.csv]
+oracle:
+- type: series
+  group: values
+  name: source lines
+  file: energy_mix.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: coal
+    aliases: [coal, 석탄]
+  - y: gas
+    aliases: [gas, 가스]
+  - y: nuclear
+    aliases: [nuclear, 원자력]
+  - y: hydro
+    aliases: [hydro, 수력]
+  - y: wind_solar
+    aliases: [wind, solar, 풍력, 태양]
+  artists: [line]
+- type: legend
+  group: spec
+  name: legend above the plot area
+  side: top

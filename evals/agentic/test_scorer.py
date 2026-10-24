@@ -294,3 +294,271 @@ def test_explicit_preservation_flags_non_target_change():
     assert res["ok"] is False and key.endswith(".lw")
     assert base[key.removesuffix(".lw") + ".label"] == "Korea"
     assert metrics.preservation(base, changed, "broad", ["*"])["ok"] is None
+
+
+# ------------------------------------------------------------ customization checks
+def spec(fig, check: dict, save: dict | None = None) -> bool:
+    """One spec check on a figure snapshot (``save`` stands in for the saved file)."""
+    snap = probe.snapshot(fig, save)
+    plt.close(fig)
+    res = oracle.check_oracle(
+        [check], {"snapshot": snap, "styles": [], "missing_glyphs": []}
+    )
+    return res[0]["ok"]
+
+
+GRID_Y = {"type": "gridlines", "axis": "y"}
+
+
+def grid_fig(mutation=None):
+    fig = sales_fig()
+    ax = fig.axes[0]
+    fig.canvas.draw()
+    ticks = [t for t in ax.get_yticks() if 0 < t < ax.get_ylim()[1]]
+    if mutation == "grid_y":
+        ax.grid(axis="y")
+    if mutation == "grid_x":
+        ax.grid(axis="x")
+    if mutation == "grid_y_alpha0":
+        ax.grid(axis="y", alpha=0)
+    if mutation == "axhlines_at_ticks":
+        for t in ticks:
+            ax.axhline(t, color="0.85", linewidth=0.5, zorder=0)
+    if mutation == "one_reference_line":
+        ax.axhline(ticks[0], color="0.5", linewidth=0.5)
+    if mutation == "hlines_at_ticks":
+        ax.hlines(ticks, *ax.get_xlim(), color="0.85", linewidth=0.5)
+    return fig
+
+
+@pytest.mark.parametrize(
+    "mutation, ok",
+    [
+        (None, False),
+        ("grid_y", True),
+        ("grid_x", False),
+        ("grid_y_alpha0", False),
+        ("axhlines_at_ticks", True),
+        ("hlines_at_ticks", True),
+        ("one_reference_line", False),
+    ],
+)
+def test_gridlines_check(mutation, ok):
+    assert spec(grid_fig(mutation), GRID_Y) is ok
+
+
+def energy_fig(legend: str):
+    fig, ax = plt.subplots()
+    for c in STACK["layers"]:
+        ax.plot(
+            col("energy_mix.csv", "year"),
+            col("energy_mix.csv", c["y"]),
+            label=c["y"],
+        )
+    if legend == "top":
+        ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.02), ncols=5)
+    elif legend == "right":
+        fig.subplots_adjust(right=0.7)  # room on the canvas, as a layout makes
+        ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1))
+    elif legend == "top_off_canvas":
+        ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.3), ncols=5)
+    else:
+        ax.legend(loc="upper right")
+    return fig
+
+
+@pytest.mark.parametrize(
+    "legend, side, ok",
+    [
+        ("top", "top", True),
+        ("inside", "top", False),
+        ("right", "top", False),
+        ("top_off_canvas", "top", False),
+        ("right", "right", True),  # e04's behaviour is unchanged
+        ("top", "right", False),
+        ("right", None, True),  # no side: right, as before
+    ],
+)
+def test_legend_side(legend, side, ok):
+    check = {"type": "legend", "outside": "right"}
+    if side:
+        check["side"] = side
+    assert spec(energy_fig(legend), check) is ok
+
+
+DARK = {"type": "dark_background", "max_luminance": 0.3}
+WHITE_SAVE = {"facecolor": "#ffffff", "face_alpha": 1.0, "transparent": False}
+
+
+@pytest.mark.parametrize(
+    "fig_face, ax_face, save, ok",
+    [
+        ("#1e1e1e", "#1e1e1e", None, True),
+        ("white", "white", None, False),
+        ("#1e1e1e", "white", None, False),  # dark margins, white plot area
+        ("white", "#1e1e1e", None, True),  # the plot area is dark
+        ("#1e1e1e", "none", None, True),  # transparent axes over a dark canvas
+        # a preset's savefig.facecolor (white) wins over fig.set_facecolor
+        ("#1e1e1e", "none", WHITE_SAVE, False),
+        ("#1e1e1e", "#1e1e1e", WHITE_SAVE, True),
+        ("#1e1e1e", "#1e1e1e", {**WHITE_SAVE, "transparent": True}, False),
+    ],
+)
+def test_dark_background_check(fig_face, ax_face, save, ok):
+    fig = gdp_fig()
+    fig.set_facecolor(fig_face)
+    fig.axes[0].set_facecolor(ax_face)
+    assert spec(fig, DARK, save) is ok
+
+
+def test_dark_background_reads_the_saved_canvas(tmp_path):
+    """End to end: the probe records savefig's facecolor, so a dark figure
+    saved under a preset whose savefig.facecolor is white is not dark."""
+    import score
+
+    src = (
+        "from pathlib import Path\n"
+        "import matplotlib.pyplot as plt\n"
+        "import dartwork_mpl as dm\n"
+        "dm.style.use('report')\n"
+        "fig, ax = plt.subplots(figsize=dm.figsize('10cm', 'golden'))\n"
+        "ax.plot([1, 2, 3], [1, 3, 2])\n"
+        "fig.set_facecolor('#111111')\n"
+        "ax.set_facecolor('{ax}')\n"
+        "Path('out').mkdir(exist_ok=True)\n"
+        "dm.save_formats(fig, 'out/figure', formats=('png',))\n"
+    )
+    results = {}
+    for ax_face in ("none", "#111111"):
+        work = tmp_path / ax_face.strip("#")
+        work.mkdir()
+        (work / "plot.py").write_text(src.replace("{ax}", ax_face))
+        pr = score.run_probe(score.REPO / ".venv" / "bin" / "python", work)
+        assert pr["snapshot"]["save"]["facecolor"] == "#ffffff", pr.get("error")
+        results[ax_face] = oracle.check_oracle([DARK], pr)[0]["ok"]
+    assert results == {"none": False, "#111111": True}
+
+
+TITLE = {"type": "title", "contains": "Real GDP growth by country"}
+
+
+@pytest.mark.parametrize(
+    "how, ok",
+    [
+        ("set_title", True),
+        ("set_title_left", True),
+        ("suptitle", True),
+        ("figtext_above", True),
+        ("text_inside_axes", False),
+        ("other_title", False),
+        ("none", False),
+    ],
+)
+def test_title_check(how, ok):
+    fig = gdp_fig()
+    ax = fig.axes[0]
+    t = TITLE["contains"]
+    if how == "set_title":
+        ax.set_title(t)
+    if how == "set_title_left":
+        ax.set_title(t, loc="left")
+    if how == "suptitle":
+        fig.suptitle(t)
+    if how == "figtext_above":
+        fig.text(0.02, 0.97, t, va="top")
+    if how == "text_inside_axes":
+        ax.text(0.5, 0.5, t, transform=ax.transAxes)
+    if how == "other_title":
+        ax.set_title("GDP growth")
+    assert spec(fig, TITLE) is ok
+
+
+NOTE = {"type": "text_below", "contains": "출처: 사내 웹 로그"}
+
+
+@pytest.mark.filterwarnings("ignore:Glyph")  # Hangul in the default font
+@pytest.mark.parametrize(
+    "where, ok",
+    [
+        ("figtext_bottom", True),
+        ("annotation_below", True),
+        ("inside_axes", False),
+        ("top", False),
+        ("off_canvas", False),
+        ("other_text", False),
+    ],
+)
+def test_text_below_check(where, ok):
+    fig = gdp_fig()
+    fig.subplots_adjust(bottom=0.25)
+    ax = fig.axes[0]
+    note = NOTE["contains"]
+    if where == "figtext_bottom":
+        fig.text(0.01, 0.01, note)
+    if where == "annotation_below":
+        ax.annotate(note, (0, -0.25), xycoords="axes fraction", va="top")
+    if where == "inside_axes":
+        ax.text(0.05, 0.05, note, transform=ax.transAxes)
+    if where == "top":
+        fig.text(0.01, 0.95, note)
+    if where == "off_canvas":
+        fig.text(0.01, -0.1, note)
+    if where == "other_text":
+        fig.text(0.01, 0.01, "Source: internal web logs")
+    assert spec(fig, NOTE) is ok
+
+
+# ------------------------------------------------------------ customization props
+def test_new_props_record_titles_grid_facecolor_and_legend():
+    fig = gdp_fig()
+    ax = fig.axes[0]
+    ax.set_title("Left", loc="left", fontweight="bold")
+    fig.suptitle("Figure title")
+    ax.grid(axis="y", color="#cccccc", linewidth=0.4, linestyle="--")
+    fig.text(0.01, 0.01, "note", color="#ff0000")
+    p = probe.snapshot(fig, None)
+    plt.close(fig)
+    props, texts = p["props"], p["texts"]
+    assert props["ax0.title.left.text"] == "Left"
+    assert props["ax0.title.left.fontweight"] == "bold"
+    assert "ax0.title.center.text" not in props  # empty slots are skipped
+    assert props["figure.suptitle.text"] == "Figure title"
+    assert props["ax0.grid.y.visible"] is True
+    assert props["ax0.grid.y.linestyle"] == "--"
+    assert props["ax0.grid.y.color"] == "#cccccc"
+    assert props["ax0.grid.x.visible"] is False
+    assert "ax0.grid.x.color" not in props
+    assert props["ax0.facecolor"] == props["figure.facecolor"] == "#ffffff"
+    assert props["ax0.legend.ncols"] == 1
+    assert isinstance(props["ax0.legend.frameon"], bool)
+    (note,) = [t for t in texts if t["s"] == "note"]
+    assert note["role"] == "figtext" and note["color"] == "#ff0000"
+    assert note["fontsize"] > 0
+
+
+@pytest.mark.parametrize(
+    "mutation", ["grid_y", "grid_x", "facecolor", "frameon", "ncols"]
+)
+def test_new_props_flag_collateral_changes_in_explicit_edits(mutation):
+    base = probe.snapshot(gdp_fig(), None)["props"]
+    fig = gdp_fig()
+    ax = fig.axes[0]
+    ax.xaxis.label.set_fontsize(ax.xaxis.label.get_fontsize() + 1)  # target
+    if mutation == "grid_y":
+        ax.grid(axis="y")
+    if mutation == "grid_x":
+        ax.grid(axis="x")
+    if mutation == "facecolor":
+        ax.set_facecolor("#f0f0f0")
+    if mutation == "frameon":
+        ax.legend(frameon=not ax.get_legend().get_frame_on())
+    if mutation == "ncols":
+        ax.legend(ncols=2)
+    edit = probe.snapshot(fig, None)["props"]
+    plt.close("all")
+    target = ["ax*.xlabel.fontsize"]
+    assert metrics.preservation(base, edit, "explicit", target)["ok"] is False
+    # an explicit horizontal-grid edit (e17's target) admits only the y grid
+    grid_target = [*target, "ax*.grid.y.*"]
+    allowed = metrics.preservation(base, edit, "explicit", grid_target)["ok"]
+    assert allowed is (mutation == "grid_y")

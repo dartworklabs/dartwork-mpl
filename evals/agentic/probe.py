@@ -63,6 +63,13 @@ def _hex(c) -> str | None:
         return None
 
 
+def _color_alpha(c) -> float | None:
+    try:
+        return round(float(mcolors.to_rgba(c)[3]), 4)
+    except (ValueError, TypeError):
+        return None
+
+
 def _floats(a) -> list:
     arr = np.ma.filled(np.ma.asarray(a, dtype=float), np.nan).ravel()
     return [None if not math.isfinite(v) else round(float(v), 6) for v in arr]
@@ -258,6 +265,15 @@ def _install_patches(use_dm: bool) -> None:
         bbox = kwargs.get("bbox_inches", matplotlib.rcParams["savefig.bbox"])
         dpi = kwargs.get("dpi", matplotlib.rcParams["savefig.dpi"])
         dpi = self.dpi if dpi in (None, "figure") else float(dpi)
+        # The saved canvas colour: savefig's own facecolor (an rc default
+        # such as a preset's "white" wins over fig.set_facecolor), or the
+        # figure's when it is "auto"; transparent=True clears it.
+        face = kwargs.get("facecolor", matplotlib.rcParams["savefig.facecolor"])
+        if isinstance(face, str) and face == "auto":
+            face = self.get_facecolor()
+        transparent = kwargs.get("transparent")
+        if transparent is None:
+            transparent = matplotlib.rcParams["savefig.transparent"]
         rec = {
             "path": path,
             "abspath": os.path.abspath(path) if path else None,
@@ -265,6 +281,9 @@ def _install_patches(use_dm: bool) -> None:
             "bbox_inches": None if bbox is None else str(bbox),
             "dpi": dpi,
             "png_px": _png_px(path) if fmt == "png" else None,
+            "facecolor": _hex(face),
+            "face_alpha": _color_alpha(face),
+            "transparent": bool(transparent),
         }
         SAVES.append(rec)
         if fmt == "png":
@@ -316,6 +335,9 @@ def _install_patches(use_dm: bool) -> None:
 
 
 # --------------------------------------------------------------- snapshot
+TITLE_SLOTS = {"title": "center", "title_left": "left", "title_right": "right"}
+
+
 def _titles(ax) -> list[tuple[str, Text]]:
     """Centre, left and right title artists, found through the public API.
 
@@ -477,6 +499,8 @@ def _legend_info(lg: Legend, fig_bb, renderer, axes) -> dict:
         "fontsize": round(lg.get_texts()[0].get_fontsize(), 3)
         if lg.get_texts()
         else None,
+        "ncols": getattr(lg, "_ncols", None),
+        "frameon": bool(lg.get_frame_on()),
         "cover": _legend_cover(lg, axes, renderer),
     }
 
@@ -502,6 +526,31 @@ def _ticks(axis, lo: float, hi: float) -> list:
         if text and loc is not None and lo - pad <= loc <= hi + pad:
             out.append([round(float(loc), 6), text])
     return out
+
+
+def _grid(ax, axis, lo: float, hi: float) -> dict:
+    """Major gridlines of ``axis`` inside the view interval.
+
+    ``visible``: any of them is drawn (axis shown, line visible with a
+    stroke); the style is that of the first drawn one.
+    """
+    if not (ax.axison and axis.get_visible()):
+        return {"visible": False}
+    lo, hi = min(lo, hi), max(lo, hi)
+    pad = (hi - lo) * 1e-6
+    for tick in axis.get_major_ticks():
+        loc, g = tick.get_loc(), tick.gridline
+        if loc is None or not lo - pad <= loc <= hi + pad:
+            continue
+        if _line_visible(g):
+            return {
+                "visible": True,
+                "color": _hex(g.get_color()),
+                "linewidth": round(float(g.get_linewidth()), 3),
+                "linestyle": str(g.get_linestyle()),
+                "alpha": _alpha(g, g.get_color()),
+            }
+    return {"visible": False}
 
 
 def _alpha(artist, color=None) -> float:
@@ -911,6 +960,7 @@ def _props(
     p: dict = {
         "figure.size_in": [round(v, 3) for v in fig.get_size_inches()],
         "figure.n_axes": len(axes),
+        "figure.facecolor": _hex(fig.get_facecolor()),
     }
     st = getattr(fig, "_suptitle", None)
     if st is not None and st.get_text():
@@ -936,15 +986,33 @@ def _props(
         p[f"{k}.legend.texts"] = lg["texts"]
         p[f"{k}.legend.fontsize"] = lg["fontsize"]
         p[f"{k}.legend.bbox"] = [round(v, 3) for v in lg["bbox"]]
+        p[f"{k}.legend.ncols"] = lg["ncols"]
+        p[f"{k}.legend.frameon"] = lg["frameon"]
     for i, ax in enumerate(axes):
         k = f"ax{i}"
         p[f"{k}.position"] = [round(v, 3) for v in ax.get_position().bounds]
         p[f"{k}.visible"] = bool(ax.get_visible() and ax.axison)
+        p[f"{k}.facecolor"] = _hex(ax.get_facecolor())
         p[f"{k}.xscale"], p[f"{k}.yscale"] = ax.get_xscale(), ax.get_yscale()
         p[f"{k}.xlim"] = [_r4(v) for v in ax.get_xlim()]
         p[f"{k}.ylim"] = [_r4(v) for v in ax.get_ylim()]
         p[f"{k}.xticks"] = [[_r4(loc), txt] for loc, txt in data[i]["xticks"]]
         p[f"{k}.yticks"] = [[_r4(loc), txt] for loc, txt in data[i]["yticks"]]
+        for name, axis, lim in (
+            ("x", ax.xaxis, ax.get_xlim()),
+            ("y", ax.yaxis, ax.get_ylim()),
+        ):
+            for prop, v in _grid(ax, axis, *lim).items():
+                p[f"{k}.grid.{name}.{prop}"] = v
+        # Every non-empty title slot under one schema (also kept below
+        # under the role names title/title_left/title_right).
+        for role, t in _titles(ax):
+            if t.get_text() and t.get_visible():
+                slot = f"{k}.title.{TITLE_SLOTS[role]}"
+                p[f"{slot}.text"] = t.get_text()
+                p[f"{slot}.fontsize"] = round(t.get_fontsize(), 3)
+                p[f"{slot}.fontweight"] = str(t.get_fontweight())
+                p[f"{slot}.color"] = _hex(t.get_color())
         for side, sp in ax.spines.items():
             p[f"{k}.spine.{side}"] = [
                 bool(sp.get_visible()),
@@ -1054,6 +1122,8 @@ def snapshot(fig: Figure, save: dict | None) -> dict:
                     for x, y in q
                 ],
                 "fontsize": round(t.get_fontsize(), 3),
+                "fontweight": str(t.get_fontweight()),
+                "color": _hex(t.get_color()),
                 "rotation": round(float(t.get_rotation()), 2),
                 "clip_on": bool(t.get_clip_on()),
             }
@@ -1098,6 +1168,9 @@ def snapshot(fig: Figure, save: dict | None) -> dict:
                 ),
                 "has_data": has_data,
                 "visible": bool(ax.get_visible() and ax.axison),
+                "facecolor": _hex(ax.get_facecolor()),
+                "face_alpha": _color_alpha(ax.get_facecolor()),
+                "patch_visible": bool(ax.patch.get_visible() and ax.axison),
                 "xscale": ax.get_xscale(),
                 "yscale": ax.get_yscale(),
                 "xlim": _floats(ax.get_xlim()),
@@ -1123,6 +1196,8 @@ def snapshot(fig: Figure, save: dict | None) -> dict:
             "dpi": float(fig.dpi),
             "width_pt": round(w_pt, 2),
             "height_pt": round(fig.get_size_inches()[1] * 72, 2),
+            "facecolor": _hex(fig.get_facecolor()),
+            "face_alpha": _color_alpha(fig.get_facecolor()),
         },
         "texts": texts,
         "axes": meta,

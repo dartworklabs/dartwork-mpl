@@ -1,0 +1,25 @@
+# c06-source-note-ko — generate / ko / report (customization: a source note under the plot)
+id: c06-source-note-ko
+kind: generate
+lang: ko
+purpose: report
+held_out: false
+prompt: "web_traffic.csv로 주간 세션 수를 선 그래프로 그리고, 그림 아래에 '출처: 사내 웹 로그'라고 적어줘."
+data: [web_traffic.csv]
+oracle:
+- type: series
+  group: values
+  name: weekly sessions
+  file: web_traffic.csv
+  x:
+    col: week_start
+    kind: date
+  identity: any
+  series:
+  - y: sessions
+    aliases: [session, 세션]
+  artists: [line]
+- type: text_below
+  group: spec
+  name: source note below the plot area
+  contains: '출처: 사내 웹 로그'

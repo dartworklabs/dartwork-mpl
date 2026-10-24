@@ -1,0 +1,28 @@
+# c07-dark-en — generate / en / report (customization: dark background)
+id: c07-dark-en
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Line chart of daily visitors from visitors_daily.csv for a dark-themed dashboard, on a dark background.
+data: [visitors_daily.csv]
+# The request asks for the background change, so it is not an unrequested
+# preset override (conformance.py).
+allowed_overrides: [facecolor]
+oracle:
+- type: series
+  group: values
+  name: daily visitors with gap
+  file: visitors_daily.csv
+  x:
+    col: 날짜
+    kind: date
+  identity: any
+  series:
+  - y: 방문자수
+    aliases: [방문, visitor]
+  artists: [line]
+- type: dark_background
+  group: spec
+  name: dark plot background
+  max_luminance: 0.3

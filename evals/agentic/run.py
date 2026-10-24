@@ -1,7 +1,7 @@
 """Run eval cases headless in Claude Code and/or Codex.
 
     uv run python evals/agentic/run.py --host claude --case g01-line-gdp
-    uv run python evals/agentic/run.py --jobs 4                         # 40 cases x both hosts
+    uv run python evals/agentic/run.py --jobs 4                         # 50 cases x both hosts
     uv run python evals/agentic/run.py --wheel W.whl --ab-skill SKILL_DIR --reps 2 --jobs 4 --hide-grading
     uv run python evals/agentic/run.py --wheel W.whl --ab-skill-install --hide-grading  # wheel's installer
 
