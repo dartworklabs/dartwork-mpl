@@ -116,6 +116,7 @@ column is the suggestion delivered by
 | `UNIT_DUP`           | warning  | Axis label declares a unit also shown on ticks     | Keep the unit in the axis label; use bare numeric tick labels       |
 | `CROSS_AXES_OVERLAP` | warning  | Text labels from different axes overlap            | Increase `hspace` / `wspace` or re-run `dm.simple_layout(fig)`      |
 | `LEGEND_OVERFLOW`    | warning  | Legend extends past axes / figure edge             | Move legend outside via `bbox_to_anchor` or shrink with `ncols`     |
+| `LEGEND_OVERLAP`     | warning  | A legend covers a title, axis or tick label, or figure text | `dm.place_legend(ax, loc="above")` (or `"below"`, `"right"`, `"left"`), then `dm.simple_layout(fig)` |
 | `TICK_CROWD`         | info     | Tick labels consume too much of the axis span      | Reduce tick density (`MaxNLocator`) or rotate labels                |
 | `TICK_ROTATION`      | info     | X tick labels are rotated needlessly or overlap    | Set `rotation=0`, rotate to 45°, or reduce tick count               |
 | `TICK_DECIMAL`       | warn/info | Tick labels have mixed, duplicate, trailing-zero or excessive decimals | Leave `decimals` unset on `dm.format_axis_*`, or match `dm.recommend_tick_decimals(values)` |

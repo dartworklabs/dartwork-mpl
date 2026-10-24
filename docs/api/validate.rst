@@ -33,6 +33,10 @@ Available Checks
    * - ``LEGEND_OVERFLOW``
      - Legends dominate the axes or spill past the figure
      - WARNING
+   * - ``LEGEND_OVERLAP``
+     - A legend covers a title, axis label, tick label or figure-level text
+       (suptitle, ``fig.text``)
+     - WARNING
    * - ``TICK_CROWD``
      - Tick labels consume more space than the axis can comfortably hold
      - INFO

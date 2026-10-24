@@ -23,6 +23,7 @@ from .cross_axes import check_cross_axes_overlap
 from .empty_axes import check_empty_axes
 from .grayscale_safety import check_grayscale_safety
 from .legend import check_legend_overflow
+from .legend_overlap import check_legend_overlap
 from .margin import check_margin_asymmetry
 from .min_font_size import check_min_font_size
 from .overflow import check_overflow
@@ -43,6 +44,7 @@ __all__ = [
     "check_empty_axes",
     "check_grayscale_safety",
     "check_legend_overflow",
+    "check_legend_overlap",
     "check_margin_asymmetry",
     "check_min_font_size",
     "check_overflow",
