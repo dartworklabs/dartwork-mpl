@@ -366,6 +366,11 @@ dartwork-mpl includes several helpers that automate tedious formatting tasks.
 
 Manually positioning `(a)`, `(b)`, `(c)` labels across panels with different y-axis label lengths often results in misaligned text. `dm.label_axes(axes)` calculates the bounding boxes of your y-labels and perfectly aligns the panel labels to the leftmost edge.
 
+Panels with a left-aligned title (`ax.set_title(..., loc="left")`) get the
+letter on the title's line, just before the title (`a  Line A`), and it moves
+with the title; a centre title moves the letter only when it would touch it.
+Set the titles first. An explicit `x=` keeps the old fixed position.
+
 **Interactive visualizer — drag the slider to compare:**
 
 ```{raw} html

@@ -37,6 +37,7 @@ from .._figure_geometry import (
     BBOX_ERRORS,
     OutsideSide,
     anchor_outside,
+    axes_titles,
     get_renderer,
 )
 from ..scale import fs, fw
@@ -143,13 +144,65 @@ def _auto_panel_labels(n: int) -> list[str]:
     return labels
 
 
+# Gap between a panel label and the title it precedes, in label font sizes.
+_PANEL_LABEL_GAP_EM = 0.5
+
+
+def _shown_title(ax: Axes, loc: str) -> Text | None:
+    """Return the ``loc`` title of ``ax`` when it is visible and not blank."""
+    title = axes_titles(ax).get(loc)
+    if title is None or not title.get_visible() or not title.get_text().strip():
+        return None
+    return title
+
+
+def _title_in_the_way(ax: Axes, label: Text, gap_pt: float) -> Text | None:
+    """Return the title of ``ax`` that ``label`` must sit before, if any.
+
+    A left title always: the label belongs on its line, so every panel of a
+    grid reads the same. A centre or right title only when ``label`` at its
+    default spot would come within ``gap_pt`` of it (measured after a
+    draw); then the leftmost such title.
+    """
+    left = _shown_title(ax, "left")
+    if left is not None:
+        return left
+    others = [
+        title
+        for loc in ("center", "right")
+        if (title := _shown_title(ax, loc)) is not None
+    ]
+    if not others:
+        return None
+    fig, renderer = _renderer_for_axes(ax)
+    gap_px = gap_pt * fig.dpi / 72.0
+    try:
+        box = label.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return None
+    hits: list[tuple[float, Text]] = []
+    for title in others:
+        try:
+            ext = title.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        if (
+            box.x1 + gap_px > ext.x0
+            and box.x0 < ext.x1 + gap_px
+            and box.y1 > ext.y0
+            and box.y0 < ext.y1
+        ):
+            hits.append((ext.x0, title))
+    return min(hits, key=lambda hit: hit[0])[1] if hits else None
+
+
 def label_axes(
     axes: list[Axes] | np.ndarray[Any, Any],
     labels: list[str] | None = None,
     fontsize: float | None = None,
     fontweight: str = "normal",
     x: float | str = "auto",
-    y: float = 1.05,
+    y: float | None = None,
     **kwargs: Any,
 ) -> list[Text]:
     """Add standardized identification labels (a, b, c, ...) to subplot panels.
@@ -173,11 +226,22 @@ def label_axes(
     x : float | str, optional
         Horizontal position in Axes-relative coordinates (may exceed 0.0-1.0).
         If "auto", the optimal x position is determined based on whether
-        a y-axis label is present (-0.18 or -0.02).
-    y : float, optional
-        Vertical position in Axes-relative coordinates. Default is 1.05.
+        a y-axis label is present (-0.18 or -0.02). With ``"auto"`` and a
+        title in the way, the label is placed before the title instead: on
+        the title's line, its right edge half a label font size left of
+        the title's start, following the title wherever it moves (a later
+        ``simple_layout``, a legend above). A left title
+        (``set_title(..., loc="left")``) is always in the way, so every
+        panel of a grid reads ``a  Title``; a centre or right title only
+        when the label at its default spot would touch it. Set the titles
+        before calling this; their text, size and weight are not changed.
+    y : float | None, optional
+        Vertical position in Axes-relative coordinates. ``None`` (default)
+        is 1.05, or the title's line when the label is placed before a
+        title. A given ``y`` is kept in both cases.
     **kwargs
-        Additional text properties passed to ``ax.text()``.
+        Additional text properties passed to ``ax.text()`` (``ax.annotate``
+        for a label placed before a title).
 
     Returns
     -------
@@ -203,7 +267,7 @@ def label_axes(
 
         t = ax.text(
             x_pos,
-            y,
+            1.05 if y is None else y,
             label,
             transform=ax.transAxes,
             fontsize=fontsize,
@@ -212,6 +276,25 @@ def label_axes(
             ha="left",
             **kwargs,
         )
+        if x == "auto":
+            size_pt = t.get_fontproperties().get_size_in_points()
+            gap_pt = _PANEL_LABEL_GAP_EM * size_pt
+            title = _title_in_the_way(ax, t, gap_pt)
+            if title is not None:
+                t.remove()
+                t = ax.annotate(
+                    label,
+                    xy=(0.0, 0.0 if y is None else y),
+                    xycoords=title if y is None else (title, "axes fraction"),
+                    xytext=(-gap_pt, 0.0),
+                    textcoords="offset points",
+                    fontsize=fontsize,
+                    fontweight=fontweight,
+                    va="bottom",
+                    ha="right",
+                    annotation_clip=False,
+                    **kwargs,
+                )
         texts.append(t)
 
     return texts

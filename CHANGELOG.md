@@ -144,6 +144,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   three title slots, one baseline); text, size and weight are unchanged. A
   `place_legend` outside legend is re-anchored to the labels present when the
   layout runs, so setting the x label after the legend no longer collides.
+- `dm.label_axes()` no longer puts the panel letter on a left-aligned panel
+  title (the advanced small_multiples template drew "a" over "Line A"). With
+  `x="auto"`, a left title takes the letter onto its line, half a letter size
+  before the title start, and the letter follows the title (layout, a legend
+  above); a centre or right title moves it only when they would touch. `y`
+  now defaults to `None` (1.05 as before when no title is in the way); an
+  explicit `x` or `y` is kept. Title text, size and weight are unchanged.
 - Colormap registration reuses exact package-owned maps on reload/retry and
   preflights static external collisions before adding missing maps.
 - Preset switches preserve detectable caller edits on incoming-silent keys;
