@@ -9,6 +9,7 @@ drawing bidirectional Low-High arrow axes.
 from __future__ import annotations
 
 __all__ = [
+    "add_note",
     "annotate_corner",
     "annotate_value",
     "arrow_axis",
@@ -608,6 +609,35 @@ def _apply_corner(text: Text, loc: _Corner, inset_pt: float) -> None:
             offset_direction[1] * float(inset_pt),
         ),
     )
+
+
+def add_note(fig: Figure, text: str, **kw: Any) -> Text:
+    """Add a source or note line under the plot, in the preset's note style.
+
+    One call for "add a source note" / "그림 아래에 출처를 적어줘", so every
+    agent draws the same line: the figure's lower-left corner, left-aligned,
+    one point below the preset font (``dm.fs(-1)``) in the preset text colour.
+    :func:`dartwork_mpl.simple_layout` keeps the axes, tick labels and axis
+    labels above it with the preset's ``axes.labelpad`` between them. A
+    ``fontsize=``, ``color=`` or other ``Text`` keyword the user names wins::
+
+        dm.add_note(fig, "Source: internal web logs")
+        dm.simple_layout(fig)
+
+    Returns the :class:`~matplotlib.text.Text`.
+    """
+    import matplotlib as mpl
+
+    style: dict[str, Any] = {
+        "ha": "left",
+        "va": "bottom",
+        "fontsize": float(mpl.rcParams["font.size"]) - 1.0,
+    }
+    style.update(kw)
+    note = fig.text(0.0, 0.0, text, **style)
+    # simple_layout reserves this gap above the note (layout slice reads it).
+    note._dm_layout_gap_pt = float(mpl.rcParams["axes.labelpad"])  # type: ignore[attr-defined]
+    return note
 
 
 def annotate_corner(

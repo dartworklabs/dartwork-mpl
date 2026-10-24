@@ -60,8 +60,8 @@ Spines, grid, ticks, fonts, background and margins are the preset's; change
 them only on request. No figure title, subtitle, source note, extra panel or
 one-series legend unless asked (small multiples name each panel); a vague ask
 gets one panel. An asked-for element keeps the preset's style in every detail
-not named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.place_legend(ax)`
-(no `loc=` or `ncols=` the user did not name); table: `references/editing.md`.
+not named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`,
+`dm.place_legend(ax)` (no `loc=`/`ncols=` unless named); `references/editing.md`.
 A generic chart skill gives chart choice and honest axes; the output is a
 static file: no hover, tooltips, rounded bar ends, placeholder palettes.
 
@@ -94,7 +94,7 @@ is not the dataset; template numbers are placeholders, never data.
 the asked property, keep data, preset, canvas, colours, legend and the rest
 (axis labels are Text objects, not `font.size`); keep the original and write
 the revision as a new script and stem. Broad asks ("make it look better"):
-keep data, preset and look rules, fix what the image shows, list each change.
+keep data, preset, canvas, title and legend; fix what the image shows, list it.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 

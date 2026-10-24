@@ -794,8 +794,10 @@ def _figure_artist_reservations(
     the gridspec is pushed flush to the edge. Each such artist is assigned
     to one figure edge (see :func:`_reservation_edge`) and that edge
     reserves the artist's extent so the axes region is pulled in to clear
-    it. Returns the reservation per edge in figure fraction; all zero
-    when no figure-level artists are present (so the layout math is
+    it. An artist carrying ``_dm_layout_gap_pt`` (``dm.add_note`` sets the
+    preset's ``axes.labelpad``) also reserves that gap between itself and
+    the content. Returns the reservation per edge in figure fraction; all
+    zero when no figure-level artists are present (so the layout math is
     unchanged in the common case).
     """
     res_l = res_r = res_b = res_t = 0.0
@@ -804,15 +806,17 @@ def _figure_artist_reservations(
             continue
         x0f, x1f = ext.x0 / fw_px, ext.x1 / fw_px
         y0f, y1f = ext.y0 / fh_px, ext.y1 / fh_px
+        gap_px = float(getattr(art, "_dm_layout_gap_pt", 0.0)) * fig.dpi / 72.0
+        gx, gy = gap_px / fw_px, gap_px / fh_px
         edge = _reservation_edge(fig, art, x0f, x1f, y0f, y1f)
         if edge == "left":
-            res_l = max(res_l, x1f)
+            res_l = max(res_l, x1f + gx)
         elif edge == "right":
-            res_r = max(res_r, 1.0 - x0f)
+            res_r = max(res_r, 1.0 - x0f + gx)
         elif edge == "bottom":
-            res_b = max(res_b, y1f)
+            res_b = max(res_b, y1f + gy)
         else:  # top
-            res_t = max(res_t, 1.0 - y0f)
+            res_t = max(res_t, 1.0 - y0f + gy)
     return _Sides(left=res_l, right=res_r, bottom=res_b, top=res_t)
 
 

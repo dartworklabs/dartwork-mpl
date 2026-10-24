@@ -34,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   fits the axes width, else the fewest rows that fit; right and left it is one
   column. `ncols=` still wins; `bbox_to_anchor=` with a side raises
   `ValueError`. Other explicit `loc` values behave as before.
+- **`dm.add_note(fig, text)` (provisional).** A source or note line in one
+  style for every caller: the figure's lower-left corner, one point under the
+  preset font, the preset text colour; `dm.simple_layout` keeps the axis
+  labels one `axes.labelpad` above it. Named `fontsize=`/`color=` win. In the
+  customization eval the same request gave 7 pt from one agent and 8 pt from
+  the other. The skill also keeps an existing legend on "highlight one series"
+  and keeps canvas, title and legend on "make it look better".
 - **`dm.place_legend(ax)` goes above the plot when nothing inside is free.**
   With no `loc`, a legend that would cover data in every in-axes spot now takes
   the `loc="above"` placement (`legend._dm_outside_fallback`), so a request
