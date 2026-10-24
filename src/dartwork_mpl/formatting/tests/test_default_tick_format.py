@@ -183,3 +183,61 @@ class TestDates:
             "Nov",
             "2025",
         ]
+
+    def _weeks(self, ax):
+        x = np.arange(
+            np.datetime64("2024-01-01"),
+            np.datetime64("2024-12-30"),
+            np.timedelta64(7, "D"),
+        )
+        ax.plot(x, np.arange(len(x)))
+
+    def test_korean_labels_give_korean_dates(self):
+        dm.style.use("report-kr")
+        fig, ax = _fig()
+        self._weeks(ax)
+        ax.set_ylabel("방문자 수")
+        dm.simple_layout(fig)
+        assert _drawn(ax, "x") == [
+            "2024년",
+            "3월",
+            "5월",
+            "7월",
+            "9월",
+            "11월",
+            "2025년",
+        ]
+
+    def test_days_drop_the_zero_padding(self):
+        dm.style.use("report-kr")
+        fig, ax = _fig()
+        x = np.arange(
+            np.datetime64("2024-01-01"),
+            np.datetime64("2024-03-01"),
+            np.timedelta64(1, "D"),
+        )
+        ax.plot(x, np.arange(len(x)))
+        ax.set_xlabel("날짜")
+        dm.simple_layout(fig)
+        assert "8일" in _drawn(ax, "x") and "08일" not in _drawn(ax, "x")
+
+    def test_english_labels_keep_english_dates_on_a_kr_preset(self):
+        dm.style.use("report-kr")
+        fig, ax = _fig()
+        self._weeks(ax)
+        ax.set_xlabel("Week start")
+        fig.text(
+            0, 0, "출처: 사내 웹 로그"
+        )  # a note does not decide the language
+        dm.simple_layout(fig)
+        assert "Mar" in _drawn(ax, "x")
+
+    def test_chosen_date_format_wins(self):
+        import matplotlib.dates as mdates
+
+        fig, ax = _fig()
+        self._weeks(ax)
+        ax.set_ylabel("방문자 수")
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+        dm.simple_layout(fig)
+        assert type(ax.xaxis.get_major_formatter()) is mdates.DateFormatter

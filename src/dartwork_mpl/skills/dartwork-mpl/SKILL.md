@@ -85,8 +85,8 @@ a value axis without one takes the request's noun (`Energy`). No invented units.
 - k/M or 만/억 asked: `dm.format_axis_si` / `_myriad`. One unit per axis, the
   largest tick's unit (`0.25억 … 1.75억`), `unit="whole"` (`2,500만 … 17,500만`);
   `decimals=` is exact. No meaningless decimals: `200`, `1k`, not `200.0`, `1.0k`.
-- Numeric value labels on bars and lines (`ax.bar_label`, `ax.text`) use
-  `fontweight=dm.fw(1)` and the preset size (no `fontsize=`).
+- Numeric value labels you add on bars and lines (`ax.bar_label`, `ax.text`)
+  use `fontweight=dm.fw(1)` and the preset size; existing ones keep theirs.
 
 ## Edits
 

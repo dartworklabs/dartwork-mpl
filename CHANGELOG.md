@@ -107,7 +107,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   theirs; `format_ticks=False` keeps matplotlib's numbers. Every preset sets
   `date.converter: concise`, so an unformatted date axis reads `2024, Mar,
   May … 2025` instead of `2024-01, 2024-03 …`, whose labels collided at
-  column widths. Agents had each picked their own formatter, so the same
+  column widths. When the figure's axis labels, titles or legend are Korean,
+  `dm.simple_layout` writes the dates as `2024년, 3월, 5월 … 2025년`. Agents had each picked their own formatter, so the same
   0-1,750 axis came out as `1750`, `1,750` or `1.75k`.
 - **Negative ticks from the axis-wide formatters use the axis minus.**
   `dm.format_axis_si`, `_millions`, `_billions` and `_myriad` print U+2212

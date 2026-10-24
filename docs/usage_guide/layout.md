@@ -389,6 +389,7 @@ figure:
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
 | below 1,000, or an x axis of years | unchanged: `0, 250 … 750`; `2012, 2014` |
 | dates (every preset) | `2024, Mar, May … 2025` (`date.converter: concise`) |
+| dates, Korean axis labels, titles or legend | `2024년, 3월, 5월 … 2025년` |
 
 Log, category and colorbar axes and any axis with a formatter you set keep
 theirs. `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's
