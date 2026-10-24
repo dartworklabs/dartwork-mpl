@@ -151,9 +151,9 @@ plt.close(fig)
    - cramped panels: `hspace` / `wspace`.
 3. Keep the preset's fonts, spines and grid, the data, the chart type and
    its axes (no new twin axis or panel), the axis limits, the canvas size,
-   text sizes and what the figure already has: its title text, legend and the
-   legend's place stay unless the image shows a defect in them (the no-title
-   default is for new figures).
+   text sizes and what the figure already has, adding no text: its title,
+   axis labels, legend and the legend's place stay unless the image shows a
+   defect in them (the no-title default is for new figures).
 4. Save as the next version, look again, and list each change in one line.
 
 Ask one short question only when the purpose (paper, report or slides) is

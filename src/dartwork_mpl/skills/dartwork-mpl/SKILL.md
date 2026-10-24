@@ -94,8 +94,8 @@ a value axis without one takes the request's noun (`Energy`). No invented units.
 the asked property; keep data, preset, canvas, colours, legend (a highlight
 keeps it too) and the rest; keep the original, write the revision as a
 new script and stem. Broad asks ("make it look better"): keep data, preset,
-canvas, chart type and axes (no new twin), limits, text and its size, title
-and legend; fix only defects the image shows (`references/editing.md`), list each.
+canvas, chart type and axes (no new twin), limits, text (add none) and its
+size, title and legend; fix only defects the image shows (`references/editing.md`), list each.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
