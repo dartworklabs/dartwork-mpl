@@ -28,7 +28,8 @@ def validate_data(
     y : Any | None
         Y-axis data (optional for histograms, etc.)
     require_same_length : bool
-        Whether x and y must have the same length
+        Whether x and y must have the same length. Originally equal-length
+        inputs share removal masks; unequal inputs are cleaned independently.
     allow_nan : bool
         Whether to retain NaN/Inf values. The default filters them and aligned
         rows, which can close a missing-observation line gap. Use True for
@@ -71,7 +72,7 @@ def validate_data(
     # numeric dtypes — calling them on a categorical (string) array
     # raises ``TypeError``, so skip non-numeric arrays (which can't hold
     # NaN/Inf anyway). Masks are only cross-applied to the other array
-    # when the two are aligned (same length); when
+    # when the original inputs are aligned (same length); when
     # ``require_same_length=False`` and the lengths differ, applying x's
     # mask to a different-length y would mis-index or silently corrupt it.
     def _has_nan_or_inf(arr: np.ndarray[Any, Any]) -> bool:
@@ -87,7 +88,6 @@ def validate_data(
             if y is not None and aligned:
                 y = y[mask]
             x = x[mask]
-            aligned = y is not None and len(x) == len(y)
             warnings.warn(
                 f"Removed {removed} NaN/Inf values from data", stacklevel=2
             )
