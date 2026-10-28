@@ -36,6 +36,12 @@ scoped overrides when adapting it. Templates are starting points, not chart or
 property limits. For equal, ratio, spanning, nested and whole-canvas container
 layouts, read `dm.get_prompt("03-recipes")` or [Layout](../usage_guide/layout.md#native-multi-panel-layouts).
 
+`figsize_grid` estimates whole-figure size from nominal panel/gap inputs;
+it does not enforce exact Axes dimensions or cm gaps. The layout recipes
+also distinguish MCP's template/checklist-only `compose_layered_plot` from
+`simple_layout`'s bounded root-margin correction (#209). Neither supplies a
+nested spacing solver or proof that content fits; render, measure and review.
+
 ## Check data without silently closing gaps
 
 `dm.validate_data(x, y)` returns cleaned NumPy arrays, not a report or boolean.

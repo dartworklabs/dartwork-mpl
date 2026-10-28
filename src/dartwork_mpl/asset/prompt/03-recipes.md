@@ -148,6 +148,34 @@ x = np.linspace(0, 12, 121)
 fig = plt.figure(figsize=dm.figsize("20cm", "16cm"))
 ```
 
+### Whole-figure estimate, template guidance and margin correction
+
+`dm.figsize_grid("6cm", "standard", ncols=3, nrows=2, gap="0.6cm")`
+returns a whole-figure size: width `3 * 6 + 2 * 0.6 = 19.2cm` and height
+`2 * (6 * 0.75) + 0.6 = 9.6cm`. It does not create Axes or set GridSpec
+spacing. The requested panel width and gap are inputs to that arithmetic;
+labels, outer margins and native `wspace`/`hspace` determine the final Axes
+rectangles and gaps. Neither exact 6cm Axes nor exact 0.6cm rendered gaps
+are guaranteed. Render and measure the bounds below when those matter.
+
+MCP `compose_layered_plot` returns a starting template (including its example
+comments) and an annotation-layer checklist for the agent to adapt. Its
+`applied`/`missing` lists use lexical detection in source, not rendered checks.
+It does not rewrite code, execute a plot, allocate panels or repair spacing.
+Installed Python users can read the same basic/advanced sources through
+`importlib.resources`, as shown in the installed workflow below.
+
+The bounded margin/convergence correction tracked by #209 is a separate
+concern from template composition and figure-size arithmetic. The current
+`dm.simple_layout` measures content and iteratively updates root GridSpec outer
+margins, preserving native internal spacing. It does not solve nested local
+spacing or guarantee that every label fits every requested canvas. Historical
+`auto_layout` is removed; do not call it as an extra correction pass.
+`simple_layout` returns `None`, not a convergence or validation report: inspect
+`dm.validate_figure(fig)` findings and the actual PNG/PDF before accepting the
+result. If content cannot fit the requested geometry, explain the constraint
+and agree on a revision; do not silently delete data or shrink fonts.
+
 ### Equal grid
 
 ```python

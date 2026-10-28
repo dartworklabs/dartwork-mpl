@@ -115,6 +115,15 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   use `ml`, `mr`, `mt`, `mb` — each accepts the same forms as `margin`.
 - `dm.auto_layout(fig)` was removed in 0.5.4 — call `simple_layout`
   directly (the legacy `padding` inches arg maps to `margin`).
+- `dm.figsize_grid` computes a whole-figure size estimate from panel/gap
+  inputs; it does not set GridSpec spacing or guarantee exact Axes sizes or
+  cm gaps. Render and measure final bounds (see `03-recipes`).
+- MCP `compose_layered_plot` supplies template source/comments and a lexical
+  annotation checklist, not execution, panel allocation or spacing repair.
+  #209's bounded margin/convergence correction is separate: `simple_layout`
+  returns `None`, not proof of convergence or a clean validation report.
+  Inspect full validation findings and actual PNG/PDF; explain infeasible
+  geometry rather than silently deleting data or shrinking fonts.
 - `tight_layout()` is **forbidden** (lint critical).
 - For nested GridSpec, this helper updates root outer margins; it does not
   solve nested local margins. `SubFigure` is not accepted (missing
