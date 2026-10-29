@@ -439,7 +439,8 @@ dm.simple_layout(fig)
 `fmt`, `loc` and `xy` are not supported `label_axes` arguments. Use
 `labels` for text and `x` / `y` for position. The helper supplies the Axes
 transform and left/bottom alignment itself; for custom transforms or
-alignment, use native matplotlib directly on the existing `ax`:
+alignment, replace the preceding `dm.label_axes(...)` call with the native
+call below, before `dm.simple_layout(fig)`. Do not run both label calls:
 
 <!-- snippet: no-run -->
 ```python

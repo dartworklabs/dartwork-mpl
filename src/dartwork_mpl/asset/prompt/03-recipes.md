@@ -499,9 +499,10 @@ import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
 dm.style.use("scientific")
-fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-ax.plot([0, 1, 2], [1, 3, 2], color="oc.blue9")
-dm.label_axes([ax], labels=["(a)"], x=-0.02, y=1.05,
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
+for ax in axes.flat:
+    ax.plot([0, 1, 2], [1, 3, 2], color="oc.blue9")
+dm.label_axes(axes, labels=["(a)", "(b)", "(c)", "(d)"], x=-0.02, y=1.05,
               color="black", rotation=0, alpha=0.9)
 dm.simple_layout(fig)
 ```
@@ -509,12 +510,14 @@ dm.simple_layout(fig)
 `fmt`, `loc` and `xy` are not supported `label_axes` arguments. Use
 `labels` for text and `x` / `y` for position. The helper supplies the Axes
 transform and left/bottom alignment itself; for custom transforms or
-alignment, use native matplotlib directly on the existing `ax`:
+alignment, replace the preceding `dm.label_axes(...)` call with the native
+calls below over the same Axes collection, before `dm.simple_layout(fig)`. Do not run both label calls:
 
 <!-- snippet: no-run -->
 ```python
-ax.text(0.02, 0.98, "(a)", transform=ax.transAxes,
-        fontsize=dm.fs(1), ha="left", va="top")
+for ax, label in zip(axes.flat, ["(a)", "(b)", "(c)", "(d)"]):
+    ax.text(0.02, 0.98, label, transform=ax.transAxes,
+            fontsize=dm.fs(1), ha="left", va="top")
 ```
 
 ## "Compare style presets side by side"
