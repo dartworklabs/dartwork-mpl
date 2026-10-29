@@ -11,6 +11,7 @@ __all__ = [
     "find_template",
     "get_prompt",
     "list_prompts",
+    "open_anti_pattern_catalog",
     "prompt_path",
 ]
 
@@ -18,6 +19,7 @@ import json
 import warnings
 from pathlib import Path
 from shutil import copy2
+from typing import TextIO
 
 _PROMPT_DIR: Path = Path(__file__).parent.parent / "asset/prompt"
 
@@ -75,6 +77,16 @@ def get_prompt(name: str) -> str:
     """
     path = prompt_path(name)
     return path.read_text(encoding="utf-8")
+
+
+def open_anti_pattern_catalog() -> TextIO:
+    """Open the exact bundled anti-pattern YAML catalog as UTF-8 text.
+
+    Opening is deferred until this call. Native filesystem and decoding
+    errors propagate without fallback to Markdown. The caller owns the
+    returned stream and must close it, normally with a ``with`` block.
+    """
+    return (_PROMPT_DIR / "02-anti-patterns.yaml").open("r", encoding="utf-8")
 
 
 def list_prompts() -> list[str]:

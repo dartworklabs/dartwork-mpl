@@ -22,9 +22,7 @@ from typing import Literal, TypeAlias
 
 import yaml
 
-_RULES_PATH: Path = (
-    Path(__file__).parent.parent / "asset" / "prompt" / "02-anti-patterns.yaml"
-)
+from ..prompt import open_anti_pattern_catalog
 
 _Severity: TypeAlias = Literal["critical", "warning", "info"]
 """A catalog severity. ``load_rules`` admits only these three strings."""
@@ -205,8 +203,12 @@ def load_rules(path: Path | None = None) -> list[Rule]:
         errors are reported at load time with catalog/rule context.
         Filesystem and YAML syntax errors retain their native exceptions.
     """
-    yaml_path = path or _RULES_PATH
-    with yaml_path.open("r", encoding="utf-8") as fh:
+    with (
+        path.open("r", encoding="utf-8")
+        if path
+        else open_anti_pattern_catalog()
+    ) as fh:
+        yaml_path = path or fh.name
         data = yaml.safe_load(fh)
     if not isinstance(data, Mapping):
         raise ValueError(f"Catalog {yaml_path} must be a mapping")

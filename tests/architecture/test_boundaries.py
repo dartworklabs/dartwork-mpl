@@ -404,3 +404,39 @@ def test_a_sub_slice_importing_its_parent_surface_is_still_a_cycle():
     code[f"{P}.colors.ink._ink"] = "from dartwork_mpl.colors import Color\n"
     errors = checker.violations(code, SUB_PACKAGES, SUB_LAYOUT)
     assert "cycle: dartwork_mpl.colors, dartwork_mpl.colors.ink" in errors
+
+
+def test_catalog_consumers_do_not_own_bundled_paths():
+    """Only the prompt owner may know the bundled catalog filesystem layout."""
+    import ast
+
+    for relative in ("lint/catalog.py", "mcp/guides/corpus.py"):
+        tree = ast.parse(
+            (ROOT / "src/dartwork_mpl" / relative).read_text(encoding="utf-8")
+        )
+        # Remove docstrings so descriptions may name the catalog being served.
+        for node in ast.walk(tree):
+            if (
+                isinstance(
+                    node,
+                    (
+                        ast.Module,
+                        ast.FunctionDef,
+                        ast.AsyncFunctionDef,
+                        ast.ClassDef,
+                    ),
+                )
+                and ast.get_docstring(node) is not None
+            ):
+                node.body = node.body[1:]
+        for node in ast.walk(tree):
+            assert not (isinstance(node, ast.Name) and node.id == "__file__"), (
+                relative
+            )
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                assert node.value not in {
+                    "asset",
+                    "prompt",
+                    "asset/prompt",
+                    "02-anti-patterns.yaml",
+                }, relative

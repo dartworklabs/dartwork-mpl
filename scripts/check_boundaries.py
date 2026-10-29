@@ -151,6 +151,9 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
+    ("dartwork_mpl.lint", "dartwork_mpl.prompt"): (
+        "lint parses the bundled anti-pattern catalog opened by its corpus owner"
+    ),
     ("dartwork_mpl._colors", "dartwork_mpl._colors.construction"): (
         "the colour build command compiles the candidate catalogue and publishes the generated module"
     ),
