@@ -39,9 +39,9 @@ from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 ## Size, layout, save
 
 - No size asked: `dm.figsize_for(kind, n_points=, n_series=)` (report 9/12/
-  14.5/17 cm by density, paper columns, slides scaled); count x points and
-  series; `dual_axis=True` with `twinx`; kind `"barh"`, `"matrix"`, `"slide"`
-  (whole 16:9 slide); n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)`.
+  14.5/17 cm by density, paper columns; `presentation` 23.4 × 10.5 cm under a
+  slide title, `"compact"` half); count x points and series; `dual_axis=True`
+  with `twinx`; kind `"barh"`, `"matrix"`; n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)`.
 - A size the user names wins, any size: `dm.figsize(width, second)`. width
   `"13cm"`, `"5in"`, `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number;
   second `standard` 4:3, `wide` 3:2, `slide` 16:9, `"16:9"`, a ratio or `"8cm"`.

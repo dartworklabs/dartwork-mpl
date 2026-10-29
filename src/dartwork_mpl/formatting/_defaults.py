@@ -19,20 +19,27 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
   not mix in English month names.
 
 ``dm.simple_layout`` calls it before measuring (``format_ticks=False`` opts
-out), so the numbers it fits are the numbers saved.
+out), so the numbers it fits are the numbers saved. After fitting it calls
+:func:`thin_crowded_date_ticks`: matplotlib picks date ticks from the date
+range alone, so on a narrow axis concise labels run into each other
+(``2021년 5월 9월 2022년``); the locator then takes fewer ticks until
+neighbouring labels are one em apart.
 """
 
 from __future__ import annotations
 
 import datetime
 import re
+import warnings
 from collections.abc import Sequence
-from typing import Literal
+from itertools import pairwise
+from typing import Any, Literal
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
+from matplotlib.text import Text
 
 from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import fewest_exact_decimals
@@ -41,12 +48,15 @@ __all__ = [
     "DefaultNumberFormatter",
     "KoreanConciseDateFormatter",
     "apply_default_tick_format",
+    "thin_crowded_date_ticks",
 ]
 
 _SEPARATOR_FROM = 1_000.0
 _UNIT_FROM = 1_000_000.0
 _MAX_UNIT_DECIMALS = 2
 _YEARS = (1_000.0, 2_999.0)
+# Neighbouring date labels keep at least this many ems between them.
+_MIN_DATE_GAP_EM = 1.0
 
 
 class DefaultNumberFormatter(AxisUnitFormatter):
@@ -175,4 +185,95 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue  # years: 2024, not 2,024
             axis.set_major_formatter(DefaultNumberFormatter(_SI_LADDER))
             changed += 1
+    return changed
+
+
+def _date_label_gap_em(
+    axis: Axis, locs: Sequence[float], fig: Figure, renderer: Any
+) -> float:
+    """Smallest gap between neighbouring tick labels, in ems of their font."""
+    if len(locs) < 2:
+        return float("inf")
+    ax = axis.axes
+    label = axis.get_major_ticks(1)[0].label1
+    labels = axis.get_major_formatter().format_ticks(list(locs))
+    along_x = axis is ax.xaxis
+    if along_x:
+        transform = ax.get_xaxis_transform()
+        points = [(v, 0.0) for v in locs]
+    else:
+        transform = ax.get_yaxis_transform()
+        points = [(0.0, v) for v in locs]
+    centres = transform.transform(points)[:, 0 if along_x else 1]
+    spans = []
+    for centre, text in zip(centres, labels, strict=True):
+        probe = Text(0, 0, text, fontproperties=label.get_fontproperties())
+        probe.set_figure(fig)
+        box = probe.get_window_extent(renderer)
+        half = (box.width if along_x else box.height) / 2
+        spans.append((centre - half, centre + half))
+    spans.sort()
+    gap = min(b[0] - a[1] for a, b in pairwise(spans))
+    em_px = label.get_fontproperties().get_size_in_points() * fig.dpi / 72.0
+    return float(gap / em_px)
+
+
+def _visible_locs(
+    axis: Axis, locator: mdates.AutoDateLocator
+) -> list[float] | None:
+    """Ticks inside the view, or ``None`` when matplotlib would warn."""
+    low, high = sorted(float(v) for v in axis.get_view_interval())
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        try:
+            locs = locator()
+        except UserWarning:
+            return None  # no interval gives this few ticks
+    return [float(v) for v in locs if low <= float(v) <= high]
+
+
+def thin_crowded_date_ticks(fig: Figure) -> int:
+    """Give a crowded concise date axis fewer ticks; return the axes changed.
+
+    Acts only on axes matplotlib's date converter set up (an
+    ``AutoDateLocator`` with concise labels) whose labels are not rotated.
+    Each step lowers the locator's tick ceiling, skipping ceilings
+    matplotlib cannot meet; the first that keeps neighbouring labels
+    :data:`_MIN_DATE_GAP_EM` ems apart with two or more ticks wins. An axis
+    with no such ceiling is left as it was.
+    """
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    changed = 0
+    for ax in fig.axes:
+        if ax.name != "rectilinear":
+            continue
+        for axis in (ax.xaxis, ax.yaxis):
+            locator = axis.get_major_locator()
+            if type(locator) is not mdates.AutoDateLocator or not isinstance(
+                axis.get_major_formatter(), mdates.ConciseDateFormatter
+            ):
+                continue
+            label = axis.get_major_ticks(1)[0].label1
+            if axis is ax.xaxis and label.get_rotation() % 180:
+                continue
+            locs = _visible_locs(axis, locator)
+            if (
+                locs is None
+                or _date_label_gap_em(axis, locs, fig, renderer)
+                >= _MIN_DATE_GAP_EM
+            ):
+                continue
+            original = (locator.minticks, dict(locator.maxticks))
+            for ceiling in range(max(locator.maxticks.values()) - 1, 1, -1):
+                locator.maxticks = dict.fromkeys(locator.maxticks, ceiling)
+                locator.minticks = min(original[0], ceiling - 1)
+                candidate = _visible_locs(axis, locator)
+                if candidate is None or len(candidate) < 2 or candidate == locs:
+                    continue
+                gap = _date_label_gap_em(axis, candidate, fig, renderer)
+                if gap >= _MIN_DATE_GAP_EM:
+                    changed += 1
+                    break
+            else:
+                locator.minticks, locator.maxticks = original
     return changed

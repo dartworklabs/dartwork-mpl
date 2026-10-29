@@ -32,7 +32,7 @@ replace explicit sizes with template dimensions or a default.
 |---|---|---|
 | paper, journal, 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
 | report, document, dashboard, 보고서, 문서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
-| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 12 / 16 / 19 / 22.5 cm for a chart on a slide; `dm.figsize_for("slide")`: 25.4 cm at 16:9 for a whole slide |
+| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 23.4 × 10.5 cm, the room under a 16:9 slide's title; `"compact"` half of it (11.4 cm) for two charts side by side; `dm.figsize("25.4cm", "16:9")` only for a whole slide with no title |
 
 These are defaults, not caps or journal/slide standards: any size the user, a
 journal or a template names wins, through `dm.figsize`. `dm.figsize_for(kind,

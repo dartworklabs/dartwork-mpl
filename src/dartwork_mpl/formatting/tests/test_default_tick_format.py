@@ -8,6 +8,8 @@ The observed value is the label text after a real canvas draw.
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
@@ -241,3 +243,103 @@ class TestDates:
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
         dm.simple_layout(fig)
         assert type(ax.xaxis.get_major_formatter()) is mdates.DateFormatter
+
+
+def _months(ax, n=36):
+    x = np.arange(
+        np.datetime64("2021-01"), np.datetime64("2021-01") + n
+    ).astype("datetime64[D]")
+    ax.plot(x, np.sin(np.arange(n)))
+
+
+def _gaps_em(ax) -> list[float]:
+    """Gaps between neighbouring drawn x tick labels, in ems."""
+    fig = ax.figure
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    low, high = sorted(ax.xaxis.get_view_interval())
+    boxes = sorted(
+        (
+            label.get_window_extent(renderer).x0,
+            label.get_window_extent(renderer).x1,
+        )
+        for loc, label in zip(
+            ax.xaxis.get_majorticklocs(),
+            ax.xaxis.get_majorticklabels(),
+            strict=True,
+        )
+        if low <= loc <= high and label.get_text()
+    )
+    em = ax.xaxis.get_majorticklabels()[0].get_fontsize() * fig.dpi / 72
+    return [(b[0] - a[1]) / em for a, b in pairwise(boxes)]
+
+
+class TestCrowdedDates:
+    """A narrow date axis takes fewer ticks until its labels are 1 em apart.
+
+    matplotlib picks date ticks from the date range alone: 36 months got ten
+    ticks on a 23.4 cm slide and on an 11.4 cm half slide alike, where
+    ``2021년 5월 9월 2022년`` ran together.
+    """
+
+    def test_half_slide_drops_to_six_month_steps(self):
+        dm.style.use("presentation-kr")
+        fig, ax = plt.subplots(figsize=dm.figsize("11.4cm", "10.5cm"))
+        _months(ax)
+        ax.set_xlabel("월")
+        dm.simple_layout(fig)
+        assert _drawn(ax, "x") == [
+            "2021년",
+            "7월",
+            "2022년",
+            "7월",
+            "2023년",
+            "7월",
+            "2024년",
+        ]
+        assert min(_gaps_em(ax)) >= 1.0
+
+    def test_report_column_is_thinned_too(self):
+        fig, ax = _fig()
+        _months(ax)
+        dm.simple_layout(fig)
+        assert _drawn(ax, "x")[:3] == ["2021", "Jul", "2022"]
+        assert min(_gaps_em(ax)) >= 1.0
+
+    def test_wide_axis_keeps_its_ticks(self):
+        dm.style.use("presentation")
+        fig, ax = plt.subplots(figsize=dm.figsize("23.4cm", "10.5cm"))
+        _months(ax)
+        dm.simple_layout(fig)
+        assert _drawn(ax, "x")[:3] == ["2021", "May", "Sep"]
+
+    def test_chosen_locator_wins(self):
+        import matplotlib.dates as mdates
+
+        fig, ax = _fig()
+        _months(ax)
+        ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=[1, 4, 7, 10]))
+        dm.simple_layout(fig)
+        assert len(_drawn(ax, "x")) == 13
+
+    def test_rotated_labels_are_left_alone(self):
+        fig, ax = _fig()
+        _months(ax)
+        ax.tick_params(axis="x", labelrotation=45)
+        dm.simple_layout(fig)
+        assert len(_drawn(ax, "x")) == 10
+
+    def test_opt_out(self):
+        fig, ax = _fig()
+        _months(ax)
+        dm.simple_layout(fig, format_ticks=False)
+        assert len(_drawn(ax, "x")) == 10
+
+    def test_no_matplotlib_warning_and_stable(self, recwarn):
+        fig, ax = _fig()
+        _months(ax)
+        dm.simple_layout(fig)
+        first = _drawn(ax, "x")
+        dm.simple_layout(fig)
+        assert _drawn(ax, "x") == first
+        assert not [w for w in recwarn if "AutoDateLocator" in str(w.message)]

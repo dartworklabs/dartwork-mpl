@@ -141,7 +141,7 @@ preset and `dm.figsize_for()` gives its default size.
 |---|---|---|
 | Paper / journal / 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
 | Report / document / dashboard / 보고서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
-| Talk / slides / presentation / 발표 | `presentation` | `dm.figsize_for()`: 12 / 16 / 19 / 22.5 cm for a chart on a slide; `dm.figsize_for("slide")`: 25.4 cm at 16:9 for a whole slide |
+| Talk / slides / presentation / 발표 | `presentation` | `dm.figsize_for()`: 23.4 × 10.5 cm, the room under a 16:9 slide's title; `"compact"` half (11.4 cm) for two charts side by side; `dm.figsize("25.4cm", "16:9")` only for a whole slide with no title |
 
 ```python
 import matplotlib.pyplot as plt

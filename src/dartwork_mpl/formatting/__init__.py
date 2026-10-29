@@ -16,7 +16,7 @@ from matplotlib.axes import Axes
 
 from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import recommend_tick_decimals
-from ._defaults import apply_default_tick_format
+from ._defaults import apply_default_tick_format, thin_crowded_date_ticks
 
 __all__ = [
     "apply_default_tick_format",
@@ -30,6 +30,7 @@ __all__ = [
     "recommend_tick_decimals",
     "rotate_tick_labels",
     "set_decimal",
+    "thin_crowded_date_ticks",
 ]
 
 _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}

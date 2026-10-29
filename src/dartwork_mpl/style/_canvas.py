@@ -12,11 +12,13 @@ chosen from the chart kind and two density hints:
 
 Every kind but ``matrix``, ``dense``, ``strip`` and ``slide`` is 4:3, the
 :func:`~dartwork_mpl.figsize` default, so a request that names only a width
-(``dm.figsize(dm.col1)``) gets the same shape. ``"slide"`` is one full 16:9
-slide, 25.4 cm wide, under any preset.
+(``dm.figsize(dm.col1)``) gets the same shape.
 
-``scientific`` presets map the tiers onto journal columns (9 or 17 cm);
-``presentation`` and ``poster`` scale them by their font size over the
+``scientific`` presets map the tiers onto journal columns (9 or 17 cm).
+``presentation`` presets fill the body of a 16:9 slide under its title,
+23.4 x 10.5 cm, whatever the density: ``"compact"`` takes half of it (two
+charts side by side) and ``"matrix"`` a 10.5 cm square. ``"slide"`` is that
+body under any preset. ``poster`` scales the tiers by its font size over the
 report's 8 pt, so text fills the same share of the canvas. Any other preset,
 or none, uses the report tiers.
 """
@@ -34,10 +36,15 @@ __all__ = ["CANVAS_KINDS", "figsize_for", "grid_shape"]
 _REPORT_FONT_PT = 8.0
 _MAX_TIER_CM = 17.0
 _COLUMNS_CM = (9.0, 17.0)
-# Tallest grid canvas: an A4 text block (25.7 cm) less a caption; on slides,
+# Tallest grid canvas: an A4 text block (25.7 cm) less a caption; on posters,
 # 16:9 of the widest tier.
 _MAX_HEIGHT_CM = 24.0
 _SLIDE_RATIO = 9.0 / 16.0
+# A 16:9 slide (25.4 x 14.29 cm) less 1 cm side margins, a 2.8 cm title band
+# and a 1 cm bottom margin: the area a chart fills under a slide title.
+_SLIDE_BODY_CM = (23.4, 10.5)
+# Half the body, 0.6 cm apart: two charts side by side.
+_SLIDE_HALF_CM = 11.4
 
 
 @dataclass(frozen=True)
@@ -63,8 +70,13 @@ CANVAS_KINDS: dict[str, _Kind] = {
     "dense": _Kind(17.0, "cinema", fixed=True),
     # A full-width strip, e.g. one row of a dashboard.
     "strip": _Kind(17.0, 0.45, fixed=True),
-    # One whole 16:9 slide (10 in, the Google Slides and Keynote width).
-    "slide": _Kind(25.4, "slide", fixed=True, absolute=True),
+    # The body of a 16:9 slide under its title, under any preset.
+    "slide": _Kind(
+        _SLIDE_BODY_CM[0],
+        _SLIDE_BODY_CM[1] / _SLIDE_BODY_CM[0],
+        fixed=True,
+        absolute=True,
+    ),
 }
 
 
@@ -105,16 +117,18 @@ def _tier_cm(
 
 
 def _family(names: Sequence[str]) -> tuple[str, float]:
-    """``("paper" | "slides" | "report", scale)`` for the active preset."""
+    """``("paper" | "slides" | "poster" | "report", scale)`` for the preset."""
     from . import load_style_dict
 
     for name in names:
         base = name.removesuffix("-kr")
         if base == "scientific":
             return "paper", 1.0
-        if base in ("presentation", "poster"):
+        if base == "presentation":
+            return "slides", 1.0
+        if base == "poster":
             font_pt = float(load_style_dict(f"font-{base}")["font.size"])
-            return "slides", font_pt / _REPORT_FONT_PT
+            return "poster", font_pt / _REPORT_FONT_PT
         if base in ("report", "web", "minimal", "dark"):
             return "report", 1.0
     return "report", 1.0
@@ -123,6 +137,16 @@ def _family(names: Sequence[str]) -> tuple[str, float]:
 def _half_cm(value: float) -> float:
     """Round to the nearest 0.5 cm, halves up."""
     return math.floor(value * 2 + 0.5) / 2
+
+
+def _slide_canvas(kind: str) -> tuple[float, float]:
+    """Width and height (cm) of a chart under a slide title."""
+    width, height = _SLIDE_BODY_CM
+    if kind == "compact":
+        return _SLIDE_HALF_CM, height
+    if kind == "matrix":
+        return height, height
+    return width, height
 
 
 def figsize_for(
@@ -156,10 +180,12 @@ def figsize_for(
         scatter, distributions), ``"barh"`` (long category labels),
         ``"compact"`` (insets, half-width panels), ``"matrix"`` (heatmaps),
         ``"dense"`` (long dense timelines), ``"strip"`` (a full-width
-        strip) or ``"slide"`` (one whole 16:9 slide).
+        strip) or ``"slide"`` (a chart filling a 16:9 slide under its
+        title, 23.4 x 10.5 cm, under any preset).
     n_points : int, optional
         Positions along the category or time axis (bars per group count
         once). Leave out for scatter, histograms and other point clouds.
+        ``presentation`` presets ignore it and ``n_series``.
     n_series : int, optional
         Plotted series: lines, bar colours, stacked layers.
     dual_axis : bool, optional
@@ -168,7 +194,7 @@ def figsize_for(
         Panel grid; :func:`grid_shape` picks them for ``n`` panels. Any grid
         larger than one panel takes the widest tier; every panel keeps the
         kind's aspect, up to a 24 cm tall canvas (16:9 of the width on
-        slides).
+        posters). On slides a grid fills the body under the title.
 
     Returns
     -------
@@ -197,6 +223,9 @@ def figsize_for(
         return figsize(f"{spec.width_cm:g}cm", spec.aspect)
     family, scale = _family(_active_preset)
     grid = nrows * ncols > 1
+    if family == "slides":
+        width, height = _slide_canvas("default" if grid else kind)
+        return figsize(f"{width:g}cm", f"{height:g}cm")
     width = (
         _MAX_TIER_CM if grid else _tier_cm(spec, n_points, n_series, dual_axis)
     )
@@ -208,7 +237,7 @@ def figsize_for(
     if not grid:
         return figsize(f"{width:g}cm", spec.aspect)
     height = width / ncols * _ratio(spec.aspect) * nrows
-    cap = width * _SLIDE_RATIO if family == "slides" else _MAX_HEIGHT_CM
+    cap = width * _SLIDE_RATIO if family == "poster" else _MAX_HEIGHT_CM
     height = min(_half_cm(height), _half_cm(cap))
     return figsize(f"{width:g}cm", f"{height:g}cm")
 

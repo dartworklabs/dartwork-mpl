@@ -41,7 +41,7 @@ class TestReportTiers:
             ({"kind": "matrix", "n_points": 40}, (12.0, 12.0)),
             ({"kind": "dense", "n_points": 3, "n_series": 1}, (17.0, 8.5)),
             ({"kind": "strip"}, (17.0, 7.65)),
-            ({"kind": "slide", "n_points": 3}, (25.4, 14.29)),
+            ({"kind": "slide", "n_points": 3}, (23.4, 10.5)),
         ],
     )
     def test_width_tier(
@@ -78,18 +78,42 @@ class TestPresets:
         assert _cm(dm.figsize_for(n_points=20, n_series=2))[0] == 17.0
         assert _cm(dm.figsize_for(nrows=2, ncols=2))[0] == 17.0
 
-    def test_presentation_scales_with_its_font(self) -> None:
-        dm.style.use("presentation")
-        assert _cm(dm.figsize_for()) == (16.0, 12.0)
-        assert _cm(dm.figsize_for(n_points=4, n_series=1)) == (12.0, 9.0)
+    @pytest.mark.parametrize("preset", ["presentation", "presentation-kr"])
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {},
+            {"n_points": 4, "n_series": 1},
+            {"n_points": 36, "n_series": 2},
+            {"kind": "barh", "n_points": 9, "n_series": 1},
+            {"kind": "dense"},
+            {"kind": "slide"},
+            {"nrows": 3, "ncols": 1},
+        ],
+    )
+    def test_presentation_fills_the_slide_body(
+        self, preset: str, kwargs: dict[str, object]
+    ) -> None:
+        # A 16:9 slide less its title band and margins: 2.8 cm title,
+        # 1 cm margins. Measured 2026-10-25: "for slides" got 19 x 14.25 cm
+        # from the density tiers or the whole 25.4 x 14.29 cm slide, both
+        # taller than the room left under a slide title.
+        dm.style.use(preset)
+        assert _cm(dm.figsize_for(**kwargs)) == (23.4, 10.5)  # type: ignore[arg-type]
 
-    def test_slide_grid_stays_within_sixteen_by_nine(self) -> None:
+    def test_presentation_half_and_square(self) -> None:
         dm.style.use("presentation")
-        assert _cm(dm.figsize_for(nrows=3, ncols=1)) == (22.5, 12.5)
+        assert _cm(dm.figsize_for("compact")) == (11.4, 10.5)
+        assert _cm(dm.figsize_for("matrix")) == (10.5, 10.5)
+
+    def test_poster_scales_with_its_font(self) -> None:
+        dm.style.use("poster")
+        assert _cm(dm.figsize_for()) == (18.0, 13.5)
+        assert _cm(dm.figsize_for(nrows=3, ncols=1)) == (25.5, 14.5)
 
     def test_font_override_does_not_resize_the_canvas(self) -> None:
         dm.style.use("presentation", font_size=14)
-        assert _cm(dm.figsize_for()) == (16.0, 12.0)
+        assert _cm(dm.figsize_for()) == (23.4, 10.5)
 
     @pytest.mark.parametrize("preset", ["web", "minimal", "dark", "report-kr"])
     def test_other_presets_use_report_tiers(self, preset: str) -> None:
@@ -97,9 +121,9 @@ class TestPresets:
         assert _cm(dm.figsize_for()) == (12.0, 9.0)
 
     @pytest.mark.parametrize("preset", ["report", "presentation", "scientific"])
-    def test_full_slide_is_the_same_everywhere(self, preset: str) -> None:
+    def test_slide_body_is_the_same_everywhere(self, preset: str) -> None:
         dm.style.use(preset)
-        assert _cm(dm.figsize_for("slide")) == (25.4, 14.29)
+        assert _cm(dm.figsize_for("slide")) == (23.4, 10.5)
 
     def test_default_shape_matches_figsize_default(self) -> None:
         width, height = dm.figsize_for()

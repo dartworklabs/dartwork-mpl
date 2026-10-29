@@ -686,8 +686,10 @@ def simple_layout(
         ``34,000``), and from one million the largest tick's SI unit
         (``0.5M … 2.5M``). Smaller axes, x axes of years (every tick in
         1000-2999), log, date and category axes, colorbars and any axis
-        with a formatter you set are left alone. ``False`` keeps
-        matplotlib's numbers.
+        with a formatter you set are left alone. After fitting, a date axis
+        matplotlib set up whose labels sit less than one em apart gets
+        fewer ticks and the margins are fitted again. ``False`` keeps
+        matplotlib's numbers and dates.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -765,36 +767,45 @@ def simple_layout(
         requested_gs = fig.axes[0].get_gridspec()
     gs_id = id(requested_gs)
 
-    for it in range(_MAX_ITER):
-        step = _solve_layout_step(
-            fig,
-            margins=margins,
-            use_all_axes=use_all_axes,
-            gs_id=gs_id,
-            last_edges=last,
-            adopt_orphan_tick_font=adopt_orphan_tick_font,
-        )
-        if step is None:
-            return
-        new_edges = step.edges
-
-        if verbose:
-            print(
-                f"[simple_layout] iter {it + 1}: "
-                f"L={new_edges.left:.3f} R={new_edges.right:.3f} "
-                f"B={new_edges.bottom:.3f} T={new_edges.top:.3f}  "
-                f"Δ={step.delta_px:.2f}px"
+    for _ in range(2):
+        for it in range(_MAX_ITER):
+            step = _solve_layout_step(
+                fig,
+                margins=margins,
+                use_all_axes=use_all_axes,
+                gs_id=gs_id,
+                last_edges=last,
+                adopt_orphan_tick_font=adopt_orphan_tick_font,
             )
+            if step is None:
+                return
+            new_edges = step.edges
 
-        actual_gs.update(
-            left=new_edges.left,
-            right=new_edges.right,
-            bottom=new_edges.bottom,
-            top=new_edges.top,
-        )
-        last = new_edges
+            if verbose:
+                print(
+                    f"[simple_layout] iter {it + 1}: "
+                    f"L={new_edges.left:.3f} R={new_edges.right:.3f} "
+                    f"B={new_edges.bottom:.3f} T={new_edges.top:.3f}  "
+                    f"Δ={step.delta_px:.2f}px"
+                )
 
-        if step.delta_px < _CONVERGE_TOL_PX:
+            actual_gs.update(
+                left=new_edges.left,
+                right=new_edges.right,
+                bottom=new_edges.bottom,
+                top=new_edges.top,
+            )
+            last = new_edges
+
+            if step.delta_px < _CONVERGE_TOL_PX:
+                break
+        # Date ticks depend on the axis length only through their labels:
+        # thin them at the fitted width, then fit once more if they moved.
+        if not format_ticks:
+            return
+        from ..formatting import thin_crowded_date_ticks
+
+        if not thin_crowded_date_ticks(fig):
             return
 
 
