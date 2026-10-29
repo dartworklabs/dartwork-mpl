@@ -72,20 +72,26 @@ class TestStdioEndToEnd:
     incompatibility) that unit tests miss.
     """
 
-    def test_initialize_handshake(self) -> None:
+    @pytest.mark.parametrize(
+        "module", ["console", "dartwork_mpl.cli", "dartwork_mpl.mcp.server"]
+    )
+    def test_initialize_handshake(self, module: str) -> None:
+        """Both real entrypoints keep JSON-RPC usable without promotional banners."""
         pytest.importorskip("fastmcp")
         import json
         import shutil
         import subprocess
         import sys
 
-        # The console-script lives on the venv's PATH when installed
-        # in editable mode. Fall back to ``python -m`` if missing.
         cli_path = shutil.which("dartwork-mpl-mcp")
         cmd = (
             [cli_path]
-            if cli_path
-            else [sys.executable, "-m", "dartwork_mpl.cli"]
+            if module == "console" and cli_path
+            else [
+                sys.executable,
+                "-m",
+                "dartwork_mpl.cli" if module == "console" else module,
+            ]
         )
 
         request = (
@@ -107,8 +113,7 @@ class TestStdioEndToEnd:
             + "\n"
         )
 
-        # FastMCP prints a banner to stderr and the JSON-RPC response
-        # to stdout. Capture both, parse only stdout.
+        # Runtime diagnostics stay on stderr; protocol envelopes stay on stdout.
         proc = subprocess.run(
             cmd, input=request, capture_output=True, text=True, timeout=30.0
         )
@@ -120,6 +125,10 @@ class TestStdioEndToEnd:
             (ln for ln in proc.stdout.splitlines() if ln.strip()), ""
         )
         assert first_line, f"empty stdout; stderr was:\n{proc.stderr[:1000]}"
+
+        assert "gofastmcp.com" not in proc.stderr
+        assert "Update available" not in proc.stderr
+        assert "Starting MCP server" in proc.stderr
 
         envelope = json.loads(first_line)
         assert envelope["jsonrpc"] == "2.0"
