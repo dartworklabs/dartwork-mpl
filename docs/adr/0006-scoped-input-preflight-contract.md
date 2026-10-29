@@ -6,7 +6,7 @@ orphan: true
 
 | Item | Value |
 | --- | --- |
-| **상태** | 제안 |
+| **상태** | Accepted (2026-10-29) |
 | **Date** | 2026-10-29 |
 | **Decider** | Project owner: “후속 고”, approving both recommended B/C exceptions and local implementation |
 | **부분 대체** | ADR 0005 §1/§4 only: B nonfinite effective-margin ValueError; C invalid template return_format render_error reply |
@@ -23,10 +23,13 @@ interfaces and edge replies. The owner separately approved precisely two
 exceptions to that freeze. This record documents that approval; it does not
 release a preceding lock on its own authority.
 
-The record remains **제안** for wording review. That drafting status neither
-withdraws the owner's approval nor requires another scope/execution decision.
-The integration owner may promote the record after text review. Implementation
-is pending; an ADR or an approved spec is not proof of changed runtime behavior.
+The owner approved the B/C decision and local implementation on 2026-10-29;
+the integration owner reviewed this wording and authorized its acceptance.
+Local B/C implementation and independent task reviews are recorded in the
+[B plan](../superpowers/plans/2026-10-29-finite-margins.md) and
+[C plan](../superpowers/plans/2026-10-29-template-format-preflight.md).
+Decision approval is separate from runtime verification: combined verification,
+final independent review and human PoC approval remain pending.
 
 ## Decision
 

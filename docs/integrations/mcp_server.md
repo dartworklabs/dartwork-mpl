@@ -472,9 +472,11 @@ bytes, regardless of `Content-Length`; UTF-8 replacement can produce up to 3 MiB
 of UTF-8 text. The supported MCP extra includes HTTPX; there is one async fetch
 path. Responses and clients close on failure, timeout and cancellation.
 
-Both template renderers keep diagnostic channels within 64 KiB UTF-8, including
-visible truncation markers. Render errors retain the existing 2,000-character
-presentation ceiling, with room reserved for a complete marker. A successful
+Both template renderers keep child-process diagnostic channels within 64 KiB
+UTF-8, including visible truncation markers. Render errors from child-process
+logs retain the existing 2,000-character presentation ceiling, with room reserved
+for a complete marker. Format preflight refusals echo the exact submitted
+string's repr without truncation by these log limits. A successful
 `return_format="path"` creates a unique, private (0600), regular PNG file and
 returns its absolute path after closing it. Callers own that persistent temporary
 file's lifetime. Exclusive creation protects existing names and symlinks; it does

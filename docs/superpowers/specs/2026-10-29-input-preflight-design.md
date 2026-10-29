@@ -4,7 +4,7 @@ orphan: true
 
 # Approved B/C input preflight design
 
-**Scope approved; implementation pending.** The owner answered “후속 고” to
+**Scope approved; local B/C implementation and independent task reviews complete.** The owner answered “후속 고” to
 both recommended exceptions and local implementation. Approval receipt:
 `~/scratch/dartwork-local-input-preflight-2026-10-29/approval.json`.
 The approved research packet is
@@ -22,8 +22,8 @@ records the separately approved partial exception to ADR 0005 §1/§4.
   frozen public/discovery/edge interfaces except precisely approved B/C.
 - **implementation role:** `src/dartwork_mpl/layout/__init__.py` owns margins;
   `src/dartwork_mpl/mcp/templates/render.py` owns template selection/render
-  replies and existing `RenderOutcome` types. At local base
-  `33f51edda7762324b9fda0f262739a0b60dbc68f`, B/C rejection is absent.
+  replies and existing `RenderOutcome` types. B/C rejection is integrated at
+  `6500fbd8d6b8c459f0b9ec54980e80bea03b284c`; the plans below link task evidence.
 - **verification role:** current colocated tests, `tests/test_mcp_render_smoke.py`,
   and reviewed scratch `acceptance-after-approval.py` beside the packet.
   Recorded RED baseline: 15 preserved PASS, 20 expected new-policy FAIL.
@@ -102,8 +102,11 @@ unique private regular files with identical bytes/null-base64 semantics.
 
 ## Conflicts, exclusions and handoff
 
-No Handbook exists; do not initialize one. Remote freshness/CI and implementation
-GREEN/finite-layout/valid-reply comparisons are unverified. A/D/G deferred;
+No Handbook exists; do not initialize one. Local task GREEN/finite-layout/valid-reply
+comparisons and independent reviews are recorded in the [B plan](../plans/2026-10-29-finite-margins.md)
+and [C plan](../plans/2026-10-29-template-format-preflight.md). Parent combined verification,
+final independent review, remote freshness/CI, supported-version runtime matrix and human PoC approval
+remain unverified here. A/D/G deferred;
 E arbitrary non-None find_template tier behavior and F native Text errors with
 corrected guidance retained. Do not broaden their policies.
 

@@ -46,7 +46,7 @@ Parent owns shared CHANGELOG/bundles and integration; do not regenerate them.
 - Produces: unchanged `simple_layout(fig: Figure, gs: GridSpecBase | SubplotSpec | None = None, *, margin: Length | str | float = 0, ml: Length | str | float | None = None, mr: Length | str | float | None = None, mt: Length | str | float | None = None, mb: Length | str | float | None = None, use_all_axes: bool = True, adopt_orphan_tick_font: bool | None = None, verbose: bool = False) -> None`.
 - New outcome: exact `ValueError("margin must resolve to finite figure fractions")` for nonfinite effective sides only.
 
-- [ ] **Step 1: Record the baseline before changing source.**
+- [x] **Step 1: Record the baseline before changing source.**
 
 Use the approved scratch oracle as evidence/design guidance, not a 215-line product-test transplant.
 Run from this worker's clean pinned base, before edits; keep reviewed originals read-only.
@@ -57,7 +57,7 @@ Save all Axes bounds, raw/resolved GridSpec edges, tick/offset font properties a
 Use `dm.style.use("scientific")`, `dm.figsize("13cm", "standard")`, two Axes and explicit font adoption.
 Expected: finite snapshots recorded on base `33f51edd`; all-overrides equal finite-base equivalent.
 
-- [ ] **Step 2: Write proportional failing public regressions.**
+- [x] **Step 2: Write proportional failing public regressions.**
 
 `test_nonfinite_effective_margin_rejects_without_effects`: parameterize nine NaN/±Inf × number/percent/`dm.cm(1)*value` bases;
 add finite-base ml=NaN, mr='inf%', mt=negative-infinite Length, mb=Inf and partial base override.
@@ -81,7 +81,7 @@ If a GridSpec-resolution error occurs, preserve it unchanged; do not move parsin
 Add deterministic `random.Random(20261029)` finite fractions with mixed side overrides to compare a fully overridden NaN base
 against the same finite-base call; assert bounds/edges/fonts/RGBA equality. No new property dependency.
 
-- [ ] **Step 3: Run the new regressions RED.**
+- [x] **Step 3: Run the new regressions RED.**
 
 For all commands, set `PY=/Users/wonjun/.t3/worktrees/dartwork-mpl/t3-0c3dff26/.venv/bin/python` (read-only),
 `PYTHONPATH="$PWD/src"`, `PYTHONDONTWRITEBYTECODE=1`, `MPLBACKEND=Agg`, and worker-owned
@@ -90,14 +90,14 @@ Run: `"$PY" -m pytest src/dartwork_mpl/layout/tests/test_margin_preflight.py -q 
 Expected: new rejection assertions FAIL on base behavior; preserve passing precedence/full-override evidence.
 Save output and exit code; a collection/import failure is not RED.
 
-- [ ] **Step 4: Implement the finite check and document it.**
+- [x] **Step 4: Implement the finite check and document it.**
 
 In `simple_layout`, after full existing parse/resolution, check all four `_Sides` values for finiteness,
 raising the exact approved error before the solver and effects. Do not modify `_parse_margin`, Length or clamp policy.
 Update the changed function docstring with finite effective-side rejection and preserved override/parse/no-op behavior.
 No signature/static-type changes, cross-slice import or new outcome framework.
 
-- [ ] **Step 5: Verify GREEN and unchanged finite renders.**
+- [x] **Step 5: Verify GREEN and unchanged finite renders.**
 
 Run: `"$PY" -m pytest src/dartwork_mpl/layout/tests -q --no-cov -p no:cacheprovider`.
 Run: `"$PY" -m ruff check src/dartwork_mpl/layout` and `"$PY" -m ruff format --check src/dartwork_mpl/layout`.
@@ -106,8 +106,18 @@ Replay Step 1 into `b/changed`; compare per-case numeric/font snapshots and RGBA
 Expected: no differences, including oversized `.001` clamp. Inspect any difference before claiming compatibility.
 Save equal-scale before/after images and bad-input refusal evidence for parent PoC; this does not claim user visual review.
 
-- [ ] **Step 6: Commit and hand off for independent patch review.**
+- [x] **Step 6: Commit and hand off for independent patch review.**
 
 Stage only owned source/test/necessary guide files; local commit `fix: reject nonfinite effective layout margins`.
 Return SHA, RED/GREEN receipts, finite comparisons and limits. Parent reviews this patch independently, then combines with C.
 Existing pytest CI collects colocated tests via `pyproject.toml` testpaths; no new CI gate.
+
+## Local completion evidence
+
+All six implementation steps and independent task review are complete for B.
+Local commit: `9edd1e58762543a4e7771c0556eaeb0e4022c6d8`.
+Evidence under `~/scratch/dartwork-local-input-preflight-2026-10-29/`:
+`b/task-1-report.md` and `b-review-r1/review.md` (spec PASS; quality approved).
+These receipts cover local RED/GREEN and compatibility replays; they do not
+establish parent combined verification, final independent review, remote CI,
+supported-version runtime matrix or human PoC approval. Those remain pending.

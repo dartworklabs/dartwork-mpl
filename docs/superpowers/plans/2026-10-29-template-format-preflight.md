@@ -47,7 +47,7 @@ Necessary guide edits belong only in `docs/integrations/mcp_server.md`; parent o
 - Produces unchanged: `render_basic(plot_type: str, return_format: str, timeout_seconds: float) -> dict[str, Any]` and `render_advanced(plot_type: str, return_format: str, timeout_seconds: float) -> dict[str, Any]`.
 - Invalid-format result is precisely the spec dict; advanced adds only the selected tier, basic has none.
 
-- [ ] **Step 1: Capture valid compatibility baseline before source edits.**
+- [x] **Step 1: Capture valid compatibility baseline before source edits.**
 
 Under worker-owned scratch `c/baseline` and `c/changed`, save source SHA/import origin and installed FastMCP/Matplotlib versions.
 Set `PY=/Users/wonjun/.t3/worktrees/dartwork-mpl/t3-0c3dff26/.venv/bin/python` (read-only);
@@ -63,7 +63,7 @@ Replay existing publication-failure and path/privacy/symlink fixtures named in S
 Delete only worker-owned published files in finally; never edit installed assets or render behavior.
 Expected: baseline saved on `33f51edd`; no baseline result is labeled changed-source GREEN.
 
-- [ ] **Step 2: Write failing exact-reply and no-effect regressions.**
+- [x] **Step 2: Write failing exact-reply and no-effect regressions.**
 
 `test_selected_template_rejects_invalid_format_without_effects`: basic bar, advanced bar and actual basic-only fallback;
 parameterize formats `bogus`, `""`, `PATH`, ` base64`. Assert exact dict from spec, selected tier only for advanced.
@@ -85,13 +85,13 @@ and `response.is_error is False`. Share a small fixture only within the owning t
 Use seeded generated invalid strings (exclude exactly base64/path) at the direct boundary as a no-execution/reply property;
 no dependency or broad validation API. Document tests/helpers and keep scratch fixture creation outside watched calls.
 
-- [ ] **Step 3: Observe RED before implementing.**
+- [x] **Step 3: Observe RED before implementing.**
 
 Run: `"$PY" -m pytest src/dartwork_mpl/mcp/templates/tests/test_format_preflight.py tests/test_mcp_render_smoke.py -k 'invalid_format or format_wire or unknown_selection' -q --no-cov -p no:cacheprovider`.
 Expected: selected invalid cases FAIL exact-reply/no-effect assertions on base; unknown cases retain old behavior.
 Ensure named tests match the selector and collect nonzero cases. Preserve exit code/output; import errors/skips are not RED.
 
-- [ ] **Step 4: Add the narrow preflight in render.py.**
+- [x] **Step 4: Add the narrow preflight in render.py.**
 
 Keep unknown branches and advanced/basic selection unchanged. After selection and before `_render`, reject every string
 outside `('base64', 'path')` with exact approved stderr and existing render_error fields, selected advanced tier included.
@@ -99,7 +99,7 @@ Use the current outcome/reply machinery without new status/type family or public
 Keep successful fallback conversion limited to successful render only. Document changed native/private functions;
 leave `mcp/tools.py` registered wrappers, their signatures and docstrings byte-for-byte unchanged.
 
-- [ ] **Step 5: Verify GREEN and compatibility replays.**
+- [x] **Step 5: Verify GREEN and compatibility replays.**
 
 Run: `"$PY" -m pytest src/dartwork_mpl/mcp/templates/tests tests/test_mcp_render_smoke.py tests/test_mcp_asset_boundary.py -q --no-cov -p no:cacheprovider`.
 This includes existing `TestRenderTemplate::test_renders_bar_to_base64_png`, `::test_path_format_writes_a_file`,
@@ -113,8 +113,20 @@ For fresh path names compare uniqueness, private regular-file permissions, PNG b
 Require actual fallback/timeout/publication-error equivalence; outcome-only fixtures do not prove actual timeout behavior.
 Save normal before/after rendered PNGs and refusal evidence for parent PoC; no visual approval claimed here.
 
-- [ ] **Step 6: Commit and hand off for independent patch review.**
+- [x] **Step 6: Commit and hand off for independent patch review.**
 
 Stage only owned source/tests/necessary guide files; local commit `fix: preflight template return formats before execution`.
 Return SHA, RED/GREEN evidence, full compatibility results and limits. Parent independently reviews patch, then combines B/C.
 Existing pytest CI collects these paths; no new CI/version matrix or supported-version wire guarantee is introduced.
+
+## Local completion evidence
+
+All six implementation steps and independent task review are complete for C.
+Local commit: `b7eef00bd6a71956a1af8a182493104b13a9f4b6`.
+Integrated as `6500fbd8d6b8c459f0b9ec54980e80bea03b284c`; the minor guide
+log-limit qualification is addressed in shared documentation closeout.
+Evidence under `~/scratch/dartwork-local-input-preflight-2026-10-29/`:
+`c/r2/task-1-report.md` and `c-review-r1/review.md` (spec PASS; quality approved).
+These receipts cover local RED/GREEN and compatibility replays; they do not
+establish parent combined verification, final independent review, remote CI,
+supported-version runtime matrix or human PoC approval. Those remain pending.

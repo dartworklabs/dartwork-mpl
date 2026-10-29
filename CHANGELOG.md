@@ -61,6 +61,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `simple_layout()` rejects nonfinite effective margins after complete parsing
+  and resolution, before layout effects. Finite margins and existing parse,
+  no-op and GridSpec error precedence are preserved.
+- Selected basic/advanced templates reject invalid `return_format` values before
+  execution, render temporary-file creation or publication, using the existing
+  `render_error` reply. Valid renders and unknown-template precedence are preserved.
+
 - `validate_data(..., require_same_length=False)` keeps originally unequal
   inputs independent even when cleaning temporarily makes their lengths equal,
   preventing finite-value loss and spurious minimum-point errors.
