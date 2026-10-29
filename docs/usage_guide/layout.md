@@ -289,6 +289,16 @@ of:
 - percentage string (`"5%"` = 5 % of the figure dimension)
 - bare number (figure-fraction, so `0.05` = 5 %)
 
+All four effective side margins must resolve to finite figure fractions.
+Otherwise, `simple_layout` raises
+`ValueError("margin must resolve to finite figure fractions")` before drawing,
+font adoption or layout changes. All margins are parsed first, so an invalid
+margin string still raises its parsing error. Four finite side overrides may
+replace a nonfinite base `margin`; partial overrides must leave every side
+finite. Finite zero, negative and oversized margins retain the existing edge
+clamp. Empty figures and figures without a supported GridSpec return before
+parsing margins; the latter retain their warning.
+
 **How it works:**
 
 1. Draws the figure once to populate text metrics.
