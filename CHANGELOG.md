@@ -65,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   inputs independent even when cleaning temporarily makes their lengths equal,
   preventing finite-value loss and spurious minimum-point errors.
 
+- `make_palette` rejects negative series counts instead of treating them as
+  end-relative slices; zero still returns an empty palette and positive counts repeat.
+
 - Colormap registration reuses exact package-owned maps on reload/retry and
   preflights static external collisions before adding missing maps.
 - Preset switches preserve detectable caller edits on incoming-silent keys;

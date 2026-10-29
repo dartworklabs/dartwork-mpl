@@ -30,7 +30,7 @@ def make_palette(
     Parameters
     ----------
     n : int
-        Number of series the palette must cover. Colors repeat if
+        Non-negative number of series the palette must cover. Colors repeat if
         ``n`` exceeds the built-in list for ``kind``.
     kind : {"categorical", "sequential", "diverging"}
         Palette family. ``categorical`` returns distinct hues;
@@ -46,6 +46,11 @@ def make_palette(
     -------
     list[str]
         Length-``n`` list of dartwork color names.
+
+    Raises
+    ------
+    ValueError
+        If ``n`` is negative or ``kind`` is unknown.
 
     Examples
     --------
@@ -93,6 +98,9 @@ def make_palette(
             ]
     else:
         raise ValueError(f"Unknown kind: {kind!r}")
+
+    if n < 0:
+        raise ValueError("n must be non-negative; use 0 for an empty palette")
 
     # Select colors
     if n <= len(base_colors):
