@@ -9,6 +9,12 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 ([colors](audit/colors.md), [core](audit/core.md), [lint-validate](audit/lint-validate.md), [mcp](audit/mcp.md),
 [ui-cli](audit/ui-cli.md), [tests-tooling](audit/tests-tooling.md)). 감사 대상은 main `0e88b810`이다.
 
+**상태 확인: 2026-10-29.** 아래 상태는 공개 병합 기준 `c90a7775`까지의 로컬 Git 이력과
+체크아웃 `05483087`의 실제 소스·설정을 대조했다. PR 번호는 병합 이력이며 이번 확인에서
+원격 CI를 실행하거나 현재 성공 여부를 확인한 것은 아니다. `c90a7775` 이후 `05483087`까지의
+네이티브 사용 안내·데이터 정리·팔레트 입력·MCP 시작 출력 수정은 미게시 로컬 변경이다.
+이 표의 구조 리팩터 병합 실적과 구분한다. 진행 규칙과 판정은 기존 PR 작업에 그대로 적용한다.
+
 ## 진행 규칙
 
 1. **PR 하나에 한 가지 일만 한다.** 파일 이동과 타입 변경을 같은 PR에 넣지 않는다. 변경은 800줄 이하를 목표로 한다.
@@ -50,7 +56,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | G2 | 동거 수집 기반: 루트 `conftest.py`로 격리 fixture 승격, `tests/support/`, `--import-mode=importlib`, `testpaths=["tests","src/dartwork_mpl"]`, CI·release `pytest` 경로 제거, wheel `**/tests/**` exclude + 패키징 테스트, coverage omit | #522 |
 | G3 | mypy: `files`, 동거 테스트 exclude, `exhaustive-match`, `strict_equality`, 완화 override를 모듈 단위로 축소, dev 그룹에 extras, 명령 `uv run mypy` 통일 | #520 |
 | G4 | `scripts/check_boundaries.py` + `tests/architecture/test_boundaries.py`(주입 위반 5종 실패, 슬라이스 내부 import 통과), 현재 위반 `DEBT` 등재(검사는 pytest가 실행) | #521 |
-| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 대기 |
+| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 부분 — #535 (`8534a470`): 단일 슬라이스 테스트 동거 완료. 루트 분류·보호 목록·진입 문서 경로 정리는 남음 |
 
 ### 2단계 — 이동 (영역마다 순서대로. 영역끼리는 병행할 수 있다. 각 PR은 그 슬라이스의 테스트도 함께 옮긴다)
 
@@ -60,15 +66,15 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | --- | --- | --- |
 | C1 | `_helpers` 해체 → platform `_figure_geometry`, `create_parent_path`는 소유자에게 | #525–#528 |
 | C2 | platform `_rc`(rcParams 잠금, did_you_mean): `style`⇄`_colors`, `icon`→`style` 순환 제거 | #525–#528 |
-| C3 | style 표면 `preset_names`/`preset_chain`: lint·mcp·_colors의 `presets.json` 직접 읽기 제거 | 대기 |
+| C3 | style 표면 `preset_names`/`preset_chain`: lint·mcp·_colors의 `presets.json` 직접 읽기 제거 | #535 (`2eeca7aa`, `6330064c`) |
 | C4 | `font/` 패키지, diagnostics의 `_FONT_DIR` 누출 제거(공개 `get_font_dir`). **icon은 흡수하지 않음**: 이름(`ensure_loaded`)과 변경 이유가 달라 잘못된 추상화 | #525–#528 |
 | C5 | `units/` 패키지, `col1/col2`를 units로 | #525–#528 |
 | C6 | `layout/` 패키지(이동만), 테스트 전용 `_measure_overflow`를 테스트 지원 코드로 | #525–#528 |
 | C7 | `annotation/` 패키지, `make_offset` 흡수. `optimize_legend`는 C11로 이월 | #525–#528 |
 | C8 | `formatting/` 패키지 + `set_decimal` 흡수 + `__all__` | #525–#528 |
 | C9 | `io/` 패키지. ui는 U5, mcp는 M6에서 `util` 대신 소유자 import | #525–#528 |
-| C10 | `util.py` → shim 전용, `mix_colors`/`pseudo_alpha` → `_colors` | 대기 |
-| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 대기 |
+| C10 | `util.py` → shim 전용, `mix_colors`/`pseudo_alpha` → `_colors` | #535 (`d070514c`, `dddabeec`): `util`은 재노출만, 색 혼합은 `_colors/blend` |
+| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 부분 — #535 (`1eca8e31`): 최소 DPI 소유권·의존 선언 정리. `helpers` 구현의 소유 슬라이스 이전은 남음 |
 | C13 | 테스트를 가진 단일 파일 슬라이스 `scale`·`tokens`·`icon`·`explore`를 같은 이름 패키지로(테스트 동거). `config`·`agent`는 전용 테스트가 없어 유지 | #526 |
 | C12 | `templates`의 루트 import 제거, `__init__` 배선화(`_compat.py`, twinx 패치는 style로) | #525–#528 |
 
@@ -99,7 +105,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | U3 | `ui/platform/`(json, fs, access) 이동 | #530 |
 | U4 | `params/`·`page/`·`scaffold/` 이동 | #530 |
 | U5 | `state/`·`saving/`·`render/`·`script/` + 슬라이스별 router·GRANTS, `ui.py`는 mount만 | #530 |
-| U6 | `prompt/` 패키지가 `asset/prompt` 경로의 유일한 소유자(lint·mcp는 표면 사용) | 대기 |
+| U6 | `prompt/` 패키지가 `asset/prompt` 경로의 유일한 소유자(lint·mcp는 표면 사용) | 부분 — #535 (`8534a470`): prompt 패키지·테스트 동거. lint·mcp의 직접 경로 소유는 남음 |
 
 **mcp** ([감사](audit/mcp.md) §5. 배선 표 네 파일은 데코레이터·docstring을 바이트 그대로 둔다)
 
@@ -116,48 +122,51 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 
 | ID | 영역 | 내용 | 상태 |
 | --- | --- | --- | --- |
-| T1 | core | `tokens` 파서(cast 제거, 손상 JSON을 이름 붙은 결과로, fallback 중복 제거) | 대기 |
-| T2 | core | annotation 내부 Literal·`LegendPlacement` 결과(공개 속성 유지), layout `Margin` 값 타입·순수 solve 분리 | 대기 |
-| T3 | core | style `Locale` 파싱(이름 부분문자열 판정 제거), io `SaveFormat` 내부 파싱 | 대기 |
-| KT1 | colors | `Family`를 kind별 variant union으로(`.kind ==` 분기 13곳 → `match`) | 대기 |
-| KT2 | colors | gate·비교 결과 variant(`GateViolation`, `ExactMismatch`), `to_payload()` 키 불변 | 대기 |
-| KT3 | colors | `load_color_v6_ssot` → 타입 `ColorAuthority`(cast 92건 제거), 2개 PR로 나눔 | 대기 |
-| KT4 | colors | 가변 상수 동결(`MappingProxyType`), `_freeze/_thaw` 중복 제거 | 대기 |
-| LT1 | lint | 내부 `Severity`·owner kind Literal, `_Detector` union(공개 `Rule` 필드 유지), 이름 있는 실패 | 대기 |
-| LT2 | lint | `_builtin_matches`를 rule id → 탐지 함수 표로 분해, 카탈로그 정합 테스트 | 대기 |
-| LT3 | validate | check별 detail TypedDict, `CheckCompleted`/`CheckFailed` 내부 결과 | 대기 |
-| UT1 | ui | 라우트별 요청 파서(`parse_request` 문자열 분기, `assert`·`cast` 제거) | 대기 |
-| UT2 | ui | 저장 상태 `StoredConfig`/`Preset` 파싱(cast 9건 제거) | 대기 |
-| UT3 | ui | `ParamDescriptor` → `Control` variant union | 대기 |
-| UT4 | ui | 실패 타입에서 HTTP `status_code` 분리, 가장자리 `match` 한 곳 | 대기 |
-| MT1 | mcp | 실행 결과 variant(`Passed`/`Incomplete`/`ExecFailed`/`LintBlocked`/`NoFigure`/`TimedOut`) | 대기 |
-| MT2 | mcp | 템플릿 렌더 결과 union | 대기 |
-| MT3 | mcp | plot_data validator를 `parse_<type>(raw) -> Parsed | Invalid`로(메시지 문자열 동결) | 대기 |
-| MT4 | mcp | docs fetch 거절을 값으로, artifacts 표면 축소, unused ignore 제거 | 대기 |
+| T1 | core | `tokens` 파서(cast 제거, 손상 JSON을 이름 붙은 결과로, fallback 중복 제거) | #536 (`927839a2`) |
+| T2 | core | annotation 내부 Literal·legend 배치 결과(`_LegendTrial`)(공개 속성 유지), layout `Margin` 값 타입·순수 solve 분리 | #536 (`73335f27`) |
+| T3 | core | style `Locale` 파싱(이름 부분문자열 판정 제거), io `SaveFormat` 내부 파싱 | #536 (`a4399df2`) |
+| KT1 | colors | `Family`를 kind별 variant union으로(`.kind ==` 분기 13곳 → `match`) | #542 (`e14fc887`) |
+| KT2 | colors | gate·비교 결과 variant(`GateViolation`, `ExactMismatch`), `to_payload()` 키 불변 | #542 (`360152d9`, `bb6ca497`) |
+| KT3 | colors | `load_color_v6_ssot` → 타입 `ColorAuthority`(cast 제거), 두 단계로 파싱 | #542 (`cad1d736`, `75d85e83`) |
+| KT4 | colors | 가변 상수 동결(`MappingProxyType`), `_freeze/_thaw` 중복 제거 | #542 (`d5f7f0a6`) |
+| LT1 | lint | 내부 `Severity`·owner kind Literal, `_Detector` union(공개 `Rule` 필드 유지), 이름 있는 실패 | #537 (`d91c206b`) |
+| LT2 | lint | `_builtin_matches`를 rule id → 탐지 함수 표로 분해, 카탈로그 정합 테스트 | #537 (`5268788b`) |
+| LT3 | validate | check별 detail TypedDict, `CheckCompleted`/`CheckFailed` 내부 결과 | #537 (`829f4244`, `149a5873`) |
+| UT1 | ui | 라우트별 요청 파서(`parse_request` 문자열 분기, `assert`·`cast` 제거) | #538 (`6c3f3747`) |
+| UT2 | ui | 저장 상태 `StoredConfig`/`Preset` 파싱(cast 9건 제거) | #538 (`664e5320`) |
+| UT3 | ui | `ParamDescriptor` 내부 표현 → `Control` variant union | #538 (`d024f0f1`) |
+| UT4 | ui | 실패 타입에서 HTTP `status_code` 분리, 가장자리 `match` 한 곳 | #538 (`311a9de0`) |
+| MT1 | mcp | 실행 결과 variant(`Passed`/`Incomplete`/`ExecFailed`/`LintBlocked`/`NoFigure`/`TimedOut`) | #543 (`e3253b30`) |
+| MT2 | mcp | 템플릿 렌더 결과 union | #543 (`33bee86e`) |
+| MT3 | mcp | plot_data validator를 `parse_<type>(raw) -> Parsed \| Invalid`로(메시지 문자열 동결) | #543 (`86e6058e`) |
+| MT4 | mcp | docs fetch 거절을 값으로, artifacts 표면 축소, unused ignore 제거 | #543 (`ed5c3201`) |
 
 ### 4단계 — 마감
 
 | ID | 내용 | 상태 |
 | --- | --- | --- |
-| D1 | ruff D100–D107(테스트는 D100–D101) 활성, 누락 docstring 101개 작성 | 대기 |
-| D2 | `DEBT = {}`로 경계 검사 강제 전환 | 대기 |
-| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 대기 |
+| D1 | ruff D100–D107(테스트는 D100–D101) 활성, 누락 docstring 보완 | #545 (`7e0c86d8`, `59da73a5`, `fc833124`) |
+| D2 | `DEBT = {}`로 경계 검사 강제 전환 | #535 (`3c406a56`) |
+| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 부분 — #545 (`7d25d3b4`): exclude 수정; job 이름은 남음. 색 검사 3중 중복 해소는 미확인 |
+
+#546 (`787b5c2b`, `bdbcfc8c`, `8aa8f267`)은 xdist 병렬 실행, 색 파이프라인 결과 공유,
+3.12 job의 색 파이프라인 전담을 반영했다. D3의 나머지 정리가 끝났다는 뜻은 아니다.
 
 ## 진행 중 정해진 도구 규칙
 
 - 경계 검사기: `SHIMS`(호환 shim → 소유 단위, shim의 `__all__`이 두 번째 표면), `PINNED`(경로가 고정된 모듈 → 소유 단위), 자기를 감싼 부모 패키지는 의존으로 세지 않음. 셋 다 주입 테스트가 있다.
-- 스택 PR은 main 대상이 아니면 CI가 돌지 않는다. 끝 PR을 main 대상으로 열어 한 번에 검증하고 merge commit으로 머지한다.
+- 스택 PR의 전체 CI(`ci.yml`)는 main 대상에서만 돈다. `pre-commit.yml`은 모든 PR이 대상이다. 끝 PR을 main 대상으로 열어 한 번에 검증하고 merge commit으로 머지한다.
 
-## 사람 결정 대기 (이 리팩터가 스스로 바꾸지 않는다)
+## 사람 결정 항목 (해소 여부 포함; 미해결 범위는 이 리팩터가 스스로 바꾸지 않는다)
 
 | ID | 내용 | 이유 |
 | --- | --- | --- |
-| H1 | main push CI가 빨갛다. self-hosted runner `ml-main`의 작업 디렉터리 조상이 0775(group-writable)라서 `tests/mcp/artifacts/conftest.py`의 조상 권한 검사가 실패한다. PR CI(ubuntu)는 녹색이다 | 머신 설정 변경이거나 보안 검사 완화라서 사람이 정해야 한다 |
-| H2 | `dartwork-mpl-ui init --example complex`는 템플릿이 삭제돼 `FileNotFoundError`. 비어 있지 않은 대상은 exit 0 | CLI 플래그 변경(선택지 제거 또는 템플릿 복원) |
+| H1 | 계획 작성 당시 main push의 runner 조상 권한(0775) 검사 실패와 PR CI 성공을 기록했다. 2026-10-29에는 재현·원격 상태 확인을 하지 않았다 | 현재도 실패하는지 미확인. 머신 설정 변경·보안 검사 완화는 사람이 정한다 |
+| H2 | 해소 — #544 (`da273413`): `complex`는 argparse 선택지에서 제외(exit 2), 비어 있지 않은 대상은 거절(exit 1). 같은 PR의 `0ec59ea1`은 `list[bool]` 쉼표 입력 파싱 수정 | `ui/__main__.py`·`ui/scaffold/`·`ui/params/_signature.py`에 반영 |
 | H3 | MCP discovery 스캐너를 레지스트리 기반으로 바꿔 tool 정의를 슬라이스로 옮기기 | ADR 0001 A1 동결 도구 수정 |
 | H4 | `_colors/_compatibility_metrics.py` 이동·정리 | 출하 자산에 경로·SHA 고정 |
 | H5 | 공개 파라미터 `Literal` 축소, `lint.Rule` detector union, `Issue.line` non-Optional, `VisualWarning` frozen | 공개 정적 계약 변경 |
-| H6 | src 안에 소비자가 없는 `_colors/_metrics.py`의 이전·제거 | docs 스크립트가 사용 |
-| H7 | CLAUDE.md·AGENTS.md의 "18 tools"(실제 19개) 문구 | 별도 문서 수정 |
+| H6 | 해소 — #547 (`be49e45e`): `_colors/_metrics.py` → `_colors/model/_metrics.py`, construction·docs 스크립트·테스트 import 갱신 | `_compatibility_metrics.py` 동결(H4)은 그대로 유지 |
+| H7 | 해소 확인 — `c90a7775`와 `05483087`의 CLAUDE.md·AGENTS.md는 모두 "19 tools" (`13932f54`에서 반영) | 별도 수정 불필요. MCP discovery 동결은 유지 |
 | H8 | `ui/_config.py`의 레거시 `save_preset`/`load_presets` 제거 | `docs/migration.md`가 대체 API로 안내 |
 | H9 | ADR 0001·0003이 적은 모듈 경로(`_colors/_gates.py` 등)는 이동 전 경로다. 수락된 ADR 원문은 고치지 않는다 | 현재 위치는 `scripts/check_boundaries.py`와 `audit/colors.md` |
