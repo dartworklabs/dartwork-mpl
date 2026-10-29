@@ -480,6 +480,13 @@ returns its absolute path after closing it. Callers own that persistent temporar
 file's lifetime. Exclusive creation protects existing names and symlinks; it does
 not promise protection from a local actor replacing a path after publication.
 
+For both template renderers, `return_format` accepts only the exact,
+case-sensitive strings `"base64"` and `"path"`, without trimming. A selected
+template with any other format returns `render_error` before execution or
+temporary-file creation. Unknown-template diagnostics take precedence over
+format rejection. Advanced format errors retain the selected tier (`advanced`
+or `basic`); a failed fallback is never reported as `fell_back`.
+
 ### Plot execution and validation results
 
 `validate_generated_plot(code, figure_var="fig", timeout_seconds=20.0,

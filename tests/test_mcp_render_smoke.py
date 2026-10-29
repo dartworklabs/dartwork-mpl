@@ -13,7 +13,9 @@ Skips when ``fastmcp`` (optional dep) is absent, matching ``test_mcp.py``.
 
 from __future__ import annotations
 
+import asyncio
 import base64
+import json
 import os
 from unittest.mock import MagicMock
 
@@ -319,3 +321,101 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
     finally:
         if result["png_path"]:
             Path(result["png_path"]).unlink(missing_ok=True)
+
+
+@pytest.fixture
+def format_wire_assets(tmp_path):
+    """Supply real basic-only selection while leaving advanced lookup empty."""
+    root = tmp_path / "format-wire-assets"
+    (root / "advanced").mkdir(parents=True)
+    (root / "basic_only.py").write_text(
+        "import base64\nfrom pathlib import Path\n"
+        "Path('out.png').write_bytes(base64.b64decode(\n"
+        "'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8'\n"
+        "'/x8AAwMCAO+aV1sAAAAASUVORK5CYII='))\n",
+        encoding="utf-8",
+    )
+    return root
+
+
+@pytest.mark.parametrize("return_format", ["bogus", "", "PATH", " base64"])
+@pytest.mark.parametrize(
+    "selection",
+    [
+        "basic",
+        "advanced",
+        "fallback",
+        "unknown-basic",
+        "unknown-advanced",
+        "scratch-unknown-basic",
+        "scratch-unknown-advanced",
+    ],
+)
+def test_invalid_format_wire_matches_structured_reply(
+    format_wire_assets, monkeypatch, selection, return_format
+):
+    """Real Client preserves exact text/structured refusals with isError false."""
+    from fastmcp import Client
+
+    from dartwork_mpl.mcp._platform import assets
+    from dartwork_mpl.mcp.server import mcp
+    from dartwork_mpl.mcp.templates import bundled
+
+    scratch = selection == "fallback" or selection.startswith("scratch-")
+    if scratch:
+        monkeypatch.setattr(assets, "_TEMPLATE_DIR", format_wire_assets)
+        monkeypatch.setattr(bundled, "_TEMPLATE_DIR", format_wire_assets)
+    advanced = selection == "fallback" or selection.endswith("advanced")
+    unknown = "unknown" in selection
+    plot_type = (
+        "missing_fixture" if unknown else "basic_only" if scratch else "bar"
+    )
+    expected = {
+        "status": "unknown_template" if unknown else "render_error",
+        "plot_type": plot_type,
+        "png_base64": None,
+        "png_path": None,
+    }
+    if unknown:
+        root = bundled._TEMPLATE_DIR
+        basic_names = sorted(p.stem for p in root.glob("*.py"))
+        if advanced:
+            advanced_names = sorted(
+                p.stem for p in (root / "advanced").glob("*.py")
+            )
+            expected["stderr"] = (
+                f"No template named {plot_type!r}. "
+                f"Available basic: {basic_names}. "
+                f"Available advanced: {advanced_names}."
+            )
+        else:
+            expected["stderr"] = (
+                f"No template named {plot_type!r}. Available: {basic_names}"
+            )
+    else:
+        expected["stderr"] = (
+            f"return_format must be 'base64' or 'path'; got {return_format!r}"
+        )
+    if advanced:
+        expected["tier"] = (
+            "none" if unknown else "basic" if scratch else "advanced"
+        )
+
+    async def check_reply():
+        """Exercise protocol serialization rather than captured tool callbacks."""
+        async with Client(mcp) as client:
+            tool = "render_template_advanced" if advanced else "render_template"
+            response = await client.call_tool(
+                tool,
+                {"plot_type": plot_type, "return_format": return_format},
+                raise_on_error=False,
+            )
+            assert response.structured_content == expected
+            assert [
+                json.loads(block.text)
+                for block in response.content
+                if block.type == "text"
+            ] == [expected]
+            assert response.is_error is False
+
+    asyncio.run(check_reply())

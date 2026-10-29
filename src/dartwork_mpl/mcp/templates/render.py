@@ -166,9 +166,11 @@ def render_basic(
     """The ``render_template`` reply for a basic-tier template.
 
     ``status`` is ``ok``, ``unknown_template``, ``render_error`` (child
-    failed, wrote no PNG, or the ``path`` publication failed) or
-    ``timeout``. ``return_format="path"`` publishes the PNG to a new
-    private temp file the caller owns; otherwise it is base64-encoded.
+    failed, wrote no PNG, publication failed, or the selected template's
+    format was invalid) or ``timeout``. Only exact ``base64`` / ``path``
+    formats are accepted, after selection and before any render effects.
+    ``path`` publishes to a new private temp file the caller owns;
+    ``base64`` encodes the PNG in memory. Unknown selection wins over format.
     """
     template_dir = bundled._TEMPLATE_DIR
     path = bundled._resolve_template_path(plot_type)
@@ -184,7 +186,11 @@ def render_basic(
             ),
         }
     status, png_base64, png_path, stderr = _reply_fields(
-        _render(
+        RenderFailed(
+            f"return_format must be 'base64' or 'path'; got {return_format!r}"
+        )
+        if return_format not in ("base64", "path")
+        else _render(
             path,
             return_format,
             timeout_seconds,
@@ -207,6 +213,8 @@ def render_advanced(
 
     Same statuses as ``render_basic`` plus ``fell_back`` (rendered from the
     basic tier); every reply carries ``tier`` (``none`` when unknown).
+    Invalid formats are rejected after tier selection without render effects;
+    only a successful basic-tier render is reported as ``fell_back``.
     """
     template_dir = bundled._TEMPLATE_DIR
     advanced_path = bundled._resolve_template_path(plot_type, advanced=True)
@@ -233,7 +241,11 @@ def render_advanced(
         }
 
     status, png_base64, png_path, stderr = _reply_fields(
-        _render(
+        RenderFailed(
+            f"return_format must be 'base64' or 'path'; got {return_format!r}"
+        )
+        if return_format not in ("base64", "path")
+        else _render(
             path,
             return_format,
             timeout_seconds,
