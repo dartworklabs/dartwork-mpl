@@ -42,6 +42,40 @@ also distinguish MCP's template/checklist-only `compose_layered_plot` from
 `simple_layout`'s bounded root-margin correction (#209). Neither supplies a
 nested spacing solver or proof that content fits; render, measure and review.
 
+## Interpreting optional source auto-fixes
+
+Import `ast` and parse the complete source string with `ast.parse(code)`
+before lint/fix. This nonexecuting preflight can detect malformed Python;
+repair syntax errors in the source first. Some lint checks skip malformed
+source, so empty findings or MCP's “No issues found” do not prove valid
+syntax. Parsing and linting do not prove that code can compile, execute or
+render correctly, and do not authorize executing arbitrary source.
+
+For a source string named `code`, import `apply_lint_fixes` from
+`dartwork_mpl.lint`, then call
+`fixed_code, applied, unfixed = apply_lint_fixes(code)`. The MCP tool of the
+same name returns a dict with those three keys. Neither route executes the
+submitted source. Inspect the diff and every remaining finding: `applied`
+locations refer to the original source, `unfixed` to the returned source.
+
+The fixer needs an existing dartwork import binding and locally proven
+calls. It can redirect pyplot's `style.use` with one supported literal
+preset to that binding, or replace a no-argument `fig.tight_layout()` on a
+proven pyplot-created Figure with `simple_layout(fig)`. Not all aliases or
+constructors are recognized. It does not invent imports, infer the current
+Figure for `plt.tight_layout()`, transfer layout kwargs, or rewrite
+unsupported/dynamic styles, bare native Figure layout calls or arbitrary
+artist properties. A suggestion alone does not establish an applicable fix.
+
+Unchanged bytes with empty `applied` mean no correction was applied;
+nonempty `unfixed` still needs attention, while empty `unfixed` means no
+reported findings, not that all checks ran. Changed source can also retain
+`unfixed` findings. Preserve the user's style, colors, legend and layout
+intent, including intentional overrides. Stop retrying identical source.
+Resolve bindings, arguments and intended behavior before making a scoped
+source edit, then parse/lint again. For trusted code you choose to execute,
+retain the normal runtime validation and actual image-review steps below.
+
 ## Check data without silently closing gaps
 
 `dm.validate_data(x, y)` returns cleaned NumPy arrays, not a report or boolean.

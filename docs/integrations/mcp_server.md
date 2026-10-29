@@ -356,7 +356,7 @@ and 2 prompts**. Callable functions the AI assistant can invoke:
 | `list_color_families()`                     | List color families (`dc.*`, `tw.*`, `oc.*`, …) with counts and samples        |
 | `lint_dartwork_mpl_code(code)`              | Analyze Python code for dartwork-mpl best practices and antipatterns            |
 | `lint_dartwork_mpl_code_json(code)`         | Same as above, returning structured JSON for programmatic consumption           |
-| `apply_lint_fixes(code)`                    | Apply safe identifier-level rewrites (`plt.style.use → dm.style.use`, no-arg `tight_layout()` → `dm.simple_layout(fig)`, `dm.cm2in → dm.cm`); returns fixed code + the issues that still need agent attention |
+| `apply_lint_fixes(code)`                    | Return `fixed_code`, `applied`, `unfixed` for locally proven preset/Figure-layout rewrites; unchanged or partial results can need attention. See the [source auto-fix workflow](../ai/installed_python.md#interpreting-optional-source-auto-fixes) for syntax preflight, scope and finding locations. |
 | `migrate_legacy_code(code)`                 | Rewrite 0.3-era source toward 0.4 idioms (safe substitutions + TODO hints)      |
 | `suggest_chart_type(x_type, y_type, ...)`   | Recommend a chart type from the data's characteristics, with pointers to the matching basic and advanced templates |
 | `find_template(intent, top_k)`              | Rank the 18 bundled AI plot templates against a free-text intent                |
