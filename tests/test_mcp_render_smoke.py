@@ -270,7 +270,7 @@ def test_template_publication_failure_has_safe_existing_error(
 def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
     tmp_path, monkeypatch, name, return_format, raw_stderr
 ):
-    """Real basic/advanced PNG callbacks strip user text and mark genuine overruns."""
+    """Font-controlled real PNG callbacks strip user text and mark genuine overruns."""
     from pathlib import Path
 
     from dartwork_mpl.mcp._platform import assets as _assets
@@ -287,6 +287,8 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
         "import matplotlib.pyplot as plt\n"
         "import dartwork_mpl as dm\n"
         "dm.style.use('scientific')\n"
+        # Isolate transport stderr from preset fallback-font weight diagnostics.
+        "plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.weight': 'normal'})\n"
         "fig, ax = plt.subplots(figsize=dm.figsize('3cm', 'square'))\n"
         "ax.plot([0, 1], [0, 1])\n"
         "dm.simple_layout(fig)\n"
