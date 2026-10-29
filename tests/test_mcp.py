@@ -1037,8 +1037,8 @@ class TestMcpTools:
     ) -> None:
         """Every recommender output resolves to a real template stem and
         a matching (non-fallback) basic template URI (H3)."""
-        from dartwork_mpl.mcp.templates.bundled import _TEMPLATE_DIR
         from dartwork_mpl.mcp.tools import register_tools
+        from dartwork_mpl.prompt import _TEMPLATE_DIR
 
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
@@ -1060,7 +1060,7 @@ class TestMcpTools:
         bundled template stem, so the mapping can't silently rot when
         templates are renamed."""
         from dartwork_mpl.mcp.recommend.chart_type import _SUGGEST_TO_TEMPLATE
-        from dartwork_mpl.mcp.templates.bundled import _TEMPLATE_DIR
+        from dartwork_mpl.prompt import _TEMPLATE_DIR
 
         stems = {p.stem for p in _TEMPLATE_DIR.glob("*.py")}
         for target in _SUGGEST_TO_TEMPLATE.values():
@@ -1178,10 +1178,10 @@ class TestMcpAgenticReliability:
 
     def test_info_plot_templates_match_bundle(self) -> None:
         """info['plot_templates'] equals the bundled 05-templates/*.py set."""
-        from dartwork_mpl.mcp.templates import bundled as _res
+        from dartwork_mpl import prompt
         from dartwork_mpl.mcp.tools import register_tools
 
-        expected = sorted(p.stem for p in _res._TEMPLATE_DIR.glob("*.py"))
+        expected = sorted(p.stem for p in prompt._TEMPLATE_DIR.glob("*.py"))
 
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
@@ -1293,10 +1293,8 @@ class TestMcpTemplatePathTraversal:
         assert _resolve_template_path(evil, advanced=True) is None
 
     def test_resolver_accepts_bundled_stems(self) -> None:
-        from dartwork_mpl.mcp.templates.bundled import (
-            _TEMPLATE_DIR,
-            _resolve_template_path,
-        )
+        from dartwork_mpl.mcp.templates.bundled import _resolve_template_path
+        from dartwork_mpl.prompt import _TEMPLATE_DIR
 
         assert _resolve_template_path("bar") == _TEMPLATE_DIR / "bar.py"
         # case-insensitive stem

@@ -295,6 +295,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.blend"): (
         "the mix_colors tool must return exactly what dm.mix_colors blends"
     ),
+    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.prompt"): (
+        "capability discovery lists the prompt owner's live bundled template names"
+    ),
     ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (
         "the capability summary lists the presets dm.style.use accepts"
     ),
@@ -314,7 +317,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "a recommendation links only templates that exist, closing the recommend -> pull-template loop"
     ),
     ("dartwork_mpl.mcp.templates", "dartwork_mpl.prompt"): (
-        "find_template ranks the prompt corpus's bundled template index"
+        "template workflows consume prompt corpus names, confined files and existence; find_template ranks its index"
     ),
     ("dartwork_mpl.style", "dartwork_mpl._colors.registry"): (
         "a preset switch re-applies the locale's semantic colour tokens"

@@ -440,3 +440,91 @@ def test_catalog_consumers_do_not_own_bundled_paths():
                     "asset/prompt",
                     "02-anti-patterns.yaml",
                 }, relative
+
+
+_TEMPLATE_CONSUMERS = (
+    "mcp/_platform/assets.py",
+    "mcp/_platform/__init__.py",
+    "mcp/templates/bundled.py",
+    "mcp/templates/render.py",
+    "mcp/templates/compose.py",
+    "mcp/catalog/discovery.py",
+)
+
+
+def _template_storage_violations(source):
+    """Detect executable template layout/glob reconstruction while permitting style I/O."""
+    import ast
+
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if (
+            isinstance(
+                node,
+                (
+                    ast.Module,
+                    ast.FunctionDef,
+                    ast.AsyncFunctionDef,
+                    ast.ClassDef,
+                ),
+            )
+            and ast.get_docstring(node) is not None
+        ):
+            node.body = node.body[1:]
+    errors = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Name, ast.Attribute)) and (
+            node.id if isinstance(node, ast.Name) else node.attr
+        ) in {"_TEMPLATE_DIR", "_TEMPLATE_INDEX_PATH"}:
+            errors.append("private template storage")
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and any(
+                marker in node.value
+                for marker in ("05-templates", "index.json", "*.py")
+            )
+        ):
+            errors.append("template layout/glob literal")
+    return errors
+
+
+def test_template_consumers_do_not_own_storage():
+    """Prompt alone owns template roots, tier paths, indices and template globs."""
+    for relative in _TEMPLATE_CONSUMERS:
+        assert (
+            _template_storage_violations(
+                (ROOT / "src/dartwork_mpl" / relative).read_text(
+                    encoding="utf-8"
+                )
+            )
+            == []
+        ), relative
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        'root = Path(__file__).parent / "asset/prompt/05-templates"',
+        "root = bundled._TEMPLATE_DIR",
+        'names = root.glob("*.py")',
+        'index = root / "index.json"',
+        "index = prompt._TEMPLATE_INDEX_PATH",
+    ],
+)
+def test_template_consumers_detector_rejects_reconstruction(source):
+    """Each forbidden storage reconstruction has an independently injected negative."""
+    assert _template_storage_violations(source)
+
+
+def test_template_consumers_detector_allows_style_only_paths():
+    """Mixed consumers may still locate styles and scan their wiring source files."""
+    source = "\n".join(
+        (
+            '"""Templates live in 05-templates/*.py."""',
+            'root = Path(__file__).parents[2] / "asset" / "mplstyle"',
+            'names = root.glob("*.mplstyle")',
+            'source = (_MCP_DIR / "tools.py").read_text()',
+        )
+    )
+    assert _template_storage_violations(source) == []

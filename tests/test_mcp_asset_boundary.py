@@ -1,6 +1,7 @@
 """Bundled MCP assets stay confined through callbacks and real URI decoding."""
 
 import asyncio
+import json
 import random
 import string
 from collections.abc import Callable
@@ -11,6 +12,7 @@ import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
 
+from dartwork_mpl import prompt  # noqa: E402
 from dartwork_mpl.mcp import resources, tools  # noqa: E402
 from dartwork_mpl.mcp._platform import assets as _assets  # noqa: E402
 from dartwork_mpl.mcp.templates import bundled  # noqa: E402
@@ -79,8 +81,8 @@ def asset_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         (directory / f"loop{suffix}").symlink_to(f"loop{suffix}")
         (directory / f"broken{suffix}").symlink_to(f"missing{suffix}")
     # All readers see the same isolated installation of bundled assets.
+    monkeypatch.setattr(prompt, "_TEMPLATE_DIR", templates)
     for owner in (bundled, _assets):
-        monkeypatch.setattr(owner, "_TEMPLATE_DIR", templates)
         monkeypatch.setattr(owner, "_MPLSTYLE_DIR", styles)
     return tmp_path
 
@@ -241,7 +243,7 @@ def test_generated_invalid_ids_never_escape(asset_roots: Path) -> None:
         if advanced:
             root /= "advanced"
         for candidate in candidates:
-            path = _assets.resolve_template_path(candidate, advanced=advanced)
+            path = prompt.resolve_template_path(candidate, advanced=advanced)
             if path is not None:
                 context = f"seed={seed} id={candidate!r} advanced={advanced}"
                 assert path == path.resolve(), context
@@ -267,3 +269,150 @@ def test_style_ids_preserve_case(asset_roots: Path) -> None:
         _assets.resolve_style_path("MiXeD_style-1")
         == (asset_roots / "styles" / "MiXeD_style-1.mplstyle").resolve()
     )
+
+
+@pytest.fixture
+def owner_root(tmp_path, monkeypatch):
+    """Inject only prompt's root so all consumers must follow the corpus owner."""
+    from dartwork_mpl import prompt
+
+    root = tmp_path / "owner"
+    (root / "advanced").mkdir(parents=True)
+    (tmp_path / "outside.py").write_text(_SENTINEL)
+    (root / "basic_only.py").write_text("# basic\nax.axhline(0)\n")
+    (root / "inside.py").write_text("# inside\n")
+    (root / "directory.py").mkdir()
+    (root / "advanced/advanced_only.py").write_text(
+        "# advanced\nax.annotate(\n"
+    )
+    (root / "advanced/basic_only.py").symlink_to(tmp_path / "outside.py")
+    monkeypatch.setattr(prompt, "_TEMPLATE_DIR", root, raising=False)
+    return root
+
+
+def test_owner_root_drives_all_template_consumers(owner_root):
+    """One owner injection preserves exact source, discovery, compose and preflight replies."""
+    from dartwork_mpl.mcp.catalog import discovery
+    from dartwork_mpl.mcp.templates import render
+    from dartwork_mpl.mcp.templates.compose import compose
+
+    names = ["basic_only", "directory", "inside"]
+    advanced_names = ["advanced_only", "basic_only"]
+    assert json.loads(bundled.template_list()) == names
+    assert discovery._discover_plot_templates() == names
+    assert bundled.exists("directory") is True
+    assert bundled.template_source("BASIC_ONLY") == "# basic\nax.axhline(0)\n"
+    assert (
+        bundled.advanced_template_source("advanced_only")
+        == "# advanced\nax.annotate(\n"
+    )
+    assert (
+        bundled.advanced_template_source("basic_only")
+        == "# basic\nax.axhline(0)\n"
+    )
+    assert (
+        bundled.template_source("advanced_only")
+        == f"No template for 'advanced_only'. Available: {names}"
+    )
+    assert (
+        bundled.advanced_template_source("missing")
+        == f"No template for 'missing'. Available: {names}"
+    )
+    layers = ["reference_line", "callout", "zzz"]
+    for stem, tier, selected, code, applied, missing in (
+        (
+            "basic_only",
+            "advanced",
+            "basic",
+            "# basic\nax.axhline(0)\n",
+            ["reference_line"],
+            ["callout", "zzz"],
+        ),
+        (
+            "advanced_only",
+            "advanced",
+            "advanced",
+            "# advanced\nax.annotate(\n",
+            ["callout"],
+            ["reference_line", "zzz"],
+        ),
+    ):
+        assert compose(stem, layers, tier) == {
+            "status": "ok",
+            "tier": selected,
+            "code": code,
+            "layers": layers,
+            "applied": applied,
+            "missing": missing,
+        }
+    assert compose("missing", layers, "advanced") == {
+        "status": "unknown_template",
+        "tier": "basic",
+        "code": f"No template named 'missing'. Available: {names}",
+        "layers": layers,
+        "applied": [],
+        "missing": layers,
+    }
+    assert compose("advanced_only", layers, "basic") == {
+        "status": "unknown_template",
+        "tier": "basic",
+        "code": f"No template named 'advanced_only'. Available: {names}",
+        "layers": layers,
+        "applied": [],
+        "missing": layers,
+    }
+    for callback, stem, selected in (
+        (render.render_basic, "basic_only", None),
+        (render.render_advanced, "basic_only", "basic"),
+        (render.render_advanced, "advanced_only", "advanced"),
+    ):
+        expected = {
+            "status": "render_error",
+            "plot_type": stem,
+            "png_base64": None,
+            "png_path": None,
+            "stderr": "return_format must be 'base64' or 'path'; got 'bogus'",
+        }
+        if selected is not None:
+            expected["tier"] = selected
+        assert callback(stem, "bogus", 30.0) == expected
+    expected = {
+        "status": "unknown_template",
+        "plot_type": "missing",
+        "tier": "none",
+        "png_base64": None,
+        "png_path": None,
+        "stderr": f"No template named 'missing'. Available basic: {names}. Available advanced: {advanced_names}.",
+    }
+    assert render.render_advanced("missing", "bogus", 30.0) == expected
+
+
+@pytest.mark.parametrize(
+    "consumer", [bundled.template_source, bundled.advanced_template_source]
+)
+def test_owner_root_source_decoding_errors_and_rereads(owner_root, consumer):
+    """Real source readers propagate invalid UTF-8 and reread replacements."""
+    path = owner_root / "invalid_utf8.py"
+    path.write_bytes(b"\xff")
+    with pytest.raises(UnicodeDecodeError):
+        consumer("invalid_utf8")
+    path.write_text("# replaced\n", encoding="utf-8")
+    assert consumer("invalid_utf8") == "# replaced\n"
+
+
+def test_selected_path_disappearance_is_native_file_error(
+    owner_root, monkeypatch
+):
+    """A real selected Path disappearing before its consumer read is not a miss."""
+    from dartwork_mpl import prompt
+
+    def select_then_remove(stem, *, advanced=False):
+        """Perform real selection then remove the selected file at the read seam."""
+        path = prompt.resolve_template_path(stem, advanced=advanced)
+        assert path is not None
+        path.unlink()
+        return path
+
+    monkeypatch.setattr(bundled, "resolve_template_path", select_then_remove)
+    with pytest.raises(FileNotFoundError):
+        bundled.template_source("inside")

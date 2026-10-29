@@ -273,8 +273,7 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
     """Font-controlled real PNG callbacks strip user text and mark genuine overruns."""
     from pathlib import Path
 
-    from dartwork_mpl.mcp._platform import assets as _assets
-    from dartwork_mpl.mcp.templates import bundled
+    from dartwork_mpl import prompt
 
     template_dir = tmp_path / "templates"
     (template_dir / "advanced").mkdir(parents=True)
@@ -295,8 +294,7 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
         "fig.savefig('out.png')\n"
         f"os.write(2, {raw_stderr!r})\n"
     )
-    monkeypatch.setattr(_assets, "_TEMPLATE_DIR", template_dir)
-    monkeypatch.setattr(bundled, "_TEMPLATE_DIR", template_dir)
+    monkeypatch.setattr(prompt, "_TEMPLATE_DIR", template_dir)
     result = _tools_map()[name]("owned", return_format=return_format)
     try:
         assert result["status"] == "ok", result
@@ -359,14 +357,12 @@ def test_invalid_format_wire_matches_structured_reply(
     """Real Client preserves exact text/structured refusals with isError false."""
     from fastmcp import Client
 
-    from dartwork_mpl.mcp._platform import assets
+    from dartwork_mpl import prompt
     from dartwork_mpl.mcp.server import mcp
-    from dartwork_mpl.mcp.templates import bundled
 
     scratch = selection == "fallback" or selection.startswith("scratch-")
     if scratch:
-        monkeypatch.setattr(assets, "_TEMPLATE_DIR", format_wire_assets)
-        monkeypatch.setattr(bundled, "_TEMPLATE_DIR", format_wire_assets)
+        monkeypatch.setattr(prompt, "_TEMPLATE_DIR", format_wire_assets)
     advanced = selection == "fallback" or selection.endswith("advanced")
     unknown = "unknown" in selection
     plot_type = (
@@ -379,7 +375,7 @@ def test_invalid_format_wire_matches_structured_reply(
         "png_path": None,
     }
     if unknown:
-        root = bundled._TEMPLATE_DIR
+        root = prompt._TEMPLATE_DIR
         basic_names = sorted(p.stem for p in root.glob("*.py"))
         if advanced:
             advanced_names = sorted(

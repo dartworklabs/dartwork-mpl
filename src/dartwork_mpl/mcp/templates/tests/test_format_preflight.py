@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from dartwork_mpl.mcp._platform import assets
-from dartwork_mpl.mcp.templates import bundled, render
+from dartwork_mpl import prompt
+from dartwork_mpl.mcp.templates import render
 
 _INVALID_FORMATS = ("bogus", "", "PATH", " base64")
 _TIERS = ("basic", "advanced", "fallback")
@@ -140,7 +140,7 @@ def test_unknown_selection_precedes_invalid_format(
     observations = _observations(
         tmp_path, root, tier, "missing_fixture", _INVALID_FORMATS
     )
-    expected = _unknown_reply(root or bundled._TEMPLATE_DIR, tier)
+    expected = _unknown_reply(root or prompt._TEMPLATE_DIR, tier)
     for observation in observations:
         _assert_refusal(observation, expected)
 
@@ -172,9 +172,9 @@ def _observe(request):
     """Observe real direct calls with a removable process, not removable hooks."""
     temp_root = Path(request["temp_root"])
     tempfile.tempdir = str(temp_root)
-    original_roots = (assets._TEMPLATE_DIR, bundled._TEMPLATE_DIR)
+    original_root = prompt._TEMPLATE_DIR
     if request["root"]:
-        assets._TEMPLATE_DIR = bundled._TEMPLATE_DIR = Path(request["root"])
+        prompt._TEMPLATE_DIR = Path(request["root"])
     events = []
     watching = False
 
@@ -215,7 +215,7 @@ def _observe(request):
                 }
             )
     finally:
-        assets._TEMPLATE_DIR, bundled._TEMPLATE_DIR = original_roots
+        prompt._TEMPLATE_DIR = original_root
     return receipts
 
 
