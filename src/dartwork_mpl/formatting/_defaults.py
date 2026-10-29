@@ -232,11 +232,25 @@ def _visible_locs(
     return [float(v) for v in locs if low <= float(v) <= high]
 
 
+def _converter_locator(locator: ticker.Locator) -> bool:
+    """Whether the locator is the one matplotlib's date converter made."""
+    if type(locator) is not mdates.AutoDateLocator:
+        return False
+    fresh = mdates.AutoDateLocator()  # type: ignore[no-untyped-call]
+    return (
+        locator.minticks == fresh.minticks
+        and locator.maxticks == fresh.maxticks
+        and bool(locator.interval_multiples)
+    )
+
+
 def thin_crowded_date_ticks(fig: Figure) -> int:
     """Give a crowded concise date axis fewer ticks; return the axes changed.
 
     Acts only on axes matplotlib's date converter set up (an
-    ``AutoDateLocator`` with concise labels) whose labels are not rotated.
+    ``AutoDateLocator`` with its default tick counts and concise labels)
+    whose labels are not rotated, so a locator someone configured, or one
+    already thinned, is kept.
     Each step lowers the locator's tick ceiling, skipping ceilings
     matplotlib cannot meet; the first that keeps neighbouring labels
     :data:`_MIN_DATE_GAP_EM` ems apart with two or more ticks wins. An axis
@@ -249,10 +263,11 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
             continue
         for axis in (ax.xaxis, ax.yaxis):
             locator = axis.get_major_locator()
-            if type(locator) is not mdates.AutoDateLocator or not isinstance(
+            if not _converter_locator(locator) or not isinstance(
                 axis.get_major_formatter(), mdates.ConciseDateFormatter
             ):
                 continue
+            assert isinstance(locator, mdates.AutoDateLocator)
             label = axis.get_major_ticks(1)[0].label1
             if axis is ax.xaxis and label.get_rotation() % 180:
                 continue

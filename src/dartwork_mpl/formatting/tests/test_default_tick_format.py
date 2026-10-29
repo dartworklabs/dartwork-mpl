@@ -322,6 +322,20 @@ class TestCrowdedDates:
         dm.simple_layout(fig)
         assert len(_drawn(ax, "x")) == 13
 
+    def test_configured_auto_locator_wins(self):
+        import matplotlib.dates as mdates
+
+        fig, ax = _fig()
+        _months(ax)
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=20))
+        ax.xaxis.set_major_formatter(
+            mdates.ConciseDateFormatter(ax.xaxis.get_major_locator())
+        )
+        dm.simple_layout(fig)
+        assert ax.xaxis.get_major_locator().maxticks == dict.fromkeys(
+            ax.xaxis.get_major_locator().maxticks, 20
+        )
+
     def test_rotated_labels_are_left_alone(self):
         fig, ax = _fig()
         _months(ax)
