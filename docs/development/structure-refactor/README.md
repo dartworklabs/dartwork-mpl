@@ -66,7 +66,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | --- | --- | --- |
 | C1 | `_helpers` 해체 → platform `_figure_geometry`, `create_parent_path`는 소유자에게 | #525–#528 |
 | C2 | platform `_rc`(rcParams 잠금, did_you_mean): `style`⇄`_colors`, `icon`→`style` 순환 제거 | #525–#528 |
-| C3 | style 표면 `preset_names`/`preset_chain`: lint·mcp·_colors의 `presets.json` 직접 읽기 제거 | #535 (`2eeca7aa`, `6330064c`) |
+| C3 | 기존 `Style.presets_dict()` 레지스트리 표면 사용: lint·mcp의 `presets.json` 직접 읽기 제거 | #535 (`2eeca7aa`, `6330064c`) |
 | C4 | `font/` 패키지, diagnostics의 `_FONT_DIR` 누출 제거(공개 `get_font_dir`). **icon은 흡수하지 않음**: 이름(`ensure_loaded`)과 변경 이유가 달라 잘못된 추상화 | #525–#528 |
 | C5 | `units/` 패키지, `col1/col2`를 units로 | #525–#528 |
 | C6 | `layout/` 패키지(이동만), 테스트 전용 `_measure_overflow`를 테스트 지원 코드로 | #525–#528 |
@@ -162,7 +162,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | ID | 내용 | 이유 |
 | --- | --- | --- |
 | H1 | 계획 작성 당시 main push의 runner 조상 권한(0775) 검사 실패와 PR CI 성공을 기록했다. 2026-10-29에는 재현·원격 상태 확인을 하지 않았다 | 현재도 실패하는지 미확인. 머신 설정 변경·보안 검사 완화는 사람이 정한다 |
-| H2 | 해소 — #544 (`da273413`): `complex`는 argparse 선택지에서 제외(exit 2), 비어 있지 않은 대상은 거절(exit 1). 같은 PR의 `0ec59ea1`은 `list[bool]` 쉼표 입력 파싱 수정 | `ui/__main__.py`·`ui/scaffold/`·`ui/params/_signature.py`에 반영 |
+| H2 | 해소 — #544 (`da273413`): `complex`는 argparse 선택지에서 제외(exit 2), 비어 있지 않은 대상은 거절(exit 1). 같은 PR의 `0ec59ea1`은 `list[bool]` 쉼표 입력 파싱 수정 | `ui/__main__.py`·`ui/scaffold/`·`ui/params/_active.py`에 반영 |
 | H3 | MCP discovery 스캐너를 레지스트리 기반으로 바꿔 tool 정의를 슬라이스로 옮기기 | ADR 0001 A1 동결 도구 수정 |
 | H4 | `_colors/_compatibility_metrics.py` 이동·정리 | 출하 자산에 경로·SHA 고정 |
 | H5 | 공개 파라미터 `Literal` 축소, `lint.Rule` detector union, `Issue.line` non-Optional, `VisualWarning` frozen | 공개 정적 계약 변경 |
