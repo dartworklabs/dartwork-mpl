@@ -385,7 +385,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "the grayscale check compares colours in the model's OKLab and Y"
     ),
     ("dartwork_mpl.helpers", "dartwork_mpl.validate"): (
-        "historical diagnostic aliases expose the native quality owner and DPI threshold"
+        "historical diagnostic aliases expose native data validation, quality and DPI threshold"
     ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
@@ -401,6 +401,7 @@ SHIMS: Mapping[str, str] = {
     "dartwork_mpl.validate_fixes": "dartwork_mpl.validate",
     "dartwork_mpl.helpers.colors": "dartwork_mpl._colors",
     "dartwork_mpl.helpers.labels": "dartwork_mpl.annotation",
+    "dartwork_mpl.helpers.data": "dartwork_mpl.validate",
 }
 
 # Modules holding pure decisions: they import no other unit, surfaces included.

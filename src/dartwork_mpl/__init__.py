@@ -168,7 +168,7 @@ EXPERIMENTAL: frozenset[str] = frozenset()
 # humans alike can reach the most useful workflow utilities through a
 # single ``dm.<name>`` access path. The submodule namespace
 # (``dm.helpers.<name>``) remains available as well.
-from .helpers import suggest_chart_type, validate_data
+from .helpers import suggest_chart_type
 
 # Native lint + migration entry points (T4). The ``dm.lint`` name is
 # the module itself (so ``dm.lint.lint(...)`` and
@@ -180,7 +180,7 @@ from .lint import lint as lint_code
 from .lint import migrate_legacy_code
 
 # Validation entry points
-from .validate import check_figure_quality, validate_figure
+from .validate import check_figure_quality, validate_data, validate_figure
 from .validate_fixes import validate_with_fixes
 
 # Define __all__ for explicit exports. The order is intentionally

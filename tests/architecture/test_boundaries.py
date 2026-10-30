@@ -793,3 +793,26 @@ def test_quality_alias_dependency_rejects_cycles_private_and_missing_allowance()
         e.startswith("undeclared dependency:")
         for e in checker.violations(code, packages, missing)
     )
+
+
+def test_data_shim_is_declared_with_validate_ownership():
+    """Historical data imports explicitly belong to the native validation owner."""
+    assert checker.SHIMS.get(f"{P}.helpers.data") == f"{P}.validate"
+
+
+def test_data_owner_and_shim_declare_the_callable_surface():
+    """Both surfaces expose native cleanup; root wiring makes missing exports fail."""
+    import ast
+
+    for relative in ("validate/__init__.py", "helpers/data.py"):
+        tree = ast.parse((ROOT / "src/dartwork_mpl" / relative).read_text())
+        exports = [
+            ast.literal_eval(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(t, ast.Name) and t.id == "__all__"
+                for t in node.targets
+            )
+        ]
+        assert len(exports) == 1 and "validate_data" in exports[0], relative
