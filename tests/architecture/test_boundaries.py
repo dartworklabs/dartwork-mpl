@@ -641,3 +641,101 @@ def test_nested_legend_shim_enforces_all_dependency_paths():
                 name,
                 errors,
             )
+
+
+def test_palette_shim_is_declared_with_color_ownership():
+    """Historical palette imports explicitly belong to the existing color owner."""
+    assert checker.SHIMS.get(f"{P}.helpers.colors") == f"{P}._colors"
+
+
+def test_nested_palette_shim_enforces_dependency_paths():
+    """Nested palette shim retains legal paths and rejects six boundary violations."""
+    p = "dartwork_mpl"
+    f = p + "._colors"
+    h = p + ".helpers"
+    plat = p + "._platform"
+    layout = checker.Layout(
+        frozenset({p}),
+        frozenset({plat}),
+        frozenset({f, h}),
+        {(h, f): "historical palette import reexports curated lookup"},
+        {},
+        {h + ".colors": f},
+    )
+    code = {
+        p: "from ._colors import make_palette\nfrom .helpers import validate_data\n",
+        f: '__all__=["make_palette"]\nfrom ._palette import make_palette\n',
+        f
+        + "._palette": "from typing import Literal\ndef make_palette(): ...\n",
+        h: '__all__=["make_palette","validate_data"]\nfrom .colors import make_palette\nfrom .data import validate_data\n',
+        h
+        + ".colors": '__all__=["make_palette"]\nfrom .._colors import make_palette as make_palette\n',
+        h + ".data": "def validate_data(): ...\n",
+        plat: "__all__=[]\n",
+    }
+    packages = {p, f, h}
+    variants = {
+        "legal": (code, layout),
+        "missing_shim_all": (
+            {**code, h + ".colors": "from .._colors import make_palette\n"},
+            layout,
+        ),
+        "private_owner_access": (
+            {
+                **code,
+                h + ".data": "from .._colors._palette import make_palette\n",
+            },
+            layout,
+        ),
+        "platform_via_nested_shim": (
+            {
+                **code,
+                plat: "__all__=[]\nfrom .helpers.colors import make_palette\n",
+            },
+            layout,
+        ),
+        "owner_imports_shim": (
+            {
+                **code,
+                f + "._palette": "from ..helpers.colors import make_palette\n",
+            },
+            layout,
+        ),
+        "missing_helpers_allowance": (
+            code,
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                {},
+                layout.decisions,
+                layout.shims,
+            ),
+        ),
+        "decision_cross_slice": (
+            {**code, f + "._palette": "from ..helpers import validate_data\n"},
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                layout.allowed,
+                {f + "._palette": "synthetic pure decision"},
+                layout.shims,
+            ),
+        ),
+    }
+    expected = {
+        "missing_shim_all": "missing __all__:",
+        "private_owner_access": "private import:",
+        "platform_via_nested_shim": "platform reaches slice:",
+        "owner_imports_shim": "cycle:",
+        "missing_helpers_allowance": "undeclared dependency:",
+        "decision_cross_slice": "decision import:",
+    }
+    results = {
+        k: checker.violations(src, packages, lay)
+        for k, (src, lay) in variants.items()
+    }
+    assert results["legal"] == []
+    for k, prefix in expected.items():
+        assert any(e.startswith(prefix) for e in results[k]), (k, results[k])

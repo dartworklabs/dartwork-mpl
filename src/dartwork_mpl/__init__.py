@@ -53,6 +53,7 @@ from ._colors import (
     ensure_contrast,
     hex,
     list_colors,
+    make_palette,
     oklab,
     oklch,
     readable_text_color,
@@ -167,12 +168,7 @@ EXPERIMENTAL: frozenset[str] = frozenset()
 # humans alike can reach the most useful workflow utilities through a
 # single ``dm.<name>`` access path. The submodule namespace
 # (``dm.helpers.<name>``) remains available as well.
-from .helpers import (
-    check_figure_quality,
-    make_palette,
-    suggest_chart_type,
-    validate_data,
-)
+from .helpers import check_figure_quality, suggest_chart_type, validate_data
 
 # Native lint + migration entry points (T4). The ``dm.lint`` name is
 # the module itself (so ``dm.lint.lint(...)`` and

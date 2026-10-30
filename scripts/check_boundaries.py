@@ -235,6 +235,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
         "the explorer draws the colour and font diagnostics it lists"
     ),
+    ("dartwork_mpl.helpers", "dartwork_mpl._colors"): (
+        "historical curated palette imports re-export the color owner's callable"
+    ),
     ("dartwork_mpl.helpers", "dartwork_mpl.annotation"): (
         "historical legend imports re-export annotation's callable"
     ),
@@ -396,6 +399,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
 SHIMS: Mapping[str, str] = {
     # dm.validate_fixes predates the validate slice's fix modules.
     "dartwork_mpl.validate_fixes": "dartwork_mpl.validate",
+    "dartwork_mpl.helpers.colors": "dartwork_mpl._colors",
     "dartwork_mpl.helpers.labels": "dartwork_mpl.annotation",
 }
 
