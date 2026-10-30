@@ -19,7 +19,7 @@ class TestBundledTemplatesLintClean:
 
     def test_all_prompt_templates_lint_clean(self) -> None:
         templates_dir = (
-            Path(__file__).resolve().parents[1]
+            Path(__file__).resolve().parents[2]
             / "src"
             / "dartwork_mpl"
             / "asset"

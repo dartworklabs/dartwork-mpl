@@ -17,7 +17,7 @@ import matplotlib.colors as mcolors
 matplotlib.use("Agg")
 
 _STYLE = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parents[2]
     / "src"
     / "dartwork_mpl"
     / "asset"

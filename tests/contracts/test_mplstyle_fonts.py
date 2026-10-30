@@ -22,7 +22,7 @@ from pathlib import Path
 def _contract_families() -> tuple[str, ...]:
     spec = importlib.util.spec_from_file_location(
         "_test_font_contract",
-        Path(__file__).resolve().parents[1]
+        Path(__file__).resolve().parents[2]
         / "src/dartwork_mpl/font/tests/test_font.py",
     )
     assert spec and spec.loader
@@ -34,7 +34,7 @@ def _contract_families() -> tuple[str, ...]:
 CONTRACT_FAMILIES = _contract_families()
 
 _MPLSTYLE_DIR = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parents[2]
     / "src"
     / "dartwork_mpl"
     / "asset"

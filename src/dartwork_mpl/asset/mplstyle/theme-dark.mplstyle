@@ -27,5 +27,5 @@ savefig.facecolor:  "#1e1e1e"
 # D65 sRGB. Neither modeled quantity measures a display or print process. Pair
 # separation is validation-only ΔE00 under normal vision, Machado (2009)
 # protan/deutan, and BVM (1997) tritan simulation (worst-case minimum 11.0).
-# The hue order matches the light cycle; see tests/test_theme_dark_cycle.py.
+# The hue order matches the light cycle; see tests/contracts/test_theme_dark_cycle.py.
 axes.prop_cycle: cycler('color', ['dc.blue3', 'dc.orange3', 'dc.green9', 'dc.pink6', 'dc.amber6', 'dc.violet5', 'dc.cyan6'])
