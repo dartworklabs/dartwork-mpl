@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 CHECKER = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parents[2]
     / "scripts"
     / "check_integration_junit.py"
 )

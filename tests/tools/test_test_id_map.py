@@ -3,7 +3,7 @@
 The tool is what a reorganization PR shows as its evidence, so a comparison that let a lost, doubled or new test through
 would make that evidence worthless. These tests feed it collections and runs directly (no git, no pytest subprocess).
 
-Run: uv run pytest -q tests/test_test_id_map.py
+Run: uv run pytest -q tests/tools/test_test_id_map.py
 """
 
 import importlib.util
@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location(
     "test_id_map_tool", ROOT / "scripts" / "test_id_map.py"
 )
