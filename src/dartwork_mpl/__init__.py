@@ -127,6 +127,7 @@ from .prompt import (
 
 # --- Explicit imports from split modules (formerly in util.py) ---
 # Scaling helpers
+from .recommend import suggest_chart_type
 from .scale import dpi, fs, fw, lw
 
 # Import style module exports
@@ -168,7 +169,6 @@ EXPERIMENTAL: frozenset[str] = frozenset()
 # humans alike can reach the most useful workflow utilities through a
 # single ``dm.<name>`` access path. The submodule namespace
 # (``dm.helpers.<name>``) remains available as well.
-from .helpers import suggest_chart_type
 
 # Native lint + migration entry points (T4). The ``dm.lint`` name is
 # the module itself (so ``dm.lint.lint(...)`` and

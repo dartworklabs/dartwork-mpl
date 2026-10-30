@@ -130,6 +130,7 @@ SLICES = frozenset(
         "dartwork_mpl.mcp.recommend",
         "dartwork_mpl.mcp.templates",
         "dartwork_mpl.prompt",
+        "dartwork_mpl.recommend",
         "dartwork_mpl.scale",
         "dartwork_mpl.style",
         "dartwork_mpl.templates",
@@ -151,6 +152,9 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
+    ("dartwork_mpl.helpers", "dartwork_mpl.recommend"): (
+        "historical recommendation aliases expose the native callable"
+    ),
     ("dartwork_mpl.lint", "dartwork_mpl.prompt"): (
         "lint parses the bundled anti-pattern catalog opened by its corpus owner"
     ),
@@ -313,7 +317,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.lint", "dartwork_mpl.lint"): (
         "the MCP lint tools expose dm.lint's anti-pattern linter"
     ),
-    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.helpers"): (
+    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.recommend"): (
         "the suggest_chart_type tool wraps dm.suggest_chart_type's heuristic"
     ),
     ("dartwork_mpl.mcp.recommend", "dartwork_mpl.mcp.templates"): (
@@ -406,6 +410,9 @@ SHIMS: Mapping[str, str] = {
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.recommend._chart_type": (
+        "chart semantics decide solely from caller values"
+    ),
     "dartwork_mpl.mcp.artifacts.policy": (
         "artifact admission, expiry and request parsing decide from values"
     ),

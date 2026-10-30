@@ -816,3 +816,18 @@ def test_data_owner_and_shim_declare_the_callable_surface():
             )
         ]
         assert len(exports) == 1 and "validate_data" in exports[0], relative
+
+
+def test_native_recommendation_ownership_is_declared():
+    """Native decisions own semantics; helpers keeps both public owner edges."""
+    assert f"{P}.recommend" in checker.SLICES
+    assert f"{P}.recommend._chart_type" in checker.DECISIONS
+    assert (f"{P}.helpers", f"{P}.recommend") in checker.ALLOWED
+    assert (f"{P}.helpers", f"{P}.validate") in checker.ALLOWED
+    assert (f"{P}.mcp.recommend", f"{P}.recommend") in checker.ALLOWED
+    assert (f"{P}.mcp.recommend", f"{P}.helpers") not in checker.ALLOWED
+    assert f"{P}.helpers.quality" not in checker.SHIMS
+    assert (
+        checker.owner(f"{P}.helpers.quality", checker.REPOSITORY_LAYOUT)
+        == f"{P}.helpers"
+    )
