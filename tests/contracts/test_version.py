@@ -15,7 +15,7 @@ import pytest
 
 import dartwork_mpl as dm
 
-_PYPROJECT = Path(__file__).resolve().parent.parent / "pyproject.toml"
+_PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 
 
 def test_version_matches_installed_metadata() -> None:
