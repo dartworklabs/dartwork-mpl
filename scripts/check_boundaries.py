@@ -384,8 +384,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.validate", "dartwork_mpl._colors.model"): (
         "the grayscale check compares colours in the model's OKLab and Y"
     ),
-    ("dartwork_mpl.validate", "dartwork_mpl.helpers"): (
-        "the agent high_dpi requirement is the figure quality check's minimum DPI"
+    ("dartwork_mpl.helpers", "dartwork_mpl.validate"): (
+        "historical diagnostic aliases expose the native quality owner and DPI threshold"
     ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"

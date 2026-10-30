@@ -739,3 +739,57 @@ def test_nested_palette_shim_enforces_dependency_paths():
     assert results["legal"] == []
     for k, prefix in expected.items():
         assert any(e.startswith(prefix) for e in results[k]), (k, results[k])
+
+
+def test_quality_dependency_points_from_historical_helpers_to_validate():
+    """Native diagnostics belong to validate without the old threshold back-edge."""
+    h, v = f"{P}.helpers", f"{P}.validate"
+    assert (h, v) in checker.ALLOWED
+    assert (v, h) not in checker.ALLOWED
+    assert h + ".quality" not in checker.SHIMS
+
+
+def test_quality_alias_dependency_rejects_cycles_private_and_missing_allowance():
+    """A mixed helper module may alias the owner surface but cannot bypass its boundary."""
+    h, v = f"{P}.helpers", f"{P}.validate"
+    layout = checker.Layout(
+        frozenset({P}),
+        frozenset(),
+        frozenset({h, v}),
+        {(h, v): "historical diagnostic aliases"},
+        {},
+    )
+    code = {
+        P: "from .validate import check_figure_quality\n",
+        h: '__all__=["check_figure_quality"]\nfrom .quality import check_figure_quality\n',
+        h
+        + ".quality": "from ..validate import check_figure_quality\ndef suggest_chart_type(): ...\n",
+        v: '__all__=["check_figure_quality"]\nfrom ._quality import check_figure_quality\n',
+        v + "._quality": "def check_figure_quality(): ...\n",
+    }
+    packages = {P, h, v}
+    assert checker.violations(code, packages, layout) == []
+    cycle = {
+        **code,
+        v + "._quality": "from ..helpers import check_figure_quality\n",
+    }
+    assert any(
+        e.startswith("cycle:")
+        for e in checker.violations(cycle, packages, layout)
+    )
+    private = {
+        **code,
+        h
+        + ".quality": "from ..validate._quality import check_figure_quality\n",
+    }
+    assert any(
+        e.startswith("private import:")
+        for e in checker.violations(private, packages, layout)
+    )
+    missing = checker.Layout(
+        layout.entry_points, layout.platform, layout.slices, {}, {}
+    )
+    assert any(
+        e.startswith("undeclared dependency:")
+        for e in checker.violations(code, packages, missing)
+    )

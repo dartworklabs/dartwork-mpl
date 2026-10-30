@@ -25,6 +25,13 @@ Usage
 from __future__ import annotations
 
 from ._orchestrator import validate_figure
+from ._quality import MIN_RECOMMENDED_DPI, check_figure_quality
 from ._types import Severity, VisualWarning
 
-__all__ = ["Severity", "VisualWarning", "validate_figure"]
+__all__ = [  # noqa: RUF022 — preserve historical export order before additions.
+    "Severity",
+    "VisualWarning",
+    "validate_figure",
+    "MIN_RECOMMENDED_DPI",
+    "check_figure_quality",
+]
