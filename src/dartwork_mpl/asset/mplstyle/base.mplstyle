@@ -12,7 +12,7 @@
 # anything past the bundle intentionally falls to matplotlib's default
 # rather than a machine-dependent OS font, so output is reproducible across
 # machines. The bundled corpus already covers the scientific/report symbol
-# set (see tests/test_font_glyph_coverage.py). Both chains are pinned by
+# set (see tests/contracts/test_font_glyph_coverage.py). Both chains are pinned by
 # tests/test_style_chain_parity.py.
 font.family: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 font.sans-serif: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif

@@ -86,7 +86,7 @@ def test_agent_doc_bundle_matches_pyproject_force_include() -> None:
 
     from dartwork_mpl.agent import _SUFFIXES, AGENT_DOCS
 
-    pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    pyproject = Path(__file__).resolve().parents[2] / "pyproject.toml"
     if not pyproject.is_file():
         pytest.skip("pyproject.toml not reachable (installed-wheel run)")
     data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
