@@ -74,7 +74,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | C8 | `formatting/` 패키지 + `set_decimal` 흡수 + `__all__` | #525–#528 |
 | C9 | `io/` 패키지. ui는 U5, mcp는 M6에서 `util` 대신 소유자 import | #525–#528 |
 | C10 | `util.py` → shim 전용, `mix_colors`/`pseudo_alpha` → `_colors` | #535 (`d070514c`, `dddabeec`): `util`은 재노출만, 색 혼합은 `_colors/blend` |
-| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 부분 — #535 (`1eca8e31`): 최소 DPI 소유권·의존 선언 정리. 로컬 커밋 `dbd594e4`에서 `optimize_legend`를 annotation으로, `6068ba35`에서 `make_palette`를 _colors로 이전하고 기존 import를 보존했다. `0e6831eb`에서는 `check_figure_quality`와 DPI 기준을 validate로 이전하고 `validate → helpers` 의존을 제거했다. 데이터 검증·차트 추천 구현의 이전은 남음. 2026-10-30 로컬 커밋·검증 기준이며, 원격 CI·병합·공개 이슈 완료는 미확인 |
+| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 로컬 반영·검증 — #535 (`1eca8e31`): 최소 DPI 소유권·의존 선언 정리. 로컬 커밋 `dbd594e4`에서 `optimize_legend`를 annotation으로, `6068ba35`에서 `make_palette`를 _colors로 이전하고 기존 import를 보존했다. `0e6831eb`에서는 `check_figure_quality`와 DPI 기준을 validate로 이전하고 `validate → helpers` 의존을 제거했다. `1479a9bc`에서 데이터 검증을 validate로, `2a95cdc1`에서 차트 추천을 recommend로 이전했다. `helpers/`의 다섯 프로덕션 모듈은 import·docstring·`__all__` 연결만 남았다. 2026-10-30 로컬 구현·범위 내 검증 기준이며, 전체 테스트·다른 런타임 검증과 원격 CI·병합·공개 C11/이슈·릴리스 완료는 미확인 |
 | C13 | 테스트를 가진 단일 파일 슬라이스 `scale`·`tokens`·`icon`·`explore`를 같은 이름 패키지로(테스트 동거). `config`·`agent`는 전용 테스트가 없어 유지 | #526 |
 | C12 | `templates`의 루트 import 제거, `__init__` 배선화(`_compat.py`, twinx 패치는 style로) | #525–#528 |
 
