@@ -14,7 +14,7 @@ CHECKER = (
     / "check_integration_junit.py"
 )
 MODULES = (
-    "tests.test_mcp",
+    "tests.contracts.test_mcp",
     "tests.test_integration",
     "tests.test_cli",
     "tests.test_drift",
@@ -22,12 +22,12 @@ MODULES = (
     "tests.mcp.agent_loop.test_capture",
     "tests.test_docs_mcp_tools",
     "tests.test_docstring_catalogs",
-    "tests.test_mcp_asset_boundary",
-    "tests.test_mcp_data_repair_contract",
-    "tests.test_mcp_heavy_tools",
-    "tests.test_mcp_render_smoke",
-    "tests.test_mcp_tool_hardening",
-    "tests.test_mcp_validation_contract",
+    "tests.contracts.test_mcp_asset_boundary",
+    "tests.contracts.test_mcp_data_repair_contract",
+    "tests.contracts.test_mcp_heavy_tools",
+    "tests.contracts.test_mcp_render_smoke",
+    "tests.contracts.test_mcp_tool_hardening",
+    "tests.contracts.test_mcp_validation_contract",
     "src.dartwork_mpl.mcp.plot_data.tests.test_validators",
     "tests.mcp.artifacts.test_artifact_boundaries",
     "tests.mcp.artifacts.test_artifact_discovery",

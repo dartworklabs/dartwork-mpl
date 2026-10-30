@@ -17,7 +17,7 @@ from dartwork_mpl.mcp.server import mcp  # noqa: E402
 
 _FIXTURE = json.loads(
     (
-        Path(__file__).parent / "mcp/data_repair/fixtures/legacy_calls.json"
+        Path(__file__).parents[1] / "mcp/data_repair/fixtures/legacy_calls.json"
     ).read_text()
 )
 _REQUESTS = _FIXTURE["requests"]

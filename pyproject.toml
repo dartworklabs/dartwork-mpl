@@ -363,7 +363,7 @@ disallow_subclassing_any = false
 
 [tool.coverage.run]
 source = ["src/dartwork_mpl"]
-# mcp/ is the agentic core and is exercised by tests/test_mcp.py +
+# mcp/ is the agentic core and is exercised by tests/contracts/test_mcp.py +
 # tests/test_integration.py, so it stays in the report (omitting it
 # hid the agentic surface behind an inflated headline number). ui/ is
 # the optional `dartwork-mpl-ui` viewer (FastAPI app + a 1.5k-line HTML
