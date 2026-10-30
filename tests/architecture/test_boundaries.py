@@ -528,3 +528,116 @@ def test_template_consumers_detector_allows_style_only_paths():
         )
     )
     assert _template_storage_violations(source) == []
+
+
+def test_legend_shim_is_declared_with_annotation_ownership():
+    """The historical nested module is explicitly owned by annotation."""
+    assert checker.SHIMS.get(f"{P}.helpers.labels") == f"{P}.annotation"
+
+
+def test_nested_legend_shim_enforces_all_dependency_paths():
+    """Nested shim ownership preserves private, platform, cycle and decision checks."""
+    p = "dartwork_mpl"
+    a = p + ".annotation"
+    h = p + ".helpers"
+    s = p + ".scale"
+    reg = p + "._colors.registry"
+    plat = p + "._platform"
+    layout = checker.Layout(
+        frozenset({p}),
+        frozenset({plat}),
+        frozenset({a, h, s, reg}),
+        {
+            (h, a): "historical legend alias",
+            (a, s): "preset sizing",
+            (a, reg): "legend edge colour registration",
+        },
+        {},
+        {h + ".labels": a},
+    )
+    code = {
+        p: "from .annotation import optimize_legend\nfrom .helpers import validate_data\n",
+        a: '__all__=["optimize_legend"]\nfrom ._legend import optimize_legend\n',
+        a
+        + "._legend": "from ..scale import fs\ndef optimize_legend():\n from .._colors.registry import ensure_loaded\n",
+        h: '__all__=["optimize_legend","validate_data"]\nfrom .labels import optimize_legend\nfrom .data import validate_data\n',
+        h
+        + ".labels": '__all__=["optimize_legend"]\nfrom ..annotation import optimize_legend\n',
+        h + ".data": "def validate_data(): ...\n",
+        s: '__all__=["fs"]\ndef fs(): ...\n',
+        reg: '__all__=["ensure_loaded"]\ndef ensure_loaded(): ...\n',
+        plat: "__all__=[]\n",
+    }
+    packages = {p, a, h, p + "._colors"}
+    variants = {
+        "legal": (code, layout),
+        "shim_missing_all": (
+            {
+                **code,
+                h + ".labels": "from ..annotation import optimize_legend\n",
+            },
+            layout,
+        ),
+        "private_owner_access": (
+            {
+                **code,
+                h
+                + ".data": "from ..annotation._legend import optimize_legend\n",
+            },
+            layout,
+        ),
+        "platform_via_nested_shim": (
+            {
+                **code,
+                plat: "__all__=[]\nfrom .helpers.labels import optimize_legend\n",
+            },
+            layout,
+        ),
+        "owner_imports_historical_shim": (
+            {
+                **code,
+                a + "._legend": code[a + "._legend"]
+                + " from ..helpers.labels import optimize_legend\n",
+            },
+            layout,
+        ),
+        "undeclared_helpers_annotation": (
+            code,
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                {k: v for k, v in layout.allowed.items() if k != (h, a)},
+                layout.decisions,
+                layout.shims,
+            ),
+        ),
+        "decision_import": (
+            code,
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                layout.allowed,
+                {a + "._legend": "synthetic decision"},
+                layout.shims,
+            ),
+        ),
+    }
+    expected = {
+        "shim_missing_all": "missing __all__:",
+        "private_owner_access": "private import:",
+        "platform_via_nested_shim": "platform reaches slice:",
+        "owner_imports_historical_shim": "cycle:",
+        "undeclared_helpers_annotation": "undeclared dependency:",
+        "decision_import": "decision import:",
+    }
+    for name, (source, rules) in variants.items():
+        errors = checker.violations(source, packages, rules)
+        if name == "legal":
+            assert errors == []
+        else:
+            assert any(e.startswith(expected[name]) for e in errors), (
+                name,
+                errors,
+            )

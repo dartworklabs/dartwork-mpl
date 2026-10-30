@@ -217,6 +217,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl._colors.verify", "dartwork_mpl._colors._ssot"): (
         "the gates read the quality baseline the validated authority pins"
     ),
+    ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
+        "legend edge colours require registered shipped colours"
+    ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
     ),
@@ -232,11 +235,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
         "the explorer draws the colour and font diagnostics it lists"
     ),
-    ("dartwork_mpl.helpers", "dartwork_mpl._colors.registry"): (
-        "label helpers resolve dc.* colour names, which must be registered"
-    ),
-    ("dartwork_mpl.helpers", "dartwork_mpl.scale"): (
-        "legend and label helpers size text relative to the active preset"
+    ("dartwork_mpl.helpers", "dartwork_mpl.annotation"): (
+        "historical legend imports re-export annotation's callable"
     ),
     ("dartwork_mpl.io", "dartwork_mpl.config"): (
         "saving applies the user's export defaults from dm.config"
@@ -395,7 +395,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
 # Compatibility shims: public module path -> the unit that owns its contents.
 SHIMS: Mapping[str, str] = {
     # dm.validate_fixes predates the validate slice's fix modules.
-    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate"
+    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate",
+    "dartwork_mpl.helpers.labels": "dartwork_mpl.annotation",
 }
 
 # Modules holding pure decisions: they import no other unit, surfaces included.

@@ -75,6 +75,7 @@ from .annotation import (
     label_axes,
     label_hline,
     make_offset,
+    optimize_legend,
     place_legend,
     wrap_axis_label,
     wrap_axis_labels,
@@ -169,7 +170,6 @@ EXPERIMENTAL: frozenset[str] = frozenset()
 from .helpers import (
     check_figure_quality,
     make_palette,
-    optimize_legend,
     suggest_chart_type,
     validate_data,
 )
