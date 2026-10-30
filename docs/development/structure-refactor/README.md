@@ -56,7 +56,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | G2 | 동거 수집 기반: 루트 `conftest.py`로 격리 fixture 승격, `tests/support/`, `--import-mode=importlib`, `testpaths=["tests","src/dartwork_mpl"]`, CI·release `pytest` 경로 제거, wheel `**/tests/**` exclude + 패키징 테스트, coverage omit | #522 |
 | G3 | mypy: `files`, 동거 테스트 exclude, `exhaustive-match`, `strict_equality`, 완화 override를 모듈 단위로 축소, dev 그룹에 extras, 명령 `uv run mypy` 통일 | #520 |
 | G4 | `scripts/check_boundaries.py` + `tests/architecture/test_boundaries.py`(주입 위반 5종 실패, 슬라이스 내부 import 통과), 현재 위반 `DEBT` 등재(검사는 pytest가 실행) | #521 |
-| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 부분 — #535 (`8534a470`): 단일 슬라이스 테스트 동거 완료. 루트 분류·보호 목록·진입 문서 경로 정리는 남음 |
+| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 부분 — #535 (`8534a470`): 단일 슬라이스 테스트 동거 완료. 기존 루트 58개 모듈 분류를 마쳤고, 로컬 커밋 `cfb8731c`에서 도구 테스트 3개를, `a0cddb4b`에서 핵심 계약 테스트 3개를 이전했다. 기존 테스트 항목과 결과를 보존했으며 보호 JUnit ID는 건드리지 않았다. 나머지 재배치·보호 목록·진입 문서 경로 정리는 남음. 2026-10-30 로컬 커밋·검증 기준이며, 원격 CI·병합·공개 이슈 완료는 미확인 |
 
 ### 2단계 — 이동 (영역마다 순서대로. 영역끼리는 병행할 수 있다. 각 PR은 그 슬라이스의 테스트도 함께 옮긴다)
 
@@ -74,7 +74,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | C8 | `formatting/` 패키지 + `set_decimal` 흡수 + `__all__` | #525–#528 |
 | C9 | `io/` 패키지. ui는 U5, mcp는 M6에서 `util` 대신 소유자 import | #525–#528 |
 | C10 | `util.py` → shim 전용, `mix_colors`/`pseudo_alpha` → `_colors` | #535 (`d070514c`, `dddabeec`): `util`은 재노출만, 색 혼합은 `_colors/blend` |
-| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 부분 — #535 (`1eca8e31`): 최소 DPI 소유권·의존 선언 정리. `helpers` 구현의 소유 슬라이스 이전은 남음 |
+| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 부분 — #535 (`1eca8e31`): 최소 DPI 소유권·의존 선언 정리. 로컬 커밋 `dbd594e4`에서 `optimize_legend`를 annotation으로, `6068ba35`에서 `make_palette`를 _colors로 이전하고 기존 import를 보존했다. `0e6831eb`에서는 `check_figure_quality`와 DPI 기준을 validate로 이전하고 `validate → helpers` 의존을 제거했다. 데이터 검증·차트 추천 구현의 이전은 남음. 2026-10-30 로컬 커밋·검증 기준이며, 원격 CI·병합·공개 이슈 완료는 미확인 |
 | C13 | 테스트를 가진 단일 파일 슬라이스 `scale`·`tokens`·`icon`·`explore`를 같은 이름 패키지로(테스트 동거). `config`·`agent`는 전용 테스트가 없어 유지 | #526 |
 | C12 | `templates`의 루트 import 제거, `__init__` 배선화(`_compat.py`, twinx 패치는 style로) | #525–#528 |
 
@@ -147,7 +147,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | --- | --- | --- |
 | D1 | ruff D100–D107(테스트는 D100–D101) 활성, 누락 docstring 보완 | #545 (`7e0c86d8`, `59da73a5`, `fc833124`) |
 | D2 | `DEBT = {}`로 경계 검사 강제 전환 | #535 (`3c406a56`) |
-| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 부분 — #545 (`7d25d3b4`): exclude 수정; job 이름은 남음. 색 검사 3중 중복 해소는 미확인 |
+| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 부분 — #545 (`7d25d3b4`): exclude 수정. 로컬 감사에서 정본 최신성·생성 코드 최신성·비교 진단과 출처 기록·게시 검사가 서로 다른 실패를 잡는 것으로 확인돼 검사 삭제 근거는 없었다. 선택 사항인 두 테스트의 설정 공유는 보류했다. job 이름 결정은 남고 branch-protection ID는 미확인·변경 없음. 원격 CI·병합·공개 이슈 완료는 미확인 |
 
 #546 (`787b5c2b`, `bdbcfc8c`, `8aa8f267`)은 xdist 병렬 실행, 색 파이프라인 결과 공유,
 3.12 job의 색 파이프라인 전담을 반영했다. D3의 나머지 정리가 끝났다는 뜻은 아니다.
