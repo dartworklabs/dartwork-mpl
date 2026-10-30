@@ -4,7 +4,7 @@ GENERATED FILE — do not edit by hand. Regenerate with::
 
     .venv-local/bin/python scripts/generate_typing.py
 
-``tests/test_typing_parity.py`` pins these Literals to the live
+``tests/contracts/test_typing_parity.py`` pins these Literals to the live
 registries (named-color mapping / colormap registry), so a palette or
 colormap change that skips the regen fails CI.
 """

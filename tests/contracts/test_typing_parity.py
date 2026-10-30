@@ -26,7 +26,7 @@ import pytest
 import dartwork_mpl  # noqa: F401 — registers color namespaces
 from dartwork_mpl._colors._typing import DartworkColor, DartworkColormap
 
-_ROOT = Path(__file__).resolve().parents[1]
+_ROOT = Path(__file__).resolve().parents[2]
 _GENERATOR = _ROOT / "scripts" / "generate_typing.py"
 _TARGET = _ROOT / "src" / "dartwork_mpl" / "_colors" / "_typing.py"
 _REGEN = "uv run python scripts/generate_typing.py"

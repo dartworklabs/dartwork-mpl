@@ -62,7 +62,7 @@ EXPECTED_HASHES = {
     ),
 }
 QUALITY_PATH = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parents[2]
     / "docs"
     / "superpowers"
     / "specs"
@@ -71,7 +71,7 @@ QUALITY_PATH = (
     / "color_v5_quality.json"
 )
 CLI_PATH = (
-    Path(__file__).resolve().parents[1] / "scripts" / "compare_color_systems.py"
+    Path(__file__).resolve().parents[2] / "scripts" / "compare_color_systems.py"
 )
 
 
@@ -1977,7 +1977,7 @@ def test_real_cli_subprocess_uses_isolated_source_audit_namespace(
     tmp_path: Path,
 ) -> None:
     """Run cold while blocking public/runtime imports and registry mutation."""
-    repository = Path(__file__).resolve().parents[1]
+    repository = Path(__file__).resolve().parents[2]
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(repository / "src")
     environment["MPLCONFIGDIR"] = str(tmp_path / "mplconfig")
@@ -2100,6 +2100,6 @@ def test_real_cli_subprocess_uses_isolated_source_audit_namespace(
 
 def test_build_artifact_directory_is_exactly_ignored() -> None:
     """Keep local and CI report artifacts outside version control."""
-    ignore = Path(__file__).resolve().parents[1] / ".gitignore"
+    ignore = Path(__file__).resolve().parents[2] / ".gitignore"
 
     assert "/build/" in ignore.read_text(encoding="utf-8").splitlines()
