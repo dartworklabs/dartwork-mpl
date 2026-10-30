@@ -105,7 +105,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | U3 | `ui/platform/`(json, fs, access) 이동 | #530 |
 | U4 | `params/`·`page/`·`scaffold/` 이동 | #530 |
 | U5 | `state/`·`saving/`·`render/`·`script/` + 슬라이스별 router·GRANTS, `ui.py`는 mount만 | #530 |
-| U6 | `prompt/` 패키지가 `asset/prompt` 경로의 유일한 소유자(lint·mcp는 표면 사용) | 부분 — #535 (`8534a470`): prompt 패키지·테스트 동거. lint·mcp의 직접 경로 소유는 남음 |
+| U6 | `prompt/` 패키지가 `asset/prompt` 경로의 유일한 소유자(lint·mcp는 표면 사용) | 로컬 반영·검증 — #535 (`8534a470`): prompt 패키지·테스트 동거. 후속 로컬 커밋 `12016eff`(guide/catalog)·`21c3dbb7`(template)에서 경로 소유권을 prompt로 모으고 lint·mcp는 선언된 표면을 사용한다. 2026-10-30 로컬 소스 확인 기준이며, 원격 CI·병합·공개 이슈 완료는 미확인 |
 
 **mcp** ([감사](audit/mcp.md) §5. 배선 표 네 파일은 데코레이터·docstring을 바이트 그대로 둔다)
 
