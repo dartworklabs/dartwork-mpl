@@ -15,7 +15,7 @@ CHECKER = (
 )
 MODULES = (
     "tests.contracts.test_mcp",
-    "tests.test_integration",
+    "tests.contracts.test_integration",
     "tests.contracts.test_cli",
     "tests.test_drift",
     "tests.mcp.agent_loop.test_oracle",
