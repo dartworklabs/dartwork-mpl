@@ -15,7 +15,7 @@ from pathlib import Path
 REQUIRED_MODULES = (
     "tests.contracts.test_mcp",
     "tests.test_integration",
-    "tests.test_cli",
+    "tests.contracts.test_cli",
     "tests.test_drift",
     "tests.mcp.agent_loop.test_oracle",
     "tests.mcp.agent_loop.test_capture",
@@ -51,7 +51,7 @@ REQUIRED_MODULES = (
     "src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github",
     "src.dartwork_mpl.ui.tests.test_ui_boundary",
     "src.dartwork_mpl.ui.saving.tests.test_ui_files",
-    "tests.test_ui_http_security",
+    "src.dartwork_mpl.ui.tests.test_ui_http_security",
     "src.dartwork_mpl.ui.render.tests.test_ui_hardening",
     "src.dartwork_mpl.ui.tests.test_ui_init",
     "src.dartwork_mpl.ui.state.tests.test_ui_viewer_state",
