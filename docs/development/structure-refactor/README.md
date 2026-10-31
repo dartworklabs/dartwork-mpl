@@ -9,11 +9,11 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 ([colors](audit/colors.md), [core](audit/core.md), [lint-validate](audit/lint-validate.md), [mcp](audit/mcp.md),
 [ui-cli](audit/ui-cli.md), [tests-tooling](audit/tests-tooling.md)). 감사 대상은 main `0e88b810`이다.
 
-**상태 확인: 2026-10-29.** 아래 상태는 공개 병합 기준 `c90a7775`까지의 로컬 Git 이력과
-체크아웃 `05483087`의 실제 소스·설정을 대조했다. PR 번호는 병합 이력이며 이번 확인에서
-원격 CI를 실행하거나 현재 성공 여부를 확인한 것은 아니다. `c90a7775` 이후 `05483087`까지의
-네이티브 사용 안내·데이터 정리·팔레트 입력·MCP 시작 출력 수정은 미게시 로컬 변경이다.
-이 표의 구조 리팩터 병합 실적과 구분한다. 진행 규칙과 판정은 기존 PR 작업에 그대로 적용한다.
+**상태 확인: 2026-10-31.** 공개 병합 기준은 기존 확인의 `c90a7775`이며, 아래 로컬 상태는
+체크아웃 기준 `8810b2a6`과 이번 G5 재배치를 반영한다. PR 번호는 기존 병합 이력이다.
+C11·U6의 2026-10-30 로컬 확인 범위는 각 행에 유지했다. 이번 확인은 원격 CI·병합·공개 이슈
+완료를 증명하지 않는다. 전체 테스트·다른 런타임 검증도 미확인이며, 진행 규칙과 판정은
+기존 PR 작업에 그대로 적용한다.
 
 ## 진행 규칙
 
@@ -36,7 +36,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | 테스트 id 보존 | `uv run python scripts/test_id_map.py --ref origin/main` (G1 이후) | lost 0, duplicated 0 |
 | 경계 | `uv run python scripts/check_boundaries.py` (G4 이후) | 위반 0, `DEBT`는 증가 금지 |
 | 색 동결 | `tests/test_shipped_colors_hash.py`, `python -m dartwork_mpl._colors._build --check` | 통과. digest 재생성 금지 |
-| MCP 동결 | `tests/test_mcp.py`, discovery 비교 테스트, artifact digest 테스트 | 통과. 기대값 재생성 금지 |
+| MCP 동결 | `tests/contracts/test_mcp.py`, discovery 비교 테스트, artifact digest 테스트 | 통과. 기대값 재생성 금지 |
 | 패키징 | `uv build --wheel` 후 wheel 안 `/tests/` 0 (G2 이후 테스트로 고정) | 0 |
 | PR CI | GitHub Actions(PR은 ubuntu-24.04) | 전부 녹색 |
 
@@ -56,7 +56,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | G2 | 동거 수집 기반: 루트 `conftest.py`로 격리 fixture 승격, `tests/support/`, `--import-mode=importlib`, `testpaths=["tests","src/dartwork_mpl"]`, CI·release `pytest` 경로 제거, wheel `**/tests/**` exclude + 패키징 테스트, coverage omit | #522 |
 | G3 | mypy: `files`, 동거 테스트 exclude, `exhaustive-match`, `strict_equality`, 완화 override를 모듈 단위로 축소, dev 그룹에 extras, 명령 `uv run mypy` 통일 | #520 |
 | G4 | `scripts/check_boundaries.py` + `tests/architecture/test_boundaries.py`(주입 위반 5종 실패, 슬라이스 내부 import 통과), 현재 위반 `DEBT` 등재(검사는 pytest가 실행) | #521 |
-| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 부분 — #535 (`8534a470`): 단일 슬라이스 테스트 동거 완료. 기존 루트 58개 모듈 분류를 마쳤고, 로컬 커밋 `cfb8731c`에서 도구 테스트 3개를, `a0cddb4b`에서 핵심 계약 테스트 3개를 이전했다. 기존 테스트 항목과 결과를 보존했으며 보호 JUnit ID는 건드리지 않았다. 나머지 재배치·보호 목록·진입 문서 경로 정리는 남음. 2026-10-30 로컬 커밋·검증 기준이며, 원격 CI·병합·공개 이슈 완료는 미확인 |
+| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 로컬 재배치 — #535 (`8534a470`)의 단일 슬라이스 테스트 동거와 후속 로컬 이전에 이어, 기존 루트 58개 중 57개를 소유 영역으로 옮겼다. 루트에는 경로 고정된 `tests/test_shipped_colors_hash.py`만 남긴다. 이번 22개(문서 20·아키텍처 2)의 이동은 루트 계산 23곳과 보호 JUnit ID 3개의 두 파일 내 갱신만 수반하며, 보호 모듈 수 45/16과 검사 의미는 유지한다. 진입 문서의 19 tools·색 동결 경로는 이미 맞아 수정하지 않았다. 검증은 범위 내 수집·정적 보존 대조와 허용된 선택 실행에 한정한다. `tests/docs/test_docs_asset_references.py`의 런타임 2건은 읽기 금지 경로 때문에 미확인이다. 2026-10-31 로컬 상태이며, 전체 테스트·다른 런타임·원격 CI·병합·공개 G5/이슈 완료는 미확인 |
 
 ### 2단계 — 이동 (영역마다 순서대로. 영역끼리는 병행할 수 있다. 각 PR은 그 슬라이스의 테스트도 함께 옮긴다)
 
