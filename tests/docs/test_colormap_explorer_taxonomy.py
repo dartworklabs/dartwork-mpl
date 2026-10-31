@@ -25,7 +25,7 @@ import pytest
 
 from dartwork_mpl._colors import _generated
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _EXPLORER = _REPO / "docs" / "_static" / "colormap_explorer.html"
 _BUILDER = _SCRIPTS / "build_colormap_explorer.py"

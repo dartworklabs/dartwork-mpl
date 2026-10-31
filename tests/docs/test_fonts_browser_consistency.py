@@ -17,7 +17,7 @@ from fontTools.ttLib import TTFont
 
 from dartwork_mpl import font
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _BUILDER_PATH = (
     _REPO / "docs" / "_static" / "scripts" / "build_fonts_browser_data.py"
 )

@@ -34,7 +34,7 @@ from pathlib import Path
 import pytest
 
 # Repository root (the directory that holds pyproject.toml).
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Root of the installable package (what actually ships).
 _SRC_ROOT = _REPO_ROOT / "src" / "dartwork_mpl"

@@ -23,7 +23,7 @@ from dartwork_mpl.diagnostics import classify_cmap
 
 matplotlib.use("Agg")
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _DOCS = [
     _REPO / "docs" / "usage_guide" / "colors.md",
     _REPO / "docs" / "usage_guide" / "quickstart.md",

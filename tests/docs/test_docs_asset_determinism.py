@@ -21,8 +21,8 @@ import re
 import subprocess
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[1]
-_DOCS = Path(__file__).resolve().parents[1] / "docs"
+_ROOT = Path(__file__).resolve().parents[2]
+_DOCS = Path(__file__).resolve().parents[2] / "docs"
 
 _PRESET_COMPARE = _DOCS / "usage_guide" / "images" / "preset_compare.html"
 _STALE_COLOR_GENERATORS = (

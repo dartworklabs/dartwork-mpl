@@ -12,7 +12,7 @@ import pytest
 
 from tests._docs_color_oracles import chroma_r_squared
 
-_ROOT = Path(__file__).resolve().parents[1]
+_ROOT = Path(__file__).resolve().parents[2]
 _GENERATOR = _ROOT / "docs" / "color_system" / "generate_theory_figures.py"
 _THEORY = _GENERATOR.parent / "theory_figures"
 _ASSET_SUFFIXES = frozenset({".html", ".svg"})

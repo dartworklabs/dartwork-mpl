@@ -18,7 +18,7 @@ from dartwork_mpl import font
 
 matplotlib.use("Agg")  # headless-safe; must precede any figure creation
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _BASE_MPLSTYLE = (
     _REPO / "src" / "dartwork_mpl" / "asset" / "mplstyle" / "base.mplstyle"
 )

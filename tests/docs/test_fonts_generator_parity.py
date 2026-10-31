@@ -21,7 +21,7 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _FONT_DIR = _REPO / "src" / "dartwork_mpl" / "asset" / "font"
 _ASSETS = _REPO / "docs" / "fonts" / "generate_assets.py"
 _SPECIMENS = _REPO / "docs" / "fonts" / "generate_html_specimens.py"
