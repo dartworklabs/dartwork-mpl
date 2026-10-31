@@ -20,7 +20,7 @@ from typing import get_args
 
 import pytest
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _ASSET = _REPO / "src" / "dartwork_mpl" / "asset"
 
 

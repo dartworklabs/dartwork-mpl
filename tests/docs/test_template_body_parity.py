@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-_REPO = Path(__file__).resolve().parent.parent
+_REPO = Path(__file__).resolve().parents[2]
 _ASSET = _REPO / "src" / "dartwork_mpl" / "asset" / "prompt" / "05-templates"
 _GALLERY = _REPO / "docs" / "examples_source" / "09_ai_templates"
 _GALLERY_ADV = _REPO / "docs" / "examples_source" / "09_ai_templates_advanced"

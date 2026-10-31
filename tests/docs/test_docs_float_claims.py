@@ -29,7 +29,7 @@ from dartwork_mpl._colors._generated import CMAPS_256, CYCLES
 from dartwork_mpl._colors.verify._gates import gate_cycle
 from tests._docs_color_oracles import chroma_r_squared
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 
 # Okabe-Ito 8-color reference palette (Wong 2011, Nature Methods) — the
 # model-specific collision benchmark used for the historical v5 search.

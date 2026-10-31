@@ -33,7 +33,7 @@ from dartwork_mpl.mcp.catalog.discovery import (
 )
 
 _DOC = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parents[2]
     / "docs"
     / "integrations"
     / "mcp_server.md"

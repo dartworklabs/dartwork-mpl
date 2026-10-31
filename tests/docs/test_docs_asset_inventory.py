@@ -11,7 +11,7 @@ from dartwork_mpl._colors._generated import CMAPS_256
 from dartwork_mpl._colors.catalog._families import QUALITATIVE
 from dartwork_mpl._colors.registry._loader import COLOR_LIBRARIES
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _WORKFLOWS = tuple(
     _REPO / ".github" / "workflows" / name
     for name in ("ci.yml", "docs.yml", "release.yml")

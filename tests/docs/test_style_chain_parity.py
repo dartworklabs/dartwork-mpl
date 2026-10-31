@@ -14,7 +14,7 @@ from pathlib import Path
 
 from dartwork_mpl.style import load_style_dict
 
-_REPO = Path(__file__).resolve().parent.parent
+_REPO = Path(__file__).resolve().parents[2]
 _DOCS_STYLES = _REPO / "docs" / "usage_guide" / "styles.md"
 
 

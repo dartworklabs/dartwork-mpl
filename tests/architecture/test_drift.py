@@ -27,7 +27,7 @@ from typing import cast
 import pytest
 import yaml
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 _WORKFLOW_JOBS = {"ci.yml": "docs", "docs.yml": "build", "release.yml": "test"}
 _COMPARISON_ARTIFACT = "color-system-comparison"
 _COMPARISON_PATH = "build/color-system-comparison"

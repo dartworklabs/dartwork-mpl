@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 _MPLSTYLE_DIR = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parents[2]
     / "src"
     / "dartwork_mpl"
     / "asset"

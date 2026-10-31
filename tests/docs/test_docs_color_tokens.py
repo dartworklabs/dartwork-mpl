@@ -20,7 +20,7 @@ import pytest
 
 import dartwork_mpl as dm
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _DOCS = _REPO / "docs"
 
 # Files that intentionally document *removed* APIs or internal design
