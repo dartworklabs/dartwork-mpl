@@ -7,7 +7,7 @@ import subprocess
 from collections import defaultdict
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[1]
+_ROOT = Path(__file__).resolve().parents[2]
 _DOCS = _ROOT / "docs"
 _RAW_FILE_RE = re.compile(
     r"^```\{raw\} html\s*$\n^:file:\s*(\S+)\s*$", re.MULTILINE

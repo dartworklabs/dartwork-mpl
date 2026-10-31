@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DESIGN = "superpowers/specs/2026-10-18-mcp-artifact-delivery-design.md"
 DESIGN_URL = (
     "https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/" + DESIGN
