@@ -13,7 +13,7 @@
 # rather than a machine-dependent OS font, so output is reproducible across
 # machines. The bundled corpus already covers the scientific/report symbol
 # set (see tests/contracts/test_font_glyph_coverage.py). Both chains are pinned by
-# tests/test_style_chain_parity.py.
+# tests/docs/test_style_chain_parity.py.
 font.family: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 font.sans-serif: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 # Monospace role chain: JetBrains Mono (default) → D2Coding (mono-kr, for
@@ -39,7 +39,7 @@ font.size:    7.5
 # Custom mathtext fontset matched to the BODY family so a math segment
 # ($R^2$, $\mu m$) renders in the same voice as the labels around it,
 # instead of leaking matplotlib's DejaVu default. Every face below MUST
-# resolve to a real font file (verified in tests/test_font_invariants.py):
+# resolve to a real font file (verified in tests/docs/test_font_invariants.py):
 # rm/it/bf/sf -> Roboto (the body face), tt -> JetBrains Mono (the mono
 # role), cal -> STIXGeneral (matplotlib-bundled, the only calligraphic
 # face we can resolve without shipping one). Greek/operators absent from

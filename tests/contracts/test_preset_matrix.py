@@ -12,7 +12,7 @@ labels), save PNG+PDF to a temporary directory, and assert that:
        data).
     4. PDF text embeds TrueType fonts rather than Type 3 glyph programs.
 
-Why a separate file: the existing ``tests/test_style.py`` covers
+Why a separate file: the existing ``src/dartwork_mpl/style/tests/test_style.py`` covers
 preset *loading* but not the round-trip through ``save_formats`` and
 ``validate_figure``. This matrix proves that every advertised preset
 actually produces a savable, validation-clean figure end-to-end.
