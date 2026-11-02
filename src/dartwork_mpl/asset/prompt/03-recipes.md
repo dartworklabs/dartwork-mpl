@@ -4,12 +4,14 @@ A short cookbook keyed by user intent. Each entry shows the canonical
 native invocation. For full templates see
 `dartwork-mpl://templates/{plot}`.
 
-> **Before any recipe**, pick and apply a style preset:
+> **For a new figure**, pick and apply a style preset:
 >
 > ```python
 > dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "*-kr"
 > ```
 >
+> For a local revision, retain the existing preset and scoped overrides; do not
+> reapply a preset or layout just to change one artist property.
 > Presets provide defaults. Use `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)` for
 > preset-relative intent; retain explicit absolute user values and colors.
 > Literal-size/width warnings remain advisory: inspect and report them.
@@ -26,19 +28,28 @@ native invocation. For full templates see
 ## "Report style, only axis labels one step larger"
 
 Agents translate the request into native artist edits; users need not write
-plotting code. Apply the preset before creating artists or restoring retained
-overrides. On an existing report figure, edit only the selected label Texts:
+plotting code. On an existing report figure, edit only the selected label Texts.
+When revising retained source, insert the edit **after the original layout call**
+(with its original kwargs), before the report/export block. Do not move the edit
+before that layout call: the larger labels can change its measured margins.
+For an in-memory figure, use its existing layout and artist handles directly.
 
 ```python
+# Existing fig/ax; the original preset, plotting and layout have already run.
 for label in (ax.xaxis.label, ax.yaxis.label):
     label.set_fontsize(label.get_fontsize() + 1)  # one more = current + 1 pt
-# Keep the existing axes/layout when the enlarged labels still fit.
+fig.canvas.draw()  # inspect labels and measure actual Axes/legend bounds
+# Continue with the existing report/export block, retaining the canvas.
 ```
 
-Keep the existing axes/layout if labels still fit. If a refit is necessary,
-reuse the original `simple_layout` kwargs, grid and margin settings; do not
-blindly rerun its margin=0 defaults. Disclose any necessary movement of axes
-or an anchored legend rather than claiming pixel-position invariance.
+Keep the existing axes/layout when the labels still fit. An active native
+layout engine can move artists during draw/export; preserve its configuration
+and compare actual bounds after drawing and exporting, rather than assuming
+that setter-only edits guarantee fixed positions. If labels no longer fit or
+bounds move, disclose the result and ask about the needed layout change before
+refitting. An explicitly requested refit should retain the original
+`simple_layout` kwargs, grid and margins unless the user changes them; do not
+silently rerun its margin=0 defaults or claim position invariance.
 
 For an explicit preset-relative request, `label.set_fontsize(dm.fs(1))` uses
 global `font.size + 1 pt`, not `axes.labelsize` or the current label size.
@@ -66,6 +77,48 @@ lengths scale with line width by default. Keep that local context around line
 creation or any later setter that rescales dashes when physical lengths must
 stay fixed. For relative width use `line.get_linewidth() + delta`.
 Check the rendered result; no single dash tuple fits every chart purpose.
+
+### Keep a known Line2D legend sample in sync
+
+A legend sample is a separate artist: editing a data line after legend creation
+does not update its sample. For an existing plain `Line2D` series with a known
+one-to-one default-handler legend mapping, apply the same requested dash setter
+to its existing sample. Keep the legend object, location, text/order, frame and
+all other handle properties. Do not call `ax.legend()` again or copy whole
+artists with `update_from` (which can replace transforms and other properties).
+
+This partial example requires the saved data-line handle `line` and the known
+label `series_label`, with unique labels and default `Line2D` handlers established
+by the original construction. The checks do not prove that a custom handler or
+proxy represents the line; resolve such mappings from the original construction
+or ask before editing. Do not infer the series from its current array index.
+
+```python
+from matplotlib.lines import Line2D
+
+legend = ax.get_legend()
+if (legend is None or type(line) is not Line2D or
+        line not in ax.lines or line.get_label() != series_label):
+    raise ValueError("Resolve the existing series and its known legend mapping")
+texts = legend.get_texts()
+labels = [text.get_text() for text in texts]
+if labels.count(series_label) != 1:
+    raise ValueError("Expected one known corresponding legend sample")
+sample = legend.legend_handles[labels.index(series_label)]
+if type(sample) is not Line2D:
+    raise ValueError("Resolve the non-Line2D/custom legend sample explicitly")
+# Requested nominal dash sequence; retain the existing scale_dashes policy.
+for artist in (line, sample):
+    artist.set_dashes((6, 2, 1, 2))
+fig.canvas.draw()  # inspect both line and sample, then report/export
+```
+
+Place this patch after the original legend/layout construction in retained
+source. For requested physical path lengths, use the local
+`lines.scale_dashes=False` context described above around both setters; apply
+only the requested width/color/cap setters to each corresponding artist. Render
+and compare both samples and actual bounds. Do not reconstruct a legend to
+repair an uncertain mapping or change unrelated properties to make it fit.
 
 ## "Only the left spine, x ticks, y tick labels or y grid"
 
@@ -636,10 +689,13 @@ before `source_path = Path(__file__)`. Run `python plot-v2.py`, then inspect
 v2 PNG/PDF and its full report. This retains v1 source/files while saving the
 exact revised script under v2. Keep previous local edits in later revisions.
 Repeated “one more step” acts on retained current label values, not the preset
-base. Keep the current layout when the enlarged labels fit. If image/content
-inspection shows clipping or overlap, refit using the original `simple_layout`
-kwargs (`margin="2mm"` here, and the original `gs` if used), then inspect again
-and report any necessary movement of axes or anchored legends.
+base. The insertion point is after the original layout call, before report/export.
+Follow the local-revision recipe above: preserve active native layout engine
+settings and compare actual bounds after draw/export. If labels clip/overlap
+or bounds move, disclose this and ask about a layout change before refitting
+(unless already requested). An authorized refit retains the original margin/grid
+kwargs unless explicitly changed. The selected-line recipe above also updates
+its known existing legend sample in place without rebuilding the legend.
 
 ```python
 # Insert before the source/report/export block in plot-v2.py.
@@ -647,8 +703,8 @@ for label in (ax.xaxis.label, ax.yaxis.label):
     label.set_fontsize(label.get_fontsize() + 1)
 # Draw and inspect changed labels before deciding whether a refit is needed.
 fig.canvas.draw()
-# Keep existing axes/legend positions when labels still fit. Only if needed:
-# dm.simple_layout(fig, margin="2mm")  # reuse the original margin/grid kwargs
+# Compare actual axes/legend bounds after draw/export; inspect for clipping.
+# Discuss a needed refit before changing layout; retain original kwargs if agreed.
 ```
 
 Hand off exact source, PNG, PDF and full report for each revision, data/gap

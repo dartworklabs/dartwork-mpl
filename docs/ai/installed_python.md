@@ -153,10 +153,15 @@ revision immediately before `source_path = Path(__file__)`. Run
 v1 source/files and saves the exact revised script under the new stem.
 Repeated “one more step” acts on retained current label values, not the preset
 base; retain previous local edits when preparing another revision.
-Keep the current layout when the enlarged labels fit. If image/content inspection
-shows clipping or overlap, refit using the original `simple_layout` kwargs
-(`margin="2mm"` here, and the original `gs` if used), then inspect again and
-report any necessary movement of axes or anchored legends.
+The insertion point is after the original `dm.simple_layout(fig, margin="2mm")`,
+before report/export. Follow the local-revision recipes in
+`dm.get_prompt("03-recipes")`: keep fitting labels in their existing layout,
+preserve any active native layout engine and verify actual bounds after draw
+and export. If labels clip/overlap or bounds move, disclose this and ask about
+a layout change before refitting (unless already requested). An authorized
+refit retains the original margin/grid kwargs unless explicitly changed.
+The same recipes cover a selected plain `Line2D` dash edit and its known
+existing legend sample; update both in place without rebuilding the legend.
 
 ```python
 # Insert before the source/report/export block in plot-v2.py.
@@ -164,8 +169,8 @@ for label in (ax.xaxis.label, ax.yaxis.label):
     label.set_fontsize(label.get_fontsize() + 1)
 # Draw and inspect changed labels before deciding whether a refit is needed.
 fig.canvas.draw()
-# Keep existing axes/legend positions when labels still fit. Only if needed:
-# dm.simple_layout(fig, margin="2mm")  # reuse the original margin/grid kwargs
+# Compare actual axes/legend bounds after draw/export; inspect for clipping.
+# Discuss a needed refit before changing layout; retain original kwargs if agreed.
 ```
 
 Hand off the exact source, PNG, PDF and full report for each revision, the

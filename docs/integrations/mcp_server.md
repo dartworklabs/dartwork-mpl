@@ -577,6 +577,16 @@ For an agent creating or revising a plot, use this review loop:
    and render the edited source, then inspect that image and its full report
    after **every rerender, including the final artifact**. Deliver original
    and revision IDs, changes and unresolved check or input limitations.
+   For local label-size or plain `Line2D` dash edits, read
+   `dartwork-mpl://guide/recipes` (also `dm.get_prompt("03-recipes")`). In retained
+   source, place current-size +1 pt label edits after the original layout call,
+   before report/export; keep its original kwargs. Update a selected line's
+   known corresponding existing legend sample with the same requested dash,
+   preserving the legend object and other properties. Do not guess custom
+   handler/proxy mappings or rebuild the legend. Preserve active native layout
+   engine settings and compare actual Axes/legend bounds after draw/export;
+   disclose clipping or movement and ask about needed layout changes unless
+   already requested. These are agent instructions, not an automatic fixer.
 5. Reopen either ID using `get_plot_artifact`, then read its returned resource
    URIs for PNG, PDF, source, report and manifest without re-executing source.
 
