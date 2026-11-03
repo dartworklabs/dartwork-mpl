@@ -727,6 +727,11 @@ operations or invalid configuration disable retention with `configuration_error`
 
 #### Choose Copy or Retained for each logical input
 
+The [common input-choice guidance](../ai/installed_python.md#choose-the-input-version-before-a-revision)
+also covers native Python revisions and a consumed-byte snapshot example.
+Native local copies have no automatic MCP expiry; this server's existing
+Copy/Retained grants, admission checks and lifetimes below remain applicable.
+
 `revision` is closed version 1 with `parent_artifact_id` and/or nonempty `inputs`.
 It permits at most 8 unique names, 16 KiB compact UTF-8 JSON and depth 4.
 Names/root IDs match `[A-Za-z0-9_-]{1,64}`; IDs are lowercase UUID4 hex and
