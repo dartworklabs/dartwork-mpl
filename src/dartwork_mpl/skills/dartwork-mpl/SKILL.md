@@ -88,7 +88,7 @@ and in its order (`GDP 성장률` → `GDP growth rate`, "the share of renewable
   largest tick's unit (`0.25억 … 1.75억`), `unit="whole"` (`2,500만 … 17,500만`);
   `decimals=` is exact. No meaningless decimals: `200`, `1k`, not `200.0`, `1.0k`.
 - Numeric value labels you add on bars and lines (`ax.bar_label`, `ax.text`)
-  use `fontsize=dm.fs(-1)`, `fontweight=dm.fw(1)`; existing ones keep theirs.
+  use `fontsize=dm.fs(-1)`, `fontweight=dm.fw(1)`; existing ones keep their size and weight.
 
 ## Edits
 
@@ -97,8 +97,8 @@ property; keep data, preset, canvas, colours, the legend as it is (a highlight t
 keep the original, write the revision as a new script and stem. A preset switch (paper → slides)
 multiplies pt values written in the code by the presets' ratio (`scientific` → `presentation`:
 × 2.6, unrounded). Broad asks ("look better"): keep data, preset, canvas, chart type and axes (no
-new twin), limits, axis labels as written, text (add none) and its size (touching value
-labels drop to `dm.fs(-1)`), title and legend; fix only defects the image shows, list each.
+new twin), limits, axis labels as written, text (add none), its size and weight (touching value
+labels drop to `dm.fs(-1)`, weight kept), title and legend; fix only defects the image shows, list each.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 

@@ -150,7 +150,8 @@ plt.close(fig)
      `dm.format_axis_dates(ax, dates)`), `dm.wrap_axis_labels(fig)`,
      `dm.rotate_tick_labels(ax)` only when none of these fits;
    - value labels touching each other or their neighbours: those labels to
-     `fontsize=dm.fs(-1)` (only when larger), named in the change list;
+     `fontsize=dm.fs(-1)` (only when larger), their weight as it is (no
+     `fontweight=`), named in the change list;
    - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
      (one legend for both twins; above the plot by itself when nothing inside
      is free);

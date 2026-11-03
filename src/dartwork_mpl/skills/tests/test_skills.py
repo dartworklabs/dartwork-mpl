@@ -218,6 +218,10 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     assert "never `ax.legend(...)`, `bbox_to_anchor`" in text
     assert "also when the request words them otherwise" in text
     assert "only a value with no column takes the request's noun" in text
+    # e10: claude gave existing value labels dm.fw(1) in a broad ask (300 vs
+    # the preset's "light", 200); existing labels keep their weight.
+    assert "existing ones keep their size and weight" in text
+    assert "`dm.fs(-1)`, weight kept" in text
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     row = next(
         ln for ln in editing.splitlines() if ln.startswith("| move the legend")
