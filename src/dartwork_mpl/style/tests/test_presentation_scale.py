@@ -106,6 +106,16 @@ class TestStepPt:
         dm.style.use(["presentation", "scientific"])
         assert step_pt() == 1.0
 
+    def test_bare_stack_after_slides_drops_the_slide_step(self) -> None:
+        dm.style.use("scientific")
+        paper_small = dm.fs(-1)
+        dm.style.use("presentation")
+        dm.style.stack(["base", "font-scientific"])
+        assert step_pt() == 1.0
+        assert dm.fs(-1) == paper_small
+        dm.style.use("presentation")
+        assert step_pt() == SLIDE_SCALE
+
     def test_native_reset_drops_the_slide_step(self) -> None:
         dm.style.use("presentation")
         plt.rcdefaults()

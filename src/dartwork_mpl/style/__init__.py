@@ -38,7 +38,8 @@ __all__ = [
 # Contexts merge temporary preset writes and restore the immediate outer copy.
 _dm_preset_values: dict[str, object] = {}
 # Preset names of the last successful use() (or the innermost context()); the
-# default canvas (figsize_for) follows them.
+# default canvas (figsize_for) and the step size (step_pt) follow them. A bare
+# stack() names no preset and clears them.
 _active_preset: list[str] = []
 
 
@@ -422,6 +423,9 @@ class Style:
             _restore_untouched_user_rcparams(user_overrides, incoming_keys)
             _dm_preset_values.clear()
             _dm_preset_values.update(preset_values)
+            # A bare stack names no preset: an earlier use("presentation")
+            # must not keep its slide step or canvas (use() names it again).
+            _active_preset.clear()
 
             # Locale-aware semantic tokens (dc.pos/neg/ref/hl) applied at the
             # choke point use() funnels through, so direct stack() callers and

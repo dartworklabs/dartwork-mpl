@@ -76,7 +76,7 @@ weight, colour and spacing, so every agent draws the same element.
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
 | bigger or smaller text, no amount | one step, `step = dm.fs(1) - dm.fs(0)` (1 pt; 2.6 pt under `presentation`): `t.set_fontsize(t.get_fontsize() + step)`; all text: `dm.style.use(preset, font_size=dm.fs(0) + step)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
-| values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontweight=dm.fw(1))` |
+| values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontsize=dm.fs(-1), fontweight=dm.fw(1))` |
 | a log axis | `ax.set_yscale("log")` |
 
 A detail the user does name wins exactly ("a bold 12 pt title", "dashed grey
