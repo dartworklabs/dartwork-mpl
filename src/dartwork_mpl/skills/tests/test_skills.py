@@ -221,6 +221,9 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     )
     assert "never `ax.legend(...)`, `bbox_to_anchor`" in text
     assert "others stay as they are" in text
+    # v19: dropping "unless named" made agents pick loc="right" / "above"
+    # for legends nobody placed (g21, c01, e09).
+    assert "with `loc=` only for a side the user names" in text
     assert "Every axes legend" not in text
     assert "also when the request words them otherwise" in text
     assert "only a value with no column takes the request's noun" in text
@@ -234,6 +237,7 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     assert "also when the request words it otherwise" in flat
     assert "a legend added, moved or merged" in flat
     assert "a legend nobody asked about stays as it is" in flat
+    assert "with `loc=` only for a side the user names" in flat
 
 
 def test_step6_decisions_w_a_and_l_b() -> None:
@@ -249,9 +253,9 @@ def test_step6_decisions_w_a_and_l_b() -> None:
     """
     flat = " ".join(SKILL_MD.read_text(encoding="utf-8").split())
     assert "with no weight written, `dm.fw(1)`" in flat
-    assert (
-        "makes `LEGEND_OVERLAP` moves by `dm.place_legend(ax)`, listed" in flat
-    )
+    assert "if your change makes `LEGEND_OVERLAP`, the fix is" in flat
+    assert "on that legend's axes with its own arguments" in flat
+    assert "not spacing or font size" in flat
     assert "limits (a line crossing value labels too)" in flat
     assert "weight kept" not in flat
     editing = " ".join(
@@ -260,7 +264,8 @@ def test_step6_decisions_w_a_and_l_b() -> None:
         .split()
     )
     assert "when the call writes no weight, `fontweight=dm.fw(1)`" in editing
-    assert "move only that legend with `dm.place_legend(ax)`" in editing
+    assert "move only that legend: `dm.place_legend(ax)` on its axes" in editing
+    assert "Not wider `wspace`, a smaller font" in editing
     assert (
         "the axis limits stay, also when a line crosses the labels" in editing
     )

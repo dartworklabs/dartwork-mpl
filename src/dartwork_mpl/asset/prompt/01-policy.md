@@ -64,11 +64,12 @@ words it otherwise; only a value with no column takes the request's noun
 word for word and in its order (`GDP 성장률` → `GDP growth rate`, "the share of
 renewables" → `Share of renewables`), with no unit the data or request does not
 state; a bare year (2012) stays a number, not a date; a legend added, moved
-or merged (a twin pair's two into one) is `dm.place_legend(ax)` (`loc="right"`,
-`"above"`, …), not `ax.legend(...)` with `bbox_to_anchor`, and a legend nobody
-asked about stays as it is unless the edit makes it overlap other text
-(`LEGEND_OVERLAP`): then `dm.place_legend(ax)` moves it and the change list
-says so. A "look better" pass that shrinks touching value labels to
+or merged (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=`
+only for a side the user names, not `ax.legend(...)` with `bbox_to_anchor`,
+and a legend nobody asked about stays as it is unless the edit makes it
+overlap other text (`LEGEND_OVERLAP`): then `dm.place_legend(ax)` on its axes,
+with its own arguments, moves it (not wider spacing or a smaller font) and
+the change list says so. A "look better" pass that shrinks touching value labels to
 `dm.fs(-1)` also gives them `dm.fw(1)` when their call writes no weight, and
 keeps the axis limits. Moving a figure to slides takes `dm.figsize_for(...)`
 and multiplies pt values written in its code by 2.6, unrounded.

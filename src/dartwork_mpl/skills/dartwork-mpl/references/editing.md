@@ -114,8 +114,11 @@ plt.close(fig)
 
 When the asked change makes a legend cover another panel's text (a
 `LEGEND_OVERLAP` WARNING, e.g. a panel widened under a neighbour's legend),
-move only that legend with `dm.place_legend(ax)` (it may go above the plot
-in two columns) and list the move; a legend the change leaves clear stays.
+move only that legend: `dm.place_legend(ax)` on its axes with the
+arguments it already had (`fontsize=` …, no `loc=`); it may go above the
+plot in two columns, which is the decided look (decision L-B). Not wider
+`wspace`, a smaller font or fewer columns of your own. List the move; a
+legend the change leaves clear stays.
 
 Repeated "one more step" adds to the current value again; it does not reset
 to `dm.fs(1)`. An absolute request ("12 pt") is set exactly. Keep the

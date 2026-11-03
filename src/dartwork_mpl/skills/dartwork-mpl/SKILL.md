@@ -62,7 +62,7 @@ formatter, locator or tick list unless asked or naming categories. No figure tit
 source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
 named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`.
-A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)` (side: `loc="right"`, `"above"`, …), never `ax.legend(...)`, `bbox_to_anchor` or `ncols=`; others stay as they are.
+A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=` only for a side the user names; never `ax.legend(...)`, `bbox_to_anchor` or `ncols=`; others stay as they are.
 A generic chart skill gives chart choice and honest axes; static output: no hover, tooltips,
 rounded bar ends, placeholder palettes.
 
@@ -93,8 +93,8 @@ and in its order (`GDP 성장률` → `GDP growth rate`, "the share of renewable
 ## Edits
 
 "Only X" requests: find that artist (panel, series, label, title), change only the asked property; keep data,
-preset, canvas, colours, the legend as it is (a highlight too; one your change makes `LEGEND_OVERLAP` moves
-by `dm.place_legend(ax)`, listed) and the rest; keep the original, write the revision as a new script and stem.
+preset, canvas, colours, the legend as it is (a highlight too; if your change makes `LEGEND_OVERLAP`, the fix is
+`dm.place_legend(ax)` on that legend's axes with its own arguments, not spacing or font size; list it) and the rest; keep the original, write the revision as a new script and stem.
 A preset switch (paper → slides) multiplies pt values written in the code by the presets' ratio (`scientific` →
 `presentation`: × 2.6, unrounded). Broad asks ("look better"): keep data, preset, canvas, chart type and axes (no
 new twin), limits (a line crossing value labels too), axis labels as written, text (add none) and its size (touching
