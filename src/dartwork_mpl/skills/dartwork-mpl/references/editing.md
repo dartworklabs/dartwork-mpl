@@ -91,7 +91,7 @@ above an outside legend and the margins around both.
 | ticks smaller | `ax.tick_params(labelsize=dm.fs(-1))` |
 | one line thicker | `line.set_linewidth(line.get_linewidth() + 0.5)` |
 | emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays, redrawn after recolouring |
-| move the legend | `ax.legend(loc="lower right")` or `dm.place_legend(ax)` |
+| move the legend | `dm.place_legend(ax)` (inside, away from the data) or a named side `dm.place_legend(ax, loc="right")`; never `ax.legend(loc=...)` or `bbox_to_anchor` |
 | legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
 | label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |

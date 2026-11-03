@@ -61,8 +61,8 @@ preset's; change them only on request. Tick numbers and dates are the library's 
 formatter, locator or tick list unless asked or naming categories. No figure title, subtitle,
 source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
-named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`,
-`dm.place_legend(ax)` (no `loc=`/`ncols=` unless named), `dm.label_line_ends(ax)`.
+named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`.
+Every axes legend, a twin pair's one or one moved to a named side too, is `dm.place_legend(ax)` (side: `loc="right"`, `"above"`, …); never `ax.legend(...)`, `bbox_to_anchor` or `ncols=`.
 A generic chart skill gives chart choice and honest axes; static output: no hover, tooltips,
 rounded bar ends, placeholder palettes.
 
@@ -72,9 +72,9 @@ Plot the user's values as given. Never drop, fill, sort, aggregate, clip or inve
 silently; state every transformation. Missing values stay visible gaps (`dm.validate_data`
 drops NaN/Inf rows unless `allow_nan=True`). A preview is not the dataset; template numbers
 are placeholders, never data. Dates are dates, a bare year (2012) a number; "A against B": A on y.
-Labels are column names, translated word for word (`week_start` → `Week start`, `share_pct` →
-`Share (%)`); a value axis without one takes the request's noun word for word and in its order
-(`GDP 성장률` → `GDP growth rate`, "the share of renewables" → `Share of renewables`); no unit nothing states.
+Labels are column names translated word for word, also when the request words them otherwise (`week_start` → `Week start`,
+`share_pct` → `Share (%)`, `고객수` → `Customer count`); only a value with no column takes the request's noun word for word
+and in its order (`GDP 성장률` → `GDP growth rate`, "the share of renewables" → `Share of renewables`); no unit nothing states.
 
 ## Values
 

@@ -205,6 +205,30 @@ def test_value_labels_are_one_weight_step_heavier() -> None:
         assert getter in editing, getter
 
 
+def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
+    """Eval v16 (2026-11-04): the rules that already held, worded so every agent reads them.
+
+    e04 / e10: one codex run moved or merged a legend with ``ax.legend`` and
+    ``bbox_to_anchor`` instead of ``dm.place_legend``; c06 / c07: a label took
+    the request's words over the column name. No row may still offer
+    ``ax.legend(loc=...)`` for moving a legend.
+    """
+    text = SKILL_MD.read_text(encoding="utf-8")
+    assert "Every axes legend, a twin pair's one" in text
+    assert "never `ax.legend(...)`, `bbox_to_anchor`" in text
+    assert "also when the request words them otherwise" in text
+    assert "only a value with no column takes the request's noun" in text
+    editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
+    row = next(
+        ln for ln in editing.splitlines() if ln.startswith("| move the legend")
+    )
+    assert "dm.place_legend(ax)" in row and 'ax.legend(loc="' not in row
+    policy = dm.get_prompt("01-policy")
+    flat = " ".join(policy.split())
+    assert "also when the request words it otherwise" in flat
+    assert "every axes legend, a twin pair's merged one" in flat
+
+
 def test_every_shown_bar_label_uses_the_value_label_size() -> None:
     """Decision 6-A (2026-11-03): value labels default to dm.fs(-1), dm.fw(1).
 

@@ -59,10 +59,13 @@ no value labels on bars or lines unless asked; axis limits stay matplotlib's
 bars are vertical, `ax.barh` with `dm.figsize_for("barh")` only when the
 category names would overlap side by side; dates under bars go through
 `dm.format_axis_dates(ax, dates)`, not rotated labels; an axis label is the
-column name word for word (`share_pct` → `Share (%)`), else the request's noun
+column name word for word (`share_pct` → `Share (%)`), also when the request
+words it otherwise; only a value with no column takes the request's noun
 word for word and in its order (`GDP 성장률` → `GDP growth rate`, "the share of
 renewables" → `Share of renewables`), with no unit the data or request does not
-state; a bare year (2012) stays a number, not a date. Moving a figure to slides takes `dm.figsize_for(...)`
+state; a bare year (2012) stays a number, not a date; every axes legend, a
+twin pair's merged one and one on a named side too, is `dm.place_legend(ax)`
+(`loc="right"`, `"above"`, …), not `ax.legend(...)` with `bbox_to_anchor`. Moving a figure to slides takes `dm.figsize_for(...)`
 and multiplies pt values written in its code by 2.6, unrounded.
 
 Ask **one short, self-contained question** only when missing information
