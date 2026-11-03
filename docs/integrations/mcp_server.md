@@ -583,10 +583,19 @@ For an agent creating or revising a plot, use this review loop:
    before report/export; keep its original kwargs. Update a selected line's
    known corresponding existing legend sample with the same requested dash,
    preserving the legend object and other properties. Do not guess custom
-   handler/proxy mappings or rebuild the legend. Preserve active native layout
-   engine settings and compare actual Axes/legend bounds after draw/export;
-   disclose clipping or movement and ask about needed layout changes unless
-   already requested. These are agent instructions, not an automatic fixer.
+   handler/proxy mappings or rebuild the legend. Keep already-fitting geometry.
+   Ordinary enlargement permits necessary fitting through the existing method
+   and settings, starting from original kwargs and changing only needed margins
+   or spacing. Preserve the physical canvas, panel/container allocations and
+   explicit ratios, data, colors, other typography and legend's intended location.
+   Keep active native layout engine settings; do not reset defaults or introduce
+   another engine. An explicit Axes-position lock overrides fitting: preserve it
+   and disclose any clipping/conflict. Ask one relevant question only if protected
+   constraints must change or the safe existing fit is unclear; retain the
+   original. Explicit user instructions take precedence. Inspect actual PNG/PDF
+   and Axes/legend bounds after draw/export; report necessary Axes movement.
+   Judge fit from content and constraints, not a universal pixel/mm tolerance.
+   These are agent instructions, not an automatic fixer.
 5. Reopen either ID using `get_plot_artifact`, then read its returned resource
    URIs for PNG, PDF, source, report and manifest without re-executing source.
 

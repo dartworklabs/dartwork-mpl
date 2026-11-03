@@ -10,8 +10,9 @@ native invocation. For full templates see
 > dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "*-kr"
 > ```
 >
-> For a local revision, retain the existing preset and scoped overrides; do not
-> reapply a preset or layout just to change one artist property.
+> For a local revision, retain the existing preset and scoped overrides.
+> Change the requested artist properties, then fit only if needed as below;
+> do not reapply a preset or refit an already-fitting change.
 > Presets provide defaults. Use `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)` for
 > preset-relative intent; retain explicit absolute user values and colors.
 > Literal-size/width warnings remain advisory: inspect and report them.
@@ -30,8 +31,8 @@ native invocation. For full templates see
 Agents translate the request into native artist edits; users need not write
 plotting code. On an existing report figure, edit only the selected label Texts.
 When revising retained source, insert the edit **after the original layout call**
-(with its original kwargs), before the report/export block. Do not move the edit
-before that layout call: the larger labels can change its measured margins.
+(with its original kwargs), before the report/export block. Inspect the changed
+content before deciding whether fitting is necessary.
 For an in-memory figure, use its existing layout and artist handles directly.
 
 ```python
@@ -42,14 +43,25 @@ fig.canvas.draw()  # inspect labels and measure actual Axes/legend bounds
 # Continue with the existing report/export block, retaining the canvas.
 ```
 
-Keep the existing axes/layout when the labels still fit. An active native
-layout engine can move artists during draw/export; preserve its configuration
-and compare actual bounds after drawing and exporting, rather than assuming
-that setter-only edits guarantee fixed positions. If labels no longer fit or
-bounds move, disclose the result and ask about the needed layout change before
-refitting. An explicitly requested refit should retain the original
-`simple_layout` kwargs, grid and margins unless the user changes them; do not
-silently rerun its margin=0 defaults or claim position invariance.
+An ordinary label enlargement permits necessary content fitting: if labels
+clip or overlap, use the existing fitting method and settings as the starting
+point, adjusting only the margins/spacing needed to fit. Keep the physical
+canvas, panel/container allocations and explicit ratios, data, colors, other
+typography and legend's intended location. Reuse the original `simple_layout`
+kwargs/grid when applicable; do not reset to margin=0 defaults, introduce a new
+layout engine or refit a change that already fits.
+
+An explicit fixed Axes-position request overrides this fitting permission.
+Preserve that geometry; disclose any clipping/conflict without claiming a
+finished fit. Ask one relevant question only if a protected constraint must
+change or the safe existing fitting method is unclear, retaining the original.
+Explicit user instructions take precedence over these defaults.
+
+Active native layout engines can move artists during draw/export. Preserve
+their configuration, inspect the actual PNG/PDF, and compare bounds after both
+drawing and exporting. Report any necessary Axes movement honestly; preserving
+panel allocations does not imply fixed Axes data rectangles. Judge fit from
+the actual content and requested constraints, not a universal pixel/mm tolerance.
 
 For an explicit preset-relative request, `label.set_fontsize(dm.fs(1))` uses
 global `font.size + 1 pt`, not `axes.labelsize` or the current label size.
@@ -690,12 +702,14 @@ v2 PNG/PDF and its full report. This retains v1 source/files while saving the
 exact revised script under v2. Keep previous local edits in later revisions.
 Repeated “one more step” acts on retained current label values, not the preset
 base. The insertion point is after the original layout call, before report/export.
-Follow the local-revision recipe above: preserve active native layout engine
-settings and compare actual bounds after draw/export. If labels clip/overlap
-or bounds move, disclose this and ask about a layout change before refitting
-(unless already requested). An authorized refit retains the original margin/grid
-kwargs unless explicitly changed. The selected-line recipe above also updates
-its known existing legend sample in place without rebuilding the legend.
+Follow the local-revision recipe above: ordinary enlargement allows necessary
+fitting through the existing method/settings while preserving the canvas,
+panel/container allocations and ratios, data, style and legend's intended
+location. Keep already-fitting geometry; an explicit Axes-position lock takes
+precedence. Ask only when protected constraints must change or the safe existing
+fit is unclear. Inspect actual draw/export bounds and PNG/PDF; report necessary
+Axes movement. The selected-line recipe also updates its known existing legend
+sample in place without rebuilding the legend.
 
 ```python
 # Insert before the source/report/export block in plot-v2.py.
@@ -704,7 +718,7 @@ for label in (ax.xaxis.label, ax.yaxis.label):
 # Draw and inspect changed labels before deciding whether a refit is needed.
 fig.canvas.draw()
 # Compare actual axes/legend bounds after draw/export; inspect for clipping.
-# Discuss a needed refit before changing layout; retain original kwargs if agreed.
+# If needed and not geometry-locked, fit through the existing method/settings.
 ```
 
 Hand off exact source, PNG, PDF and full report for each revision, data/gap

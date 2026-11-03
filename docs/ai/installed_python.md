@@ -155,11 +155,18 @@ Repeated “one more step” acts on retained current label values, not the pres
 base; retain previous local edits when preparing another revision.
 The insertion point is after the original `dm.simple_layout(fig, margin="2mm")`,
 before report/export. Follow the local-revision recipes in
-`dm.get_prompt("03-recipes")`: keep fitting labels in their existing layout,
-preserve any active native layout engine and verify actual bounds after draw
-and export. If labels clip/overlap or bounds move, disclose this and ask about
-a layout change before refitting (unless already requested). An authorized
-refit retains the original margin/grid kwargs unless explicitly changed.
+`dm.get_prompt("03-recipes")`: keep already-fitting geometry. Ordinary label
+enlargement permits necessary fitting through the existing method/settings,
+starting from the original kwargs and adjusting only needed margins/spacing.
+Preserve the physical canvas, panel/container allocations and explicit ratios,
+data, colors, other typography and legend's intended location. Keep any active
+native layout engine configuration; do not reset defaults or switch engines.
+An explicit Axes-position lock overrides fitting: retain it and disclose any
+clipping/conflict. Ask one relevant question only if protected constraints must
+change or the safe existing fit is unclear; retain the original. Explicit user
+instructions take precedence. Inspect actual PNG/PDF and bounds after draw and
+export, and report necessary Axes movement without claiming position invariance.
+Fit depends on the content and constraints, not a universal pixel/mm tolerance.
 The same recipes cover a selected plain `Line2D` dash edit and its known
 existing legend sample; update both in place without rebuilding the legend.
 
@@ -170,7 +177,7 @@ for label in (ax.xaxis.label, ax.yaxis.label):
 # Draw and inspect changed labels before deciding whether a refit is needed.
 fig.canvas.draw()
 # Compare actual axes/legend bounds after draw/export; inspect for clipping.
-# Discuss a needed refit before changing layout; retain original kwargs if agreed.
+# If needed and not geometry-locked, fit through the existing method/settings.
 ```
 
 Hand off the exact source, PNG, PDF and full report for each revision, the
