@@ -1120,7 +1120,8 @@ document.addEventListener("click", function (e) {
     var presets = {
       scientific: { baseSize: 7.5, baseWeight: 300, isPx: false },
       report: { baseSize: 9, baseWeight: 300, isPx: false },
-      presentation: { baseSize: 10.5, baseWeight: 300, isPx: false },
+      // Every point size x 2.6, and so is one dm.fs step (2.6 pt).
+      presentation: { baseSize: 19.5, baseWeight: 300, isPx: false, step: 2.6 },
       minimal: { baseSize: 10, baseWeight: 300, isPx: false },
       web: { baseSize: 16, baseWeight: 400, isPx: true },
     };
@@ -1149,7 +1150,10 @@ document.addEventListener("click", function (e) {
 
         var finalSize = Math.max(
           1,
-          preset.baseSize + (preset.isPx ? fsOffset * 2 : fsOffset),
+          +(
+            preset.baseSize +
+            (preset.isPx ? fsOffset * 2 : fsOffset * (preset.step || 1))
+          ).toFixed(1),
         ); // approximate pt to px for visualization if needed, but here we just map 1 unit to 1pt or 2px
         var unit = preset.isPx ? "px" : "pt";
         var renderSize = preset.isPx

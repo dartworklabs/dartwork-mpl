@@ -15,10 +15,11 @@ Every kind but ``matrix``, ``dense``, ``strip`` and ``slide`` is 4:3, the
 (``dm.figsize(dm.col1)``) gets the same shape.
 
 ``scientific`` presets map the tiers onto journal columns (9 or 17 cm).
-``presentation`` presets fill the body of a 16:9 slide under its title,
-23.4 x 10.5 cm, whatever the density: ``"compact"`` takes half of it (two
-charts side by side) and ``"matrix"`` a 10.5 cm square. ``"slide"`` is that
-body under any preset. ``poster`` scales the tiers by its font size over the
+``presentation`` presets draw under a 16:9 slide's title, 10.5 cm tall:
+up to 4 x positions half the 23.4 cm body (11.4 cm), up to 6 two thirds
+(15.4 cm), anything denser the full body; ``"compact"`` takes half of it
+and ``"matrix"`` a 10.5 cm square. ``"slide"`` is the full body under any
+preset. ``poster`` scales the tiers by its font size over the
 report's 8 pt, so text fills the same share of the canvas. Any other preset,
 or none, uses the report tiers.
 """
@@ -31,7 +32,7 @@ from dataclasses import dataclass
 
 from ..units import ASPECT_TOKENS, figsize
 
-__all__ = ["CANVAS_KINDS", "figsize_for", "grid_shape"]
+__all__ = ["CANVAS_KINDS", "SLIDE_SCALE", "figsize_for", "grid_shape"]
 
 _REPORT_FONT_PT = 8.0
 _MAX_TIER_CM = 17.0
@@ -45,6 +46,19 @@ _SLIDE_RATIO = 9.0 / 16.0
 _SLIDE_BODY_CM = (23.4, 10.5)
 # Half the body, 0.6 cm apart: two charts side by side.
 _SLIDE_HALF_CM = 11.4
+# Two of three 7.4 cm columns with their 0.6 cm gutter: a chart beside a
+# text column.
+_SLIDE_TWO_THIRDS_CM = 15.4
+# Most x positions whose labels fit the half and two-thirds widths at the
+# slide's 18.2 pt ticks (six company names fit 15.4 cm with 9 pt to spare).
+_SLIDE_HALF_MAX_POINTS = 4
+_SLIDE_TWO_THIRDS_MAX_POINTS = 6
+
+#: How much larger every point size is on slides than in a journal column:
+#: the slide body's width over the column's, 23.4 / 9. The presentation
+#: preset is the scientific one times this, and one ``dm.fs`` / ``dm.lw``
+#: step there is this many points.
+SLIDE_SCALE: float = round(_SLIDE_BODY_CM[0] / _COLUMNS_CM[0], 6)
 
 
 @dataclass(frozen=True)
@@ -139,13 +153,32 @@ def _half_cm(value: float) -> float:
     return math.floor(value * 2 + 0.5) / 2
 
 
-def _slide_canvas(kind: str) -> tuple[float, float]:
-    """Width and height (cm) of a chart under a slide title."""
+def _slide_canvas(
+    kind: str, n_points: int | None, n_series: int | None, dual_axis: bool
+) -> tuple[float, float]:
+    """Width and height (cm) of a chart under a slide title.
+
+    The height is always the body's 10.5 cm, so text is the same size on
+    every slide. ``"compact"`` takes half the width and ``"matrix"`` a
+    10.5 cm square. A ``"default"`` chart is as wide as its x positions
+    need at slide text size: up to 4 positions half the body (11.4 cm), up
+    to 6 two thirds (15.4 cm). More positions, unknown positions (point
+    clouds), 4 or more series or a second y axis take the full 23.4 cm, as
+    does every other kind.
+    """
     width, height = _SLIDE_BODY_CM
     if kind == "compact":
         return _SLIDE_HALF_CM, height
     if kind == "matrix":
         return height, height
+    if kind != "default" or n_points is None or dual_axis:
+        return width, height
+    if n_series is not None and n_series >= 4:
+        return width, height
+    if n_points <= _SLIDE_HALF_MAX_POINTS:
+        return _SLIDE_HALF_CM, height
+    if n_points <= _SLIDE_TWO_THIRDS_MAX_POINTS:
+        return _SLIDE_TWO_THIRDS_CM, height
     return width, height
 
 
@@ -185,7 +218,8 @@ def figsize_for(
     n_points : int, optional
         Positions along the category or time axis (bars per group count
         once). Leave out for scatter, histograms and other point clouds.
-        ``presentation`` presets ignore it and ``n_series``.
+        Under ``presentation`` presets it picks a 11.4, 15.4 or 23.4 cm
+        wide slide chart (up to 4, up to 6, more positions).
     n_series : int, optional
         Plotted series: lines, bar colours, stacked layers.
     dual_axis : bool, optional
@@ -224,7 +258,10 @@ def figsize_for(
     family, scale = _family(_active_preset)
     grid = nrows * ncols > 1
     if family == "slides":
-        width, height = _slide_canvas("default" if grid else kind)
+        if grid:
+            width, height = _SLIDE_BODY_CM
+        else:
+            width, height = _slide_canvas(kind, n_points, n_series, dual_axis)
         return figsize(f"{width:g}cm", f"{height:g}cm")
     width = (
         _MAX_TIER_CM if grid else _tier_cm(spec, n_points, n_series, dual_axis)

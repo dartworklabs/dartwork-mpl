@@ -856,7 +856,8 @@
       scientific: { fs: 7.5, lw: 0.8, fw: 300 },
       report: { fs: 8.0, lw: 0.8, fw: 300 },
       minimal: { fs: 7.5, lw: 0.5, fw: 300 },
-      presentation: { fs: 10.5, lw: 1.0, fw: 300 },
+      // Every point size x 2.6, and so is one dm.fs step (2.6 pt).
+      presentation: { fs: 19.5, lw: 2.6, fw: 300, step: 2.6 },
       poster: { fs: 12.0, lw: 1.5, fw: 300 },
       web: { fs: 11.0, lw: 0.8, fw: 400 },
       dark: { fs: 11.0, lw: 0.8, fw: 400 },
@@ -956,7 +957,7 @@
       var fwO = parseInt(fwR.value, 10);
       var lwF = parseInt(lwR.value, 10);
       // fs: base + offset (pt)
-      var fs = Math.max(1, p.fs + fsO);
+      var fs = Math.max(1, +(p.fs + fsO * (p.step || 1)).toFixed(1));
       var fw = Math.max(100, Math.min(900, p.fw + fwO * 100));
       // dm.lw: factor steps. 0 = 1.0, +1 = 1.5, +2 = 2.0, ...
       var lwMult = 1 + lwF * 0.5;

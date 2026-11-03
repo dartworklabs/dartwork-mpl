@@ -9,7 +9,7 @@ canvas, so the same request gets the same size whoever draws it:
 |---|---|
 | `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
 | `scientific` | 9 or 17 cm (journal columns) |
-| `presentation` | 23.4 × 10.5 cm: a 16:9 slide under its title |
+| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title |
 | `poster` | report widths × font size / 8 pt |
 
 The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
@@ -22,10 +22,15 @@ the kind's aspect. `dm.grid_shape(n)` lays out `n` panels: one row up to
 three, then a near-square grid, wider than tall.
 
 Slides: a 16:9 slide is 25.4 × 14.29 cm; under a 28 pt title with 1 cm
-margins a chart has 23.4 × 10.5 cm. `presentation` gives that whatever the
-density, grids included; `"compact"` gives half (11.4 × 10.5 cm, two charts
-side by side) and `"matrix"` a 10.5 cm square. A chart that is the whole
-slide with no slide title, only when asked: `dm.figsize("25.4cm", "16:9")`.
+margins a chart has 23.4 × 10.5 cm. `presentation` is `scientific` with every
+point size × 2.6 (23.4 / 9 cm: text 19.5 pt, ticks 18.2 pt, lines 2.6 pt), so
+every slide chart keeps the 10.5 cm height and one text size, and the width
+follows the x positions at that text size: up to 4 → 11.4 cm (half the body),
+up to 6 → 15.4 cm (two thirds), more, unknown (scatter), 4+ series or
+`dual_axis=True` → 23.4 cm. Grids, `"barh"`, `"dense"` and `"strip"` take
+23.4 cm, `"compact"` 11.4 cm (two charts side by side) and `"matrix"` a
+10.5 cm square. A chart that is the whole slide with no slide title, only
+when asked: `dm.figsize("25.4cm", "16:9")`.
 
 ```python
 import matplotlib.pyplot as plt
@@ -39,6 +44,8 @@ dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
 dm.figsize_for("slide")  # 23.4 x 10.5 cm, under a slide title
 nrows, ncols = dm.grid_shape(6)  # (2, 3)
 dm.figsize_for(nrows=nrows, ncols=ncols)  # 17 x 8.5 cm
+dm.style.use("presentation")
+dm.figsize_for(n_points=len(quarters), n_series=series)  # 11.4 x 10.5 cm
 ```
 
 A size the user names goes to `dm.figsize(width, second)`, which returns the

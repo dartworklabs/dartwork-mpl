@@ -83,9 +83,11 @@ class TestPresets:
         "kwargs",
         [
             {},
-            {"n_points": 4, "n_series": 1},
+            {"n_points": 7},
             {"n_points": 36, "n_series": 2},
-            {"kind": "barh", "n_points": 9, "n_series": 1},
+            {"n_points": 3, "n_series": 4},
+            {"n_points": 3, "dual_axis": True},
+            {"kind": "barh", "n_points": 3, "n_series": 1},
             {"kind": "dense"},
             {"kind": "slide"},
             {"nrows": 3, "ncols": 1},
@@ -100,6 +102,22 @@ class TestPresets:
         # taller than the room left under a slide title.
         dm.style.use(preset)
         assert _cm(dm.figsize_for(**kwargs)) == (23.4, 10.5)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("preset", ["presentation", "presentation-kr"])
+    @pytest.mark.parametrize(
+        ("n_points", "width"),
+        [(1, 11.4), (4, 11.4), (5, 15.4), (6, 15.4), (7, 23.4), (12, 23.4)],
+    )
+    def test_presentation_width_follows_x_positions(
+        self, preset: str, n_points: int, width: float
+    ) -> None:
+        # Decision 4-A (2026-11-03): at 18.2 pt slide ticks, six company
+        # names overlapped 4 times at 11.4 cm (-8.6 pt) and had 9.2 pt to
+        # spare at 15.4 cm; 12 month names overlapped 10 times at 15.4 cm.
+        # The height stays 10.5 cm so text is the same size on every slide.
+        dm.style.use(preset)
+        got = _cm(dm.figsize_for(n_points=n_points, n_series=2))
+        assert got == (width, 10.5)
 
     def test_presentation_half_and_square(self) -> None:
         dm.style.use("presentation")

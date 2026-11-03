@@ -12,8 +12,8 @@ layout/font helpers so you get **predictable results** fast.
 | Academic paper / journal | `scientific` | Compact fonts (7.5 pt), all 4 spines, fits 3.5" column |
 | Business report / memo | `report` | Clean look, no top/right spines, 8 pt fonts |
 | Infographic / editorial | `minimal` | Tufte-style, no spines/ticks, data-ink focus |
-| PowerPoint / Keynote | `presentation` | Large fonts (10.5 pt), readable when projected |
-| Conference poster | `poster` | Largest fonts (12 pt), thick lines, 1-2m reading distance |
+| PowerPoint / Keynote | `presentation` | Scientific × 2.6 (19.5 pt text, 2.6 pt lines), readable when projected |
+| Conference poster | `poster` | 12 pt fonts, thick lines, 1-2m reading distance |
 | Web docs / blog | `web` | Screen-optimized 11 pt, clean for HTML/Jupyter |
 | Dark Jupyter / dark slides | `dark` | Inverted colors on `#1e1e1e` background |
 | **Any of the above + Korean** | Add `-kr` suffix | Swaps to Paperlogy/Pretendard fonts |

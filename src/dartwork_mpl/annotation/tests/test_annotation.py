@@ -155,7 +155,7 @@ class TestAnnotateValue:
         assert text.get_text() == "0.5"
         assert text.get_horizontalalignment() == "center"
         assert text.get_verticalalignment() == "bottom"
-        assert text.get_fontsize() == dm.fs(-2)
+        assert text.get_fontsize() == dm.fs(-1)
         plt.close(fig)
 
     def test_auto_flips_below_axes_top(self) -> None:
@@ -200,6 +200,17 @@ class TestAnnotateValueWeight:
         fig, ax = plt.subplots()
         text = annotate_value(ax, 0.5, 0.5, "42", side="above")
         assert text.get_fontweight() == dm.fw(1)
+        plt.close(fig)
+
+    @pytest.mark.parametrize("preset", ["report", "presentation"])
+    def test_default_size_is_one_step_below(self, preset: str) -> None:
+        # Decision 6-A (2026-11-03): value labels take dm.fs(-1). At fs(0)
+        # twelve monthly labels at report size kept 3.4 pt apart; at
+        # fs(-1), 5.8 pt. It was fs(-2), 6 pt next to 8 pt report ticks.
+        dm.style.use(preset)
+        fig, ax = plt.subplots()
+        text = annotate_value(ax, 0.5, 0.5, "42", side="above")
+        assert text.get_fontsize() == pytest.approx(dm.fs(-1))
         plt.close(fig)
 
     @pytest.mark.parametrize("key", ["fontweight", "weight"])

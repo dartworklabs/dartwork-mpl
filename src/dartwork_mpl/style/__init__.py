@@ -16,10 +16,11 @@ import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
 from .._rc import rc_lock
-from ._canvas import CANVAS_KINDS, figsize_for, grid_shape
+from ._canvas import CANVAS_KINDS, SLIDE_SCALE, figsize_for, grid_shape
 
 __all__ = [
     "CANVAS_KINDS",
+    "SLIDE_SCALE",
     "Style",
     "active_preset_rcparams",
     "figsize_for",
@@ -27,6 +28,7 @@ __all__ = [
     "install_twinx_patch",
     "list_styles",
     "load_style_dict",
+    "step_pt",
     "style",
     "style_path",
 ]
@@ -642,6 +644,28 @@ def active_preset_rcparams() -> dict[str, object]:
     ):
         return {}
     return values
+
+
+def step_pt() -> float:
+    """Return how many points one ``dm.fs`` / ``dm.lw`` step adds right now.
+
+    :data:`SLIDE_SCALE` (2.6) while the last preset ``style.use`` applied (or
+    the innermost ``style.context``) is ``presentation`` or
+    ``presentation-kr``: those presets are the scientific one times 2.6, so a
+    step on a slide looks like one point in a journal column. 1.0 under every
+    other preset and when no dartwork preset is in force (none applied, a
+    bare ``style.stack``, or a native reset since; see
+    :func:`active_preset_rcparams`). Caller overrides such as
+    ``font_size=12`` do not change the step.
+    """
+    if (
+        not _active_preset
+        or _active_preset[-1].removesuffix("-kr") != "presentation"
+    ):
+        return 1.0
+    if not active_preset_rcparams():
+        return 1.0
+    return SLIDE_SCALE
 
 
 def install_twinx_patch() -> None:

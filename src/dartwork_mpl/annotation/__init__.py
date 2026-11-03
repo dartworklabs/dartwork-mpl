@@ -497,10 +497,12 @@ def annotate_value(
 
     The label is one weight step heavier than the preset's base weight
     (``fontweight=fw(1)``) so a data value reads apart from captions;
-    pass ``fontweight`` (or ``weight``) to override.
+    pass ``fontweight`` (or ``weight``) to override. ``fontsize`` defaults
+    to one step below the base, ``fs(-1)``, the size every value label
+    takes (7 pt under ``report``, 16.9 pt under ``presentation``).
     """
     if fontsize is None:
-        fontsize = fs(-2)
+        fontsize = fs(-1)
     requested = _parse_value_side(side)
     if "fontweight" not in kw and "weight" not in kw:
         kw["fontweight"] = fw(1)

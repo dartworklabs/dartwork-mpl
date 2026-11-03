@@ -36,7 +36,7 @@ import dartwork_mpl as dm  # Fonts are now available!
         <select class="dm-up-base" aria-label="Base Preset">
           <option value="scientific">scientific (Base: 7.5pt / Light)</option>
           <option value="report">report (Base: 9pt / Light)</option>
-          <option value="presentation">presentation (Base: 10.5pt / Light)</option>
+          <option value="presentation">presentation (Base: 19.5pt / Light, 2.6pt steps)</option>
           <option value="minimal">minimal (Base: 10pt / Light)</option>
           <option value="web" selected>web (Base: 16px / Regular)</option>
         </select>
@@ -105,7 +105,7 @@ ax.text(0.5, 0.5, "Note", fontsize=dm.fs(-2))      # 5.5pt
 ```
 
 **Why use `fs()` instead of hardcoded sizes?** If you switch from `scientific`
-(base 7.5pt) to `presentation` (base 10.5pt), all your `fs()` calls
+(base 7.5pt) to `presentation` (base 19.5pt, 2.6pt steps), all your `fs()` calls
 automatically adjust — no manual updates needed:
 
 ```python

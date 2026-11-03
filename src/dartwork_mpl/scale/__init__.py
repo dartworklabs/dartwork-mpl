@@ -1,7 +1,10 @@
 """Font and line-width scaling helpers relative to rcParams defaults.
 
 Provides ``fs``, ``fw``, and ``lw`` helper functions that add or
-subtract fixed offsets from the current matplotlib style defaults.
+subtract steps from the current matplotlib style defaults. A ``fs`` /
+``lw`` step is 1 pt, or 2.6 pt under the presentation presets, whose
+point sizes are all 2.6 times the scientific ones
+(:func:`dartwork_mpl.style.step_pt`).
 """
 
 from __future__ import annotations
@@ -9,6 +12,8 @@ from __future__ import annotations
 __all__ = ["dpi", "fs", "fw", "lw"]
 
 import matplotlib.pyplot as plt
+
+from ..style import step_pt
 
 _WEIGHT_MAP: dict[str, int] = {
     "ultralight": 100,
@@ -29,20 +34,25 @@ _WEIGHT_MAP: dict[str, int] = {
 
 
 def fs(n: int | float) -> float:
-    """Return the base font size plus *n*.
+    """Return the base font size plus *n* steps.
+
+    A step is 1 pt, or 2.6 pt under ``presentation`` / ``presentation-kr``
+    (:func:`dartwork_mpl.style.step_pt`), so ``fs(-1)`` is the same share
+    of the text size on a slide as in a journal column: 6.5 of 7.5 pt
+    under ``scientific``, 16.9 of 19.5 pt under ``presentation``.
 
     Parameters
     ----------
     n : int | float
-        Offset to add to ``rcParams['font.size']``.
+        Steps to add to ``rcParams['font.size']``.
         Positive values increase, negative values decrease.
 
     Returns
     -------
     float
-        Scaled font size.
+        Scaled font size in points.
     """
-    return float(plt.rcParams["font.size"]) + float(n)
+    return float(plt.rcParams["font.size"]) + float(n) * step_pt()
 
 
 def fw(n: int | float) -> int:
@@ -72,20 +82,24 @@ def fw(n: int | float) -> int:
 
 
 def lw(n: int | float) -> float:
-    """Return the base line width plus *n*.
+    """Return the base line width plus *n* steps.
+
+    A step is 1 pt, or 2.6 pt under ``presentation`` / ``presentation-kr``
+    (:func:`dartwork_mpl.style.step_pt`): ``lw(1)`` doubles the 1 pt
+    scientific line and the 2.6 pt slide line alike.
 
     Parameters
     ----------
     n : int | float
-        Offset to add to ``rcParams['lines.linewidth']``.
+        Steps to add to ``rcParams['lines.linewidth']``.
         Positive values thicken, negative values thin.
 
     Returns
     -------
     float
-        Scaled line width.
+        Scaled line width in points.
     """
-    return float(plt.rcParams["lines.linewidth"]) + float(n)
+    return float(plt.rcParams["lines.linewidth"]) + float(n) * step_pt()
 
 
 # Default DPI ladder step. The 50-DPI step matches the gap between
