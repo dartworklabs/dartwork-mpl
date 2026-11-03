@@ -282,21 +282,17 @@ class TestCrowdedDates:
     ``2021년 5월 9월 2022년`` ran together.
     """
 
-    def test_half_slide_drops_to_six_month_steps(self):
+    def test_half_slide_drops_to_two_year_steps(self):
+        # At the slide's 18.2 pt ticks (scientific x 2.6, 2026-11-03) neither
+        # six-month nor yearly labels fit 36 months into a half slide; the
+        # 10.5 pt ticks before that took six-month steps. figsize_for gives
+        # 36 positions the full 23.4 cm body (test_wide_axis_keeps_its_ticks).
         dm.style.use("presentation-kr")
         fig, ax = plt.subplots(figsize=dm.figsize("11.4cm", "10.5cm"))
         _months(ax)
         ax.set_xlabel("월")
         dm.simple_layout(fig)
-        assert _drawn(ax, "x") == [
-            "2021년",
-            "7월",
-            "2022년",
-            "7월",
-            "2023년",
-            "7월",
-            "2024년",
-        ]
+        assert _drawn(ax, "x") == ["2022년", "2024년"]
         assert min(_gaps_em(ax)) >= 1.0
 
     def test_report_column_is_thinned_too(self):
