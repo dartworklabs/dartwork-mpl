@@ -71,10 +71,10 @@ rounded bar ends, placeholder palettes.
 Plot the user's values as given. Never drop, fill, sort, aggregate, clip or invent rows
 silently; state every transformation. Missing values stay visible gaps (`dm.validate_data`
 drops NaN/Inf rows unless `allow_nan=True`). A preview is not the dataset; template numbers
-are placeholders, never data. Read dates as dates; "A against B" puts A on y ("length
-against width": length on y). Labels are column names, translated word for word
-(`week_start` → `Week start`, `share_pct` → `Share (%)`); a value axis without one takes the
-request's noun word for word (`GDP 성장률` → `GDP growth rate`); no unit nothing states.
+are placeholders, never data. Dates are dates, a bare year (2012) a number; "A against B": A on y.
+Labels are column names, translated word for word (`week_start` → `Week start`, `share_pct` →
+`Share (%)`); a value axis without one takes the request's noun word for word and in its order
+(`GDP 성장률` → `GDP growth rate`, "the share of renewables" → `Share of renewables`); no unit nothing states.
 
 ## Values
 

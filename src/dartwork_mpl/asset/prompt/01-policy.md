@@ -59,8 +59,9 @@ bars are vertical, `ax.barh` with `dm.figsize_for("barh")` only when the
 category names would overlap side by side; dates under bars go through
 `dm.format_axis_dates(ax, dates)`, not rotated labels; an axis label is the
 column name word for word (`share_pct` → `Share (%)`), else the request's noun
-word for word (`GDP 성장률` → `GDP growth rate`), with no unit the data or
-request does not state. Moving a figure to slides takes `dm.figsize_for(...)`
+word for word and in its order (`GDP 성장률` → `GDP growth rate`, "the share of
+renewables" → `Share of renewables`), with no unit the data or request does not
+state; a bare year (2012) stays a number, not a date. Moving a figure to slides takes `dm.figsize_for(...)`
 and multiplies pt values written in its code by 2.6, unrounded.
 
 Ask **one short, self-contained question** only when missing information
