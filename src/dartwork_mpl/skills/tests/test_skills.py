@@ -253,7 +253,10 @@ def test_step6_decisions_w_a_and_l_b() -> None:
     """
     flat = " ".join(SKILL_MD.read_text(encoding="utf-8").split())
     assert "with no weight written, `dm.fw(1)`" in flat
-    assert "if your change makes `LEGEND_OVERLAP`, the fix is" in flat
+    # v20: the e03 original already had the overlap (331 px2 at 1:1 and 1:2),
+    # so an "only X" edit keeps that legend and reports the warning.
+    assert "a `LEGEND_OVERLAP` the original already has stays, reported" in flat
+    assert "one your change makes: `dm.place_legend(ax)`" in flat
     assert "on that legend's axes with its own arguments" in flat
     assert "not spacing or font size" in flat
     assert "limits (a line crossing value labels too)" in flat
@@ -266,12 +269,14 @@ def test_step6_decisions_w_a_and_l_b() -> None:
     assert "when the call writes no weight, `fontweight=dm.fw(1)`" in editing
     assert "move only that legend: `dm.place_legend(ax)` on its axes" in editing
     assert "Not wider `wspace`, a smaller font" in editing
+    assert "Validate the original before the change." in editing
+    assert "redraw it with the same call and arguments" in editing
     assert (
         "the axis limits stay, also when a line crosses the labels" in editing
     )
     policy = " ".join(dm.get_prompt("01-policy").split())
     assert (
-        "unless the edit makes it overlap other text (`LEGEND_OVERLAP`)"
+        "unless the edit makes it overlap other text (`LEGEND_OVERLAP` the original did not have"
         in policy
     )
     assert "`dm.fw(1)` when their call writes no weight" in policy

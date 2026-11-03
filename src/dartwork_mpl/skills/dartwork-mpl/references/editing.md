@@ -90,7 +90,7 @@ above an outside legend and the margins around both.
 | axis labels one step bigger | each label: `t.set_fontsize(t.get_fontsize() + step)` |
 | ticks smaller | `ax.tick_params(labelsize=dm.fs(-1))` |
 | one line thicker | `line.set_linewidth(line.get_linewidth() + 0.5)` |
-| emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays, redrawn after recolouring |
+| emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays: after recolouring, redraw it with the same call and arguments (`loc=`, `ncols=` …) |
 | move the legend | `dm.place_legend(ax)` (inside, away from the data) or a named side `dm.place_legend(ax, loc="right")`; never `ax.legend(loc=...)` or `bbox_to_anchor` |
 | legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
 | label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
@@ -112,8 +112,10 @@ dm.save_formats(fig, "output/figure-v2", formats=("png",))
 plt.close(fig)
 ```
 
-When the asked change makes a legend cover another panel's text (a
-`LEGEND_OVERLAP` WARNING, e.g. a panel widened under a neighbour's legend),
+Validate the original before the change. A WARNING it already has is not
+the change's: it stays and goes in the report (an "only X" edit fixes
+nothing else). When the asked change itself makes a legend cover another
+panel's text (a `LEGEND_OVERLAP` WARNING the original did not have),
 move only that legend: `dm.place_legend(ax)` on its axes with the
 arguments it already had (`fontsize=` …, no `loc=`); it may go above the
 plot in two columns, which is the decided look (decision L-B). Not wider

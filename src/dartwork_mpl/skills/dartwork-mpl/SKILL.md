@@ -93,8 +93,8 @@ and in its order (`GDP 성장률` → `GDP growth rate`, "the share of renewable
 ## Edits
 
 "Only X" requests: find that artist (panel, series, label, title), change only the asked property; keep data,
-preset, canvas, colours, the legend as it is (a highlight too; if your change makes `LEGEND_OVERLAP`, the fix is
-`dm.place_legend(ax)` on that legend's axes with its own arguments, not spacing or font size; list it) and the rest; keep the original, write the revision as a new script and stem.
+preset, canvas, colours, the legend as it is (a highlight too; a `LEGEND_OVERLAP` the original already has stays, reported; one your
+change makes: `dm.place_legend(ax)` on that legend's axes with its own arguments, not spacing or font size; list it) and the rest; keep the original, write the revision as a new script and stem.
 A preset switch (paper → slides) multiplies pt values written in the code by the presets' ratio (`scientific` →
 `presentation`: × 2.6, unrounded). Broad asks ("look better"): keep data, preset, canvas, chart type and axes (no
 new twin), limits (a line crossing value labels too), axis labels as written, text (add none) and its size (touching

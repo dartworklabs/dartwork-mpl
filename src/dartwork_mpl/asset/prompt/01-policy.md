@@ -67,7 +67,8 @@ state; a bare year (2012) stays a number, not a date; a legend added, moved
 or merged (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=`
 only for a side the user names, not `ax.legend(...)` with `bbox_to_anchor`,
 and a legend nobody asked about stays as it is unless the edit makes it
-overlap other text (`LEGEND_OVERLAP`): then `dm.place_legend(ax)` on its axes,
+overlap other text (`LEGEND_OVERLAP` the original did not have; one it had
+stays and is reported): then `dm.place_legend(ax)` on its axes,
 with its own arguments, moves it (not wider spacing or a smaller font) and
 the change list says so. A "look better" pass that shrinks touching value labels to
 `dm.fs(-1)` also gives them `dm.fw(1)` when their call writes no weight, and
