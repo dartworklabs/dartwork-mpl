@@ -32,7 +32,7 @@ replace explicit sizes with template dimensions or a default.
 |---|---|---|
 | paper, journal, 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
 | report, document, dashboard, 보고서, 문서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
-| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 10.5 cm tall under a 16:9 slide's title; wide 11.4 cm for up to 4 x positions, 15.4 cm up to 6, 23.4 cm for more, 4+ series or a second y axis; `"compact"` 11.4 cm for two charts side by side; `dm.figsize("25.4cm", "16:9")` only for a whole slide with no title |
+| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 10.5 cm tall under a 16:9 slide's title; wide 11.4 cm for up to 4 x positions, 15.4 cm up to 6, 23.4 cm for more, 4+ series or a second y axis; `"compact"` 11.4 cm for two charts side by side; `dm.figsize_for("full_slide")` (25.4 × 14.29 cm) only for a whole 16:9 slide with no title |
 
 These are defaults, not caps or journal/slide standards: any size the user, a
 journal or a template names wins, through `dm.figsize`. `dm.figsize_for(kind,
@@ -52,6 +52,16 @@ does not name: "add a title" is `ax.set_title(text)` with the preset's title
 size and weight; "add gridlines" is `ax.grid(True, axis=...)` with the
 preset's grid colour and width; "20 cm wide" is `dm.figsize("20cm")` at the
 default 4:3 (an edit keeps the existing height). Named details win exactly.
+
+Details nobody named are the library's, so every agent draws the same figure:
+axis limits stay matplotlib's (bars start at 0, lines keep the data margins);
+bars are vertical, `ax.barh` with `dm.figsize_for("barh")` only when the
+category names would overlap side by side; dates under bars go through
+`dm.format_axis_dates(ax, dates)`, not rotated labels; an axis label is the
+column name word for word (`share_pct` → `Share (%)`), else the request's noun
+word for word (`GDP 성장률` → `GDP growth rate`), with no unit the data or
+request does not state. Moving a figure to slides takes `dm.figsize_for(...)`
+and multiplies pt values written in its code by 2.6, unrounded.
 
 Ask **one short, self-contained question** only when missing information
 materially affects the result, for example “Is this paper figure single- or

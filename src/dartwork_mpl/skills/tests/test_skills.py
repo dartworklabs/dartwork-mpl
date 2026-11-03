@@ -138,6 +138,38 @@ def test_plot_text_is_english_unless_the_user_asks() -> None:
     assert "missing from font(s)" in korean
 
 
+def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
+    """User decisions 2026-11-03 (eval v13 step 5): 20-A, 0-A, 19-A, 22-A.
+
+    A whole 16:9 slide is ``figsize_for("full_slide")``; axis limits are the
+    library's; bars are vertical unless names overlap; no unit nothing
+    states. Also the rules v13 showed agents reading two ways: dates under
+    bars, pt values on a move to slides, the legend on an edit, axis labels
+    on a broad ask.
+    """
+    text = SKILL_MD.read_text(encoding="utf-8")
+    for rule in (
+        '`"full_slide"` (25.4 × 14.29 cm)',  # noqa: RUF001
+        "axis limits (bars start at 0)",
+        '`"barh"` + `ax.barh` only when names overlap',
+        "`GDP 성장률` → `GDP growth rate`",
+        "no unit nothing states",
+        "`dm.format_axis_dates(ax, dates)`, not rotated",
+        "× 2.6, unrounded",  # noqa: RUF001
+        "the legend as it is",
+        "axis labels as written",
+    ):
+        assert rule in text, rule
+    editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
+    assert "`dm.format_axis_dates(ax, dates)`" in editing
+    assert "axis labels stay as written" in editing
+    sizing = (SKILL / "references" / "sizing-and-layout.md").read_text(
+        encoding="utf-8"
+    )
+    assert 'dm.figsize_for("full_slide")' in sizing
+    assert '"25.4cm", "16:9"' not in sizing
+
+
 def test_one_unit_per_axis() -> None:
     """User decision 2026-10-22: one unit per axis, the largest tick's by default."""
     text = SKILL_MD.read_text(encoding="utf-8")

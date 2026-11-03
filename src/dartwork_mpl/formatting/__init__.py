@@ -7,7 +7,7 @@ tick labels, and other matplotlib elements.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from itertools import pairwise
 from typing import Any, Literal
 
@@ -16,13 +16,21 @@ from matplotlib.axes import Axes
 
 from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import recommend_tick_decimals
-from ._defaults import apply_default_tick_format, thin_crowded_date_ticks
+from ._defaults import (
+    CategoryDateFormatter,
+    CategoryDateLocator,
+    _steps_for,
+    apply_default_tick_format,
+    category_dates,
+    thin_crowded_date_ticks,
+)
 
 __all__ = [
     "apply_default_tick_format",
     "avoid_tick_overlap",
     "format_axis_billions",
     "format_axis_currency",
+    "format_axis_dates",
     "format_axis_millions",
     "format_axis_myriad",
     "format_axis_si",
@@ -99,6 +107,57 @@ def format_axis_year(
         ax.xaxis.set_major_formatter(year_formatter)
     if axis in ("y", "both"):
         ax.yaxis.set_major_formatter(year_formatter)
+
+
+def format_axis_dates(
+    ax: Axes, dates: Sequence[Any] | Any, axis: Literal["x", "y"] = "x"
+) -> None:
+    """Label category positions with the dates they stand for.
+
+    For bars (or any chart drawn at positions ``0, 1, ... n-1``) whose
+    categories are dates, such as twelve monthly bars over ``"2024-01" …
+    "2024-12"``. The labels become the library's concise date words, the
+    ones a real date axis gets (``2024, Feb, Mar …``; ``2024년, 2월, 3월 …``
+    when the figure's labels are Korean), and :func:`dm.simple_layout
+    <dartwork_mpl.simple_layout>` thins a crowded axis to every 2nd, 3rd,
+    4th, 6th or 12th month (other spacings: 2, 3, 4, 5 …) until the labels
+    are one em apart, with ticks only under labelled positions. Use it
+    instead of rotating date labels; rotation stays the last resort.
+
+    Replaces the axis's tick positions and labels; the bars, their order
+    and the axis limits are unchanged. Call it after drawing and before
+    ``dm.simple_layout``::
+
+        bars = ax.bar(range(len(df)), df["sales"])
+        dm.format_axis_dates(ax, df["month"])   # "2024-01" ... "2024-12"
+        dm.simple_layout(fig)
+
+    Parameters
+    ----------
+    ax:
+        Matplotlib axes whose categories sit at ``0 … len(dates) - 1``
+        (``ax.bar(range(n), …)`` or string categories).
+    dates:
+        One date per position, in position order: ISO strings
+        (``"2024-01"``, ``"2024-01-15"``), ``datetime`` / ``date`` values,
+        pandas timestamps or a ``datetime64`` array.
+    axis:
+        ``"x"`` (default) for vertical bars, ``"y"`` for horizontal ones.
+
+    Raises
+    ------
+    ValueError
+        If ``dates`` is empty, holds a value that is not a date, or ``axis``
+        is not ``"x"`` or ``"y"``.
+    """
+    if axis not in ("x", "y"):
+        raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
+    parsed = category_dates(dates)
+    target = ax.xaxis if axis == "x" else ax.yaxis
+    target.set_major_locator(
+        CategoryDateLocator(len(parsed), _steps_for(parsed))
+    )
+    target.set_major_formatter(CategoryDateFormatter(parsed))
 
 
 _MYRIAD_UNIT_LADDERS: dict[str, tuple[tuple[int, str], ...]] = {

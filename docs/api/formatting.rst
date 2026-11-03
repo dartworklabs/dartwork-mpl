@@ -38,6 +38,8 @@ Numeric Formatting
 Label Management
 ^^^^^^^^^^^^^^^^
 
+.. autofunction:: dartwork_mpl.format_axis_dates
+
 .. autofunction:: dartwork_mpl.rotate_tick_labels
 
 Examples

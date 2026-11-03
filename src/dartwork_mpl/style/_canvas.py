@@ -8,9 +8,10 @@ chosen from the chart kind and two density hints:
 - ``n_points <= 6`` and ``n_series <= 2`` on one axis: 9 cm;
 - a second y axis, ``n_series >= 4`` or ``n_points > 12``: 14.5 cm;
 - otherwise the kind's width. ``"matrix"``, ``"dense"``, ``"strip"``,
-  ``"slide"`` and panel grids ignore the hints.
+  ``"slide"``, ``"full_slide"`` and panel grids ignore the hints.
 
-Every kind but ``matrix``, ``dense``, ``strip`` and ``slide`` is 4:3, the
+Every kind but ``matrix``, ``dense``, ``strip``, ``slide`` and
+``full_slide`` is 4:3, the
 :func:`~dartwork_mpl.figsize` default, so a request that names only a width
 (``dm.figsize(dm.col1)``) gets the same shape.
 
@@ -19,7 +20,8 @@ Every kind but ``matrix``, ``dense``, ``strip`` and ``slide`` is 4:3, the
 up to 4 x positions half the 23.4 cm body (11.4 cm), up to 6 two thirds
 (15.4 cm), anything denser the full body; ``"compact"`` takes half of it
 and ``"matrix"`` a 10.5 cm square. ``"slide"`` is the full body under any
-preset. ``poster`` scales the tiers by its font size over the
+preset; ``"full_slide"`` is the whole 16:9 slide (25.4 x 14.29 cm, no title
+band), the slide the presentation sizes assume. ``poster`` scales the tiers by its font size over the
 report's 8 pt, so text fills the same share of the canvas. Any other preset,
 or none, uses the report tiers.
 """
@@ -41,8 +43,13 @@ _COLUMNS_CM = (9.0, 17.0)
 # 16:9 of the widest tier.
 _MAX_HEIGHT_CM = 24.0
 _SLIDE_RATIO = 9.0 / 16.0
-# A 16:9 slide (25.4 x 14.29 cm) less 1 cm side margins, a 2.8 cm title band
-# and a 1 cm bottom margin: the area a chart fills under a slide title.
+# A 10 in 16:9 slide, 25.4 x 14.29 cm: the slide the presentation sizes and
+# SLIDE_SCALE assume. A chart that fills the slide ("a full-slide chart")
+# takes all of it; a larger slide (13.33 in) would show the same text 25 %
+# smaller on screen.
+_SLIDE_CM = (25.4, 25.4 * _SLIDE_RATIO)
+# The slide less 1 cm side margins, a 2.8 cm title band and a 1 cm bottom
+# margin: the area a chart fills under a slide title.
 _SLIDE_BODY_CM = (23.4, 10.5)
 # Half the body, 0.6 cm apart: two charts side by side.
 _SLIDE_HALF_CM = 11.4
@@ -91,6 +98,8 @@ CANVAS_KINDS: dict[str, _Kind] = {
         fixed=True,
         absolute=True,
     ),
+    # A whole 16:9 slide, no title band, under any preset.
+    "full_slide": _Kind(_SLIDE_CM[0], _SLIDE_RATIO, fixed=True, absolute=True),
 }
 
 
@@ -213,8 +222,10 @@ def figsize_for(
         scatter, distributions), ``"barh"`` (long category labels),
         ``"compact"`` (insets, half-width panels), ``"matrix"`` (heatmaps),
         ``"dense"`` (long dense timelines), ``"strip"`` (a full-width
-        strip) or ``"slide"`` (a chart filling a 16:9 slide under its
-        title, 23.4 x 10.5 cm, under any preset).
+        strip), ``"slide"`` (a chart filling a 16:9 slide under its
+        title, 23.4 x 10.5 cm, under any preset) or ``"full_slide"`` (a
+        chart that is the whole 16:9 slide, 25.4 x 14.29 cm, under any
+        preset: "a full-slide chart").
     n_points : int, optional
         Positions along the category or time axis (bars per group count
         once). Leave out for scatter, histograms and other point clouds.

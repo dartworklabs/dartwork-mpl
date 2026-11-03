@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.format_axis_dates(ax, dates)`.** Bars and other category charts that
+  stand for dates (`"2024-01" … "2024-12"` under twelve bars) get the
+  library's concise date words (`2024, Feb, Mar …`; `2024년, 2월 …` on a
+  Korean figure), and `dm.simple_layout` thins a crowded axis to every 2nd,
+  3rd, 4th, 6th or 12th month until the labels are one em apart, instead of
+  the labels being rotated. ISO strings, datetimes and `datetime64` are read;
+  anything else is a `ValueError`.
+- **`dm.figsize_for("full_slide")`.** A chart that is a whole 16:9 slide
+  ("a full-slide chart") is 25.4 x 14.29 cm under any preset: the 10 in slide
+  the presentation sizes assume, so its text reads at the same size as a
+  chart under a slide title.
+
 - **The preset's default canvas (provisional).** `dm.figsize_for(kind,
   n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
   preset's figure size when a request names none: report widths 9 / 12 /
@@ -108,6 +120,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `parse_aspect`.
 
 ### Changed
+
+- **`TICK_ROTATION` advises dates and fewer ticks before rotation.**
+  Overlapping x labels now read "날짜면 dm.format_axis_dates(ax, dates),
+  아니면 눈금 수 축소, 45° 회전은 마지막 수단", and the fix suggestions list
+  `dm.format_axis_dates`, then a tick locator, then `dm.rotate_tick_labels`.
+- **Agent skill and policy: details nobody named.** Axis limits stay the
+  library's (bars from 0, lines with their data margins); bars are vertical
+  unless the category names would overlap; axis labels are column names, else
+  the request's noun, word for word, with no unit nothing states; a figure
+  moved to slides takes `dm.figsize_for` and multiplies pt values written in
+  its code by 2.6, unrounded; a broad "make it look better" keeps axis labels
+  as written and an "only X" edit keeps the legend as it is.
 
 - **`presentation` is `scientific` with every point size × 2.6.** Text,
   lines, markers, tick lengths and widths, pads, grid, spines and boxplot

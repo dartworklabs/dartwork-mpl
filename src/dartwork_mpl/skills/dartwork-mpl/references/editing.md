@@ -95,6 +95,8 @@ above an outside legend and the margins around both.
 | legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
 | label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
+| date labels under bars crowd (`2024-01 … 2024-12`) | `dm.format_axis_dates(ax, df["month"])`: the library's date words, thinned by `dm.simple_layout` (`2024, Mar, May …`); not rotated |
+| for slides / for a talk (preset switch) | `dm.style.use("presentation")`, canvas `dm.figsize_for(...)` (`"full_slide"` only for a whole 16:9 slide); pt values written in the code × 2.6 (`scientific` → `presentation`), unrounded: `markersize=3` → `3 * 2.6`; keep data, labels and limits |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
 | show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontsize=dm.fs(-1), fontweight=dm.fw(1))`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
@@ -144,16 +146,18 @@ plt.close(fig)
 2. Fix in this order, only what the image shows:
    - clipped or overlapping text: dates read as dates and the library's tick
      numbers and dates (`dm.simple_layout(fig)`; no formatter or locator of
-     your own), `dm.wrap_axis_labels(fig)`, `dm.rotate_tick_labels(ax)` as a
-     last resort;
+     your own; dates under bars or other categories:
+     `dm.format_axis_dates(ax, dates)`), `dm.wrap_axis_labels(fig)`,
+     `dm.rotate_tick_labels(ax)` only when none of these fits;
    - value labels touching each other or their neighbours: those labels to
      `fontsize=dm.fs(-1)` (only when larger), named in the change list;
    - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
      (one legend for both twins; above the plot by itself when nothing inside
      is free);
    - many competing colours: one accent, the rest `dc.gray4`;
-   - unclear labels: the column's name and a unit the data or request gives
-     ("Time (s)"); never an invented unit;
+   - axis labels stay as written, case and all, and none is added; a label
+     that is clipped or overlaps is wrapped (`dm.wrap_axis_labels(fig)`), not
+     reworded;
    - cramped panels: `hspace` / `wspace`.
 3. Keep the preset's fonts, spines and grid, the data, the chart type and
    its axes (no new twin axis or panel), the axis limits, the canvas size,

@@ -143,6 +143,23 @@ class TestPresets:
         dm.style.use(preset)
         assert _cm(dm.figsize_for("slide")) == (23.4, 10.5)
 
+    @pytest.mark.parametrize(
+        "preset", ["report", "presentation", "scientific", "poster"]
+    )
+    def test_full_slide_is_the_whole_10in_slide_everywhere(
+        self, preset: str
+    ) -> None:
+        """'A full-slide 16:9 chart' is the 10 in slide the slide sizes assume.
+
+        2026-11-03 decision 20-A: 25.4 x 14.29 cm under any preset, not
+        PowerPoint's 13.33 in slide (text 25 % smaller on screen) and not
+        the 23.4 cm body at 16:9.
+        """
+        dm.style.use(preset)
+        width, height = _cm(dm.figsize_for("full_slide"))
+        assert width == 25.4
+        assert height == pytest.approx(25.4 * 9 / 16, abs=0.01)
+
     def test_default_shape_matches_figsize_default(self) -> None:
         width, height = dm.figsize_for()
         assert height / width == pytest.approx(
