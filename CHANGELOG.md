@@ -125,10 +125,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Overlapping x labels now read "날짜면 dm.format_axis_dates(ax, dates),
   아니면 눈금 수 축소, 45° 회전은 마지막 수단", and the fix suggestions list
   `dm.format_axis_dates`, then a tick locator, then `dm.rotate_tick_labels`.
-- **Agent skill and policy: details nobody named.** Axis limits stay the
-  library's (bars from 0, lines with their data margins); bars are vertical
-  unless the category names would overlap; axis labels are column names, else
-  the request's noun, word for word, with no unit nothing states; a figure
+- **Agent skill and policy: details nobody named.** No value labels unless
+  asked; axis limits stay the library's (bars from 0, lines with their data
+  margins); bars are vertical unless the category names would overlap; axis
+  labels are column names, else the request's noun, word for word and in its
+  order, with no unit nothing states; a bare year stays a number; a figure
   moved to slides takes `dm.figsize_for` and multiplies pt values written in
   its code by 2.6, unrounded; a broad "make it look better" keeps axis labels
   as written and an "only X" edit keeps the legend as it is.

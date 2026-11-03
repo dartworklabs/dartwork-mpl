@@ -59,7 +59,7 @@ Spines, grid, ticks, axis limits (bars start at 0), fonts, background and margin
 preset's; change them only on request. Tick numbers and dates are the library's (`1,750`,
 `0.5M`, `2024, Mar`; dates under bars: `dm.format_axis_dates(ax, dates)`, not rotated): no
 formatter, locator or tick list unless asked or naming categories. No figure title, subtitle,
-source note, extra panel or one-series legend unless asked (small multiples name each panel);
+source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
 named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`,
 `dm.place_legend(ax)` (no `loc=`/`ncols=` unless named), `dm.label_line_ends(ax)`.

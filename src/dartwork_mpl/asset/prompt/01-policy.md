@@ -54,7 +54,8 @@ preset's grid colour and width; "20 cm wide" is `dm.figsize("20cm")` at the
 default 4:3 (an edit keeps the existing height). Named details win exactly.
 
 Details nobody named are the library's, so every agent draws the same figure:
-axis limits stay matplotlib's (bars start at 0, lines keep the data margins);
+no value labels on bars or lines unless asked; axis limits stay matplotlib's
+(bars start at 0, lines keep the data margins);
 bars are vertical, `ax.barh` with `dm.figsize_for("barh")` only when the
 category names would overlap side by side; dates under bars go through
 `dm.format_axis_dates(ax, dates)`, not rotated labels; an axis label is the

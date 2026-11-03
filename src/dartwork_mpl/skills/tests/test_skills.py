@@ -139,13 +139,13 @@ def test_plot_text_is_english_unless_the_user_asks() -> None:
 
 
 def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
-    """User decisions 2026-11-03 (eval v13 step 5): 20-A, 0-A, 19-A, 22-A.
+    """User decisions 2026-11-03 (eval v13/v14 step 5): 20-A 0-A 19-A 22-A V-A.
 
     A whole 16:9 slide is ``figsize_for("full_slide")``; axis limits are the
     library's; bars are vertical unless names overlap; no unit nothing
-    states. Also the rules v13 showed agents reading two ways: dates under
-    bars, pt values on a move to slides, the legend on an edit, axis labels
-    on a broad ask.
+    states; no value labels unless asked. Also the rules v13 showed agents
+    reading two ways: dates under bars, pt values on a move to slides, the
+    legend on an edit, axis labels on a broad ask.
     """
     text = SKILL_MD.read_text(encoding="utf-8")
     for rule in (
@@ -158,6 +158,7 @@ def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
         "× 2.6, unrounded",  # noqa: RUF001
         "the legend as it is",
         "axis labels as written",
+        "value labels, extra panel or one-series legend unless asked",
     ):
         assert rule in text, rule
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
