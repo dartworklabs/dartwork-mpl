@@ -144,3 +144,31 @@ transport, remote freshness, public release/merge and user PoC approval are not
 claimed. The bounded run stops after the original six plus exactly three affected
 replays and final independent review. No additional trials or generalization are
 implied by the successful correction demonstrations.
+
+## Separate fresh native acceptance follow-up
+
+A separately authorized fresh native agent used frozen installed R2 guidance
+after 64e6c368, with three successive requests and one plot execution per request.
+The controller changed upstream only after the initial state. The prior three
+passing/four rejecting controls were reused; the revised plot-only replay harness
+was frozen before evaluator candidate exposure. No controls were rerun.
+
+Independent assessment passes plot delivery for all three states: actual canvases
+24 × 18cm, 24 × 18cm and 30 × 20cm; actual ordered v1/v1/v2 inputs; report scoped
+styles; 50:50 rows, 40:60 top widths and 70:30 bottom widths. User-unspecified
+initial B area is 22pt², then 27.5→27.5pt²; D stays 22pt². Other scoped styles and
+the permitted transitions pass. The third report's exact-float ratio flag is false
+at a 5.55e-17 difference; independent allocation checks pass frozen 1e-8 tolerance.
+
+Each exact-source replay matches its actual PNG's decoded pixels. Actual PDF page
+dimensions, export draw geometry and all six independently opened PNG/PDF-raster
+views pass physical-fit review. Prior and new preservation checkpoints match.
+The initial runner nevertheless exited 1 after exports during NumPy-boolean report
+serialization; its partial report/stderr remain. A separate report-only recovery
+reuses recorded fields without plotting again. Deliverables with that recovery
+pass; this is not three clean first attempts. Earlier failures/replays are intact.
+
+Evidence root: /Users/wonjun/scratch/dartwork-native-fresh-acceptance-2026-11-03
+Review: evaluation/final-report.md, assessment.json and final-hashes.json.
+No new suite, build, CI, remote, runtime or general backend/model-success claim is
+made. The bounded follow-up stops here without another correction loop.
