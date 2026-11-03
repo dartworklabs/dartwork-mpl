@@ -133,6 +133,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   moved to slides takes `dm.figsize_for` and multiplies pt values written in
   its code by 2.6, unrounded; a broad "make it look better" keeps axis labels
   as written and an "only X" edit keeps the legend as it is.
+- **Agent skill and policy after eval v16–v18.** Column names win over the
+  request's wording for axis labels; a legend added, moved or merged (a twin
+  pair's two into one) goes through `dm.place_legend`, never `ax.legend` with
+  `bbox_to_anchor`, and others stay; an "only X" edit that makes a legend
+  overlap other text (`LEGEND_OVERLAP`) moves that legend with
+  `dm.place_legend` and lists it (decision L-B); a "make it look better"
+  pass that shrinks touching value labels to `dm.fs(-1)` gives them
+  `dm.fw(1)` too when no weight is written (decision W-A) and keeps the axis
+  limits even when a line crosses the labels.
 
 - **`presentation` is `scientific` with every point size × 2.6.** Text,
   lines, markers, tick lengths and widths, pads, grid, spines and boxplot
@@ -226,6 +235,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `dm.format_axis_dates` reads `datetime64` arrays and Series of any unit
+  (a `datetime64[ns]` array came out in the year 53999741868), refuses
+  numbers such as a bare year instead of reading them as seconds since 1970,
+  and words and thins only the dates in view, so a view cut to Feb–Dec still
+  shows the year.
+- After `dm.style.use("presentation")`, a bare `dm.style.stack([...])` no
+  longer keeps the 2.6 pt `dm.fs` / `dm.lw` step.
 - `dm.simple_layout()` no longer leaves an axes title on top of a legend above
   the axes. Whether the legend came from `dm.place_legend(ax, loc="above")` or
   a raw `ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0))`, the title

@@ -224,10 +224,6 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     assert "Every axes legend" not in text
     assert "also when the request words them otherwise" in text
     assert "only a value with no column takes the request's noun" in text
-    # e10: claude gave existing value labels dm.fw(1) in a broad ask (300 vs
-    # the preset's "light", 200); existing labels keep their weight.
-    assert "existing ones keep their size and weight" in text
-    assert "`dm.fs(-1)`, weight kept" in text
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     row = next(
         ln for ln in editing.splitlines() if ln.startswith("| move the legend")
@@ -238,6 +234,42 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     assert "also when the request words it otherwise" in flat
     assert "a legend added, moved or merged" in flat
     assert "a legend nobody asked about stays as it is" in flat
+
+
+def test_step6_decisions_w_a_and_l_b() -> None:
+    """Decisions W-A and L-B (2026-11-04, review page 2026-11-04-step6).
+
+    W-A: a broad ask that shrinks touching value labels to dm.fs(-1) also
+    gives them dm.fw(1) when their call writes no weight (e10: claude 300 vs
+    codex "light" 200 before). L-B: an "only X" edit whose result makes a
+    legend overlap other text moves that legend with dm.place_legend and
+    lists it (e03: widening a panel put 'wind + solar' under the neighbour's
+    legend). Broad asks keep the limits even when a line crosses value
+    labels (e10: a claude run moved the twin's limits).
+    """
+    flat = " ".join(SKILL_MD.read_text(encoding="utf-8").split())
+    assert "with no weight written, `dm.fw(1)`" in flat
+    assert (
+        "makes `LEGEND_OVERLAP` moves by `dm.place_legend(ax)`, listed" in flat
+    )
+    assert "limits (a line crossing value labels too)" in flat
+    assert "weight kept" not in flat
+    editing = " ".join(
+        (SKILL / "references" / "editing.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    assert "when the call writes no weight, `fontweight=dm.fw(1)`" in editing
+    assert "move only that legend with `dm.place_legend(ax)`" in editing
+    assert (
+        "the axis limits stay, also when a line crosses the labels" in editing
+    )
+    policy = " ".join(dm.get_prompt("01-policy").split())
+    assert (
+        "unless the edit makes it overlap other text (`LEGEND_OVERLAP`)"
+        in policy
+    )
+    assert "`dm.fw(1)` when their call writes no weight" in policy
 
 
 def test_every_shown_bar_label_uses_the_value_label_size() -> None:

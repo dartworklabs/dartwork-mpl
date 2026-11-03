@@ -112,6 +112,11 @@ dm.save_formats(fig, "output/figure-v2", formats=("png",))
 plt.close(fig)
 ```
 
+When the asked change makes a legend cover another panel's text (a
+`LEGEND_OVERLAP` WARNING, e.g. a panel widened under a neighbour's legend),
+move only that legend with `dm.place_legend(ax)` (it may go above the plot
+in two columns) and list the move; a legend the change leaves clear stays.
+
 Repeated "one more step" adds to the current value again; it does not reset
 to `dm.fs(1)`. An absolute request ("12 pt") is set exactly. Keep the
 existing layout when the result still fits; refit only with the arguments
@@ -150,8 +155,9 @@ plt.close(fig)
      `dm.format_axis_dates(ax, dates)`), `dm.wrap_axis_labels(fig)`,
      `dm.rotate_tick_labels(ax)` only when none of these fits;
    - value labels touching each other or their neighbours: those labels to
-     `fontsize=dm.fs(-1)` (only when larger), their weight as it is (no
-     `fontweight=`), named in the change list;
+     `fontsize=dm.fs(-1)` (only when larger) and, when the call writes no
+     weight, `fontweight=dm.fw(1)` (the value-label look), named in the change
+     list; the axis limits stay, also when a line crosses the labels;
    - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
      (one legend for both twins; above the plot by itself when nothing inside
      is free);
