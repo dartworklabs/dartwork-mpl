@@ -39,9 +39,8 @@ from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 ## Size, layout, save
 
 - No size asked: `dm.figsize_for(kind, n_points=, n_series=)` (report 9/12/
-  14.5/17 cm by density, paper columns; `presentation` 10.5 cm tall under a
-  slide title, 11.4/15.4/23.4 cm wide for ≤4/≤6/more x points, `"compact"`
-  half); count x points and series; `dual_axis=True`
+  14.5/17 cm by density, paper columns; `presentation` 10.5 cm tall, 11.4/15.4/
+  23.4 cm wide for ≤4/≤6/more x points); count x points and series; `dual_axis=True`
   with `twinx`; kind `"barh"`, `"matrix"`; n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)`.
 - A size the user names wins, any size: `dm.figsize(width, second)`. width
   `"13cm"`, `"5in"`, `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number;
@@ -79,10 +78,8 @@ a value axis without one takes the request's noun (`Energy`). No invented units.
 
 - Leave `color=` out so the preset cycle applies; name one when asked or to
   emphasise (`dc.blue6`: family + step 0–9). More: `references/colors.md`.
-- `dm.fs(n)`/`dm.lw(n)`: preset font size/line width + n steps (1 pt; 2.6 pt
-  under `presentation`, whose sizes are all `scientific` × 2.6); `dm.fw(n)`:
-  weight + 100·n. The preset, not an artist: one step on an artist is
-  `t.set_fontsize(t.get_fontsize() + dm.fs(1) - dm.fs(0))`.
+- `dm.fs(n)`/`dm.lw(n)`: preset font size/line width + n steps (1 pt; 2.6 pt in
+  `presentation` = `scientific` × 2.6); `dm.fw(n)`: weight + 100·n (preset, not an artist).
 - Explicit user values win exactly (`fontsize=12`, `"#235fa4"`), even when
   lint flags literals. Hairlines stay literal (`linewidth=0.3`).
 - k/M or 만/억 asked: `dm.format_axis_si` / `_myriad`. One unit per axis, the
@@ -93,13 +90,12 @@ a value axis without one takes the request's noun (`Energy`). No invented units.
 
 ## Edits
 
-"Only X" requests: find that artist (panel, series, label, title), change only
-the asked property; keep data, preset, canvas, colours, legend (a highlight
-keeps it too) and the rest; keep the original, write the revision as a
-new script and stem. Broad asks ("make it look better"): keep data, preset,
-canvas, chart type and axes (no new twin), limits, text (add none) and its
-size (value labels touching each other drop to `dm.fs(-1)`), title and
-legend; fix only defects the image shows (`references/editing.md`), list each.
+"Only X" requests: find that artist (panel, series, label, title), change only the asked
+property; keep data, preset, canvas, colours, legend (a highlight keeps it too) and the rest;
+keep the original, write the revision as a new script and stem. Broad asks ("make it look
+better"): keep data, preset, canvas, chart type and axes (no new twin), limits, text (add
+none) and its size (touching value labels drop to `dm.fs(-1)`), title and legend; fix only
+defects the image shows (`references/editing.md`), list each.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 

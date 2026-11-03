@@ -74,7 +74,7 @@ weight, colour and spacing, so every agent draws the same element.
 | a legend on a named side | `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
 | a source or note line | `dm.add_note(fig, "Source: …")`, then `dm.simple_layout(fig)` |
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
-| bigger or smaller text, no amount | one step: `t.set_fontsize(t.get_fontsize() + 1)`; all text: `dm.style.use(preset, font_size=<preset size + 1>)` |
+| bigger or smaller text, no amount | one step, `step = dm.fs(1) - dm.fs(0)` (1 pt; 2.6 pt under `presentation`): `t.set_fontsize(t.get_fontsize() + step)`; all text: `dm.style.use(preset, font_size=dm.fs(0) + step)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
 | values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontweight=dm.fw(1))` |
 | a log axis | `ax.set_yscale("log")` |
@@ -87,7 +87,7 @@ above an outside legend and the margins around both.
 
 | Request | Change |
 |---|---|
-| axis labels one step bigger | each label: `t.set_fontsize(t.get_fontsize() + 1)` |
+| axis labels one step bigger | each label: `t.set_fontsize(t.get_fontsize() + step)` |
 | ticks smaller | `ax.tick_params(labelsize=dm.fs(-1))` |
 | one line thicker | `line.set_linewidth(line.get_linewidth() + 0.5)` |
 | emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays, redrawn after recolouring |
@@ -96,12 +96,13 @@ above an outside legend and the margins around both.
 | label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
-| show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontweight=dm.fw(1))`, see below |
+| show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontsize=dm.fs(-1), fontweight=dm.fw(1))`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 
 ```python
+step = dm.fs(1) - dm.fs(0)       # one size step: 1 pt, 2.6 pt under presentation
 for t in (panel_a.xaxis.label, panel_a.yaxis.label):
-    t.set_fontsize(t.get_fontsize() + 1)
+    t.set_fontsize(t.get_fontsize() + step)
 model.set_linewidth(model.get_linewidth() + 0.5)
 error_ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
 dm.simple_layout(fig)            # text grew: refit with the script's own arguments
