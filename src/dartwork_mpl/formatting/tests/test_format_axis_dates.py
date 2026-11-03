@@ -136,6 +136,52 @@ def test_year_goes_to_the_corner_when_no_january_is_shown() -> None:
     assert ax.xaxis.get_offset_text().get_text() == "2024"
 
 
+def test_a_view_without_january_still_names_the_year() -> None:
+    """Review 2026-11-03: a January outside the view must not take the year.
+
+    Twelve months with the view cut to Feb … Dec: the words and the corner
+    label come from the dates in view, so 2024 is still on the axis.
+    """
+    fig, ax = _bars("report", "17cm", "standard", "Sales")
+    ax.set_xlim(0.5, 11.5)
+    dm.simple_layout(fig)
+    locs, texts = _shown(ax)
+    assert locs == list(range(1, 12))
+    assert texts[0] == "Feb"
+    assert ax.xaxis.get_offset_text().get_text() == "2024"
+
+
+def test_a_crowded_view_thins_over_the_dates_in_view() -> None:
+    """Property: whatever slice of 36 months is in view, labels sit 1 em apart.
+
+    Seeded loop over views of a 36-month Korean axis on 12 cm: after layout
+    every drawn label is a date in view, under a bar, and the gap rule holds
+    whenever two or more labels are drawn and some step fits.
+    """
+    months = [f"{2022 + m // 12}-{m % 12 + 1:02d}" for m in range(36)]
+    rng = random.Random(1103)
+    for _ in range(6):
+        lo = rng.randrange(0, 20)
+        hi = rng.randrange(lo + 6, 36)
+        with matplotlib.rc_context():
+            dm.style.use("report-kr")
+            fig, ax = plt.subplots(figsize=dm.figsize("12cm", "golden"))
+            ax.bar(range(36), range(36))
+            ax.set_ylabel("매출액 (억원)")
+            dm.format_axis_dates(ax, months)
+            ax.set_xlim(lo - 0.5, hi + 0.5)
+            dm.simple_layout(fig)
+            locs, texts = _shown(ax)
+            assert locs and all(lo <= p <= hi for p in locs), (lo, hi, locs)
+            assert all(float(p).is_integer() for p in locs)
+            years = {m[:4] for m in months[lo : hi + 1]}
+            shown = " ".join(texts) + ax.xaxis.get_offset_text().get_text()
+            assert any(y in shown for y in years), (lo, hi, texts)
+            if len(locs) >= 2 and locs[1] - locs[0] > 1:
+                assert _min_gap_em(ax) >= 1.0, (lo, hi, texts)
+            plt.close(fig)
+
+
 def test_tick_rotation_check_is_quiet_on_the_result() -> None:
     """The library's own overlap advice is satisfied, so it does not fire."""
     fig, ax = _bars("report-kr", "12cm", "golden", "매출액 (억원)")
@@ -146,8 +192,28 @@ def test_tick_rotation_check_is_quiet_on_the_result() -> None:
 
 @pytest.mark.parametrize(
     "dates",
-    [["2024/01"], ["Jan"], [None], ["2024-01", "not a date"], []],
-    ids=["slashes", "month-name", "none", "one-bad", "empty"],
+    [
+        ["2024/01"],
+        ["Jan"],
+        [None],
+        ["2024-01", "not a date"],
+        [],
+        [2024, 2025],
+        np.array([2024, 2025]),
+        ["2024-01", 3],
+        [True],
+    ],
+    ids=[
+        "slashes",
+        "month-name",
+        "none",
+        "one-bad",
+        "empty",
+        "bare-years",
+        "int-array",
+        "mixed-number",
+        "bool",
+    ],
 )
 def test_values_that_are_not_dates_are_refused(dates) -> None:
     """Anything but a date per position is a caller error, named in the message."""
@@ -181,6 +247,21 @@ def test_iso_strings_and_datetimes_read_as_the_same_dates() -> None:
             got = category_dates([form])
             assert got.dtype == np.dtype("datetime64[s]"), form
             assert got[0] == expected, (form, got[0], expected)
+
+
+@pytest.mark.parametrize("unit", ["ns", "us", "ms", "s", "D", "M"])
+def test_datetime64_arrays_of_any_unit_keep_their_dates(unit: str) -> None:
+    """Review 2026-11-03: a datetime64[ns] array (pandas' unit) read as seconds.
+
+    The array and a pandas Series of it give the same dates as the ISO text.
+    """
+    pd = pytest.importorskip("pandas")
+    dates = np.array(MONTHS_2024, dtype=f"datetime64[{unit}]")
+    expected = category_dates(MONTHS_2024)
+    for form in (dates, pd.Series(dates), pd.DatetimeIndex(dates)):
+        got = category_dates(form)
+        assert got.dtype == np.dtype("datetime64[s]")
+        assert (got == expected).all(), (unit, type(form), got[:2])
 
 
 def test_any_text_is_read_or_refused_never_crashes() -> None:

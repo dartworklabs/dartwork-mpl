@@ -36,6 +36,7 @@ are one em apart, instead of the labels being rotated.
 from __future__ import annotations
 
 import datetime
+import numbers
 import re
 import warnings
 from collections.abc import Sequence
@@ -163,21 +164,31 @@ def category_dates(
     """Read the dates that category positions 0, 1, ... stand for.
 
     Accepts ISO strings (``"2024-01"``, ``"2024-01-15"``), ``datetime`` /
-    ``date`` values, pandas timestamps or a ``datetime64`` array, in
-    position order. Returns a ``datetime64[s]`` array of the same length.
+    ``date`` values, pandas timestamps or a ``datetime64`` array or Series
+    of any unit, in position order. Returns a ``datetime64[s]`` array of the
+    same length.
 
     Raises
     ------
     ValueError
         If there are no dates, or one is missing or not a date
-        (``"2024/01"``, ``"Jan"``, ``None``, ``NaT``).
+        (``"2024/01"``, ``"Jan"``, ``None``, ``NaT``, or a number such as a
+        bare year ``2024``, which stays a number on a numeric axis).
     """
-    values = list(np.asarray(dates, dtype=object).ravel())
+    dtype = getattr(dates, "dtype", None)
+    if isinstance(dtype, np.dtype) and dtype.kind == "M":
+        # Convert the array itself: an object view of datetime64[ns] holds
+        # nanosecond integers, which would read back as seconds.
+        values = list(np.asarray(dates).astype("datetime64[s]").ravel())
+    else:
+        values = list(np.asarray(dates, dtype=object).ravel())
     if not values:
         raise ValueError("format_axis_dates needs at least one date")
     parsed = []
     for position, value in enumerate(values):
         try:
+            if isinstance(value, (numbers.Number, np.number, np.bool_)):
+                raise TypeError("a number is not a date")
             day = np.datetime64(value, "s")
         except (TypeError, ValueError):
             day = np.datetime64("NaT")
@@ -202,11 +213,13 @@ def _steps_for(dates: npt.NDArray[np.datetime64]) -> tuple[int, ...]:
 
 
 class CategoryDateLocator(ticker.Locator):
-    """Every ``step``-th of ``n`` category positions, from position 0.
+    """Every ``step``-th of ``n`` category positions, from position 0, in view.
 
     ``steps`` lists the steps :func:`thin_crowded_date_ticks` may move
-    through, smallest first; ``step`` starts at the first. Positions are
-    the same whatever the view, so a bar chart's ticks stay under bars.
+    through, smallest first; ``step`` starts at the first. The grid of
+    positions is the same whatever the view, so a bar chart's ticks stay
+    under bars; only the ones inside the view are returned, so the words
+    and the thinning follow the dates someone can see.
     """
 
     def __init__(self, n: int, steps: Sequence[int]) -> None:
@@ -217,20 +230,33 @@ class CategoryDateLocator(ticker.Locator):
         self.step = self.steps[0]
 
     def __call__(self) -> list[float]:
-        """Return the labelled positions ``0, step, 2*step ... < n``."""
-        return [float(i) for i in range(0, self.n, self.step)]
+        """Return the positions ``0, step, 2*step ... < n`` inside the view."""
+        axis = getattr(self, "axis", None)
+        if axis is None:
+            return [float(i) for i in range(0, self.n, self.step)]
+        return self.tick_values(*axis.get_view_interval())
 
     def tick_values(self, vmin: float, vmax: float) -> list[float]:
-        """Return the same positions as ``__call__``; the view is ignored."""
-        return self()
+        """Return the positions ``0, step, 2*step ... < n`` in ``[vmin, vmax]``."""
+        return [
+            float(i)
+            for i in range(0, self.n, self.step)
+            if _within(i, vmin, vmax)
+        ]
+
+
+def _within(position: float, vmin: float, vmax: float) -> bool:
+    """Whether a category position lies in the view ``[vmin, vmax]``."""
+    low, high = sorted((float(vmin), float(vmax)))
+    return low - 1e-9 <= position <= high + 1e-9
 
 
 class CategoryDateFormatter(ticker.Formatter):
     """The library's concise date words for category positions.
 
-    Position ``i`` stands for ``dates[i]``; positions outside the dates get
-    no label. Words come from matplotlib's concise date labels over the
-    ticks shown (``2024, Mar, May …``; the year appears on January or in
+    Position ``i`` stands for ``dates[i]``; positions outside the dates or
+    the view get no label. Words come from matplotlib's concise date labels
+    over the ticks shown (``2024, Mar, May …``; the year appears on January or in
     the axis-corner offset), Korean (``2024년, 3월, 5월 …``) when the
     figure's axis labels, titles or legends are Korean at drawing time.
     """
@@ -249,10 +275,20 @@ class CategoryDateFormatter(ticker.Formatter):
             return KoreanConciseDateFormatter(mdates.AutoDateLocator())  # type: ignore[no-untyped-call]
         return mdates.ConciseDateFormatter(mdates.AutoDateLocator())  # type: ignore[no-untyped-call]
 
+    def _shown(self, index: Sequence[int]) -> list[int]:
+        """The positions that stand for a date and lie in the view."""
+        axis = getattr(self, "axis", None)
+        view = axis.get_view_interval() if axis is not None else None
+        return [
+            i
+            for i in index
+            if 0 <= i < len(self._nums) and (view is None or _within(i, *view))
+        ]
+
     def format_ticks(self, values: Sequence[float]) -> list[str]:
-        """Words for the given positions, worded together as one axis."""
+        """Words for the given positions in view, worded together as one axis."""
         index = [round(float(v)) for v in values]
-        inside = [i for i in index if 0 <= i < len(self._nums)]
+        inside = self._shown(index)
         if not inside:
             self._offset = ""
             return ["" for _ in index]
@@ -265,7 +301,7 @@ class CategoryDateFormatter(ticker.Formatter):
         return [by_position.get(i, "") for i in index]
 
     def __call__(self, x: float, pos: int | None = None) -> str:
-        """One position's word, worded together with every position."""
+        """One position's word, worded together with every position in view."""
         everything = list(range(len(self._nums)))
         words = dict(
             zip(everything, self.format_ticks(everything), strict=True)
