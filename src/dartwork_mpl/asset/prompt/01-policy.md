@@ -63,9 +63,10 @@ column name word for word (`share_pct` → `Share (%)`), also when the request
 words it otherwise; only a value with no column takes the request's noun
 word for word and in its order (`GDP 성장률` → `GDP growth rate`, "the share of
 renewables" → `Share of renewables`), with no unit the data or request does not
-state; a bare year (2012) stays a number, not a date; every axes legend, a
-twin pair's merged one and one on a named side too, is `dm.place_legend(ax)`
-(`loc="right"`, `"above"`, …), not `ax.legend(...)` with `bbox_to_anchor`. Moving a figure to slides takes `dm.figsize_for(...)`
+state; a bare year (2012) stays a number, not a date; a legend added, moved
+or merged (a twin pair's two into one) is `dm.place_legend(ax)` (`loc="right"`,
+`"above"`, …), not `ax.legend(...)` with `bbox_to_anchor`, and a legend nobody
+asked about stays as it is. Moving a figure to slides takes `dm.figsize_for(...)`
 and multiplies pt values written in its code by 2.6, unrounded.
 
 Ask **one short, self-contained question** only when missing information

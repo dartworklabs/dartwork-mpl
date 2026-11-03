@@ -214,8 +214,14 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     ``ax.legend(loc=...)`` for moving a legend.
     """
     text = SKILL_MD.read_text(encoding="utf-8")
-    assert "Every axes legend, a twin pair's one" in text
+    # v17: "every axes legend" made claude re-place an existing legend in a
+    # highlight edit (e05); only a legend added, moved or merged changes.
+    assert (
+        "A legend you add, move or merge (a twin pair's two into one)" in text
+    )
     assert "never `ax.legend(...)`, `bbox_to_anchor`" in text
+    assert "others stay as they are" in text
+    assert "Every axes legend" not in text
     assert "also when the request words them otherwise" in text
     assert "only a value with no column takes the request's noun" in text
     # e10: claude gave existing value labels dm.fw(1) in a broad ask (300 vs
@@ -230,7 +236,8 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     policy = dm.get_prompt("01-policy")
     flat = " ".join(policy.split())
     assert "also when the request words it otherwise" in flat
-    assert "every axes legend, a twin pair's merged one" in flat
+    assert "a legend added, moved or merged" in flat
+    assert "a legend nobody asked about stays as it is" in flat
 
 
 def test_every_shown_bar_label_uses_the_value_label_size() -> None:

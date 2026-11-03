@@ -62,7 +62,7 @@ formatter, locator or tick list unless asked or naming categories. No figure tit
 source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
 named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`.
-Every axes legend, a twin pair's one or one moved to a named side too, is `dm.place_legend(ax)` (side: `loc="right"`, `"above"`, …); never `ax.legend(...)`, `bbox_to_anchor` or `ncols=`.
+A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)` (side: `loc="right"`, `"above"`, …), never `ax.legend(...)`, `bbox_to_anchor` or `ncols=`; others stay as they are.
 A generic chart skill gives chart choice and honest axes; static output: no hover, tooltips,
 rounded bar ends, placeholder palettes.
 
