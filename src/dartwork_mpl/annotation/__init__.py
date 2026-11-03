@@ -620,7 +620,7 @@ def add_note(fig: Figure, text: str, **kw: Any) -> Text:
 
     One call for "add a source note" / "그림 아래에 출처를 적어줘", so every
     agent draws the same line: the figure's lower-left corner, left-aligned,
-    one point below the preset font (``dm.fs(-1)``) in the preset text colour.
+    one step below the preset font (``dm.fs(-1)``) in the preset text colour.
     :func:`dartwork_mpl.simple_layout` keeps the axes, tick labels and axis
     labels above it with the preset's ``axes.labelpad`` between them. A
     ``fontsize=``, ``color=`` or other ``Text`` keyword the user names wins::
