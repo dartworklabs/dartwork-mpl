@@ -30,7 +30,7 @@ by hand.
 
 | Path | Role |
 |---|---|
-| `cases/*.yaml` | 40 cases: 25 `generate` and 15 `edit`. Each has `id`, `kind`, `lang`, `purpose`, `held_out`, `prompt`, `data`, `oracle` and an optional `auxiliary`. Edit cases add `base`, `edit_scope`, `target` (the properties the requested change may touch) and optionally `max_new_texts`. |
+| `cases/*.yaml` | 50 cases: 32 `generate` and 18 `edit` (10 of them customization requests, below). Each has `id`, `kind`, `lang`, `purpose`, `held_out`, `prompt`, `data`, `oracle` and optionally `auxiliary` and `allowed_overrides` (override kinds the request itself asks for, not counted by `conformance.py`). Edit cases add `base`, `edit_scope`, `target` (the properties the requested change may touch) and optionally `max_new_texts`. |
 | `fixtures/data/*.csv` | Frozen inputs, pinned by `SHA256SUMS`. `make_fixtures.py` records how they were made. |
 | `fixtures/base/` | The starting `plot.py` for each edit case. |
 | `fixtures/reference/` | One correct solution per case. Only `--selftest` uses them. |
@@ -174,7 +174,7 @@ Use `uv run python evals/agentic/...` from the repo root.
 
 ```sh
 # 1. Harness self-checks. No model calls.
-uv run python evals/agentic/score.py --selftest   # 40 references, 7 controls, fixture checksums
+uv run python evals/agentic/score.py --selftest   # 50 references, 7 controls, fixture checksums
 uv run pytest evals/agentic/test_scorer.py evals/agentic/test_regressions.py \
     evals/agentic/test_calibration.py evals/agentic/test_contamination.py evals/agentic/test_endpoints.py -q
 
@@ -186,7 +186,7 @@ uv run python evals/agentic/run.py --run-id $R --host codex --case g01-line-gdp
 uv run python evals/agentic/score.py ~/scratch/dartwork-mpl-evals/$R
 uv run python evals/agentic/sheet.py ~/scratch/dartwork-mpl-evals/$R
 
-# 3. Full baseline: 40 cases x 2 hosts on one pinned wheel.
+# 3. Full baseline: 50 cases x 2 hosts on one pinned wheel.
 uv build --wheel --out-dir ~/scratch/dartwork-mpl-evals/wheels/main-$(git rev-parse --short HEAD)
 uv run python evals/agentic/run.py --run-id baseline-$(date +%Y%m%d) --jobs 4 \
     --wheel ~/scratch/dartwork-mpl-evals/wheels/main-$(git rev-parse --short HEAD)/dartwork_mpl-*.whl
@@ -219,6 +219,26 @@ repetitions get the next rep numbers. Keep `--jobs` at 7 or below.
 
 Do not read, run or inspect them while tuning a skill, docs or prompts. The
 comparison tables report them separately.
+
+## Customization cases
+
+The library owns the defaults (size, the preset's look, no unrequested
+title); these cases ask for one change each and measure that the request is
+honoured (a `spec` check), that nothing else changed (the data contracts;
+explicit-edit preservation), and, from the snapshot `props`, whether agents
+and repetitions agree on the details the request did not name.
+
+| Case | Request | Unnamed details to compare |
+|---|---|---|
+| `c01-title-en`, `c02-title-ko`, `e16-add-title-en` | a named title | title slot, size, weight, colour (`ax{i}.title.*`, `figure.suptitle.*`) |
+| `c03-gridlines-en`, `e17-add-grid-ko` | horizontal gridlines | grid colour, width, style, alpha; x gridlines too |
+| `c04-width-only-en`, `e18-width-16-en` | a width only | height (`figure.size_in`) |
+| `c05-legend-top-en` | legend above the plot | `legend.ncols`, `legend.frameon`, bbox |
+| `c06-source-note-ko` | a source note under the plot | the note's role, size, colour (`texts`) |
+| `c07-dark-en` | a dark background | `figure.facecolor`, `ax{i}.facecolor`, the saved canvas |
+
+`e16` edits `b14_gdp_untitled.py` (b01 without its title), so the title's
+look is the agent's choice. All ten are `held_out: false`.
 
 ## Metrics (per run unit)
 
@@ -315,7 +335,22 @@ comparison tables report them separately.
 - **Oracle `spec` checks.** These cover the request: size, aspect, preset,
   scale, twin axes, panel ratio, grid, shared limits, legend placement, sorting,
   highlight, end labels, label font-size delta, and "no more defects than the
-  base".
+  base". For customization requests:
+  - `title`: an axes title (centre/left/right) or suptitle contains the
+    requested text, or a figure/axes text containing it sits wholly above the
+    plot area;
+  - `text_below`: a text containing the requested string has its top at or
+    under the bottom of the lowest data axes, on the canvas;
+  - `gridlines`: visible major gridlines along `axis` in every plot area
+    (twins share one); lines drawn by hand across the area at two or more
+    ticks (`axhline`, `hlines`) also count;
+  - `legend` with `side: top`: a legend whose bottom is at or above the top of
+    the data axes, inside the canvas (`side: right`, the default, is the
+    original rule);
+  - `dark_background`: every plot area, as saved, has WCAG relative luminance
+    below `max_luminance` (0.3): its visible axes faces composited over the
+    saved canvas (savefig's facecolor, which a preset's rc value sets even when
+    the figure's differs; else the figure's). A transparent save fails.
 - **Preservation (edit cases).** This diffs a property snapshot:
   - figure size;
   - axes positions, scales, limits, tick locations and texts, and tick style;
@@ -326,7 +361,12 @@ comparison tables report them separately.
     the line's data digest (including the NaN mask), so relabelling or
     re-ordering is not a change of every property and changed data is;
   - bar and scatter labels, colours and alpha, keyed the same way;
-  - legend location, texts, size and bbox.
+  - legend location, texts, size, bbox, column count and frame;
+  - per axes, major gridlines along x and y (`ax{i}.grid.{x|y}.visible`, and
+    when visible the colour, width, style and alpha of the first one), the
+    axes and figure face colours, and each non-empty title slot as
+    `ax{i}.title.{center|left|right}.{text,fontsize,fontweight,color}` (the
+    suptitle is `figure.suptitle.*`).
 
   Placements (`.position`, `.pos`, `.bbox`) are compared with a 0.03 figure
   fraction tolerance. For `explicit` edits, a missing base snapshot, any

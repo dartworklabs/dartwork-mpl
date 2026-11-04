@@ -1,0 +1,36 @@
+# c04-width-only-en — generate / en / report (customization: width only; the height is the agent's)
+id: c04-width-only-en
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Scatter plot of leaf length against leaf width, coloured by species, from plants.csv. Make it 20 cm wide.
+data: [plants.csv]
+oracle:
+# "length against width" reads as length on y; agents also read it the other
+# way round, and the request is about the width, so either orientation passes.
+- type: any_of
+  group: values
+  name: points per species (either orientation)
+  checks:
+  - type: points
+    group: values
+    name: length on y
+    file: plants.csv
+    x: leaf_width_cm
+    y: leaf_length_cm
+    by:
+      col: species
+  - type: points
+    group: values
+    name: length on x
+    file: plants.csv
+    x: leaf_length_cm
+    y: leaf_width_cm
+    by:
+      col: species
+- type: size
+  group: spec
+  name: 20 cm wide
+  width: 20
+  tol: 0.15

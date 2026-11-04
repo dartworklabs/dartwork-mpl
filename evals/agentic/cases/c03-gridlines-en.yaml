@@ -1,0 +1,24 @@
+# c03-gridlines-en — generate / en / report (customization: horizontal gridlines)
+id: c03-gridlines-en
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Grouped bar chart of quarterly revenue by region from quarterly_sales.csv, with horizontal gridlines.
+data: [quarterly_sales.csv]
+oracle:
+- type: bars
+  group: values
+  name: quarter x region -> revenue
+  file: quarterly_sales.csv
+  category:
+    col: quarter
+  series:
+    col: region
+  value: revenue
+  orientation: v
+  layout: grouped
+- type: gridlines
+  group: spec
+  name: horizontal gridlines
+  axis: y

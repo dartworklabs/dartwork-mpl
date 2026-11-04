@@ -1,7 +1,7 @@
 """Run eval cases headless in Claude Code and/or Codex.
 
     uv run python evals/agentic/run.py --host claude --case g01-line-gdp
-    uv run python evals/agentic/run.py --jobs 4                         # 40 cases x both hosts
+    uv run python evals/agentic/run.py --jobs 4                         # 50 cases x both hosts
     uv run python evals/agentic/run.py --wheel W.whl --ab-skill SKILL_DIR --reps 2 --jobs 4 --hide-grading
     uv run python evals/agentic/run.py --wheel W.whl --ab-skill-install --hide-grading  # wheel's installer
 
@@ -1382,6 +1382,15 @@ def main() -> int:
         "versions": meta["versions"],
         "started": datetime.now().isoformat(timespec="seconds"),
     }
+    if a.skill_dir:
+        import skill_quotes
+
+        inv["skill_quotes"] = skill_quotes.find(a.skill_dir)
+        for q in inv["skill_quotes"]:
+            print(
+                f"WARNING skill quotes {q['kind']}: {q['quote']!r} in {q['file']}",
+                flush=True,
+            )
     log["invocations"].append(inv)
     write_json(run_dir / "run_meta.json", log)
     print(

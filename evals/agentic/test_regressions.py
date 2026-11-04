@@ -453,6 +453,17 @@ def test_r24_edit_never_executed_is_not_an_execution_success(tmp_path):
     assert not r["execution_success"] and not r["task_success"]
 
 
+def test_r24b_touch_without_a_change_is_still_an_execution_success(tmp_path):
+    """git stash + git stash pop after the last render rewrites plot.py unchanged."""
+    base = (HERE / "fixtures" / "base" / "b01_gdp_lines.py").read_text()
+    case, unit = _unit(tmp_path, "e01-label-step-en", base, after_run=base)
+    r = score.score_unit(case, unit)
+    assert r["execution_success"] and r["rerun_matches"], r.get(
+        "execution_problems"
+    )
+    assert "reproduces" in r["execution_note"]
+
+
 def test_r25_executed_reference_is_a_task_success(tmp_path):
     ref = (HERE / "fixtures" / "reference" / "g01-line-gdp.py").read_text()
     case, unit = _unit(tmp_path, "g01-line-gdp", ref)

@@ -106,6 +106,27 @@ def sat(hexc: str | None) -> float:
     return colorsys.rgb_to_hsv(r, g, b)[1]
 
 
+def rgb(hexc: str) -> tuple[float, float, float]:
+    return tuple(int(hexc[k : k + 2], 16) / 255 for k in (1, 3, 5))
+
+
+def luminance(c: tuple[float, float, float]) -> float:
+    """WCAG relative luminance of an sRGB colour (0 black .. 1 white)."""
+
+    def lin(v: float) -> float:
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (lin(v) for v in c)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def over(top: tuple, alpha: float, below: tuple) -> tuple:
+    """``top`` with ``alpha`` composited over an opaque ``below``."""
+    return tuple(
+        alpha * t + (1 - alpha) * b for t, b in zip(top, below, strict=True)
+    )
+
+
 # ------------------------------------------------------------ snapshot views
 def data_axes(snap: dict) -> list[int]:
     return [

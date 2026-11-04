@@ -1,0 +1,39 @@
+# e18-width-16-en — edit / en / report (customization: width only; the height is the agent's)
+id: e18-width-16-en
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Make the figure 16 cm wide.
+data: [energy_mix.csv]
+base: b06_energy_lines.py
+edit_scope: explicit
+# A resize reflows the layout: axes positions, the automatic tick choice, the
+# legend box and every text position move. Keeping or rescaling the height
+# is the agent's choice; font sizes, colours and line styles are not.
+target: [figure.size_in, ax*.position, ax*.xticks, ax*.yticks, ax*.legend.bbox, ax*.*.pos, figure.*.pos]
+oracle:
+- type: size
+  group: spec
+  name: 16 cm wide
+  width: 16
+  tol: 0.15
+- type: series
+  group: values
+  name: source lines
+  file: energy_mix.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: coal
+    aliases: [Coal, 석탄]
+  - y: gas
+    aliases: [Gas, 가스]
+  - y: nuclear
+    aliases: [Nuclear, 원자력]
+  - y: hydro
+    aliases: [Hydro, 수력]
+  - y: wind_solar
+    aliases: [Wind, Solar, 풍력, 태양]

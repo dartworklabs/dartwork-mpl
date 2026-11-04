@@ -9,7 +9,9 @@ Per run unit (``RUN_DIR/<host>/<case>/<arm>-r<k>/``, the records tree):
   ``out/figure.pdf`` (copied to ``artifacts/`` when the host exited) that are
   valid (PNG decodes; the PDF parses and renders a page whose aspect matches
   the PNG), were written during the run, and are not older than the final
-  ``plot.py`` (an edit that was never executed fails).
+  ``plot.py`` (an edit that was never executed fails) -- unless re-running the
+  final ``plot.py`` reproduces the saved PNG pixel for pixel (a touch without
+  a change, such as ``git stash`` then ``git stash pop``).
 * ``rerun_ok`` / ``rerun_matches``: ``plot.py`` re-run in a fresh process in
   the unit's venv saves both files again, the re-run PDF is valid, and the
   re-run PNG is pixel-identical to the original (measured same-env noise: 0).
@@ -408,6 +410,9 @@ def png_matches(a: Path, b: Path) -> bool:
     )
 
 
+_NEVER_EXECUTED = " (last edit never executed)"
+
+
 def execution(unit: Path, project: Path, run: dict) -> tuple[bool, list[str]]:
     """Was the final plot.py executed by the agent, leaving valid outputs?"""
     art = unit / "artifacts"
@@ -434,7 +439,7 @@ def execution(unit: Path, project: Path, run: dict) -> tuple[bool, list[str]]:
             and f.stat().st_mtime < plot.stat().st_mtime
         ):
             why.append(
-                f"{f.name} is older than the final plot.py (last edit never executed)"
+                f"{f.name} is older than the final plot.py{_NEVER_EXECUTED}"
             )
     if started is None:
         why.append("no run start time recorded")
@@ -602,6 +607,22 @@ def score_unit(case: dict, unit: Path) -> dict:
         ]
     )
     rec["rerun_ok"] = bool(rec["rerun_ok"] and rerun_pdf_ok)
+    stale = [
+        p for p in rec["execution_problems"] if p.endswith(_NEVER_EXECUTED)
+    ]
+    if (
+        stale
+        and len(stale) == len(rec["execution_problems"])
+        and rerun_png
+        and png_matches(Path(rerun_png), unit / "artifacts" / "figure.png")
+    ):
+        # plot.py was touched after the last render (git stash/pop, a comment)
+        # but the final script still draws the saved PNG pixel for pixel.
+        rec["execution_success"], rec["execution_problems"] = True, []
+        rec["execution_note"] = (
+            "plot.py is newer than the outputs, but its re-run reproduces "
+            "the saved PNG exactly"
+        )
     rec["rerun_matches"] = bool(
         rerun_png
         and rec["execution_success"]

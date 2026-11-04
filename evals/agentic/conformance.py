@@ -1,7 +1,8 @@
 """Unrequested preset overrides in the final ``plot.py``, counted from its AST.
 
 A dartwork-mpl preset (``dm.style.use``) owns the global look. Counted as
-overrides (secondary A/B metric; none of the 40 cases asks for one):
+overrides (secondary A/B metric; a case lists the kinds its request asks
+for in ``allowed_overrides``, e.g. c07's dark background):
 
 * ``rcparams``: ``rcParams[...] = ...``, ``rcParams.update/setdefault``,
   ``rc(...)``, ``rc_context(...)``, ``rcdefaults()``;

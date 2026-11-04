@@ -16,8 +16,12 @@ from views import (
     center,
     data_axes,
     expected_series,
+    fin,
+    luminance,
     named,
     observed_bars,
+    over,
+    rgb,
     sat,
     series_match,
     texts,
@@ -140,10 +144,24 @@ def c_twin(c, probe, base):
 
 
 def c_legend(c, probe, base):
+    """A legend outside the plot area on ``side`` (``right``, the default, or ``top``), inside the canvas."""
     snap = probe["snapshot"]
     lgs = snap["legends"]
     if "present" in c:
         return bool(lgs) == c["present"], f"legends {list(lgs)}"
+    if c.get("side", "right") == "top":
+        _, top = _plot_area(snap)
+        above = [k for k, lg in lgs.items() if lg["bbox"][1] >= top - 0.01]
+        inside_canvas = all(
+            lg["bbox"][3] <= 1.005
+            and lg["bbox"][0] >= -0.005
+            and lg["bbox"][2] <= 1.005
+            for lg in lgs.values()
+        )
+        return (
+            bool(above) and inside_canvas,
+            f"axes top edge {top:.3f}; legends {[(k, lg['bbox']) for k, lg in lgs.items()]}",
+        )
     right = max(
         snap["axes"][i]["position"][0] + snap["axes"][i]["position"][2]
         for i in data_axes(snap)
@@ -336,6 +354,183 @@ def c_not_worse(c, probe, base):
     return e <= b, f"defects base {b} -> edit {e}"
 
 
+# ------------------------------------------------------------ customization
+TITLE_ROLES = {"title", "title_left", "title_right", "suptitle"}
+NOT_NOTES = TICK_ROLES | {"legend", "legend_title"}
+
+
+def _plot_area(snap: dict) -> tuple[float, float]:
+    """Bottom and top edges of the data axes (figure fraction)."""
+    pos = [snap["axes"][i]["position"] for i in data_axes(snap)]
+    return min(p[1] for p in pos), max(p[1] + p[3] for p in pos)
+
+
+def _areas(snap: dict) -> dict[tuple, list[int]]:
+    """Data axes grouped by position: twins share one plot area."""
+    out: dict[tuple, list[int]] = {}
+    for i in data_axes(snap):
+        pos = tuple(round(v, 3) for v in snap["axes"][i]["position"])
+        out.setdefault(pos, []).append(i)
+    return out
+
+
+def _on_canvas(t: dict, snap: dict, tol: float = 0.01) -> bool:
+    """The text lies on the saved canvas (a tight bbox grows it to fit)."""
+    if str((snap.get("save") or {}).get("bbox_inches")).lower() == "tight":
+        return True
+    q = np.asarray(t["quad"])
+    return bool(q.min() >= -tol and q.max() <= 1 + tol)
+
+
+def c_title(c, probe, base):
+    """The requested title is drawn as a title.
+
+    An axes title (centre/left/right) or the suptitle containing
+    ``contains``, or a figure/axes text containing it that sits wholly
+    above the plot area; on the canvas either way.
+    """
+    snap = probe["snapshot"]
+    _, top = _plot_area(snap)
+    found = [
+        f"{t['role']}:{t['s'][:40]}"
+        for t in texts(snap, exclude=NOT_NOTES)
+        if named(t["s"], [c["contains"]])
+        and _on_canvas(t, snap)
+        and (
+            t["role"] in TITLE_ROLES
+            or np.asarray(t["quad"])[:, 1].min() >= top - c.get("tol", 0.01)
+        )
+    ]
+    return bool(found), (
+        f"title {found}"
+        if found
+        else f"no title or text above the plot area contains {c['contains']!r}"
+    )
+
+
+def c_text_below(c, probe, base):
+    """A text containing ``contains`` lies below the plot area, on the canvas.
+
+    Its top edge is at or under the bottom of the lowest data axes; any
+    role but ticks and legends (a figure text, an axes annotation, a
+    second x-label line).
+    """
+    snap = probe["snapshot"]
+    bottom, _ = _plot_area(snap)
+    hits = [
+        t
+        for t in texts(snap, exclude=NOT_NOTES)
+        if named(t["s"], [c["contains"]])
+    ]
+    below = [
+        f"{t['role']}:{t['s'][:40]}"
+        for t in hits
+        if np.asarray(t["quad"])[:, 1].max() <= bottom + c.get("tol", 0.01)
+        and _on_canvas(t, snap)
+    ]
+    return bool(below), (
+        f"below the plot area (bottom {bottom:.3f}): {below}"
+        if below
+        else f"{len(hits)} texts contain {c['contains']!r}, none below the plot area (bottom {bottom:.3f}) on the canvas"
+    )
+
+
+def _drawn_grid(snap: dict, i: int, axis: str) -> set[float]:
+    """Tick locations of ``axis`` with a drawn line across >= 90% of the plot area.
+
+    Gridlines drawn by hand: ``axhline``/``axvline`` (or a two-point line)
+    and ``hlines``/``vlines`` segments at the tick positions.
+    """
+    d, meta = snap["data"][i], snap["axes"][i]
+    locs = [t[0] for t in d[f"{axis}ticks"]]
+    k = 1 if axis == "y" else 0  # the figure coordinate a gridline holds
+    span = meta["position"][2] if axis == "y" else meta["position"][3]
+
+    def tick(v):
+        return next(
+            (loc for loc in locs if abs(loc - v) <= 1e-6 * max(1.0, abs(loc))),
+            None,
+        )
+
+    hits = set()
+    for ln in d["lines"]:
+        vals, f = fin(ln["y"] if axis == "y" else ln["x"]), ln.get("figxy")
+        if not (ln["visible"] and f and len(f) >= 2 and vals):
+            continue
+        f = np.asarray(f, dtype=float)
+        if (
+            max(vals) == min(vals)
+            and np.ptp(f[:, k]) < 1e-3
+            and np.ptp(f[:, 1 - k]) >= 0.9 * span
+        ):
+            hits.add(tick(vals[0]))
+    lim = sorted(meta["xlim"] if axis == "y" else meta["ylim"])
+    for s in d["hsegs"] if axis == "y" else d["vsegs"]:
+        a, b, v = (s[0], s[1], s[2]) if axis == "y" else (s[1], s[2], s[0])
+        if b - a >= 0.9 * (lim[1] - lim[0]):
+            hits.add(tick(v))
+    return hits - {None}
+
+
+def c_gridlines(c, probe, base):
+    """Visible major gridlines along ``axis`` (``y``: horizontal lines) in every plot area.
+
+    A plot area's twin axes count for it. Lines drawn by hand across the
+    plot area at two or more ticks count as gridlines too.
+    """
+    snap = probe["snapshot"]
+    axis, props = c.get("axis", "y"), snap["props"]
+    how = {}
+    for idx in _areas(snap).values():
+        native = [i for i in idx if props.get(f"ax{i}.grid.{axis}.visible")]
+        drawn = {i: len(_drawn_grid(snap, i, axis)) for i in idx}
+        how["+".join(f"ax{i}" for i in idx)] = (
+            "grid"
+            if native
+            else next(
+                (f"lines at {n} ticks" for n in drawn.values() if n >= 2),
+                "none",
+            )
+        )
+    return bool(how) and "none" not in how.values(), f"{axis} gridlines {how}"
+
+
+def c_dark_background(c, probe, base):
+    """Every plot area is dark as saved: WCAG luminance below ``max_luminance``.
+
+    A plot area's colour is its visible axes faces composited over the
+    saved canvas (savefig's facecolor, else the figure's, over white). A
+    transparent save leaves the background to the viewer and fails.
+    """
+    snap = probe["snapshot"]
+    save, fig = snap.get("save") or {}, snap["figure"]
+    if save.get("transparent"):
+        return (
+            False,
+            "saved with transparent=True: the background is the viewer's",
+        )
+    face, alpha = (
+        (save["facecolor"], save.get("face_alpha"))
+        if save.get("facecolor")
+        else (fig.get("facecolor"), fig.get("face_alpha"))
+    )
+    if not face:
+        return False, "no canvas colour recorded"
+    canvas = over(rgb(face), 1.0 if alpha is None else alpha, (1.0, 1.0, 1.0))
+    limit = c.get("max_luminance", 0.3)
+    areas = {}
+    for idx in _areas(snap).values():
+        bg = canvas
+        for i in idx:
+            a = snap["axes"][i]
+            if a.get("patch_visible") and a.get("facecolor"):
+                bg = over(rgb(a["facecolor"]), a.get("face_alpha") or 0.0, bg)
+        areas["+".join(f"ax{i}" for i in idx)] = round(luminance(bg), 3)
+    return bool(areas) and all(v < limit for v in areas.values()), (
+        f"canvas luminance {luminance(canvas):.3f}; plot areas {areas} (dark < {limit})"
+    )
+
+
 SPEC_CHECKS = {
     "text": c_text,
     "regex": c_regex,
@@ -354,4 +549,8 @@ SPEC_CHECKS = {
     "preset": c_preset,
     "fontsize_delta": c_fontsize_delta,
     "defects_not_worse": c_not_worse,
+    "title": c_title,
+    "text_below": c_text_below,
+    "gridlines": c_gridlines,
+    "dark_background": c_dark_background,
 }
