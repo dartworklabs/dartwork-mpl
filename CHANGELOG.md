@@ -34,8 +34,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   colour fails the test and names the surface that moved, with no colour-theory
   knowledge required to read the result.
 
+- **Agent skill in the wheel.** `src/dartwork_mpl/skills/dartwork-mpl/`
+  (`SKILL.md` plus references on sizing, editing, colours, Korean text, the
+  review loop and templates) ships with the package.
+  `python -m dartwork_mpl.skills install [--dest DIR] [--copy] [--force]`
+  links it into `.claude/skills` and `.agents/skills`, the project skill
+  folders agents read, so it follows upgrades; every agent gets the same
+  skill. `... skills path` prints the folder. `--copy` copies record an inventory of their entries and are
+  never overwritten after local edits without `--force`, nor when they change
+  during the install. A link is replaced in one atomic rename; an
+  interrupted copy replacement is recovered on the next `install` or `path`
+  run. Linked `.claude`/`.agents` folders may not lead outside `--dest`. The
+  skill also says how to use it alongside a generic chart skill.
+- `dm.figsize` accepts `"W:H"` ratio strings as its second argument
+  (`dm.figsize("13cm", "16:9")`); so do `dm.figsize_grid` and
+  `parse_aspect`.
+
 ### Changed
 
+- **No meaningless decimals and no mixed units on scaled axes (#523).**
+  `format_axis_si`, `format_axis_myriad`, `format_axis_millions` and
+  `format_axis_billions` default to `decimals=None`: one decimal count per
+  axis, the fewest that render every visible tick exactly. Integer ticks
+  print `200`, `0`, `1M` instead of `200.0`, `0.0`, `1.0M`; half steps stay
+  exact (1250 no longer rounds to `1.2k`, `1.75억` to `1.8억`); fractional
+  steps keep the count on every tick (`0.5M, 1.0M`). Zero prints as `0`;
+  scaled values of 1000 and more get thousands separators.
+- **`format_axis_si` and `format_axis_myriad` take `unit=`.** The whole axis
+  shares one unit, so an axis no longer mixes `800` with `1.2k` or
+  `7,500만` with `1.25억`. `unit="max"` (default) uses the unit of the
+  largest visible tick (`0, 0.2k … 1.2k`; `0, 0.25억 … 1.75억`);
+  `unit="whole"` picks a unit in which every tick is whole (`0, 200 …
+  1,200`); a prefix such as `"k"` or `"억"` fixes the unit. Log axes keep a
+  unit per tick (decades cannot share one). An explicit integer `decimals=`
+  with the default `unit` keeps the previous per-tick output.
+- **`TICK_DECIMAL` trailing zeros are now a WARNING**, and decimal
+  consistency is judged per unit suffix on the rendered numbers; a bare `0`
+  needs no decimals (`-1.0M, -0.5M, 0, 0.5M, 1.0M` is clean). The new
+  **`VALUE_LABEL_DECIMAL`** check warns when every numeric value label in an
+  axes is a whole number but some print trailing zeros.
+- **Value labels on bars and lines are one weight step heavier.**
+  `dm.annotate_value()` defaults to `fontweight=fw(1)` unless `fontweight` or
+  `weight` is passed; the advanced bar_grouped, waterfall, tornado and line
+  templates now match the templates that already did this.
 - `format_axis_year` prints two-digit tick years by default (`2025` -> `25년`,
   `25年`, `25`). Four-digit tick years double the tick width and crowd
   neighbouring labels; the company-analysis harness now rejects them
@@ -58,6 +99,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   measurement, or stated limit, so a house style no longer reads as a law of
   vision. `relative_y` is described as modeled relative CIE Y from nominal D65
   sRGB rather than a measurement of any display.
+- `dm.get_agent_doc("AGENTS")` and `("CLAUDE")` return a one-screen consumer
+  entry that points to the skill instead of the repository's contributor
+  `AGENTS.md` (ADR and colour-freeze rules no longer reach installed users).
+  The repo-root `AGENTS.md` / `CLAUDE.md` are contributor docs and leave the
+  wheel. The four stale `.cursor/rules/*.mdc` files became one pointer.
 
 ### Fixed
 
@@ -88,6 +134,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   numeric tick labels such as `17.5, 20, 22.5` now warn as non-uniform,
   while fractional-step labels such as `17.5, 20.0, 22.5` remain valid.
   Trailing-zero advice now applies only to integer-valued tick sequences.
+- A pixel size such as `dm.figsize("1920px", ...)` was answered with "Did you
+  mean 'pt'"; the error now explains that pixels need a DPI and shows the
+  `dm.inch(px / dpi)` conversion.
+- Agent guidance matched the runtime again: the prompt corpus lists all ten
+  aspect tokens (`slide` 16:9 was missing) and all seven presets, the a/b/c
+  panel-label recipe draws each label once, the MCP prompts no longer say
+  "dartwork-mpl 0.4", and the AI hub shows Codex's MCP support, drops the
+  nonexistent `GEMINI.md` and states the real `llms*.txt` sizes. The
+  "Be Specific" guide now treats vague requests ("make it look better") as
+  normal ones.
 
 ## [0.5.6] - 2026-07-05
 

@@ -7,7 +7,7 @@ native invocation. For full templates see
 > **For a new figure**, pick and apply a style preset:
 >
 > ```python
-> dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "*-kr"
+> dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "poster" / "web" / "dark" / "*-kr"
 > ```
 >
 > For a local revision, retain the existing preset and scoped overrides.
@@ -605,7 +605,8 @@ import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
 dm.style.use("scientific")
-fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"),
+                         gridspec_kw={"hspace": 0.5, "wspace": 0.35})
 for ax in axes.flat:
     ax.plot([0, 1, 2], [1, 3, 2], color="oc.blue9")
 dm.label_axes(axes, labels=["(a)", "(b)", "(c)", "(d)"], x=-0.02, y=1.05,
@@ -623,7 +624,7 @@ calls below over the same Axes collection, before `dm.simple_layout(fig)`. Do no
 ```python
 for ax, label in zip(axes.flat, ["(a)", "(b)", "(c)", "(d)"]):
     ax.text(0.02, 0.98, label, transform=ax.transAxes,
-            fontsize=dm.fs(1), ha="left", va="top")
+            fontsize=dm.fs(1), fontweight=dm.fw(1), ha="left", va="top")
 ```
 
 ## "Compare style presets side by side"

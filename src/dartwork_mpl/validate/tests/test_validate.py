@@ -374,7 +374,7 @@ class TestCheckTickDecimal:
 
         hits = [w for w in warnings if w.check_id == "TICK_DECIMAL"]
         assert len(hits) == 1
-        assert hits[0].severity == Severity.INFO
+        assert hits[0].severity == Severity.WARNING
         assert "trailing zero" in hits[0].message
         plt.close(fig)
 

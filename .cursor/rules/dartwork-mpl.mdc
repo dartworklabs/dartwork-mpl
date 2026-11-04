@@ -1,0 +1,27 @@
+---
+description: dartwork-mpl plotting and contribution rules (matplotlib figures, docs examples, templates)
+globs:
+alwaysApply: true
+---
+# dartwork-mpl
+
+Plotting rules live in one place, the skill bundled with the package:
+`src/dartwork_mpl/skills/dartwork-mpl/SKILL.md` and its `references/`.
+Read it before writing or reviewing plot code. Contributor rules (design
+documents, the colour freeze, MCP freeze) are in `AGENTS.md`.
+
+The short version:
+
+- `dm.style.use(preset)` first: `scientific` paper, `report` documents,
+  `presentation` slides; `-kr` only for Korean plot text.
+- `plt.subplots(figsize=dm.figsize("13cm", "standard"))`; never
+  `figsize=(w, h)` or `dpi=` on figure creation.
+- `dm.simple_layout(fig)` after drawing; never `plt.tight_layout()`.
+- `dm.save_formats(fig, "output/name", formats=("png", "pdf"))`, then open the
+  PNG and read `dm.validate_figure(fig, quiet=True)`.
+- Edit only the requested target; keep data, preset, size and style.
+
+Code in this repository: runtime dependencies with `uv add`, tools with
+`uv add --dev`; NumPy-style docstrings; Python 3.10+ type hints on every
+function (`uv run mypy` is strict); `uv run ruff check . && uv run ruff
+format .` before committing; no stray render outputs in commits.

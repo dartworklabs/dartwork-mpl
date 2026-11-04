@@ -85,7 +85,8 @@ def info_payload() -> str:
                     "Slide ratio/full-slide/inset and panel complexity inform initial size. "
                     "Ask one short question only for material ambiguity; reuse known context. "
                     "For quick drafts state provisional preset/size. "
-                    "Use -kr for Korean plot text only. Geometry-only edits retain preset/data/style."
+                    "Plot text is English unless another language is requested; -kr for Korean text. "
+                    "Geometry-only edits retain preset/data/style."
                 ),
                 "max_width": (
                     "No API maximum; 17 cm is a page-fit lint reference. "
