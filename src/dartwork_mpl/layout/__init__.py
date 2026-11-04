@@ -813,6 +813,23 @@ def simple_layout(
                 bottom=new_edges.bottom,
                 top=new_edges.top,
             )
+            # GridSpec.update only repositions pyplot-managed figures.
+            # A retained closed Figure still needs its own axes updated;
+            # reuse their SubplotSpecs to preserve SubFigure coordinates,
+            # twin relationships and in_layout flags. Open figures whose
+            # positions already match are left untouched.
+            for ax in fig.axes:
+                spec = ax.get_subplotspec()
+                if (
+                    spec is not None
+                    and spec.get_topmost_subplotspec().get_gridspec()
+                    is actual_gs
+                ):
+                    # Matplotlib accepts the local SubFigure here, though
+                    # its SubplotSpec stub only declares Figure.
+                    position = spec.get_position(ax.get_figure(root=False))  # type: ignore[arg-type]
+                    if ax.get_position(original=True).bounds != position.bounds:
+                        ax.set_subplotspec(spec)
             last = new_edges
 
             if step.delta_px < _CONVERGE_TOL_PX:
