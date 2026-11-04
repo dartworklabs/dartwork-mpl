@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-05
+
 ### Added
 
 - **`dm.review(fig, stem)`: one call for the review loop (experimental, #574).**
@@ -289,6 +291,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Retained figures relayout after `plt.close(fig)` (#579).**
+  `dm.simple_layout(fig)` updates subplot positions on the retained Figure
+  even after it leaves pyplot's figure registry.
+- **Retained figures work with Matplotlib 3.11's rendererless canvas (#582).**
+  Layout, formatting and geometry checks can obtain a renderer when the
+  canvas has no `get_renderer` method.
+- **MCP guidance respects requested title and source scope (#580).**
+  Returned instructions and examples add titles and source notes only when
+  asked, keep unnamed preset defaults and explicit user values, and preserve
+  existing text outside an edit's scope.
+- **MCP HTTPS trust uses updated certificate roots (#576).** The MCP extra
+  now requires `certifi>=2026.10.19`, excluding compromised emSign roots
+  from the certificate bundle used for Raw GitHub fetches.
 - **Line-end labels stay apart after the layout.** `dm.label_line_ends`
   spaced its labels at the Axes size of the call, so a later
   `dm.simple_layout` that shrank the Axes (for a note, say) let them overlap
@@ -1668,3 +1683,6 @@ The following fixes landed between the 0.4.0 cut commit and the PyPI publish.
 ## [0.1.0] - 2025-12-01
 
 - Initial public release with style management, color system, font registration, colormap support, and visual validation.
+
+[Unreleased]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.5.6...v0.6.0
