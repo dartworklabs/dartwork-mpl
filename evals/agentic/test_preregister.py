@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import random
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -28,7 +29,7 @@ def _git(repo: Path, *args: str) -> str:
 
 
 @pytest.fixture
-def registration(tmp_path):
+def registration(tmp_path, monkeypatch):
     """Supply explicit real-file inputs and a clean disposable harness commit."""
     repo = tmp_path / "repo"
     cases = repo / "evals" / "agentic" / "cases"
@@ -58,6 +59,21 @@ def registration(tmp_path):
     )
     home = tmp_path / "authenticated-codex-home"
     home.mkdir()
+    host_bin = tmp_path / "host-bin"
+    host_bin.mkdir()
+    for host in ("claude", "codex"):
+        executable = host_bin / host
+        executable.write_text(
+            f"#!{sys.executable}\nimport sys\n"
+            "if sys.argv[1:] != ['--version']: raise SystemExit(2)\n"
+            f"print('fixture {host} 1.0')\n"
+        )
+        executable.chmod(0o755)
+    monkeypatch.setenv(
+        "PATH", str(host_bin) + os.pathsep + os.environ.get("PATH", "")
+    )
+    records = tmp_path / "records"
+    records.mkdir()
     config = {
         "schema_version": 1,
         "wheel": {"path": str(wheel), "sha256": _sha(wheel)},
@@ -66,9 +82,7 @@ def registration(tmp_path):
             host: {
                 "id": f"runtime-selected-{host}",
                 "effort": "high",
-                "host_version": subprocess.check_output(
-                    [host, "--version"], text=True, stdin=subprocess.DEVNULL
-                ).strip(),
+                "host_version": f"fixture {host} 1.0",
             }
             for host in ("claude", "codex")
         },
@@ -83,7 +97,7 @@ def registration(tmp_path):
         "execution": {
             "python": sys.executable,
             "project_python": "3.12",
-            "records_root": str(tmp_path / "records"),
+            "records_root": str(records),
             "work_root": str(tmp_path / "work"),
             "run_ids": {
                 "primary": "final-primary",
@@ -112,13 +126,94 @@ def registration(tmp_path):
         "home": home,
         "config": config,
         "source": source,
-        "record": tmp_path / "prelaunch.json",
+        "record": records / "prelaunch.json",
     }
 
 
 def _rewrite(registration):
     """Persist an intentionally changed configuration for a boundary check."""
     registration["source"].write_text(json.dumps(registration["config"]))
+
+
+@pytest.mark.parametrize(
+    "location", ["outside", "work", "primary", "supplemental", "symlink"]
+)
+def test_prelaunch_record_must_be_hidden_outside_official_run_directories(
+    registration, location
+):
+    """No launch record can be exposed or create an official run directory."""
+    r = registration
+    execution = r["config"]["execution"]
+    records = Path(execution["records_root"])
+    if location in ("primary", "supplemental"):
+        output = records / execution["run_ids"][location] / "prelaunch.json"
+    elif location == "work":
+        output = Path(execution["work_root"]) / "prelaunch.json"
+    elif location == "symlink":
+        public = r["source"].parent / "public"
+        public.mkdir()
+        (records / "escape").symlink_to(public, target_is_directory=True)
+        output = records / "escape" / "prelaunch.json"
+    else:
+        output = r["source"].parent / "visible-prelaunch.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with pytest.raises(ValueError, match="prelaunch record"):
+        preregister.freeze(r["source"], output, r["repo"])
+    assert not output.exists()
+
+
+def test_copied_visible_record_cannot_be_verified_or_emit_launch_argv(
+    registration,
+):
+    """A valid checksum does not authorize exposing the frozen grading record."""
+    r = registration
+    preregister.freeze(r["source"], r["record"], r["repo"])
+    visible = r["source"].parent / "visible-copy.json"
+    visible.write_bytes(r["record"].read_bytes())
+    for operation in (
+        lambda: preregister.verify(visible, r["repo"]),
+        lambda: preregister.command(visible, "primary", r["repo"]),
+    ):
+        with pytest.raises(ValueError, match="prelaunch record"):
+            operation()
+
+
+def test_frozen_record_is_hidden_by_actual_runner_sandbox(registration):
+    """The real runner mount order hides the record and retains project input."""
+    if not shutil.which("bwrap"):
+        pytest.skip("requires the eval harness's bwrap dependency")
+    import run as runner
+
+    r = registration
+    preregister.freeze(r["source"], r["record"], r["repo"])
+    execution = r["config"]["execution"]
+    project = Path(execution["work_root"]) / "agent"
+    project.mkdir(parents=True)
+    (project / "input.txt").write_text("own input")
+    script = (
+        "from pathlib import Path; "
+        f"assert not Path({str(r['record'])!r}).exists(); "
+        "assert Path('input.txt').read_text() == 'own input'"
+    )
+    command = runner.sandbox_wrap(
+        [sys.executable, "-c", script],
+        project,
+        [
+            r["repo"],
+            Path(execution["records_root"]),
+            Path(execution["work_root"]),
+        ],
+    )
+    subprocess.run(
+        command,
+        cwd=project,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=20,
+    )
+    assert r["record"].is_file()
 
 
 def test_filename_inventory_has_exact_primary_and_supplemental_partitions(
