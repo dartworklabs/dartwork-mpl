@@ -1,15 +1,18 @@
 """Rendering a bundled template to PNG for ``render_template`` / ``render_template_advanced``.
 
-Both tools run a template the same way (``_execute``); they differ only in
-tier selection and reply shape, so each keeps its own reply builder.
+Both tools run a selected template the same way (``_render``), which ends in
+one ``RenderOutcome`` variant; they differ only in tier selection and reply
+shape. ``_reply_fields`` is the one exhaustive match that turns an outcome into
+the legacy reply's status, PNG and stderr fields.
 """
 
 import base64
 import sys
 import tempfile
 import textwrap
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 from .. import _platform
 from . import bundled
@@ -58,6 +61,105 @@ def _execute(
         return proc, pngs[0].read_bytes()
 
 
+@dataclass(frozen=True)
+class Rendered:
+    """The template wrote a PNG; ``stderr`` is the child's stripped stderr."""
+
+    png: bytes
+    stderr: str
+
+
+@dataclass(frozen=True)
+class Published:
+    """The PNG was copied to ``path``, a new private temp file the caller owns."""
+
+    path: str
+    stderr: str
+
+
+@dataclass(frozen=True)
+class RenderTimedOut:
+    """The child exceeded the requested ``timeout_seconds``."""
+
+    timeout_seconds: float
+
+
+@dataclass(frozen=True)
+class RenderFailed:
+    """The child failed or wrote no PNG; ``diagnostic`` is its bounded log."""
+
+    diagnostic: str
+
+
+@dataclass(frozen=True)
+class PublicationFailed:
+    """The PNG rendered, but publishing it to a temp file raised ``OSError``."""
+
+
+RenderOutcome: TypeAlias = (
+    Rendered | Published | RenderTimedOut | RenderFailed | PublicationFailed
+)
+
+
+def _render(
+    path: Path, return_format: str, timeout_seconds: float, prefix: str
+) -> RenderOutcome:
+    """Render the template at ``path``; ``"path"`` publishes under ``prefix``, else in memory."""
+    proc, png_bytes = _execute(path, timeout_seconds)
+    if proc.timed_out:
+        return RenderTimedOut(timeout_seconds)
+    if png_bytes is None:
+        return RenderFailed(
+            _platform.diagnostic(
+                proc.stderr or proc.stdout,
+                "stderr" if proc.stderr else "stdout",
+                char_limit=2000,
+                marked=(
+                    proc.stderr_truncated
+                    if proc.stderr
+                    else proc.stdout_truncated
+                ),
+            )
+        )
+    stderr = _platform.strip_diagnostic(
+        proc.stderr, "stderr", marked=proc.stderr_truncated
+    )
+    if return_format != "path":
+        return Rendered(png_bytes, stderr)
+    try:
+        persistent = _platform.publish_png(png_bytes, prefix)
+    except OSError:
+        return PublicationFailed()
+    return Published(persistent, stderr)
+
+
+def _reply_fields(
+    outcome: RenderOutcome,
+) -> tuple[str, str | None, str | None, str]:
+    """The reply's ``(status, png_base64, png_path, stderr)``; success is ``ok``."""
+    match outcome:
+        case Rendered(png, stderr):
+            return "ok", base64.b64encode(png).decode("ascii"), None, stderr
+        case Published(path, stderr):
+            return "ok", None, path, stderr
+        case RenderTimedOut(timeout_seconds):
+            return (
+                "timeout",
+                None,
+                None,
+                f"Render exceeded {timeout_seconds}s timeout.",
+            )
+        case RenderFailed(diagnostic):
+            return "render_error", None, None, diagnostic
+        case PublicationFailed():
+            return (
+                "render_error",
+                None,
+                None,
+                "Template output publication failed.",
+            )
+
+
 def render_basic(
     plot_type: str, return_format: str, timeout_seconds: float
 ) -> dict[str, Any]:
@@ -81,65 +183,20 @@ def render_basic(
                 f"No template named {plot_type!r}. Available: {available}"
             ),
         }
-
-    proc, png_bytes = _execute(path, timeout_seconds)
-    if proc.timed_out:
-        return {
-            "status": "timeout",
-            "plot_type": plot_type,
-            "png_base64": None,
-            "png_path": None,
-            "stderr": f"Render exceeded {timeout_seconds}s timeout.",
-        }
-
-    if png_bytes is None:
-        return {
-            "status": "render_error",
-            "plot_type": plot_type,
-            "png_base64": None,
-            "png_path": None,
-            "stderr": _platform.diagnostic(
-                proc.stderr or proc.stdout,
-                "stderr" if proc.stderr else "stdout",
-                char_limit=2000,
-                marked=(
-                    proc.stderr_truncated
-                    if proc.stderr
-                    else proc.stdout_truncated
-                ),
-            ),
-        }
-
-    if return_format == "path":
-        try:
-            persistent = _platform.publish_png(
-                png_bytes, f"dartwork-mpl-render-{plot_type}-"
-            )
-        except OSError:
-            return {
-                "status": "render_error",
-                "plot_type": plot_type,
-                "png_base64": None,
-                "png_path": None,
-                "stderr": "Template output publication failed.",
-            }
-        return {
-            "status": "ok",
-            "plot_type": plot_type,
-            "png_base64": None,
-            "png_path": str(persistent),
-            "stderr": _platform.strip_diagnostic(
-                proc.stderr, "stderr", marked=proc.stderr_truncated
-            ),
-        }
+    status, png_base64, png_path, stderr = _reply_fields(
+        _render(
+            path,
+            return_format,
+            timeout_seconds,
+            f"dartwork-mpl-render-{plot_type}-",
+        )
+    )
     return {
-        "status": "ok",
+        "status": status,
         "plot_type": plot_type,
-        "png_base64": base64.b64encode(png_bytes).decode("ascii"),
-        "png_path": None,
-        "stderr": _platform.strip_diagnostic(
-            proc.stderr, "stderr", marked=proc.stderr_truncated
-        ),
+        "png_base64": png_base64,
+        "png_path": png_path,
+        "stderr": stderr,
     }
 
 
@@ -156,13 +213,9 @@ def render_advanced(
     basic_path = bundled._resolve_template_path(plot_type)
 
     if advanced_path is not None:
-        path = advanced_path
-        tier = "advanced"
-        fell_back = False
+        path, tier = advanced_path, "advanced"
     elif basic_path is not None:
-        path = basic_path
-        tier = "basic"
-        fell_back = True
+        path, tier = basic_path, "basic"
     else:
         available = sorted(p.stem for p in template_dir.glob("*.py"))
         return {
@@ -179,68 +232,21 @@ def render_advanced(
             ),
         }
 
-    proc, png_bytes = _execute(path, timeout_seconds)
-    if proc.timed_out:
-        return {
-            "status": "timeout",
-            "plot_type": plot_type,
-            "tier": tier,
-            "png_base64": None,
-            "png_path": None,
-            "stderr": f"Render exceeded {timeout_seconds}s timeout.",
-        }
-
-    if png_bytes is None:
-        return {
-            "status": "render_error",
-            "plot_type": plot_type,
-            "tier": tier,
-            "png_base64": None,
-            "png_path": None,
-            "stderr": _platform.diagnostic(
-                proc.stderr or proc.stdout,
-                "stderr" if proc.stderr else "stdout",
-                char_limit=2000,
-                marked=(
-                    proc.stderr_truncated
-                    if proc.stderr
-                    else proc.stdout_truncated
-                ),
-            ),
-        }
-
-    status = "fell_back" if fell_back else "ok"
-    if return_format == "path":
-        try:
-            persistent = _platform.publish_png(
-                png_bytes, f"dartwork-mpl-render-advanced-{plot_type}-"
-            )
-        except OSError:
-            return {
-                "status": "render_error",
-                "plot_type": plot_type,
-                "tier": tier,
-                "png_base64": None,
-                "png_path": None,
-                "stderr": "Template output publication failed.",
-            }
-        return {
-            "status": status,
-            "plot_type": plot_type,
-            "tier": tier,
-            "png_base64": None,
-            "png_path": str(persistent),
-            "stderr": _platform.strip_diagnostic(
-                proc.stderr, "stderr", marked=proc.stderr_truncated
-            ),
-        }
+    status, png_base64, png_path, stderr = _reply_fields(
+        _render(
+            path,
+            return_format,
+            timeout_seconds,
+            f"dartwork-mpl-render-advanced-{plot_type}-",
+        )
+    )
+    if status == "ok" and tier == "basic":
+        status = "fell_back"
     return {
         "status": status,
         "plot_type": plot_type,
         "tier": tier,
-        "png_base64": base64.b64encode(png_bytes).decode("ascii"),
-        "png_path": None,
-        "stderr": _platform.strip_diagnostic(
-            proc.stderr, "stderr", marked=proc.stderr_truncated
-        ),
+        "png_base64": png_base64,
+        "png_path": png_path,
+        "stderr": stderr,
     }

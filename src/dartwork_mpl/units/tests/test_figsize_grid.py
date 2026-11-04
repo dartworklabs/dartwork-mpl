@@ -1,3 +1,5 @@
+"""``dm.figsize_grid`` arithmetic for panel grids with gaps, and its input checks."""
+
 from __future__ import annotations
 
 import pytest

@@ -1,3 +1,7 @@
+"""Public color-family API: ``dm.colors``, ``set_colors``, ``list_colors``,
+``show_colors``, registered colormaps and removed legacy names.
+"""
+
 from __future__ import annotations
 
 import matplotlib as mpl

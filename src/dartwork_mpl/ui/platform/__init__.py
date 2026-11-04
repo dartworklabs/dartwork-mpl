@@ -3,7 +3,7 @@
 Four platform units, each its own surface: ``access`` (loopback binds and
 per-request Host/Origin checks against a caller-supplied grant table),
 ``fs`` (startup directory handles and no-follow file primitives), ``http``
-(bounded JSON request bodies and the detail/code refusal response) and
+(bounded JSON request bodies and their refusals) and
 ``json_bounds`` (the bounded JSON decoder and limits). None of them imports
 a viewer slice. This package initializer only names them.
 """

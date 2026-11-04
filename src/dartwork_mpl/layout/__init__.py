@@ -20,8 +20,9 @@ __all__ = [
 import contextlib
 import warnings
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
+import matplotlib as mpl
 from matplotlib.figure import Figure
 from matplotlib.gridspec import (
     GridSpec,
@@ -29,13 +30,20 @@ from matplotlib.gridspec import (
     GridSpecFromSubplotSpec,
     SubplotSpec,
 )
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Bbox, ScaledTranslation
 
 # ``BBOX_ERRORS`` is shared with the validation checks via ``_figure_geometry``
 # — one source for the bbox-measurement exception set (the two modules
 # used to carry identical private copies).
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
-from .._figure_geometry import get_renderer, iter_figure_level_extents
+from .._figure_geometry import (
+    axes_text_artists,
+    axes_titles,
+    get_renderer,
+    iter_figure_level_extents,
+    reanchor_outside,
+    same_position_axes,
+)
 from ..units import Length
 
 if TYPE_CHECKING:
@@ -303,6 +311,8 @@ def _axes_content_extent_px(
     # rule in ``validate_fixes.check_agent_requirements``.
     if not ax.get_visible():
         return None
+    if getattr(ax, "name", None) == "3d":
+        return _axes3d_extent_px(ax, renderer, fig.bbox.width)
 
     pts: list[tuple[float, float]] = []
 
@@ -317,9 +327,8 @@ def _axes_content_extent_px(
         pts.append((apos.x0, apos.y0))
         pts.append((apos.x1, apos.y1))
 
-    # Texts, title, axis labels.
-    text_artists = [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]
-    for txt in text_artists:
+    # Texts, centre/left/right titles, axis labels.
+    for txt in axes_text_artists(ax):
         if txt is None or not txt.get_visible() or not txt.get_text().strip():
             continue
         try:
@@ -328,8 +337,9 @@ def _axes_content_extent_px(
             continue
         if ext.width <= 0 or ext.height <= 0:
             continue
-        pts.append((ext.x0, ext.y0))
-        pts.append((ext.x1, ext.y1))
+        x0, x1 = _fixable_text_span(txt, ext, apos, fig.bbox.width)
+        pts.append((x0, ext.y0))
+        pts.append((x1, ext.y1))
 
     # Tick labels — only those whose tick position falls inside the
     # current view interval. Auto-generated ticks outside the data
@@ -382,6 +392,83 @@ def _axes_content_extent_px(
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     return min(xs), max(xs), min(ys), max(ys)
+
+
+def _fixable_text_span(
+    txt: Text, ext: Bbox, apos: Bbox | None, canvas_w_px: float
+) -> tuple[float, float]:
+    """Return the horizontal span of ``txt`` that moving axes edges can fix.
+
+    The solver treats an overhang as moving with the nearest axes edge.
+    Text anchored at or left of the left edge (a ``loc="left"`` title, a
+    subtitle at ``transAxes`` x=0) stays put when the right edge moves, so
+    chasing its overhang past the right edge shrank the axes on every
+    iteration, down to 0.001 of the canvas; the same holds mirrored on the
+    right. Text wider than the canvas cannot fit at all. Those overhangs
+    are dropped here; the visual checks still report the overflow.
+    """
+    x0, x1 = ext.x0, ext.x1
+    if apos is None or apos.width <= 0:
+        return x0, x1
+    if ext.width > canvas_w_px:
+        return max(x0, apos.x0), min(x1, apos.x1)
+    try:
+        anchor_x = txt.get_transform().transform(txt.get_unitless_position())[0]
+    except _BBOX_ERRORS:
+        return x0, x1
+    if anchor_x <= apos.x0 + 0.5:
+        x1 = min(x1, apos.x1)
+    elif anchor_x >= apos.x1 - 0.5:
+        x0 = max(x0, apos.x0)
+    return x0, x1
+
+
+def _axes3d_extent_px(
+    ax: Axes, renderer: RendererBase, canvas_w_px: float
+) -> tuple[float, float, float, float] | None:
+    """Return the ``(x0, x1, y0, y1)`` content extent of an mplot3d axes.
+
+    mplot3d places tick labels at projected positions and leaves stale
+    ones on ticks outside the view, so the per-tick walk of
+    ``_axes_content_extent_px`` reads extents thousands of px off the
+    canvas and the layout shrinks the axes into a corner. Instead the
+    axes window, each axis's full tight bbox (in-view tick labels and the
+    axis label) and the legend are measured natively, while titles and
+    2-D texts go through :func:`_fixable_text_span` as on a 2-D axes, so
+    an oversized title is not chased. ``Text3D`` (``ax.text(x, y, z)``)
+    returns no tight bbox, so matplotlib's layouts skip it, and so does
+    this one.
+    """
+    try:
+        window = ax.get_window_extent(renderer)
+    except _BBOX_ERRORS:
+        return None
+    boxes: list[Bbox] = []
+    if window.width > 0 and window.height > 0:
+        boxes.append(window)
+    zaxis = getattr(ax, "zaxis", None)
+    for artist in (ax.xaxis, ax.yaxis, zaxis, ax.get_legend()):
+        if artist is None or not artist.get_visible():
+            continue
+        with contextlib.suppress(*_BBOX_ERRORS):
+            bb = artist.get_tightbbox(renderer)
+            if bb is not None and bb.width > 0 and bb.height > 0:
+                boxes.append(bb)
+    for txt in (*axes_titles(ax).values(), *ax.texts):
+        if not txt.get_visible() or not txt.get_text().strip():
+            continue
+        try:
+            ext = txt.get_tightbbox(renderer)
+        except _BBOX_ERRORS:
+            continue
+        if ext is None or ext.width <= 0 or ext.height <= 0:
+            continue
+        x0, x1 = _fixable_text_span(txt, ext, window, canvas_w_px)
+        boxes.append(Bbox.from_extents(x0, ext.y0, x1, ext.y1))
+    if not boxes:
+        return None
+    union = Bbox.union(boxes)
+    return union.x0, union.x1, union.y0, union.y1
 
 
 def _resolve_gridspec(
@@ -545,6 +632,7 @@ def simple_layout(
     mb: Length | str | float | None = None,
     use_all_axes: bool = True,
     adopt_orphan_tick_font: bool | None = None,
+    format_ticks: bool = True,
     verbose: bool = False,
 ) -> None:
     """Place axes content at the requested distance from each figure edge.
@@ -591,6 +679,17 @@ def simple_layout(
         defaulting to ``False``), so set ``dm.config.adopt_orphan_tick_font
         = True`` once to opt in at every call site. Pass ``True`` /
         ``False`` explicitly to override per call.
+    format_ticks : bool, optional
+        If ``True`` (default), an axis still on matplotlib's default number
+        formatter whose visible ticks reach 1,000 gets the library's tick
+        numbers before measuring: thousands separators (``1,750``;
+        ``34,000``), and from one million the largest tick's SI unit
+        (``0.5M … 2.5M``). Smaller axes, x axes of years (every tick in
+        1000-2999), log, date and category axes, colorbars and any axis
+        with a formatter you set are left alone. After fitting, a date axis
+        matplotlib set up whose labels sit less than one em apart gets
+        fewer ticks and the margins are fitted again. ``False`` keeps
+        matplotlib's numbers and dates.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -599,6 +698,14 @@ def simple_layout(
     -----
     The function returns ``None``. It is a no-op on figures with no
     axes.
+
+    Before measuring, a legend placed with ``dm.place_legend(ax,
+    loc="above" | "below" | "right" | "left")`` is re-anchored past the
+    tick and axis labels present now, and the titles of an axes whose
+    legend sits above it (``place_legend(loc="above")`` or a raw
+    ``ax.legend(..., bbox_to_anchor=(x, 1.0))``) get their offset raised
+    so they sit ``axes.titlepad`` above that legend; their text, size and
+    weight are kept.
 
     Examples
     --------
@@ -616,6 +723,11 @@ def simple_layout(
     """
     if not fig.axes:
         return
+
+    if format_ticks:
+        from ..formatting import apply_default_tick_format
+
+        apply_default_tick_format(fig)
 
     if adopt_orphan_tick_font is None:
         from ..config import config
@@ -655,36 +767,45 @@ def simple_layout(
         requested_gs = fig.axes[0].get_gridspec()
     gs_id = id(requested_gs)
 
-    for it in range(_MAX_ITER):
-        step = _solve_layout_step(
-            fig,
-            margins=margins,
-            use_all_axes=use_all_axes,
-            gs_id=gs_id,
-            last_edges=last,
-            adopt_orphan_tick_font=adopt_orphan_tick_font,
-        )
-        if step is None:
-            return
-        new_edges = step.edges
-
-        if verbose:
-            print(
-                f"[simple_layout] iter {it + 1}: "
-                f"L={new_edges.left:.3f} R={new_edges.right:.3f} "
-                f"B={new_edges.bottom:.3f} T={new_edges.top:.3f}  "
-                f"Δ={step.delta_px:.2f}px"
+    for _ in range(2):
+        for it in range(_MAX_ITER):
+            step = _solve_layout_step(
+                fig,
+                margins=margins,
+                use_all_axes=use_all_axes,
+                gs_id=gs_id,
+                last_edges=last,
+                adopt_orphan_tick_font=adopt_orphan_tick_font,
             )
+            if step is None:
+                return
+            new_edges = step.edges
 
-        actual_gs.update(
-            left=new_edges.left,
-            right=new_edges.right,
-            bottom=new_edges.bottom,
-            top=new_edges.top,
-        )
-        last = new_edges
+            if verbose:
+                print(
+                    f"[simple_layout] iter {it + 1}: "
+                    f"L={new_edges.left:.3f} R={new_edges.right:.3f} "
+                    f"B={new_edges.bottom:.3f} T={new_edges.top:.3f}  "
+                    f"Δ={step.delta_px:.2f}px"
+                )
 
-        if step.delta_px < _CONVERGE_TOL_PX:
+            actual_gs.update(
+                left=new_edges.left,
+                right=new_edges.right,
+                bottom=new_edges.bottom,
+                top=new_edges.top,
+            )
+            last = new_edges
+
+            if step.delta_px < _CONVERGE_TOL_PX:
+                break
+        # Date ticks depend on the axis length only through their labels:
+        # thin them at the fitted width, then fit once more if they moved.
+        if not format_ticks:
+            return
+        from ..formatting import thin_crowded_date_ticks
+
+        if not thin_crowded_date_ticks(fig):
             return
 
 
@@ -697,33 +818,184 @@ def _figure_artist_reservations(
     figure-level artists — ``fig.suptitle``, ``fig.legend``, ``fig.text``
     — are otherwise invisible to it and end up overlapping the axes once
     the gridspec is pushed flush to the edge. Each such artist is assigned
-    to its nearest figure edge and that edge reserves the artist's extent
-    so the axes region is pulled in to clear it. Returns the reservation
-    per edge in figure fraction; all zero when no figure-level
-    artists are present (so the layout math is unchanged in the common
-    case).
+    to one figure edge (see :func:`_reservation_edge`) and that edge
+    reserves the artist's extent so the axes region is pulled in to clear
+    it. An artist carrying ``_dm_layout_gap_pt`` (``dm.add_note`` sets the
+    preset's ``axes.labelpad``) also reserves that gap between itself and
+    the content. Returns the reservation per edge in figure fraction; all
+    zero when no figure-level artists are present (so the layout math is
+    unchanged in the common case).
     """
     res_l = res_r = res_b = res_t = 0.0
-    for _art, ext in iter_figure_level_extents(fig, renderer):
+    for art, ext in iter_figure_level_extents(fig, renderer):
+        if not art.get_in_layout():
+            continue
         x0f, x1f = ext.x0 / fw_px, ext.x1 / fw_px
         y0f, y1f = ext.y0 / fh_px, ext.y1 / fh_px
-        # Assign to the nearest figure edge by perpendicular distance.
-        dists = {
-            "left": x0f,
-            "right": 1.0 - x1f,
-            "bottom": y0f,
-            "top": 1.0 - y1f,
-        }
-        edge = min(dists, key=lambda k: dists[k])
+        gap_px = float(getattr(art, "_dm_layout_gap_pt", 0.0)) * fig.dpi / 72.0
+        gx, gy = gap_px / fw_px, gap_px / fh_px
+        edge = _reservation_edge(fig, art, x0f, x1f, y0f, y1f)
         if edge == "left":
-            res_l = max(res_l, x1f)
+            res_l = max(res_l, x1f + gx)
         elif edge == "right":
-            res_r = max(res_r, 1.0 - x0f)
+            res_r = max(res_r, 1.0 - x0f + gx)
         elif edge == "bottom":
-            res_b = max(res_b, y1f)
+            res_b = max(res_b, y1f + gy)
         else:  # top
-            res_t = max(res_t, 1.0 - y0f)
+            res_t = max(res_t, 1.0 - y0f + gy)
     return _Sides(left=res_l, right=res_r, bottom=res_b, top=res_t)
+
+
+# Figure text whose centre lies in this outer band of the canvas height
+# (horizontal text) or width (vertical text) reserves that band's edge.
+# The centre is rebuilt from a pixel bbox, so text placed exactly on the
+# boundary lands 1e-16 either side depending on dpi; the tolerance (in
+# figure fraction) keeps the boundary inclusive at every dpi.
+_EDGE_BAND = 0.15
+_EDGE_BAND_TOL = 1e-9
+
+_Edge: TypeAlias = Literal["left", "right", "bottom", "top"]
+
+
+def _reservation_edge(
+    fig: Figure, art: Any, x0f: float, x1f: float, y0f: float, y1f: float
+) -> _Edge:
+    """Pick the figure edge a figure-level artist reserves space on.
+
+    The nearest edge by distance put a left-aligned suptitle at the
+    top-left corner on the *left* edge and pushed the whole grid right.
+    So roles come first: the suptitle reserves the top, the sup x/y labels
+    the bottom/left, each while it sits on that half of the canvas. Other
+    text in an outer ``_EDGE_BAND`` reserves along its reading direction:
+    horizontal text (a subtitle, a source note) the top or bottom band,
+    vertical text the left or right band. Everything else, legends
+    included, keeps the nearest edge.
+    """
+    xc, yc = (x0f + x1f) / 2, (y0f + y1f) / 2
+    roles: tuple[tuple[str, _Edge, bool], ...] = (
+        ("_suptitle", "top", yc >= 0.5),
+        ("_supxlabel", "bottom", yc < 0.5),
+        ("_supylabel", "left", xc < 0.5),
+    )
+    for attr, edge, on_side in roles:
+        if on_side and art is getattr(fig, attr, None):
+            return edge
+    get_rotation = getattr(art, "get_rotation", None)
+    if get_rotation is not None:
+        vertical = 45.0 <= get_rotation() % 180.0 <= 135.0
+        centre = xc if vertical else yc
+        if centre <= _EDGE_BAND + _EDGE_BAND_TOL:
+            return "left" if vertical else "bottom"
+        if centre >= 1.0 - _EDGE_BAND - _EDGE_BAND_TOL:
+            return "right" if vertical else "top"
+    dists: dict[_Edge, float] = {
+        "left": x0f,
+        "right": 1.0 - x1f,
+        "bottom": y0f,
+        "top": 1.0 - y1f,
+    }
+    return min(dists, key=lambda k: dists[k])
+
+
+# Most rounds of re-anchoring and title lifting per layout step. Matplotlib
+# re-places an auto-positioned title on every draw (above top tick labels,
+# say), so a lift can need a second round after the redraw; a third round
+# would only confirm that nothing moves.
+_SETTLE_ROUNDS: int = 3
+
+
+def _legend_extents_above(ax: Axes, renderer: RendererBase) -> list[Bbox]:
+    """Return the extents of the legends of ``ax`` and its twins that sit above it.
+
+    A legend sits above when its vertical centre is above the top of the
+    Axes box — a raw ``ax.legend(loc="lower center", bbox_to_anchor=(0.5,
+    1.0))`` as well as ``dm.place_legend(ax, loc="above")``. Legends of
+    other panels and figure legends are not included.
+    """
+    try:
+        top = ax.get_window_extent(renderer).y1
+    except _BBOX_ERRORS:
+        return []
+    extents: list[Bbox] = []
+    for owner in same_position_axes(ax):
+        legend = owner.get_legend()
+        if legend is None or not legend.get_visible():
+            continue
+        try:
+            ext = legend.get_window_extent(renderer)
+        except _BBOX_ERRORS:
+            continue
+        if ext.width > 0 and ext.height > 0 and (ext.y0 + ext.y1) / 2 > top:
+            extents.append(ext)
+    return extents
+
+
+def _lift_titles_over_legends(ax: Axes, renderer: RendererBase) -> bool:
+    """Raise the titles of ``ax`` above a legend that sits above it.
+
+    A title that overlaps such a legend horizontally (within the title pad)
+    and is not wholly below it gets the pad that puts its baseline
+    ``axes.titlepad`` points above the legend's top, the same gap the
+    preset leaves between a title and the Axes. All three title slots take
+    the new pad so they keep one baseline. Only the title offset changes:
+    text, font size and weight stay. A pad already large enough is kept.
+    Returns whether a pad changed.
+    """
+    titles = [
+        title
+        for title in axes_titles(ax).values()
+        if title.get_visible() and title.get_text().strip()
+    ]
+    root = ax.get_figure(root=True)
+    if not titles or root is None:
+        return False
+    legends = _legend_extents_above(ax, renderer)
+    if not legends:
+        return False
+    gap_px = float(mpl.rcParams["axes.titlepad"]) * root.dpi / 72.0
+    pad_px = 0.0
+    needed_px = 0.0
+    for title in titles:
+        try:
+            ext = title.get_window_extent(renderer)
+        except _BBOX_ERRORS:
+            continue
+        position = title.get_position()
+        base_y = ax.transAxes.transform(position)[1]
+        own_pad = title.get_transform().transform(position)[1] - base_y
+        pad_px = max(pad_px, own_pad)
+        for legend in legends:
+            side_by_side = (
+                ext.x1 <= legend.x0 - gap_px or ext.x0 >= legend.x1 + gap_px
+            )
+            if side_by_side or ext.y1 <= legend.y0:
+                continue
+            needed_px = max(needed_px, legend.y1 + gap_px - base_y)
+    if needed_px <= pad_px + 0.5:
+        return False
+    offset = ScaledTranslation(0.0, needed_px / root.dpi, root.dpi_scale_trans)
+    for title in axes_titles(ax).values():
+        title.set_transform(ax.transAxes + offset)
+    return True
+
+
+def _settle_outside_legends(fig: Figure, renderer: RendererBase) -> bool:
+    """Re-anchor ``dm.place_legend`` outside legends, then lift titles over legends.
+
+    Runs on every Axes of ``fig`` before the layout measures it, so a
+    legend placed before its axis labels existed moves past them and a
+    title never sits on a legend above its Axes. Returns whether anything
+    moved (the caller redraws before measuring).
+    """
+    moved = False
+    for ax in fig.axes:
+        legend = ax.get_legend()
+        if legend is not None and reanchor_outside(legend, ax, renderer):
+            moved = True
+    for ax in fig.axes:
+        if _lift_titles_over_legends(ax, renderer):
+            moved = True
+    return moved
 
 
 def _solve_layout_step(
@@ -745,9 +1017,12 @@ def _solve_layout_step(
     1. Draws the canvas so artist bboxes are populated.
     2. Optionally adopts the axis-label font on orphan-label axes
        (so the measurement reflects the post-restyle ticks).
-    3. Measures the content overhang of every target axes and the room
+    3. Re-anchors outside legends and lifts titles over legends above
+       their axes (:func:`_settle_outside_legends`), redrawing after a
+       move.
+    4. Measures the content overhang of every target axes and the room
        figure-level artists reserve.
-    4. Hands those measurements to the pure :func:`_solve_edges`.
+    5. Hands those measurements to the pure :func:`_solve_edges`.
 
     The caller writes the returned edges into the GridSpec and decides
     whether to stop iterating based on ``delta_px``.
@@ -759,6 +1034,11 @@ def _solve_layout_step(
     if adopt_orphan_tick_font:
         _adopt_axis_label_font_core(fig)
     renderer = get_renderer(fig)
+    for _round in range(_SETTLE_ROUNDS):
+        if not _settle_outside_legends(fig, renderer):
+            break
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
     fbox = fig.bbox
     fw_px, fh_px = fbox.width, fbox.height
 

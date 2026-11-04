@@ -91,6 +91,10 @@ class TestFetchGithubDocumentSSRF:
 
 
 class TestColorTools:
+    """Color lookup and mixing tools return unknown names and bad ratios as error
+    text instead of raising.
+    """
+
     def setup_method(self) -> None:
         m = _tools_map()
         self.get_color = m["get_color_value"]

@@ -78,6 +78,7 @@ ax.annotate(
     xy=(peak_idx, y_primary[peak_idx]),
     xytext=(peak_idx - 5, y_primary[peak_idx] + 12),
     fontsize=dm.fs(-1),
+    fontweight=dm.fw(1),
     ha="left",
     color=primary_color,
     arrowprops={"arrowstyle": "->", "color": primary_color, "lw": 0.5},

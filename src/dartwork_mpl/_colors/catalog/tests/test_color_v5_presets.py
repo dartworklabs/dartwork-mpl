@@ -1,4 +1,6 @@
 # tests/test_color_v5_presets.py
+"""Default color cycle and image colormap that the bundled presets install."""
+
 from __future__ import annotations
 
 import matplotlib as mpl

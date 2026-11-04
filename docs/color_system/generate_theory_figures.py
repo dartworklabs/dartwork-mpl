@@ -126,6 +126,7 @@ def neutral_tone(h: str) -> float:
 
 
 def de_ok(a: str, b: str) -> float:
+    """Return the OKLab Euclidean distance between two hex colors, scaled by 100."""
     return (
         math.dist(CONV._srgb_to_oklab(rgb(a)), CONV._srgb_to_oklab(rgb(b)))
         * 100
@@ -133,20 +134,29 @@ def de_ok(a: str, b: str) -> float:
 
 
 def de2000(a: str, b: str) -> float:
+    """Return the CIEDE2000 difference between two hex colors."""
     return M.de2000_hex(a, b)
 
 
 def de76(a: str, b: str) -> float:
+    """Return the CIE76 difference (CIELAB Euclidean distance) between two hex colors."""
     la = M.lab_from_rgb(M.rgb_from_hex(a))
     lb = M.lab_from_rgb(M.rgb_from_hex(b))
     return math.sqrt(sum((x - y) ** 2 for x, y in zip(la, lb, strict=True)))
 
 
 def cvd(h: str, kind: str) -> str:
+    """Return ``h`` as seen under the named color-vision deficiency, as hex.
+
+    ``kind`` is a simulation name understood by the metrics module, such as
+    ``"deutan"``, ``"protan"``, ``"tritan"``, or ``"gray"`` for a neutral
+    with the same modeled relative Y.
+    """
     return M.hex_from_rgb(M.cvd_rgb(M.rgb_from_hex(h), kind))
 
 
 def oklch(h: str) -> tuple[float, float, float]:
+    """Return ``(L, C, h)`` of a hex color in OKLCH, with hue in degrees."""
     return CONV._oklab_to_oklch_degrees(*CONV._srgb_to_oklab(rgb(h)))
 
 
@@ -192,6 +202,11 @@ GAM, DH, H0, C0, CE, TP, CMAX = "γ", "Δh", "h₀", "c₀", "c_end", "t_p", "C_
 
 
 def title(fig, text, top=0.84, y=0.965, fs=2.3, **adj):
+    """Set a bold, left-aligned figure title and reserve ``top`` for it.
+
+    Extra keyword arguments go to ``fig.subplots_adjust``; ``fs`` is a
+    :func:`dartwork_mpl.fs` offset.
+    """
     fig.subplots_adjust(top=top, **adj)
     fig.suptitle(
         text, fontsize=dm.fs(fs), fontweight="bold", x=0.012, ha="left", y=y
@@ -241,6 +256,11 @@ def save(fig, name: str, output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 1 · neutral tone and modeled Y
 def fig_lightness_weber(output_dir: Path) -> None:
+    """Render theory figure 1, even neutral-tone steps against even modeled-relative-Y steps.
+
+    Computed from the shipped package and saved as ``theory_1_lightness_weber.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     fig, axs = plt.subplots(2, 1, figsize=dm.figsize("15cm", 0.42))
     n = 12
     tones = np.linspace(0.18, 0.98, n)
@@ -293,6 +313,11 @@ def fig_lightness_weber(output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 2 · hue-specific output floor
 def fig_floor(output_dir: Path) -> None:
+    """Render theory figure 2, the authored hue-specific dark endpoint of each family.
+
+    Computed from the shipped package and saved as ``theory_2_floor.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     fams = [
         "yellow",
         "orange",
@@ -372,6 +397,11 @@ def fig_floor(output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 3 · drift power law
 def fig_drift(output_dir: Path) -> None:
+    """Render theory figure 3, hue drift along each family's lightness path.
+
+    Computed from the shipped package and saved as ``theory_3_drift.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     fig, axs = plt.subplots(
         1,
         2,
@@ -431,6 +461,11 @@ def fig_drift(output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 4 · chroma fingerprint
 def fig_chroma(output_dir: Path) -> None:
+    """Render theory figure 4, the per-hue chroma peak fit and the shared chroma shape.
+
+    Computed from the shipped package and saved as ``theory_4_chroma.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     fig, axs = plt.subplots(1, 2, figsize=dm.figsize("15cm", 0.46))
     ax = axs[0]
     coefficients = FOURIER["cmax_k3"]
@@ -516,6 +551,11 @@ def fig_chroma(output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 5 · step spacing
 def fig_spacing(output_dir: Path) -> None:
+    """Render theory figure 5, equalized ΔEOK step spacing against naive linear steps.
+
+    Computed from the shipped package and saved as ``theory_5_spacing.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     fig, axs = plt.subplots(
         2,
         1,
@@ -589,6 +629,11 @@ def fig_spacing(output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 6 · metric reform
 def fig_metric(output_dir: Path) -> None:
+    """Render theory figure 6, a CIEDE2000 regression check under a named deutan simulation.
+
+    Computed from the shipped package and saved as ``theory_6_metric.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     a, b = PALETTE["blue"][7], PALETTE["violet"][7]
     fig, axs = plt.subplots(
         1,
@@ -706,6 +751,11 @@ def fig_metric(output_dir: Path) -> None:
 
 # ══════════════════════════════════════ 7 · sequential OKLab L and modeled Y
 def fig_dcseq(output_dir: Path) -> None:
+    """Render theory figure 7, aurora against viridis on 32 stops, with lightness profiles.
+
+    Computed from the shipped package and saved as ``theory_7_dcseq.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     import matplotlib as mpl
 
     seq = [CMAPS["aurora"][round(i * 255 / 31)] for i in range(32)]
@@ -830,6 +880,11 @@ def fig_dcseq(output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 8 · recipe anatomy
 def fig_anatomy(output_dir: Path) -> None:
+    """Render theory figure 8, the construction of the yellow family ladder.
+
+    Computed from the shipped package and saved as ``theory_8_anatomy.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     fam = "yellow"
     p = PARAMS[fam]
     row = PALETTE[fam]
@@ -974,6 +1029,11 @@ def _grad(ax, hexes, y, label, h=0.82):
 
 
 def fig_catalog(output_dir: Path) -> None:
+    """Render theory figure 9, the catalog of every shipped colormap by group.
+
+    Computed from the shipped package and saved as ``theory_9_cmap_catalog.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     groups = [
         ("Single-hue 20 — family name as-is", [*R.FAMILIES, "gray"]),
         (
@@ -1053,6 +1113,11 @@ def fig_catalog(output_dir: Path) -> None:
 
 # ══════════════════════════════════════════════ 10 · cyclic demo
 def fig_cyclic_demo(output_dir: Path) -> None:
+    """Render theory figure 10, why phase data needs a cyclic colormap.
+
+    Computed from the shipped package and saved as ``theory_10_cyclic_demo.svg`` in
+    ``output_dir`` through :func:`save`.
+    """
     xx, yy = np.meshgrid(np.linspace(-3, 3, 220), np.linspace(-2, 2, 150))
     phase = (np.arctan2(yy, xx) + 0.6 * np.sin(np.hypot(xx, yy) * 1.5)) % (
         2 * np.pi

@@ -18,29 +18,43 @@ from pydantic import (
 )
 
 from dartwork_mpl.ui._boundary import ROUTE_POLICY
-from dartwork_mpl.ui.params import InvalidRequest, ModelRequest, ParamModel
-from dartwork_mpl.ui.params._descriptors import descriptors_from_model
+from dartwork_mpl.ui.params import (
+    InvalidRequest,
+    ModelRequest,
+    ParamModel,
+    parse_model_request,
+)
+from dartwork_mpl.ui.params._descriptors import controls_from_model
 from dartwork_mpl.ui.platform import json_bounds
-from dartwork_mpl.ui.render._routes import parse_request as render_request
 from dartwork_mpl.ui.saving import (
+    AutoNamedSave,
     InvalidOutput,
+    NamedSave,
     RelativeOutput,
     SaveInputFailure,
-    SaveRequest,
     parse_output,
+    parse_save_request,
+    requested_name,
 )
-from dartwork_mpl.ui.script._routes import parse_request as script_request
 from dartwork_mpl.ui.state._language import (
+    FigWidth,
+    FullStateUpdate,
     InvalidStoredState,
+    ParamsUpdate,
+    Preset,
     PresetRequest,
-    StateRequest,
     StoredConfig,
     StoredPresets,
+    Tab,
     encode_state,
-    parse_stored,
-    project_stored,
+    parse_config,
+    parse_full_state_update,
+    parse_params_update,
+    parse_preset_request,
+    parse_presets,
+    project_config,
+    project_presets,
 )
-from dartwork_mpl.ui.state._language import parse_request as state_request
 
 
 class Params(ParamModel):
@@ -104,24 +118,27 @@ class ValidatedParams(ParamModel):
         return value
 
 
-# Each sub-slice parses its own routes; an unknown route is refused by any.
+# The body parser each route calls (no parser dispatches on a route string).
 PARSERS = {
-    "/api/render": render_request,
-    "/api/export/{fmt}": render_request,
-    "/api/save-server/image/{fmt}": render_request,
-    "/api/script": script_request,
-    "/api/save-server/script": script_request,
+    "/api/render": parse_model_request,
+    "/api/export/{fmt}": parse_model_request,
+    "/api/save-server/image/{fmt}": parse_save_request,
+    "/api/script": parse_model_request,
+    "/api/save-server/script": parse_save_request,
+    "/api/config": parse_params_update,
+    "/api/save-state": parse_full_state_update,
+    "/api/preset": parse_preset_request,
 }
 
 
 def parse_request(route, value, model, descriptors):
-    """Dispatch to the parser of the sub-slice that owns ``route``."""
-    return PARSERS.get(route, state_request)(route, value, model, descriptors)
+    """Parse ``value`` with the parser of the route ``route``."""
+    return PARSERS[route](value, model, descriptors)
 
 
 def request(value, route="/api/render", model=Params):
     """Exercise the public pure parser with actual UI descriptors."""
-    return parse_request(route, value, model, descriptors_from_model(model))
+    return parse_request(route, value, model, controls_from_model(model))
 
 
 def test_active_fields_closed_even_when_model_extra_allows():
@@ -163,7 +180,7 @@ def test_numeric_choice_strings_convert_once_to_declared_members(route, wrap):
         route=route,
         model=NumericChoiceParams,
     )
-    assert isinstance(result, (ModelRequest, StateRequest, PresetRequest)), (
+    assert isinstance(result, (ModelRequest, FullStateUpdate, PresetRequest)), (
         result
     )
     assert (result.model.ncols, type(result.model.ncols)) == (2, int)
@@ -262,9 +279,9 @@ def test_old_numeric_choice_strings_in_stored_presets_remain_usable():
     raw = json.dumps(
         [{"label": "old", "params": {"ncols": "2", "ratio": "1"}}]
     ).encode()
-    stored = parse_stored("presets", raw)
+    stored = parse_presets(raw)
     assert isinstance(stored, StoredPresets)
-    (entry,) = project_stored(
+    (entry,) = project_presets(
         stored, frozenset(NumericChoiceParams.model_fields)
     )
     assert entry["params"] == {"ncols": "2", "ratio": "1"}
@@ -429,8 +446,9 @@ def test_tab_values_are_structural_and_ids_unique():
         "figWidth": 70,
     }
     result = request(value, "/api/save-state")
-    assert isinstance(result, StateRequest)
+    assert isinstance(result, FullStateUpdate)
     assert result.tabs[0].params == {"count": "obsolete"}
+    assert result.fig_width == FigWidth(70)
     for edit in [
         {"tabs": value["tabs"] * 2},
         {"tabs": [{"id": True, "name": "x", "params": {}}]},
@@ -450,16 +468,28 @@ def test_tab_values_are_structural_and_ids_unique():
         }
         assert isinstance(
             request(body, "/api/save-state"),
-            StateRequest if count == 64 else json_bounds.LimitExceeded,
+            FullStateUpdate if count == 64 else json_bounds.LimitExceeded,
         )
 
 
 def test_complete_endpoint_shapes_and_label_limits():
     """Endpoint schemas consume every field and preserve defaults only where allowed."""
-    assert isinstance(request({}, "/api/config"), StateRequest)
+    assert isinstance(request({}, "/api/config"), ParamsUpdate)
+    full = request({}, "/api/save-state")
+    assert isinstance(full, FullStateUpdate)
+    assert (full.model.count, full.tabs, full.fig_width) == (3, (), None)
     assert isinstance(
-        request({"params": {}}, "/api/save-server/script"), SaveRequest
+        request({"params": {}}, "/api/save-server/script"), AutoNamedSave
     )
+    assert isinstance(
+        request({"params": {}, "filename": None}, "/api/save-server/script"),
+        AutoNamedSave,
+    )
+    named = request(
+        {"params": {}, "filename": "sub/out"}, "/api/save-server/script"
+    )
+    assert isinstance(named, NamedSave)
+    assert named.output == RelativeOutput(("sub", "out"))
     assert isinstance(
         request({"label": "é" * 128, "params": {}}, "/api/preset"),
         PresetRequest,
@@ -475,9 +505,31 @@ def test_complete_endpoint_shapes_and_label_limits():
         ("/api/save-server/script", {"params": {}, "filename": 1}),
         ("/api/save-server/script", {"params": {}, "other": True}),
         ("/api/render", []),
-        ("/unknown", {}),
+        ("/api/config", []),
+        ("/api/save-state", []),
+        ("/api/preset", []),
+        ("/api/save-server/image/{fmt}", []),
     ]:
         assert isinstance(request(value, route), InvalidRequest), (route, value)
+
+
+def test_requested_name_is_the_parsed_output_or_a_fresh_timestamped_name():
+    """A named save keeps its relative name; an unnamed one gets function_timestamp."""
+    model = Params()
+    output = parse_output("sub/figure")
+    assert isinstance(output, RelativeOutput)
+    assert requested_name(NamedSave(model, output), "plot") == "sub/figure"
+    first = requested_name(AutoNamedSave(model), "plot")
+    assert first.startswith("plot_")
+    assert first != requested_name(AutoNamedSave(model), "plot")
+
+
+@pytest.mark.parametrize("width", [29, 101, True, 70.0])
+def test_fig_width_rejects_values_outside_its_range(width):
+    """Only an int in 30..100 can be built; the parser refuses the rest first."""
+    with pytest.raises(ValueError):
+        FigWidth(width)
+    assert FigWidth(30).value == 30 and FigWidth(100).value == 100
 
 
 @pytest.mark.parametrize(
@@ -535,23 +587,26 @@ def test_stored_model_drift_projects_without_mutating_raw_values():
         ],
         "figWidth": 999,
     }
-    state = parse_stored("config", json.dumps(value).encode())
+    state = parse_config(json.dumps(value).encode())
     assert isinstance(state, StoredConfig)
-    projected = project_stored(state, frozenset({"count"}))
+    projected = project_config(state, frozenset({"count"}))
     assert projected["params"] == {"count": "obsolete"}
     assert projected["dropped_fields"] == ["removed"]
     assert projected["tabs"][0]["params"] == {"count": 900}
     assert projected["figWidth"] == 70
-    assert state.value == value
+    assert state.to_json() == value
     presets = [
         {"label": "Old", "params": value["params"], "timestamp": "<img>"}
     ]
-    state = parse_stored("presets", json.dumps(presets).encode())
-    assert isinstance(state, StoredPresets)
-    assert project_stored(state, frozenset({"count"}))[0]["dropped_fields"] == [
-        "removed"
-    ]
-    assert state.value == presets
+    presets_state = parse_presets(json.dumps(presets).encode())
+    assert isinstance(presets_state, StoredPresets)
+    assert project_presets(presets_state, frozenset({"count"}))[0][
+        "dropped_fields"
+    ] == ["removed"]
+    assert presets_state.to_json() == presets
+
+
+PARSE_STORED = {"config": parse_config, "presets": parse_presets}
 
 
 @pytest.mark.parametrize(
@@ -576,28 +631,72 @@ def test_stored_model_drift_projects_without_mutating_raw_values():
         ("presets", [1]),
         ("presets", [{"label": "x", "params": {}, "extra": 1}]),
         ("presets", [{"label": "x", "params": {}, "timestamp": []}]),
+        ("config", {"params": {}, "figWidth": None}),
+        ("config", {"params": {}, "function": None}),
+        ("presets", [{"label": "x", "params": {}, "timestamp": None}]),
+        ("presets", [{"label": "x" * 257, "params": {}}]),
     ],
 )
 def test_stored_structural_corruption_is_distinct_from_model_drift(kind, value):
     """Malformed persisted containers and metadata never become empty defaults."""
     assert isinstance(
-        parse_stored(kind, json.dumps(value).encode()), InvalidStoredState
+        PARSE_STORED[kind](json.dumps(value).encode()), InvalidStoredState
     )
+
+
+def test_stored_member_order_survives_projection_and_rewrite():
+    """Hand-ordered objects read back, and re-encode, in the order the file spelled them."""
+    value = {
+        "figWidth": 40,
+        "tabs": [{"params": {"count": 2}, "name": "t", "id": 7}],
+        "params": {"count": 4},
+        "function": "f",
+    }
+    state = parse_config(json.dumps(value).encode())
+    assert isinstance(state, StoredConfig)
+    projected = project_config(state, frozenset({"count"}))
+    assert list(projected) == [*value, "dropped_fields"]
+    assert list(projected["tabs"][0]) == [
+        "params",
+        "name",
+        "id",
+        "dropped_fields",
+    ]
+    entries = [{"params": {}, "timestamp": "t", "label": "old"}]
+    presets = parse_presets(json.dumps(entries).encode())
+    assert isinstance(presets, StoredPresets)
+    assert json.dumps(presets.to_json()) == json.dumps(entries)
+
+
+def test_stored_values_reject_illegal_construction():
+    """Member orders must list exactly the members; labels and preset counts keep their bounds."""
+    with pytest.raises(ValueError):
+        Tab(1, "x", {}, ("id", "name"))
+    with pytest.raises(ValueError):
+        Tab(1, "x" * 257, {})
+    with pytest.raises(ValueError):
+        Preset("x", {}, None, ("label", "params", "timestamp"))
+    with pytest.raises(ValueError):
+        StoredConfig({}, None, None, None, None, ("params", "params"))
+    with pytest.raises(ValueError):
+        StoredPresets((Preset("x", {}, None, ("label", "params")),) * 1001)
+    assert Preset("x", {}, None, ("params", "label")).to_json() == {
+        "params": {},
+        "label": "x",
+    }
 
 
 def test_stored_limits_and_outgoing_serialization_are_bounded():
     """Stored counts and encoded next-state bytes are checked before replacement."""
     entry = {"label": "x", "params": {}}
     assert isinstance(
-        parse_stored("presets", json.dumps([entry] * 1000).encode()),
-        StoredPresets,
+        parse_presets(json.dumps([entry] * 1000).encode()), StoredPresets
     )
     assert isinstance(
-        parse_stored("presets", json.dumps([entry] * 1001).encode()),
-        InvalidStoredState,
+        parse_presets(json.dumps([entry] * 1001).encode()), InvalidStoredState
     )
     assert isinstance(
-        parse_stored("config", b" " * (1024 * 1024 + 1)), InvalidStoredState
+        parse_config(b" " * (1024 * 1024 + 1)), InvalidStoredState
     )
     expected = b'{\n  "params": {}\n}\n'
     result = encode_state({"params": {}}, max_bytes=len(expected))

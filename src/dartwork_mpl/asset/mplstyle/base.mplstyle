@@ -154,3 +154,7 @@ pdf.fonttype:      42       # Embed TrueType fonts in PDF output
 # global mapping on package import, before Style.stack() parses this file.
 axes.prop_cycle: cycler('color', ['dc.blue6', 'dc.orange9', 'dc.green5', 'dc.pink3', 'dc.amber7', 'dc.violet8', 'dc.cyan8', 'dc.rose8'])
 image.cmap: dc.aurora
+
+# Date axes nobody formatted read "2024, Mar, May … 2025" (ConciseDateFormatter)
+# instead of "2024-01, 2024-03 …", whose labels collide at column widths.
+date.converter: concise

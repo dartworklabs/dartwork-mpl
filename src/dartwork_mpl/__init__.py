@@ -69,11 +69,13 @@ from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
 from .annotation import (
+    add_note,
     annotate_corner,
     annotate_value,
     arrow_axis,
     label_axes,
     label_hline,
+    label_line_ends,
     make_offset,
     place_legend,
     wrap_axis_label,
@@ -91,6 +93,7 @@ from .formatting import (
     avoid_tick_overlap,
     format_axis_billions,
     format_axis_currency,
+    format_axis_dates,
     format_axis_millions,
     format_axis_myriad,
     format_axis_si,
@@ -160,8 +163,12 @@ from .units import (
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
 # docs/development/api-stability.md. ``figsize_for`` (the preset's default
-# canvas) and ``grid_shape`` may still change their kinds, tiers and layouts.
-EXPERIMENTAL: frozenset[str] = frozenset({"figsize_for", "grid_shape"})
+# canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
+# ``add_note`` (a source line in the preset's note style) its placement;
+# ``label_line_ends`` (line names instead of a legend) its spacing and colour.
+EXPERIMENTAL: frozenset[str] = frozenset(
+    {"add_note", "figsize_for", "grid_shape", "label_line_ends"}
+)
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
 # These wrap the lower-level primitives above so that AI agents and
@@ -263,6 +270,7 @@ __all__ = [  # noqa: RUF022
     "format_axis_millions",
     "format_axis_myriad",
     "format_axis_year",
+    "format_axis_dates",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_si",
@@ -275,9 +283,11 @@ __all__ = [  # noqa: RUF022
     "show",
     # Axes annotation
     "annotate_value",
+    "add_note",
     "annotate_corner",
     "label_axes",
     "label_hline",
+    "label_line_ends",
     "place_legend",
     "wrap_axis_label",
     "wrap_axis_labels",

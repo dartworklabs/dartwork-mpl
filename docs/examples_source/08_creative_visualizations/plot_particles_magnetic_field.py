@@ -35,6 +35,11 @@ dipoles = [
 
 
 def magnetic_field(x, y, dipoles):
+    """Return the summed dipole field ``(Bx, By)`` at points ``x``, ``y``.
+
+    Each dipole is a dict with ``pos``, ``moment`` and ``strength``. Distances
+    are offset by 0.01 so the field stays finite at a dipole's position.
+    """
     Bx, By = 0, 0
     for dipole in dipoles:
         dx = x - dipole["pos"][0]

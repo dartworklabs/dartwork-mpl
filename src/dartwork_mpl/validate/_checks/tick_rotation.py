@@ -130,8 +130,9 @@ def check_tick_rotation(
                     severity=Severity.INFO,
                     check_id="TICK_ROTATION",
                     message=(
-                        f"X-axis[{axes_index}]: 라벨 겹침 — "
-                        "45° 회전 또는 틱 수 축소 권장"
+                        f"X-axis[{axes_index}]: 라벨 겹침 — 날짜면 "
+                        "dm.format_axis_dates(ax, dates), 아니면 눈금 수 "
+                        "축소, 45° 회전은 마지막 수단"
                     ),
                     detail=wire(
                         TickRotationNeededDetail(
@@ -149,11 +150,23 @@ def check_tick_rotation(
 
 @register_fix("TICK_ROTATION")
 def _fix_tick_rotation(warning: VisualWarning) -> list[str]:
-    """Rotate to the recommended angle (default 45) or thin the ticks."""
+    """Suggest the fix for the warning's direction.
+
+    Rotated labels that fit flat: rotate back to the recommended angle (0).
+    Flat labels that overlap: date labels first (the library's date words,
+    thinned by ``dm.simple_layout``), then fewer ticks, rotation last.
+    """
     rotation = number(warning.detail, "recommended_rotation", 45)
-    return [
+    rotate = (
         "# Adjust x tick label rotation\n"
-        f"dm.rotate_tick_labels(ax, axis='x', rotation={rotation})",
-        "# Or reduce tick density\n"
+        f"dm.rotate_tick_labels(ax, axis='x', rotation={rotation})"
+    )
+    if rotation == 0:
+        return [rotate]
+    return [
+        "# Dates under bars: the library's date words, thinned to fit\n"
+        "dm.format_axis_dates(ax, dates)",
+        "# Other categories: fewer ticks\n"
         "ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=6))",
+        "# Last resort: rotate\n" + rotate.split("\n", 1)[1],
     ]

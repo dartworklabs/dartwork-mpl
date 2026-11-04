@@ -57,6 +57,8 @@ def _tools_map() -> dict:
 
 
 class TestRenderTemplate:
+    """``render_template`` renders a real figure as base64 PNG or to a file path."""
+
     def setup_method(self) -> None:
         self.render = _tools_map()["render_template"]
 
@@ -74,6 +76,10 @@ class TestRenderTemplate:
 
 
 class TestValidateGeneratedPlot:
+    """``validate_generated_plot`` renders clean code, stops on critical lint
+    and reports code that makes no figure.
+    """
+
     def setup_method(self) -> None:
         self.validate = _tools_map()["validate_generated_plot"]
 
@@ -98,6 +104,8 @@ class TestValidateGeneratedPlot:
 
 
 class TestComposeLayeredPlot:
+    """``compose_layered_plot`` returns code and layers, or a status for bad input."""
+
     def setup_method(self) -> None:
         self.compose = _tools_map()["compose_layered_plot"]
 
@@ -118,6 +126,8 @@ class TestComposeLayeredPlot:
 
 
 class TestRenderTemplateAdvanced:
+    """``render_template_advanced`` renders or falls back, and reports unknown ids."""
+
     def setup_method(self) -> None:
         self.render_adv = _tools_map()["render_template_advanced"]
 

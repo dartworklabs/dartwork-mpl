@@ -15,7 +15,6 @@ import stat
 import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import cast
 
 from .._ssot import load_color_v6_ssot
 from ._catalog import CatalogSnapshot
@@ -63,10 +62,7 @@ def _fmt_multi_hue_indices(
 def render_generated(candidate: CatalogSnapshot) -> str:
     """Render the complete expected generated module without side effects."""
     authority = load_color_v6_ssot()
-    multi_hue_indices = cast(
-        Mapping[str, Mapping[str, Sequence[int]]],
-        authority["multi_hue_discrete_indices"],
-    )
+    multi_hue_indices = authority.multi_hue_discrete_indices
     body = (
         _fmt("PALETTE", candidate.palette)
         + "\n"

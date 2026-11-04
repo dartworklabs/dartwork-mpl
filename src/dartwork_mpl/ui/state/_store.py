@@ -1,7 +1,7 @@
 """The two fixed viewer-state files: bounded bytes under the primary root, locked per process.
 
-This layer knows no JSON or model schema. ``.dartwork_ui_config.json`` and
-``.dartwork_ui_presets.json`` are the only names; replacement is an atomic
+This layer knows no JSON or model schema. The ``StateFile`` names are the
+only names it opens; replacement is an atomic
 sibling rename of a private (0600) staging file. An editor can refuse
 malformed state before replacement; separate processes can still lose
 updates to one another.
@@ -14,13 +14,13 @@ import threading
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TypeAlias
+from typing import TypeAlias, TypeVar
 
-from ..params import InputFailure
 from ..platform import fs
 from ..platform.fs import FileIOFailure, FsFailure, PartialSave, RootScope
 from ..platform.json_bounds import LimitExceeded
-from ._language import InvalidStoredState, StateKind
+from ._files import StateFile
+from ._language import InvalidStoredState
 
 FileFailure: TypeAlias = FsFailure | InvalidStoredState | LimitExceeded
 
@@ -30,7 +30,10 @@ class StateUnchanged:
     """An editor completed its locked decision without changing persisted bytes."""
 
 
-StateEditRefusal: TypeAlias = InvalidStoredState | InputFailure | StateUnchanged
+# The outcomes, other than new bytes, one editor can return (for example
+# InvalidStoredState, an InputFailure or StateUnchanged); ``update`` passes
+# them through unchanged.
+_EditOutcome = TypeVar("_EditOutcome")
 
 
 def _replace_state(parent_fd: int, staging: str, destination: str) -> None:
@@ -55,15 +58,6 @@ class StateWritten:
     """The complete next bytes replaced one fixed viewer-owned state name."""
 
 
-def _state_name(kind: StateKind) -> str:
-    """Resolve the two trusted kinds without admitting request-selected filenames."""
-    if kind == "config":
-        return ".dartwork_ui_config.json"
-    if kind == "presets":
-        return ".dartwork_ui_presets.json"
-    raise ValueError("Unknown fixed state kind")
-
-
 class FixedStateStore:
     """Bounded fixed-name bytes under a root, with process-wide read/edit/write locks.
 
@@ -76,7 +70,7 @@ class FixedStateStore:
         self._roots = roots
 
     def read(
-        self, kind: StateKind, *, max_bytes: int
+        self, file: StateFile, *, max_bytes: int
     ) -> bytes | MissingState | FileFailure:
         """Read at most the bound plus one byte, refusing symlinks/nonregular state."""
         with _STATE_LOCK:
@@ -87,7 +81,7 @@ class FixedStateStore:
             fd: int | None = None
             try:
                 fd = os.open(
-                    _state_name(kind),
+                    file.value,
                     os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
                     dir_fd=root.fd,
                 )
@@ -112,17 +106,19 @@ class FixedStateStore:
 
     def update(
         self,
-        kind: StateKind,
+        file: StateFile,
         *,
         max_bytes: int,
-        edit: Callable[[bytes | MissingState], bytes | StateEditRefusal],
-    ) -> StateWritten | StateEditRefusal | FileFailure:
+        edit: Callable[[bytes | MissingState], bytes | _EditOutcome],
+    ) -> StateWritten | _EditOutcome | LimitExceeded | FileFailure:
         """Lock read/edit/bound/staging/replacement; refused edits preserve old bytes.
 
-        Staging is created private (0600), so the replaced state stays private.
+        Returns the editor's own non-bytes outcome unchanged, so a caller sees
+        only the outcomes its editor can produce. Staging is created private
+        (0600), so the replaced state stays private.
         """
         with _STATE_LOCK:
-            previous = self.read(kind, max_bytes=max_bytes)
+            previous = self.read(file, max_bytes=max_bytes)
             if not isinstance(previous, (bytes, MissingState)):
                 return previous
             proposed = edit(previous)
@@ -134,7 +130,7 @@ class FixedStateStore:
             refusal = fs.verify_root(self._roots, root)
             if refusal is not None:
                 return refusal
-            name = _state_name(kind)
+            name = file.value
             staging = f"{name}.{uuid.uuid4().hex}.tmp"
             fd: int | None = None
             identity: tuple[int, int] | None = None
@@ -153,7 +149,7 @@ class FixedStateStore:
                     result = refusal
                 else:
                     # Re-check the name to refuse a controlled late symlink/device.
-                    current = self.read(kind, max_bytes=max_bytes)
+                    current = self.read(file, max_bytes=max_bytes)
                     if not isinstance(current, (bytes, MissingState)):
                         result = current
                     else:

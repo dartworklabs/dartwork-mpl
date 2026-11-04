@@ -8,7 +8,6 @@ the filesystem has been checked. Surface (through the ``saving`` package):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 MAX_OUTPUT_BYTES = 1024
 
@@ -18,8 +17,6 @@ class InvalidOutput:
     """An output name cannot denote a safe portable relative path."""
 
     detail: str = "Filename must be a bounded safe relative path."
-    status_code: ClassVar[int] = 400
-    code: ClassVar[str] = "invalid_output_path"
 
 
 def _output_parts(filename: str) -> tuple[str, ...] | None:

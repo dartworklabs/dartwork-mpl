@@ -32,7 +32,7 @@ replace explicit sizes with template dimensions or a default.
 |---|---|---|
 | paper, journal, 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
 | report, document, dashboard, 보고서, 문서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
-| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 12 / 16 / 19 / 22.5 cm for a chart on a slide; `dm.figsize_for("slide")`: 25.4 cm at 16:9 for a whole slide |
+| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 10.5 cm tall under a 16:9 slide's title; wide 11.4 cm for up to 4 x positions, 15.4 cm up to 6, 23.4 cm for more, 4+ series or a second y axis; `"compact"` 11.4 cm for two charts side by side; `dm.figsize_for("full_slide")` (25.4 × 14.29 cm) only for a whole 16:9 slide with no title |
 
 These are defaults, not caps or journal/slide standards: any size the user, a
 journal or a template names wins, through `dm.figsize`. `dm.figsize_for(kind,
@@ -40,6 +40,9 @@ n_points=, n_series=, dual_axis=, nrows=, ncols=)` picks the width from the
 kind (`"barh"`, `"matrix"`, `"slide"`, ...) and the data density, and
 `dm.grid_shape(n)` lays out `n` small multiples; both are provisional
 (`dm.EXPERIMENTAL`). Reuse the recommender/templates for the chart type.
+`presentation` is `scientific` with every point size × 2.6 (text, lines,
+markers, ticks, pads): a slide chart looks like a column figure enlarged to
+the slide, and every slide chart has the same text size whatever its width.
 Plot text is English unless the user asks for another language; a Korean
 conversation alone does not make it Korean. Korean text on the figure,
 requested or from the data, takes a `-kr` preset. Edits keep the figure's language.
@@ -49,6 +52,29 @@ does not name: "add a title" is `ax.set_title(text)` with the preset's title
 size and weight; "add gridlines" is `ax.grid(True, axis=...)` with the
 preset's grid colour and width; "20 cm wide" is `dm.figsize("20cm")` at the
 default 4:3 (an edit keeps the existing height). Named details win exactly.
+
+Details nobody named are the library's, so every agent draws the same figure:
+no value labels on bars or lines unless asked; axis limits stay matplotlib's
+(bars start at 0, lines keep the data margins);
+bars are vertical, `ax.barh` with `dm.figsize_for("barh")` only when the
+category names would overlap side by side; dates under bars go through
+`dm.format_axis_dates(ax, dates)`, not rotated labels; an axis label is the
+column name word for word (`margin_pct` → `Margin (%)`), also when the request
+words it otherwise; only a value with no column takes the request's noun
+word for word and in its order (`수출 증가율` → `Export growth rate`, "the share of
+online orders" → `Share of online orders`), with no unit the data or request does not
+state (a rate the data gives stays bare, no `(%)`; a share you compute and
+scale by 100 says `(%)`); a bare year (2012) stays a number, not a date; a legend added, moved
+or merged (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=`
+only for a side the user names, not `ax.legend(...)` with `bbox_to_anchor`,
+and a legend nobody asked about stays as it is unless the edit makes it
+overlap other text (`LEGEND_OVERLAP` the original did not have; one it had
+stays and is reported): then `dm.place_legend(ax)` on its axes,
+with its own arguments, moves it (not wider spacing or a smaller font) and
+the change list says so. A "look better" pass that shrinks touching value labels to
+`dm.fs(-1)` also gives them `dm.fw(1)` when their call writes no weight, and
+keeps the axis limits. Moving a figure to slides takes `dm.figsize_for(...)`
+and multiplies pt values written in its code by 2.6, unrounded.
 
 Ask **one short, self-contained question** only when missing information
 materially affects the result, for example “Is this paper figure single- or
@@ -195,7 +221,8 @@ style, canvas, legend and preset; do not add unsolicited palette/legend changes.
 Apply the preset first, then retained overrides, then local artist edits.
 
 - For preset-relative defaults use `dm.fs(n)`, `dm.lw(n)`, `dm.fw(n)`.
-  `fs` = global `font.size` + `n` pt; `lw` = global `lines.linewidth` + `n` pt;
+  `fs` = global `font.size` + `n` steps; `lw` = global `lines.linewidth` + `n`
+  steps. A step is 1 pt, 2.6 pt under `presentation` (`dm.fs(1) - dm.fs(0)`);
   `fw` = global `font.weight` + `100*n`. Fractional offsets are accepted.
   These helpers do not read an artist's current value or a role-specific base.
 - For relative-to-current edits use the target's getter plus the requested

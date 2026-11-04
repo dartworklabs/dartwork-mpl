@@ -1,3 +1,7 @@
+"""Every script in ``examples/`` runs to completion under the Agg backend
+against the in-repo ``src`` package.
+"""
+
 from __future__ import annotations
 
 import os

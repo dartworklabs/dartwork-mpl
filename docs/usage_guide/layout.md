@@ -351,6 +351,7 @@ requested margin from each figure edge. This means:
 | `annotate_corner(ax, s)`      | Adds spine-tight narrative notes in the least obstructed corner |
 | `label_hline(ax, y, s)`       | Attaches text tightly to a horizontal reference-line endpoint  |
 | `place_legend(ax)`            | Places legends around data/text obstacles and can raise ncol   |
+| `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels; `simple_layout` keeps titles above it |
 | `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |
@@ -365,11 +366,36 @@ dartwork-mpl includes several helpers that automate tedious formatting tasks.
 
 Manually positioning `(a)`, `(b)`, `(c)` labels across panels with different y-axis label lengths often results in misaligned text. `dm.label_axes(axes)` calculates the bounding boxes of your y-labels and perfectly aligns the panel labels to the leftmost edge.
 
+Panels with a left-aligned title (`ax.set_title(..., loc="left")`) get the
+letter on the title's line, just before the title (`a  Line A`), and it moves
+with the title; a centre title moves the letter only when it would touch it.
+Set the titles first. An explicit `x=` keeps the old fixed position.
+
 **Interactive visualizer — drag the slider to compare:**
 
 ```{raw} html
 :file: images/label_axes_slider.html
 ```
+
+### Tick numbers and dates you did not format
+
+`dm.simple_layout(fig)` settles the numbers of every axis still on
+matplotlib's default formatter, so the same data reads the same in every
+figure:
+
+| Axis | Ticks |
+|---|---|
+| reaches 1,000 | `0, 250 … 1,750`; `24,000 … 34,000` |
+| reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
+| below 1,000, or an x axis of years | unchanged: `0, 250 … 750`; `2012, 2014` |
+| dates (every preset) | `2024, Mar, May … 2025` (`date.converter: concise`) |
+| dates, Korean axis labels, titles or legend | `2024년, 3월, 5월 … 2025년` |
+| dates on a narrow axis | fewer ticks until labels are one em apart: `2021, Jul, 2022 …` |
+
+Log, category and colorbar axes and any axis with a formatter you set keep
+theirs; a date axis with a locator you set or rotated labels keeps its ticks. `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's
+numbers; `dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k`
+or `0.25억` when you want units on the ticks.
 
 ### Consistent tick decimals (`set_decimal`)
 

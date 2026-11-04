@@ -215,6 +215,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl._colors.verify", "dartwork_mpl._colors._ssot"): (
         "the gates read the quality baseline the validated authority pins"
     ),
+    ("dartwork_mpl.annotation", "dartwork_mpl._colors.contrast"): (
+        "line-end labels keep their line's colour at a readable contrast"
+    ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
     ),
@@ -247,6 +250,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.config"): (
         "layout follows the user's tick-label font adoption setting"
+    ),
+    ("dartwork_mpl.layout", "dartwork_mpl.formatting"): (
+        "layout writes the library's tick numbers before measuring them"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.units"): (
         "margins are given as physical lengths"
@@ -314,6 +320,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.templates", "dartwork_mpl.prompt"): (
         "find_template ranks the prompt corpus's bundled template index"
     ),
+    ("dartwork_mpl.scale", "dartwork_mpl.style"): (
+        "the active preset sets how many points one fs / lw step adds (2.6 on slides)"
+    ),
     ("dartwork_mpl.style", "dartwork_mpl._colors.registry"): (
         "a preset switch re-applies the locale's semantic colour tokens"
     ),
@@ -338,6 +347,10 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.ui", "dartwork_mpl.ui.render"): (
         "the viewer mounts the preview, download and image-save routes"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.saving"): (
+        "the viewer's HTTP edge answers a refused save name with its status"
+        " and code"
     ),
     ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
         "the dartwork-mpl-ui init command copies the scaffold project"

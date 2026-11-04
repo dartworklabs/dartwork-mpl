@@ -12,11 +12,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from itertools import pairwise
 from pathlib import Path
-from types import MappingProxyType
-from typing import Protocol, cast
+from typing import ClassVar, Literal, Protocol, TypeAlias, cast
 
 from .. import _compatibility_metrics as oracle
 from .. import _ssot
+from ._json import as_mapping as _as_mapping
+from ._json import finite_number as _number
+from ._json import freeze
 
 __all__ = [
     "QUALITY_BASELINE_SEMANTIC_SHA256",
@@ -24,15 +26,21 @@ __all__ = [
     "QUALITY_ORACLE_SHA256",
     "GateReport",
     "GateViolation",
+    "InvalidCandidate",
+    "InvalidMetric",
+    "ThresholdViolation",
+    "UnequalValues",
     "check_all",
     "evaluate_catalog",
     "evaluate_quality_metrics",
     "gate_cycle",
     "gate_cyclic_cmap",
+    "gate_decision_text",
     "gate_div_cmap",
     "gate_ladder",
     "gate_seq_cmap",
     "load_quality_baseline",
+    "violation_order",
 ]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -93,45 +101,167 @@ class CatalogSnapshot(Protocol):
         ...
 
 
-def _freeze(value: object) -> object:
-    """Copy JSON-like gate diagnostics into deterministic immutable forms."""
-    if isinstance(value, Mapping):
-        if not all(isinstance(key, str) for key in value):
-            raise TypeError("gate mappings require string keys")
-        return MappingProxyType(
-            {str(key): _freeze(item) for key, item in sorted(value.items())}
-        )
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return tuple(_freeze(item) for item in value)
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    raise TypeError(f"unsupported gate value: {type(value).__name__}")
+Relation: TypeAlias = Literal["==", ">=", "<="]
+"""How a candidate raw value must relate to its allowed value."""
 
 
-@dataclass(frozen=True, slots=True, order=True)
-class GateViolation:
-    """One sortable gate failure expressed with raw finite decision values."""
+def _require_text(value: object, name: str) -> None:
+    """Reject a non-string identifying field of a gate failure."""
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string")
+
+
+def _raw_number(value: object, name: str) -> float:
+    """Return a finite non-boolean raw number or reject it."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be a finite raw number")
+    normalized = float(value)
+    if not math.isfinite(normalized):
+        raise ValueError(f"{name} must be a finite raw number")
+    return normalized
+
+
+@dataclass(frozen=True, slots=True)
+class ThresholdViolation:
+    """A measured raw value on the wrong side of its allowed value.
+
+    ``rule`` says how ``observed`` had to relate to ``allowed`` (``==``
+    for exact gates, ``>=``/``<=`` for floors and ceilings). Both numbers
+    are finite raw values (booleans are rejected); integers are stored as
+    floats.
+    """
 
     asset: str
     metric: str
-    rule: str
+    rule: Relation
     observed: float
     allowed: float
     message: str
 
     def __post_init__(self) -> None:
         """Normalize numeric inputs and reject rounded/non-finite sentinels."""
-        for name in ("asset", "metric", "rule", "message"):
-            if not isinstance(getattr(self, name), str):
-                raise TypeError(f"{name} must be a string")
+        for name in ("asset", "metric", "message"):
+            _require_text(getattr(self, name), name)
+        if self.rule not in ("==", ">=", "<="):
+            raise ValueError(f"unknown gate relation {self.rule!r}")
         for name in ("observed", "allowed"):
-            value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise TypeError(f"{name} must be a finite raw number")
-            normalized = float(value)
-            if not math.isfinite(normalized):
-                raise ValueError(f"{name} must be a finite raw number")
-            object.__setattr__(self, name, normalized)
+            object.__setattr__(
+                self, name, _raw_number(getattr(self, name), name)
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class UnequalValues:
+    """An exact gate whose operands differ but are not both numbers.
+
+    The operands are not comparable on a number line, so no observed or
+    allowed value is recorded; ``message`` names both operands.
+    """
+
+    asset: str
+    metric: str
+    message: str
+
+    def __post_init__(self) -> None:
+        """Reject non-string identifying fields."""
+        for name in ("asset", "metric", "message"):
+            _require_text(getattr(self, name), name)
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidMetric:
+    """A required metric or contract that is missing or malformed."""
+
+    asset: str
+    metric: str
+    message: str
+
+    def __post_init__(self) -> None:
+        """Reject non-string identifying fields."""
+        for name in ("asset", "metric", "message"):
+            _require_text(getattr(self, name), name)
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidCandidate:
+    """The candidate catalogue could not be measured at all.
+
+    It is reported against the whole catalogue: ``asset`` is always
+    ``"catalog"`` and ``metric`` always ``"/candidate"``. ``message`` names
+    the error the oracle raised.
+    """
+
+    asset: ClassVar[str] = "catalog"
+    metric: ClassVar[str] = "/candidate"
+    message: str
+
+    def __post_init__(self) -> None:
+        """Reject a non-string message."""
+        _require_text(self.message, "message")
+
+
+GateViolation: TypeAlias = (
+    ThresholdViolation | UnequalValues | InvalidMetric | InvalidCandidate
+)
+"""One gate failure; a report holds them in :func:`violation_order`."""
+
+
+def gate_decision_text(violation: GateViolation) -> str:
+    """Return the ``observed rule allowed`` text the gate reports print.
+
+    Failures without raw operands keep the text the build has always
+    printed: an unequal non-numeric pair reads ``0.0 == 1.0`` and a missing
+    or malformed metric reads ``0.0 valid 1.0``.
+    """
+    match violation:
+        case ThresholdViolation():
+            return f"{violation.observed} {violation.rule} {violation.allowed}"
+        case UnequalValues():
+            return "0.0 == 1.0"
+        case InvalidMetric() | InvalidCandidate():
+            return "0.0 valid 1.0"
+
+
+def violation_order(
+    violation: GateViolation,
+) -> tuple[str, str, int, str, float, float, str]:
+    """Return the sort key that fixes the order of gate failures.
+
+    Failures order by asset and metric path. On one path, numeric failures
+    come first (by rule, observed, allowed, message), then unequal and
+    invalid ones by message — the order the build has always printed.
+    """
+    match violation:
+        case ThresholdViolation():
+            return (
+                violation.asset,
+                violation.metric,
+                0,
+                violation.rule,
+                violation.observed,
+                violation.allowed,
+                violation.message,
+            )
+        case UnequalValues():
+            return (
+                violation.asset,
+                violation.metric,
+                0,
+                "==",
+                0.0,
+                1.0,
+                violation.message,
+            )
+        case InvalidMetric() | InvalidCandidate():
+            return (
+                violation.asset,
+                violation.metric,
+                1,
+                "",
+                0.0,
+                0.0,
+                violation.message,
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,16 +274,26 @@ class GateReport:
 
     def __post_init__(self) -> None:
         """Sort failures and detach all retained metric containers."""
-        object.__setattr__(self, "violations", tuple(sorted(self.violations)))
+        object.__setattr__(
+            self,
+            "violations",
+            tuple(sorted(self.violations, key=violation_order)),
+        )
         object.__setattr__(
             self,
             "candidate_metrics",
-            cast(Mapping[str, object], _freeze(self.candidate_metrics)),
+            cast(
+                Mapping[str, object],
+                freeze(self.candidate_metrics, subject="gate"),
+            ),
         )
         object.__setattr__(
             self,
             "candidate_global_extrema",
-            cast(Mapping[str, object], _freeze(self.candidate_global_extrema)),
+            cast(
+                Mapping[str, object],
+                freeze(self.candidate_global_extrema, subject="gate"),
+            ),
         )
 
     @property
@@ -171,51 +311,15 @@ def load_quality_baseline() -> dict[str, object]:
     )
 
 
-def _plain_json_value(value: object) -> object:
-    """Copy frozen accessor data into containers accepted by JSON hashing."""
-    if isinstance(value, Mapping):
-        if not all(isinstance(key, str) for key in value):
-            raise RuntimeError("v6 row-contract authority has non-string keys")
-        return {
-            str(key): _plain_json_value(item)
-            for key, item in sorted(value.items())
-        }
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return [_plain_json_value(item) for item in value]
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    raise RuntimeError("v6 row-contract authority is not JSON-shaped")
-
-
-def _load_row_contracts() -> Mapping[str, object]:
+def _load_row_contracts() -> _ssot.RowContracts:
     """Load the independently hash-pinned v6 row-contract section."""
-    payload = _ssot.load_color_v6_ssot()
-    contracts = _as_mapping(payload.get("row_contracts"))
-    section_hashes = _as_mapping(payload.get("section_hashes"))
-    if contracts is None or section_hashes is None:
-        raise RuntimeError("v6 row-contract authority is missing")
-    actual = oracle.canonical_json_sha256(_plain_json_value(contracts))
-    embedded = section_hashes.get("row_contracts")
+    authority = _ssot.load_color_v6_ssot()
+    contracts = authority.row_contracts
+    actual = oracle.canonical_json_sha256(_ssot.row_contracts_json(contracts))
+    embedded = authority.section_hashes.get("row_contracts")
     if actual != _ROW_CONTRACTS_SHA256 or embedded != _ROW_CONTRACTS_SHA256:
         raise RuntimeError("v6 row-contract authority SHA-256 differs")
     return contracts
-
-
-def _as_mapping(value: object) -> Mapping[str, object] | None:
-    """Return a string-keyed mapping or ``None`` for malformed gate input."""
-    if not isinstance(value, Mapping) or not all(
-        isinstance(key, str) for key in value
-    ):
-        return None
-    return cast(Mapping[str, object], value)
-
-
-def _number(value: object) -> float | None:
-    """Return one finite non-boolean number or ``None``."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    result = float(value)
-    return result if math.isfinite(result) else None
 
 
 def _pointer_token(value: str) -> str:
@@ -225,52 +329,23 @@ def _pointer_token(value: str) -> str:
 
 def _failed_equality_values(
     baseline: object, candidate: object
-) -> tuple[float, float]:
-    """Represent arbitrary failed equality operands with finite raw values."""
+) -> tuple[float, float] | None:
+    """Return the failed equality operands as raw numbers, if both are."""
     old = _number(baseline)
     new = _number(candidate)
     if old is not None and new is not None:
         return new, old
     if isinstance(baseline, bool) and isinstance(candidate, bool):
         return float(candidate), float(baseline)
-    return 0.0, 1.0
-
-
-def _append_violation(
-    violations: list[GateViolation],
-    *,
-    asset: str,
-    metric: str,
-    observed: float,
-    allowed: float,
-    rule: str,
-    message: str,
-) -> None:
-    """Append one validated raw-value failure."""
-    violations.append(
-        GateViolation(
-            asset=asset,
-            metric=metric,
-            observed=observed,
-            allowed=allowed,
-            rule=rule,
-            message=message,
-        )
-    )
+    return None
 
 
 def _gate_invalid(
     violations: list[GateViolation], *, asset: str, metric: str, message: str
 ) -> None:
-    """Record a malformed required metric without non-finite sentinels."""
-    _append_violation(
-        violations,
-        asset=asset,
-        metric=metric,
-        observed=0.0,
-        allowed=1.0,
-        rule="valid",
-        message=message,
+    """Record a malformed or missing required metric."""
+    violations.append(
+        InvalidMetric(asset=asset, metric=metric, message=message)
     )
 
 
@@ -293,18 +368,25 @@ def _gate_equal(
         return
     if type(baseline) is type(candidate) and baseline == candidate:
         return
-    observed, allowed = _failed_equality_values(baseline, candidate)
-    _append_violation(
-        violations,
-        asset=asset,
-        metric=metric,
-        observed=observed,
-        allowed=allowed,
-        rule="==",
-        message=(
-            f"candidate value {candidate!r} must equal frozen value "
-            f"{baseline!r}"
-        ),
+    message = (
+        f"candidate value {candidate!r} must equal frozen value {baseline!r}"
+    )
+    operands = _failed_equality_values(baseline, candidate)
+    if operands is None:
+        violations.append(
+            UnequalValues(asset=asset, metric=metric, message=message)
+        )
+        return
+    observed, allowed = operands
+    violations.append(
+        ThresholdViolation(
+            asset=asset,
+            metric=metric,
+            observed=observed,
+            allowed=allowed,
+            rule="==",
+            message=message,
+        )
     )
 
 
@@ -336,7 +418,7 @@ def _gate_number(
     metric: str,
     baseline: object,
     candidate: object,
-    relation: str,
+    relation: Literal[">=", "<="],
     ceiling: float | None = None,
 ) -> None:
     """Apply one finite raw-number lower or upper bound."""
@@ -361,14 +443,15 @@ def _gate_number(
     if passed:
         return
     comparator = "at least" if relation == ">=" else "at most"
-    _append_violation(
-        violations,
-        asset=asset,
-        metric=metric,
-        observed=new,
-        allowed=threshold,
-        rule=relation,
-        message=f"candidate raw value must be {comparator} {threshold!r}",
+    violations.append(
+        ThresholdViolation(
+            asset=asset,
+            metric=metric,
+            observed=new,
+            allowed=threshold,
+            rule=relation,
+            message=f"candidate raw value must be {comparator} {threshold!r}",
+        )
     )
 
 
@@ -379,7 +462,7 @@ def _gate_summary_leaves(
     metric: str,
     baseline: object,
     candidate: object,
-    relation: str,
+    relation: Literal[">=", "<="],
 ) -> None:
     """Gate every raw numeric leaf of one summary mapping."""
     old = _as_mapping(baseline)
@@ -466,17 +549,19 @@ def _compare_ordered_record(
                     message="local 8-bit relative-Y record is malformed",
                 )
             elif margin < 0.0:
-                _append_violation(
-                    violations,
-                    asset=asset,
-                    metric=quantization_metric,
-                    observed=margin,
-                    allowed=0.0,
-                    rule=">=",
-                    message=(
-                        "candidate modeled-relative-Y ordering is impossible "
-                        f"within the local 8-bit cells at pair {pair_index}"
-                    ),
+                violations.append(
+                    ThresholdViolation(
+                        asset=asset,
+                        metric=quantization_metric,
+                        observed=margin,
+                        allowed=0.0,
+                        rule=">=",
+                        message=(
+                            "candidate modeled-relative-Y ordering is "
+                            "impossible within the local 8-bit cells at "
+                            f"pair {pair_index}"
+                        ),
+                    )
                 )
     if not monotonic_floors:
         return
@@ -868,18 +953,15 @@ def _candidate_contract_rows(
 
 
 def _evaluate_row_contracts(
-    candidate: CatalogSnapshot, contracts_value: object
+    candidate: CatalogSnapshot, contracts: _ssot.RowContracts
 ) -> tuple[GateViolation, ...]:
     """Require every candidate row shape to be no worse than its v5 contract."""
-    contracts = _as_mapping(contracts_value)
-    if contracts is None:
-        raise RuntimeError("row contracts must be a string-keyed object")
     candidate_sections = _candidate_contract_rows(candidate)
     violations: list[GateViolation] = []
     for section in sorted(contracts):
-        baseline_rows = _as_mapping(contracts[section])
+        baseline_rows = contracts[section]
         candidate_rows = candidate_sections.get(section)
-        if baseline_rows is None or candidate_rows is None:
+        if candidate_rows is None:
             _gate_invalid(
                 violations,
                 asset=section,
@@ -892,9 +974,9 @@ def _evaluate_row_contracts(
                 f"/row_contracts/{_pointer_token(section)}/"
                 f"{_pointer_token(asset)}"
             )
-            baseline = _as_mapping(baseline_rows[asset])
+            baseline = baseline_rows[asset]
             candidate_row = candidate_rows.get(asset)
-            if baseline is None or candidate_row is None:
+            if candidate_row is None:
                 _gate_invalid(
                     violations,
                     asset=asset,
@@ -915,23 +997,26 @@ def _evaluate_row_contracts(
                 violations,
                 asset=asset,
                 metric=f"{metric}/count",
-                baseline=baseline.get("count", _MISSING),
+                baseline=baseline.count,
                 candidate=observed["count"],
             )
             _gate_number(
                 violations,
                 asset=asset,
                 metric=f"{metric}/unique_count",
-                baseline=baseline.get("unique_count", _MISSING),
+                baseline=baseline.unique_count,
                 candidate=observed["unique_count"],
                 relation=">=",
             )
-            for field_name in ("adjacent_duplicate_count", "max_run_length"):
+            for field_name, allowed in (
+                ("adjacent_duplicate_count", baseline.adjacent_duplicate_count),
+                ("max_run_length", baseline.max_run_length),
+            ):
                 _gate_number(
                     violations,
                     asset=asset,
                     metric=f"{metric}/{field_name}",
-                    baseline=baseline.get(field_name, _MISSING),
+                    baseline=allowed,
                     candidate=observed[field_name],
                     relation="<=",
                 )
@@ -984,14 +1069,7 @@ def evaluate_catalog(
         TypeError,
         ValueError,
     ) as error:
-        violation = GateViolation(
-            asset="catalog",
-            metric="/candidate",
-            observed=0.0,
-            allowed=1.0,
-            rule="valid",
-            message=f"{type(error).__name__}: {error}",
-        )
+        violation = InvalidCandidate(message=f"{type(error).__name__}: {error}")
         return GateReport(violations=(violation,))
 
     quality_violations = evaluate_quality_metrics(
@@ -1177,8 +1255,8 @@ def check_all(
         baseline_subset, candidate_subset, taxonomy
     )
     failures.extend(
-        f"{item.asset} {item.metric}: {item.observed} {item.rule} "
-        f"{item.allowed} ({item.message})"
+        f"{item.asset} {item.metric}: {gate_decision_text(item)} "
+        f"({item.message})"
         for item in violations
     )
     return sorted(failures)

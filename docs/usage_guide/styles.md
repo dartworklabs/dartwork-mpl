@@ -110,8 +110,11 @@ dm.style.use("minimal")
 
 ### `presentation` — slides
 
-Large fonts (10.5 pt base) so text remains readable when projected. All four
-spines are kept to give charts clear boundaries on busy slide backgrounds.
+The `scientific` look with every point size × 2.6 (19.5 pt text, 18.2 pt
+ticks, 2.6 pt lines; one `dm.fs` / `dm.lw` step is 2.6 pt), so a slide chart
+looks like a journal-column figure enlarged to the 23.4 cm slide body under a
+title. `dm.figsize_for` keeps the height at 10.5 cm and picks the width from
+the x positions: 11.4 cm for up to 4, 15.4 cm up to 6, 23.4 cm for more.
 
 ```python
 dm.style.use("presentation")

@@ -6,6 +6,7 @@ import json
 import os
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import replace
 from datetime import timedelta
 from types import SimpleNamespace
 
@@ -13,32 +14,38 @@ import pytest
 
 from dartwork_mpl.mcp import execution
 from dartwork_mpl.mcp.artifacts import (
-    AbsentInputs,
-    ArtifactMember,
-    ArtifactStore,
-    ConfigurationError,
-    CorruptArtifact,
-    DeletedInputs,
-    Expired,
+    configure_store,
+    delivery,
+    input_cleanup,
+    register_artifacts,
+)
+from dartwork_mpl.mcp.artifacts import store as disk
+from dartwork_mpl.mcp.artifacts.delivery import render_artifact
+from dartwork_mpl.mcp.artifacts.input_access import InputsDisabled
+from dartwork_mpl.mcp.artifacts.input_policy import (
     InputMetadata,
-    InputsDisabled,
+    RetainedInput,
+    Revision,
+)
+from dartwork_mpl.mcp.artifacts.inputs import (
+    AbsentInputs,
+    DeletedInputs,
     InputStore,
     InputTransaction,
+)
+from dartwork_mpl.mcp.artifacts.policy import (
+    ArtifactMember,
+    ConfigurationError,
+    CorruptArtifact,
+    Expired,
     InvalidRequest,
     Manifest,
     NotFound,
     PublicationError,
     RenderRequest,
-    RetainedInput,
-    Revision,
     StoredBundle,
-    configure_store,
-    delivery,
-    input_cleanup,
-    register_artifacts,
-    render_artifact,
 )
-from dartwork_mpl.mcp.artifacts import store as disk
+from dartwork_mpl.mcp.artifacts.store import ArtifactStore
 from tests.mcp.artifacts.input_fixtures import (
     NOW,
     STATES,
@@ -125,8 +132,7 @@ def test_every_delivery_path_applies_artifact_log_budget(
     )
     code = "import os\nos.write(1, b'x' * 200000)\n" + FIGURE
     result = render(rig, code, specs=specs, parent=parent)
-    assert isinstance(result, execution.ExecutionRejected), result
-    assert isinstance(result, execution.LogLimitRejected)
+    assert isinstance(result, execution.LogLimitRejected), result
     assert result.report["status"] == "exec_error"
     assert result.report["validation_complete"] is False
     assert set(rig.root.rglob("manifest.json")) == published
@@ -145,9 +151,11 @@ def test_legacy_bytes_and_optin_mapping(rig, monkeypatch):
         suffix: stem.with_suffix(suffix).read_bytes()
         for suffix in (".png", ".pdf")
     }
-    report = deepcopy(real.report)
-    report.update(stdout="  한글 stdout\n", stderr=" stderr \n")
-    controlled = execution.ExportedPlot(report)
+    logs = replace(
+        real.outcome.diagnostics, stdout="  한글 stdout\n", stderr=" stderr \n"
+    )
+    controlled = execution.ExportedPlot(replace(real.outcome, diagnostics=logs))
+    report = controlled.report
     pristine = deepcopy(report)
     code = '# exact café 한글\r\nvalue = "unchanged"  \r\n'
     monkeypatch.setattr(

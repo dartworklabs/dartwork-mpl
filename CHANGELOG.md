@@ -9,13 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.format_axis_dates(ax, dates)`.** Bars and other category charts that
+  stand for dates (`"2024-01" … "2024-12"` under twelve bars) get the
+  library's concise date words (`2024, Feb, Mar …`; `2024년, 2월 …` on a
+  Korean figure), and `dm.simple_layout` thins a crowded axis to every 2nd,
+  3rd, 4th, 6th or 12th month until the labels are one em apart, instead of
+  the labels being rotated. ISO strings, datetimes and `datetime64` are read;
+  anything else is a `ValueError`.
+- **`dm.figsize_for("full_slide")`.** A chart that is a whole 16:9 slide
+  ("a full-slide chart") is 25.4 x 14.29 cm under any preset: the 10 in slide
+  the presentation sizes assume, so its text reads at the same size as a
+  chart under a slide title.
+
 - **The preset's default canvas (provisional).** `dm.figsize_for(kind,
   n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
   preset's figure size when a request names none: report widths 9 / 12 /
   14.5 / 17 cm picked by chart kind and data density (4:3 like `dm.figsize`),
   journal columns under `scientific` (one panel in one 9 cm column, grids
-  and full-width kinds 17 cm), widths scaled by font size under
-  `presentation` and `poster`, and `"slide"` for one whole 16:9 slide.
+  and full-width kinds 17 cm), 10.5 cm tall under a 16:9 slide's title
+  under `presentation` (11.4 / 15.4 / 23.4 cm wide for up to 4, up to 6
+  or more x positions, half for `"compact"`), widths scaled by font size
+  under `poster`, and `"slide"` for that slide body under any preset.
   `dm.grid_shape(n)` lays out `n` small multiples. The same request gets the
   same canvas from any agent. The bundled skill uses both and states that
   spines, grid, ticks, fonts, background and margins stay the preset's, with
@@ -28,6 +42,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Axis-off, polar, 3-D, colorbar, pie and twin Axes are not inspected, and
   nothing is reported without an active preset.
   `dartwork_mpl.style.active_preset_rcparams()` returns the values compared.
+- **Outside legends from one call.** `dm.place_legend(ax, loc="above")` (also
+  `"below"`, `"right"`, `"left"`) puts the legend outside the axes, centred on
+  that side and past its tick labels and axis label (a twin's included) by the
+  preset's `legend.borderaxespad`. Above and below it takes one row when that
+  fits the axes width, else the fewest rows that fit; right and left it is one
+  column. `ncols=` still wins; `bbox_to_anchor=` with a side raises
+  `ValueError`. Other explicit `loc` values behave as before.
+- **`dm.label_line_ends(ax)` (provisional).** Line names instead of a legend
+  in one style for every caller: each named line's label
+  `axes.labelpad` right of its last finite point, vertically centred, in the
+  preset text size and weight and the line's colour made readable on the
+  axes background (`dm.ensure_contrast`, 4.5:1); labels that would overlap
+  move apart vertically in order. The legend is removed and the axis limits
+  stay; `dm.simple_layout` makes room. Agents asked for end labels had drawn
+  them in the line colour, a darker shade or black, at 6 to 8 pt, and some
+  widened the x axis to fit them.
+- **`dm.add_note(fig, text)` (provisional).** A source or note line in one
+  style for every caller: the figure's lower-left corner, one point under the
+  preset font, the preset text colour; `dm.simple_layout` keeps the axis
+  labels one `axes.labelpad` above it. Named `fontsize=`/`color=` win. In the
+  customization eval the same request gave 7 pt from one agent and 8 pt from
+  the other. The skill also keeps an existing legend on "highlight one series"
+  and keeps canvas, title and legend on "make it look better".
+- **`dm.place_legend(ax)` gives a twin pair one legend.** The entries of every
+  `twinx`/`twiny` partner go into one legend on the twin drawn last, and the
+  partners' own legends are removed, whichever twin is passed.
+- **`dm.place_legend(ax)` goes above the plot when nothing inside is free.**
+  With no `loc`, a legend that would cover data in every in-axes spot now takes
+  the `loc="above"` placement (`legend._dm_outside_fallback`), so a request
+  that names no side gets one legend from every agent; a caller
+  `bbox_to_anchor=` keeps it inside as before.
+- **`LEGEND_OVERLAP` validation check (WARNING).** `validate_figure()` reports
+  a legend box that covers a title, an axis label, tick labels or a
+  figure-level text (suptitle, `fig.text`), one finding per legend and covered
+  role, naming both. `OVERLAP` compares text with text only and missed a
+  legend drawn on the title.
 - Font corpus expanded to 20 families (262 files): Noto Serif and IBM Plex Serif
   added, Roboto/Roboto Mono completed with instanced weights + italics;
   registry-backed interactive font browser on the fonts page (faceted filters,
@@ -79,6 +129,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   tier also drops its subtitle and source footnote. Panel names in small
   multiples stay. Agents copy templates, so a size or title now appears only
   when the user asks for it.
+- **`TICK_ROTATION` advises dates and fewer ticks before rotation.**
+  Overlapping x labels now read "날짜면 dm.format_axis_dates(ax, dates),
+  아니면 눈금 수 축소, 45° 회전은 마지막 수단", and the fix suggestions list
+  `dm.format_axis_dates`, then a tick locator, then `dm.rotate_tick_labels`.
+- **Agent skill and policy: details nobody named.** No value labels unless
+  asked; axis limits stay the library's (bars from 0, lines with their data
+  margins); bars are vertical unless the category names would overlap; axis
+  labels are column names, else the request's noun, word for word and in its
+  order, with no unit nothing states; a bare year stays a number; a figure
+  moved to slides takes `dm.figsize_for` and multiplies pt values written in
+  its code by 2.6, unrounded; a broad "make it look better" keeps axis labels
+  as written and an "only X" edit keeps the legend as it is.
+- **Agent skill and policy after eval v16–v18.** Column names win over the
+  request's wording for axis labels; a legend added, moved or merged (a twin
+  pair's two into one) goes through `dm.place_legend`, never `ax.legend` with
+  `bbox_to_anchor`, and others stay; an "only X" edit that makes a legend
+  overlap other text (`LEGEND_OVERLAP`) moves that legend with
+  `dm.place_legend` and lists it (decision L-B); a "make it look better"
+  pass that shrinks touching value labels to `dm.fs(-1)` gives them
+  `dm.fw(1)` too when no weight is written (decision W-A) and keeps the axis
+  limits even when a line crosses the labels.
+
+- **`presentation` is `scientific` with every point size × 2.6.** Text,
+  lines, markers, tick lengths and widths, pads, grid, spines and boxplot
+  lines are 2.6 times the scientific values (23.4 cm slide body over a 9 cm
+  column): 19.5 pt text, 18.2 pt ticks, 15.6 pt legend, 2.6 pt lines, 7.8 pt
+  markers. A slide chart now looks like a column figure enlarged as a vector;
+  before, only text grew (10.5 pt) and lines, markers and ticks stayed at
+  paper size. `presentation-kr` follows. Slide titles stay regular weight.
+- **One `dm.fs` / `dm.lw` step is 2.6 pt under `presentation`.** So
+  `dm.fs(-1)` is 16.9 pt on a 19.5 pt slide, the same share as 6.5 of 7.5 pt
+  in a column, and `dm.lw(1)` doubles the line as it does on paper. Every
+  other preset keeps 1 pt steps; `dartwork_mpl.style.step_pt()` returns the
+  active step. Code that passed `dm.fs(n)` under `presentation` gets larger
+  offsets than before.
+- **Tick numbers and dates nobody formatted are the library's.**
+  `dm.simple_layout(fig)` gives every axis still on matplotlib's default
+  number formatter whose visible ticks reach 1,000 thousands separators
+  (`1,750`, `34,000`) and, from one million, the largest tick's SI unit
+  (`0.5M … 2.5M`) instead of a `1e6` corner label; decimals are the fewest
+  exact ones. Smaller axes, x axes of years (every tick in 1000-2999), log,
+  date and category axes, colorbars and axes with a formatter you set keep
+  theirs; `format_ticks=False` keeps matplotlib's numbers. Every preset sets
+  `date.converter: concise`, so an unformatted date axis reads `2024, Mar,
+  May … 2025` instead of `2024-01, 2024-03 …`, whose labels collided at
+  column widths. When the figure's axis labels, titles or legend are Korean,
+  `dm.simple_layout` writes the dates as `2024년, 3월, 5월 … 2025년`. Agents had each picked their own formatter, so the same
+  0-1,750 axis came out as `1750`, `1,750` or `1.75k`.
+- **Date ticks fit the axis length.** matplotlib picks date ticks from the
+  date range alone, so 36 months got ten labels on a 23.4 cm slide and on a
+  9 cm column alike, where `2021 May Sep 2022` ran together. After fitting,
+  `dm.simple_layout` gives a date axis matplotlib set up fewer ticks until
+  neighbouring labels are one em apart (`2021, Jul, 2022 …`) and fits the
+  margins again. Axes with a locator you set, rotated labels and
+  `format_ticks=False` keep matplotlib's ticks.
+- **Negative ticks from the axis-wide formatters use the axis minus.**
+  `dm.format_axis_si`, `_millions`, `_billions` and `_myriad` print U+2212
+  (`−1.0M`) like matplotlib's own ticks unless `axes.unicode_minus` is off,
+  instead of a hyphen beside the minus of the other axis.
+- **No meaningless decimals and no mixed units on scaled axes (#523).**
+  `format_axis_si`, `format_axis_myriad`, `format_axis_millions` and
+  `format_axis_billions` default to `decimals=None`: one decimal count per
+  axis, the fewest that render every visible tick exactly. Integer ticks
+  print `200`, `0`, `1M` instead of `200.0`, `0.0`, `1.0M`; half steps stay
+  exact (1250 no longer rounds to `1.2k`, `1.75억` to `1.8억`); fractional
+  steps keep the count on every tick (`0.5M, 1.0M`). Zero prints as `0`;
+  scaled values of 1000 and more get thousands separators.
+- **`format_axis_si` and `format_axis_myriad` take `unit=`.** The whole axis
+  shares one unit, so an axis no longer mixes `800` with `1.2k` or
+  `7,500만` with `1.25억`. `unit="max"` (default) uses the unit of the
+  largest visible tick (`0, 0.2k … 1.2k`; `0, 0.25억 … 1.75억`);
+  `unit="whole"` picks a unit in which every tick is whole (`0, 200 …
+  1,200`); a prefix such as `"k"` or `"억"` fixes the unit. Log axes keep a
+  unit per tick (decades cannot share one). An explicit integer `decimals=`
+  with the default `unit` keeps the previous per-tick output.
+- **`TICK_DECIMAL` trailing zeros are now a WARNING**, and decimal
+  consistency is judged per unit suffix on the rendered numbers; a bare `0`
+  needs no decimals (`-1.0M, -0.5M, 0, 0.5M, 1.0M` is clean). The new
+  **`VALUE_LABEL_DECIMAL`** check warns when every numeric value label in an
+  axes is a whole number but some print trailing zeros.
+- **Value labels on bars and lines are one weight step heavier.**
+  `dm.annotate_value()` defaults to `fontweight=fw(1)` unless `fontweight` or
+  `weight` is passed; the advanced bar_grouped, waterfall, tornado and line
+  templates now match the templates that already did this.
 - `format_axis_year` prints two-digit tick years by default (`2025` -> `25년`,
   `25年`, `25`). Four-digit tick years double the tick width and crowd
   neighbouring labels; the company-analysis harness now rejects them
@@ -109,6 +243,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `dm.format_axis_dates` reads `datetime64` arrays and Series of any unit
+  (a `datetime64[ns]` array came out in the year 53999741868), refuses
+  numbers such as a bare year instead of reading them as seconds since 1970,
+  and words and thins only the dates in view, so a view cut to Feb–Dec still
+  shows the year; a step that shows one label in a cut view no longer ends
+  the search for a step that fits.
+- After `dm.style.use("presentation")`, a bare `dm.style.stack([...])` no
+  longer keeps the 2.6 pt `dm.fs` / `dm.lw` step.
+- `dm.simple_layout()` no longer leaves an axes title on top of a legend above
+  the axes. Whether the legend came from `dm.place_legend(ax, loc="above")` or
+  a raw `ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0))`, the title
+  offset is raised so the title sits `axes.titlepad` above the legend (all
+  three title slots, one baseline); text, size and weight are unchanged. A
+  `place_legend` outside legend is re-anchored to the labels present when the
+  layout runs, so setting the x label after the legend no longer collides.
+- `dm.label_axes()` no longer puts the panel letter on a left-aligned panel
+  title (the advanced small_multiples template drew "a" over "Line A"). With
+  `x="auto"`, a left title takes the letter onto its line, half a letter size
+  before the title start, and the letter follows the title (layout, a legend
+  above); a centre or right title moves it only when they would touch. `y`
+  now defaults to `None` (1.05 as before when no title is in the way); an
+  explicit `x` or `y` is kept. Title text, size and weight are unchanged.
 - Colormap registration reuses exact package-owned maps on reload/retry and
   preflights static external collisions before adding missing maps.
 - Preset switches preserve detectable caller edits on incoming-silent keys;

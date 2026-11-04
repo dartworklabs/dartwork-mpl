@@ -15,7 +15,7 @@ import json
 import sys
 import threading
 from importlib.resources import files
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import matplotlib.colors as mcolors
 
@@ -104,34 +104,43 @@ def _load_json_palette(
 # v5 palette marker. Consumers (this loader, diagnostics, the MCP server)
 # derive their prefix / label / order lists from this list instead of
 # re-hardcoding them.
-COLOR_LIBRARIES: list[tuple[str, str, str, str]] = [
-    ("dc", "dc.", "_generated.PALETTE", "dartwork Color"),
-    ("opencolor", "oc.", "opencolor.txt", "OpenColor"),
-    ("tw", "tw.", "tailwind_colors.json", "Tailwind"),
-    ("md", "md.", "material_colors.json", "Material Design"),
-    ("ant", "ad.", "ant_colors.json", "Ant Design"),
-    ("chakra", "cu.", "chakra_colors.json", "Chakra UI"),
-    ("primer", "pr.", "primer_colors.json", "Primer"),
-]
+class ColorLibrary(NamedTuple):
+    """One bundled colour library; still unpacks as ``(key, prefix, source, label)``."""
+
+    key: str
+    prefix: str
+    source: str
+    label: str
+
+
+COLOR_LIBRARIES: tuple[ColorLibrary, ...] = (
+    ColorLibrary("dc", "dc.", "_generated.PALETTE", "dartwork Color"),
+    ColorLibrary("opencolor", "oc.", "opencolor.txt", "OpenColor"),
+    ColorLibrary("tw", "tw.", "tailwind_colors.json", "Tailwind"),
+    ColorLibrary("md", "md.", "material_colors.json", "Material Design"),
+    ColorLibrary("ant", "ad.", "ant_colors.json", "Ant Design"),
+    ColorLibrary("chakra", "cu.", "chakra_colors.json", "Chakra UI"),
+    ColorLibrary("primer", "pr.", "primer_colors.json", "Primer"),
+)
 
 # (prefix, filename) for JSON-based third-party palettes — derived from the
 # SSOT above. Dartwork's ``dc.`` namespace is registered from the generated v5
 # palette below.
-_JSON_PALETTES: list[tuple[str, str]] = [
-    (prefix.rstrip("."), filename)
-    for _key, prefix, filename, _label in COLOR_LIBRARIES
-    if filename.endswith(".json")
-]
+_JSON_PALETTES: tuple[tuple[str, str], ...] = tuple(
+    (library.prefix.rstrip("."), library.source)
+    for library in COLOR_LIBRARIES
+    if library.source.endswith(".json")
+)
 
 # (prefix, filename) for the text-based palettes (Open Color) — same
 # SSOT derivation as ``_JSON_PALETTES``. Previously the ``oc.`` prefix
 # was re-hardcoded here and *any* stray ``.txt`` dropped into
 # ``asset/color`` would have been swept in under it.
-_TXT_PALETTES: list[tuple[str, str]] = [
-    (prefix.rstrip("."), filename)
-    for _key, prefix, filename, _label in COLOR_LIBRARIES
-    if filename.endswith(".txt")
-]
+_TXT_PALETTES: tuple[tuple[str, str], ...] = tuple(
+    (library.prefix.rstrip("."), library.source)
+    for library in COLOR_LIBRARIES
+    if library.source.endswith(".txt")
+)
 
 
 def _load_colors() -> None:

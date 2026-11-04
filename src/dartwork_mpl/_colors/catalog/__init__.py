@@ -5,8 +5,10 @@ palette, cycles and 256-step colormaps (``_colors/_generated.py``, whose
 path the build pins), the family taxonomy and the discrete colour forms.
 Read-only values; registering them with matplotlib is the registry's job.
 
-Surface: ``PALETTE``, ``CYCLES``, ``CMAPS_256``, ``FAMILIES``, ``Family``,
-``FamilyKind``, the family-kind name tuples (``SEQUENTIAL``, ``MULTI_HUE``,
+Surface: ``PALETTE``, ``CYCLES``, ``CMAPS_256``, ``FAMILIES``, ``Family``
+(the union of ``SequentialFamily``, ``MultiHueFamily``, ``DivergingFamily``,
+``CyclicFamily`` and ``QualitativeFamily``), ``FamilyKind``, the family-kind
+name tuples (``SEQUENTIAL``, ``MULTI_HUE``,
 ``DIVERGING``, ``CYCLIC``, ``QUALITATIVE``), ``discrete_colors``,
 ``DIVERGING_CANONICALS`` and ``GENERATED_DIVERGING``.
 """
@@ -24,8 +26,13 @@ from ._families import (
     MULTI_HUE,
     QUALITATIVE,
     SEQUENTIAL,
+    CyclicFamily,
+    DivergingFamily,
     Family,
     FamilyKind,
+    MultiHueFamily,
+    QualitativeFamily,
+    SequentialFamily,
 )
 
 __all__ = [
@@ -40,7 +47,12 @@ __all__ = [
     "PALETTE",
     "QUALITATIVE",
     "SEQUENTIAL",
+    "CyclicFamily",
+    "DivergingFamily",
     "Family",
     "FamilyKind",
+    "MultiHueFamily",
+    "QualitativeFamily",
+    "SequentialFamily",
     "discrete_colors",
 ]

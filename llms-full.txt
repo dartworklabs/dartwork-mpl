@@ -137,7 +137,7 @@ weight and stroke width.
 | `scientific`   | 7.5                   | 9.5                     |
 | `report`       | 8.0                   | 10.0                    |
 | `web`          | 11.0                  | 13.0                    |
-| `presentation` | 10.5                  | 12.5                    |
+| `presentation` | 19.5                  | 24.7                    |
 | `poster`       | 12.0                  | 14.0                    |
 | `minimal`      | 7.5                   | 9.5                     |
 
@@ -155,7 +155,7 @@ preset and `dm.figsize_for()` gives its default size.
 |---|---|---|
 | Paper / journal / 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
 | Report / document / dashboard / 보고서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
-| Talk / slides / presentation / 발표 | `presentation` | `dm.figsize_for()`: 12 / 16 / 19 / 22.5 cm for a chart on a slide; `dm.figsize_for("slide")`: 25.4 cm at 16:9 for a whole slide |
+| Talk / slides / presentation / 발표 | `presentation` | `dm.figsize_for()`: 10.5 cm tall under a 16:9 slide's title; wide 11.4 cm for up to 4 x positions, 15.4 cm up to 6, 23.4 cm for more, 4+ series or a second y axis; `"compact"` 11.4 cm for two charts side by side; `dm.figsize_for("full_slide")` (25.4 × 14.29 cm) only for a whole 16:9 slide with no title |
 
 ```python
 import matplotlib.pyplot as plt
@@ -227,9 +227,9 @@ data, colors, canvas and preset. Keep existing axes/layout when labels still
 fit. If a refit is necessary, reuse the original `simple_layout` kwargs, grid
 and margins instead of blindly rerunning margin=0 defaults. Disclose necessary
 axes or anchored-legend movement rather than promising fixed pixel positions.
-One current-relative step is +1 pt; repeating “one more” increments the retained current value.
-`dm.fs(1)` instead means global `font.size + 1 pt`; it does not inspect the
-current label or its role-specific default. `dm.lw(n)` adds `n` pt to global
+One current-relative step is +1 pt (+2.6 pt under `presentation`, `dm.fs(1) - dm.fs(0)`); repeating “one more” increments the retained current value.
+`dm.fs(1)` instead means global `font.size` + one step; it does not inspect the
+current label or its role-specific default. `dm.lw(n)` adds `n` steps to global
 `lines.linewidth`, and `dm.fw(n)` adds `100*n` to global `font.weight`.
 An absolute request such as “12 pt” retains that exact value.
 
@@ -562,10 +562,12 @@ blindly rerun its margin=0 defaults. Disclose any necessary movement of axes
 or an anchored legend rather than claiming pixel-position invariance.
 
 For an explicit preset-relative request, `label.set_fontsize(dm.fs(1))` uses
-global `font.size + 1 pt`, not `axes.labelsize` or the current label size.
+global `font.size` + one step (1 pt; 2.6 pt under `presentation`), not
+`axes.labelsize` or the current label size.
 Repeat current-relative edits from the retained current value. For an absolute
 request use `label.set_fontsize(12)` exactly. `dm.fw(1)` adds 100 to the global
-base weight, while `dm.lw(1)` adds 1 pt to the global base line width.
+base weight, while `dm.lw(1)` adds one step (1 pt; 2.6 pt under
+`presentation`) to the global base line width.
 
 ## "A selected line: exact width, color and dash/dot spacing"
 

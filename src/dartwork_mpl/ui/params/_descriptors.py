@@ -1,226 +1,233 @@
-"""Type-to-widget resolver for UI generation.
+"""The controls the page renders for a ``ParamModel``, and their ``/api/descriptors`` wire form.
 
-Inspects Pydantic ``ParamModel`` field metadata and produces
-JSON-serializable descriptors that the frontend uses to build
-parameter controls.
+Each model field becomes one ``Control`` variant chosen from its annotation:
 
-Supported types
----------------
-- ``int`` — slider (if ge/le) or number input
-- ``float`` — slider (if ge/le) or number input
-- ``str`` — text input, or color picker (via widget hint / name)
-- ``bool`` — checkbox
-- ``Literal[...]`` — select dropdown
-- ``list[int]``, ``list[float]``, ``list[str]`` — comma-separated text input
-- ``tuple[int, ...]``, ``tuple[float, ...]`` — comma-separated text input
+- ``int`` / ``float`` — ``NumberControl`` (slider when bounded, else number input)
+- ``bool`` — ``BoolControl`` (checkbox)
+- ``Literal[...]`` — ``ChoiceControl`` (select)
+- ``list[X]`` / ``tuple[X, ...]`` — ``ListControl`` (comma-separated text)
+- ``str`` and every other annotation — ``TextControl`` (text input or colour picker)
+
+``controls_wire`` is the one place the variants become the wire dicts the
+page's JavaScript reads (``type_name``, ``min_value``, ``choices`` …); that
+payload is a frozen interface. Surface (through the ``params`` package):
+``Control``, ``controls_from_model`` and ``controls_wire``.
 """
 
 import typing
-from dataclasses import asdict, dataclass, field
-from typing import Any, get_args, get_origin
+from copy import deepcopy
+from dataclasses import dataclass
+from typing import Any, Literal, TypeAlias, get_args, get_origin
 
 from ._model import ParamModel
 
-# ============================================================================
-# Parameter descriptor
-# ============================================================================
+# The scalar kinds a choice's values or a list's items can have.
+Scalar: TypeAlias = Literal["int", "float", "str", "bool"]
+
+_SCALARS: dict[object, Scalar] = {
+    int: "int",
+    float: "float",
+    str: "str",
+    bool: "bool",
+}
 
 
-@dataclass
-class ParamDescriptor:
-    """Resolved metadata for a single parameter."""
+@dataclass(frozen=True)
+class _ControlBase:
+    """What every control has, whatever its kind.
+
+    ``default`` is the wire default (list defaults already joined as text).
+    ``minimum`` / ``maximum`` are the field's declared ``ge``/``gt`` and
+    ``le``/``lt`` (``None`` when undeclared); a field of any kind may declare
+    them, and the page renders them for numbers. ``widget_hint`` is the
+    ``widget`` entry of ``json_schema_extra`` or the automatic ``"color"`` of a
+    text-valued field whose name contains ``color``. ``extra`` is the field's
+    ``json_schema_extra`` dict, from which the wire ``step`` and ``group`` come.
+    """
 
     name: str
     label: str
-    type_name: str  # "int", "float", "str", "bool", "list_int", "list_float", "list_str"
-    default: Any = None
-    min_value: Any = None
-    max_value: Any = None
-    step: Any = None
-    group: str | None = None
-    choices: list[Any] | None = None
-    widget_hint: str | None = None  # "color", "slider", etc.
+    default: Any
+    minimum: Any
+    maximum: Any
+    widget_hint: Any
+    extra: dict[str, Any]
 
-    # Extra metadata from Pydantic json_schema_extra
-    extra: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to JSON-serializable dict."""
-        return asdict(self)
+@dataclass(frozen=True)
+class NumberControl(_ControlBase):
+    """An ``int`` or ``float`` field."""
+
+    number: Literal["int", "float"]
+
+
+@dataclass(frozen=True)
+class BoolControl(_ControlBase):
+    """A ``bool`` field."""
+
+
+@dataclass(frozen=True)
+class TextControl(_ControlBase):
+    """A ``str`` field, or any annotation no other control covers."""
+
+
+@dataclass(frozen=True)
+class ChoiceControl(_ControlBase):
+    """A ``Literal`` field: its members, and the kind of the first one (``str`` if unknown)."""
+
+    choices: tuple[Any, ...]
+    value_kind: Scalar
+
+
+@dataclass(frozen=True)
+class ListControl(_ControlBase):
+    """A ``list[X]`` / ``tuple[X, ...]`` field edited as comma-separated text of ``item`` values."""
+
+    item: Scalar
+
+
+Control: TypeAlias = (
+    NumberControl | BoolControl | TextControl | ChoiceControl | ListControl
+)
 
 
 def _humanize(name: str) -> str:
-    """Convert a snake_case name to a Title Case label.
-
-    Parameters
-    ----------
-    name : str
-        snake_case parameter name.
-
-    Returns
-    ----------
-    str
-        Label converted to Title Case.
-    """
+    """Convert a snake_case name to a Title Case label (``line_color`` -> ``Line Color``)."""
     return name.replace("_", " ").title()
 
 
-def _type_name(t: type) -> str:
-    """Return a simple string name for a Python type.
+def _list_item(annotation: object) -> Scalar | None:
+    """The item kind of ``list[X]`` / ``tuple[X, ...]``, or ``None`` for other annotations.
 
-    Parameters
-    ----------
-    t : type
-        A Python type.
-
-    Returns
-    ----------
-    str
-        Type name string (int, float, str, bool,
-        list_int, list_float, list_str).
+    Unknown or missing item types read as ``str``; a bare ``list`` (no
+    subscription) is not a list control.
     """
-    simple = {int: "int", float: "float", str: "str", bool: "bool"}
-    if t in simple:
-        return simple[t]
-
-    origin = get_origin(t)
-    args = get_args(t)
-
-    # list[X] or List[X]
-    if origin is list:
-        if args:
-            inner = simple.get(args[0], "str")
-            return f"list_{inner}"
-        return "list_str"
-
-    # tuple[X, ...] or Tuple[X, ...]
-    if origin is tuple:
-        if args:
-            # tuple[float, ...] → list_float (variable-length)
-            inner = simple.get(args[0], "str")
-            return f"list_{inner}"
-        return "list_str"
-
-    return "str"
+    if get_origin(annotation) not in (list, tuple):
+        return None
+    args = get_args(annotation)
+    return _SCALARS.get(args[0], "str") if args else "str"
 
 
-def _serialize_default(val: Any, type_name: str) -> Any:
-    """Convert a default value to a JSON-safe representation.
+def _serialize_default(val: Any, is_list: bool) -> Any:
+    """Convert a default to its wire form: sequences become ``", "``-joined text.
 
-    Converts list/tuple defaults to comma-separated strings.
-
-    Parameters
-    ----------
-    val : Any
-        Default value to convert.
-    type_name : str
-        Parameter type name.
-
-    Returns
-    ----------
-    Any
-        JSON-serializable default value.
+    A ``None`` default of a list control becomes ``""``; other values pass
+    through unchanged.
     """
     if val is None:
-        return "" if type_name.startswith("list_") else val
+        return "" if is_list else val
     if isinstance(val, (list, tuple)):
         return ", ".join(str(v) for v in val)
     return val
 
 
-# ============================================================================
-# Extract from Pydantic ParamModel
-# ============================================================================
+def _bounds(metadata: list[Any]) -> tuple[Any, Any]:
+    """Return the declared (minimum, maximum); later ``ge``/``gt``/``le``/``lt`` entries win."""
+    minimum: Any = None
+    maximum: Any = None
+    for m in metadata:
+        if hasattr(m, "ge") and m.ge is not None:
+            minimum = m.ge
+        if hasattr(m, "le") and m.le is not None:
+            maximum = m.le
+        if hasattr(m, "gt") and m.gt is not None:
+            minimum = m.gt
+        if hasattr(m, "lt") and m.lt is not None:
+            maximum = m.lt
+    return minimum, maximum
 
 
-def descriptors_from_model(
-    model_cls: type[ParamModel],
-) -> list[ParamDescriptor]:
-    """Extract ``ParamDescriptor`` list from a Pydantic model class.
+def controls_from_model(model_cls: type[ParamModel]) -> list[Control]:
+    """Return one control per field of ``model_cls``, in declaration order.
 
-    Parameters
-    ----------
-    model_cls : type[ParamModel]
-        A subclass of ``ParamModel``.
-
-    Returns
-    -------
-    list[ParamDescriptor]
-        One descriptor per model field.
+    The label is the field description or the humanized name. Pure; reads
+    only the class's field metadata.
     """
-    descriptors: list[ParamDescriptor] = []
-
+    controls: list[Control] = []
     for name, field_info in model_cls.model_fields.items():
-        annotation = field_info.annotation
-        if annotation is None:
-            annotation = str
-
-        # Resolve Literal
-        origin = get_origin(annotation)
-        choices: list[Any] | None = None
-        resolved_type = annotation
-
-        if origin is typing.Literal:
-            choices = list(get_args(annotation))
-            resolved_type = type(choices[0]) if choices else str
-
-        # Compute type_name (handles list/tuple/scalar)
-        tname = _type_name(resolved_type)
-
-        # Pydantic metadata
-        min_val: Any = None
-        max_val: Any = None
-        step: Any = None
-        group: str | None = None
-        widget_hint: str | None = None
-        extra: dict[str, Any] = {}
-
-        # ge / le / gt / lt from Pydantic metadata list
-        for m in field_info.metadata:
-            if hasattr(m, "ge") and m.ge is not None:
-                min_val = m.ge
-            if hasattr(m, "le") and m.le is not None:
-                max_val = m.le
-            if hasattr(m, "gt") and m.gt is not None:
-                min_val = m.gt
-            if hasattr(m, "lt") and m.lt is not None:
-                max_val = m.lt
-
-        # json_schema_extra
-        if field_info.json_schema_extra and isinstance(
-            field_info.json_schema_extra, dict
-        ):
-            extra = dict(field_info.json_schema_extra)
-            widget_hint = extra.get("widget")
-            if "step" in extra:
-                step = extra["step"]
-            if "group" in extra:
-                group = extra["group"]
-
-        # Auto-detect color from name (for str fields only)
-        if widget_hint is None and tname == "str" and "color" in name.lower():
-            widget_hint = "color"
-
-        # Description as label
-        label = field_info.description or _humanize(name)
-
-        # Serialize default for list/tuple types
-        default = _serialize_default(field_info.default, tname)
-
-        descriptors.append(
-            ParamDescriptor(
-                name=name,
-                label=label,
-                type_name=tname,
-                default=default,
-                min_value=min_val,
-                max_value=max_val,
-                step=step,
-                group=group,
-                choices=choices,
-                widget_hint=widget_hint,
-                extra=extra,
-            )
+        annotation: Any = (
+            field_info.annotation if field_info.annotation is not None else str
         )
+        jse = field_info.json_schema_extra
+        extra: dict[str, Any] = (
+            dict(jse) if jse and isinstance(jse, dict) else {}
+        )
+        minimum, maximum = _bounds(field_info.metadata)
+        label = field_info.description or _humanize(name)
+        hint = extra.get("widget")
 
-    return descriptors
+        def text_hint(hint: Any = hint, name: str = name) -> Any:
+            """A text-valued field named ``*color*`` with no hint gets the colour picker."""
+            return "color" if hint is None and "color" in name.lower() else hint
+
+        if get_origin(annotation) is typing.Literal:
+            choices = get_args(annotation)
+            kind: Scalar = (
+                _SCALARS.get(type(choices[0]), "str") if choices else "str"
+            )
+            controls.append(
+                ChoiceControl(
+                    name,
+                    label,
+                    _serialize_default(field_info.default, False),
+                    minimum,
+                    maximum,
+                    text_hint() if kind == "str" else hint,
+                    extra,
+                    choices,
+                    kind,
+                )
+            )
+            continue
+        scalar = _SCALARS.get(annotation)
+        item = _list_item(annotation)
+        default = _serialize_default(
+            field_info.default, scalar is None and item is not None
+        )
+        common = (name, label, default, minimum, maximum)
+        control: Control
+        if scalar == "int" or scalar == "float":
+            control = NumberControl(*common, hint, extra, scalar)
+        elif scalar == "bool":
+            control = BoolControl(*common, hint, extra)
+        elif scalar is None and item is not None:
+            control = ListControl(*common, hint, extra, item)
+        else:
+            control = TextControl(*common, text_hint(), extra)
+        controls.append(control)
+    return controls
+
+
+def _wire(control: Control) -> dict[str, Any]:
+    """Project one control onto the frozen ``/api/descriptors`` entry."""
+    choices: list[Any] | None = None
+    match control:
+        case NumberControl(number=number):
+            type_name: str = number
+        case BoolControl():
+            type_name = "bool"
+        case TextControl():
+            type_name = "str"
+        case ChoiceControl(choices=members, value_kind=kind):
+            type_name = kind
+            choices = deepcopy(list(members))
+        case ListControl(item=item):
+            type_name = f"list_{item}"
+    return {
+        "name": control.name,
+        "label": control.label,
+        "type_name": type_name,
+        "default": deepcopy(control.default),
+        "min_value": deepcopy(control.minimum),
+        "max_value": deepcopy(control.maximum),
+        "step": deepcopy(control.extra.get("step")),
+        "group": deepcopy(control.extra.get("group")),
+        "choices": choices,
+        "widget_hint": deepcopy(control.widget_hint),
+        "extra": deepcopy(control.extra),
+    }
+
+
+def controls_wire(controls: list[Control]) -> list[dict[str, Any]]:
+    """The ``/api/descriptors`` payload: one detached JSON-ready dict per control, in order."""
+    return [_wire(control) for control in controls]

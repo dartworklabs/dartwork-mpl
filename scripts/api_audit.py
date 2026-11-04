@@ -38,6 +38,11 @@ SEARCH_DIRS = ["docs", "tests", "examples"]
 
 
 def iter_python_files(root: pathlib.Path):
+    """Yield ``.py`` files under ``root`` in sorted order.
+
+    Skips ``__pycache__`` and any path with a part in ``EXCLUDED_PARTS``
+    (MCP, UI, assets, the CLI and private helpers).
+    """
     for path in sorted(root.rglob("*.py")):
         if "__pycache__" in path.parts:
             continue
@@ -48,6 +53,11 @@ def iter_python_files(root: pathlib.Path):
 
 
 def extract_public_defs(path: pathlib.Path):
+    """Yield the module-level functions and classes in ``path`` without a leading underscore.
+
+    Nested definitions are not visited. Raises ``SyntaxError`` if the file does
+    not parse.
+    """
     tree = ast.parse(path.read_text(encoding="utf-8"))
     for node in tree.body:
         if isinstance(
@@ -59,6 +69,11 @@ def extract_public_defs(path: pathlib.Path):
 
 
 def function_loc(node: ast.AST) -> int:
+    """Return the body line span of a function, excluding its docstring.
+
+    Classes and empty bodies count as 0. Blank and comment lines inside the
+    span are counted.
+    """
     if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         return 0
     body = node.body
@@ -77,6 +92,12 @@ def function_loc(node: ast.AST) -> int:
 
 
 def grep_callsites(name: str, cwd: pathlib.Path) -> int:
+    """Count whole-word matches of ``name`` in docs, tests and examples via ``rg``.
+
+    Searches ``.py`` and ``.md`` files, excluding the audit's own output page.
+    Returns -1 when ``rg`` fails; raises ``FileNotFoundError`` if ``rg`` is not
+    installed.
+    """
     cmd = [
         "rg",
         "-c",
@@ -103,6 +124,10 @@ def grep_callsites(name: str, cwd: pathlib.Path) -> int:
 
 
 def main() -> int:
+    """Print a markdown table of every public definition with its size and call sites.
+
+    Runs one ``rg`` per definition, so it is slow; always returns 0.
+    """
     rows = []
     for path in iter_python_files(SRC):
         rel = path.relative_to(ROOT)

@@ -14,6 +14,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .state import StateFile
+
 
 def _atomic_write_text(path: Path, text: str) -> None:
     """Write *text* to *path* atomically (temp file + ``os.replace``).
@@ -38,8 +40,8 @@ def _atomic_write_text(path: Path, text: str) -> None:
         raise
 
 
-# Default file name
-PRESET_FILENAME = ".dartwork_ui_presets.json"
+# Default file name (the viewer's own presets file)
+PRESET_FILENAME = StateFile.PRESETS.value
 
 # Base directory — set to the script's parent directory by ui.run()
 _base_dir: Path | None = None

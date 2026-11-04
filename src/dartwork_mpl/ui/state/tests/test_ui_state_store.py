@@ -9,6 +9,7 @@ import pytest
 
 from dartwork_mpl.ui.platform import fs
 from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
+from dartwork_mpl.ui.state import StateFile
 from dartwork_mpl.ui.state import _store as state
 from dartwork_mpl.ui.state._language import InvalidStoredState
 
@@ -44,7 +45,9 @@ def test_state_replace_preserves_corrupt_bytes_when_edit_refuses(
         before = snapshot(tmp_path)
         store = state.FixedStateStore(roots)
         result = store.update(
-            "config", max_bytes=1024, edit=lambda _old: InvalidStoredState()
+            StateFile.CONFIG,
+            max_bytes=1024,
+            edit=lambda _old: InvalidStoredState(),
         )
         assert isinstance(result, InvalidStoredState)
         assert snapshot(tmp_path) == before
@@ -60,7 +63,7 @@ def test_state_unchanged_never_creates_or_replaces_bytes(
             if initial is not None:
                 assert isinstance(
                     store.update(
-                        "presets",
+                        StateFile.PRESETS,
                         max_bytes=100,
                         edit=lambda old, value=initial: value,
                     ),
@@ -69,7 +72,7 @@ def test_state_unchanged_never_creates_or_replaces_bytes(
             before = snapshot(tmp_path)
             assert isinstance(
                 store.update(
-                    "presets",
+                    StateFile.PRESETS,
                     max_bytes=100,
                     edit=lambda old: state.StateUnchanged(),
                 ),
@@ -82,18 +85,26 @@ def test_state_missing_replace_bounds_and_fixed_names(tmp_path: Path) -> None:
     """Only fixed names are updated, and both old and next bytes are bounded."""
     with opened(tmp_path / "primary") as roots:
         store = state.FixedStateStore(roots)
-        assert isinstance(store.read("config", max_bytes=8), state.MissingState)
         assert isinstance(
-            store.update("config", max_bytes=8, edit=lambda old: b"12345678"),
+            store.read(StateFile.CONFIG, max_bytes=8), state.MissingState
+        )
+        assert isinstance(
+            store.update(
+                StateFile.CONFIG, max_bytes=8, edit=lambda old: b"12345678"
+            ),
             state.StateWritten,
         )
-        assert store.read("config", max_bytes=8) == b"12345678"
+        assert store.read(StateFile.CONFIG, max_bytes=8) == b"12345678"
         before = snapshot(tmp_path)
         assert isinstance(
-            store.update("config", max_bytes=8, edit=lambda old: b"123456789"),
+            store.update(
+                StateFile.CONFIG, max_bytes=8, edit=lambda old: b"123456789"
+            ),
             LimitExceeded,
         )
-        assert isinstance(store.read("config", max_bytes=7), InvalidStoredState)
+        assert isinstance(
+            store.read(StateFile.CONFIG, max_bytes=7), InvalidStoredState
+        )
         assert snapshot(tmp_path) == before
         assert set(before) == {"primary", "primary/.dartwork_ui_config.json"}
 
@@ -117,10 +128,12 @@ def test_state_nonregular_refused_without_external_changes(
     with opened(primary) as roots:
         store = state.FixedStateStore(roots)
         assert isinstance(
-            store.read("presets", max_bytes=100), InvalidStoredState
+            store.read(StateFile.PRESETS, max_bytes=100), InvalidStoredState
         )
         assert isinstance(
-            store.update("presets", max_bytes=100, edit=lambda old: b"[]"),
+            store.update(
+                StateFile.PRESETS, max_bytes=100, edit=lambda old: b"[]"
+            ),
             InvalidStoredState,
         )
     assert outside.read_bytes() == b"keep"
@@ -134,7 +147,9 @@ def test_state_replacement_failure_preserves_old_bytes(
     with opened(tmp_path / "primary") as roots:
         store = state.FixedStateStore(roots)
         assert isinstance(
-            store.update("config", max_bytes=100, edit=lambda old: b"old"),
+            store.update(
+                StateFile.CONFIG, max_bytes=100, edit=lambda old: b"old"
+            ),
             state.StateWritten,
         )
         before = snapshot(tmp_path)
@@ -147,7 +162,9 @@ def test_state_replacement_failure_preserves_old_bytes(
 
         monkeypatch.setattr(state, "_replace_state", refuse_replace)
         assert isinstance(
-            store.update("config", max_bytes=100, edit=lambda old: b"next"),
+            store.update(
+                StateFile.CONFIG, max_bytes=100, edit=lambda old: b"next"
+            ),
             fs.FileIOFailure,
         )
         assert snapshot(tmp_path) == before
@@ -162,7 +179,7 @@ def test_state_updates_are_serialized_across_stores(tmp_path: Path) -> None:
         def increment(index: int) -> None:
             """Increment persisted state through independently constructed stores."""
             result = stores[index % 2].update(
-                "config",
+                StateFile.CONFIG,
                 max_bytes=100,
                 edit=lambda old: str(
                     (0 if isinstance(old, state.MissingState) else int(old)) + 1
@@ -172,4 +189,4 @@ def test_state_updates_are_serialized_across_stores(tmp_path: Path) -> None:
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             list(executor.map(increment, range(40)))
-        assert stores[0].read("config", max_bytes=100) == b"40"
+        assert stores[0].read(StateFile.CONFIG, max_bytes=100) == b"40"

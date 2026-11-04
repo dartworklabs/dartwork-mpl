@@ -98,6 +98,8 @@ class TestConfigInternals:
 
 
 class TestAtomicWriteText:
+    """Atomic text writes create parents, replace content and leave no temp files."""
+
     def test_writes_content(self, tmp_path: Path) -> None:
         target = tmp_path / "presets.json"
         _atomic_write_text(target, '[{"a": 1}]\n')

@@ -38,8 +38,6 @@ ax2.plot(
 ax1.set_xlabel("Month")
 ax1.set_ylabel("Precipitation (mm)")
 ax2.set_ylabel("Temperature (C)")
-lines1, labels1 = ax1.get_legend_handles_labels()
-lines2, labels2 = ax2.get_legend_handles_labels()
-ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+dm.place_legend(ax1)  # one legend for both twins
 
 dm.simple_layout(fig)

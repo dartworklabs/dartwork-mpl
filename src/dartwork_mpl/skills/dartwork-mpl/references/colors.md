@@ -36,17 +36,21 @@ of one family.
 
 ## One highlighted series
 
+The highlighted series keeps its own colour (in a new figure, the preset's
+first colour); every other series or bar turns `dc.gray4`; widths, markers and
+the legend stay.
+
 ```python
 x = np.arange(2015, 2025)
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 for i, name in enumerate(["North", "South", "East", "West"]):
-    y = 50 + 3 * i + np.cumsum(np.ones(len(x)) * (i - 1.5))
-    focus = name == "East"
-    ax.plot(x, y, color="dc.orange6" if focus else "dc.gray4",
-            zorder=3 if focus else 2)
-    ax.annotate(name, (x[-1], y[-1]), xytext=(4, 0),
-                textcoords="offset points", va="center",
-                color="dc.orange6" if focus else "dc.gray6")
+    ax.plot(x, 50 + 3 * i + np.cumsum(np.ones(len(x)) * (i - 1.5)), label=name)
+for line in ax.get_lines():
+    if line.get_label() == "East":
+        line.set_zorder(3)                    # keeps its colour
+    else:
+        line.set_color("dc.gray4")
+dm.place_legend(ax)                           # after recolouring: fresh handles
 dm.simple_layout(fig)
 plt.close(fig)
 ```
