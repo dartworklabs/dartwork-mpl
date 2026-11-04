@@ -54,6 +54,7 @@ def _text_flags(rs):
 
 
 def summary_md(rows: list[dict], run_dir: Path) -> str:
+    """Summarize scored rows without inferring exposure from historical flags."""
     out = [
         f"# Agent eval summary — `{run_dir.name}`",
         "",
@@ -128,10 +129,14 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
                 for (h, a, k), v in sorted(lint_rules.items())
             ),
         ]
+    out += ["", "## Units", ""]
+    if any(r.get("held_out") for r in rows):
+        out += [
+            "Declared held-out reflects the historical case YAML flag, not proof of no tuning exposure. "
+            "Final-freeze provenance is separate; historical run-time exposure is not inferred here.",
+            "",
+        ]
     out += [
-        "",
-        "## Units",
-        "",
         "| case | host | arm/rep | exec | task | inspected | lint | overrides | stop | turns | tokens "
         "| time (s) | defects | values | spec | preserved | failed checks |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
@@ -156,7 +161,7 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
             failed.append(
                 f"changed {pres['changed_n']} / added {pres.get('added_n', 0)} non-target props"
             )
-        flag = " (held-out)" if r.get("held_out") else ""
+        flag = " (declared held-out)" if r.get("held_out") else ""
         insp = r.get("inspection_observed")
         out.append(
             f"| {r['case']}{flag} | {r['host']} | {_arm(r)}/{r.get('rep')} | {'yes' if r.get('execution_success') else 'NO'} "
