@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from dartwork_mpl._colors import _build, _generated
+from dartwork_mpl._colors.construction._catalog import CatalogSnapshot
 from dartwork_mpl._colors.verify import ThresholdViolation
 
 _GENERATED_TEXT = '"""generated test artifact"""\n'
@@ -403,8 +404,15 @@ def test_write_mode_honors_injected_output_target(
     assert tuple(tmp_path.iterdir()) == (target,)
 
 
-def test_tracked_generated_check_is_fresh_and_non_writing() -> None:
+def test_tracked_generated_check_is_fresh_and_non_writing(
+    candidate_catalog: CatalogSnapshot, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Run the real coordinator in check mode without touching source bytes."""
+    # Reuse the session's compile of the same source instead of compiling it
+    # a second time; the gate, exact comparison and render stay real.
+    monkeypatch.setattr(
+        _build, "compile_candidate_snapshot", lambda: candidate_catalog
+    )
     target = Path(_build.__file__).with_name("_generated.py")
     before = target.read_bytes()
     siblings = tuple(sorted(target.parent.iterdir()))
