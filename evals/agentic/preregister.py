@@ -582,10 +582,27 @@ def _unused(cfg: Config, cohort: str) -> None:
         )
 
 
+def _record_location(cfg: Config, path: Path) -> None:
+    """Keep grading details under the runner's hidden root, beside its run IDs."""
+    target = path.resolve()
+    records = cfg.records.resolve()
+    if target == records or not target.is_relative_to(records):
+        raise ValueError(
+            "prelaunch record must stay inside the hidden records root"
+        )
+    if any(
+        target.is_relative_to((cfg.records / name).resolve())
+        for name in cfg.run_ids.values()
+    ):
+        raise ValueError(
+            "prelaunch record must be outside official run directories"
+        )
+
+
 def freeze(
     config_path: Path, output_path: Path, repo: Path = REPO
 ) -> dict[str, object]:
-    """Exclusively persist a read-only checksummed record; never overwrite one."""
+    """Exclusively persist a checksummed record inside the hidden records root."""
     if os.path.lexists(output_path):
         raise ValueError("prelaunch output already exists")
     if output_path.resolve().is_relative_to(repo.resolve()):
@@ -593,6 +610,7 @@ def freeze(
             "keep the prelaunch record outside the trusted repository"
         )
     cfg, snapshot = _snapshot(config_path.resolve(), repo.resolve())
+    _record_location(cfg, output_path)
     for cohort in COHORTS:
         _unused(cfg, cohort)
     record: dict[str, object] = {
@@ -633,6 +651,7 @@ def _verified(
         raise ValueError("prelaunch record integrity check failed")
     path = _path(record["snapshot"].get("config_path"), "prelaunch config_path")
     cfg, expected = _snapshot(path, repo.resolve())
+    _record_location(cfg, record_path)
     if record["snapshot"] != expected:
         raise ValueError(
             "frozen input/config/roster/endpoints/provenance changed"
