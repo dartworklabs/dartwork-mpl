@@ -76,6 +76,7 @@ from .annotation import (
     arrow_axis,
     label_axes,
     label_hline,
+    label_line_ends,
     make_offset,
     optimize_legend,
     place_legend,
@@ -165,9 +166,10 @@ from .units import (
 # release without a full deprecation cycle. Documented in
 # docs/development/api-stability.md. ``figsize_for`` (the preset's default
 # canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
-# ``add_note`` (a source line in the preset's note style) its placement.
+# ``add_note`` (a source line in the preset's note style) its placement;
+# ``label_line_ends`` (line names instead of a legend) its spacing and colour.
 EXPERIMENTAL: frozenset[str] = frozenset(
-    {"add_note", "figsize_for", "grid_shape"}
+    {"add_note", "figsize_for", "grid_shape", "label_line_ends"}
 )
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
@@ -279,6 +281,7 @@ __all__ = [  # noqa: RUF022
     "annotate_corner",
     "label_axes",
     "label_hline",
+    "label_line_ends",
     "place_legend",
     "wrap_axis_label",
     "wrap_axis_labels",
