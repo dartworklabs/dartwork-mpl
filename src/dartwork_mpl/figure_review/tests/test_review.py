@@ -559,3 +559,64 @@ class TestEditsTheSummaryMustSee:
         assert r.paths["png"] == tmp_path / "chart.png"
         assert r.paths["png"].is_file()
         assert not (tmp_path / "chart..png").exists()
+
+
+class TestRecheckFindings:
+    """The three findings of the codex re-check (review 6)."""
+
+    def test_a_3d_line_collection_edit(self, tmp_path: Path) -> None:
+        from mpl_toolkits.mplot3d.art3d import Line3DCollection
+
+        def draw(end):
+            def make():
+                fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+                ax = fig.add_subplot(projection="3d")
+                ax.add_collection3d(Line3DCollection([[[0, 0, 0], end]]))
+                return fig
+
+            return make
+
+        r = _changes(tmp_path, draw([1, 1, 1]), draw([1, 0, 1]))
+        assert "axes[0].series[0].data" in [c.path for c in r.changes]
+
+    def test_turning_a_3d_scatter_changes_no_sizes_or_colours(
+        self, tmp_path: Path
+    ) -> None:
+        def draw(elev=30, azim=-60):
+            def make():
+                fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+                ax = fig.add_subplot(projection="3d")
+                ax.scatter(
+                    [0, 1, 2],
+                    [0, 1, 2],
+                    [0, 1, 2],
+                    c=["red", "green", "blue"],
+                    s=[10, 20, 30],
+                    depthshade=False,
+                )
+                ax.view_init(elev, azim)
+                return fig
+
+            return make
+
+        r = _changes(tmp_path, draw(), draw(0, 180))
+        series = [c.path for c in r.changes if ".series[" in c.path]
+        assert series == []
+
+    def test_canvas_paths_index_the_summary_texts(self, tmp_path: Path) -> None:
+        fig = plt.figure(figsize=dm.figsize("13cm", "wide"))
+        left, _ = fig.subfigures(1, 2)
+        ax = left.subplots()
+        left.text(0.5, 0.5, "hidden", visible=False)
+        left.text(2, 2, "outside")
+        ax.text(0.5, 0.5, "hidden too", visible=False)
+        ax.text(5, 5, "far out", transform=ax.transAxes)
+        s = dm.review(fig, tmp_path / "f", quiet=True).summary
+        plt.close(fig)
+        sub_texts = [e["text"] for e in s["figure"]["subfigures"][0]["texts"]]
+        ax_texts = [e["text"] for e in s["axes"][0]["texts"]]
+        where = {o["text"]: o["where"] for o in s["outside_canvas"]}
+        assert sub_texts == ["outside"]
+        assert where["outside"] == "figure.subfigures[0].texts[0]"
+        assert ax_texts == ["far out"]
+        assert where["far out"] == "axes[0].texts[0]"

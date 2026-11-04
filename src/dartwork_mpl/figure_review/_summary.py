@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 import matplotlib.colors as mcolors
 import numpy as np
 from matplotlib.collections import (
+    Collection,
     LineCollection,
     PathCollection,
     PolyCollection,
@@ -223,18 +224,22 @@ def _collections(ax: _AxesBase, names: dict[int, str]) -> list[dict[str, Any]]:
         rgba: Any
         if isinstance(col, PathCollection):
             offsets3d = getattr(col, "_offsets3d", None) if three_d else None
-            data = (
-                _digest(*offsets3d)
-                if offsets3d is not None
-                else _digest(col.get_offsets())
-            )
+            if offsets3d is not None:
+                # mplot3d sorts sizes and colours by depth for drawing; read
+                # them in data order so turning the view changes nothing.
+                data = _digest(*offsets3d)
+                sizes = getattr(col, "_sizes3d", col.get_sizes())
+                rgba = Collection.get_facecolor(col)
+            else:
+                data = _digest(col.get_offsets())
+                sizes = col.get_sizes()
+                rgba = col.get_facecolor()
             entry = {
                 "kind": "scatter",
                 "n": len(np.asarray(col.get_offsets())),
                 "data": data,
-                "sizes": _digest(col.get_sizes()),
+                "sizes": _digest(sizes),
             }
-            rgba = col.get_facecolor()
         elif isinstance(col, QuadMesh):
             values = col.get_array()
             mesh: Any = [] if values is None else values
@@ -247,8 +252,16 @@ def _collections(ax: _AxesBase, names: dict[int, str]) -> list[dict[str, Any]]:
         elif isinstance(col, (PolyCollection, LineCollection)):
             kind = "area" if isinstance(col, PolyCollection) else "lines"
             if three_d:
+                # 3-D data, not the projection: segments for lines, vertices
+                # for polygons.
+                segments = getattr(col, "_segments3d", None)
                 vec = getattr(col, "_vec", None)
-                poly: str | None = _digest(vec) if vec is not None else None
+                if segments is not None:
+                    poly: str | None = (
+                        _digest(*segments) if len(segments) else _digest([])
+                    )
+                else:
+                    poly = _digest(vec) if vec is not None else None
             else:
                 verts = [p.vertices for p in col.get_paths()]
                 poly = _digest(*verts) if verts else _digest([])
@@ -404,7 +417,7 @@ def _axes(ax: _AxesBase, renderer: RendererBase) -> dict[str, Any]:
         out[f"{name}ticks"] = _ticks(axis)
     out["series"] = _series(ax)
     out["legends"] = [_legend(lg, ax, renderer) for lg in _legends(ax)]
-    out["texts"] = [_text(t) for t in ax.texts if t.get_visible()]
+    out["texts"] = [_text(t) for t in _axes_free_texts(ax)]
     out["insets"] = [_axes(child, renderer) for child in ax.child_axes]
     return out
 
@@ -413,9 +426,18 @@ _SUP_NAMES = ("_suptitle", "_supxlabel", "_supylabel")
 
 
 def _free_texts(owner: Figure | SubFigure) -> list[Text]:
-    """``owner.texts`` without the sup titles, which have their own fields."""
+    """Visible ``owner.texts`` without the sup titles (they have own fields).
+
+    The summary's ``texts[i]`` and the canvas check's ``texts[i]`` both index
+    this list, so a path in ``outside_canvas`` names a summary entry.
+    """
     sups = {id(getattr(owner, name, None)) for name in _SUP_NAMES}
-    return [t for t in owner.texts if id(t) not in sups]
+    return [t for t in owner.texts if id(t) not in sups and t.get_visible()]
+
+
+def _axes_free_texts(ax: _AxesBase) -> list[Text]:
+    """Visible ``ax.texts``, indexed the same way as :func:`_free_texts`."""
+    return [t for t in ax.texts if t.get_visible()]
 
 
 def _sup(owner: Figure | SubFigure, name: str) -> dict[str, Any] | None:
@@ -431,7 +453,7 @@ def _figure_texts(
         "suptitle": _sup(owner, "_suptitle"),
         "supxlabel": _sup(owner, "_supxlabel"),
         "supylabel": _sup(owner, "_supylabel"),
-        "texts": [_text(t) for t in _free_texts(owner) if t.get_visible()],
+        "texts": [_text(t) for t in _free_texts(owner)],
         "legends": [_legend(lg, None, renderer) for lg in owner.legends],
     }
 
@@ -485,7 +507,9 @@ def _axes_texts(ax: _AxesBase, here: str) -> list[tuple[str, Text]]:
             found += [
                 (f"{here}.{name}ticks", t) for t in _shown_ticklabels(axis)
             ]
-    found += [(f"{here}.texts[{j}]", t) for j, t in enumerate(ax.texts)]
+    found += [
+        (f"{here}.texts[{j}]", t) for j, t in enumerate(_axes_free_texts(ax))
+    ]
     for j, legend in enumerate(_legends(ax)):
         found.append((f"{here}.legends[{j}].title", legend.get_title()))
         found += [(f"{here}.legends[{j}]", t) for t in legend.get_texts()]
