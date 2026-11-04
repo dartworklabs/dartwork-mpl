@@ -16,13 +16,17 @@ e09 and g18, each next to the label the eval then counted as agreement.
   as "make it look better").
 
 ``run.py`` prints the hits and keeps them in ``run_meta.json``; it does not
-stop the run (a skill may legitimately name a request kind).
+stop the run (a skill may legitimately name a request kind). With
+``--ab-skill-install`` the skill comes from the wheel, so :func:`find_in_wheel`
+reads the copy the wheel ships.
 """
 
 from __future__ import annotations
 
 import csv
 import re
+import tempfile
+import zipfile
 from pathlib import Path
 
 import yaml
@@ -98,3 +102,23 @@ def find(
                         }
                     )
     return hits
+
+
+#: Where the wheel ships the skill that ``python -m dartwork_mpl.skills install``
+#: links into a project.
+WHEEL_SKILL = "dartwork_mpl/skills/dartwork-mpl/"
+
+
+def find_in_wheel(wheel: Path, **kwargs: object) -> list[dict[str, str]]:
+    """:func:`find` over the skill a wheel ships (``--ab-skill-install`` arms)."""
+    with zipfile.ZipFile(wheel) as zf, tempfile.TemporaryDirectory() as tmp:
+        members = [
+            m
+            for m in zf.namelist()
+            if m.startswith(WHEEL_SKILL) and m.endswith(".md")
+        ]
+        if not any(m == WHEEL_SKILL + "SKILL.md" for m in members):
+            raise FileNotFoundError(f"{wheel} ships no {WHEEL_SKILL}SKILL.md")
+        for m in members:
+            zf.extract(m, tmp)
+        return find(Path(tmp) / WHEEL_SKILL, **kwargs)  # type: ignore[arg-type]

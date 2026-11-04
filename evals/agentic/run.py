@@ -1213,6 +1213,23 @@ def plan_jobs(
     return jobs
 
 
+def skill_quote_hits(
+    a: argparse.Namespace, wheel: Path
+) -> list[dict[str, str]] | None:
+    """What the skill under test quotes from the cases; None without a skill arm.
+
+    A copied skill (``--with-skill`` / ``--ab-skill``) is read from its folder,
+    an installed one (``--ab-skill-install``) from the wheel that installs it.
+    """
+    import skill_quotes
+
+    if a.skill_dir:
+        return skill_quotes.find(a.skill_dir)
+    if getattr(a, "skill_install", False):
+        return skill_quotes.find_in_wheel(wheel)
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -1382,11 +1399,10 @@ def main() -> int:
         "versions": meta["versions"],
         "started": datetime.now().isoformat(timespec="seconds"),
     }
-    if a.skill_dir:
-        import skill_quotes
-
-        inv["skill_quotes"] = skill_quotes.find(a.skill_dir)
-        for q in inv["skill_quotes"]:
+    quoted = skill_quote_hits(a, Path(wheel["path"]))
+    if quoted is not None:
+        inv["skill_quotes"] = quoted
+        for q in quoted:
             print(
                 f"WARNING skill quotes {q['kind']}: {q['quote']!r} in {q['file']}",
                 flush=True,
