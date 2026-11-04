@@ -620,3 +620,51 @@ class TestRecheckFindings:
         assert where["outside"] == "figure.subfigures[0].texts[0]"
         assert ax_texts == ["far out"]
         assert where["far out"] == "axes[0].texts[0]"
+
+
+class TestConnectorFindings:
+    """The GitHub Codex review of 58f7e42e: tick sides, hidden legends, meshes."""
+
+    def test_tick_labels_on_both_sides(self, tmp_path: Path) -> None:
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.plot([0, 1, 2], [0, 1, 2])
+        ax.tick_params(axis="y", labelright=True)
+        s = dm.review(fig, tmp_path / "v1", quiet=True).summary
+        plt.close(fig)
+        ticks = s["axes"][0]["yticks"]
+        assert ticks["labels"] and ticks["labels2"] == ticks["labels"]
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        ax = fig.add_axes([0.1, 0.1, 0.95, 0.8])
+        ax.plot([0, 1], [0, 1])
+        ax.tick_params(axis="y", labelright=True)
+        s = dm.review(fig, tmp_path / "v3", quiet=True).summary
+        plt.close(fig)
+        assert any(o["where"] == "axes[0].yticks" for o in s["outside_canvas"])
+
+    def test_hiding_a_legend_is_a_change(self, tmp_path: Path) -> None:
+        def draw(hidden):
+            def make():
+                fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+                ax.plot([0, 1], [0, 1], label="a")
+                legend = ax.legend()
+                legend.set_visible(not hidden)
+                return fig
+
+            return make
+
+        r = _changes(tmp_path, draw(False), draw(True))
+        assert [c.path for c in r.changes if "legends" in c.path]
+
+    def test_mesh_coordinates_are_data(self, tmp_path: Path) -> None:
+        def draw(x):
+            def make():
+                fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+                ax.pcolormesh(x, [0, 1], [[1, 2]])
+                ax.set(xlim=(0, 3), ylim=(0, 1))
+                return fig
+
+            return make
+
+        r = _changes(tmp_path, draw([0, 1, 3]), draw([0, 2, 3]))
+        assert "axes[0].series[0].data" in [c.path for c in r.changes]

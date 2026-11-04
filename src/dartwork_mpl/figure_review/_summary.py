@@ -246,7 +246,7 @@ def _collections(ax: _AxesBase, names: dict[int, str]) -> list[dict[str, Any]]:
             entry = {
                 "kind": "image",
                 "n": int(np.size(mesh)),
-                "data": _digest(mesh),
+                "data": _digest(mesh, col.get_coordinates()),
             }
             rgba = []
         elif isinstance(col, (PolyCollection, LineCollection)):
@@ -328,27 +328,36 @@ def _series(ax: _AxesBase) -> list[dict[str, Any]]:
     return series
 
 
-def _shown_ticklabels(axis: Axis) -> list[Text]:
-    """Major tick labels matplotlib draws: inside the view, visible, not empty."""
+def _shown_ticklabels(axis: Axis, side: int = 1) -> list[Text]:
+    """Tick labels matplotlib draws on one side (1: bottom/left, 2: top/right).
+
+    Each major tick carries both sides' labels at its own location; only those
+    inside the view, visible and not empty count.
+    """
     low, high = sorted(float(v) for v in axis.get_view_interval())
     eps = 1e-9 * max(abs(high - low), 1e-300)
-    labels = axis.get_majorticklabels()
-    locs = axis.get_majorticklocs()
-    return [
-        label
-        for label, loc in zip(labels, locs, strict=False)
-        if low - eps <= float(loc) <= high + eps
-        and label.get_visible()
-        and label.get_text()
-    ]
+    shown = []
+    for tick in axis.get_major_ticks(len(axis.get_majorticklocs())):
+        label = tick.label1 if side == 1 else tick.label2
+        if (
+            low - eps <= float(tick.get_loc()) <= high + eps
+            and label.get_visible()
+            and label.get_text()
+        ):
+            shown.append(label)
+    return shown
 
 
 def _ticks(axis: Axis) -> dict[str, Any]:
     shown = _shown_ticklabels(axis)
-    return {
+    other = _shown_ticklabels(axis, side=2)
+    out: dict[str, Any] = {
         "labels": [t.get_text() for t in shown],
         "size": _num(shown[0].get_fontsize()) if shown else None,
     }
+    if other:
+        out["labels2"] = [t.get_text() for t in other]
+    return out
 
 
 def _inside(inner: Any, outer: Any) -> bool:
@@ -361,9 +370,22 @@ def _inside(inner: Any, outer: Any) -> bool:
 
 
 def _legends(ax: _AxesBase) -> list[Legend]:
-    """Every legend of ``ax``: the current one and any kept with add_artist."""
-    found = [c for c in ax.get_children() if isinstance(c, Legend)]
+    """Every shown legend of ``ax``: the current one and any kept with add_artist.
+
+    A hidden legend is left out here and in the canvas check alike, so hiding
+    or showing one is a change.
+    """
+    found = [
+        c
+        for c in ax.get_children()
+        if isinstance(c, Legend) and c.get_visible()
+    ]
     return list(dict.fromkeys(found))
+
+
+def _figure_legends(owner: Figure | SubFigure) -> list[Legend]:
+    """The figure's or SubFigure's shown legends."""
+    return [lg for lg in owner.legends if lg.get_visible()]
 
 
 def _legend(
@@ -454,7 +476,9 @@ def _figure_texts(
         "supxlabel": _sup(owner, "_supxlabel"),
         "supylabel": _sup(owner, "_supylabel"),
         "texts": [_text(t) for t in _free_texts(owner)],
-        "legends": [_legend(lg, None, renderer) for lg in owner.legends],
+        "legends": [
+            _legend(lg, None, renderer) for lg in _figure_legends(owner)
+        ],
     }
 
 
@@ -488,7 +512,7 @@ def _owner_texts(
     found += [
         (f"{here}.texts[{i}]", t) for i, t in enumerate(_free_texts(owner))
     ]
-    for i, legend in enumerate(owner.legends):
+    for i, legend in enumerate(_figure_legends(owner)):
         found.append((f"{here}.legends[{i}].title", legend.get_title()))
         found += [(f"{here}.legends[{i}]", t) for t in legend.get_texts()]
     for i, sf in enumerate(owner.subfigs):
@@ -504,9 +528,11 @@ def _axes_texts(ax: _AxesBase, here: str) -> list[tuple[str, Text]]:
         axis = getattr(ax, f"{name}axis")
         found.append((f"{here}.{name}label", axis.label))
         if ax.name != "3d":  # mplot3d tick labels sit at stale 2-D positions
-            found += [
-                (f"{here}.{name}ticks", t) for t in _shown_ticklabels(axis)
-            ]
+            for side in (1, 2):
+                found += [
+                    (f"{here}.{name}ticks", t)
+                    for t in _shown_ticklabels(axis, side=side)
+                ]
     found += [
         (f"{here}.texts[{j}]", t) for j, t in enumerate(_axes_free_texts(ax))
     ]

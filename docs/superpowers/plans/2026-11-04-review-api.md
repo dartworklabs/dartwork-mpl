@@ -85,12 +85,14 @@ figure: size_in, dpi, suptitle / supxlabel / supylabel {text,size,weight,color},
 axes[i]: kind ("rectilinear", "polar", "3d", ...), position (fraction, 3 decimals)
   title.left|center|right {text,size,weight,color}
   xlabel / ylabel (/ zlabel on 3-D) {text,size,weight,color}
-  xlim, ylim (zlim), xscale, yscale (zscale); xticks / yticks (zticks) {labels in view, size}
+  xlim, ylim (zlim), xscale, yscale (zscale); xticks / yticks (zticks)
+    {labels in view, size, labels2 when the opposite side shows labels}
   series[j]: kind (line|bar|scatter|area|lines|image|patches|collection), label
              (a container's name for errorbar / hist parts), n, color, colors
              (digest when not uniform), line width / style / marker, scatter sizes,
-             data (digest of shape, mask and exact values; 3-D from 3-D data)
-  legends[k]: title, labels, ncols, inside   (every legend, add_artist ones too)
+             data (digest of shape, mask and exact values, mesh coordinates;
+             3-D from 3-D data in data order)
+  legends[k]: title, labels, ncols, inside   (every shown legend, add_artist ones too)
   texts: [{text,size,weight,color}]  (ax.texts: annotations, notes)
   insets[k]: the same fields for ax.inset_axes children
 outside_canvas: [{where, text, beyond_px{left,bottom,right,top}}]
