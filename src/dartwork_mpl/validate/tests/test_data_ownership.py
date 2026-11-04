@@ -33,13 +33,16 @@ def test_owner_surface_preserves_historical_callable_and_metadata():
         "min_points": "int",
         "return": "tuple[np.ndarray[Any, Any], np.ndarray[Any, Any] | None]",
     }
-    assert {k: str(v) for k, v in typing.get_type_hints(f).items()} == {
-        "x": "typing.Any",
-        "y": "typing.Any | None",
-        "require_same_length": "<class 'bool'>",
-        "allow_nan": "<class 'bool'>",
-        "min_points": "<class 'int'>",
-        "return": "tuple[numpy.ndarray[typing.Any, typing.Any], numpy.ndarray[typing.Any, typing.Any] | None]",
+    assert typing.get_type_hints(f) == {
+        "x": typing.Any,
+        "y": typing.Any | None,
+        "require_same_length": bool,
+        "allow_nan": bool,
+        "min_points": int,
+        "return": tuple[
+            np.ndarray[typing.Any, typing.Any],
+            np.ndarray[typing.Any, typing.Any] | None,
+        ],
     }
     for namespace in (dm, helpers, owner):
         assert namespace.__all__.count("validate_data") == 1
