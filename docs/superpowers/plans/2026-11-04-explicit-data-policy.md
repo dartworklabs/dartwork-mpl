@@ -41,11 +41,11 @@ Existing remote CI remains unchanged; local verification uses inspected safe pat
 
 Files: `validate/_data.py`, `validate/__init__.py`, root `__init__.py`,
 `validate/tests/test_data_policy.py`, existing `test_data_ownership.py`.
-- [ ] Step 1: add observable policy examples and generated invariants; run before implementation.
+- [x] Step 1: add observable policy examples and generated invariants; run before implementation.
   Expected: assertions exercising the new contract fail; preserve raw red evidence.
-- [ ] Step 2: implement explicit policy parsing, masks, immutable diagnostics and safe text.
+- [x] Step 2: implement explicit policy parsing, masks, immutable diagnostics and safe text.
   Keep the legacy function body/caller warning stack intact after the opt-in branch.
-- [ ] Step 3: update only the approved signature expectation; retain all other ownership assertions.
+- [x] Step 3: update only the approved signature expectation; retain all other ownership assertions.
   Run focused policy/ownership/helpers tests, Ruff and mypy. Expected: pass, no weakened checks.
 Commit point: native implementation plus behavioral regression tests after green.
 
@@ -53,25 +53,43 @@ Commit point: native implementation plus behavioral regression tests after green
 
 Files: focused tests in `tests/contracts/test_data_policy_runtime.py`, reusable
 synthetic probe in `tests/support/data_policy_probe.py` if useful.
-- [ ] Step 1: build a wheel, install it non-editably outside the checkout, run finite,
+- [x] Step 1: build a wheel, install it non-editably outside the checkout, run finite,
   strict, preserve, clean and omitted-policy probes. Expected: installed path,
   tuple/data/diagnostic assertions and original inputs all correct.
-- [ ] Step 2: exercise those calls through existing MCP render execution using a
+- [x] Step 2: exercise those calls through existing MCP render execution using a
   fixed sentinel after assertions; verify the actual envelope and untouched discovery.
   Use real in-process client and one bounded installed-server stdio path.
-- [ ] Step 3: run existing MCP data-repair contracts and color freeze/boundary tests.
+- [x] Step 3: run existing MCP data-repair contracts and color freeze/boundary tests.
   Expected: no new protocol, no altered existing result and no digest regeneration.
 Commit point: executable acceptance tests with real wheel/MCP evidence.
 
 ## Task 3 — consumer guidance, integration and review
 
 Files: bundled skill reference routed to data usage, `CHANGELOG.md`, this plan.
-- [ ] Step 1: document opt-in numeric scope, allow_nan conflict, diagnostics and
+- [x] Step 1: document opt-in numeric scope, allow_nan conflict, diagnostics and
   unchanged default; retain MCP shape-vs-native distinction. Execute any new code examples.
-- [ ] Step 2: inspect changed doc rendering before merge where visible output changes.
-- [ ] Step 3: independent review against the approved contract and executable checks;
+- [x] Step 2: inspect changed doc rendering before merge where visible output changes.
+- [x] Step 3: independent review against the approved contract and executable checks;
   fix bounded findings, then recheck only affected tests. Save evidence outside /tmp.
 - [ ] Step 4: fetch main again, reconcile concurrent changes, run affected checks,
   create PR and require its latest checks. Merge per repository policy when green.
   Do not close all of #501: other dtype policies and task 8 decisions remain.
 Commit point: guidance and verified completion record; PR links all work.
+
+## Executed evidence (2026-11-04)
+
+- Local policy red phase: 64 failures before the new API; five isolated policy
+  mutants killed. Presentation-hook regression and six timedelta minimum cases
+  failed before their fixes and passed afterward. Legacy body remains unchanged.
+- Expanded validation/helpers/MCP-repair/color/boundary selection: 607 passed.
+  Full mypy: 210 source modules; changed Python Ruff lint/format passed.
+- Installed wheel journey: core-only Python, real MCP in-process and CLI stdio
+  all passed in 23.12 s. One collected journey retains three transport stages
+  to avoid xdist rebuilding the same wheel three times. No skips.
+- Installed union-mask mutation failed all three stages. Stage/build failure
+  cleanup and success cleanup verified; temporary wheel/environment trees removed.
+- Consumer example executed and linted; rendered same-scale before/after shown.
+- Independent review found timedelta64/NaT threshold acceptance; fixed with
+  six red/green regression cases. No other correctness/privacy blocker reported.
+- Current-machine raw logs: `~/scratch/dartwork-policy-implementation-20261104/`.
+  No broad local docs suite or forbidden design/copy access.

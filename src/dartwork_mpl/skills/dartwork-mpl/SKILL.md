@@ -68,10 +68,9 @@ rounded bar ends, placeholder palettes.
 
 ## Data
 
-Plot the user's values as given. Never drop, fill, sort, aggregate, clip or invent rows
-silently; state every transformation. Missing values stay visible gaps (`dm.validate_data`
-drops NaN/Inf rows unless `allow_nan=True`). A preview is not the dataset; template numbers
-are placeholders, never data. Dates are dates, a bare year (2012) a number; "A against B": A on y ("rent against floor area": rent on y).
+Plot the user's values as given. Never drop, fill, sort, aggregate, clip or invent rows silently; state every transformation. Missing values stay visible gaps; `dm.validate_data`
+legacy cleanup and opt-in policies: `references/data-policy.md`. A preview is not the dataset;
+template numbers are placeholders. Dates are dates, a bare year (2012) a number; "A against B": A on y ("rent against floor area": rent on y).
 A new figure labels both axes. Labels and legend names are column names translated word for word, sentence case, also when the request words
 them otherwise (`order_date` → `Order date`, `margin_pct` → `Margin (%)`, `고객수` → `Customer count`); only a value with no column takes the request's noun
 word for word, every word kept, in its order (`수출 증가율` → `Export growth rate`, "the share of online orders" → `Share of online orders`); no unit nothing states (a rate the data gives stays bare, no `(%)`; a share you compute × 100 says `(%)`).
@@ -113,6 +112,7 @@ value labels larger than `dm.fs(-1)` drop to it and, with no weight written, tak
 | Need | Read |
 |---|---|
 | tokens, pixels, grids, ratios, mosaics, twin axes, panel labels | `references/sizing-and-layout.md` |
+| explicit NaN/Inf retention, rejection or cleanup; native vs MCP data checks | `references/data-policy.md` |
 | finding the artist, one-target edits, "make it better" | `references/editing.md` |
 | colour names, palettes, colormaps, one highlighted series | `references/colors.md` |
 | plot text language, Korean presets, other scripts | `references/korean.md` |
