@@ -1,0 +1,25 @@
+# g21-size-17x9 — generate / en / report
+id: g21-size-17x9
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Stacked bar chart of quarterly revenue by region. The figure must be exactly 17 cm wide and 9 cm tall.
+data: [quarterly_sales.csv]
+oracle:
+- type: bars
+  group: values
+  name: quarter x region segments
+  file: quarterly_sales.csv
+  category:
+    col: quarter
+  series:
+    col: region
+  value: revenue
+  layout: stacked
+- type: size
+  group: spec
+  name: 17 x 9 cm
+  width: 17
+  height: 9
+  tol: 0.15

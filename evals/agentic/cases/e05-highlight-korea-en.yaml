@@ -1,0 +1,56 @@
+# e05-highlight-korea-en — edit / en / report
+id: e05-highlight-korea-en
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Highlight Korea and make the other countries grey.
+data: [gdp_growth.csv]
+base: b01_gdp_lines.py
+edit_scope: explicit
+# Greying the other series makes legend colours ambiguous, so the highlight may
+# replace the legend with one direct label per series (and shrink the plot to fit).
+target: [ax*.line.*.color, ax*.line.*.lw, ax*.line.*.marker, ax*.line.*.ms, ax*.line.*.alpha, ax*.line.*.zorder,
+  ax*.line.*.label, ax*.legend.*, 'ax*.text:*', ax*.position, ax*.xlim, ax*.*.pos]
+max_new_texts: 5
+auxiliary: [reference_lines]
+oracle:
+- type: highlight
+  group: spec
+  name: Korea coloured, others grey
+  kind: line
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  target:
+    y: Korea
+    aliases: [Korea]
+  others:
+  - y: Japan
+    aliases: [Japan]
+  - y: United States
+    aliases: [United States]
+  - y: Germany
+    aliases: [Germany]
+  - y: France
+    aliases: [France]
+- type: series
+  group: values
+  name: country series
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  - y: United States
+    aliases: [United States, USA, US, 미국]
+  - y: Germany
+    aliases: [Germany, 독일]
+  - y: France
+    aliases: [France, 프랑스]

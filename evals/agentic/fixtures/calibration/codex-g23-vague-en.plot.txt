@@ -1,0 +1,138 @@
+# calibration control: baseline-main-20261022 codex/g23-vague-en - must fail: the final plot.py edit was never executed
+"""Render annual GDP growth; run with `.venv/bin/python plot.py`."""
+
+from __future__ import annotations
+
+import csv
+import dataclasses
+import json
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+
+
+ROOT = Path(__file__).resolve().parent
+SOURCE = ROOT / "data" / "gdp_growth.csv"
+OUT = ROOT / "out"
+
+
+def serializable(value):
+    if dataclasses.is_dataclass(value):
+        return dataclasses.asdict(value)
+    if hasattr(value, "__dict__"):
+        return vars(value)
+    return str(value)
+
+
+def main():
+    with SOURCE.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        countries = reader.fieldnames[1:]
+        rows = list(reader)
+    years = np.array([int(row["year"]) for row in rows])
+    values = {
+        country: np.array([
+            float(row[country]) if row[country].strip() else np.nan
+            for row in rows
+        ])
+        for country in countries
+    }
+    assert np.all(np.diff(years) > 0), "Years must be ordered and unique"
+    assert all(len(series) == len(years) for series in values.values())
+    assert not any(np.isinf(series).any() for series in values.values())
+
+    dm.style.use("report")
+    ink = "#172C3C"
+    blue = "#176C91"
+    muted = "#62717D"
+    grid = "#DEE5E9"
+    band = "#EDF1F4"
+    fig, axes = plt.subplots(
+        1, len(countries), sharey=True,
+        figsize=dm.figsize("30cm", "16cm"),
+        gridspec_kw={"wspace": 0.25},
+    )
+    fig.set_facecolor("white")
+
+    for ax, country in zip(axes, countries):
+        series = values[country]
+        ax.set_facecolor("white")
+        ax.axvspan(2019.5, 2021.5, color=band, linewidth=0, zorder=0)
+        ax.set_axisbelow(True)
+        ax.grid(axis="y", color=grid, linewidth=0.5)
+        ax.grid(axis="x", visible=False)
+        ax.axhline(0, color="#8797A2", linewidth=0.7, zorder=1)
+        ax.plot(
+            years, series, color=blue, linewidth=dm.lw(0.9),
+            marker="o", markersize=3.1, markeredgewidth=0,
+            solid_capstyle="round", zorder=3,
+        )
+        ax.scatter(years[-1], series[-1], color=blue, s=28, zorder=4)
+        rising = series[-1] >= series[-2]
+        label_offset = 12 if rising else -12
+        # Keep descending labels clear of both their segment and the zero rule.
+        if not rising and 0 < series[-1] < 1.0:
+            label_offset = -21
+        elif not rising and 1.0 <= series[-1] < 2.0:
+            label_offset = -7
+        ax.annotate(
+            f"{series[-1]:.1f}%", (years[-1], series[-1]),
+            xytext=(-1, label_offset), textcoords="offset points",
+            ha="center", va="bottom" if rising else "top", fontsize=dm.fs(2),
+            fontweight=dm.fw(2), color=blue,
+        )
+        ax.set_title(country, loc="left", pad=20,
+                     fontsize=dm.fs(3), fontweight=dm.fw(2), color=ink)
+        ax.set_xlim(2011.5, 2024.3)
+        ax.set_ylim(-8.5, 8.2)
+        ax.set_xticks([2012, 2017, 2023])
+        ax.set_yticks([-8, -4, 0, 4, 8])
+        ax.tick_params(axis="both", labelsize=dm.fs(0), labelcolor=muted,
+                       length=0, pad=8)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+    # Reserve physical room for the report header and explanatory footer.
+    dm.simple_layout(fig, ml="1.1cm", mr="0.7cm", mt="4.4cm", mb="3cm")
+    left = axes[0].get_position().x0
+    fig.text(left, 0.931, "GDP growth across five economies", color=ink,
+             fontsize=dm.fs(13), fontweight=dm.fw(3), va="top")
+    fig.text(left, 0.866, "Annual growth (%) · 2012–2023", color=muted,
+             fontsize=dm.fs(3), va="top")
+    fig.text(left, 0.139,
+             "Shaded area: 2020–2021    ·    End labels show 2023 growth",
+             color=muted, fontsize=dm.fs(0.5), va="top")
+    fig.text(left, 0.091,
+             "Source: data/gdp_growth.csv\nGermany: 2016 is missing; the line is left unconnected.",
+             color=muted, fontsize=dm.fs(0), linespacing=1.6, va="top")
+
+    OUT.mkdir(exist_ok=True)
+    fig.canvas.draw()
+    report = {
+        "source": str(SOURCE.relative_to(ROOT)),
+        "rows": len(rows),
+        "countries": countries,
+        "missing_values": {
+            country: years[np.isnan(series)].tolist()
+            for country, series in values.items() if np.isnan(series).any()
+        },
+        "policy": "Original row order and values; blanks preserved as NaN line gaps.",
+        "canvas_cm": [30, 16],
+        "visual_findings": dm.validate_figure(fig, quiet=True),
+        "lint_findings": dm.lint_code(Path(__file__).read_text()),
+    }
+    (OUT / "validation.json").write_text(
+        json.dumps(report, default=serializable, indent=2) + "\n"
+    )
+    dm.save_formats(fig, str(OUT / "figure"), formats=("png", "pdf"),
+                    bbox_inches=None, dpi=200)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()

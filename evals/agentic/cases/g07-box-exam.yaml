@@ -1,0 +1,17 @@
+# g07-box-exam — generate / en / report / held-out
+id: g07-box-exam
+kind: generate
+lang: en
+purpose: report
+held_out: true
+prompt: Show the score distribution of each section (A to D) as box plots or violin plots.
+data: [exam_scores.csv]
+oracle:
+- type: dist
+  group: values
+  name: per-section box/violin
+  file: exam_scores.csv
+  value: score
+  by:
+    col: section
+  accept: [box, violin]

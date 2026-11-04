@@ -1,0 +1,51 @@
+# calibration control: baseline-main-20261022 claude/e07-end-labels-en - must pass: end labels replace the legend and the series labels
+"""GDP growth by country, 2012-2023 (report)."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import dartwork_mpl as dm
+
+dm.style.use("report")
+
+df = pd.read_csv("data/gdp_growth.csv")
+countries = ["Korea", "Japan", "United States", "Germany", "France"]
+
+ends = []
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "golden"))
+for name in countries:
+    (line,) = ax.plot(df["year"], df[name], marker="o", markersize=3)
+    ends.append((name, df[name].iloc[-1], line.get_color()))
+ax.axhline(0, color="0.5", linewidth=0.5, linestyle="--")
+ax.set_xlabel("Year")
+ax.set_ylabel("Real GDP growth (%)")
+ax.set_title("Real GDP growth, 2012-2023")
+ax.margins(x=0.02)
+ax.set_xticks(range(2012, 2024, 2))
+ax.set_xlim(right=df["year"].iloc[-1] + 2.8)  # room for end labels
+
+dm.simple_layout(fig)
+
+# Label each line at its end; push labels apart so they do not overlap.
+min_gap = 1.1 * plt.rcParams["font.size"] * fig.dpi / 72
+ends.sort(key=lambda e: e[1])
+ys = [ax.transData.transform((0, v))[1] for _, v, _ in ends]
+for _ in range(100):  # relax: push overlapping neighbours apart symmetrically
+    for i in range(1, len(ys)):
+        overlap = ys[i - 1] + min_gap - ys[i]
+        if overlap > 0:
+            ys[i - 1] -= overlap / 2
+            ys[i] += overlap / 2
+for (name, _, color), y in zip(ends, ys):
+    ax.annotate(
+        name,
+        xy=(df["year"].iloc[-1], ax.transData.inverted().transform((0, y))[1]),
+        xytext=(6, 0),
+        textcoords="offset points",
+        va="center",
+        color=dm.ensure_contrast(color, "white"),
+    )
+Path("out").mkdir(exist_ok=True)
+dm.save_formats(fig, "out/figure", formats=("png", "pdf"))

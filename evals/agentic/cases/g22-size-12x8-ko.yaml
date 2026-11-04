@@ -1,0 +1,30 @@
+# g22-size-12x8-ko — generate / ko / report
+id: g22-size-12x8-ko
+kind: generate
+lang: ko
+purpose: report
+held_out: false
+prompt: 가로 12cm, 세로 8cm 크기로 한국과 일본의 GDP 성장률을 비교하는 선 그래프를 그려 주세요.
+data: [gdp_growth.csv]
+auxiliary: [reference_lines]
+oracle:
+- type: series
+  group: values
+  name: country series
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  artists: [line]
+- type: size
+  group: spec
+  name: 12 x 8 cm
+  width: 12
+  height: 8
+  tol: 0.15

@@ -1,0 +1,17 @@
+region,quarter,revenue
+North,Q1,"1,250"
+North,Q2,"1,340"
+North,Q3,"1,415"
+North,Q4,"1,580"
+South,Q1,980
+South,Q2,"1,045"
+South,Q3,"1,120"
+South,Q4,"1,210"
+East,Q1,"1,430"
+East,Q2,"1,395"
+East,Q3,"1,510"
+East,Q4,"1,655"
+West,Q1,760
+West,Q2,845
+West,Q3,910
+West,Q4,"1,030"

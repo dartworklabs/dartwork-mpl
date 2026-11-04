@@ -1,0 +1,27 @@
+# g08-stacked-area-energy — generate / en / report
+id: g08-stacked-area-energy
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Draw a stacked area chart of electricity generation by source from 2000 to 2023.
+data: [energy_mix.csv]
+oracle:
+- type: stack
+  group: values
+  name: named layers with yearly thickness
+  file: energy_mix.csv
+  x:
+    col: year
+    kind: num
+  layers:
+  - y: coal
+    aliases: [coal, 석탄]
+  - y: gas
+    aliases: [gas, 가스]
+  - y: nuclear
+    aliases: [nuclear, 원자력]
+  - y: hydro
+    aliases: [hydro, 수력]
+  - y: wind_solar
+    aliases: [wind, solar, 풍력, 태양]

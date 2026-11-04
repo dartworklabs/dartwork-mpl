@@ -1,0 +1,29 @@
+# g13-uneven-panels — generate / en / report
+id: g13-uneven-panels
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: 'Two stacked panels sharing the x axis: daily output on top using about 70% of the height, and the defect
+  rate below using about 30%.'
+data: [plant_output.csv]
+oracle:
+- type: series
+  group: values
+  name: both panels
+  file: plant_output.csv
+  x:
+    col: date
+    kind: date
+  identity: named
+  series:
+  - y: output_units
+    aliases: [output]
+  - y: defect_rate_pct
+    aliases: [defect]
+  panels: distinct
+- type: panel_ratio
+  group: spec
+  name: 70/30 heights
+  ratios: [0.7, 0.3]
+  tol: 0.06

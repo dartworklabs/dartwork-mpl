@@ -1,0 +1,39 @@
+# g14-korean-combo — generate / ko / report
+id: g14-korean-combo
+kind: generate
+lang: ko
+purpose: report
+held_out: false
+prompt: 2024년 월별 매출액(막대)과 영업이익(선)을 한 그림에 보여 주세요. 제목과 축 이름은 한국어로 써 주세요.
+data: [korea_monthly_sales.csv]
+oracle:
+- type: series
+  group: values
+  name: sales bars
+  file: korea_monthly_sales.csv
+  x:
+    col: 월
+    kind: order
+  identity: named
+  series:
+  - y: 매출액(억원)
+    aliases: [매출]
+  artists: [bars]
+- type: series
+  group: values
+  name: profit line
+  file: korea_monthly_sales.csv
+  x:
+    col: 월
+    kind: order
+  identity: named
+  series:
+  - y: 영업이익(억원)
+    aliases: [영업이익, 이익]
+  artists: [line]
+- type: regex
+  group: spec
+  name: Korean title/labels
+  pattern: '[가-힣]'
+  roles: [title, title_left, suptitle, xlabel, ylabel]
+  min: 2

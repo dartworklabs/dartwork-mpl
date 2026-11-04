@@ -1,0 +1,135 @@
+# calibration control: baseline-main-20261022 codex/g19-slides-share-ko - must pass: Others shown as its Korean name
+"""Render a Korean presentation chart from the complete market-share CSV."""
+
+from __future__ import annotations
+
+import csv
+from dataclasses import asdict
+import json
+import math
+from pathlib import Path
+import warnings
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
+
+import dartwork_mpl as dm
+
+
+ROOT = Path(__file__).resolve().parent
+DATA = ROOT / "data" / "market_share.csv"
+OUT = ROOT / "out"
+
+
+def read_market_share() -> list[tuple[str, float]]:
+    """Reject missing/invalid observations; sort the full input descending."""
+    with DATA.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames != ["company", "share_pct"]:
+            raise ValueError("Expected CSV columns: company,share_pct")
+        records = []
+        for line_number, row in enumerate(reader, start=2):
+            name = row["company"].strip()
+            value = float(row["share_pct"])
+            if not name or not math.isfinite(value) or not 0 <= value <= 100:
+                raise ValueError(f"Invalid market-share observation at line {line_number}")
+            records.append((name, value))
+    if not records or len({name for name, _ in records}) != len(records):
+        raise ValueError("Expected nonempty input with unique company names")
+    if not math.isclose(math.fsum(value for _, value in records), 100, abs_tol=0.01):
+        raise ValueError("Market shares must sum to 100%; no normalization is applied")
+    return sorted(records, key=lambda record: record[1], reverse=True)
+
+
+def main() -> None:
+    records = read_market_share()
+    OUT.mkdir(exist_ok=True)
+    dm.style.use("presentation-kr")
+    fig, ax = plt.subplots(figsize=dm.figsize("12.8in", "7.2in"))
+    fig.set_facecolor("white")
+    ax.set_facecolor("white")
+
+    labels = ["기타" if name == "Others" else name for name, _ in records]
+    values = [value for _, value in records]
+    colors = [
+        "oc.gray5" if name == "Others" else "oc.blue9" if i == 0 else "#7C9FBE"
+        for i, (name, _) in enumerate(records)
+    ]
+    bars = ax.barh(labels, values, height=0.62, color=colors, linewidth=0)
+    ax.invert_yaxis()
+    ax.set_xlim(0, 36)
+    ax.set_xticks([0, 10, 20, 30])
+    ax.xaxis.set_major_formatter(PercentFormatter(xmax=100, decimals=0))
+    ax.tick_params(axis="x", length=0, labelsize=dm.fs(3.5), colors="oc.gray7", pad=10)
+    ax.tick_params(axis="y", length=0, labelsize=dm.fs(9.5), colors="oc.gray8", pad=16)
+    ax.grid(False)
+    ax.xaxis.grid(True, color="oc.gray2", linewidth=0.5)
+    ax.set_axisbelow(True)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.axvline(0, color="oc.gray4", linewidth=0.7)
+    for i, (bar, value) in enumerate(zip(bars, values, strict=True)):
+        ax.annotate(
+            f"{value:.1f}%",
+            (bar.get_width(), bar.get_y() + bar.get_height() / 2),
+            xytext=(12, 0),
+            textcoords="offset points",
+            va="center",
+            fontsize=dm.fs(9.5),
+            fontweight=dm.fw(2) if i == 0 else dm.fw(0),
+            color="oc.blue9" if i == 0 else "oc.gray8",
+        )
+    title = ax.set_title(
+        "2024년 회사별 시장점유율",
+        loc="left",
+        fontsize=dm.fs(17.5),
+        fontweight=dm.fw(3),
+        color="oc.gray9",
+        pad=30,
+    )
+    dm.simple_layout(fig, margin="0.55in")
+    # Reserve explicit title headroom: the large presentation title exceeds
+    # the automatic layout's estimate for this Korean font.
+    fig.subplots_adjust(top=0.82)
+    position = ax.get_position()
+    ax.set_position([position.x0, position.y0, position.width, 0.82 - position.y0])
+    title.set_position((0, 1))
+
+    source = Path(__file__).read_text(encoding="utf-8")
+    with warnings.catch_warnings(record=True) as captured:
+        warnings.simplefilter("always")
+        fig.canvas.draw()
+        title_bounds = title.get_window_extent(fig.canvas.get_renderer())
+        if not fig.bbox.contains(title_bounds.x0, title_bounds.y0) or not fig.bbox.contains(title_bounds.x1, title_bounds.y1):
+            raise RuntimeError(f"Title extends outside the slide canvas: {title_bounds.bounds}; canvas={fig.bbox.bounds}")
+        visual = [asdict(item) for item in dm.validate_figure(fig)]
+        dm.save_formats(
+            fig, str(OUT / "figure"), formats=("png", "pdf"),
+            bbox_inches=None, dpi=200,
+        )
+    report = {
+        "input": str(DATA.relative_to(ROOT)),
+        "data_policy": "Read all rows; reject missing/nonfinite values; descending order; no normalization; Others displayed as 기타.",
+        "records": [{"company": name, "share_pct": value} for name, value in records],
+        "total_pct": math.fsum(values),
+        "style": "presentation-kr",
+        "canvas_inches": list(fig.get_size_inches()),
+        "title_bounds_px": list(title_bounds.bounds),
+        "canvas_bounds_px": list(fig.bbox.bounds),
+        "lint": [asdict(item) for item in dm.lint_code(source)],
+        "visual": visual,
+        "warnings": [str(item.message) for item in captured],
+    }
+    (OUT / "figure-report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    (OUT / "figure-source.py").write_text(source, encoding="utf-8")
+    plt.close(fig)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

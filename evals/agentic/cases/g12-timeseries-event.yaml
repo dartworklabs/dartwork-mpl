@@ -1,0 +1,26 @@
+# g12-timeseries-event — generate / en / report
+id: g12-timeseries-event
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Plot the daily closing price and shade the product-recall period from 11 to 22 March 2024.
+data: [stock_prices.csv]
+oracle:
+- type: series
+  group: values
+  name: closing prices with gap
+  file: stock_prices.csv
+  x:
+    col: date
+    kind: date
+  identity: any
+  series:
+  - y: close
+    aliases: [close, price]
+- type: span
+  group: spec
+  name: recall shaded
+  x0: '2024-03-11'
+  x1: '2024-03-22'
+  tol_days: 1.5

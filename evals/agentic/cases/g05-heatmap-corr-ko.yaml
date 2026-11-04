@@ -1,0 +1,22 @@
+# g05-heatmap-corr-ko — generate / ko / report
+id: g05-heatmap-corr-ko
+kind: generate
+lang: ko
+purpose: report
+held_out: false
+prompt: 센서 변수들 사이의 상관계수를 히트맵으로 그려 주세요. 각 칸에 값을 소수점 둘째 자리까지 적어 주세요.
+data: [sensors.csv]
+oracle:
+- type: matrix
+  group: values
+  name: labelled correlation matrix + cell text
+  file: sensors.csv
+  columns: [temperature, humidity, pressure, wind_speed, pm25, noise_db]
+  aliases:
+    temperature: [온도, 기온]
+    humidity: [습도]
+    pressure: [기압]
+    wind_speed: [풍속]
+    pm25: [PM2.5, 미세먼지]
+    noise_db: [noise, 소음]
+  cell_text: true

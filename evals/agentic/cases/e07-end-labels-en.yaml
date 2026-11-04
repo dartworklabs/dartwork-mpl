@@ -1,0 +1,50 @@
+# e07-end-labels-en — edit / en / report
+id: e07-end-labels-en
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Label each line at its end instead of using a legend.
+data: [gdp_growth.csv]
+base: b01_gdp_lines.py
+edit_scope: explicit
+target: [ax*.legend.*, ax*.line.*.label, ax*.position, ax*.xlim, ax*.xticks, 'ax*.text:*', ax*.*.pos]
+max_new_texts: 5
+oracle:
+- type: end_labels
+  group: spec
+  name: names at line ends, no legend
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  - y: United States
+    aliases: [United States, USA, US, 미국]
+  - y: Germany
+    aliases: [Germany, 독일]
+  - y: France
+    aliases: [France, 프랑스]
+- type: series
+  group: values
+  name: country series
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  - y: United States
+    aliases: [United States, USA, US, 미국]
+  - y: Germany
+    aliases: [Germany, 독일]
+  - y: France
+    aliases: [France, 프랑스]

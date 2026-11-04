@@ -1,0 +1,58 @@
+# calibration control: baseline-main-20261022 claude/g10-dashboard-kpi - must pass: users plotted in thousands with the unit in the title
+"""2x2 dashboard of the 2024 monthly KPIs: revenue, active users, churn, NPS."""
+from pathlib import Path
+
+import matplotlib.dates
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import dartwork_mpl as dm
+
+ROOT = Path(__file__).parent
+df = pd.read_csv(ROOT / "data" / "kpi_monthly.csv")
+df["month"] = pd.to_datetime(df["month"])
+
+dm.style.use("report")
+
+# One measure per panel, so a single series hue; panel titles carry identity.
+COLOR = "#2a78d6"
+panels = [
+    ("revenue_musd", "Revenue (USD M)", "{:.1f}", "higher is better"),
+    ("active_users", "Active users (thousands)", "{:.1f}", "higher is better"),
+    ("churn_pct", "Monthly churn (%)", "{:.2f}", "lower is better"),
+    ("nps", "NPS", "{:.0f}", "higher is better"),
+]
+
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", 0.62), sharex=True)
+
+for ax, (col, title, fmt, note) in zip(axes.flat, panels):
+    y = df[col] / 1000 if col == "active_users" else df[col]
+    ax.plot(df["month"], y, color=COLOR, marker="o", markersize=3.5,
+            markerfacecolor=COLOR, markeredgecolor="white", markeredgewidth=0.8)
+    ax.set_title(f"{title}  ·  {note}", loc="left")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(axis="y", linewidth=0.5, alpha=0.5)
+    ax.grid(axis="x", visible=False)
+
+    # Direct labels: first and last value only, placed on the side away from the line.
+    rising = y.iloc[-1] > y.iloc[0]
+    for idx, ha in ((0, "left"), (len(df) - 1, "right")):
+        above = (idx == len(df) - 1) == rising
+        ax.annotate(fmt.format(y.iloc[idx]), (df["month"].iloc[idx], y.iloc[idx]),
+                    xytext=(0, 6 if above else -6), textcoords="offset points",
+                    ha=ha, va="bottom" if above else "top")
+    lo, hi = y.min(), y.max()
+    pad = (hi - lo) * 0.2
+    ax.set_ylim(lo - pad * 1.2, hi + pad * 1.2)
+
+for ax in axes[1]:
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%b"))
+    ax.xaxis.set_major_locator(matplotlib.dates.MonthLocator(bymonth=(1, 4, 7, 10)))
+    ax.xaxis.set_minor_locator(matplotlib.dates.MonthLocator())
+
+dm.simple_layout(fig, margin="3mm", mt="12mm")
+fig.text(0.005, 0.99, "2024 monthly KPIs", ha="left", va="top", fontweight="bold",
+         fontsize=plt.rcParams["axes.titlesize"] + 2)
+
+(ROOT / "out").mkdir(exist_ok=True)
+dm.save_formats(fig, str(ROOT / "out" / "figure"), formats=("png", "pdf"))

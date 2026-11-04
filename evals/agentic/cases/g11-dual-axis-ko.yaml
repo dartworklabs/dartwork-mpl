@@ -1,0 +1,36 @@
+# g11-dual-axis-ko — generate / ko / report / held-out
+id: g11-dual-axis-ko
+kind: generate
+lang: ko
+purpose: report
+held_out: true
+prompt: 월별 기온은 선으로, 강수량은 막대로 한 그림에 그리고, 두 값의 y축을 왼쪽과 오른쪽에 따로 두세요.
+data: [climate_monthly.csv]
+oracle:
+- type: series
+  group: values
+  name: temperature line
+  file: climate_monthly.csv
+  x:
+    col: month
+    kind: order
+  identity: named
+  series:
+  - y: temp_c
+    aliases: [기온, temperature, temp]
+  artists: [line]
+- type: series
+  group: values
+  name: precipitation bars
+  file: climate_monthly.csv
+  x:
+    col: month
+    kind: order
+  identity: named
+  series:
+  - y: precip_mm
+    aliases: [강수, precipitation, precip, rain]
+  artists: [bars]
+- type: twin
+  group: spec
+  name: two y axes

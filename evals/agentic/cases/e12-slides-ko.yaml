@@ -1,0 +1,33 @@
+# e12-slides-ko — edit / ko / slides
+id: e12-slides-ko
+kind: edit
+lang: ko
+purpose: slides
+held_out: false
+prompt: 발표 슬라이드용으로 바꿔 주세요.
+data: [city_temps.csv]
+base: b10_kr_report_temps.py
+edit_scope: broad
+target: ['*']
+oracle:
+- type: preset
+  group: spec
+  name: presentation preset
+  prefix: [presentation]
+- type: series
+  group: values
+  name: two cities
+  file: city_temps.csv
+  x:
+    col: month
+    kind: date
+  identity: named
+  series:
+  - y: temp_c
+    aliases: [Seoul, 서울]
+    where:
+      city: Seoul
+  - y: temp_c
+    aliases: [Busan, 부산]
+    where:
+      city: Busan

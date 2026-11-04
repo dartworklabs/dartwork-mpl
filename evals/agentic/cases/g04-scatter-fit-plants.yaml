@@ -1,0 +1,26 @@
+# g04-scatter-fit-plants — generate / en / paper
+id: g04-scatter-fit-plants
+kind: generate
+lang: en
+purpose: paper
+held_out: false
+prompt: Scatter leaf width against leaf length, coloured by species, with a straight-line fit for each species.
+data: [plants.csv]
+auxiliary: [fit_lines]
+oracle:
+- type: points
+  group: values
+  name: points per species
+  file: plants.csv
+  x: leaf_length_cm
+  y: leaf_width_cm
+  by:
+    col: species
+- type: fits
+  group: values
+  name: fit line per species
+  file: plants.csv
+  x: leaf_length_cm
+  y: leaf_width_cm
+  by:
+    col: species

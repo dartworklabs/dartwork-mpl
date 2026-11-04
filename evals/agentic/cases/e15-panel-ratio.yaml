@@ -1,0 +1,30 @@
+# e15-panel-ratio — edit / en / report
+id: e15-panel-ratio
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: 'Make the top panel taller: split the height 70/30 instead of 50/50.'
+data: [plant_output.csv]
+base: b13_stacked_panels.py
+edit_scope: explicit
+target: [ax*.position, ax*.ylim, ax*.yticks, ax*.ytick.*, ax*.*.pos]
+oracle:
+- type: panel_ratio
+  group: spec
+  name: 70/30 heights
+  ratios: [0.7, 0.3]
+  tol: 0.04
+- type: series
+  group: values
+  name: both panels
+  file: plant_output.csv
+  x:
+    col: date
+    kind: date
+  identity: named
+  series:
+  - y: output_units
+    aliases: [output]
+  - y: defect_rate_pct
+    aliases: [defect]

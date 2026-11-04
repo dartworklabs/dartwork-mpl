@@ -1,0 +1,115 @@
+# calibration control: baseline-main-20261022 codex/g18-report-traffic - must pass: panel names are in-axes texts; endpoint markers
+"""Render weekly 2024 web metrics, preserving the missing signup observation."""
+from pathlib import Path
+import csv
+import json
+from datetime import datetime, timedelta
+import os
+
+ROOT = Path(__file__).resolve().parent
+os.environ.setdefault('MPLCONFIGDIR', str(ROOT / '.mplconfig'))
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.ticker import FuncFormatter
+import numpy as np
+import dartwork_mpl as dm
+
+
+def main():
+    out = ROOT / 'out'
+    out.mkdir(exist_ok=True)
+    with (ROOT / 'data/web_traffic.csv').open(newline='') as handle:
+        rows = list(csv.DictReader(handle))
+    dates = [datetime.strptime(row['week_start'], '%Y-%m-%d') for row in rows]
+    sessions = np.array([float(row['sessions']) for row in rows])
+    signups = np.array([float(row['signups']) if row['signups'] else np.nan for row in rows])
+    assert len(dates) == len(sessions) == len(signups) == 52
+    assert all(b - a == timedelta(days=7) for a, b in zip(dates, dates[1:]))
+    assert not np.isinf(sessions).any() and not np.isinf(signups).any()
+    assert [d.strftime('%Y-%m-%d') for d, n in zip(dates, signups) if np.isnan(n)] == ['2024-07-29']
+
+    dm.style.use('report')
+    palette = {key: dm.color(value).to_hex() for key, value in {
+        'sessions': 'oc.blue8', 'signups': 'oc.teal9', 'ink': 'oc.gray9',
+        'muted': 'oc.gray7', 'grid': 'oc.gray2', 'quarter': 'oc.gray4',
+    }.items()}
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=dm.figsize('26cm', '17cm'))
+    fig.set_facecolor('white')
+    for ax, values, name, ticks, limits in zip(
+        axes, [sessions, signups], ['sessions', 'signups'],
+        [[24000, 28000, 32000], [600, 800, 1000, 1200]],
+        [(22500, 35500), (590, 1220)],
+    ):
+        color = palette[name]
+        ax.plot(dates, values, color=color, linewidth=dm.lw(0.8),
+                marker='o', markersize=2.4, markeredgewidth=0, zorder=3)
+        ax.set_ylim(*limits)
+        ax.set_yticks(ticks)
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda val, pos: f'{val:,.0f}'))
+        ax.grid(axis='y', color=palette['grid'], linewidth=0.5)
+        ax.grid(axis='x', visible=False)
+        ax.set_axisbelow(True)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        ax.tick_params(axis='both', which='both', length=0, labelsize=dm.fs(1),
+                       colors=palette['muted'], pad=7)
+        ax.text(0, 1.035, name.capitalize(), transform=ax.transAxes, color=color,
+                fontsize=dm.fs(3), fontweight=dm.fw(2), ha='left', va='bottom')
+        for month in (4, 7, 10):
+            ax.axvline(datetime(2024, month, 1), color=palette['quarter'],
+                       linewidth=0.5, linestyle=(0, (3, 4)), zorder=1)
+        ax.scatter([dates[-1]], [values[-1]], s=23, color=color, zorder=4,
+                   edgecolor='white', linewidth=0.6)
+        ax.annotate(f'{values[-1]:,.0f}', xy=(dates[-1], values[-1]),
+                    xytext=(8, 0), textcoords='offset points', va='center',
+                    color=color, fontsize=dm.fs(2), fontweight=dm.fw(2))
+
+    axes[-1].set_xlim(datetime(2024, 1, 1) - timedelta(days=3), datetime(2025, 1, 12))
+    axes[-1].set_xticks([datetime(2024, month, 1) for month in range(1, 13)])
+    axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+    axes[0].tick_params(axis='x', labelbottom=False)
+    for month, label in [(2, 'Q1'), (5, 'Q2'), (8, 'Q3'), (11, 'Q4')]:
+        axes[0].text(datetime(2024, month, 15), 1.04, label,
+                     transform=axes[0].get_xaxis_transform(), ha='center',
+                     fontsize=dm.fs(0), color=palette['muted'])
+
+    # Reserve editorial bands after the package's content-aware margin pass.
+    dm.simple_layout(fig)
+    axes[0].get_gridspec().update(left=0.095, right=0.91, top=0.765, bottom=0.19, hspace=0.43)
+    fig.text(0.095, 0.932, 'Weekly web traffic & signups', fontsize=dm.fs(12),
+             fontweight=dm.fw(2), color=palette['ink'], ha='left')
+    fig.text(0.095, 0.882, '2024  /  52 weeks starting Jan 1–Dec 23',
+             fontsize=dm.fs(3), color=palette['muted'], ha='left')
+    fig.text(0.095, 0.837, 'Weekly observations • Panels use separate vertical scales',
+             fontsize=dm.fs(1), color=palette['muted'], ha='left')
+    fig.text(0.095, 0.10, 'Note: Signups for the week starting Jul 29 are missing; the line is left open.',
+             fontsize=dm.fs(0), color=palette['muted'], ha='left')
+    fig.text(0.095, 0.064, 'Source: data/web_traffic.csv  •  Dates indicate week starts; no interpolation or smoothing.',
+             fontsize=dm.fs(0), color=palette['muted'], ha='left')
+
+    warnings = dm.validate_figure(fig, quiet=True)
+    (out / 'figure-validation.json').write_text(json.dumps([
+        {attr: str(getattr(w, attr)) for attr in ('code', 'message', 'detail') if hasattr(w, attr)}
+        for w in warnings], indent=2) + '\n')
+    dm.save_formats(fig, str(out / 'figure'), formats=('png', 'pdf'), dpi=220,
+                    validate=False)
+    evidence = [
+        'Input: data/web_traffic.csv',
+        f'Rows: {len(rows)}; dates: {dates[0]:%Y-%m-%d} through {dates[-1]:%Y-%m-%d}',
+        'All dates are consecutive 7-day week starts. No aggregation, sorting, filling, or interpolation.',
+        f'Sessions: observed={np.isfinite(sessions).sum()}, missing={np.isnan(sessions).sum()}, min={np.nanmin(sessions):.0f}, max={np.nanmax(sessions):.0f}, total={np.nansum(sessions):.0f}',
+        f'Signups: observed={np.isfinite(signups).sum()}, missing={np.isnan(signups).sum()}, min={np.nanmin(signups):.0f}, max={np.nanmax(signups):.0f}, observed total={np.nansum(signups):.0f}',
+        'Missing signups: 2024-07-29. Preserved as NaN; plotted line contains a gap.',
+        f'Endpoint labels: sessions={sessions[-1]:.0f}; signups={signups[-1]:.0f}',
+        'Canvas: 26 x 17 cm; dartwork_mpl report preset; named palette colors.',
+        f'Figure validation warnings: {len(warnings)}; see figure-validation.json.',
+    ]
+    (out / 'validation.txt').write_text('\n'.join(evidence) + '\n')
+    print('\n'.join(evidence))
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,60 @@
+# calibration control: baseline-main-20261022 claude/g06-hist-response - must pass: step histograms, unlabelled ECDF lines, median reference lines
+"""Compare response-time distributions of variant A and variant B."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import dartwork_mpl as dm
+
+ROOT = Path(__file__).parent
+df = pd.read_csv(ROOT / "data" / "response_times.csv")
+a = df.loc[df["variant"] == "A", "response_ms"].to_numpy()
+b = df.loc[df["variant"] == "B", "response_ms"].to_numpy()
+
+COLORS = {"A": "dc.blue7", "B": "dc.orange4"}
+
+dm.style.use("report")
+
+fig, (ax_h, ax_c) = plt.subplots(
+    1, 2, figsize=dm.figsize("17cm", "golden"), width_ratios=[1.15, 1]
+)
+
+# Left: histograms on shared bins, so bar heights are directly comparable.
+bins = np.linspace(0, np.ceil(df["response_ms"].max() / 20) * 20, 29)
+for name, x in (("A", a), ("B", b)):
+    ax_h.hist(
+        x,
+        bins=bins,
+        color=COLORS[name],
+        histtype="stepfilled",
+        alpha=0.35,
+        label=f"Variant {name} (median {np.median(x):.0f} ms)",
+    )
+    ax_h.hist(x, bins=bins, histtype="step", color=COLORS[name], linewidth=dm.lw(0))
+    ax_h.axvline(np.median(x), color=COLORS[name], linewidth=dm.lw(0), linestyle="--")
+ax_h.set_xlabel("Response time (ms)")
+ax_h.set_ylabel("Requests")
+ax_h.set_title("Distribution", fontsize=dm.fs(1), fontweight=dm.fw(1))
+dm.place_legend(ax_h, loc="upper right")
+
+# Right: ECDFs, which show the whole shift and the tails without binning.
+for name, x in (("A", a), ("B", b)):
+    xs = np.sort(x)
+    ys = np.arange(1, len(xs) + 1) / len(xs)
+    ax_c.step(xs, ys, where="post", color=COLORS[name], linewidth=dm.lw(0))
+    p95 = np.percentile(x, 95)
+    ax_c.plot(p95, 0.95, "o", color=COLORS[name], markersize=5,
+              markeredgecolor="white", markeredgewidth=0.8)
+ax_c.axhline(0.95, color="gray", linewidth=0.5, linestyle=":")
+dm.label_hline(ax_c, 0.95, "p95", x="left")
+ax_c.set_xlabel("Response time (ms)")
+ax_c.set_ylabel("Cumulative share of requests")
+ax_c.set_title("Cumulative (p95 marked)", fontsize=dm.fs(1), fontweight=dm.fw(1))
+ax_c.set_ylim(0, 1.02)
+ax_c.set_xlim(0, bins[-1])
+
+dm.simple_layout(fig, margin="2%")
+dm.save_formats(fig, str(ROOT / "out" / "figure"), formats=("png", "pdf"))

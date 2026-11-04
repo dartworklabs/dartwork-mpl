@@ -1,0 +1,48 @@
+# calibration control: baseline-main-20261022 claude/g07-box-exam - must pass: violin + box + jittered observations
+"""Score distribution per section (A-D): violin + box + raw points."""
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import dartwork_mpl as dm
+
+dm.style.use("report")
+
+df = pd.read_csv("data/exam_scores.csv").dropna(subset=["score"])  # one blank score (row 59, section B)
+sections = sorted(df["section"].unique())
+groups = [df.loc[df["section"] == s, "score"].to_numpy() for s in sections]
+pos = np.arange(1, len(sections) + 1)
+
+color = "oc.blue6"
+
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+
+parts = ax.violinplot(groups, positions=pos, widths=0.8, showextrema=False)
+for body in parts["bodies"]:
+    body.set_facecolor(color)
+    body.set_edgecolor("none")
+    body.set_alpha(0.3)
+
+ax.boxplot(
+    groups,
+    positions=pos,
+    widths=0.18,
+    showfliers=False,
+    patch_artist=True,
+    boxprops=dict(facecolor="white", edgecolor=color),
+    medianprops=dict(color=color),
+    whiskerprops=dict(color=color),
+    capprops=dict(color=color),
+)
+
+rng = np.random.default_rng(0)
+for p, g in zip(pos, groups):
+    ax.scatter(p + rng.uniform(-0.3, 0.3, len(g)), g, s=6, color=color,
+               alpha=0.5, linewidths=0, zorder=3)
+
+ax.set_xticks(pos, [f"{s}\n(n={len(g)})" for s, g in zip(sections, groups)])
+ax.set_xlabel("Section")
+ax.set_ylabel("Score")
+
+dm.simple_layout(fig)
+dm.save_formats(fig, "out/figure", formats=("png", "pdf"))

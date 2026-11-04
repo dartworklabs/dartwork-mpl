@@ -1,0 +1,56 @@
+# g24-vague-ko — generate / ko / unspecified / held-out
+id: g24-vague-ko
+kind: generate
+lang: ko
+purpose: unspecified
+held_out: true
+prompt: 이 데이터로 보기 좋은 그래프 하나 만들어 주세요.
+data: [quarterly_sales.csv]
+oracle:
+- type: any_of
+  group: values
+  name: revenue shown with identity
+  checks:
+  - type: bars
+    group: values
+    name: quarter x region bars
+    file: quarterly_sales.csv
+    category:
+      col: quarter
+    series:
+      col: region
+    value: revenue
+  - type: bars
+    group: values
+    name: region x quarter bars
+    file: quarterly_sales.csv
+    category:
+      col: region
+    series:
+      col: quarter
+    value: revenue
+  - type: series
+    group: values
+    name: one line per region
+    file: quarterly_sales.csv
+    x:
+      col: quarter
+      kind: order
+    identity: named
+    series:
+    - y: revenue
+      aliases: [North]
+      where:
+        region: North
+    - y: revenue
+      aliases: [South]
+      where:
+        region: South
+    - y: revenue
+      aliases: [East]
+      where:
+        region: East
+    - y: revenue
+      aliases: [West]
+      where:
+        region: West

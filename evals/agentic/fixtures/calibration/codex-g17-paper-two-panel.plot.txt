@@ -1,0 +1,134 @@
+# calibration control: baseline-main-20261022 codex/g17-paper-two-panel - must pass: panel labels lead titles ('(a) Annual GDP growth')
+"""Render the GDP-growth comparison from the complete supplied CSV.
+
+Run with: .venv/bin/python plot.py
+Missing observations remain NaN in the line chart; means use observed years.
+"""
+
+from dataclasses import asdict
+from pathlib import Path
+import csv
+import hashlib
+import json
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+
+
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / "out"
+COUNTRIES = ("Korea", "Japan", "United States", "Germany", "France")
+COLORS = ("oc.blue8", "oc.orange8", "oc.green8", "oc.violet8", "oc.red8")
+MARKERS = ("o", "s", "^", "D", "v")
+STYLES = ("-", "--", "-.", ":", (0, (5, 2, 1, 2)))
+
+
+def main():
+    OUT.mkdir(exist_ok=True)
+    source = ROOT / "data" / "gdp_growth.csv"
+    with source.open(newline="", encoding="utf-8-sig") as stream:
+        reader = csv.DictReader(stream)
+        if reader.fieldnames != ["year", *COUNTRIES]:
+            raise ValueError("Unexpected CSV columns")
+        rows = list(reader)
+    years = np.array([int(row["year"]) for row in rows])
+    values = np.array([
+        [float(row[country]) if row[country].strip() else np.nan
+         for row in rows] for country in COUNTRIES
+    ])
+    if not np.array_equal(years, np.arange(2012, 2024)):
+        raise ValueError("Expected the complete, ordered 2012–2023 period")
+    if values.shape != (5, 12) or np.isinf(values).any():
+        raise ValueError("Expected five aligned annual series without infinity")
+    expected_missing = np.zeros_like(values, dtype=bool)
+    expected_missing[3, 4] = True
+    if not np.array_equal(np.isnan(values), expected_missing):
+        raise ValueError("Unexpected missing observations")
+    counts = np.isfinite(values).sum(axis=1)
+    means = np.nanmean(values, axis=1)
+
+    dm.style.use("scientific")
+    fig, (ax_line, ax_bar) = plt.subplots(
+        1, 2, figsize=dm.figsize("17cm", "8.6cm"),
+        gridspec_kw={"width_ratios": [1.75, 1], "wspace": 0.43},
+    )
+    handles = []
+    for country, color, marker, linestyle, y in zip(
+        COUNTRIES, COLORS, MARKERS, STYLES, values, strict=True
+    ):
+        x, y = dm.validate_data(years, y, allow_nan=True)
+        handle, = ax_line.plot(
+            x, y, label=country, color=color, marker=marker,
+            linestyle=linestyle, markersize=3.2, linewidth=dm.lw(0.15),
+            markeredgewidth=0.4, markeredgecolor="white",
+        )
+        handles.append(handle)
+
+    ax_line.set(
+        xlabel="Year", ylabel="Annual GDP growth (%)", xlim=(2011.7, 2023.3),
+        ylim=(-8.5, 7.5), xticks=np.arange(2012, 2024, 2),
+        yticks=np.arange(-8, 9, 4),
+    )
+    ax_line.set_title("(a) Annual GDP growth", loc="left", fontweight="bold",
+                      fontsize=dm.fs(0), pad=9)
+    ax_line.axhline(0, color="oc.gray6", linewidth=0.5, zorder=0)
+    ax_line.grid(axis="y", color="oc.gray3", linewidth=0.4)
+    ax_line.set_axisbelow(True)
+
+    positions = np.arange(len(COUNTRIES))
+    ax_bar.barh(positions, means, height=0.59, color=COLORS, edgecolor="none")
+    ax_bar.set(
+        yticks=positions, yticklabels=COUNTRIES, xlim=(0, 3.05),
+        xticks=[0, 1, 2, 3], xlabel="Average annual growth (%)",
+    )
+    ax_bar.invert_yaxis()
+    ax_bar.set_title("(b) Average, 2012–2023", loc="left", fontweight="bold",
+                     fontsize=dm.fs(0), pad=9)
+    ax_bar.grid(axis="x", color="oc.gray3", linewidth=0.4)
+    ax_bar.set_axisbelow(True)
+    for position, mean in zip(positions, means, strict=True):
+        ax_bar.text(mean + 0.06, position, f"{mean:.2f}", va="center",
+                    fontsize=dm.fs(-1))
+    ax_bar.tick_params(axis="y", length=0, pad=4)
+    for ax in (ax_line, ax_bar):
+        ax.spines[["top", "right"]].set_visible(False)
+
+    # Fit the axes before adding figure-level legend and footer text: those
+    # full-canvas artists must not participate in the axes-margin calculation.
+    dm.simple_layout(fig, ml="1.5mm", mr="2mm", mt="12mm", mb="11mm")
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.995),
+               ncol=5, frameon=False, fontsize=dm.fs(-1), handlelength=2.5,
+               columnspacing=1.2, handletextpad=0.5)
+    fig.text(
+        0.015, 0.035,
+        "Germany: 2016 missing (line gap); mean uses 11 observed years. "
+        "Other countries: 12 years.",
+        ha="left", va="bottom", fontsize=dm.fs(-1), color="oc.gray8",
+    )
+
+    fig.canvas.draw()
+    code = Path(__file__).read_text(encoding="utf-8")
+    report = {
+        "input": str(source.relative_to(ROOT)),
+        "input_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "canvas_cm": (fig.get_size_inches() * 2.54).tolist(),
+        "missing_policy": "Keep Germany 2016 as NaN; arithmetic means use observed years.",
+        "summary": {
+            country: {"observed_years": int(count), "arithmetic_mean_pct": float(mean)}
+            for country, count, mean in zip(COUNTRIES, counts, means, strict=True)
+        },
+        "lint": [asdict(item) for item in dm.lint_code(code)],
+        "visual": [asdict(item) for item in dm.validate_figure(fig)],
+    }
+    (OUT / "validation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (OUT / "figure.py").write_text(code, encoding="utf-8")
+    dm.save_formats(fig, str(OUT / "figure"), formats=("png", "pdf"),
+                    bbox_inches=None, dpi=300)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
