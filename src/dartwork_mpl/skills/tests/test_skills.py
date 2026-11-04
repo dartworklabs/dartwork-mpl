@@ -225,8 +225,9 @@ def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
     # for legends nobody placed (g21, c01, e09).
     assert "with `loc=` only for a side the user names" in text
     assert "Every axes legend" not in text
-    assert "also when the request words them otherwise" in text
-    assert "only a value with no column takes the request's noun" in text
+    flat_text = " ".join(text.split())
+    assert "also when the request words them otherwise" in flat_text
+    assert "only a value with no column takes the request's noun" in flat_text
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     row = next(
         ln for ln in editing.splitlines() if ln.startswith("| move the legend")
@@ -319,7 +320,12 @@ def test_skill_examples_do_not_quote_the_eval_cases() -> None:
         ):
             assert quoted not in flat, (name, quoted)
     flat = " ".join(texts["SKILL.md"].split())
-    assert "Both axes get a label." in flat
+    # v22: "Both axes get a label" made a broad edit add an x label (e09);
+    # without the quoted g22 answer, 3 of 4 runs put (%) on a growth rate.
+    assert "A new figure labels both axes." in flat
+    assert "Both axes get a label" not in flat
+    assert "no unit nothing states (no `(%)` on a rate or share either)" in flat
+    assert "column names translated word for word, sentence case" in flat
     assert "every word kept, in its order" in flat
     assert '"rent against floor area": rent on y' in flat
     assert "an edit: on the original first" in flat
