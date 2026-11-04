@@ -149,6 +149,11 @@ a Codex sqlite store) still set `contaminated` (`contamination_text.gating`).
   Limitations:
   - **Global instructions leak.** `$CODEX_HOME/AGENTS.md` still loads unless
     you pass `--codex-home`. Its hash is recorded.
+    Use a dedicated authenticated home without `AGENTS.md` for an isolated run.
+    Its sessions are bound to a fresh per-unit directory, including when that
+    home has no sessions yet; archived sessions and histories in both the default
+    and selected homes are hidden. The monitor and stored rollout evidence use
+    that same selected home. GitHub MCP is explicitly disabled.
   - **Sessions are kept.** Runs are not `--ephemeral`. Code-mode `exec`,
     `view_image` and sub-agents appear only in rollouts, so the rollouts are
     needed as evidence.

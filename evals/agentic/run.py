@@ -351,6 +351,8 @@ def codex_cmd(
         "-c",
         'approval_policy="never"',
         "-c",
+        "mcp_servers.github.enabled=false",
+        "-c",
         f'model_reasoning_effort="{cfg["efforts"]["codex"]}"',
         "-s",
         "workspace-write",
@@ -380,7 +382,30 @@ def host_context(host: str, home: Path) -> dict:
     }
 
 
-def home_store_mounts(host: str, stores: Path) -> tuple[list[str], Path | None]:
+def host_transcript_stores(home: Path) -> list[str]:
+    """Include the selected Codex home's stores in isolation and text checks."""
+    return sorted(
+        {
+            *transcript_stores(str(Path.home())),
+            *(
+                str(home / name)
+                for name in (
+                    "sessions",
+                    "archived_sessions",
+                    "history.jsonl",
+                    "session_index.jsonl",
+                    "log",
+                )
+            ),
+            *(str(p) for p in home.glob("*.sqlite*")),
+            *(str(p) for p in home.glob("accounts/*/sessions")),
+        }
+    )
+
+
+def home_store_mounts(
+    host: str, stores: Path, home: Path | None = None
+) -> tuple[list[str], Path | None]:
     """bwrap args that hide other sessions' transcripts and histories under HOME.
 
     Directories get an empty tmpfs, files an empty per-unit copy, except the
@@ -388,17 +413,23 @@ def home_store_mounts(host: str, stores: Path) -> tuple[list[str], Path | None]:
     directory (``stores/codex-sessions``) so the harness still reads this
     unit's own rollouts. Codex's sqlite stores stay (Codex needs them);
     reading them is gating text evidence instead. Returns the args and the
-    per-unit Codex sessions directory (None for Claude).
+    per-unit Codex sessions directory (None for Claude). ``home`` selects the
+    actual CODEX_HOME; otherwise the environment or the user's default applies.
+    Its sessions directory is created when absent so a fresh home is isolated too.
     """
+    home = home or Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
+    selected_sessions = home / "sessions"
+    if host == "codex":
+        selected_sessions.mkdir(parents=True, exist_ok=True)
     stores.mkdir(parents=True, exist_ok=True)
     args: list[str] = []
     sessions = None
-    for raw in transcript_stores():
+    for raw in host_transcript_stores(home):
         path = Path(raw)
         if ".sqlite" in path.name:
             continue  # Codex sqlite stores: needed by Codex itself
         if path.is_dir():
-            if host == "codex" and path == Path.home() / ".codex" / "sessions":
+            if host == "codex" and path == selected_sessions:
                 sessions = stores / "codex-sessions"
                 sessions.mkdir(exist_ok=True)
                 args += ["--bind", str(sessions), str(path)]
@@ -853,6 +884,7 @@ def recheck_contamination(rec: dict, unit: Path) -> dict | None:
         grading_roots(rec, unit),
         project.parent,
         project,
+        stores=rec.get("transcript_stores"),
         exempt=own,
     )
 
@@ -982,6 +1014,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         "budget": cfg["budgets"][host],
         "host_version": meta["versions"][host],
         "host_context": host_context(host, home),
+        "transcript_stores": host_transcript_stores(home),
     }
     hide = [*repo_roots(), run_dir.parent.resolve(), a.work_root.resolve()]
     try:
@@ -993,7 +1026,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         prompt = full_prompt(case)
         (unit / "prompt.txt").write_text(prompt, encoding="utf-8")
         mounts, sessions = (
-            home_store_mounts(host, unit / "home-stores")
+            home_store_mounts(host, unit / "home-stores", home)
             if cfg["hide_grading"]
             else ([], None)
         )
@@ -1006,11 +1039,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             monitor = None
         else:
             argv = codex_cmd(prompt, project, unit, cfg, home)
-            env = base_env(
-                project,
-                {"CODEX_HOME": str(home)} if a.codex_home else None,
-                hide,
-            )
+            env = base_env(project, {"CODEX_HOME": str(home)}, hide)
             monitor = CodexMonitor(
                 home,
                 unit / "transcript.jsonl",
@@ -1056,7 +1085,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             )
             parent, sub_paths = codex_rollouts(home, thread, roots)
             own = [q for q in [parent, *sub_paths] if q]
-            seen_as = Path.home() / ".codex" / "sessions"
+            seen_as = home / "sessions"
             rec["own_rollouts"] = {  # recorded while the harness owns them
                 "thread_id": thread,
                 "host": [str(q) for q in own],
@@ -1109,11 +1138,13 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             unit / "artifacts" / "figure.png",
             final_ts,
         )
+        rec["transcript_stores"] = host_transcript_stores(home)
         rec["contamination"] = contamination(
             tool_strings(host, lines, [rollout, *subs]),
             hide[:-1],
             a.work_root.resolve(),
             project,
+            stores=rec["transcript_stores"],
             exempt=rec["own_rollouts"]["visible"],
         )
         rec["skill_usage"] = skill_usage(
