@@ -34,6 +34,13 @@
   현재 main 은 `a691e285`이고, 이 head 자체의
   [CI](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41835359707)·[pre-commit](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41835359528)·[문서 배포](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41835360221)가
   모두 통과했다(2026-11-04 확인). 앞선 `a6e0c450`·`a891272a` 실행을 재사용한 것이 아니다.
+- [#570](https://github.com/dartworklabs/dartwork-mpl/pull/570), `cb6735c0`: 아래 잔여 결정 세 건의
+  구현과 기록을 병합했다 — `label_axes` 의 키워드 진단, 범위 안 소수 `highlight` 거부, 현황 재조정.
+  병합 커밋 `cb6735c09c66810081690711ed70f5c998c347eb` 자체의
+  [CI](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41845473175)·[pre-commit](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41845473317)·[문서 배포](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41845473648)가
+  `push` 이벤트로 모두 통과했다(2026-11-05 확인). PR head `bd81bd4e` 의 체크 통과를 main 통과로
+  바꿔 쓴 것이 아니다. 이후 main 은 다른 세션의 작업으로 더 진행됐고, 그 head 의 CI 는 이 문서가
+  확인한 범위가 아니다.
 
 네이티브 matplotlib `Figure`/`Axes`, 스타일 프리셋, 물리 단위 크기, 내용에 맞춘 유연한 레이아웃을 유지한다.
 그림은 `dm.style.use(...)`, `dm.figsize(...)`, `dm.simple_layout(fig)`를 사용하고
