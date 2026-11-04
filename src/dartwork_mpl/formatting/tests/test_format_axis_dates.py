@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 import dartwork_mpl as dm
-from dartwork_mpl.formatting._defaults import category_dates
+from dartwork_mpl.formatting._defaults import _date_label_gap_em, category_dates
 
 MONTHS_2024 = [f"2024-{m:02d}" for m in range(1, 13)]
 SALES = [1180, 1095, 1320, 1405, 1460, 1390, 1515, 1600, 1550, 1680, 1745, 1910]
@@ -65,6 +65,25 @@ def _min_gap_em(ax: Axes) -> float:
     )
     em = labels[0].get_fontsize() * fig.dpi / 72.0
     return min(b.x0 - a.x1 for a, b in pairwise(boxes)) / em
+
+
+def _some_step_fits(ax: Axes) -> bool:
+    """Whether any step of the axis's date locator shows 2+ labels 1 em apart."""
+    fig = ax.figure
+    renderer = fig.canvas.get_renderer()
+    locator = ax.xaxis.get_major_locator()
+    kept = locator.step
+    try:
+        for step in locator.steps:
+            locator.step = step
+            locs = locator()
+            if len(locs) >= 2 and (
+                _date_label_gap_em(ax.xaxis, locs, fig, renderer) >= 1.0
+            ):
+                return True
+        return False
+    finally:
+        locator.step = kept
 
 
 def test_months_read_as_concise_words_when_they_fit() -> None:
@@ -177,9 +196,26 @@ def test_a_crowded_view_thins_over_the_dates_in_view() -> None:
             years = {m[:4] for m in months[lo : hi + 1]}
             shown = " ".join(texts) + ax.xaxis.get_offset_text().get_text()
             assert any(y in shown for y in years), (lo, hi, texts)
-            if len(locs) >= 2 and locs[1] - locs[0] > 1:
-                assert _min_gap_em(ax) >= 1.0, (lo, hi, texts)
+            if len(locs) >= 2 and _min_gap_em(ax) < 1.0:
+                # Crowded only when no step fits: every step shows fewer
+                # than two labels in view or still crowds them.
+                assert not _some_step_fits(ax), (lo, hi, texts)
             plt.close(fig)
+
+
+def test_a_step_with_one_label_in_view_does_not_end_the_search() -> None:
+    """Review 2026-11-04: in view 3.5-8.5, step 3 shows one label, step 4 two.
+
+    With a view, larger steps do not always show fewer labels (step 2:
+    4, 6, 8; step 3: 6; step 4: 4, 8). On a 2.6 cm axis step 2 is crowded
+    and step 4 fits, so the search goes past step 3 to step 4.
+    """
+    fig, ax = _bars("report-kr", "2.6cm", "golden", "매출액 (억원)")
+    ax.set_xlim(3.5, 8.5)
+    dm.simple_layout(fig)
+    locs, _ = _shown(ax)
+    assert locs == [4, 8]
+    assert _min_gap_em(ax) >= 1.0
 
 
 def test_tick_rotation_check_is_quiet_on_the_result() -> None:

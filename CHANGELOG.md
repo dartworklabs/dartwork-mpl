@@ -239,7 +239,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (a `datetime64[ns]` array came out in the year 53999741868), refuses
   numbers such as a bare year instead of reading them as seconds since 1970,
   and words and thins only the dates in view, so a view cut to Feb–Dec still
-  shows the year.
+  shows the year; a step that shows one label in a cut view no longer ends
+  the search for a step that fits.
 - After `dm.style.use("presentation")`, a bare `dm.style.stack([...])` no
   longer keeps the 2.6 pt `dm.fs` / `dm.lw` step.
 - `dm.simple_layout()` no longer leaves an axes title on top of a legend above

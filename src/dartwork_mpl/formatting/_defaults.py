@@ -415,7 +415,10 @@ def _thin_category_dates(
     Leaves rotated x labels alone. Moves the locator's ``step`` through its
     larger ``steps`` and keeps the first whose labels are
     :data:`_MIN_DATE_GAP_EM` ems apart with two or more labels; with none,
-    the step is restored. Returns 1 when the step changed, else 0.
+    the step is restored. Returns 1 when the step changed, else 0. In a cut
+    view a larger step can show more labels than a smaller one (view 3.5-8.5:
+    step 3 shows 6, step 4 shows 4 and 8), so a step with one label in view
+    is skipped, not the end of the search.
     """
     label = axis.get_major_ticks(1)[0].label1
     if axis is axis.axes.xaxis and label.get_rotation() % 180:
@@ -427,7 +430,7 @@ def _thin_category_dates(
         locator.step = step
         locs = locator()
         if len(locs) < 2:
-            break
+            continue
         if _date_label_gap_em(axis, locs, fig, renderer) >= _MIN_DATE_GAP_EM:
             return 1
     locator.step = original
