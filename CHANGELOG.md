@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Explicit native data policies.** `dm.validate_data(..., policy="strict" | "preserve" | "clean")`
+  rejects, retains or removes nonfinite values in one-dimensional signed/unsigned
+  integer and real floating vectors. Opt-in calls require `allow_nan=False`;
+  `dm.DataPolicyError` and `dm.DataPolicyWarning` carry immutable original-index
+  records. Omitted policy and `policy=None` preserve exact legacy behavior;
+  MCP shape checks and report contracts are unchanged.
 - **`dm.format_axis_dates(ax, dates)`.** Bars and other category charts that
   stand for dates (`"2024-01" … "2024-12"` under twelve bars) get the
   library's concise date words (`2024, Feb, Mar …`; `2024년, 2월 …` on a

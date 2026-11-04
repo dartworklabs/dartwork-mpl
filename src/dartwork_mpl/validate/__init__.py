@@ -24,7 +24,7 @@ Usage
 
 from __future__ import annotations
 
-from ._data import validate_data
+from ._data import DataPolicyError, DataPolicyWarning, validate_data
 from ._orchestrator import validate_figure
 from ._quality import MIN_RECOMMENDED_DPI, check_figure_quality
 from ._types import Severity, VisualWarning
@@ -36,4 +36,6 @@ __all__ = [  # noqa: RUF022 — preserve historical export order before addition
     "MIN_RECOMMENDED_DPI",
     "check_figure_quality",
     "validate_data",
+    "DataPolicyError",
+    "DataPolicyWarning",
 ]
