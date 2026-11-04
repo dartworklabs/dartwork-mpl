@@ -148,7 +148,7 @@ class TestRenderTemplateAdvanced:
 def test_path_output_is_unique_regular_private_and_preserves_owned_symlink(
     tmp_path, monkeypatch, name
 ):
-    """Repeated publication cannot collide with a previous path or follow its symlink."""
+    """Private concurrent publication preserves a legacy symlink and its target."""
     import stat
     import tempfile
     from pathlib import Path
@@ -162,6 +162,9 @@ def test_path_output_is_unique_regular_private_and_preserves_owned_symlink(
     monkeypatch.setattr(
         bundled, "_resolve_template_path", lambda *args, **kwargs: template
     )
+    # Configure the real temp-file mechanisms to use this test's namespace;
+    # another runner invocation may own the legacy filename in the system temp.
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
     legacy = Path(tempfile.gettempdir()) / (
         "dartwork-mpl-render-advanced-line.png"
         if name.endswith("advanced")
@@ -187,8 +190,10 @@ def test_path_output_is_unique_regular_private_and_preserves_owned_symlink(
                 paths.append(Path(result["png_path"]))
             assert result["status"] == "ok", result
         assert paths[0] != paths[1]
+        assert legacy.is_symlink()
         assert target.read_bytes() == b"original"
         for path in paths:
+            assert path.parent == tmp_path
             assert path.is_absolute() and not path.is_symlink()
             assert stat.S_ISREG(path.stat().st_mode)
             assert stat.S_IMODE(path.stat().st_mode) == 0o600
