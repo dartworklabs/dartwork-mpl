@@ -22,7 +22,7 @@ def test_owner_surface_preserves_historical_callable_and_metadata():
     assert f.__name__ == f.__qualname__ == "validate_data"
     assert (
         str(inspect.signature(f))
-        == "(x: 'Any', y: 'Any | None' = None, require_same_length: 'bool' = True, allow_nan: 'bool' = False, min_points: 'int' = 2) -> 'tuple[np.ndarray[Any, Any], np.ndarray[Any, Any] | None]'"
+        == "(x: 'Any', y: 'Any | None' = None, require_same_length: 'bool' = True, allow_nan: 'bool' = False, min_points: 'int' = 2, *, policy: 'str | None' = None) -> 'tuple[np.ndarray[Any, Any], np.ndarray[Any, Any] | None]'"
     )
     assert f.__defaults__ == (None, True, False, 2)
     assert f.__annotations__ == {
@@ -31,6 +31,7 @@ def test_owner_surface_preserves_historical_callable_and_metadata():
         "require_same_length": "bool",
         "allow_nan": "bool",
         "min_points": "int",
+        "policy": "str | None",
         "return": "tuple[np.ndarray[Any, Any], np.ndarray[Any, Any] | None]",
     }
     assert typing.get_type_hints(f) == {
@@ -39,6 +40,7 @@ def test_owner_surface_preserves_historical_callable_and_metadata():
         "require_same_length": bool,
         "allow_nan": bool,
         "min_points": int,
+        "policy": str | None,
         "return": tuple[
             np.ndarray[typing.Any, typing.Any],
             np.ndarray[typing.Any, typing.Any] | None,

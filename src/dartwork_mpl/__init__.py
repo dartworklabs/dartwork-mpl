@@ -189,7 +189,13 @@ from .lint import lint as lint_code
 from .lint import migrate_legacy_code
 
 # Validation entry points
-from .validate import check_figure_quality, validate_data, validate_figure
+from .validate import (
+    DataPolicyError,
+    DataPolicyWarning,
+    check_figure_quality,
+    validate_data,
+    validate_figure,
+)
 from .validate_fixes import validate_with_fixes
 
 # Define __all__ for explicit exports. The order is intentionally
@@ -295,6 +301,8 @@ __all__ = [  # noqa: RUF022
     "copy_prompt",
     "find_template",
     # Validation
+    "DataPolicyError",
+    "DataPolicyWarning",
     "validate_figure",
     "validate_with_fixes",
     "validate_fixes",
