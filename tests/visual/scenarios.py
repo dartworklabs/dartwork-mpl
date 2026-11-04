@@ -1,3 +1,8 @@
+"""Figure scenarios shared by the pixel-baseline and property tests.
+
+Each scenario builds a figure and states what a correct render must contain.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -18,6 +23,13 @@ _SPECIAL_CHARS = f"{_TIMES} {_PLUS_MINUS} {_ARROW}"
 
 @dataclass(frozen=True)
 class Expectations:
+    """Minimum content a scenario's figure must show.
+
+    Counts are lower bounds over all axes; ``palette`` colors must appear among
+    artist colors and ``texts_contain`` substrings among Text artists.
+    ``tolerance`` is the pixel-comparison RMS tolerance for the baseline image.
+    """
+
     n_axes: int = 1
     min_lines: int = 0
     min_patches: int = 0
@@ -31,6 +43,8 @@ class Expectations:
 
 @dataclass(frozen=True)
 class Scenario:
+    """A named figure builder and the expectations its render must meet."""
+
     name: str
     build: Callable[[], Figure]
     expect: Expectations

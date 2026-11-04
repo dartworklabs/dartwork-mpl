@@ -18,6 +18,8 @@ def _axes():
 
 
 class TestFormatAxisMillions:
+    """Million-scale tick formatter installs and renders."""
+
     def test_smoke(self) -> None:
         fig, ax = _axes()
         ax.plot([0, 1], [1e6, 5e6])
@@ -26,6 +28,8 @@ class TestFormatAxisMillions:
 
 
 class TestFormatAxisBillions:
+    """Billion-scale tick formatter installs and renders with a suffix."""
+
     def test_smoke_with_suffix(self) -> None:
         fig, ax = _axes()
         ax.plot([0, 1], [1e9, 5e9])
@@ -34,6 +38,8 @@ class TestFormatAxisBillions:
 
 
 class TestFormatAxisCurrency:
+    """Currency symbol placement as a tick-label prefix or suffix."""
+
     def test_prefix(self) -> None:
         fig, ax = _axes()
         dm.format_axis_currency(ax, axis="y", symbol="$", position="prefix")
@@ -46,6 +52,8 @@ class TestFormatAxisCurrency:
 
 
 class TestFormatAxisSi:
+    """SI-prefix tick formatter on a log axis."""
+
     def test_smoke(self) -> None:
         fig, ax = _axes()
         ax.semilogx([1, 1e9], [0, 1])
@@ -54,6 +62,8 @@ class TestFormatAxisSi:
 
 
 class TestRotateTickLabels:
+    """Tick-label rotation and the alignment it implies, without matplotlib warnings."""
+
     @pytest.mark.parametrize("rotation", [0, 30, 45, 90])
     def test_rotation(self, rotation: int) -> None:
         fig, ax = _axes()
@@ -115,6 +125,8 @@ class TestRotateTickLabelsAlignment:
 
 
 class TestAvoidTickOverlap:
+    """Thinning of dense tick labels that would otherwise overlap."""
+
     def test_dense_x_labels_are_thinned(self) -> None:
         fig, ax = _axes()
         labels = [f"very-long-label-{i}" for i in range(12)]
@@ -134,6 +146,8 @@ class TestAvoidTickOverlap:
 
 
 class TestRecommendTickDecimals:
+    """Minimum decimals that keep tick values distinct, capped at four."""
+
     def test_integer_steps_need_no_decimals(self) -> None:
         assert dm.recommend_tick_decimals([0, 5, 10]) == 0
 

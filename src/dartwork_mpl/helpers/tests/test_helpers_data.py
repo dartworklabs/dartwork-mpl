@@ -141,3 +141,121 @@ class TestValidateDataNaNHandling:
                     [1.0, 2.0, 3.0],
                     allow_nan=False,
                 )
+
+
+class TestOriginalDataAlignment:
+    """Cleaning must preserve original correspondence, never infer new pairs."""
+
+    @pytest.mark.parametrize(
+        ("x_values", "y_values", "expected_x", "expected_y"),
+        [
+            (
+                [10, np.nan, 20, 30],
+                [100, np.nan, 300],
+                [10, 20, 30],
+                [100, 300],
+            ),
+            ([10, np.nan, 20], [np.nan, 300], [10, 20], [300]),
+            (
+                [10, np.nan, 20, 30, 40],
+                [100, np.nan, 300],
+                [10, 20, 30, 40],
+                [100, 300],
+            ),
+        ],
+    )
+    def test_unequal_inputs_keep_independent_values(
+        self, x_values, y_values, expected_x, expected_y
+    ) -> None:
+        """Coincident cleaned lengths cannot drop finite x or fail its minimum."""
+        x_in = np.array(x_values, dtype=np.float32)
+        y_in = np.array(y_values, dtype=np.float64)
+        originals = x_in.copy(), y_in.copy()
+        with pytest.warns(UserWarning) as caught:
+            x, y = validate_data(x_in, y_in, require_same_length=False)
+        np.testing.assert_array_equal(x, expected_x)
+        np.testing.assert_array_equal(y, expected_y)
+        assert x.dtype == x_in.dtype
+        assert y is not None and y.dtype == y_in.dtype
+        np.testing.assert_array_equal(x_in, originals[0])
+        np.testing.assert_array_equal(y_in, originals[1])
+        assert [str(w.message) for w in caught] == [
+            "Removed 1 NaN/Inf values from data",
+            "Removed 1 NaN/Inf values from data",
+        ]
+
+    @pytest.mark.parametrize("require_same_length", [True, False])
+    def test_original_equal_lengths_keep_union_mask(
+        self, require_same_length
+    ) -> None:
+        """False permits unequal lengths but does not unpair equal inputs."""
+        x_in = np.array([10, np.nan, 20, 30, np.inf])
+        y_in = np.array([100, 200, np.nan, 400, 500])
+        originals = x_in.copy(), y_in.copy()
+        with pytest.warns(UserWarning) as caught:
+            x, y = validate_data(
+                x_in, y_in, require_same_length=require_same_length
+            )
+        np.testing.assert_array_equal(x, [10, 30])
+        np.testing.assert_array_equal(y, [100, 400])
+        np.testing.assert_array_equal(x_in, originals[0])
+        np.testing.assert_array_equal(y_in, originals[1])
+        assert [str(w.message) for w in caught] == [
+            "Removed 2 NaN/Inf values from data",
+            "Removed 1 NaN/Inf values from data",
+        ]
+
+    def test_categorical_partner_keeps_original_pairing(self) -> None:
+        """Numeric missing values still remove only their aligned category."""
+        x_in = np.array(["A", "B", "C"])
+        y_in = np.array([10.0, np.nan, 30.0])
+        with pytest.warns(UserWarning, match="Removed 1 NaN/Inf"):
+            x, y = validate_data(x_in, y_in, require_same_length=False)
+        np.testing.assert_array_equal(x, ["A", "C"])
+        np.testing.assert_array_equal(y, [10, 30])
+        np.testing.assert_array_equal(x_in, ["A", "B", "C"])
+        np.testing.assert_array_equal(y_in, [10, np.nan, 30])
+
+    def test_allow_nan_retains_nonfinite_values_without_warnings(self) -> None:
+        """Allowing NaN keeps infinities too and never filters independent inputs."""
+        x_in = np.array([10, np.nan, 20, np.inf])
+        y_in = np.array([np.nan, 300, -np.inf])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            x, y = validate_data(
+                x_in, y_in, require_same_length=False, allow_nan=True
+            )
+        assert not caught
+        np.testing.assert_array_equal(x, x_in)
+        np.testing.assert_array_equal(y, y_in)
+
+    def test_seeded_unequal_inputs_equal_independent_finite_subsequences(
+        self,
+    ) -> None:
+        """Each returned 1-D sequence equals its own original finite values."""
+        rng = np.random.default_rng(20261028)
+        for _ in range(100):
+            nx = int(rng.integers(3, 30))
+            ny = int(rng.integers(1, 30))
+            if nx == ny:
+                ny += 1
+            x_in = rng.normal(size=nx)
+            y_in = rng.normal(size=ny)
+            x_in[rng.random(nx) < 0.4] = np.nan
+            y_in[rng.random(ny) < 0.4] = np.inf
+            # Guarantee the existing x-only minimum; y may retain no points.
+            x_in[:2] = [10, 20]
+            expected_x = [v for v in x_in if np.isfinite(v)]
+            expected_y = [v for v in y_in if np.isfinite(v)]
+            originals = x_in.copy(), y_in.copy()
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                x, y = validate_data(x_in, y_in, require_same_length=False)
+            np.testing.assert_array_equal(
+                x, expected_x, err_msg=f"seed=20261028 x={x_in} y={y_in}"
+            )
+            np.testing.assert_array_equal(
+                y, expected_y, err_msg=f"seed=20261028 x={x_in} y={y_in}"
+            )
+            np.testing.assert_array_equal(x_in, originals[0])
+            np.testing.assert_array_equal(y_in, originals[1])

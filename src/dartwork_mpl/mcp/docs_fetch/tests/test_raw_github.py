@@ -276,3 +276,28 @@ def test_raw_fetch_total_deadline_and_external_cancellation_close_streams():
         assert pending.closed and owned.closed
 
     asyncio.run(cancelled())
+
+
+def test_fetch_returns_refusals_as_values():
+    """Refused URLs and responses are values; only the edge raises ValueError."""
+    import asyncio
+
+    from dartwork_mpl.mcp.docs_fetch import Fetched, Refused, fetch
+
+    assert asyncio.run(fetch("http://raw.githubusercontent.com/o/r/x")) == (
+        Refused(
+            "Expected an HTTPS raw.githubusercontent.com URL without credentials or a nondefault port."
+        )
+    )
+    stream = _OwnedRawStream([b"body"])
+    assert asyncio.run(
+        fetch(
+            "https://raw.githubusercontent.com/o/r/ref/x",
+            transport=_raw_transport(stream),
+        )
+    ) == Fetched("body")
+    missing = _raw_transport(_OwnedRawStream([b""]), status=404)
+    assert asyncio.run(
+        fetch("https://raw.githubusercontent.com/o/r/ref/x", transport=missing)
+    ) == Refused("Failed to fetch Raw document: HTTP 404.")
+    assert stream.closed

@@ -26,22 +26,23 @@ import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from dartwork_mpl.mcp.artifacts import (
-    ArtifactMember,
-    ArtifactStore,
+from dartwork_mpl.mcp.artifacts import configure_store
+from dartwork_mpl.mcp.artifacts.delivery import render_artifact
+from dartwork_mpl.mcp.artifacts.input_access import InputGrant, authorize_inputs
+from dartwork_mpl.mcp.artifacts.input_policy import (
     CopyInput,
-    InputGrant,
-    InputStore,
     KnownProvenance,
-    RenderRequest,
     RetainedInput,
     Revision,
-    StoredBundle,
-    authorize_inputs,
     classify_provenance,
-    configure_store,
-    render_artifact,
 )
+from dartwork_mpl.mcp.artifacts.inputs import InputStore
+from dartwork_mpl.mcp.artifacts.policy import (
+    ArtifactMember,
+    RenderRequest,
+    StoredBundle,
+)
+from dartwork_mpl.mcp.artifacts.store import ArtifactStore
 
 CSV_A = b"x,y,include\n2,20,1\n1,,1\n3,30,0\n4,40,1\n"
 CSV_B = b"x,y,include\n2,200,1\n1,,1\n3,300,0\n4,400,1\n"

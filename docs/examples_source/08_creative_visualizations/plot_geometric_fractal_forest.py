@@ -26,6 +26,11 @@ fig, ax = plt.subplots(figsize=dm.figsize("14cm", 1.111))
 
 
 def draw_fractal_tree(ax, x, y, angle, length, depth, max_depth, colors):
+    """Draw a branch on ``ax`` and recurse into two children until ``max_depth``.
+
+    Branch angles and lengths are jittered with numpy's global random state, so
+    seed it for a reproducible tree. Leaves are scattered on the last two levels.
+    """
     if depth > max_depth:
         return
 

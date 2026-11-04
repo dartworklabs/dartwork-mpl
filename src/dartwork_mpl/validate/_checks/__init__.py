@@ -33,6 +33,7 @@ from .tick_crowd import check_tick_crowding
 from .tick_decimal import check_tick_decimal
 from .tick_rotation import check_tick_rotation
 from .unit_dup import check_unit_dup
+from .value_label_decimal import check_value_label_decimal
 
 __all__ = [
     "RegisteredCheck",
@@ -51,6 +52,7 @@ __all__ = [
     "check_tick_decimal",
     "check_tick_rotation",
     "check_unit_dup",
+    "check_value_label_decimal",
     "register_check",
     "registered_checks",
 ]

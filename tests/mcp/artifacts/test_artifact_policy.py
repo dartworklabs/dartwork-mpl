@@ -11,7 +11,7 @@ import pytest
 
 pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp.artifacts import (
+from dartwork_mpl.mcp.artifacts.policy import (
     ArtifactId,
     ArtifactMember,
     CorruptArtifact,

@@ -23,6 +23,8 @@ from tests.robustness.pixel_assertions import (
 
 
 class TestFigureToRgba:
+    """Figure rasterization helper returns a uint8 RGBA array."""
+
     def test_returns_uint8_4channel(self) -> None:
         fig, ax = plt.subplots(figsize=(2, 2))
         ax.plot([1, 2, 3])
@@ -34,6 +36,8 @@ class TestFigureToRgba:
 
 
 class TestAssertNoEdgeOverflow:
+    """Edge-overflow assertion passes clean figures and fails ink at the figure edge."""
+
     def test_clean_figure_passes(self) -> None:
         fig, ax = plt.subplots(figsize=(4, 3))
         ax.plot([1, 2, 3])
@@ -90,6 +94,8 @@ class TestAssertMinimumWhiteBorder:
 
 
 class TestAssertNoClippedText:
+    """Clipped-text assertion fails text placed outside its axes."""
+
     def test_text_inside_axes_passes(self) -> None:
         fig, ax = plt.subplots(figsize=(4, 3))
         ax.plot([1, 2, 3])

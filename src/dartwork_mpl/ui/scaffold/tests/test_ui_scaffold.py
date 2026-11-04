@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dartwork_mpl.ui.scaffold import scaffold
+from dartwork_mpl.ui.scaffold import (
+    EXAMPLES,
+    TargetNotEmpty,
+    UnknownExample,
+    scaffold,
+)
 
 
 class TestScaffold:
@@ -27,16 +32,27 @@ class TestScaffold:
         content = (dest / "app.py").read_text()
         assert len(content) > 100
 
-    def test_non_empty_dir_aborts(self, tmp_path: Path, capsys: object) -> None:
-        """Scaffold refuses to overwrite a non-empty directory."""
+    def test_non_empty_dir_aborts(self, tmp_path: Path) -> None:
+        """A non-empty directory is refused as a value and left unchanged."""
         dest = tmp_path / "existing"
         dest.mkdir()
         (dest / "dummy.txt").write_text("x")
 
-        scaffold(str(dest))
+        result = scaffold(str(dest))
 
-        # app.py should NOT be created
-        assert not (dest / "app.py").exists()
+        assert result == TargetNotEmpty(dest=dest.resolve())
+        assert sorted(p.name for p in dest.iterdir()) == ["dummy.txt"]
+
+    def test_unknown_example_is_refused_before_any_write(
+        self, tmp_path: Path
+    ) -> None:
+        """An example without a bundled template is refused; no directory appears."""
+        dest = tmp_path / "proj"
+
+        result = scaffold(str(dest), example="complex")
+
+        assert result == UnknownExample(example="complex", available=EXAMPLES)
+        assert not dest.exists()
 
     def test_creates_parent_dirs(self, tmp_path: Path) -> None:
         """Nested target directories are created automatically."""

@@ -5,7 +5,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import TypeAlias
 
-from ..execution import ExecutionRejected, ExportRejected, export_plot
+from ..execution import ExportedPlot, ExportFailure, export_plot
 from . import policy
 from .input_access import InputsDisabled
 from .input_policy import (
@@ -48,8 +48,7 @@ ArtifactFailure: TypeAlias = (
     | CorruptArtifact
     | ArtifactTooLarge
     | PublicationError
-    | ExecutionRejected
-    | ExportRejected
+    | ExportFailure
 )
 
 
@@ -82,7 +81,7 @@ def render_artifact(
                 output_stem=stage.output_stem,
                 log_limit_bytes=policy.MAX_BUNDLE_BYTES,
             )
-            if isinstance(outcome, (ExecutionRejected, ExportRejected)):
+            if not isinstance(outcome, ExportedPlot):
                 return outcome
             return store.publish(
                 stage, request.code.encode("utf-8"), outcome.report, clock()
@@ -119,7 +118,7 @@ def _render_revision(
                     output_stem=stage.output_stem,
                     log_limit_bytes=policy.MAX_BUNDLE_BYTES,
                 )
-                if isinstance(outcome, (ExecutionRejected, ExportRejected)):
+                if not isinstance(outcome, ExportedPlot):
                     return outcome
                 report = {
                     **outcome.report,
@@ -220,7 +219,7 @@ def _publish_inputs(
         input_paths=copied.execution_inputs,
         log_limit_bytes=policy.MAX_BUNDLE_BYTES,
     )
-    if isinstance(outcome, (ExecutionRejected, ExportRejected)):
+    if not isinstance(outcome, ExportedPlot):
         return outcome
     checked = tx.check(copied)
     if checked is not None:

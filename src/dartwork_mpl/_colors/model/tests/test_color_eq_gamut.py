@@ -17,6 +17,8 @@ import dartwork_mpl as dm
 
 
 class TestColorEquality:
+    """Value equality and hashing of ``Color``, across constructors and in sets/dicts."""
+
     def test_equal_colors_compare_equal(self) -> None:
         assert dm.Color("#ff0000") == dm.Color("#ff0000")
 
@@ -45,6 +47,8 @@ class TestColorEquality:
 
 
 class TestColorInGamut:
+    """sRGB gamut test and gamut mapping of OKLCH colors, including tolerance input."""
+
     def test_in_gamut_true_for_representable(self) -> None:
         assert dm.Color.from_oklch(0.7, 0.05, 30).in_gamut() is True
 

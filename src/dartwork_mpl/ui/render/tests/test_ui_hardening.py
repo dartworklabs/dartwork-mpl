@@ -23,6 +23,8 @@ from dartwork_mpl.ui.render._figure import (
 
 
 class TestValidateExportFormat:
+    """Export format validation: matplotlib's formats pass, others are HTTP 400."""
+
     @pytest.mark.parametrize("fmt", ["png", "svg", "pdf"])
     def test_supported_formats_pass(self, fmt: str) -> None:
         assert parse_export_format(fmt) == ExportFormat(fmt)

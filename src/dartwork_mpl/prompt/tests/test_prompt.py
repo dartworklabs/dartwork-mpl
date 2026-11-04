@@ -203,3 +203,53 @@ def test_prompt_corpus_explains_the_color_metric_split() -> None:
     )
     stale = [claim for claim in stale_claims if claim in normalized]
     assert not stale, f"stale hybrid-construction guidance: {stale}"
+
+
+def test_catalog_stream_is_opened_on_call_and_closed_by_with(tmp_path):
+    """A fresh shadow import needs no corpus; streams retain native lifetime/errors."""
+    import subprocess
+    import sys
+
+    import dartwork_mpl.prompt as prompt
+
+    package = tmp_path / "shadow_prompt_owner" / "prompt"
+    package.mkdir(parents=True)
+    (package.parent / "__init__.py").write_text("", encoding="utf-8")
+    (package / "__init__.py").write_text(
+        Path(prompt.__file__).read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    code = r"""
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from shadow_prompt_owner import prompt
+assert "open_anti_pattern_catalog" in prompt.__all__
+try:
+    prompt.open_anti_pattern_catalog()
+except FileNotFoundError:
+    pass
+else:
+    raise AssertionError("missing corpus opened")
+corpus = Path(sys.argv[1]) / "shadow_prompt_owner" / "asset" / "prompt"
+corpus.mkdir(parents=True)
+catalog = corpus / "02-anti-patterns.yaml"
+catalog.write_text("rules: []\n", encoding="utf-8")
+with prompt.open_anti_pattern_catalog() as stream:
+    assert stream.name == str(catalog)
+    assert not stream.closed
+    assert stream.read() == "rules: []\n"
+assert stream.closed
+try:
+    with prompt.open_anti_pattern_catalog() as stream:
+        raise RuntimeError("probe")
+except RuntimeError:
+    pass
+assert stream.closed
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

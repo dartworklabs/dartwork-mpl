@@ -1,3 +1,5 @@
+"""Semantic font, line and spacing tokens: values per preset, export and bad levels."""
+
 from __future__ import annotations
 
 import matplotlib.pyplot as plt

@@ -14,11 +14,11 @@ import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
 from dartwork_mpl.mcp.artifacts import (  # noqa: E402
-    ArtifactStore,
-    ConfigurationError,
     configure_store,
     register_artifacts,
 )
+from dartwork_mpl.mcp.artifacts.policy import ConfigurationError  # noqa: E402
+from dartwork_mpl.mcp.artifacts.store import ArtifactStore  # noqa: E402
 
 SOURCE = """# exact Unicode source: 한글
 import sys
@@ -255,11 +255,8 @@ def test_invalid_configuration_missing_corrupt_expired_and_malformed(tmp_path):
 
 def test_incomplete_ready_repeats_concurrent_and_publication_clock(tmp_path):
     """Incomplete warnings remain ready, fresh IDs never overwrite and clock is late."""
-    from dartwork_mpl.mcp.artifacts import (
-        RenderRequest,
-        StoredBundle,
-        render_artifact,
-    )
+    from dartwork_mpl.mcp.artifacts.delivery import render_artifact
+    from dartwork_mpl.mcp.artifacts.policy import RenderRequest, StoredBundle
 
     code = (
         SOURCE
@@ -323,7 +320,7 @@ def test_stored_failures_and_publication_errors_are_safe(
 ):
     """Expiry, size limits and real failing writes never return ready artifacts."""
     import dartwork_mpl.mcp.artifacts.transport as transport
-    from dartwork_mpl.mcp.artifacts import PublicationError
+    from dartwork_mpl.mcp.artifacts.policy import PublicationError
 
     root = tmp_path / "store"
 

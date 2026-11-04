@@ -201,3 +201,29 @@ def test_accessor_normalizes_invalid_utf8(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="could not decode color v6 SSOT"):
         _load_changed(changed)
+
+
+@pytest.mark.parametrize(
+    ("count", "unique", "adjacent", "run"),
+    [
+        (8, 9, 0, 1),  # more unique colours than colours
+        (8, 8, 1, 2),  # all unique yet a duplicate pair
+        (8, 6, 0, 2),  # a run of two without an adjacent duplicate
+        (8, 7, 1, 1),  # an adjacent duplicate without a run
+        (8, 0, 0, 1),  # no colour at all
+    ],
+)
+def test_row_contract_rejects_impossible_counts(
+    count: int, unique: int, adjacent: int, run: int
+) -> None:
+    """A row-contract value that no colour row can have cannot be built."""
+    from dartwork_mpl._colors._ssot import RowContract
+
+    with pytest.raises(ValueError, match="row contract counts are impossible"):
+        RowContract(
+            canonical_sha256="0" * 64,
+            count=count,
+            unique_count=unique,
+            adjacent_duplicate_count=adjacent,
+            max_run_length=run,
+        )

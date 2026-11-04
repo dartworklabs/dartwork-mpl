@@ -39,6 +39,7 @@ class PageParser(HTMLParser):
     """Collects <img>, <svg>, <link>, <a>, and a few inline-style flags."""
 
     def __init__(self) -> None:
+        """Start with empty collections; :meth:`feed` fills them."""
         super().__init__()
         self.imgs: list[dict] = []
         self.svgs: list[dict] = []
@@ -53,6 +54,7 @@ class PageParser(HTMLParser):
     def handle_starttag(
         self, tag: str, attrs: list[tuple[str, str | None]]
     ) -> None:
+        """Record ids, images, top-level ``<svg>``, stylesheets, scripts and link targets."""
         a = dict(attrs)
         if a.get("id"):
             self.ids.add(a["id"])
@@ -90,6 +92,7 @@ class PageParser(HTMLParser):
             self.anchors.append(a["href"])
 
     def handle_endtag(self, tag: str) -> None:
+        """Track ``<svg>`` nesting so only the outermost one is recorded."""
         if tag == "svg":
             self.svg_depth = max(0, self.svg_depth - 1)
             if self.svg_depth == 0:
@@ -97,6 +100,7 @@ class PageParser(HTMLParser):
 
 
 def parse_page(html: str) -> PageParser:
+    """Parse one HTML document and return the parser holding its collected elements."""
     p = PageParser()
     p.feed(html)
     return p
@@ -108,6 +112,12 @@ def parse_page(html: str) -> PageParser:
 
 
 def fetch(url: str, *, timeout: float = 8.0) -> tuple[int, bytes, str]:
+    """GET ``url`` and return ``(status, body, content_type)``.
+
+    Never raises for network failures: an HTTP error returns its status with an
+    empty body, and a connection error or timeout returns status 0 with the
+    error text in place of the content type.
+    """
     req = urllib.request.Request(url, headers={"User-Agent": "brute-check/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -144,12 +154,20 @@ ASSET_CACHE: dict[str, tuple[int, int, str]] = {}
 
 
 def head_cached(url: str) -> tuple[int, int, str]:
+    """Return :func:`head` for ``url``, memoised in ``ASSET_CACHE`` for the run."""
     if url not in ASSET_CACHE:
         ASSET_CACHE[url] = head(url)
     return ASSET_CACHE[url]
 
 
 def audit_page(base: str, rel_url: str) -> dict:
+    """Fetch one built page from ``base`` and return its issue report.
+
+    Checks the design stylesheet, same-origin assets and images (status, size,
+    SVG content type and dimensions), in-page anchors and stray markdown.
+    External URLs are not checked. A page that does not return 200 yields a
+    single ``page-fetch-fail`` issue.
+    """
     page_url = urljoin(base + "/", rel_url)
     status, body, _ctype = fetch(page_url)
     issues: list[dict] = []
@@ -299,6 +317,10 @@ def audit_page(base: str, rel_url: str) -> dict:
 
 
 def list_pages(root: Path) -> list[str]:
+    """Return built HTML pages under ``root`` as sorted ``/``-separated relative paths.
+
+    Skips ``_downloads``, ``_modules``, ``_static`` and ``_sources``.
+    """
     # _downloads can contain standalone HTML fragments copied from static
     # assets. They are downloadable artifacts, not Sphinx pages with the docs
     # shell or dartwork-design.css link.
@@ -318,6 +340,11 @@ def list_pages(root: Path) -> list[str]:
 
 
 def main() -> int:
+    """Audit every built page against a served docs site and write a JSON report.
+
+    The site must already be served at ``--base``. Returns 0 when no issues were
+    found and 1 otherwise.
+    """
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--base", default="http://localhost:8080")
     ap.add_argument(

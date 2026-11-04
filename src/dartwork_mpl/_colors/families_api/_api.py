@@ -13,7 +13,17 @@ import matplotlib.pyplot as plt
 from cycler import cycler
 
 from ..._rc import rc_lock
-from ..catalog import FAMILIES, Family, FamilyKind, discrete_colors
+from ..catalog import (
+    FAMILIES,
+    CyclicFamily,
+    DivergingFamily,
+    Family,
+    FamilyKind,
+    MultiHueFamily,
+    QualitativeFamily,
+    SequentialFamily,
+    discrete_colors,
+)
 from ..registry import ensure_registered
 
 if TYPE_CHECKING:
@@ -74,9 +84,11 @@ def _validate_kind(kind: str | None) -> FamilyKind | None:
     return kind  # type: ignore[return-value]
 
 
-def _qualitative_cmap(name: str, family: Family, *, reverse: bool) -> Colormap:
-    n = int(family.discrete_size or 0)
-    hexes = discrete_colors(name, n, reverse=reverse)
+def _qualitative_cmap(
+    name: str, family: QualitativeFamily, *, reverse: bool
+) -> Colormap:
+    """Build the listed colormap of a qualitative family's full colour set."""
+    hexes = discrete_colors(name, family.discrete_size, reverse=reverse)
     suffix = "_r" if reverse else ""
     return mcolors.ListedColormap(
         [mcolors.to_rgba(hex_value) for hex_value in hexes],
@@ -118,10 +130,12 @@ def colors(
             return mpl.colormaps[reverse_name]
         if cmap_name in mpl.colormaps:
             return mpl.colormaps[cmap_name].reversed(name=reverse_name)
-        return _qualitative_cmap(family_name, family, reverse=True)
+        if isinstance(family, QualitativeFamily):
+            return _qualitative_cmap(family_name, family, reverse=True)
+        raise ValueError(f"Registered colormap {cmap_name!r} is not available.")
     if cmap_name in mpl.colormaps:
         return mpl.colormaps[cmap_name]
-    if family.kind == "qualitative":
+    if isinstance(family, QualitativeFamily):
         return _qualitative_cmap(family_name, family, reverse=False)
     raise ValueError(f"Registered colormap {cmap_name!r} is not available.")
 
@@ -135,12 +149,12 @@ def _colors_for_cycle(
         family_name = _resolve_family_name(name_or_list)
         family = FAMILIES[family_name]
         if n is None:
-            if family.kind != "qualitative":
+            if not isinstance(family, QualitativeFamily):
                 raise ValueError(
                     f"{family_name!r} is a {family.kind} family and requires n= "
                     "when used with dm.set_colors(...)."
                 )
-            n = int(family.discrete_size or 0)
+            n = family.discrete_size
         return discrete_colors(family_name, n)
     return list(name_or_list)
 
@@ -175,29 +189,54 @@ def list_colors(
     """List Model B color families and their metadata."""
     kind_filter = _validate_kind(kind)
     return [
-        {
-            "name": name,
-            "kind": family.kind,
-            "continuous": family.has_continuous,
-            "discrete_size": family.discrete_size,
-        }
+        _family_record(name, family)
         for name, family in FAMILIES.items()
-        if kind_filter is None or family.kind == kind_filter
+        if _matches_kind(family, kind_filter)
     ]
 
 
+def _matches_kind(family: Family, kind_filter: FamilyKind | None) -> bool:
+    """Return whether a family passes a parsed ``kind=`` filter."""
+    return kind_filter is None or family.kind == kind_filter
+
+
+def _family_record(name: str, family: Family) -> dict[str, object]:
+    """Render one family as its public ``list_colors`` record.
+
+    Kinds without a fixed discrete form report ``discrete_size`` as None;
+    only qualitative families report ``continuous`` as False.
+    """
+    discrete_size: int | None
+    match family:
+        case (
+            SequentialFamily(discrete_size=size)
+            | DivergingFamily(discrete_size=size)
+            | QualitativeFamily(discrete_size=size)
+        ):
+            discrete_size = size
+        case MultiHueFamily() | CyclicFamily():
+            discrete_size = None
+    return {
+        "name": name,
+        "kind": family.kind,
+        "continuous": not isinstance(family, QualitativeFamily),
+        "discrete_size": discrete_size,
+    }
+
+
 def _preview_n(family: Family, requested: int | None) -> int:
+    """Return how many swatches ``show_colors`` draws for a family."""
     if requested is not None:
         return requested
-    if family.kind == "qualitative":
-        return int(family.discrete_size or 8)
-    if family.kind == "sequential":
-        return 5
-    if family.kind == "diverging":
-        return 5
-    if family.kind == "multi-hue":
-        return 6
-    return 12
+    match family:
+        case QualitativeFamily(discrete_size=size):
+            return size
+        case SequentialFamily() | DivergingFamily():
+            return 5
+        case MultiHueFamily():
+            return 6
+        case CyclicFamily():
+            return 12
 
 
 def show_colors(
@@ -219,7 +258,7 @@ def show_colors(
         selected_names = [
             name
             for name, family in FAMILIES.items()
-            if kind_filter is None or family.kind == kind_filter
+            if _matches_kind(family, kind_filter)
         ]
     else:
         selected_names = [_resolve_family_name(name) for name in names]
@@ -227,7 +266,7 @@ def show_colors(
             selected_names = [
                 name
                 for name in selected_names
-                if FAMILIES[name].kind == kind_filter
+                if _matches_kind(FAMILIES[name], kind_filter)
             ]
     if not selected_names:
         raise ValueError("No color families match the requested preview.")
@@ -246,7 +285,7 @@ def show_colors(
         y = row_count - row_index - 1
         ax.text(-0.02, y + 0.5, name, ha="right", va="center", fontsize=8)
 
-        if family.has_continuous:
+        if not isinstance(family, QualitativeFamily):
             gradient = [list(range(256))]
             ax.imshow(
                 gradient,
