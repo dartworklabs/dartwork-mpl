@@ -39,10 +39,12 @@ for cx, cy, amp, sigma in peaks:
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
 
 # Filled contour (background) + line contour (foreground) for layering.
-levels = np.linspace(0, Z.max(), 11)
+# Round the top level up to a 0.1 step so levels, contour labels and
+# colorbar ticks read 0.2, 0.4 … instead of 0.3999.
+levels = np.linspace(0, np.ceil(Z.max() * 10) / 10, 11)
 cf = ax.contourf(X, Y, Z, levels=levels, cmap="viridis", alpha=0.85)
 cs = ax.contour(X, Y, Z, levels=levels[::2], colors="white", linewidths=0.3)
-ax.clabel(cs, inline=True, fontsize=dm.fs(-2), fmt="%.2f", colors="white")
+ax.clabel(cs, inline=True, fontsize=dm.fs(-2), fmt="%.1f", colors="white")
 
 # Peak markers + callouts.
 for i, (cx, cy, amp, _) in enumerate(peaks):
@@ -57,7 +59,7 @@ for i, (cx, cy, amp, _) in enumerate(peaks):
         marker="*",
     )
     ax.annotate(
-        f"Peak {i + 1}\n({cx:+.1f}, {cy:+.1f})\nz = {amp:.2f}",
+        f"Peak {i + 1}\n({cx:+.1f}, {cy:+.1f})\nz = {amp:.1f}",
         xy=(cx, cy),
         xytext=(cx + 0.4, cy + 0.6),
         fontsize=dm.fs(-1),

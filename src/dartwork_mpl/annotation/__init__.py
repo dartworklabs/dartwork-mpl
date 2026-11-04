@@ -34,7 +34,7 @@ from matplotlib.text import Text
 from matplotlib.transforms import Bbox, ScaledTranslation
 
 from .._figure_geometry import BBOX_ERRORS, get_renderer
-from ..scale import fs
+from ..scale import fs, fw
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -403,10 +403,16 @@ def annotate_value(
     opposite vertical side. Explicit ``side="left"`` / ``"right"`` is
     supported, including ``arrowprops``; all offsets are single-axis point
     offsets so arrows remain straight horizontal or vertical connectors.
+
+    The label is one weight step heavier than the preset's base weight
+    (``fontweight=fw(1)``) so a data value reads apart from captions;
+    pass ``fontweight`` (or ``weight``) to override.
     """
     if fontsize is None:
         fontsize = fs(-2)
     requested = _parse_value_side(side)
+    if "fontweight" not in kw and "weight" not in kw:
+        kw["fontweight"] = fw(1)
 
     existing_texts = list(ax.texts)
     initial_side: _ValueSide = "above" if requested == "auto" else requested
