@@ -10,7 +10,10 @@ hooks never rewrite it; provenance in ``index.json``). Three kinds:
 * fails since a library change: an output that was correct with the
   baseline wheel but no longer re-runs because a decided library change
   altered what its code draws (``since`` names it); the re-run must fail
-  with the recorded ``error``, so a later change is noticed either way;
+  with the recorded ``error``, so a later change is noticed either way,
+  and its figure must still pass the checks. Its ``compat`` replacement
+  restores the baseline's sizes, and that run must pass like a must-pass
+  control;
 * mutations: a real source changed to fabricate data, hide a unit or add an
   unrequested text must fail, so the general rules do not over-accept;
 * contamination: the real tool calls the old ``../`` rule flagged stay
@@ -101,6 +104,17 @@ def test_output_obsoleted_by_a_library_change_fails_as_recorded(name, tmp_path):
     assert INDEX[name]["since"]
     assert not rec["rerun_ok"]
     assert INDEX[name]["error"] in rec["rerun_error"]
+    # The script stops on its own check after saving; the scorer must still
+    # accept the figure it drew (local codex re-check, 2026-11-04).
+    assert score.checks_pass(rec), rec["failing"]
+
+
+@pytest.mark.parametrize("name", CHANGED)
+def test_obsoleted_output_with_its_baseline_sizes_passes(name, tmp_path):
+    old, new = INDEX[name]["compat"]
+    rec = _evaluate(tmp_path, name, (old, new))
+    assert rec["rerun_ok"], rec["rerun_error"]
+    assert score.checks_pass(rec), rec["failing"]
 
 
 @pytest.mark.parametrize("name", MUST_PASS)

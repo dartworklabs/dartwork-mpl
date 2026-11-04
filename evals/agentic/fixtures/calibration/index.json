@@ -175,7 +175,11 @@
   },
   "started_ts": 1792633997.390567,
   "since": "#556 (2026-11-03 decision): presentation is scientific x 2.6 and one dm.fs step is 2.6 pt, so the script's dm.fs(17.5) title is 65 pt, not 28 pt",
-  "error": "Title extends outside the slide canvas"
+  "error": "Title extends outside the slide canvas",
+  "compat": [
+   "dm.fs(",
+   "(10.5 + "
+  ]
  },
  "claude-e05-highlight-korea-en.plot.txt": {
   "unit": "claude/e05-highlight-korea-en",
