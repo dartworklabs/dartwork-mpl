@@ -2,7 +2,7 @@
 
 Each function now lives in the slice that owns it (ADR 0005); this module
 only re-exports them unchanged so ``from dartwork_mpl.util import X`` keeps
-working. tests/test_util.py pins that every name is its owner's object.
+working. tests/contracts/test_util.py pins that every name is its owner's object.
 """
 
 from __future__ import annotations

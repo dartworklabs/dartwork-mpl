@@ -20,7 +20,7 @@ CI can compare the in-memory result without touching the tracked file::
 
     uv run python scripts/generate_typing.py --check
 
-``tests/test_typing_parity.py`` pins the emitted file to both the source
+``tests/contracts/test_typing_parity.py`` pins the emitted file to both the source
 compiler and the public runtime surface, so forgetting to rerun fails CI.
 """
 
@@ -46,7 +46,7 @@ GENERATED FILE — do not edit by hand. Regenerate with::
 
     .venv-local/bin/python scripts/generate_typing.py
 
-``tests/test_typing_parity.py`` pins these Literals to the live
+``tests/contracts/test_typing_parity.py`` pins these Literals to the live
 registries (named-color mapping / colormap registry), so a palette or
 colormap change that skips the regen fails CI.
 """
