@@ -30,6 +30,7 @@ from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import numpy as np
+from matplotlib import cbook
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
@@ -202,6 +203,57 @@ def _title_in_the_way(ax: Axes, label: Text, gap_pt: float) -> Text | None:
     return min(hits, key=lambda hit: hit[0])[1] if hits else None
 
 
+#: Properties ``label_axes`` sets on the label itself. Passing any spelling of
+#: these used to collide inside ``ax.text`` (``ha``, ``va``, ``transform``) or be
+#: accepted and then overridden without a word (the full alignment names).
+_LABEL_AXES_OWNED_KWARGS = frozenset(
+    {"ha", "horizontalalignment", "transform", "va", "verticalalignment"}
+)
+
+#: What the agent most likely meant, for the arguments #483 saw in real loops.
+_LABEL_AXES_KWARG_HINTS = {
+    "fmt": (
+        "There is no format string: pass finished strings with labels=, "
+        "for example labels=[f'({c})' for c in 'abc']. "
+    ),
+    "loc": "Use x= and y=, which are Axes-relative, for placement. ",
+    "xy": "Use x= and y=, which are Axes-relative, for placement. ",
+}
+
+_LABEL_AXES_NATIVE_ESCAPE = (
+    "For a different placement API, write the text yourself with "
+    "ax.text(x, y, label, transform=ax.transAxes)."
+)
+
+
+def _is_text_property(name: str) -> bool:
+    """Report whether ``Text`` accepts ``name``, resolving matplotlib aliases."""
+    try:
+        canonical = next(iter(cbook.normalize_kwargs({name: None}, Text)))
+    except TypeError:
+        return False
+    return callable(getattr(Text, f"set_{canonical}", None))
+
+
+def _reject_unusable_label_kwargs(kwargs: dict[str, Any]) -> None:
+    """Fail named, before any label exists, for kwargs that cannot be honoured."""
+    for name in kwargs:
+        if name in _LABEL_AXES_OWNED_KWARGS:
+            raise TypeError(
+                f"label_axes() sets {name!r} on the panel labels itself, so "
+                f"passing {name!r} cannot take effect. Position the labels with "
+                f"x= and y= (both Axes-relative). {_LABEL_AXES_NATIVE_ESCAPE}"
+            )
+        if not _is_text_property(name):
+            raise AttributeError(
+                f"label_axes() does not support {name!r}. It takes labels=, x=, "
+                f"y=, fontsize=, fontweight= and any matplotlib Text property "
+                f"(color=, rotation=, fontstyle=, ...). "
+                f"{_LABEL_AXES_KWARG_HINTS.get(name, '')}"
+                f"{_LABEL_AXES_NATIVE_ESCAPE}"
+            )
+
+
 def label_axes(
     axes: list[Axes] | np.ndarray[Any, Any],
     labels: list[str] | None = None,
@@ -254,6 +306,8 @@ def label_axes(
     list
         List of created Text objects.
     """
+    _reject_unusable_label_kwargs(kwargs)
+
     if fontsize is None:
         fontsize = fs(1)
 
