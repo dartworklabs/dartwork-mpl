@@ -90,11 +90,13 @@ above an outside legend and the margins around both.
 | axis labels one step bigger | each label: `t.set_fontsize(t.get_fontsize() + step)` |
 | ticks smaller | `ax.tick_params(labelsize=dm.fs(-1))` |
 | one line thicker | `line.set_linewidth(line.get_linewidth() + 0.5)` |
-| emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays, redrawn after recolouring |
-| move the legend | `ax.legend(loc="lower right")` or `dm.place_legend(ax)` |
+| emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays: after recolouring, redraw it with the same call and arguments (`loc=`, `ncols=` …) |
+| move the legend | `dm.place_legend(ax)` (inside, away from the data) or a named side `dm.place_legend(ax, loc="right")`; never `ax.legend(loc=...)` or `bbox_to_anchor` |
 | legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
 | label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
+| date labels under bars crowd (`2022-07 … 2023-12`) | `dm.format_axis_dates(ax, df["order_month"])`: the library's date words, thinned by `dm.simple_layout` (`Jul, Sep, Nov, 2023, Mar …`); not rotated |
+| for slides / for a talk (preset switch) | `dm.style.use("presentation")`, canvas `dm.figsize_for(...)` (`"full_slide"` only for a whole 16:9 slide); pt values written in the code × 2.6 (`scientific` → `presentation`), unrounded: `markersize=3` → `3 * 2.6`; keep data, labels and limits |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
 | show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontsize=dm.fs(-1), fontweight=dm.fw(1))`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
@@ -109,6 +111,16 @@ dm.simple_layout(fig)            # text grew: refit with the script's own argume
 dm.save_formats(fig, "output/figure-v2", formats=("png",))
 plt.close(fig)
 ```
+
+Validate the original before the change. A WARNING it already has is not
+the change's: it stays and goes in the report (an "only X" edit fixes
+nothing else). When the asked change itself makes a legend cover text,
+its own panel's or another's (a `LEGEND_OVERLAP` WARNING the original did
+not have), move only that legend: `dm.place_legend(ax)` on its axes with
+the arguments it already had (`fontsize=`, `ncols=` …; no new `loc=`); it may go above the
+plot in two columns, which is the decided look (decision L-B). Not wider
+`wspace`, a smaller font or fewer columns of your own. List the move; a
+legend the change leaves clear stays.
 
 Repeated "one more step" adds to the current value again; it does not reset
 to `dm.fs(1)`. An absolute request ("12 pt") is set exactly. Keep the
@@ -144,16 +156,20 @@ plt.close(fig)
 2. Fix in this order, only what the image shows:
    - clipped or overlapping text: dates read as dates and the library's tick
      numbers and dates (`dm.simple_layout(fig)`; no formatter or locator of
-     your own), `dm.wrap_axis_labels(fig)`, `dm.rotate_tick_labels(ax)` as a
-     last resort;
+     your own; dates under bars or other categories:
+     `dm.format_axis_dates(ax, dates)`), `dm.wrap_axis_labels(fig)`,
+     `dm.rotate_tick_labels(ax)` only when none of these fits;
    - value labels touching each other or their neighbours: those labels to
-     `fontsize=dm.fs(-1)` (only when larger), named in the change list;
+     `fontsize=dm.fs(-1)` (only when larger) and, when the call writes no
+     weight, `fontweight=dm.fw(1)` (the value-label look), named in the change
+     list; the axis limits stay, also when a line crosses the labels;
    - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
      (one legend for both twins; above the plot by itself when nothing inside
      is free);
    - many competing colours: one accent, the rest `dc.gray4`;
-   - unclear labels: the column's name and a unit the data or request gives
-     ("Time (s)"); never an invented unit;
+   - axis labels stay as written, case and all, and none is added; a label
+     that is clipped or overlaps is wrapped (`dm.wrap_axis_labels(fig)`), not
+     reworded;
    - cramped panels: `hspace` / `wspace`.
 3. Keep the preset's fonts, spines and grid, the data, the chart type and
    its axes (no new twin axis or panel), the axis limits, the canvas size,

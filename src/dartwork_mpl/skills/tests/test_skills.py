@@ -138,6 +138,39 @@ def test_plot_text_is_english_unless_the_user_asks() -> None:
     assert "missing from font(s)" in korean
 
 
+def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
+    """User decisions 2026-11-03 (eval v13/v14 step 5): 20-A 0-A 19-A 22-A V-A.
+
+    A whole 16:9 slide is ``figsize_for("full_slide")``; axis limits are the
+    library's; bars are vertical unless names overlap; no unit nothing
+    states; no value labels unless asked. Also the rules v13 showed agents
+    reading two ways: dates under bars, pt values on a move to slides, the
+    legend on an edit, axis labels on a broad ask.
+    """
+    text = SKILL_MD.read_text(encoding="utf-8")
+    for rule in (
+        '`"full_slide"` (25.4 × 14.29 cm)',  # noqa: RUF001
+        "axis limits (bars start at 0)",
+        '`"barh"` + `ax.barh` only when names overlap',
+        "`수출 증가율` → `Export growth rate`",
+        "no unit nothing states",
+        "`dm.format_axis_dates(ax, dates)`, not rotated",
+        "× 2.6, unrounded",  # noqa: RUF001
+        "the legend as it is",
+        "axis labels as written",
+        "value labels, extra panel or one-series legend unless asked",
+    ):
+        assert rule in text, rule
+    editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
+    assert "`dm.format_axis_dates(ax, dates)`" in editing
+    assert "axis labels stay as written" in editing
+    sizing = (SKILL / "references" / "sizing-and-layout.md").read_text(
+        encoding="utf-8"
+    )
+    assert 'dm.figsize_for("full_slide")' in sizing
+    assert '"25.4cm", "16:9"' not in sizing
+
+
 def test_one_unit_per_axis() -> None:
     """User decision 2026-10-22: one unit per axis, the largest tick's by default."""
     text = SKILL_MD.read_text(encoding="utf-8")
@@ -170,6 +203,135 @@ def test_value_labels_are_one_weight_step_heavier() -> None:
         "plot-v2.py",
     ):
         assert getter in editing, getter
+
+
+def test_legends_and_labels_follow_the_eval_v16_findings() -> None:
+    """Eval v16 (2026-11-04): the rules that already held, worded so every agent reads them.
+
+    e04 / e10: one codex run moved or merged a legend with ``ax.legend`` and
+    ``bbox_to_anchor`` instead of ``dm.place_legend``; c06 / c07: a label took
+    the request's words over the column name. No row may still offer
+    ``ax.legend(loc=...)`` for moving a legend.
+    """
+    text = SKILL_MD.read_text(encoding="utf-8")
+    # v17: "every axes legend" made claude re-place an existing legend in a
+    # highlight edit (e05); only a legend added, moved or merged changes.
+    assert (
+        "A legend you add, move or merge (a twin pair's two into one)" in text
+    )
+    assert "never `ax.legend(...)`, `bbox_to_anchor`" in text
+    assert "others stay as they are" in text
+    # v19: dropping "unless named" made agents pick loc="right" / "above"
+    # for legends nobody placed (g21, c01, e09).
+    assert "with `loc=` only for a side the user names" in text
+    assert "Every axes legend" not in text
+    flat_text = " ".join(text.split())
+    assert "also when the request words them otherwise" in flat_text
+    assert "only a value with no column takes the request's noun" in flat_text
+    editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
+    row = next(
+        ln for ln in editing.splitlines() if ln.startswith("| move the legend")
+    )
+    assert "dm.place_legend(ax)" in row and 'ax.legend(loc="' not in row
+    policy = dm.get_prompt("01-policy")
+    flat = " ".join(policy.split())
+    assert "also when the request words it otherwise" in flat
+    assert "a legend added, moved or merged" in flat
+    assert "a legend nobody asked about stays as it is" in flat
+    assert "with `loc=` only for a side the user names" in flat
+
+
+def test_step6_decisions_w_a_and_l_b() -> None:
+    """Decisions W-A and L-B (2026-11-04, review page 2026-11-04-step6).
+
+    W-A: a broad ask that shrinks touching value labels to dm.fs(-1) also
+    gives them dm.fw(1) when their call writes no weight (e10: claude 300 vs
+    codex "light" 200 before). L-B: an "only X" edit whose result makes a
+    legend overlap other text moves that legend with dm.place_legend and
+    lists it (e03: widening a panel put 'wind + solar' under the neighbour's
+    legend). Broad asks keep the limits even when a line crosses value
+    labels (e10: a claude run moved the twin's limits).
+    """
+    flat = " ".join(SKILL_MD.read_text(encoding="utf-8").split())
+    # Review 2026-11-04: only labels larger than dm.fs(-1) shrink.
+    assert (
+        "larger than `dm.fs(-1)` drop to it and, with no weight written, take `dm.fw(1)`"
+        in flat
+    )
+    assert "`ncols=` of your own (arguments it had stay)" in flat
+    # v20: the e03 original already had the overlap (331 px2 at 1:1 and 1:2),
+    # so an "only X" edit keeps that legend and reports the warning.
+    assert "a `LEGEND_OVERLAP` the original already has stays, reported" in flat
+    assert "one your change makes: `dm.place_legend(ax)`" in flat
+    assert "on that legend's axes with its own arguments" in flat
+    assert "not spacing or font size" in flat
+    assert "limits (a line crossing value labels too)" in flat
+    assert "weight kept" not in flat
+    editing = " ".join(
+        (SKILL / "references" / "editing.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    assert "when the call writes no weight, `fontweight=dm.fw(1)`" in editing
+    assert "move only that legend: `dm.place_legend(ax)` on its axes" in editing
+    assert "Not wider `wspace`, a smaller font" in editing
+    assert "Validate the original before the change." in editing
+    assert "its own panel's or another's" in editing
+    assert "redraw it with the same call and arguments" in editing
+    assert (
+        "the axis limits stay, also when a line crosses the labels" in editing
+    )
+    policy = " ".join(dm.get_prompt("01-policy").split())
+    assert (
+        "unless the edit makes it overlap other text (`LEGEND_OVERLAP` the original did not have"
+        in policy
+    )
+    assert "`dm.fw(1)` when their call writes no weight" in policy
+
+
+def test_skill_examples_do_not_quote_the_eval_cases() -> None:
+    """The skill teaches with examples no eval case uses (2026-11-04).
+
+    Step 5 had quoted g20's request ("the share of renewables"), g22's
+    (`GDP 성장률`), g19's column (`share_pct`) and, since 2026-10-25, the
+    week_start column of c06 / e09 / g18, each with the label the eval then
+    counted as agreement; the date row mirrored held-out e10's 2024 months.
+    The rules stay, the examples moved to data no case has.
+    """
+    texts = {
+        "SKILL.md": SKILL_MD.read_text(encoding="utf-8"),
+        "editing.md": (SKILL / "references" / "editing.md").read_text(
+            encoding="utf-8"
+        ),
+        "01-policy": dm.get_prompt("01-policy"),
+        "sizing-and-layout.md": (
+            SKILL / "references" / "sizing-and-layout.md"
+        ).read_text(encoding="utf-8"),
+    }
+    for name, text in texts.items():
+        flat = " ".join(text.split())
+        for quoted in (
+            "share of renewables",
+            "GDP 성장률",
+            "share_pct",
+            "week_start",
+            "2024-01 … 2024-12",
+            "full-slide 16:9 chart",
+        ):
+            assert quoted not in flat, (name, quoted)
+    flat = " ".join(texts["SKILL.md"].split())
+    # v22: "Both axes get a label" made a broad edit add an x label (e09);
+    # without the quoted g22 answer, 3 of 4 runs put (%) on a growth rate.
+    assert "A new figure labels both axes." in flat
+    assert "Both axes get a label" not in flat
+    # v23: "no (%) on a share either" split g20 (claude x100 with no unit,
+    # codex 0-1); a share the agent scales by 100 keeps its (%).
+    assert "a rate the data gives stays bare, no `(%)`" in flat
+    assert "a share you compute × 100 says `(%)`" in flat  # noqa: RUF001
+    assert "column names translated word for word, sentence case" in flat
+    assert "every word kept, in its order" in flat
+    assert '"rent against floor area": rent on y' in flat
+    assert "an edit: on the original first" in flat
 
 
 def test_every_shown_bar_label_uses_the_value_label_size() -> None:

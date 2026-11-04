@@ -90,9 +90,23 @@ class TestFixHandlersReadTypedDetails:
         assert "{x:.0f}" in _fixes("TICK_DECIMAL", {})[0]
         assert "ax.yaxis" in _fixes("UNIT_DUP", {})[0]
         assert "pctdistance=0.70" in _fixes("PIE_LABEL_OFFSET", {})[0]
-        assert "rotation=45" in _fixes("TICK_ROTATION", {})[0]
+        assert "rotation=45" in _fixes("TICK_ROTATION", {})[-1]
         assert "nbins=0" in _fixes("TICK_CROWD", {})[0]
         assert "vertically" in _fixes("MARGIN_ASYMMETRY", {})[0]
+
+    def test_overlapping_labels_try_dates_first_and_rotation_last(self) -> None:
+        """Flat labels that overlap: date words, then fewer ticks, rotation last."""
+        fixes = _fixes("TICK_ROTATION", {"recommended_rotation": 45})
+        assert "dm.format_axis_dates(ax, dates)" in fixes[0]
+        assert "MaxNLocator" in fixes[1]
+        assert "rotate_tick_labels" in fixes[-1]
+        assert "rotate_tick_labels" not in "".join(fixes[:-1])
+
+    def test_unneeded_rotation_only_rotates_back(self) -> None:
+        """Rotated labels that fit flat get one suggestion: rotation=0."""
+        fixes = _fixes("TICK_ROTATION", {"recommended_rotation": 0})
+        assert len(fixes) == 1
+        assert "rotation=0)" in fixes[0]
 
     def test_values_are_formatted_as_given(self) -> None:
         """Present values keep their type in the suggestion text."""

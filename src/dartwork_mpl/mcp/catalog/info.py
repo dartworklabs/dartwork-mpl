@@ -57,7 +57,8 @@ def info_payload() -> str:
                 ),
                 "locale_formatters": (
                     "dm.format_axis_myriad (East-Asian 10^4 labels), "
-                    "dm.format_axis_year (two-digit year + suffix)"
+                    "dm.format_axis_year (two-digit year + suffix), "
+                    "dm.format_axis_dates (date words for bars, thinned to fit)"
                 ),
                 "grid_sizing": (
                     "dm.figsize_grid(panel_width, aspect, ncols=, nrows=, gap=)"

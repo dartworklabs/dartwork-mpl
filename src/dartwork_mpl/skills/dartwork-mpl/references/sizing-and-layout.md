@@ -14,10 +14,10 @@ canvas, so the same request gets the same size whoever draws it:
 
 The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
 9 cm, all 4:3 like `dm.figsize`; `"matrix"` 12 cm square, `"dense"` 17 cm 2:1,
-`"strip"` 17 cm 0.45, `"slide"` 23.4 × 10.5 cm under any preset). Density
-moves it: 6 or fewer points with 2 or fewer series on one axis gives 9 cm;
-`dual_axis=True`, 4+ series or 13+ points gives 14.5 cm. `matrix`, `dense`,
-`strip`, `slide` and grids keep theirs; a grid takes 17 cm and panels keep
+`"strip"` 17 cm 0.45, `"slide"` 23.4 × 10.5 cm and `"full_slide"` 25.4 × 14.29 cm
+under any preset). Density moves it: 6 or fewer points with 2 or fewer series
+on one axis gives 9 cm; `dual_axis=True`, 4+ series or 13+ points gives
+14.5 cm. `matrix`, `dense`, `strip`, `slide`, `full_slide` and grids keep theirs; a grid takes 17 cm and panels keep
 the kind's aspect. `dm.grid_shape(n)` lays out `n` panels: one row up to
 three, then a near-square grid, wider than tall.
 
@@ -29,8 +29,15 @@ follows the x positions at that text size: up to 4 → 11.4 cm (half the body),
 up to 6 → 15.4 cm (two thirds), more, unknown (scatter), 4+ series or
 `dual_axis=True` → 23.4 cm. Grids, `"barh"`, `"dense"` and `"strip"` take
 23.4 cm, `"compact"` 11.4 cm (two charts side by side) and `"matrix"` a
-10.5 cm square. A chart that is the whole slide with no slide title, only
-when asked: `dm.figsize("25.4cm", "16:9")`.
+10.5 cm square. A chart that is the whole slide with no slide title ("fill
+the slide", "the entire 16:9 page"): `dm.figsize_for("full_slide")`, 25.4 × 14.29 cm under
+any preset, the 10 in slide these sizes assume (a 13.33 in slide would show the
+same text 25 % smaller on screen).
+
+Bars are vertical; horizontal bars (`ax.barh`, `dm.figsize_for("barh")`) only
+when the category names would overlap side by side, or when asked. Axis limits
+are the library's: bars start at 0 by themselves, lines keep matplotlib's data
+margins; `set_ylim` / `set_xlim` only when asked.
 
 ```python
 import matplotlib.pyplot as plt
@@ -42,6 +49,7 @@ dm.figsize_for(n_points=len(quarters), n_series=series)  # 12 x 9 cm
 dm.figsize_for("barh", n_points=10, n_series=1)  # 14.5 cm, long labels
 dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
 dm.figsize_for("slide")  # 23.4 x 10.5 cm, under a slide title
+dm.figsize_for("full_slide")  # 25.4 x 14.29 cm, the whole 16:9 slide
 nrows, ncols = dm.grid_shape(6)  # (2, 3)
 dm.figsize_for(nrows=nrows, ncols=ncols)  # 17 x 8.5 cm
 dm.style.use("presentation")
@@ -63,7 +71,6 @@ x = np.linspace(0, 10, 101)
 dm.figsize(dm.col1, "golden")    # paper, one column (9 cm)
 dm.figsize(dm.col2, 0.45)        # two columns, height = 0.45 x width
 dm.figsize("24cm", "12cm")       # exact width and height
-dm.figsize("25.4cm", "16:9")     # a whole 16:9 slide, no slide title
 dm.figsize_grid("6cm", "square", ncols=3, nrows=2, gap="0.6cm")  # panel-sized
 print(dm.list_aspect_tokens())   # {token: height / width}
 ```
