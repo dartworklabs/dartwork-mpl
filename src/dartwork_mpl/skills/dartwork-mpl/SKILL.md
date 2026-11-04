@@ -68,8 +68,8 @@ rounded bar ends, placeholder palettes.
 
 ## Data
 
-Plot the user's values as given. Never drop, fill, sort, aggregate, clip or invent rows silently; state every transformation. Missing values stay visible gaps; `dm.validate_data`
-legacy cleanup and opt-in policies: `references/data-policy.md`. A preview is not the dataset;
+Plot the user's values as given. Never drop, fill, sort, aggregate, clip or invent rows silently; state every transformation. Missing values stay visible gaps; legacy `dm.validate_data` drops NaN/Inf unless `allow_nan=True`.
+Explicit policies require `allow_nan=False`: `references/data-policy.md`. A preview is not the dataset;
 template numbers are placeholders. Dates are dates, a bare year (2012) a number; "A against B": A on y ("rent against floor area": rent on y).
 A new figure labels both axes. Labels and legend names are column names translated word for word, sentence case, also when the request words
 them otherwise (`order_date` → `Order date`, `margin_pct` → `Margin (%)`, `고객수` → `Customer count`); only a value with no column takes the request's noun
