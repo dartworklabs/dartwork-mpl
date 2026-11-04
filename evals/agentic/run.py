@@ -73,6 +73,7 @@ ENV_KEEP = (
     "LC_ALL",
     "SHELL",
     "TMPDIR",
+    "CLAUDE_CONFIG_DIR",
 )
 DEFAULT_WORK = Path.home() / "scratch" / "dartwork-mpl-evals-work"
 MIN_VIEW_PX = 400  # long side; smaller views are not a usable inspection
@@ -136,6 +137,8 @@ def base_env(
 ) -> dict:
     """Allowlisted environment; PATH entries inside the repo or records are dropped."""
     env = {k: os.environ[k] for k in ENV_KEEP if k in os.environ}
+    if "CLAUDE_CONFIG_DIR" in env:
+        env["CLAUDE_CONFIG_DIR"] = str(claude_config_dir())
     banned = [str(p) for p in [*repo_roots(), *hidden]]
     env["PATH"] = os.pathsep.join(
         p
@@ -263,10 +266,35 @@ def prepare(
 
 
 # ------------------------------------------------------------ hosts
+def claude_config_dir(cfg: dict | None = None) -> Path:
+    """Resolve the captured selection (None means the CLI's implicit default)."""
+    selected = (
+        cfg["claude_config_dir"]
+        if cfg is not None and "claude_config_dir" in cfg
+        else os.environ.get("CLAUDE_CONFIG_DIR")
+    )
+    return Path(selected or Path.home() / ".claude").expanduser().resolve()
+
+
+def claude_profile_roots(selected: Path) -> list[Path]:
+    """Default and selected profile aliases and targets can hold global context."""
+    roots = {Path.home() / ".claude", selected}
+    return sorted(roots | {p.resolve() for p in roots})
+
+
 def claude_cmd(prompt: str, cfg: dict) -> list[str]:
-    user_md = Path.home() / ".claude" / "CLAUDE.md"
-    excludes = [str(Path.home() / ".claude" / "**")] + (
-        [str(user_md.resolve())] if user_md.is_symlink() else []
+    """Exclude global instructions in the run's selected and default profiles."""
+    selected = claude_config_dir(cfg)
+    roots = claude_profile_roots(selected)
+    excludes = sorted(
+        {
+            *(str(root / "**") for root in roots),
+            *(
+                str((root / "CLAUDE.md").resolve())
+                for root in roots
+                if (root / "CLAUDE.md").is_symlink()
+            ),
+        }
     )
     b = cfg["budgets"]["claude"]
     return [
@@ -369,11 +397,19 @@ def codex_cmd(
     ]
 
 
-def host_context(host: str, home: Path) -> dict:
+def host_context(
+    host: str, home: Path, claude_home: Path | None = None
+) -> dict:
     """Global instruction files present on this machine and how the run treats them."""
     if host == "claude":
-        md = Path.home() / ".claude" / "CLAUDE.md"
-        return {str(md): "present, excluded" if md.exists() else "absent"}
+        return {
+            str(root / "CLAUDE.md"): (
+                "present, excluded"
+                if (root / "CLAUDE.md").exists()
+                else "absent"
+            )
+            for root in claude_profile_roots(claude_home or claude_config_dir())
+        }
     md = home / "AGENTS.md"
     return {
         str(md): (
@@ -385,29 +421,35 @@ def host_context(host: str, home: Path) -> dict:
     }
 
 
-def host_transcript_stores(home: Path) -> list[str]:
-    """Include the selected Codex home's stores in isolation and text checks."""
-    return sorted(
-        {
-            *transcript_stores(str(Path.home())),
-            *(
-                str(home / name)
-                for name in (
-                    "sessions",
-                    "archived_sessions",
-                    "history.jsonl",
-                    "session_index.jsonl",
-                    "log",
-                )
-            ),
-            *(str(p) for p in home.glob("*.sqlite*")),
-            *(str(p) for p in home.glob("accounts/*/sessions")),
-        }
-    )
+def host_transcript_stores(
+    home: Path, claude_home: Path | None = None
+) -> list[str]:
+    """Record both profiles' store aliases and targets for isolation and replay."""
+    paths = {
+        *transcript_stores(
+            str(Path.home()), str(claude_home or claude_config_dir())
+        ),
+        *(
+            str(home / name)
+            for name in (
+                "sessions",
+                "archived_sessions",
+                "history.jsonl",
+                "session_index.jsonl",
+                "log",
+            )
+        ),
+        *(str(p) for p in home.glob("*.sqlite*")),
+        *(str(p) for p in home.glob("accounts/*/sessions")),
+    }
+    return sorted(paths | {str(Path(p).resolve()) for p in paths})
 
 
 def home_store_mounts(
-    host: str, stores: Path, home: Path | None = None
+    host: str,
+    stores: Path,
+    home: Path | None = None,
+    claude_home: Path | None = None,
 ) -> tuple[list[str], Path | None]:
     """bwrap args that hide other sessions' transcripts and histories under HOME.
 
@@ -419,6 +461,9 @@ def home_store_mounts(
     per-unit Codex sessions directory (None for Claude). ``home`` selects the
     actual CODEX_HOME; otherwise the environment or the user's default applies.
     Its sessions directory is created when absent so a fresh home is isolated too.
+    ``claude_home`` selects the run's CLAUDE_CONFIG_DIR. Claude's global
+    instructions and skills are masked too. Mount resolved targets so symlinked
+    stores cannot expose their old bytes through another path.
     """
     home = home or Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
     selected_sessions = home / "sessions"
@@ -427,19 +472,30 @@ def home_store_mounts(
     stores.mkdir(parents=True, exist_ok=True)
     args: list[str] = []
     sessions = None
-    for raw in host_transcript_stores(home):
-        path = Path(raw)
-        if ".sqlite" in path.name:
+    sqlite_targets = {
+        path.resolve()
+        for root in {home, Path.home() / ".codex"}
+        for path in root.glob("*.sqlite*")
+    }
+    paths = host_transcript_stores(home, claude_home)
+    if host == "claude":
+        paths += [
+            str(root / name)
+            for root in claude_profile_roots(claude_home or claude_config_dir())
+            for name in ("CLAUDE.md", "skills")
+        ]
+    for path in sorted({Path(raw).resolve() for raw in paths}):
+        if path in sqlite_targets:
             continue  # Codex sqlite stores: needed by Codex itself
         if path.is_dir():
-            if host == "codex" and path == selected_sessions:
+            if host == "codex" and path == selected_sessions.resolve():
                 sessions = stores / "codex-sessions"
                 sessions.mkdir(exist_ok=True)
                 args += ["--bind", str(sessions), str(path)]
             else:
                 args += ["--tmpfs", str(path)]
         elif path.is_file():
-            blank = stores / f"blank-{path.parent.name}-{path.name}"
+            blank = stores / f"blank-{sha256(str(path).encode())[:16]}"
             blank.touch()
             args += ["--bind", str(blank), str(path)]
     return args, sessions
@@ -977,6 +1033,7 @@ def unit_id(host: str, case: str, arm: str, rep: int) -> str:
 
 
 def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
+    """Launch one immutable unit with the profile selection captured by the run."""
     case, host, arm, rep = job
     uid = unit_id(host, case["id"], arm, rep)
     unit = run_dir / uid
@@ -995,6 +1052,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         INSTALLED_SKILL if skill == "install" else skill.name if skill else None
     )
     home = codex_home(a)
+    claude_home = claude_config_dir(cfg)
     rec: dict = {
         "run_id": run_dir.name,
         "unit_id": uid,
@@ -1016,8 +1074,9 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         "effort": cfg["efforts"][host],
         "budget": cfg["budgets"][host],
         "host_version": meta["versions"][host],
-        "host_context": host_context(host, home),
-        "transcript_stores": host_transcript_stores(home),
+        "host_context": host_context(host, home, claude_home),
+        "transcript_stores": host_transcript_stores(home, claude_home),
+        **({"claude_config_dir": str(claude_home)} if host == "claude" else {}),
     }
     hide = [*repo_roots(), run_dir.parent.resolve(), a.work_root.resolve()]
     try:
@@ -1029,7 +1088,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         prompt = full_prompt(case)
         (unit / "prompt.txt").write_text(prompt, encoding="utf-8")
         mounts, sessions = (
-            home_store_mounts(host, unit / "home-stores", home)
+            home_store_mounts(host, unit / "home-stores", home, claude_home)
             if cfg["hide_grading"]
             else ([], None)
         )
@@ -1037,8 +1096,17 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         if host == "claude":
             argv = claude_cmd(prompt, cfg)
             env = base_env(
-                project, {"CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}, hide
+                project,
+                {
+                    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+                    "CLAUDE_CONFIG_DIR": str(claude_home),
+                },
+                hide,
             )
+            if not cfg.get(
+                "claude_config_dir", os.environ.get("CLAUDE_CONFIG_DIR")
+            ):
+                env.pop("CLAUDE_CONFIG_DIR", None)
             monitor = None
         else:
             argv = codex_cmd(prompt, project, unit, cfg, home)
@@ -1141,7 +1209,12 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             unit / "artifacts" / "figure.png",
             final_ts,
         )
-        rec["transcript_stores"] = host_transcript_stores(home)
+        rec["transcript_stores"] = sorted(
+            {
+                *rec["transcript_stores"],
+                *host_transcript_stores(home, claude_home),
+            }
+        )
         rec["contamination"] = contamination(
             tool_strings(host, lines, [rollout, *subs]),
             hide[:-1],
@@ -1177,6 +1250,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
 
 # ------------------------------------------------------------ manifest
 def config_from(a) -> dict:
+    """Capture budgets and the non-secret Claude profile path once per invocation."""
     return {
         "models": {"claude": a.claude_model, "codex": a.codex_model},
         "efforts": {"claude": a.claude_effort, "codex": a.codex_effort},
@@ -1196,6 +1270,11 @@ def config_from(a) -> dict:
         "suffix_version": SUFFIX_VERSION,
         "hide_grading": a.hide_grading,
         "codex_home": str(codex_home(a)) if a.codex_home else None,
+        "claude_config_dir": (
+            str(claude_config_dir())
+            if os.environ.get("CLAUDE_CONFIG_DIR")
+            else None
+        ),
         **(
             {"skill_install": INSTALLED_SKILL}
             if getattr(a, "ab_skill_install", False)
