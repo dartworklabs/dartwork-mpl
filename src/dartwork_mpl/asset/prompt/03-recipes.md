@@ -89,10 +89,12 @@ panel allocations does not imply fixed Axes data rectangles. Judge fit from
 the actual content and requested constraints, not a universal pixel/mm tolerance.
 
 For an explicit preset-relative request, `label.set_fontsize(dm.fs(1))` uses
-global `font.size + 1 pt`, not `axes.labelsize` or the current label size.
+global `font.size` + one step (1 pt; 2.6 pt under `presentation`), not
+`axes.labelsize` or the current label size.
 Repeat current-relative edits from the retained current value. For an absolute
 request use `label.set_fontsize(12)` exactly. `dm.fw(1)` adds 100 to the global
-base weight, while `dm.lw(1)` adds 1 pt to the global base line width.
+base weight, while `dm.lw(1)` adds one step (1 pt; 2.6 pt under
+`presentation`) to the global base line width.
 
 ## "A selected line: exact width, color and dash/dot spacing"
 

@@ -499,10 +499,12 @@ def annotate_value(
 
     The label is one weight step heavier than the preset's base weight
     (``fontweight=fw(1)``) so a data value reads apart from captions;
-    pass ``fontweight`` (or ``weight``) to override.
+    pass ``fontweight`` (or ``weight``) to override. ``fontsize`` defaults
+    to one step below the base, ``fs(-1)``, the size every value label
+    takes (7 pt under ``report``, 16.9 pt under ``presentation``).
     """
     if fontsize is None:
-        fontsize = fs(-2)
+        fontsize = fs(-1)
     requested = _parse_value_side(side)
     if "fontweight" not in kw and "weight" not in kw:
         kw["fontweight"] = fw(1)
@@ -620,7 +622,7 @@ def add_note(fig: Figure, text: str, **kw: Any) -> Text:
 
     One call for "add a source note" / "그림 아래에 출처를 적어줘", so every
     agent draws the same line: the figure's lower-left corner, left-aligned,
-    one point below the preset font (``dm.fs(-1)``) in the preset text colour.
+    one step below the preset font (``dm.fs(-1)``) in the preset text colour.
     :func:`dartwork_mpl.simple_layout` keeps the axes, tick labels and axis
     labels above it with the preset's ``axes.labelpad`` between them. A
     ``fontsize=``, ``color=`` or other ``Text`` keyword the user names wins::

@@ -483,9 +483,10 @@ figure:
 | below 1,000, or an x axis of years | unchanged: `0, 250 … 750`; `2012, 2014` |
 | dates (every preset) | `2024, Mar, May … 2025` (`date.converter: concise`) |
 | dates, Korean axis labels, titles or legend | `2024년, 3월, 5월 … 2025년` |
+| dates on a narrow axis | fewer ticks until labels are one em apart: `2021, Jul, 2022 …` |
 
 Log, category and colorbar axes and any axis with a formatter you set keep
-theirs. `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's
+theirs; a date axis with a locator you set or rotated labels keeps its ticks. `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's
 numbers; `dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k`
 or `0.25억` when you want units on the ticks.
 

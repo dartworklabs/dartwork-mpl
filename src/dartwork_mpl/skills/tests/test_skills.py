@@ -172,6 +172,26 @@ def test_value_labels_are_one_weight_step_heavier() -> None:
         assert getter in editing, getter
 
 
+def test_every_shown_bar_label_uses_the_value_label_size() -> None:
+    """Decision 6-A (2026-11-03): value labels default to dm.fs(-1), dm.fw(1).
+
+    Every ``bar_label`` call the skill shows an agent, table rows included,
+    carries both, so copying any one of them draws the decided label.
+    """
+    calls = [
+        (path.name, call)
+        for path in [SKILL_MD, *sorted((SKILL / "references").glob("*.md"))]
+        for call in re.findall(
+            r"bar_label\((?:[^()]|\([^()]*\))*\)",
+            path.read_text(encoding="utf-8"),
+        )
+    ]
+    assert len(calls) >= 3
+    for name, call in calls:
+        assert "fontsize=dm.fs(-1)" in call, (name, call)
+        assert "fontweight=dm.fw(1)" in call, (name, call)
+
+
 def test_skill_states_how_to_coexist_with_generic_chart_advice() -> None:
     text = SKILL_MD.read_text(encoding="utf-8")
     assert "generic chart skill" in text

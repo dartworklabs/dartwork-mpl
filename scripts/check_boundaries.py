@@ -333,6 +333,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.templates", "dartwork_mpl.prompt"): (
         "template workflows consume prompt corpus names, confined files and existence; find_template ranks its index"
     ),
+    ("dartwork_mpl.scale", "dartwork_mpl.style"): (
+        "the active preset sets how many points one fs / lw step adds (2.6 on slides)"
+    ),
     ("dartwork_mpl.style", "dartwork_mpl._colors.registry"): (
         "a preset switch re-applies the locale's semantic colour tokens"
     ),

@@ -74,9 +74,9 @@ weight, colour and spacing, so every agent draws the same element.
 | a legend on a named side | `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
 | a source or note line | `dm.add_note(fig, "Source: …")`, then `dm.simple_layout(fig)` |
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
-| bigger or smaller text, no amount | one step: `t.set_fontsize(t.get_fontsize() + 1)`; all text: `dm.style.use(preset, font_size=<preset size + 1>)` |
+| bigger or smaller text, no amount | one step, `step = dm.fs(1) - dm.fs(0)` (1 pt; 2.6 pt under `presentation`): `t.set_fontsize(t.get_fontsize() + step)`; all text: `dm.style.use(preset, font_size=dm.fs(0) + step)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
-| values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontweight=dm.fw(1))` |
+| values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontsize=dm.fs(-1), fontweight=dm.fw(1))` |
 | a log axis | `ax.set_yscale("log")` |
 
 A detail the user does name wins exactly ("a bold 12 pt title", "dashed grey
@@ -87,7 +87,7 @@ above an outside legend and the margins around both.
 
 | Request | Change |
 |---|---|
-| axis labels one step bigger | each label: `t.set_fontsize(t.get_fontsize() + 1)` |
+| axis labels one step bigger | each label: `t.set_fontsize(t.get_fontsize() + step)` |
 | ticks smaller | `ax.tick_params(labelsize=dm.fs(-1))` |
 | one line thicker | `line.set_linewidth(line.get_linewidth() + 0.5)` |
 | emphasise one series or bar | target keeps its colour, `set_zorder(3)`; others `set_color("dc.gray4")` (bars: `set_facecolor`); the legend stays, redrawn after recolouring |
@@ -96,12 +96,13 @@ above an outside legend and the margins around both.
 | label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
-| show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontweight=dm.fw(1))`, see below |
+| show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontsize=dm.fs(-1), fontweight=dm.fw(1))`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 
 ```python
+step = dm.fs(1) - dm.fs(0)       # one size step: 1 pt, 2.6 pt under presentation
 for t in (panel_a.xaxis.label, panel_a.yaxis.label):
-    t.set_fontsize(t.get_fontsize() + 1)
+    t.set_fontsize(t.get_fontsize() + step)
 model.set_linewidth(model.get_linewidth() + 0.5)
 error_ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
 dm.simple_layout(fig)            # text grew: refit with the script's own arguments
@@ -116,20 +117,23 @@ the script already used.
 
 ## Value labels
 
-Numbers written on bars or at line points are one weight step heavier than
-body text (`fontweight=dm.fw(1)`) and carry no meaningless decimals. Titles,
-axis labels, ticks and legends keep the preset weight.
+Numbers written on bars or at line points are one size step smaller and one
+weight step heavier than body text (`fontsize=dm.fs(-1)`,
+`fontweight=dm.fw(1)`; `dm.annotate_value` does both) and carry no
+meaningless decimals. Titles, axis labels, ticks and legends keep the preset
+size and weight.
 
 ```python
 fig, (bar_ax, line_ax) = plt.subplots(
     1, 2, figsize=dm.figsize("17cm", "7cm"), gridspec_kw={"wspace": 0.3}
 )
 bars = bar_ax.bar(["A", "B", "C"], [12, 30, 21])
-bar_ax.bar_label(bars, fmt="{:.0f}", padding=2, fontweight=dm.fw(1))
+bar_ax.bar_label(bars, fmt="{:.0f}", padding=2, fontsize=dm.fs(-1),
+                 fontweight=dm.fw(1))
 days, visits = np.arange(1, 8), np.array([40, 42, 47, 45, 51, 58, 63])
 line_ax.plot(days, visits)
 line_ax.text(days[-1], visits[-1], f" {visits[-1]}", va="center",
-             fontweight=dm.fw(1))
+             fontsize=dm.fs(-1), fontweight=dm.fw(1))
 dm.simple_layout(fig)
 plt.close(fig)
 ```
@@ -142,6 +146,8 @@ plt.close(fig)
      numbers and dates (`dm.simple_layout(fig)`; no formatter or locator of
      your own), `dm.wrap_axis_labels(fig)`, `dm.rotate_tick_labels(ax)` as a
      last resort;
+   - value labels touching each other or their neighbours: those labels to
+     `fontsize=dm.fs(-1)` (only when larger), named in the change list;
    - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
      (one legend for both twins; above the plot by itself when nothing inside
      is free);
@@ -151,9 +157,10 @@ plt.close(fig)
    - cramped panels: `hspace` / `wspace`.
 3. Keep the preset's fonts, spines and grid, the data, the chart type and
    its axes (no new twin axis or panel), the axis limits, the canvas size,
-   text sizes and what the figure already has, adding no text: its title,
-   axis labels, legend and the legend's place stay unless the image shows a
-   defect in them (the no-title default is for new figures).
+   text sizes (but for the value labels above) and what the figure already
+   has, adding no text: its title, axis labels, legend and the legend's place
+   stay unless the image shows a defect in them (the no-title default is for
+   new figures).
 4. Save as the next version, look again, and list each change in one line.
 
 Ask one short question only when the purpose (paper, report or slides) is

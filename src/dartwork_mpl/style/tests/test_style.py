@@ -466,7 +466,7 @@ def test_valid_preset_list_keeps_order_and_caller_precedence(
     isolated_style_state, presets
 ):
     """Ordered preset lists still apply the final font layer and then caller kwargs."""
-    expected = 10.5 if presets[-1] == "presentation-kr" else 7.5
+    expected = 19.5 if presets[-1] == "presentation-kr" else 7.5
     assert dm.style.use(presets) is None
     assert mpl.rcParams["font.size"] == expected
     dm.style.use(presets, font_size=14)

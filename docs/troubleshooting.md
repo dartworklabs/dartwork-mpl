@@ -109,7 +109,7 @@ This is expected behavior. Each preset defines its own font size scale optimized
 |--------|---------------|--------|
 | `scientific` | 7.5 pt | Journal figures at 3.5" width |
 | `report` | 8.0 pt | PDF reports |
-| `presentation` | 10.5 pt | Projected slides |
+| `presentation` | 19.5 pt | Projected slides (scientific × 2.6) |
 | `poster` | 12.0 pt | Conference posters (1-2m viewing) |
 
 Use `dm.fs(n)` for relative sizing that scales correctly with any preset.

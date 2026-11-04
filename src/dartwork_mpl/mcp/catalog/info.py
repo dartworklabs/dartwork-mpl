@@ -102,7 +102,8 @@ def info_payload() -> str:
                 "default_dpi": "Controlled by the active style preset.",
                 "font": (
                     "Presets supply defaults; explicit scoped user values win. "
-                    "dm.fs(n)/dm.lw(n) add n pt to global font.size/lines.linewidth; "
+                    "dm.fs(n)/dm.lw(n) add n steps to global font.size/lines.linewidth "
+                    "(a step is 1 pt, 2.6 pt under presentation); "
                     "dm.fw(n) adds 100*n weight units. For one more step use the "
                     "current artist getter plus delta; retain exact absolute values. "
                     "Literal-size/width warnings are advisory: review/report them, "

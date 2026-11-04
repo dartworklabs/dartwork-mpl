@@ -32,7 +32,7 @@ replace explicit sizes with template dimensions or a default.
 |---|---|---|
 | paper, journal, 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
 | report, document, dashboard, 보고서, 문서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
-| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 12 / 16 / 19 / 22.5 cm for a chart on a slide; `dm.figsize_for("slide")`: 25.4 cm at 16:9 for a whole slide |
+| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 10.5 cm tall under a 16:9 slide's title; wide 11.4 cm for up to 4 x positions, 15.4 cm up to 6, 23.4 cm for more, 4+ series or a second y axis; `"compact"` 11.4 cm for two charts side by side; `dm.figsize("25.4cm", "16:9")` only for a whole slide with no title |
 
 These are defaults, not caps or journal/slide standards: any size the user, a
 journal or a template names wins, through `dm.figsize`. `dm.figsize_for(kind,
@@ -40,6 +40,9 @@ n_points=, n_series=, dual_axis=, nrows=, ncols=)` picks the width from the
 kind (`"barh"`, `"matrix"`, `"slide"`, ...) and the data density, and
 `dm.grid_shape(n)` lays out `n` small multiples; both are provisional
 (`dm.EXPERIMENTAL`). Reuse the recommender/templates for the chart type.
+`presentation` is `scientific` with every point size × 2.6 (text, lines,
+markers, ticks, pads): a slide chart looks like a column figure enlarged to
+the slide, and every slide chart has the same text size whatever its width.
 Plot text is English unless the user asks for another language; a Korean
 conversation alone does not make it Korean. Korean text on the figure,
 requested or from the data, takes a `-kr` preset. Edits keep the figure's language.
@@ -204,7 +207,8 @@ style, canvas, legend and preset; do not add unsolicited palette/legend changes.
 Apply the preset first, then retained overrides, then local artist edits.
 
 - For preset-relative defaults use `dm.fs(n)`, `dm.lw(n)`, `dm.fw(n)`.
-  `fs` = global `font.size` + `n` pt; `lw` = global `lines.linewidth` + `n` pt;
+  `fs` = global `font.size` + `n` steps; `lw` = global `lines.linewidth` + `n`
+  steps. A step is 1 pt, 2.6 pt under `presentation` (`dm.fs(1) - dm.fs(0)`);
   `fw` = global `font.weight` + `100*n`. Fractional offsets are accepted.
   These helpers do not read an artist's current value or a role-specific base.
 - For relative-to-current edits use the target's getter plus the requested

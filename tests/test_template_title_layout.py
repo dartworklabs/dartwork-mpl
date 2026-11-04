@@ -3,8 +3,9 @@
 Renders every bundled advanced template under scientific, report and
 presentation. Each title ends inside the canvas, or it cannot fit there
 (wider than the room its anchor leaves), is reported by validate_figure,
-and re-running the template's last simple_layout call without it does not
-widen the axes, which shows the layout did not chase it.
+and re-running the template's last simple_layout call with the title cut to
+one character does not widen the axes, which shows the layout did not chase
+it sideways.
 """
 
 from __future__ import annotations
@@ -75,6 +76,21 @@ def _titles(fig):
         yield None, "center", suptitle
 
 
+def _slots(fig) -> list[float]:
+    """Left and right edges of every axes slot, in figure fractions.
+
+    The slot (``get_position(original=True)``) is what the layout sets; an
+    aspect-locked axes draws a smaller box inside it whose width also follows
+    the slot's height, so the drawn width cannot tell sideways chasing apart
+    from the room a title takes above the axes.
+    """
+    edges: list[float] = []
+    for ax in fig.axes:
+        slot = ax.get_position(original=True)
+        edges += [slot.x0, slot.x1]
+    return edges
+
+
 def _room_px(fig, ax, loc: str) -> float:
     """Widest title the canvas can hold given where it is anchored."""
     canvas = fig.bbox
@@ -117,7 +133,12 @@ def test_advanced_template_titles_stay_on_canvas(
 
     A title may end outside the canvas only when it is wider than the room
     its anchor leaves; then the checks must report it and re-running the
-    layout without it must not widen the axes (it was not chased).
+    layout with the title cut to one character must not move the axes slots'
+    left or right edges (it was not chased sideways). The cut title keeps its height: the room above
+    the axes is the title's, and on aspect-locked axes (polar, heatmap, 3-D)
+    that room also narrows the axes, so removing the title outright measured
+    the title's height, not chasing (presentation titles at 22.1 pt,
+    2026-11-03).
     """
     figures, calls, relayout = _run_template(
         template, preset, monkeypatch, tmp_path
@@ -133,11 +154,11 @@ def test_advanced_template_titles_stay_on_canvas(
                 assert width > _room_px(fig, ax, loc), f"{where}: {text!r}"
                 assert _flagged(fig, text), f"{where}: unreported {text!r}"
                 assert calls, f"{where}: not laid out by simple_layout"
-                before = [a.get_position().width for a in fig.axes]
-                title.set_text("")
+                before = _slots(fig)
+                title.set_text(text[:1])
                 relayout(*calls[-1][0], **calls[-1][1])
                 title.set_text(text)
-                after = [a.get_position().width for a in fig.axes]
+                after = _slots(fig)
                 assert after == pytest.approx(before, abs=1e-3), where
     finally:
         plt.close("all")

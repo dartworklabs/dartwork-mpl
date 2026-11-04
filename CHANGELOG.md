@@ -13,8 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
   preset's figure size when a request names none: report widths 9 / 12 /
   14.5 / 17 cm picked by chart kind and data density (4:3 like `dm.figsize`),
-  journal columns under `scientific`, widths scaled by font size under
-  `presentation` and `poster`, and `"slide"` for one whole 16:9 slide.
+  journal columns under `scientific`, 10.5 cm tall under a 16:9 slide's
+  title under `presentation` (11.4 / 15.4 / 23.4 cm wide for up to 4, up to 6
+  or more x positions, half for `"compact"`), widths scaled
+  by font size under `poster`, and `"slide"` for that slide body under any
+  preset.
   `dm.grid_shape(n)` lays out `n` small multiples. The same request gets the
   same canvas from any agent. The bundled skill uses both and states that
   spines, grid, ticks, fonts, background and margins stay the preset's, with
@@ -106,6 +109,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **`presentation` is `scientific` with every point size × 2.6.** Text,
+  lines, markers, tick lengths and widths, pads, grid, spines and boxplot
+  lines are 2.6 times the scientific values (23.4 cm slide body over a 9 cm
+  column): 19.5 pt text, 18.2 pt ticks, 15.6 pt legend, 2.6 pt lines, 7.8 pt
+  markers. A slide chart now looks like a column figure enlarged as a vector;
+  before, only text grew (10.5 pt) and lines, markers and ticks stayed at
+  paper size. `presentation-kr` follows. Slide titles stay regular weight.
+- **One `dm.fs` / `dm.lw` step is 2.6 pt under `presentation`.** So
+  `dm.fs(-1)` is 16.9 pt on a 19.5 pt slide, the same share as 6.5 of 7.5 pt
+  in a column, and `dm.lw(1)` doubles the line as it does on paper. Every
+  other preset keeps 1 pt steps; `dartwork_mpl.style.step_pt()` returns the
+  active step. Code that passed `dm.fs(n)` under `presentation` gets larger
+  offsets than before.
 - **Tick numbers and dates nobody formatted are the library's.**
   `dm.simple_layout(fig)` gives every axis still on matplotlib's default
   number formatter whose visible ticks reach 1,000 thousands separators
@@ -119,6 +135,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   column widths. When the figure's axis labels, titles or legend are Korean,
   `dm.simple_layout` writes the dates as `2024년, 3월, 5월 … 2025년`. Agents had each picked their own formatter, so the same
   0-1,750 axis came out as `1750`, `1,750` or `1.75k`.
+- **Date ticks fit the axis length.** matplotlib picks date ticks from the
+  date range alone, so 36 months got ten labels on a 23.4 cm slide and on a
+  9 cm column alike, where `2021 May Sep 2022` ran together. After fitting,
+  `dm.simple_layout` gives a date axis matplotlib set up fewer ticks until
+  neighbouring labels are one em apart (`2021, Jul, 2022 …`) and fits the
+  margins again. Axes with a locator you set, rotated labels and
+  `format_ticks=False` keep matplotlib's ticks.
 - **Negative ticks from the axis-wide formatters use the axis minus.**
   `dm.format_axis_si`, `_millions`, `_billions` and `_myriad` print U+2212
   (`−1.0M`) like matplotlib's own ticks unless `axes.unicode_minus` is off,

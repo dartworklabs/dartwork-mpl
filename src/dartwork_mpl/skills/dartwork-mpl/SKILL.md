@@ -39,9 +39,9 @@ from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 ## Size, layout, save
 
 - No size asked: `dm.figsize_for(kind, n_points=, n_series=)` (report 9/12/
-  14.5/17 cm by density, paper columns, slides scaled); count x points and
-  series; `dual_axis=True` with `twinx`; kind `"barh"`, `"matrix"`, `"slide"`
-  (whole 16:9 slide); n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)`.
+  14.5/17 cm by density, paper columns; `presentation` 10.5 cm tall, 11.4/15.4/
+  23.4 cm wide for ≤4/≤6/more x points); count x points and series; `dual_axis=True`
+  with `twinx`; kind `"barh"`, `"matrix"`; n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)`.
 - A size the user names wins, any size: `dm.figsize(width, second)`. width
   `"13cm"`, `"5in"`, `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number;
   second `standard` 4:3, `wide` 3:2, `slide` 16:9, `"16:9"`, a ratio or `"8cm"`.
@@ -78,24 +78,24 @@ a value axis without one takes the request's noun (`Energy`). No invented units.
 
 - Leave `color=` out so the preset cycle applies; name one when asked or to
   emphasise (`dc.blue6`: family + step 0–9). More: `references/colors.md`.
-- `dm.fs(n)`/`dm.lw(n)`: preset font size/line width + n pt; `dm.fw(n)`: weight
-  + 100·n (the preset, not an artist: `t.set_fontsize(t.get_fontsize() + 1)`).
+- `dm.fs(n)`/`dm.lw(n)`: preset font size/line width + n steps (1 pt; 2.6 pt in
+  `presentation` = `scientific` × 2.6); `dm.fw(n)`: weight + 100·n (preset, not an artist).
 - Explicit user values win exactly (`fontsize=12`, `"#235fa4"`), even when
   lint flags literals. Hairlines stay literal (`linewidth=0.3`).
 - k/M or 만/억 asked: `dm.format_axis_si` / `_myriad`. One unit per axis, the
   largest tick's unit (`0.25억 … 1.75억`), `unit="whole"` (`2,500만 … 17,500만`);
   `decimals=` is exact. No meaningless decimals: `200`, `1k`, not `200.0`, `1.0k`.
 - Numeric value labels you add on bars and lines (`ax.bar_label`, `ax.text`)
-  use `fontweight=dm.fw(1)` and the preset size; existing ones keep theirs.
+  use `fontsize=dm.fs(-1)`, `fontweight=dm.fw(1)`; existing ones keep theirs.
 
 ## Edits
 
-"Only X" requests: find that artist (panel, series, label, title), change only
-the asked property; keep data, preset, canvas, colours, legend (a highlight
-keeps it too) and the rest; keep the original, write the revision as a
-new script and stem. Broad asks ("make it look better"): keep data, preset,
-canvas, chart type and axes (no new twin), limits, text (add none) and its
-size, title and legend; fix only defects the image shows (`references/editing.md`), list each.
+"Only X" requests: find that artist (panel, series, label, title), change only the asked
+property; keep data, preset, canvas, colours, legend (a highlight keeps it too) and the rest;
+keep the original, write the revision as a new script and stem. Broad asks ("make it look
+better"): keep data, preset, canvas, chart type and axes (no new twin), limits, text (add
+none) and its size (touching value labels drop to `dm.fs(-1)`), title and legend; fix only
+defects the image shows (`references/editing.md`), list each.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 

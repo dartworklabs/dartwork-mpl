@@ -16,10 +16,11 @@ import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
 from .._rc import rc_lock
-from ._canvas import CANVAS_KINDS, figsize_for, grid_shape
+from ._canvas import CANVAS_KINDS, SLIDE_SCALE, figsize_for, grid_shape
 
 __all__ = [
     "CANVAS_KINDS",
+    "SLIDE_SCALE",
     "Style",
     "active_preset_rcparams",
     "figsize_for",
@@ -27,6 +28,7 @@ __all__ = [
     "install_twinx_patch",
     "list_styles",
     "load_style_dict",
+    "step_pt",
     "style",
     "style_path",
 ]
@@ -36,7 +38,8 @@ __all__ = [
 # Contexts merge temporary preset writes and restore the immediate outer copy.
 _dm_preset_values: dict[str, object] = {}
 # Preset names of the last successful use() (or the innermost context()); the
-# default canvas (figsize_for) follows them.
+# default canvas (figsize_for) and the step size (step_pt) follow them. A bare
+# stack() names no preset and clears them.
 _active_preset: list[str] = []
 
 
@@ -420,6 +423,9 @@ class Style:
             _restore_untouched_user_rcparams(user_overrides, incoming_keys)
             _dm_preset_values.clear()
             _dm_preset_values.update(preset_values)
+            # A bare stack names no preset: an earlier use("presentation")
+            # must not keep its slide step or canvas (use() names it again).
+            _active_preset.clear()
 
             # Locale-aware semantic tokens (dc.pos/neg/ref/hl) applied at the
             # choke point use() funnels through, so direct stack() callers and
@@ -642,6 +648,28 @@ def active_preset_rcparams() -> dict[str, object]:
     ):
         return {}
     return values
+
+
+def step_pt() -> float:
+    """Return how many points one ``dm.fs`` / ``dm.lw`` step adds right now.
+
+    :data:`SLIDE_SCALE` (2.6) while the last preset ``style.use`` applied (or
+    the innermost ``style.context``) is ``presentation`` or
+    ``presentation-kr``: those presets are the scientific one times 2.6, so a
+    step on a slide looks like one point in a journal column. 1.0 under every
+    other preset and when no dartwork preset is in force (none applied, a
+    bare ``style.stack``, or a native reset since; see
+    :func:`active_preset_rcparams`). Caller overrides such as
+    ``font_size=12`` do not change the step.
+    """
+    if (
+        not _active_preset
+        or _active_preset[-1].removesuffix("-kr") != "presentation"
+    ):
+        return 1.0
+    if not active_preset_rcparams():
+        return 1.0
+    return SLIDE_SCALE
 
 
 def install_twinx_patch() -> None:
