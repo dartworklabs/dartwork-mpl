@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
+from matplotlib import backend_bases
 from matplotlib.text import Text
 from matplotlib.transforms import ScaledTranslation
 
@@ -56,26 +57,36 @@ BBOX_ERRORS: tuple[type[BaseException], ...] = (
 
 
 def get_renderer(fig: Figure | SubFigure) -> RendererBase:
-    """Return ``fig.canvas.get_renderer()`` with the type-ignore centralised.
+    """Return a measurement renderer without replacing the caller's canvas.
 
-    Matplotlib's ``FigureCanvasBase`` does not declare ``get_renderer`` —
-    only the backend subclasses (``FigureCanvasAgg`` etc.) do. mypy
-    flags every call site with ``attr-defined``. Routing through this
-    helper keeps the suppression in one place.
+    Live rendering canvases keep their native renderer. A plain Figure,
+    a vector canvas, or a Figure closed by matplotlib 3.11 may have no
+    ``canvas.get_renderer``. In that case, use matplotlib's temporary PNG
+    print canvas at the Figure's current DPI and draw without output to
+    update artist positions. The native context restores the original
+    canvas even when rendering fails; artist errors propagate unchanged.
+    PNG avoids the DPI change made by native PDF/SVG print renderers.
 
     Parameters
     ----------
     fig : matplotlib.figure.Figure or matplotlib.figure.SubFigure
-        Figure (or SubFigure) whose canvas exposes a renderer (true
-        for every backend dartwork-mpl supports). SubFigure delegates
-        its canvas to the parent Figure, so the same call works.
+        Figure or SubFigure to measure. Fallback drawing uses its root
+        Figure so SubFigure transforms and sibling positions are current.
 
     Returns
     -------
     matplotlib.backend_bases.RendererBase
-        The renderer used by ``fig``'s canvas.
+        Native canvas renderer, or a temporary renderer at the Figure DPI.
     """
-    return fig.canvas.get_renderer()  # type: ignore[attr-defined,no-any-return]
+    if hasattr(fig.canvas, "get_renderer"):
+        return fig.canvas.get_renderer()  # type: ignore[no-any-return]
+    root = fig.get_figure(root=True)
+    print_canvas = root.canvas._switch_canvas_and_return_print_method("png")  # type: ignore[attr-defined]
+    with print_canvas as print_method:
+        renderer: RendererBase = backend_bases._get_renderer(root, print_method)  # type: ignore[attr-defined]
+        with renderer._draw_disabled():  # type: ignore[attr-defined]
+            root.draw(renderer)
+    return renderer
 
 
 def iter_figure_level_extents(

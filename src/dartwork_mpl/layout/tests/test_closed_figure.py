@@ -7,6 +7,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
 import dartwork_mpl as dm
+from dartwork_mpl._figure_geometry import get_renderer
 
 
 def _figure(kind):
@@ -90,7 +91,7 @@ def test_closed_figure_matches_open_layout_without_reopening(kind):
             assert all(ax.yaxis.label.get_fontsize() == 12 for ax in axes)
             results.append([ax.get_position().bounds for ax in fig.axes])
             if kind == "simple":
-                renderer = fig.canvas.get_renderer()
+                renderer = get_renderer(fig)
                 for label in (axes[0].xaxis.label, axes[0].yaxis.label):
                     box = label.get_window_extent(renderer)
                     assert box.x0 >= -0.5 and box.y0 >= -0.5
