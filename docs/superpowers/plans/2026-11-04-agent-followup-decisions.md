@@ -108,31 +108,38 @@ or its copies; no broad docs scan that would reach it.
 
 Files: `_colors/_palette.py`, `_colors/tests/test_make_palette.py`.
 
-- [ ] Step 1: red tests — in-range fractional rejected; `1`/`1.0`/`True`/numpy
+- [x] Step 1: red tests — in-range fractional rejected; `1`/`1.0`/`True`/numpy
       integral unchanged; `9` and `9.5` still ignored; existing `highlight="1"`
       `TypeError` retained.
       `test_boundary_and_highlight_contract` pins the defect as a native quirk
       (`(3, "categorical", 0.5, ["oc.blue3", "oc.red3", "oc.green3"])`). That row
       guarded the mechanical move, not the outcome; this decision replaces it with
       the rejection on purpose. The other pinned rows, including ignored `-1`, stay.
-- [ ] Step 2: minimal guard inside the highlighting branch; update the docstring.
-- [ ] Step 3: run the colours suite plus the shipped-colour freeze.
+- [x] Step 2: minimal guard inside the highlighting branch; update the docstring.
+- [x] Step 3: run the colours suite plus the shipped-colour freeze.
 
 ### Task 2 — label_axes diagnostics
 
 Files: `annotation/__init__.py`, `annotation/tests/test_label_axes_diagnostics.py`.
 
-- [ ] Step 1: red tests — message content and exception type per kwarg class,
+- [x] Step 1: red tests — message content and exception type per kwarg class,
       and the accepted kwargs that must not regress.
-- [ ] Step 2: pre-flight check; keep the placement logic untouched.
-- [ ] Step 3: run annotation, `tests/contracts/test_util.py`,
+- [x] Step 2: pre-flight check; keep the placement logic untouched.
+- [x] Step 3: run annotation, `tests/contracts/test_util.py`,
       `tests/test_agent_docs_runtime.py`, Ruff and mypy.
 
 ### Task 3 — status reconciliation and merge
 
 Files: handoff, structure-refactor README, `CHANGELOG.md`, this plan.
 
-- [ ] Step 1: record #566–#569, the verified branch-protection context, the three
+- [x] Step 1: record #566–#569, the verified branch-protection context, the three
       decisions and the identified receiving sessions. Do not close #483 or #501.
-- [ ] Step 2: run the affected checks on the final head; open the PR and require
+- [x] Step 2: run the affected checks on the final head; open the PR and require
       its own checks. Error-text changes only, so no render PoC is owed.
+
+## Outcome
+
+Merged as [#570](https://github.com/dartworklabs/dartwork-mpl/pull/570), merge commit
+`cb6735c0`. That commit's own CI, pre-commit and Sphinx deploy passed (2026-11-05);
+the PR head's checks were not reused as main's evidence. #483 and #501 stay open for
+the items listed above as out of scope.

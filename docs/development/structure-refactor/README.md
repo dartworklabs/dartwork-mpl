@@ -20,9 +20,11 @@ Python 3.10–3.13 네 job 모두 worker 4개로 통과했고 동시에 실행�
 소스 대조 기준은 후속 [#564](https://github.com/dartworklabs/dartwork-mpl/pull/564)의 `d5d8453c`다.
 위 CI 결과는 `a6e0c450`에 한정되며, `d5d8453c` 전체 CI 통과나 공개 이슈·릴리스 완료를 뜻하지 않는다.
 다른 컴퓨터에서 이어 갈 범위와 승인 경계는 [후속 작업 인계](agent-followup-handoff.md)에 모았고,
-그 인계는 2026-11-04 에 수신 세션이 정해져 끝났다. 이후 #566–#569 가 병합돼 현재 main 은
-`a691e285`이며, 잔여 결정 세 건(#483 작업 2, D3, #501 소수 `highlight`)은
-[결정 기록](../../superpowers/plans/2026-11-04-agent-followup-decisions.md)에서 해소했다.
+그 인계는 2026-11-04 에 수신 세션이 정해져 끝났다. 이후 #566–#569 가 병합돼 main 이
+`a691e285`이 됐고, 잔여 결정 세 건(#483 작업 2, D3, #501 소수 `highlight`)은
+[결정 기록](../../superpowers/plans/2026-11-04-agent-followup-decisions.md)에서 해소해
+[#570](https://github.com/dartworklabs/dartwork-mpl/pull/570) (`cb6735c0`)으로 병합했다.
+그 병합 커밋 자체의 CI·pre-commit·문서 배포 run 링크는 인계 문서에 있다.
 
 ## 진행 규칙
 
