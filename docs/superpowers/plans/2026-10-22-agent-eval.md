@@ -117,3 +117,34 @@ n = 4 cases per host, so every primary is `inconclusive` (by design).
 - Name markers can fire on package text that mentions them, and they gate
   even under the sandbox (fail closed).
 - Lint counts depend on the wheel's linter: compare arms on one wheel only.
+
+## Current evidence, 2026-11-04
+
+The 40-case / 320-unit scope and cost above describe the historical registered
+experiment, not today's whole corpus. The corpus now has 50 cases (32 generate,
+18 edit); using all of them with two hosts, two arms and two repetitions would
+mean 400 units. That arithmetic does not amend the registered experiment.
+
+No final-main decision A/B is recorded. On 2026-11-04 the user explicitly chose
+to retain the pre-registered endpoints and align the masterplan wording. Its
+phase 0, phase 1 acceptance and completion rule now match `PREREGISTERED` above:
+per host, at least one primary improved, neither worse, both guardrails passing.
+Evaluator thresholds and raw failure records remain unchanged. Five cases marked
+held-out were used in tuning; the case scope and treatment of that exposure are
+still unresolved. Do not label the remaining cases a new clean holdout. See
+[the transition diagnosis](2026-11-04-agentic-transition-diagnosis.md).
+
+A new 16-unit pilot uses product main `cb6735c0`, the exact installed wheel and
+the repaired harness `efb78189`. Run ID:
+`main-cb6735c0-pilot2-fc90bf3c-20261104`, under
+`/home/wonjun/scratch/dartwork-mpl-evals/`. Runtime model selection, budgets,
+wheel hash and planned units are in its manifest, rather than fixed in this plan.
+The first pilot remains preserved as startup-invalid (eight Codex configuration
+errors). After the harness fixes, its 232 tests passed; this is separate from
+live pilot outcomes.
+Final pilot result: all 16 planned units executed and passed task success;
+values 32/32 and explicit-edit preservation 8/8 passed. All eight skill units
+discovered/invoked the skill and viewed the final PNG. Both host decisions are
+`no demonstrated gain`: token noninferiority is inconclusive at four cases per
+host. Raw summary/results and the measured 320/400-unit usage projections are
+linked from the diagnosis. No decisive full A/B or release has run.
