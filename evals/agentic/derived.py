@@ -41,6 +41,8 @@ LEADER_TEXT_TOL = 0.03  # other end within 3% of the figure from a drawn text
 
 @dataclass
 class Pools:
+    """The case input's value groups, sequences and statistics, and the claimed points, that an unclaimed artist is matched against."""
+
     groups: list[np.ndarray] = field(default_factory=list)
     dist: list[np.ndarray] = field(default_factory=list)
     pairs: list[np.ndarray] = field(default_factory=list)

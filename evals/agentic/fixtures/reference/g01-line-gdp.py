@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g01-line-gdp."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g25-korean-dates."""
+
 from pathlib import Path
 
 import matplotlib.dates as mdates

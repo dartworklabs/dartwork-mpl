@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g09-small-multiples-ko."""
+
 from pathlib import Path
 
 import matplotlib.dates as mdates

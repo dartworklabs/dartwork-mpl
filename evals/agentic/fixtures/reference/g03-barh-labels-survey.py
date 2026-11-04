@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g03-barh-labels-survey."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

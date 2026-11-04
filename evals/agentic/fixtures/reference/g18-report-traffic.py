@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g18-report-traffic."""
+
 # known-defect: text_outside=1 (dm simple_layout ignores loc="left" titles; #523 phase 2)
 from pathlib import Path
 

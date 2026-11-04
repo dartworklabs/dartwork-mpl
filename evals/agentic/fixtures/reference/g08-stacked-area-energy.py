@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g08-stacked-area-energy."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g20-slides-renewables."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

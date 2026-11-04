@@ -314,6 +314,11 @@ split-on-trailing-comma = false
     "D107",
 ]
 
+# The agent-eval harness (evals/, outside the package; the default pytest
+# and CI do not collect it) follows the test-code rule: every module and
+# class has a docstring, functions are described by their names.
+"evals/**/*.py" = ["D102", "D103", "D104", "D105", "D106", "D107"]
+
 [tool.mypy]
 # `uv run mypy` (no arguments) is the one command, locally and in CI. Every
 # module under src/dartwork_mpl is checked strictly; a new module is checked

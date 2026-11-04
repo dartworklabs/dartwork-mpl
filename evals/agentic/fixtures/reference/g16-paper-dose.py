@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g16-paper-dose."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

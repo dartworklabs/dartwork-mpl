@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g22-size-12x8-ko."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

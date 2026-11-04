@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g24-vague-ko."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

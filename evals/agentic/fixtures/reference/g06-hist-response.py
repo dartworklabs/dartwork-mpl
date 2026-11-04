@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g06-hist-response."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
