@@ -9,11 +9,17 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 ([colors](audit/colors.md), [core](audit/core.md), [lint-validate](audit/lint-validate.md), [mcp](audit/mcp.md),
 [ui-cli](audit/ui-cli.md), [tests-tooling](audit/tests-tooling.md)). 감사 대상은 main `0e88b810`이다.
 
-**상태 확인: 2026-10-31.** 공개 병합 기준은 기존 확인의 `c90a7775`이며, 아래 로컬 상태는
-체크아웃 기준 `8810b2a6`과 이번 G5 재배치를 반영한다. PR 번호는 기존 병합 이력이다.
-C11·U6의 2026-10-30 로컬 확인 범위는 각 행에 유지했다. 이번 확인은 원격 CI·병합·공개 이슈
-완료를 증명하지 않는다. 전체 테스트·다른 런타임 검증도 미확인이며, 진행 규칙과 판정은
-기존 PR 작업에 그대로 적용한다.
+**상태 확인: 2026-11-04.** C11·U6·G5의 후속 구현은 [#549](https://github.com/dartworklabs/dartwork-mpl/pull/549)
+(`2aab9d8110a9f30c1e1f7846c5f83b5c042848f0`)로 병합됐다. 이후 테스트 fixture 격리
+[#562](https://github.com/dartworklabs/dartwork-mpl/pull/562)와 self-hosted CI 병렬도 제한
+[#563](https://github.com/dartworklabs/dartwork-mpl/pull/563)이 병합됐으며, `a6e0c450`의
+[전체 CI](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41791298918),
+[pre-commit](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41791298948),
+[문서 배포](https://github.com/dartworklabs/dartwork-mpl/actions/runs/41791298892)가 통과했다.
+Python 3.10–3.13 네 job 모두 worker 4개로 통과했고 동시에 실행된 Python job은 최대 2개였다.
+소스 대조 기준은 후속 [#564](https://github.com/dartworklabs/dartwork-mpl/pull/564)의 `d5d8453c`다.
+위 CI 결과는 `a6e0c450`에 한정되며, `d5d8453c` 전체 CI 통과나 공개 이슈·릴리스 완료를 뜻하지 않는다.
+다른 컴퓨터에서 이어 갈 범위와 승인 경계는 [후속 작업 인계](agent-followup-handoff.md)에 모았다.
 
 ## 진행 규칙
 
@@ -56,7 +62,7 @@ C11·U6의 2026-10-30 로컬 확인 범위는 각 행에 유지했다. 이번 �
 | G2 | 동거 수집 기반: 루트 `conftest.py`로 격리 fixture 승격, `tests/support/`, `--import-mode=importlib`, `testpaths=["tests","src/dartwork_mpl"]`, CI·release `pytest` 경로 제거, wheel `**/tests/**` exclude + 패키징 테스트, coverage omit | #522 |
 | G3 | mypy: `files`, 동거 테스트 exclude, `exhaustive-match`, `strict_equality`, 완화 override를 모듈 단위로 축소, dev 그룹에 extras, 명령 `uv run mypy` 통일 | #520 |
 | G4 | `scripts/check_boundaries.py` + `tests/architecture/test_boundaries.py`(주입 위반 5종 실패, 슬라이스 내부 import 통과), 현재 위반 `DEBT` 등재(검사는 pytest가 실행) | #521 |
-| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 로컬 재배치 — #535 (`8534a470`)의 단일 슬라이스 테스트 동거와 후속 로컬 이전에 이어, 기존 루트 58개 중 57개를 소유 영역으로 옮겼다. 루트에는 경로 고정된 `tests/test_shipped_colors_hash.py`만 남긴다. 이번 22개(문서 20·아키텍처 2)의 이동은 루트 계산 23곳과 보호 JUnit ID 3개의 두 파일 내 갱신만 수반하며, 보호 모듈 수 45/16과 검사 의미는 유지한다. 진입 문서의 19 tools·색 동결 경로는 이미 맞아 수정하지 않았다. 검증은 범위 내 수집·정적 보존 대조와 허용된 선택 실행에 한정한다. `tests/docs/test_docs_asset_references.py`의 런타임 2건은 읽기 금지 경로 때문에 미확인이다. 2026-10-31 로컬 상태이며, 전체 테스트·다른 런타임·원격 CI·병합·공개 G5/이슈 완료는 미확인 |
+| G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 병합 — #549 (`2aab9d81`). 기존 루트 58개 중 57개를 소유 영역으로 옮긴 후속 작업과 보호 JUnit ID 갱신이 반영됐다. `tests/test_shipped_colors_hash.py`의 고정 경로는 유지한다. 현재 루트에는 이후 추가된 `test_agent_docs_runtime.py`·`test_template_title_layout.py`도 있으므로 루트 파일 수를 완료 기준으로 재사용하지 않는다. 원격 실행 근거는 위 `a6e0c450` CI이며, 이번 로컬 확인에서는 읽기 금지 경로에 닿는 문서 검사를 다시 실행하지 않았다 |
 
 ### 2단계 — 이동 (영역마다 순서대로. 영역끼리는 병행할 수 있다. 각 PR은 그 슬라이스의 테스트도 함께 옮긴다)
 
@@ -74,7 +80,7 @@ C11·U6의 2026-10-30 로컬 확인 범위는 각 행에 유지했다. 이번 �
 | C8 | `formatting/` 패키지 + `set_decimal` 흡수 + `__all__` | #525–#528 |
 | C9 | `io/` 패키지. ui는 U5, mcp는 M6에서 `util` 대신 소유자 import | #525–#528 |
 | C10 | `util.py` → shim 전용, `mix_colors`/`pseudo_alpha` → `_colors` | #535 (`d070514c`, `dddabeec`): `util`은 재노출만, 색 혼합은 `_colors/blend` |
-| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 로컬 반영·검증 — #535 (`1eca8e31`): 최소 DPI 소유권·의존 선언 정리. 로컬 커밋 `dbd594e4`에서 `optimize_legend`를 annotation으로, `6068ba35`에서 `make_palette`를 _colors로 이전하고 기존 import를 보존했다. `0e6831eb`에서는 `check_figure_quality`와 DPI 기준을 validate로 이전하고 `validate → helpers` 의존을 제거했다. `1479a9bc`에서 데이터 검증을 validate로, `2a95cdc1`에서 차트 추천을 recommend로 이전했다. `helpers/`의 다섯 프로덕션 모듈은 import·docstring·`__all__` 연결만 남았다. 2026-10-30 로컬 구현·범위 내 검증 기준이며, 전체 테스트·다른 런타임 검증과 원격 CI·병합·공개 C11/이슈·릴리스 완료는 미확인 |
+| C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 병합 — #549 (`2aab9d81`). `optimize_legend`는 annotation, `make_palette`는 _colors, `check_figure_quality`·DPI 기준·데이터 검증은 validate, 차트 추천은 recommend가 소유한다. `d5d8453c` 소스에서도 helpers의 프로덕션 모듈 다섯 개는 import·docstring·`__all__` 연결만 남고 기존 import를 보존한다. 원격 실행 근거는 위 `a6e0c450` CI |
 | C13 | 테스트를 가진 단일 파일 슬라이스 `scale`·`tokens`·`icon`·`explore`를 같은 이름 패키지로(테스트 동거). `config`·`agent`는 전용 테스트가 없어 유지 | #526 |
 | C12 | `templates`의 루트 import 제거, `__init__` 배선화(`_compat.py`, twinx 패치는 style로) | #525–#528 |
 
@@ -105,7 +111,7 @@ C11·U6의 2026-10-30 로컬 확인 범위는 각 행에 유지했다. 이번 �
 | U3 | `ui/platform/`(json, fs, access) 이동 | #530 |
 | U4 | `params/`·`page/`·`scaffold/` 이동 | #530 |
 | U5 | `state/`·`saving/`·`render/`·`script/` + 슬라이스별 router·GRANTS, `ui.py`는 mount만 | #530 |
-| U6 | `prompt/` 패키지가 `asset/prompt` 경로의 유일한 소유자(lint·mcp는 표면 사용) | 로컬 반영·검증 — #535 (`8534a470`): prompt 패키지·테스트 동거. 후속 로컬 커밋 `12016eff`(guide/catalog)·`21c3dbb7`(template)에서 경로 소유권을 prompt로 모으고 lint·mcp는 선언된 표면을 사용한다. 2026-10-30 로컬 소스 확인 기준이며, 원격 CI·병합·공개 이슈 완료는 미확인 |
+| U6 | `prompt/` 패키지가 `asset/prompt` 경로의 유일한 소유자(lint·mcp는 표면 사용) | 병합 — #549 (`2aab9d81`). guide/catalog와 template 경로 소유권을 prompt에 모았으며 lint·mcp는 선언된 표면을 사용한다. `d5d8453c`의 prompt 소스·소비자 import·경계 테스트에서도 확인했다. 원격 실행 근거는 위 `a6e0c450` CI |
 
 **mcp** ([감사](audit/mcp.md) §5. 배선 표 네 파일은 데코레이터·docstring을 바이트 그대로 둔다)
 
@@ -147,7 +153,7 @@ C11·U6의 2026-10-30 로컬 확인 범위는 각 행에 유지했다. 이번 �
 | --- | --- | --- |
 | D1 | ruff D100–D107(테스트는 D100–D101) 활성, 누락 docstring 보완 | #545 (`7e0c86d8`, `59da73a5`, `fc833124`) |
 | D2 | `DEBT = {}`로 경계 검사 강제 전환 | #535 (`3c406a56`) |
-| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 부분 — #545 (`7d25d3b4`): exclude 수정. 로컬 감사에서 정본 최신성·생성 코드 최신성·비교 진단과 출처 기록·게시 검사가 서로 다른 실패를 잡는 것으로 확인돼 검사 삭제 근거는 없었다. 선택 사항인 두 테스트의 설정 공유는 보류했다. job 이름 결정은 남고 branch-protection ID는 미확인·변경 없음. 원격 CI·병합·공개 이슈 완료는 미확인 |
+| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 부분 — #545 (`7d25d3b4`): exclude 수정. 정본 최신성·생성 코드 최신성·비교 진단과 출처 기록·게시 검사는 서로 다른 실패를 잡으므로 삭제 근거는 없었다. 선택 사항인 두 테스트의 설정 공유는 보류했다. `d5d8453c`의 pre-commit job 이름은 여전히 `Run pre-commit on changed files`다. 이름 결정과 branch-protection ID는 미확인·변경 없음. 위 원격 CI 통과가 이 잔여 결정을 대신하지 않는다 |
 
 #546 (`787b5c2b`, `bdbcfc8c`, `8aa8f267`)은 xdist 병렬 실행, 색 파이프라인 결과 공유,
 3.12 job의 색 파이프라인 전담을 반영했다. D3의 나머지 정리가 끝났다는 뜻은 아니다.
@@ -161,7 +167,7 @@ C11·U6의 2026-10-30 로컬 확인 범위는 각 행에 유지했다. 이번 �
 
 | ID | 내용 | 이유 |
 | --- | --- | --- |
-| H1 | 계획 작성 당시 main push의 runner 조상 권한(0775) 검사 실패와 PR CI 성공을 기록했다. 2026-10-29에는 재현·원격 상태 확인을 하지 않았다 | 현재도 실패하는지 미확인. 머신 설정 변경·보안 검사 완화는 사람이 정한다 |
+| H1 | 해소 확인 — 과거 main push의 runner 조상 권한(0775) 실패 이후, #562 (`13f1575b`)가 입력 정책 fixture를 검증된 사용자 소유 홈 아래의 개별 임시 디렉터리로 격리했고 #563 (`a6e0c450`)이 self-hosted 병렬도를 제한했다 | `a6e0c450`의 전체 CI·pre-commit·문서 배포 통과로 실행을 확인했다. fixture의 소유권·모드 검사는 유지하며, 머신 권한 변경·보안 검사 완화를 승인한 기록은 아니다 |
 | H2 | 해소 — #544 (`da273413`): `complex`는 argparse 선택지에서 제외(exit 2), 비어 있지 않은 대상은 거절(exit 1). 같은 PR의 `0ec59ea1`은 `list[bool]` 쉼표 입력 파싱 수정 | `ui/__main__.py`·`ui/scaffold/`·`ui/params/_active.py`에 반영 |
 | H3 | MCP discovery 스캐너를 레지스트리 기반으로 바꿔 tool 정의를 슬라이스로 옮기기 | ADR 0001 A1 동결 도구 수정 |
 | H4 | `_colors/_compatibility_metrics.py` 이동·정리 | 출하 자산에 경로·SHA 고정 |
