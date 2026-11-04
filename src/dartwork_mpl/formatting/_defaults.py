@@ -113,10 +113,15 @@ class KoreanConciseDateFormatter(mdates.ConciseDateFormatter):
         self,
         locator: mdates.DateLocator,
         tz: datetime.tzinfo | str | None = None,
+        *,
+        show_offset: bool = True,
+        usetex: bool | None = None,
     ) -> None:
         super().__init__(  # type: ignore[no-untyped-call]
             locator,
             tz=tz,
+            show_offset=show_offset,
+            usetex=usetex,
             formats=["%Y년", "%m월", "%d일", "%H:%M", "%H:%M", "%S.%f"],
             zero_formats=["", "%Y년", "%m월", "%m월 %d일", "%H:%M", "%H:%M"],
             offset_formats=[
@@ -359,8 +364,15 @@ def apply_default_tick_format(fig: Figure) -> int:
             if korean and type(fmt) is mdates.ConciseDateFormatter:
                 locator = axis.get_major_locator()
                 if isinstance(locator, mdates.DateLocator) and _stock(fmt):
+                    # Same time zone, offset and TeX choice; only the words
+                    # change.
                     axis.set_major_formatter(
-                        KoreanConciseDateFormatter(locator, tz=fmt._tz)
+                        KoreanConciseDateFormatter(
+                            locator,
+                            tz=fmt._tz,
+                            show_offset=fmt.show_offset,
+                            usetex=fmt._usetex,
+                        )
                     )
                     changed += 1
                 continue

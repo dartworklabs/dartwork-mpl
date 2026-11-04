@@ -139,7 +139,7 @@ Apply the context-appropriate preset via `dm.style.use(...)` (or a style stack).
 - `dartwork-mpl://guide/recipes` — intent → function-call cookbook
 - `dartwork-mpl://guide/anti-patterns` — machine-readable lint catalog
 - `dartwork-mpl://templates/{{plot_type}}` — bundled tier-1 (minimal) starter scripts
-- `dartwork-mpl://templates/advanced/{{plot_type}}` — tier-2 narrative templates with reference lines, value labels, source footnote
+- `dartwork-mpl://templates/advanced/{{plot_type}}` — tier-2 templates with reference lines and value labels (no title or source note unless asked)
 
 ## Template selection (on demand)
 

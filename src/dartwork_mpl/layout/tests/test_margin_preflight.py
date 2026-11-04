@@ -75,6 +75,13 @@ def _state(fig):
             if g is not None
         ],
         "fonts": fonts,
+        # simple_layout also installs tick formatters (#554); a refused
+        # call must leave them as they were.
+        "formatters": [
+            type(axis.get_major_formatter()).__name__
+            for ax in fig.axes
+            for axis in (ax.xaxis, ax.yaxis)
+        ],
     }
 
 
@@ -130,6 +137,7 @@ def test_nonfinite_effective_margin_rejects_without_effects(kwargs):
             "bounds": after["bounds"] == before["bounds"],
             "edges": after["edges"] == before["edges"],
             "fonts": after["fonts"] == before["fonts"],
+            "formatters": after["formatters"] == before["formatters"],
         }
         assert checks == dict.fromkeys(checks, True), checks
     finally:

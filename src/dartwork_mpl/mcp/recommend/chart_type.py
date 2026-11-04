@@ -68,10 +68,9 @@ def suggest(
         f"n_series={n_series} → recommended: {recommended!r}"
         f"{semantic_note}. "
         "Tier-1 templates show the minimal API call; tier-2 (advanced) "
-        "templates add reference lines, value labels, narrative title, "
-        "and source footnote — copy the advanced version when you "
-        "want the agent's generated plot to read like a finished "
-        "report figure."
+        "templates add realistic data, reference lines and value labels. "
+        "Neither tier draws a title, subtitle or source note: add one "
+        "only when the user asks (dm.add_note for a source line)."
     )
     return {
         "recommended": recommended,

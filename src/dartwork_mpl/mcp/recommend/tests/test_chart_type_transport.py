@@ -17,7 +17,7 @@ CASES = [
             "recommended": "bar_grouped",
             "basic_template_uri": "dartwork-mpl://templates/bar_grouped",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/bar_grouped",
-            "rationale": "x=categorical, y=continuous, n_points=50, n_series=3 → recommended: 'bar_grouped' (recommender semantic: 'grouped_bar' — rendered with the 'bar_grouped' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=categorical, y=continuous, n_points=50, n_series=3 → recommended: 'bar_grouped' (recommender semantic: 'grouped_bar' — rendered with the 'bar_grouped' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -26,7 +26,7 @@ CASES = [
             "recommended": "bar",
             "basic_template_uri": "dartwork-mpl://templates/bar",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/bar",
-            "rationale": "x=categorical, y=None, n_points=50, n_series=1 → recommended: 'bar' (recommender semantic: 'count_bar' — rendered with the 'bar' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=categorical, y=None, n_points=50, n_series=1 → recommended: 'bar' (recommender semantic: 'count_bar' — rendered with the 'bar' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -35,7 +35,7 @@ CASES = [
             "recommended": "line",
             "basic_template_uri": "dartwork-mpl://templates/line",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/line",
-            "rationale": "x=temporal, y=continuous, n_points=19, n_series=1 → recommended: 'line' (recommender semantic: 'bar_line' — rendered with the 'line' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=temporal, y=continuous, n_points=19, n_series=1 → recommended: 'line' (recommender semantic: 'bar_line' — rendered with the 'line' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -44,7 +44,7 @@ CASES = [
             "recommended": "line",
             "basic_template_uri": "dartwork-mpl://templates/line",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/line",
-            "rationale": "x=temporal, y=continuous, n_points=50, n_series=3 → recommended: 'line' (recommender semantic: 'multi_line' — rendered with the 'line' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=temporal, y=continuous, n_points=50, n_series=3 → recommended: 'line' (recommender semantic: 'multi_line' — rendered with the 'line' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -53,7 +53,7 @@ CASES = [
             "recommended": "scatter",
             "basic_template_uri": "dartwork-mpl://templates/scatter",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/scatter",
-            "rationale": "x=continuous, y=continuous, n_points=50, n_series=1 → recommended: 'scatter' (recommender semantic: 'scatter_density' — rendered with the 'scatter' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=continuous, y=continuous, n_points=50, n_series=1 → recommended: 'scatter' (recommender semantic: 'scatter_density' — rendered with the 'scatter' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -62,7 +62,7 @@ CASES = [
             "recommended": "scatter",
             "basic_template_uri": "dartwork-mpl://templates/scatter",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/scatter",
-            "rationale": "x=continuous, y=continuous, n_points=500, n_series=1 → recommended: 'scatter' (recommender semantic: 'hexbin' — rendered with the 'scatter' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=continuous, y=continuous, n_points=500, n_series=1 → recommended: 'scatter' (recommender semantic: 'hexbin' — rendered with the 'scatter' template). Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -71,7 +71,7 @@ CASES = [
             "recommended": "histogram",
             "basic_template_uri": "dartwork-mpl://templates/histogram",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/histogram",
-            "rationale": "x=continuous, y=None, n_points=50, n_series=1 → recommended: 'histogram'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=continuous, y=None, n_points=50, n_series=1 → recommended: 'histogram'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -80,7 +80,7 @@ CASES = [
             "recommended": "scatter",
             "basic_template_uri": "dartwork-mpl://templates/scatter",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/scatter",
-            "rationale": "x=weird, y=continuous, n_points=50, n_series=1 → recommended: 'scatter'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=weird, y=continuous, n_points=50, n_series=1 → recommended: 'scatter'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
     (
@@ -89,7 +89,7 @@ CASES = [
             "recommended": "line",
             "basic_template_uri": "dartwork-mpl://templates/line",
             "advanced_template_uri": "dartwork-mpl://templates/advanced/line",
-            "rationale": "x=weird, y=None, n_points=50, n_series=1 → recommended: 'line'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add reference lines, value labels, narrative title, and source footnote — copy the advanced version when you want the agent's generated plot to read like a finished report figure.",
+            "rationale": "x=weird, y=None, n_points=50, n_series=1 → recommended: 'line'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
 ]
