@@ -75,8 +75,12 @@ jobs:
         run: uv sync --all-extras --dev
 
       # Keep the coverage gate on one representative interpreter. The
-      # remaining matrix jobs still run the full test suite for version
-      # compatibility, but skip coverage instrumentation.
+      # remaining matrix jobs still run the test suite for version
+      # compatibility (minus color_pipeline, see below), but skip coverage
+      # instrumentation.
+      # `-n auto` spreads the suite over the runner's vCPUs (pytest-xdist);
+      # the serial run took 16-30 min per job. Keep -n here, not in addopts,
+      # so local runs and scripts/test_id_map.py stay serial by default.
       - name: Run tests with coverage
         if: matrix.python-version == '3.12'
         env:
@@ -88,9 +92,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run pytest -v --cov --cov-report=term-missing --durations=30 \
+          uv run pytest -v -n auto --cov --cov-report=term-missing --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
+      # `color_pipeline` tests (colour build, regeneration, comparison,
+      # typing parity, quality oracle) prove byte identity and the colour
+      # freeze. Their result does not depend on the interpreter and they are
+      # the slowest part of the suite, so they run once, in the 3.12 job
+      # above, which still runs everything.
       - name: Run tests
         if: matrix.python-version != '3.12'
         env:
@@ -98,7 +107,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run pytest -v --no-cov --durations=30 \
+          uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       # Prove every protected module contributed a passing executed case in
