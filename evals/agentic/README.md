@@ -223,7 +223,21 @@ repetitions get the next rep numbers. Keep `--jobs` at 7 or below.
 - `e04`, `e08`, `e10`, `e14`.
 
 Do not read, run or inspect them while tuning a skill, docs or prompts. The
-comparison tables report them separately.
+comparison tables report the historical YAML declaration separately as
+**declared held-out**; that flag does not prove absence of tuning exposure.
+
+Current exposure record (2026-11-04): v13–v24 tuning used
+`e04/e08/e10/e14/g20`. `g03/g07/g11/g15/g24` were not used in those tuning
+lists, but their original baseline was observed. Neither group is a new
+independent holdout. This does not imply those cases were already exposed
+at the time of an older run; keep historical flags and raw records intact.
+Final-freeze provenance is separate from that declaration.
+
+For the final comparison, follow the
+[final A/B plan](../../docs/superpowers/plans/2026-11-04-agentic-final-ab.md)
+and `preregister.py freeze/verify/command` CLI. Its frozen primary40/320-unit
+and descriptive supplemental10/80-unit populations stay separate; this
+report qualification changes neither membership nor endpoint calculations.
 
 ## Customization cases
 

@@ -244,3 +244,64 @@ def test_override_count_never_runs_project_code(tmp_path, monkeypatch):
     )
     over = conformance.preset_overrides('plt.rcParams["font.size"] = 9\n')
     assert over["total"] == 1 and not calls
+
+
+@pytest.mark.parametrize("state", ["complete", "blocked", "incomplete"])
+def test_legacy_held_out_reports_qualify_declarations_without_changing_results(
+    tmp_path, state
+):
+    """Unknown historical exposure stays unknown in both human report formats."""
+    from copy import deepcopy
+
+    from summary import summary_md
+
+    rows_a = [
+        {
+            "host": "synthetic",
+            "case": name,
+            "arm": "noskill",
+            "rep": 1,
+            "held_out": held_out,
+            "sandboxed": state != "blocked",
+            "task_success": success,
+            "tokens": {"total": 100},
+        }
+        for name, held_out, success in (
+            ("legacy-declared", True, False),
+            ("legacy-other", False, True),
+        )
+    ]
+    rows_b = [dict(row, arm="skill", task_success=True) for row in rows_a]
+    original_rows = deepcopy((rows_a, rows_b))
+    status = {
+        "complete": state != "incomplete",
+        "missing": ["unit"],
+        "duplicates": [],
+    }
+    results = compare.compare_rows(rows_a, rows_b, status=status)
+    original_results = deepcopy(results)
+    report = summary_md(rows_a, tmp_path / "synthetic-legacy")
+    comparison = compare.table(results, "noskill", "skill")
+    assert "legacy-declared (declared held-out)" in report
+    assert "synthetic (declared held-out)" in comparison
+    for text in (report, comparison):
+        assert "historical case YAML flag" in text
+        assert "not proof of no tuning exposure" in text
+        assert "Final-freeze provenance" in text
+        assert " (held-out)" not in text and " (held_out)" not in text
+        assert (
+            "clean holdout" not in text and "independent validation" not in text
+        )
+    assert (rows_a, rows_b) == original_rows
+    assert results == original_results
+    assert [row["subset"] for row in results] == ["all", "held_out"]
+    assert [row["cases"] for row in results] == [2, 1]
+    if state == "complete":
+        assert [(r["success_a"], r["success_b"]) for r in results] == [
+            (0.5, 1.0),
+            (0.0, 1.0),
+        ]
+        assert "| 0.50 | 1.00 | +0.500" in comparison
+        assert "| 0.00 | 1.00 | +1.000" in comparison
+    else:
+        assert state in comparison
