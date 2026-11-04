@@ -4,12 +4,15 @@ A short cookbook keyed by user intent. Each entry shows the canonical
 native invocation. For full templates see
 `dartwork-mpl://templates/{plot}`.
 
-> **Before any recipe**, pick and apply a style preset:
+> **For a new figure**, pick and apply a style preset:
 >
 > ```python
 > dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "poster" / "web" / "dark" / "*-kr"
 > ```
 >
+> For a local revision, retain the existing preset and scoped overrides.
+> Change the requested artist properties, then fit only if needed as below;
+> do not reapply a preset or refit an already-fitting change.
 > Presets provide defaults. Use `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)` for
 > preset-relative intent; retain explicit absolute user values and colors.
 > Literal-size/width warnings remain advisory: inspect and report them.
@@ -23,22 +26,67 @@ native invocation. For full templates see
 > to ``0`` for most presets, collapsing edges into the "no border"
 > idiom.
 
+## Choose the input version before a revision
+
+For each logical input, keep its name, chosen version, SHA-256, source and
+snapshot location visible beside the revision. Explicit requests settle the
+choice; do not ask again when the requested version is clear.
+
+| Request | Input choice |
+| --- | --- |
+| “Keep the previous data; change only the markers/style.” | Verify and reuse the retained bytes used by the previous figure, even if the upstream file changed. |
+| “Use the current file.” | Read the authorized current bytes and pin them in a new revision; retain earlier snapshots and prior requested style edits. |
+| Data version is materially ambiguous or prior evidence is unknown | Ask one relevant question before choosing; keep the original artifacts. |
+
+Read only user/operator-authorized inputs. For native Python, save copies in
+an authorized, user-owned project output area outside `datasets`. MCP instead
+uses its operator-authorized private `storage_dir` and existing admission rules.
+Never write upstream or collect unrelated files. Consume the pinned bytes/path,
+rather than reopening
+a mutable upstream path after hashing it. For style-only work, verify every
+required input against its previous receipt. A missing/changed snapshot or
+unknown input evidence needs clarification, never a silent current-file fallback.
+Hashes establish byte identity, not freshness, permission or complete
+reproducibility. An old snapshot is not evidence of the latest upstream data.
+MCP uses its existing explicit Copy/Retained admission and receipts; native local
+copies have no automatic MCP seven-day expiry or deletion guarantee.
+
 ## "Report style, only axis labels one step larger"
 
 Agents translate the request into native artist edits; users need not write
-plotting code. Apply the preset before creating artists or restoring retained
-overrides. On an existing report figure, edit only the selected label Texts:
+plotting code. On an existing report figure, edit only the selected label Texts.
+When revising retained source, insert the edit **after the original layout call**
+(with its original kwargs), before the report/export block. Inspect the changed
+content before deciding whether fitting is necessary.
+For an in-memory figure, use its existing layout and artist handles directly.
 
 ```python
+# Existing fig/ax; the original preset, plotting and layout have already run.
 for label in (ax.xaxis.label, ax.yaxis.label):
     label.set_fontsize(label.get_fontsize() + 1)  # one more = current + 1 pt
-# Keep the existing axes/layout when the enlarged labels still fit.
+fig.canvas.draw()  # inspect labels and measure actual Axes/legend bounds
+# Continue with the existing report/export block, retaining the canvas.
 ```
 
-Keep the existing axes/layout if labels still fit. If a refit is necessary,
-reuse the original `simple_layout` kwargs, grid and margin settings; do not
-blindly rerun its margin=0 defaults. Disclose any necessary movement of axes
-or an anchored legend rather than claiming pixel-position invariance.
+An ordinary label enlargement permits necessary content fitting: if labels
+clip or overlap, use the existing fitting method and settings as the starting
+point, adjusting only the margins/spacing needed to fit. Keep the physical
+canvas, panel/container allocations and explicit ratios, data, colors, other
+typography and legend's intended location. Reuse the original `simple_layout`
+kwargs/grid when applicable; do not reset to margin=0 defaults, introduce a new
+layout engine or refit a change that already fits.
+
+An explicit fixed Axes-position request overrides this fitting permission.
+Preserve that geometry; disclose any clipping/conflict without claiming a
+finished fit. Ask one relevant question only if a protected constraint must
+change or the safe existing fitting method is unclear, retaining the original.
+Explicit user instructions take precedence over these defaults.
+
+Active native layout engines can move artists during draw/export. Preserve
+their configuration, inspect the actual PNG/PDF, and compare bounds after both
+drawing and exporting. Report any necessary Axes movement honestly; preserving
+panel allocations does not imply fixed Axes data rectangles. Judge fit from
+the actual content and requested constraints, not a universal pixel/mm tolerance.
 
 For an explicit preset-relative request, `label.set_fontsize(dm.fs(1))` uses
 global `font.size + 1 pt`, not `axes.labelsize` or the current label size.
@@ -67,6 +115,48 @@ creation or any later setter that rescales dashes when physical lengths must
 stay fixed. For relative width use `line.get_linewidth() + delta`.
 Check the rendered result; no single dash tuple fits every chart purpose.
 
+### Keep a known Line2D legend sample in sync
+
+A legend sample is a separate artist: editing a data line after legend creation
+does not update its sample. For an existing plain `Line2D` series with a known
+one-to-one default-handler legend mapping, apply the same requested dash setter
+to its existing sample. Keep the legend object, location, text/order, frame and
+all other handle properties. Do not call `ax.legend()` again or copy whole
+artists with `update_from` (which can replace transforms and other properties).
+
+This partial example requires the saved data-line handle `line` and the known
+label `series_label`, with unique labels and default `Line2D` handlers established
+by the original construction. The checks do not prove that a custom handler or
+proxy represents the line; resolve such mappings from the original construction
+or ask before editing. Do not infer the series from its current array index.
+
+```python
+from matplotlib.lines import Line2D
+
+legend = ax.get_legend()
+if (legend is None or type(line) is not Line2D or
+        line not in ax.lines or line.get_label() != series_label):
+    raise ValueError("Resolve the existing series and its known legend mapping")
+texts = legend.get_texts()
+labels = [text.get_text() for text in texts]
+if labels.count(series_label) != 1:
+    raise ValueError("Expected one known corresponding legend sample")
+sample = legend.legend_handles[labels.index(series_label)]
+if type(sample) is not Line2D:
+    raise ValueError("Resolve the non-Line2D/custom legend sample explicitly")
+# Requested nominal dash sequence; retain the existing scale_dashes policy.
+for artist in (line, sample):
+    artist.set_dashes((6, 2, 1, 2))
+fig.canvas.draw()  # inspect both line and sample, then report/export
+```
+
+Place this patch after the original legend/layout construction in retained
+source. For requested physical path lengths, use the local
+`lines.scale_dashes=False` context described above around both setters; apply
+only the requested width/color/cap setters to each corresponding artist. Render
+and compare both samples and actual bounds. Do not reconstruct a legend to
+repair an uncertain mapping or change unrelated properties to make it fit.
+
 ## "Only the left spine, x ticks, y tick labels or y grid"
 
 These are independent examples: apply only the line(s) matching the request to
@@ -85,6 +175,22 @@ Axis labels (`ax.xaxis.label`, `ax.yaxis.label`) differ from tick labels
 `artist.properties()`, getters or `help(type(artist))`; consult official docs
 for the installed matplotlib version for unsupported or unfamiliar properties.
 Ask one short question only if panel/series/property scope is materially unclear.
+
+## File-only scripts: select the backend before creating figures
+
+For standalone PNG/PDF export, start the process with `MPLBACKEND=Agg`, before
+importing pyplot or creating figures: `MPLBACKEND=Agg python plot.py` (likewise
+`plot-v2.py` and `pin-input.py`). This is scoped to file-only scripts; keep
+interactive/notebook backend choices. `dm.figsize` returns the requested inch
+tuple, but a GUI backend can quantize a Figure's size at creation. A local
+macOS backend observation is not a universal limitation of `dm.figsize`.
+
+Check `fig.get_size_inches()` after creation and after export against the
+requested physical canvas. Keep `bbox_inches=None`, then inspect the saved
+PDF page width/height (72 points per inch), not only the PNG pixel dimensions.
+Report any mismatch and the backend actually used; do not silently resize the
+canvas, change layout or blame the unit conversion. Agg avoids the observed
+GUI quantization in these file-export examples; still check the actual PDF.
 
 ## "Exact canvas width and height (cm, mm or inches)"
 
@@ -147,6 +253,34 @@ dm.style.use("scientific")  # report/document: report; talk/slides: presentation
 x = np.linspace(0, 12, 121)
 fig = plt.figure(figsize=dm.figsize("20cm", "16cm"))
 ```
+
+### Whole-figure estimate, template guidance and margin correction
+
+`dm.figsize_grid("6cm", "standard", ncols=3, nrows=2, gap="0.6cm")`
+returns a whole-figure size: width `3 * 6 + 2 * 0.6 = 19.2cm` and height
+`2 * (6 * 0.75) + 0.6 = 9.6cm`. It does not create Axes or set GridSpec
+spacing. The requested panel width and gap are inputs to that arithmetic;
+labels, outer margins and native `wspace`/`hspace` determine the final Axes
+rectangles and gaps. Neither exact 6cm Axes nor exact 0.6cm rendered gaps
+are guaranteed. Render and measure the bounds below when those matter.
+
+MCP `compose_layered_plot` returns a starting template (including its example
+comments) and an annotation-layer checklist for the agent to adapt. Its
+`applied`/`missing` lists use lexical detection in source, not rendered checks.
+It does not rewrite code, execute a plot, allocate panels or repair spacing.
+Installed Python users can read the same basic/advanced sources through
+`importlib.resources`, as shown in the installed workflow below.
+
+The bounded margin/convergence correction tracked by #209 is a separate
+concern from template composition and figure-size arithmetic. The current
+`dm.simple_layout` measures content and iteratively updates root GridSpec outer
+margins, preserving native internal spacing. It does not solve nested local
+spacing or guarantee that every label fits every requested canvas. Historical
+`auto_layout` is removed; do not call it as an extra correction pass.
+`simple_layout` returns `None`, not a convergence or validation report: inspect
+`dm.validate_figure(fig)` findings and the actual PNG/PDF before accepting the
+result. If content cannot fit the requested geometry, explain the constraint
+and agree on a revision; do not silently delete data or shrink fonts.
 
 ### Equal grid
 
@@ -280,6 +414,33 @@ helper calls or silently change requested allocations to make validation pass.
 Read the full report (including `CHECK_FAILED`), inspect the actual PNG and PDF,
 and retain heuristic/advisory warnings with any explanation. Save a revision to
 a new stem such as `layout-v2`; keep v1, exact source and geometry for review.
+
+### Measured presentation text correction
+
+For the two whole-canvas recipes above, a measured 20 × 16 cm render using
+`presentation` clipped the leftmost `Response` y-label with the initial
+1.15 cm local left margin. Increasing only that margin to 1.70 cm cleared
+that overflow in both examples. After inspecting the full report and images,
+a revision can replace the `local = panel.add_gridspec(...)` call inside the
+existing panel loop with:
+
+<!-- snippet: no-run -->
+```python
+# This measured example's candidate, not a universal fit value.
+local = panel.add_gridspec(
+    1, 1, left=1.70 / width_cm, right=1 - 0.45 / width_cm,
+    bottom=1.05 / height_cm, top=1 - 0.80 / height_cm)
+```
+
+Rebuild the figure with that local edit, then repeat drawing, measurement,
+validation and image review, saving to a new output stem. Keep the 20 × 16 cm
+canvas, requested container ratios, data, colors, preset fonts and legend
+anchors. The larger left margin makes the data Axes narrower; it does not
+change the container allocations. The value 1.70 cm is a candidate for these
+measured examples, not an automatic preset override. If too little data space
+remains or content still clips, explain the constraint and ask which constraint
+may change; do not silently shrink fonts, remove data, resize the canvas or
+relocate legends. The scientific recipe defaults above remain unchanged.
 
 ## "Bar chart"
 
@@ -433,18 +594,38 @@ dm.simple_layout(fig)
 
 ## "Multi-panel grid (a/b/c labels)"
 
+`dm.label_axes` accepts `labels` for custom strings and `x` / `y` for
+Axes-relative positions (values may extend outside 0–1). With `x="auto"`,
+it uses -0.18 when an Axes has a y-label and -0.02 otherwise; `y` defaults
+to 1.05. Extra compatible native `Text` properties, such as `color`,
+`rotation` and `alpha`, pass through to `ax.text`:
+
 ```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
 fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"),
                          gridspec_kw={"hspace": 0.5, "wspace": 0.35})
-dm.label_axes(axes)                    # a, b, c, d just above each top-left corner
+for ax in axes.flat:
+    ax.plot([0, 1, 2], [1, 3, 2], color="oc.blue9")
+dm.label_axes(axes, labels=["(a)", "(b)", "(c)", "(d)"], x=-0.02, y=1.05,
+              color="black", rotation=0, alpha=0.9)
 dm.simple_layout(fig)
 ```
 
-`dm.label_axes` draws each label once; pass `labels=["(a)", "(b)", …]` for
-another style. To place a label inside the panel corner instead, skip
-`label_axes` and draw it yourself:
-`ax.text(0, 1, "a", transform=ax.transAxes + dm.make_offset(4, -4, fig),
-fontweight=dm.fw(1), va="top")`.
+`fmt`, `loc` and `xy` are not supported `label_axes` arguments. Use
+`labels` for text and `x` / `y` for position. The helper supplies the Axes
+transform and left/bottom alignment itself; for custom transforms or
+alignment, replace the preceding `dm.label_axes(...)` call with the native
+calls below over the same Axes collection, before `dm.simple_layout(fig)`. Do not run both label calls:
+
+<!-- snippet: no-run -->
+```python
+for ax, label in zip(axes.flat, ["(a)", "(b)", "(c)", "(d)"]):
+    ax.text(0.02, 0.98, label, transform=ax.transAxes,
+            fontsize=dm.fs(1), fontweight=dm.fw(1), ha="left", va="top")
+```
 
 ## "Compare style presets side by side"
 
@@ -469,9 +650,136 @@ dm.save_formats(fig, "output/figure", formats=("svg", "png", "pdf"),
                 bbox_inches=None, dpi=300)
 ```
 
+## Interpreting optional source auto-fixes
+
+Import `ast` and parse the complete source string with `ast.parse(code)`
+before lint/fix. This nonexecuting preflight can detect malformed Python;
+repair syntax errors in the source first. Some lint checks skip malformed
+source, so empty findings or MCP's “No issues found” do not prove valid
+syntax. Parsing and linting do not prove that code can compile, execute or
+render correctly, and do not authorize executing arbitrary source.
+
+For a source string named `code`, import `apply_lint_fixes` from
+`dartwork_mpl.lint`, then call
+`fixed_code, applied, unfixed = apply_lint_fixes(code)`. The MCP tool of the
+same name returns a dict with those three keys. Neither route executes the
+submitted source. Inspect the diff and every remaining finding: `applied`
+locations refer to the original source, `unfixed` to the returned source.
+
+The fixer needs an existing dartwork import binding and locally proven
+calls. It can redirect pyplot's `style.use` with one supported literal
+preset to that binding, or replace a no-argument `fig.tight_layout()` on a
+proven pyplot-created Figure with `simple_layout(fig)`. Not all aliases or
+constructors are recognized. It does not invent imports, infer the current
+Figure for `plt.tight_layout()`, transfer layout kwargs, or rewrite
+unsupported/dynamic styles, bare native Figure layout calls or arbitrary
+artist properties. A suggestion alone does not establish an applicable fix.
+
+Unchanged bytes with empty `applied` mean no correction was applied;
+nonempty `unfixed` still needs attention, while empty `unfixed` means no
+reported findings, not that all checks ran. Changed source can also retain
+`unfixed` findings. Preserve the user's style, colors, legend and layout
+intent, including intentional overrides. Stop retrying identical source.
+Resolve bindings, arguments and intended behavior before making a scoped
+source edit, then parse/lint again. For trusted code you choose to execute,
+retain the normal runtime validation and actual image-review steps below.
+
+## Native file input: pin the bytes actually consumed
+
+This standalone example expects an authorized UTF-8 `measurements.csv` with
+`x,y` columns (blank `y` means a missing reading). Save it as `pin-input.py`
+and run `MPLBACKEND=Agg python pin-input.py` for file-only export.
+Choose the input and a **new** revision directory in the configuration below.
+The small JSON receipt is a local example, not a public schema/API. Treat its
+paths as trusted, user-owned project paths, not untrusted service requests.
+Keep the receipt, snapshot, exact source, PNG/PDF and full validation findings.
+
+<!-- pinned-input-example -->
+```python
+import csv
+import hashlib
+import io
+import json
+from dataclasses import asdict
+from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+
+# User-authorized paths; output must be outside datasets. Never reuse a directory.
+choice = "current"  # initial/current-file request; use "previous" for old data
+upstream = Path("measurements.csv")
+previous_receipt = Path("output/figure-v1/input.json")
+revision = Path("output/figure-v1")
+logical_name = "measurements"
+
+if choice == "current":
+    raw = upstream.read_bytes()  # read upstream once; copy AND parse these bytes
+    source = str(upstream.resolve())
+    selected_from = None
+elif choice == "previous":
+    old = json.loads(previous_receipt.read_text(encoding="utf-8"))
+    if old["logical_name"] != logical_name:
+        raise ValueError("Unknown prior input: clarify the intended version")
+    raw = Path(old["snapshot"]).read_bytes()  # missing: stop, do not read upstream
+    if hashlib.sha256(raw).hexdigest() != old["sha256"]:
+        raise ValueError("Prior snapshot changed: clarify the intended version")
+    source = old["source"]
+    selected_from = str(previous_receipt.resolve())
+else:
+    raise ValueError("Choose current or previous explicitly")
+
+rows = list(csv.DictReader(io.StringIO(raw.decode("utf-8"), newline="")))
+x = np.array([float(row["x"]) for row in rows])
+y = np.array([float(row["y"]) if row["y"] else np.nan for row in rows])
+if not np.isfinite(x).all() or np.isinf(y).any() or np.isfinite(y).sum() < 2:
+    raise ValueError("Expected finite x and at least two finite y observations")
+x, y = dm.validate_data(x, y, allow_nan=True)
+
+revision.mkdir(parents=True, exist_ok=False)  # refuse overwrite, even on rerun
+snapshot = revision / "input.csv"
+with snapshot.open("xb") as stream:
+    stream.write(raw)
+receipt = dict(logical_name=logical_name, choice=choice, source=source,
+               sha256=hashlib.sha256(raw).hexdigest(),
+               snapshot=str(snapshot.resolve()), selected_from=selected_from)
+with (revision / "input.json").open("x", encoding="utf-8") as stream:
+    json.dump(receipt, stream, indent=2)
+print(json.dumps(receipt, indent=2))  # show the selected version, not only a filename
+
+# Keep the existing construction/overrides when adapting this to a revision.
+dm.style.use("report")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+ax.plot(x, y, color="oc.blue9", label="Observed")
+ax.set(xlabel="Time (s)", ylabel="Response")
+ax.legend(loc="upper left")
+dm.simple_layout(fig, margin="2mm")
+code = Path(__file__).read_text(encoding="utf-8")
+with (revision / "plot.py").open("x", encoding="utf-8") as stream:
+    stream.write(code)
+report = {"lint": [asdict(item) for item in dm.lint_code(code)],
+          "visual": [asdict(item) for item in dm.validate_figure(fig)]}
+with (revision / "report.json").open("x", encoding="utf-8") as stream:
+    json.dump(report, stream, indent=2)
+dm.save_formats(fig, str(revision / "figure"), formats=("png", "pdf"),
+                bbox_inches=None)
+```
+
+For the next style-only revision, retain the construction and all earlier edits,
+set `choice = "previous"`, point `previous_receipt` at the previous revision's
+`input.json`, and choose a new directory such as `output/figure-v2`. An explicit
+current-file request instead sets `choice = "current"` with the authorized
+upstream path and another new directory. Never relabel the old receipt as current.
+Missing/unreadable receipts, absent snapshots, mismatched hashes or unknown
+required inputs stop this example; disclose the problem and ask which available
+version to use. Do not repair evidence or silently substitute another file.
+Then follow the full report and actual PNG/PDF review steps below. These local
+copies persist until the user manages them; they do not inherit MCP expiry.
+
 ## Installed Python: native Figure, full report and review
 
-Save this as `plot.py` and run it with the installed core package. Blank
+Save this as `plot.py` and run `MPLBACKEND=Agg python plot.py` with the
+installed core package for file-only export. Blank
 readings represent gaps here. `validate_data` defaults to filtering NaN/Inf
 rows, which can close a line gap; `allow_nan=True` preserves them but also
 allows infinity, so check shape/alignment/domain separately. This helper
@@ -524,14 +832,19 @@ choices; don't silently change retained user overrides to silence warnings.
 
 After reviewing v1, copy `plot.py` to `plot-v2.py`, replace every `figure-v1`
 output stem in the copy with `figure-v2`, and insert the following immediately
-before `source_path = Path(__file__)`. Run `python plot-v2.py`, then inspect
+before `source_path = Path(__file__)`. Run `MPLBACKEND=Agg python plot-v2.py`, then inspect
 v2 PNG/PDF and its full report. This retains v1 source/files while saving the
 exact revised script under v2. Keep previous local edits in later revisions.
 Repeated “one more step” acts on retained current label values, not the preset
-base. Keep the current layout when the enlarged labels fit. If image/content
-inspection shows clipping or overlap, refit using the original `simple_layout`
-kwargs (`margin="2mm"` here, and the original `gs` if used), then inspect again
-and report any necessary movement of axes or anchored legends.
+base. The insertion point is after the original layout call, before report/export.
+Follow the local-revision recipe above: ordinary enlargement allows necessary
+fitting through the existing method/settings while preserving the canvas,
+panel/container allocations and ratios, data, style and legend's intended
+location. Keep already-fitting geometry; an explicit Axes-position lock takes
+precedence. Ask only when protected constraints must change or the safe existing
+fit is unclear. Inspect actual draw/export bounds and PNG/PDF; report necessary
+Axes movement. The selected-line recipe also updates its known existing legend
+sample in place without rebuilding the legend.
 
 ```python
 # Insert before the source/report/export block in plot-v2.py.
@@ -539,8 +852,8 @@ for label in (ax.xaxis.label, ax.yaxis.label):
     label.set_fontsize(label.get_fontsize() + 1)
 # Draw and inspect changed labels before deciding whether a refit is needed.
 fig.canvas.draw()
-# Keep existing axes/legend positions when labels still fit. Only if needed:
-# dm.simple_layout(fig, margin="2mm")  # reuse the original margin/grid kwargs
+# Compare actual axes/legend bounds after draw/export; inspect for clipping.
+# If needed and not geometry-locked, fit through the existing method/settings.
 ```
 
 Hand off exact source, PNG, PDF and full report for each revision, data/gap

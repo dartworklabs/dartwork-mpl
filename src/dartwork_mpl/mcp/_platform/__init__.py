@@ -3,13 +3,12 @@
 Two mechanisms live here and nothing else: bounded capture of a trusted
 child process (``process``: ``run_child`` and its ``CapturedProcess``
 result, the ``diagnostic`` / ``strip_diagnostic`` log views and
-``publish_png``), and confinement of bundled asset IDs to regular files
-under their roots (``assets``: ``resolve_template_path``,
-``resolve_style_path``). Neither knows which tool calls it. This unit
+``publish_png``), and confinement of bundled style IDs to regular files
+under their root (``assets``: ``resolve_style_path``). Neither knows which tool calls it. This unit
 imports no MCP slice; slices import only the names below.
 """
 
-from .assets import resolve_style_path, resolve_template_path
+from .assets import resolve_style_path
 from .process import (
     CapturedProcess,
     diagnostic,
@@ -23,7 +22,6 @@ __all__ = [
     "diagnostic",
     "publish_png",
     "resolve_style_path",
-    "resolve_template_path",
     "run_child",
     "strip_diagnostic",
 ]

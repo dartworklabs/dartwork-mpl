@@ -130,6 +130,7 @@ SLICES = frozenset(
         "dartwork_mpl.mcp.recommend",
         "dartwork_mpl.mcp.templates",
         "dartwork_mpl.prompt",
+        "dartwork_mpl.recommend",
         "dartwork_mpl.scale",
         "dartwork_mpl.skills",
         "dartwork_mpl.style",
@@ -152,6 +153,12 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
+    ("dartwork_mpl.helpers", "dartwork_mpl.recommend"): (
+        "historical recommendation aliases expose the native callable"
+    ),
+    ("dartwork_mpl.lint", "dartwork_mpl.prompt"): (
+        "lint parses the bundled anti-pattern catalog opened by its corpus owner"
+    ),
     ("dartwork_mpl._colors", "dartwork_mpl._colors.construction"): (
         "the colour build command compiles the candidate catalogue and publishes the generated module"
     ),
@@ -215,6 +222,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl._colors.verify", "dartwork_mpl._colors._ssot"): (
         "the gates read the quality baseline the validated authority pins"
     ),
+    ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
+        "legend edge colours require registered shipped colours"
+    ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
     ),
@@ -230,11 +240,11 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
         "the explorer draws the colour and font diagnostics it lists"
     ),
-    ("dartwork_mpl.helpers", "dartwork_mpl._colors.registry"): (
-        "label helpers resolve dc.* colour names, which must be registered"
+    ("dartwork_mpl.helpers", "dartwork_mpl._colors"): (
+        "historical curated palette imports re-export the color owner's callable"
     ),
-    ("dartwork_mpl.helpers", "dartwork_mpl.scale"): (
-        "legend and label helpers size text relative to the active preset"
+    ("dartwork_mpl.helpers", "dartwork_mpl.annotation"): (
+        "historical legend imports re-export annotation's callable"
     ),
     ("dartwork_mpl.io", "dartwork_mpl.config"): (
         "saving applies the user's export defaults from dm.config"
@@ -293,6 +303,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.blend"): (
         "the mix_colors tool must return exactly what dm.mix_colors blends"
     ),
+    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.prompt"): (
+        "capability discovery lists the prompt owner's live bundled template names"
+    ),
     ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (
         "the capability summary lists the presets dm.style.use accepts"
     ),
@@ -305,14 +318,14 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.lint", "dartwork_mpl.lint"): (
         "the MCP lint tools expose dm.lint's anti-pattern linter"
     ),
-    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.helpers"): (
+    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.recommend"): (
         "the suggest_chart_type tool wraps dm.suggest_chart_type's heuristic"
     ),
     ("dartwork_mpl.mcp.recommend", "dartwork_mpl.mcp.templates"): (
         "a recommendation links only templates that exist, closing the recommend -> pull-template loop"
     ),
     ("dartwork_mpl.mcp.templates", "dartwork_mpl.prompt"): (
-        "find_template ranks the prompt corpus's bundled template index"
+        "template workflows consume prompt corpus names, confined files and existence; find_template ranks its index"
     ),
     ("dartwork_mpl.style", "dartwork_mpl._colors.registry"): (
         "a preset switch re-applies the locale's semantic colour tokens"
@@ -379,8 +392,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.validate", "dartwork_mpl._colors.model"): (
         "the grayscale check compares colours in the model's OKLab and Y"
     ),
-    ("dartwork_mpl.validate", "dartwork_mpl.helpers"): (
-        "the agent high_dpi requirement is the figure quality check's minimum DPI"
+    ("dartwork_mpl.helpers", "dartwork_mpl.validate"): (
+        "historical diagnostic aliases expose native data validation, quality and DPI threshold"
     ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
@@ -396,11 +409,17 @@ ALLOWED: Mapping[tuple[str, str], str] = {
 # Compatibility shims: public module path -> the unit that owns its contents.
 SHIMS: Mapping[str, str] = {
     # dm.validate_fixes predates the validate slice's fix modules.
-    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate"
+    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate",
+    "dartwork_mpl.helpers.colors": "dartwork_mpl._colors",
+    "dartwork_mpl.helpers.labels": "dartwork_mpl.annotation",
+    "dartwork_mpl.helpers.data": "dartwork_mpl.validate",
 }
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.recommend._chart_type": (
+        "chart semantics decide solely from caller values"
+    ),
     "dartwork_mpl.mcp.artifacts.policy": (
         "artifact admission, expiry and request parsing decide from values"
     ),

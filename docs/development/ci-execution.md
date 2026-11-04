@@ -11,7 +11,7 @@ policy remains in `pyproject.toml`.
 | Gate | Workflow and local command | Durable output |
 | --- | --- | --- |
 | Full suite, Python 3.10–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
-| Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest tests/ -q -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
+| Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest -q -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
 | All-extras module execution | Both workflows, after successful full pytest (CI 3.12): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
 | FastMCP 2.13.3 / locked 3.4.2 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: `uv run --no-sync --with "fastmcp==<version>" pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"`, then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
 | Src typing | `.github/workflows/ci.yml`: `uv run mypy` (paths and strictness live in `[tool.mypy]`) | Step log |
@@ -40,21 +40,21 @@ OIDC publish, and tag-only release conditions remain in force.
 ## Explicit all-extras inventory
 
 `scripts/check_integration_junit.py:REQUIRED_MODULES` is the executable list.
-`tests/test_check_integration_junit.py` independently pins that contract using
+`tests/tools/test_check_integration_junit.py` independently pins that contract using
 real CLI/temp-XML checks. Inventory review on 2026-10-20 used optional-extra
 imports and `pytest.importorskip`, plus retained actual full-suite JUnit
 collection, without another full-suite run.
 
 | Protected group | Modules (prefix `tests.` unless otherwise shown) |
 | --- | --- |
-| Original integrations | `test_mcp`, `test_integration`, `test_cli`, `test_drift` |
+| Original integrations | `contracts.test_mcp`, `contracts.test_integration`, `contracts.test_cli`, `architecture.test_drift` |
 | Agent loop | `mcp.agent_loop.test_oracle`, `mcp.agent_loop.test_capture` |
-| Optional MCP consumers | `test_docs_mcp_tools`, `test_docstring_catalogs`, `test_mcp_asset_boundary`, `test_mcp_data_repair_contract`, `test_mcp_heavy_tools`, `test_mcp_render_smoke`, `test_mcp_tool_hardening`, `test_mcp_validation_contract` |
+| Optional MCP consumers | `docs.test_docs_mcp_tools`, `docs.test_docstring_catalogs`, `contracts.test_mcp_asset_boundary`, `contracts.test_mcp_data_repair_contract`, `contracts.test_mcp_heavy_tools`, `contracts.test_mcp_render_smoke`, `contracts.test_mcp_tool_hardening`, `contracts.test_mcp_validation_contract` |
 | Durable MCP artifacts | With prefix `tests.mcp.artifacts.`: `test_artifact_boundaries`, `test_artifact_discovery`, `test_artifact_entry_policies`, `test_artifact_execution`, `test_artifact_policy`, `test_artifact_protocol`, `test_artifact_store` |
 | Retained input contracts | With prefix `tests.mcp.artifacts.`: `test_input_access`, `test_input_commit_observer`, `test_input_delivery`, `test_input_io`, `test_input_lifecycle`, `test_input_policy`, `test_input_recovery`, `test_input_stdio`, `test_input_store` |
 | Plot-data validation and repair | With prefix `src.dartwork_mpl.mcp.plot_data.tests.`: `test_limits`, `test_properties`, `test_reports`, `test_validators` |
 | MCP slice-owned tests | No prefix: `src.dartwork_mpl.mcp._platform.tests.test_process`, `src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github` |
-| Optional UI consumers | `test_ui_boundary`, `test_ui_files`, `test_ui_http_security`, `test_ui_hardening`, `test_ui_init`, `test_ui_viewer_state`, `test_ui_render`, `test_ui_widget`, `test_ui_wire_golden` |
+| Optional UI consumers | With prefix `src.dartwork_mpl.ui.`: `tests.test_ui_boundary`, `saving.tests.test_ui_files`, `tests.test_ui_http_security`, `render.tests.test_ui_hardening`, `tests.test_ui_init`, `state.tests.test_ui_viewer_state`, `render.tests.test_ui_render`, `params.tests.test_ui_widget`, `tests.test_ui_wire_golden` |
 
 All 45 modules must contribute a passed executed case. Missing modules,
 zero-test suites, and modules whose cases all skip fail. Any failure/error in
