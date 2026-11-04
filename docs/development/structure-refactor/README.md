@@ -19,7 +19,10 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 Python 3.10–3.13 네 job 모두 worker 4개로 통과했고 동시에 실행된 Python job은 최대 2개였다.
 소스 대조 기준은 후속 [#564](https://github.com/dartworklabs/dartwork-mpl/pull/564)의 `d5d8453c`다.
 위 CI 결과는 `a6e0c450`에 한정되며, `d5d8453c` 전체 CI 통과나 공개 이슈·릴리스 완료를 뜻하지 않는다.
-다른 컴퓨터에서 이어 갈 범위와 승인 경계는 [후속 작업 인계](agent-followup-handoff.md)에 모았다.
+다른 컴퓨터에서 이어 갈 범위와 승인 경계는 [후속 작업 인계](agent-followup-handoff.md)에 모았고,
+그 인계는 2026-11-04 에 수신 세션이 정해져 끝났다. 이후 #566–#569 가 병합돼 현재 main 은
+`a691e285`이며, 잔여 결정 세 건(#483 작업 2, D3, #501 소수 `highlight`)은
+[결정 기록](../../superpowers/plans/2026-11-04-agent-followup-decisions.md)에서 해소했다.
 
 ## 진행 규칙
 
@@ -153,7 +156,7 @@ Python 3.10–3.13 네 job 모두 worker 4개로 통과했고 동시에 실행�
 | --- | --- | --- |
 | D1 | ruff D100–D107(테스트는 D100–D101) 활성, 누락 docstring 보완 | #545 (`7e0c86d8`, `59da73a5`, `fc833124`) |
 | D2 | `DEBT = {}`로 경계 검사 강제 전환 | #535 (`3c406a56`) |
-| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 부분 — #545 (`7d25d3b4`): exclude 수정. 정본 최신성·생성 코드 최신성·비교 진단과 출처 기록·게시 검사는 서로 다른 실패를 잡으므로 삭제 근거는 없었다. 선택 사항인 두 테스트의 설정 공유는 보류했다. `d5d8453c`의 pre-commit job 이름은 여전히 `Run pre-commit on changed files`다. 이름 결정과 branch-protection ID는 미확인·변경 없음. 위 원격 CI 통과가 이 잔여 결정을 대신하지 않는다 |
+| D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 완료 — #545 (`7d25d3b4`): exclude 수정. 정본 최신성·생성 코드 최신성·비교 진단과 출처 기록·게시 검사는 서로 다른 실패를 잡으므로 삭제 근거는 없었다. 선택 사항인 두 테스트의 설정 공유는 보류했다. pre-commit job 이름은 `Run pre-commit on changed files`로 **유지**하기로 2026-11-04 결정했다 ([결정 기록](../../superpowers/plans/2026-11-04-agent-followup-decisions.md)): main 의 branch protection 필수 컨텍스트가 그 표시 이름 문자열 자체(app_id 15368)이므로 개명은 보호 규칙 갱신과 동시에만 가능하고, 어긋나면 필수 체크가 보고되지 않아 모든 PR 머지가 막힌다. 얻는 것은 표시 문구뿐이다 |
 
 #546 (`787b5c2b`, `bdbcfc8c`, `8aa8f267`)은 xdist 병렬 실행, 색 파이프라인 결과 공유,
 3.12 job의 색 파이프라인 전담을 반영했다. D3의 나머지 정리가 끝났다는 뜻은 아니다.
