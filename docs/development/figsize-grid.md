@@ -6,7 +6,8 @@ orphan: true
 
 `dm.figsize(width, aspect)` sizes the whole matplotlib figure.
 `dm.figsize_grid(panel_width, aspect, ncols=..., nrows=...)` sizes a
-multi-panel figure from the desired physical size of each panel.
+whole multi-panel figure from nominal panel-size and gap inputs. It does
+not create Axes or set GridSpec spacing.
 
 ```python
 import matplotlib.pyplot as plt
@@ -36,8 +37,10 @@ The calculation is:
 - figure height = `nrows * panel_height + (nrows - 1) * gap`
 - panel height = `panel_width * aspect`
 
-`gap` is a physical distance, unlike matplotlib's relative `wspace` and
-`hspace` settings. Matplotlib can still adjust subplot positions after
-the figure size is chosen, so the final rendered panel spacing is an
-approximation. Pair `figsize_grid` with `dm.simple_layout(fig)` for the
+`gap` is a physical-distance input to this size calculation, unlike
+matplotlib's relative `wspace` and `hspace` settings. It is not applied to
+those settings. Labels, outer margins and native subplot spacing reduce or
+redistribute the available area: neither exact panel Axes dimensions nor
+exact cm gaps are guaranteed. Measure rendered Axes and content bounds
+separately from the whole figure. Pair `figsize_grid` with `dm.simple_layout(fig)` for the
 deterministic content-aware layout path used by dartwork-mpl.

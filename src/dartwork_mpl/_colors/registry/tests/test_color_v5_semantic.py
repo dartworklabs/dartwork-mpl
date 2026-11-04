@@ -1,4 +1,4 @@
-# tests/test_color_v5_semantic.py
+# src/dartwork_mpl/_colors/registry/tests/test_color_v5_semantic.py
 """Semantic color names (``dc.pos``, ``dc.neg``, ...) that presets register,
 including the Korean up/down convention and restoration after a context.
 """

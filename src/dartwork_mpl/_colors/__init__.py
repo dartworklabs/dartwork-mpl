@@ -4,6 +4,7 @@ Provides facilities for loading, registering, and converting colors
 across OKLab, OKLCH, RGB, and Hex color spaces.
 """
 
+from ._palette import make_palette
 from .contrast import ensure_contrast, readable_text_color
 from .families_api import colors, list_colors, set_colors, show_colors
 from .model import (
@@ -39,6 +40,7 @@ __all__ = [
     "ensure_contrast",
     "hex",
     "list_colors",
+    "make_palette",
     "oklab",
     "oklch",
     "readable_text_color",

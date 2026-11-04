@@ -1,12 +1,6 @@
 """The guide resources' text: prompt-corpus documents and the migration pointer."""
 
-from pathlib import Path
-
-from ...prompt import get_prompt
-
-# Path to the SSOT prompt directory (00-index, 01-policy, 03-recipes,
-# 05-templates/, _legacy/, ...)
-_PROMPT_DIR = Path(__file__).parents[2] / "asset" / "prompt"
+from ...prompt import get_prompt, open_anti_pattern_catalog
 
 
 def guide_text(name: str) -> str:
@@ -16,8 +10,8 @@ def guide_text(name: str) -> str:
 
 def anti_pattern_catalog() -> str:
     """The raw ``02-anti-patterns.yaml`` catalog text (the lint engine's source)."""
-    path = _PROMPT_DIR / "02-anti-patterns.yaml"
-    return path.read_text(encoding="utf-8")
+    with open_anti_pattern_catalog() as fh:
+        return fh.read()
 
 
 def migration_pointer() -> str:
