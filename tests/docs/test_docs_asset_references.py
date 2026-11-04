@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import random
 import re
 import subprocess
+import sys
+import textwrap
 from collections import defaultdict
 from pathlib import Path
 
@@ -16,8 +19,12 @@ _SRC_RE = re.compile(r"""\bsrc=["']([^"']+)["']""")
 
 
 def _raw_includes() -> list[tuple[Path, Path]]:
+    """Read raw HTML includes from the public Markdown source surface."""
     includes = []
     for source in sorted(_DOCS.rglob("*.md")):
+        # Sphinx excludes these internal notes via ``superpowers/**``.
+        if source.relative_to(_DOCS).parts[0] == "superpowers":
+            continue
         text = source.read_text(encoding="utf-8")
         for target in _RAW_FILE_RE.findall(text):
             includes.append((source, (source.parent / target).resolve()))
@@ -123,3 +130,62 @@ def test_committed_html_relative_sources_exist() -> None:
         if asset.relative_to(_ROOT) not in ignored
     ]
     assert not broken, "missing relative HTML assets:\n" + "\n".join(broken)
+
+
+def test_raw_includes_never_opens_excluded_design_sources(
+    tmp_path: Path,
+) -> None:
+    """Read public includes while an audit trap denies every internal design."""
+    docs = tmp_path / "docs"
+    internal = docs / "superpowers"
+    internal.mkdir(parents=True)
+    generator = random.Random(0)
+    internal_paths = ["design.md", "specs/one.md", "plans/deep/two.md"]
+    for index in range(12):
+        parents = [f"part{generator.randrange(10)}" for _ in range(index % 5)]
+        internal_paths.append("/".join([*parents, f"note{index}.md"]))
+    for relative in internal_paths:
+        source = internal / relative
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text("```{raw} html\n:file: hidden.html\n```\n")
+    public = docs / "public.md"
+    public.write_text("```{raw} html\n:file: visible.html\n```\n")
+    nested = docs / "reference" / "superpowers" / "public.md"
+    nested.parent.mkdir(parents=True)
+    nested.write_text("```{raw} html\n:file: ../../visible.html\n```\n")
+    (docs / "visible.html").write_text("<p>Public asset</p>\n")
+    code = textwrap.dedent(
+        """
+        import os
+        from pathlib import Path
+        import runpy
+        import sys
+
+        namespace = runpy.run_path(sys.argv[1])
+        docs = Path(sys.argv[2])
+        excluded = {path.resolve() for path in (docs / "superpowers").rglob("*.md")}
+
+        def deny_internal_read(event, args):
+            "Reject an excluded input before its actual file can be opened."
+            if event == "open" and isinstance(args[0], (str, bytes)):
+                if Path(os.fsdecode(args[0])).resolve() in excluded:
+                    raise AssertionError("opened an excluded design source")
+
+        sys.addaudithook(deny_internal_read)
+        collect = namespace["_raw_includes"]
+        collect.__globals__["_DOCS"] = docs
+        assert collect() == [
+            (docs / "public.md", docs / "visible.html"),
+            (docs / "reference/superpowers/public.md", docs / "visible.html"),
+        ]
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(Path(__file__)), str(docs)],
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
