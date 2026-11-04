@@ -16,8 +16,10 @@ from matplotlib.axes import Axes
 
 from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import recommend_tick_decimals
+from ._defaults import apply_default_tick_format
 
 __all__ = [
+    "apply_default_tick_format",
     "avoid_tick_overlap",
     "format_axis_billions",
     "format_axis_currency",

@@ -258,6 +258,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.config"): (
         "layout follows the user's tick-label font adoption setting"
     ),
+    ("dartwork_mpl.layout", "dartwork_mpl.formatting"): (
+        "layout writes the library's tick numbers before measuring them"
+    ),
     ("dartwork_mpl.layout", "dartwork_mpl.units"): (
         "margins are given as physical lengths"
     ),

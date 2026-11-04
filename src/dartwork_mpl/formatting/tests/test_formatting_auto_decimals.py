@@ -125,12 +125,23 @@ class TestFormatAxisSiMax:
         # line_signals: half steps need one decimal; zero stays a bare 0.
         ticks = _ticks(0.5e6, 5, start=-1e6)
         labels = _labels(dm.format_axis_si, (-1e6, 1e6), ticks=ticks)
-        assert labels == ["-1.0M", "-0.5M", "0", "0.5M", "1.0M"]
+        assert labels == [
+            "\N{MINUS SIGN}1.0M",
+            "\N{MINUS SIGN}0.5M",
+            "0",
+            "0.5M",
+            "1.0M",
+        ]
 
     def test_all_negative_axis(self) -> None:
         ticks = _ticks(1000, 4, start=-3000)
         labels = _labels(dm.format_axis_si, (-3000, 0), ticks=ticks)
-        assert labels == ["-3k", "-2k", "-1k", "0"]
+        assert labels == [
+            "\N{MINUS SIGN}3k",
+            "\N{MINUS SIGN}2k",
+            "\N{MINUS SIGN}1k",
+            "0",
+        ]
 
     def test_axis_crossing_a_unit_threshold(self) -> None:
         # 800 → 1.2M: the largest tick (1.2M) sets M for the whole axis.
@@ -188,7 +199,7 @@ class TestFormatAxisSiMax:
                 "999",
                 "1k",
                 "1.5k",
-                "-2M",
+                "\N{MINUS SIGN}2M",
             ]
         finally:
             plt.close(fig)
@@ -223,7 +234,13 @@ class TestFormatAxisSiWhole:
         labels = _labels(
             dm.format_axis_si, (-1e6, 1e6), ticks=ticks, unit="whole"
         )
-        assert labels == ["-1,000k", "-500k", "0", "500k", "1,000k"]
+        assert labels == [
+            "\N{MINUS SIGN}1,000k",
+            "\N{MINUS SIGN}500k",
+            "0",
+            "500k",
+            "1,000k",
+        ]
 
     def test_falls_back_to_fewest_decimals(self) -> None:
         labels = _labels(
@@ -238,10 +255,46 @@ class TestFormatAxisSiFixedUnit:
     @pytest.mark.parametrize(
         "unit,expected",
         [
-            ("", ["-1,000,000", "-500,000", "0", "500,000", "1,000,000"]),
-            ("k", ["-1,000k", "-500k", "0", "500k", "1,000k"]),
-            ("M", ["-1.0M", "-0.5M", "0", "0.5M", "1.0M"]),
-            ("G", ["-0.0010G", "-0.0005G", "0", "0.0005G", "0.0010G"]),
+            (
+                "",
+                [
+                    "\N{MINUS SIGN}1,000,000",
+                    "\N{MINUS SIGN}500,000",
+                    "0",
+                    "500,000",
+                    "1,000,000",
+                ],
+            ),
+            (
+                "k",
+                [
+                    "\N{MINUS SIGN}1,000k",
+                    "\N{MINUS SIGN}500k",
+                    "0",
+                    "500k",
+                    "1,000k",
+                ],
+            ),
+            (
+                "M",
+                [
+                    "\N{MINUS SIGN}1.0M",
+                    "\N{MINUS SIGN}0.5M",
+                    "0",
+                    "0.5M",
+                    "1.0M",
+                ],
+            ),
+            (
+                "G",
+                [
+                    "\N{MINUS SIGN}0.0010G",
+                    "\N{MINUS SIGN}0.0005G",
+                    "0",
+                    "0.0005G",
+                    "0.0010G",
+                ],
+            ),
         ],
     )
     def test_fixed_unit_with_automatic_decimals(
@@ -378,7 +431,13 @@ class TestFormatAxisMyriad:
         labels = _labels(
             dm.format_axis_myriad, (-1e8, 1e8), ticks=ticks, currency="₩"
         )
-        assert labels == ["-₩1.0억", "-₩0.5억", "0", "₩0.5억", "₩1.0억"]
+        assert labels == [
+            "\N{MINUS SIGN}₩1.0억",
+            "\N{MINUS SIGN}₩0.5억",
+            "0",
+            "₩0.5억",
+            "₩1.0억",
+        ]
 
     def test_below_first_unit_is_plain_with_separators(self) -> None:
         labels = _labels(

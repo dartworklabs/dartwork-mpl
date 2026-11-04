@@ -15,6 +15,8 @@ the axis actually shows:
   every scaled tick exactly and distinctly, so integer ticks print none and
   fractional steps keep the same count on every tick (``0.5M, 1.0M``).
 - Zero prints as ``0``; numbers of 1000 and more carry thousands separators.
+- Negative ticks use matplotlib's minus sign (U+2212 unless
+  ``axes.unicode_minus`` is off), like the axis's other text.
 
 On log and other non-linear scales the ticks span decades, which cannot
 share one unit (``0.000001k`` beside ``1,000k``), so there each tick takes
@@ -27,6 +29,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+import matplotlib as mpl
 import matplotlib.ticker as ticker
 import numpy as np
 
@@ -110,7 +113,9 @@ class AxisUnitFormatter(ticker.Formatter):
         number = format(abs(value) / unit.factor, f",.{decimals}f")
         if float(number.replace(",", "")) == 0:
             return "0" if self._decimals is None else f"{0:.{decimals}f}"
-        sign = "-" if value < 0 else ""
+        # The same minus as matplotlib's own ticks (U+2212 unless turned off).
+        minus = "\N{MINUS SIGN}" if mpl.rcParams["axes.unicode_minus"] else "-"
+        sign = minus if value < 0 else ""
         return f"{sign}{self._currency}{number}{unit.label}"
 
     def _cost(
