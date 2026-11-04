@@ -58,6 +58,8 @@ def _labels(
 
 
 class TestFewestExactDecimals:
+    """Fewest decimals that print every tick value exactly."""
+
     @pytest.mark.parametrize(
         "values,expected",
         [
@@ -231,6 +233,8 @@ class TestFormatAxisSiWhole:
 
 
 class TestFormatAxisSiFixedUnit:
+    """SI formatter with a fixed unit picks its decimals automatically."""
+
     @pytest.mark.parametrize(
         "unit,expected",
         [
@@ -272,6 +276,8 @@ class TestFormatAxisSiFixedUnit:
 
 
 class TestFormatAxisMillionsBillionsAuto:
+    """Million and billion formatters drop meaningless decimals by default."""
+
     def test_millions_integer_axis(self) -> None:
         assert _labels(
             dm.format_axis_millions, (0, 5e6), ticks=_ticks(1e6, 6)
@@ -315,6 +321,8 @@ _QUARTERS = _ticks(2.5e7, 8)  # 0 .. 1.75억 in 2,500만 steps
 
 @pytest.mark.filterwarnings("ignore:Glyph .* missing from font")
 class TestFormatAxisMyriad:
+    """Korean myriad formatter puts every tick in the largest tick's unit."""
+
     def test_max_unit_is_the_largest_tick(self) -> None:
         labels = _labels(dm.format_axis_myriad, (0, 1.75e8), ticks=_QUARTERS)
         assert labels == [
