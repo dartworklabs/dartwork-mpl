@@ -247,7 +247,11 @@ def review(
         None if before is None else diff_summaries(before, summary, patterns)
     )
 
-    paths = {fmt: Path(f"{stem_str}.{fmt}") for fmt in formats}
+    # save_formats drops a leading dot: formats=(".png",) writes <stem>.png.
+    paths = {
+        fmt.lstrip("."): Path(f"{stem_str}.{fmt.lstrip('.')}")
+        for fmt in formats
+    }
     paths["json"] = _json_path(stem_str)
     result = Review(
         paths=paths,

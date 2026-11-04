@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   It saves with `dm.save_formats` (the same files), runs every
   `dm.validate_figure` check on the saved figure and keeps the findings as
   they are, and returns a `Review` with a summary of what the figure shows:
-  per Axes the titles, axis labels, ranges, tick labels, series (kind, label,
-  count, colour, line style, a digest of the values) and legend, plus every
-  text outside the canvas. `complete` is `False` when a check could not run
+  per Axes (insets nested) the titles, axis labels, ranges, tick labels,
+  series (kind, label, count, colour, line style, a digest of the values) and
+  legends, the figure's and SubFigures' own titles and text, plus every text
+  outside the canvas. `complete` is `False` when a check could not run
   (`CHECK_FAILED`); it is not a pass. `<stem>.review.json` records it all.
   With `baseline=` (an earlier `Review`, its stem or its json) the review
   lists every summary entry that differs by path (`axes[0].ylabel.text`);

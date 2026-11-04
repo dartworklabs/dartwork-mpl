@@ -44,20 +44,21 @@ def flatten(tree: Any, prefix: str = "") -> dict[str, Any]:
     """Map every leaf of a summary to its path, in document order.
 
     Mappings add ``.key``; lists of mappings add ``[i]``; any other value,
-    including a list of scalars, is one leaf.
+    including a list of scalars, is one leaf. ``None`` and empty lists or
+    mappings are no leaf at all, so a first text, legend or series appears as
+    its own fields only (and a last one disappears the same way) instead of
+    also changing its empty container.
     """
     out: dict[str, Any] = {}
+    if tree is None or (isinstance(tree, (list, Mapping)) and not tree):
+        return out
     if isinstance(tree, Mapping):
-        if not tree and prefix:
-            out[prefix] = {}
         for key, value in tree.items():
             out.update(
                 flatten(value, f"{prefix}.{key}" if prefix else str(key))
             )
-    elif (
-        isinstance(tree, list)
-        and tree
-        and all(isinstance(item, Mapping) for item in tree)
+    elif isinstance(tree, list) and all(
+        isinstance(item, Mapping) for item in tree
     ):
         for i, item in enumerate(tree):
             out.update(flatten(item, f"{prefix}[{i}]"))

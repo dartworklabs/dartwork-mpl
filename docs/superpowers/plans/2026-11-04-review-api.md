@@ -54,7 +54,8 @@ def review(
   refuse the ambiguity `save_formats` only warns about. `ValueError`.
 - `baseline` as a path: `*.review.json` is read as is; anything else is a stem
   and `<stem>.review.json` is read. Missing file or other schema: `ValueError`.
-- `allow` patterns use `fnmatch.fnmatchcase` on change paths.
+- `allow` patterns: `*` matches any run of characters, everything else is
+  literal (`axes[0]` is that Axes, `axes[*]` any).
 
 ## Return value: `Review` (frozen dataclass, `dartwork_mpl.figure_review`)
 
@@ -79,24 +80,32 @@ outside the canvas, per Axes in `fig.axes` order. Floats are rounded to six
 significant digits so a re-render does not report noise.
 
 ```
-figure: size_in, dpi, suptitle{text,size,weight,color}, texts[{...}], legends
-axes[i]: position (figure fraction, 3 decimals), kind ("rectilinear", "polar", ...)
+figure: size_in, dpi, suptitle / supxlabel / supylabel {text,size,weight,color},
+        texts, legends, subfigures[k] (the same fields, nested)
+axes[i]: kind ("rectilinear", "polar", "3d", ...), position (fraction, 3 decimals)
   title.left|center|right {text,size,weight,color}
-  xlabel / ylabel {text,size,weight,color}
-  xlim, ylim, xscale, yscale; xticks / yticks {labels, size}
-  series[j]: kind (line|bar|scatter|area|image|patches), label, n, color,
-             line extras (width, style, marker), data (sha1 of the values)
-  legend: labels, ncols, inside (bool) | null
+  xlabel / ylabel (/ zlabel on 3-D) {text,size,weight,color}
+  xlim, ylim (zlim), xscale, yscale (zscale); xticks / yticks (zticks) {labels in view, size}
+  series[j]: kind (line|bar|scatter|area|lines|image|patches|collection), label
+             (a container's name for errorbar / hist parts), n, color, colors
+             (digest when not uniform), line width / style / marker, scatter sizes,
+             data (digest of shape, mask and exact values; 3-D from 3-D data)
+  legends[k]: title, labels, ncols, inside   (every legend, add_artist ones too)
   texts: [{text,size,weight,color}]  (ax.texts: annotations, notes)
+  insets[k]: the same fields for ax.inset_axes children
 outside_canvas: [{where, text, beyond_px{left,bottom,right,top}}]
+               (3-D tick labels are not measured: mplot3d keeps them at stale positions)
 ```
 
 `data` is a digest, not the values: it says whether a series' values changed
-without making the summary an eval snapshot API.
+without making the summary an eval snapshot API. Nothing in it is rounded
+(re-rendering the same data gives the same bits); display fields (sizes,
+limits) are rounded to six significant digits.
 
 Diff paths flatten this tree: `axes[0].ylabel.text`, `axes[0].series[1].color`,
-`axes[0].legend.labels`, `figure.size_in`. Lists of records compare by index;
-lists of scalars compare as one value.
+`axes[0].legends[0].labels`, `figure.size_in`. Lists of records compare by
+index; lists of scalars compare as one value. `None` and empty lists are no
+entry, so a first text or legend appears as its own fields only.
 
 ## Where it lives
 

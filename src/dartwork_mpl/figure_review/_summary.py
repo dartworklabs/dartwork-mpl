@@ -1,13 +1,16 @@
 """A JSON-ready summary of what a figure shows (schema 1).
 
-Only what the review loop reads: per Axes the titles, axis labels, ranges,
-tick labels, series, legend and free text, and every text outside the canvas.
-Series values are a digest, not the values. Values are JSON-native (dict, list,
-str, int, float, bool, None), floats are rounded to six significant digits and
-non-finite numbers become ``"nan"`` / ``"inf"`` / ``"-inf"``, so a summary read
-back from ``<stem>.review.json`` compares equal to the one in memory and a
-re-render of the same figure reports no difference. No path, time or file
-name enters the summary.
+Only what the review loop reads: per Axes (insets nested under their parent)
+the titles, axis labels, ranges, tick labels, series, legends and free text;
+the figure's and each SubFigure's own titles, texts and legends; and every
+text outside the canvas. Series values, masks, shapes and non-uniform colours
+are a digest, not the values. Values are JSON-native (dict, list, str, int,
+float, bool, None), floats are rounded to six significant digits for display
+fields only and non-finite numbers become ``"nan"`` / ``"inf"`` / ``"-inf"``,
+so a summary read back from ``<stem>.review.json`` compares equal to the one in
+memory and a re-render of the same figure reports no difference. No path, time
+or file name enters the summary. 3-D Axes are read from their 3-D data, not the
+projection, so turning the view changes no series digest.
 """
 
 from __future__ import annotations
@@ -26,14 +29,15 @@ from matplotlib.collections import (
 )
 from matplotlib.container import BarContainer
 from matplotlib.font_manager import weight_dict
+from matplotlib.legend import Legend
 
 from .._figure_geometry import BBOX_ERRORS, get_renderer
 
 if TYPE_CHECKING:
-    from matplotlib.axes import Axes
+    from matplotlib.axes._base import _AxesBase
     from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
-    from matplotlib.figure import Figure
+    from matplotlib.figure import Figure, SubFigure
     from matplotlib.text import Text
 
 __all__ = ["summarize"]
@@ -78,43 +82,90 @@ def _text(text: Text | None) -> dict[str, Any] | None:
 
 
 def _value_bytes(array: Any) -> bytes:
-    """Rounded float bytes of ``array``, or its repr when it is not numeric."""
+    """Shape, mask and exact float bytes of ``array`` (repr if not numeric).
+
+    Nothing is rounded: re-rendering the same data gives the same bits, and
+    rounding would hide real edits to small values. Masked entries count by
+    their mask only, so a value hidden behind the mask does not matter but a
+    point that appears or disappears does.
+    """
     try:
         masked = np.ma.asarray(array, dtype=float)  # type: ignore[no-untyped-call]
-        values = np.asarray(np.ma.filled(masked, np.nan)).ravel()  # type: ignore[no-untyped-call]
     except (TypeError, ValueError):
-        return repr(list(np.asarray(array, dtype=object).ravel())).encode()
-    return bytes(np.round(values, 10).tobytes())
+        objects = np.asarray(array, dtype=object)
+        return repr((objects.shape, list(objects.ravel()))).encode()
+    mask = np.ma.getmaskarray(masked)  # type: ignore[no-untyped-call]
+    data = np.where(mask, 0.0, np.ma.getdata(masked))  # type: ignore[no-untyped-call]
+    data = np.where(np.isnan(data), np.nan, data)
+    return bytes(repr(masked.shape).encode() + mask.tobytes() + data.tobytes())
 
 
 def _digest(*arrays: Any) -> str:
-    """A short, rounding-stable fingerprint of series values."""
+    """A short fingerprint of series values (shape, mask and values)."""
     h = hashlib.sha1()
     for array in arrays:
         h.update(_value_bytes(array))
     return h.hexdigest()[:12]
 
 
-def _first_color(colors: Any) -> str | None:
-    array = np.asarray(colors)
+def _colors(rgba: Any) -> tuple[str | None, str | None]:
+    """The colour when uniform; else the first colour and a digest of all."""
+    array = np.asarray(rgba, dtype=float)
     if array.size == 0:
-        return None
-    return _hex(
-        array.reshape(-1, array.shape[-1])[0] if array.ndim > 1 else array
-    )
+        return None, None
+    rows = array.reshape(-1, array.shape[-1]) if array.ndim > 1 else array[None]
+    first = _hex(rows[0])
+    if len(rows) == 1 or bool(np.all(rows == rows[0])):
+        return first, None
+    return first, _digest(rows)
 
 
-def _lines(ax: Axes) -> list[dict[str, Any]]:
+def _container_labels(ax: _AxesBase) -> dict[int, str]:
+    """The legend name of every artist that belongs to a named container."""
+    names: dict[int, str] = {}
+    for container in ax.containers:
+        label = str(container.get_label())
+        if label.startswith("_") and isinstance(container, BarContainer):
+            first = container.patches[0] if container.patches else None
+            if first is not None and not str(first.get_label()).startswith("_"):
+                label = str(first.get_label())
+        if label.startswith("_"):
+            continue
+        stack: list[Any] = list(container)
+        while stack:
+            item = stack.pop()
+            if item is None:
+                continue
+            if isinstance(item, (list, tuple)):
+                stack.extend(item)
+            else:
+                names[id(item)] = label
+    return names
+
+
+def _label(artist: Any, names: dict[int, str]) -> str:
+    own = str(artist.get_label())
+    if own.startswith("_") and id(artist) in names:
+        return names[id(artist)]
+    return own
+
+
+def _lines(ax: _AxesBase, names: dict[int, str]) -> list[dict[str, Any]]:
     out = []
     for line in ax.get_lines():
         if not line.get_visible():
             continue
-        x = line.convert_xunits(line.get_xdata())  # type: ignore[no-untyped-call]
-        y = line.convert_yunits(line.get_ydata())  # type: ignore[no-untyped-call]
+        if hasattr(line, "get_data_3d"):
+            data = _digest(*line.get_data_3d())
+        else:
+            data = _digest(
+                line.convert_xunits(line.get_xdata()),  # type: ignore[no-untyped-call]
+                line.convert_yunits(line.get_ydata()),  # type: ignore[no-untyped-call]
+            )
         out.append(
             {
                 "kind": "line",
-                "label": str(line.get_label()),
+                "label": _label(line, names),
                 "n": len(
                     np.atleast_1d(np.asarray(line.get_xdata(), dtype=object))
                 ),
@@ -122,13 +173,15 @@ def _lines(ax: Axes) -> list[dict[str, Any]]:
                 "width": _num(line.get_linewidth()),
                 "style": str(line.get_linestyle()),
                 "marker": str(line.get_marker()),
-                "data": _digest(x, y),
+                "data": data,
             }
         )
     return out
 
 
-def _bars(ax: Axes) -> tuple[list[dict[str, Any]], set[int]]:
+def _bars(
+    ax: _AxesBase, names: dict[int, str]
+) -> tuple[list[dict[str, Any]], set[int]]:
     out = []
     seen: set[int] = set()
     for container in ax.containers:
@@ -140,34 +193,48 @@ def _bars(ax: Axes) -> tuple[list[dict[str, Any]], set[int]]:
             (p.get_x(), p.get_y(), p.get_width(), p.get_height())
             for p in patches
         ]
+        color, colors = _colors([p.get_facecolor() for p in patches])
+        label = str(container.get_label())
+        if label.startswith("_") and container.patches:
+            label = _label(container.patches[0], names)
         out.append(
             {
                 "kind": "bar",
-                "label": str(container.get_label()),
+                "label": label,
                 "n": len(patches),
                 "orientation": str(
                     getattr(container, "orientation", "vertical")
                 ),
-                "color": _hex(patches[0].get_facecolor()) if patches else None,
+                "color": color,
+                "colors": colors,
                 "data": _digest(boxes),
             }
         )
     return out, seen
 
 
-def _collections(ax: Axes) -> list[dict[str, Any]]:
+def _collections(ax: _AxesBase, names: dict[int, str]) -> list[dict[str, Any]]:
+    three_d = ax.name == "3d"
     out = []
     for col in ax.collections:
         if not col.get_visible():
             continue
+        entry: dict[str, Any]
+        rgba: Any
         if isinstance(col, PathCollection):
-            offsets = np.asarray(col.get_offsets())
+            offsets3d = getattr(col, "_offsets3d", None) if three_d else None
+            data = (
+                _digest(*offsets3d)
+                if offsets3d is not None
+                else _digest(col.get_offsets())
+            )
             entry = {
                 "kind": "scatter",
-                "n": len(offsets),
-                "data": _digest(offsets),
+                "n": len(np.asarray(col.get_offsets())),
+                "data": data,
+                "sizes": _digest(col.get_sizes()),
             }
-            color = _first_color(col.get_facecolor())
+            rgba = col.get_facecolor()
         elif isinstance(col, QuadMesh):
             values = col.get_array()
             mesh: Any = [] if values is None else values
@@ -176,17 +243,17 @@ def _collections(ax: Axes) -> list[dict[str, Any]]:
                 "n": int(np.size(mesh)),
                 "data": _digest(mesh),
             }
-            color = None
+            rgba = []
         elif isinstance(col, (PolyCollection, LineCollection)):
             kind = "area" if isinstance(col, PolyCollection) else "lines"
-            paths = col.get_paths()
-            verts = [p.vertices for p in paths]
-            entry = {
-                "kind": kind,
-                "n": len(paths),
-                "data": _digest(*verts) if verts else _digest([]),
-            }
-            color = _first_color(
+            if three_d:
+                vec = getattr(col, "_vec", None)
+                poly: str | None = _digest(vec) if vec is not None else None
+            else:
+                verts = [p.vertices for p in col.get_paths()]
+                poly = _digest(*verts) if verts else _digest([])
+            entry = {"kind": kind, "n": len(col.get_paths()), "data": poly}
+            rgba = (
                 col.get_facecolor() if kind == "area" else col.get_edgecolor()
             )
         else:
@@ -195,42 +262,46 @@ def _collections(ax: Axes) -> list[dict[str, Any]]:
                 "n": len(col.get_paths()),
                 "data": None,
             }
-            color = None
-        entry["label"] = str(col.get_label())
-        entry["color"] = color
+            rgba = []
+        entry["label"] = _label(col, names)
+        entry["color"], entry["colors"] = _colors(rgba)
         out.append(entry)
     return out
 
 
-def _images(ax: Axes) -> list[dict[str, Any]]:
+def _images(ax: _AxesBase) -> list[dict[str, Any]]:
     out = []
     for image in ax.images:
         if not image.get_visible():
             continue
         values = image.get_array()
+        array: Any = [] if values is None else values
         out.append(
             {
                 "kind": "image",
                 "label": str(image.get_label()),
-                "n": int(np.size(values)) if values is not None else 0,
+                "n": int(np.size(array)),
                 "color": None,
-                "data": _digest(values if values is not None else []),
+                "data": _digest(array),
             }
         )
     return out
 
 
-def _series(ax: Axes) -> list[dict[str, Any]]:
-    bars, in_bars = _bars(ax)
+def _series(ax: _AxesBase) -> list[dict[str, Any]]:
+    names = _container_labels(ax)
+    bars, in_bars = _bars(ax, names)
     loose = [p for p in ax.patches if p.get_visible() and id(p) not in in_bars]
-    series = [*_lines(ax), *bars, *_collections(ax), *_images(ax)]
+    series = [*_lines(ax, names), *bars, *_collections(ax, names), *_images(ax)]
     if loose:
+        color, colors = _colors([p.get_facecolor() for p in loose])
         series.append(
             {
                 "kind": "patches",
                 "label": "",
                 "n": len(loose),
-                "color": _hex(loose[0].get_facecolor()),
+                "color": color,
+                "colors": colors,
                 "data": _digest(
                     *(
                         p.get_path()
@@ -276,94 +347,33 @@ def _inside(inner: Any, outer: Any) -> bool:
     )
 
 
-def _legend(ax: Axes, renderer: RendererBase) -> dict[str, Any] | None:
-    legend = ax.get_legend()
-    if legend is None:
-        return None
-    try:
-        inside = _inside(
-            legend.get_window_extent(renderer), ax.get_window_extent(renderer)
-        )
-    except BBOX_ERRORS:
-        inside = None
+def _legends(ax: _AxesBase) -> list[Legend]:
+    """Every legend of ``ax``: the current one and any kept with add_artist."""
+    found = [c for c in ax.get_children() if isinstance(c, Legend)]
+    return list(dict.fromkeys(found))
+
+
+def _legend(
+    legend: Legend, owner: Any, renderer: RendererBase
+) -> dict[str, Any]:
+    inside: bool | None = None
+    if owner is not None:
+        try:
+            inside = _inside(
+                legend.get_window_extent(renderer),
+                owner.get_window_extent(renderer),
+            )
+        except BBOX_ERRORS:
+            inside = None
     return {
+        "title": legend.get_title().get_text(),
         "labels": [t.get_text() for t in legend.get_texts()],
         "ncols": int(getattr(legend, "_ncols", 1)),
         "inside": inside,
     }
 
 
-def _titles(ax: Axes) -> dict[str, Any]:
-    return {
-        "left": _text(getattr(ax, "_left_title", None)),
-        "center": _text(ax.title),
-        "right": _text(getattr(ax, "_right_title", None)),
-    }
-
-
-def _axes(ax: Axes, renderer: RendererBase) -> dict[str, Any]:
-    return {
-        "kind": ax.name,
-        "position": [round(float(v), 3) for v in ax.get_position().bounds],
-        "title": _titles(ax),
-        "xlabel": _text(ax.xaxis.label),
-        "ylabel": _text(ax.yaxis.label),
-        "xlim": [_num(v) for v in ax.get_xlim()],
-        "ylim": [_num(v) for v in ax.get_ylim()],
-        "xscale": str(ax.get_xscale()),
-        "yscale": str(ax.get_yscale()),
-        "xticks": _ticks(ax.xaxis),
-        "yticks": _ticks(ax.yaxis),
-        "series": _series(ax),
-        "legend": _legend(ax, renderer),
-        "texts": [_text(t) for t in ax.texts if t.get_visible()],
-    }
-
-
-def _figure(fig: Figure) -> dict[str, Any]:
-    width, height = fig.get_size_inches()
-    suptitle = getattr(fig, "_suptitle", None)
-    return {
-        "size_in": [_num(width), _num(height)],
-        "dpi": _num(fig.dpi),
-        "suptitle": _text(suptitle) if suptitle is not None else None,
-        "texts": [_text(t) for t in fig.texts if t.get_visible()],
-        "legends": [
-            [t.get_text() for t in lg.get_texts()] for lg in fig.legends
-        ],
-    }
-
-
-def _owned_texts(fig: Figure) -> list[tuple[str, Text]]:
-    """Every visible, non-empty text with the summary path that owns it."""
-    found: list[tuple[str, Text]] = []
-    for name in ("_suptitle", "_supxlabel", "_supylabel"):
-        artist = getattr(fig, name, None)
-        if artist is not None:
-            found.append((f"figure.{name.lstrip('_')}", artist))
-    found += [(f"figure.texts[{i}]", t) for i, t in enumerate(fig.texts)]
-    for i, fig_legend in enumerate(fig.legends):
-        found += [(f"figure.legends[{i}]", t) for t in fig_legend.get_texts()]
-    for i, ax in enumerate(fig.axes):
-        here = f"axes[{i}]"
-        for loc, title in _titles_artists(ax):
-            found.append((f"{here}.title.{loc}", title))
-        found.append((f"{here}.xlabel", ax.xaxis.label))
-        found.append((f"{here}.ylabel", ax.yaxis.label))
-        found += [(f"{here}.xticks", t) for t in _shown_ticklabels(ax.xaxis)]
-        found += [(f"{here}.yticks", t) for t in _shown_ticklabels(ax.yaxis)]
-        found += [(f"{here}.texts[{j}]", t) for j, t in enumerate(ax.texts)]
-        legend = ax.get_legend()
-        if legend is not None:
-            found += [(f"{here}.legend", t) for t in legend.get_texts()]
-    return [
-        (where, t)
-        for where, t in found
-        if t.get_visible() and str(t.get_text()).strip()
-    ]
-
-
-def _titles_artists(ax: Axes) -> list[tuple[str, Text]]:
+def _title_artists(ax: _AxesBase) -> list[tuple[str, Text]]:
     out = []
     for loc, name in (
         ("left", "_left_title"),
@@ -373,6 +383,133 @@ def _titles_artists(ax: Axes) -> list[tuple[str, Text]]:
         title = getattr(ax, name, None)
         if title is not None:
             out.append((loc, title))
+    return out
+
+
+def _axis_names(ax: _AxesBase) -> tuple[str, ...]:
+    return ("x", "y", "z") if ax.name == "3d" else ("x", "y")
+
+
+def _axes(ax: _AxesBase, renderer: RendererBase) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        "kind": ax.name,
+        "position": [round(float(v), 3) for v in ax.get_position().bounds],
+        "title": {loc: _text(t) for loc, t in _title_artists(ax)},
+    }
+    for name in _axis_names(ax):
+        axis = getattr(ax, f"{name}axis")
+        out[f"{name}label"] = _text(axis.label)
+        out[f"{name}lim"] = [_num(v) for v in getattr(ax, f"get_{name}lim")()]
+        out[f"{name}scale"] = str(getattr(ax, f"get_{name}scale")())
+        out[f"{name}ticks"] = _ticks(axis)
+    out["series"] = _series(ax)
+    out["legends"] = [_legend(lg, ax, renderer) for lg in _legends(ax)]
+    out["texts"] = [_text(t) for t in ax.texts if t.get_visible()]
+    out["insets"] = [_axes(child, renderer) for child in ax.child_axes]
+    return out
+
+
+_SUP_NAMES = ("_suptitle", "_supxlabel", "_supylabel")
+
+
+def _free_texts(owner: Figure | SubFigure) -> list[Text]:
+    """``owner.texts`` without the sup titles, which have their own fields."""
+    sups = {id(getattr(owner, name, None)) for name in _SUP_NAMES}
+    return [t for t in owner.texts if id(t) not in sups]
+
+
+def _sup(owner: Figure | SubFigure, name: str) -> dict[str, Any] | None:
+    artist = getattr(owner, name, None)
+    return _text(artist) if artist is not None else None
+
+
+def _figure_texts(
+    owner: Figure | SubFigure, renderer: RendererBase
+) -> dict[str, Any]:
+    """Titles, free text and legends that belong to the figure or a SubFigure."""
+    return {
+        "suptitle": _sup(owner, "_suptitle"),
+        "supxlabel": _sup(owner, "_supxlabel"),
+        "supylabel": _sup(owner, "_supylabel"),
+        "texts": [_text(t) for t in _free_texts(owner) if t.get_visible()],
+        "legends": [_legend(lg, None, renderer) for lg in owner.legends],
+    }
+
+
+def _subfigures(
+    owner: Figure | SubFigure, renderer: RendererBase
+) -> list[dict[str, Any]]:
+    return [
+        {**_figure_texts(sf, renderer), "subfigures": _subfigures(sf, renderer)}
+        for sf in owner.subfigs
+    ]
+
+
+def _figure(fig: Figure, renderer: RendererBase) -> dict[str, Any]:
+    width, height = fig.get_size_inches()
+    return {
+        "size_in": [_num(width), _num(height)],
+        "dpi": _num(fig.dpi),
+        **_figure_texts(fig, renderer),
+        "subfigures": _subfigures(fig, renderer),
+    }
+
+
+def _owner_texts(
+    owner: Figure | SubFigure, here: str
+) -> list[tuple[str, Text]]:
+    found: list[tuple[str, Text]] = []
+    for name in _SUP_NAMES:
+        artist = getattr(owner, name, None)
+        if artist is not None:
+            found.append((f"{here}.{name.lstrip('_')}", artist))
+    found += [
+        (f"{here}.texts[{i}]", t) for i, t in enumerate(_free_texts(owner))
+    ]
+    for i, legend in enumerate(owner.legends):
+        found.append((f"{here}.legends[{i}].title", legend.get_title()))
+        found += [(f"{here}.legends[{i}]", t) for t in legend.get_texts()]
+    for i, sf in enumerate(owner.subfigs):
+        found += _owner_texts(sf, f"{here}.subfigures[{i}]")
+    return found
+
+
+def _axes_texts(ax: _AxesBase, here: str) -> list[tuple[str, Text]]:
+    found: list[tuple[str, Text]] = []
+    for loc, title in _title_artists(ax):
+        found.append((f"{here}.title.{loc}", title))
+    for name in _axis_names(ax):
+        axis = getattr(ax, f"{name}axis")
+        found.append((f"{here}.{name}label", axis.label))
+        if ax.name != "3d":  # mplot3d tick labels sit at stale 2-D positions
+            found += [
+                (f"{here}.{name}ticks", t) for t in _shown_ticklabels(axis)
+            ]
+    found += [(f"{here}.texts[{j}]", t) for j, t in enumerate(ax.texts)]
+    for j, legend in enumerate(_legends(ax)):
+        found.append((f"{here}.legends[{j}].title", legend.get_title()))
+        found += [(f"{here}.legends[{j}]", t) for t in legend.get_texts()]
+    for j, child in enumerate(ax.child_axes):
+        found += _axes_texts(child, f"{here}.insets[{j}]")
+    return found
+
+
+def _owned_texts(fig: Figure) -> list[tuple[str, Text]]:
+    """Every visible, non-empty text with the summary path that owns it."""
+    found = _owner_texts(fig, "figure")
+    for i, ax in enumerate(fig.axes):
+        found += _axes_texts(ax, f"axes[{i}]")
+    seen: set[int] = set()
+    out: list[tuple[str, Text]] = []
+    for where, t in found:
+        if (
+            id(t) in seen
+            or not t.get_visible()
+            or not str(t.get_text()).strip()
+        ):
+            continue
+        seen.add(id(t))
+        out.append((where, t))
     return out
 
 
@@ -408,7 +545,7 @@ def summarize(fig: Figure) -> dict[str, Any]:
     fig.canvas.draw()
     renderer = get_renderer(fig)
     return {
-        "figure": _figure(fig),
+        "figure": _figure(fig, renderer),
         "axes": [_axes(ax, renderer) for ax in fig.axes],
         "outside_canvas": _outside(fig, renderer),
     }

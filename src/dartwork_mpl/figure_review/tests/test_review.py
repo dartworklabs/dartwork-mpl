@@ -152,8 +152,8 @@ class TestSummary:
         assert [e["label"] for e in ax["series"]] == ["Measured", "Model"]
         assert {e["kind"] for e in ax["series"]} == {"line"}
         assert ax["series"][0]["n"] == 51
-        assert ax["legend"]["labels"] == ["Measured", "Model"]
-        assert ax["legend"]["inside"] is True
+        assert ax["legends"][0]["labels"] == ["Measured", "Model"]
+        assert ax["legends"][0]["inside"] is True
         assert ax["yticks"]["labels"][0] == "\N{MINUS SIGN}1,500"
         assert s["outside_canvas"] == []
 
@@ -351,3 +351,211 @@ class TestReport:
         assert all(
             w.severity in (Severity.WARNING, Severity.INFO) for w in r.findings
         )
+
+
+def _changes(tmp_path: Path, draw, edit, allow=()):
+    """Review ``draw()`` as v1 and ``edit()`` against it; the change paths."""
+    dm.review(draw(), tmp_path / "v1", quiet=True)
+    r = dm.review(
+        edit(),
+        tmp_path / "v2",
+        baseline=tmp_path / "v1",
+        allow=allow,
+        quiet=True,
+    )
+    plt.close("all")
+    return r
+
+
+class TestEditsTheSummaryMustSee:
+    """Edits that change the PNG must show in the changes (codex review 5)."""
+
+    def test_tiny_values_reordered_and_an_image_reshaped(
+        self, tmp_path: Path
+    ) -> None:
+        def line(y):
+            def draw():
+                fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+                ax.plot([0, 1, 2], y)
+                ax.set_ylim(0, 4e-12)
+                return fig
+
+            return draw
+
+        r = _changes(
+            tmp_path, line([1e-12, 2e-12, 3e-12]), line([3e-12, 1e-12, 2e-12])
+        )
+        assert [c.path for c in r.changes] == ["axes[0].series[0].data"]
+
+        def image(shape):
+            def draw():
+                fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+                ax.imshow(np.arange(6).reshape(shape), extent=(0, 1, 0, 1))
+                return fig
+
+            return draw
+
+        r = _changes(tmp_path / "img", image((2, 3)), image((3, 2)))
+        assert "axes[0].series[0].data" in [c.path for c in r.changes]
+
+    def test_a_masked_scatter_point_that_appears(self, tmp_path: Path) -> None:
+        def draw(reveal):
+            fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+            sc = ax.scatter([0, 1, 2], np.ma.array([1, 2, 3], mask=[0, 1, 0]))
+            if reveal:
+                sc.set_offsets([[0, 1], [1, 2], [2, 3]])
+            ax.set(xlim=(-1, 3), ylim=(0, 4))
+            return fig
+
+        r = _changes(tmp_path, lambda: draw(False), lambda: draw(True))
+        assert "axes[0].series[0].data" in [c.path for c in r.changes]
+
+    def test_inset_and_subfigure_text(self, tmp_path: Path) -> None:
+        def inset(label):
+            def draw():
+                fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+                child = ax.inset_axes([0.6, 0.6, 0.3, 0.3])
+                child.set_ylabel(label)
+                return fig
+
+            return draw
+
+        r = _changes(tmp_path, inset("A"), inset("B"))
+        assert [c.path for c in r.changes] == ["axes[0].insets[0].ylabel.text"]
+
+        def sub(title):
+            def draw():
+                fig = plt.figure(figsize=dm.figsize("13cm", "wide"))
+                left, _ = fig.subfigures(1, 2)
+                left.subplots()
+                left.suptitle(title)
+                return fig
+
+            return draw
+
+        r = _changes(tmp_path / "sf", sub("A"), sub("B"))
+        assert [c.path for c in r.changes] == [
+            "figure.subfigures[0].suptitle.text"
+        ]
+
+    def test_3d_reads_z_and_ignores_the_view(self, tmp_path: Path) -> None:
+        def draw(zlabel="", elev=30):
+            fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+            ax = fig.add_subplot(projection="3d")
+            ax.plot([0, 1, 2], [0, 1, 0], [1, 2, 3])
+            ax.set_zlabel(zlabel)
+            ax.view_init(elev=elev, azim=-60)
+            return fig
+
+        r = _changes(tmp_path, draw, lambda: draw(zlabel="Altitude"))
+        own = [
+            c.path for c in r.changes if not c.path.startswith("outside_canvas")
+        ]
+        assert own == ["axes[0].zlabel.text"]
+        r = _changes(tmp_path / "view", draw, lambda: draw(elev=60))
+        assert not any(c.path.endswith(".data") for c in r.changes)
+        assert not any(
+            "ticks" in o["where"] for o in r.summary["outside_canvas"]
+        )
+
+    def test_a_kept_first_legend_and_legend_titles(
+        self, tmp_path: Path
+    ) -> None:
+        def draw(first="x", title="T1"):
+            fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+            (a,) = ax.plot([0, 1], [0, 1])
+            (b,) = ax.plot([0, 1], [1, 0])
+            kept = ax.legend([a], [first], title=title, loc="upper left")
+            ax.add_artist(kept)
+            ax.legend([b], ["y"], loc="lower right")
+            return fig
+
+        paths = [
+            c.path
+            for c in _changes(tmp_path, draw, lambda: draw(first="z")).changes
+        ]
+        assert paths == ["axes[0].legends[0].labels"]
+        paths = [
+            c.path
+            for c in _changes(
+                tmp_path / "t", draw, lambda: draw(title="T2")
+            ).changes
+        ]
+        assert paths == ["axes[0].legends[0].title"]
+
+    def test_one_bar_or_one_point_recoloured(self, tmp_path: Path) -> None:
+        def bars(highlight):
+            def draw():
+                fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+                drawn = ax.bar(["a", "b", "c"], [1, 2, 3])
+                if highlight:
+                    drawn[1].set_facecolor("red")
+                return fig
+
+            return draw
+
+        r = _changes(tmp_path, bars(False), bars(True))
+        assert [c.path for c in r.changes] == ["axes[0].series[0].colors"]
+
+        def points(highlight):
+            def draw():
+                fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+                colors = [
+                    "#1f77b4",
+                    "red" if highlight else "#1f77b4",
+                    "#1f77b4",
+                ]
+                ax.scatter([0, 1, 2], [1, 2, 3], c=colors)
+                return fig
+
+            return draw
+
+        r = _changes(tmp_path / "pt", points(False), points(True))
+        assert [c.path for c in r.changes] == ["axes[0].series[0].colors"]
+
+    def test_errorbar_and_histogram_keep_their_names(
+        self, tmp_path: Path
+    ) -> None:
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.errorbar([0, 1], [1, 2], yerr=0.1, label="Observed")
+        ax.hist([1, 2, 2, 3], label="Counts")
+        s = dm.review(fig, tmp_path / "f", quiet=True).summary
+        plt.close(fig)
+        labels = {e["label"] for e in s["axes"][0]["series"]}
+        assert {"Observed", "Counts"} <= labels
+        assert not any(label.startswith("_") for label in labels)
+
+    def test_a_first_text_or_legend_adds_only_its_fields(
+        self, tmp_path: Path
+    ) -> None:
+        def draw(text=False, legend=False):
+            fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+            ax.plot([0, 1], [0, 1], label="x")
+            if text:
+                ax.text(0.5, 0.5, "note")
+            if legend:
+                ax.legend()
+            return fig
+
+        r = _changes(
+            tmp_path,
+            draw,
+            lambda: draw(text=True),
+            allow=["axes[0].texts[*].*"],
+        )
+        assert r.unexpected == []
+        r = _changes(
+            tmp_path / "lg",
+            draw,
+            lambda: draw(legend=True),
+            allow=["axes[0].legends[*].*"],
+        )
+        assert r.unexpected == []
+
+    def test_a_format_with_a_leading_dot(self, tmp_path: Path) -> None:
+        fig = _lines()
+        r = dm.review(fig, tmp_path / "chart", formats=(".png",), quiet=True)
+        plt.close(fig)
+        assert r.paths["png"] == tmp_path / "chart.png"
+        assert r.paths["png"].is_file()
+        assert not (tmp_path / "chart..png").exists()
