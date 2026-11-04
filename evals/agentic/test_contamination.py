@@ -10,6 +10,9 @@ wrong, or a backstop that must keep firing. Not collected by the default
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import subprocess
 import sys
 from argparse import Namespace
 from itertools import pairwise
@@ -408,6 +411,185 @@ def test_sandbox_hides_home_stores_and_gives_codex_its_own_sessions(tmp_path):
     assert not any(".sqlite" in t for t in [*targets, *binds])
     args, sessions = runner.home_store_mounts("claude", tmp_path / "stores2")
     assert sessions is None
+
+
+@pytest.mark.parametrize(
+    "home_source", ["default", "environment", "argument", "fresh"]
+)
+def test_codex_selected_home_rollouts_reach_monitor_through_bwrap(
+    tmp_path, monkeypatch, home_source
+):
+    """The selected home hides prior sessions and delivers new token evidence."""
+    if not shutil.which("bwrap"):
+        pytest.skip("requires the eval harness's bwrap dependency")
+    user_home = tmp_path / "user"
+    monkeypatch.setenv("HOME", str(user_home))
+    home = user_home / (
+        ".codex" if home_source == "default" else "isolated-codex"
+    )
+    monkeypatch.delenv("CODEX_HOME", raising=False)
+    if home_source != "default":
+        monkeypatch.setenv("CODEX_HOME", str(home))
+    if home_source != "fresh":
+        (home / "sessions").mkdir(parents=True)
+        (home / "sessions" / "old.jsonl").write_text("prior unit")
+    (home / "archived_sessions").mkdir(parents=True)
+    (home / "archived_sessions" / "old.jsonl").write_text("prior unit")
+    project = tmp_path / "project"
+    project.mkdir()
+    unit = tmp_path / "unit"
+    unit.mkdir()
+    mounts, sessions = runner.home_store_mounts(
+        "codex", unit / "stores", home if home_source == "argument" else None
+    )
+    script = """
+import json, os
+from datetime import date
+from pathlib import Path
+home = Path(os.environ['CODEX_HOME'])
+assert not (home / 'sessions' / 'old.jsonl').exists(), 'prior session visible'
+assert not (home / 'archived_sessions' / 'old.jsonl').exists(), 'archive visible'
+folder = home / 'sessions' / date.today().strftime('%Y/%m/%d')
+folder.mkdir(parents=True, exist_ok=True)
+events = [
+    {'type': 'session_meta', 'payload': {'id': 'synthetic-thread'}},
+    {'type': 'event_msg', 'payload': {'type': 'token_count', 'info': {
+        'total_token_usage': {'input_tokens': 400, 'output_tokens': 10}}}},
+]
+(folder / 'rollout-synthetic-thread.jsonl').write_text(
+    ''.join(json.dumps(e) + '\\n' for e in events))
+print(json.dumps({'type': 'thread.started', 'thread_id': 'synthetic-thread'}))
+"""
+    result = subprocess.run(
+        runner.sandbox_wrap(
+            [sys.executable, "-c", script], project, [], mounts
+        ),
+        cwd=project,
+        env={**os.environ, "CODEX_HOME": str(home)},
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stderr
+    (unit / "transcript.jsonl").write_text(result.stdout)
+    monitor = runner.CodexMonitor(
+        home,
+        unit / "transcript.jsonl",
+        budget=1000,
+        roots=[sessions] if sessions else None,
+    )
+    assert monitor() is False
+    assert monitor.last == 410
+    if home_source != "fresh":
+        assert (home / "sessions" / "old.jsonl").read_text() == "prior unit"
+
+
+def test_codex_command_disables_github_mcp(tmp_path):
+    """Headless evals explicitly suppress the globally configured GitHub MCP."""
+    cfg = {
+        "budgets": {"codex": {"subagents": False}},
+        "efforts": {"codex": "high"},
+        "models": {"codex": "test-model"},
+    }
+    command = runner.codex_cmd("request", tmp_path, tmp_path, cfg, tmp_path)
+    assert "mcp_servers.github.enabled=false" in command
+
+
+def test_codex_github_disable_parses_with_an_empty_home(tmp_path):
+    """The real CLI accepts the disabled MCP even without inherited transport."""
+    if not shutil.which("codex"):
+        pytest.skip("requires the eval harness's Codex CLI dependency")
+    home = tmp_path / "empty-codex-home"
+    home.mkdir()
+    cfg = {
+        "budgets": {"codex": {"subagents": False}},
+        "efforts": {"codex": "high"},
+        "models": {"codex": "test-model"},
+    }
+    command = runner.codex_cmd("request", tmp_path, tmp_path, cfg, home)
+    overrides = [value for flag, value in pairwise(command) if flag == "-c"]
+    result = subprocess.run(
+        [
+            "codex",
+            "mcp",
+            "list",
+            "--json",
+            *(part for value in overrides for part in ("-c", value)),
+        ],
+        env={**os.environ, "CODEX_HOME": str(home)},
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stderr
+    servers = json.loads(result.stdout)
+    github = next(server for server in servers if server["name"] == "github")
+    assert github["enabled"] is False
+    assert github["transport"]["command"] == "false"
+
+
+def test_codex_environment_home_reaches_the_host_process(tmp_path, monkeypatch):
+    """An environment-selected home must reach Codex, not just its monitor."""
+    home = tmp_path / "selected-home"
+    monkeypatch.setenv("CODEX_HOME", str(home))
+
+    def prepare(case, project, *args):
+        """Supply an empty project without installing a wheel or reading cases."""
+        project.mkdir(parents=True)
+        return {}
+
+    observed = []
+
+    def run_host(argv, cwd, env, *args):
+        """Observe the real child environment in place of a model invocation."""
+        result = subprocess.run(
+            [sys.executable, "-c", "import os; print(os.getenv('CODEX_HOME'))"],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=20,
+        )
+        observed.append(result.stdout.strip())
+        raise RuntimeError("stop before model invocation")
+
+    monkeypatch.setattr(runner, "prepare", prepare)
+    monkeypatch.setattr(runner, "run_host", run_host)
+    args = Namespace(
+        work_root=tmp_path / "work",
+        skill_dir=None,
+        codex_home=None,
+        dry_run=False,
+    )
+    cfg = {
+        "models": {"codex": "test-model"},
+        "efforts": {"codex": "high"},
+        "budgets": {
+            "codex": {
+                "subagents": False,
+                "timeout_s": 300,
+                "token_budget": 1000,
+            }
+        },
+        "python": "3.12",
+        "hide_grading": True,
+    }
+    case = {
+        "id": "synthetic",
+        "kind": "generate",
+        "lang": "en",
+        "held_out": False,
+        "prompt": "Synthetic request",
+    }
+    meta = {
+        "wheel": {"name": "synthetic.whl", "sha256": "0" * 64},
+        "versions": {"codex": "test"},
+    }
+    runner.one(
+        (case, "codex", "noskill", 1), tmp_path / "records", args, cfg, meta
+    )
+    assert observed == [str(home)]
 
 
 # ------------------------------------------------------------ exact own-rollout exemption (addendum 3)

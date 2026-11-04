@@ -2,6 +2,9 @@
 
 2026-10-22 · 기준 main `e8fe78a2` · 결정: 최원준 · 추적 #523 · 상위 로드맵 #482
 개정 1 (같은 날): Codex 독립 리뷰(GPT-6.1-Sol)를 반영해 평가 판정 규칙, 머지 순서, 3·4단계 범위를 고쳤다.
+개정 2 (2026-11-04): 사용자가 “사전 등록 기준을 유지하고 마스터플랜 문구를 맞춘다”를 선택했다.
+아래 판정을 `evals/agentic/compare.py`의 `PREREGISTERED`에 맞췄다. 평가기·임계값·결과는 바꾸지 않는다.
+40/50문항 범위와 held-out 노출 처리는 이 결정에 포함하지 않는다.
 
 ## 결정
 
@@ -74,10 +77,15 @@
   - A/B는 같은 wheel hash에서 skill이 없을 때와 있을 때를 비교한다. model, effort, 권한, 호스트 설정을 기록하고 실행 순서는 무작위로 짝짓는다.
   - 파일럿은 4사례 × 2호스트 × 2조건 = 16회다.
   - 결정 실험은 40사례 × 2반복 × 2호스트 × 2조건 = 320회다. 후보마다 한 번만 돌리고, 파일럿에서 잰 사용량으로 비용을 먼저 추정한다.
-- **판정 규칙**: 호스트마다 다음을 본다.
-  - task_success 차이가 10%p 이상이고, 사례 단위 bootstrap 95% 구간이 0보다 위에 있으면 "개선"이다. 아니면 "판단 보류"다.
-  - tokens는 10% 비열등 범위를 본다.
-  - 값 검사와 편집 보존 검사는 차이 비교가 아니라 반드시 통과해야 하는 조건이다.
+- **판정 규칙**: 같은 wheel의 noskill/skill을 `--hide-grading`으로 비교하며 호스트별로 판정한다. 사전등록 원문은 `evals/agentic/compare.py`의 `PREREGISTERED`다.
+  - primary 1은 `inspection_observed`(마지막 수정 뒤 최종 PNG를 실제로 본 비율)다.
+  - primary 2는 `lint_clean`(최종 실행 소스의 `dm.lint_code` critical·warning이 0인 비율)이다. info는 보고만 한다.
+  - 각 primary의 skill − noskill 차이에 사례 단위 bootstrap 95% CI를 쓴다. 차이 ≥ 0.10이고 CI 하한 > 0이면 improved, CI 상한 < 0이면 worse다.
+  - task_success guardrail: skill − noskill 차이의 95% CI 하한 > −0.05.
+  - tokens guardrail: skill/noskill 총량 비율의 95% CI 상한 ≤ 1.10.
+  - 적어도 한 primary가 improved이고, 어느 primary도 worse가 아니며, 두 guardrail이 모두 통과하면 해당 호스트에서 skill이 도움이 된다고 판정한다.
+  - 값 검사·explicit 편집 보존 실패는 계속 실패한 task_success로 기록한다. 원본 근거를 보존하며 unchecked나 성공으로 바꾸지 않는다.
+  - contaminated unit은 실패로 센다. unsandboxed unit이 하나라도 있으면 모든 verdict를 차단한다. 기존 fail-closed 검사를 유지한다.
 - **통과**: 다음이 모두 되면 0단계를 통과한다.
   - 채점기 변이 시험이 통과한다.
   - 현재 main 기준선이 기록되고, 같은 명령으로 다시 재현된다.
@@ -108,7 +116,7 @@
 - **입력 허용**: `dm.figsize(w, "16:9")` 같은 비율 문자열을 받는다. px 입력에 대한 힌트도 고친다.
 - **`/dataviz`와의 관계**: 두 skill이 함께 발동할 때의 지침만 적는다. 호스트가 우선순위를 보장한다고 주장하지 않는다.
 - **AGENTS.md index 주입기**는 만들지 않는다. 평가에서 발견 실패가 확인될 때만 짧은 opt-in pointer를 검토한다.
-- **통과**: 0단계 판정 규칙으로 skill이 있을 때 "개선"이 나온다. 아울러 무관한 새 프로젝트에서 두 호스트 모두 skill 이름을 말하지 않는 요청으로 발견·호출·준수를 따로 확인한다.
+- **통과**: 두 호스트 각각에서 0단계 사전등록 규칙(한 primary 이상 improved, worse 없음, task_success·tokens guardrail 통과)으로 skill이 도움이 된다는 판정이 나온다. 아울러 무관한 새 프로젝트에서 두 호스트 모두 skill 이름을 말하지 않는 요청으로 발견·호출·준수를 따로 확인한다.
 
 ### 2. 레이아웃 견고성 (스타일 불변)
 
@@ -173,8 +181,9 @@
 
 ## 전체 완료 판정
 
-0단계 판정 규칙으로 Claude Code와 Codex 각각에서 다음 결과가 나오면 완료다. 결과는 같은 명령으로 재현돼야 한다.
+0단계 사전등록 판정 규칙으로 Claude Code와 Codex 각각에서 다음 결과가 나오면 완료다. 결과는 같은 명령으로 재현돼야 한다.
 
-- task_success가 "개선"으로 나온다.
-- 값 검사와 편집 보존 검사를 통과한다.
-- tokens가 비열등 범위 안에 있다.
+- inspection_observed·lint_clean 중 적어도 하나의 skill − noskill 차이가 ≥ 0.10이고 사례 bootstrap 95% CI 하한 > 0이다.
+- 어느 primary도 worse(CI 상한 < 0)가 아니다.
+- task_success 차이의 95% CI 하한 > −0.05이고 tokens 총량 비율의 95% CI 상한 ≤ 1.10이다.
+- 값 검사·explicit 편집 보존 실패와 contaminated unit은 실패로 기록하고 원본을 보존한다. unsandboxed unit이 있으면 verdict를 내리지 않는다.

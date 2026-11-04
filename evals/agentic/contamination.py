@@ -161,12 +161,16 @@ def _resolve(path: str, cwd: str) -> str:
     return os.path.realpath(os.path.normpath(path))
 
 
-def transcript_stores(home: str = HOME) -> list[str]:
+def transcript_stores(
+    home: str = HOME, claude_config_dir: str | None = None
+) -> list[str]:
     """Other sessions' transcripts and histories under HOME (Claude Code, Codex).
 
     Not grading files, but they hold other units' work and the operator's
     sessions, so reaching them is contamination too. ``run.py`` hides or
     replaces them inside the sandbox (``home_store_mounts``).
+    A selected Claude profile adds its stores alongside the default profile;
+    callers persist the resulting roots rather than relying on a later environment.
     """
     claude, codex = Path(home) / ".claude", Path(home) / ".codex"
     paths = [
@@ -184,6 +188,18 @@ def transcript_stores(home: str = HOME) -> list[str]:
         *sorted(codex.glob("*.sqlite*")),
         *sorted(codex.glob("accounts/*/sessions")),
     ]
+    if claude_config_dir:
+        paths.extend(
+            Path(claude_config_dir) / name
+            for name in (
+                "projects",
+                "file-history",
+                "sessions",
+                "todos",
+                "plans",
+                "history.jsonl",
+            )
+        )
     return [str(p) for p in paths]
 
 

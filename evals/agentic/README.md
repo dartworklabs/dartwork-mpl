@@ -135,11 +135,24 @@ a Codex sqlite store) still set `contaminated` (`contamination_text.gating`).
 - **Claude Code** runs with:
   - `--setting-sources project`, so user settings, plugins and hooks are not loaded;
   - `--strict-mcp-config`, so no MCP servers are loaded;
-  - `claudeMdExcludes` on `~/.claude/**`, so the user's CLAUDE.md is not loaded;
+  - `claudeMdExcludes` on both `~/.claude/**` and the selected
+    `$CLAUDE_CONFIG_DIR/**`, including symlinked CLAUDE.md targets;
   - auto-memory disabled;
   - tools limited to `Bash, Read, Write, Edit, Glob, Grep, Skill`.
 
   Built-in skills (including `/dataviz`) stay on. There is no agent-spawning tool.
+  The launcher preserves `CLAUDE_CONFIG_DIR` from `cc-swap job` or an explicit
+  environment selection; unset, it keeps Claude's implicit `~/.claude` default
+  without setting the variable. The resolved selected path (or `null` for the
+  implicit default) is frozen in the run config; each Claude unit records its
+  resolved, non-secret profile path. With
+  `--hide-grading`, both default and selected profiles' transcripts, histories,
+  global CLAUDE.md and skills are masked, including their symlink targets.
+  Authentication remains in the selected profile; credentials are not copied.
+  Transcript aliases and resolved roots are recorded for contamination replay
+  even if the environment or symlinks change later. A profile change requires
+  a new run id when extending an existing manifest. Manifests created before
+  profile capture also require a new run id; their original bytes stay intact.
 - **Codex** runs with:
   - `--ignore-user-config` and `--ignore-rules`;
   - plugins, memories and apps disabled;
@@ -149,6 +162,11 @@ a Codex sqlite store) still set `contaminated` (`contamination_text.gating`).
   Limitations:
   - **Global instructions leak.** `$CODEX_HOME/AGENTS.md` still loads unless
     you pass `--codex-home`. Its hash is recorded.
+    Use a dedicated authenticated home without `AGENTS.md` for an isolated run.
+    Its sessions are bound to a fresh per-unit directory, including when that
+    home has no sessions yet; archived sessions and histories in both the default
+    and selected homes are hidden. The monitor and stored rollout evidence use
+    that same selected home. GitHub MCP is explicitly disabled.
   - **Sessions are kept.** Runs are not `--ephemeral`. Code-mode `exec`,
     `view_image` and sub-agents appear only in rollouts, so the rollouts are
     needed as evidence.
@@ -164,9 +182,12 @@ a Codex sqlite store) still set `contaminated` (`contamination_text.gating`).
 
   `run.json` records `termination` as one of: `completed`, `turn_limit`,
   `budget_usd`, `timeout`, `token_budget`, `error`. Every host call uses the
-  subscription login, and no `ANTHROPIC_API_KEY` reaches the child. Models are
-  pinned and recorded: Claude `sonnet` with `high` effort, and Codex
-  `gpt-6-astra` with `medium` effort.
+  subscription login. API keys and auth-token environment variables remain
+  excluded; `CLAUDE_CONFIG_DIR` selects the existing subscription profile.
+  Select current models and supported efforts at prelaunch, pass them explicitly,
+  and retain their exact IDs, efforts and CLI versions in the manifest. The final
+  A/B freeze requires this runtime evidence and explicit overrides of the runner's
+  historical model defaults.
 
 ## Commands
 
@@ -176,7 +197,8 @@ Use `uv run python evals/agentic/...` from the repo root.
 # 1. Harness self-checks. No model calls.
 uv run python evals/agentic/score.py --selftest   # 50 references, 7 controls, fixture checksums
 uv run pytest evals/agentic/test_scorer.py evals/agentic/test_regressions.py \
-    evals/agentic/test_calibration.py evals/agentic/test_contamination.py evals/agentic/test_endpoints.py -q
+    evals/agentic/test_calibration.py evals/agentic/test_contamination.py \
+    evals/agentic/test_claude_profile.py evals/agentic/test_endpoints.py -q
 
 # 2. Smoke run (3 Claude units + 1 Codex unit in one run id), then score and draw sheets.
 R=smoke-$(date +%Y%m%d-%H%M)
@@ -218,7 +240,21 @@ repetitions get the next rep numbers. Keep `--jobs` at 7 or below.
 - `e04`, `e08`, `e10`, `e14`.
 
 Do not read, run or inspect them while tuning a skill, docs or prompts. The
-comparison tables report them separately.
+comparison tables report the historical YAML declaration separately as
+**declared held-out**; that flag does not prove absence of tuning exposure.
+
+Current exposure record (2026-11-04): v13–v24 tuning used
+`e04/e08/e10/e14/g20`. `g03/g07/g11/g15/g24` were not used in those tuning
+lists, but their original baseline was observed. Neither group is a new
+independent holdout. This does not imply those cases were already exposed
+at the time of an older run; keep historical flags and raw records intact.
+Final-freeze provenance is separate from that declaration.
+
+For the final comparison, follow the
+[final A/B plan](../../docs/superpowers/plans/2026-11-04-agentic-final-ab.md)
+and `preregister.py freeze/verify/command` CLI. Its frozen primary40/320-unit
+and descriptive supplemental10/80-unit populations stay separate; this
+report qualification changes neither membership nor endpoint calculations.
 
 ## Customization cases
 

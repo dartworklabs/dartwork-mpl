@@ -51,6 +51,7 @@ from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
+from .._figure_geometry import get_renderer
 from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import fewest_exact_decimals
 
@@ -490,7 +491,7 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
     :class:`CategoryDateLocator`) are thinned the same way through the
     locator's position steps; see :func:`_thin_category_dates`.
     """
-    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(fig)
     changed = 0
     for ax in fig.axes:
         if ax.name != "rectilinear":

@@ -473,19 +473,29 @@ def preregistered(
 
 
 def table(results: list[dict], label_a: str, label_b: str) -> str:
+    """Format comparisons without inferring exposure from historical subset names."""
     lines = [
         f"| host | cases | {label_a} | {label_b} | diff [95% CI] | verdict | tokens B/A [95% CI] | tokens verdict |",
         "|---|---|---|---|---|---|---|---|",
     ]
+    if any(r["subset"] == "held_out" for r in results):
+        lines[:0] = [
+            "Declared held-out reflects the historical case YAML flag, not proof of no tuning exposure. "
+            "Final-freeze provenance is separate; historical run-time exposure is not inferred here.",
+            "",
+        ]
     for r in results:
+        subset = (
+            "declared held-out" if r["subset"] == "held_out" else r["subset"]
+        )
         if str(r.get("success_verdict")).startswith("blocked"):
             lines.append(
-                f"| {r['host']} ({r['subset']}) | {r['cases']} | - | - | - | {r['success_verdict']} | - | blocked |"
+                f"| {r['host']} ({subset}) | {r['cases']} | - | - | - | {r['success_verdict']} | - | blocked |"
             )
             continue
         if r.get("success_verdict") == "incomplete":
             lines.append(
-                f"| {r['host']} ({r['subset']}) | {r['cases']} | - | - | - | incomplete "
+                f"| {r['host']} ({subset}) | {r['cases']} | - | - | - | incomplete "
                 f"(missing {r['missing']}, duplicates {r['duplicates']}) | - | incomplete |"
             )
             continue
@@ -493,7 +503,7 @@ def table(results: list[dict], label_a: str, label_b: str) -> str:
             continue
         ci = ", ".join(f"{v:.2f}" for v in r.get("tokens_ci", []))
         lines.append(
-            f"| {r['host']} ({r['subset']}) | {r['cases']} | {r['success_a']:.2f} | {r['success_b']:.2f} "
+            f"| {r['host']} ({subset}) | {r['cases']} | {r['success_a']:.2f} | {r['success_b']:.2f} "
             f"| {r['success_diff']:+.3f} [{r['success_ci'][0]:+.2f}, {r['success_ci'][1]:+.2f}] | {r['success_verdict']} "
             f"| {r.get('tokens_ratio', float('nan')):.2f} [{ci}] | {r.get('tokens_verdict', '-')} |"
         )

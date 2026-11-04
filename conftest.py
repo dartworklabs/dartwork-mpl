@@ -21,10 +21,11 @@ Tests that *intentionally* depend on a specific style should call
 
 from __future__ import annotations
 
+import errno
 import os
 import re
-import shutil
 import sys
+import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -46,19 +47,34 @@ def _pyproject_version() -> str:
 
 
 def _ensure_source_tree_metadata() -> str:
+    """Publish complete metadata atomically, excluding other cached versions.
+
+    Every xdist worker bootstraps independently. Stage the whole distribution
+    before first publication so readers cannot see an empty directory; replace
+    an existing metadata file atomically so a peer import cannot read it between
+    truncation and writing. Version-specific search roots avoid shared deletion.
+    """
     version = _pyproject_version()
-    _METADATA_ROOT.mkdir(parents=True, exist_ok=True)
-    for old in _METADATA_ROOT.glob("dartwork_mpl-*.dist-info"):
-        if old.name != f"dartwork_mpl-{version}.dist-info":
-            shutil.rmtree(old)
-    dist_info = _METADATA_ROOT / f"dartwork_mpl-{version}.dist-info"
-    dist_info.mkdir(exist_ok=True)
-    metadata = dist_info / "METADATA"
-    metadata.write_text(
-        f"Metadata-Version: 2.1\nName: dartwork-mpl\nVersion: {version}\n",
-        encoding="utf-8",
-    )
-    return str(_METADATA_ROOT)
+    metadata_root = _METADATA_ROOT / version
+    metadata_root.mkdir(parents=True, exist_ok=True)
+    dist_info = metadata_root / f"dartwork_mpl-{version}.dist-info"
+    with tempfile.TemporaryDirectory(
+        prefix=".metadata-", dir=metadata_root
+    ) as folder:
+        staged = Path(folder) / dist_info.name
+        staged.mkdir()
+        metadata = staged / "METADATA"
+        metadata.write_text(
+            f"Metadata-Version: 2.1\nName: dartwork-mpl\nVersion: {version}\n",
+            encoding="utf-8",
+        )
+        try:
+            staged.rename(dist_info)
+        except OSError as error:
+            if error.errno not in {errno.EEXIST, errno.ENOTEMPTY}:
+                raise
+            metadata.replace(dist_info / "METADATA")
+    return str(metadata_root)
 
 
 _METADATA_PATH = _ensure_source_tree_metadata()
