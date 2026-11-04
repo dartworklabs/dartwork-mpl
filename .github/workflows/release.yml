@@ -44,6 +44,12 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+      - name: Isolate release matplotlib font discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_mplconfig=$(mktemp -d "$RUNNER_TEMP/matplotlib-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+          printf 'MPLCONFIGDIR=%s\n' "$release_mplconfig" >> "$GITHUB_ENV"
       - name: Install uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -59,6 +65,36 @@ jobs:
           set -euo pipefail
           uv run --no-sync python -c 'import sys; print(sys.version); print(sys.executable); assert sys.version_info[:2] == (3, 12)' \
             | tee "$RUNNER_TEMP/python-runtime.txt"
+      - name: Record release font runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --no-sync python - <<'PY' | tee "$RUNNER_TEMP/font-runtime.json"
+          import json
+          from pathlib import Path
+
+          import matplotlib
+          from matplotlib import font_manager
+
+          fallback_faces = [
+              {"family": entry.name, "file": Path(entry.fname).name,
+               "exists": Path(entry.fname).is_file()}
+              for entry in sorted(
+                  font_manager.fontManager.ttflist,
+                  key=lambda entry: (entry.name, entry.fname),
+              )
+              if entry.name.startswith("STIX") or entry.name == "cmex10"
+          ]
+          print(json.dumps({
+              "matplotlib": matplotlib.__version__,
+              "cache_dir": matplotlib.get_cachedir(),
+              "data_path": matplotlib.get_data_path(),
+              "fontlist_version": font_manager.FontManager.__version__,
+              "ttf_count": len(font_manager.fontManager.ttflist),
+              "fallback_face_count": len(fallback_faces),
+              "fallback_faces": fallback_faces[:64],
+          }, indent=2))
+          PY
       - name: Verify packaged color authorities
         run: |
           set -euo pipefail
@@ -102,6 +138,7 @@ jobs:
             ${{ runner.temp }}/pytest-full.xml
             ${{ runner.temp }}/pytest-summary.txt
             ${{ runner.temp }}/python-runtime.txt
+            ${{ runner.temp }}/font-runtime.json
           if-no-files-found: warn
           retention-days: 7
 
