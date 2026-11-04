@@ -40,8 +40,13 @@ Available Checks
      - X tick labels are rotated needlessly or overlap when horizontal
      - INFO
    * - ``TICK_DECIMAL``
-     - Numeric tick labels are mixed, ambiguous, or over-precise for their step
+     - Numeric tick labels are mixed or duplicated within a unit, print
+       trailing zeros on whole-number ticks, or are over-precise for their step
      - WARNING / INFO
+   * - ``VALUE_LABEL_DECIMAL``
+     - Every numeric value label in an axes is a whole number, yet some print
+       trailing zeros (``120.0``)
+     - WARNING
    * - ``EMPTY_AXES``
      - Axes contain no visible plotted artist or annotation
      - INFO

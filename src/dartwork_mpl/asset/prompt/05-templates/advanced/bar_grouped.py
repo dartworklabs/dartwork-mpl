@@ -53,6 +53,7 @@ for i, name in enumerate(series_names):
             ha="center",
             va="bottom",
             fontsize=dm.fs(-2),
+            fontweight=dm.fw(1),
             color="oc.gray8",
         )
 

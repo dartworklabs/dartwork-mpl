@@ -11,6 +11,9 @@ constant across locales.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from types import MappingProxyType
+
 import matplotlib.colors as mcolors
 
 from ..catalog import PALETTE
@@ -22,16 +25,24 @@ __all__ = ["SEMANTIC_TOKEN_NAMES", "apply_semantic"]
 # this tuple rather than re-deriving the key set.
 SEMANTIC_TOKEN_NAMES: tuple[str, ...] = ("dc.pos", "dc.neg", "dc.ref", "dc.hl")
 
-_MAPS: dict[str, dict[str, str]] = {
-    # Korean financial convention: gains = red, losses = blue.
-    "kr": {"dc.pos": PALETTE["red"][5], "dc.neg": PALETTE["blue"][6]},
-    # Default (most other locales): gains = green, losses = red.
-    "default": {"dc.pos": PALETTE["green"][6], "dc.neg": PALETTE["red"][6]},
-}
-_COMMON: dict[str, str] = {
-    "dc.ref": PALETTE["gray"][6],
-    "dc.hl": PALETTE["violet"][6],
-}
+# ``construction._catalog`` reads these two declarations from this file's
+# AST (palette coordinates, not hex values): keep them literal
+# ``MappingProxyType({...})`` calls over ``PALETTE["family"][index]``.
+_MAPS: Mapping[str, Mapping[str, str]] = MappingProxyType(
+    {
+        # Korean financial convention: gains = red, losses = blue.
+        "kr": MappingProxyType(
+            {"dc.pos": PALETTE["red"][5], "dc.neg": PALETTE["blue"][6]}
+        ),
+        # Default (most other locales): gains = green, losses = red.
+        "default": MappingProxyType(
+            {"dc.pos": PALETTE["green"][6], "dc.neg": PALETTE["red"][6]}
+        ),
+    }
+)
+_COMMON: Mapping[str, str] = MappingProxyType(
+    {"dc.ref": PALETTE["gray"][6], "dc.hl": PALETTE["violet"][6]}
+)
 
 
 def apply_semantic(locale: str) -> None:

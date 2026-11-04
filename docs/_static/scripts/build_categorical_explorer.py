@@ -23,9 +23,8 @@ from __future__ import annotations
 import argparse
 import json
 import runpy
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from pathlib import Path
-from typing import cast
 
 from dartwork_mpl._colors._ssot import load_color_v6_ssot
 
@@ -112,10 +111,7 @@ def _cvd_models() -> dict[str, str]:
     dict[str, str]
         Model descriptions for deutan, protan, and tritan simulation.
     """
-    authority = load_color_v6_ssot()
-    policies = cast(Mapping[str, object], authority["policies"])
-    cvd_policy = cast(Mapping[str, object], policies["cvd"])
-    models = cast(Mapping[str, str], cvd_policy["models_by_deficiency"])
+    models = load_color_v6_ssot().policies.cvd.models_by_deficiency
     return {
         deficiency: models[deficiency]
         for deficiency in ("deutan", "protan", "tritan")
@@ -137,6 +133,12 @@ def _demo_coverage_table(selected: int = 8) -> list[dict]:
 
 
 def build_payload() -> dict:
+    """Collect the categorical explorer's data from the color sources.
+
+    Reads the generated cycles, the curated qualitative sets and the cycle CVD
+    metrics, and returns the palettes, their rail groups and display order, the
+    CVD model, the demo library and the default selections.
+    """
     g = runpy.run_path(str(GENERATED))
     cycles = g["CYCLES"]
     c = runpy.run_path(str(CURATED_MOD))

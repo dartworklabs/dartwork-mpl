@@ -105,10 +105,14 @@ packages = ["src/dartwork_mpl"]
 # tests/architecture/test_packaging.py builds the wheel and checks this.
 exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 
-# Agent entry-point files are bundled inside the wheel under
+# The llms index files are bundled inside the wheel under
 # ``dartwork_mpl/asset/agent/`` so installations from PyPI can read
 # them via ``importlib.resources``. The repo-root copies remain the
-# canonical source for GitHub-raw fetches.
+# canonical source for GitHub-raw fetches. The consumer agent entry
+# (``dm.get_agent_doc("AGENTS")`` / ``("CLAUDE")``) is ordinary package data
+# at src/dartwork_mpl/asset/agent/{AGENTS,CLAUDE}.md, and the agent skill
+# ships from src/dartwork_mpl/skills/; the repo-root AGENTS.md / CLAUDE.md
+# are contributor documents and stay out of the wheel.
 #
 # Destinations are package-relative — Hatch does NOT strip ``src/``
 # for ``force-include`` the way it does for the ``packages = [...]``
@@ -117,8 +121,6 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 # ``importlib.resources`` couldn't reach them under
 # ``dartwork_mpl.asset.agent``.
 [tool.hatch.build.targets.wheel.force-include]
-"CLAUDE.md" = "dartwork_mpl/asset/agent/CLAUDE.md"
-"AGENTS.md" = "dartwork_mpl/asset/agent/AGENTS.md"
 "llms.txt" = "dartwork_mpl/asset/agent/llms.txt"
 "llms-full.txt" = "dartwork_mpl/asset/agent/llms-full.txt"
 
@@ -151,6 +153,10 @@ dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mpl>=0.17",
+    # CI runs the suite with `-n auto`; local runs stay serial unless you
+    # pass -n yourself (never put -n in addopts: scripts/test_id_map.py
+    # runs its own --collect-only).
+    "pytest-xdist>=3.8.0",
     "ruff>=0.4.0",
     "shibuya>=2025.11.10",
     "sphinx>=8.1.3",
@@ -193,6 +199,7 @@ addopts = [
 ]
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
+    "color_pipeline: slow colour build/regeneration/byte-identity checks; interpreter-independent, so CI runs them on 3.12 only",
 ]
 
 [tool.ruff]
@@ -210,6 +217,8 @@ skip-magic-trailing-comma = true
 line-ending = "auto"
 
 [tool.ruff.lint]
+# D100-D107 cover production code (src, scripts, docs scripts); D100-D101
+# also cover tests.
 select = [
     "E",
     "W",
@@ -223,6 +232,14 @@ select = [
     "SIM",
     "PERF",
     "RUF",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
 ]
 ignore = ["E501"]
 
@@ -268,6 +285,14 @@ split-on-trailing-comma = false
     "SIM105",
     "BLE001",
     "RUF002",
+    # Every test module and class has a docstring; test functions are
+    # described by their names.
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
 ]
 # Slice-owned tests (ADR 0005) follow the same test-code allowances.
 "src/dartwork_mpl/**/tests/**/*.py" = [
@@ -279,6 +304,14 @@ split-on-trailing-comma = false
     "SIM105",
     "BLE001",
     "RUF002",
+    # Every test module and class has a docstring; test functions are
+    # described by their names.
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
 ]
 
 [tool.mypy]
@@ -332,8 +365,8 @@ disallow_subclassing_any = false
 
 [tool.coverage.run]
 source = ["src/dartwork_mpl"]
-# mcp/ is the agentic core and is exercised by tests/test_mcp.py +
-# tests/test_integration.py, so it stays in the report (omitting it
+# mcp/ is the agentic core and is exercised by tests/contracts/test_mcp.py +
+# tests/contracts/test_integration.py, so it stays in the report (omitting it
 # hid the agentic surface behind an inflated headline number). ui/ is
 # the optional `dartwork-mpl-ui` viewer (FastAPI app + a 1.5k-line HTML
 # template) whose web layer is not unit-tested; it is omitted so the

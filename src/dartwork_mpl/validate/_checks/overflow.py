@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
-from ..._figure_geometry import iter_figure_level_extents
+from ..._figure_geometry import axes_text_artists, iter_figure_level_extents
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import SIDES, Side, choice, number, wire
 from ._registry import register_check, register_fix
@@ -42,7 +42,7 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
 
     for ax in fig.axes:
         # --- text objects (titles, labels, annotations) ---
-        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
+        for txt in axes_text_artists(ax):
             if (
                 txt is None
                 or not txt.get_visible()

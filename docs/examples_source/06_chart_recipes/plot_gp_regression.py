@@ -19,6 +19,7 @@ np.random.seed(42)
 
 
 def true_fn(x):
+    """Return the noise-free target ``sin(3x) + 0.5 cos(5x)`` that the GP recovers."""
     return np.sin(3 * x) + 0.5 * np.cos(5 * x)
 
 

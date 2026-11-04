@@ -17,17 +17,21 @@ import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
 from dartwork_mpl.mcp.artifacts import (  # noqa: E402
-    ArtifactStore,
-    ConfigurationError,
-    InputGrant,
-    InputStore,
-    RenderRequest,
-    Revision,
-    authorize_inputs,
     configure_store,
     register_artifacts,
-    render_artifact,
 )
+from dartwork_mpl.mcp.artifacts.delivery import render_artifact  # noqa: E402
+from dartwork_mpl.mcp.artifacts.input_access import (  # noqa: E402
+    InputGrant,
+    authorize_inputs,
+)
+from dartwork_mpl.mcp.artifacts.input_policy import Revision  # noqa: E402
+from dartwork_mpl.mcp.artifacts.inputs import InputStore  # noqa: E402
+from dartwork_mpl.mcp.artifacts.policy import (  # noqa: E402
+    ConfigurationError,
+    RenderRequest,
+)
+from dartwork_mpl.mcp.artifacts.store import ArtifactStore  # noqa: E402
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -427,7 +431,7 @@ def test_cancelled_call_and_final_close_keep_lock_fds_and_reap(
     path, storage, source, store = fixture(owned_input_root)
     runtime = module.ArtifactRuntime(store, str(path))
     spec = revision(source)
-    from dartwork_mpl.mcp.artifacts import parse_revision
+    from dartwork_mpl.mcp.artifacts.input_policy import parse_revision
 
     parsed = parse_revision(spec)
     assert isinstance(parsed, Revision)
@@ -591,15 +595,23 @@ def test_stdio_shipped_global_runtime_and_repeated_process_ownership(
 ):
     """Actual shipped stdio starts/closes retention and preserves wire delete/errors."""
     api()
+    package = importlib.import_module("dartwork_mpl")
     path, _, source, store = fixture(owned_input_root)
     spec = revision(source)
     from fastmcp.client.transports import PythonStdioTransport
 
     script = owned_input_root / "stdio_server.py"
     script.write_text(
+        "import sys\nimport dartwork_mpl as dm\n"
+        f"assert dm.__file__ == {package.__file__!r}, dm.__file__\n"
+        f"assert dm.__version__ == {package.__version__!r}, dm.__version__\n"
+        "print(f'stdio bootstrap: {dm.__file__} ({dm.__version__})', "
+        "file=sys.stderr)\n"
         "from dartwork_mpl.mcp.server import mcp\nmcp.run(show_banner=False)\n"
     )
     env = {
+        # Preserve conftest's source/metadata bootstrap through the SDK env filter.
+        "PYTHONPATH": os.environ["PYTHONPATH"],
         "DARTWORK_MPL_INPUT_POLICY": str(path),
         "DARTWORK_MPL_ARTIFACT_DIR": str(owned_input_root / "artifacts"),
     }
@@ -985,6 +997,7 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
 ):
     """Real stdio disconnect drains the server's owned export before releasing pins."""
     api()
+    package = importlib.import_module("dartwork_mpl")
     path, storage, source, store = fixture(owned_input_root)
     marker, release = owned_input_root / "pid", owned_input_root / "release"
     code = (
@@ -996,9 +1009,16 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
 
     script = owned_input_root / "stdio_server.py"
     script.write_text(
+        "import sys\nimport dartwork_mpl as dm\n"
+        f"assert dm.__file__ == {package.__file__!r}, dm.__file__\n"
+        f"assert dm.__version__ == {package.__version__!r}, dm.__version__\n"
+        "print(f'stdio bootstrap: {dm.__file__} ({dm.__version__})', "
+        "file=sys.stderr)\n"
         "from dartwork_mpl.mcp.server import mcp\nmcp.run(show_banner=False)\n"
     )
     env = {
+        # Preserve conftest's source/metadata bootstrap through the SDK env filter.
+        "PYTHONPATH": os.environ["PYTHONPATH"],
         "DARTWORK_MPL_INPUT_POLICY": str(path),
         "DARTWORK_MPL_ARTIFACT_DIR": str(owned_input_root / "artifacts"),
     }

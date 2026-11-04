@@ -580,6 +580,11 @@ def splice(source: str, payload: str | None = None) -> str:
 
 
 def main() -> int:
+    """Regenerate the data region of ``fonts_browser.frag.html`` in place.
+
+    With ``--check`` nothing is written and the exit code is 2 when the
+    committed fragment is out of date. Writes only when the content changed.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--check",

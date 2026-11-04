@@ -128,6 +128,7 @@ for i, (d, b, h, total) in enumerate(
             ha="center",
             va="bottom",
             fontsize=dm.fs(-1),
+            fontweight=dm.fw(1),
             color=colors[i],
         )
 
@@ -150,7 +151,7 @@ handles = [
 ax.legend(handles=handles, loc="upper right", fontsize=dm.fs(-1), frameon=False)
 
 ax.set_title(
-    "From 1,200 MWh generated to 440 MWh delivered — loss is the biggest leak",
+    "From 1,200 MWh generated to 440 MWh delivered —\nloss is the biggest leak",
     fontsize=dm.fs(1),
     fontweight=dm.fw(1),
     loc="left",

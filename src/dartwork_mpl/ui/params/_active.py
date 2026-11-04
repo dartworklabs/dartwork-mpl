@@ -39,13 +39,28 @@ class InvalidRequest:
     detail: str = "Input does not match the viewer request schema."
 
 
-# How comma-separated list text converts per item kind. ``bool`` has no entry:
-# list[bool] text raises KeyError (an answered-500 defect kept as before, so
-# the wire does not change in a types-only refactor).
+def _bool_item(text: str) -> bool:
+    """Parse one stripped ``list[bool]`` item: ``true``/``false`` in any case.
+
+    Accepts exactly what the browser and the descriptor default
+    (``"True, False"``) produce. Raises ``ValueError`` for any other text,
+    which ``parse_active`` answers as ``InvalidRequest``.
+    """
+    folded = text.lower()
+    if folded == "true":
+        return True
+    if folded == "false":
+        return False
+    raise ValueError(f"not a boolean: {text!r}")
+
+
+# How comma-separated list text converts per item kind; each converter raises
+# ValueError for text it cannot convert. Every ``Scalar`` has an entry.
 _LIST_ITEMS: dict[Scalar, Callable[[str], object]] = {
     "int": int,
     "float": float,
     "str": str,
+    "bool": _bool_item,
 }
 
 
@@ -187,8 +202,14 @@ def parse_active(
     A numeric ``Literal`` choice arrives from a browser select, or from state the
     base viewer saved, as text (``"2"``; JS renders ``1.0`` as ``"1"``). Such text
     gets the base viewer's single ``int()``/``float()`` conversion; text that does
-    not convert stays unchanged so native validation rejects it. Membership,
+    not convert stays unchanged so native validation rejects it. List text is
+    split on commas, blank items dropped, and each item converted by its kind
+    (``list[bool]`` items must read ``true``/``false``, any case). Membership,
     bounds, nonfinite values and the caller's validators remain native.
+
+    Returns the validated model, or ``InvalidRequest`` when ``value`` is not an
+    object, an item does not convert, native validation fails, or the result is
+    not bounded finite JSON. Expected bad input never raises.
     """
     if not isinstance(value, dict):
         return InvalidRequest()

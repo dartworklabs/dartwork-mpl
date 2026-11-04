@@ -9,7 +9,7 @@ parameters you actually want before locking them into code.
 ## See it in action
 
 The slider below is the **real viewer**, captured at two moments:
-on the left, the default state right after `python viewer.py` boots;
+on the left, the default state right after `python app.py` boots;
 on the right, the same UI after a handful of slider/dropdown/color-picker
 tweaks. Drag the handle to wipe between them and watch the chart
 respond — every control on the left panel is auto-generated from a
@@ -51,7 +51,7 @@ dartwork-mpl-ui init ./my-viewer --example simple
 
 # 2. run it
 cd my-viewer
-python viewer.py
+python app.py
 # → opens the viewer in your default browser (local server, default port 8501)
 ```
 

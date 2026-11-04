@@ -17,11 +17,12 @@ import pytest
 
 pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp.artifacts import (
+from dartwork_mpl.mcp.artifacts import configure_store
+from dartwork_mpl.mcp.artifacts import store as disk
+from dartwork_mpl.mcp.artifacts.policy import (
     ArtifactBytes,
     ArtifactId,
     ArtifactMember,
-    ArtifactStore,
     ArtifactTooLarge,
     ConfigurationError,
     CorruptArtifact,
@@ -29,10 +30,9 @@ from dartwork_mpl.mcp.artifacts import (
     NotFound,
     PublicationError,
     StoredBundle,
-    configure_store,
     parse_artifact_id,
 )
-from dartwork_mpl.mcp.artifacts import store as disk
+from dartwork_mpl.mcp.artifacts.store import ArtifactStore
 
 NOW = datetime(2026, 10, 18, 3, 4, 5, 123456, tzinfo=timezone.utc)
 SOURCE = '# exact submitted source\nlabel = "한글 café"\n'

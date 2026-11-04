@@ -1,3 +1,7 @@
+"""East Asian myriad-unit (10^4 grouping) tick labels for ko, zh and ja,
+with an optional currency prefix.
+"""
+
 from __future__ import annotations
 
 import matplotlib.pyplot as plt

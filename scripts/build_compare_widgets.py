@@ -120,6 +120,10 @@ WIDGETS = [
 
 
 def main() -> None:
+    """Write each before/after comparison widget in ``WIDGETS`` as HTML under ``docs/``.
+
+    Creates parent directories and overwrites existing files.
+    """
     for w in WIDGETS:
         html = render_compare(
             w["wid"],

@@ -1,17 +1,47 @@
-"""Trusted-snippet execution with optional private input paths, without authorization."""
+"""Trusted-snippet execution with optional private input paths, without authorization.
+
+``validate_plot`` runs a snippet and returns its ``ExecutionOutcome`` (one
+variant per way a run ends, see ``.outcome``); ``to_wire`` turns an outcome
+into the legacy ``validate_generated_plot`` report dict. ``export_plot`` also
+saves the selected Figure and returns ``ExportedPlot`` or one ``ExportFailure``
+variant; each holds its run's outcome and exposes the legacy ``report`` dict
+that the artifact edge stores and returns.
+"""
 
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, TypeAlias
+
+from .checkpoint import Checkpoint, ChildExportFailed, parse_checkpoint, settle
+from .outcome import (
+    AnalysisExhausted,
+    Diagnostics,
+    ExecFailed,
+    ExecutionOutcome,
+    Incomplete,
+    LintBlocked,
+    LintRecord,
+    NoFigure,
+    Passed,
+    SourceRefused,
+    TimedOut,
+    to_wire,
+)
+
+if TYPE_CHECKING:
+    from .._platform import CapturedProcess
 
 __all__ = [
+    "ExecutionOutcome",
     "ExecutionRejected",
+    "ExportFailure",
     "ExportRejected",
     "ExportedPlot",
     "LogLimitRejected",
     "export_plot",
+    "to_wire",
     "validate_plot",
 ]
 
@@ -25,27 +55,80 @@ _MAX_SOURCE_BYTES = 512 * 1024
 class ExportedPlot:
     """Selected Figure was validated and both output files were exported."""
 
-    report: dict[str, Any]
+    outcome: Passed | Incomplete
+
+    @property
+    def report(self) -> dict[str, Any]:
+        """The legacy report (a fresh dict) for ``report.json``."""
+        return to_wire(self.outcome)
 
 
 @dataclass(frozen=True)
 class ExecutionRejected:
     """Execution did not yield an exportable validated Figure."""
 
-    report: dict[str, Any]
+    outcome: (
+        SourceRefused
+        | AnalysisExhausted
+        | LintBlocked
+        | NoFigure
+        | ExecFailed
+        | TimedOut
+    )
+
+    @property
+    def report(self) -> dict[str, Any]:
+        """The legacy report (a fresh dict) returned with the refusal."""
+        return to_wire(self.outcome)
 
 
 @dataclass(frozen=True)
-class LogLimitRejected(ExecutionRejected):
+class LogLimitRejected:
     """A bounded incomplete report whose original logs exceed the caller's limit."""
+
+    outcome: ExecFailed
+
+    @property
+    def report(self) -> dict[str, Any]:
+        """The legacy ``exec_error`` report with the bounded diagnostics."""
+        return to_wire(self.outcome)
 
 
 @dataclass(frozen=True)
 class ExportRejected:
     """Export failed after validation, retaining its evidence without paths."""
 
-    report: dict[str, Any]
+    outcome: ExecFailed | TimedOut
     message: str = "Artifact export failed."
+
+    @property
+    def report(self) -> dict[str, Any]:
+        """The legacy report of the run whose export failed."""
+        return to_wire(self.outcome)
+
+
+ExportFailure: TypeAlias = ExecutionRejected | LogLimitRejected | ExportRejected
+
+
+@dataclass(frozen=True)
+class _Launched:
+    """A reaped child with its parsed checkpoint and the pre-launch lint."""
+
+    checkpoint: Checkpoint
+    process: "CapturedProcess"
+    lint: tuple[LintRecord, ...]
+    hinted: bool
+
+    def outcome(self) -> ExecutionOutcome:
+        """Settle the run; a log overrun is a failed exit."""
+        return settle(
+            self.checkpoint,
+            Diagnostics(self.lint, self.process.stdout, self.process.stderr),
+            self.hinted,
+            timed_out=self.process.timed_out and not self.process.log_overrun,
+            exited_cleanly=self.process.returncode == 0
+            and not self.process.log_overrun,
+        )
 
 
 def _source_timeout_error(code: str, timeout_seconds: float) -> str | None:
@@ -77,16 +160,18 @@ def validate_plot(
     figure_var: str = "fig",
     timeout_seconds: float = 20.0,
     chart_type_hint: str | None = None,
-) -> dict[str, Any]:
-    """Execute trusted source with legacy outcomes and bounded diagnostic logs.
+) -> ExecutionOutcome:
+    """Execute trusted source and return how the run ended, with bounded diagnostic logs.
 
     Source/timeout admission shares render's existing limits; unrelated legacy
     figure/hint values retain their behavior. No code runs on admission or
     handleable AST-resource refusal. This is not an OS security sandbox.
+    ``to_wire`` gives the outcome's legacy report.
     """
-    return _run(
+    ran = _run(
         code, figure_var, timeout_seconds, chart_type_hint, output_stem=None
     )
+    return ran.outcome() if isinstance(ran, _Launched) else ran
 
 
 def export_plot(
@@ -98,7 +183,7 @@ def export_plot(
     output_stem: Path,
     input_paths: Mapping[str, str] | None = None,
     log_limit_bytes: int = _DEFAULT_EXPORT_LOG_BYTES,
-) -> ExportedPlot | ExecutionRejected | ExportRejected:
+) -> ExportedPlot | ExportFailure:
     """Validate and export one selected Figure in a single child execution.
 
     Nonempty ``input_paths`` supplies a read-only ``dartwork_inputs`` mapping
@@ -115,7 +200,7 @@ def export_plot(
     """
     if type(log_limit_bytes) is not int or log_limit_bytes <= 0:
         raise ValueError("Shared log budget must be a positive integer")
-    report = _run(
+    ran = _run(
         code,
         figure_var,
         timeout_seconds,
@@ -124,14 +209,18 @@ def export_plot(
         input_paths=input_paths,
         log_limit_bytes=log_limit_bytes,
     )
-    export_failed = report.pop("_export_failed", False)
-    if report.pop("_artifact_logs_too_large", False):
-        return LogLimitRejected(report)
-    if export_failed:
-        return ExportRejected(report)
-    if report["status"] in {"ok", "validation_incomplete"}:
-        return ExportedPlot(report)
-    return ExecutionRejected(report)
+    if not isinstance(ran, _Launched):
+        return ExecutionRejected(ran)
+    outcome = ran.outcome()
+    if ran.process.log_overrun and isinstance(outcome, ExecFailed):
+        return LogLimitRejected(outcome)
+    if isinstance(ran.checkpoint, ChildExportFailed) and isinstance(
+        outcome, (ExecFailed, TimedOut)
+    ):
+        return ExportRejected(outcome)
+    if isinstance(outcome, (Passed, Incomplete)):
+        return ExportedPlot(outcome)
+    return ExecutionRejected(outcome)
 
 
 def _run(
@@ -143,7 +232,7 @@ def _run(
     output_stem: Path | None,
     input_paths: Mapping[str, str] | None = None,
     log_limit_bytes: int | None = None,
-) -> dict[str, Any]:
+) -> SourceRefused | AnalysisExhausted | LintBlocked | _Launched:
     """Run a child and remove its checkpoint on return, error or timeout.
 
     Opt-in stdin is one ASCII JSON mapping line, a newline, then the exact
@@ -177,72 +266,29 @@ def _run(
         ):
             raise TypeError("input_paths must map string names to string paths")
 
-    def _finalize(payload: dict[str, Any]) -> dict[str, Any]:
-        """Keep logs and completion fields consistent on every outcome.
-
-        Semantic warnings are present iff a chart hint was supplied.
-        An error cannot claim completion, even with partial check results.
-        """
-        payload.setdefault("visual_warnings", [])
-        payload.setdefault("stdout", "")
-        payload.setdefault("failed_checks", [])
-        payload["validation_complete"] = payload["status"] == "ok"
-        if chart_type_hint is None:
-            payload.pop("semantic_warnings", None)
-        else:
-            payload.setdefault("semantic_warnings", [])
-        return payload
-
+    hinted = chart_type_hint is not None
     # Match render's code/timeout admission without a reverse feature import.
     # Legacy figure/hint handling retains its independent existing behavior.
     admission_error = _source_timeout_error(code, timeout_seconds)
     if admission_error is not None:
-        return _finalize(
-            {"status": "exec_error", "lint": [], "stderr": admission_error}
-        )
-
-    def _resource_failure(exc: MemoryError | RecursionError) -> dict[str, Any]:
-        """Refuse a handleable parser/lint resource fault without source or paths."""
-        return _finalize(
-            {
-                "status": "exec_error",
-                "lint": [],
-                "exc_type": type(exc).__name__,
-                "stderr": "Python source analysis exceeded available parser resources.",
-            }
-        )
+        return SourceRefused(admission_error, hinted)
 
     try:
         # lint intentionally tolerates some parse failures, including recursion;
         # MCP must recognize a resource refusal before invoking trusted source.
         with suppress(SyntaxError, ValueError, UnicodeError):
             ast.parse(code)
-        lint_issues = [
-            {
-                "rule_id": i.rule_id,
-                "severity": i.severity,
-                "line": i.line,
-                "message": i.message,
-                "fix_suggestion": i.fix_suggestion,
-            }
+        lint_issues = tuple(
+            LintRecord(
+                i.rule_id, i.severity, i.line, i.message, i.fix_suggestion
+            )
             for i in _lint(code)
-        ]
-    except (MemoryError, RecursionError) as exc:
-        return _resource_failure(exc)
-    critical = [i for i in lint_issues if i["severity"] == "critical"]
-    if critical:
-        return _finalize(
-            {
-                "status": "lint_blocked",
-                "lint": lint_issues,
-                "visual_warnings": [],
-                "stderr": (
-                    "Critical lint issues must be fixed before "
-                    "execution: "
-                    + ", ".join(str(i["rule_id"]) for i in critical)
-                ),
-            }
         )
+    except (MemoryError, RecursionError) as exc:
+        # Refuse a handleable parser/lint resource fault without source or paths.
+        return AnalysisExhausted(type(exc).__name__, hinted)
+    if any(i.severity == "critical" for i in lint_issues):
+        return LintBlocked(lint_issues, hinted)
 
     runner = textwrap.dedent(
         """\
@@ -429,13 +475,13 @@ def _run(
         output_stem=str(output_stem) if output_stem is not None else None,
     )
 
-    def _read_result(path: Path) -> dict[str, Any]:
-        """Read the private checkpoint, or report missing/invalid framing."""
+    def _read_result(path: Path) -> Checkpoint:
+        """Read and parse the private checkpoint; missing/invalid framing records nothing."""
         try:
-            result = json.loads(path.read_text(encoding="utf-8"))
+            raw = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            return {"status": "exec_error"}
-        return result if isinstance(result, dict) else {"status": "exec_error"}
+            raw = None
+        return parse_checkpoint(raw)
 
     # The private absolute channel is removed on success, error and timeout.
     # Cwd stays inherited so snippet save destinations retain their meaning.
@@ -454,14 +500,4 @@ def _run(
             strip_stderr=output_stem is None,
             timeout_message=output_stem is None,
         )
-        payload = _read_result(result_path)
-        if proc.timed_out:
-            payload["status"] = "timeout"
-        elif proc.returncode != 0:
-            payload["status"] = "exec_error"
-        if proc.log_overrun:
-            payload.update(status="exec_error", _artifact_logs_too_large=True)
-        payload["lint"] = lint_issues
-        payload["stdout"] = proc.stdout
-        payload["stderr"] = proc.stderr
-        return _finalize(payload)
+        return _Launched(_read_result(result_path), proc, lint_issues, hinted)

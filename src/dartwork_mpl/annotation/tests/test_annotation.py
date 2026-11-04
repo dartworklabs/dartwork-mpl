@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import matplotlib
 import matplotlib.pyplot as plt
+import pytest
 from matplotlib.patches import Rectangle
 
 matplotlib.use("Agg")
@@ -142,6 +143,8 @@ class TestArrowAxisDirection:
 
 
 class TestAnnotateValue:
+    """Placement of value labels next to a data point, including auto-flip near the top."""
+
     def test_default_places_label_above_point(self) -> None:
         fig, ax = plt.subplots()
         ax.set_xlim(0, 1)
@@ -189,7 +192,27 @@ class TestAnnotateValue:
         plt.close(fig)
 
 
+class TestAnnotateValueWeight:
+    """Value labels are one weight step above the preset base (2026-10-22)."""
+
+    def test_default_weight_is_one_step_heavier(self) -> None:
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        text = annotate_value(ax, 0.5, 0.5, "42", side="above")
+        assert text.get_fontweight() == dm.fw(1)
+        plt.close(fig)
+
+    @pytest.mark.parametrize("key", ["fontweight", "weight"])
+    def test_explicit_weight_wins(self, key: str) -> None:
+        fig, ax = plt.subplots()
+        text = annotate_value(ax, 0.5, 0.5, "42", side="above", **{key: 300})
+        assert text.get_fontweight() == 300
+        plt.close(fig)
+
+
 class TestAnnotateCorner:
+    """Corner text placement, tight to the corner and clear of existing corner text."""
+
     def test_annotate_corner_places_text_tight_to_requested_corner(
         self,
     ) -> None:
@@ -226,6 +249,8 @@ class TestAnnotateCorner:
 
 
 class TestLabelHLine:
+    """Labels on horizontal reference lines: side, default endpoint and endpoint choice."""
+
     def test_label_hline_sits_close_above_reference_line(self) -> None:
         fig, ax = plt.subplots(figsize=(4, 3))
         ax.set_ylim(0, 1)
@@ -292,6 +317,8 @@ class TestLabelHLine:
 
 
 class TestPlaceLegend:
+    """Legend placement that avoids data and text obstacles and widens tall legends."""
+
     def test_place_legend_chooses_empty_upper_right_candidate(self) -> None:
         fig, ax = plt.subplots(figsize=(5, 4))
         ax.set_xlim(0, 1)
@@ -372,6 +399,8 @@ class TestPlaceLegend:
 
 
 class TestWrapAxisLabel:
+    """Wrapping of long axis labels without splitting the unit, on one or many axes."""
+
     def test_wrap_axis_label_splits_long_ylabel_without_breaking_unit(
         self,
     ) -> None:

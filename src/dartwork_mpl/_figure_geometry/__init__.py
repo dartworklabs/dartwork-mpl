@@ -7,13 +7,22 @@ public API.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
-__all__ = ["BBOX_ERRORS", "get_renderer", "iter_figure_level_extents"]
+from matplotlib.text import Text
+
+__all__ = [
+    "BBOX_ERRORS",
+    "axes_text_artists",
+    "axes_titles",
+    "get_renderer",
+    "iter_figure_level_extents",
+]
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.transforms import Bbox
@@ -128,3 +137,41 @@ def iter_figure_level_extents(
         if ext.width <= 0 or ext.height <= 0:
             continue
         yield art, ext
+
+
+# ``ax.title`` is only the centre title. ``ax.set_title(..., loc="left")``
+# and ``loc="right"`` write to these private attributes instead, so a walk
+# over ``ax.title`` alone never sees a left-aligned headline.
+_TITLE_ATTRS: dict[Literal["center", "left", "right"], str] = {
+    "center": "title",
+    "left": "_left_title",
+    "right": "_right_title",
+}
+
+
+def axes_titles(ax: Axes) -> dict[str, Text]:
+    """Return the title Text artists of ``ax`` keyed by ``set_title``'s ``loc``.
+
+    This is the one place that reads matplotlib's private title
+    attributes. Each is read with ``getattr`` and kept only while its text
+    matches the public ``ax.get_title(loc=...)``, so a matplotlib that
+    renames or repurposes them yields fewer titles instead of wrong ones.
+    """
+    titles: dict[str, Text] = {}
+    for loc, attr in _TITLE_ATTRS.items():
+        text = getattr(ax, attr, None)
+        if not isinstance(text, Text):
+            continue
+        try:
+            public = ax.get_title(loc=loc)
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if text.get_text() == public:
+            titles[loc] = text
+    return titles
+
+
+def axes_text_artists(ax: Axes) -> list[Text]:
+    """Return ``ax.texts``, the three titles and the x/y axis labels."""
+    titles = axes_titles(ax).values()
+    return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]

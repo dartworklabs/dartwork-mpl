@@ -29,4 +29,4 @@ register_artifacts(mcp, _store, runtime=_runtime)
 
 # Server entry point
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(show_banner=False)

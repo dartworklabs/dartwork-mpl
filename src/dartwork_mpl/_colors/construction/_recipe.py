@@ -6,12 +6,11 @@ mechanism without performing historical coordinate migration at runtime.
 """
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import cast
 
-from .._ssot import load_color_v6_ssot
+from .._ssot import RecipeFamily, load_color_v6_ssot
 from ._tone import NeutralTone, neutral_tone
 
 __all__ = [
@@ -67,81 +66,36 @@ class FamilyParams:
     c0: float
 
 
-def _mapping(value: object, label: str) -> Mapping[str, object]:
-    """Narrow a validated SSOT value to a string-keyed mapping."""
-    if not isinstance(value, Mapping):
-        raise RuntimeError(f"{label} must be a mapping")
-    return cast(Mapping[str, object], value)
-
-
-def _sequence(value: object, label: str) -> Sequence[object]:
-    """Narrow a validated SSOT value to a non-string sequence."""
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
-        raise RuntimeError(f"{label} must be a sequence")
-    return cast(Sequence[object], value)
-
-
-def _number(value: object, label: str) -> float:
-    """Read one already-validated numeric SSOT leaf as ``float``."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise RuntimeError(f"{label} must be numeric")
-    return float(value)
-
-
-def _family_params(value: object) -> FamilyParams:
-    """Construct one typed family row from validated packaged data."""
-    row = _mapping(value, "family params")
+def _family_params(row: RecipeFamily) -> FamilyParams:
+    """Construct one typed family row from the parsed authority."""
     return FamilyParams(
-        h0=_number(row["h0"], "h0"),
-        dh=_number(row["dh"], "dh"),
-        gamma=_number(row["gamma"], "gamma"),
-        tp=_number(row["tp"], "tp"),
-        cmax=_number(row["cmax"], "cmax"),
-        tone_floor=neutral_tone(_number(row["tone_floor"], "tone_floor")),
-        cend=_number(row["cend"], "cend"),
-        c0=_number(row["c0"], "c0"),
+        h0=row.h0,
+        dh=row.dh,
+        gamma=row.gamma,
+        tp=row.tp,
+        cmax=row.cmax,
+        tone_floor=neutral_tone(row.tone_floor),
+        cend=row.cend,
+        c0=row.c0,
     )
 
 
-_SSOT = load_color_v6_ssot()
-_RECIPE = _mapping(_SSOT["recipe"], "recipe")
-_FAMILY_ROWS = _mapping(_RECIPE["family_params"], "family params")
-FAMILIES: tuple[str, ...] = tuple(
-    cast(Sequence[str], _sequence(_RECIPE["family_order"], "family order"))
-)
+_RECIPE = load_color_v6_ssot().recipe
+FAMILIES: tuple[str, ...] = _RECIPE.family_order
 FAMILY_PARAMS: Mapping[str, FamilyParams] = MappingProxyType(
-    {name: _family_params(_FAMILY_ROWS[name]) for name in FAMILIES}
+    {name: _family_params(_RECIPE.family_params[name]) for name in FAMILIES}
 )
+FOURIER: Mapping[str, tuple[float, ...]] = _RECIPE.fourier
 
-_FOURIER_ROWS = _mapping(_RECIPE["fourier"], "Fourier curves")
-FOURIER: Mapping[str, tuple[float, ...]] = MappingProxyType(
-    {
-        name: tuple(
-            _number(coefficient, f"{name} coefficient")
-            for coefficient in _sequence(values, name)
-        )
-        for name, values in _FOURIER_ROWS.items()
-    }
-)
-
-_CONSTANTS = _mapping(_RECIPE["constants"], "recipe constants")
-TONE_TOP = neutral_tone(_number(_CONSTANTS["TONE_TOP"], "TONE_TOP"))
-SHAPE_Q = _number(_CONSTANTS["SHAPE_Q"], "SHAPE_Q")
-SHAPE_R = _number(_CONSTANTS["SHAPE_R"], "SHAPE_R")
-GAMUT_CHROMA_FRAC = _number(
-    _CONSTANTS["GAMUT_CHROMA_FRAC"], "GAMUT_CHROMA_FRAC"
-)
-GRAY_TONE_FLOOR = neutral_tone(
-    _number(_CONSTANTS["GRAY_TONE_FLOOR"], "GRAY_TONE_FLOOR")
-)
-GRAY_TINT_HUE = _number(_CONSTANTS["GRAY_TINT_HUE"], "GRAY_TINT_HUE")
-GRAY_C_PROFILE: tuple[float, ...] = tuple(
-    _number(value, "gray chroma")
-    for value in _sequence(_CONSTANTS["GRAY_C_PROFILE"], "GRAY_C_PROFILE")
-)
-TONE_DERIVATION_GRID = _number(
-    _CONSTANTS["TONE_DERIVATION_GRID"], "TONE_DERIVATION_GRID"
-)
+_CONSTANTS = _RECIPE.constants
+TONE_TOP = neutral_tone(_CONSTANTS.tone_top)
+SHAPE_Q = _CONSTANTS.shape_q
+SHAPE_R = _CONSTANTS.shape_r
+GAMUT_CHROMA_FRAC = _CONSTANTS.gamut_chroma_frac
+GRAY_TONE_FLOOR = neutral_tone(_CONSTANTS.gray_tone_floor)
+GRAY_TINT_HUE = _CONSTANTS.gray_tint_hue
+GRAY_C_PROFILE: tuple[float, ...] = _CONSTANTS.gray_c_profile
+TONE_DERIVATION_GRID = _CONSTANTS.tone_derivation_grid
 
 
 def fourier_eval(coef: tuple[float, ...], h_deg: float) -> float:
