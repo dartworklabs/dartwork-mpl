@@ -44,7 +44,11 @@ jobs:
     # Override the repository's 3.10 pin so each matrix job tests its interpreter.
     env:
       UV_PYTHON: ${{ matrix.python-version }}
+      # Bound shared ml-main load; an empty override preserves hosted PR auto detection.
+      PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
     strategy:
+      # Shared ml-main runs two Python jobs at once; hosted PRs retain all four.
+      max-parallel: ${{ github.event_name == 'pull_request' && 4 || 2 }}
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
@@ -78,7 +82,7 @@ jobs:
       # remaining matrix jobs still run the test suite for version
       # compatibility (minus color_pipeline, see below), but skip coverage
       # instrumentation.
-      # `-n auto` spreads the suite over the runner's vCPUs (pytest-xdist);
+      # `-n auto` uses the job's worker bound or the hosted runner's vCPUs;
       # the serial run took 16-30 min per job. Keep -n here, not in addopts,
       # so local runs and scripts/test_id_map.py stay serial by default.
       - name: Run tests with coverage
