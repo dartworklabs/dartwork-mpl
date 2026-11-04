@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from ..._figure_geometry import axes_text_artists
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -83,10 +84,7 @@ def check_clipped_text(
     for ax in fig.axes:
         oor_ticks = _out_of_range_ticks(ax)
         candidates: list[Any] = [
-            *ax.texts,
-            ax.title,
-            ax.xaxis.label,
-            ax.yaxis.label,
+            *axes_text_artists(ax),
             *ax.xaxis.get_ticklabels(),
             *ax.yaxis.get_ticklabels(),
         ]

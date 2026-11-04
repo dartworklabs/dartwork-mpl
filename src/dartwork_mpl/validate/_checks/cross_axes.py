@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from ..._figure_geometry import axes_titles
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
@@ -48,10 +49,15 @@ def check_cross_axes_overlap(
             ax_bbox = ax.get_window_extent(renderer)
         except BBOX_ERRORS:
             ax_bbox = None
+        # A hidden axis draws neither its label nor its tick labels. A twin
+        # (twinx / twiny) hides the axis it shares, whose tick labels sit
+        # exactly on the host's; counting them flagged every dual-axis
+        # figure. Titles and the visible axes are still compared.
+        shown = {"x": ax.xaxis.get_visible(), "y": ax.yaxis.get_visible()}
         candidates: list[tuple[str, Any]] = [
-            ("title", ax.title),
-            ("xlabel", ax.xaxis.label),
-            ("ylabel", ax.yaxis.label),
+            *(("title", title) for title in axes_titles(ax).values()),
+            *([("xlabel", ax.xaxis.label)] if shown["x"] else []),
+            *([("ylabel", ax.yaxis.label)] if shown["y"] else []),
         ]
         for role, txt in candidates:
             if (
@@ -71,8 +77,8 @@ def check_cross_axes_overlap(
         # and are within the view (matplotlib draws them outside the
         # visible range too).
         for role, ticklabels in (
-            ("xtick", ax.get_xticklabels()),
-            ("ytick", ax.get_yticklabels()),
+            ("xtick", ax.get_xticklabels() if shown["x"] else []),
+            ("ytick", ax.get_yticklabels() if shown["y"] else []),
         ):
             is_x = role == "xtick"
             for tl in ticklabels:
