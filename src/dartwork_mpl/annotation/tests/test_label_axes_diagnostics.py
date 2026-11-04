@@ -14,6 +14,16 @@ def axes():
     plt.close(fig)
 
 
+@pytest.fixture
+def titled_axes():
+    """Two panels whose left titles push the labels onto the title line."""
+    fig, created = plt.subplots(1, 2)
+    for ax in created:
+        ax.set_title("Left title", loc="left")
+    yield created
+    plt.close(fig)
+
+
 @pytest.mark.parametrize("name", ["fmt", "loc", "xy"])
 def test_unsupported_keyword_keeps_attributeerror(axes, name):
     """The exception kind callers already catch does not change."""
@@ -125,6 +135,18 @@ def test_accepted_text_properties_still_take_effect(
     texts = dm.label_axes(axes, **kwargs)
     assert len(texts) == len(axes)
     assert getattr(texts[0], reader)() == expected
+
+
+def test_fontdict_still_reaches_the_label(axes):
+    """``fontdict`` is an ``Axes.text`` argument, not a ``Text`` setter."""
+    texts = dm.label_axes(axes, fontdict={"color": "red"})
+    assert [t.get_color() for t in texts] == ["red"] * len(axes)
+
+
+def test_fontdict_with_a_title_keeps_its_native_error(titled_axes):
+    """The title path uses ``ax.annotate``, which never took ``fontdict``."""
+    with pytest.raises(AttributeError, match="Annotation"):
+        dm.label_axes(titled_axes, fontdict={"color": "red"})
 
 
 @pytest.mark.parametrize(

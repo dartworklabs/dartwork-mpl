@@ -23,6 +23,7 @@ __all__ = [
     "wrap_axis_labels",
 ]
 
+import inspect
 import re
 import string
 from dataclasses import dataclass
@@ -226,8 +227,21 @@ _LABEL_AXES_NATIVE_ESCAPE = (
 )
 
 
-def _is_text_property(name: str) -> bool:
-    """Report whether ``Text`` accepts ``name``, resolving matplotlib aliases."""
+#: ``Axes.text`` arguments of its own, which are not ``Text`` setters and so
+#: would be misread as unsupported. Taken from the signature rather than listed,
+#: so the check cannot drift from the matplotlib in use. Today: ``fontdict``.
+_AXES_TEXT_OWN_PARAMETERS = frozenset(
+    name
+    for name, parameter in inspect.signature(Axes.text).parameters.items()
+    if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
+    and name not in {"self", "x", "y", "s"}
+)
+
+
+def _label_kwarg_is_accepted(name: str) -> bool:
+    """Report whether the label call takes ``name``, resolving matplotlib aliases."""
+    if name in _AXES_TEXT_OWN_PARAMETERS:
+        return True
     try:
         canonical = next(iter(cbook.normalize_kwargs({name: None}, Text)))
     except TypeError:
@@ -244,7 +258,7 @@ def _reject_unusable_label_kwargs(kwargs: dict[str, Any]) -> None:
                 f"passing {name!r} cannot take effect. Position the labels with "
                 f"x= and y= (both Axes-relative). {_LABEL_AXES_NATIVE_ESCAPE}"
             )
-        if not _is_text_property(name):
+        if not _label_kwarg_is_accepted(name):
             raise AttributeError(
                 f"label_axes() does not support {name!r}. It takes labels=, x=, "
                 f"y=, fontsize=, fontweight= and any matplotlib Text property "
@@ -299,7 +313,14 @@ def label_axes(
         title. A given ``y`` is kept in both cases.
     **kwargs
         Additional text properties passed to ``ax.text()`` (``ax.annotate``
-        for a label placed before a title).
+        for a label placed before a title). An argument this helper cannot
+        honour is reported by name: one ``Text`` does not accept raises
+        ``AttributeError``, and a property the helper sets itself
+        (``transform``, and either spelling of the alignments) raises
+        ``TypeError``. ``fontdict`` reaches ``ax.text`` but not
+        ``ax.annotate``, so it fails on a panel whose label moves onto a
+        title's line; passing the properties directly (``color=``,
+        ``fontsize=``) works on both paths.
 
     Returns
     -------

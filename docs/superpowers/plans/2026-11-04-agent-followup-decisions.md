@@ -20,6 +20,7 @@ Peer check: both live sessions reported no dartwork-mpl work. The worktree
 | Alias of a name `label_axes` passes | `ha`, `va`, `transform` | `TypeError: ...Axes.text() got multiple values for keyword argument 'ha'` |
 | Full name of that alias | `horizontalalignment`, `verticalalignment` | **accepted, then silently dropped** — the internal `ha="left"`/`va="bottom"` wins |
 | Alias of a dedicated parameter | `size`, `weight` | `TypeError: Got both 'fontsize' and 'size', which are aliases of one another` |
+| `Axes.text` argument, not a `Text` setter | `fontdict` | accepted on the `ax.text` path; already `AttributeError: 'Annotation' object has no property 'fontdict'` when a title moves the label |
 | Other `Text` properties | `color`, `c`, `rotation`, `fontstyle` | accepted, take effect, as documented |
 
 No partial labels are left on any Axes when a call raises. Not an atomicity defect.
@@ -59,6 +60,14 @@ Everything that takes effect today keeps taking effect: `color`, `c`,
 `rotation`, `fontstyle` and the rest of the `Text` surface, plus the dedicated
 `fontsize`/`fontweight`. The `size`/`weight` alias clash keeps matplotlib's own
 message. No new positioning wrapper, no newly accepted keyword.
+
+The accepted set is read from `Text`'s setters through matplotlib's own alias
+table *and* from `Axes.text`'s own signature, because an argument like
+`fontdict` is accepted by the call without being a `Text` setter. A review of
+the first implementation caught exactly that regression; deriving both sides
+keeps the check from drifting as matplotlib changes. `fontdict` reaching
+`ax.text` but not `ax.annotate` is pre-existing and left as measured, since
+making the title path honour it would change a rendered label.
 
 ## Decision 2 — D3: keep the pre-commit job name
 

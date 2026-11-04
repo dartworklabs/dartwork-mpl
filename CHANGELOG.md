@@ -139,7 +139,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   nothing; they now raise that same named `TypeError`, matching the bundled
   guidance that the helper supplies alignment. Every keyword that reached the
   label before — `color`, `rotation`, `fontstyle`, the rest of the `Text`
-  surface — is untouched, as are label placement and the default output.
+  surface and `ax.text`'s own `fontdict` — is untouched, as are label placement
+  and the default output. `fontdict` still reaches `ax.text` but not
+  `ax.annotate`, so it still fails on a panel whose label moves onto a title's
+  line; passing the properties directly works on both paths.
 
 - **`dm.make_palette` rejects a fractional `highlight` inside the series
   range.** `highlight=1.5` passed the range check but matched no series, so
