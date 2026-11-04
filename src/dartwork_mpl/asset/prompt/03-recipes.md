@@ -598,9 +598,10 @@ dm.simple_layout(fig)
 
 `dm.label_axes` accepts `labels` for custom strings and `x` / `y` for
 Axes-relative positions (values may extend outside 0–1). With `x="auto"`,
-it uses -0.18 when an Axes has a y-label and -0.02 otherwise; `y` defaults
-to 1.05. With `x="auto"`, a left title (or a centre/right one the letter
-would touch) takes the letter onto its line just before the title instead.
+it uses -0.18 when an Axes has a y-label and -0.02 otherwise. `y=None`
+(default) is 1.05, except that with `x="auto"` a left title (or a
+centre/right one the letter would touch) takes the letter onto the title's
+line, just before it. An explicit `y` (even `y=1.05`) keeps that height.
 Extra compatible native `Text` properties, such as `color`,
 `rotation` and `alpha`, pass through to `ax.text`:
 
