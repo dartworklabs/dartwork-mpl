@@ -56,6 +56,8 @@ def _line_figure(width: str = "13cm"):
 
 
 class TestSideTitles:
+    """Left and right axes titles are measured and kept on the canvas."""
+
     @pytest.mark.parametrize("loc", ["left", "center", "right"])
     def test_title_stays_on_canvas(self, loc: str) -> None:
         fig, ax = _line_figure()
@@ -117,6 +119,8 @@ def _nearest_edge(fig, art, x0f, x1f, y0f, y1f) -> str:
 
 
 class TestFigureTextEdges:
+    """Figure-level text reserves the canvas edge it sits on."""
+
     def _report(self):
         dm.style.use("report")
         fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
@@ -240,6 +244,8 @@ class TestFigureTextEdges:
 
 
 class TestAxes3D:
+    """mplot3d axes are measured by their tight bbox, not raw tick positions."""
+
     def _surface(self, preset: str):
         dm.style.use(preset)
         fig = plt.figure(figsize=dm.figsize("13cm", "square"))

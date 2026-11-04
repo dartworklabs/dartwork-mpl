@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 
-from .model import conversion
+from . import _conversion as conversion
 
 __all__ = [
     "cvd_rgb",
