@@ -324,7 +324,10 @@ def test_skill_examples_do_not_quote_the_eval_cases() -> None:
     # without the quoted g22 answer, 3 of 4 runs put (%) on a growth rate.
     assert "A new figure labels both axes." in flat
     assert "Both axes get a label" not in flat
-    assert "no unit nothing states (no `(%)` on a rate or share either)" in flat
+    # v23: "no (%) on a share either" split g20 (claude x100 with no unit,
+    # codex 0-1); a share the agent scales by 100 keeps its (%).
+    assert "a rate the data gives stays bare, no `(%)`" in flat
+    assert "a share you compute × 100 says `(%)`" in flat  # noqa: RUF001
     assert "column names translated word for word, sentence case" in flat
     assert "every word kept, in its order" in flat
     assert '"rent against floor area": rent on y' in flat

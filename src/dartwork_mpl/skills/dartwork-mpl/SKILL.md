@@ -74,7 +74,7 @@ drops NaN/Inf rows unless `allow_nan=True`). A preview is not the dataset; templ
 are placeholders, never data. Dates are dates, a bare year (2012) a number; "A against B": A on y ("rent against floor area": rent on y).
 A new figure labels both axes. Labels and legend names are column names translated word for word, sentence case, also when the request words
 them otherwise (`order_date` → `Order date`, `margin_pct` → `Margin (%)`, `고객수` → `Customer count`); only a value with no column takes the request's noun
-word for word, every word kept, in its order (`수출 증가율` → `Export growth rate`, "the share of online orders" → `Share of online orders`); no unit nothing states (no `(%)` on a rate or share either).
+word for word, every word kept, in its order (`수출 증가율` → `Export growth rate`, "the share of online orders" → `Share of online orders`); no unit nothing states (a rate the data gives stays bare, no `(%)`; a share you compute × 100 says `(%)`).
 
 ## Values
 
