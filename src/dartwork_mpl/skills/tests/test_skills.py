@@ -303,6 +303,9 @@ def test_skill_examples_do_not_quote_the_eval_cases() -> None:
             encoding="utf-8"
         ),
         "01-policy": dm.get_prompt("01-policy"),
+        "sizing-and-layout.md": (
+            SKILL / "references" / "sizing-and-layout.md"
+        ).read_text(encoding="utf-8"),
     }
     for name, text in texts.items():
         flat = " ".join(text.split())
@@ -312,6 +315,7 @@ def test_skill_examples_do_not_quote_the_eval_cases() -> None:
             "share_pct",
             "week_start",
             "2024-01 … 2024-12",
+            "full-slide 16:9 chart",
         ):
             assert quoted not in flat, (name, quoted)
     flat = " ".join(texts["SKILL.md"].split())

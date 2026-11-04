@@ -29,8 +29,8 @@ follows the x positions at that text size: up to 4 → 11.4 cm (half the body),
 up to 6 → 15.4 cm (two thirds), more, unknown (scatter), 4+ series or
 `dual_axis=True` → 23.4 cm. Grids, `"barh"`, `"dense"` and `"strip"` take
 23.4 cm, `"compact"` 11.4 cm (two charts side by side) and `"matrix"` a
-10.5 cm square. A chart that is the whole slide with no slide title ("a
-full-slide 16:9 chart"): `dm.figsize_for("full_slide")`, 25.4 × 14.29 cm under
+10.5 cm square. A chart that is the whole slide with no slide title ("fill
+the slide", "the entire 16:9 page"): `dm.figsize_for("full_slide")`, 25.4 × 14.29 cm under
 any preset, the 10 in slide these sizes assume (a 13.33 in slide would show the
 same text 25 % smaller on screen).
 
