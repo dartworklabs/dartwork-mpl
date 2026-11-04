@@ -495,6 +495,40 @@ def test_codex_command_disables_github_mcp(tmp_path):
     assert "mcp_servers.github.enabled=false" in command
 
 
+def test_codex_github_disable_parses_with_an_empty_home(tmp_path):
+    """The real CLI accepts the disabled MCP even without inherited transport."""
+    if not shutil.which("codex"):
+        pytest.skip("requires the eval harness's Codex CLI dependency")
+    home = tmp_path / "empty-codex-home"
+    home.mkdir()
+    cfg = {
+        "budgets": {"codex": {"subagents": False}},
+        "efforts": {"codex": "high"},
+        "models": {"codex": "test-model"},
+    }
+    command = runner.codex_cmd("request", tmp_path, tmp_path, cfg, home)
+    overrides = [value for flag, value in pairwise(command) if flag == "-c"]
+    result = subprocess.run(
+        [
+            "codex",
+            "mcp",
+            "list",
+            "--json",
+            *(part for value in overrides for part in ("-c", value)),
+        ],
+        env={**os.environ, "CODEX_HOME": str(home)},
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stderr
+    servers = json.loads(result.stdout)
+    github = next(server for server in servers if server["name"] == "github")
+    assert github["enabled"] is False
+    assert github["transport"]["command"] == "false"
+
+
 def test_codex_environment_home_reaches_the_host_process(tmp_path, monkeypatch):
     """An environment-selected home must reach Codex, not just its monitor."""
     home = tmp_path / "selected-home"

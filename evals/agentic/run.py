@@ -353,6 +353,9 @@ def codex_cmd(
         "-c",
         "mcp_servers.github.enabled=false",
         "-c",
+        # Disabled entries still require a valid transport in a fresh home.
+        'mcp_servers.github.command="false"',
+        "-c",
         f'model_reasoning_effort="{cfg["efforts"]["codex"]}"',
         "-s",
         "workspace-write",
