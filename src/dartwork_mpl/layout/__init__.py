@@ -736,11 +736,6 @@ def simple_layout(
     if not fig.axes:
         return
 
-    if format_ticks:
-        from ..formatting import apply_default_tick_format
-
-        apply_default_tick_format(fig)
-
     if adopt_orphan_tick_font is None:
         from ..config import config
 
@@ -767,6 +762,11 @@ def simple_layout(
         for side in (margins.left, margins.right, margins.bottom, margins.top)
     ):
         raise ValueError("margin must resolve to finite figure fractions")
+
+    # Tick formats change label widths, so they go before fitting, but
+    # after every check that can still refuse the call.
+    if format_ticks:
+        _format_ticks(fig)
 
     last: _GridEdges | None = None
     # Filter target axes by the gridspec the caller actually pointed at
@@ -824,6 +824,13 @@ def simple_layout(
 
         if not thin_crowded_date_ticks(fig):
             return
+
+
+def _format_ticks(fig: Figure) -> None:
+    """The library's tick numbers and dates on axes nobody formatted."""
+    from ..formatting import apply_default_tick_format
+
+    apply_default_tick_format(fig)
 
 
 def _figure_artist_reservations(

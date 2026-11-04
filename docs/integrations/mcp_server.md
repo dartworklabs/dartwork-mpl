@@ -336,7 +336,7 @@ Read-only data that the AI assistant can retrieve on demand.
 | `dartwork-mpl://styles/{preset}`          | Content of a specific mplstyle preset file                                  |
 | `dartwork-mpl://templates/list`           | Available plot template types                                               |
 | `dartwork-mpl://templates/{plot_type}`    | Boilerplate Python script for a specific plot type                          |
-| `dartwork-mpl://templates/advanced/{plot_type}` | Tier-2 (advanced) template for a plot type — synthetic data, reference lines, value labels, narrative title; falls back to the basic template |
+| `dartwork-mpl://templates/advanced/{plot_type}` | Tier-2 (advanced) template for a plot type — synthetic data, reference lines, value labels (no title or source note unless asked); falls back to the basic template |
 | `dartwork-mpl://artifacts/{artifact_id}/plot.png` | Verified PNG (`image/png`) |
 | `dartwork-mpl://artifacts/{artifact_id}/plot.pdf` | Verified PDF (`application/pdf`) |
 | `dartwork-mpl://artifacts/{artifact_id}/source.py` | Exact submitted UTF-8 source (`text/x-python`) |
@@ -361,7 +361,7 @@ and 2 prompts**. Callable functions the AI assistant can invoke:
 | `suggest_chart_type(x_type, y_type, ...)`   | Recommend a chart type from the data's characteristics, with pointers to the matching basic and advanced templates |
 | `find_template(intent, top_k)`              | Rank the 18 bundled AI plot templates against a free-text intent                |
 | `render_template(plot_type)`                | Execute a bundled template in a subprocess and return the rendered PNG (base64 or path) for inline preview |
-| `render_template_advanced(plot_type)`       | Render the tier-2 (advanced) version of a bundled template — synthetic data, reference lines, value labels, and a narrative title, so it reads like a finished report figure |
+| `render_template_advanced(plot_type)`       | Render the tier-2 (advanced) version of a bundled template — synthetic data, reference lines and value labels; no title or source note unless asked |
 | `compose_layered_plot(plot_type, layers)`   | Return a template plus a checklist of annotation/composition layers to apply (guidance for the agent to edit, not a code rewriter) |
 | `validate_plot_data(plot_type, data_json, report=False)` | Validate data; opt into a JSON-string report with reviewable suggestions |
 | `validate_generated_plot(code)`             | Execute a script in an isolated subprocess and return the `dm.validate_figure` report (overflow, clipped text, asymmetric margins). Lint-critical issues short-circuit before execution. |
