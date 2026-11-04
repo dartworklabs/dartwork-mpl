@@ -243,6 +243,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Korean concise dates leave edited formats alone.** `dm.simple_layout`
+  turned any stock-type `ConciseDateFormatter` on a Korean figure into
+  `2024년, 3월 …`, also when the caller had already rewritten its format
+  strings (company-analysis turns `%Y` into a two-digit `%y` and then failed
+  its year-tick guard on `2026년 5월`). Only matplotlib's own format strings
+  are replaced now.
+- **`save_formats` no longer prints `PRESET_OVERRIDE`.** The check cannot
+  see the request, so a deliberate grid or spine printed advice on every
+  save and failed callers that allow no `[VISUAL]` hints. `validate_figure()`
+  still reports it, and takes `exclude=` to drop check IDs the same way
+  `checks=` selects them.
+
 - `dm.format_axis_dates` reads `datetime64` arrays and Series of any unit
   (a `datetime64[ns]` array came out in the year 53999741868), refuses
   numbers such as a bare year instead of reading them as seconds since 1970,

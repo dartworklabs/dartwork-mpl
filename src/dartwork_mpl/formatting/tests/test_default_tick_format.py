@@ -210,6 +210,28 @@ class TestDates:
             "2025년",
         ]
 
+    def test_edited_concise_formats_stay_on_a_korean_figure(self):
+        # company-analysis's finish step rewrites the stock %Y as %y before
+        # simple_layout (two-digit years); its labels must not turn into
+        # "2026년" (company-analysis CI, 2026-11-04).
+        import matplotlib.dates as mdates
+
+        dm.style.use("report-kr")
+        fig, ax = _fig()
+        self._weeks(ax)
+        ax.set_ylabel("방문자 수")
+        fmt = ax.xaxis.get_major_formatter()
+        assert type(fmt) is mdates.ConciseDateFormatter
+        for name in ("formats", "zero_formats", "offset_formats"):
+            setattr(
+                fmt, name, [f.replace("%Y", "%y") for f in getattr(fmt, name)]
+            )
+        dm.simple_layout(fig)
+        assert ax.xaxis.get_major_formatter() is fmt
+        drawn = _drawn(ax, "x")
+        assert drawn[0] == "24"
+        assert not any("년" in label or "2024" in label for label in drawn)
+
     def test_days_drop_the_zero_padding(self):
         dm.style.use("report-kr")
         fig, ax = _fig()

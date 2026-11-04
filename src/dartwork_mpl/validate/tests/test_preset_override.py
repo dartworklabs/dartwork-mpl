@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import matplotlib
@@ -282,3 +283,28 @@ def test_untouched_preset_reports_nothing(preset: str) -> None:
     right.set_title("Bars")
     dm.simple_layout(fig)
     assert _findings(fig) == []
+
+
+class TestSaveLeavesItToReview:
+    """``save_formats`` does not print PRESET_OVERRIDE; ``validate_figure`` does."""
+
+    def test_a_deliberate_grid_prints_nothing_on_save(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        # company-analysis charts draw a grid on purpose and fail on any 💡
+        # printed at save (company-analysis CI, 2026-11-04).
+        fig, ax = _plot("report")
+        ax.grid(True, axis="y")
+        dm.save_formats(fig, str(tmp_path / "out"), formats=("png",))
+        assert "PRESET_OVERRIDE" not in capsys.readouterr().out
+        assert [w.check_id for w in _findings(fig)] == ["PRESET_OVERRIDE"]
+        plt.close(fig)
+
+    def test_exclude_drops_a_check_and_refuses_unknown_ids(self) -> None:
+        fig, ax = _plot("report")
+        ax.grid(True, axis="y")
+        found = validate_figure(fig, exclude=("PRESET_OVERRIDE",), quiet=True)
+        assert all(w.check_id != "PRESET_OVERRIDE" for w in found)
+        with pytest.raises(ValueError, match="Unknown check IDs"):
+            validate_figure(fig, exclude=("PRESET_OVERRID",), quiet=True)
+        plt.close(fig)

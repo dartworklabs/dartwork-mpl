@@ -230,6 +230,8 @@ def save_formats(
     validate : bool, optional
         If True, performs visual validation before saving and prints
         ``[VISUAL]`` warnings to stdout on issues. Default is True.
+        Every check runs except ``PRESET_OVERRIDE`` (advice about the
+        request; :func:`~dartwork_mpl.validate.validate_figure` reports it).
         Pair with ``validate_quiet=True`` to keep the check but
         suppress the stdout output.
     validate_quiet : bool, optional
@@ -307,7 +309,10 @@ def save_formats(
     if validate:
         from ..validate import validate_figure
 
-        validate_figure(fig, quiet=validate_quiet)
+        # PRESET_OVERRIDE cannot see the request, so a deliberate grid or
+        # spine would print advice on every save; review loops call
+        # validate_figure() for it.
+        validate_figure(fig, exclude=("PRESET_OVERRIDE",), quiet=validate_quiet)
 
     image_stem = _normalize_image_stem(image_stem)
     Path(image_stem).parent.mkdir(parents=True, exist_ok=True)
