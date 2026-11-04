@@ -26,6 +26,9 @@ def make_palette(
         and the rest become lighter (``oc.*3``) to emphasise it.
         Only effective for the categorical and (loosely) diverging
         palettes whose names contain a ``"5"`` middle shade.
+        An index outside ``0..n-1`` is ignored, leaving every series at its
+        base shade. A fractional index inside that range is rejected instead
+        of receding every series without emphasising any.
 
     Returns
     -------
@@ -35,7 +38,8 @@ def make_palette(
     Raises
     ------
     ValueError
-        If ``n`` is negative or ``kind`` is unknown.
+        If ``n`` is negative, ``kind`` is unknown, or an in-range ``highlight``
+        is not a whole number.
 
     Examples
     --------
@@ -102,6 +106,18 @@ def make_palette(
     # left sequential/diverging highlights on the wrong series and could
     # corrupt any name containing a stray "5".
     if highlight is not None and 0 <= highlight < n:
+        # A fractional index passes the range test but never equals a series
+        # position, so every series would recede and none would be emphasised:
+        # a plausible-looking palette that answers a different question.
+        if highlight != int(highlight):
+            raise ValueError(
+                f"highlight must be a whole number index in 0..{n - 1}; "
+                f"got {highlight!r}, which would recede every series and "
+                "emphasise none. Pass the index of the series to emphasise, "
+                "or highlight=None to keep every series at its base shade."
+            )
+        highlight = int(highlight)
+
         import re as _re
 
         def _shift(color: str, delta: int) -> str:

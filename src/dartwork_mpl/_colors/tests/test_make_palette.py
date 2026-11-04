@@ -4,6 +4,7 @@ import inspect
 import pickle
 from typing import Literal, get_type_hints
 
+import numpy as np
 import pytest
 
 import dartwork_mpl as dm
@@ -99,14 +100,17 @@ def test_owner_aliases_and_metadata():
                 "oc.red7",
             ],
         ),
-        (3, "categorical", 0.5, ["oc.blue3", "oc.red3", "oc.green3"]),
         (3, "categorical", True, ["oc.blue3", "oc.red7", "oc.green3"]),
         (3, "categorical", 1.0, ["oc.blue3", "oc.red7", "oc.green3"]),
         (3, "categorical", -1, ["oc.blue5", "oc.red5", "oc.green5"]),
     ],
 )
 def test_boundary_and_highlight_contract(n, kind, highlight, expected):
-    """Literal boundaries and native highlight quirks survive a mechanical move."""
+    """Literal boundaries and native highlight quirks survive a mechanical move.
+
+    The in-range fractional index this once pinned is now rejected instead; see
+    ``test_in_range_fractional_highlight_is_rejected``.
+    """
     assert dm.make_palette(n, kind, highlight) == expected
 
 
@@ -132,3 +136,26 @@ def test_kind_errors_precede_count_errors():
         dm.make_palette(3.0)
     with pytest.raises(TypeError):
         dm.make_palette(3, highlight="1")
+
+
+@pytest.mark.parametrize("highlight", [0.5, 1.5, 2.5, np.float64(1.5)])
+def test_in_range_fractional_highlight_is_rejected(highlight):
+    """A fractional index would recede every series and emphasise none."""
+    with pytest.raises(ValueError, match="highlight must be a whole number"):
+        dm.make_palette(4, highlight=highlight)
+
+
+@pytest.mark.parametrize(
+    "highlight", [1, 1.0, True, np.int64(1), np.float64(1.0), np.True_]
+)
+def test_integral_highlight_keeps_its_exact_result(highlight):
+    """Every numeric spelling of a whole index keeps emphasising that series."""
+    assert dm.make_palette(4, highlight=highlight) == dm.make_palette(
+        4, highlight=1
+    )
+
+
+@pytest.mark.parametrize("highlight", [-1, -0.5, 4, 9, 9.5])
+def test_out_of_range_highlight_is_still_ignored(highlight):
+    """The documented out-of-range ignore covers fractional indices too."""
+    assert dm.make_palette(4, highlight=highlight) == dm.make_palette(4)
