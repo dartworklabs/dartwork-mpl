@@ -75,7 +75,11 @@ def _outcome_warnings(outcome: CheckOutcome) -> list[VisualWarning]:
 
 
 def validate_figure(
-    fig: Figure, *, checks: tuple[str, ...] | None = None, quiet: bool = False
+    fig: Figure,
+    *,
+    checks: tuple[str, ...] | None = None,
+    exclude: tuple[str, ...] = (),
+    quiet: bool = False,
 ) -> list[VisualWarning]:
     """Run comprehensive visual validation on a Matplotlib figure.
 
@@ -91,6 +95,11 @@ def validate_figure(
         ``TICK_ROTATION``, ``TICK_DECIMAL``, ``VALUE_LABEL_DECIMAL``,
         ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
         ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``.
+    exclude : tuple[str, ...], optional
+        Check IDs not to run, applied after ``checks``. Unknown IDs raise
+        like unknown ``checks``. ``save_formats`` passes
+        ``("PRESET_OVERRIDE",)``: that finding is advice for a review of
+        the request, not a defect to print on every save.
     quiet : bool, optional
         If True, suppresses stdout output. Default is False.
 
@@ -124,6 +133,14 @@ def validate_figure(
                 f"Valid IDs: {sorted(valid_ids)}"
             )
         selected = [check for check in selected if check.check_id in checks]
+    if exclude:
+        unknown = set(exclude) - valid_ids
+        if unknown:
+            raise ValueError(
+                f"Unknown check IDs: {sorted(unknown)}. "
+                f"Valid IDs: {sorted(valid_ids)}"
+            )
+        selected = [c for c in selected if c.check_id not in exclude]
 
     warnings: list[VisualWarning] = []
     for check in selected:

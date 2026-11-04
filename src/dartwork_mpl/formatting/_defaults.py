@@ -325,6 +325,19 @@ def _untouched(axis: Axis) -> bool:
     return type(axis.get_major_formatter()) is ticker.ScalarFormatter
 
 
+def _stock(fmt: mdates.ConciseDateFormatter) -> bool:
+    """Whether a concise formatter still has matplotlib's own format strings.
+
+    Code that edits them (a two-digit ``%y`` year, say) chose its dates; the
+    Korean words replace only the stock English ones.
+    """
+    stock = mdates.ConciseDateFormatter(mdates.AutoDateLocator())  # type: ignore[no-untyped-call]
+    return all(
+        list(getattr(fmt, name)) == list(getattr(stock, name))
+        for name in ("formats", "zero_formats", "offset_formats")
+    )
+
+
 def apply_default_tick_format(fig: Figure) -> int:
     """Install the library's tick numbers on every axis nobody formatted.
 
@@ -345,7 +358,7 @@ def apply_default_tick_format(fig: Figure) -> int:
             fmt = axis.get_major_formatter()
             if korean and type(fmt) is mdates.ConciseDateFormatter:
                 locator = axis.get_major_locator()
-                if isinstance(locator, mdates.DateLocator):
+                if isinstance(locator, mdates.DateLocator) and _stock(fmt):
                     axis.set_major_formatter(
                         KoreanConciseDateFormatter(locator, tz=fmt._tz)
                     )
