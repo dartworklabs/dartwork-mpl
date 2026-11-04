@@ -174,3 +174,40 @@ class TestSpacing:
         found = dm.validate_figure(fig, checks=("OVERLAP",), quiet=True)
         assert found == []
         plt.close(fig)
+
+    def _crowded(self):
+        dm.style.use("presentation")
+        fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=2, n_series=4))
+        for name, end in zip(
+            ["Japan", "Egypt", "Germany", "France"],
+            [1, 1.3, 1.6, 3],
+            strict=True,
+        ):
+            ax.plot([0, 1], [0, end], label=name)
+        ax.set(xlabel="Year", ylabel="Value")
+        dm.add_note(
+            fig, "Source: example data\nProvisional\nUpdated 2026-11-04"
+        )
+        return fig, ax
+
+    def test_a_label_moved_after_the_call_keeps_its_place(self):
+        fig, ax = self._crowded()
+        labels = dm.label_line_ends(ax)
+        labels[0].set_position((80, 40))
+        dm.simple_layout(fig)
+        assert tuple(labels[0].xyann) == (80, 40)
+        plt.close(fig)
+
+    def test_every_call_on_an_axes_is_spaced_again(self):
+        fig, ax = self._crowded()
+        lines = ax.get_lines()
+        first = dm.label_line_ends(ax, lines[:2])
+        second = dm.label_line_ends(ax, lines[2:])
+        dm.simple_layout(fig)
+        fig.canvas.draw()
+        for group in (first, second):
+            boxes = sorted(
+                (t.get_window_extent() for t in group), key=lambda b: b.y0
+            )
+            assert all(b.y1 <= c.y0 + 0.5 for b, c in pairwise(boxes))
+        plt.close(fig)
