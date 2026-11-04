@@ -86,6 +86,10 @@ report page/content width or preferred size). Do not reask supplied context or
 force a setup form. For a quick draft, state a provisional preset/size and
 invite correction. Plot text is English unless the user asks for another
 language, whatever the conversation language; use `-kr` for Korean text.
+Do not add a title or source note unless the user asks. For requested text use
+`ax.set_title(text)` or `dm.add_note(fig, text)` before layout; keep unnamed
+details at preset defaults and honor explicit user values. For edits,
+preserve existing titles and source notes outside the requested scope.
 For every edit preserve data and all unrelated style/canvas/legend/preset
 choices; do not add unsolicited palette or legend changes. Apply the preset
 before retained overrides and local artist edits. Choose unspecified defaults
@@ -201,8 +205,9 @@ ax.legend(fontsize=dm.fs(-1))
 
 ax.set_xlabel("...")
 ax.set_ylabel("...")
-# Title — one step above body, with the bolder weight step.
-ax.set_title("...", fontsize=dm.fs(1), fontweight=dm.fw(1))
+# Only if the user asks; use their text and keep unnamed preset defaults.
+# ax.set_title("Requested title")
+# dm.add_note(fig, "Source: actual source")
 
 dm.simple_layout(fig)
 # MCP: submit this source to render_plot; it saves fig and returns an ID.
@@ -238,16 +243,13 @@ ax.bar_label(bars, fmt="%.1f", fontsize=dm.fs(-1), fontweight=dm.fw(1))
 # dm.format_axis_currency(ax, axis="y", symbol="$")
 # dm.format_axis_si(ax, axis="y")
 
-# Use the actual labels/units and a title supported by the data.
+# Use the actual labels/units.
 ax.set_xlabel("Category", fontsize=dm.fs(0))
 ax.set_ylabel("Value (source unit)", fontsize=dm.fs(0))
-ax.set_title("Descriptive title", fontsize=dm.fs(1),
-             fontweight=dm.fw(1), loc="left")
 
-# Source footnote, when needed; identify the actual source.
-fig.text(0.01, 0.005, "Source: ...",
-         fontsize=dm.fs(-2), color="oc.gray5",
-         ha="left", va="bottom")
+# Only if the user asks; use their text and keep unnamed preset defaults.
+# ax.set_title("Requested title")
+# dm.add_note(fig, "Source: actual source")
 
 # Layout; MCP render_plot supplies the validation report.
 dm.simple_layout(fig, margin=dm.inch(0.08))
@@ -302,9 +304,13 @@ and series order, units, and the declared missing-value/transformation policy.
 Change only requested properties on the resolved panel/series/artist. Retain
 the preset, canvas, legend and all unrelated styling for every targeted edit;
 do not add unsolicited palette/legend changes. Apply the preset before retained
-overrides and local edits. Distinguish axis labels from tick labels; do not
+overrides and local edits. Do not add a title or source note unless the user asks.
+For requested text use `ax.set_title(text)` or `dm.add_note(fig, text)` before
+layout, keeping unnamed preset defaults and explicit user values. For edits,
+preserve existing titles and source notes outside the requested scope.
+Distinguish axis labels from tick labels; do not
 change global font.size for an axis-label-only request. `dm.fs(n)` / `dm.lw(n)`
-use global preset bases (+n pt), and `dm.fw(n)` adds 100*n weight units. For
+use preset-relative size steps, and `dm.fw(n)` adds 100*n weight units. For
 “one more,” use the current artist getter plus the delta rather than reset to
 fs(1); preserve explicit absolute values exactly. Literal-size/width warnings
 remain advisory: inspect and report them without erasing explicit user intent.

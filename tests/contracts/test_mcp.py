@@ -1073,6 +1073,106 @@ class TestMcpTools:
 class TestMcpPrompts:
     """Tests for prompt registration."""
 
+    @pytest.mark.parametrize("tier", [0, 1])
+    def test_default_skeleton_omits_unrequested_title_and_source(self, tier):
+        """Both returned starters run without adding an unrequested title or note."""
+        import re
+
+        import matplotlib.pyplot as plt
+
+        from dartwork_mpl.mcp.guides import create_plot_text
+
+        text = create_plot_text("Plot the supplied observations", "")
+        blocks = re.findall(r"```python\n(.*?)```", text, re.S)
+        assert len(blocks) == 2
+        namespace = {
+            "x": [0, 1, 2],
+            "y": [1, 3, 2],
+            "categories": ["A", "B", "C"],
+            "values": [1, 3, 2],
+        }
+        with plt.rc_context():
+            exec(
+                compile(blocks[tier], "<returned skeleton>", "exec"), namespace
+            )
+            fig, ax = namespace["fig"], namespace["ax"]
+            try:
+                assert all(
+                    ax.get_title(loc=loc) == ""
+                    for loc in ("left", "center", "right")
+                )
+                assert not fig.texts
+                if tier == 0:
+                    assert ax.lines[0].get_ydata().tolist() == [1, 3, 2]
+                else:
+                    assert [bar.get_height() for bar in ax.patches] == [1, 3, 2]
+            finally:
+                plt.close(fig)
+
+    @pytest.mark.parametrize("tier", [0, 1])
+    def test_requested_title_and_source_recipe_keeps_preset_defaults(
+        self, tier
+    ):
+        """Opting into each commented recipe honors text and native title defaults."""
+        import re
+
+        import matplotlib.pyplot as plt
+
+        from dartwork_mpl.mcp.guides import create_plot_text
+
+        text = create_plot_text(
+            'Title "Requested title"; add note "Source: actual source"', ""
+        )
+        block = re.findall(r"```python\n(.*?)```", text, re.S)[tier]
+        recipes = [
+            line.removeprefix("# ")
+            for line in block.splitlines()
+            if line.startswith(("# ax.set_title(", "# dm.add_note("))
+        ]
+        assert len(recipes) == 2
+        for recipe in recipes:
+            block = block.replace("# " + recipe, recipe)
+        namespace = {
+            "x": [0, 1, 2],
+            "y": [1, 3, 2],
+            "categories": ["A", "B", "C"],
+            "values": [1, 3, 2],
+        }
+        with plt.rc_context():
+            exec(compile(block, "<requested skeleton>", "exec"), namespace)
+            fig, ax = namespace["fig"], namespace["ax"]
+            control, control_ax = plt.subplots()
+            try:
+                control_ax.set_title("Requested title")
+                assert ax.get_title() == "Requested title"
+                assert ax.get_title(loc="left") == ""
+                for getter in ("get_fontsize", "get_fontweight", "get_color"):
+                    assert (
+                        getattr(ax.title, getter)()
+                        == getattr(control_ax.title, getter)()
+                    )
+                assert [note.get_text() for note in fig.texts] == [
+                    "Source: actual source"
+                ]
+            finally:
+                plt.close(fig)
+                plt.close(control)
+
+    def test_returned_guidance_preserves_requested_title_source_scope(self):
+        """Creation and review describe the same opt-in, preserve-on-edit policy."""
+        from dartwork_mpl.mcp.guides import create_plot_text, style_review_text
+
+        for text in (
+            create_plot_text("A line chart", ""),
+            style_review_text(""),
+        ):
+            assert (
+                "Do not add a title or source note unless the user asks" in text
+            )
+            assert "ax.set_title(text)" in text
+            assert "dm.add_note(fig, text)" in text
+            assert "preserve existing titles and source notes" in text
+
     def test_register_prompts_no_error(self) -> None:
         """register_prompts() should not raise on a mock server."""
         from dartwork_mpl.mcp.prompts import register_prompts
