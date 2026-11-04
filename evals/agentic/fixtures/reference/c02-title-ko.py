@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case c02-title-ko."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case c04-width-only-en."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

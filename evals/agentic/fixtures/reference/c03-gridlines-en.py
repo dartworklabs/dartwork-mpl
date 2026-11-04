@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case c03-gridlines-en."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

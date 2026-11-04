@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case c05-legend-top-en."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

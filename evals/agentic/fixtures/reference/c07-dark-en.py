@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case c07-dark-en."""
+
 from pathlib import Path
 
 import matplotlib.dates as mdates

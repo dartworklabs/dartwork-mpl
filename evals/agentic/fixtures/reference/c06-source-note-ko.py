@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case c06-source-note-ko."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
