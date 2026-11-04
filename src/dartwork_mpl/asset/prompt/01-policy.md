@@ -36,7 +36,9 @@ These are draft suggestions, not universal journal/slide standards or caps.
 Choose an initial height using `dm.figsize` and the panel/label complexity.
 Choose defaults from data, chart purpose, panel density and categorical text;
 there is no universal ratio or numeric font size. Reuse the recommender/templates.
-Use `-kr` only for Korean plot text, not merely a Korean conversation.
+Plot text is English unless the user asks for another language; a Korean
+conversation alone does not make it Korean. Korean text on the figure,
+requested or from the data, takes a `-kr` preset. Edits keep the figure's language.
 
 Ask **one short, self-contained question** only when missing information
 materially affects the result. Reuse context already given. For example:
@@ -79,30 +81,39 @@ preset/size and invite correction instead of blocking.
 
 ## Aspect or height (the second `dm.figsize` argument)
 
-The second argument picks the figure's height in one of four
+The second argument picks the figure's height in one of five
 equivalent forms; the first matching form wins:
 
 1. **Aspect token** (str, default `"standard"`): height = width × ratio.
    Tokens listed below.
-2. **Numeric ratio** (positive `int`/`float`, non-`bool`): treated as
+2. **Ratio string** `"W:H"` (`"16:9"`, `"4:3"`): width first, so
+   height = width × H / W.
+3. **Numeric ratio** (positive `int`/`float`, non-`bool`): treated as
    height / width.
-3. **Unit-suffix string** (`"12cm"`, `"5in"`, `"170mm"`, `"24pt"`):
+4. **Unit-suffix string** (`"12cm"`, `"5in"`, `"170mm"`, `"24pt"`):
    literal height. Width and height units may differ.
-4. **`Length` value** (`dm.cm(12)`, `dm.col1`, …): literal height.
+5. **`Length` value** (`dm.cm(12)`, `dm.col1`, …): literal height.
 
 Bare numeric strings (`"0.5"`) raise `ValueError` with a
-"drop the quotes" hint so quoted ratios fail loudly.
+"drop the quotes" hint so quoted ratios fail loudly. Pixel sizes
+(`"1080px"`) raise with a note that pixels need a DPI: convert with
+`dm.inch(px / dpi)` and save with the same `dpi=`.
 
 ### Aspect tokens
 
-- Default: `"standard"` (= 3 / 4).
-- Tokens:
-  - `"square"`  — 1.0
+- Default: `"standard"` (= 3 / 4). `dm.list_aspect_tokens()` returns the
+  registry as `{token: height / width}`.
+- Tokens (height / width):
+  - `"tall"` — 3 / 2
   - `"portrait"` — 5 / 4
+  - `"square"` — 1.0
   - `"standard"` — 3 / 4
-  - `"golden"` — 1 / 1.618
+  - `"a4"` — 1 / 1.4142
   - `"wide"` — 2 / 3
+  - `"golden"` — 1 / 1.618
+  - `"slide"` — 9 / 16
   - `"cinema"` — 1 / 2
+  - `"panoramic"` — 1 / 3
 - Or pass a positive float directly. Extreme aspects (< 0.3 or > 4.0)
   trigger a `validate_figure` warning.
 
@@ -215,9 +226,11 @@ Apply the preset first, then retained overrides, then local artist edits.
   figure and applying retained user overrides; a later preset reset can
   replace rcParams overrides. Local artist edits follow the preset.
 - Available presets: `scientific`, `report`, `presentation`,
-  `minimal`, plus their `-kr` Korean variants.
-- Korean plot text → `*-kr` variants (`scientific-kr`, `report-kr`,
-  `presentation-kr`); conversation language alone does not select a variant.
+  `minimal`, `poster`, `web`, `dark`, plus their `-kr` Korean variants
+  (`dm.style.presets` lists all of them).
+- Korean plot text (requested by the user or present in the data) → `*-kr`
+  variants (`scientific-kr`, `report-kr`, `presentation-kr`, …); conversation
+  language alone keeps English plot text and the plain preset.
 - Use `dm.style.context("preset")` when a single block needs a
   different look — it restores the previous style on exit so the
   preset does not leak into later figures.
