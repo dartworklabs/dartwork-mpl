@@ -4,6 +4,6 @@
 # explicit, not the generic `sans-serif`). font.sans-serif is held
 # IDENTICAL to font.family — bundled families only, no machine-dependent
 # OS fonts — and its tail must stay equal to base's tail
-# (tests/test_style_chain_parity.py).
+# (tests/docs/test_style_chain_parity.py).
 font.family: Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 font.sans-serif: Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
