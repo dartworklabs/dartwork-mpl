@@ -8,7 +8,7 @@ from typing import Any
 
 from .. import templates
 
-# ``helpers.quality.suggest_chart_type`` speaks in *chart semantics*
+# ``recommend.suggest_chart_type`` speaks in *chart semantics*
 # (``grouped_bar``, ``scatter_density``, ``hexbin``, …) while the bundled
 # templates are keyed by canonical stems (``bar_grouped``, ``scatter``,
 # …). This mapping normalizes recommender output to the template
@@ -35,7 +35,7 @@ def suggest(
     template has the recommended stem; ``advanced_template_uri`` is None when
     no advanced one exists.
     """
-    from ...helpers import suggest_chart_type as _suggest
+    from ...recommend import suggest_chart_type as _suggest
 
     raw = _suggest(
         x_type=x_type, y_type=y_type, n_points=n_points, n_series=n_series

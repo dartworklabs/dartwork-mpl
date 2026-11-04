@@ -18,6 +18,7 @@ __all__ = [
 ]
 
 import contextlib
+import math
 import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
@@ -694,10 +695,21 @@ def simple_layout(
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
 
+    Raises
+    ------
+    ValueError
+        If any effective per-side margin resolves to a nonfinite figure
+        fraction, after all margins have been parsed. Four finite side
+        overrides can replace a nonfinite base margin. Existing parsing
+        and GridSpec resolution errors take precedence.
+
     Notes
     -----
-    The function returns ``None``. It is a no-op on figures with no
-    axes.
+    The function returns ``None``. Figures with no axes, or without a
+    supported GridSpec, return before parsing margins (the latter warn).
+    Nonfinite effective margins are rejected before drawing, font
+    adoption or layout mutation. Finite zero, negative and oversized
+    margins retain the existing edge-clamping behavior.
 
     Before measuring, a legend placed with ``dm.place_legend(ax,
     loc="above" | "below" | "right" | "left")`` is re-anchored past the
@@ -750,6 +762,11 @@ def simple_layout(
 
     fw_in, fh_in = fig.get_size_inches()
     margins = _parse_margins(margin, ml, mr, mt, mb).fractions(fw_in, fh_in)
+    if not all(
+        math.isfinite(side)
+        for side in (margins.left, margins.right, margins.bottom, margins.top)
+    ):
+        raise ValueError("margin must resolve to finite figure fractions")
 
     last: _GridEdges | None = None
     # Filter target axes by the gridspec the caller actually pointed at

@@ -1,7 +1,7 @@
 # Explicit family list enables matplotlib per-glyph fallback in plain
 # text (bundled families + symbol faces); see base.mplstyle for the full
 # rationale. font.sans-serif is held identical to base's chain — bundled
-# families only, no machine-dependent OS fonts (tests/test_style_chain_parity.py).
+# families only, no machine-dependent OS fonts (tests/docs/test_style_chain_parity.py).
 font.family: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 font.sans-serif: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 #### MATPLOTLIBRC FORMAT

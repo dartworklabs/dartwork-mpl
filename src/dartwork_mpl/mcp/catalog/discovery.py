@@ -3,11 +3,13 @@
 Tool, resource and prompt names are scanned from the wiring tables' source
 (``tools.py``, ``resources.py``, ``prompts.py``, ``artifacts/transport.py``)
 in registration order; plot templates and primitive styles are listed from
-the bundled asset directories. Imports no MCP slice.
+prompt corpus names and the bundled style directory. Imports no MCP slice.
 """
 
 import re
 from pathlib import Path
+
+from dartwork_mpl.prompt import list_template_names
 
 # ── Agentic-catalog discovery ────────────────────────────────────────
 #
@@ -21,7 +23,6 @@ from pathlib import Path
 
 _MCP_DIR = Path(__file__).parents[1]
 _ASSET_DIR = Path(__file__).parents[2] / "asset"
-_TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
 _MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
 
 
@@ -73,7 +74,7 @@ def _discover_prompt_names() -> list[str]:
 
 def _discover_plot_templates() -> list[str]:
     """Stems of the bundled ``05-templates/*.py`` plot templates."""
-    return sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
+    return list_template_names()
 
 
 def _discover_primitive_mplstyles() -> list[str]:
