@@ -127,6 +127,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **`dm.label_axes` names itself when a keyword cannot be honoured.** An
+  argument it does not support (`fmt`, `loc`, `xy`, a typo) still raises
+  `AttributeError` and a property it sets itself still raises `TypeError`, but
+  the message now names `label_axes`, the argument, the supported
+  `labels`/`x`/`y`/`fontsize`/`fontweight` and the native
+  `ax.text(x, y, label, transform=ax.transAxes)` route, instead of a bare
+  `'Text' object has no property 'fmt'` or a `matplotlib...Axes.text()` clash.
+  `horizontalalignment`/`verticalalignment` were accepted and then dropped by
+  the helper's own `ha`/`va`, so an explicit alignment request silently did
+  nothing; they now raise that same named `TypeError`, matching the bundled
+  guidance that the helper supplies alignment. Every keyword that reached the
+  label before — `color`, `rotation`, `fontstyle`, the rest of the `Text`
+  surface — is untouched, as are label placement and the default output.
+
+- **`dm.make_palette` rejects a fractional `highlight` inside the series
+  range.** `highlight=1.5` passed the range check but matched no series, so
+  every series receded to `oc.*3` and none was emphasised — a plausible-looking
+  palette that answered a different question. It is now a `ValueError` naming
+  the valid range. Whole-number indices of any numeric spelling (`1`, `1.0`,
+  `True`, numpy integers and integral floats) keep their exact results, and an
+  out-of-range `highlight` is still ignored.
+
 - **Bundled templates size with `dm.figsize_for` and draw no title.** All 36
   templates (18 basic, 18 advanced) and their gallery pages take the canvas
   from `dm.figsize_for(...)` with counts read from their own data
