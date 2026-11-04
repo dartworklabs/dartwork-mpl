@@ -1382,6 +1382,15 @@ def main() -> int:
         "versions": meta["versions"],
         "started": datetime.now().isoformat(timespec="seconds"),
     }
+    if a.skill_dir:
+        import skill_quotes
+
+        inv["skill_quotes"] = skill_quotes.find(a.skill_dir)
+        for q in inv["skill_quotes"]:
+            print(
+                f"WARNING skill quotes {q['kind']}: {q['quote']!r} in {q['file']}",
+                flush=True,
+            )
     log["invocations"].append(inv)
     write_json(run_dir / "run_meta.json", log)
     print(
