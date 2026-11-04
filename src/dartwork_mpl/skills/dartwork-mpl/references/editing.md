@@ -95,7 +95,7 @@ above an outside legend and the margins around both.
 | legend above (below, right, left) the plot | `dm.place_legend(ax, loc="above")` |
 | label line ends instead of a legend | `dm.label_line_ends(ax)` (removes the legend; names in the line colour, readable, spaced) |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
-| date labels under bars crowd (`2024-01 … 2024-12`) | `dm.format_axis_dates(ax, df["month"])`: the library's date words, thinned by `dm.simple_layout` (`2024, Mar, May …`); not rotated |
+| date labels under bars crowd (`2022-07 … 2023-12`) | `dm.format_axis_dates(ax, df["order_month"])`: the library's date words, thinned by `dm.simple_layout` (`Jul, Sep, Nov, 2023, Mar …`); not rotated |
 | for slides / for a talk (preset switch) | `dm.style.use("presentation")`, canvas `dm.figsize_for(...)` (`"full_slide"` only for a whole 16:9 slide); pt values written in the code × 2.6 (`scientific` → `presentation`), unrounded: `markersize=3` → `3 * 2.6`; keep data, labels and limits |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
 | show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontsize=dm.fs(-1), fontweight=dm.fw(1))`, see below |
@@ -114,10 +114,10 @@ plt.close(fig)
 
 Validate the original before the change. A WARNING it already has is not
 the change's: it stays and goes in the report (an "only X" edit fixes
-nothing else). When the asked change itself makes a legend cover another
-panel's text (a `LEGEND_OVERLAP` WARNING the original did not have),
-move only that legend: `dm.place_legend(ax)` on its axes with the
-arguments it already had (`fontsize=` …, no `loc=`); it may go above the
+nothing else). When the asked change itself makes a legend cover text,
+its own panel's or another's (a `LEGEND_OVERLAP` WARNING the original did
+not have), move only that legend: `dm.place_legend(ax)` on its axes with
+the arguments it already had (`fontsize=`, `ncols=` …; no new `loc=`); it may go above the
 plot in two columns, which is the decided look (decision L-B). Not wider
 `wspace`, a smaller font or fewer columns of your own. List the move; a
 legend the change leaves clear stays.

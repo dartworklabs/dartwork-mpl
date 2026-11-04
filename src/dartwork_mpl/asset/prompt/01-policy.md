@@ -59,10 +59,10 @@ no value labels on bars or lines unless asked; axis limits stay matplotlib's
 bars are vertical, `ax.barh` with `dm.figsize_for("barh")` only when the
 category names would overlap side by side; dates under bars go through
 `dm.format_axis_dates(ax, dates)`, not rotated labels; an axis label is the
-column name word for word (`share_pct` → `Share (%)`), also when the request
+column name word for word (`margin_pct` → `Margin (%)`), also when the request
 words it otherwise; only a value with no column takes the request's noun
-word for word and in its order (`GDP 성장률` → `GDP growth rate`, "the share of
-renewables" → `Share of renewables`), with no unit the data or request does not
+word for word and in its order (`수출 증가율` → `Export growth rate`, "the share of
+online orders" → `Share of online orders`), with no unit the data or request does not
 state; a bare year (2012) stays a number, not a date; a legend added, moved
 or merged (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=`
 only for a side the user names, not `ax.legend(...)` with `bbox_to_anchor`,

@@ -57,12 +57,12 @@ takes `-kr` (`report-kr`); edits keep its language and preset.
 
 Spines, grid, ticks, axis limits (bars start at 0), fonts, background and margins are the
 preset's; change them only on request. Tick numbers and dates are the library's (`1,750`,
-`0.5M`, `2024, Mar`; dates under bars: `dm.format_axis_dates(ax, dates)`, not rotated): no
+`0.5M`, `2023, Mar`; dates under bars: `dm.format_axis_dates(ax, dates)`, not rotated): no
 formatter, locator or tick list unless asked or naming categories. No figure title, subtitle,
 source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
 named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`.
-A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=` only for a side the user names; never `ax.legend(...)`, `bbox_to_anchor` or `ncols=`; others stay as they are.
+A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=` only for a side the user names; never `ax.legend(...)`, `bbox_to_anchor` or `ncols=` of your own (arguments it had stay); others stay as they are.
 A generic chart skill gives chart choice and honest axes; static output: no hover, tooltips,
 rounded bar ends, placeholder palettes.
 
@@ -71,10 +71,10 @@ rounded bar ends, placeholder palettes.
 Plot the user's values as given. Never drop, fill, sort, aggregate, clip or invent rows
 silently; state every transformation. Missing values stay visible gaps (`dm.validate_data`
 drops NaN/Inf rows unless `allow_nan=True`). A preview is not the dataset; template numbers
-are placeholders, never data. Dates are dates, a bare year (2012) a number; "A against B": A on y.
-Labels are column names translated word for word, also when the request words them otherwise (`week_start` → `Week start`,
-`share_pct` → `Share (%)`, `고객수` → `Customer count`); only a value with no column takes the request's noun word for word
-and in its order (`GDP 성장률` → `GDP growth rate`, "the share of renewables" → `Share of renewables`); no unit nothing states.
+are placeholders, never data. Dates are dates, a bare year (2012) a number; "A against B": A on y ("rent against floor area": rent on y).
+Both axes get a label. Labels are column names translated word for word, also when the request words them otherwise (`order_date` →
+`Order date`, `margin_pct` → `Margin (%)`, `고객수` → `Customer count`); only a value with no column takes the request's noun word for word,
+every word kept, in its order (`수출 증가율` → `Export growth rate`, "the share of online orders" → `Share of online orders`); no unit nothing states.
 
 ## Values
 
@@ -98,14 +98,14 @@ change makes: `dm.place_legend(ax)` on that legend's axes with its own arguments
 A preset switch (paper → slides) multiplies pt values written in the code by the presets' ratio (`scientific` →
 `presentation`: × 2.6, unrounded). Broad asks ("look better"): keep data, preset, canvas, chart type and axes (no
 new twin), limits (a line crossing value labels too), axis labels as written, text (add none) and its size (touching
-value labels take `dm.fs(-1)` and, with no weight written, `dm.fw(1)`), title and legend; fix only defects the image shows, list each.
+value labels larger than `dm.fs(-1)` drop to it and, with no weight written, take `dm.fw(1)`), title and legend; fix only defects the image shows, list each.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
 1. Save `output/figure-v1` (a path the user names gets the final version).
 2. Open the PNG with your image-viewing tool: clipped or overlapping text, legend over data,
    crowded ticks, wasted space, wrong data. No image tool: say it was not visually reviewed.
-3. `dm.validate_figure(fig, quiet=True)`: fix WARNING, weigh INFO; `CHECK_FAILED`: incomplete.
+3. `dm.validate_figure(fig, quiet=True)` (an edit: on the original first; "only X" keeps its warnings, reported): fix WARNING, weigh INFO; `CHECK_FAILED`: incomplete.
 4. Change only what is needed; save `figure-v2`, keep v1, look again; report changes, warnings.
 
 ## References

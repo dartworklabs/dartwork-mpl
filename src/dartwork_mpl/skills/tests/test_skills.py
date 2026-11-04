@@ -152,7 +152,7 @@ def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
         '`"full_slide"` (25.4 × 14.29 cm)',  # noqa: RUF001
         "axis limits (bars start at 0)",
         '`"barh"` + `ax.barh` only when names overlap',
-        "`GDP 성장률` → `GDP growth rate`",
+        "`수출 증가율` → `Export growth rate`",
         "no unit nothing states",
         "`dm.format_axis_dates(ax, dates)`, not rotated",
         "× 2.6, unrounded",  # noqa: RUF001
@@ -252,7 +252,12 @@ def test_step6_decisions_w_a_and_l_b() -> None:
     labels (e10: a claude run moved the twin's limits).
     """
     flat = " ".join(SKILL_MD.read_text(encoding="utf-8").split())
-    assert "with no weight written, `dm.fw(1)`" in flat
+    # Review 2026-11-04: only labels larger than dm.fs(-1) shrink.
+    assert (
+        "larger than `dm.fs(-1)` drop to it and, with no weight written, take `dm.fw(1)`"
+        in flat
+    )
+    assert "`ncols=` of your own (arguments it had stay)" in flat
     # v20: the e03 original already had the overlap (331 px2 at 1:1 and 1:2),
     # so an "only X" edit keeps that legend and reports the warning.
     assert "a `LEGEND_OVERLAP` the original already has stays, reported" in flat
@@ -270,6 +275,7 @@ def test_step6_decisions_w_a_and_l_b() -> None:
     assert "move only that legend: `dm.place_legend(ax)` on its axes" in editing
     assert "Not wider `wspace`, a smaller font" in editing
     assert "Validate the original before the change." in editing
+    assert "its own panel's or another's" in editing
     assert "redraw it with the same call and arguments" in editing
     assert (
         "the axis limits stay, also when a line crosses the labels" in editing
@@ -280,6 +286,39 @@ def test_step6_decisions_w_a_and_l_b() -> None:
         in policy
     )
     assert "`dm.fw(1)` when their call writes no weight" in policy
+
+
+def test_skill_examples_do_not_quote_the_eval_cases() -> None:
+    """The skill teaches with examples no eval case uses (2026-11-04).
+
+    Step 5 had quoted g20's request ("the share of renewables"), g22's
+    (`GDP 성장률`), g19's column (`share_pct`) and, since 2026-10-25, the
+    week_start column of c06 / e09 / g18, each with the label the eval then
+    counted as agreement; the date row mirrored held-out e10's 2024 months.
+    The rules stay, the examples moved to data no case has.
+    """
+    texts = {
+        "SKILL.md": SKILL_MD.read_text(encoding="utf-8"),
+        "editing.md": (SKILL / "references" / "editing.md").read_text(
+            encoding="utf-8"
+        ),
+        "01-policy": dm.get_prompt("01-policy"),
+    }
+    for name, text in texts.items():
+        flat = " ".join(text.split())
+        for quoted in (
+            "share of renewables",
+            "GDP 성장률",
+            "share_pct",
+            "week_start",
+            "2024-01 … 2024-12",
+        ):
+            assert quoted not in flat, (name, quoted)
+    flat = " ".join(texts["SKILL.md"].split())
+    assert "Both axes get a label." in flat
+    assert "every word kept, in its order" in flat
+    assert '"rent against floor area": rent on y' in flat
+    assert "an edit: on the original first" in flat
 
 
 def test_every_shown_bar_label_uses_the_value_label_size() -> None:
