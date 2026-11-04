@@ -8,6 +8,7 @@ from the text and compared with the live registry.
 
 from __future__ import annotations
 
+import ast
 import re
 from fractions import Fraction
 from pathlib import Path
@@ -114,13 +115,35 @@ def test_consumer_entry_keeps_both_frozen_asset_paths() -> None:
     assert paths["AGENTS"].read_bytes() != (ROOT / "AGENTS.md").read_bytes()
 
 
-def test_panel_label_recipe_draws_each_label_once() -> None:
+@pytest.mark.parametrize("variant", ["helper", "native"])
+def test_panel_label_recipe_draws_each_label_once(variant: str) -> None:
+    """Each alternative independently labels the real four-panel grid once."""
     recipes = dm.get_prompt("03-recipes")
     section = _section(recipes, '## "Multi-panel grid (a/b/c labels)"')
-    (block,) = re.findall(r"```python\n(.*?)```", section, re.S)
+    helper, native = re.findall(r"```python\n(.*?)```", section, re.S)
+    tree = ast.parse(helper)
+    if variant == "native":
+        # Follow the recipe: replace the helper call before laying out the
+        # same grid, rather than applying both alternatives to one figure.
+        helper_calls = [
+            node
+            for node in tree.body
+            if isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.value.id == "dm"
+            and node.value.func.attr == "label_axes"
+        ]
+        (helper_call,) = helper_calls
+        index = tree.body.index(helper_call)
+        tree.body[index : index + 1] = ast.parse(native).body
     namespace = {"plt": plt, "dm": dm}
-    exec(compile(block, "03-recipes:panel-labels", "exec"), namespace)
+    exec(compile(tree, "03-recipes:panel-labels", "exec"), namespace)
     fig = namespace["fig"]
+    labels = ["(a)", "(b)", "(c)", "(d)"]
+    assert len(fig.axes) == len(labels)
     texts = [t.get_text() for t in fig.findobj(Text)]
-    for label in "abcd":
+    for ax, label in zip(fig.axes, labels, strict=True):
+        assert [t.get_text() for t in ax.texts] == [label]
         assert texts.count(label) == 1, (label, texts)

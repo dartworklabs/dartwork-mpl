@@ -404,3 +404,430 @@ def test_a_sub_slice_importing_its_parent_surface_is_still_a_cycle():
     code[f"{P}.colors.ink._ink"] = "from dartwork_mpl.colors import Color\n"
     errors = checker.violations(code, SUB_PACKAGES, SUB_LAYOUT)
     assert "cycle: dartwork_mpl.colors, dartwork_mpl.colors.ink" in errors
+
+
+def test_catalog_consumers_do_not_own_bundled_paths():
+    """Only the prompt owner may know the bundled catalog filesystem layout."""
+    import ast
+
+    for relative in ("lint/catalog.py", "mcp/guides/corpus.py"):
+        tree = ast.parse(
+            (ROOT / "src/dartwork_mpl" / relative).read_text(encoding="utf-8")
+        )
+        # Remove docstrings so descriptions may name the catalog being served.
+        for node in ast.walk(tree):
+            if (
+                isinstance(
+                    node,
+                    (
+                        ast.Module,
+                        ast.FunctionDef,
+                        ast.AsyncFunctionDef,
+                        ast.ClassDef,
+                    ),
+                )
+                and ast.get_docstring(node) is not None
+            ):
+                node.body = node.body[1:]
+        for node in ast.walk(tree):
+            assert not (isinstance(node, ast.Name) and node.id == "__file__"), (
+                relative
+            )
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                assert node.value not in {
+                    "asset",
+                    "prompt",
+                    "asset/prompt",
+                    "02-anti-patterns.yaml",
+                }, relative
+
+
+_TEMPLATE_CONSUMERS = (
+    "mcp/_platform/assets.py",
+    "mcp/_platform/__init__.py",
+    "mcp/templates/bundled.py",
+    "mcp/templates/render.py",
+    "mcp/templates/compose.py",
+    "mcp/catalog/discovery.py",
+)
+
+
+def _template_storage_violations(source):
+    """Detect executable template layout/glob reconstruction while permitting style I/O."""
+    import ast
+
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if (
+            isinstance(
+                node,
+                (
+                    ast.Module,
+                    ast.FunctionDef,
+                    ast.AsyncFunctionDef,
+                    ast.ClassDef,
+                ),
+            )
+            and ast.get_docstring(node) is not None
+        ):
+            node.body = node.body[1:]
+    errors = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Name, ast.Attribute)) and (
+            node.id if isinstance(node, ast.Name) else node.attr
+        ) in {"_TEMPLATE_DIR", "_TEMPLATE_INDEX_PATH"}:
+            errors.append("private template storage")
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and any(
+                marker in node.value
+                for marker in ("05-templates", "index.json", "*.py")
+            )
+        ):
+            errors.append("template layout/glob literal")
+    return errors
+
+
+def test_template_consumers_do_not_own_storage():
+    """Prompt alone owns template roots, tier paths, indices and template globs."""
+    for relative in _TEMPLATE_CONSUMERS:
+        assert (
+            _template_storage_violations(
+                (ROOT / "src/dartwork_mpl" / relative).read_text(
+                    encoding="utf-8"
+                )
+            )
+            == []
+        ), relative
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        'root = Path(__file__).parent / "asset/prompt/05-templates"',
+        "root = bundled._TEMPLATE_DIR",
+        'names = root.glob("*.py")',
+        'index = root / "index.json"',
+        "index = prompt._TEMPLATE_INDEX_PATH",
+    ],
+)
+def test_template_consumers_detector_rejects_reconstruction(source):
+    """Each forbidden storage reconstruction has an independently injected negative."""
+    assert _template_storage_violations(source)
+
+
+def test_template_consumers_detector_allows_style_only_paths():
+    """Mixed consumers may still locate styles and scan their wiring source files."""
+    source = "\n".join(
+        (
+            '"""Templates live in 05-templates/*.py."""',
+            'root = Path(__file__).parents[2] / "asset" / "mplstyle"',
+            'names = root.glob("*.mplstyle")',
+            'source = (_MCP_DIR / "tools.py").read_text()',
+        )
+    )
+    assert _template_storage_violations(source) == []
+
+
+def test_legend_shim_is_declared_with_annotation_ownership():
+    """The historical nested module is explicitly owned by annotation."""
+    assert checker.SHIMS.get(f"{P}.helpers.labels") == f"{P}.annotation"
+
+
+def test_nested_legend_shim_enforces_all_dependency_paths():
+    """Nested shim ownership preserves private, platform, cycle and decision checks."""
+    p = "dartwork_mpl"
+    a = p + ".annotation"
+    h = p + ".helpers"
+    s = p + ".scale"
+    reg = p + "._colors.registry"
+    plat = p + "._platform"
+    layout = checker.Layout(
+        frozenset({p}),
+        frozenset({plat}),
+        frozenset({a, h, s, reg}),
+        {
+            (h, a): "historical legend alias",
+            (a, s): "preset sizing",
+            (a, reg): "legend edge colour registration",
+        },
+        {},
+        {h + ".labels": a},
+    )
+    code = {
+        p: "from .annotation import optimize_legend\nfrom .helpers import validate_data\n",
+        a: '__all__=["optimize_legend"]\nfrom ._legend import optimize_legend\n',
+        a
+        + "._legend": "from ..scale import fs\ndef optimize_legend():\n from .._colors.registry import ensure_loaded\n",
+        h: '__all__=["optimize_legend","validate_data"]\nfrom .labels import optimize_legend\nfrom .data import validate_data\n',
+        h
+        + ".labels": '__all__=["optimize_legend"]\nfrom ..annotation import optimize_legend\n',
+        h + ".data": "def validate_data(): ...\n",
+        s: '__all__=["fs"]\ndef fs(): ...\n',
+        reg: '__all__=["ensure_loaded"]\ndef ensure_loaded(): ...\n',
+        plat: "__all__=[]\n",
+    }
+    packages = {p, a, h, p + "._colors"}
+    variants = {
+        "legal": (code, layout),
+        "shim_missing_all": (
+            {
+                **code,
+                h + ".labels": "from ..annotation import optimize_legend\n",
+            },
+            layout,
+        ),
+        "private_owner_access": (
+            {
+                **code,
+                h
+                + ".data": "from ..annotation._legend import optimize_legend\n",
+            },
+            layout,
+        ),
+        "platform_via_nested_shim": (
+            {
+                **code,
+                plat: "__all__=[]\nfrom .helpers.labels import optimize_legend\n",
+            },
+            layout,
+        ),
+        "owner_imports_historical_shim": (
+            {
+                **code,
+                a + "._legend": code[a + "._legend"]
+                + " from ..helpers.labels import optimize_legend\n",
+            },
+            layout,
+        ),
+        "undeclared_helpers_annotation": (
+            code,
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                {k: v for k, v in layout.allowed.items() if k != (h, a)},
+                layout.decisions,
+                layout.shims,
+            ),
+        ),
+        "decision_import": (
+            code,
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                layout.allowed,
+                {a + "._legend": "synthetic decision"},
+                layout.shims,
+            ),
+        ),
+    }
+    expected = {
+        "shim_missing_all": "missing __all__:",
+        "private_owner_access": "private import:",
+        "platform_via_nested_shim": "platform reaches slice:",
+        "owner_imports_historical_shim": "cycle:",
+        "undeclared_helpers_annotation": "undeclared dependency:",
+        "decision_import": "decision import:",
+    }
+    for name, (source, rules) in variants.items():
+        errors = checker.violations(source, packages, rules)
+        if name == "legal":
+            assert errors == []
+        else:
+            assert any(e.startswith(expected[name]) for e in errors), (
+                name,
+                errors,
+            )
+
+
+def test_palette_shim_is_declared_with_color_ownership():
+    """Historical palette imports explicitly belong to the existing color owner."""
+    assert checker.SHIMS.get(f"{P}.helpers.colors") == f"{P}._colors"
+
+
+def test_nested_palette_shim_enforces_dependency_paths():
+    """Nested palette shim retains legal paths and rejects six boundary violations."""
+    p = "dartwork_mpl"
+    f = p + "._colors"
+    h = p + ".helpers"
+    plat = p + "._platform"
+    layout = checker.Layout(
+        frozenset({p}),
+        frozenset({plat}),
+        frozenset({f, h}),
+        {(h, f): "historical palette import reexports curated lookup"},
+        {},
+        {h + ".colors": f},
+    )
+    code = {
+        p: "from ._colors import make_palette\nfrom .helpers import validate_data\n",
+        f: '__all__=["make_palette"]\nfrom ._palette import make_palette\n',
+        f
+        + "._palette": "from typing import Literal\ndef make_palette(): ...\n",
+        h: '__all__=["make_palette","validate_data"]\nfrom .colors import make_palette\nfrom .data import validate_data\n',
+        h
+        + ".colors": '__all__=["make_palette"]\nfrom .._colors import make_palette as make_palette\n',
+        h + ".data": "def validate_data(): ...\n",
+        plat: "__all__=[]\n",
+    }
+    packages = {p, f, h}
+    variants = {
+        "legal": (code, layout),
+        "missing_shim_all": (
+            {**code, h + ".colors": "from .._colors import make_palette\n"},
+            layout,
+        ),
+        "private_owner_access": (
+            {
+                **code,
+                h + ".data": "from .._colors._palette import make_palette\n",
+            },
+            layout,
+        ),
+        "platform_via_nested_shim": (
+            {
+                **code,
+                plat: "__all__=[]\nfrom .helpers.colors import make_palette\n",
+            },
+            layout,
+        ),
+        "owner_imports_shim": (
+            {
+                **code,
+                f + "._palette": "from ..helpers.colors import make_palette\n",
+            },
+            layout,
+        ),
+        "missing_helpers_allowance": (
+            code,
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                {},
+                layout.decisions,
+                layout.shims,
+            ),
+        ),
+        "decision_cross_slice": (
+            {**code, f + "._palette": "from ..helpers import validate_data\n"},
+            checker.Layout(
+                layout.entry_points,
+                layout.platform,
+                layout.slices,
+                layout.allowed,
+                {f + "._palette": "synthetic pure decision"},
+                layout.shims,
+            ),
+        ),
+    }
+    expected = {
+        "missing_shim_all": "missing __all__:",
+        "private_owner_access": "private import:",
+        "platform_via_nested_shim": "platform reaches slice:",
+        "owner_imports_shim": "cycle:",
+        "missing_helpers_allowance": "undeclared dependency:",
+        "decision_cross_slice": "decision import:",
+    }
+    results = {
+        k: checker.violations(src, packages, lay)
+        for k, (src, lay) in variants.items()
+    }
+    assert results["legal"] == []
+    for k, prefix in expected.items():
+        assert any(e.startswith(prefix) for e in results[k]), (k, results[k])
+
+
+def test_quality_dependency_points_from_historical_helpers_to_validate():
+    """Native diagnostics belong to validate without the old threshold back-edge."""
+    h, v = f"{P}.helpers", f"{P}.validate"
+    assert (h, v) in checker.ALLOWED
+    assert (v, h) not in checker.ALLOWED
+    assert h + ".quality" not in checker.SHIMS
+
+
+def test_quality_alias_dependency_rejects_cycles_private_and_missing_allowance():
+    """A mixed helper module may alias the owner surface but cannot bypass its boundary."""
+    h, v = f"{P}.helpers", f"{P}.validate"
+    layout = checker.Layout(
+        frozenset({P}),
+        frozenset(),
+        frozenset({h, v}),
+        {(h, v): "historical diagnostic aliases"},
+        {},
+    )
+    code = {
+        P: "from .validate import check_figure_quality\n",
+        h: '__all__=["check_figure_quality"]\nfrom .quality import check_figure_quality\n',
+        h
+        + ".quality": "from ..validate import check_figure_quality\ndef suggest_chart_type(): ...\n",
+        v: '__all__=["check_figure_quality"]\nfrom ._quality import check_figure_quality\n',
+        v + "._quality": "def check_figure_quality(): ...\n",
+    }
+    packages = {P, h, v}
+    assert checker.violations(code, packages, layout) == []
+    cycle = {
+        **code,
+        v + "._quality": "from ..helpers import check_figure_quality\n",
+    }
+    assert any(
+        e.startswith("cycle:")
+        for e in checker.violations(cycle, packages, layout)
+    )
+    private = {
+        **code,
+        h
+        + ".quality": "from ..validate._quality import check_figure_quality\n",
+    }
+    assert any(
+        e.startswith("private import:")
+        for e in checker.violations(private, packages, layout)
+    )
+    missing = checker.Layout(
+        layout.entry_points, layout.platform, layout.slices, {}, {}
+    )
+    assert any(
+        e.startswith("undeclared dependency:")
+        for e in checker.violations(code, packages, missing)
+    )
+
+
+def test_data_shim_is_declared_with_validate_ownership():
+    """Historical data imports explicitly belong to the native validation owner."""
+    assert checker.SHIMS.get(f"{P}.helpers.data") == f"{P}.validate"
+
+
+def test_data_owner_and_shim_declare_the_callable_surface():
+    """Both surfaces expose native cleanup; root wiring makes missing exports fail."""
+    import ast
+
+    for relative in ("validate/__init__.py", "helpers/data.py"):
+        tree = ast.parse((ROOT / "src/dartwork_mpl" / relative).read_text())
+        exports = [
+            ast.literal_eval(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(t, ast.Name) and t.id == "__all__"
+                for t in node.targets
+            )
+        ]
+        assert len(exports) == 1 and "validate_data" in exports[0], relative
+
+
+def test_native_recommendation_ownership_is_declared():
+    """Native decisions own semantics; helpers keeps both public owner edges."""
+    assert f"{P}.recommend" in checker.SLICES
+    assert f"{P}.recommend._chart_type" in checker.DECISIONS
+    assert (f"{P}.helpers", f"{P}.recommend") in checker.ALLOWED
+    assert (f"{P}.helpers", f"{P}.validate") in checker.ALLOWED
+    assert (f"{P}.mcp.recommend", f"{P}.recommend") in checker.ALLOWED
+    assert (f"{P}.mcp.recommend", f"{P}.helpers") not in checker.ALLOWED
+    assert f"{P}.helpers.quality" not in checker.SHIMS
+    assert (
+        checker.owner(f"{P}.helpers.quality", checker.REPOSITORY_LAYOUT)
+        == f"{P}.helpers"
+    )

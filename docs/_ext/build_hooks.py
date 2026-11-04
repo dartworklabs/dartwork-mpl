@@ -38,29 +38,34 @@ _GALLERY_CATEGORIES = [
 
 
 def resolve_provenance_links(app, doctree):
-    """Keep the accepted artifact ADR's excluded design link navigable.
+    """Keep accepted ADR provenance links navigable without publishing inputs.
 
     MyST resolves document links before Sphinx's missing-reference event, so
-    convert this one provenance target before reference resolution. Keep the
-    frozen ADR source intact and leave all other unresolved links to warn.
+    convert only these accepted targets before reference resolution. Each
+    source must exist; missing and unrelated links retain their warnings.
     """
     from docutils import nodes
     from sphinx import addnodes
 
-    target = "superpowers/specs/2026-10-18-mcp-artifact-delivery-design"
-    if not (Path(app.srcdir) / f"{target}.md").is_file():
-        return
-    url = (
-        "https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/"
-        f"{target}.md"
-    )
+    targets = {
+        "superpowers/specs/2026-10-18-mcp-artifact-delivery-design",
+        "superpowers/plans/2026-10-29-finite-margins",
+        "superpowers/plans/2026-10-29-template-format-preflight",
+        "superpowers/specs/2026-10-29-input-preflight-design",
+    }
     for node in doctree.findall(addnodes.pending_xref):
+        target = node.get("reftarget")
         if (
             node.get("refdomain") != "doc"
             or node.get("reftype") != "myst"
-            or node.get("reftarget") != target
+            or target not in targets
+            or not (Path(app.srcdir) / f"{target}.md").is_file()
         ):
             continue
+        url = (
+            "https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/"
+            f"{target}.md"
+        )
         fragment = node.get("reftargetid")
         refuri = f"{url}#{fragment}" if fragment else url
         node.replace_self(
@@ -71,7 +76,7 @@ def resolve_provenance_links(app, doctree):
 def setup(app):
     """Register link resolution with Sphinx's extension cache invalidation."""
     app.connect("doctree-read", resolve_provenance_links)
-    return {"env_version": 1, "parallel_read_safe": True}
+    return {"env_version": 2, "parallel_read_safe": True}
 
 
 def create_placeholder_index(app):

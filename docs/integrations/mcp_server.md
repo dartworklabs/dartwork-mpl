@@ -356,7 +356,7 @@ and 2 prompts**. Callable functions the AI assistant can invoke:
 | `list_color_families()`                     | List color families (`dc.*`, `tw.*`, `oc.*`, …) with counts and samples        |
 | `lint_dartwork_mpl_code(code)`              | Analyze Python code for dartwork-mpl best practices and antipatterns            |
 | `lint_dartwork_mpl_code_json(code)`         | Same as above, returning structured JSON for programmatic consumption           |
-| `apply_lint_fixes(code)`                    | Apply safe identifier-level rewrites (`plt.style.use → dm.style.use`, no-arg `tight_layout()` → `dm.simple_layout(fig)`, `dm.cm2in → dm.cm`); returns fixed code + the issues that still need agent attention |
+| `apply_lint_fixes(code)`                    | Return `fixed_code`, `applied`, `unfixed` for locally proven preset/Figure-layout rewrites; unchanged or partial results can need attention. See the [source auto-fix workflow](../ai/installed_python.md#interpreting-optional-source-auto-fixes) for syntax preflight, scope and finding locations. |
 | `migrate_legacy_code(code)`                 | Rewrite 0.3-era source toward 0.4 idioms (safe substitutions + TODO hints)      |
 | `suggest_chart_type(x_type, y_type, ...)`   | Recommend a chart type from the data's characteristics, with pointers to the matching basic and advanced templates |
 | `find_template(intent, top_k)`              | Rank the 18 bundled AI plot templates against a free-text intent                |
@@ -472,13 +472,22 @@ bytes, regardless of `Content-Length`; UTF-8 replacement can produce up to 3 MiB
 of UTF-8 text. The supported MCP extra includes HTTPX; there is one async fetch
 path. Responses and clients close on failure, timeout and cancellation.
 
-Both template renderers keep diagnostic channels within 64 KiB UTF-8, including
-visible truncation markers. Render errors retain the existing 2,000-character
-presentation ceiling, with room reserved for a complete marker. A successful
+Both template renderers keep child-process diagnostic channels within 64 KiB
+UTF-8, including visible truncation markers. Render errors from child-process
+logs retain the existing 2,000-character presentation ceiling, with room reserved
+for a complete marker. Format preflight refusals echo the exact submitted
+string's repr without truncation by these log limits. A successful
 `return_format="path"` creates a unique, private (0600), regular PNG file and
 returns its absolute path after closing it. Callers own that persistent temporary
 file's lifetime. Exclusive creation protects existing names and symlinks; it does
 not promise protection from a local actor replacing a path after publication.
+
+For both template renderers, `return_format` accepts only the exact,
+case-sensitive strings `"base64"` and `"path"`, without trimming. A selected
+template with any other format returns `render_error` before execution or
+temporary-file creation. Unknown-template diagnostics take precedence over
+format rejection. Advanced format errors retain the selected tier (`advanced`
+or `basic`); a failed fallback is never reported as `fell_back`.
 
 ### Plot execution and validation results
 
@@ -568,6 +577,25 @@ For an agent creating or revising a plot, use this review loop:
    and render the edited source, then inspect that image and its full report
    after **every rerender, including the final artifact**. Deliver original
    and revision IDs, changes and unresolved check or input limitations.
+   For local label-size or plain `Line2D` dash edits, read
+   `dartwork-mpl://guide/recipes` (also `dm.get_prompt("03-recipes")`). In retained
+   source, place current-size +1 pt label edits after the original layout call,
+   before report/export; keep its original kwargs. Update a selected line's
+   known corresponding existing legend sample with the same requested dash,
+   preserving the legend object and other properties. Do not guess custom
+   handler/proxy mappings or rebuild the legend. Keep already-fitting geometry.
+   Ordinary enlargement permits necessary fitting through the existing method
+   and settings, starting from original kwargs and changing only needed margins
+   or spacing. Preserve the physical canvas, panel/container allocations and
+   explicit ratios, data, colors, other typography and legend's intended location.
+   Keep active native layout engine settings; do not reset defaults or introduce
+   another engine. An explicit Axes-position lock overrides fitting: preserve it
+   and disclose any clipping/conflict. Ask one relevant question only if protected
+   constraints must change or the safe existing fit is unclear; retain the
+   original. Explicit user instructions take precedence. Inspect actual PNG/PDF
+   and Axes/legend bounds after draw/export; report necessary Axes movement.
+   Judge fit from content and constraints, not a universal pixel/mm tolerance.
+   These are agent instructions, not an automatic fixer.
 5. Reopen either ID using `get_plot_artifact`, then read its returned resource
    URIs for PNG, PDF, source, report and manifest without re-executing source.
 
@@ -698,6 +726,11 @@ Startup pins root descriptors; replacement requires restart. Unsupported safe
 operations or invalid configuration disable retention with `configuration_error`.
 
 #### Choose Copy or Retained for each logical input
+
+The [common input-choice guidance](../ai/installed_python.md#choose-the-input-version-before-a-revision)
+also covers native Python revisions and a consumed-byte snapshot example.
+Native local copies have no automatic MCP expiry; this server's existing
+Copy/Retained grants, admission checks and lifetimes below remain applicable.
 
 `revision` is closed version 1 with `parent_artifact_id` and/or nonempty `inputs`.
 It permits at most 8 unique names, 16 KiB compact UTF-8 JSON and depth 4.
