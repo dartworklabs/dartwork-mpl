@@ -147,3 +147,30 @@ class TestSpacing:
         ax.plot([0, 1, 2], [1.0, 2.0, np.nan], label="a")
         (t,) = dm.label_line_ends(ax)
         assert t.xy == (1.0, 2.0)
+
+    def test_labels_stay_apart_after_the_layout_shrinks_the_axes(self):
+        # Spaced at the call, the labels overlapped again once simple_layout
+        # shrank the Axes for a three-line note (local codex review,
+        # 2026-11-04): -12.3 px between neighbours at 300 dpi.
+        dm.style.use("presentation")
+        fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=2, n_series=4))
+        for name, end in zip(
+            ["Japan", "Egypt", "Germany", "France"],
+            [1, 1.3, 1.6, 3],
+            strict=True,
+        ):
+            ax.plot([0, 1], [0, end], label=name)
+        ax.set(xlabel="Year", ylabel="Value")
+        dm.add_note(
+            fig, "Source: example data\nProvisional\nUpdated 2026-11-04"
+        )
+        labels = dm.label_line_ends(ax)
+        dm.simple_layout(fig)
+        fig.canvas.draw()
+        boxes = sorted(
+            (t.get_window_extent() for t in labels), key=lambda b: b.y0
+        )
+        assert all(b.y1 <= c.y0 + 0.5 for b, c in pairwise(boxes))
+        found = dm.validate_figure(fig, checks=("OVERLAP",), quiet=True)
+        assert found == []
+        plt.close(fig)

@@ -243,6 +243,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Line-end labels stay apart after the layout.** `dm.label_line_ends`
+  spaced its labels at the Axes size of the call, so a later
+  `dm.simple_layout` that shrank the Axes (for a note, say) let them overlap
+  again (-12 px at 300 dpi in a four-line slide chart). The layout now
+  spaces them again at the size it settles on.
+- **`dm.add_note` is `dm.fs(-1)` under `presentation` too.** It used one
+  point under the body text, which is the same step everywhere but
+  `presentation`, where a step is 2.6 pt: slide notes are 16.9 pt, not
+  18.5 pt.
+
 - **Korean concise dates leave edited formats alone.** `dm.simple_layout`
   turned any stock-type `ConciseDateFormatter` on a Korean figure into
   `2024년, 3월 …`, also when the caller had already rewritten its format

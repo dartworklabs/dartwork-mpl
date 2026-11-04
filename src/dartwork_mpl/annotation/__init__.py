@@ -43,6 +43,7 @@ from .._figure_geometry import (
     axes_titles,
     get_renderer,
     same_position_axes,
+    spread_line_end_labels,
 )
 from ..scale import fs, fw
 from ._optimize_legend import optimize_legend
@@ -634,11 +635,7 @@ def add_note(fig: Figure, text: str, **kw: Any) -> Text:
     """
     import matplotlib as mpl
 
-    style: dict[str, Any] = {
-        "ha": "left",
-        "va": "bottom",
-        "fontsize": float(mpl.rcParams["font.size"]) - 1.0,
-    }
+    style: dict[str, Any] = {"ha": "left", "va": "bottom", "fontsize": fs(-1)}
     style.update(kw)
     note = fig.text(0.0, 0.0, text, **style)
     # simple_layout reserves this gap above the note (layout slice reads it).
@@ -657,32 +654,6 @@ def _last_point(line: Any) -> tuple[float, float] | None:
         return None
     i = finite[-1]
     return float(x[i]), float(y[i])
-
-
-def _spread(centres: list[float], height: float) -> list[float]:
-    """Move sorted label centres apart to ``height`` spacing, as little as possible.
-
-    Labels that would overlap are merged into a group centred on their mean;
-    groups that then touch merge again (a 1-D pool-adjacent pass), so the
-    result keeps the order and the average position of each crowded group.
-    """
-    groups: list[list[float]] = []  # [first centre, count, mean of wanted]
-    for c in centres:
-        groups.append([c, 1, c])
-        while len(groups) > 1:
-            first, n, mean = groups[-1]
-            p_first, p_n, p_mean = groups[-2]
-            if p_first + p_n * height <= first + 1e-9:
-                break
-            total = p_n + n
-            merged_mean = (p_mean * p_n + mean * n) / total
-            groups[-2:] = [
-                [merged_mean - (total - 1) * height / 2, total, merged_mean]
-            ]
-    out: list[float] = []
-    for first, n, _mean in groups:
-        out.extend(first + k * height for k in range(int(n)))
-    return out
 
 
 def label_line_ends(
@@ -754,19 +725,10 @@ def label_line_ends(
     if len(placed) < 2:
         return [t for t, _ in placed]
 
-    # Vertical spacing in points: one text line plus a sliver.
-    fig, renderer = _renderer_for_axes(ax)
-    heights = []
-    for placed_label, _ in placed:
-        bbox = placed_label.get_window_extent(renderer)
-        heights.append(bbox.height * 72.0 / fig.dpi)
-    height = max(heights) * 1.1
-    to_pt = 72.0 / fig.dpi
-    wanted = [ax.transData.transform(end)[1] * to_pt for _, end in placed]
-    order = sorted(range(len(placed)), key=lambda i: wanted[i])
-    spread = _spread([wanted[i] for i in order], height)
-    for i, y_pt in zip(order, spread, strict=True):
-        _set_annotation_offset(placed[i][0], (gap, y_pt - wanted[i]))
+    _fig, renderer = _renderer_for_axes(ax)
+    spread_line_end_labels(
+        ax, [t for t, _ in placed], [e for _, e in placed], gap, renderer
+    )
     return [t for t, _ in placed]
 
 
