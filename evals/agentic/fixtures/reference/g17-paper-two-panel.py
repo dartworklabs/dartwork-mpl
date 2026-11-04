@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g17-paper-two-panel."""
+
 # known-defect: text_outside=2 (dm simple_layout ignores loc="left" titles; #523 phase 2)
 from pathlib import Path
 

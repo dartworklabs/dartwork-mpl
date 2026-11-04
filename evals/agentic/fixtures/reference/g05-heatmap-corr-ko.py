@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g05-heatmap-corr-ko."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

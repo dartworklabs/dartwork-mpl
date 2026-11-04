@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g19-slides-share-ko."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

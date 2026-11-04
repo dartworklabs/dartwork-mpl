@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g02-grouped-bar-sales."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

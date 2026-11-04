@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g07-box-exam."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g12-timeseries-event."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

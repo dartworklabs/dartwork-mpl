@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g13-uneven-panels."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

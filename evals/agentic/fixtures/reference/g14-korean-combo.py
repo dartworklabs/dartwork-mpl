@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g14-korean-combo."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g11-dual-axis-ko."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt

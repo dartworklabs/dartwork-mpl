@@ -1,3 +1,5 @@
+"""Reference solution for agent-eval case g10-dashboard-kpi."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
