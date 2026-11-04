@@ -536,9 +536,9 @@ def register_tools(mcp: FastMCP) -> None:
 
         Companion to :func:`render_template` for the basic tier. The
         advanced templates include real-feeling synthetic data,
-        reference lines, value labels, a narrative title with takeaway
-        subtitle, and a source footnote — they read like finished
-        report figures.
+        reference lines and value labels. Like the basic tier they draw
+        no title, subtitle or source note; add one only when the user
+        asks (``dm.add_note`` for a source line).
 
         Falls back to the basic tier and returns ``status:"fell_back"``
         if no advanced version exists for the requested plot type yet.

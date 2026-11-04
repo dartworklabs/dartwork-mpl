@@ -232,6 +232,24 @@ class TestDates:
         assert drawn[0] == "24"
         assert not any("년" in label or "2024" in label for label in drawn)
 
+    def test_korean_dates_keep_the_offset_and_tex_choice(self):
+        import matplotlib.dates as mdates
+
+        dm.style.use("report-kr")
+        fig, ax = _fig()
+        self._weeks(ax)
+        ax.set_ylabel("방문자 수")
+        locator = mdates.AutoDateLocator()
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(
+            mdates.ConciseDateFormatter(locator, show_offset=False, usetex=True)
+        )
+        apply_default_tick_format(fig)
+        fmt = ax.xaxis.get_major_formatter()
+        assert type(fmt).__name__ == "KoreanConciseDateFormatter"
+        assert fmt.show_offset is False
+        assert fmt._usetex is True
+
     def test_days_drop_the_zero_padding(self):
         dm.style.use("report-kr")
         fig, ax = _fig()

@@ -243,6 +243,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **A refused `simple_layout` call leaves tick formats alone.** The library
+  tick numbers and dates (#554) were installed before the GridSpec and
+  margin checks, so `simple_layout(fig, margin=float("nan"))` raised but had
+  already swapped the formatters, and a figure without a GridSpec got them
+  although its layout stays unchanged. They are installed only once the call
+  goes ahead.
+- **Korean concise dates keep the axis's offset and TeX choice.** Replacing a
+  stock `ConciseDateFormatter` on a Korean figure carries over `show_offset`
+  and `usetex` with the time zone.
+- **The MCP template descriptions match the templates.** `suggest_chart_type`,
+  `render_template_advanced`, the advanced-template resource and the MCP
+  guide no longer promise a narrative title or source footnote, which the
+  templates dropped; `03-recipes` describes `label_axes` stepping before a
+  title.
+
 - **Korean concise dates leave edited formats alone.** `dm.simple_layout`
   turned any stock-type `ConciseDateFormatter` on a Korean figure into
   `2024년, 3월 …`, also when the caller had already rewritten its format

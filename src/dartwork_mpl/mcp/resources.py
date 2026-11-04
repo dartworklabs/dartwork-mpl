@@ -167,8 +167,8 @@ def register_resources(mcp: FastMCP) -> None:
     def plot_templates_advanced(plot_type: str) -> str:
         """Get the bundled tier-2 (advanced) template for a plot type.
 
-        The advanced tier adds synthetic data, reference lines, value
-        labels, a narrative title, and a source footnote. Falls back to
+        The advanced tier adds synthetic data, reference lines and value
+        labels; neither tier draws a title or source note. Falls back to
         the basic template if no advanced version exists yet — so the
         ``suggest_chart_type`` / ``create_plot`` URIs always resolve. Both
         tiers use the same confined bare-ID lookup; invalid IDs return
