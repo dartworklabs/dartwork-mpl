@@ -19,6 +19,7 @@
 - Models/efforts, host versions, final wheel/path/SHA, trusted harness commit, authenticated Codex home and budgets must be explicit configuration inputs; never invent missing values.
 - Hosts use verified subscriptions, grading isolation, valid disabled GitHub MCP and Codex subagents off. Start at jobs=2; supported ceiling=7.
 - Two fresh repetitions per host/arm; seeded order; no retries, replacements or optional stopping. Never dry-run an official run ID.
+- Keep the prelaunch record under the sandbox-hidden records root, outside both official run-ID directories; verification and command emission enforce the same location.
 
 ## Current authority and status
 
@@ -67,7 +68,7 @@
 ## Task 2 — root-owned final run and reporting
 
 - [ ] Step 1: Integrate peer-owned review/baseline API and pin the final wheel SHA and trusted clean harness head; preserve a receipt for current model catalog, host versions and subscription auth without credentials.
-- [ ] Step 2: Write explicit configuration with wheel `{path,sha256}`, harness commit, runner/project Python, model/effort/host-version per host, Codex home, runtime evidence `{path,sha256}`, budgets, records/work roots, two distinct run IDs, two seeds and jobs=2. Freeze the record once outside the repository.
+- [ ] Step 2: Write explicit configuration with wheel `{path,sha256}`, harness commit, runner/project Python, model/effort/host-version per host, Codex home, runtime evidence `{path,sha256}`, budgets, records/work roots, two distinct run IDs, two seeds and jobs=2. Freeze once under the hidden records root, outside the repository and both official run directories.
 - [ ] Step 3: Review the frozen argv, all400 unit IDs, endpoint text, cohort membership and provenance. Hash/retain the prelaunch record. Do not allocate dry units under either official ID.
 - [ ] Step 4: Reverify and emit the primary command immediately before execution; pass stdin=DEVNULL. Run the complete primary320 once. Retain failed/missing units; no substitutions.
 - [ ] Step 5: Reverify and emit the fresh supplemental command; run its80 units under the same frozen wheel/runtime. Do not extend the primary run.
