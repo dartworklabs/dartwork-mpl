@@ -44,7 +44,7 @@ gradient = dm.cspace("dc.teal5", "dc.amber4", n=len(profiles))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize("13cm", "square"), subplot_kw={"projection": "polar"}
+    figsize=dm.figsize_for("matrix"), subplot_kw={"projection": "polar"}
 )
 
 for (name, r), color in zip(profiles.items(), colors, strict=False):
@@ -71,24 +71,6 @@ ax.legend(
     ncol=3,
     fontsize=dm.fs(-1),
     frameon=False,
-)
-
-ax.set_title(
-    "Weekday load shifts the daily peak to 18:00",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic load profile (kW vs. hour-of-day).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
 )
 
 dm.simple_layout(fig, margin=dm.inch(0.12))

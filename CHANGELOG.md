@@ -25,11 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
   preset's figure size when a request names none: report widths 9 / 12 /
   14.5 / 17 cm picked by chart kind and data density (4:3 like `dm.figsize`),
-  journal columns under `scientific`, 10.5 cm tall under a 16:9 slide's
-  title under `presentation` (11.4 / 15.4 / 23.4 cm wide for up to 4, up to 6
-  or more x positions, half for `"compact"`), widths scaled
-  by font size under `poster`, and `"slide"` for that slide body under any
-  preset.
+  journal columns under `scientific` (one panel in one 9 cm column, grids
+  and full-width kinds 17 cm), 10.5 cm tall under a 16:9 slide's title
+  under `presentation` (11.4 / 15.4 / 23.4 cm wide for up to 4, up to 6
+  or more x positions, half for `"compact"`), widths scaled by font size
+  under `poster`, and `"slide"` for that slide body under any preset.
   `dm.grid_shape(n)` lays out `n` small multiples. The same request gets the
   same canvas from any agent. The bundled skill uses both and states that
   spines, grid, ticks, fonts, background and margins stay the preset's, with
@@ -121,6 +121,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Bundled templates size with `dm.figsize_for` and draw no title.** All 36
+  templates (18 basic, 18 advanced) and their gallery pages take the canvas
+  from `dm.figsize_for(...)` with counts read from their own data
+  (`dm.grid_shape` + `nrows=`/`ncols=` for small multiples) instead of
+  hand-picked 9-17 cm sizes, and no longer draw a chart title; the advanced
+  tier also drops its subtitle and source footnote. Panel names in small
+  multiples stay. Agents copy templates, so a size or title now appears only
+  when the user asks for it.
 - **`TICK_ROTATION` advises dates and fewer ticks before rotation.**
   Overlapping x labels now read "날짜면 dm.format_axis_dates(ax, dates),
   아니면 눈금 수 축소, 45° 회전은 마지막 수단", and the fix suggestions list

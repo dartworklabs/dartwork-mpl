@@ -39,7 +39,9 @@ accent = dm.color("dc.amber5").to_hex()
 default = dm.color("dc.teal3").to_hex()
 colors = [accent if v == values.max() else default for v in values]
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for("barh", n_points=len(categories), n_series=1)
+)
 
 bars = ax.barh(
     categories, values, color=colors, edgecolor="white", linewidth=0.3
@@ -75,34 +77,6 @@ ax.text(
 ax.set_xlim(0, values.max() * 1.12)
 ax.set_xlabel("Index value")
 dm.format_axis_si(ax, axis="x")
-
-ax.set_title(
-    "SF leads the index — 3.2x over Detroit",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Top-8 metros (3-letter codes); dashed line marks the cohort median.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic metro index panel.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.35))
 dm.validate_with_fixes(fig)

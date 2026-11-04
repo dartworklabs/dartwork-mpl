@@ -53,7 +53,7 @@ np.fill_diagonal(corr, 1.0)
 display = corr.copy()
 mask = np.eye(n, dtype=bool)
 
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
 
 im = ax.imshow(
     np.ma.masked_array(display, mask=mask),
@@ -96,34 +96,6 @@ cbar = fig.colorbar(im, cax=cax, ticks=[-1, -0.5, 0, 0.5, 1])
 cbar.ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:+.1f}"))
 cbar.ax.tick_params(labelsize=dm.fs(-1))
 cbar.outline.set_linewidth(0.3)
-
-ax.set_title(
-    "Equities-REITs is the only strong cross-asset link",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Pairwise correlation, diagonal masked — note bonds decouple from risk assets.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic 6-asset correlation panel (rng seed 42).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.45))
 dm.validate_with_fixes(fig)

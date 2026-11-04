@@ -47,7 +47,7 @@ colors = [
     for d, total in zip(deltas, is_total, strict=False)
 ]
 
-fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(labels), n_series=1))
 ax.bar(
     labels,
     heights,
@@ -58,6 +58,5 @@ ax.bar(
 )
 ax.axhline(0, color="dc.indigo3", linewidth=0.3)
 ax.set_ylabel("Value")
-ax.set_title("Bridge / waterfall", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)

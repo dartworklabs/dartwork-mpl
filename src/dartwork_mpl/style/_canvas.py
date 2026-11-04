@@ -15,15 +15,17 @@ Every kind but ``matrix``, ``dense``, ``strip``, ``slide`` and
 :func:`~dartwork_mpl.figsize` default, so a request that names only a width
 (``dm.figsize(dm.col1)``) gets the same shape.
 
-``scientific`` presets map the tiers onto journal columns (9 or 17 cm).
-``presentation`` presets draw under a 16:9 slide's title, 10.5 cm tall:
-up to 4 x positions half the 23.4 cm body (11.4 cm), up to 6 two thirds
-(15.4 cm), anything denser the full body; ``"compact"`` takes half of it
-and ``"matrix"`` a 10.5 cm square. ``"slide"`` is the full body under any
-preset; ``"full_slide"`` is the whole 16:9 slide (25.4 x 14.29 cm, no title
-band), the slide the presentation sizes assume. ``poster`` scales the tiers by its font size over the
-report's 8 pt, so text fills the same share of the canvas. Any other preset,
-or none, uses the report tiers.
+``scientific`` presets use journal columns: one column (9 cm) for a single
+panel whatever its density, two (17 cm) for grids and the full-width kinds
+(``"dense"``, ``"strip"``). ``presentation`` presets draw under a 16:9
+slide's title, 10.5 cm tall: up to 4 x positions half the 23.4 cm body
+(11.4 cm), up to 6 two thirds (15.4 cm), anything denser the full body;
+``"compact"`` takes half of it and ``"matrix"`` a 10.5 cm square.
+``"slide"`` is the full body under any preset; ``"full_slide"`` is the whole
+16:9 slide (25.4 x 14.29 cm, no title band), the slide the presentation
+sizes assume. ``poster`` scales the tiers by its font size over the report's
+8 pt, so text fills the same share of the canvas. Any other preset, or none,
+uses the report tiers.
 """
 
 from __future__ import annotations
@@ -278,7 +280,9 @@ def figsize_for(
         _MAX_TIER_CM if grid else _tier_cm(spec, n_points, n_series, dual_axis)
     )
     if family == "paper":
-        width = _COLUMNS_CM[0] if width <= 12.0 else _COLUMNS_CM[1]
+        # A journal sets one panel in one column, however dense it is.
+        full = grid or (spec.fixed and spec.width_cm > 12.0)
+        width = _COLUMNS_CM[1] if full else _COLUMNS_CM[0]
     else:
         width = _half_cm(width * scale)
 

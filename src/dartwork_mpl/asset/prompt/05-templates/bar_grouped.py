@@ -19,7 +19,9 @@ series_a = [20, 35, 30, 35]
 series_b = [25, 32, 34, 20]
 series_c = [15, 18, 22, 28]
 
-fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(categories), n_series=3)
+)
 x = np.arange(len(categories))
 bar_width = 0.27
 ax.bar(x - bar_width, series_a, bar_width, label="Series A", color="dc.teal2")
@@ -29,7 +31,6 @@ ax.set_xticks(x)
 ax.set_xticklabels(categories)
 ax.set_ylabel("Value")
 ax.legend()
-ax.set_title("Grouped bars", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)
 dm.save_formats(fig, "bar_grouped")

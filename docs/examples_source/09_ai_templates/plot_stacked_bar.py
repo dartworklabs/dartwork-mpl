@@ -28,7 +28,9 @@ a = [20, 35, 30, 35]
 b = [25, 32, 34, 20]
 c = [15, 18, 22, 28]
 
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(categories), n_series=3)
+)
 x = np.arange(len(categories))
 ax.bar(x, a, label="A", color="dc.teal2")
 ax.bar(x, b, bottom=a, label="B", color="dc.green2")
@@ -38,6 +40,5 @@ ax.set_xticks(x)
 ax.set_xticklabels(categories)
 ax.set_ylabel("Value")
 ax.legend()
-ax.set_title("Stacked bars", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)

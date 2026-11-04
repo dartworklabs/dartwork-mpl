@@ -33,7 +33,7 @@ a_closed = values_a + values_a[:1]
 b_closed = values_b + values_b[:1]
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize("11cm", "square"), subplot_kw={"projection": "polar"}
+    figsize=dm.figsize_for("matrix"), subplot_kw={"projection": "polar"}
 )
 ax.plot(
     theta_closed, a_closed, color="dc.teal3", linewidth=dm.lw(0), label="Plan A"
@@ -51,6 +51,5 @@ ax.set_xticks(theta)
 ax.set_xticklabels(categories)
 ax.set_ylim(0, 5)
 ax.legend(loc="upper right", bbox_to_anchor=(1.25, 1.1))
-ax.set_title("Radar comparison", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)

@@ -205,7 +205,7 @@ def find_template(
     tier : str | None, optional
         ``"basic"`` (default-equivalent) scans only the tier-1 minimal
         templates. ``"advanced"`` scans only the tier-2 narrative
-        templates (story-led titles, reference lines, value labels).
+        templates (reference lines, value labels, callouts).
         ``"all"`` (or any other non-None string) scans both tiers and
         returns ``"tier"`` on each match so the caller can tell which
         bucket a hit came from. ``None`` (default) preserves the

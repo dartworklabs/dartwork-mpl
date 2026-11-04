@@ -29,7 +29,7 @@ colors = [c.to_hex() for c in gradient]
 explode = np.zeros(len(labels))
 explode[0] = 0.08
 
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
 
 wedges, texts, autotexts = ax.pie(
     sizes,
@@ -59,34 +59,6 @@ ax.annotate(
     fontsize=dm.fs(-1),
     color=colors[0],
     arrowprops={"arrowstyle": "-", "color": colors[0], "lw": 0.5},
-)
-
-ax.set_title(
-    "NVIDIA still holds a 3.6x lead in discrete GPU share",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Synthetic 2025 snapshot — gradient depth mirrors share rank.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic GPU share snapshot.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
 )
 
 dm.simple_layout(fig, margin=dm.inch(0.08))

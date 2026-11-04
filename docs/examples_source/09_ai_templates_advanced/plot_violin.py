@@ -43,7 +43,7 @@ p75s = [float(np.percentile(g, 75)) for g in data]
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(labels), n_series=1))
 
 parts = ax.violinplot(
     data, showmeans=False, showmedians=False, showextrema=False, widths=0.65
@@ -85,34 +85,6 @@ ax.set_ylabel("CSAT score (0-100)")
 ax.set_xlabel("Region")
 ax.set_ylim(40, 105)
 ax.legend(loc="lower right", fontsize=dm.fs(-1), frameon=False)
-
-ax.set_title(
-    "APAC carries the widest CSAT spread despite a middling median",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "n = 200 per region — white dot = median, ticks = 25/75 percentiles.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic CSAT panel (rng seed 42).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 dm.validate_with_fixes(fig)

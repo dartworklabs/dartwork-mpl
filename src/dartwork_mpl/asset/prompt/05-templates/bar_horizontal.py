@@ -22,11 +22,12 @@ categories = [
 ]
 values = [23, 45, 56, 78, 33]
 
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for("barh", n_points=len(categories), n_series=1)
+)
 ax.barh(categories, values, color="dc.teal2", edgecolor="white", linewidth=0.3)
 ax.set_xlabel("Value")
 ax.invert_yaxis()
-ax.set_title("Horizontal bars", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)
 dm.save_formats(fig, "bar_horizontal")

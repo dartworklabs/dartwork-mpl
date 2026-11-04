@@ -30,7 +30,9 @@ target = 115.0
 price_color = dm.color("dc.teal5").to_hex()
 vol_color = dm.color("oc.gray5").to_hex()
 
-fig, ax_price = plt.subplots(figsize=dm.figsize("15cm", "standard"))
+fig, ax_price = plt.subplots(
+    figsize=dm.figsize_for(n_points=n, n_series=2, dual_axis=True)
+)
 ax_vol = ax_price.twinx()
 
 # Volume — drawn behind, lighter.
@@ -72,34 +74,6 @@ ax_price.text(
 
 ax_price.set_xlabel("Trading day")
 ax_price.set_xlim(0, n - 1)
-
-ax_price.set_title(
-    "Price closes the gap to the $115 target on rising volume",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax_price.text(
-    0.0,
-    1.02,
-    "Synthetic 90-day series — axis colors track their series.",
-    transform=ax_price.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic price + volume series (rng seed 42).",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 dm.validate_with_fixes(fig)

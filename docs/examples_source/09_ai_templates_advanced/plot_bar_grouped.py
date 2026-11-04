@@ -39,7 +39,9 @@ colors = [c.to_hex() for c in gradient]
 x = np.arange(len(categories))
 bar_width = 0.26
 
-fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(categories), n_series=len(series_names))
+)
 
 for i, name in enumerate(series_names):
     offset = (i - 1) * bar_width
@@ -89,34 +91,6 @@ ax.set_ylim(0, max(totals) * 1.0 + 30)
 dm.format_axis_si(ax, axis="y")
 
 ax.legend(loc="upper left", fontsize=dm.fs(-1), frameon=False, ncol=3)
-
-ax.set_title(
-    "Plant zone drives P4 throughput as Field plateaus",
-    fontsize=dm.fs(1),
-    fontweight=dm.fw(1),
-    loc="left",
-    pad=18,
-)
-ax.text(
-    0.0,
-    1.02,
-    "Synthetic zone throughput — totals annotated above each period.",
-    transform=ax.transAxes,
-    ha="left",
-    va="bottom",
-    fontsize=dm.fs(-1),
-    color="oc.gray6",
-)
-
-fig.text(
-    0.01,
-    0.005,
-    "Source: synthetic zone throughput panel.",
-    fontsize=dm.fs(-2),
-    color="oc.gray5",
-    ha="left",
-    va="bottom",
-)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)
