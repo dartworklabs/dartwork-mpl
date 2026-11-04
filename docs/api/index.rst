@@ -27,6 +27,7 @@ The essential modules you'll use in every project.
    Formatting Utilities <formatting>
    Save & Export <io>
    Visual Validation <validate>
+   Review Loop <review>
    Lint <lint>
    Configuration <config>
 

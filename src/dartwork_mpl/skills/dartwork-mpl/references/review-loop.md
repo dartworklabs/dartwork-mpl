@@ -4,7 +4,6 @@ Run this loop for every figure and again for every revision. A figure is
 done when you have looked at the saved PNG, not when the script ran.
 
 ```python
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import dartwork_mpl as dm
@@ -18,12 +17,18 @@ ax.set(xlabel="Time (s)", ylabel="Signal")
 ax.legend()
 dm.simple_layout(fig)
 
-for finding in dm.validate_figure(fig, quiet=True):
+r = dm.review(fig, "output/figure-v1")  # PNG + PDF, every finding, a summary
+for finding in r.findings:
     print(finding.severity.value, finding.check_id, finding.message)
-Path("output").mkdir(exist_ok=True)
-dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"), validate=False)
 plt.close(fig)
 ```
+
+`dm.review` saves with `dm.save_formats`, runs every `dm.validate_figure` check
+on the saved figure and keeps the findings as they are, and writes
+`output/figure-v1.review.json` with a summary of what the figure shows (titles,
+axis labels, ranges, tick labels, series, legend, text outside the canvas).
+It fixes nothing. `r.complete` is `False` when a check could not run
+(`CHECK_FAILED`); `True` is not a pass, only "every check ran".
 
 ## Look at the image
 
@@ -70,10 +75,29 @@ that one is a false positive.
 ## Revise
 
 1. Change only what the image, a WARNING or the user asked for.
-2. Save under the next stem (`output/figure-v2`) and keep v1. If the user
-   named an output path, write the final version there too.
+2. Review under the next stem against v1 and keep v1. If the user named an
+   output path, write the final version there too.
 3. Look at the new PNG again.
 4. Report what changed, which warnings remain and why.
+
+```python
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+ax.plot(x, np.sin(x), label="Measured")
+ax.plot(x, np.cos(x), label="Model")
+ax.set(xlabel="Time (s)", ylabel="Signal (V)")  # the asked change
+ax.legend()
+dm.simple_layout(fig)
+r2 = dm.review(fig, "output/figure-v2", baseline="output/figure-v1",
+               allow=["axes[0].ylabel.*"])
+print([(c.path, c.before, c.after) for c in r2.unexpected])
+plt.close(fig)
+```
+
+`r2.changes` lists every summary entry that differs from v1 by path
+(`axes[0].ylabel.text`, `axes[0].series[1].color`, `figure.size_in`, a
+series' `data` digest …); `allow=` names the paths you meant to change (`*`
+is the only wildcard) and `r2.unexpected` is the rest. The list judges
+nothing: explain or undo each unexpected change.
 
 Lint a script before running it: `dm.lint_code(Path("plot.py").read_text())`
 returns issues with `rule_id`, `severity` and `fix_suggestion`; fix every

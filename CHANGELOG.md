@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.review(fig, stem)`: one call for the review loop (experimental, #574).**
+  It saves with `dm.save_formats` (the same files), runs every
+  `dm.validate_figure` check on the saved figure and keeps the findings as
+  they are, and returns a `Review` with a summary of what the figure shows:
+  per Axes (insets nested) the titles, axis labels, ranges, tick labels,
+  series (kind, label, count, colour, line style, a digest of the values) and
+  legends, the figure's and SubFigures' own titles and text, plus every text
+  outside the canvas. `complete` is `False` when a check could not run
+  (`CHECK_FAILED`); it is not a pass. `<stem>.review.json` records it all.
+  With `baseline=` (an earlier `Review`, its stem or its json) the review
+  lists every summary entry that differs by path (`axes[0].ylabel.text`);
+  `allow=` patterns (`*` the only wildcard) mark the expected ones and
+  `Review.unexpected` is the rest. Nothing is fixed or judged. The bundled
+  skill's review loop and editing reference use it (masterplan stages 3–4).
+
 - **Explicit native data policies.** `dm.validate_data(..., policy="strict" | "preserve" | "clean")`
   rejects, retains or removes nonfinite values in one-dimensional signed/unsigned
   integer and real floating vectors. Opt-in calls require `allow_nan=False`;

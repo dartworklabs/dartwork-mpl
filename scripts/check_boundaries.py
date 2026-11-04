@@ -111,6 +111,7 @@ SLICES = frozenset(
         "dartwork_mpl.config",
         "dartwork_mpl.diagnostics",
         "dartwork_mpl.explore",
+        "dartwork_mpl.figure_review",
         "dartwork_mpl.font",
         "dartwork_mpl.formatting",
         "dartwork_mpl.helpers",
@@ -242,6 +243,12 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
         "the explorer draws the colour and font diagnostics it lists"
+    ),
+    ("dartwork_mpl.figure_review", "dartwork_mpl.io"): (
+        "a review saves the figure with save_formats, the files a plain save writes"
+    ),
+    ("dartwork_mpl.figure_review", "dartwork_mpl.validate"): (
+        "a review reports validate_figure's findings, unfiltered"
     ),
     ("dartwork_mpl.helpers", "dartwork_mpl._colors"): (
         "historical curated palette imports re-export the color owner's callable"

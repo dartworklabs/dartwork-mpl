@@ -1349,6 +1349,13 @@ dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"),
                 bbox_inches=None)
 ```
 
+`dm.review(fig, "output/figure-v1")` does the save and the full
+`validate_figure` report in one call, adds a summary of the figure and writes
+`output/figure-v1.review.json`; for v2, `dm.review(fig, "output/figure-v2",
+baseline="output/figure-v1", allow=[...])` lists every summary entry that
+changed, and `Review.unexpected` the ones no `allow=` pattern covers. It is
+experimental and judges nothing; `complete=True` only means every check ran.
+
 Inspect all fields of the report, then open the **actual PNG** and the PDF
 (or a rasterized PDF page) at target size. Check the gap, clipping, labels,
 fonts and legend. No image reader means this step remains incomplete.

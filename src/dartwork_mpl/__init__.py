@@ -90,6 +90,9 @@ from .config import Config, config
 # Import asset-diagnostic visualization helpers.
 from .diagnostics import plot_fonts
 
+# Review loop: save, validate, summarize, compare (masterplan stages 3-4)
+from .figure_review import review
+
 # Formatting utilities
 from .formatting import (
     avoid_tick_overlap,
@@ -168,9 +171,10 @@ from .units import (
 # docs/development/api-stability.md. ``figsize_for`` (the preset's default
 # canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
 # ``add_note`` (a source line in the preset's note style) its placement;
-# ``label_line_ends`` (line names instead of a legend) its spacing and colour.
+# ``label_line_ends`` (line names instead of a legend) its spacing and colour;
+# ``review`` (save, findings, summary, baseline diff) its summary fields.
 EXPERIMENTAL: frozenset[str] = frozenset(
-    {"add_note", "figsize_for", "grid_shape", "label_line_ends"}
+    {"add_note", "figsize_for", "grid_shape", "label_line_ends", "review"}
 )
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
@@ -305,6 +309,7 @@ __all__ = [  # noqa: RUF022
     "DataPolicyWarning",
     "validate_figure",
     "validate_with_fixes",
+    "review",
     "validate_fixes",
     # Helpers (high-level composition utilities)
     "validate_data",
