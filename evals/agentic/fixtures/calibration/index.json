@@ -162,7 +162,7 @@
  "codex-g19-slides-share-ko.plot.txt": {
   "unit": "codex/g19-slides-share-ko",
   "case": "g19-slides-share-ko",
-  "expect": "must pass",
+  "expect": "fails since a library change",
   "artifacts": {
    "png": "7ea03bc4566b60298b628f5045454831b57f3b8e456bce0a17c13149f5afd902",
    "png_mtime": 1792634180.781921,
@@ -173,7 +173,13 @@
    "plot_sha256": "2abbc87c115c78fc4b8f33e3bfb1aeb6ee9984b389c0c56efa85be20efed1977",
    "plot_mtime": 1792634178.4138486
   },
-  "started_ts": 1792633997.390567
+  "started_ts": 1792633997.390567,
+  "since": "#556 (2026-11-03 decision): presentation is scientific x 2.6 and one dm.fs step is 2.6 pt, so the script's dm.fs(17.5) title is 65 pt, not 28 pt",
+  "error": "Title extends outside the slide canvas",
+  "compat": [
+   "dm.fs(",
+   "(10.5 + "
+  ]
  },
  "claude-e05-highlight-korea-en.plot.txt": {
   "unit": "claude/e05-highlight-korea-en",

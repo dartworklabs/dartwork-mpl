@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -39,3 +40,28 @@ def test_examples_no_case_uses_and_request_kinds_pass(tmp_path: Path) -> None:
         " a date, the year, 월; make it look better; the legend above the plot.",
     )
     assert skill_quotes.find(d) == []
+
+
+def test_an_installed_skill_is_read_from_the_wheel(tmp_path: Path) -> None:
+    # --ab-skill-install arms have no skill folder; the quote check must read
+    # the skill the wheel installs (local codex review, 2026-11-04).
+    import zipfile
+
+    import run as runner
+
+    column = sorted(
+        skill_quotes._columns(skill_quotes.HERE / "fixtures" / "data")
+    )[0]
+    wheel = tmp_path / "dartwork_mpl-0-py3-none-any.whl"
+    with zipfile.ZipFile(wheel, "w") as zf:
+        zf.writestr(skill_quotes.WHEEL_SKILL + "SKILL.md", f"Use `{column}`.\n")
+        zf.writestr(skill_quotes.WHEEL_SKILL + "references/x.md", "nothing\n")
+    a = argparse.Namespace(skill_dir=None, skill_install=True)
+    hits = runner.skill_quote_hits(a, wheel)
+    assert {"kind": "column", "quote": column, "file": "SKILL.md"} in hits
+    assert (
+        runner.skill_quote_hits(
+            argparse.Namespace(skill_dir=None, skill_install=False), wheel
+        )
+        is None
+    )
