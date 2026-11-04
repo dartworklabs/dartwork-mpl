@@ -14,6 +14,7 @@ from typing import Any, Literal
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
+from .._figure_geometry import get_renderer
 from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import recommend_tick_decimals
 from ._defaults import (
@@ -644,7 +645,7 @@ def avoid_tick_overlap(
 
     canvas: Any = fig.canvas
     canvas.draw()
-    renderer = canvas.get_renderer()
+    renderer = get_renderer(fig)
     visible = [
         label for label in labels if label.get_visible() and label.get_text()
     ]
