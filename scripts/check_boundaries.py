@@ -333,6 +333,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
     ),
+    ("dartwork_mpl.style", "dartwork_mpl.units"): (
+        "a preset's default canvas is a physical width and aspect"
+    ),
     ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
         "a template sizes its text relative to the active preset"
     ),
@@ -397,6 +400,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
         "the auto-applied validation fix is re-running the content-aware layout"
+    ),
+    ("dartwork_mpl.validate", "dartwork_mpl.style"): (
+        "the preset-override check compares a figure with the active preset"
     ),
 }
 

@@ -18,36 +18,43 @@ explicit aesthetic choices (including colormap or rotation) take priority over
 aesthetic warning recommendations: explain/report warnings without silently
 normalizing the user's choice. Warning/info findings are not critical gates.
 
-## Purpose, preset and initial size
+## Purpose, preset and default size
 
-Use this priority: explicit user width/height/style and journal/template
-constraints, then prior project context, then inferred purpose defaults.
-Keep a selected preset (including `scientific` or `report`) during geometry-only
-edits; preserve the data and other style choices. Do not replace explicit
-sizes with template dimensions or a 17 cm suggestion.
+What the request names wins: explicit user width/height/style, then
+journal/template constraints, then prior project context. What it leaves
+unnamed comes from the library, so every agent and every run draws the same
+figure: the purpose picks the preset and `dm.figsize_for()` gives that
+preset's canvas. Keep a selected preset (including `scientific` or `report`)
+during geometry-only edits; preserve the data and other style choices. Do not
+replace explicit sizes with template dimensions or a default.
 
-| Purpose keywords (examples) | Existing preset | Provisional size guidance |
+| Purpose keywords (examples) | Existing preset | Canvas when no size is named |
 |---|---|---|
-| paper, journal, 논문 | `scientific` | `dm.col1` (9 cm) or `dm.col2` (17 cm) are rough candidates; confirm venue/column width for final publication |
-| report, document, dashboard, 보고서, 문서 | `report` | 13–17 cm is a rough starting range; fit the page/content width and panel complexity |
-| talk, slides, presentation, 발표 | `presentation` | fit the slide ratio and full-slide/inset placement; a slide-sized canvas is not implied by the preset |
+| paper, journal, 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
+| report, document, dashboard, 보고서, 문서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
+| talk, slides, presentation, 발표 | `presentation` | `dm.figsize_for()`: 12 / 16 / 19 / 22.5 cm for a chart on a slide; `dm.figsize_for("slide")`: 25.4 cm at 16:9 for a whole slide |
 
-These are draft suggestions, not universal journal/slide standards or caps.
-Choose an initial height using `dm.figsize` and the panel/label complexity.
-Choose defaults from data, chart purpose, panel density and categorical text;
-there is no universal ratio or numeric font size. Reuse the recommender/templates.
+These are defaults, not caps or journal/slide standards: any size the user, a
+journal or a template names wins, through `dm.figsize`. `dm.figsize_for(kind,
+n_points=, n_series=, dual_axis=, nrows=, ncols=)` picks the width from the
+kind (`"barh"`, `"matrix"`, `"slide"`, ...) and the data density, and
+`dm.grid_shape(n)` lays out `n` small multiples; both are provisional
+(`dm.EXPERIMENTAL`). Reuse the recommender/templates for the chart type.
 Plot text is English unless the user asks for another language; a Korean
 conversation alone does not make it Korean. Korean text on the figure,
 requested or from the data, takes a `-kr` preset. Edits keep the figure's language.
 
+A requested element keeps the preset's style for every detail the request
+does not name: "add a title" is `ax.set_title(text)` with the preset's title
+size and weight; "add gridlines" is `ax.grid(True, axis=...)` with the
+preset's grid colour and width; "20 cm wide" is `dm.figsize("20cm")` at the
+default 4:3 (an edit keeps the existing height). Named details win exactly.
+
 Ask **one short, self-contained question** only when missing information
-materially affects the result. Reuse context already given. For example:
-“Is this paper figure single- or double-column, and what is its target width?”;
-“Is the slide 16:9 or 4:3, and is this a full-slide chart or an inset?”;
-“For this report, what page/content width or preferred figure size should I use?”
-Do not require a setup form for every plot or silently assume ambiguous final
-publication sizing. For a quick draft, state a reasonable provisional
-preset/size and invite correction instead of blocking.
+materially affects the result, for example “Is this paper figure single- or
+double-column, and what is its target width?” for a final publication figure.
+Reuse context already given. For a draft, use the default, say which preset
+and size you used and invite correction instead of blocking.
 
 ## Width
 

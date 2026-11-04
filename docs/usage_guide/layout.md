@@ -416,6 +416,7 @@ requested margin from each figure edge. This means:
 | `annotate_corner(ax, s)`      | Adds spine-tight narrative notes in the least obstructed corner |
 | `label_hline(ax, y, s)`       | Attaches text tightly to a horizontal reference-line endpoint  |
 | `place_legend(ax)`            | Places legends around data/text obstacles and can raise ncol   |
+| `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels; `simple_layout` keeps titles above it |
 | `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |
@@ -457,6 +458,11 @@ call below, before `dm.simple_layout(fig)`. Do not run both label calls:
 ax.text(0.02, 0.98, "(a)", transform=ax.transAxes,
         fontsize=dm.fs(1), ha="left", va="top")
 ```
+
+Panels with a left-aligned title (`ax.set_title(..., loc="left")`) get the
+letter on the title's line, just before the title (`a  Line A`), and it moves
+with the title; a centre title moves the letter only when it would touch it.
+Set the titles first. An explicit `x=` keeps the old fixed position.
 
 **Interactive visualizer — drag the slider to compare:**
 

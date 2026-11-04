@@ -2,8 +2,41 @@
 
 ## Canvas size
 
-`dm.figsize(width, second)` returns the inch tuple for matplotlib's
-`figsize=`. Width and height are physical; their units may differ.
+With no size in the request, `dm.figsize_for` returns the active preset's
+canvas, so the same request gets the same size whoever draws it:
+
+| Preset | Widths |
+|---|---|
+| `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
+| `scientific` | 9 or 17 cm (journal columns) |
+| `presentation`, `poster` | report widths × font size / 8 pt |
+
+The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
+9 cm, all 4:3 like `dm.figsize`; `"matrix"` 12 cm square, `"dense"` 17 cm 2:1,
+`"strip"` 17 cm 0.45, `"slide"` one whole 16:9 slide, 25.4 cm under any
+preset). Density moves it: 6 or fewer points with 2 or fewer series on one
+axis gives 9 cm; `dual_axis=True`, 4+ series or 13+ points gives 14.5 cm.
+`matrix`, `dense`, `strip`, `slide` and grids keep theirs; a grid takes 17 cm
+and panels keep the kind's aspect. `dm.grid_shape(n)` lays out `n` panels:
+one row up to three, then a near-square grid, wider than tall.
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")
+quarters, series = ["Q1", "Q2", "Q3", "Q4"], 3
+dm.figsize_for(n_points=len(quarters), n_series=series)  # 12 x 9 cm
+dm.figsize_for("barh", n_points=10, n_series=1)  # 14.5 cm, long labels
+dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
+dm.figsize_for("slide")  # 25.4 x 14.3 cm, one whole slide
+nrows, ncols = dm.grid_shape(6)  # (2, 3)
+dm.figsize_for(nrows=nrows, ncols=ncols)  # 17 x 8.5 cm
+```
+
+A size the user names goes to `dm.figsize(width, second)`, which returns the
+inch tuple for matplotlib's `figsize=`. Width and height are physical; their
+units may differ.
 
 ```python
 import matplotlib.pyplot as plt
@@ -120,7 +153,7 @@ plt.close(fig)
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 for i in range(3):
     ax.plot(x, np.sin(x + i), label=f"Run {i + 1}")
-ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0)
+dm.place_legend(ax, loc="right")  # or "above", "below", "left"
 dm.simple_layout(fig)            # makes room for the outside legend
 plt.close(fig)
 
@@ -133,6 +166,11 @@ plt.close(fig)
 
 - Legend below everything: `fig.legend(loc="lower center", ncol=3,
   bbox_to_anchor=(0.5, 0))`, then `dm.simple_layout(fig)`.
-- Legend inside, away from the data: `dm.place_legend(ax)`.
+- Legend inside, away from the data: `dm.place_legend(ax)`; when every
+  inside spot covers data it goes above the plot by itself.
+- Legend outside one side ("legend above the plot"):
+  `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
+  the clearance of tick labels, and `dm.simple_layout(fig)` keeps a title
+  above it.
 - A twin pair may report `CROSS_AXES_OVERLAP` for its shared x ticks; that
   finding is a false positive for twins.

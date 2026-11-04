@@ -55,11 +55,13 @@ WARNING findings are defects to fix or explain; INFO findings are hints.
 | `OVERFLOW`, `CLIPPED_TEXT` | text outside the canvas or axes | `dm.simple_layout(fig)` after the last artist; `margin=` |
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text collides | more `hspace`/`wspace`, fewer or rotated ticks |
 | `LEGEND_OVERFLOW` | legend too large or off the canvas | fewer columns, outside legend, direct labels |
+| `LEGEND_OVERLAP` | legend covers a title, axis or tick label | `dm.place_legend(ax)` (the side the user named, if any), then `simple_layout` |
 | `TICK_CROWD`, `TICK_ROTATION` | crowded or rotated tick labels | `MaxNLocator(nbins=5)`, `dm.avoid_tick_overlap(ax)` |
 | `TICK_DECIMAL`, `UNIT_DUP` | odd precision, unit repeated | `dm.set_decimal(ax, yn=1)`, unit in the axis label only |
 | `MIN_FONT_SIZE`, `TEXT_CONTRAST` | text too small or faint | `dm.fs(0)` or larger, darker colour |
 | `MARGIN_ASYMMETRY`, `EMPTY_AXES` | lopsided margins, empty panel | rerun `simple_layout`, remove the panel |
 | `GRAYSCALE_SAFETY` (INFO) | similar grey values | mention it; change colours only when asked |
+| `PRESET_OVERRIDE` (INFO) | grid, spines or background differ from the preset | keep the change only if the user asked; else delete the call |
 | `CHECK_FAILED` | a check could not run | the check is incomplete; say so |
 
 A twin-axes pair can report `CROSS_AXES_OVERLAP` for its shared x ticks;

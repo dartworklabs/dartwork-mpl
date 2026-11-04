@@ -133,21 +133,32 @@ those values change, regenerate this table.
 ## Choosing a purpose and canvas
 
 Explicit width/height/style and journal/template constraints take priority,
-then prior project context, then purpose defaults. Start with these draft
-suggestions and adjust for panel/label complexity:
+then prior project context. Whatever is left unnamed comes from the library,
+so every agent and every run draws the same canvas: the purpose picks the
+preset and `dm.figsize_for()` gives its default size.
 
-| Context | Existing preset | Initial sizing decision |
+| Context | Existing preset | Canvas when no size is named |
 |---|---|---|
-| Paper / journal / 논문 | `scientific` | `dm.col1` (9 cm) or `dm.col2` (17 cm) can be starting points; confirm the venue's actual column width for final publication |
-| Report / document / dashboard / 보고서 | `report` | 13–17 cm can be a starting range; use the available page/content width |
-| Talk / slides / presentation / 발표 | `presentation` | use the slide ratio and intended full-slide/inset placement |
+| Paper / journal / 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
+| Report / document / dashboard / 보고서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
+| Talk / slides / presentation / 발표 | `presentation` | `dm.figsize_for()`: 12 / 16 / 19 / 22.5 cm for a chart on a slide; `dm.figsize_for("slide")`: 25.4 cm at 16:9 for a whole slide |
 
-These are suggestions, not universal standards or size limits. If context is
-materially ambiguous, ask one short question such as “What page/content width
-or preferred figure size should I use?” For papers ask about single/double
-columns or venue width; for slides ask about 16:9/4:3 and full-slide/inset use.
-Reuse already supplied context. For a quick draft, state a provisional preset
-and size and invite correction. Plot text is English unless the user asks for
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")
+years = list(range(2015, 2024))
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(years), n_series=2))
+plt.close(fig)
+```
+
+These are defaults, not size limits: a size the user, a journal or a template
+names wins, through `dm.figsize`. A requested element (a title, gridlines)
+keeps the preset's style for every detail the request does not name. For a
+final paper figure, ask one short question about single/double columns or the
+venue width if it is unknown; for a draft, use the default, say which preset
+and size you used and invite correction. Plot text is English unless the user asks for
 another language, whatever the conversation language; use a `-kr` preset for
 Korean text. A geometry-only edit keeps the
 selected preset, data and other style choices. Presets supply defaults;

@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **The preset's default canvas (provisional).** `dm.figsize_for(kind,
+  n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
+  preset's figure size when a request names none: report widths 9 / 12 /
+  14.5 / 17 cm picked by chart kind and data density (4:3 like `dm.figsize`),
+  journal columns under `scientific`, widths scaled by font size under
+  `presentation` and `poster`, and `"slide"` for one whole 16:9 slide.
+  `dm.grid_shape(n)` lays out `n` small multiples. The same request gets the
+  same canvas from any agent. The bundled skill uses both and states that
+  spines, grid, ticks, fonts, background and margins stay the preset's, with
+  no figure title or extra panel unless asked. Both are in `dm.EXPERIMENTAL`.
+- **`PRESET_OVERRIDE` validation check (INFO).** `validate_figure()` reports
+  major gridlines, spine visibility and Axes or figure backgrounds that differ
+  from the active dartwork preset, one finding per Axes and property with the
+  preset and figure values in `detail`. The check cannot see the request, so
+  the finding is advisory: keep the change only if the user asked for it.
+  Axis-off, polar, 3-D, colorbar, pie and twin Axes are not inspected, and
+  nothing is reported without an active preset.
+  `dartwork_mpl.style.active_preset_rcparams()` returns the values compared.
+- **Outside legends from one call.** `dm.place_legend(ax, loc="above")` (also
+  `"below"`, `"right"`, `"left"`) puts the legend outside the axes, centred on
+  that side and past its tick labels and axis label (a twin's included) by the
+  preset's `legend.borderaxespad`. Above and below it takes one row when that
+  fits the axes width, else the fewest rows that fit; right and left it is one
+  column. `ncols=` still wins; `bbox_to_anchor=` with a side raises
+  `ValueError`. Other explicit `loc` values behave as before.
+- **`dm.add_note(fig, text)` (provisional).** A source or note line in one
+  style for every caller: the figure's lower-left corner, one point under the
+  preset font, the preset text colour; `dm.simple_layout` keeps the axis
+  labels one `axes.labelpad` above it. Named `fontsize=`/`color=` win. In the
+  customization eval the same request gave 7 pt from one agent and 8 pt from
+  the other. The skill also keeps an existing legend on "highlight one series"
+  and keeps canvas, title and legend on "make it look better".
+- **`dm.place_legend(ax)` gives a twin pair one legend.** The entries of every
+  `twinx`/`twiny` partner go into one legend on the twin drawn last, and the
+  partners' own legends are removed, whichever twin is passed.
+- **`dm.place_legend(ax)` goes above the plot when nothing inside is free.**
+  With no `loc`, a legend that would cover data in every in-axes spot now takes
+  the `loc="above"` placement (`legend._dm_outside_fallback`), so a request
+  that names no side gets one legend from every agent; a caller
+  `bbox_to_anchor=` keeps it inside as before.
+- **`LEGEND_OVERLAP` validation check (WARNING).** `validate_figure()` reports
+  a legend box that covers a title, an axis label, tick labels or a
+  figure-level text (suptitle, `fig.text`), one finding per legend and covered
+  role, naming both. `OVERLAP` compares text with text only and missed a
+  legend drawn on the title.
 - Font corpus expanded to 20 families (262 files): Noto Serif and IBM Plex Serif
   added, Roboto/Roboto Mono completed with instanced weights + italics;
   registry-backed interactive font browser on the fonts page (faceted filters,
@@ -107,6 +152,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `dm.simple_layout()` no longer leaves an axes title on top of a legend above
+  the axes. Whether the legend came from `dm.place_legend(ax, loc="above")` or
+  a raw `ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0))`, the title
+  offset is raised so the title sits `axes.titlepad` above the legend (all
+  three title slots, one baseline); text, size and weight are unchanged. A
+  `place_legend` outside legend is re-anchored to the labels present when the
+  layout runs, so setting the x label after the legend no longer collides.
+- `dm.label_axes()` no longer puts the panel letter on a left-aligned panel
+  title (the advanced small_multiples template drew "a" over "Line A"). With
+  `x="auto"`, a left title takes the letter onto its line, half a letter size
+  before the title start, and the letter follows the title (layout, a legend
+  above); a centre or right title moves it only when they would touch. `y`
+  now defaults to `None` (1.05 as before when no title is in the way); an
+  explicit `x` or `y` is kept. Title text, size and weight are unchanged.
 - `simple_layout()` rejects nonfinite effective margins after complete parsing
   and resolution, before layout effects. Finite margins and existing parse,
   no-op and GridSpec error precedence are preserved.

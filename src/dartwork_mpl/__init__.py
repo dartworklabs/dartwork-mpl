@@ -70,6 +70,7 @@ from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
 from .annotation import (
+    add_note,
     annotate_corner,
     annotate_value,
     arrow_axis,
@@ -133,6 +134,8 @@ from .scale import dpi, fs, fw, lw
 # Import style module exports
 from .style import (
     Style,
+    figsize_for,
+    grid_shape,
     install_twinx_patch,
     list_styles,
     load_style_dict,
@@ -160,9 +163,12 @@ from .units import (
 
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
-# docs/development/api-stability.md. Empty today because the interactive
-# UI is a subpackage, not an advertised top-level ``dm.ui`` attribute.
-EXPERIMENTAL: frozenset[str] = frozenset()
+# docs/development/api-stability.md. ``figsize_for`` (the preset's default
+# canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
+# ``add_note`` (a source line in the preset's note style) its placement.
+EXPERIMENTAL: frozenset[str] = frozenset(
+    {"add_note", "figsize_for", "grid_shape"}
+)
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
 # These wrap the lower-level primitives above so that AI agents and
@@ -245,7 +251,9 @@ __all__ = [  # noqa: RUF022
     "col2",
     "Length",
     "figsize",
+    "figsize_for",
     "figsize_grid",
+    "grid_shape",
     "list_aspect_tokens",
     "tokens",
     # Units (legacy helpers, kept for compatibility)
@@ -267,6 +275,7 @@ __all__ = [  # noqa: RUF022
     "show",
     # Axes annotation
     "annotate_value",
+    "add_note",
     "annotate_corner",
     "label_axes",
     "label_hline",

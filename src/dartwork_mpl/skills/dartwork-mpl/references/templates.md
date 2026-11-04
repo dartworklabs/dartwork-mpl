@@ -30,8 +30,9 @@ When adapting a template:
 
 1. Replace every synthetic array, label and hard-coded summary with the
    user's data. Never keep invented numbers or annotations.
-2. Keep the user's preset and size; the template's preset and
-   `dm.figsize` are defaults.
+2. Keep the user's preset and size. The template's `dm.figsize` and title
+   are examples: with no size asked use `dm.figsize_for`, and keep a title
+   only when the user asked for one.
 3. Change the output stem in its `dm.save_formats` call, then run the
    review loop (`references/review-loop.md`). Advanced templates draw long
    titles and annotations: check them in the PNG.

@@ -86,10 +86,11 @@ def validate_figure(
     checks : tuple[str, ...] | None, optional
         Check IDs to run. If None, all registered checks are executed.
         Supported IDs: ``OVERFLOW``, ``OVERLAP``, ``UNIT_DUP``,
-        ``CROSS_AXES_OVERLAP``, ``LEGEND_OVERFLOW``, ``TICK_CROWD``,
+        ``CROSS_AXES_OVERLAP``, ``LEGEND_OVERFLOW``, ``LEGEND_OVERLAP``,
+        ``TICK_CROWD``,
         ``TICK_ROTATION``, ``TICK_DECIMAL``, ``VALUE_LABEL_DECIMAL``,
         ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
-        ``CLIPPED_TEXT``.
+        ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``.
     quiet : bool, optional
         If True, suppresses stdout output. Default is False.
 

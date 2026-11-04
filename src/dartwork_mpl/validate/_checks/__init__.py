@@ -23,11 +23,13 @@ from .cross_axes import check_cross_axes_overlap
 from .empty_axes import check_empty_axes
 from .grayscale_safety import check_grayscale_safety
 from .legend import check_legend_overflow
+from .legend_overlap import check_legend_overlap
 from .margin import check_margin_asymmetry
 from .min_font_size import check_min_font_size
 from .overflow import check_overflow
 from .overlap import check_overlap
 from .pie_label import check_pie_label_offset
+from .preset_override import check_preset_override
 from .text_contrast import check_text_contrast
 from .tick_crowd import check_tick_crowding
 from .tick_decimal import check_tick_decimal
@@ -42,11 +44,13 @@ __all__ = [
     "check_empty_axes",
     "check_grayscale_safety",
     "check_legend_overflow",
+    "check_legend_overlap",
     "check_margin_asymmetry",
     "check_min_font_size",
     "check_overflow",
     "check_overlap",
     "check_pie_label_offset",
+    "check_preset_override",
     "check_text_contrast",
     "check_tick_crowding",
     "check_tick_decimal",

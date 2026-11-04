@@ -9,6 +9,7 @@ drawing bidirectional Low-High arrow axes.
 from __future__ import annotations
 
 __all__ = [
+    "add_note",
     "annotate_corner",
     "annotate_value",
     "arrow_axis",
@@ -34,7 +35,14 @@ from matplotlib.legend import Legend
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, ScaledTranslation
 
-from .._figure_geometry import BBOX_ERRORS, get_renderer
+from .._figure_geometry import (
+    BBOX_ERRORS,
+    OutsideSide,
+    anchor_outside,
+    axes_titles,
+    get_renderer,
+    same_position_axes,
+)
 from ..scale import fs, fw
 from ._optimize_legend import optimize_legend
 
@@ -140,13 +148,65 @@ def _auto_panel_labels(n: int) -> list[str]:
     return labels
 
 
+# Gap between a panel label and the title it precedes, in label font sizes.
+_PANEL_LABEL_GAP_EM = 0.5
+
+
+def _shown_title(ax: Axes, loc: str) -> Text | None:
+    """Return the ``loc`` title of ``ax`` when it is visible and not blank."""
+    title = axes_titles(ax).get(loc)
+    if title is None or not title.get_visible() or not title.get_text().strip():
+        return None
+    return title
+
+
+def _title_in_the_way(ax: Axes, label: Text, gap_pt: float) -> Text | None:
+    """Return the title of ``ax`` that ``label`` must sit before, if any.
+
+    A left title always: the label belongs on its line, so every panel of a
+    grid reads the same. A centre or right title only when ``label`` at its
+    default spot would come within ``gap_pt`` of it (measured after a
+    draw); then the leftmost such title.
+    """
+    left = _shown_title(ax, "left")
+    if left is not None:
+        return left
+    others = [
+        title
+        for loc in ("center", "right")
+        if (title := _shown_title(ax, loc)) is not None
+    ]
+    if not others:
+        return None
+    fig, renderer = _renderer_for_axes(ax)
+    gap_px = gap_pt * fig.dpi / 72.0
+    try:
+        box = label.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return None
+    hits: list[tuple[float, Text]] = []
+    for title in others:
+        try:
+            ext = title.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        if (
+            box.x1 + gap_px > ext.x0
+            and box.x0 < ext.x1 + gap_px
+            and box.y1 > ext.y0
+            and box.y0 < ext.y1
+        ):
+            hits.append((ext.x0, title))
+    return min(hits, key=lambda hit: hit[0])[1] if hits else None
+
+
 def label_axes(
     axes: list[Axes] | np.ndarray[Any, Any],
     labels: list[str] | None = None,
     fontsize: float | None = None,
     fontweight: str = "normal",
     x: float | str = "auto",
-    y: float = 1.05,
+    y: float | None = None,
     **kwargs: Any,
 ) -> list[Text]:
     """Add standardized identification labels (a, b, c, ...) to subplot panels.
@@ -170,11 +230,22 @@ def label_axes(
     x : float | str, optional
         Horizontal position in Axes-relative coordinates (may exceed 0.0-1.0).
         If "auto", the optimal x position is determined based on whether
-        a y-axis label is present (-0.18 or -0.02).
-    y : float, optional
-        Vertical position in Axes-relative coordinates. Default is 1.05.
+        a y-axis label is present (-0.18 or -0.02). With ``"auto"`` and a
+        title in the way, the label is placed before the title instead: on
+        the title's line, its right edge half a label font size left of
+        the title's start, following the title wherever it moves (a later
+        ``simple_layout``, a legend above). A left title
+        (``set_title(..., loc="left")``) is always in the way, so every
+        panel of a grid reads ``a  Title``; a centre or right title only
+        when the label at its default spot would touch it. Set the titles
+        before calling this; their text, size and weight are not changed.
+    y : float | None, optional
+        Vertical position in Axes-relative coordinates. ``None`` (default)
+        is 1.05, or the title's line when the label is placed before a
+        title. A given ``y`` is kept in both cases.
     **kwargs
-        Additional text properties passed to ``ax.text()``.
+        Additional text properties passed to ``ax.text()`` (``ax.annotate``
+        for a label placed before a title).
 
     Returns
     -------
@@ -200,7 +271,7 @@ def label_axes(
 
         t = ax.text(
             x_pos,
-            y,
+            1.05 if y is None else y,
             label,
             transform=ax.transAxes,
             fontsize=fontsize,
@@ -209,6 +280,25 @@ def label_axes(
             ha="left",
             **kwargs,
         )
+        if x == "auto":
+            size_pt = t.get_fontproperties().get_size_in_points()
+            gap_pt = _PANEL_LABEL_GAP_EM * size_pt
+            title = _title_in_the_way(ax, t, gap_pt)
+            if title is not None:
+                t.remove()
+                t = ax.annotate(
+                    label,
+                    xy=(0.0, 0.0 if y is None else y),
+                    xycoords=title if y is None else (title, "axes fraction"),
+                    xytext=(-gap_pt, 0.0),
+                    textcoords="offset points",
+                    fontsize=fontsize,
+                    fontweight=fontweight,
+                    va="bottom",
+                    ha="right",
+                    annotation_clip=False,
+                    **kwargs,
+                )
         texts.append(t)
 
     return texts
@@ -522,6 +612,35 @@ def _apply_corner(text: Text, loc: _Corner, inset_pt: float) -> None:
             offset_direction[1] * float(inset_pt),
         ),
     )
+
+
+def add_note(fig: Figure, text: str, **kw: Any) -> Text:
+    """Add a source or note line under the plot, in the preset's note style.
+
+    One call for "add a source note" / "그림 아래에 출처를 적어줘", so every
+    agent draws the same line: the figure's lower-left corner, left-aligned,
+    one point below the preset font (``dm.fs(-1)``) in the preset text colour.
+    :func:`dartwork_mpl.simple_layout` keeps the axes, tick labels and axis
+    labels above it with the preset's ``axes.labelpad`` between them. A
+    ``fontsize=``, ``color=`` or other ``Text`` keyword the user names wins::
+
+        dm.add_note(fig, "Source: internal web logs")
+        dm.simple_layout(fig)
+
+    Returns the :class:`~matplotlib.text.Text`.
+    """
+    import matplotlib as mpl
+
+    style: dict[str, Any] = {
+        "ha": "left",
+        "va": "bottom",
+        "fontsize": float(mpl.rcParams["font.size"]) - 1.0,
+    }
+    style.update(kw)
+    note = fig.text(0.0, 0.0, text, **style)
+    # simple_layout reserves this gap above the note (layout slice reads it).
+    note._dm_layout_gap_pt = float(mpl.rcParams["axes.labelpad"])  # type: ignore[attr-defined]
+    return note
 
 
 def annotate_corner(
@@ -844,42 +963,244 @@ def _legend_candidate_ncols(
     return list(range(1, max_ncol + 1))
 
 
+# The legend's own anchor point (matplotlib ``loc``) for each outside side:
+# the legend edge that faces the Axes touches the anchor.
+_OUTSIDE_LEGEND_LOCS: dict[OutsideSide, str] = {
+    "above": "lower center",
+    "below": "upper center",
+    "right": "center left",
+    "left": "center right",
+}
+
+
+def _parse_outside_side(loc: str) -> OutsideSide | None:
+    """Return ``loc`` as an outside side, or ``None`` for a matplotlib ``loc``."""
+    match loc:
+        case "above" | "below" | "right" | "left":
+            return loc
+        case _:
+            return None
+
+
+def _outside_ncols(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    side: OutsideSide,
+    legend_kw: dict[str, Any],
+    renderer: RendererBase,
+) -> int:
+    """Return the column count for an outside legend on ``side`` of ``ax``.
+
+    Right and left legends are one column. Above and below, the fewest
+    rows whose rendered legend is no wider than the Axes win: one row when
+    it fits, otherwise two, and so on; a single column when nothing fits.
+    ``legend_kw`` must not hold ``ncol`` / ``ncols``.
+    """
+    if side in ("right", "left"):
+        return 1
+    try:
+        axes_width = ax.get_window_extent(renderer).width
+    except BBOX_ERRORS:
+        return 1
+    count = len(labels)
+    tried: set[int] = set()
+    for rows in range(1, count + 1):
+        ncols = -(-count // rows)  # ceil(count / rows)
+        if ncols in tried:
+            continue
+        tried.add(ncols)
+        legend = ax.legend(
+            handles,
+            labels,
+            loc=_OUTSIDE_LEGEND_LOCS[side],
+            ncols=ncols,
+            **legend_kw,
+        )
+        try:
+            width = legend.get_window_extent(renderer).width
+        except BBOX_ERRORS:
+            continue
+        if width <= axes_width:
+            return ncols
+    return 1
+
+
+def _place_outside_legend(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    side: OutsideSide,
+    kw: dict[str, Any],
+) -> Legend:
+    """Draw the legend of ``ax`` outside ``side``, past its tick and axis labels."""
+    for key in ("bbox_to_anchor", "bbox_transform"):
+        if key in kw:
+            raise ValueError(
+                f"place_legend(loc={side!r}) anchors the legend itself; "
+                f"remove {key}= or pass a matplotlib loc instead"
+            )
+    legend_kw = dict(kw)
+    explicit = legend_kw.pop("ncols", None)
+    explicit = legend_kw.pop("ncol", explicit)
+    _fig, renderer = _renderer_for_axes(ax)
+    ncols = (
+        int(explicit)
+        if explicit is not None
+        else _outside_ncols(ax, handles, labels, side, legend_kw, renderer)
+    )
+    legend = ax.legend(
+        handles,
+        labels,
+        loc=_OUTSIDE_LEGEND_LOCS[side],
+        ncols=ncols,
+        **legend_kw,
+    )
+    anchor_outside(legend, ax, side, renderer)
+    return legend
+
+
+def _may_go_outside(kw: dict[str, Any]) -> bool:
+    """Whether a ``best`` legend may fall back outside (no caller anchor)."""
+    return "bbox_to_anchor" not in kw and "bbox_transform" not in kw
+
+
+def _covers_data(ax: Axes, legend: Legend, renderer: Any) -> bool:
+    """Whether the drawn ``legend`` box overlaps data of ``ax`` or its twins."""
+    ax.figure.canvas.draw()
+    try:
+        bbox = legend.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return False
+    return _collision_area(bbox, _pair_occupancy_bboxes(ax, renderer)) > 0
+
+
+def _pair_occupancy_bboxes(ax: Axes, renderer: Any) -> list[Bbox]:
+    """Data occupancy of ``ax`` and every twin drawn in the same box."""
+    return [
+        bbox
+        for owner in same_position_axes(ax)
+        for bbox in _data_occupancy_bboxes(owner, renderer)
+    ]
+
+
+def _legend_entries(ax: Axes) -> tuple[list[Any], list[str]]:
+    """Legend handles and labels of ``ax``, from its artists or its legend."""
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        return list(handles), list(labels)
+    legend = ax.get_legend()
+    if legend is None:
+        return [], []
+    pairs = [
+        (handle, text.get_text())
+        for handle, text in zip(
+            legend.legend_handles, legend.get_texts(), strict=False
+        )
+        if handle is not None
+    ]
+    return [h for h, _ in pairs], [t for _, t in pairs]
+
+
+def _merge_twin_legends(ax: Axes) -> tuple[Axes, list[Any], list[str]]:
+    """One legend for a twin pair: every partner's entries, on the top axes.
+
+    The legend goes on the twin drawn last, so no partner's data is drawn
+    over it; the partners' own legends are removed. A single Axes returns
+    itself and its own entries.
+    """
+    owners = same_position_axes(ax)
+    if len(owners) == 1:
+        handles, labels = _legend_entries(ax)
+        return ax, handles, labels
+    parent = ax.get_figure(root=False)
+    order = parent.axes if parent is not None else owners
+    host = max(owners, key=order.index)
+    handles, labels, seen = [], [], set()
+    for owner in sorted(owners, key=order.index):
+        for handle, label in zip(*_legend_entries(owner), strict=True):
+            if label not in seen:
+                seen.add(label)
+                handles.append(handle)
+                labels.append(label)
+    for owner in owners:
+        legend = owner.get_legend()
+        if owner is not host and legend is not None:
+            legend.remove()
+    return host, handles, labels
+
+
+def _outside_fallback(
+    ax: Axes, handles: list[Any], labels: list[str], kw: dict[str, Any]
+) -> Legend:
+    """Put the legend above ``ax`` because every in-axes spot covers data."""
+    legend = _place_outside_legend(ax, handles, labels, "above", kw)
+    legend._dm_collision_free = True  # type: ignore[attr-defined]
+    legend._dm_collision_score = 0.0  # type: ignore[attr-defined]
+    legend._dm_outside_fallback = True  # type: ignore[attr-defined]
+    return legend
+
+
 def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     """Place or reposition an axes legend.
 
     ``loc="best"`` delegates to matplotlib for simple line-only axes. When the
     axes contains bars/collections/text obstacles or a tall legend, it scores
     four corners plus upper/lower center across one to three columns and
-    selects the least obstructed in-axes location. The returned Legend receives
-    ``_dm_collision_free`` and ``_dm_collision_score`` attributes for callers
-    that need to detect an unavoidable collision fallback.
+    selects the least obstructed in-axes location. When every in-axes
+    location would cover data, the legend goes outside, above the axes (the
+    ``loc="above"`` placement below), so no caller has to pick a side; a
+    ``bbox_to_anchor`` / ``bbox_transform`` in ``kw`` keeps it inside. The
+    returned Legend receives ``_dm_collision_free`` and
+    ``_dm_collision_score`` attributes; ``_dm_outside_fallback`` is True when
+    the legend went outside for that reason.
+
+    ``loc="above"``, ``"below"``, ``"right"`` or ``"left"`` puts the legend
+    outside the axes, centred on that side, past the side's tick labels and
+    axis label (and a ``twinx`` / ``twiny`` partner's) by the preset's
+    ``legend.borderaxespad`` gap. Above and below it takes one row when that
+    row fits the axes width, otherwise the fewest rows that fit (rows are
+    chosen for the axes width at call time); right and left it is one
+    column. ``ncol`` / ``ncols`` in ``kw`` overrides the count, and
+    ``bbox_to_anchor`` / ``bbox_transform`` raise ``ValueError`` because the
+    side sets the anchor. :func:`dartwork_mpl.simple_layout` re-anchors such
+    a legend to the labels present when it runs, makes room for it, and
+    raises the axes titles above an ``"above"`` legend.
+    ``dm.optimize_legend(ax, outside=True)`` also places a legend outside,
+    at the top of the right side with its own font size and frame; prefer
+    ``loc="right"`` here, which keeps the preset's legend style.
+
+    A ``twinx`` / ``twiny`` pair gets one legend: the entries of every twin,
+    on the twin drawn last (so no partner's data covers it), and the
+    partners' own legends are removed. Any other ``loc`` is passed to
+    ``ax.legend`` unchanged.
     """
-    handles, labels = ax.get_legend_handles_labels()
-    if not handles:
-        legend = ax.get_legend()
-        if legend is None:
-            return None
-        handles = [
-            handle for handle in legend.legend_handles if handle is not None
-        ]
-        labels = [text.get_text() for text in legend.get_texts()]
+    ax, handles, labels = _merge_twin_legends(ax)
     if not handles:
         return None
 
+    side = _parse_outside_side(loc)
+    if side is not None:
+        return _place_outside_legend(ax, list(handles), list(labels), side, kw)
     if loc != "best":
         return _legend_for_loc(ax, list(handles), list(labels), loc, kw)
 
     fig, renderer = _renderer_for_axes(ax)
-    has_obstacles = bool(ax.patches or ax.collections or ax.texts)
+    twins = len(same_position_axes(ax)) > 1
+    has_obstacles = twins or bool(ax.patches or ax.collections or ax.texts)
     ncols = _legend_candidate_ncols(list(labels), kw)
     if not has_obstacles and len(labels) < 5 and ncols == [1]:
-        return _legend_for_loc(ax, list(handles), list(labels), "best", kw)
+        legend = _legend_for_loc(ax, list(handles), list(labels), "best", kw)
+        if not _may_go_outside(kw) or not _covers_data(ax, legend, renderer):
+            return legend
+        legend.remove()
+        return _outside_fallback(ax, list(handles), list(labels), kw)
 
     old_legend = ax.get_legend()
     if old_legend is not None:
         old_legend.remove()
 
-    data_bboxes = _data_occupancy_bboxes(ax, renderer)
+    data_bboxes = _pair_occupancy_bboxes(ax, renderer)
     try:
         axes_bbox = ax.get_window_extent(renderer)
     except BBOX_ERRORS:
@@ -922,6 +1243,10 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
             legend.remove()
 
     best = _best_trial(trials)
+    if _may_go_outside(kw) and not (
+        isinstance(best, _MeasuredLegend) and best.collision_free
+    ):
+        return _outside_fallback(ax, list(handles), list(labels), kw)
     legend_kw = dict(kw)
     legend_kw["ncol"] = best.ncol
     legend = _legend_for_loc(
