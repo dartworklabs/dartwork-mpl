@@ -43,6 +43,7 @@ from .._figure_geometry import (
     get_renderer,
     iter_figure_level_extents,
     reanchor_outside,
+    respread_line_end_labels,
     same_position_axes,
 )
 from ..units import Length
@@ -1004,7 +1005,7 @@ def _lift_titles_over_legends(ax: Axes, renderer: RendererBase) -> bool:
 
 
 def _settle_outside_legends(fig: Figure, renderer: RendererBase) -> bool:
-    """Re-anchor ``dm.place_legend`` outside legends, then lift titles over legends.
+    """Re-anchor outside legends, re-space line-end labels, lift titles over legends.
 
     Runs on every Axes of ``fig`` before the layout measures it, so a
     legend placed before its axis labels existed moves past them and a
@@ -1015,6 +1016,10 @@ def _settle_outside_legends(fig: Figure, renderer: RendererBase) -> bool:
     for ax in fig.axes:
         legend = ax.get_legend()
         if legend is not None and reanchor_outside(legend, ax, renderer):
+            moved = True
+        # Line-end labels (dm.label_line_ends) were spaced at the size the
+        # Axes had then; space them again at its size now.
+        if respread_line_end_labels(ax, renderer):
             moved = True
     for ax in fig.axes:
         if _lift_titles_over_legends(ax, renderer):

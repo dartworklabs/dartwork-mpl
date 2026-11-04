@@ -30,16 +30,16 @@ def _figure(preset: str):
 
 
 class TestNoteStyle:
-    """Lower-left corner, one point under the preset font, the preset colour."""
+    """Lower-left corner, one step under the preset font (dm.fs(-1)), its colour."""
 
     @pytest.mark.parametrize("preset", PRESETS)
     def test_style_follows_the_preset(self, preset: str) -> None:
         fig, _ = _figure(preset)
         try:
             note = dm.add_note(fig, "Source: internal web logs")
-            assert note.get_fontsize() == pytest.approx(
-                mpl.rcParams["font.size"] - 1.0
-            )
+            # dm.fs(-1): one point under the body text, 2.6 pt under
+            # presentation (one step there, #556).
+            assert note.get_fontsize() == pytest.approx(dm.fs(-1))
             assert note.get_position() == (0.0, 0.0)
             assert note.get_ha() == "left" and note.get_va() == "bottom"
             assert note in fig.texts
