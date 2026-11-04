@@ -36,6 +36,8 @@ def _tick_fig(ticks: list[float], labels: list[str]) -> Figure:
 
 
 class TestTickDecimalTrailingZero:
+    """TICK_DECIMAL flags tick labels that end in meaningless zeros."""
+
     def test_si_explicit_decimals_warn_and_name_the_formatter(self) -> None:
         fig, ax = plt.subplots(figsize=(5, 3))
         ax.set_ylim(0, 200)
@@ -180,6 +182,8 @@ def _bar_fig(labels: list[str]) -> Figure:
 
 
 class TestValueLabelDecimal:
+    """VALUE_LABEL_DECIMAL flags whole-number value labels with decimals."""
+
     @pytest.mark.parametrize(
         "labels",
         [

@@ -11,8 +11,8 @@ from __future__ import annotations
 import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 
-from ..helpers import MIN_RECOMMENDED_DPI
 from ._orchestrator import validate_figure
+from ._quality import MIN_RECOMMENDED_DPI
 from ._types import Severity
 
 # matplotlib's hard default base font size (pt). dartwork style presets
@@ -66,7 +66,7 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
     requirements = {}
 
     # Check DPI — threshold comes from the single source in
-    # helpers.quality so the two checks can never drift apart again.
+    # validate._quality so the two checks can never drift apart again.
     requirements["high_dpi"] = fig.dpi >= MIN_RECOMMENDED_DPI
 
     # Check if a (dartwork) style preset was applied — figure-local, not

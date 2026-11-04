@@ -74,6 +74,34 @@ x = np.linspace(0, 12, 121)
 fig = plt.figure(figsize=dm.figsize("20cm", "16cm"))
 ```
 
+### Whole-figure estimate, template guidance and margin correction
+
+`dm.figsize_grid("6cm", "standard", ncols=3, nrows=2, gap="0.6cm")`
+returns a whole-figure size: width `3 * 6 + 2 * 0.6 = 19.2cm` and height
+`2 * (6 * 0.75) + 0.6 = 9.6cm`. It does not create Axes or set GridSpec
+spacing. The requested panel width and gap are inputs to that arithmetic;
+labels, outer margins and native `wspace`/`hspace` determine the final Axes
+rectangles and gaps. Neither exact 6cm Axes nor exact 0.6cm rendered gaps
+are guaranteed. Render and measure the bounds below when those matter.
+
+MCP `compose_layered_plot` returns a starting template (including its example
+comments) and an annotation-layer checklist for the agent to adapt. Its
+`applied`/`missing` lists use lexical detection in source, not rendered checks.
+It does not rewrite code, execute a plot, allocate panels or repair spacing.
+Installed Python users can read the same basic/advanced sources through
+`importlib.resources`, as shown in the [installed workflow](../ai/installed_python.md).
+
+The bounded margin/convergence correction tracked by #209 is a separate
+concern from template composition and figure-size arithmetic. The current
+`dm.simple_layout` measures content and iteratively updates root GridSpec outer
+margins, preserving native internal spacing. It does not solve nested local
+spacing or guarantee that every label fits every requested canvas. Historical
+`auto_layout` is removed; do not call it as an extra correction pass.
+`simple_layout` returns `None`, not a convergence or validation report: inspect
+`dm.validate_figure(fig)` findings and the actual PNG/PDF before accepting the
+result. If content cannot fit the requested geometry, explain the constraint
+and agree on a revision; do not silently delete data or shrink fonts.
+
 ### Equal grid
 
 ```python
@@ -208,6 +236,33 @@ Read the full report (including `CHECK_FAILED`), inspect the actual PNG and PDF,
 and retain heuristic/advisory warnings with any explanation. Save a revision to
 a new stem such as `layout-v2`; keep v1, exact source and geometry for review.
 
+### Measured presentation text correction
+
+For the two whole-canvas recipes above, a measured 20 × 16 cm render using
+`presentation` clipped the leftmost `Response` y-label with the initial
+1.15 cm local left margin. Increasing only that margin to 1.70 cm cleared
+that overflow in both examples. After inspecting the full report and images,
+a revision can replace the `local = panel.add_gridspec(...)` call inside the
+existing panel loop with:
+
+<!-- snippet: no-run -->
+```python
+# This measured example's candidate, not a universal fit value.
+local = panel.add_gridspec(
+    1, 1, left=1.70 / width_cm, right=1 - 0.45 / width_cm,
+    bottom=1.05 / height_cm, top=1 - 0.80 / height_cm)
+```
+
+Rebuild the figure with that local edit, then repeat drawing, measurement,
+validation and image review, saving to a new output stem. Keep the 20 × 16 cm
+canvas, requested container ratios, data, colors, preset fonts and legend
+anchors. The larger left margin makes the data Axes narrower; it does not
+change the container allocations. The value 1.70 cm is a candidate for these
+measured examples, not an automatic preset override. If too little data space
+remains or content still clips, explain the constraint and ask which constraint
+may change; do not silently shrink fonts, remove data, resize the canvas or
+relocate legends. The scientific recipe defaults above remain unchanged.
+
 ### Adding a buffer with `margin`
 
 The default `simple_layout(fig)` snaps axes content (labels, ticks,
@@ -233,6 +288,16 @@ of:
 - unit string (`"5mm"`, `"0.5cm"`, `"0.1in"`, `"24pt"`)
 - percentage string (`"5%"` = 5 % of the figure dimension)
 - bare number (figure-fraction, so `0.05` = 5 %)
+
+All four effective side margins must resolve to finite figure fractions.
+Otherwise, `simple_layout` raises
+`ValueError("margin must resolve to finite figure fractions")` before drawing,
+font adoption or layout changes. All margins are parsed first, so an invalid
+margin string still raises its parsing error. Four finite side overrides may
+replace a nonfinite base `margin`; partial overrides must leave every side
+finite. Finite zero, negative and oversized margins retain the existing edge
+clamp. Empty figures and figures without a supported GridSpec return before
+parsing margins; the latter retain their warning.
 
 **How it works:**
 
@@ -362,9 +427,37 @@ requested margin from each figure edge. This means:
 
 dartwork-mpl includes several helpers that automate tedious formatting tasks.
 
-### Auto-aligned panel labels (`label_axes`)
+### Panel labels (`label_axes`)
 
-Manually positioning `(a)`, `(b)`, `(c)` labels across panels with different y-axis label lengths often results in misaligned text. `dm.label_axes(axes)` calculates the bounding boxes of your y-labels and perfectly aligns the panel labels to the leftmost edge.
+`dm.label_axes` accepts `labels` for custom strings and `x` / `y` for
+Axes-relative positions (values may extend outside 0–1). With `x="auto"`,
+it uses -0.18 when an Axes has a y-label and -0.02 otherwise; `y` defaults
+to 1.05. Extra compatible native `Text` properties, such as `color`,
+`rotation` and `alpha`, pass through to `ax.text`:
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+ax.plot([0, 1, 2], [1, 3, 2], color="oc.blue9")
+dm.label_axes([ax], labels=["(a)"], x=-0.02, y=1.05,
+              color="black", rotation=0, alpha=0.9)
+dm.simple_layout(fig)
+```
+
+`fmt`, `loc` and `xy` are not supported `label_axes` arguments. Use
+`labels` for text and `x` / `y` for position. The helper supplies the Axes
+transform and left/bottom alignment itself; for custom transforms or
+alignment, replace the preceding `dm.label_axes(...)` call with the native
+call below, before `dm.simple_layout(fig)`. Do not run both label calls:
+
+<!-- snippet: no-run -->
+```python
+ax.text(0.02, 0.98, "(a)", transform=ax.transAxes,
+        fontsize=dm.fs(1), ha="left", va="top")
+```
 
 Panels with a left-aligned title (`ax.set_title(..., loc="left")`) get the
 letter on the title's line, just before the title (`a  Line A`), and it moves

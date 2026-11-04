@@ -17,6 +17,7 @@ __all__ = [
     "label_hline",
     "label_line_ends",
     "make_offset",
+    "optimize_legend",
     "place_legend",
     "wrap_axis_label",
     "wrap_axis_labels",
@@ -44,6 +45,7 @@ from .._figure_geometry import (
     same_position_axes,
 )
 from ..scale import fs, fw
+from ._optimize_legend import optimize_legend
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase

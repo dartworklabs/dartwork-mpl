@@ -11,15 +11,71 @@ __all__ = [
     "find_template",
     "get_prompt",
     "list_prompts",
+    "list_template_names",
+    "open_anti_pattern_catalog",
     "prompt_path",
+    "resolve_template_path",
+    "template_exists",
 ]
 
 import json
+import re
 import warnings
 from pathlib import Path
 from shutil import copy2
+from typing import TextIO
 
 _PROMPT_DIR: Path = Path(__file__).parent.parent / "asset/prompt"
+_TEMPLATE_DIR = _PROMPT_DIR / "05-templates"
+_TEMPLATE_ID_RE = re.compile(r"[a-z0-9_]+")
+
+
+def resolve_template_path(
+    plot_type: str, *, advanced: bool = False
+) -> Path | None:
+    """Select a resolved regular file confined to the requested bundled tier.
+
+    IDs are lowercased and must fully match the bare template ID grammar.
+    Missing, unsafe and nonfile candidates return None, as do OSError and
+    RuntimeError during resolution. Advanced selection never falls back.
+    No source is read or cached; read/decoding errors remain the caller's.
+    The package installation is trusted and stable during selection and use.
+    """
+    stem = plot_type.lower()
+    if _TEMPLATE_ID_RE.fullmatch(stem) is None:
+        return None
+    root = _TEMPLATE_DIR / "advanced" if advanced else _TEMPLATE_DIR
+    try:
+        resolved_root = root.resolve()
+        path = (resolved_root / f"{stem}.py").resolve()
+        if path.is_relative_to(resolved_root) and path.is_file():
+            return path
+    except (OSError, RuntimeError):
+        return None
+    return None
+
+
+def list_template_names(*, advanced: bool = False) -> list[str]:
+    """Return sorted raw glob stems in one tier, including nonfile entries.
+
+    Names preserve filesystem spelling; listing does not authorize a read.
+    No confinement, file filtering, fallback or source caching is applied.
+    """
+    root = _TEMPLATE_DIR / "advanced" if advanced else _TEMPLATE_DIR
+    return sorted(p.stem for p in root.glob("*.py"))
+
+
+def template_exists(stem: str, *, advanced: bool = False) -> bool:
+    """Report raw path existence with OS-native spelling and join semantics.
+
+    This metadata operation neither normalizes nor confines the stem and
+    may observe directories or outside paths. It never authorizes a read;
+    consumers must use resolve_template_path before reading or execution.
+    Path.exists errors retain native behavior, with no tier fallback.
+    """
+    root = _TEMPLATE_DIR / "advanced" if advanced else _TEMPLATE_DIR
+    return (root / f"{stem}.py").exists()
+
 
 # Canonical prompt corpus (T5/R3a). ``list_prompts`` warns when a
 # supported prompt file outside this set appears next to it. The
@@ -75,6 +131,16 @@ def get_prompt(name: str) -> str:
     """
     path = prompt_path(name)
     return path.read_text(encoding="utf-8")
+
+
+def open_anti_pattern_catalog() -> TextIO:
+    """Open the exact bundled anti-pattern YAML catalog as UTF-8 text.
+
+    Opening is deferred until this call. Native filesystem and decoding
+    errors propagate without fallback to Markdown. The caller owns the
+    returned stream and must close it, normally with a ``with`` block.
+    """
+    return (_PROMPT_DIR / "02-anti-patterns.yaml").open("r", encoding="utf-8")
 
 
 def list_prompts() -> list[str]:

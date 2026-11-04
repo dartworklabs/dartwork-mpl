@@ -35,7 +35,7 @@ def main() -> None:
             f"\nUnderlying error: {exc}\n"
         )
         sys.exit(1)
-    mcp.run()
+    mcp.run(show_banner=False)
 
 
 if __name__ == "__main__":

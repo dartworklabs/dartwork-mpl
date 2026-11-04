@@ -7,6 +7,8 @@ exhaustively into the legacy reply dict.
 from dataclasses import dataclass
 from typing import Any, TypeAlias
 
+from dartwork_mpl.prompt import list_template_names
+
 from . import bundled
 
 # Heuristic detection — purely lexical so it stays cheap and lets the agent
@@ -93,9 +95,7 @@ def compose(
                 "missing": [],
             }
         case NoTemplate(tier):
-            available = sorted(
-                p.stem for p in bundled._TEMPLATE_DIR.glob("*.py")
-            )
+            available = list_template_names()
             return {
                 "status": "unknown_template",
                 "tier": tier,
