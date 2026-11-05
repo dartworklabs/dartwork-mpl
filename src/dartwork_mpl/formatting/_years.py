@@ -12,6 +12,7 @@ between two years) gets no label rather than a rounded one.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Any, Literal
 
@@ -34,11 +35,13 @@ _LAST_YEAR = 2099
 _WHOLE_TOL = 1e-6
 
 
+def _whole(value: float) -> bool:
+    # Finite first: round() of an infinity raises; NaN is not finite.
+    return math.isfinite(value) and abs(value - round(value)) <= _WHOLE_TOL
+
+
 def _whole_year(value: float) -> bool:
-    # Range first: round() of an infinity raises; NaN compares false.
-    return _FIRST_YEAR <= value <= _LAST_YEAR and abs(value - round(value)) <= (
-        _WHOLE_TOL
-    )
+    return _FIRST_YEAR <= value <= _LAST_YEAR and _whole(value)
 
 
 def year_data(values: npt.ArrayLike) -> bool:
@@ -144,12 +147,15 @@ class WholeYearLocator(ticker.MaxNLocator):
 class YearTickFormatter(ticker.Formatter):
     """Whole years as two digits (``24``) or four (``2024``).
 
-    ``suffix`` is appended to every year (``"년"``). Each :meth:`set_locs`
-    (every draw) reads the whole years in view: with ``digits=2`` they print
-    four digits when two would repeat (``00, 50, 00``). A tick that is not a
-    whole year in 1900-2099 gets no label. The cursor readout
-    (:meth:`format_data_short`) is the value itself (``2007.53``), as
-    matplotlib's number axes write it: a cursor sits between years.
+    For year axes, under :class:`WholeYearLocator` or whole years someone
+    pinned. ``suffix`` is appended to every year (``"년"``). Each
+    :meth:`set_locs` (every draw) reads the whole years in view: with
+    ``digits=2`` they print four digits when two would repeat (``1900,
+    2000``; ``2000 … 2100``). Every whole tick is a year, the ``2100`` at the
+    edge of data reaching 2099 included; a tick between years gets no label.
+    The cursor readout (:meth:`format_data_short`) is the value itself
+    (``2007.53``), as matplotlib's number axes write it: a cursor sits
+    between years.
     """
 
     def __init__(self, digits: Literal[2, 4], suffix: str = "") -> None:
@@ -173,12 +179,12 @@ class YearTickFormatter(ticker.Formatter):
         if axis is not None:
             low, high = sorted(float(v) for v in axis.get_view_interval())
             values = [v for v in values if low <= v <= high]
-        years = [round(v) for v in values if _whole_year(v)]
+        years = [round(v) for v in values if _whole(v)]
         self._four = self.digits == 4 or two_digits_repeat(years)
 
     def __call__(self, x: float, pos: int | None = None) -> str:
         """One tick's label: the year, or nothing between years."""
-        if not _whole_year(float(x)):
+        if not _whole(float(x)):
             return ""
         year = round(x)
         body = f"{year}" if self._four else f"{year % 100:02d}"

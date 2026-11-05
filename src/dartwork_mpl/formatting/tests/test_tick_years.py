@@ -340,6 +340,55 @@ def test_requested_params_read_what_someone_changed():
     assert WholeYearLocator().requested == frozenset()
 
 
+def _reads_its_value(loc: float, text: str) -> bool:
+    return bool(text) and float(text.replace(",", "")) == pytest.approx(loc)
+
+
+# Review 2026-11-05, R2: with these, an explicitly set locator ended on
+# 2.5-year ticks after the refit and every other tick was unlabelled.
+EXPLICIT_LOCATOR_CASES = [
+    ("report", "6cm", 2011),
+    ("report", "9cm", 2005),
+    ("scientific", "6cm", 2009),
+    ("report", "12cm", 2003),
+]
+
+
+@pytest.mark.parametrize(
+    "make",
+    [mticker.AutoLocator, lambda: mticker.MaxNLocator(nbins=6)],
+    ids=["AutoLocator", "MaxNLocator"],
+)
+def test_a_locator_someone_set_labels_every_tick(make):
+    """Year labels go with whole-year ticks, which only the library's
+    locator (or whole years someone pinned) promises. A locator someone set
+    keeps matplotlib's number labels: every tick reads its own value,
+    never a rounded year and never an empty label."""
+    for preset, width, start in EXPLICIT_LOCATOR_CASES:
+        dm.style.use(preset)
+        fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"))
+        x = np.arange(start, 2025)
+        ax.plot(x, np.arange(len(x)))
+        ax.xaxis.set_major_locator(make())
+        dm.simple_layout(fig)
+        locs, labels = _shown(ax)
+        case = (preset, width, start, locs, labels)
+        assert len(locs) >= 2, case
+        assert all(map(_reads_its_value, locs, labels)), case
+        assert type(ax.xaxis.get_major_formatter()) is mticker.ScalarFormatter
+        plt.close(fig)
+
+
+def test_year_ticks_past_2099_are_labelled():
+    """Data to 2099 tick 2100 at the edge: a year, labelled like the rest."""
+    locs, labels = _shown(_line(np.arange(2050, 2100), width="12cm"))
+    assert _year_axis(_line(np.arange(2050, 2100), width="12cm"))
+    assert locs[-1] == 2100 and all(labels), (locs, labels)
+    assert labels == _two_digits(locs), labels  # 50, 60 … 90, 00
+    locs, labels = _shown(_line(np.arange(2001, 2100), width="12cm"))
+    assert labels == [f"{round(v)}" for v in locs], labels  # 2000 … 2100
+
+
 def test_pinned_ticks_keep_their_places():
     """Whole years someone pinned read two digits; other pins keep numbers."""
     ax = _line(np.arange(2016, 2025), ticks=[2016, 2020, 2024])
@@ -398,6 +447,8 @@ def test_helpers():
     fmt = YearTickFormatter(2)
     assert fmt.format_ticks([2016, 2016.5, 2017]) == ["16", "", "17"]
     assert fmt.format_ticks([1900, 2000]) == ["1900", "2000"]
+    assert fmt.format_ticks([2080, 2090, 2100]) == ["80", "90", "00"]
+    assert fmt.format_ticks([2000, 2100]) == ["2000", "2100"]
     assert fmt.format_data_short(2016.5) == "2016.5"
     locator = WholeYearLocator()
     assert locator.tick_values(2004.05, 2024.95) == pytest.approx(

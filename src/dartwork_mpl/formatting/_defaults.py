@@ -541,9 +541,11 @@ def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
     margins after this call and the ticks move with them. Matplotlib's own
     locator gives way to :class:`WholeYearLocator`, which carries what
     someone asked of it in place (``ax.locator_params(axis="x", nbins=3)``),
-    and its own formatter to :class:`YearTickFormatter` (when the ticks in
-    view are whole years); a locator or formatter someone set stays.
-    Returns 1 if anything changed.
+    and its own formatter to :class:`YearTickFormatter` when every tick is
+    a whole year whatever the refit does (:func:`_ticks_whole_years`). A
+    locator or formatter someone set stays; under a locator someone set
+    (``MaxNLocator``) matplotlib's formatter stays too, so every tick reads
+    its value (``2005, 2007.5``). Returns 1 if anything changed.
     """
     if not year_data(plotted_dates(ax, "x")):
         return 0
@@ -552,10 +554,25 @@ def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
         asked = requested_params(axis.get_major_locator())
         axis.set_major_locator(WholeYearLocator(**asked))
         changed = 1
-    if axis.isDefault_majfmt and whole_years(_visible_ticks(axis)):
+    if axis.isDefault_majfmt and _ticks_whole_years(axis.get_major_locator()):
         axis.set_major_formatter(YearTickFormatter(digits, suffix))
         changed = 1
     return changed
+
+
+def _ticks_whole_years(locator: ticker.Locator) -> bool:
+    """Whether every tick the locator gives is a whole year.
+
+    The library's :class:`WholeYearLocator`, or ticks someone pinned
+    (``set_xticks``) that are all whole years. Any other locator can land
+    between years once the margins are refitted.
+    """
+    if isinstance(locator, WholeYearLocator):
+        return True
+    if not isinstance(locator, ticker.FixedLocator):
+        return False
+    pins = locator.tick_values(-np.inf, np.inf)  # every pin, any view
+    return whole_years([float(v) for v in pins])
 
 
 def apply_default_tick_format(fig: Figure) -> int:

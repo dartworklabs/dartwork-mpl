@@ -506,7 +506,10 @@ with dm.config.override(tick_years=4):        # four-digit years
 It applies to what runs inside the `with` block, so wrap the code from
 figure creation to the last `dm.simple_layout` (and the save), or set the
 field on `dm.config` for the whole program (`dm.config.tick_years = 4`). A
-formatter or locator you set yourself is never replaced.
+formatter or locator you set yourself is never replaced. A tick count asked
+of the axis, `ax.locator_params(axis="x", nbins=3)`, is kept on whole years
+(`00, 10, 20`). Year labels need whole-year ticks, so under a locator you
+set (`MaxNLocator`) the ticks keep matplotlib's numbers (`2005, 2010`).
 `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's numbers;
 `dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k` or
 `0.25억` on the ticks.

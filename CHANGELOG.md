@@ -28,7 +28,10 @@ a request for another format gets that format.
   `ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))` keeps its
   words (in Korean figures too, which 0.6.0 turned Korean) and its locator
   (no quarter locator, no thinning), and an explicit `ScalarFormatter()`
-  keeps `1000`.
+  keeps `1000`. A tick count asked with `ax.locator_params(axis="x",
+  nbins=3)` is kept, on whole years for year data (`00, 10, 20`); under a
+  locator you set (`MaxNLocator`) year data keep matplotlib's numbers
+  (`2005, 2010`), so no tick is left unlabelled.
 - **Requires Matplotlib ≥3.11; 3.10 is no longer supported.** Matplotlib
   3.11 sizes text boxes and draws legend markers differently, so it renders
   dartwork-mpl figures slightly differently from 3.10. Rather than patch
