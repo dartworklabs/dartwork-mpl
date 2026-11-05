@@ -329,6 +329,23 @@ def test_reference_line_does_not_hide_quarters():
     assert all(PERIOD_QUARTER.fullmatch(t) for t in _xticks(ax))
 
 
+def test_marker_line_does_not_hide_quarters():
+    """An axvline at a date between quarters is a marker, not quarterly data.
+
+    Its x is a date but its y runs in axes fractions, so it is left out of
+    the plotted dates as an axhline is (review 2026-11-05: it turned the
+    axis back to ``23.01, 23.05``).
+    """
+    fig, ax = _dated(QUARTER_STARTS)
+    ax.axvline(np.datetime64("2024-02-15"), linewidth=0.5)
+    dm.simple_layout(fig)
+    labels = _xticks(ax)
+    assert labels and all(PERIOD_QUARTER.fullmatch(t) for t in labels), labels
+    np.testing.assert_allclose(
+        np.sort(plotted_dates(ax, "x")), mdates.date2num(QUARTER_STARTS)
+    )
+
+
 def test_auto_date_locator_labels_read_as_periods():
     """Property over spans and widths on the default locator path."""
     spans = [

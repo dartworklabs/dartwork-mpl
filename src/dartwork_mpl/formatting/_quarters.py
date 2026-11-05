@@ -66,9 +66,11 @@ def plotted_dates(
 
     Reads the axes' lines, scatter offsets and bar centres (vertical bars
     for x, horizontal for y), and those of every axes sharing that axis
-    (a ``twinx`` line counts for the shared x). Artists placed in axes
-    fractions along it (``axhline`` spans x from 0 to 1) and collections
-    without offsets (``fill_between``) are left out.
+    (a ``twinx`` line counts for the shared x). Lines count only when they
+    are in data units on both axes: an ``axhline`` (x from 0 to 1 in axes
+    fractions) or an ``axvline`` (a date marker spanning the height) marks
+    a value rather than plotting data. Collections without offsets
+    (``fill_between``) are left out.
     """
     column = 0 if which == "x" else 1
     shared = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
@@ -77,7 +79,9 @@ def plotted_dates(
     for member in shared.get_siblings(ax):
         data = member.transData
         for line in member.lines:
-            if line.get_transform().contains_branch_seperately(data)[column]:
+            # Data units on both axes: axhline / axvline span an axes
+            # fraction across, so they mark a value rather than plot data.
+            if all(line.get_transform().contains_branch_seperately(data)):
                 xy = np.asarray(line.get_xydata(), dtype=float)
                 chunks.append(xy.reshape(-1, 2)[:, column])
         for coll in member.collections:
