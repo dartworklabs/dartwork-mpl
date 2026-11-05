@@ -171,6 +171,21 @@ def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
     assert '"25.4cm", "16:9"' not in sizing
 
 
+def test_fewer_ticks_recipe_names_a_date_locator() -> None:
+    """Re-review 2026-11-05, N7: ``ax.locator_params`` is a no-op on dates.
+
+    matplotlib's ``AutoDateLocator`` has no ``set_params``, so the recipe
+    gives date axes a date locator (only the locator is set: the period
+    words stay, checked in ``test_tick_years``).
+    """
+    editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
+    (row,) = [
+        ln for ln in editing.splitlines() if ln.startswith("| fewer ticks")
+    ]
+    assert 'ax.locator_params(axis="x", nbins=5)' in row
+    assert "ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))" in row
+
+
 def test_one_unit_per_axis() -> None:
     """User decision 2026-10-22: one unit per axis, the largest tick's by default."""
     text = SKILL_MD.read_text(encoding="utf-8")

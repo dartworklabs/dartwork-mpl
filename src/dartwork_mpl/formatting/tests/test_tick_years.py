@@ -1204,6 +1204,27 @@ def test_horizontal_quarter_bars_read_quarters():
     assert all(PERIOD_QUARTER.fullmatch(t) for t in labels), labels
 
 
+@pytest.mark.parametrize("width", ["9cm", "14.5cm"])
+def test_fewer_date_ticks_with_a_date_locator_keep_period_words(width):
+    """editing.md's date recipe: only the locator is set, so dm keeps its
+    period formatter on it (re-review 2026-11-05, N7)."""
+    fig, ax = _dated(MONTHS, width)
+    locator = mdates.MonthLocator(interval=6)
+    ax.xaxis.set_major_locator(locator)
+    dm.simple_layout(fig)
+    assert ax.xaxis.get_major_locator() is locator
+    assert type(ax.xaxis.get_major_formatter()) is PeriodDateFormatter
+    assert _xticks(ax) == [
+        "23.01",
+        "23.07",
+        "24.01",
+        "24.07",
+        "25.01",
+        "25.07",
+        "26.01",
+    ]
+
+
 def test_period_four_digits():
     with dm.config.override(tick_years=4):
         assert _xticks(_laid_out(MONTHS))[0] == "2023.01"
