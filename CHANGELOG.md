@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 The rule behind these defaults: with no request the library's look applies;
 a request for another format gets that format.
 
+### Security
+
+- Raise the development-only Mistune floor to 3.3.3 and virtualenv floor
+  to 21.14.13, fixing the captured Markdown recursion, seed-link and Bash
+  prompt-expansion advisories. These tools are not consumer dependencies.
+
 ### Breaking / Changed defaults
 
 - **Two-digit years on untouched axes.** An x axis whose data are integer
