@@ -10,15 +10,18 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 - from one million the axis takes the largest tick's unit (``0.5M …
   2.5M``; ``50만 … 250만`` in Korean figures, ``config.number_ladder``),
   unless that needs more than two decimals;
-- x and y axes whose plotted data are integers 1900-2099 (annual lines,
-  bars and horizontal bars, bars grouped side by side within each year,
-  scatter, ``stackplot``, ``fill_between`` and ``fill_betweenx`` areas;
-  twins, shared axes and a ``secondary_xaxis`` / ``secondary_yaxis``
-  showing the same years included; a vertical bar's height is a value,
-  not y data) are year axes: ticks on whole years
+- x axes whose plotted data are integers 1900-2099 (annual lines, bars,
+  bars grouped side by side within each year, scatter, ``stackplot`` and
+  ``fill_between`` areas; twins, shared axes and a ``secondary_xaxis``
+  showing the same years included) are year axes, and so are y axes whose
+  data *positions* are such years (horizontal bars, grouped too, and
+  ``fill_betweenx`` spans; a ``twiny`` sibling or ``secondary_yaxis``
+  following them). A line's, a scatter's or a bar's y values are
+  quantities and never make a year axis (a price of 1,985 … 2,045 keeps
+  its separators). A year axis ticks whole years
   only (:class:`._years.WholeYearLocator`), read two digits (``16, 18,
   20``; four when two would print alike, or with ``config.tick_years =
-  4``); integer data in that range that are not years (elevations) read
+  4``); integer x data in that range that are not years (elevations) read
   the same way, so give such an axis a formatter of your own;
 - smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
   sit in 1000-2999 (``1950.3`` elevations), log and category axes, colorbars
@@ -670,7 +673,9 @@ def _year_axes(
     The functions see only a small sample of the data
     (:func:`_secondary_values`).
     """
-    years = plotted_dates(ax, which, bar_slot=1.0)
+    # On y only positions count: horizontal bars and fill_betweenx spans.
+    # A line's or a scatter's y values are quantities (a price of 1,985 …).
+    years = plotted_dates(ax, which, bar_slot=1.0, positions_only=which == "y")
     changed = _year_axis(_axis_of(ax, which), years, digits, suffix)
     secondaries = _secondary_axes(ax, which)
     sample = _sample(years) if secondaries else years

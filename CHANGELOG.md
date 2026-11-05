@@ -20,13 +20,15 @@ a request for another format gets that format.
 
 ### Breaking / Changed defaults
 
-- **Two-digit years on untouched axes.** An x or y axis whose data are
-  integer years (1900–2099: annual lines, bars, grouped bars, horizontal
-  bars such as `ax.barh(range(2014, 2025), …)`, scatter, `stackplot`,
-  `fill_between` and `fill_betweenx` areas; a `secondary_xaxis` /
-  `secondary_yaxis` showing them too) ticks whole years only and reads
+- **Two-digit years on untouched axes.** An x axis whose data are integer
+  years (1900–2099: annual lines, bars, grouped bars, scatter, `stackplot`
+  and `fill_between` areas; a `secondary_xaxis` showing them too), and a
+  y axis whose data *positions* are such years (horizontal bars such as
+  `ax.barh(range(2014, 2025), …)`, grouped too, `fill_betweenx` spans; a
+  `secondary_yaxis` following them), ticks whole years only and reads
   `16, 18, 20 … 24` (no more `2005.0, 2007.5`, nor a rounded `08`, nor
-  `2,014` on a y axis); monthly dates read `23.01, 23.07, 24.01`, quarterly
+  `2,014` beside horizontal bars). Line, scatter and bar values on y are
+  quantities and keep their numbers (a price of `1,985 … 2,045`); monthly dates read `23.01, 23.07, 24.01`, quarterly
   dates `23.Q1, 23.Q3` (`stackplot` and `fill_between` areas included;
   `dm.format_axis_dates` and dated categories too). Korean figures print
   the same text, without the `년` suffix. Other

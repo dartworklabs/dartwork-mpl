@@ -131,7 +131,11 @@ def _fill_outline(
 
 
 def plotted_dates(
-    ax: Axes, which: Literal["x", "y"], *, bar_slot: float | None = None
+    ax: Axes,
+    which: Literal["x", "y"],
+    *,
+    bar_slot: float | None = None,
+    positions_only: bool = False,
 ) -> npt.NDArray[np.float64]:
     """The x (or y) values the data sits on (date numbers on a date axis).
 
@@ -145,7 +149,10 @@ def plotted_dates(
     (:func:`_fill_outline`); other collections without offsets are left
     out. ``bar_slot`` (``1`` for years) reads
     a bar inside one slot as the slot's centre (:func:`_bar_positions`), so
-    grouped bars stand for their year.
+    grouped bars stand for their year. ``positions_only`` keeps only the
+    artists that place data at a position along ``which`` (bar centres and
+    ``fill_between`` / ``fill_betweenx`` spans): a line's or a scatter's y
+    values are quantities, whatever their numbers.
     """
     column = 0 if which == "x" else 1
     shared = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
@@ -153,7 +160,7 @@ def plotted_dates(
     chunks: list[npt.NDArray[np.float64]] = []
     for member in shared.get_siblings(ax):
         data = member.transData
-        for line in member.lines:
+        for line in [] if positions_only else member.lines:
             # Data units on both axes: axhline / axvline span an axes
             # fraction across, so they mark a value rather than plot data.
             if all(line.get_transform().contains_branch_seperately(data)):
@@ -162,6 +169,7 @@ def plotted_dates(
         for coll in member.collections:
             if (
                 isinstance(coll, PathCollection)
+                and not positions_only
                 and (
                     coll.get_offset_transform().contains_branch_seperately(
                         data

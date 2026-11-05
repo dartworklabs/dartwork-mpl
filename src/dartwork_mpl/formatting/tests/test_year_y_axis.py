@@ -1,11 +1,12 @@
-"""Year data on a y axis read as years, as on an x axis.
+"""Year positions on a y axis read as years; values on y never do.
 
-``ax.barh(range(2014, 2025), …)`` and a line plotted with years on y read
-``2,014 … 2,024`` (thousands separators on a year) before follow-up F1. The
-y axis takes the same data-driven rule as x: plotted y values that are all
-integers in 1900-2099 (horizontal bars' centres, lines' and scatter y data,
-``fill_betweenx`` areas, ``twiny`` siblings, a ``secondary_yaxis``) tick
-whole years and read two digits.
+``ax.barh(range(2014, 2025), …)`` read ``2,014 … 2,024`` (thousands
+separators on a year) before follow-up F1. On y only artists that place
+data AT a y position count as year data: horizontal bars' centres
+(grouped too), ``fill_betweenx`` spans, and a ``twiny`` sibling or a
+``secondary_yaxis`` following such an axis. Line, scatter and errorbar y
+values are quantities: a KRW price of 1,985-2,045 or a headcount of
+2,031-2,090 keeps its numbers (review of PR #595, item 1).
 """
 
 from __future__ import annotations
@@ -104,16 +105,51 @@ def test_grouped_horizontal_bars_read_as_years(series):
     _assert_years(_laid_out(draw).yaxis)
 
 
-def test_a_line_with_years_on_y_reads_years():
-    ax = _laid_out(lambda ax: ax.plot(np.linspace(1, 9, 11), YEARS))
-    _assert_years(ax.yaxis)
-
-
-def test_scatter_and_fill_betweenx_with_years_on_y():
-    _assert_years(_laid_out(lambda ax: ax.scatter(np.arange(11), YEARS)).yaxis)
+def test_fill_betweenx_spans_over_years_read_two_digits():
     _assert_years(
         _laid_out(lambda ax: ax.fill_betweenx(YEARS, 0, np.arange(11))).yaxis
     )
+
+
+MONTHS = np.arange(12)
+# A small-cap share price in KRW and a headcount: integers in 1900-2099.
+PRICE = np.array(
+    [1985, 1990, 2010, 2045, 2030, 2060, 2080, 2075, 2040, 2020, 2005, 1995]
+)
+HEADCOUNT = np.arange(2031, 2091, 5)
+
+
+@pytest.mark.parametrize(
+    "draw",
+    [
+        lambda ax: ax.plot(MONTHS, PRICE),
+        lambda ax: ax.plot(MONTHS, HEADCOUNT),
+        lambda ax: ax.scatter(MONTHS, PRICE),
+        lambda ax: ax.errorbar(MONTHS, PRICE, yerr=5),
+        lambda ax: ax.step(MONTHS, PRICE),
+        lambda ax: (ax.bar(MONTHS, PRICE), ax.plot(MONTHS, PRICE)),
+        lambda ax: ax.plot(np.arange(2014, 2026), PRICE),  # years on x
+        lambda ax: ax.plot(np.linspace(1, 9, 11), YEARS),  # a line's y values
+    ],
+    ids=[
+        "price-line",
+        "headcount-line",
+        "price-scatter",
+        "errorbar",
+        "step",
+        "value-line-over-bars",
+        "years-on-x",
+        "line-of-year-values",
+    ],
+)
+def test_integer_values_on_y_keep_their_numbers(draw):
+    """Values on y in 1900-2099 are quantities, never years."""
+    ax = _laid_out(draw)
+    assert not isinstance(ax.yaxis.get_major_formatter(), YearTickFormatter)
+    assert type(ax.yaxis.get_major_locator()) is mticker.AutoLocator
+    locs, labels = _on(ax.yaxis)
+    big = [t for t in labels if len(t.replace(",", "")) >= 4]
+    assert big and all("," in t for t in big), labels  # 1,985, not 85
 
 
 def test_twiny_and_secondary_yaxis_read_the_same_years():

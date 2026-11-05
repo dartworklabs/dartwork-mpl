@@ -484,7 +484,7 @@ figure:
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
 | reaches one million, Korean axis labels, titles or legend | `0, 50만 … 250만` (만/억/조) |
 | below 1,000 | unchanged: `0, 250 … 750` |
-| an x or y axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, horizontal bars `ax.barh(range(2014, 2025), …)`, scatter, `stackplot` / `fill_between` / `fill_betweenx` areas; a `secondary_xaxis` / `secondary_yaxis` showing them too; also non-year data such as elevations; a vertical bar's height is a value, not y data) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4` |
+| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; a `secondary_xaxis` showing them too; also non-year data such as elevations), or a y axis whose data *positions* are such years (horizontal bars `ax.barh(range(2014, 2025), …)`, grouped too, `fill_betweenx` spans; a `secondary_yaxis` following them). A line's, scatter's or bar's y values are quantities and keep their numbers (`1,985 … 2,045`) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4` |
 | monthly dates | `23.01, 23.07, 24.01` (year, then month; two-digit years) |
 | quarterly dates | `23.Q1, 23.Q3, 24.Q1` |
 | dates on a narrow axis | fewer ticks until labels are one em apart |
