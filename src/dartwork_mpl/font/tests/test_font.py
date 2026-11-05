@@ -395,6 +395,15 @@ class TestMathTextWeightNoise:
     ) -> None:
         # A fresh process: findfont caches each lookup, so the notice is only
         # logged on the first math render of a process.
+        #
+        # The control family is cmr10: Matplotlib ships it in one (regular)
+        # weight and no distro adds a light one, so a light request always
+        # misses. DejaVu Sans did not: Matplotlib's "light" is weight 200,
+        # which a system DejaVu Sans ExtraLight (fonts-dejavu-extra)
+        # satisfies, and the notice the control relies on never came.
+        with dm.style.context("scientific"):
+            # Not a font mathtext consults under the preset, so it must warn.
+            assert "cmr10" not in font_module._mathtext_families()
         code = (
             "import matplotlib\n"
             "matplotlib.use('Agg')\n"
@@ -403,7 +412,7 @@ class TestMathTextWeightNoise:
             "dm.style.use('scientific')\n"
             "fig, ax = plt.subplots(figsize=dm.figsize('9cm', 'standard'))\n"
             "ax.set_title(r'$\\alpha$')\n"
-            "ax.text(0.5, 0.5, 'x', family='DejaVu Sans')\n"
+            "ax.text(0.5, 0.5, 'x', family='cmr10')\n"
             "fig.canvas.draw()\n"
         )
         src = Path(__file__).resolve().parents[3]
@@ -420,11 +429,11 @@ class TestMathTextWeightNoise:
             for line in result.stderr.splitlines()
             if "Failed to find font weight" in line
         ]
-        # The math fonts are silent; the caller's DejaVu Sans still warns.
+        # The math fonts are silent; the caller's cmr10 still warns.
         assert misses, result.stderr
         assert all(
             line.startswith(
-                "findfont: Failed to find font weight light for DejaVu Sans,"
+                "findfont: Failed to find font weight light for cmr10,"
             )
             for line in misses
         ), misses
