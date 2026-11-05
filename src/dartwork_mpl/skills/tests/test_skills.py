@@ -183,7 +183,16 @@ def test_fewer_ticks_recipe_names_a_date_locator() -> None:
         ln for ln in editing.splitlines() if ln.startswith("| fewer ticks")
     ]
     assert 'ax.locator_params(axis="x", nbins=5)' in row
-    assert "ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))" in row
+    # One coarser date locator per span (re-review: a fixed interval=6 gave
+    # 24 ticks on 11 years and one "00:00" tick on 3 months).
+    assert "coarser than the current ticks" in row
+    for example in (
+        "mdates.YearLocator(5)",
+        "mdates.MonthLocator(interval=6)",
+        "mdates.MonthLocator()",
+        "mdates.WeekdayLocator(byweekday=mdates.MO)",
+    ):
+        assert f"ax.xaxis.set_major_locator({example})" in row, example
 
 
 def test_one_unit_per_axis() -> None:

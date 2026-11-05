@@ -1204,25 +1204,48 @@ def test_horizontal_quarter_bars_read_quarters():
     assert all(PERIOD_QUARTER.fullmatch(t) for t in labels), labels
 
 
-@pytest.mark.parametrize("width", ["9cm", "14.5cm"])
-def test_fewer_date_ticks_with_a_date_locator_keep_period_words(width):
-    """editing.md's date recipe: only the locator is set, so dm keeps its
-    period formatter on it (re-review 2026-11-05, N7)."""
-    fig, ax = _dated(MONTHS, width)
-    locator = mdates.MonthLocator(interval=6)
+# editing.md's "fewer ticks" on dates: a locator coarser than the current
+# ticks, one per span. Only the locator is set, so the period words stay.
+FEWER_DATE_TICKS = [
+    (
+        np.arange(np.datetime64("1995-01"), np.datetime64("2025-02")),
+        lambda: mdates.YearLocator(5),
+        ["95", "00", "05", "10", "15", "20", "25"],
+    ),
+    (
+        MONTHS,
+        lambda: mdates.MonthLocator(interval=6),
+        ["23.01", "23.07", "24.01", "24.07", "25.01", "25.07", "26.01"],
+    ),
+    (
+        np.arange(np.datetime64("2024-01-01"), np.datetime64("2024-04-01")),
+        mdates.MonthLocator,
+        ["24.01", "24.02", "24.03", "24.04"],
+    ),
+    (
+        np.arange(np.datetime64("2024-01-01"), np.datetime64("2024-01-22")),
+        lambda: mdates.WeekdayLocator(byweekday=mdates.MO),
+        ["24.01.01", "24.01.08", "24.01.15", "24.01.22"],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("dates", "make", "expected"),
+    FEWER_DATE_TICKS,
+    ids=["decades-YearLocator", "years-MonthLocator6", "months", "weeks"],
+)
+def test_fewer_date_ticks_with_a_date_locator_keep_period_words(
+    dates, make, expected
+):
+    """editing.md's date recipes (re-review 2026-11-05, N7 and its rewording)."""
+    fig, ax = _dated(dates.astype("datetime64[D]"), "9cm")
+    locator = make()
     ax.xaxis.set_major_locator(locator)
     dm.simple_layout(fig)
     assert ax.xaxis.get_major_locator() is locator
     assert type(ax.xaxis.get_major_formatter()) is PeriodDateFormatter
-    assert _xticks(ax) == [
-        "23.01",
-        "23.07",
-        "24.01",
-        "24.07",
-        "25.01",
-        "25.07",
-        "26.01",
-    ]
+    assert _xticks(ax) == expected
 
 
 def test_period_four_digits():
