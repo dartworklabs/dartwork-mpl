@@ -135,3 +135,50 @@ def test_every_removed_name_raises_with_version_and_hint(name):
     assert "migration" in msg.lower()
     # The message must carry the hint's leading replacement pointer.
     assert hint.split(" ")[0] in msg
+
+
+@pytest.mark.parametrize(
+    ("name", "hint"),
+    [
+        ("get_palette", "dm.colors"),
+        ("set_cycle", "dm.set_colors"),
+        ("cycle", "dm.colors"),
+        ("cycle_cycler", "dm.set_colors"),
+        ("list_palettes", "dm.list_colors"),
+        ("list_colormaps", "dm.list_colors"),
+        ("plot_colors", "dm.show_colors"),
+        ("plot_colormaps", "dm.show_colors"),
+        ("show_palette", "dm.show_colors"),
+        ("classify_colormap", "dm.list_colors"),
+        ("DartworkColor", "color inputs"),
+        ("DartworkColormap", "matplotlib.colors.Colormap"),
+        ("set_palette_version", "no palette-version switch"),
+    ],
+)
+def test_removed_color_api_reports_release_and_migration(name, hint):
+    """Every removed 0.5.6 color export identifies its removal and next step."""
+    with pytest.raises(AttributeError) as excinfo:
+        getattr(dm, name)
+    message = str(excinfo.value)
+    assert "removed in 0.6.0" in message
+    assert hint in message
+    assert "docs/migration.md" in message
+
+
+def test_removed_palette_switch_is_reported_by_static_lint():
+    """Code using the deleted version switch receives a release-specific explanation."""
+    messages = "\n".join(
+        issue.message for issue in dm.lint_code("dm.set_palette_version(4)")
+    )
+    assert "0.6.0" in messages
+    assert "no palette-version switch" in messages
+
+
+def test_removed_palette_switch_migration_keeps_call_for_manual_review():
+    """The codemod explains the missing switch without inventing a replacement call."""
+    source = "dm.set_palette_version(4)\n"
+    migrated = dm.migrate_legacy_code(source)
+    assert migrated.endswith(source)
+    assert "# TODO(dm-migrate)" in migrated
+    assert "0.6.0" in migrated
+    assert "no palette-version switch" in migrated

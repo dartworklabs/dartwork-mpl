@@ -39,14 +39,21 @@ That four-step pattern — **preset → `figsize(width, aspect)` → `simple_lay
 pip install dartwork-mpl        # or:  uv add dartwork-mpl
 ```
 
-Requires Python 3.11+ (from 0.6.0). The core install is intentionally lean; add an extra only
-when you need it:
+Requires Python 3.11+ (from 0.6.0), Matplotlib 3.10.1–3.10.x and NumPy
+1.26–2.4.x. Matplotlib 3.11 changes font rendering and legend markers and is excluded while its
+compatibility with the frozen visual style is unresolved. NumPy 2.5 is
+excluded because its date-unit deprecations fail the Matplotlib 3.10
+date-rendering checks. The core install
+is intentionally lean; add an extra only when you need it:
 
 | Extra        | Enables                                   | Pulls in              |
 | ------------ | ----------------------------------------- | --------------------- |
 | `[notebook]` | `dm.show()` inline SVG display in Jupyter | `ipython`             |
 | `[mcp]`      | the MCP server for AI assistants          | `fastmcp`, `httpx`    |
 | `[ui]`       | the interactive parameter viewer          | `fastapi`, `uvicorn`  |
+
+The UI extra requires FastAPI >=0.110.0,<0.137. Newer versions currently
+cause the UI to reject every request.
 
 ```shell
 pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
