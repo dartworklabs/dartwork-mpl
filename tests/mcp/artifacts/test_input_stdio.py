@@ -1033,6 +1033,16 @@ def unexpected_diagnostics(stderr):
                 "  from authlib.jose import JsonWebKey, JsonWebToken",
             ]:
                 continue
+            if re.fullmatch(
+                r".+/authlib/integrations/httpx_client/assertion_client\.py:5: "
+                r"AuthlibDeprecationWarning: The httpx module is deprecated; "
+                r"please use httpx2 instead\.",
+                line,
+            ) and lines[index + 1 : index + 2] == [
+                "  from ._compat import httpx2"
+            ]:
+                known_context.add(index + 1)
+                continue
             unexpected.append(line)
     return unexpected
 
@@ -1044,6 +1054,11 @@ RUNPY_310_WARNING = (
     + "\n  warn(RuntimeWarning(msg))"
 )
 AUTHLIB_WARNING = "/fixture/site-packages/fastmcp/server/auth/providers/jwt.py:10: AuthlibDeprecationWarning: authlib.jose module is deprecated, please use joserfc instead.\nIt will be compatible before version 2.0.0.\n  from authlib.jose import JsonWebKey, JsonWebToken"
+AUTHLIB_HTTPX_WARNING = (
+    "/fixture/site-packages/authlib/integrations/httpx_client/assertion_client.py:5: "
+    "AuthlibDeprecationWarning: The httpx module is deprecated; "
+    "please use httpx2 instead.\n  from ._compat import httpx2"
+)
 
 
 @pytest.mark.parametrize(
@@ -1055,6 +1070,8 @@ AUTHLIB_WARNING = "/fixture/site-packages/fastmcp/server/auth/providers/jwt.py:1
         RUNPY_310_WARNING,
         AUTHLIB_WARNING,
         RUNPY_WARNING + "\n" + AUTHLIB_WARNING,
+        AUTHLIB_HTTPX_WARNING,
+        RUNPY_WARNING + "\n" + AUTHLIB_WARNING + "\n" + AUTHLIB_HTTPX_WARNING,
     ],
 )
 def test_normal_stderr_accepts_exact_known_warnings(stderr):
@@ -1075,6 +1092,15 @@ def test_known_runpy_warning_is_invariant_to_source_line():
         )
         for stderr in (frozen, source):
             assert unexpected_diagnostics(stderr) == [], stderr
+
+
+def test_known_authlib_httpx_warning_is_invariant_to_install_prefix():
+    """Installed paths vary while the observed upstream warning stays exact."""
+    rng = random.Random(20261105)
+    for _ in range(32):
+        prefix = f"/fixture/env-{rng.randrange(10000)}/lib/python3.{rng.randrange(11, 14)}"
+        stderr = AUTHLIB_HTTPX_WARNING.replace("/fixture", prefix, 1)
+        assert unexpected_diagnostics(stderr) == [], stderr
 
 
 @pytest.mark.parametrize(
@@ -1100,6 +1126,22 @@ def test_known_runpy_warning_is_invariant_to_source_line():
         RUNPY_WARNING.replace(":128:", ":unknown:"),
         AUTHLIB_WARNING.replace("please use joserfc instead.", "new advice."),
         AUTHLIB_WARNING.replace("before version 2.0.0", "before version 3.0.0"),
+        AUTHLIB_HTTPX_WARNING.replace("assertion_client.py", "other.py"),
+        AUTHLIB_HTTPX_WARNING.replace(
+            "AuthlibDeprecationWarning", "UserWarning"
+        ),
+        AUTHLIB_HTTPX_WARNING.replace(
+            "please use httpx2 instead.", "new advice."
+        ),
+        AUTHLIB_HTTPX_WARNING.replace(
+            "from ._compat import httpx2", "from ._compat import other"
+        ),
+        AUTHLIB_HTTPX_WARNING.split("\n", 1)[0],
+        AUTHLIB_HTTPX_WARNING
+        + "\nfixture.py:1: UserWarning: additional warning",
+        AUTHLIB_HTTPX_WARNING + "\nTraceback (most recent call last):",
+        AUTHLIB_HTTPX_WARNING
+        + "\nfixture.py:1: ResourceWarning: unclosed file",
         "fixture.py:1: AuthlibDeprecationWarning: unrelated message",
         "Traceback (most recent call last):",
         "anyio.ClosedResourceError",

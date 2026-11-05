@@ -12,6 +12,7 @@ import importlib.metadata
 from pathlib import Path
 
 import pytest
+import tomllib
 
 import dartwork_mpl as dm
 
@@ -37,12 +38,11 @@ def test_version_matches_pyproject() -> None:
     release that bumped ``pyproject.toml`` without rebuilding, or a
     stale editable install (``pip install -e .`` captures the version at
     install time). Skipped when ``pyproject.toml`` isn't reachable
-    (tests run against an installed wheel) or on Python < 3.11 where the
-    stdlib ``tomllib`` parser is unavailable.
+    (tests run against an installed wheel). All supported Python runtimes
+    provide the stdlib ``tomllib`` parser.
     """
     if not _PYPROJECT.is_file():
         pytest.skip("pyproject.toml not reachable (installed-wheel test run)")
-    tomllib = pytest.importorskip("tomllib")  # py3.11+; skipped on 3.10
     data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
     pyproject_version = data["project"]["version"]
     assert dm.__version__ == pyproject_version, (

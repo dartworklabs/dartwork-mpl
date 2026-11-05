@@ -14,6 +14,21 @@ naming its replacement.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
+## 0.6.0: Python 3.11 minimum
+
+Upgrade to Python 3.11 or newer before installing 0.6.0. Supported test
+runtimes are 3.11, 3.12 and 3.13. The security patch set requires Pillow 13
+and other dependencies that no longer support Python 3.10. The core wheel
+now declares Pillow >=13; affected optional extras also declare security
+lower bounds for transitive dependencies, so fresh installs receive them.
+Jupyter/documentation tools remain development-only.
+
+The MCP extra supports FastMCP >=2.14.7 and patched 3.x below 4, excluding
+vulnerable 3.0–3.4.9. FastMCP 2.13.3 pins MCP SDK <1.23, which cannot meet
+the patched SDK >=1.30 requirement. Upgrade 2.x installations to 2.14.7;
+exact 2.13.3 remains only in disposable legacy source/API compatibility
+coverage. The tested 3.x lock is 3.4.10.
+
 ## At a glance
 
 The moves you're most likely to hit, regardless of the version you're

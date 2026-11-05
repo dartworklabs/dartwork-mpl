@@ -39,7 +39,7 @@ That four-step pattern — **preset → `figsize(width, aspect)` → `simple_lay
 pip install dartwork-mpl        # or:  uv add dartwork-mpl
 ```
 
-Requires Python 3.10+. The core install is intentionally lean; add an extra only
+Requires Python 3.11+ (from 0.6.0). The core install is intentionally lean; add an extra only
 when you need it:
 
 | Extra        | Enables                                   | Pulls in              |

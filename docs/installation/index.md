@@ -12,7 +12,7 @@ terminal.
 ## Quick Install
 
 **dartwork-mpl** is on [PyPI](https://pypi.org/project/dartwork-mpl/), so a
-standard install needs **no Git**. Requires Python 3.10+. The package
+standard install needs **no Git**. Requires Python 3.11+ (from 0.6.0). The package
 includes matplotlib style presets, curated color palettes, and layout
 utilities.
 
@@ -97,8 +97,9 @@ uv add "git+https://github.com/dartworklabs/dartwork-mpl@main"
 pip install "git+https://github.com/dartworklabs/dartwork-mpl@main"
 ```
 
-Contributors working from a local clone use an editable install
-(`uv pip install -e ".[dev]"`) — see the repository README.
+Contributors working from a local clone use `uv sync --all-extras --dev`,
+which installs the editable project and its development dependency group —
+see the repository README.
 
 ## Basic Import
 

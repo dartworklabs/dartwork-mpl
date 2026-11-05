@@ -13,6 +13,7 @@ DESIGN = "superpowers/specs/2026-10-18-mcp-artifact-delivery-design.md"
 DESIGN_URL = (
     "https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/" + DESIGN
 )
+SECURITY_PLAN = "superpowers/plans/2026-11-05-python311-security-upgrade.md"
 PREFLIGHT_PROVENANCE = (
     (
         "superpowers/plans/2026-10-29-finite-margins.md",
@@ -64,7 +65,11 @@ def docs_project(tmp_path):
     source = tmp_path / "docs"
     source.mkdir()
     shutil.copytree(ROOT / "docs/adr", source / "adr")
-    for relative in (DESIGN, *(path for path, _, _ in PREFLIGHT_PROVENANCE)):
+    for relative in (
+        DESIGN,
+        SECURITY_PLAN,
+        *(path for path, _, _ in PREFLIGHT_PROVENANCE),
+    ):
         target = source / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / "docs" / relative, target)
@@ -166,6 +171,18 @@ def test_accepted_adr_links_render_to_repository_without_source_edits(
         ] == captions
         assert not (output / Path(relative).with_suffix(".html")).exists()
     assert not (output / Path(DESIGN).with_suffix(".html")).exists()
+    security_links = _Links()
+    security_links.feed(
+        (
+            output / "adr/0007-python311-security-dependency-floor.html"
+        ).read_text(encoding="utf-8")
+    )
+    assert (
+        "https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/"
+        + SECURITY_PLAN,
+        "2026-11-05-python311-security-upgrade",
+    ) in security_links.links
+    assert not (output / Path(SECURITY_PLAN).with_suffix(".html")).exists()
     parser = _Links()
     root_html = (output / "index.html").read_text(encoding="utf-8")
     parser.feed(root_html)
@@ -181,12 +198,16 @@ def test_accepted_adr_links_render_to_repository_without_source_edits(
 
 
 @pytest.mark.parametrize(
-    "broken", ["missing-design", "other-excluded", "unknown"]
+    "broken",
+    ["missing-design", "missing-security-plan", "other-excluded", "unknown"],
 )
 def test_unresolved_links_still_fail_warning_gate(docs_project, broken):
     """Routing one provenance source must not hide missing or unrelated links."""
     if broken == "missing-design":
         (docs_project / DESIGN).unlink()
+    elif broken == "missing-security-plan":
+        target = SECURITY_PLAN
+        (docs_project / target).unlink()
     else:
         target = (
             "superpowers/specs/unrelated.md"
@@ -204,3 +225,48 @@ def test_unresolved_links_still_fail_warning_gate(docs_project, broken):
     assert "myst.xref_missing" in result.stderr
     target = DESIGN if broken == "missing-design" else target
     assert target.removesuffix(".md") in result.stderr
+
+
+@pytest.mark.parametrize("source_exists", [False, True])
+def test_security_plan_resolver_requires_actual_source(tmp_path, source_exists):
+    """The adapter preserves a missing source and links only an existing plan."""
+    from types import SimpleNamespace
+
+    from docutils import nodes
+    from docutils.utils import new_document
+    from sphinx import addnodes
+
+    from docs._ext.build_hooks import resolve_provenance_links
+
+    if source_exists:
+        source = tmp_path / SECURITY_PLAN
+        source.parent.mkdir(parents=True)
+        source.write_text("# Fixture plan\n", encoding="utf-8")
+    document = new_document("fixture")
+    reference = addnodes.pending_xref(
+        "",
+        refdomain="doc",
+        reftype="myst",
+        reftarget=SECURITY_PLAN.removesuffix(".md"),
+    )
+    reference.append(nodes.Text("support plan"))
+    document.append(reference)
+    resolve_provenance_links(SimpleNamespace(srcdir=str(tmp_path)), document)
+    links = [
+        (node["refuri"], node.astext())
+        for node in document.findall(nodes.reference)
+    ]
+    if source_exists:
+        assert links == [
+            (
+                "https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/"
+                + SECURITY_PLAN,
+                "support plan",
+            )
+        ]
+    else:
+        assert links == []
+        assert [
+            node["reftarget"]
+            for node in document.findall(addnodes.pending_xref)
+        ] == [SECURITY_PLAN.removesuffix(".md")]

@@ -52,6 +52,7 @@ def resolve_provenance_links(app, doctree):
         "superpowers/plans/2026-10-29-finite-margins",
         "superpowers/plans/2026-10-29-template-format-preflight",
         "superpowers/specs/2026-10-29-input-preflight-design",
+        "superpowers/plans/2026-11-05-python311-security-upgrade",
     }
     for node in doctree.findall(addnodes.pending_xref):
         target = node.get("reftarget")
@@ -76,7 +77,7 @@ def resolve_provenance_links(app, doctree):
 def setup(app):
     """Register link resolution with Sphinx's extension cache invalidation."""
     app.connect("doctree-read", resolve_provenance_links)
-    return {"env_version": 2, "parallel_read_safe": True}
+    return {"env_version": 3, "parallel_read_safe": True}
 
 
 def create_placeholder_index(app):

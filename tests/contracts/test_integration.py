@@ -86,9 +86,9 @@ def _fastmcp_has_public_introspection() -> bool:
     requires a ``context`` (only available inside an actual request),
     so in-process introspection is not possible there.
 
-    The ``pyproject.toml`` pin is ``fastmcp>=2.13.3,<4``: we keep the
-    floor for downstream 2.x consumers but skip these contract tests
-    on 2.x. The non-contract tests (drift, render-via-API) still run.
+    The ``pyproject.toml`` range retains FastMCP >=2.14.7,<4, with
+    vulnerable 3.0–3.4.9 excluded. Downstream 2.x remains supported,
+    but these direct-introspection contract tests still skip on 2.x. The non-contract tests (drift, render-via-API) still run.
     """
     from dartwork_mpl.mcp.server import mcp
 
