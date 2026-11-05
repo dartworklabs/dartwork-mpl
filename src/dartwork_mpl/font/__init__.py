@@ -4,6 +4,7 @@ Registers custom fonts from the package's asset/font directory with
 matplotlib's internal font manager.
 """
 
+import logging
 import threading
 import warnings
 from collections.abc import Mapping
@@ -13,6 +14,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Literal
 
+import matplotlib as mpl
 from matplotlib import font_manager
 
 __all__ = [
@@ -36,6 +38,90 @@ _EXPECTED_MIN_FONTS: int = 5
 # path with os.path idioms).
 _FONT_DIR: Path = Path(__file__).parent.parent / "asset" / "font"
 _FONT_SUFFIXES: frozenset[str] = frozenset({".ttf", ".otf"})
+
+# (resolved file, family) of the entry ``FontManager.addfont`` creates from
+# ``FT2Font.family_name``. Matplotlib >= 3.11 also appends alias entries for a
+# file's other name-table families (name IDs 1/16/21, e.g. "Inter Black"
+# at weight 400); those stay resolvable but are not curated families.
+_PRIMARY_ENTRIES: set[tuple[str, str]] = set()
+
+# Matplotlib >= 3.11 logs "Failed to find font weight ..." whenever a lookup
+# lands on a family without the requested weight. Two such misses are what
+# dm's presets intend, so only those records are dropped:
+#
+# - bundled fallback-chain families that ship exactly one weight by design
+#   (derived below from the fallback-chain constants; a test pins it to the
+#   registry's one-weight families);
+# - Matplotlib's own math fonts. They ship regular and bold only, and
+#   mathtext looks them up at the default ``font.weight``, so under the
+#   presets' ``font.weight: light`` the first math render would log one miss
+#   per math font (see _mathtext_families).
+_WEIGHT_MISS = "findfont: Failed to find font weight %s for %s, now using %s."
+
+# File-name prefix of the fonts Matplotlib bundles for each math font set
+# named by ``mathtext.fontset`` / ``mathtext.fallback``.
+_MATH_FONT_PREFIX: Mapping[str, str] = MappingProxyType(
+    {
+        "cm": "cm",
+        "stix": "STIX",
+        "stixsans": "STIX",
+        "dejavusans": "DejaVu",
+        "dejavuserif": "DejaVu",
+    }
+)
+
+
+def _mathtext_families() -> frozenset[str]:
+    """Matplotlib-bundled families the active mathtext settings consult.
+
+    ``mathtext.fontset`` names the set mathtext draws from; a ``custom`` set
+    falls back to ``mathtext.fallback``, the built-in sets (Computer Modern
+    included) fall back to STIX, and every set takes its extensible symbols
+    from ``cmex10``. The family names are read from the font files
+    Matplotlib ships in its data directory.
+    """
+    fontset = mpl.rcParams["mathtext.fontset"]
+    sets = (
+        {mpl.rcParams["mathtext.fallback"]}
+        if fontset == "custom"
+        else {fontset, "stix"}
+    )
+    if "cm" in sets:
+        sets.add("stix")
+    prefixes = (
+        "cmex10",
+        *(_MATH_FONT_PREFIX[s] for s in sets if s in _MATH_FONT_PREFIX),
+    )
+    data_dir = Path(mpl.get_data_path()).resolve()
+    return frozenset(
+        entry.name
+        for entry in font_manager.fontManager.ttflist
+        if entry.name.startswith(prefixes)
+        and data_dir in Path(entry.fname).resolve().parents
+    )
+
+
+class _ExpectedWeightMissFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        if not (
+            record.msg == _WEIGHT_MISS
+            and isinstance(args, tuple)
+            and len(args) == 3
+        ):
+            return True
+        weight, family = args[0], args[1]
+        if family in _SINGLE_WEIGHT_FALLBACKS:
+            return False
+        # Only the preset's default weight: an explicit other weight on a
+        # math font is a caller's choice and keeps its notice.
+        return not (
+            weight == mpl.rcParams["font.weight"]
+            and family in _mathtext_families()
+        )
+
+
+_WEIGHT_FILTER = _ExpectedWeightMissFilter()
 _BUNDLED_FONT_WEIGHT_OVERRIDES: Mapping[str, int] = MappingProxyType(
     {
         # Both files report OS/2 weight 250, which makes Matplotlib choose
@@ -212,6 +298,9 @@ _FALLBACK_TAIL_FAMILIES: tuple[str, ...] = (
     "Noto Sans Math",
     "Noto Sans Symbols",
     "Noto Sans Symbols 2",
+)
+_SINGLE_WEIGHT_FALLBACKS: frozenset[str] = frozenset(
+    {"Noto Sans CJK KR", *_FALLBACK_TAIL_FAMILIES}
 )
 
 FONTS: Mapping[str, FontFamily] = MappingProxyType(
@@ -580,6 +669,8 @@ def list_registered() -> list[str]:
             entry.name
             for entry in font_manager.fontManager.ttflist
             if _is_bundled_font_entry(entry, bundle_dir)
+            and (str(Path(entry.fname).resolve()), entry.name)
+            in _PRIMARY_ENTRIES
         }
     )
 
@@ -674,8 +765,18 @@ def _add_fonts() -> None:
     imported; users do not need to call it directly.
     """
     found = font_manager.findSystemFonts([_FONT_DIR])
+    ttflist = font_manager.fontManager.ttflist
     for font in found:
+        start = len(ttflist)
         font_manager.fontManager.addfont(font)
+        if len(ttflist) > start:  # first appended entry is ttfFontProperty's
+            primary = ttflist[start]
+            _PRIMARY_ENTRIES.add(
+                (str(Path(primary.fname).resolve()), primary.name)
+            )
+    logger = logging.getLogger("matplotlib.font_manager")
+    if _WEIGHT_FILTER not in logger.filters:
+        logger.addFilter(_WEIGHT_FILTER)
 
     _correct_bundled_weight_metadata()
 

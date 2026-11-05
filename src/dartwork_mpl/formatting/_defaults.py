@@ -239,7 +239,7 @@ def category_dates(
                 raise TypeError("a number is not a date")
             day = np.datetime64(value, "s")
         except (TypeError, ValueError):
-            day = np.datetime64("NaT")
+            day = np.datetime64("NaT", "s")
         if np.isnat(day):
             raise ValueError(
                 f"format_axis_dates: position {position} ({value!r}) is not "

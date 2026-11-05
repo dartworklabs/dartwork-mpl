@@ -8,11 +8,13 @@ matplotlib draws, read after a real canvas draw.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 
 import matplotlib
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib import MatplotlibDeprecationWarning
 from matplotlib.axes import Axes
 
 matplotlib.use("Agg")
@@ -216,6 +218,19 @@ class TestFormatAxisSiMax:
                 "1.5k",
                 "\N{MINUS SIGN}2M",
             ]
+        finally:
+            plt.close(fig)
+
+    def test_draw_records_ticks_without_deprecated_locs(self) -> None:
+        # Matplotlib 3.11 deprecates assigning Formatter.locs; a draw must
+        # record the ticks through set_locs without that warning.
+        fig, ax = plt.subplots()
+        try:
+            ax.set_ylim(0, 3000)
+            dm.format_axis_si(ax)
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", MatplotlibDeprecationWarning)
+                assert _drawn_labels(ax)[-1] == "3.0k"
         finally:
             plt.close(fig)
 

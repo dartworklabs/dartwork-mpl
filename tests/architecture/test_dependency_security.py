@@ -64,37 +64,36 @@ def test_wheel_python_boundary_excludes_310_and_supports_311_to_313(
 
 
 @pytest.mark.parametrize("extra", ("", "notebook", "mcp", "ui"))
-def test_fresh_wheel_limits_matplotlib_to_the_frozen_visual_series(
+def test_fresh_wheel_requires_the_matplotlib_series_of_the_baselines(
     wheel_metadata, extra
 ):
-    """Fresh installs preserve the approved 3.10 appearance instead of resolving 3.11."""
+    """Fresh installs resolve Matplotlib 3.11+, the series the baselines are made on."""
     requirements = _requirements(wheel_metadata, extra)
-    for version in ("3.10.1", "3.10.9", "3.10.99"):
+    for version in ("3.11.0", "3.11.2", "3.12.0"):
         assert _accepts(requirements, "matplotlib", version), version
-    for version in ("3.10.0", "3.11.0", "3.11.2", "3.12.0", "4.0.0"):
+    for version in ("3.10.1", "3.10.9", "3.10.99"):
         assert not _accepts(requirements, "matplotlib", version), version
 
 
 @pytest.mark.parametrize("extra", ("", "notebook", "mcp", "ui"))
-def test_fresh_wheel_excludes_numpy_with_incompatible_date_conversion(
+def test_fresh_wheel_accepts_numpy_25_with_the_matplotlib_311_floor(
     wheel_metadata, extra
 ):
-    """The supported Matplotlib date stack must not resolve incompatible NumPy 2.5."""
+    """Only Matplotlib 3.10's dates.py tripped NumPy 2.5, so 2.5 is allowed."""
     requirements = _requirements(wheel_metadata, extra)
-    for version in ("1.26.4", "2.3.2", "2.4.6"):
+    for version in ("1.26.4", "2.4.6", "2.5.0", "2.5.4"):
         assert _accepts(requirements, "numpy", version), version
-    for version in ("1.25.2", "2.5.0", "2.5.4", "3.0.0"):
-        assert not _accepts(requirements, "numpy", version), version
+    assert not _accepts(requirements, "numpy", "1.25.2")
 
 
-def test_fresh_ui_wheel_excludes_fastapi_with_incompatible_router_matching(
+def test_fresh_ui_wheel_accepts_fastapi_with_included_router_wrapper(
     wheel_metadata,
 ):
-    """The UI must not resolve FastAPI versions whose router wrapper denies every route."""
+    """The UI policy matches built routers, so FastAPI >=0.137 is allowed."""
     requirements = _requirements(wheel_metadata, "ui")
-    assert _accepts(requirements, "fastapi", "0.136.3")
-    for version in ("0.109.0", "0.137.0", "0.137.1", "0.162.0"):
-        assert not _accepts(requirements, "fastapi", version), version
+    for version in ("0.110.0", "0.136.3", "0.137.0", "0.162.0"):
+        assert _accepts(requirements, "fastapi", version), version
+    assert not _accepts(requirements, "fastapi", "0.109.0")
 
 
 @pytest.mark.parametrize(

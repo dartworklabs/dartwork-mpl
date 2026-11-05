@@ -28,7 +28,7 @@ import re
 import string
 from dataclasses import dataclass
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 import numpy as np
 from matplotlib import cbook
@@ -53,6 +53,7 @@ from ._optimize_legend import optimize_legend
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
+    from matplotlib.typing import LegendLocType
 
 HorizontalAlign = Literal["left", "center", "right"]
 VerticalAlign = Literal[
@@ -413,7 +414,7 @@ def _outside_area(inner: Bbox, outer: Bbox) -> float:
 
 
 def _bbox_inside(bbox: Bbox, container: Bbox, tol_px: float = 0.5) -> bool:
-    return (
+    return bool(
         bbox.x0 >= container.x0 - tol_px
         and bbox.x1 <= container.x1 + tol_px
         and bbox.y0 >= container.y0 - tol_px
@@ -1045,7 +1046,10 @@ def _legend_for_loc(
     legend_kw: dict[str, Any],
 ) -> Legend:
     """Draw (replacing any existing) the axes legend at matplotlib location ``loc``."""
-    return ax.legend(handles, labels, loc=loc, **legend_kw)
+    # A caller's loc is passed through unchanged; Matplotlib validates it.
+    return ax.legend(
+        handles, labels, loc=cast("LegendLocType", loc), **legend_kw
+    )
 
 
 @dataclass(frozen=True)
@@ -1129,7 +1133,7 @@ def _legend_candidate_ncols(
 
 # The legend's own anchor point (matplotlib ``loc``) for each outside side:
 # the legend edge that faces the Axes touches the anchor.
-_OUTSIDE_LEGEND_LOCS: dict[OutsideSide, str] = {
+_OUTSIDE_LEGEND_LOCS: dict[OutsideSide, LegendLocType] = {
     "above": "lower center",
     "below": "upper center",
     "right": "center left",

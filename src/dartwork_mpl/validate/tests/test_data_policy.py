@@ -185,7 +185,7 @@ class ExplosiveArray:
 
 @pytest.mark.parametrize("policy", ["strict", "preserve", "clean"])
 @pytest.mark.parametrize(
-    "minimum", [np.timedelta64(1, "D"), np.timedelta64("NaT")]
+    "minimum", [np.timedelta64(1, "D"), np.timedelta64("NaT", "D")]
 )
 def test_temporal_scalar_cannot_bypass_positive_integer_minimum(
     policy, minimum

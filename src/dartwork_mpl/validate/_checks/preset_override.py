@@ -18,7 +18,7 @@ not compared.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Literal, TypeAlias, TypedDict
+from typing import TYPE_CHECKING, Literal, TypeAlias, TypedDict, cast
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
+    from matplotlib.typing import RcKeyType
 
 __all__ = ["check_preset_override"]
 
@@ -91,7 +92,9 @@ class PresetOverrideFigureDetail(TypedDict):
 
 def _preset_value(preset: Mapping[str, object], key: str) -> object:
     """The preset's value for ``key``; an undeclared key is the live rcParam."""
-    return preset[key] if key in preset else mpl.rcParams[key]
+    return (
+        preset[key] if key in preset else mpl.rcParams[cast("RcKeyType", key)]
+    )
 
 
 def _is_twin(ax: Axes, fig_axes: list[Axes]) -> bool:

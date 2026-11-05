@@ -9,7 +9,8 @@ reading any color theory:
 
 ``named``      every color name added to matplotlib's named-color mapping
 ``colormaps``  every added colormap, sampled at 256 stops
-``presets``    each style preset's prop_cycle and color-valued rcParams
+``presets``    each style preset's prop_cycle and the color-valued rcParams
+               its bundled .mplstyle chain sets
 ``discrete``   ``dm.colors(name, n)`` over the full family x n x reverse grid
 ``curated``    the hand-tuned ``CURATED`` palettes
 
@@ -74,10 +75,23 @@ def _colormap_surface() -> list[str]:
     return rows
 
 
+def _preset_declared_keys(preset: str) -> set[str]:
+    """rcParam keys the preset's bundled .mplstyle chain sets."""
+    keys: set[str] = set()
+    for style_name in style.presets_dict()[preset]:
+        keys.update(dm.load_style_dict(style_name))
+    return keys
+
+
 def _preset_surface() -> list[str]:
+    # Only the keys a preset's own style files set are its shipped colors.
+    # Every other color-named rcParam is Matplotlib's default, which moves
+    # with Matplotlib (3.11 changed hatch.color and added grid.major.color /
+    # grid.minor.color) without dartwork-mpl shipping anything different.
     rows = []
     with mpl.rc_context():
         for preset in sorted(style.presets_dict()):
+            declared = _preset_declared_keys(preset)
             style.use(preset)
             cycle = ",".join(
                 _hex(entry["color"])
@@ -85,7 +99,11 @@ def _preset_surface() -> list[str]:
             )
             rows.append(f"{preset} axes.prop_cycle {cycle}")
             for key in sorted(mpl.rcParams):
-                if "color" not in key or key == "axes.prop_cycle":
+                if (
+                    "color" not in key
+                    or key == "axes.prop_cycle"
+                    or key not in declared
+                ):
                     continue
                 rows.append(f"{preset} {key} {mpl.rcParams[key]!r}")
     return rows
@@ -132,7 +150,7 @@ EXPECTED_COUNTS = {
     "curated": 15,
     "discrete": 1344,
     "named": 1272,
-    "presets": 588,
+    "presets": 106,
 }
 
 EXPECTED_DIGESTS = {
@@ -140,11 +158,11 @@ EXPECTED_DIGESTS = {
     "curated": "794287529f6217d1cd416dc34b2788acfb0e874907e769935344686770e6ec15",
     "discrete": "f43cc9f9a4e1880445a54a1b563c78f8b7454bad52486cc1425a46a477a2f254",
     "named": "53b8d4357773274653fa1aa47e897472af0bfa6e6021093588bebf123b6c0784",
-    "presets": "72247b40588e8a56354c48c0afa1fbdfb91ed4962a8729d4923ed094f3f41d3b",
+    "presets": "0e6283575ad6430e2feb347482b91e864deb131e629e78d0e66bb8260a9864c4",
 }
 
 EXPECTED_COMBINED = (
-    "ca48e12c1b91035e1c2e0312db4b5379015368b4da8313738ce22a8ef6dd06ae"
+    "1d5c3b7512b122efc78affcbcf71852b8776a8ef379c57fe37fbf060295a38af"
 )
 
 

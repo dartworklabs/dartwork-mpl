@@ -209,7 +209,7 @@ class AxisUnitFormatter(ticker.Formatter):
 
     def set_locs(self, locs: list[float]) -> None:
         """Record the tick locations and settle this axis's unit/decimals."""
-        self.locs = locs
+        super().set_locs(locs)
         values = [float(v) for v in locs]
         self._plan = self._make_plan(self._in_view(values)) if values else None
 

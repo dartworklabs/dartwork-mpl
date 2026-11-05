@@ -36,15 +36,23 @@ To move the unit into the label instead of the ticks, use
 (`0, 0.2 … 1.0` under `인구 (억명)`); `dm.axis_unit_of(ax)` gives the unit for
 value labels.
 
+## Unreleased: Matplotlib 3.11 minimum
+
+Use Matplotlib >=3.11.0. Matplotlib 3.10 is no longer supported: the pixel
+baselines and docs figures are made on 3.11, which sizes text boxes and
+draws legend markers differently, and dartwork-mpl does not imitate the 3.10
+output. Expect the same small shifts in your own figures when you upgrade
+from 3.10. NumPy >=1.26 is required with no upper cap; the NumPy 2.5
+date-unit deprecation came from Matplotlib 3.10's own date code.
+
 ## 0.6.0: Python 3.11 minimum
 
-Use Matplotlib >=3.10.1,<3.11 with 0.6.0. Matplotlib 3.11 is excluded
-because its rendered appearance differs from the frozen output.
-Use NumPy >=1.26,<2.5: NumPy 2.5 deprecates the generic date units still
-used by Matplotlib 3.10 and fails the date-rendering regression check.
-The UI extra requires FastAPI >=0.110.0,<0.137. Later versions currently
-cause every UI request to be rejected with 403; upgrading Starlette or
-Pydantic alone does not cause that failure.
+Use Matplotlib >=3.10.1,<3.11 with 0.6.0 (raised to >=3.11.0 after 0.6.0,
+see above). Use NumPy >=1.26,<2.5 with Matplotlib 3.10: NumPy 2.5 deprecates
+the generic date units Matplotlib 3.10 still uses.
+The UI extra requires FastAPI >=0.110.0. FastAPI 0.137 and later keep each
+included router as one wrapper route; the UI policy now matches against the
+routers it builds, so those versions serve requests normally.
 
 Upgrade to Python 3.11 or newer before installing 0.6.0. Supported test
 runtimes are 3.11, 3.12 and 3.13. The security patch set requires Pillow 13

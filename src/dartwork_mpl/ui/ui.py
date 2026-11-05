@@ -40,7 +40,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from matplotlib.figure import Figure
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.routing import Match
+from starlette.routing import BaseRoute, Match
 
 from . import page, params, render, script
 from ._boundary import ROUTE_POLICY
@@ -69,10 +69,21 @@ from .state import routes as state_routes
 matplotlib.use("Agg")
 
 
+def _policy_routes(app: FastAPI) -> list[BaseRoute]:
+    """List every concrete route: direct registrations plus the routers included.
+
+    FastAPI >= 0.137 keeps an include as one opaque ``_IncludedRouter`` (no
+    ``path``/``methods``) in ``app.routes``, so the routes built by this module
+    are recorded separately in ``app.state.included_routes``.
+    """
+    direct = [route for route in app.routes if hasattr(route, "path")]
+    return [*direct, *getattr(app.state, "included_routes", [])]
+
+
 def _matched_route(app: FastAPI, request: Request) -> str | None:
     """Match actual registrations before routing; method/path misses have no grant."""
     path_exists = False
-    for route in app.routes:
+    for route in _policy_routes(app):
         match, _ = route.matches(request.scope)
         if match is Match.FULL:
             return cast(str, getattr(route, "path", None))
@@ -171,29 +182,23 @@ def _create_app(
         """Borrow the lifespan-owned state capability, including startup refusal values."""
         return cast(ViewerState | FileFailure, app.state.viewer_state)
 
-    app.include_router(
-        page.routes(title=title, function_name=figure_fn.__name__)
-    )
-    app.include_router(params.routes(descriptors))
-    app.include_router(
+    routers = [
+        page.routes(title=title, function_name=figure_fn.__name__),
+        params.routes(descriptors),
         render.routes(
             figure_fn=figure_fn,
             param_model=param_model,
             descriptors=descriptors,
             roots=roots,
             refuse=refusal_response,
-        )
-    )
-    app.include_router(
+        ),
         state_routes(
             param_model=param_model,
             descriptors=descriptors,
             function_name=figure_fn.__name__,
             state=state,
             refuse=refusal_response,
-        )
-    )
-    app.include_router(
+        ),
         script.routes(
             figure_fn=figure_fn,
             param_model=param_model,
@@ -201,8 +206,13 @@ def _create_app(
             script_root=script_root,
             roots=roots,
             refuse=refusal_response,
-        )
-    )
+        ),
+    ]
+    app.state.included_routes = [
+        route for router in routers for route in router.routes
+    ]
+    for router in routers:
+        app.include_router(router)
 
     @app.post("/api/reload", response_model=None)
     async def reload_server() -> dict[str, str] | JSONResponse:
