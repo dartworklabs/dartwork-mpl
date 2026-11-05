@@ -8,6 +8,8 @@ them either. Both now treat them as the parent's own decorations.
 
 from __future__ import annotations
 
+import warnings
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -166,3 +168,43 @@ def test_validate_figure_sees_secondary_text_past_the_canvas(
         "OVERFLOW",
         "CLIPPED_TEXT",
     }, findings
+
+
+def _one_over(x):
+    """matplotlib gallery's reciprocal: 1/x, infinity at zero."""
+    x = np.array(x, float)
+    near_zero = np.isclose(x, 0)
+    x[near_zero] = np.inf
+    x[~near_zero] = 1 / x[~near_zero]
+    return x
+
+
+@pytest.mark.parametrize(
+    "functions",
+    [(_one_over, _one_over), (lambda v: 1 / v, lambda v: 1 / v)],
+    ids=["gallery-one-over", "naive-reciprocal"],
+)
+def test_a_reciprocal_secondary_axis_does_not_collapse_the_plot(functions):
+    """A tick at x = inf or far off the canvas is not the parent's margin.
+
+    Review of PR #595, item 2: over data from 0 the reciprocal axis puts a
+    tick label at x0 = x1 = inf (a NaN width) and others in view but about
+    214 px off the canvas; measuring them squeezed the Axes to 0.01 cm.
+    Only labels with a finite extent whose anchor lies inside their own
+    axis' box count, as in the OVERFLOW check.
+    """
+
+    def width_cm(with_secondary: bool) -> float:
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+        ax.plot(np.linspace(0, 1, 50), np.linspace(0, 1, 50))
+        ax.set_xlabel("frequency")
+        if with_secondary:
+            top = ax.secondary_xaxis("top", functions=functions)
+            top.set_xlabel("period")
+        with np.errstate(all="ignore"), warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dm.simple_layout(fig)
+        return ax.get_position().width * fig.get_figwidth() * 2.54
+
+    plain = width_cm(with_secondary=False)
+    assert width_cm(with_secondary=True) >= 0.9 * plain
