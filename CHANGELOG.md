@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+The rule behind these defaults: with no request the library's look applies;
+a request for another format gets that format.
+
+### Changed
+
+- **Two-digit years on untouched axes.** Year axes read `16, 18, 20 … 24`,
+  monthly dates `23.01, 23.07, 24.01`, quarterly dates `23.Q1, 23.Q3`
+  (`dm.format_axis_dates` and dated categories too). Korean figures print the
+  same text, without the `년` suffix. Back to 0.6.0:
+  `dm.config.override(tick_years=4, date_style="concise")`.
+- **Korean figures count in 만/억/조 from 1,000,000** on axes you did not
+  format (`50만 … 250만`, `0.2조`). English figures keep `k/M/G/T`. Back to
+  0.6.0: `dm.config.override(number_ladder="si")`.
+- Symmetric axes no longer print floating-point noise (`-0.4 … 0.4`).
+
+### Added
+
+- `dm.axis_unit(ax, axis, label="… ({unit}명)", ladder=..., scale=...)` puts the
+  unit in the axis label and keeps the ticks plain (`0, 0.2 … 1.0` under
+  `인구 (억명)`); `dm.axis_unit_of(ax)` returns the unit for value labels.
+  The default rule is the largest unit (`scale="max"`).
+- `dm.config.tick_years`, `date_style` and `number_ladder` fields; all three
+  at once restore 0.6.0 text:
+  `dm.config.override(tick_years=4, date_style="concise", number_ladder="si")`.
+
 ## [0.6.0] - 2026-11-05
 
 ### Breaking / Removed

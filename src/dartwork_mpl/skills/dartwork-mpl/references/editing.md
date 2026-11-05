@@ -105,6 +105,8 @@ above an outside legend and the margins around both.
 | date labels under bars crowd (`2022-07 … 2023-12`) | `dm.format_axis_dates(ax, df["order_month"])`: the library's date words, thinned by `dm.simple_layout` (`Jul, Sep, Nov, 2023, Mar …`); not rotated |
 | for slides / for a talk (preset switch) | `dm.style.use("presentation")`, canvas `dm.figsize_for(...)` (`"full_slide"` only for a whole 16:9 slide); pt values written in the code × 2.6 (`scientific` → `presentation`), unrounded: `markersize=3` → `3 * 2.6`; keep data, labels and limits |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
+| unit in the axis label, plain ticks (`0, 0.2 … 1.0` under `인구 (억명)`) | `dm.axis_unit(ax, "y", label="인구 ({unit}명)")`; `dm.axis_unit_of(ax)` for value labels |
+| four-digit years / `2023, May, Sep` dates / `k, M` in a Korean figure | `with dm.config.override(tick_years=4):`, `(date_style="concise")`, `(number_ladder="si")`; all three are the 0.6.0 text |
 | show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontsize=dm.fs(-1), fontweight=dm.fw(1))`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 

@@ -15,6 +15,27 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
+## Unreleased: two-digit tick years, axis units, 만/억/조
+
+One rule: with no request the library's look applies; ask for another format
+and you get that format. The defaults below changed for axes you did not
+format yourself; each has a one-line way back.
+
+| Default now | 0.6.0 text | Back to 0.6.0 |
+|---|---|---|
+| years `16, 18 … 24`; dates `23.01, 23.07`; quarters `23.Q1` | `2016 …`; `2023, May, Sep` | `dm.config.override(tick_years=4, date_style="concise")` |
+| Korean figures: `50만 … 250만` from 1,000,000 | `0.5M … 2.5M` | `dm.config.override(number_ladder="si")` |
+
+All three at once:
+`dm.config.override(tick_years=4, date_style="concise", number_ladder="si")`,
+or set the fields on `dm.config` for the whole program. A formatter you set
+yourself is never replaced.
+
+To move the unit into the label instead of the ticks, use
+`dm.axis_unit(ax, "y", label="Exports (USD {unit})", ladder="finance")`
+(`0, 0.2 … 1.0` under `인구 (억명)`); `dm.axis_unit_of(ax)` gives the unit for
+value labels.
+
 ## 0.6.0: Python 3.11 minimum
 
 Use Matplotlib >=3.10.1,<3.11 with 0.6.0. Matplotlib 3.11 is excluded

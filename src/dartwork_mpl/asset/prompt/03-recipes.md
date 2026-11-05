@@ -558,6 +558,12 @@ ax.set_ylabel("값")
 dm.simple_layout(fig)
 ```
 
+Untouched Korean axes read `50만 … 250만` and `23.01` / `16` dates and years
+(no `년`). A unit in the label instead: `dm.axis_unit(ax, "y", label="인구
+({unit}명)")` (`0, 0.2 … 1.0`; `dm.axis_unit_of(ax)` for value labels). The
+0.6.0 text back (`2023, May, Sep`, `0.5M`, four-digit years): `with
+dm.config.override(tick_years=4, date_style="concise", number_ladder="si"):`.
+
 ## "Small multiples / faceted panels"
 
 ```python

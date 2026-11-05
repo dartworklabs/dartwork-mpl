@@ -480,15 +480,40 @@ figure:
 |---|---|
 | reaches 1,000 | `0, 250 … 1,750`; `24,000 … 34,000` |
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
-| below 1,000, or an x axis of years | unchanged: `0, 250 … 750`; `2012, 2014` |
-| dates (every preset) | `2024, Mar, May … 2025` (`date.converter: concise`) |
-| dates, Korean axis labels, titles or legend | `2024년, 3월, 5월 … 2025년` |
-| dates on a narrow axis | fewer ticks until labels are one em apart: `2021, Jul, 2022 …` |
+| reaches one million, Korean axis labels, titles or legend | `0, 50만 … 250만` (만/억/조) |
+| below 1,000 | unchanged: `0, 250 … 750` |
+| an x axis of years | two digits: `16, 18 … 24` (four digits when the span crosses a century) |
+| monthly dates | `23.01, 23.07, 24.01` (year, then month; two-digit years) |
+| quarterly dates | `23.Q1, 23.Q3, 24.Q1` |
+| dates on a narrow axis | fewer ticks until labels are one em apart |
 
-Log, category and colorbar axes and any axis with a formatter you set keep
-theirs; a date axis with a locator you set or rotated labels keeps its ticks. `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's
-numbers; `dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k`
-or `0.25억` when you want units on the ticks.
+Korean figures print the same dates and years, without a suffix.
+
+The rule: no request, the library default; a request, that format. Three
+lines give the 0.6.0 text back (`2016`, `2023, May, Sep`, `0.5M`):
+
+```python
+dm.config.override(tick_years=4)            # four-digit years
+dm.config.override(date_style="concise")    # 2023, May, Sep (0.6.0)
+dm.config.override(number_ladder="si")      # k/M/G/T in Korean figures too
+```
+
+(Use them as `with dm.config.override(...):`, or set the fields on
+`dm.config` for the whole program.) A formatter you set yourself and an axis
+with a locator you set keep theirs. `dm.simple_layout(fig, format_ticks=False)`
+keeps matplotlib's numbers; `dm.format_axis_si(ax)` or
+`dm.format_axis_myriad(ax)` give `1.75k` or `0.25억` on the ticks.
+
+To print the unit once, in the axis label, use `dm.axis_unit`:
+
+```python
+dm.axis_unit(ax, "y", label="Exports (USD {unit})", ladder="finance")  # 40 … 70 · Exports (USD B)
+dm.axis_unit(ax, "y", label="인구 ({unit}명)")   # 0, 0.2 … 1.0 · 인구 (억명)
+unit = dm.axis_unit_of(ax)                       # the unit, for value labels
+```
+
+The default rule is the largest unit on the axis (`scale="max"`); the ticks
+stay plain numbers.
 
 ### Consistent tick decimals (`set_decimal`)
 
