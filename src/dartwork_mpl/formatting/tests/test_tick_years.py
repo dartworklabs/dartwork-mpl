@@ -385,6 +385,32 @@ def test_a_secondary_axis_of_other_values_or_formats_is_kept():
     assert _whole(locs) and labels == [f"FY{v:.0f}" for v in locs], labels
 
 
+@pytest.mark.parametrize(
+    "span",
+    [
+        [np.datetime64("2022-02-15"), np.datetime64("2022-08-20")],
+        [np.datetime64("2022-04-01"), np.datetime64("2022-10-01")],
+    ],
+    ids=["mid-month", "quarter-starts"],
+)
+def test_span_shading_is_not_data(span):
+    """``fill_between(span, 0, 1, transform=ax.get_xaxis_transform())``.
+
+    matplotlib's span-shading idiom: x in data units, y in axes fractions.
+    It marks a period, like ``axvspan``, so quarterly data keep quarters
+    (re-review 2026-11-05, N1: the mid-month span turned them to months).
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
+    ax.plot(QUARTER_STARTS, np.arange(12))
+    ax.fill_between(span, 0, 1, transform=ax.get_xaxis_transform(), alpha=0.2)
+    dm.simple_layout(fig)
+    labels = _xticks(ax)
+    assert labels and all(PERIOD_QUARTER.fullmatch(t) for t in labels), labels
+    np.testing.assert_allclose(
+        np.unique(plotted_dates(ax, "x")), mdates.date2num(QUARTER_STARTS)
+    )
+
+
 def test_quarterly_stackplot_reads_quarters():
     fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
     ax.stackplot(QUARTER_STARTS, np.ones(12), np.arange(12))

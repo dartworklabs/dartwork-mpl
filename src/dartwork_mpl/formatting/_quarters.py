@@ -105,13 +105,17 @@ def _fill_outline(
     when any is not a whole number: ``interpolate=True`` crossings and
     ``step="mid"`` corners are outline, not data, so such a fill is left
     out rather than outvoting the data plotted with it. Annual data and
-    midnight dates sit on whole numbers.
+    midnight dates sit on whole numbers. A fill drawn partly in axes
+    fractions (span shading) is left out.
     """
     if getattr(coll, "t_direction", None) != which:  # not in the stubs
         return None
-    column = 0 if which == "x" else 1
-    if not coll.get_transform().contains_branch_seperately(data)[column]:
+    # Data units on both axes, as for lines: a span shaded with
+    # ``transform=ax.get_xaxis_transform()`` (y in axes fractions) marks a
+    # period, as ``axvspan`` does, rather than plotting data.
+    if not all(coll.get_transform().contains_branch_seperately(data)):
         return None
+    column = 0 if which == "x" else 1
     paths = coll.get_paths()
     if not paths:
         return None
