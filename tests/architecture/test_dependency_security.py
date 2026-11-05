@@ -7,6 +7,7 @@ from email.parser import Parser
 from pathlib import Path
 
 import pytest
+import tomllib
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
@@ -157,6 +158,7 @@ def test_jupyter_development_stack_is_absent_from_every_published_extra(
         "jupyterlab",
         "jupyter-server",
         "virtualenv",
+        "mistune",
         "filelock",
     }
     for extra in ("", "notebook", "mcp", "ui"):
@@ -164,3 +166,34 @@ def test_jupyter_development_stack_is_absent_from_every_published_extra(
             req.name.lower() for req in _requirements(wheel_metadata, extra)
         }
         assert not names & development
+
+
+@pytest.mark.parametrize(
+    ("package", "vulnerable", "patched"),
+    [
+        # GHSA-6m44-fpc8-c3rq: Markdown emphasis recursion denial of service.
+        ("mistune", ("3.3.0", "3.3.2"), "3.3.3"),
+        # GHSA-4f8h-vr72-p32c and GHSA-cx6f-vjhg-g3cc: seed links and
+        # unescaped Bash prompt expansion, including the 21.14.9 regression.
+        ("virtualenv", ("21.14.8", "21.14.9", "21.14.12"), "21.14.13"),
+    ],
+)
+def test_development_requirements_and_lock_exclude_captured_vulnerabilities(
+    package, vulnerable, patched
+):
+    """Reject the captured vulnerable ranges both on fresh sync and in CI's lock."""
+    project = tomllib.loads((_ROOT / "pyproject.toml").read_text())
+    requirements = [
+        Requirement(raw) for raw in project["dependency-groups"]["dev"]
+    ]
+    for version in vulnerable:
+        assert not _accepts(requirements, package, version), (package, version)
+    assert _accepts(requirements, package, patched)
+    lock = tomllib.loads((_ROOT / "uv.lock").read_text())
+    versions = [
+        entry["version"]
+        for entry in lock["package"]
+        if entry["name"] == package
+    ]
+    assert versions
+    assert all(Version(version) >= Version(patched) for version in versions)
