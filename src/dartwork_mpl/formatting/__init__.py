@@ -19,8 +19,7 @@ from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import recommend_tick_decimals
 from ._defaults import (
     CategoryDateFormatter,
-    CategoryDateLocator,
-    _steps_for,
+    _category_locator,
     apply_default_tick_format,
     category_dates,
     thin_crowded_date_ticks,
@@ -111,19 +110,30 @@ def format_axis_year(
 
 
 def format_axis_dates(
-    ax: Axes, dates: Sequence[Any] | Any, axis: Literal["x", "y"] = "x"
+    ax: Axes,
+    dates: Sequence[Any] | Any,
+    axis: Literal["x", "y"] = "x",
+    *,
+    years: Literal[2, 4] | None = None,
+    style: Literal["period", "concise"] | None = None,
 ) -> None:
     """Label category positions with the dates they stand for.
 
     For bars (or any chart drawn at positions ``0, 1, ... n-1``) whose
     categories are dates, such as twelve monthly bars over ``"2024-01" …
-    "2024-12"``. The labels become the library's concise date words, the
-    ones a real date axis gets (``2024, Feb, Mar …``; ``2024년, 2월, 3월 …``
-    when the figure's labels are Korean), and :func:`dm.simple_layout
+    "2024-12"``. The labels become the library's date words, the ones a
+    real date axis gets: ``24.01, 24.02 …`` by default; quarterly dates
+    read ``23.Q1, 23.Q2 …``. :func:`dm.simple_layout
     <dartwork_mpl.simple_layout>` thins a crowded axis to every 2nd, 3rd,
-    4th, 6th or 12th month (other spacings: 2, 3, 4, 5 …) until the labels
-    are one em apart, with ticks only under labelled positions. Use it
-    instead of rotating date labels; rotation stays the last resort.
+    4th, 6th or 12th month (quarters: every 2nd, 4th or 8th, keeping Q1;
+    other spacings: 2, 3, 4, 5 …) until the labels are one em apart, with
+    ticks only under labelled positions. Use it instead of rotating date
+    labels; rotation stays the last resort.
+
+    ``style="concise"`` gives matplotlib's concise words with two-digit
+    years (``24, Feb, Mar …``; ``24년, 2월, 3월 …`` when the figure's labels
+    are Korean; quarters ``23, Q2, Q3 …``), and ``years=4, style="concise"``
+    the 0.6.0 words (``2024, Feb, Mar …``, quarters as months).
 
     Replaces the axis's tick positions and labels; the bars, their order
     and the axis limits are unchanged. Call it after drawing and before
@@ -144,21 +154,30 @@ def format_axis_dates(
         pandas timestamps or a ``datetime64`` array.
     axis:
         ``"x"`` (default) for vertical bars, ``"y"`` for horizontal ones.
+    years:
+        ``2`` (``24.01``) or ``4`` (``2024.01``); ``None`` (default) follows
+        ``dm.config.tick_years``. Two-digit years that would repeat (a
+        century of dates) print four digits.
+    style:
+        ``"period"`` (``24.01``) or ``"concise"`` (``24, Feb``); ``None``
+        (default) follows ``dm.config.date_style``.
 
     Raises
     ------
     ValueError
-        If ``dates`` is empty, holds a value that is not a date, or ``axis``
-        is not ``"x"`` or ``"y"``.
+        If ``dates`` is empty, holds a value that is not a date, ``axis``
+        is not ``"x"`` or ``"y"``, ``years`` is not 2 or 4, or ``style`` is
+        not ``"period"`` or ``"concise"``.
     """
     if axis not in ("x", "y"):
         raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
     parsed = category_dates(dates)
+    formatter = CategoryDateFormatter(parsed, years=years, style=style)
     target = ax.xaxis if axis == "x" else ax.yaxis
     target.set_major_locator(
-        CategoryDateLocator(len(parsed), _steps_for(parsed))
+        _category_locator(parsed, quarters=formatter.quarters)
     )
-    target.set_major_formatter(CategoryDateFormatter(parsed))
+    target.set_major_formatter(formatter)
 
 
 _MYRIAD_UNIT_LADDERS: dict[str, tuple[tuple[int, str], ...]] = {

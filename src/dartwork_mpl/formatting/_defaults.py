@@ -17,10 +17,16 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 - smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
   sit in 1000-2999 (years), log and category axes, colorbars and any axis with a
   formatter someone chose keep theirs;
-- date axes are concise in every preset (``date.converter: concise``:
-  ``2024, Mar, May … 2025``); when the figure's axis labels, titles or legend
-  are Korean they read ``2024년, 3월, 5월 … 2025년`` so a Korean figure does
-  not mix in English month names.
+- date axes nobody formatted (every preset sets ``date.converter:
+  concise``) read whole two-digit dates, ``23.01, 23.05 … 26.01``
+  (``23.01.15`` daily, ``23`` yearly); quarterly data reads ``23.Q1, 23.Q3``,
+  decided from the plotted dates, and stays in quarters however far the axis
+  is thinned. ``config.date_style = "concise"`` gives matplotlib's concise
+  words with two-digit years (``23, May, Sep``; ``23, Q2, Q3``), and when the
+  figure's axis labels, titles or legend are Korean ``23년, 5월, 9월`` so a
+  Korean figure does not mix in English month names; ``tick_years = 4`` with
+  it is the 0.6.0 look (``2023, May``; ``2023년, 5월``). See
+  :mod:`._dates` and :mod:`._quarters`.
 
 ``dm.simple_layout`` calls it before measuring (``format_ticks=False`` opts
 out), so the numbers it fits are the numbers saved. After fitting it calls
@@ -31,15 +37,15 @@ neighbouring labels are one em apart.
 
 Bars and other category charts often stand for dates (``2024-01 …
 2024-12`` under twelve bars). ``dm.format_axis_dates`` labels those
-positions with the same concise words through :class:`CategoryDateFormatter`
+positions with the same date words through :class:`CategoryDateFormatter`
 and :class:`CategoryDateLocator`, and the same thinning step labels every
-second, third ... position (months: 1, 2, 3, 4, 6 or 12) until the labels
-are one em apart, instead of the labels being rotated.
+second, third ... position (months: 1, 2, 3, 4, 6 or 12; quarters: 1, 2, 4
+or 8, keeping Q1) until the labels are one em apart, instead of the labels
+being rotated.
 """
 
 from __future__ import annotations
 
-import datetime
 import numbers
 import re
 import warnings
@@ -51,6 +57,7 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 import numpy as np
 import numpy.typing as npt
+from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 from matplotlib.text import Text
@@ -58,7 +65,23 @@ from matplotlib.text import Text
 from .._figure_geometry import get_renderer
 from ..config import config
 from ._axis_wide import AxisUnitFormatter, Unit
+from ._dates import (
+    DateStyle,
+    Digits,
+    KoreanConciseDateFormatter,
+    date_formatter,
+    reads_quarters,
+)
 from ._decimals import fewest_exact_decimals
+from ._quarters import (
+    QUARTER_STEPS,
+    QuarterDateFormatter,
+    QuarterLocator,
+    plotted_dates,
+    quarter_anchor,
+    quarter_words,
+    quarterly,
+)
 from ._years import YearTickFormatter, is_year_axis
 
 __all__ = [
@@ -109,47 +132,34 @@ _TITLE_LOCS: tuple[Literal["left", "center", "right"], ...] = (
     "right",
 )
 _HANGUL = re.compile("[\uac00-\ud7a3]")
-# "03월" -> "3월", "08일" -> "8일": Korean dates drop the zero padding.
-_PADDED = re.compile(r"(?<!\d)0(\d)(?=[월일])")
 
 
-class KoreanConciseDateFormatter(mdates.ConciseDateFormatter):
-    """Matplotlib's concise date ticks with Korean year, month and day units."""
+def _date_style(
+    years: object = None, style: object = None
+) -> tuple[Digits, DateStyle]:
+    """The year digits and date style asked for, else ``dm.config``'s.
 
-    def __init__(
-        self,
-        locator: mdates.DateLocator,
-        tz: datetime.tzinfo | str | None = None,
-        *,
-        show_offset: bool = True,
-        usetex: bool | None = None,
-    ) -> None:
-        super().__init__(  # type: ignore[no-untyped-call]
-            locator,
-            tz=tz,
-            show_offset=show_offset,
-            usetex=usetex,
-            formats=["%Y년", "%m월", "%d일", "%H:%M", "%H:%M", "%S.%f"],
-            zero_formats=["", "%Y년", "%m월", "%m월 %d일", "%H:%M", "%H:%M"],
-            offset_formats=[
-                "",
-                "%Y년",
-                "%Y년 %m월",
-                "%Y년 %m월 %d일",
-                "%Y년 %m월 %d일",
-                "%Y년 %m월 %d일 %H:%M",
-            ],
+    Raises
+    ------
+    ValueError
+        Naming ``years`` / ``style`` (or ``config.tick_years`` /
+        ``config.date_style`` when the value came from the config) unless
+        they are 2 or 4 and ``"period"`` or ``"concise"``.
+    """
+    years_name, style_name = "years", "style"
+    if years is None:
+        years, years_name = config.tick_years, "config.tick_years"
+    if style is None:
+        style, style_name = config.date_style, "config.date_style"
+    if years not in (2, 4):
+        raise ValueError(f"{years_name} must be 2 or 4, got {years!r}")
+    if style not in ("period", "concise"):
+        raise ValueError(
+            f"{style_name} must be 'period' or 'concise', got {style!r}"
         )
-
-    def format_ticks(self, values: Sequence[float]) -> list[str]:
-        """Format the ticks, without zero padding before 월 and 일."""
-        labels: list[str] = super().format_ticks(values)  # type: ignore[no-untyped-call]
-        return [_PADDED.sub(r"\1", label) for label in labels]
-
-    def get_offset(self) -> str:
-        """The corner label, without zero padding before 월 and 일."""
-        offset: str = super().get_offset()  # type: ignore[no-untyped-call]
-        return _PADDED.sub(r"\1", offset)
+    digits: Digits = 2 if years == 2 else 4
+    chosen: DateStyle = "period" if style == "period" else "concise"
+    return digits, chosen
 
 
 def _korean_labels(fig: Figure) -> bool:
@@ -225,36 +235,72 @@ def _steps_for(dates: npt.NDArray[np.datetime64]) -> tuple[int, ...]:
 
 
 class CategoryDateLocator(ticker.Locator):
-    """Every ``step``-th of ``n`` category positions, from position 0, in view.
+    """Every ``step``-th of ``n`` category positions, from its start, in view.
 
     ``steps`` lists the steps :func:`thin_crowded_date_ticks` may move
-    through, smallest first; ``step`` starts at the first. The grid of
-    positions is the same whatever the view, so a bar chart's ticks stay
-    under bars; only the ones inside the view are returned, so the words
-    and the thinning follow the dates someone can see.
+    through, smallest first; ``step`` starts at the first. ``starts`` gives
+    each step's first position (default 0): quarterly dates start every
+    step on a quarter that keeps Q1 labelled. The grid of positions is the
+    same whatever the view, so a bar chart's ticks stay under bars; only the
+    ones inside the view are returned, so the words and the thinning follow
+    the dates someone can see.
     """
 
-    def __init__(self, n: int, steps: Sequence[int]) -> None:
+    def __init__(
+        self,
+        n: int,
+        steps: Sequence[int],
+        *,
+        starts: Sequence[int] | None = None,
+    ) -> None:
         if n < 1 or not steps or any(s < 1 for s in steps):
             raise ValueError("CategoryDateLocator needs n >= 1 and steps >= 1")
+        if starts is None:
+            starts = [0] * len(steps)
+        if len(starts) != len(steps) or any(s < 0 for s in starts):
+            raise ValueError(
+                "CategoryDateLocator needs one start >= 0 for every step"
+            )
         self.n = n
         self.steps = tuple(steps)
         self.step = self.steps[0]
+        self._starts = dict(zip(self.steps, starts, strict=True))
+
+    def _positions(self) -> range:
+        return range(self._starts.get(self.step, 0), self.n, self.step)
 
     def __call__(self) -> list[float]:
-        """Return the positions ``0, step, 2*step ... < n`` inside the view."""
+        """Return the positions ``start, start + step ... < n`` inside the view."""
         axis = getattr(self, "axis", None)
         if axis is None:
-            return [float(i) for i in range(0, self.n, self.step)]
+            return [float(i) for i in self._positions()]
         return self.tick_values(*axis.get_view_interval())
 
     def tick_values(self, vmin: float, vmax: float) -> list[float]:
-        """Return the positions ``0, step, 2*step ... < n`` in ``[vmin, vmax]``."""
-        return [
-            float(i)
-            for i in range(0, self.n, self.step)
-            if _within(i, vmin, vmax)
-        ]
+        """Return the positions ``start, start + step ... < n`` in ``[vmin, vmax]``."""
+        return [float(i) for i in self._positions() if _within(i, vmin, vmax)]
+
+
+def _category_locator(
+    dates: npt.NDArray[np.datetime64], *, quarters: bool
+) -> CategoryDateLocator:
+    """The locator for dated categories; quarter steps when ``quarters``.
+
+    Quarterly positions step by 1, 2, 4 or 8 quarters, each step starting on
+    the first position whose quarter (counted from year 0) it divides, so
+    steps 2 show Q1 and Q3 and larger steps Q1.
+    """
+    if not quarters:
+        return CategoryDateLocator(len(dates), _steps_for(dates))
+    index = [
+        moment.year * 4 + (moment.month - 1) // 3
+        for moment in mdates.num2date(mdates.date2num(dates))  # type: ignore[no-untyped-call]
+    ]
+    starts = [
+        next((p for p, q in enumerate(index) if q % step == 0), len(index))
+        for step in QUARTER_STEPS
+    ]
+    return CategoryDateLocator(len(dates), QUARTER_STEPS, starts=starts)
 
 
 def _within(position: float, vmin: float, vmax: float) -> bool:
@@ -264,28 +310,64 @@ def _within(position: float, vmin: float, vmax: float) -> bool:
 
 
 class CategoryDateFormatter(ticker.Formatter):
-    """The library's concise date words for category positions.
+    """The library's date words for category positions.
 
     Position ``i`` stands for ``dates[i]``; positions outside the dates or
-    the view get no label. Words come from matplotlib's concise date labels
-    over the ticks shown (``2024, Mar, May …``; the year appears on January or in
-    the axis-corner offset), Korean (``2024년, 3월, 5월 …``) when the
-    figure's axis labels, titles or legends are Korean at drawing time.
+    the view get no label. Words are the ones a real date axis gets, worded
+    over the ticks shown: ``24.01, 24.03 …`` in the period style; in the
+    concise style matplotlib's concise words with the year on January or in
+    the axis-corner offset (``24, Mar, May …``; ``2024, Mar …`` with
+    four-digit years), Korean (``24년, 3월, 5월 …``) when the figure's axis
+    labels, titles or legends are Korean at drawing time. Quarterly dates
+    read quarters: ``23.Q1, 23.Q3 …``; concise ``23, Q2, Q3 …``
+    (``23년, Q2 …``). With four-digit years and the concise style they read
+    as months, the 0.6.0 words.
+
+    ``years`` (2 or 4) and ``style`` (``"period"`` or ``"concise"``) are
+    fixed when the formatter is made; ``None`` takes ``dm.config``'s
+    ``tick_years`` / ``date_style`` at that moment.
     """
 
-    def __init__(self, dates: npt.NDArray[np.datetime64]) -> None:
+    def __init__(
+        self,
+        dates: npt.NDArray[np.datetime64],
+        *,
+        years: Literal[2, 4] | None = None,
+        style: Literal["period", "concise"] | None = None,
+    ) -> None:
+        self.years, self.style = _date_style(years, style)
         self._nums: list[float] = [
             float(v)
             for v in mdates.date2num(dates)  # type: ignore[no-untyped-call]
         ]
+        # Quarters when the positions run through consecutive quarters.
+        self.quarters = (
+            reads_quarters(self.years, self.style)
+            and quarterly(self._nums)
+            and bool(np.all(np.diff(self._nums) > 0))
+        )
         self._offset = ""
 
-    def _concise(self) -> mdates.ConciseDateFormatter:
+    def _words(self, nums: list[float]) -> tuple[list[str], str]:
+        """Words and corner label for the dates shown together."""
         axis = getattr(self, "axis", None)
         fig = axis.get_figure(root=True) if axis is not None else None
-        if isinstance(fig, Figure) and _korean_labels(fig):
-            return KoreanConciseDateFormatter(mdates.AutoDateLocator())  # type: ignore[no-untyped-call]
-        return mdates.ConciseDateFormatter(mdates.AutoDateLocator())  # type: ignore[no-untyped-call]
+        korean = isinstance(fig, Figure) and _korean_labels(fig)
+        if self.quarters:
+            return quarter_words(
+                mdates.num2date(nums),  # type: ignore[no-untyped-call]
+                style=self.style,
+                digits=self.years,
+                korean=korean,
+            )
+        concise = date_formatter(
+            mdates.AutoDateLocator(),  # type: ignore[no-untyped-call]
+            years=self.years,
+            style=self.style,
+            korean=korean,
+        )
+        words: list[str] = concise.format_ticks(nums)  # type: ignore[no-untyped-call]
+        return words, str(concise.get_offset())  # type: ignore[no-untyped-call]
 
     def _shown(self, index: Sequence[int]) -> list[int]:
         """The positions that stand for a date and lie in the view."""
@@ -304,11 +386,7 @@ class CategoryDateFormatter(ticker.Formatter):
         if not inside:
             self._offset = ""
             return ["" for _ in index]
-        concise = self._concise()
-        words: list[str] = concise.format_ticks(  # type: ignore[no-untyped-call]
-            [self._nums[i] for i in inside]
-        )
-        self._offset = str(concise.get_offset())  # type: ignore[no-untyped-call]
+        words, self._offset = self._words([self._nums[i] for i in inside])
         by_position = dict(zip(inside, words, strict=True))
         return [by_position.get(i, "") for i in index]
 
@@ -337,17 +415,82 @@ def _untouched(axis: Axis) -> bool:
     return type(axis.get_major_formatter()) is ticker.ScalarFormatter
 
 
-def _stock(fmt: mdates.ConciseDateFormatter) -> bool:
-    """Whether a concise formatter still has matplotlib's own format strings.
-
-    Code that edits them (a two-digit ``%y`` year, say) chose its dates; the
-    Korean words replace only the stock English ones.
-    """
-    stock = mdates.ConciseDateFormatter(mdates.AutoDateLocator())  # type: ignore[no-untyped-call]
-    return all(
-        list(getattr(fmt, name)) == list(getattr(stock, name))
+def _same_formats(
+    a: mdates.ConciseDateFormatter, b: mdates.ConciseDateFormatter
+) -> bool:
+    """Same class and the same format strings."""
+    return type(a) is type(b) and all(
+        list(getattr(a, name)) == list(getattr(b, name))
         for name in ("formats", "zero_formats", "offset_formats")
     )
+
+
+def _stock(fmt: mdates.ConciseDateFormatter) -> bool:
+    """Whether a concise formatter is a stock one with its own format strings.
+
+    Matplotlib's English one, or the four-digit Korean one. Code that edits
+    the strings (a two-digit ``%y`` year, say) or picks another class chose
+    its dates, and keeps them.
+    """
+    locator = mdates.AutoDateLocator()  # type: ignore[no-untyped-call]
+    stock: list[mdates.ConciseDateFormatter] = [
+        mdates.ConciseDateFormatter(locator),  # type: ignore[no-untyped-call]
+        KoreanConciseDateFormatter(locator),
+    ]
+    return any(_same_formats(fmt, reference) for reference in stock)
+
+
+def _restyle_dates(
+    ax: Axes,
+    which: Literal["x", "y"],
+    axis: Axis,
+    fmt: mdates.ConciseDateFormatter,
+    *,
+    years: Digits,
+    style: DateStyle,
+    korean: bool,
+) -> int:
+    """Give a stock concise date axis the chosen style; 1 if it changed.
+
+    Quarterly data on the converter's own locator reads quarters
+    (:class:`QuarterLocator`, :class:`QuarterDateFormatter`); everything
+    else keeps its locator and gets :func:`date_formatter`'s formatter with
+    the same time zone, offset and TeX choice.
+    """
+    locator = axis.get_major_locator()
+    if not _stock(fmt) or not isinstance(locator, mdates.DateLocator):
+        return 0
+    if reads_quarters(years, style) and _converter_locator(locator):
+        dates = plotted_dates(ax, which)
+        if quarterly(dates):
+            axis.set_major_locator(
+                QuarterLocator(
+                    anchor=quarter_anchor(dates, locator.tz), tz=locator.tz
+                )
+            )
+            axis.set_major_formatter(
+                QuarterDateFormatter(
+                    style=style,
+                    digits=years,
+                    korean=korean,
+                    tz=fmt._tz,
+                    show_offset=fmt.show_offset,
+                )
+            )
+            return 1
+    chosen = date_formatter(
+        locator,
+        years=years,
+        style=style,
+        korean=korean,
+        tz=fmt._tz,
+        show_offset=fmt.show_offset,
+        usetex=fmt._usetex,
+    )
+    if _same_formats(chosen, fmt):
+        return 0
+    axis.set_major_formatter(chosen)
+    return 1
 
 
 def apply_default_tick_format(fig: Figure) -> int:
@@ -358,17 +501,7 @@ def apply_default_tick_format(fig: Figure) -> int:
     """
     from . import _SI_LADDER  # defined after this module is imported
 
-    tick_years = config.tick_years
-    date_style = config.date_style
-    if tick_years not in (2, 4):
-        raise ValueError(
-            f"config.tick_years must be 2 or 4, got {tick_years!r}"
-        )
-    if date_style not in ("period", "concise"):
-        raise ValueError(
-            "config.date_style must be 'period' or 'concise', "
-            f"got {date_style!r}"
-        )
+    tick_years, date_style = _date_style()
     changed = 0
     korean = _korean_labels(fig)
     for ax in fig.axes:
@@ -377,22 +510,22 @@ def apply_default_tick_format(fig: Figure) -> int:
             or getattr(ax, "_colorbar", None) is not None
         ):
             continue
-        for which, axis in (("x", ax.xaxis), ("y", ax.yaxis)):
+        pairs: tuple[tuple[Literal["x", "y"], Axis], ...] = (
+            ("x", ax.xaxis),
+            ("y", ax.yaxis),
+        )
+        for which, axis in pairs:
             fmt = axis.get_major_formatter()
-            if korean and type(fmt) is mdates.ConciseDateFormatter:
-                locator = axis.get_major_locator()
-                if isinstance(locator, mdates.DateLocator) and _stock(fmt):
-                    # Same time zone, offset and TeX choice; only the words
-                    # change.
-                    axis.set_major_formatter(
-                        KoreanConciseDateFormatter(
-                            locator,
-                            tz=fmt._tz,
-                            show_offset=fmt.show_offset,
-                            usetex=fmt._usetex,
-                        )
-                    )
-                    changed += 1
+            if isinstance(fmt, mdates.ConciseDateFormatter):
+                changed += _restyle_dates(
+                    ax,
+                    which,
+                    axis,
+                    fmt,
+                    years=tick_years,
+                    style=date_style,
+                    korean=korean,
+                )
                 continue
             if not _untouched(axis) or axis.get_scale() != "linear":
                 continue
@@ -455,10 +588,13 @@ def _visible_locs(
     return [float(v) for v in locs if low <= float(v) <= high]
 
 
-def _thin_category_dates(
-    axis: Axis, locator: CategoryDateLocator, fig: Figure, renderer: Any
+def _thin_by_steps(
+    axis: Axis,
+    locator: CategoryDateLocator | QuarterLocator,
+    fig: Figure,
+    renderer: Any,
 ) -> int:
-    """Label every n-th dated category position until labels are one em apart.
+    """Label every n-th dated category position (or quarter) until one em apart.
 
     Leaves rotated x labels alone. Moves the locator's ``step`` through its
     larger ``steps`` and keeps the first whose labels are
@@ -510,8 +646,10 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
     with no such ceiling is left as it was.
 
     Axes labelled with ``dm.format_axis_dates`` (a
-    :class:`CategoryDateLocator`) are thinned the same way through the
-    locator's position steps; see :func:`_thin_category_dates`.
+    :class:`CategoryDateLocator`) and quarterly date axes (a
+    :class:`QuarterLocator`: 1, 2, 4, 8 … quarters, Q1 kept) are thinned
+    the same way through the locator's steps, so the notation never
+    changes; see :func:`_thin_by_steps`.
     """
     renderer = get_renderer(fig)
     changed = 0
@@ -520,8 +658,8 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
             continue
         for axis in (ax.xaxis, ax.yaxis):
             locator = axis.get_major_locator()
-            if isinstance(locator, CategoryDateLocator):
-                changed += _thin_category_dates(axis, locator, fig, renderer)
+            if isinstance(locator, (CategoryDateLocator, QuarterLocator)):
+                changed += _thin_by_steps(axis, locator, fig, renderer)
                 continue
             if not _converter_locator(locator) or not isinstance(
                 axis.get_major_formatter(), mdates.ConciseDateFormatter

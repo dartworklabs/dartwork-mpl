@@ -160,6 +160,12 @@ class TestLeftAlone:
 class TestDates:
     """Every preset formats unformatted date axes concisely."""
 
+    @pytest.fixture(autouse=True)
+    def _concise_dates(self):
+        """These pin the 0.6.0 concise words, one config line away now."""
+        with dm.config.override(tick_years=4, date_style="concise"):
+            yield
+
     @pytest.mark.parametrize(
         "preset", ["scientific", "report", "presentation", "report-kr", "dark"]
     )
@@ -321,6 +327,12 @@ class TestCrowdedDates:
     ticks on a 23.4 cm slide and on an 11.4 cm half slide alike, where
     ``2021년 5월 9월 2022년`` ran together.
     """
+
+    @pytest.fixture(autouse=True)
+    def _concise_dates(self):
+        """These pin the 0.6.0 concise words, one config line away now."""
+        with dm.config.override(tick_years=4, date_style="concise"):
+            yield
 
     def test_half_slide_drops_to_two_year_steps(self):
         # At the slide's 18.2 pt ticks (scientific x 2.6, 2026-11-03) neither
