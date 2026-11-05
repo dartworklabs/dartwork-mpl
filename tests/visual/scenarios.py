@@ -51,8 +51,14 @@ class Scenario:
 
 
 def _blue_colors(count: int | None = None) -> tuple[str, ...]:
-    tokens = tuple(dm.colors("blue", n=10))
-    return tokens if count is None else tokens[:count]
+    """The blue family's designed discrete form for ``count`` series.
+
+    ``dm.colors(name, n)`` spreads ``n`` colors over the ladder; slicing the
+    10-step ladder instead would hand every scenario its lightest, nearly
+    invisible shades. ``None`` is the full 10-step ladder, which only the
+    swatch scenario shows.
+    """
+    return tuple(dm.colors("blue", n=10 if count is None else count))
 
 
 def _build_preset_report_line() -> Figure:
@@ -473,12 +479,11 @@ def _build_kr_math_labels() -> Figure:
 
 
 def all_scenarios() -> list[Scenario]:
-    blue_palette = _blue_colors()
     return [
         Scenario(
             "preset_report_line",
             _build_preset_report_line,
-            Expectations(min_lines=3, palette=blue_palette[:3]),
+            Expectations(min_lines=3, palette=_blue_colors(3)),
         ),
         Scenario(
             "preset_report_kr_bars",
@@ -486,7 +491,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_patches=4,
                 texts_contain=("매출",),
-                palette=blue_palette[:4],
+                palette=_blue_colors(4),
                 tolerance=22.0,
             ),
         ),
@@ -494,7 +499,7 @@ def all_scenarios() -> list[Scenario]:
             "preset_scientific_scatter",
             _build_preset_scientific_scatter,
             Expectations(
-                min_lines=1, min_collections=1, palette=blue_palette[:2]
+                min_lines=1, min_collections=1, palette=_blue_colors(2)
             ),
         ),
         Scenario(
@@ -504,29 +509,27 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=5,
                 texts_contain=("확률 밀도",),
-                palette=blue_palette[:2],
+                palette=_blue_colors(2),
                 tolerance=22.0,
             ),
         ),
         Scenario(
             "line_signals",
             _build_line_signals,
-            Expectations(min_lines=2, palette=blue_palette[:2]),
+            Expectations(min_lines=2, palette=_blue_colors(2)),
         ),
         Scenario(
             "bar_value_labels",
             _build_bar_value_labels,
             Expectations(
-                min_patches=4,
-                texts_contain=("1.20M",),
-                palette=blue_palette[:4],
+                min_patches=4, texts_contain=("1.20M",), palette=_blue_colors(4)
             ),
         ),
         Scenario(
             "scatter_fit",
             _build_scatter_fit,
             Expectations(
-                min_lines=1, min_collections=1, palette=blue_palette[:2]
+                min_lines=1, min_collections=1, palette=_blue_colors(2)
             ),
         ),
         Scenario(
@@ -536,7 +539,7 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=5,
                 texts_contain=("Normal fit",),
-                palette=blue_palette[:2],
+                palette=_blue_colors(2),
             ),
         ),
         Scenario(
@@ -550,7 +553,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_patches=3,
                 texts_contain=("구성",),
-                palette=blue_palette[:5],
+                palette=_blue_colors(5),
                 require_ylabel=False,
                 tolerance=24.0,
             ),
@@ -563,14 +566,14 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=12,
                 texts_contain=("보조 계열",),
-                palette=blue_palette[:2],
+                palette=_blue_colors(2),
                 tolerance=24.0,
             ),
         ),
         Scenario(
             "palette_swatch",
             _build_palette_swatch,
-            Expectations(min_patches=8, palette=blue_palette),
+            Expectations(min_patches=8, palette=_blue_colors()),
         ),
         Scenario(
             "colormap_strip",
@@ -583,7 +586,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_lines=1,
                 texts_contain=("한글", _SPECIAL_CHARS),
-                palette=blue_palette[:1],
+                palette=_blue_colors(1),
                 tolerance=25.0,
             ),
         ),
