@@ -12,11 +12,13 @@ a request for another format gets that format.
 
 ### Changed
 
-- **Two-digit years on untouched axes.** An x axis whose data are integer
-  years (1900–2099: annual lines, bars, grouped bars, scatter, `stackplot`
-  and `fill_between` areas; a `secondary_xaxis` showing them too) ticks
-  whole years only and reads `16, 18, 20 … 24` (no more `2005.0, 2007.5`,
-  nor a rounded `08`); monthly dates read `23.01, 23.07, 24.01`, quarterly
+- **Two-digit years on untouched axes.** An x or y axis whose data are
+  integer years (1900–2099: annual lines, bars, grouped bars, horizontal
+  bars such as `ax.barh(range(2014, 2025), …)`, scatter, `stackplot`,
+  `fill_between` and `fill_betweenx` areas; a `secondary_xaxis` /
+  `secondary_yaxis` showing them too) ticks whole years only and reads
+  `16, 18, 20 … 24` (no more `2005.0, 2007.5`, nor a rounded `08`, nor
+  `2,014` on a y axis); monthly dates read `23.01, 23.07, 24.01`, quarterly
   dates `23.Q1, 23.Q3` (`stackplot` and `fill_between` areas included;
   `dm.format_axis_dates` and dated categories too). Korean figures print
   the same text, without the `년` suffix. Other

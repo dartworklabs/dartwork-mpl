@@ -10,10 +10,12 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 - from one million the axis takes the largest tick's unit (``0.5M …
   2.5M``; ``50만 … 250만`` in Korean figures, ``config.number_ladder``),
   unless that needs more than two decimals;
-- x axes whose plotted data are integers 1900-2099 (annual lines, bars,
-  bars grouped side by side within each year, scatter, ``stackplot`` and
-  ``fill_between`` areas; twins, shared axes and a ``secondary_xaxis``
-  showing the same years included) are year axes: ticks on whole years
+- x and y axes whose plotted data are integers 1900-2099 (annual lines,
+  bars and horizontal bars, bars grouped side by side within each year,
+  scatter, ``stackplot``, ``fill_between`` and ``fill_betweenx`` areas;
+  twins, shared axes and a ``secondary_xaxis`` / ``secondary_yaxis``
+  showing the same years included; a vertical bar's height is a value,
+  not y data) are year axes: ticks on whole years
   only (:class:`._years.WholeYearLocator`), read two digits (``16, 18,
   20``; four when two would print alike, or with ``config.tick_years =
   4``); integer data in that range that are not years (elevations) read
@@ -538,7 +540,7 @@ def _restyle_dates(
 def _year_axis(
     axis: Axis, values: npt.NDArray[np.float64], digits: Digits, suffix: str
 ) -> int:
-    """Whole-year ticks and year labels on an x axis whose data are years.
+    """Whole-year ticks and year labels on an axis whose data are years.
 
     The data decide (:func:`year_data` over ``values``: the axes'
     :func:`plotted_dates`, twins and shared axes included, or what a
@@ -571,34 +573,45 @@ def _year_axis(
     return changed
 
 
-def _secondary_x_axes(ax: Axes) -> list[SecondaryAxis]:
-    """The ``ax.secondary_xaxis(...)`` children of ``ax``."""
+def _axis_of(ax: Axes | SecondaryAxis, which: Literal["x", "y"]) -> Axis:
+    return ax.xaxis if which == "x" else ax.yaxis
+
+
+_WHICH: tuple[Literal["x", "y"], ...] = ("x", "y")
+
+
+def _secondary_axes(ax: Axes, which: Literal["x", "y"]) -> list[SecondaryAxis]:
+    """The ``ax.secondary_xaxis(...)`` (or ``secondary_yaxis``) children of ``ax``."""
     return [
         child
         for child in ax.child_axes
         if isinstance(child, SecondaryAxis)
-        and child.xaxis.get_scale() == "function"  # a secondary x on linear
+        # a secondary axis of a linear parent axis
+        and _axis_of(child, which).get_scale() == "function"
     ]
 
 
-def _year_axes(ax: Axes, digits: Digits, suffix: str) -> int:
-    """:func:`_year_axis` on ``ax``'s x axis and its secondary x axes.
+def _year_axes(
+    ax: Axes, which: Literal["x", "y"], digits: Digits, suffix: str
+) -> int:
+    """:func:`_year_axis` on ``ax``'s x (or y) axis and its secondary axes.
 
-    A secondary x axis shows the plotted x data through its functions
+    A secondary axis shows the plotted data through its functions
     (``secondary_xaxis("top")``: the same years; ``y - 1990``: ages), so it
     takes the year treatment when what it shows are years, under the same
     flags; matplotlib keeps them on it until its parent's scale changes.
     The functions see only a small sample of the data
     (:func:`_secondary_values`).
     """
-    years = plotted_dates(ax, "x", bar_slot=1.0)
-    changed = _year_axis(ax.xaxis, years, digits, suffix)
-    secondaries = _secondary_x_axes(ax)
+    years = plotted_dates(ax, which, bar_slot=1.0)
+    changed = _year_axis(_axis_of(ax, which), years, digits, suffix)
+    secondaries = _secondary_axes(ax, which)
     sample = _sample(years) if secondaries else years
     for secondary in secondaries:
-        shown = _secondary_values(secondary, sample)
+        axis = _axis_of(secondary, which)
+        shown = _secondary_values(axis, sample)
         if shown is not None:
-            changed += _year_axis(secondary.xaxis, shown, digits, suffix)
+            changed += _year_axis(axis, shown, digits, suffix)
     return changed
 
 
@@ -632,9 +645,9 @@ def _sample(values: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
 
 
 def _secondary_values(
-    secondary: SecondaryAxis, values: npt.NDArray[np.float64]
+    secondary: Axis, values: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64] | None:
-    """What ``secondary`` shows for ``values``; ``None`` if it cannot say.
+    """What a secondary axis shows for ``values``; ``None`` if it cannot say.
 
     Runs the secondary's functions (its scale's inverse transform) with
     numpy's floating-point warnings off. A function that raises (a
@@ -645,7 +658,7 @@ def _secondary_values(
     try:
         with np.errstate(all="ignore"):
             shown = np.asarray(
-                secondary.xaxis.get_transform().inverted().transform(values),
+                secondary.get_transform().inverted().transform(values),
                 dtype=float,
             )
     except Exception:  # noqa: BLE001 - user functions may raise anything
@@ -698,9 +711,8 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if not _plain_numbers(axis):
                 continue
-            if which == "x":
-                suffix = "년" if korean and date_style == "concise" else ""
-                changed += _year_axes(ax, tick_years, suffix)
+            suffix = "년" if korean and date_style == "concise" else ""
+            changed += _year_axes(ax, which, tick_years, suffix)
             if not axis.isDefault_majfmt:
                 continue
             ticks = _visible_ticks(axis)
@@ -857,15 +869,20 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
     :class:`QuarterLocator`: 1, 2, 4, 8 … quarters, Q1 kept) are thinned
     the same way through the locator's steps, so the notation never
     changes; see :func:`_thin_by_steps`. Year axes (a
-    :class:`WholeYearLocator`, ``secondary_xaxis`` children included) take
-    fewer whole-year ticks; see :func:`_thin_years`.
+    :class:`WholeYearLocator`, x or y, ``secondary_xaxis`` /
+    ``secondary_yaxis`` children included) take fewer whole-year ticks; see
+    :func:`_thin_years`.
     """
     renderer = get_renderer(fig)
     changed = 0
     for ax in fig.axes:
         if ax.name != "rectilinear":
             continue
-        secondaries = [s.xaxis for s in _secondary_x_axes(ax)]
+        secondaries = [
+            _axis_of(s, which)
+            for which in _WHICH
+            for s in _secondary_axes(ax, which)
+        ]
         for axis in (ax.xaxis, ax.yaxis, *secondaries):
             locator = axis.get_major_locator()
             if isinstance(locator, (CategoryDateLocator, QuarterLocator)):
