@@ -27,7 +27,8 @@ _ADV_STEMS = sorted(p.stem for p in (_ASSET / "advanced").glob("*.py"))
 
 def _gallery_file(gallery_dir: Path, stem: str, suffix: str = "") -> Path:
     # test_drift.py quirk: the docs file for ``plot_3d`` is
-    # ``plot_3d{suffix}.py``, not ``plot_plot_3d{suffix}.py``.
+    # ``plot_3d{suffix}.py``, not ``plot_plot_3d{suffix}.py``. Tier-2
+    # examples carry ``_advanced`` so sphinx-gallery's names stay unique.
     name = (
         f"{stem}{suffix}.py" if stem == "plot_3d" else f"plot_{stem}{suffix}.py"
     )
@@ -68,7 +69,9 @@ def test_advanced_template_matches_gallery(stem: str) -> None:
         (_ASSET / "advanced" / f"{stem}.py").read_text(encoding="utf-8")
     )
     gallery = _normalize(
-        _gallery_file(_GALLERY_ADV, stem).read_text(encoding="utf-8")
+        _gallery_file(_GALLERY_ADV, stem, "_advanced").read_text(
+            encoding="utf-8"
+        )
     )
     assert asset == gallery, f"{stem} (advanced): asset ↔ gallery drift"
 

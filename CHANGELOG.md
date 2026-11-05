@@ -79,6 +79,12 @@ a request for another format gets that format.
   labels and `dm.format_axis_si` / `_millions` / `_billions` / `_myriad` no
   longer emit a `MatplotlibDeprecationWarning` about `Formatter.locs` on
   every draw.
+- **Docs build from `docs/`.** The 18 tier-2 gallery examples shared their
+  file names with the basic tier, so sphinx-gallery warned "Duplicate
+  example file name(s)" and `sphinx-build -W` failed when started in
+  `docs/`. They are now `plot_<id>_advanced.py`; template ids, MCP
+  resources and the bundled sources are unchanged, and
+  `find_template(..., tier="advanced")` reports the new `source_path`.
 - **Secondary axes stay on the canvas.** `dm.simple_layout` now fits the
   tick labels, offset text and label of `ax.secondary_xaxis(...)` /
   `ax.secondary_yaxis(...)` like the parent's own; they used to sit past
