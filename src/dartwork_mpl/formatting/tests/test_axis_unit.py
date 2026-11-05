@@ -15,7 +15,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
-import pandas as pd
 import pytest
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -40,8 +39,8 @@ MINUS = "\N{MINUS SIGN}"
 
 # The approved captures' data (b12/scripts/render.py).
 Q_DATES = [
-    p.start_time.strftime("%Y-%m")
-    for p in pd.period_range("2023Q1", "2025Q4", freq="Q")
+    str(m)
+    for m in np.arange(np.datetime64("2023-01"), np.datetime64("2026-01"), 3)
 ]
 Q_REVENUE_WON = (
     np.array(
@@ -49,7 +48,9 @@ Q_REVENUE_WON = (
     )
     * 1e8
 )
-M_DATES = pd.date_range("2023-01-01", periods=36, freq="MS")
+M_DATES = np.arange(np.datetime64("2023-01"), np.datetime64("2026-01")).astype(
+    "datetime64[D]"
+)
 _T = np.arange(36)
 M_REVENUE_USD = (
     1.25e6 + 0.058e6 * _T + 0.18e6 * np.sin(2 * np.pi * (_T - 2) / 12)
