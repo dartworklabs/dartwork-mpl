@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
-from ..._figure_geometry import axes_text_artists, iter_figure_level_extents
+from ..._figure_geometry import (
+    axes_text_artists,
+    axes_with_secondaries,
+    iter_figure_level_extents,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import SIDES, Side, choice, number, wire
 from ._registry import register_check, register_fix
@@ -36,11 +40,15 @@ OverflowDetail = OverflowTextDetail | OverflowTickDetail
 
 @register_check("OVERFLOW", order=10)
 def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
-    """Detect elements whose bounding boxes extend beyond the figure canvas."""
+    """Detect elements whose bounding boxes extend beyond the figure canvas.
+
+    Walks every Axes and its ``secondary_xaxis`` / ``secondary_yaxis``
+    children, which matplotlib keeps out of ``fig.axes``.
+    """
     warnings: list[VisualWarning] = []
     fig_bbox = fig.bbox  # pixel coords
 
-    for ax in fig.axes:
+    for ax in axes_with_secondaries(fig):
         # --- text objects (titles, labels, annotations) ---
         for txt in axes_text_artists(ax):
             if (

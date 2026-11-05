@@ -79,6 +79,11 @@ a request for another format gets that format.
   labels and `dm.format_axis_si` / `_millions` / `_billions` / `_myriad` no
   longer emit a `MatplotlibDeprecationWarning` about `Formatter.locs` on
   every draw.
+- **Secondary axes stay on the canvas.** `dm.simple_layout` now fits the
+  tick labels, offset text and label of `ax.secondary_xaxis(...)` /
+  `ax.secondary_yaxis(...)` like the parent's own; they used to sit past
+  the figure edge. `dm.validate_figure`'s `OVERFLOW` and `CLIPPED_TEXT`
+  checks look at them too (matplotlib keeps them out of `fig.axes`).
 - **`ax.ticklabel_format` on a year axis.** After `dm.simple_layout` it
   raised `AttributeError: This method only works with the ScalarFormatter`,
   and before it the request was dropped. The year formatter is now

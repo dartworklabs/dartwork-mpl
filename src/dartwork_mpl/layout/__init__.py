@@ -45,6 +45,7 @@ from .._figure_geometry import (
     reanchor_outside,
     respread_line_end_labels,
     same_position_axes,
+    secondary_axes,
 )
 from ..units import Length
 
@@ -297,7 +298,9 @@ def _axes_content_extent_px(
 
     Walks texts, title, axis labels, view-limited tick labels, axis
     offset text, and legend, plus the axes' own window extent so the
-    result is never smaller than the plot area. This is *almost* the
+    result is never smaller than the plot area. The tick labels, offset
+    text and axis label of its ``secondary_xaxis`` / ``secondary_yaxis``
+    children count as its own (:func:`secondary_axes`). This is *almost* the
     artist set the layout tests' ``measure_overflow`` oracle walks, with three deliberate
     deltas: the offset text and the axes window extent are only
     measured here, and the ``_LEGEND_FRAME_PAD`` slack is only added
@@ -329,8 +332,13 @@ def _axes_content_extent_px(
         pts.append((apos.x0, apos.y0))
         pts.append((apos.x1, apos.y1))
 
+    # ``secondary_xaxis`` / ``secondary_yaxis`` children: their tick
+    # labels, offset text and axis label sit around this axes' box like
+    # its own, but matplotlib keeps them out of ``fig.axes``.
+    owners = [ax, *secondary_axes(ax)]
+
     # Texts, centre/left/right titles, axis labels.
-    for txt in axes_text_artists(ax):
+    for txt in (t for owner in owners for t in axes_text_artists(owner)):
         if txt is None or not txt.get_visible() or not txt.get_text().strip():
             continue
         try:
@@ -347,7 +355,7 @@ def _axes_content_extent_px(
     # current view interval. Auto-generated ticks outside the data
     # range (e.g. ``10^16`` on a log axis with data up to ``10^9``)
     # are ignored, mirroring the layout tests' ``measure_overflow``.
-    for axis in (ax.xaxis, ax.yaxis):
+    for owner, axis in ((o, a) for o in owners for a in (o.xaxis, o.yaxis)):
         # ``get_view_interval`` returns the pair *reversed* on an inverted
         # axis (e.g. ``[1.05, -0.05]`` after ``invert_yaxis()``); sort so
         # the in-view test below doesn't drop every tick on such axes.
@@ -361,7 +369,7 @@ def _axes_content_extent_px(
                 pos = tick.get_position()
             except _BBOX_ERRORS:
                 continue
-            val = pos[0] if axis is ax.xaxis else pos[1]
+            val = pos[0] if axis is owner.xaxis else pos[1]
             if val < vmin - tol or val > vmax + tol:
                 continue
             if ext.width <= 0 or ext.height <= 0:

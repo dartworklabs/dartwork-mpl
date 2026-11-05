@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import axes_text_artists
+from ..._figure_geometry import axes_text_artists, axes_with_secondaries
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -40,7 +40,8 @@ def check_clipped_text(
     box exits the canvas, but it has a 2 px tolerance and skips ticks
     outside the data range. CLIPPED_TEXT is stricter — it fires when
     *any* visible Text artist's bbox approaches the edge by less than
-    1 px, which is what causes saved PNGs to chop labels.
+    1 px, which is what causes saved PNGs to chop labels. The text of
+    ``secondary_xaxis`` / ``secondary_yaxis`` children is checked too.
     """
     warnings: list[VisualWarning] = []
     fig_bbox = fig.bbox
@@ -81,7 +82,7 @@ def check_clipped_text(
                     oor.add(id(tick_label))
         return oor
 
-    for ax in fig.axes:
+    for ax in axes_with_secondaries(fig):
         oor_ticks = _out_of_range_ticks(ax)
         candidates: list[Any] = [
             *axes_text_artists(ax),

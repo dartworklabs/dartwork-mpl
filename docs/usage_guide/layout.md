@@ -303,8 +303,10 @@ parsing margins; the latter retain their warning.
 
 1. Draws the figure once to populate text metrics.
 2. Walks every visible artist on each axes (texts, title, axis labels,
-   tick labels in view, axis offset text, legend) and computes the
-   content-extent overhang relative to each axes' plot area.
+   tick labels in view, axis offset text, legend; the tick labels and
+   label of a `secondary_xaxis` / `secondary_yaxis` count as that axes'
+   own) and computes the content-extent overhang relative to each axes'
+   plot area.
 3. Sets GridSpec edges arithmetically so the union of all axes
    content sits at exactly the requested distance from each figure
    edge.
