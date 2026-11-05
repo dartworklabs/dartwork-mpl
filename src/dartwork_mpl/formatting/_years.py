@@ -158,43 +158,72 @@ class WholeYearLocator(ticker.MaxNLocator):
 class YearTickFormatter(ticker.Formatter):
     """Whole years as two digits (``24``) or four (``2024``).
 
-    For year axes, under :class:`WholeYearLocator` or whole years someone
-    pinned. ``suffix`` is appended to every year (``"년"``). Each
-    :meth:`set_locs` (every draw) reads the whole years in view: with
-    ``digits=2`` they print four digits when two would repeat (``1900,
-    2000``; ``2000 … 2100``). Every whole tick is a year, the ``2100`` at the
-    edge of data reaching 2099 included; a tick between years gets no label.
+    ``suffix`` is appended to every year (``"년"``). Each :meth:`set_locs`
+    (every draw) reads the ticks in view: with ``digits=2`` the years print
+    four digits when two would repeat (``1900, 2000``; ``2000 … 2100``).
+    Every whole tick is a year, the ``2100`` at the edge of data reaching
+    2099 included. ``between`` says what a draw with a tick between years
+    prints:
+
+    - ``"blank"`` (under :class:`WholeYearLocator`, which leaves whole years
+      only for a view under two years): that tick gets no label;
+    - ``"numbers"`` (under a locator someone set, ``MaxNLocator`` or pinned
+      ticks): every tick prints its plain value (``2005.0, 2007.5``), no
+      offset, never a rounded year; with every tick whole, the years.
+
     The cursor readout (:meth:`format_data_short`) is the value itself
     (``2007.53``), as matplotlib's number axes write it: a cursor sits
     between years.
     """
 
-    def __init__(self, digits: Literal[2, 4], suffix: str = "") -> None:
+    def __init__(
+        self,
+        digits: Literal[2, 4],
+        suffix: str = "",
+        *,
+        between: Literal["blank", "numbers"] = "blank",
+    ) -> None:
         if digits not in (2, 4):
             raise ValueError(f"digits must be 2 or 4, got {digits!r}")
+        if between not in ("blank", "numbers"):
+            raise ValueError(
+                f"between must be 'blank' or 'numbers', got {between!r}"
+            )
         self.digits = digits
         self.suffix = suffix
+        self.between = between
         self._four = digits == 4
+        self._numbers: ticker.ScalarFormatter | None = None
         self._cursor = ticker.ScalarFormatter()
+        self._plain = ticker.ScalarFormatter(useOffset=False)
+        self._plain.set_scientific(False)
 
     def set_axis(self, axis: Any) -> None:
-        """Attach this formatter (and its cursor readout) to ``axis``."""
+        """Attach this formatter (and its number readouts) to ``axis``."""
         super().set_axis(axis)
         self._cursor.set_axis(axis)
+        self._plain.set_axis(axis)
 
     def set_locs(self, locs: Sequence[float]) -> None:
-        """Choose two or four digits from the whole years in view."""
+        """Choose years (two or four digits) or numbers from the ticks in view."""
         values = [float(v) for v in locs]
         super().set_locs(values)
         axis = getattr(self, "axis", None)
+        shown = values
         if axis is not None:
             low, high = sorted(float(v) for v in axis.get_view_interval())
-            values = [v for v in values if low <= v <= high]
-        years = [round(v) for v in values if _whole(v)]
+            shown = [v for v in values if low <= v <= high]
+        self._numbers = None
+        if self.between == "numbers" and not all(_whole(v) for v in shown):
+            self._plain.set_locs(values)
+            self._numbers = self._plain
+        years = [round(v) for v in shown if _whole(v)]
         self._four = self.digits == 4 or two_digits_repeat(years)
 
     def __call__(self, x: float, pos: int | None = None) -> str:
-        """One tick's label: the year, or nothing between years."""
+        """One tick's label: the year, a plain number, or nothing."""
+        if self._numbers is not None:
+            return str(self._numbers(x, pos))
         if not _whole(float(x)):
             return ""
         year = round(x)
@@ -202,7 +231,7 @@ class YearTickFormatter(ticker.Formatter):
         return f"{body}{self.suffix}"
 
     def format_ticks(self, values: Sequence[float]) -> list[str]:
-        """Labels for the ticks, the year digits chosen over those in view."""
+        """Labels for the ticks, years or numbers chosen over those in view."""
         self.set_locs(values)
         return [self(value, i) for i, value in enumerate(values)]
 

@@ -92,7 +92,6 @@ from ._years import (
     WholeYearLocator,
     YearTickFormatter,
     requested_params,
-    whole_years,
     year_data,
 )
 
@@ -547,11 +546,11 @@ def _year_axis(
     Matplotlib's own
     locator gives way to :class:`WholeYearLocator`, which carries what
     someone asked of it in place (``ax.locator_params(axis="x", nbins=3)``),
-    and its own formatter to :class:`YearTickFormatter` when every tick is
-    a whole year whatever the refit does (:func:`_ticks_whole_years`). A
-    locator or formatter someone set stays; under a locator someone set
-    (``MaxNLocator``) matplotlib's formatter stays too, so every tick reads
-    its value (``2005, 2007.5``). Returns 1 if anything changed.
+    and its own formatter to :class:`YearTickFormatter`. A locator or
+    formatter someone set stays. Under a locator someone set
+    (``MaxNLocator``, pinned ticks) the year formatter decides at each draw:
+    years while every tick in view is a whole year (``05, 10``), else every
+    tick's plain value (``2005.0, 2007.5``). Returns 1 if anything changed.
     """
     if not year_data(values):
         return 0
@@ -560,8 +559,12 @@ def _year_axis(
         asked = requested_params(axis.get_major_locator())
         axis.set_major_locator(WholeYearLocator(**asked))
         changed = 1
-    if axis.isDefault_majfmt and _ticks_whole_years(axis.get_major_locator()):
-        axis.set_major_formatter(YearTickFormatter(digits, suffix))
+    if axis.isDefault_majfmt:
+        ours = isinstance(axis.get_major_locator(), WholeYearLocator)
+        between: Literal["blank", "numbers"] = "blank" if ours else "numbers"
+        axis.set_major_formatter(
+            YearTickFormatter(digits, suffix, between=between)
+        )
         changed = 1
     return changed
 
@@ -590,21 +593,6 @@ def _year_axes(ax: Axes, digits: Digits, suffix: str) -> int:
         shown = secondary.xaxis.get_transform().inverted().transform(years)
         changed += _year_axis(secondary.xaxis, shown, digits, suffix)
     return changed
-
-
-def _ticks_whole_years(locator: ticker.Locator) -> bool:
-    """Whether every tick the locator gives is a whole year.
-
-    The library's :class:`WholeYearLocator`, or ticks someone pinned
-    (``set_xticks``) that are all whole years. Any other locator can land
-    between years once the margins are refitted.
-    """
-    if isinstance(locator, WholeYearLocator):
-        return True
-    if not isinstance(locator, ticker.FixedLocator):
-        return False
-    pins = locator.tick_values(-np.inf, np.inf)  # every pin, any view
-    return whole_years([float(v) for v in pins])
 
 
 def apply_default_tick_format(fig: Figure) -> int:

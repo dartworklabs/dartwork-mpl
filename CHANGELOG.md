@@ -33,8 +33,9 @@ a request for another format gets that format.
   (no quarter locator, no thinning), and an explicit `ScalarFormatter()`
   keeps `1000`. A tick count asked with `ax.locator_params(axis="x",
   nbins=3)` is kept, on whole years for year data (`00, 10, 20`); under a
-  locator you set (`MaxNLocator`) year data keep matplotlib's numbers
-  (`2005, 2010`), so no tick is left unlabelled.
+  locator you set (`MaxNLocator`) year data read `05, 10` while every tick
+  is a whole year and plain numbers (`2005.0, 2007.5`) when one is not, so
+  no tick is left unlabelled or rounded.
 - **Requires Matplotlib ≥3.11; 3.10 is no longer supported.** Matplotlib
   3.11 sizes text boxes and draws legend markers differently, so it renders
   dartwork-mpl figures slightly differently from 3.10. Rather than patch
