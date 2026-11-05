@@ -113,7 +113,7 @@ class TestLeftAlone:
         ax.plot(np.arange(2012, 2024), np.linspace(1, 3, 12))
         dm.simple_layout(fig)
         assert all("," not in t for t in _drawn(ax, "x"))
-        assert "2016" in _drawn(ax, "x")
+        assert "16" in _drawn(ax, "x")
 
     def test_chosen_formatter_wins(self):
         fig, ax = _fig()
@@ -143,6 +143,25 @@ class TestLeftAlone:
             is not dm.formatting._defaults.DefaultNumberFormatter
         )
 
+    def test_a_scalar_formatter_someone_set_wins(self):
+        """Even matplotlib's own class: set explicitly, it is a choice."""
+        fig, ax = _fig()
+        ax.bar(["a", "b"], [1200, 1750])
+        chosen = mticker.ScalarFormatter()
+        ax.yaxis.set_major_formatter(chosen)
+        dm.simple_layout(fig)
+        assert ax.yaxis.get_major_formatter() is chosen
+        assert "1000" in _drawn(ax)
+
+    def test_category_axis_keeps_its_names(self):
+        fig, ax = _fig()
+        names = [f"n{i}" for i in range(1200)]
+        ax.bar(names, np.ones(len(names)))
+        dm.simple_layout(fig)
+        assert type(ax.xaxis.get_major_formatter()) is not (
+            dm.formatting._defaults.DefaultNumberFormatter
+        )
+
     def test_opt_out(self):
         fig, ax = _fig()
         ax.bar(["a", "b"], [1200, 1750])
@@ -159,6 +178,12 @@ class TestLeftAlone:
 
 class TestDates:
     """Every preset formats unformatted date axes concisely."""
+
+    @pytest.fixture(autouse=True)
+    def _concise_dates(self):
+        """These pin matplotlib's concise words: the four-digit concise option."""
+        with dm.config.override(tick_years=4, date_style="concise"):
+            yield
 
     @pytest.mark.parametrize(
         "preset", ["scientific", "report", "presentation", "report-kr", "dark"]
@@ -233,6 +258,21 @@ class TestDates:
         assert not any("년" in label or "2024" in label for label in drawn)
 
     def test_korean_dates_keep_the_offset_and_tex_choice(self):
+        """The converter's own formatter, adjusted in place, turns Korean."""
+        dm.style.use("report-kr")
+        fig, ax = _fig()
+        with matplotlib.rc_context({"text.usetex": True}):
+            self._weeks(ax)  # the converter reads usetex here
+        ax.set_ylabel("방문자 수")
+        ax.xaxis.get_major_formatter().show_offset = False
+        apply_default_tick_format(fig)
+        fmt = ax.xaxis.get_major_formatter()
+        assert type(fmt).__name__ == "KoreanConciseDateFormatter"
+        assert fmt.show_offset is False
+        assert fmt._usetex is True
+
+    def test_a_concise_formatter_someone_set_stays_english(self):
+        """Set explicitly, matplotlib's stock formatter is a choice too."""
         import matplotlib.dates as mdates
 
         dm.style.use("report-kr")
@@ -240,15 +280,11 @@ class TestDates:
         self._weeks(ax)
         ax.set_ylabel("방문자 수")
         locator = mdates.AutoDateLocator()
+        chosen = mdates.ConciseDateFormatter(locator)
         ax.xaxis.set_major_locator(locator)
-        ax.xaxis.set_major_formatter(
-            mdates.ConciseDateFormatter(locator, show_offset=False, usetex=True)
-        )
-        apply_default_tick_format(fig)
-        fmt = ax.xaxis.get_major_formatter()
-        assert type(fmt).__name__ == "KoreanConciseDateFormatter"
-        assert fmt.show_offset is False
-        assert fmt._usetex is True
+        ax.xaxis.set_major_formatter(chosen)
+        assert apply_default_tick_format(fig) == 0
+        assert ax.xaxis.get_major_formatter() is chosen
 
     def test_days_drop_the_zero_padding(self):
         dm.style.use("report-kr")
@@ -321,6 +357,12 @@ class TestCrowdedDates:
     ``2021년 5월 9월 2022년`` ran together.
     """
 
+    @pytest.fixture(autouse=True)
+    def _concise_dates(self):
+        """These pin matplotlib's concise words: the four-digit concise option."""
+        with dm.config.override(tick_years=4, date_style="concise"):
+            yield
+
     def test_half_slide_drops_to_two_year_steps(self):
         # At the slide's 18.2 pt ticks (scientific x 2.6, 2026-11-03) neither
         # six-month nor yearly labels fit 36 months into a half slide; the
@@ -392,3 +434,68 @@ class TestCrowdedDates:
         dm.simple_layout(fig)
         assert _drawn(ax, "x") == first
         assert not [w for w in recwarn if "AutoDateLocator" in str(w.message)]
+
+
+class TestKoreanDefaultLadder:
+    """Korean figures read 만/억/조 on untouched axes; English keeps SI."""
+
+    def test_korean_figure_uses_myriad_from_one_million(self):
+        fig, ax = _fig()
+        ax.plot([0, 1, 2], [5.2e11, 7.0e11, 9.6e11])
+        ax.set_ylabel("매출")
+        dm.simple_layout(fig)
+        labels = _drawn(ax)
+        assert labels and all(t.endswith("조") for t in labels)
+        assert "1.0조" in labels
+
+        fig, ax = _fig()
+        ax.plot([0, 1], [50_000, 80_000])
+        ax.set_ylabel("매출")
+        dm.simple_layout(fig)
+        assert all(
+            "," in t and not t.endswith(("만", "억")) for t in _drawn(ax)
+        )
+
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3_000_000])
+        ax.set_ylabel("매출")
+        dm.simple_layout(fig)
+        assert "300만" in _drawn(ax)
+
+    def test_signed_korean_axis_keeps_one_unit(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [-3_000_000, 3_000_000])
+        ax.set_ylabel("손익")
+        dm.simple_layout(fig)
+        labels = _drawn(ax)
+        assert f"{MINUS}300만" in labels and "300만" in labels
+
+    def test_english_figure_keeps_si(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3.5e10])
+        ax.set_ylabel("Revenue")
+        dm.simple_layout(fig)
+        assert "35G" in _drawn(ax)
+
+    def test_number_ladder_override_si(self):
+        fig, ax = _fig()
+        ax.plot([0, 1, 2], [5.2e11, 7.0e11, 9.6e11])
+        ax.set_ylabel("매출")
+        with dm.config.override(number_ladder="si"):
+            dm.simple_layout(fig)
+            labels = _drawn(ax)
+        assert "1.0T" in labels and not any("조" in t for t in labels)
+
+    def test_number_ladder_myriad_forces_korean_units(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3_000_000])
+        with dm.config.override(number_ladder="myriad"):
+            dm.simple_layout(fig)
+            assert "300만" in _drawn(ax)
+
+    def test_bad_number_ladder_is_named(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3_000_000])
+        with dm.config.override(number_ladder="metric"):
+            with pytest.raises(ValueError, match="number_ladder"):
+                dm.simple_layout(fig)

@@ -35,6 +35,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, fields
+from typing import Literal
 
 __all__ = ["Config", "config"]
 
@@ -67,10 +68,39 @@ class Config:
         running under matplotlib's ``constrained_layout``, where the
         font change can trigger a re-layout on the next draw. Default is
         off so the common path stays quiet.
+    tick_years : {2, 4}, default ``2``
+        Digits of the year in tick labels on axes nobody formatted (x axes
+        whose data are integer years, ticked on whole years, and date axes,
+        via ``dm.simple_layout``) and in
+        ``dm.format_axis_dates``: ``24``, ``24.01``, ``24.Q1``. An axis whose
+        two-digit years would repeat (a century in view) prints four on its
+        own. ``4`` is the four-digit option (``2024``, ``2024.01``):
+        ``with dm.config.override(tick_years=4):`` around the code from
+        figure creation to the last ``dm.simple_layout``, or assign it.
+    date_style : {"period", "concise"}, default ``"period"``
+        Date tick words on the same axes: ``"period"`` writes every tick as
+        a whole date (``23.01``, ``23.01.15``, quarterly data ``23.Q1``);
+        ``"concise"`` writes matplotlib's concise words (``23, May, Sep``;
+        ``23년, 5월`` in Korean figures; quarters ``23, Q2``). With
+        ``tick_years=4`` it is matplotlib's own concise formatter
+        (``2023, May, Sep``; ``2023년, 5월``).
+    number_ladder : {"auto", "si", "myriad"}, default ``"auto"``
+        Unit ladder for large numbers: the one-unit tick labels of axes
+        nobody formatted (from 1,000,000) and ``dm.axis_unit(ladder="auto")``.
+        ``"auto"`` picks 만/억/조/경 when the figure's axis labels, titles or
+        legends hold Hangul (``0.2조 … 1.0조``) and SI k/M/G/T otherwise
+        (``0.2T … 1.0T``); ``"si"`` always uses k/M/G/T and ``"myriad"``
+        always uses 만/억/조/경. Any other value raises ``ValueError`` where
+        it is read.
+        ``"si"`` is the option for k/M/G/T in Korean figures too
+        (``with dm.config.override(number_ladder="si"):``, or assign it).
     """
 
     adopt_orphan_tick_font: bool = False
     warn_on_orphan_tick_adoption: bool = False
+    tick_years: Literal[2, 4] = 2
+    date_style: Literal["period", "concise"] = "period"
+    number_ladder: Literal["auto", "si", "myriad"] = "auto"
 
     @contextmanager
     def override(self, **overrides: object) -> Iterator[None]:

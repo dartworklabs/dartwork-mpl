@@ -95,7 +95,9 @@ def serve(app):
     sock = socket.socket()
     sock.bind(("127.0.0.1", 0))
     server = uvicorn.Server(uvicorn.Config(app, log_level="error", access_log=False))
-    (root / "ready.json").write_text(json.dumps({"port": sock.getsockname()[1], "origin": dm.__file__, "version": __import__("importlib.metadata").metadata.version("dartwork-mpl")}))
+    tmp = root / "ready.json.tmp"
+    tmp.write_text(json.dumps({"port": sock.getsockname()[1], "origin": dm.__file__, "version": __import__("importlib.metadata").metadata.version("dartwork-mpl")}))
+    tmp.replace(root / "ready.json")
     server.run(sockets=[sock])
 serve(app)
 """
@@ -212,7 +214,11 @@ def _viewer(
             while time.monotonic() < deadline and child.poll() is None:
                 ready = root / "ready.json"
                 if ready.exists():
-                    metadata = json.loads(ready.read_text())
+                    try:
+                        metadata = json.loads(ready.read_text())
+                    except (OSError, ValueError):
+                        time.sleep(0.02)
+                        continue
                     assert Path(metadata["origin"]).resolve() == origin
                     viewer = Viewer(root, metadata["port"])
                     try:

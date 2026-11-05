@@ -30,8 +30,16 @@ SALES = [1180, 1095, 1320, 1405, 1460, 1390, 1515, 1600, 1550, 1680, 1745, 1910]
 
 @pytest.fixture(autouse=True)
 def _restore_rc():
-    """Each test sets its own preset; leave matplotlib's rc as it was."""
-    with matplotlib.rc_context():
+    """Each test sets its own preset; leave matplotlib's rc as it was.
+
+    The words pinned here are matplotlib's concise ones (``2024, Feb``), the
+    four-digit concise option; the default period words are pinned in
+    ``test_tick_years.py``.
+    """
+    with (
+        matplotlib.rc_context(),
+        dm.config.override(tick_years=4, date_style="concise"),
+    ):
         yield
     plt.close("all")
 

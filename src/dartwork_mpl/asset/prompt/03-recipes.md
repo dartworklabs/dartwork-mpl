@@ -558,6 +558,15 @@ ax.set_ylabel("값")
 dm.simple_layout(fig)
 ```
 
+Untouched Korean axes read `50만 … 250만` and `23.01` / `16` dates and years
+(no `년`). A unit in the label instead: `dm.axis_unit(ax, "y", label="인구
+({unit}명)")` (`0, 0.2 … 1.0`; `dm.axis_unit_of(ax)` for value labels). Other
+formats on request, one `dm.config` field each: `tick_years=4` (four-digit
+years), `date_style="concise"` (`23, May, Sep`), `number_ladder="si"` (`0.5M`
+in Korean figures). The override applies to what runs inside its `with`
+block: wrap the code from figure creation to the last `dm.simple_layout`, or
+set the field on `dm.config`.
+
 ## "Small multiples / faceted panels"
 
 ```python

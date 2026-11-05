@@ -155,6 +155,21 @@ class TestFormatAxisSiMax:
         labels = _labels(dm.format_axis_si, (0, 1.5), ticks=_ticks(0.5, 4))
         assert labels == ["0", "0.5", "1.0", "1.5"]
 
+    def test_symmetric_axis_with_float_noise(self) -> None:
+        # An all-zero bar chart's locator: -0.02 is -0.020000000000000004
+        # and 0.06 is 0.06000000000000001. Their magnitudes collide at two
+        # decimals, which once pushed every tick to twelve.
+        labels = _labels(dm.format_axis_si, (-0.06, 0.06))
+        assert labels == [
+            "\N{MINUS SIGN}0.06",
+            "\N{MINUS SIGN}0.04",
+            "\N{MINUS SIGN}0.02",
+            "0",
+            "0.02",
+            "0.04",
+            "0.06",
+        ]
+
     def test_out_of_view_tick_does_not_pick_the_unit(self) -> None:
         # The locator also returns 1000 (beyond 950); it must not force "k".
         assert _labels(dm.format_axis_si, (0, 950)) == [
@@ -262,6 +277,18 @@ class TestFormatAxisSiWhole:
             dm.format_axis_si, (0, 1.5), ticks=_ticks(0.5, 4), unit="whole"
         )
         assert labels == ["0", "0.5", "1.0", "1.5"]
+
+    def test_symmetric_axis_with_float_noise(self) -> None:
+        labels = _labels(dm.format_axis_si, (-0.06, 0.06), unit="whole")
+        assert labels == [
+            "\N{MINUS SIGN}0.06",
+            "\N{MINUS SIGN}0.04",
+            "\N{MINUS SIGN}0.02",
+            "0",
+            "0.02",
+            "0.04",
+            "0.06",
+        ]
 
 
 class TestFormatAxisSiFixedUnit:

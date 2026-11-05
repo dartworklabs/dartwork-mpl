@@ -7,8 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+The rule behind these defaults: with no request the library's look applies;
+a request for another format gets that format.
+
+### Changed
+
+- **Two-digit years on untouched axes.** An x axis whose data are integer
+  years (1900–2099: annual lines, bars, grouped bars, scatter, `stackplot`
+  and `fill_between` areas; a `secondary_xaxis` showing them too) ticks
+  whole years only and reads `16, 18, 20 … 24` (no more `2005.0, 2007.5`,
+  nor a rounded `08`); monthly dates read `23.01, 23.07, 24.01`, quarterly
+  dates `23.Q1, 23.Q3` (`stackplot` and `fill_between` areas included;
+  `dm.format_axis_dates` and dated categories too). Korean figures print
+  the same text, without the `년` suffix. Other
+  formats on request: `tick_years=4` (`2016`), `date_style="concise"`
+  (`23, May, Sep`).
+- **Korean figures count in 만/억/조 from 1,000,000** on axes you did not
+  format (`50만 … 250만`, `0.2조`). English figures keep `k/M/G/T`;
+  `number_ladder="si"` gives `k/M/G/T` in Korean figures too.
+- **A formatter or locator you set is never replaced**, of any class. The
+  defaults go only where matplotlib's own `axis.isDefault_majfmt` /
+  `isDefault_majloc` flags still hold, so matplotlib's idiom
+  `ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))` keeps its
+  words (in Korean figures too, which 0.6.0 turned Korean) and its locator
+  (no quarter locator, no thinning), and an explicit `ScalarFormatter()`
+  keeps `1000`. A tick count asked with `ax.locator_params(axis="x",
+  nbins=3)` is kept, on whole years for year data (`00, 10, 20`); under a
+  locator you set (`MaxNLocator`) year data read `05, 10` while every tick
+  is a whole year and plain numbers (`2005.0, 2007.5`) when one is not,
+  decided at each draw (also for a locator set after `dm.simple_layout`),
+  so no tick is left unlabelled or rounded.
+- **Requires Matplotlib ≥3.11; 3.10 is no longer supported.** Matplotlib
+  3.11 sizes text boxes and draws legend markers differently, so it renders
+  dartwork-mpl figures slightly differently from 3.10. Rather than patch
+  Matplotlib internals to imitate 3.10, dartwork-mpl follows 3.11 as it is:
+  the 14 pixel baselines and the colour-theory docs figures are regenerated
+  on 3.11 (3.11.0 and 3.11.2 render them byte-identically), and supporting
+  both series would mean two baseline sets. The `numpy<2.5` cap is lifted
+  with it: only Matplotlib 3.10's own `dates.py` tripped NumPy 2.5's
+  generic-unit deprecation.
+- The `fastapi<0.137` upper cap is lifted.
+
+### Added
+
+- `dm.axis_unit(ax, axis, label="… ({unit}명)", ladder=..., scale=...)` puts the
+  unit in the axis label and keeps the ticks plain (`0, 0.2 … 1.0` under
+  `인구 (억명)`); `dm.axis_unit_of(ax)` returns the unit for value labels.
+  The default rule is the largest unit (`scale="max"`).
+- `dm.config.tick_years` (2 or 4), `date_style` (`"period"` or `"concise"`)
+  and `number_ladder` (`"auto"`, `"si"` or `"myriad"`): the tick formats a
+  prompt can ask for, as `with dm.config.override(...):` around the code from
+  figure creation to the last `dm.simple_layout`, or set on `dm.config`.
+
 ### Fixed
 
+- Symmetric axes no longer print floating-point noise (`-0.4 … 0.4`).
 - **FastAPI >=0.137 UI.** The UI policy matches against the routers it builds,
   so the included-router wrapper no longer makes every request 403.
 - **NumPy 2.5.** Date formatting no longer creates generic-unit NumPy values.
@@ -24,19 +77,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   labels and `dm.format_axis_si` / `_millions` / `_billions` / `_myriad` no
   longer emit a `MatplotlibDeprecationWarning` about `Formatter.locs` on
   every draw.
-
-### Changed
-
-- **Requires Matplotlib ≥3.11; 3.10 is no longer supported.** Matplotlib
-  3.11 sizes text boxes and draws legend markers differently, so it renders
-  dartwork-mpl figures slightly differently from 3.10. Rather than patch
-  Matplotlib internals to imitate 3.10, dartwork-mpl follows 3.11 as it is:
-  the 14 pixel baselines and the colour-theory docs figures are regenerated
-  on 3.11 (3.11.0 and 3.11.2 render them byte-identically), and supporting
-  both series would mean two baseline sets. The `numpy<2.5` cap is lifted
-  with it: only Matplotlib 3.10's own `dates.py` tripped NumPy 2.5's
-  generic-unit deprecation.
-- The `fastapi<0.137` upper cap is lifted.
 
 ## [0.6.0] - 2026-11-05
 

@@ -35,7 +35,14 @@ import numpy as np
 
 from ._decimals import fewest_exact_decimals
 
-__all__ = ["UNIT_RULES", "AxisUnitFormatter", "Unit"]
+__all__ = [
+    "FINANCE_LADDER",
+    "MYRIAD_LADDER",
+    "SI_LADDER",
+    "UNIT_RULES",
+    "AxisUnitFormatter",
+    "Unit",
+]
 
 UNIT_RULES = ("max", "whole")
 """Unit rules besides naming one ladder label."""
@@ -49,6 +56,44 @@ class Unit:
 
     factor: float
     label: str
+
+
+SI_LADDER = (
+    Unit(1.0, ""),
+    Unit(1e3, "k"),
+    Unit(1e6, "M"),
+    Unit(1e9, "G"),
+    Unit(1e12, "T"),
+)
+"""SI prefixes: none, k, M, G, T."""
+
+MYRIAD_LADDER = (
+    Unit(1.0, ""),
+    Unit(1e4, "만"),
+    Unit(1e8, "억"),
+    Unit(1e12, "조"),
+    Unit(1e16, "경"),
+)
+"""Korean myriad units: none, 만, 억, 조, 경."""
+
+FINANCE_LADDER = (
+    Unit(1.0, ""),
+    Unit(1e3, "k"),
+    Unit(1e6, "M"),
+    Unit(1e9, "B"),
+    Unit(1e12, "T"),
+)
+"""Money abbreviations: none, k, M, B (billion), T (trillion)."""
+
+
+def _axis_decimals(values: Sequence[float], unit: Unit) -> int:
+    """Fewest decimals that print every tick exactly and distinctly.
+
+    Signed values: the ticks print with their sign, and ``-0.06`` beside
+    ``0.06000000000000001`` are two ticks, not one magnitude seen twice
+    (as magnitudes they never print apart, and the count climbs to 12).
+    """
+    return fewest_exact_decimals([v / unit.factor for v in values])
 
 
 @dataclass(frozen=True)
@@ -121,7 +166,7 @@ class AxisUnitFormatter(ticker.Formatter):
     def _cost(
         self, values: Sequence[float], unit: Unit
     ) -> tuple[int, int, float]:
-        decimals = fewest_exact_decimals([abs(v) / unit.factor for v in values])
+        decimals = _axis_decimals(values, unit)
         longest = max(len(self._label(v, unit, decimals)) for v in values)
         return decimals, longest, unit.factor
 
@@ -144,9 +189,7 @@ class AxisUnitFormatter(ticker.Formatter):
         unit = self._axis_unit(finite)
         decimals = self._decimals
         if decimals is None:
-            decimals = fewest_exact_decimals(
-                [abs(v) / unit.factor for v in finite]
-            )
+            decimals = _axis_decimals(finite, unit)
         return _Plan(unit, decimals)
 
     def _in_view(self, values: list[float]) -> list[float]:

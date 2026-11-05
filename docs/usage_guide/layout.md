@@ -480,15 +480,53 @@ figure:
 |---|---|
 | reaches 1,000 | `0, 250 … 1,750`; `24,000 … 34,000` |
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
-| below 1,000, or an x axis of years | unchanged: `0, 250 … 750`; `2012, 2014` |
-| dates (every preset) | `2024, Mar, May … 2025` (`date.converter: concise`) |
-| dates, Korean axis labels, titles or legend | `2024년, 3월, 5월 … 2025년` |
-| dates on a narrow axis | fewer ticks until labels are one em apart: `2021, Jul, 2022 …` |
+| reaches one million, Korean axis labels, titles or legend | `0, 50만 … 250만` (만/억/조) |
+| below 1,000 | unchanged: `0, 250 … 750` |
+| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; a `secondary_xaxis` showing them too; also non-year data such as elevations) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4` |
+| monthly dates | `23.01, 23.07, 24.01` (year, then month; two-digit years) |
+| quarterly dates | `23.Q1, 23.Q3, 24.Q1` |
+| dates on a narrow axis | fewer ticks until labels are one em apart |
 
-Log, category and colorbar axes and any axis with a formatter you set keep
-theirs; a date axis with a locator you set or rotated labels keeps its ticks. `dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's
-numbers; `dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k`
-or `0.25억` when you want units on the ticks.
+Korean figures print the same dates and years, without a suffix.
+
+The rule: no request, the library default; a request, that format. A prompt
+can ask for three other formats, one `dm.config` field each:
+`tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
+(matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
+`tick_years=4`) and `number_ladder="si"` (`k/M/G/T` in Korean figures too).
+
+```python
+with dm.config.override(tick_years=4):        # four-digit years
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot(range(2016, 2025), range(9))
+    dm.simple_layout(fig)                     # 2016, 2017 … 2024
+```
+
+`dm.config.override(...)` is a context manager: a bare call changes nothing.
+It applies to what runs inside the `with` block, so wrap the code from
+figure creation to the last `dm.simple_layout` (and the save), or set the
+field on `dm.config` for the whole program (`dm.config.tick_years = 4`). A
+formatter or locator you set yourself is never replaced. A tick count asked
+of the axis, `ax.locator_params(axis="x", nbins=3)`, is kept on whole years
+(`00, 10, 20`); that is the way to ask for fewer ticks. Under a locator you
+set (`MaxNLocator`) year data read years while every tick is a whole year
+(`05, 10`) and plain numbers when one falls between years (`2005.0,
+2007.5`), decided at each draw, whether you set it before or after
+`dm.simple_layout`.
+`dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's numbers;
+`dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k` or
+`0.25억` on the ticks.
+
+To print the unit once, in the axis label, use `dm.axis_unit`:
+
+```python
+dm.axis_unit(ax, "y", label="Exports (USD {unit})", ladder="finance")  # 40 … 70 · Exports (USD B)
+dm.axis_unit(ax, "y", label="인구 ({unit}명)")   # 0, 0.2 … 1.0 · 인구 (억명)
+unit = dm.axis_unit_of(ax)                       # the unit, for value labels
+```
+
+The default rule is the largest unit on the axis (`scale="max"`); the ticks
+stay plain numbers.
 
 ### Consistent tick decimals (`set_decimal`)
 
