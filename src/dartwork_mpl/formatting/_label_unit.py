@@ -59,9 +59,11 @@ class LabelUnitFormatter(AxisUnitFormatter):
     The unit and decimals are decided as in :class:`AxisUnitFormatter`
     (``unit`` is ``"max"``, ``"whole"`` or one ladder label). Each
     :meth:`set_locs` (every draw) writes ``fill(template, unit.label)`` to
-    the axis label. On a log or other non-linear axis the ticks span
-    decades, which one label cannot name, so the ticks print in full
-    (``100``, ``1,000,000``) and the label carries no unit.
+    the axis label, and to the label of every axis :meth:`share_label`
+    added: axes made with ``sharex`` / ``sharey`` share one formatter, and
+    each keeps its own template. On a log or other non-linear axis the
+    ticks span decades, which one label cannot name, so the ticks print
+    linearly in full (``100``, ``1,000,000``) and the label carries no unit.
     """
 
     def __init__(
@@ -74,11 +76,23 @@ class LabelUnitFormatter(AxisUnitFormatter):
     ) -> None:
         super().__init__(ladder, unit, decimals=decimals)
         self._template = template
+        self._shared: dict[Axis, str] = {}
 
     @property
     def template(self) -> str:
         """The label template, with ``{unit}`` where the unit goes."""
         return self._template
+
+    def share_label(self, axis: Axis, template: str) -> None:
+        """Also write ``fill(template, unit)`` to ``axis``'s label each draw."""
+        self._shared[axis] = template
+
+    def templates(self) -> dict[Axis, str]:
+        """Every axis whose label this formatter writes, with its template."""
+        written = dict(self._shared)
+        if isinstance(self.axis, Axis):
+            written[self.axis] = self._template
+        return written
 
     @property
     def unit(self) -> Unit | None:
@@ -102,10 +116,13 @@ class LabelUnitFormatter(AxisUnitFormatter):
         return super()._label(value, Unit(unit.factor, ""), decimals)
 
     def set_locs(self, locs: list[float]) -> None:
-        """Settle the unit and decimals, then write the unit to the label."""
+        """Settle the unit and decimals, then write the unit to the labels."""
         super().set_locs(locs)
-        if self.unit is not None and isinstance(self.axis, Axis):
-            self.axis.label.set_text(self.label_text)
+        unit = self.unit
+        if unit is None:
+            return
+        for axis, template in self.templates().items():
+            axis.label.set_text(fill(template, unit.label))
 
 
 def _target(ax: Axes, axis: str) -> Axis:
@@ -158,7 +175,10 @@ def axis_unit(
         dm.axis_unit(ax, "y", label="Exports (USD {unit})", ladder="finance")
 
     The formatter owns the label text from then on: it rewrites the label on
-    every draw, so change the label by calling ``axis_unit`` again. On a log
+    every draw, so change the label by calling ``axis_unit`` again. Axes made
+    with ``sharex`` / ``sharey`` share one formatter: call ``axis_unit`` on
+    each (``for a in axes: dm.axis_unit(a, "y", label=...)``); every label
+    keeps its own template and they read the same unit. On a log
     axis the ticks span decades, which one label cannot name, so they print
     in full (``100``, ``1,000,000``) and the label carries no unit.
 
@@ -207,16 +227,23 @@ def axis_unit(
     target = _target(ax, axis)
     if decimals is not None and decimals < 0:
         raise ValueError(f"decimals must be non-negative, got {decimals!r}")
+    current = target.get_major_formatter()
+    # Shared axes share this formatter: the axes it already writes.
+    written = (
+        current.templates() if isinstance(current, LabelUnitFormatter) else {}
+    )
     if label is None:
         label = target.label.get_text()
-        current = target.get_major_formatter()
-        # Called again without a label on a label this formatter wrote:
-        # keep its template rather than append a second unit.
-        if (
-            isinstance(current, LabelUnitFormatter)
-            and label == current.label_text
-        ):
-            label = current.template
+        # Called again without a label on a label this formatter wrote (or
+        # set at install): keep its template rather than append a second unit.
+        known = written.get(target)
+        if known is not None and isinstance(current, LabelUnitFormatter):
+            unit = current.unit
+            if label in (
+                fill(known, ""),
+                fill(known, unit.label if unit else ""),
+            ):
+                label = known
     template = _template(label)
     rungs = _ladder(ladder, ax, template)
     symbols = [rung.label for rung in rungs]
@@ -229,6 +256,9 @@ def axis_unit(
     formatter = LabelUnitFormatter(
         rungs, scale, template=template, decimals=decimals
     )
+    for other, other_template in written.items():
+        if other is not target and other.major is target.major:
+            formatter.share_label(other, other_template)
     target.set_major_formatter(formatter)
     target.label.set_text(fill(template, ""))
     return formatter

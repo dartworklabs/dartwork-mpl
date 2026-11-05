@@ -446,6 +446,63 @@ class TestAxisUnitOf:
         assert formatter.unit == dm.axis_unit_of(ax) == Unit(1e8, "억")
 
 
+class TestSharedAxes:
+    """Shared axes share one formatter; every axes keeps its own label.
+
+    Review 2026-11-05, Important 3: the loop below left axes[0] reading
+    ``매출 (원)`` over 조원 ticks.
+    """
+
+    def test_sharey_loop_labels_every_axes(self):
+        dm.style.use("report-kr")
+        fig, axes = plt.subplots(
+            2, 1, sharey=True, figsize=dm.figsize("12cm", "standard")
+        )
+        for i, a in enumerate(axes):
+            a.bar(range(5), np.array([5.2, 6.4, 7.1, 8.2, 9.6]) * 1e11)
+            dm.axis_unit(a, "y", label=f"매출 {i} ({{unit}}원)")
+        dm.simple_layout(fig)
+        for i, a in enumerate(axes):
+            assert a.get_ylabel() == f"매출 {i} (조원)"
+            assert _drawn(a) == ["0", "0.2", "0.4", "0.6", "0.8", "1.0"]
+            assert dm.axis_unit_of(a) == Unit(1e12, "조")
+        assert dm.validate_figure(fig, checks=("UNIT_DUP",)) == []
+        axes[0].set_ylim(0, 2e9)  # shared: both axes follow
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == [
+            "매출 0 (억원)",
+            "매출 1 (억원)",
+        ]
+
+    def test_sharex_loop_labels_every_axes(self):
+        dm.style.use("report-kr")
+        fig, axes = plt.subplots(
+            1, 2, sharex=True, figsize=dm.figsize("12cm", "wide")
+        )
+        for a in axes:
+            a.plot(np.linspace(0, 3e8, 5), range(5))
+            dm.axis_unit(a, "x", label="인구 ({unit}명)")
+        dm.simple_layout(fig)
+        for a in axes:
+            assert a.get_xlabel() == "인구 (억명)"
+            assert dm.axis_unit_of(a, "x") == Unit(1e8, "억")
+
+    def test_label_none_loop_keeps_each_label(self):
+        dm.style.use("report-kr")
+        fig, axes = plt.subplots(
+            2, 1, sharey=True, figsize=dm.figsize("12cm", "standard")
+        )
+        for a, name in zip(axes, ("매출", "비용"), strict=True):
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e8)
+            a.set_ylabel(name)
+            dm.axis_unit(a, "y")
+        dm.simple_layout(fig)
+        assert [a.get_ylabel() for a in axes] == ["매출 (억)", "비용 (억)"]
+        dm.axis_unit(axes[0], "y")  # again, without a label: no second unit
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == ["매출 (억)", "비용 (억)"]
+
+
 def test_exported_as_experimental():
     assert {"axis_unit", "axis_unit_of"} <= set(dm.__all__)
     assert {"axis_unit", "axis_unit_of"} <= dm.EXPERIMENTAL
