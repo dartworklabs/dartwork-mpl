@@ -185,8 +185,10 @@ matching lines above:
   0.6.0 reproduction; no new machinery reproduces 0.6.0.
 - Residual round (R1–R7): a request made in place on matplotlib's locator
   (`ax.locator_params(axis="x", nbins=3)`) is carried into the year locator and
-  never thinned; year labels go in only under the year locator or whole-year pins
-  (a locator someone set keeps matplotlib's numbers); bars inside one year's slot,
-  `stackplot` / `fill_between` outlines on whole numbers and a `secondary_xaxis`
-  showing years count as year data; one `dm.axis_unit` call writes every label
-  sharing the ticker except an inner panel `label_outer` emptied.
+  never thinned; under a locator someone set, year data read years while every
+  visible tick is whole and plain numbers otherwise, decided per draw; bars inside
+  one year's slot, `stackplot` / `fill_between` outlines on whole numbers and a
+  `secondary_xaxis` showing years count as year data; one `dm.axis_unit` call
+  writes every label sharing the ticker (a sibling's unit goes inside its trailing
+  parentheses: `비용 (억원)`, `Cost (USD B)`) except an inner panel `label_outer`
+  emptied.
