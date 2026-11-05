@@ -482,7 +482,7 @@ figure:
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
 | reaches one million, Korean axis labels, titles or legend | `0, 50만 … 250만` (만/억/조) |
 | below 1,000 | unchanged: `0, 250 … 750` |
-| an x axis whose ticks are all integers in 1900–2099 (also non-year data such as elevations) | two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`); opt out with `tick_years=4` |
+| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, scatter; also non-year data such as elevations) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4` |
 | monthly dates | `23.01, 23.07, 24.01` (year, then month; two-digit years) |
 | quarterly dates | `23.Q1, 23.Q3, 24.Q1` |
 | dates on a narrow axis | fewer ticks until labels are one em apart |

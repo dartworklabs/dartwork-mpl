@@ -69,8 +69,9 @@ class Config:
         font change can trigger a re-layout on the next draw. Default is
         off so the common path stays quiet.
     tick_years : {2, 4}, default ``2``
-        Digits of the year in tick labels on axes nobody formatted (integer
-        year axes and date axes, via ``dm.simple_layout``) and in
+        Digits of the year in tick labels on axes nobody formatted (x axes
+        whose data are integer years, ticked on whole years, and date axes,
+        via ``dm.simple_layout``) and in
         ``dm.format_axis_dates``: ``24``, ``24.01``, ``24.Q1``. An axis whose
         two-digit years would repeat (a century in view) prints four on its
         own. Opt out with ``dm.config.override(tick_years=4)`` (or assign

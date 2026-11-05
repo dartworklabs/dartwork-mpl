@@ -62,7 +62,7 @@ def quarterly(nums: Sequence[float] | npt.ArrayLike) -> bool:
 def plotted_dates(
     ax: Axes, which: Literal["x", "y"]
 ) -> npt.NDArray[np.float64]:
-    """The x (or y) values the data sits on, as date numbers.
+    """The x (or y) values the data sits on (date numbers on a date axis).
 
     Reads the axes' lines, scatter offsets and bar centres (vertical bars
     for x, horizontal for y), and those of every axes sharing that axis

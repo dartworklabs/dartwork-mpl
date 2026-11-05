@@ -10,13 +10,16 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 - from one million the axis takes the largest tick's unit (``0.5M …
   2.5M``; ``50만 … 250만`` in Korean figures, ``config.number_ladder``),
   unless that needs more than two decimals;
-- x axes whose ticks are integer years 1900-2099 read two digits (``16, 18,
-  20``; four when two would print alike, or with ``config.tick_years = 4``);
-  an integer axis in that range that is not years (elevations) reads the
-  same way, so opt out with ``tick_years=4`` or a formatter of your own;
+- x axes whose plotted data are integers 1900-2099 (annual lines, bars,
+  scatter; twins and shared axes included) are year axes: ticks on whole
+  years only (:class:`._years.WholeYearLocator`), read two digits (``16,
+  18, 20``; four when two would print alike, or with
+  ``config.tick_years = 4``); integer data in that range that are not years
+  (elevations) read the same way, so give such an axis a formatter of
+  your own;
 - smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
-  sit in 1000-2999 (years), log and category axes, colorbars and any axis with a
-  formatter someone chose keep theirs;
+  sit in 1000-2999 (``1950.3`` elevations), log and category axes, colorbars
+  and any axis with a formatter someone chose keep theirs;
 - date axes nobody formatted (every preset sets ``date.converter:
   concise``) read whole two-digit dates, ``23.01, 23.05 … 26.01``
   (``23.01.15`` daily, ``23`` yearly); quarterly data reads ``23.Q1, 23.Q3``,
@@ -33,7 +36,7 @@ out), so the numbers it fits are the numbers saved. After fitting it calls
 :func:`thin_crowded_date_ticks`: matplotlib picks date ticks from the date
 range alone, so on a narrow axis concise labels run into each other
 (``2021년 5월 9월 2022년``); the locator then takes fewer ticks until
-neighbouring labels are one em apart.
+neighbouring labels are one em apart. Year axes thin the same way.
 
 Bars and other category charts often stand for dates (``2024-01 …
 2024-12`` under twelve bars). ``dm.format_axis_dates`` labels those
@@ -82,7 +85,7 @@ from ._quarters import (
     quarter_words,
     quarterly,
 )
-from ._years import YearTickFormatter, is_year_axis
+from ._years import WholeYearLocator, YearTickFormatter, whole_years, year_data
 
 __all__ = [
     "CategoryDateFormatter",
@@ -519,6 +522,25 @@ def _restyle_dates(
     return 1
 
 
+def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> bool:
+    """Whole-year ticks and year labels on an x axis whose data are years.
+
+    The data decide (:func:`year_data` over :func:`plotted_dates`, twins and
+    shared axes included), not the ticks: ``dm.simple_layout`` refits the
+    margins after this call and the ticks move with them. Matplotlib's own
+    locator gives way to :class:`WholeYearLocator`; ticks someone placed
+    keep their places, and keep their numbers unless all are whole years.
+    """
+    if not year_data(plotted_dates(ax, "x")):
+        return False
+    if axis.isDefault_majloc:
+        axis.set_major_locator(WholeYearLocator())
+    elif not whole_years(_visible_ticks(axis)):
+        return False
+    axis.set_major_formatter(YearTickFormatter(digits, suffix))
+    return True
+
+
 def apply_default_tick_format(fig: Figure) -> int:
     """Install the library's tick numbers on every axis nobody formatted.
 
@@ -554,12 +576,11 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if not _untouched(axis) or axis.get_scale() != "linear":
                 continue
-            ticks = _visible_ticks(axis)
-            if which == "x" and tick_years == 2 and is_year_axis(ticks):
-                suffix = "년" if korean and date_style == "concise" else ""
-                axis.set_major_formatter(YearTickFormatter(2, suffix))
+            suffix = "년" if korean and date_style == "concise" else ""
+            if which == "x" and _year_axis(ax, axis, tick_years, suffix):
                 changed += 1
                 continue
+            ticks = _visible_ticks(axis)
             if not ticks or max(abs(t) for t in ticks) < _SEPARATOR_FROM:
                 continue
             if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):
@@ -646,6 +667,39 @@ def _thin_by_steps(
     return 0
 
 
+def _view_locs(axis: Axis, locs: Sequence[float]) -> list[float]:
+    low, high = sorted(float(v) for v in axis.get_view_interval())
+    return [float(v) for v in locs if low <= float(v) <= high]
+
+
+def _thin_years(
+    axis: Axis, locator: WholeYearLocator, fig: Figure, renderer: Any
+) -> int:
+    """Lower a year axis's tick count until its labels are one em apart.
+
+    Leaves rotated x labels alone. Tries ever fewer bins and keeps the
+    first that gives two or more ticks :data:`_MIN_DATE_GAP_EM` ems apart;
+    with none, the count is restored. Returns 1 when it changed, else 0.
+    """
+    label = axis.get_major_ticks(1)[0].label1
+    if axis is axis.axes.xaxis and label.get_rotation() % 180:
+        return 0
+    locs = _view_locs(axis, locator())
+    if _date_label_gap_em(axis, locs, fig, renderer) >= _MIN_DATE_GAP_EM:
+        return 0
+    for nbins in range(max(len(locs) - 1, 1), 0, -1):
+        locator.set_params(nbins=nbins)
+        candidate = _view_locs(axis, locator())
+        if len(candidate) < 2 or candidate == locs:
+            continue
+        if _date_label_gap_em(axis, candidate, fig, renderer) >= (
+            _MIN_DATE_GAP_EM
+        ):
+            return 1
+    locator.set_params(nbins="auto")
+    return 0
+
+
 def _converter_locator(locator: ticker.Locator) -> bool:
     """Whether the locator is the one matplotlib's date converter made."""
     if type(locator) is not mdates.AutoDateLocator:
@@ -674,7 +728,9 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
     :class:`CategoryDateLocator`) and quarterly date axes (a
     :class:`QuarterLocator`: 1, 2, 4, 8 … quarters, Q1 kept) are thinned
     the same way through the locator's steps, so the notation never
-    changes; see :func:`_thin_by_steps`.
+    changes; see :func:`_thin_by_steps`. Year axes (a
+    :class:`WholeYearLocator`) take fewer whole-year ticks; see
+    :func:`_thin_years`.
     """
     renderer = get_renderer(fig)
     changed = 0
@@ -685,6 +741,9 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
             locator = axis.get_major_locator()
             if isinstance(locator, (CategoryDateLocator, QuarterLocator)):
                 changed += _thin_by_steps(axis, locator, fig, renderer)
+                continue
+            if isinstance(locator, WholeYearLocator):
+                changed += _thin_years(axis, locator, fig, renderer)
                 continue
             if not _converter_locator(locator) or not isinstance(
                 axis.get_major_formatter(), mdates.ConciseDateFormatter

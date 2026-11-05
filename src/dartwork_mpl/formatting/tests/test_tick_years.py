@@ -29,9 +29,11 @@ from dartwork_mpl.formatting._quarters import (
     quarterly,
 )
 from dartwork_mpl.formatting._years import (
+    WholeYearLocator,
     YearTickFormatter,
-    is_year_axis,
     two_digits_repeat,
+    whole_years,
+    year_data,
 )
 
 
@@ -57,33 +59,188 @@ def _xticks(ax) -> list[str]:
     ]
 
 
-def _line(x, ylabel=None, ticks=None):
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+def _line(x, ylabel=None, ticks=None, width="9cm", aspect="standard"):
+    """A line over ``x``; matplotlib's own locator unless ``ticks`` pins it."""
+    fig, ax = plt.subplots(figsize=dm.figsize(width, aspect))
     ax.plot(x, np.linspace(1, 3, len(x)))
-    # Fixed locations keep the tick count independent of font and canvas.
-    ax.set_xticks(np.arange(2016, 2025, 2) if ticks is None else ticks)
+    if ticks is not None:
+        ax.set_xticks(ticks)
     if ylabel:
         ax.set_ylabel(ylabel)
     dm.simple_layout(fig)
     return ax
 
 
+def _shown(ax) -> tuple[list[float], list[str]]:
+    """Locations and texts of every x tick inside the view, after a draw."""
+    ax.figure.canvas.draw()
+    low, high = sorted(ax.xaxis.get_view_interval())
+    pairs = [
+        (float(loc), label.get_text())
+        for loc, label in zip(
+            ax.xaxis.get_majorticklocs(),
+            ax.xaxis.get_majorticklabels(),
+            strict=True,
+        )
+        if low <= loc <= high
+    ]
+    return [p[0] for p in pairs], [p[1] for p in pairs]
+
+
+def _two_digits(locs, suffix="") -> list[str]:
+    return [f"{round(loc) % 100:02d}{suffix}" for loc in locs]
+
+
+def _whole(locs) -> bool:
+    return all(abs(loc - round(loc)) < 1e-9 for loc in locs)
+
+
 def test_untouched_year_axis_two_digits():
-    ax = _line(np.arange(2016, 2025))
-    assert _xticks(ax) == ["16", "18", "20", "22", "24"]
+    locs, labels = _shown(_line(np.arange(2016, 2025)))
+    assert len(locs) >= 3 and _whole(locs), locs
+    assert labels == _two_digits(locs)
 
 
 def test_korean_period_year_axis_has_no_suffix():
-    assert _xticks(_line(np.arange(2016, 2025), "매출")) == [
-        "16",
-        "18",
-        "20",
-        "22",
-        "24",
-    ]
+    locs, labels = _shown(_line(np.arange(2016, 2025), "매출"))
+    assert len(locs) >= 3 and _whole(locs), locs
+    assert labels == _two_digits(locs)
     with dm.config.override(date_style="concise"):
-        ax = _line(np.arange(2016, 2025), "매출")
-        assert _xticks(ax) == ["16년", "18년", "20년", "22년", "24년"]
+        locs, labels = _shown(_line(np.arange(2016, 2025), "매출"))
+        assert len(locs) >= 3 and _whole(locs), locs
+        assert labels == _two_digits(locs, "년")
+
+
+# Report 9 cm: 2004/2005 starts ended on 2.5-year ticks once the margins
+# were refitted (2007.5 read "08"), 2008/2009 on whole years after starting
+# on 2.5 (read "2010"). Review 2026-11-05, C1.
+SWEEP_STARTS = (1995, 2004, 2005, 2008, 2009, 2012)
+
+
+@pytest.mark.parametrize("width", ["6cm", "9cm", "12cm", "17cm"])
+@pytest.mark.parametrize("preset", ["report", "scientific"])
+def test_annual_lines_tick_whole_years(preset, width):
+    """Annual data tick whole years at every width, labelled two digits.
+
+    The year axis is read from the data (integers 1900-2099), so the ticks
+    are whole years before and after the margins are refitted, where
+    matplotlib's own locator steps 2.5 years (``2005.0, 2007.5``).
+    """
+    dm.style.use(preset)
+    for start in SWEEP_STARTS:
+        for aspect in ("standard", "wide"):
+            ax = _line(np.arange(start, 2025), "y", width=width, aspect=aspect)
+            locs, labels = _shown(ax)
+            case = (preset, width, aspect, start, locs, labels)
+            assert len(locs) >= 2 and _whole(locs), case
+            assert labels == _two_digits(locs), case
+            assert ax.xaxis.get_offset_text().get_text() == "", case
+            assert _min_gap_em(ax) >= 1.0, case
+            plt.close(ax.figure)
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"date_style": "concise"}, {"tick_years": 4}],
+    ids=["korean-concise", "four-digits"],
+)
+def test_wider_year_labels_stay_one_em_apart(options):
+    """``24년`` and ``2024`` are wider than ``24``: the ticks thin to fit."""
+    dm.style.use("report-kr")
+    with dm.config.override(**options):
+        for width in ("6cm", "9cm"):
+            ax = _line(np.arange(1995, 2025), "매출", width=width)
+            locs, labels = _shown(ax)
+            assert len(locs) >= 2 and _whole(locs), (width, locs)
+            if options.get("tick_years") == 4:
+                assert labels == [f"{round(v)}" for v in locs], labels
+            else:
+                assert labels == _two_digits(locs, "년"), labels
+            assert _min_gap_em(ax) >= 1.0, (width, labels)
+            plt.close(ax.figure)
+
+
+def test_zoomed_year_axis_never_rounds_a_fraction():
+    ax = _line(np.arange(2005, 2025))
+    ax.set_xlim(2016, 2017)
+    locs, labels = _shown(ax)
+    assert locs == [2016.0, 2017.0] and labels == ["16", "17"], (locs, labels)
+    ax.set_xlim(2016.2, 2016.8)  # no whole year in view
+    locs, labels = _shown(ax)
+    assert locs and not _whole(locs), locs
+    assert labels == [""] * len(locs), labels  # unlabelled, never "16"/"17"
+    assert ax.xaxis.get_offset_text().get_text() == ""
+
+
+def test_year_axis_cursor_reads_the_value_not_a_rounded_year():
+    ax = _line(np.arange(2005, 2025))
+    _shown(ax)
+    oracle = mticker.ScalarFormatter()
+    oracle.set_axis(ax.xaxis)
+    fmt = ax.xaxis.get_major_formatter()
+    for value in (2007.5, 2016.43, 2020.0):
+        assert fmt.format_data_short(value) == oracle.format_data_short(value)
+    assert fmt.format_data_short(2007.5) != "08"
+
+
+def _year_axis(ax) -> bool:
+    return isinstance(ax.xaxis.get_major_formatter(), YearTickFormatter)
+
+
+def test_year_data_on_bars_scatter_twins_and_shared_axes():
+    years = np.arange(2014, 2025)
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.bar(years, np.arange(len(years)) + 1)
+    dm.simple_layout(fig)
+    locs, labels = _shown(ax)
+    assert _whole(locs) and labels == _two_digits(locs), labels
+
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.scatter(years, np.arange(len(years)))
+    dm.simple_layout(fig)
+    assert _year_axis(ax)
+
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.axhline(0.5)  # axes fractions across: not data
+    twin = ax.twinx()
+    twin.plot(years, np.arange(len(years)))  # the twin's line is the data
+    dm.simple_layout(fig)
+    assert _year_axis(ax) and _year_axis(twin)
+
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=dm.figsize("12cm"))
+    for a in axes:
+        a.plot(years, np.arange(len(years)))
+    dm.simple_layout(fig)
+    assert _year_axis(axes[0])
+    locs, labels = _shown(axes[1])  # the top axes hides its tick labels
+    assert _whole(locs) and labels == _two_digits(locs), labels
+
+
+@pytest.mark.parametrize(
+    "x",
+    [
+        np.linspace(1950.3, 2010.3, 7),  # elevations, not years
+        np.arange(1880, 2025),  # reaches outside 1900-2099
+        np.array([2020.0, 2020.0]),  # one year is not a span
+    ],
+    ids=["fractions", "out-of-range", "one-value"],
+)
+def test_other_data_keep_matplotlibs_locator_and_formatter(x):
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot(x, np.arange(len(x)))
+    dm.simple_layout(fig)
+    assert type(ax.xaxis.get_major_locator()) is mticker.AutoLocator
+    assert type(ax.xaxis.get_major_formatter()) is mticker.ScalarFormatter
+
+
+def test_pinned_ticks_keep_their_places():
+    """Whole years someone pinned read two digits; other pins keep numbers."""
+    ax = _line(np.arange(2016, 2025), ticks=[2016, 2020, 2024])
+    assert _shown(ax) == ([2016.0, 2020.0, 2024.0], ["16", "20", "24"])
+    ax = _line(np.arange(2016, 2025), ticks=[2016.5, 2020.5])
+    locs, labels = _shown(ax)
+    assert type(ax.xaxis.get_major_formatter()) is mticker.ScalarFormatter
+    assert all(len(t) >= 6 for t in labels), labels  # "2016.5", never "16"
 
 
 def test_year_axis_rejects_non_integer_and_out_of_range():
@@ -99,17 +256,17 @@ def test_year_axis_rejects_non_integer_and_out_of_range():
 
 
 def test_century_span_keeps_four_digits():
-    labels = _xticks(
-        _line(np.arange(1880, 2025), ticks=np.arange(1900, 2025, 20))
-    )
-    assert labels and all(len(t) == 4 for t in labels)
-    assert len(set(labels)) == len(labels)
+    """1900 … 2024 would print ``00`` twice: the years print four digits."""
+    locs, labels = _shown(_line(np.arange(1900, 2025), width="12cm"))
+    assert len(locs) >= 3 and _whole(locs), locs
+    assert labels == [f"{round(v)}" for v in locs], labels
 
 
 def test_override_four_digits():
     with dm.config.override(tick_years=4):
-        ax = _line(np.arange(2016, 2025))
-        assert _xticks(ax) == ["2016", "2018", "2020", "2022", "2024"]
+        locs, labels = _shown(_line(np.arange(2016, 2025)))
+        assert len(locs) >= 3 and _whole(locs), locs
+        assert labels == [str(round(loc)) for loc in locs]
 
 
 @pytest.mark.parametrize("field", ["tick_years", "date_style"])
@@ -122,33 +279,28 @@ def test_invalid_config_value_raises_naming_field(field):
 
 
 def test_helpers():
-    assert is_year_axis([2016, 2018, 2020])
-    assert not is_year_axis([2016])
-    assert not is_year_axis([1890, 1900])
-    assert not is_year_axis([2016.5, 2017.5])
-    assert not is_year_axis([2000, 2001, 2003])
+    assert year_data([2016, 2017, 2018]) and year_data([2016.0, 2016.0, 2020])
+    assert year_data(np.array([2015.6]) + 0.4 + [0, 1])  # bar centres
+    assert not year_data([2016, 2016])  # one year is not a span
+    assert not year_data([1890, 1900])
+    assert not year_data([2016, 2016.5])
+    assert not year_data([2016, float("inf")])  # no OverflowError
+    assert not year_data([2016, float("nan")])
+    assert whole_years([2016, 2017, 2020]) and not whole_years([])
+    assert not whole_years([2016, 2016.5])
+    fmt = YearTickFormatter(2)
+    assert fmt.format_ticks([2016, 2016.5, 2017]) == ["16", "", "17"]
+    assert fmt.format_ticks([1900, 2000]) == ["1900", "2000"]
+    assert fmt.format_data_short(2016.5) == "2016.5"
+    locator = WholeYearLocator()
+    assert locator.tick_values(2004.05, 2024.95) == pytest.approx(
+        [2000, 2005, 2010, 2015, 2020, 2025]
+    )
     assert two_digits_repeat([1900, 2000]) and not two_digits_repeat(
         [2016, 2017]
     )
     with pytest.raises(ValueError, match="digits"):
         YearTickFormatter(3)  # type: ignore[arg-type]
-
-
-def test_untouched_auto_year_axis_reads_two_digits():
-    """The default locator (no pinned ticks): every label two digits, once.
-
-    Widths where matplotlib's locator steps whole years; at 17 cm it steps
-    2.5 years (``2005.0, 2007.5``), which is not a year axis (0.6.0 alike).
-    """
-    for width in ("6cm", "9cm"):
-        fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"))
-        ax.plot(np.arange(2005, 2025), np.linspace(1, 3, 20))
-        dm.simple_layout(fig)
-        labels = _xticks(ax)
-        assert len(labels) >= 2, width
-        assert all(re.fullmatch(r"\d\d", t) for t in labels), (width, labels)
-        assert len(set(labels)) == len(labels), (width, labels)
-        plt.close(fig)
 
 
 # ---------------------------------------------------------------- date axes
