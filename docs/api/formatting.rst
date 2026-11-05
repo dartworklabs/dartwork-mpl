@@ -9,9 +9,10 @@ Overview
 
 The formatting module covers the four large-number formats that
 matplotlib ships without a built-in answer — **millions**, **billions**,
-**currency**, and **SI prefixes** — plus a label-rotation helper. For
-plain percentages and thousands separators, lean on matplotlib's
-``ticker.PercentFormatter`` and ``ticker.StrMethodFormatter`` directly.
+**currency**, and **SI prefixes** — plus **units in the axis label**
+(``dm.axis_unit``) and a label-rotation helper. For plain percentages and
+thousands separators, lean on matplotlib's ``ticker.PercentFormatter`` and
+``ticker.StrMethodFormatter`` directly.
 
 API Reference
 -------------
@@ -34,6 +35,16 @@ Numeric Formatting
 .. autofunction:: dartwork_mpl.format_axis_currency
 
 .. autofunction:: dartwork_mpl.format_axis_si
+
+Units in the Axis Label
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Provisional (listed in ``dartwork_mpl.EXPERIMENTAL``): the ladders, the
+label template rules and the unit rules may still change in a minor release.
+
+.. autofunction:: dartwork_mpl.axis_unit
+
+.. autofunction:: dartwork_mpl.axis_unit_of
 
 Label Management
 ^^^^^^^^^^^^^^^^
@@ -157,6 +168,39 @@ SI prefixes
    ax2.set_ylabel("Power (W)")
 
    dm.simple_layout(fig)
+
+Units in the axis label
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The unit goes in the axis label once and the ticks stay plain numbers. The
+axis takes the unit of its largest visible tick (``scale="max"``);
+``scale="whole"`` keeps whole numbers and a ladder symbol fixes the unit.
+Korean figures use 만/억/조, others SI (k, M, G, T); ``ladder="finance"``
+gives k, M, B, T for money.
+
+.. code-block:: python
+
+   import dartwork_mpl as dm
+   import matplotlib.pyplot as plt
+   import numpy as np
+
+   dm.style.use("report-kr")
+   fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+   population = np.array([5210, 6420, 7120, 8210, 9650]) * 1e4
+   ax.bar(["A", "B", "C", "D", "E"], population, color="dc.blue6")
+   dm.axis_unit(ax, "y", label="인구 ({unit}명)")  # 0, 0.2 … 1.0 · 인구 (억명)
+   # dm.axis_unit(ax, "y", label="인구 ({unit}명)", scale="whole")
+   #   -> 0, 2,000 … 10,000 · 인구 (만명)
+   dm.simple_layout(fig)
+   unit = dm.axis_unit_of(ax)  # Unit(factor=1e8, label="억") for value labels
+
+   dm.style.use("report")
+   fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+   years = np.arange(2019, 2026)
+   exports_usd = np.array([44.8, 41.2, 49.6, 55.3, 58.9, 64.7, 71.8]) * 1e9
+   ax.plot(years, exports_usd, color="dc.blue6", marker="o")
+   dm.axis_unit(ax, "y", label="Exports (USD {unit})", ladder="finance")
+   dm.simple_layout(fig)  # 40, 45 … 70 · Exports (USD B)
 
 Rotating labels
 ^^^^^^^^^^^^^^^
@@ -287,7 +331,8 @@ Best practices
 3. **One unit per axis.** ``format_axis_si`` and ``format_axis_myriad``
    share one unit across the axis: ``unit="max"`` (default) follows the
    largest tick, ``unit="whole"`` keeps whole numbers, and a prefix such as
-   ``unit="k"`` fixes it.
+   ``unit="k"`` fixes it. When the label names the unit (``Exports (USD)``), use
+   ``dm.axis_unit`` instead so the unit is not printed twice.
 4. **Currency placement** follows local convention — prefix for USD,
    suffix for EUR.
 5. **SI prefixes** belong in scientific / engineering contexts; mixing

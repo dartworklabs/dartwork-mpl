@@ -35,7 +35,14 @@ import numpy as np
 
 from ._decimals import fewest_exact_decimals
 
-__all__ = ["UNIT_RULES", "AxisUnitFormatter", "Unit"]
+__all__ = [
+    "FINANCE_LADDER",
+    "MYRIAD_LADDER",
+    "SI_LADDER",
+    "UNIT_RULES",
+    "AxisUnitFormatter",
+    "Unit",
+]
 
 UNIT_RULES = ("max", "whole")
 """Unit rules besides naming one ladder label."""
@@ -49,6 +56,34 @@ class Unit:
 
     factor: float
     label: str
+
+
+SI_LADDER = (
+    Unit(1.0, ""),
+    Unit(1e3, "k"),
+    Unit(1e6, "M"),
+    Unit(1e9, "G"),
+    Unit(1e12, "T"),
+)
+"""SI prefixes: none, k, M, G, T."""
+
+MYRIAD_LADDER = (
+    Unit(1.0, ""),
+    Unit(1e4, "만"),
+    Unit(1e8, "억"),
+    Unit(1e12, "조"),
+    Unit(1e16, "경"),
+)
+"""Korean myriad units: none, 만, 억, 조, 경."""
+
+FINANCE_LADDER = (
+    Unit(1.0, ""),
+    Unit(1e3, "k"),
+    Unit(1e6, "M"),
+    Unit(1e9, "B"),
+    Unit(1e12, "T"),
+)
+"""Money abbreviations: none, k, M, B (billion), T (trillion)."""
 
 
 def _axis_decimals(values: Sequence[float], unit: Unit) -> int:

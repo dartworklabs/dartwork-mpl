@@ -15,7 +15,7 @@ import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
 from .._figure_geometry import get_renderer
-from ._axis_wide import AxisUnitFormatter, Unit
+from ._axis_wide import SI_LADDER, AxisUnitFormatter, Unit
 from ._decimals import recommend_tick_decimals
 from ._defaults import (
     CategoryDateFormatter,
@@ -24,10 +24,13 @@ from ._defaults import (
     category_dates,
     thin_crowded_date_ticks,
 )
+from ._label_unit import axis_unit, axis_unit_of
 
 __all__ = [
     "apply_default_tick_format",
     "avoid_tick_overlap",
+    "axis_unit",
+    "axis_unit_of",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_dates",
@@ -43,13 +46,9 @@ __all__ = [
 
 _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
 
-_SI_LADDER = (
-    Unit(1.0, ""),
-    Unit(1e3, "k"),
-    Unit(1e6, "M"),
-    Unit(1e9, "G"),
-    Unit(1e12, "T"),
-)
+# Defined beside the other ladders in ``_axis_wide``; ``_defaults`` reads
+# this name.
+_SI_LADDER = SI_LADDER
 
 
 def _set_formatter(

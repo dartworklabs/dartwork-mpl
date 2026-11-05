@@ -96,6 +96,8 @@ from .figure_review import review
 # Formatting utilities
 from .formatting import (
     avoid_tick_overlap,
+    axis_unit,
+    axis_unit_of,
     format_axis_billions,
     format_axis_currency,
     format_axis_dates,
@@ -172,9 +174,19 @@ from .units import (
 # canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
 # ``add_note`` (a source line in the preset's note style) its placement;
 # ``label_line_ends`` (line names instead of a legend) its spacing and colour;
-# ``review`` (save, findings, summary, baseline diff) its summary fields.
+# ``review`` (save, findings, summary, baseline diff) its summary fields;
+# ``axis_unit`` / ``axis_unit_of`` (the axis unit in its label) their ladders,
+# label template rules and unit rules.
 EXPERIMENTAL: frozenset[str] = frozenset(
-    {"add_note", "figsize_for", "grid_shape", "label_line_ends", "review"}
+    {
+        "add_note",
+        "axis_unit",
+        "axis_unit_of",
+        "figsize_for",
+        "grid_shape",
+        "label_line_ends",
+        "review",
+    }
 )
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
@@ -280,6 +292,8 @@ __all__ = [  # noqa: RUF022
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_si",
+    "axis_unit",
+    "axis_unit_of",
     "recommend_tick_decimals",
     "rotate_tick_labels",
     "avoid_tick_overlap",
