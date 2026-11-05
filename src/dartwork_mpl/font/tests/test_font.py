@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 from matplotlib.font_manager import FontProperties
 
+import dartwork_mpl as dm
 from dartwork_mpl import font as font_module
 from dartwork_mpl.font import (
     _EXPECTED_MIN_FONTS,
@@ -360,3 +361,105 @@ class TestSingleWeightFallbackNoise:
         assert self._emit("Roboto") == [
             "findfont: Failed to find font weight light for Roboto, now using 400."
         ]
+
+
+class TestMathTextWeightNoise:
+    """Matplotlib's math fonts looked up at a preset's light weight stay quiet."""
+
+    @staticmethod
+    def _emit(family: str, weight: str = "light") -> list[str]:
+        import logging
+
+        seen: list[str] = []
+
+        class _Sink(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                seen.append(record.getMessage())
+
+        logger = logging.getLogger("matplotlib.font_manager")
+        sink = _Sink()
+        logger.addHandler(sink)
+        try:
+            logger.warning(
+                "findfont: Failed to find font weight %s for %s, now using %s.",
+                weight,
+                family,
+                400,
+            )
+        finally:
+            logger.removeHandler(sink)
+        return seen
+
+    def test_math_render_under_a_preset_logs_only_the_callers_family(
+        self,
+    ) -> None:
+        # A fresh process: findfont caches each lookup, so the notice is only
+        # logged on the first math render of a process.
+        code = (
+            "import matplotlib\n"
+            "matplotlib.use('Agg')\n"
+            "import matplotlib.pyplot as plt\n"
+            "import dartwork_mpl as dm\n"
+            "dm.style.use('scientific')\n"
+            "fig, ax = plt.subplots(figsize=dm.figsize('9cm', 'standard'))\n"
+            "ax.set_title(r'$\\alpha$')\n"
+            "ax.text(0.5, 0.5, 'x', family='DejaVu Sans')\n"
+            "fig.canvas.draw()\n"
+        )
+        src = Path(__file__).resolve().parents[3]
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            check=False,
+            env={**os.environ, "PYTHONPATH": str(src)},
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        misses = [
+            line
+            for line in result.stderr.splitlines()
+            if "Failed to find font weight" in line
+        ]
+        # The math fonts are silent; the caller's DejaVu Sans still warns.
+        assert misses, result.stderr
+        assert all(
+            line.startswith(
+                "findfont: Failed to find font weight light for DejaVu Sans,"
+            )
+            for line in misses
+        ), misses
+
+    @pytest.mark.parametrize(
+        "family", ["STIXGeneral", "STIXSizeOneSym", "cmex10"]
+    )
+    def test_preset_weight_miss_on_a_math_font_is_dropped(
+        self, family: str
+    ) -> None:
+        font_module.ensure_loaded()
+        with dm.style.context("scientific"):
+            assert self._emit(family) == []
+
+    def test_explicit_other_weight_on_a_math_font_still_warns(self) -> None:
+        font_module.ensure_loaded()
+        with dm.style.context("scientific"):
+            assert self._emit("STIXGeneral", weight="thin") == [
+                "findfont: Failed to find font weight thin for STIXGeneral, "
+                "now using 400."
+            ]
+
+    def test_math_families_follow_the_active_fontset(self) -> None:
+        import matplotlib as mpl
+
+        with dm.style.context("scientific"):
+            preset = font_module._mathtext_families()
+            assert {"STIXGeneral", "cmex10"} <= preset
+            assert "DejaVu Sans" not in preset
+            with mpl.rc_context({"mathtext.fallback": "cm"}):
+                assert {
+                    "cmr10",
+                    "STIXGeneral",
+                } <= font_module._mathtext_families()
+            with mpl.rc_context({"mathtext.fallback": "None"}):
+                assert font_module._mathtext_families() == {"cmex10"}
+            with mpl.rc_context({"mathtext.fontset": "dejavusans"}):
+                assert "DejaVu Sans" in font_module._mathtext_families()
