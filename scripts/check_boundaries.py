@@ -251,7 +251,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "a review reports validate_figure's findings, unfiltered"
     ),
     ("dartwork_mpl.formatting", "dartwork_mpl.config"): (
-        "default tick text follows the user's tick_years and date_style"
+        "default tick text follows the user's tick_years, date_style and "
+        "number_ladder"
     ),
     ("dartwork_mpl.helpers", "dartwork_mpl._colors"): (
         "historical curated palette imports re-export the color owner's callable"
