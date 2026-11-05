@@ -95,8 +95,10 @@ class LabelUnitFormatter(AxisUnitFormatter):
     the axis label and to every axis sharing the ticker: axes made with
     ``sharex`` / ``sharey`` share one formatter, so one call rescales them
     all. Each keeps its own template: the one :meth:`share_label` (another
-    ``axis_unit`` call) gave it, else, at the first draw, its own label text
-    plus `` ({unit})`` (as ``label=None``). An inner panel whose label
+    ``axis_unit`` call) gave it, else one made at the first draw from its
+    own label (:func:`_sibling_template`: ``인구 (명)`` -> ``인구 (억명)``,
+    ``Cost (USD)`` -> ``Cost (USD B)``, ``인구`` -> ``인구 (억)``), kept
+    so later draws write the same text. An inner panel whose label
     ``label_outer`` emptied (tick labels hidden, a sibling showing them)
     stays unlabelled; a template meant for it goes to the siblings that show
     the ticks and have no label. On a log or other non-linear axis the
@@ -148,7 +150,7 @@ class LabelUnitFormatter(AxisUnitFormatter):
         for other in siblings:
             text = other.label.get_text()
             if other is not own and other not in self._shared and text.strip():
-                self._shared[other] = _template(text)
+                self._shared[other] = _sibling_template(text, self._ladder)
         written: dict[Axis, str] = {}
         handed: list[str] = []
         for axis, template in self.templates().items():
@@ -204,6 +206,39 @@ def _template(label: str) -> str:
     return f"{label} ({_PLACEHOLDER})" if label.strip() else f"({_PLACEHOLDER})"
 
 
+# A label ending in a parenthesised unit: ``인구 (명)``, ``Cost (USD)``.
+_TRAILING_UNIT = re.compile(
+    r"^(?P<text>.*?)(?P<gap>\s*)\((?P<inner>[^()]*\S[^()]*)\)(?P<tail>\s*)$",
+    re.DOTALL,
+)
+_LAST_WORD = re.compile(r"^(?P<lead>.*\s)?(?P<word>\S+)$", re.DOTALL)
+
+
+def _sibling_template(label: str, ladder: Sequence[Unit]) -> str:
+    """A shared sibling's template, made from its own label.
+
+    A unit in trailing parentheses takes the ladder's unit where the
+    installing template puts it: in front of the unit word on 만/억/조
+    (``인구 (명)`` -> ``인구 ({unit}명)``, as ``가구 ({unit}명)``), after it
+    with a space on finance / SI ladders (``Cost (USD)`` ->
+    ``Cost (USD {unit})``). Any other label gets `` ({unit})`` appended.
+    The ones unit (``""``) fills back to the label as written.
+    """
+    if _PLACEHOLDER in label:
+        return label
+    match = _TRAILING_UNIT.match(label)
+    if match is None:
+        return _template(label)
+    inner = match["inner"].strip()
+    if tuple(ladder) == MYRIAD_LADDER:
+        word = _LAST_WORD.match(inner)
+        assert word is not None  # inner holds a non-space character
+        inner = f"{word['lead'] or ''}{_PLACEHOLDER}{word['word']}"
+    else:
+        inner = f"{inner} {_PLACEHOLDER}"
+    return f"{match['text']}{match['gap']}({inner}){match['tail']}"
+
+
 def _ladder(name: str, ax: Axes, template: str) -> tuple[Unit, ...]:
     """The ladder ``name`` stands for; ``"auto"`` asks ``dm.config``.
 
@@ -245,7 +280,9 @@ def axis_unit(
     every draw, so change the label by calling ``axis_unit`` again. Axes made
     with ``sharex`` / ``sharey`` share one formatter, so one call rescales
     the ticks of all of them and writes every label: a sibling's own label
-    gets the unit appended (``"비용"`` -> ``"비용 (억)"``); call
+    takes the unit inside its trailing parentheses (``"인구 (명)"`` ->
+    ``"인구 (억명)"``, ``"Cost (USD)"`` -> ``"Cost (USD B)"``) or appended
+    (``"인구"`` -> ``"인구 (억)"``); call
     ``axis_unit`` on each (``for a in axes: dm.axis_unit(a, "y",
     label=...)``) to give each its own template. An inner panel whose label
     ``label_outer`` emptied (the upper panels of a stacked ``sharex`` grid)

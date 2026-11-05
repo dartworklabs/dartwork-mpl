@@ -23,8 +23,17 @@ from matplotlib.figure import Figure
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-from dartwork_mpl.formatting._axis_wide import Unit
-from dartwork_mpl.formatting._label_unit import LabelUnitFormatter, fill
+from dartwork_mpl.formatting._axis_wide import (
+    FINANCE_LADDER,
+    MYRIAD_LADDER,
+    SI_LADDER,
+    Unit,
+)
+from dartwork_mpl.formatting._label_unit import (
+    LabelUnitFormatter,
+    _sibling_template,
+    fill,
+)
 
 MINUS = "\N{MINUS SIGN}"
 
@@ -512,14 +521,21 @@ class TestSharedAxes:
 
     @pytest.mark.parametrize(
         ("other", "expected"),
-        [("비용", "비용 (억)"), ("비용 (원)", "비용 (원) (억)")],
+        [
+            ("비용", "비용 (억)"),
+            ("비용 (원)", "비용 (억원)"),
+            ("비용 (단위: 원)", "비용 (단위: 억원)"),
+        ],
     )
     def test_one_call_on_sharey_labels_the_sibling(self, other, expected):
         """One call rescales the shared ticks of every axes; each label says so.
 
-        A sibling without a template of its own takes the label=None rule:
-        its own label text plus `` ({unit})`` (review 2026-11-05, R4: the
-        sibling read ``비용 (원)`` over 억 ticks).
+        A sibling without a template of its own keeps its label: a unit in
+        trailing parentheses takes the ladder's unit in front, as the
+        installing template places it (``비용 (원)`` -> ``비용 (억원)``);
+        without parentheses `` ({unit})`` is appended (review 2026-11-05,
+        R4: the sibling read ``비용 (원)`` over 억 ticks; user decision,
+        follow-up b).
         """
         fig, axes = self._stacked(sharey=True)
         for a, name in zip(axes, ("매출 (원)", other), strict=True):
@@ -535,6 +551,57 @@ class TestSharedAxes:
         axes[0].set_ylim(0, 6e12)  # both follow the shared ticks
         fig.canvas.draw()
         assert axes[1].get_ylabel() == expected.replace("억", "조")
+
+    @pytest.mark.parametrize(
+        ("ladder", "unit"), [("finance", "B"), ("si", "G")]
+    )
+    def test_a_sibling_unit_takes_a_suffix_on_latin_ladders(self, ladder, unit):
+        """Finance and SI units follow the currency, after a space."""
+        dm.style.use("report")
+        fig, axes = plt.subplots(
+            2, 1, sharey=True, figsize=dm.figsize("12cm", "standard")
+        )
+        for a, name in zip(axes, ("Revenue (USD)", "Cost (USD)"), strict=True):
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e10)
+            a.set_ylabel(name)
+        dm.axis_unit(axes[0], "y", label="Revenue (USD {unit})", ladder=ladder)
+        dm.simple_layout(fig)
+        for _ in range(3):  # repeated draws write the same text
+            fig.canvas.draw()
+            assert [a.get_ylabel() for a in axes] == [
+                f"Revenue (USD {unit})",
+                f"Cost (USD {unit})",
+            ]
+
+    def test_a_sibling_unit_reads_back_on_the_ones_rung(self):
+        """No unit: ``비용 (원)`` stays as written, and returns later."""
+        fig, axes = self._stacked(sharey=True)
+        for a, name in zip(axes, ("매출 (원)", "비용 (원)"), strict=True):
+            a.bar(range(3), [2000.0, 4000.0, 6000.0])
+            a.set_ylabel(name)
+        dm.axis_unit(axes[0], "y", label="매출 ({unit}원)")
+        dm.simple_layout(fig)
+        assert [a.get_ylabel() for a in axes] == ["매출 (원)", "비용 (원)"]
+        axes[0].set_ylim(0, 6e8)
+        fig.canvas.draw()
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == ["매출 (억원)", "비용 (억원)"]
+        axes[0].set_ylim(0, 6000)
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == ["매출 (원)", "비용 (원)"]
+
+    def test_an_empty_sibling_label_stays_empty(self):
+        """``label_outer`` emptied the right panel's y label: it stays so."""
+        dm.style.use("report-kr")
+        fig, axes = plt.subplots(
+            1, 2, sharey=True, figsize=dm.figsize("12cm", "wide")
+        )
+        for a in axes:
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e11)
+        axes[0].set_ylabel("매출 (원)")
+        dm.axis_unit(axes[0], "y", label="매출 ({unit}원)")
+        dm.simple_layout(fig)
+        assert [a.get_ylabel() for a in axes] == ["매출 (억원)", ""]
 
     @pytest.mark.parametrize("on", [0, 1], ids=["inner", "outer"])
     def test_one_call_on_stacked_sharex_labels_the_bottom_only(self, on):
@@ -577,6 +644,37 @@ class TestSharedAxes:
         dm.axis_unit(axes[1], "x", label="인구 ({unit}명)")
         dm.simple_layout(fig)
         assert [a.get_xlabel() for a in axes] == ["상단 (억)", "인구 (억명)"]
+
+
+@pytest.mark.parametrize(
+    ("label", "ladder", "template", "filled"),
+    [
+        ("비용 (원)", "myriad", "비용 ({unit}원)", "비용 (억원)"),
+        ("비용(원)", "myriad", "비용({unit}원)", "비용(억원)"),
+        (
+            "비용 (단위: 원)",
+            "myriad",
+            "비용 (단위: {unit}원)",
+            "비용 (단위: 억원)",
+        ),
+        ("Cost (USD)", "finance", "Cost (USD {unit})", "Cost (USD 억)"),
+        ("비용", "myriad", "비용 ({unit})", "비용 (억)"),
+        ("x (a) b", "si", "x (a) b ({unit})", "x (a) b (억)"),
+        ("비용 ({unit}원)", "myriad", "비용 ({unit}원)", "비용 (억원)"),
+    ],
+)
+def test_sibling_template(label, ladder, template, filled):
+    rungs = {
+        "myriad": MYRIAD_LADDER,
+        "finance": FINANCE_LADDER,
+        "si": SI_LADDER,
+    }
+    made = _sibling_template(label, rungs[ladder])
+    assert made == template
+    assert fill(made, "억") == filled
+    assert fill(made, "") == label.replace(" ({unit})", "").replace(
+        "{unit}", ""
+    )
 
 
 def test_exported_as_experimental():
