@@ -4,6 +4,12 @@ Generate SVG/PNG figures for usage guide code examples.
 Each function produces one figure matching a code block in the usage guide docs.
 Run standalone or via Sphinx build hooks.
 
+Every figure here is drawn on a paper canvas (9-19 cm), so it uses a paper
+preset (``scientific``); ``presentation`` is ``scientific`` with every size
+x 2.6 and belongs on a slide canvas (``dm.figsize_for("slide")``). A docs
+build checks each figure with ``dm.validate_figure``
+(``tests/docs/test_docs_figures_validate.py``).
+
     python docs/usage_guide/generate_assets.py
 """
 
@@ -68,7 +74,7 @@ def _save_svg(fig, path: Path, **savefig_kwargs) -> Path:
 def _save_quickstart_first_figure(images_dir: Path) -> Path:
     """Quickstart 'First figure': sine wave with dc.teal2."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"), dpi=300)
     x = np.linspace(0, 10, 200)
@@ -87,7 +93,7 @@ def _save_quickstart_first_figure(images_dir: Path) -> Path:
 def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     """Quickstart 'Multi-panel layout': 2-panel with label_axes."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     x = np.linspace(0, 10, 200)
     fig = plt.figure(figsize=dm.figsize("15cm", "8.5cm"), dpi=300)
@@ -194,7 +200,7 @@ def _save_layout_simple(images_dir: Path) -> Path:
 def _save_layout_gridspec(images_dir: Path) -> Path:
     """Layout 'Layout optimization': 2×2 GridSpec + panel labels."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig = plt.figure(figsize=dm.figsize("15cm", "12cm"), dpi=300)
     gs = fig.add_gridspec(
@@ -226,7 +232,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
 def _save_layout_typography(images_dir: Path) -> Path:
     """Layout 'Typography': fs(), fw(), lw() demo."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"), dpi=300)
     x = np.array([0, 1, 2])
@@ -391,7 +397,7 @@ def _save_evolution_step4(images_dir: Path) -> Path:
 def _make_label_axes_compare(use_dm: bool) -> plt.Figure:
     """Compare vanilla matplotlib text placement vs dm.label_axes()."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig, axes = plt.subplots(3, 1, figsize=dm.figsize("10cm", "12cm"), dpi=300)
     ylabels = ["y", "Velocity [m/s]", "A very long descriptive label"]
@@ -444,7 +450,7 @@ def _save_label_axes_dm(images_dir: Path) -> Path:
 def _make_set_decimal_compare(use_dm: bool) -> plt.Figure:
     """Compare vanilla unformatted ticks vs dm.set_decimal()."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig, ax = plt.subplots(figsize=dm.figsize("12cm", "6cm"), dpi=300)
     x = np.linspace(0, 10, 100)
@@ -483,7 +489,7 @@ def _save_set_decimal_dm(images_dir: Path) -> Path:
 def _save_arrow_axis_example(images_dir: Path) -> Path:
     """Showcase dm.arrow_axis() conceptually."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "square"), dpi=300)
 
@@ -527,7 +533,7 @@ def _save_validation_example(images_dir: Path) -> Path:
     and bbox_inches is left at its default (not "tight"), so the
     intended OVERFLOW demonstration is preserved.
     """
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig, ax = plt.subplots(figsize=dm.figsize("17cm", "10cm"), dpi=300)
     ax.plot([1, 2, 3], [1, 4, 9], color="dc.orange3")
@@ -611,7 +617,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
 
 def _save_diverging_bar(images_dir: Path) -> Path:
     """Save & Export: templates diverging bar chart."""
-    dm.style.use("presentation")
+    dm.style.use("scientific")
     from dartwork_mpl.templates import plot_diverging_bar
 
     fig, _ax = plot_diverging_bar(
@@ -638,7 +644,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
 # representative sample is ever desired in the diagnostics section.
 #
 # def _save_diagnostics_preview(images_dir: Path) -> Path:
-#     dm.style.use("presentation")
+#     dm.style.use("scientific")
 #     fig = dm.show_colors(kind="qualitative")
 #     ...
 
