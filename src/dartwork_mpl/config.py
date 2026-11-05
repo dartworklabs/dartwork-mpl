@@ -35,6 +35,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, fields
+from typing import Literal
 
 __all__ = ["Config", "config"]
 
@@ -67,10 +68,29 @@ class Config:
         running under matplotlib's ``constrained_layout``, where the
         font change can trigger a re-layout on the next draw. Default is
         off so the common path stays quiet.
+    tick_years : {2, 4}, default ``2``
+        Spacing, in years, between year ticks that the date-axis helpers
+        in :mod:`dartwork_mpl.formatting` place when they choose year
+        locations. Opt out with ``dm.config.override(tick_years=4)`` (or
+        assign ``4``) to keep the wider four-year spacing.
+    date_style : {"period", "concise"}, default ``"period"``
+        Label style the date-axis helpers apply: ``"period"`` writes
+        two-digit years with a trailing period (for example ``24.``),
+        ``"concise"`` keeps matplotlib's ``ConciseDateFormatter`` labels.
+        Opt out with ``dm.config.override(date_style="concise")``.
+    number_ladder : {"auto", "si", "myriad"}, default ``"auto"``
+        Unit ladder used when ``dm.axis_unit`` abbreviates large numbers.
+        ``"auto"`` picks 만/억/조 for Korean figures and k/M/B otherwise;
+        ``"si"`` always uses k/M/B and ``"myriad"`` always uses 만/억/조.
+        Opt out of the Korean default with
+        ``dm.config.override(number_ladder="si")``.
     """
 
     adopt_orphan_tick_font: bool = False
     warn_on_orphan_tick_adoption: bool = False
+    tick_years: Literal[2, 4] = 2
+    date_style: Literal["period", "concise"] = "period"
+    number_ladder: Literal["auto", "si", "myriad"] = "auto"
 
     @contextmanager
     def override(self, **overrides: object) -> Iterator[None]:
