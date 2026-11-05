@@ -123,11 +123,78 @@ _OTHER_STEPS = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 15, 20, 25, 30, 50, 100)
 _MONTH_DAYS = (28.0, 31.0)
 
 
+# ScalarFormatter switches the library's default numbers already have off.
+_OFF_IN_DEFAULT_NUMBERS = (
+    "useOffset",
+    "scientific",
+    "useMathText",
+    "useLocale",
+)
+
+
+def _met_by_default_numbers(name: str, value: object) -> bool:
+    """Whether a ScalarFormatter setting asks nothing these numbers lack.
+
+    They have no offset, no exponent, no math text and no locale, so turning
+    any of those off (``False``, or ``None``: the rc default) is met.
+    """
+    return name in _OFF_IN_DEFAULT_NUMBERS and (value is None or value is False)
+
+
+_SCALAR_SETTERS = {
+    "useOffset": ticker.ScalarFormatter.set_useOffset,
+    "scientific": ticker.ScalarFormatter.set_scientific,
+    "powerlimits": ticker.ScalarFormatter.set_powerlimits,
+    "useMathText": ticker.ScalarFormatter.set_useMathText,
+    "useLocale": ticker.ScalarFormatter.set_useLocale,
+}
+
+
 class DefaultNumberFormatter(AxisUnitFormatter):
-    """Thousands separators below one million, the largest tick's unit above."""
+    """Thousands separators below one million, the largest tick's unit above.
+
+    ``ax.ticklabel_format`` and the ScalarFormatter setters behind it work
+    on it: a request these numbers already meet (``useOffset=False``,
+    ``style="plain"``) keeps them; a request for matplotlib's own notation
+    (scientific, power limits, an offset, math text, locale) puts
+    matplotlib's ``ScalarFormatter`` with that setting on the axis.
+    """
 
     def __init__(self, ladder: Sequence[Unit]) -> None:
         super().__init__(ladder, "max")
+
+    def set_useOffset(self, val: bool | float) -> None:
+        """``ticklabel_format(useOffset=...)``; see the class docstring."""
+        self._asked("useOffset", val)
+
+    def set_scientific(self, b: bool) -> None:
+        """``ticklabel_format(style=...)``; see the class docstring."""
+        self._asked("scientific", b)
+
+    def set_powerlimits(self, lims: tuple[int, int]) -> None:
+        """``ticklabel_format(scilimits=...)``; see the class docstring."""
+        self._asked("powerlimits", lims)
+
+    def set_useMathText(self, val: bool | None) -> None:
+        """``ticklabel_format(useMathText=...)``; see the class docstring."""
+        self._asked("useMathText", val)
+
+    def set_useLocale(self, val: bool | None) -> None:
+        """``ticklabel_format(useLocale=...)``; see the class docstring."""
+        self._asked("useLocale", val)
+
+    def _asked(self, name: str, value: object) -> None:
+        if _met_by_default_numbers(name, value):
+            return
+        axis = self.axis
+        if not isinstance(axis, Axis):
+            raise ValueError(
+                "DefaultNumberFormatter hands a request for matplotlib's "
+                "notation to its axis: call set_axis first"
+            )
+        stock = ticker.ScalarFormatter()
+        _SCALAR_SETTERS[name](stock, value)  # type: ignore[operator]
+        axis.set_major_formatter(stock)
 
     def _axis_unit(self, values: Sequence[float]) -> Unit:
         top = max(abs(v) for v in values)
@@ -720,6 +787,9 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):
                 continue  # years: 2024, not 2,024
+            asked = requested_format(axis.get_major_formatter())
+            if not all(_met_by_default_numbers(*kv) for kv in asked.items()):
+                continue  # matplotlib's notation asked of its formatter in place
             axis.set_major_formatter(DefaultNumberFormatter(ladder))
             changed += 1
     return changed
