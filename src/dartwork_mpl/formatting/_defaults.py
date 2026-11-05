@@ -11,7 +11,8 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
   2.5M``; ``50만 … 250만`` in Korean figures, ``config.number_ladder``),
   unless that needs more than two decimals;
 - x axes whose plotted data are integers 1900-2099 (annual lines, bars,
-  scatter; twins and shared axes included) are year axes: ticks on whole
+  bars grouped side by side within each year, scatter; twins and shared
+  axes included) are year axes: ticks on whole
   years only (:class:`._years.WholeYearLocator`), read two digits (``16,
   18, 20``; four when two would print alike, or with
   ``config.tick_years = 4``); integer data in that range that are not years
@@ -547,7 +548,7 @@ def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
     (``MaxNLocator``) matplotlib's formatter stays too, so every tick reads
     its value (``2005, 2007.5``). Returns 1 if anything changed.
     """
-    if not year_data(plotted_dates(ax, "x")):
+    if not year_data(plotted_dates(ax, "x", bar_slot=1.0)):
         return 0
     changed = 0
     if axis.isDefault_majloc:

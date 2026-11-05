@@ -59,8 +59,41 @@ def quarterly(nums: Sequence[float] | npt.ArrayLike) -> bool:
     return bool(np.all((gaps >= low) & (gaps <= high)))
 
 
+def _bar_positions(
+    container: BarContainer, which: Literal["x", "y"], slot: float | None
+) -> npt.NDArray[np.float64]:
+    """Where bars stand: their centres, or with ``slot`` the slot they fill.
+
+    A bar that lies inside the slot of width ``slot`` around the multiple of
+    ``slot`` nearest its centre stands for that multiple: bars grouped side
+    by side at ``year -/+ w/2`` stand for the year (``slot=1``).
+    """
+    starts, sizes = (
+        (
+            [p.get_x() for p in container.patches],
+            [p.get_width() for p in container.patches],
+        )
+        if which == "x"
+        else (
+            [p.get_y() for p in container.patches],
+            [p.get_height() for p in container.patches],
+        )
+    )
+    start = np.asarray(starts, dtype=float)
+    end = start + np.asarray(sizes, dtype=float)
+    centre: npt.NDArray[np.float64] = (start + end) / 2
+    if slot is None:
+        return centre
+    near = np.rint(centre / slot) * slot
+    low, high = np.minimum(start, end), np.maximum(start, end)
+    tol = 1e-6 * slot
+    inside = (low >= near - slot / 2 - tol) & (high <= near + slot / 2 + tol)
+    placed: npt.NDArray[np.float64] = np.where(inside, near, centre)
+    return placed
+
+
 def plotted_dates(
-    ax: Axes, which: Literal["x", "y"]
+    ax: Axes, which: Literal["x", "y"], *, bar_slot: float | None = None
 ) -> npt.NDArray[np.float64]:
     """The x (or y) values the data sits on (date numbers on a date axis).
 
@@ -70,7 +103,9 @@ def plotted_dates(
     are in data units on both axes: an ``axhline`` (x from 0 to 1 in axes
     fractions) or an ``axvline`` (a date marker spanning the height) marks
     a value rather than plotting data. Collections without offsets
-    (``fill_between``) are left out.
+    (``fill_between``) are left out. ``bar_slot`` (``1`` for years) reads
+    a bar inside one slot as the slot's centre (:func:`_bar_positions`), so
+    grouped bars stand for their year.
     """
     column = 0 if which == "x" else 1
     shared = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
@@ -105,17 +140,7 @@ def plotted_dates(
                 continue
             if container.orientation != bars:
                 continue
-            chunks.append(
-                np.array(
-                    [
-                        patch.get_x() + patch.get_width() / 2
-                        if which == "x"
-                        else patch.get_y() + patch.get_height() / 2
-                        for patch in container.patches
-                    ],
-                    dtype=float,
-                )
-            )
+            chunks.append(_bar_positions(container, which, bar_slot))
     if not chunks:
         return np.empty(0, dtype=float)
     values: npt.NDArray[np.float64] = np.concatenate(chunks)

@@ -240,6 +240,57 @@ def test_year_data_on_bars_scatter_twins_and_shared_axes():
     assert _whole(locs) and labels == _two_digits(locs), labels
 
 
+def _laid_out_axes(draw, width="12cm"):
+    fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"))
+    draw(ax)
+    dm.simple_layout(fig)
+    return ax
+
+
+def _assert_year_ticks(ax):
+    locs, labels = _shown(ax)
+    assert len(locs) >= 2 and _whole(locs), locs
+    assert labels == _two_digits(locs), labels
+    assert _year_axis(ax)
+
+
+@pytest.mark.parametrize("series", [2, 3, 4])
+def test_grouped_annual_bars_read_as_years(series):
+    """Bars side by side within each year's slot stand for that year.
+
+    Review 2026-11-05, R6: two bars at year -/+ 0.2 read ``2014, 2016``
+    while single bars read ``14, 16``.
+    """
+    years = np.arange(2014, 2025)
+    width = 0.8 / series
+
+    def draw(ax):
+        for i in range(series):
+            offset = (i - (series - 1) / 2) * width
+            ax.bar(years + offset, np.arange(len(years)) + i + 1, width=width)
+
+    _assert_year_ticks(_laid_out_axes(draw))
+
+
+@pytest.mark.parametrize(
+    "draw",
+    [
+        # edge-aligned pairs: the second bar crosses into the next slot
+        lambda ax: [
+            ax.bar(np.arange(2014, 2025) + d, np.ones(11), 0.4, align="edge")
+            for d in (0, 0.4)
+        ],
+        # a histogram of years: bins five years wide
+        lambda ax: ax.hist(np.arange(2000, 2025), bins=5),
+    ],
+    ids=["edge-aligned", "histogram"],
+)
+def test_bars_wider_than_a_year_slot_keep_matplotlibs(draw):
+    ax = _laid_out_axes(draw)
+    assert type(ax.xaxis.get_major_formatter()) is mticker.ScalarFormatter
+    assert type(ax.xaxis.get_major_locator()) is mticker.AutoLocator
+
+
 @pytest.mark.parametrize(
     "x",
     [
