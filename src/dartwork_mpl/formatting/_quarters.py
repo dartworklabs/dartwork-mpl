@@ -118,9 +118,12 @@ def plotted_dates(
             )
     if not chunks:
         return np.empty(0, dtype=float)
-    values = np.concatenate(chunks)
-    finite: npt.NDArray[np.float64] = values[np.isfinite(values)]
-    return finite
+    values: npt.NDArray[np.float64] = np.concatenate(chunks)
+    finite = np.isfinite(values)
+    if finite.all():
+        return values  # no copy for the usual all-finite data
+    kept: npt.NDArray[np.float64] = values[finite]
+    return kept
 
 
 def _quarter_end(day: datetime.date) -> bool:

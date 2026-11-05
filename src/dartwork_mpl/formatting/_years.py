@@ -45,11 +45,22 @@ def _whole_year(value: float) -> bool:
 
 
 def year_data(values: npt.ArrayLike) -> bool:
-    """Whether plotted values are years: two or more, all integers in 1900-2099."""
+    """Whether plotted values are years: two or more, all integers in 1900-2099.
+
+    Vectorised, cheapest test first: the range (``min`` / ``max``; a NaN or
+    infinity fails it) rejects most non-year data in one pass, then one
+    in-place pass checks every value is whole.
+    """
     data = np.asarray(values, dtype=float).ravel()
-    if len(np.unique(data)) < 2:
+    if data.size < 2:
         return False
-    return all(_whole_year(float(v)) for v in data)
+    low, high = float(data.min()), float(data.max())
+    if not (_FIRST_YEAR <= low < high <= _LAST_YEAR):
+        return False  # out of range, NaN, or one value only
+    off = np.rint(data)
+    np.subtract(data, off, out=off)
+    np.abs(off, out=off)
+    return bool((off <= _WHOLE_TOL).all())
 
 
 def whole_years(ticks: Sequence[float]) -> bool:

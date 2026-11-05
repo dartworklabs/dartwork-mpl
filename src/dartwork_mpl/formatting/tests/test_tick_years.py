@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import re
+import time
 from itertools import pairwise
 
 import matplotlib
@@ -459,6 +460,33 @@ def test_helpers():
     )
     with pytest.raises(ValueError, match="digits"):
         YearTickFormatter(3)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "x",
+    [
+        np.arange(10_000_000, dtype=float),  # not years: out of range
+        np.repeat(np.arange(1950, 2050), 100_000).astype(float),  # years
+    ],
+    ids=["numbers", "years"],
+)
+def test_year_detection_on_ten_million_points_is_quick(x):
+    """Every plain x axis is checked for year data on each layout.
+
+    Review 2026-11-05, R5: ``np.unique`` and a Python loop over the raw
+    values took 0.6-1.9 s (numbers) and 2.3-3.6 s (years) on a 10M-point
+    line; vectorised it is about 0.05 s. The bound is generous for a loaded
+    machine; the best of three runs counts.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm"))
+    ax.plot(x, np.zeros(len(x)), linewidth=0.3)
+    timings = []
+    for _ in range(3):
+        start = time.perf_counter()
+        apply_default_tick_format(fig)
+        timings.append(time.perf_counter() - start)
+    assert min(timings) < 0.3, timings
+    assert year_data(x) == (x[0] == 1950)
 
 
 # ---------------------------------------------------------------- date axes
