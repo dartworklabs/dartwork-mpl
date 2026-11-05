@@ -93,9 +93,11 @@ def plotted_dates(
                     )[column]
                 )
             ):
-                offsets = np.ma.filled(
-                    np.ma.asarray(coll.get_offsets(), dtype=float),  # type: ignore[no-untyped-call]
-                    np.nan,
+                offsets: npt.NDArray[np.float64] = np.asarray(
+                    np.ma.filled(
+                        np.ma.asarray(coll.get_offsets(), dtype=float), np.nan
+                    ),
+                    dtype=float,
                 )
                 chunks.append(offsets.reshape(-1, 2)[:, column])
         for container in member.containers:
