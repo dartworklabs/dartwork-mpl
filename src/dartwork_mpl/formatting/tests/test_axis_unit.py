@@ -618,6 +618,61 @@ class TestSharedAxes:
             "비용 (원) (억)",
         ]
 
+    def _pair(self) -> tuple[Figure, list[Axes]]:
+        fig, axes = self._stacked(sharey=True)
+        for a, name in zip(axes, ("매출 (원)", "비용 (원)"), strict=True):
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e11)
+            a.set_ylabel(name)
+        dm.axis_unit(axes[0], "y", label="매출 ({unit}원)")
+        dm.simple_layout(fig)
+        return fig, axes
+
+    def test_a_label_set_after_a_draw_is_the_new_template(self):
+        """Explicit edits win (re-review 2026-11-05, N3: they were reverted)."""
+        fig, axes = self._pair()
+        assert [a.get_ylabel() for a in axes] == ["매출 (억원)", "비용 (억원)"]
+        axes[1].set_ylabel("영업비용 (원)")
+        axes[0].set_ylabel("매출액 (원)")  # the installing axes too
+        dm.simple_layout(fig)
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == [
+            "매출액 (억원)",
+            "영업비용 (억원)",
+        ]
+        axes[1].set_ylabel("")  # an emptied label stays empty
+        fig.canvas.draw()
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == ["매출액 (억원)", ""]
+        axes[1].set_ylabel("비용")
+        fig.canvas.draw()
+        assert axes[1].get_ylabel() == "비용 (억)"
+
+    def test_an_edit_before_another_axis_unit_call_is_kept(self):
+        fig, axes = self._pair()
+        axes[1].set_ylabel("영업비용 (원)")
+        dm.axis_unit(axes[0], "y", label="매출 ({unit}원)", scale="whole")
+        fig.canvas.draw()
+        assert axes[1].get_ylabel() == "영업비용 (억원)"
+        dm.axis_unit(axes[1], "y")  # label=None on a label it wrote
+        fig.canvas.draw()
+        assert axes[1].get_ylabel() == "영업비용 (억원)"  # no second unit
+
+    def test_label_outer_after_the_layout_empties_inner_labels(self):
+        dm.style.use("report-kr")
+        fig, axes = plt.subplots(
+            1, 2, sharey=True, figsize=dm.figsize("12cm", "wide")
+        )
+        for a, name in zip(axes, ("매출 (원)", "비용 (원)"), strict=True):
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e11)
+            a.set_ylabel(name)
+        dm.axis_unit(axes[0], "y", label="매출 ({unit}원)")
+        dm.simple_layout(fig)
+        for a in axes:
+            a.label_outer()
+        dm.simple_layout(fig)
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == ["매출 (억원)", ""]
+
     def test_a_sibling_unit_reads_back_on_the_ones_rung(self):
         """No unit: ``비용 (원)`` stays as written, and returns later."""
         fig, axes = self._stacked(sharey=True)

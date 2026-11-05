@@ -123,15 +123,55 @@ class LabelUnitFormatter(AxisUnitFormatter):
         self._template = template
         self._group = _unit_group(template)
         self._shared: dict[Axis, str] = {}
+        # The text last written to each label, to tell an edit from our own.
+        self._wrote: dict[Axis, str] = {}
 
     @property
     def template(self) -> str:
         """The label template, with ``{unit}`` where the unit goes."""
         return self._template
 
-    def share_label(self, axis: Axis, template: str) -> None:
-        """Also write ``fill(template, unit)`` to ``axis``'s label each draw."""
+    def share_label(
+        self, axis: Axis, template: str, last: str | None = None
+    ) -> None:
+        """Also write ``fill(template, unit)`` to ``axis``'s label each draw.
+
+        ``last`` is the text last written there (by the formatter this one
+        replaces), so an edit made since is still recognised as one.
+        """
         self._shared[axis] = template
+        if last is not None:
+            self._wrote[axis] = last
+
+    def last_written(self, axis: Axis) -> str | None:
+        """The text this formatter last wrote to ``axis``'s label, if any."""
+        return self._wrote.get(axis)
+
+    def note_written(self, axis: Axis, text: str) -> None:
+        """Record ``text`` as written to ``axis``'s label (at install)."""
+        self._wrote[axis] = text
+
+    def _adopt_edits(self) -> None:
+        """A label whose text is not the one last written was set by someone.
+
+        Its text becomes that label's template (:func:`_sibling_template`
+        with the installing unit group), so the edit stays and its unit
+        follows the ticks; an emptied label stays empty.
+        """
+        for axis in self.templates():
+            last = self._wrote.get(axis)
+            text = axis.label.get_text()
+            if last is None or text == last:
+                continue
+            made = (
+                _sibling_template(text, self._group, self._ladder)
+                if text.strip()
+                else ""
+            )
+            if axis is self.axis:
+                self._template = made
+            else:
+                self._shared[axis] = made
 
     def templates(self) -> dict[Axis, str]:
         """Every axis with a template here (labels it writes), and the template."""
@@ -143,13 +183,16 @@ class LabelUnitFormatter(AxisUnitFormatter):
     def labels(self) -> dict[Axis, str]:
         """The labels this draw writes: each axis and its template.
 
-        Adopts a sibling that shares the ticker and has a label but no
-        template, leaves an inner unlabelled panel alone and hands its
-        template to the siblings that show the ticks and have no label.
+        Takes a label someone set since the last draw as its new template
+        (:meth:`_adopt_edits`), adopts a sibling that shares the ticker and
+        has a label but no template, leaves an inner unlabelled panel alone
+        and hands its template to the siblings that show the ticks and have
+        no label.
         """
         own = self.axis
         if not isinstance(own, Axis):
             return dict(self._shared)
+        self._adopt_edits()
         siblings = _sharing(own)
         for other in siblings:
             text = other.label.get_text()
@@ -160,10 +203,10 @@ class LabelUnitFormatter(AxisUnitFormatter):
         written: dict[Axis, str] = {}
         handed: list[str] = []
         for axis, template in self.templates().items():
-            if _inner_unlabelled(axis, siblings):
-                handed.append(template)
-            else:
+            if not _inner_unlabelled(axis, siblings):
                 written[axis] = template
+            elif template:
+                handed.append(template)
         for other in siblings:
             if handed and other not in written and _shows_ticks(other):
                 self._shared[other] = written[other] = handed[0]
@@ -197,7 +240,9 @@ class LabelUnitFormatter(AxisUnitFormatter):
         if unit is None:
             return
         for axis, template in self.labels().items():
-            axis.label.set_text(fill(template, unit.label))
+            text = fill(template, unit.label)
+            axis.label.set_text(text)
+            self._wrote[axis] = text
 
 
 def _target(ax: Axes, axis: str) -> Axis:
@@ -289,16 +334,16 @@ def axis_unit(
         dm.axis_unit(ax, "y", label="인구 ({unit}명)", scale="만")  # fixed
         dm.axis_unit(ax, "y", label="Exports (USD {unit})", ladder="finance")
 
-    The formatter owns the label text from then on: it rewrites the label on
-    every draw, so change the label by calling ``axis_unit`` again. Axes made
-    with ``sharex`` / ``sharey`` share one formatter, so one call rescales
-    the ticks of all of them and writes every label: a sibling's trailing
+    The formatter writes the label on every draw. Axes made with
+    ``sharex`` / ``sharey`` share one formatter, so one call rescales the
+    ticks of all of them and writes every label: a sibling's trailing
     parentheses that hold this label's base unit take the unit inside
     (``"인구 (명)"`` -> ``"인구 (억명)"`` for ``label="가구 ({unit}명)"``;
     ``"Cost (USD)"`` -> ``"Cost (USD B)"``), any other sibling label gets
     it appended (``"인구"`` -> ``"인구 (억)"``; all of them with
-    ``label=None``); call
-    ``axis_unit`` on each (``for a in axes: dm.axis_unit(a, "y",
+    ``label=None``). A label you set later (``ax.set_ylabel(...)``, on any
+    of these axes) becomes that label's template the same way; an emptied
+    label stays empty. Call ``axis_unit`` on each (``for a in axes: dm.axis_unit(a, "y",
     label=...)``) to give each its own template. An inner panel whose label
     ``label_outer`` emptied (the upper panels of a stacked ``sharex`` grid)
     stays unlabelled; the label goes on the panel that shows the ticks. On a
@@ -364,13 +409,12 @@ def axis_unit(
         # Called again without a label on a label this formatter wrote (or
         # set at install): keep its template rather than append a second unit.
         known = written.get(target)
-        if known is not None and isinstance(current, LabelUnitFormatter):
-            unit = current.unit
-            if label in (
-                fill(known, ""),
-                fill(known, unit.label if unit else ""),
-            ):
-                label = known
+        if (
+            known is not None
+            and isinstance(current, LabelUnitFormatter)
+            and current.last_written(target) == label
+        ):
+            label = known
     template = _template(label)
     rungs = _ladder(ladder, ax, template)
     symbols = [rung.label for rung in rungs]
@@ -385,10 +429,17 @@ def axis_unit(
     )
     for other, other_template in written.items():
         if other is not target and other.major is target.major:
-            formatter.share_label(other, other_template)
+            last = (
+                current.last_written(other)
+                if isinstance(current, LabelUnitFormatter)
+                else None
+            )
+            formatter.share_label(other, other_template, last)
     target.set_major_formatter(formatter)
     if not _inner_unlabelled(target, _sharing(target)):
-        target.label.set_text(fill(template, ""))
+        text = fill(template, "")
+        target.label.set_text(text)
+        formatter.note_written(target, text)
     return formatter
 
 
