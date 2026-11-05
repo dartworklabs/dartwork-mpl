@@ -183,3 +183,10 @@ matching lines above:
   date thinning); an explicitly set formatter or locator of any class stays.
 - `tick_years`, `date_style`, `number_ladder` are options a prompt asks for, not a
   0.6.0 reproduction; no new machinery reproduces 0.6.0.
+- Residual round (R1–R7): a request made in place on matplotlib's locator
+  (`ax.locator_params(axis="x", nbins=3)`) is carried into the year locator and
+  never thinned; year labels go in only under the year locator or whole-year pins
+  (a locator someone set keeps matplotlib's numbers); bars inside one year's slot,
+  `stackplot` / `fill_between` outlines on whole numbers and a `secondary_xaxis`
+  showing years count as year data; one `dm.axis_unit` call writes every label
+  sharing the ticker except an inner panel `label_outer` emptied.
