@@ -74,15 +74,16 @@ class Config:
         via ``dm.simple_layout``) and in
         ``dm.format_axis_dates``: ``24``, ``24.01``, ``24.Q1``. An axis whose
         two-digit years would repeat (a century in view) prints four on its
-        own. Opt out with ``dm.config.override(tick_years=4)`` (or assign
-        ``4``) for ``2024``, ``2024.01``.
+        own. ``4`` is the four-digit option (``2024``, ``2024.01``):
+        ``with dm.config.override(tick_years=4):`` around the code from
+        figure creation to the last ``dm.simple_layout``, or assign it.
     date_style : {"period", "concise"}, default ``"period"``
         Date tick words on the same axes: ``"period"`` writes every tick as
         a whole date (``23.01``, ``23.01.15``, quarterly data ``23.Q1``);
         ``"concise"`` writes matplotlib's concise words (``23, May, Sep``;
         ``23년, 5월`` in Korean figures; quarters ``23, Q2``). With
-        ``tick_years=4``, ``"concise"`` is the 0.6.0 look
-        (``dm.config.override(tick_years=4, date_style="concise")``).
+        ``tick_years=4`` it is matplotlib's own concise formatter
+        (``2023, May, Sep``; ``2023년, 5월``).
     number_ladder : {"auto", "si", "myriad"}, default ``"auto"``
         Unit ladder for large numbers: the one-unit tick labels of axes
         nobody formatted (from 1,000,000) and ``dm.axis_unit(ladder="auto")``.
@@ -91,8 +92,8 @@ class Config:
         (``0.2T … 1.0T``); ``"si"`` always uses k/M/G/T and ``"myriad"``
         always uses 만/억/조/경. Any other value raises ``ValueError`` where
         it is read.
-        Opt out of the Korean default with
-        ``dm.config.override(number_ladder="si")``.
+        ``"si"`` is the option for k/M/G/T in Korean figures too
+        (``dm.config.override(number_ladder="si")``).
     """
 
     adopt_orphan_tick_font: bool = False

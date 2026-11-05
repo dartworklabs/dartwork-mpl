@@ -1,9 +1,11 @@
-"""``override(tick_years=4, date_style="concise", number_ladder="si")`` is 0.6.0.
+"""The tick formats a prompt can ask for, one ``dm.config`` field each.
 
-One place that covers the four figures whose default tick text changed:
-monthly dates (English and Korean), integer years and Korean bars from one
-million. Date text is compared with the stock formatter computed here, because
-which ticks fit depends on the figure width.
+``tick_years=4`` (four-digit years), ``date_style="concise"`` (with
+``tick_years=4``: matplotlib's own concise words) and ``number_ladder="si"``
+(k/M/G/T in Korean figures), on the four figures whose default tick text
+changed: monthly dates (English and Korean), year data and Korean bars from
+one million. Date text is compared with the stock formatter computed here,
+because which ticks fit depends on the figure width.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from dartwork_mpl.formatting._dates import KoreanConciseDateFormatter
 MONTHS = np.arange(np.datetime64("2023-01"), np.datetime64("2026-02")).astype(
     "datetime64[D]"
 )
-OLD_LOOK = {"tick_years": 4, "date_style": "concise", "number_ladder": "si"}
+OPTIONS = {"tick_years": 4, "date_style": "concise", "number_ladder": "si"}
 
 
 @pytest.fixture(autouse=True)
@@ -64,8 +66,8 @@ def _monthly(*, korean: bool):
 
 
 @pytest.mark.parametrize("korean", [False, True], ids=["en", "ko"])
-def test_override_restores_060_month_ticks(korean):
-    with dm.config.override(**OLD_LOOK):
+def test_four_digit_concise_dates_are_matplotlibs_words(korean):
+    with dm.config.override(**OPTIONS):
         ax = _monthly(korean=korean)
         cls = (
             KoreanConciseDateFormatter
@@ -78,18 +80,17 @@ def test_override_restores_060_month_ticks(korean):
         assert got[0] in ("2023", "2023년")
 
 
-def test_override_restores_060_integer_years():
-    with dm.config.override(**OLD_LOOK):
+def test_four_digit_years_on_whole_year_ticks():
+    with dm.config.override(**OPTIONS):
         fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
         ax.plot(np.arange(2016, 2025), np.arange(9))
-        ax.set_xticks(np.arange(2016, 2025))
         dm.simple_layout(fig)
         assert _texts(ax.xaxis) == [str(y) for y in range(2016, 2025)]
 
 
-def test_override_restores_060_korean_bars():
+def test_si_ladder_in_a_korean_figure():
     dm.style.use("report-kr")
-    with dm.config.override(**OLD_LOOK):
+    with dm.config.override(**OPTIONS):
         fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
         ax.bar(["가", "나"], [4e11, 1e12])
         ax.set_ylabel("인구")
@@ -98,8 +99,8 @@ def test_override_restores_060_korean_bars():
         assert _texts(ax.yaxis) == ["0", "0.2T", "0.4T", "0.6T", "0.8T", "1.0T"]
 
 
-def test_default_differs_from_060():
-    """The same Korean bars read 조 by default, so the override is meaningful."""
+def test_korean_default_reads_myriad_units():
+    """The same Korean bars read 조 by default, so the option is meaningful."""
     dm.style.use("report-kr")
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     ax.bar(["가", "나"], [4e11, 1e12])

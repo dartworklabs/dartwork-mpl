@@ -181,7 +181,7 @@ class TestDates:
 
     @pytest.fixture(autouse=True)
     def _concise_dates(self):
-        """These pin the 0.6.0 concise words, one config line away now."""
+        """These pin matplotlib's concise words: the four-digit concise option."""
         with dm.config.override(tick_years=4, date_style="concise"):
             yield
 
@@ -359,7 +359,7 @@ class TestCrowdedDates:
 
     @pytest.fixture(autouse=True)
     def _concise_dates(self):
-        """These pin the 0.6.0 concise words, one config line away now."""
+        """These pin matplotlib's concise words: the four-digit concise option."""
         with dm.config.override(tick_years=4, date_style="concise"):
             yield
 

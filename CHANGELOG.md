@@ -12,14 +12,16 @@ a request for another format gets that format.
 
 ### Changed
 
-- **Two-digit years on untouched axes.** Year axes read `16, 18, 20 … 24`,
-  monthly dates `23.01, 23.07, 24.01`, quarterly dates `23.Q1, 23.Q3`
+- **Two-digit years on untouched axes.** An x axis whose data are integer
+  years (1900–2099: annual lines, bars, scatter) ticks whole years only and
+  reads `16, 18, 20 … 24` (no more `2005.0, 2007.5`, nor a rounded `08`);
+  monthly dates read `23.01, 23.07, 24.01`, quarterly dates `23.Q1, 23.Q3`
   (`dm.format_axis_dates` and dated categories too). Korean figures print the
-  same text, without the `년` suffix. Back to 0.6.0:
-  `dm.config.override(tick_years=4, date_style="concise")`.
+  same text, without the `년` suffix. Other formats on request:
+  `tick_years=4` (`2016`), `date_style="concise"` (`23, May, Sep`).
 - **Korean figures count in 만/억/조 from 1,000,000** on axes you did not
-  format (`50만 … 250만`, `0.2조`). English figures keep `k/M/G/T`. Back to
-  0.6.0: `dm.config.override(number_ladder="si")`.
+  format (`50만 … 250만`, `0.2조`). English figures keep `k/M/G/T`;
+  `number_ladder="si"` gives `k/M/G/T` in Korean figures too.
 - Symmetric axes no longer print floating-point noise (`-0.4 … 0.4`).
 - **A formatter or locator you set is never replaced**, of any class. The
   defaults go only where matplotlib's own `axis.isDefault_majfmt` /
@@ -45,9 +47,10 @@ a request for another format gets that format.
   unit in the axis label and keeps the ticks plain (`0, 0.2 … 1.0` under
   `인구 (억명)`); `dm.axis_unit_of(ax)` returns the unit for value labels.
   The default rule is the largest unit (`scale="max"`).
-- `dm.config.tick_years`, `date_style` and `number_ladder` fields; all three
-  at once restore 0.6.0 text:
-  `dm.config.override(tick_years=4, date_style="concise", number_ladder="si")`.
+- `dm.config.tick_years` (2 or 4), `date_style` (`"period"` or `"concise"`)
+  and `number_ladder` (`"auto"`, `"si"` or `"myriad"`): the tick formats a
+  prompt can ask for, as `with dm.config.override(...):` around the code from
+  figure creation to the last `dm.simple_layout`, or set on `dm.config`.
 
 ### Fixed
 

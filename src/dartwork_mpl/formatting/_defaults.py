@@ -27,8 +27,9 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
   is thinned. ``config.date_style = "concise"`` gives matplotlib's concise
   words with two-digit years (``23, May, Sep``; ``23, Q2, Q3``), and when the
   figure's axis labels, titles or legend are Korean ``23년, 5월, 9월`` so a
-  Korean figure does not mix in English month names; ``tick_years = 4`` with
-  it is the 0.6.0 look (``2023, May``; ``2023년, 5월``). See
+  Korean figure does not mix in English month names; with
+  ``tick_years = 4`` too, matplotlib's own concise words (``2023, May``;
+  ``2023년, 5월``). See
   :mod:`._dates` and :mod:`._quarters`.
 
 ``dm.simple_layout`` calls it before measuring (``format_ticks=False`` opts
@@ -350,7 +351,7 @@ class CategoryDateFormatter(ticker.Formatter):
     labels, titles or legends are Korean at drawing time. Quarterly dates
     read quarters: ``23.Q1, 23.Q3 …``; concise ``23, Q2, Q3 …``
     (``23년, Q2 …``). With four-digit years and the concise style they read
-    as months, the 0.6.0 words.
+    as months, matplotlib's own concise words.
 
     ``years`` (2 or 4) and ``style`` (``"period"`` or ``"concise"``) are
     fixed when the formatter is made; ``None`` takes ``dm.config``'s

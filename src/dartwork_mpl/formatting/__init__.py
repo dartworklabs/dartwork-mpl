@@ -132,7 +132,8 @@ def format_axis_dates(
     ``style="concise"`` gives matplotlib's concise words with two-digit
     years (``24, Feb, Mar …``; ``24년, 2월, 3월 …`` when the figure's labels
     are Korean; quarters ``23, Q2, Q3 …``), and ``years=4, style="concise"``
-    the 0.6.0 words (``2024, Feb, Mar …``, quarters as months).
+    matplotlib's own concise words (``2024, Feb, Mar …``, quarters as
+    months).
 
     Replaces the axis's tick positions and labels; the bars, their order
     and the axis limits are unchanged. Call it after drawing and before

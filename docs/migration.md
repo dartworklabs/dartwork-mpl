@@ -19,17 +19,20 @@ raise `ModuleNotFoundError` without a replacement hint.
 
 One rule: with no request the library's look applies; ask for another format
 and you get that format. The defaults below changed for axes you did not
-format yourself; each has a one-line way back.
+format yourself; each other format is one `dm.config` field.
 
-| Default now | 0.6.0 text | Back to 0.6.0 |
+| Default now | Before | Ask for another format |
 |---|---|---|
-| years `16, 18 … 24`; dates `23.01, 23.07`; quarters `23.Q1` | `2016 …`; `2023, May, Sep` | `dm.config.override(tick_years=4, date_style="concise")` |
-| Korean figures: `50만 … 250만` from 1,000,000 | `0.5M … 2.5M` | `dm.config.override(number_ladder="si")` |
+| year data (integers 1900–2099) tick whole years: `16, 18 … 24` | `2016 …`, or `2005.0, 2007.5 …` | `tick_years=4`: `2016, 2018 …` |
+| dates `23.01, 23.07`; quarters `23.Q1` | `2023, May, Sep` | `date_style="concise"`: `23, May, Sep` (`2023, May, Sep` with `tick_years=4`) |
+| Korean figures: `50만 … 250만` from 1,000,000 | `0.5M … 2.5M` | `number_ladder="si"`: `0.5M … 2.5M` |
 
-All three at once:
-`dm.config.override(tick_years=4, date_style="concise", number_ladder="si")`,
-or set the fields on `dm.config` for the whole program. A formatter you set
-yourself is never replaced.
+Use them as `with dm.config.override(tick_years=4):`. The override applies to
+what runs inside the `with` block: wrap the code from figure creation to the
+last `dm.simple_layout` (and the save), or set the field on `dm.config` for
+the whole program. A formatter or locator you set yourself is never
+replaced, whatever its class (an explicit `ConciseDateFormatter` stays
+English in a Korean figure).
 
 To move the unit into the label instead of the ticks, use
 `dm.axis_unit(ax, "y", label="Exports (USD {unit})", ladder="finance")`

@@ -9,8 +9,8 @@ date axes read (:func:`date_formatter`):
   Sep`` (:class:`ShortConciseDateFormatter`), Korean ``23년, 5월`` in Korean
   figures (:class:`KoreanConciseDateFormatter` with ``digits=2``);
 - ``tick_years=4`` prints four-digit years; with ``"concise"`` that is
-  matplotlib's stock look (and :class:`KoreanConciseDateFormatter`'s
-  ``2024년, 3월``), the 0.6.0 output.
+  matplotlib's stock concise formatter (and
+  :class:`KoreanConciseDateFormatter`'s ``2024년, 3월``).
 
 Two-digit years never repeat on one axis: when two years in view share their
 last two digits (an axis spanning a century) the formatter prints four.
@@ -242,5 +242,9 @@ def date_formatter(
 
 
 def reads_quarters(years: Digits, style: DateStyle) -> bool:
-    """Whether quarterly data reads quarters: all but the 0.6.0 look."""
+    """Whether quarterly data reads quarters: all but four-digit concise.
+
+    Four-digit years in the concise style are matplotlib's own concise
+    formatter, which words quarters as months.
+    """
     return not (years == 4 and style == "concise")
