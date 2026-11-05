@@ -37,7 +37,8 @@ plt.close(fig)
   `인구 (억명)`, `dm.axis_unit_of(ax)` for value labels);
   `dm.format_axis_myriad(ax)` puts 만/억 on each tick and
   `dm.format_axis_year(ax)` prints `25년`. k/M/G/T in a Korean figure only
-  when asked: `dm.config.override(number_ladder="si")`.
+  when asked: `with dm.config.override(number_ladder="si"):` around the
+  code from figure creation to the last `dm.simple_layout`.
 
 ## Other languages
 

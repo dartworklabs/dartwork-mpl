@@ -93,7 +93,7 @@ class Config:
         always uses 만/억/조/경. Any other value raises ``ValueError`` where
         it is read.
         ``"si"`` is the option for k/M/G/T in Korean figures too
-        (``dm.config.override(number_ladder="si")``).
+        (``with dm.config.override(number_ladder="si"):``, or assign it).
     """
 
     adopt_orphan_tick_font: bool = False
