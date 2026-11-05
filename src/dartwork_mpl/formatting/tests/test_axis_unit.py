@@ -32,7 +32,7 @@ from dartwork_mpl.formatting._axis_wide import (
 from dartwork_mpl.formatting._label_unit import (
     LabelUnitFormatter,
     _sibling_template,
-    _unit_group,
+    _unit_slot,
     fill,
 )
 
@@ -747,36 +747,79 @@ class TestSharedAxes:
 
 
 @pytest.mark.parametrize(
-    ("label", "group", "ladder", "template"),
+    ("label", "installed", "ladder", "template"),
     [
-        ("비용 (원)", "({unit}원)", "myriad", "비용 ({unit}원)"),
-        ("비용(원)", "({unit}원)", "myriad", "비용({unit}원)"),
-        ("비용 (억원)", "({unit}원)", "myriad", "비용 ({unit}원)"),
-        ("비용 (단위: 원)", "({unit}원)", "myriad", "비용 (단위: 원) ({unit})"),
-        ("매출 (별도)", "({unit}원)", "myriad", "매출 (별도) ({unit})"),
-        ("Cost (USD)", "(USD {unit})", "finance", "Cost (USD {unit})"),
-        ("Cost (USD B)", "(USD {unit})", "finance", "Cost (USD {unit})"),
-        ("Temp (°C)", "({unit}W)", "si", "Temp (°C) ({unit})"),
-        ("비용 (원)", "({unit})", "myriad", "비용 (원) ({unit})"),
-        ("비용 (원) (억)", "({unit})", "myriad", "비용 (원) ({unit})"),
-        ("비용", "({unit}원)", "myriad", "비용 ({unit})"),
-        ("비용 ({unit}원)", "({unit}원)", "myriad", "비용 ({unit}원)"),
+        ("비용 (원)", "매출 ({unit}원)", "myriad", "비용 ({unit}원)"),
+        ("비용(원)", "매출 ({unit}원)", "myriad", "비용({unit}원)"),
+        ("비용 (억원)", "매출 ({unit}원)", "myriad", "비용 ({unit}원)"),
+        (
+            "비용 (단위: 원)",
+            "매출 ({unit}원)",
+            "myriad",
+            "비용 (단위: 원) ({unit})",
+        ),
+        ("매출 (별도)", "매출 ({unit}원)", "myriad", "매출 (별도) ({unit})"),
+        ("Cost (USD)", "Revenue (USD {unit})", "finance", "Cost (USD {unit})"),
+        (
+            "Cost (USD B)",
+            "Revenue (USD {unit})",
+            "finance",
+            "Cost (USD {unit})",
+        ),
+        (
+            "Cost (USD)\n(nominal)",
+            "Revenue (USD {unit})",
+            "finance",
+            "Cost (USD)\n(nominal) ({unit})",
+        ),
+        ("Temp (°C)", "Power ({unit}W)", "si", "Temp (°C) ({unit})"),
+        ("Loss [W]", "Power [{unit}W]", "si", "Loss [{unit}W]"),
+        ("Loss [kW]", "Power [{unit}W]", "si", "Loss [{unit}W]"),
+        ("Loss / W", "Power / {unit}W", "si", "Loss / {unit}W"),
+        ("Loss (W), net", "Power ({unit}W), net", "si", "Loss ({unit}W), net"),
+        (
+            "Loss (W)\n, net",
+            "Power ({unit}W), net",
+            "si",
+            "Loss ({unit}W)\n, net",
+        ),
+        ("Loss\n[kW]", "Power [{unit}W]", "si", "Loss\n[{unit}W]"),
+        ("비용 (원)", "매출 (원) ({unit})", "myriad", "비용 (원) ({unit})"),
+        (
+            "비용 (원) (억)",
+            "매출 (원) ({unit})",
+            "myriad",
+            "비용 (원) ({unit})",
+        ),
+        ("비용", "매출 ({unit}원)", "myriad", "비용 ({unit})"),
+        ("비용 ({unit}원)", "매출 ({unit}원)", "myriad", "비용 ({unit}원)"),
     ],
 )
-def test_sibling_template(label, group, ladder, template):
+def test_sibling_template(label, installed, ladder, template):
     rungs = {
         "myriad": MYRIAD_LADDER,
         "finance": FINANCE_LADDER,
         "si": SI_LADDER,
     }
-    assert _sibling_template(label, group, rungs[ladder]) == template
+    assert _sibling_template(label, installed, rungs[ladder]) == template
 
 
-def test_unit_group():
-    assert _unit_group("매출 ({unit}원)") == "({unit}원)"
-    assert _unit_group("Revenue (USD {unit})") == "(USD {unit})"
-    assert _unit_group("매출 (원) ({unit})") == "({unit})"
-    assert _unit_group("매출 {unit}원") == "({unit})"  # none: the append form
+@pytest.mark.parametrize(
+    ("template", "slot"),
+    [
+        ("매출 ({unit}원)", "({unit}원)"),
+        ("Revenue (USD {unit})", "(USD {unit})"),
+        ("Power [{unit}W]", "[{unit}W]"),
+        ("Power / {unit}W", "{unit}W"),
+        ("Power ({unit}W), net", "({unit}W)"),
+        ("매출 (원) ({unit})", "({unit})"),
+        ("매출 {unit}원", "{unit}원"),
+    ],
+)
+def test_unit_slot(template, slot):
+    span = _unit_slot(template)
+    assert span is not None and template[span[0] : span[1]] == slot
+    assert _unit_slot("매출") is None
 
 
 def test_exported_as_experimental():

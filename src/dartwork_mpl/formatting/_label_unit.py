@@ -96,19 +96,22 @@ class LabelUnitFormatter(AxisUnitFormatter):
     ``sharex`` / ``sharey`` share one formatter, so one call rescales them
     all. Each keeps its own template: the one :meth:`share_label` (another
     ``axis_unit`` call) gave it, else one made at the first draw from its
-    own label (:func:`_sibling_template`): trailing parentheses holding the
-    installing template's base unit take its unit group (``인구 (명)`` ->
-    ``인구 (억명)`` under ``가구 ({unit}명)``; ``Cost (USD)`` ->
-    ``Cost (USD B)``), any other label gets `` ({unit})`` (``인구`` ->
-    ``인구 (억)``), kept so later draws write the same text. An inner panel
-    whose label
-    ``label_outer`` emptied (tick labels hidden, a sibling showing them)
-    stays unlabelled; a template meant for it goes to the siblings that show
-    the ticks and have no label. On a log or other non-linear axis the
-    ticks span decades, which one label cannot name, so every tick prints
-    its whole value with thousands separators (``100``, ``1,000,000``), the
-    label carries no unit and :attr:`unit` is the empty one
-    (``Unit(1.0, "")``).
+    own label (:func:`_sibling_template`): the installing template's unit
+    slot - its ``( )`` or ``[ ]`` group or the word holding ``{unit}`` - is
+    recognised in the label with its base unit or a ladder unit already
+    written (``인구 (명)`` -> ``인구 (억명)`` under ``가구 ({unit}명)``;
+    ``Cost (USD)`` -> ``Cost (USD B)``; ``Loss [W]`` -> ``Loss [kW]``), any
+    other label gets `` ({unit})`` (``인구`` -> ``인구 (억)``). A label
+    someone sets later (an edit, ``dm.wrap_axis_labels``) is read the same
+    way, so its unit follows the ticks and is never doubled. An inner panel
+    whose label ``label_outer`` emptied (tick labels hidden, a sibling
+    showing them) stays unlabelled. When no label would name the unit, the
+    first axis that shows the ticks carries it: the inner panel's template,
+    or just `` ({unit})`` after a visible label was emptied. On a log or
+    other non-linear axis the ticks span decades, which one label cannot
+    name, so every tick prints its whole value with thousands separators
+    (``100``, ``1,000,000``), the label carries no unit and :attr:`unit` is
+    the empty one (``Unit(1.0, "")``).
     """
 
     def __init__(
@@ -121,10 +124,15 @@ class LabelUnitFormatter(AxisUnitFormatter):
     ) -> None:
         super().__init__(ladder, unit, decimals=decimals)
         self._template = template
-        self._group = _unit_group(template)
+        # The installing template: where a sharing axes' label takes the unit.
+        self._installed = template
         self._shared: dict[Axis, str] = {}
         # The text last written to each label, to tell an edit from our own.
         self._wrote: dict[Axis, str] = {}
+        # A label's template before it was emptied (label_outer, set_ylabel("")).
+        self._emptied: dict[Axis, str] = {}
+        # The axis that showed the unit last draw only because no label did.
+        self._fallback: Axis | None = None
 
     @property
     def template(self) -> str:
@@ -154,20 +162,24 @@ class LabelUnitFormatter(AxisUnitFormatter):
     def _adopt_edits(self) -> None:
         """A label whose text is not the one last written was set by someone.
 
-        Its text becomes that label's template (:func:`_sibling_template`
-        with the installing unit group), so the edit stays and its unit
-        follows the ticks; an emptied label stays empty.
+        Its text becomes that label's template (:func:`_adopt`): the unit is
+        recognised where the label's own template or the installing one puts
+        it (a unit already written is kept, never doubled; line breaks from
+        ``dm.wrap_axis_labels`` stay), else appended. An emptied label stays
+        empty; its template is kept for :meth:`_last_place`.
         """
-        for axis in self.templates():
+        for axis, template in self.templates().items():
             last = self._wrote.get(axis)
             text = axis.label.get_text()
             if last is None or text == last:
                 continue
-            made = (
-                _sibling_template(text, self._group, self._ladder)
-                if text.strip()
-                else ""
+            made = _adopt(
+                text,
+                [t for t in (template, self._installed) if t],
+                self._ladder,
             )
+            if not made and template:
+                self._emptied[axis] = template
             if axis is self.axis:
                 self._template = made
             else:
@@ -185,9 +197,8 @@ class LabelUnitFormatter(AxisUnitFormatter):
 
         Takes a label someone set since the last draw as its new template
         (:meth:`_adopt_edits`), adopts a sibling that shares the ticker and
-        has a label but no template, leaves an inner unlabelled panel alone
-        and hands its template to the siblings that show the ticks and have
-        no label.
+        has a label of its own but no template (not text this formatter
+        wrote), and leaves an inner unlabelled panel alone.
         """
         own = self.axis
         if not isinstance(own, Axis):
@@ -196,21 +207,49 @@ class LabelUnitFormatter(AxisUnitFormatter):
         siblings = _sharing(own)
         for other in siblings:
             text = other.label.get_text()
-            if other is not own and other not in self._shared and text.strip():
+            if (
+                other is not own
+                and other not in self._shared
+                and text.strip()
+                and text != self._wrote.get(other)
+            ):
                 self._shared[other] = _sibling_template(
-                    text, self._group, self._ladder
+                    text, self._installed, self._ladder
                 )
-        written: dict[Axis, str] = {}
-        handed: list[str] = []
-        for axis, template in self.templates().items():
-            if not _inner_unlabelled(axis, siblings):
-                written[axis] = template
-            elif template:
-                handed.append(template)
-        for other in siblings:
-            if handed and other not in written and _shows_ticks(other):
-                self._shared[other] = written[other] = handed[0]
-        return written
+        return {
+            axis: template
+            for axis, template in self.templates().items()
+            if not _inner_unlabelled(axis, siblings)
+        }
+
+    def _last_place(self, written: dict[Axis, str]) -> tuple[Axis, str] | None:
+        """Where the unit goes when no label written this draw names it.
+
+        Scaled ticks need a label that says so. When every label is empty
+        or hidden, the first sharing axis that shows the ticks takes the
+        template of an inner panel that ``label_outer`` (or an inner
+        installer) left empty, else just `` ({unit})``.
+        """
+        own = self.axis
+        if not isinstance(own, Axis):
+            return None
+        if any(
+            template and axis.get_visible() and axis.label.get_visible()
+            for axis, template in written.items()
+        ):
+            return None
+        siblings = _sharing(own)
+        source = next(
+            (
+                template or self._emptied.get(axis, "")
+                for axis, template in self.templates().items()
+                if _inner_unlabelled(axis, siblings)
+                and (template or self._emptied.get(axis))
+            ),
+            f"({_PLACEHOLDER})",
+        )
+        target = next((axis for axis in siblings if _shows_ticks(axis)), None)
+        return None if target is None else (target, source)
 
     @property
     def unit(self) -> Unit | None:
@@ -239,7 +278,20 @@ class LabelUnitFormatter(AxisUnitFormatter):
         unit = self.unit
         if unit is None:
             return
-        for axis, template in self.labels().items():
+        written = self.labels()
+        previous, self._fallback = self._fallback, None
+        last_place = self._last_place(written)
+        if last_place is not None:
+            target, template = last_place
+            written[target] = template
+            self._fallback = target
+        if (
+            previous is not None
+            and previous not in written
+            and previous.label.get_text() == self._wrote.get(previous)
+        ):
+            written[previous] = ""  # no longer the last place: clear it
+        for axis, template in written.items():
             text = fill(template, unit.label)
             axis.label.set_text(text)
             self._wrote[axis] = text
@@ -257,44 +309,131 @@ def _template(label: str) -> str:
     return f"{label} ({_PLACEHOLDER})" if label.strip() else f"({_PLACEHOLDER})"
 
 
-# The parenthesised group of a template that holds the unit: ``({unit}명)``.
-_UNIT_GROUP = re.compile(r"\([^()]*\{unit\}[^()]*\)")
-# A label that ends in a parenthesised group: ``인구 (명)``, ``Cost (USD)``.
-_TRAILING_GROUP = re.compile(
-    r"^(?P<text>.*?)(?P<gap>\s*)(?P<group>\([^()]*\))(?P<tail>\s*)$", re.DOTALL
-)
+_BRACKETS = (("(", ")"), ("[", "]"))
 
 
-def _unit_group(template: str) -> str:
-    """The last parenthesised group of ``template`` that holds ``{unit}``.
+def _unit_slot(template: str) -> tuple[int, int] | None:
+    """Where ``template`` holds the unit: the span of its unit slot.
 
-    ``인구 ({unit}명)`` -> ``({unit}명)``; ``Exports (USD {unit})`` ->
-    ``(USD {unit})``. A template with none (or the appended `` ({unit})``
-    of ``label=None``) gives ``({unit})``, the append form.
+    The innermost ``( )`` or ``[ ]`` group around the last ``{unit}``
+    (``({unit}명)``, ``(USD {unit})``, ``[{unit}W]``), else the run of
+    non-space characters around it (``{unit}W`` in ``Power / {unit}W``).
+    ``None`` when the template has no ``{unit}``.
     """
-    groups = _UNIT_GROUP.findall(template)
-    return groups[-1] if groups else f"({_PLACEHOLDER})"
+    at = template.rfind(_PLACEHOLDER)
+    if at < 0:
+        return None
+    after = at + len(_PLACEHOLDER)
+    best: tuple[int, int] | None = None
+    for opener, closer in _BRACKETS:
+        start = template.rfind(opener, 0, at)
+        stop = template.find(closer, after)
+        if start < 0 or stop < 0:
+            continue
+        inside = template[start + 1 : at] + template[after:stop]
+        if any(mark in inside for pair in _BRACKETS for mark in pair):
+            continue
+        if best is None or start > best[0]:
+            best = (start, stop + 1)
+    if best is not None:
+        return best
+    start = max((m.end() for m in re.finditer(r"\s", template[:at])), default=0)
+    space = re.search(r"\s", template[after:])
+    return start, after + space.start() if space else len(template)
 
 
-def _sibling_template(label: str, group: str, ladder: Sequence[Unit]) -> str:
-    """A shared sibling's template, made from its own label.
+def _loose(text: str) -> str:
+    """``text`` as a pattern: literal words, any whitespace between them."""
+    return r"\s+".join(re.escape(word) for word in text.split())
 
-    ``group`` is the installing template's unit group (:func:`_unit_group`).
-    When the label's trailing parentheses read as that group with any unit
-    of ``ladder`` (``(명)`` or ``(억명)`` for ``({unit}명)``; ``(USD)`` or
-    ``(USD B)`` for ``(USD {unit})``), the group takes their place, so the
-    unit goes where the installer puts it and is never doubled. Any other
-    label gets `` ({unit})`` appended (``(별도)``, ``(2024)``, ``(est.)``,
-    a second line, or every label when the installer itself appends).
+
+def _slot_pattern(slot: str, ladder: Sequence[Unit]) -> str:
+    """A pattern for ``slot`` with any unit of ``ladder`` (or none) in it.
+
+    The unit is the named group ``unit``; whitespace (line breaks included,
+    as ``dm.wrap_axis_labels`` puts in) may vary. A slot that is not a
+    bracket group must stand as a whole word.
     """
+    before, _, after = slot.partition(_PLACEHOLDER)
+    symbols = sorted(
+        (u.label for u in ladder if u.label), key=len, reverse=True
+    )
+    units = "|".join(re.escape(symbol) for symbol in symbols)
+    body = rf"{_loose(before)}\s*(?P<unit>{units})?\s*{_loose(after)}"
+    if slot[:1] in "([":
+        return body
+    return rf"(?<!\S){body}(?!\S)"
+
+
+def _recognise(
+    label: str, template: str, ladder: Sequence[Unit], *, anywhere: bool
+) -> str | None:
+    """``label`` with its unit slot read the way ``template`` writes it.
+
+    Not ``anywhere``: the slot must sit where the template puts it, before
+    the template's own trailing text (``, net``), at the end of the label;
+    it may hold any ladder unit or none (``(명)``, ``(억명)``). ``anywhere``:
+    the last slot in the label that holds a ladder unit, so a unit already
+    written is recognised wherever an edit moved it, never doubled. The
+    unit there becomes ``{unit}``; a slot without one takes the template's
+    slot. ``None`` when nothing matches.
+    """
+    span = _unit_slot(template)
+    if span is None:
+        return None
+    slot, tail = template[span[0] : span[1]], template[span[1] :]
+    pattern = _slot_pattern(slot, ladder)
+    if anywhere:
+        found = [m for m in re.finditer(pattern, label) if m["unit"]]
+        match = found[-1] if found else None
+    else:
+        match = re.search(
+            rf"(?P<slot>{pattern})\s*{_loose(tail)}\s*\Z", label, re.DOTALL
+        )
+    if match is None:
+        return None
+    if match["unit"]:
+        return (
+            label[: match.start("unit")]
+            + _PLACEHOLDER
+            + label[match.end("unit") :]
+        )
+    start, end = match.span("slot") if not anywhere else match.span()
+    return label[:start] + slot + label[end:]
+
+
+def _adopt(label: str, templates: Sequence[str], ladder: Sequence[Unit]) -> str:
+    """The template for a label someone wrote, recognising the unit slot.
+
+    Tried in order: the label already holds ``{unit}``; each template's
+    slot where that template puts it; a slot holding a ladder unit anywhere
+    (the unit written last, kept rather than doubled); otherwise
+    `` ({unit})`` appended. An empty label stays empty.
+    """
+    if not label.strip():
+        return ""
     if _PLACEHOLDER in label:
         return label
-    match = _TRAILING_GROUP.match(label)
-    if match is not None:
-        written = fill(match["group"], "")
-        if any(written == fill(group, rung.label) for rung in ladder):
-            return f"{match['text']}{match['gap']}{group}{match['tail']}"
+    for anywhere in (False, True):
+        for template in templates:
+            made = _recognise(label, template, ladder, anywhere=anywhere)
+            if made is not None:
+                return made
     return _template(label)
+
+
+def _sibling_template(label: str, template: str, ladder: Sequence[Unit]) -> str:
+    """A shared sibling's template, made from its own label.
+
+    ``template`` is the installing template. The sibling's text takes the
+    unit only where it holds that template's unit slot - its base unit
+    (``(명)`` for ``({unit}명)``, ``(USD)`` for ``(USD {unit})``, ``[W]``
+    for ``[{unit}W]``) at the template's place, or a ladder unit already
+    written (``(억명)``, ``(USD B)``), never doubled. Any other label gets
+    `` ({unit})`` appended (``(별도)``, ``(2024)``, ``(est.)``, a second
+    line, or every label when the installer itself appends).
+    """
+    return _adopt(label, [template], ladder)
 
 
 def _ladder(name: str, ax: Axes, template: str) -> tuple[Unit, ...]:
@@ -342,8 +481,12 @@ def axis_unit(
     ``"Cost (USD)"`` -> ``"Cost (USD B)"``), any other sibling label gets
     it appended (``"인구"`` -> ``"인구 (억)"``; all of them with
     ``label=None``). A label you set later (``ax.set_ylabel(...)``, on any
-    of these axes) becomes that label's template the same way; an emptied
-    label stays empty. Call ``axis_unit`` on each (``for a in axes: dm.axis_unit(a, "y",
+    of these axes, or ``dm.wrap_axis_labels``) becomes that label's
+    template the same way, the unit you see in it recognised wherever this
+    label's template puts it (``[kW]``, ``/ kW``, ``(kW), net``), never
+    doubled. An emptied label stays empty unless no other label would show
+    the unit of scaled ticks; then the axis that shows the ticks carries it.
+    Call ``axis_unit`` on each (``for a in axes: dm.axis_unit(a, "y",
     label=...)``) to give each its own template. An inner panel whose label
     ``label_outer`` emptied (the upper panels of a stacked ``sharex`` grid)
     stays unlabelled; the label goes on the panel that shows the ticks. On a
@@ -436,7 +579,9 @@ def axis_unit(
             )
             formatter.share_label(other, other_template, last)
     target.set_major_formatter(formatter)
-    if not _inner_unlabelled(target, _sharing(target)):
+    if _inner_unlabelled(target, _sharing(target)):
+        formatter.note_written(target, "")  # left empty: an edit shows later
+    else:
         text = fill(template, "")
         target.label.set_text(text)
         formatter.note_written(target, text)
