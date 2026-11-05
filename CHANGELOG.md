@@ -77,6 +77,14 @@ a request for another format gets that format.
   labels and `dm.format_axis_si` / `_millions` / `_billions` / `_myriad` no
   longer emit a `MatplotlibDeprecationWarning` about `Formatter.locs` on
   every draw.
+- **`ax.ticklabel_format` on a year axis.** After `dm.simple_layout` it
+  raised `AttributeError: This method only works with the ScalarFormatter`,
+  and before it the request was dropped. The year formatter is now
+  matplotlib's `ScalarFormatter`, and what was asked of matplotlib's own
+  formatter before the layout carries over, so both orders draw the same
+  ticks: `useOffset=False` and `style="plain"` keep `14 … 24`; an exponent
+  or offset you ask for (`scilimits=(0, 0)`, `useOffset=2000`) reads as
+  matplotlib writes it, on whole-year ticks.
 
 ## [0.6.0] - 2026-11-05
 

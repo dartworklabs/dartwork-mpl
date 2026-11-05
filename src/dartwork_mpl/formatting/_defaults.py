@@ -91,6 +91,7 @@ from ._quarters import (
 from ._years import (
     WholeYearLocator,
     YearTickFormatter,
+    requested_format,
     requested_params,
     year_data,
 )
@@ -546,7 +547,9 @@ def _year_axis(
     Matplotlib's own
     locator gives way to :class:`WholeYearLocator`, which carries what
     someone asked of it in place (``ax.locator_params(axis="x", nbins=3)``),
-    and its own formatter to :class:`YearTickFormatter`. A locator or
+    and its own formatter to :class:`YearTickFormatter`, which carries what
+    was asked of that in place (``ax.ticklabel_format(axis="x",
+    useOffset=False)``; :func:`requested_format`). A locator or
     formatter someone set stays. Under a locator someone set
     (``MaxNLocator``, pinned ticks) the year formatter decides at each draw:
     years while every tick in view is a whole year (``05, 10``), else every
@@ -560,7 +563,10 @@ def _year_axis(
         axis.set_major_locator(WholeYearLocator(**asked))
         changed = 1
     if axis.isDefault_majfmt:
-        axis.set_major_formatter(YearTickFormatter(digits, suffix))
+        format_asked = requested_format(axis.get_major_formatter())
+        axis.set_major_formatter(
+            YearTickFormatter(digits, suffix, **format_asked)
+        )
         changed = 1
     return changed
 
