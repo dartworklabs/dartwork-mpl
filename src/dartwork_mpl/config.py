@@ -69,15 +69,19 @@ class Config:
         font change can trigger a re-layout on the next draw. Default is
         off so the common path stays quiet.
     tick_years : {2, 4}, default ``2``
-        Spacing, in years, between year ticks that the date-axis helpers
-        in :mod:`dartwork_mpl.formatting` place when they choose year
-        locations. Opt out with ``dm.config.override(tick_years=4)`` (or
-        assign ``4``) to keep the wider four-year spacing.
+        Digits of the year in tick labels on axes nobody formatted (integer
+        year axes and date axes, via ``dm.simple_layout``) and in
+        ``dm.format_axis_dates``: ``24``, ``24.01``, ``24.Q1``. An axis whose
+        two-digit years would repeat (a century in view) prints four on its
+        own. Opt out with ``dm.config.override(tick_years=4)`` (or assign
+        ``4``) for ``2024``, ``2024.01``.
     date_style : {"period", "concise"}, default ``"period"``
-        Label style the date-axis helpers apply: ``"period"`` writes
-        two-digit years with a trailing period (for example ``24.``),
-        ``"concise"`` keeps matplotlib's ``ConciseDateFormatter`` labels.
-        Opt out with ``dm.config.override(date_style="concise")``.
+        Date tick words on the same axes: ``"period"`` writes every tick as
+        a whole date (``23.01``, ``23.01.15``, quarterly data ``23.Q1``);
+        ``"concise"`` writes matplotlib's concise words (``23, May, Sep``;
+        ``23년, 5월`` in Korean figures; quarters ``23, Q2``). With
+        ``tick_years=4``, ``"concise"`` is the 0.6.0 look
+        (``dm.config.override(tick_years=4, date_style="concise")``).
     number_ladder : {"auto", "si", "myriad"}, default ``"auto"``
         Unit ladder used when ``dm.axis_unit`` abbreviates large numbers.
         ``"auto"`` picks 만/억/조 for Korean figures and k/M/B otherwise;
