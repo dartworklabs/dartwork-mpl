@@ -4,6 +4,7 @@ Registers custom fonts from the package's asset/font directory with
 matplotlib's internal font manager.
 """
 
+import logging
 import threading
 import warnings
 from collections.abc import Mapping
@@ -42,6 +43,28 @@ _FONT_SUFFIXES: frozenset[str] = frozenset({".ttf", ".otf"})
 # file's other name-table families (name IDs 1/16/21, e.g. "Inter Black"
 # at weight 400); those stay resolvable but are not curated families.
 _PRIMARY_ENTRIES: set[tuple[str, str]] = set()
+
+# Bundled fallback-chain families that ship exactly one weight by design.
+# Matplotlib >= 3.11 logs "Failed to find font weight ..." whenever such a
+# family is consulted for a light/bold request; the substitution is the
+# intended behaviour, so only those records are dropped.
+# (derived below from the fallback-chain constants; a test pins it to the
+# registry's one-weight families.)
+_WEIGHT_MISS = "findfont: Failed to find font weight %s for %s, now using %s."
+
+
+class _SingleWeightFallbackFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        return not (
+            record.msg == _WEIGHT_MISS
+            and isinstance(args, tuple)
+            and len(args) == 3
+            and args[1] in _SINGLE_WEIGHT_FALLBACKS
+        )
+
+
+_WEIGHT_FILTER = _SingleWeightFallbackFilter()
 _BUNDLED_FONT_WEIGHT_OVERRIDES: Mapping[str, int] = MappingProxyType(
     {
         # Both files report OS/2 weight 250, which makes Matplotlib choose
@@ -218,6 +241,9 @@ _FALLBACK_TAIL_FAMILIES: tuple[str, ...] = (
     "Noto Sans Math",
     "Noto Sans Symbols",
     "Noto Sans Symbols 2",
+)
+_SINGLE_WEIGHT_FALLBACKS: frozenset[str] = frozenset(
+    {"Noto Sans CJK KR", *_FALLBACK_TAIL_FAMILIES}
 )
 
 FONTS: Mapping[str, FontFamily] = MappingProxyType(
@@ -691,6 +717,9 @@ def _add_fonts() -> None:
             _PRIMARY_ENTRIES.add(
                 (str(Path(primary.fname).resolve()), primary.name)
             )
+    logger = logging.getLogger("matplotlib.font_manager")
+    if _WEIGHT_FILTER not in logger.filters:
+        logger.addFilter(_WEIGHT_FILTER)
 
     _correct_bundled_weight_metadata()
 
