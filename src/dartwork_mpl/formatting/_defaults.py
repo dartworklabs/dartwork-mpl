@@ -10,8 +10,12 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 - from one million the axis takes the largest tick's SI unit (``0.5M …
   2.5M``), as ``dm.format_axis_si`` does, unless that needs more than two
   decimals;
-- smaller axes (``0, 250 … 750``; ``0.5, 1.0``), x axes whose ticks all sit
-  in 1000-2999 (years), log and category axes, colorbars and any axis with a
+- x axes whose ticks are integer years 1900-2099 read two digits (``16, 18,
+  20``; four when two would print alike, or with ``config.tick_years = 4``);
+  an integer axis in that range that is not years (elevations) reads the
+  same way, so opt out with ``tick_years=4`` or a formatter of your own;
+- smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
+  sit in 1000-2999 (years), log and category axes, colorbars and any axis with a
   formatter someone chose keep theirs;
 - date axes are concise in every preset (``date.converter: concise``:
   ``2024, Mar, May … 2025``); when the figure's axis labels, titles or legend
@@ -52,8 +56,10 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 
 from .._figure_geometry import get_renderer
+from ..config import config
 from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import fewest_exact_decimals
+from ._years import YearTickFormatter, is_year_axis
 
 __all__ = [
     "CategoryDateFormatter",
@@ -352,6 +358,17 @@ def apply_default_tick_format(fig: Figure) -> int:
     """
     from . import _SI_LADDER  # defined after this module is imported
 
+    tick_years = config.tick_years
+    date_style = config.date_style
+    if tick_years not in (2, 4):
+        raise ValueError(
+            f"config.tick_years must be 2 or 4, got {tick_years!r}"
+        )
+    if date_style not in ("period", "concise"):
+        raise ValueError(
+            "config.date_style must be 'period' or 'concise', "
+            f"got {date_style!r}"
+        )
     changed = 0
     korean = _korean_labels(fig)
     for ax in fig.axes:
@@ -380,6 +397,11 @@ def apply_default_tick_format(fig: Figure) -> int:
             if not _untouched(axis) or axis.get_scale() != "linear":
                 continue
             ticks = _visible_ticks(axis)
+            if which == "x" and tick_years == 2 and is_year_axis(ticks):
+                suffix = "년" if korean and date_style == "concise" else ""
+                axis.set_major_formatter(YearTickFormatter(2, suffix))
+                changed += 1
+                continue
             if not ticks or max(abs(t) for t in ticks) < _SEPARATOR_FROM:
                 continue
             if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):

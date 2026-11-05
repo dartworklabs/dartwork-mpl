@@ -113,7 +113,7 @@ class TestLeftAlone:
         ax.plot(np.arange(2012, 2024), np.linspace(1, 3, 12))
         dm.simple_layout(fig)
         assert all("," not in t for t in _drawn(ax, "x"))
-        assert "2016" in _drawn(ax, "x")
+        assert "16" in _drawn(ax, "x")
 
     def test_chosen_formatter_wins(self):
         fig, ax = _fig()
