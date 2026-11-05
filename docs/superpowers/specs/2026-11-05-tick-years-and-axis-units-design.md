@@ -189,6 +189,7 @@ matching lines above:
   visible tick is whole and plain numbers otherwise, decided per draw; bars inside
   one year's slot, `stackplot` / `fill_between` outlines on whole numbers and a
   `secondary_xaxis` showing years count as year data; one `dm.axis_unit` call
-  writes every label sharing the ticker (a sibling's unit goes inside its trailing
-  parentheses: `비용 (억원)`, `Cost (USD B)`) except an inner panel `label_outer`
-  emptied.
+  writes every label sharing the ticker except an inner panel `label_outer`
+  emptied: trailing parentheses holding the template's base unit take its unit
+  group (`(원)` → `(억원)`, `(USD)` → `(USD B)`, never doubled), any other label
+  appends; a label set after a draw becomes its new template.
