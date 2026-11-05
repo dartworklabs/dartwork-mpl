@@ -135,12 +135,16 @@ _OFF_IN_DEFAULT_NUMBERS = (
 )
 
 
-def _met_by_default_numbers(name: str, value: object) -> bool:
+def _met_by_default_numbers(name: str, value: object, *, scaled: bool) -> bool:
     """Whether a ScalarFormatter setting asks nothing these numbers lack.
 
     They have no offset, no exponent, no math text and no locale, so turning
-    any of those off (``False``, or ``None``: the rc default) is met.
+    any of those off (``False``, or ``None``: the rc default) is met, except
+    ``style="plain"`` (``scientific=False``) on an axis the library scales
+    (``0.5M``): plain asks for full numbers.
     """
+    if name == "scientific" and scaled:
+        return False
     return name in _OFF_IN_DEFAULT_NUMBERS and (value is None or value is False)
 
 
@@ -157,14 +161,18 @@ class DefaultNumberFormatter(AxisUnitFormatter):
     """Thousands separators below one million, the largest tick's unit above.
 
     ``ax.ticklabel_format`` and the ScalarFormatter setters behind it work
-    on it: a request these numbers already meet (``useOffset=False``,
-    ``style="plain"``) keeps them; a request for matplotlib's own notation
-    (scientific, power limits, an offset, math text, locale) puts
-    matplotlib's ``ScalarFormatter`` with that setting on the axis.
+    on it: a request these numbers already meet (``useOffset=False``;
+    ``style="plain"`` while the axis has no unit) keeps them, and is
+    remembered; a request for matplotlib's own notation (scientific, power
+    limits, an offset, math text, locale; plain full numbers on a ``0.5M``
+    axis) puts matplotlib's ``ScalarFormatter`` on the axis with every
+    remembered setting replayed first, then that one, as matplotlib's own
+    formatter would have them.
     """
 
     def __init__(self, ladder: Sequence[Unit]) -> None:
         super().__init__(ladder, "max")
+        self._kept: dict[str, object] = {}
 
     def set_useOffset(self, val: bool | float) -> None:
         """``ticklabel_format(useOffset=...)``; see the class docstring."""
@@ -186,8 +194,16 @@ class DefaultNumberFormatter(AxisUnitFormatter):
         """``ticklabel_format(useLocale=...)``; see the class docstring."""
         self._asked("useLocale", val)
 
+    def scales(self) -> bool:
+        """Whether the axis prints in a unit (``0.5M``) at its current ticks."""
+        if self._plan is None and isinstance(self.axis, Axis):
+            self.set_locs(list(self.axis.get_majorticklocs()))
+        unit = self._plan.axis_unit if self._plan is not None else None
+        return unit is not None and unit.factor != 1.0
+
     def _asked(self, name: str, value: object) -> None:
-        if _met_by_default_numbers(name, value):
+        if _met_by_default_numbers(name, value, scaled=self.scales()):
+            self._kept[name] = value
             return
         axis = self.axis
         if not isinstance(axis, Axis):
@@ -196,8 +212,13 @@ class DefaultNumberFormatter(AxisUnitFormatter):
                 "notation to its axis: call set_axis first"
             )
         stock = ticker.ScalarFormatter()
-        _SCALAR_SETTERS[name](stock, value)  # type: ignore[operator]
+        for kept, kept_value in [*self._kept.items(), (name, value)]:
+            _SCALAR_SETTERS[kept](stock, kept_value)  # type: ignore[operator]
         axis.set_major_formatter(stock)
+
+    def wants_unit(self, values: Sequence[float]) -> bool:
+        """Whether these tick values would print in a unit (``0.5M``)."""
+        return bool(values) and self._axis_unit(values).factor != 1.0
 
     def _axis_unit(self, values: Sequence[float]) -> Unit:
         top = max(abs(v) for v in values)
@@ -792,10 +813,15 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):
                 continue  # years: 2024, not 2,024
+            numbers = DefaultNumberFormatter(ladder)
+            scaled = numbers.wants_unit(ticks)
             asked = requested_format(axis.get_major_formatter())
-            if not all(_met_by_default_numbers(*kv) for kv in asked.items()):
+            if not all(
+                _met_by_default_numbers(k, v, scaled=scaled)
+                for k, v in asked.items()
+            ):
                 continue  # matplotlib's notation asked of its formatter in place
-            axis.set_major_formatter(DefaultNumberFormatter(ladder))
+            axis.set_major_formatter(numbers)
             changed += 1
     return changed
 

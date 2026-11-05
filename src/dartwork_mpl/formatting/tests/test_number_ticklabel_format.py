@@ -134,3 +134,57 @@ def test_both_orders_draw_the_same_ticks():
         {"style": "sci", "scilimits": (0, 0)},
     ):
         assert _y(_chart(request_, "before")) == _y(_chart(request_, "after"))
+
+
+def _oracle(ax, *calls) -> tuple[list[str], str]:
+    """matplotlib's ScalarFormatter after the same setter calls, in order."""
+    oracle = mticker.ScalarFormatter()
+    oracle.set_axis(ax.yaxis)
+    for name, value in calls:
+        getattr(oracle, f"set_{name}")(value)
+    locs = list(ax.yaxis.get_majorticklocs())
+    labels = oracle.format_ticks(locs)
+    low, high = sorted(ax.yaxis.get_view_interval())
+    shown = [t for v, t in zip(locs, labels, strict=True) if low <= v <= high]
+    return shown, oracle.get_offset()
+
+
+def test_a_kept_setting_is_replayed_when_the_axis_is_handed_over():
+    """``style="plain"`` then ``scilimits=(0, 0)`` stays plain, as in matplotlib.
+
+    Review of PR #595, item 3 (Codex P2): the plain request was accepted
+    without a handoff and forgotten, so the later ``scilimits`` handed the
+    axis to a fresh ScalarFormatter with scientific notation on.
+    """
+    for calls in (
+        [{"style": "plain"}, {"scilimits": (0, 0)}],
+        [{"style": "plain", "scilimits": (0, 0)}],
+    ):
+        ax = _chart({}, "after", axis="y")
+        for request_ in calls:
+            ax.ticklabel_format(axis="y", **request_)
+        expected = _oracle(ax, ("scientific", False), ("powerlimits", (0, 0)))
+        assert _y(ax) == expected, calls
+        assert _y(ax)[1] == "" and "1e4" not in "".join(_y(ax)[0])
+
+
+MILLIONS = np.array([500_000, 900_000, 1_200_000, 2_500_000, 3_000_000])
+
+
+@pytest.mark.parametrize("order", ORDERS)
+def test_plain_on_a_unit_axis_prints_full_numbers(order):
+    """``style="plain"`` on ``0.5M … 3.0M`` asks for no scaling: full numbers.
+
+    Review of PR #595, item 6: the request was met by keeping the units.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(np.arange(len(MILLIONS)), MILLIONS)
+    if order == "before":
+        ax.ticklabel_format(axis="y", style="plain")
+        dm.simple_layout(fig)
+    else:
+        dm.simple_layout(fig)
+        ax.ticklabel_format(axis="y", style="plain")
+    labels, offset = _y(ax)
+    assert not any("M" in t for t in labels), labels
+    assert (labels, offset) == _oracle(ax, ("scientific", False))

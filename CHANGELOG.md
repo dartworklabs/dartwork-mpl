@@ -112,8 +112,10 @@ a request for another format gets that format.
   or offset you ask for (`scilimits=(0, 0)`, `useOffset=2000`) reads as
   matplotlib writes it, on whole-year ticks. The same holds on an axis with
   the library's default numbers (`1,750`; `0.5M`): `ax.ticklabel_format()`
-  no longer raises there, `useOffset=False` keeps `1,750`, and a request
-  for matplotlib's notation gets matplotlib's `ScalarFormatter`.
+  no longer raises there, `useOffset=False` keeps `1,750`, `style="plain"`
+  on a `0.5M … 3.0M` axis prints full numbers, and a request for
+  matplotlib's notation gets matplotlib's `ScalarFormatter`, with the
+  settings asked before it (`style="plain"`) kept.
 
 ## [0.6.0] - 2026-11-05
 

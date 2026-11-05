@@ -491,7 +491,10 @@ figure:
 
 Korean figures print the same dates and years, without a suffix.
 
-The rule: no request, the library default; a request, that format. A prompt
+The rule: no request, the library default; a request, that format.
+`ax.ticklabel_format(...)` is such a request: `style="plain"` prints full
+numbers (`500000`) where the default would read `0.5M`, and scientific
+notation or an offset gets matplotlib's own formatter. A prompt
 can ask for three other formats, one `dm.config` field each:
 `tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
 (matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
