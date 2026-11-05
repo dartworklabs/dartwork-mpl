@@ -22,6 +22,7 @@ import numpy.typing as npt
 __all__ = [
     "WholeYearLocator",
     "YearTickFormatter",
+    "requested_params",
     "two_digits_repeat",
     "whole_years",
     "year_data",
@@ -59,18 +60,85 @@ def two_digits_repeat(years: Sequence[int]) -> bool:
     return any(seen.setdefault(year % 100, year) != year for year in years)
 
 
+# MaxNLocator settings someone can change on matplotlib's own locator in
+# place (``ax.locator_params``, ``locator.set_params``), which leaves
+# ``isDefault_majloc`` set; the year locator carries them over.
+_CARRIED = {
+    "nbins": "_nbins",
+    "steps": "_steps",
+    "prune": "_prune",
+    "symmetric": "_symmetric",
+    "min_n_ticks": "_min_n_ticks",
+}
+_YEAR_STEPS = (1, 2, 5, 10)
+
+
+def _same(a: object, b: object) -> bool:
+    if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+        return bool(np.array_equal(np.asarray(a), np.asarray(b)))
+    return a == b
+
+
+def requested_params(locator: ticker.Locator) -> dict[str, Any]:
+    """The settings someone changed on matplotlib's own tick locator.
+
+    ``ax.locator_params(axis="x", nbins=3)`` and
+    ``ax.xaxis.get_major_locator().set_params(...)`` edit the default
+    ``AutoLocator`` in place. Returns each ``nbins``, ``steps``, ``prune``,
+    ``symmetric`` or ``min_n_ticks`` that differs from a fresh
+    ``AutoLocator``; ``{}`` for a locator that is not a ``MaxNLocator``.
+    """
+    if not isinstance(locator, ticker.MaxNLocator):
+        return {}
+    mine, fresh = vars(locator), vars(ticker.AutoLocator())
+    return {
+        name: mine.get(attr)
+        for name, attr in _CARRIED.items()
+        if not _same(mine.get(attr), fresh.get(attr))
+    }
+
+
 class WholeYearLocator(ticker.MaxNLocator):
     """Ticks on whole years, every 1, 2, 5, 10, 20, 50 … years.
 
     Matplotlib's tick count for the axis length (``nbins="auto"``) on whole
-    numbers only, so annual data never ticks ``2007.5``.
-    ``dm.simple_layout`` lowers ``nbins`` when the labels end up closer than
-    one em. A view narrower than two whole years falls back to fractions,
-    which :class:`YearTickFormatter` leaves unlabelled.
+    numbers only, so annual data never ticks ``2007.5``. ``requested``
+    MaxNLocator settings (from :func:`requested_params`: ``nbins=3`` asked
+    of matplotlib's locator) replace the defaults; ticks stay whole. Every
+    later :meth:`set_params` (``ax.locator_params``) is a request too.
+    ``dm.simple_layout`` lowers an unrequested ``nbins`` (:meth:`thin`) when
+    the labels end up closer than one em; a requested one is kept. A view
+    narrower than two whole years falls back to fractions, which
+    :class:`YearTickFormatter` leaves unlabelled.
     """
 
-    def __init__(self) -> None:
-        super().__init__(nbins="auto", steps=[1, 2, 5, 10], integer=True)
+    requested: frozenset[str] = frozenset()
+
+    def __init__(self, **requested: Any) -> None:
+        super().__init__(
+            **{
+                "nbins": "auto",
+                "steps": list(_YEAR_STEPS),
+                **requested,
+                "integer": True,
+            }
+        )
+        self.requested = frozenset(requested)
+
+    def set_params(self, **kwargs: Any) -> None:
+        """Set MaxNLocator parameters; each one set here is a request."""
+        super().set_params(**kwargs)
+        self.requested = self.requested | frozenset(kwargs)
+
+    @property
+    def nbins(self) -> int | Literal["auto"]:
+        """The tick-count ceiling (``"auto"``: from the axis length)."""
+        count: int | Literal["auto"] = vars(self)["_nbins"]
+        return count
+
+    def thin(self, nbins: int | Literal["auto"]) -> None:
+        """Set the library's own ``nbins`` (layout thinning), not a request."""
+        ticker.MaxNLocator.set_params(self, nbins=nbins)
 
 
 class YearTickFormatter(ticker.Formatter):

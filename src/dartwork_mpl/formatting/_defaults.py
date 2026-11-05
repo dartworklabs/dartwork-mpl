@@ -86,7 +86,13 @@ from ._quarters import (
     quarter_words,
     quarterly,
 )
-from ._years import WholeYearLocator, YearTickFormatter, whole_years, year_data
+from ._years import (
+    WholeYearLocator,
+    YearTickFormatter,
+    requested_params,
+    whole_years,
+    year_data,
+)
 
 __all__ = [
     "CategoryDateFormatter",
@@ -533,15 +539,18 @@ def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
     The data decide (:func:`year_data` over :func:`plotted_dates`, twins and
     shared axes included), not the ticks: ``dm.simple_layout`` refits the
     margins after this call and the ticks move with them. Matplotlib's own
-    locator gives way to :class:`WholeYearLocator` and its own formatter to
-    :class:`YearTickFormatter` (when the ticks in view are whole years); a
-    locator or formatter someone set stays. Returns 1 if anything changed.
+    locator gives way to :class:`WholeYearLocator`, which carries what
+    someone asked of it in place (``ax.locator_params(axis="x", nbins=3)``),
+    and its own formatter to :class:`YearTickFormatter` (when the ticks in
+    view are whole years); a locator or formatter someone set stays.
+    Returns 1 if anything changed.
     """
     if not year_data(plotted_dates(ax, "x")):
         return 0
     changed = 0
     if axis.isDefault_majloc:
-        axis.set_major_locator(WholeYearLocator())
+        asked = requested_params(axis.get_major_locator())
+        axis.set_major_locator(WholeYearLocator(**asked))
         changed = 1
     if axis.isDefault_majfmt and whole_years(_visible_ticks(axis)):
         axis.set_major_formatter(YearTickFormatter(digits, suffix))
@@ -694,10 +703,13 @@ def _thin_years(
 ) -> int:
     """Lower a year axis's tick count until its labels are one em apart.
 
-    Leaves rotated x labels alone. Tries ever fewer bins and keeps the
-    first that gives two or more ticks :data:`_MIN_DATE_GAP_EM` ems apart;
-    with none, the count is restored. Returns 1 when it changed, else 0.
+    Leaves rotated x labels and a requested ``nbins`` alone. Tries ever
+    fewer bins and keeps the first that gives two or more ticks
+    :data:`_MIN_DATE_GAP_EM` ems apart; with none, the count is restored.
+    Returns 1 when it changed, else 0.
     """
+    if "nbins" in locator.requested:
+        return 0
     label = axis.get_major_ticks(1)[0].label1
     if axis is axis.axes.xaxis and label.get_rotation() % 180:
         return 0
@@ -705,7 +717,7 @@ def _thin_years(
     if _date_label_gap_em(axis, locs, fig, renderer) >= _MIN_DATE_GAP_EM:
         return 0
     for nbins in range(max(len(locs) - 1, 1), 0, -1):
-        locator.set_params(nbins=nbins)
+        locator.thin(nbins)
         candidate = _view_locs(axis, locator())
         if len(candidate) < 2 or candidate == locs:
             continue
@@ -713,7 +725,7 @@ def _thin_years(
             _MIN_DATE_GAP_EM
         ):
             return 1
-    locator.set_params(nbins="auto")
+    locator.thin("auto")
     return 0
 
 

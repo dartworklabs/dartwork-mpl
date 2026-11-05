@@ -31,6 +31,7 @@ from dartwork_mpl.formatting._quarters import (
 from dartwork_mpl.formatting._years import (
     WholeYearLocator,
     YearTickFormatter,
+    requested_params,
     two_digits_repeat,
     whole_years,
     year_data,
@@ -249,6 +250,72 @@ def test_a_chosen_year_formatter_still_gets_whole_year_ticks():
     locs, labels = _shown(ax)
     assert len(locs) >= 2 and _whole(locs), locs
     assert labels == _two_digits(locs, "년"), labels
+
+
+@pytest.mark.parametrize(
+    ("ask", "expected"),
+    [
+        (lambda ax: ax.locator_params(axis="x", nbins=3), ["00", "10", "20"]),
+        (
+            lambda ax: ax.xaxis.get_major_locator().set_params(nbins=2),
+            ["00", "20"],
+        ),
+    ],
+    ids=["locator_params", "set_params"],
+)
+def test_a_requested_tick_count_stays_on_whole_years(ask, expected):
+    """A tick count asked of matplotlib's own locator is kept.
+
+    ``locator_params`` and ``set_params`` edit that locator in place and
+    leave ``isDefault_majloc`` set, so the year locator still goes in: it
+    carries the request, on whole years, and is not thinned below it
+    (review 2026-11-05, R1: ``nbins=3`` read ``00, 05 … 25``).
+    """
+    for width in ("9cm", "17cm"):
+        fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"))
+        ax.plot(np.arange(2000, 2025), np.arange(25))
+        ask(ax)
+        dm.simple_layout(fig)
+        locs, labels = _shown(ax)
+        assert labels == expected, (width, locs, labels)
+        assert isinstance(ax.xaxis.get_major_locator(), WholeYearLocator)
+        plt.close(fig)
+
+
+def test_a_tick_count_asked_after_the_layout_is_kept():
+    """The year locator is the axis's from then on: asking it again wins."""
+    fig, ax = plt.subplots(figsize=dm.figsize("6cm", "standard"))
+    ax.plot(np.arange(1995, 2025), np.arange(30))
+    dm.simple_layout(fig)
+    ax.locator_params(axis="x", nbins=8)
+    dm.simple_layout(fig)
+    locator = ax.xaxis.get_major_locator()
+    assert isinstance(locator, WholeYearLocator) and locator.nbins == 8
+    locs, labels = _shown(ax)
+    assert _whole(locs) and labels == _two_digits(locs), labels
+
+
+def test_requested_params_read_what_someone_changed():
+    fresh = mticker.AutoLocator()
+    assert requested_params(fresh) == {}
+    fresh.set_params(nbins=4, prune="lower", min_n_ticks=3)
+    assert requested_params(fresh) == {
+        "nbins": 4,
+        "prune": "lower",
+        "min_n_ticks": 3,
+    }
+    stepped = mticker.AutoLocator()
+    stepped.set_params(steps=[1, 3, 10])
+    assert list(requested_params(stepped)["steps"]) == [1, 3, 10]
+    assert requested_params(mticker.MultipleLocator(5)) == {}
+    locator = WholeYearLocator(nbins=3)
+    assert locator.requested == {"nbins"} and locator.nbins == 3
+    assert locator.tick_values(1998.8, 2025.2) == pytest.approx(
+        [1990, 2000, 2010, 2020, 2030]  # one past each edge, as matplotlib's
+    )
+    locator.thin(2)  # the library's own count: not a request
+    assert locator.requested == {"nbins"} and locator.nbins == 2
+    assert WholeYearLocator().requested == frozenset()
 
 
 def test_pinned_ticks_keep_their_places():
