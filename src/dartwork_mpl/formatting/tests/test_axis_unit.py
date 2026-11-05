@@ -502,6 +502,82 @@ class TestSharedAxes:
         fig.canvas.draw()
         assert [a.get_ylabel() for a in axes] == ["매출 (억)", "비용 (억)"]
 
+    @staticmethod
+    def _stacked(n: int = 2, **share: object) -> tuple[Figure, list[Axes]]:
+        dm.style.use("report-kr")
+        fig, axes = plt.subplots(
+            n, 1, figsize=dm.figsize("12cm", "standard"), **share
+        )
+        return fig, list(axes)
+
+    @pytest.mark.parametrize(
+        ("other", "expected"),
+        [("비용", "비용 (억)"), ("비용 (원)", "비용 (원) (억)")],
+    )
+    def test_one_call_on_sharey_labels_the_sibling(self, other, expected):
+        """One call rescales the shared ticks of every axes; each label says so.
+
+        A sibling without a template of its own takes the label=None rule:
+        its own label text plus `` ({unit})`` (review 2026-11-05, R4: the
+        sibling read ``비용 (원)`` over 억 ticks).
+        """
+        fig, axes = self._stacked(sharey=True)
+        for a, name in zip(axes, ("매출 (원)", other), strict=True):
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e11)
+            a.set_ylabel(name)
+        dm.axis_unit(axes[0], "y", label="매출 ({unit}원)")
+        dm.simple_layout(fig)
+        assert [a.get_ylabel() for a in axes] == ["매출 (억원)", expected]
+        assert _drawn(axes[1]) == ["0", "2,000", "4,000", "6,000"]
+        assert dm.validate_figure(fig, checks=("UNIT_DUP",)) == []
+        fig.canvas.draw()  # a repeat draw appends nothing
+        assert [a.get_ylabel() for a in axes] == ["매출 (억원)", expected]
+        axes[0].set_ylim(0, 6e12)  # both follow the shared ticks
+        fig.canvas.draw()
+        assert axes[1].get_ylabel() == expected.replace("억", "조")
+
+    @pytest.mark.parametrize("on", [0, 1], ids=["inner", "outer"])
+    def test_one_call_on_stacked_sharex_labels_the_bottom_only(self, on):
+        """The inner panel's x label stays empty, as ``label_outer`` left it.
+
+        Called on the inner (top) panel, the label goes where the shared
+        ticks are shown: the bottom panel.
+        """
+        fig, axes = self._stacked(sharex=True)
+        for a in axes:
+            a.plot(np.linspace(0, 3e8, 5), range(5))
+        dm.axis_unit(axes[on], "x", label="인구 ({unit}명)")
+        dm.simple_layout(fig)
+        assert [a.get_xlabel() for a in axes] == ["", "인구 (억명)"]
+        assert dm.axis_unit_of(axes[0], "x") == Unit(1e8, "억")
+
+    def test_stacked_sharex_loop_labels_the_bottom_only(self):
+        fig, axes = self._stacked(3, sharex=True)
+        for a in axes:
+            a.plot(np.linspace(0, 3e8, 5), range(5))
+            dm.axis_unit(a, "x", label="인구 ({unit}명)")
+        dm.simple_layout(fig)
+        assert [a.get_xlabel() for a in axes] == ["", "", "인구 (억명)"]
+        assert _drawn(axes[2], "x") == [
+            "0",
+            "0.5",
+            "1.0",
+            "1.5",
+            "2.0",
+            "2.5",
+            "3.0",
+        ]
+
+    def test_an_inner_label_someone_wrote_follows_the_unit(self):
+        """Only an empty inner label is left alone; a written one is kept up."""
+        fig, axes = self._stacked(sharex=True)
+        for a in axes:
+            a.plot(np.linspace(0, 3e8, 5), range(5))
+        axes[0].set_xlabel("상단")
+        dm.axis_unit(axes[1], "x", label="인구 ({unit}명)")
+        dm.simple_layout(fig)
+        assert [a.get_xlabel() for a in axes] == ["상단 (억)", "인구 (억명)"]
+
 
 def test_exported_as_experimental():
     assert {"axis_unit", "axis_unit_of"} <= set(dm.__all__)

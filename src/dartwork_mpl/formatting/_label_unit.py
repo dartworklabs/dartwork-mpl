@@ -53,15 +53,53 @@ def fill(template: str, unit: str) -> str:
     return re.sub(r"\s*\(\)", "", text)
 
 
+def _sharing(axis: Axis) -> list[Axis]:
+    """Every axis that shares ``axis``'s ticker (``sharex`` / ``sharey``)."""
+    ax = axis.axes
+    along_x = axis is ax.xaxis
+    group = ax.get_shared_x_axes() if along_x else ax.get_shared_y_axes()
+    members = group.get_siblings(ax)
+    fig = ax.get_figure(root=True)
+    order = fig.axes if fig is not None else []
+    members.sort(key=lambda m: order.index(m) if m in order else len(order))
+    axes = [m.xaxis if along_x else m.yaxis for m in members]
+    return [other for other in axes if other.major is axis.major]
+
+
+def _shows_ticks(axis: Axis) -> bool:
+    """Whether the axis prints its tick labels on its label's side."""
+    side = axis.get_label_position()
+    shown = axis.get_tick_params(which="major").get(f"label{side}", True)
+    return axis.get_visible() and bool(shown)
+
+
+def _inner_unlabelled(axis: Axis, siblings: Sequence[Axis]) -> bool:
+    """An inner panel of a shared grid whose empty label ``label_outer`` left.
+
+    Its tick labels are hidden on its label's side while a sibling shows
+    them, and its label is empty: the shared ticks are read elsewhere.
+    """
+    return (
+        not axis.label.get_text().strip()
+        and not _shows_ticks(axis)
+        and any(_shows_ticks(s) for s in siblings if s is not axis)
+    )
+
+
 class LabelUnitFormatter(AxisUnitFormatter):
     """Plain-number ticks with the axis unit written into the axis label.
 
     The unit and decimals are decided as in :class:`AxisUnitFormatter`
     (``unit`` is ``"max"``, ``"whole"`` or one ladder label). Each
     :meth:`set_locs` (every draw) writes ``fill(template, unit.label)`` to
-    the axis label, and to the label of every axis :meth:`share_label`
-    added: axes made with ``sharex`` / ``sharey`` share one formatter, and
-    each keeps its own template. On a log or other non-linear axis the
+    the axis label and to every axis sharing the ticker: axes made with
+    ``sharex`` / ``sharey`` share one formatter, so one call rescales them
+    all. Each keeps its own template: the one :meth:`share_label` (another
+    ``axis_unit`` call) gave it, else, at the first draw, its own label text
+    plus `` ({unit})`` (as ``label=None``). An inner panel whose label
+    ``label_outer`` emptied (tick labels hidden, a sibling showing them)
+    stays unlabelled; a template meant for it goes to the siblings that show
+    the ticks and have no label. On a log or other non-linear axis the
     ticks span decades, which one label cannot name, so every tick prints
     its whole value with thousands separators (``100``, ``1,000,000``), the
     label carries no unit and :attr:`unit` is the empty one
@@ -90,10 +128,37 @@ class LabelUnitFormatter(AxisUnitFormatter):
         self._shared[axis] = template
 
     def templates(self) -> dict[Axis, str]:
-        """Every axis whose label this formatter writes, with its template."""
+        """Every axis with a template here (labels it writes), and the template."""
         written = dict(self._shared)
         if isinstance(self.axis, Axis):
             written[self.axis] = self._template
+        return written
+
+    def labels(self) -> dict[Axis, str]:
+        """The labels this draw writes: each axis and its template.
+
+        Adopts a sibling that shares the ticker and has a label but no
+        template, leaves an inner unlabelled panel alone and hands its
+        template to the siblings that show the ticks and have no label.
+        """
+        own = self.axis
+        if not isinstance(own, Axis):
+            return dict(self._shared)
+        siblings = _sharing(own)
+        for other in siblings:
+            text = other.label.get_text()
+            if other is not own and other not in self._shared and text.strip():
+                self._shared[other] = _template(text)
+        written: dict[Axis, str] = {}
+        handed: list[str] = []
+        for axis, template in self.templates().items():
+            if _inner_unlabelled(axis, siblings):
+                handed.append(template)
+            else:
+                written[axis] = template
+        for other in siblings:
+            if handed and other not in written and _shows_ticks(other):
+                self._shared[other] = written[other] = handed[0]
         return written
 
     @property
@@ -123,7 +188,7 @@ class LabelUnitFormatter(AxisUnitFormatter):
         unit = self.unit
         if unit is None:
             return
-        for axis, template in self.templates().items():
+        for axis, template in self.labels().items():
             axis.label.set_text(fill(template, unit.label))
 
 
@@ -178,9 +243,14 @@ def axis_unit(
 
     The formatter owns the label text from then on: it rewrites the label on
     every draw, so change the label by calling ``axis_unit`` again. Axes made
-    with ``sharex`` / ``sharey`` share one formatter: call ``axis_unit`` on
-    each (``for a in axes: dm.axis_unit(a, "y", label=...)``); every label
-    keeps its own template and they read the same unit. On a log (or any
+    with ``sharex`` / ``sharey`` share one formatter, so one call rescales
+    the ticks of all of them and writes every label: a sibling's own label
+    gets the unit appended (``"비용"`` -> ``"비용 (억)"``); call
+    ``axis_unit`` on each (``for a in axes: dm.axis_unit(a, "y",
+    label=...)``) to give each its own template. An inner panel whose label
+    ``label_outer`` emptied (the upper panels of a stacked ``sharex`` grid)
+    stays unlabelled; the label goes on the panel that shows the ticks. On a
+    log (or any
     non-linear) axis the ticks span decades, which one label cannot name,
     so each tick prints its whole value with thousands separators (``100``,
     ``1,000,000``), the label carries no unit and :func:`axis_unit_of`
@@ -265,7 +335,8 @@ def axis_unit(
         if other is not target and other.major is target.major:
             formatter.share_label(other, other_template)
     target.set_major_formatter(formatter)
-    target.label.set_text(fill(template, ""))
+    if not _inner_unlabelled(target, _sharing(target)):
+        target.label.set_text(fill(template, ""))
     return formatter
 
 
