@@ -254,10 +254,11 @@ jobs:
 
   test-matplotlib:
     # A lock-only job cannot prove the published dependency range. Resolve
-    # the actual project with its minimum and latest supported 3.10 patch,
-    # and with the newest versions pyproject allows (latest-deps), which also
-    # runs the UI, formatting and font slices against NumPy / FastAPI /
-    # Starlette releases newer than uv.lock.
+    # the actual project with the oldest supported Python and the Matplotlib
+    # floor (minimum), and with the newest versions pyproject allows
+    # (latest-deps), which also runs the UI, formatting and font slices
+    # against NumPy / FastAPI / Starlette releases newer than uv.lock. The
+    # locked Matplotlib itself is covered by the visual job.
     strategy:
       fail-fast: false
       matrix:
@@ -265,12 +266,7 @@ jobs:
           - label: minimum
             python-version: "3.11"
             project: "."
-            pins: "matplotlib==3.10.1"
-            extra-tests: ""
-          - label: latest-3.10
-            python-version: "3.13"
-            project: "."
-            pins: "matplotlib==3.10.*"
+            pins: "matplotlib==3.11.0"
             extra-tests: ""
           - label: latest-deps
             python-version: "3.13"
@@ -307,10 +303,9 @@ jobs:
           uv pip install --python "$task_python" --resolution highest \
             "${{ matrix.project }}" "${pins[@]}" pytest pytest-cov pytest-mpl pytest-xdist
           uv pip check --python "$task_python"
-          # The 3.10.x and numpy<2.5 assertions hold in every cell while
-          # pyproject caps matplotlib<3.11 and numpy<2.5 (Matplotlib 3.10's
-          # dates.py trips NumPy 2.5's generic-unit deprecation).
-          "$task_python" -I -c 'import sys, matplotlib, numpy, PIL; print(sys.version); print(matplotlib.__version__, numpy.__version__, PIL.__version__); assert matplotlib.__version__.startswith("3.10."); assert tuple(map(int, numpy.__version__.split(".")[:2])) < (2, 5)'
+          # Every cell must resolve at or above the Matplotlib 3.11 floor the
+          # pixel baselines are made on.
+          "$task_python" -I -c 'import sys, matplotlib, numpy, PIL; print(sys.version); print(matplotlib.__version__, numpy.__version__, PIL.__version__); assert tuple(map(int, matplotlib.__version__.split(".")[:2])) >= (3, 11)'
           "$task_python" -m pytest tests/visual/test_visual_pixels.py \
             tests/test_shipped_colors_hash.py tests/docs/test_font_invariants.py \
             --mpl -v --no-cov \
