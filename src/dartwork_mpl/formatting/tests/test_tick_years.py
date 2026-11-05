@@ -773,31 +773,36 @@ def test_helpers():
         YearTickFormatter(3)  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize(
-    "x",
-    [
-        np.arange(10_000_000, dtype=float),  # not years: out of range
-        np.repeat(np.arange(1950, 2050), 100_000).astype(float),  # years
-    ],
-    ids=["numbers", "years"],
-)
-def test_year_detection_on_ten_million_points_is_quick(x):
+# Plotted values for the cost check; built inside the test, not at import.
+_POINTS = 2_000_000
+
+
+@pytest.mark.parametrize("kind", ["numbers", "years"])
+def test_year_detection_costs_a_few_numpy_passes(kind):
     """Every plain x axis is checked for year data on each layout.
 
     Review 2026-11-05, R5: ``np.unique`` and a Python loop over the raw
-    values took 0.6-1.9 s (numbers) and 2.3-3.6 s (years) on a 10M-point
-    line; vectorised it is about 0.05 s. The bound is generous for a loaded
-    machine; the best of three runs counts.
+    values took 0.6-3.6 s on a 10M-point line, about 200 times one numpy
+    pass over the same values. The check is relative, in this process: the
+    best of five detection runs against the best of five ``np.rint``
+    passes, interleaved so machine load hits both alike (re-review N6).
     """
+    if kind == "numbers":
+        x = np.arange(_POINTS, dtype=float)  # not years: out of range
+    else:
+        x = np.repeat(np.arange(1950, 2050), _POINTS // 100).astype(float)
     fig, ax = plt.subplots(figsize=dm.figsize("9cm"))
     ax.plot(x, np.zeros(len(x)), linewidth=0.3)
-    timings = []
-    for _ in range(3):
+    detect, one_pass = [], []
+    for _ in range(5):
         start = time.perf_counter()
         apply_default_tick_format(fig)
-        timings.append(time.perf_counter() - start)
-    assert min(timings) < 0.3, timings
-    assert year_data(x) == (x[0] == 1950)
+        detect.append(time.perf_counter() - start)
+        start = time.perf_counter()
+        np.rint(x)
+        one_pass.append(time.perf_counter() - start)
+    assert min(detect) < 30 * min(one_pass), (detect, one_pass)
+    assert year_data(x) == (kind == "years")
 
 
 # ---------------------------------------------------------------- date axes
