@@ -57,8 +57,9 @@ def test_set_colors_accepts_qualitative_default_and_axes_target() -> None:
     fig, ax = plt.subplots()
     try:
         dm.set_colors("vivid", ax=ax)
-        rows = list(ax._get_lines._cycler_items)
-        assert [row["color"] for row in rows] == discrete_colors("vivid", 8)
+        want = discrete_colors("vivid", 8)
+        drawn = [ax.plot([0, 1])[0].get_color() for _ in range(len(want) + 1)]
+        assert drawn == [*want, want[0]]  # eight in order, then wraps
     finally:
         plt.close(fig)
 

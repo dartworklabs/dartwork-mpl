@@ -52,8 +52,7 @@ is intentionally lean; add an extra only when you need it:
 | `[mcp]`      | the MCP server for AI assistants          | `fastmcp`, `httpx`    |
 | `[ui]`       | the interactive parameter viewer          | `fastapi`, `uvicorn`  |
 
-The UI extra requires FastAPI >=0.110.0,<0.137. Newer versions currently
-cause the UI to reject every request.
+The UI extra requires FastAPI >=0.110.0.
 
 ```shell
 pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]

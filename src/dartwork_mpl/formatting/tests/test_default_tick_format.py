@@ -286,9 +286,8 @@ class TestDates:
 
 
 def _months(ax, n=36):
-    x = np.arange(
-        np.datetime64("2021-01"), np.datetime64("2021-01") + n
-    ).astype("datetime64[D]")
+    first = np.datetime64("2021-01", "M")
+    x = np.arange(first, first + np.timedelta64(n, "M")).astype("datetime64[D]")
     ax.plot(x, np.sin(np.arange(n)))
 
 

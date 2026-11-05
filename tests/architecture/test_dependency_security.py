@@ -87,14 +87,14 @@ def test_fresh_wheel_excludes_numpy_with_incompatible_date_conversion(
         assert not _accepts(requirements, "numpy", version), version
 
 
-def test_fresh_ui_wheel_excludes_fastapi_with_incompatible_router_matching(
+def test_fresh_ui_wheel_accepts_fastapi_with_included_router_wrapper(
     wheel_metadata,
 ):
-    """The UI must not resolve FastAPI versions whose router wrapper denies every route."""
+    """The UI policy matches built routers, so FastAPI >=0.137 is allowed."""
     requirements = _requirements(wheel_metadata, "ui")
-    assert _accepts(requirements, "fastapi", "0.136.3")
-    for version in ("0.109.0", "0.137.0", "0.137.1", "0.162.0"):
-        assert not _accepts(requirements, "fastapi", version), version
+    for version in ("0.110.0", "0.136.3", "0.137.0", "0.162.0"):
+        assert _accepts(requirements, "fastapi", version), version
+    assert not _accepts(requirements, "fastapi", "0.109.0")
 
 
 @pytest.mark.parametrize(

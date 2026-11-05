@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **FastAPI >=0.137 UI.** The UI policy matches against the routers it builds,
+  so the included-router wrapper no longer makes every request 403.
+- **NumPy 2.5.** Date formatting no longer creates generic-unit NumPy values.
+- **Matplotlib 3.11 fonts.** `dm.font.list_registered()` lists only the
+  bundled primary families, and the per-render "Failed to find font weight"
+  notice for one-weight fallback families is muted.
+
+### Changed
+
+- The `fastapi<0.137` upper cap is lifted. `numpy<2.5` stays with
+  `matplotlib<3.11`: Matplotlib 3.10's own `dates.py` still creates
+  generic-unit NumPy values that NumPy 2.5 deprecates.
+
 ## [0.6.0] - 2026-11-05
 
 ### Breaking / Removed

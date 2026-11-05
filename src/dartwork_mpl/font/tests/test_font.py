@@ -50,6 +50,10 @@ class TestFontDiagnostics:
         assert "Roboto" in registered
         assert "Noto Sans Symbols 2" in registered
 
+    def test_list_registered_is_the_curated_registry(self) -> None:
+        """Alias families matplotlib 3.11 adds per file are not reported."""
+        assert set(list_registered()) == set(font_module.font_families())
+
 
 class TestAddFonts:
     """Tests for _add_fonts()."""
@@ -299,3 +303,60 @@ def test_paperlogy_light_resolution_is_stable_across_cold_and_warm_cache(
         "Paperlogy-2ExtraLight.ttf",
         "Paperlogy-2ExtraLight.ttf",
     ]
+
+
+class TestSingleWeightFallbackNoise:
+    """The findfont weight warning for one-weight fallback families is muted."""
+
+    @staticmethod
+    def _emit(family: str) -> list[str]:
+        import logging
+
+        seen: list[str] = []
+
+        class _Sink(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                seen.append(record.getMessage())
+
+        logger = logging.getLogger("matplotlib.font_manager")
+        sink = _Sink()
+        logger.addHandler(sink)
+        try:
+            logger.warning(
+                "findfont: Failed to find font weight %s for %s, now using %s.",
+                "light",
+                family,
+                400,
+            )
+        finally:
+            logger.removeHandler(sink)
+        return seen
+
+    def test_filtered_set_is_the_curated_single_weight_families(self) -> None:
+        curated = {
+            name
+            for name, family in font_module.font_families().items()
+            if len(family.weights) == 1
+        }
+        assert set(font_module._SINGLE_WEIGHT_FALLBACKS) == curated
+
+    @pytest.mark.parametrize(
+        "family",
+        [
+            "Noto Sans CJK KR",
+            "Noto Sans Math",
+            "Noto Sans Symbols",
+            "Noto Sans Symbols 2",
+        ],
+    )
+    def test_single_weight_fallback_message_is_dropped(
+        self, family: str
+    ) -> None:
+        font_module.ensure_loaded()
+        assert self._emit(family) == []
+
+    def test_other_fonts_still_warn(self) -> None:
+        font_module.ensure_loaded()
+        assert self._emit("Roboto") == [
+            "findfont: Failed to find font weight light for Roboto, now using 400."
+        ]
