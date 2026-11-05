@@ -45,6 +45,26 @@ Run the pixel comparison when baselines are present:
 pytest tests/visual/test_visual_pixels.py --mpl
 ```
 
+## Tolerance
+
+Every scenario uses one tolerance, `PIXEL_TOLERANCE = 0.5` (RMS on the
+0–255 scale) in `tests/visual/test_visual_pixels.py`. It is set where the
+renders are deterministic, so a visible change fails however small.
+Measured on 2026-11-06 against the committed baselines:
+
+| Render | RMS |
+|---|---|
+| lock environment (Python 3.11, Matplotlib 3.11.2, NumPy 2.4); Matplotlib 3.11.0 and 3.11.1; NumPy without its AVX-512 or AVX2 kernels | 0 (byte-identical) |
+| NumPy 2.5.4, as the `visual` job (Python 3.12) and `test-matplotlib (latest-deps)` resolve it | 0.007 (`scatter_fit` only, 95 pixels) |
+| one character of one tick label changed | 1.65 – 22 |
+| `dual_axis_timeseries` with `tick_years=4` (every x tick relabelled) | 11.2 |
+
+0.5 sits 70 times above the NumPy 2.5 noise and 3 times below the smallest
+change measured. `test_pixel_tolerance_catches_a_tick_text_change` keeps it
+there: it fails if the tolerance would let the `tick_years=4` relabel pass.
+A pixel test that fails after a dependency update means the render really
+changed: look at the diff images, and regenerate the baselines on purpose.
+
 ## Updating Baselines
 
 Baselines are Ubuntu-native. Do not regenerate them on macOS.
