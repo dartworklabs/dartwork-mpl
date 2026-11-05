@@ -51,6 +51,16 @@ class Unit:
     label: str
 
 
+def _axis_decimals(values: Sequence[float], unit: Unit) -> int:
+    """Fewest decimals that print every tick exactly and distinctly.
+
+    Signed values: the ticks print with their sign, and ``-0.06`` beside
+    ``0.06000000000000001`` are two ticks, not one magnitude seen twice
+    (as magnitudes they never print apart, and the count climbs to 12).
+    """
+    return fewest_exact_decimals([v / unit.factor for v in values])
+
+
 @dataclass(frozen=True)
 class _Plan:
     """One axis decision.
@@ -121,7 +131,7 @@ class AxisUnitFormatter(ticker.Formatter):
     def _cost(
         self, values: Sequence[float], unit: Unit
     ) -> tuple[int, int, float]:
-        decimals = fewest_exact_decimals([abs(v) / unit.factor for v in values])
+        decimals = _axis_decimals(values, unit)
         longest = max(len(self._label(v, unit, decimals)) for v in values)
         return decimals, longest, unit.factor
 
@@ -144,9 +154,7 @@ class AxisUnitFormatter(ticker.Formatter):
         unit = self._axis_unit(finite)
         decimals = self._decimals
         if decimals is None:
-            decimals = fewest_exact_decimals(
-                [abs(v) / unit.factor for v in finite]
-            )
+            decimals = _axis_decimals(finite, unit)
         return _Plan(unit, decimals)
 
     def _in_view(self, values: list[float]) -> list[float]:
