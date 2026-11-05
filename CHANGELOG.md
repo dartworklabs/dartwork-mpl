@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.6.0] - 2026-11-05
 
+### Changed
+
+- **Python 3.11 minimum.** Python 3.11–3.13 remain tested; Python 3.10 is
+  no longer supported from 0.6.0 because the security patch set requires
+  Pillow 13 and other dependencies whose minimum is 3.11.
+
+### Security
+
+- Raise Pillow's published core requirement to >=13.0.0 and publish affected
+  MCP/UI transitive security floors so fresh wheel installs receive the
+  repair. Update the 25 advisory candidates and forced collateral packages;
+  keep Jupyter/docs patches in the dev group. FastMCP 3.4.10 and its matching
+  slim package replace 3.4.2. The secure 2.x minimum becomes 2.14.7 because
+  2.13.3 pins a vulnerable MCP SDK <1.23; its legacy source/API test remains.
+  Vulnerable 3.0–3.4.9 is excluded and the <4 cap remains. PyJWT >=2.15.1 uses the exact-tested
+  wheel; GHSA-gvp8-978c-rx2q still has no upstream patched-version field.
+  This addresses the captured dependency ranges, not all possible security
+  issues or unassessed product paths.
+
 ### Added
 
 - **`dm.review(fig, stem)`: one call for the review loop (experimental, #574).**

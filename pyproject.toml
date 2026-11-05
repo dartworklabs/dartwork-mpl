@@ -10,14 +10,13 @@ authors = [
     { name = "Sangwon Lee", email = "lsw91.main@gmail.com" },
     { name = "Wonjun Choi", email = "wonjunn.choi@gmail.com" }
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -36,6 +35,9 @@ dependencies = [
     "cycler>=0.12",
     "matplotlib>=3.10.1",
     "numpy>=1.26",
+    # Matplotlib imports Pillow transitively; publish the security floor so
+    # fresh wheel consumers cannot resolve the vulnerable 12.x image stack.
+    "pillow>=13.0.0",
     "pyyaml>=6.0",
 ]
 
@@ -60,12 +62,38 @@ notebook = [
 mcp = [
     # Cap below 4 — 3.x is the latest tested major; 4.x has not been
     # vetted and may rename/remove the introspection APIs we use.
-    "fastmcp>=2.13.3,<4",
+    # GHSA-7xgj-8392-5q4r affects 3.0–3.4.9. PEP 440 has no OR, so
+    # exclude those prefixes (including post releases) while retaining 2.x.
+    # 2.13.3 pins MCP SDK <1.23, conflicting with the patched SDK >=1.30;
+    # 2.14.7 admits it. 2.13.3 remains legacy source/API test coverage only.
+    # 3.x pins fastmcp-slim to the same version; never add slim directly:
+    # installing it alongside 2.x would overlap the fastmcp namespace.
+    "fastmcp>=2.14.7,<4,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.0.*,!=3.4.1.*,!=3.4.2.*,!=3.4.3.*,!=3.4.4.*,!=3.4.5.*,!=3.4.6.*,!=3.4.7.*,!=3.4.8.*,!=3.4.9.*",
+    # These are transitive security minima, declared in wheel extras because
+    # uv.lock is not consulted by pip installing a published wheel (ADR 0007).
+    "anyio>=4.14.2",
+    "authlib>=1.9.1",
+    "cryptography>=50.0.0",
+    "dnspython>=2.9.0",
+    "joserfc>=1.7.6",
+    "mcp>=1.30.0,<2",
+    "opentelemetry-api>=1.45.1",
+    "pydantic-settings>=2.14.2",
+    # Exact 2.15.1 wheel controls pass; GHSA-gvp8-978c-rx2q still omits
+    # a patched-version field upstream. Do not infer general remediation.
+    "pyjwt>=2.15.1",
+    "starlette>=1.3.1",
+    # jsonschema-path -> requests also reaches urllib3 in MCP installations.
+    "urllib3>=2.8.0",
     "httpx>=0.27.0",
     # HTTPX Raw GitHub fetches need a bundle without compromised emSign roots.
     "certifi>=2026.10.19",
 ]
 ui = [
+    # FastAPI's dependency minima alone still admit recorded vulnerable
+    # Starlette/AnyIO releases; carry the security floors in this extra too.
+    "anyio>=4.14.2",
+    "starlette>=1.3.1",
     "fastapi>=0.110.0",
     "pydantic>=2.0.0",
     "uvicorn[standard]>=0.27.0",
@@ -149,7 +177,20 @@ dev = [
     # question moot.
     "types-PyYAML>=6.0",
     "myst-parser>=4.0.1",
-    "notebook>=7.4.1",
+    "notebook>=7.6.3",
+    # Security floors for the developer-only Jupyter/docs graph. Notebook
+    # 7.6.3 also forces JupyterLab >=4.6.4,<4.7 and jupyter-builder.
+    "bleach>=6.4.0",
+    "filelock>=4.2.1",
+    "jupyter-server>=2.20.0",
+    "jupyterlab>=4.6.4,<4.7",
+    "mistune>=3.3.0",
+    "nbconvert>=7.17.2",
+    "setuptools>=84.1.0",
+    "soupsieve>=2.9.0",
+    "tornado>=6.6",
+    "urllib3>=2.8.0",
+    "virtualenv>=21.14.9",
     "openpyxl>=3.1.5",
     "pandas>=2.2.3",
     "pytest>=8.0.0",
@@ -206,6 +247,9 @@ markers = [
 
 [tool.ruff]
 line-length = 80
+# Keep the pre-existing authoring/modernization baseline: Python 3.11 is
+# the supported runtime floor, but raising Ruff's target adds 37 unrelated
+# syntax/noqa findings and must be a separately scoped source migration.
 target-version = "py310"
 # Deterministic build artifact: rows are one hex tuple per line (256 hex
 # per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
@@ -326,7 +370,7 @@ split-on-trailing-comma = false
 # module under src/dartwork_mpl is checked strictly; a new module is checked
 # without being listed.
 files = ["src/dartwork_mpl"]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
 # == between types that cannot overlap is an error (stated again so it
 # stays on independently of `strict`).

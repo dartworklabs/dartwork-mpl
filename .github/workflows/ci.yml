@@ -41,16 +41,16 @@ jobs:
 
   test:
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
-    # Override the repository's 3.10 pin so each matrix job tests its interpreter.
+    # Override the repository's 3.11 pin so each matrix job tests its interpreter.
     env:
       UV_PYTHON: ${{ matrix.python-version }}
       # Bound shared ml-main load; an empty override preserves hosted PR auto detection.
       PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
     strategy:
-      # Shared ml-main runs two Python jobs at once; hosted PRs retain all four.
+      # Shared ml-main runs two Python jobs at once; hosted PRs retain all three.
       max-parallel: ${{ github.event_name == 'pull_request' && 4 || 2 }}
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       # Full history: src/dartwork_mpl/_colors/verify/tests/test_color_v6_quality_oracle.py runs
       # scripts/freeze_color_v5_quality.py, which resolves the frozen colour
@@ -132,7 +132,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  # Exercise affected artifact contracts on both supported FastMCP majors.
+  # Exercise secure FastMCP 2.x/3.x plus legacy 2.13.3 source/API coverage.
+  # The legacy overlay uses its old vulnerable SDK and is not a secure install.
   # The existing full-suite Python 3.12 guard remains the primary repo gate.
   test-mcp-artifacts:
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
@@ -141,7 +142,7 @@ jobs:
       MPLBACKEND: Agg
     strategy:
       matrix:
-        fastmcp: ["2.13.3", "3.4.2"]
+        fastmcp: ["2.13.3", "2.14.7", "3.4.10"]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -164,7 +165,20 @@ jobs:
           trap 'rm -rf -- "$task_store"' EXIT
           export DARTWORK_MPL_ARTIFACT_DIR="$task_store/artifacts"
           export MPLCONFIGDIR="$task_store/matplotlib"
-          runtime=(uv run --no-sync --with 'fastmcp==${{ matrix.fastmcp }}')
+          if [[ '${{ matrix.fastmcp }}' == '2.13.3' ]]; then
+            # Legacy source/API coverage only: this overlay deliberately uses
+            # the old SDK <1.23 and cannot satisfy the current wheel requirements.
+            runtime=(uv run --no-sync --with 'fastmcp==2.13.3' --with 'pydantic==2.14.1')
+          else
+            # Install the real project requirements with the selected secure
+            # runtime. Remove both overlapping 3.x distributions before 2.x;
+            # an overlay can silently ignore the published project's bounds.
+            uv pip uninstall fastmcp fastmcp-slim
+            uv pip install '.[mcp,notebook,ui]' 'fastmcp==${{ matrix.fastmcp }}'
+            uv pip check
+            runtime=(uv run --no-sync)
+            "${runtime[@]}" python -c 'from importlib.metadata import version; from packaging.version import Version; assert Version(version("mcp")) >= Version("1.30.0")'
+          fi
           "${runtime[@]}" python -c 'import json, sys; from importlib.metadata import version; assert sys.version_info[:2] == (3, 12); assert version("fastmcp") == "${{ matrix.fastmcp }}"; print(json.dumps({"python": sys.version, "fastmcp": version("fastmcp"), "mcp": version("mcp")}))' | tee "$RUNNER_TEMP/artifact-runtime.json"
           "${runtime[@]}" pytest tests/mcp/artifacts -q --no-cov \
             --junitxml="$RUNNER_TEMP/pytest-artifacts.xml" 2>&1 | tee "$RUNNER_TEMP/artifact-summary.txt"
@@ -275,10 +289,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     # Pin the docs build to a single modern interpreter. Without this,
-    # `uv sync` floats the build venv to the requires-python floor (3.10),
-    # whose gallery execution hit an environment-specific color-resolution
-    # failure the 3.11+ build does not. The docs are interpreter-agnostic
-    # (build-only job), so pin to 3.12 for a deterministic, known-good build.
+    # `uv sync` otherwise follows the repository's 3.11 pin. The docs are
+    # interpreter-agnostic (build-only job); retain the known-good 3.12 build.
     env:
       UV_PYTHON: "3.12"
     steps:

@@ -10,10 +10,10 @@ policy remains in `pyproject.toml`.
 
 | Gate | Workflow and local command | Durable output |
 | --- | --- | --- |
-| Full suite, Python 3.10–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
+| Full suite, Python 3.11–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
 | Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest -q -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
 | All-extras module execution | Both workflows, after successful full pytest (CI 3.12): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
-| FastMCP 2.13.3 / locked 3.4.2 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: `uv run --no-sync --with "fastmcp==<version>" pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"`, then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
+| FastMCP legacy 2.13.3 / secure 2.14.7 / locked 3.4.10 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: secure cells install the project plus selected FastMCP, then `uv run --no-sync pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"` (legacy 2.13.3 uses the recorded Pydantic 2.14.1 overlay), then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
 | Src typing | `.github/workflows/ci.yml`: `uv run mypy` (paths and strictness live in `[tool.mypy]`) | Step log |
 | Isolated Ruff lint/format | `.github/workflows/pre-commit.yml`, `.pre-commit-config.yaml`: `SKIP=mypy pre-commit run --all-files` | Step log |
 
@@ -62,15 +62,19 @@ a protected module also fails, even alongside a passed case. Class-based
 pytest names are accepted; similarly named sibling modules cannot count.
 Pytest remains authoritative for every suite failure and collection error.
 The checker proves module execution, not that every optional case executed.
-In mixed modules, pytest skip reporting still identifies individual skips
-(for example tomllib on Python 3.10).
+In mixed modules, pytest skip reporting still identifies individual skips.
+The 0.6.0 owner decision (ADR 0007) removes only the Python 3.10 support cell.
 
 The default guard scope protects all-extras full-suite jobs and remains the
 primary repository execution proof. The closed `--scope artifacts` inventory
-protects all 16 artifact modules in the focused two-major job, accepting no
+protects all 16 artifact modules in the focused secure-two-major / legacy job, accepting no
 skipped cases even alongside passes. It cannot select arbitrary module prefixes.
-The focused job uses a frozen all-extras/dev sync followed by version overlays
-without lock changes. It prints/asserts Python and FastMCP versions, executes
+The focused job begins with a frozen all-extras/dev sync. Secure 2.14.7 and
+3.4.10 cells install the actual project with the selected FastMCP version,
+check installed dependency consistency and assert MCP SDK >=1.30. Only the
+explicit legacy 2.13.3 cell uses an overlay; its SDK <1.23 is vulnerable and
+that cell establishes source/API compatibility, never a secure install.
+No cell rewrites the repository lock. It prints/asserts Python and FastMCP versions, executes
 only artifact contracts and consumes that same run's JUnit; it never duplicates
 the whole-repository major matrix. Missing optional extras cannot become a
 passing focused gate. These are configured CI checks; local results alone do

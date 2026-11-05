@@ -16,7 +16,14 @@ Proposed relationships have no effect and are excluded from approved successors.
 | [ADR 0004](0004-retained-input-revision-contract.md) | Retained input revision contract | Propose one delete tool and bounded opt-in revision/input retention, preserving artifact v1 and frozen baselines. | 제안 | 부분 대체: ADR 0001 A1의 `mcp_discovery` live 전체 exact 일치 범위와 ADR 0003의 닫힌 7개 추가 목록만 — 결정 1·2의 `delete_plot_inputs` 한 개 추가 및 그 투영 범위에 한정 | — |
 | [ADR 0005](0005-capability-slices-and-test-colocation.md) | 기능 슬라이스, 테스트 동거, 경계 검사로 집행하는 구조 | Move code into capability slices with declared surfaces and colocated tests, enforced by a boundary checker; public interface and ADR 0001–0004 freezes unchanged. | Accepted (2026-10-22) | — | [ADR 0006](0006-scoped-input-preflight-contract.md) 부분 대체 |
 | [ADR 0006](0006-scoped-input-preflight-contract.md) | Scoped input preflight contract | Record owner-approved B/C preflight exceptions; local implementation and task reviews complete. | Accepted (2026-10-29) | 부분 대체: ADR 0005 §1/§4 only: B nonfinite effective-margin ValueError; C invalid template return_format render_error reply | — |
+| [ADR 0007](0007-python311-security-dependency-floor.md) | Python 3.11 minimum and security dependency floors | Apply the approved 0.6.0 Python 3.11+ support change and scoped security floors, retaining FastMCP 2.x/3.x. | Accepted — owner approved the support change on 2026-11-05. | No preceding freeze or lock changed | — |
 
 ADR 0003의 원문 상태는 역사 기록 그대로다. 실제 구현 상태는 [artifact delivery 설계의 검증 기록](../superpowers/specs/2026-10-18-mcp-artifact-delivery-design.md)과 현재 코드를 확인한다. ADR 0004의 제안 관계는 미발효이며 승인된 후속 관계에 포함하지 않는다.
 
 ADR 0006 records the owner's 2026-10-29 approval and partially replaces only ADR 0005 §1/§4 within its stated B/C scope. Local implementation and independent task reviews are complete; combined verification, final independent review and human PoC approval remain pending. Acceptance does not establish runtime verification or authorize public merge.
+
+```{toctree}
+:hidden:
+
+0007-python311-security-dependency-floor
+```

@@ -31,7 +31,9 @@ A typical install-and-wire-up takes under a minute. The flow is:
 
 ### 1. Install the package with MCP extras
 
-The `[mcp]` extra pulls in `fastmcp` (>=2.13.3,<4) and `httpx`. After install, the
+The `[mcp]` extra pulls in FastMCP 2.14.7+ or patched 3.x below 4, excluding
+3.0–3.4.9, plus HTTPX and the patched MCP SDK (>=1.30,<2). FastMCP 2.13.3's
+older SDK pin cannot satisfy these security requirements. After install, the
 console script `dartwork-mpl-mcp` is on your `PATH`.
 
 ```bash
@@ -296,7 +298,7 @@ If all four work, the integration is fully operational.
 | Server starts but client shows no resources / tools    | Client picked up an older config, or `--directory` points at the wrong checkout.              | Restart the client. Double-check the absolute path. Inspect the client's MCP log for connection errors.                                   |
 | `uv run mcp …` launches the wrong CLI                  | The unrelated `mcp` PyPI package ships its own `mcp` console script that takes precedence.    | Always invoke `dartwork-mpl-mcp` (not `mcp`) in your config.                                                                               |
 | `ValueError: Prompt guide not found`                   | The bundled `asset/prompt/` tree is missing (e.g., a partial install or stripped package).    | Reinstall the package; verify `dartwork_mpl/asset/prompt/` exists in your `site-packages`.                                                |
-| `fastmcp` import errors after upgrading                | A breaking `fastmcp` major release. dartwork-mpl is pinned to `>=2.13.3,<4`.                  | Pin `fastmcp<4` in your environment (or reinstall the `[mcp]` extra so the constraint is re-applied).                                     |
+| `fastmcp` import errors after upgrading                | An unsupported FastMCP/SDK combination: 2.13.3 requires an older SDK, and 3.0–3.4.9 are excluded. | Reinstall the `[mcp]` extra to resolve FastMCP 2.14.7+ or patched 3.x below 4 with MCP SDK >=1.30,<2.                                      |
 | Works in terminal but not in the client                | The client launches the command in a different shell / `PATH` than your interactive terminal. | Use the absolute path to `dartwork-mpl-mcp` (e.g., `/Users/you/.venv/bin/dartwork-mpl-mcp`) in the JSON, or wire it via `uv run` instead. |
 
 ---
@@ -663,7 +665,8 @@ once; requests cannot choose paths or roots. Directories/files are private (0700
 and hosts without descriptor-relative no-follow opens and exclusive
 no-follow hard-link restoration return `configuration_error` for this capability;
 existing tools remain available. Local filesystem validation covers macOS with
-Python 3.10, not every OS/filesystem.
+Python 3.10 historically; 0.6.0 requires Python 3.11+. That historical check
+is not verification of every current OS/filesystem.
 
 Source is limited to 512 KiB UTF-8; timeout must be finite and in `(0, 120]`
 seconds. All five files together must fit 32 MiB. Oversize source/report/logs
