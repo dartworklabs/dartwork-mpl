@@ -143,6 +143,25 @@ class TestLeftAlone:
             is not dm.formatting._defaults.DefaultNumberFormatter
         )
 
+    def test_a_scalar_formatter_someone_set_wins(self):
+        """Even matplotlib's own class: set explicitly, it is a choice."""
+        fig, ax = _fig()
+        ax.bar(["a", "b"], [1200, 1750])
+        chosen = mticker.ScalarFormatter()
+        ax.yaxis.set_major_formatter(chosen)
+        dm.simple_layout(fig)
+        assert ax.yaxis.get_major_formatter() is chosen
+        assert "1000" in _drawn(ax)
+
+    def test_category_axis_keeps_its_names(self):
+        fig, ax = _fig()
+        names = [f"n{i}" for i in range(1200)]
+        ax.bar(names, np.ones(len(names)))
+        dm.simple_layout(fig)
+        assert type(ax.xaxis.get_major_formatter()) is not (
+            dm.formatting._defaults.DefaultNumberFormatter
+        )
+
     def test_opt_out(self):
         fig, ax = _fig()
         ax.bar(["a", "b"], [1200, 1750])
@@ -239,6 +258,21 @@ class TestDates:
         assert not any("년" in label or "2024" in label for label in drawn)
 
     def test_korean_dates_keep_the_offset_and_tex_choice(self):
+        """The converter's own formatter, adjusted in place, turns Korean."""
+        dm.style.use("report-kr")
+        fig, ax = _fig()
+        with matplotlib.rc_context({"text.usetex": True}):
+            self._weeks(ax)  # the converter reads usetex here
+        ax.set_ylabel("방문자 수")
+        ax.xaxis.get_major_formatter().show_offset = False
+        apply_default_tick_format(fig)
+        fmt = ax.xaxis.get_major_formatter()
+        assert type(fmt).__name__ == "KoreanConciseDateFormatter"
+        assert fmt.show_offset is False
+        assert fmt._usetex is True
+
+    def test_a_concise_formatter_someone_set_stays_english(self):
+        """Set explicitly, matplotlib's stock formatter is a choice too."""
         import matplotlib.dates as mdates
 
         dm.style.use("report-kr")
@@ -246,15 +280,11 @@ class TestDates:
         self._weeks(ax)
         ax.set_ylabel("방문자 수")
         locator = mdates.AutoDateLocator()
+        chosen = mdates.ConciseDateFormatter(locator)
         ax.xaxis.set_major_locator(locator)
-        ax.xaxis.set_major_formatter(
-            mdates.ConciseDateFormatter(locator, show_offset=False, usetex=True)
-        )
-        apply_default_tick_format(fig)
-        fmt = ax.xaxis.get_major_formatter()
-        assert type(fmt).__name__ == "KoreanConciseDateFormatter"
-        assert fmt.show_offset is False
-        assert fmt._usetex is True
+        ax.xaxis.set_major_formatter(chosen)
+        assert apply_default_tick_format(fig) == 0
+        assert ax.xaxis.get_major_formatter() is chosen
 
     def test_days_drop_the_zero_padding(self):
         dm.style.use("report-kr")

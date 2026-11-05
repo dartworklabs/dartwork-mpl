@@ -602,17 +602,74 @@ def test_override_reproduces_concise(data):
 
 
 def test_period_dates_keep_the_offset_and_tex_choice():
-    fig, ax = _dated(MONTHS)
-    locator = mdates.AutoDateLocator()
-    ax.xaxis.set_major_locator(locator)
-    ax.xaxis.set_major_formatter(
-        mdates.ConciseDateFormatter(locator, show_offset=False, usetex=True)
-    )
+    """The converter's own formatter, adjusted in place, keeps those choices."""
+    with matplotlib.rc_context({"text.usetex": True}):
+        fig, ax = _dated(MONTHS)  # the converter reads usetex here
+    ax.xaxis.get_major_formatter().show_offset = False
+    locator = ax.xaxis.get_major_locator()
+    assert ax.xaxis.isDefault_majfmt and ax.xaxis.isDefault_majloc
     assert apply_default_tick_format(fig) == 1
     fmt = ax.xaxis.get_major_formatter()
     assert type(fmt) is PeriodDateFormatter
     assert fmt.show_offset is False and fmt._usetex is True
     assert ax.xaxis.get_major_locator() is locator
+
+
+def test_matplotlib_flags_mark_what_someone_set():
+    """The matplotlib 3.11 contract the defaults rely on.
+
+    ``isDefault_majfmt`` / ``isDefault_majloc`` stay True on untouched date
+    axes (plain, twinx, sharex, bars), turn False after ``set_major_*``, and
+    live on the shared ticker, so setting them on one shared axes marks all.
+    """
+
+    def flags(a):
+        return a.xaxis.isDefault_majfmt, a.xaxis.isDefault_majloc
+
+    fig, ax = _dated(MONTHS)
+    twin = ax.twinx()
+    twin.plot(MONTHS, np.arange(len(MONTHS)))
+    assert flags(ax) == flags(twin) == (True, True)
+    fig, axes = plt.subplots(2, 1, sharex=True)
+    for a in axes:
+        a.plot(MONTHS, np.arange(len(MONTHS)))
+    assert flags(axes[0]) == flags(axes[1]) == (True, True)
+    fig, ax = plt.subplots()
+    ax.bar(MONTHS, np.arange(len(MONTHS)), width=20)
+    assert flags(ax) == (True, True)
+    fig, ax = plt.subplots()
+    ax.plot([2000, 3000], [1, 2])
+    assert flags(ax) == (True, True)
+
+    loc = mdates.AutoDateLocator()
+    axes[1].xaxis.set_major_locator(loc)
+    assert flags(axes[0]) == (True, False)
+    axes[1].xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+    assert flags(axes[0]) == flags(axes[1]) == (False, False)
+
+
+@pytest.mark.parametrize("korean", [False, True], ids=["en", "ko"])
+@pytest.mark.parametrize("data", [MONTHS, QUARTER_STARTS], ids=["m", "q"])
+@pytest.mark.parametrize("width", ["6cm", "14.5cm"])
+def test_matplotlib_concise_idiom_is_kept(data, korean, width):
+    """``loc = AutoDateLocator(); ConciseDateFormatter(loc)`` is a choice.
+
+    Formatter and locator stay the user's objects, untouched (no quarter
+    locator, no thinning), and the ticks read matplotlib's own words, also
+    in a Korean figure (review 2026-11-05, Important 2).
+    """
+    fig, ax = _dated(data, width, "매출" if korean else None, korean=korean)
+    loc = mdates.AutoDateLocator()
+    fmt = mdates.ConciseDateFormatter(loc)
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(fmt)
+    dm.simple_layout(fig)
+    assert ax.xaxis.get_major_formatter() is fmt
+    assert ax.xaxis.get_major_locator() is loc
+    fresh = mdates.AutoDateLocator()
+    assert (loc.minticks, loc.maxticks) == (fresh.minticks, fresh.maxticks)
+    assert _xticks(ax) == _labels_of(ax, mdates.ConciseDateFormatter(loc))
+    assert re.fullmatch(r"\d{4}", _xticks(ax)[0])
 
 
 @pytest.mark.parametrize("data", [MONTHS, QUARTER_STARTS], ids=["m", "q"])

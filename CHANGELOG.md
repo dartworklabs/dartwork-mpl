@@ -21,6 +21,13 @@ a request for another format gets that format.
   format (`50만 … 250만`, `0.2조`). English figures keep `k/M/G/T`. Back to
   0.6.0: `dm.config.override(number_ladder="si")`.
 - Symmetric axes no longer print floating-point noise (`-0.4 … 0.4`).
+- **A formatter or locator you set is never replaced**, of any class. The
+  defaults go only where matplotlib's own `axis.isDefault_majfmt` /
+  `isDefault_majloc` flags still hold, so matplotlib's idiom
+  `ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))` keeps its
+  words (in Korean figures too, which 0.6.0 turned Korean) and its locator
+  (no quarter locator, no thinning), and an explicit `ScalarFormatter()`
+  keeps `1000`.
 - **Requires Matplotlib ≥3.11; 3.10 is no longer supported.** Matplotlib
   3.11 sizes text boxes and draws legend markers differently, so it renders
   dartwork-mpl figures slightly differently from 3.10. Rather than patch

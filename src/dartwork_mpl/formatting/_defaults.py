@@ -439,9 +439,9 @@ def _visible_ticks(axis: Axis) -> list[float]:
     ]
 
 
-def _untouched(axis: Axis) -> bool:
-    # Exactly matplotlib's default: a subclass or another formatter was chosen.
-    return type(axis.get_major_formatter()) is ticker.ScalarFormatter
+def _plain_numbers(axis: Axis) -> bool:
+    """A linear axis of plain numbers: no dates, categories or other units."""
+    return axis.get_scale() == "linear" and axis.get_converter() is None
 
 
 def _same_formats(
@@ -489,7 +489,11 @@ def _restyle_dates(
     locator = axis.get_major_locator()
     if not _stock(fmt) or not isinstance(locator, mdates.DateLocator):
         return 0
-    if reads_quarters(years, style) and _converter_locator(locator):
+    if (
+        reads_quarters(years, style)
+        and axis.isDefault_majloc
+        and _converter_locator(locator)
+    ):
         dates = plotted_dates(ax, which)
         if quarterly(dates):
             axis.set_major_locator(
@@ -522,30 +526,40 @@ def _restyle_dates(
     return 1
 
 
-def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> bool:
+def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
     """Whole-year ticks and year labels on an x axis whose data are years.
 
     The data decide (:func:`year_data` over :func:`plotted_dates`, twins and
     shared axes included), not the ticks: ``dm.simple_layout`` refits the
     margins after this call and the ticks move with them. Matplotlib's own
-    locator gives way to :class:`WholeYearLocator`; ticks someone placed
-    keep their places, and keep their numbers unless all are whole years.
+    locator gives way to :class:`WholeYearLocator` and its own formatter to
+    :class:`YearTickFormatter` (when the ticks in view are whole years); a
+    locator or formatter someone set stays. Returns 1 if anything changed.
     """
     if not year_data(plotted_dates(ax, "x")):
-        return False
+        return 0
+    changed = 0
     if axis.isDefault_majloc:
         axis.set_major_locator(WholeYearLocator())
-    elif not whole_years(_visible_ticks(axis)):
-        return False
-    axis.set_major_formatter(YearTickFormatter(digits, suffix))
-    return True
+        changed = 1
+    if axis.isDefault_majfmt and whole_years(_visible_ticks(axis)):
+        axis.set_major_formatter(YearTickFormatter(digits, suffix))
+        changed = 1
+    return changed
 
 
 def apply_default_tick_format(fig: Figure) -> int:
     """Install the library's tick numbers on every axis nobody formatted.
 
-    Returns the number of axes changed. Safe to call again: an axis that
-    already carries the default formatter is no longer ``ScalarFormatter``.
+    One rule decides what is "nobody formatted": matplotlib's own flags.
+    A formatter goes in only while ``axis.isDefault_majfmt`` holds and a
+    locator only while ``axis.isDefault_majloc`` holds; ``set_major_formatter``
+    and ``set_major_locator`` clear them (on every axes sharing the ticker),
+    so anything someone set, of any class, a stock ``ConciseDateFormatter``
+    or ``ScalarFormatter`` included, is never replaced.
+
+    Returns the number of axes changed. Safe to call again: what this call
+    installs clears the same flags.
     """
     tick_years, date_style = _date_style()
     changed = 0
@@ -564,21 +578,23 @@ def apply_default_tick_format(fig: Figure) -> int:
         for which, axis in pairs:
             fmt = axis.get_major_formatter()
             if isinstance(fmt, mdates.ConciseDateFormatter):
-                changed += _restyle_dates(
-                    ax,
-                    which,
-                    axis,
-                    fmt,
-                    years=tick_years,
-                    style=date_style,
-                    korean=korean,
-                )
+                if axis.isDefault_majfmt:
+                    changed += _restyle_dates(
+                        ax,
+                        which,
+                        axis,
+                        fmt,
+                        years=tick_years,
+                        style=date_style,
+                        korean=korean,
+                    )
                 continue
-            if not _untouched(axis) or axis.get_scale() != "linear":
+            if not _plain_numbers(axis):
                 continue
-            suffix = "년" if korean and date_style == "concise" else ""
-            if which == "x" and _year_axis(ax, axis, tick_years, suffix):
-                changed += 1
+            if which == "x":
+                suffix = "년" if korean and date_style == "concise" else ""
+                changed += _year_axis(ax, axis, tick_years, suffix)
+            if not axis.isDefault_majfmt:
                 continue
             ticks = _visible_ticks(axis)
             if not ticks or max(abs(t) for t in ticks) < _SEPARATOR_FROM:
@@ -715,10 +731,10 @@ def _converter_locator(locator: ticker.Locator) -> bool:
 def thin_crowded_date_ticks(fig: Figure) -> int:
     """Give a crowded concise date axis fewer ticks; return the axes changed.
 
-    Acts only on axes matplotlib's date converter set up (an
-    ``AutoDateLocator`` with its default tick counts and concise labels)
-    whose labels are not rotated, so a locator someone configured, or one
-    already thinned, is kept.
+    Acts only on axes matplotlib's date converter set up (its own
+    ``AutoDateLocator``, ``axis.isDefault_majloc`` still set, with its
+    default tick counts and concise labels) whose labels are not rotated, so
+    a locator someone set or configured, or one already thinned, is kept.
     Each step lowers the locator's tick ceiling, skipping ceilings
     matplotlib cannot meet; the first that keeps neighbouring labels
     :data:`_MIN_DATE_GAP_EM` ems apart with two or more ticks wins. An axis
@@ -745,8 +761,12 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
             if isinstance(locator, WholeYearLocator):
                 changed += _thin_years(axis, locator, fig, renderer)
                 continue
-            if not _converter_locator(locator) or not isinstance(
-                axis.get_major_formatter(), mdates.ConciseDateFormatter
+            if (
+                not axis.isDefault_majloc
+                or not _converter_locator(locator)
+                or not isinstance(
+                    axis.get_major_formatter(), mdates.ConciseDateFormatter
+                )
             ):
                 continue
             assert isinstance(locator, mdates.AutoDateLocator)
