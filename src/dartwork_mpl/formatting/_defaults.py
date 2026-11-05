@@ -7,9 +7,9 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 
 - an axis whose visible ticks reach 1,000 gets thousands separators
   (``1,750``; ``34,000``) and the fewest exact decimals;
-- from one million the axis takes the largest tick's SI unit (``0.5M …
-  2.5M``), as ``dm.format_axis_si`` does, unless that needs more than two
-  decimals;
+- from one million the axis takes the largest tick's unit (``0.5M …
+  2.5M``; ``50만 … 250만`` in Korean figures, ``config.number_ladder``),
+  unless that needs more than two decimals;
 - x axes whose ticks are integer years 1900-2099 read two digits (``16, 18,
   20``; four when two would print alike, or with ``config.tick_years = 4``);
   an integer axis in that range that is not years (elevations) reads the
@@ -64,7 +64,7 @@ from matplotlib.text import Text
 
 from .._figure_geometry import get_renderer
 from ..config import config
-from ._axis_wide import AxisUnitFormatter, Unit
+from ._axis_wide import MYRIAD_LADDER, SI_LADDER, AxisUnitFormatter, Unit
 from ._dates import (
     DateStyle,
     Digits,
@@ -178,6 +178,32 @@ def _korean_labels(fig: Figure) -> bool:
         if artist is not None:
             texts.append(artist.get_text())
     return any(_HANGUL.search(t) for t in texts)
+
+
+_CONFIG_LADDERS = ("auto", "si", "myriad")
+
+
+def config_ladder(fig: Figure | None, extra_text: str = "") -> tuple[Unit, ...]:
+    """The ladder ``config.number_ladder`` picks for ``fig``.
+
+    ``"si"`` and ``"myriad"`` are fixed; ``"auto"`` picks 만/억/조 when the
+    figure's labels, titles or legends (or ``extra_text``) hold Hangul, else SI.
+    Any other configured value raises :class:`ValueError`.
+    """
+    configured = config.number_ladder
+    if configured not in _CONFIG_LADDERS:
+        raise ValueError(
+            "config.number_ladder must be 'auto', 'si' or 'myriad', "
+            f"got {configured!r}"
+        )
+    if configured == "si":
+        return SI_LADDER
+    if configured == "myriad":
+        return MYRIAD_LADDER
+    korean = bool(_HANGUL.search(extra_text)) or (
+        isinstance(fig, Figure) and _korean_labels(fig)
+    )
+    return MYRIAD_LADDER if korean else SI_LADDER
 
 
 def category_dates(
@@ -499,11 +525,10 @@ def apply_default_tick_format(fig: Figure) -> int:
     Returns the number of axes changed. Safe to call again: an axis that
     already carries the default formatter is no longer ``ScalarFormatter``.
     """
-    from . import _SI_LADDER  # defined after this module is imported
-
     tick_years, date_style = _date_style()
     changed = 0
     korean = _korean_labels(fig)
+    ladder = config_ladder(fig)
     for ax in fig.axes:
         if (
             ax.name != "rectilinear"
@@ -539,7 +564,7 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):
                 continue  # years: 2024, not 2,024
-            axis.set_major_formatter(DefaultNumberFormatter(_SI_LADDER))
+            axis.set_major_formatter(DefaultNumberFormatter(ladder))
             changed += 1
     return changed
 

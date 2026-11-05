@@ -405,3 +405,68 @@ class TestCrowdedDates:
         dm.simple_layout(fig)
         assert _drawn(ax, "x") == first
         assert not [w for w in recwarn if "AutoDateLocator" in str(w.message)]
+
+
+class TestKoreanDefaultLadder:
+    """Korean figures read 만/억/조 on untouched axes; English keeps SI."""
+
+    def test_korean_figure_uses_myriad_from_one_million(self):
+        fig, ax = _fig()
+        ax.plot([0, 1, 2], [5.2e11, 7.0e11, 9.6e11])
+        ax.set_ylabel("매출")
+        dm.simple_layout(fig)
+        labels = _drawn(ax)
+        assert labels and all(t.endswith("조") for t in labels)
+        assert "1.0조" in labels
+
+        fig, ax = _fig()
+        ax.plot([0, 1], [50_000, 80_000])
+        ax.set_ylabel("매출")
+        dm.simple_layout(fig)
+        assert all(
+            "," in t and not t.endswith(("만", "억")) for t in _drawn(ax)
+        )
+
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3_000_000])
+        ax.set_ylabel("매출")
+        dm.simple_layout(fig)
+        assert "300만" in _drawn(ax)
+
+    def test_signed_korean_axis_keeps_one_unit(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [-3_000_000, 3_000_000])
+        ax.set_ylabel("손익")
+        dm.simple_layout(fig)
+        labels = _drawn(ax)
+        assert f"{MINUS}300만" in labels and "300만" in labels
+
+    def test_english_figure_keeps_si(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3.5e10])
+        ax.set_ylabel("Revenue")
+        dm.simple_layout(fig)
+        assert "35G" in _drawn(ax)
+
+    def test_number_ladder_override_si(self):
+        fig, ax = _fig()
+        ax.plot([0, 1, 2], [5.2e11, 7.0e11, 9.6e11])
+        ax.set_ylabel("매출")
+        with dm.config.override(number_ladder="si"):
+            dm.simple_layout(fig)
+            labels = _drawn(ax)
+        assert "1.0T" in labels and not any("조" in t for t in labels)
+
+    def test_number_ladder_myriad_forces_korean_units(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3_000_000])
+        with dm.config.override(number_ladder="myriad"):
+            dm.simple_layout(fig)
+            assert "300만" in _drawn(ax)
+
+    def test_bad_number_ladder_is_named(self):
+        fig, ax = _fig()
+        ax.plot([0, 1], [0, 3_000_000])
+        with dm.config.override(number_ladder="metric"):
+            with pytest.raises(ValueError, match="number_ladder"):
+                dm.simple_layout(fig)

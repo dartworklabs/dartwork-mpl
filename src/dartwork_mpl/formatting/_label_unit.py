@@ -16,9 +16,7 @@ from typing import Literal
 
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
-from matplotlib.figure import Figure
 
-from ..config import config
 from ._axis_wide import (
     FINANCE_LADDER,
     MYRIAD_LADDER,
@@ -28,7 +26,7 @@ from ._axis_wide import (
     Unit,
     _Plan,
 )
-from ._defaults import _HANGUL, _korean_labels
+from ._defaults import config_ladder
 
 __all__ = ["LabelUnitFormatter", "axis_unit", "axis_unit_of", "fill"]
 
@@ -39,7 +37,6 @@ _LADDERS: dict[str, tuple[Unit, ...]] = {
     "finance": FINANCE_LADDER,
     "si": SI_LADDER,
 }
-_CONFIG_LADDERS = ("auto", "si", "myriad")
 _PLACEHOLDER = "{unit}"
 
 
@@ -135,19 +132,7 @@ def _ladder(name: str, ax: Axes, template: str) -> tuple[Unit, ...]:
         )
     if name != "auto":
         return _LADDERS[name]
-    configured = config.number_ladder
-    if configured not in _CONFIG_LADDERS:
-        raise ValueError(
-            "config.number_ladder must be 'auto', 'si' or 'myriad', "
-            f"got {configured!r}"
-        )
-    if configured != "auto":
-        return _LADDERS[configured]
-    fig = ax.get_figure(root=True)
-    korean = bool(_HANGUL.search(template)) or (
-        isinstance(fig, Figure) and _korean_labels(fig)
-    )
-    return MYRIAD_LADDER if korean else SI_LADDER
+    return config_ladder(ax.get_figure(root=True), template)
 
 
 def axis_unit(

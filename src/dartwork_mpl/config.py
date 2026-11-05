@@ -83,9 +83,13 @@ class Config:
         ``tick_years=4``, ``"concise"`` is the 0.6.0 look
         (``dm.config.override(tick_years=4, date_style="concise")``).
     number_ladder : {"auto", "si", "myriad"}, default ``"auto"``
-        Unit ladder used when ``dm.axis_unit`` abbreviates large numbers.
-        ``"auto"`` picks 만/억/조 for Korean figures and k/M/B otherwise;
-        ``"si"`` always uses k/M/B and ``"myriad"`` always uses 만/억/조.
+        Unit ladder for large numbers: the one-unit tick labels of axes
+        nobody formatted (from 1,000,000) and ``dm.axis_unit(ladder="auto")``.
+        ``"auto"`` picks 만/억/조/경 when the figure's axis labels, titles or
+        legends hold Hangul (``0.2조 … 1.0조``) and SI k/M/G/T otherwise
+        (``0.2T … 1.0T``); ``"si"`` always uses k/M/G/T and ``"myriad"``
+        always uses 만/억/조/경. Any other value raises ``ValueError`` where
+        it is read.
         Opt out of the Korean default with
         ``dm.config.override(number_ladder="si")``.
     """
