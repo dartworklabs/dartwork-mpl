@@ -764,7 +764,7 @@ def _labels_of(ax, fresh) -> list[str]:
 
 
 @pytest.mark.parametrize("data", [MONTHS, QUARTER_STARTS], ids=["m", "q"])
-def test_override_reproduces_concise(data):
+def test_four_digit_concise_option_prints_matplotlibs_concise(data):
     with dm.config.override(tick_years=4, date_style="concise"):
         ax = _laid_out(data)
         fmt = ax.xaxis.get_major_formatter()
