@@ -736,7 +736,7 @@ def test_registered_routes_all_have_explicit_policy(tmp_path: Path) -> None:
     """Inventory framework and application registrations, rejecting any omitted grant."""
     from dartwork_mpl.ui import ParamModel
     from dartwork_mpl.ui._boundary import ROUTE_POLICY
-    from dartwork_mpl.ui.ui import _create_app
+    from dartwork_mpl.ui.ui import _create_app, _policy_routes
 
     class Params(ParamModel):
         """An empty valid model is sufficient to inspect app registration without startup."""
@@ -758,7 +758,7 @@ def test_registered_routes_all_have_explicit_policy(tmp_path: Path) -> None:
         """Collect every actual route method/template directly from the built app."""
         return {
             (method, route.path)
-            for route in app.routes
+            for route in _policy_routes(app)
             for method in route.methods
         }
 
