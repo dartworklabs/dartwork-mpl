@@ -193,3 +193,6 @@ matching lines above:
   emptied: trailing parentheses holding the template's base unit take its unit
   group (`(원)` → `(억원)`, `(USD)` → `(USD B)`, never doubled), any other label
   appends; a label set after a draw becomes its new template.
+- `dm.axis_unit` label sync is decided by `test_axis_unit_label_sync` (one current
+  unit token per label, a visible label names scaled ticks, user text kept, emptied
+  stays empty unless it is the last place); later edge cases become issues.
