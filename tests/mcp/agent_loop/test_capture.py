@@ -7,7 +7,9 @@ import json
 import os
 import random
 import sys
+import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from mcp import ClientSession, StdioServerParameters
@@ -151,7 +153,7 @@ def test_capture_rejects_incomplete_or_contaminated_run(tmp_path):
     "limit", ["wall", "calls", "reader_calls", "bytes", "source", "render_time"]
 )
 def test_watchdog_stops_process_tree_and_keeps_partial_evidence(
-    tmp_path, limit
+    tmp_path, limit, monkeypatch
 ):
     """External limits terminate an owned child plus detached grandchild."""
     child = tmp_path / "child.py"
@@ -180,6 +182,24 @@ time.sleep(60)
                 "'code':'x' * 1000", "'code':'x' * 1000,'timeout_seconds':21"
             )
         )
+    if limit == "wall":
+        import run_agent_plot_eval as capture
+
+        started = time.monotonic()
+        events = tmp_path / "events.jsonl"
+
+        def controlled_monotonic():
+            """Expire after the real first event, with a bounded startup guard."""
+            elapsed = time.monotonic() - started
+            if (events.exists() and events.stat().st_size) or elapsed > 5:
+                return started + 1 + elapsed
+            return started
+
+        monkeypatch.setattr(
+            capture,
+            "time",
+            SimpleNamespace(monotonic=controlled_monotonic, sleep=time.sleep),
+        )
     result = capture_process(
         [sys.executable, str(child)],
         tmp_path,
@@ -206,6 +226,22 @@ time.sleep(60)
     with pytest.raises(ProcessLookupError):
         os.kill(first["child_pid"], 0)
     assert (tmp_path / "stderr.txt").exists()
+
+
+def test_watchdog_wall_limit_includes_startup_without_output(tmp_path):
+    """The actual wall deadline also stops a child that never emits evidence."""
+    result = capture_process(
+        [sys.executable, "-c", "import time; time.sleep(60)"],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=0.4,
+    )
+    assert result["stop_reason"] == "wall_limit"
+    assert result["cleanup_ok"]
+    assert result["elapsed_seconds"] >= 0.4
+    assert (tmp_path / "events.jsonl").read_bytes() == b""
 
 
 def test_replay_keeps_exact_source_and_absolute_csv_until_finished(tmp_path):
