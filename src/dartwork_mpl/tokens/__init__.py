@@ -7,6 +7,7 @@ time. The surface is ``__all__``.
 """
 
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import font_scalings
@@ -23,6 +24,9 @@ from ._table import (
     WeightRole,
     read_tokens,
 )
+
+if TYPE_CHECKING:
+    from matplotlib.typing import RcKeyType
 
 _TOKEN_PATH = (
     Path(__file__).parent.parent / "asset" / "tokens" / "semantic_tokens.json"
@@ -54,7 +58,7 @@ def _table() -> TokenTable:
 
 
 def _rcparam_float(rcparam: str) -> float:
-    value = plt.rcParams[rcparam]
+    value = plt.rcParams[cast("RcKeyType", rcparam)]
     try:
         return float(value)
     except (TypeError, ValueError):
