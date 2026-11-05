@@ -31,8 +31,13 @@ plt.close(fig)
 - `dm.style.context("report-kr")` scopes the preset to one block.
 - Do not set `font.family` by hand; the preset's family list holds the
   bundled math and symbol fallbacks.
-- Korean number formats: `dm.format_axis_myriad(ax)` (만/억 units) and
-  `dm.format_axis_year(ax)` (`25년`).
+- Korean numbers: an axis you did not format already counts in 만/억/조 from
+  1,000,000 (`50만 … 250만`, `0.2조`); `dm.axis_unit(ax, "y", label="매출
+  ({unit}원)")` moves the unit into the label (`0, 0.2 … 1.0` under
+  `매출 (조원)`, `dm.axis_unit_of(ax)` for value labels);
+  `dm.format_axis_myriad(ax)` puts 만/억 on each tick and
+  `dm.format_axis_year(ax)` prints `25년`. k/M/G/T in a Korean figure only
+  when asked: `dm.config.override(number_ladder="si")`.
 
 ## Other languages
 
