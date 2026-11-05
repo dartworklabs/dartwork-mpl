@@ -78,8 +78,8 @@ different years would print the same two digits, e.g. 1880–2024) it falls back
 four digits on its own. In "period" style a Korean figure's integer-year axis reads
 `24` (no `년`), matching the user's table; "concise" keeps `24년`.
 
-Per-axis overrides: `years=` and `style=` keywords on `format_axis_dates` and
-`format_axis_year`; any explicit `ax.xaxis.set_major_formatter(...)` is left alone
+Per-axis overrides: `years=` and `style=` keywords on `format_axis_dates`
+(`None` follows `dm.config`); `format_axis_year` keeps its own `digits=`; any explicit `ax.xaxis.set_major_formatter(...)` is left alone
 (the existing `_untouched`/`_stock` rules). Korean detection stays the existing rule
 (`_korean_labels`: Hangul in labels, titles or legend), the same one that picks
 Korean date words today.
