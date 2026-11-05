@@ -169,3 +169,17 @@ Module placement inside `formatting` (respect `scripts/check_boundaries.py`), th
 period formatter's tick thinning at narrow widths (keep labels ≥1 em apart as
 `thin_crowded_date_ticks` does), and whether `format_axis_myriad/si` gain a
 `unit_in="label"` shortcut over `axis_unit` (optional sugar, not required).
+
+## Revisions after the final review (2026-11-05)
+
+User: *"개발을 최대한 미래 지향적으로 가. 과거에 얽매이지 마"*. These replace the
+matching lines above:
+
+- Year axes (point 2): decided by the **plotted x data** (all integers in
+  1900–2099, twins and shared axes included), not the ticks, and ticked on whole
+  years only (`WholeYearLocator`, thinned to ≥1 em); a non-whole tick gets no label.
+- What counts as untouched: matplotlib's `axis.isDefault_majfmt` /
+  `isDefault_majloc` everywhere (dates, numbers, the quarter and year locators,
+  date thinning); an explicitly set formatter or locator of any class stays.
+- `tick_years`, `date_style`, `number_ladder` are options a prompt asks for, not a
+  0.6.0 reproduction; no new machinery reproduces 0.6.0.
