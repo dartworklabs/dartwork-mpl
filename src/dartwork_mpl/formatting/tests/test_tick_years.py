@@ -233,6 +233,24 @@ def test_other_data_keep_matplotlibs_locator_and_formatter(x):
     assert type(ax.xaxis.get_major_formatter()) is mticker.ScalarFormatter
 
 
+def test_a_chosen_year_formatter_still_gets_whole_year_ticks():
+    """``dm.format_axis_year`` set the formatter, not the locator.
+
+    The locator is still matplotlib's, so the year locator goes in and the
+    chosen formatter stays: no ``2007.5`` rounded to ``08년``.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "wide"))
+    ax.plot(np.arange(2004, 2025), np.arange(21))
+    ax.set_ylabel("y")
+    dm.format_axis_year(ax)
+    chosen = ax.xaxis.get_major_formatter()
+    dm.simple_layout(fig)
+    assert ax.xaxis.get_major_formatter() is chosen
+    locs, labels = _shown(ax)
+    assert len(locs) >= 2 and _whole(locs), locs
+    assert labels == _two_digits(locs, "년"), labels
+
+
 def test_pinned_ticks_keep_their_places():
     """Whole years someone pinned read two digits; other pins keep numbers."""
     ax = _line(np.arange(2016, 2025), ticks=[2016, 2020, 2024])
