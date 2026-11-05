@@ -411,6 +411,56 @@ def test_span_shading_is_not_data(span):
     )
 
 
+def test_secondary_functions_are_asked_little_and_safely():
+    """Re-review 2026-11-05, N5: the functions ran on every data point.
+
+    ``1 / x`` with data at 0 warned (raised under ``-W error``), a
+    ``Transform`` given as functions raised, and a 10,000-point line called
+    the function with 10,000 values. They now run on a small sample, with
+    numpy's floating-point warnings off; a failure or a non-finite value
+    leaves the secondary axis as matplotlib made it.
+    """
+    import warnings
+
+    import matplotlib.transforms as mtransforms
+
+    from dartwork_mpl.formatting._defaults import thin_crowded_date_ticks
+
+    sizes = []
+
+    def forward(v):
+        sizes.append(np.size(v))
+        return v + 1
+
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(np.repeat(ANNUAL, 500), np.arange(21 * 500))
+    fiscal = ax.secondary_xaxis("top", functions=(forward, lambda v: v - 1))
+    apply_default_tick_format(fig)
+    assert sizes and max(sizes) <= 512, max(sizes)
+    assert isinstance(fiscal.xaxis.get_major_formatter(), YearTickFormatter)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+        x = np.linspace(0, 10, 11)
+        ax.plot(x, x**2)
+        top = ax.secondary_xaxis(
+            "top", functions=(lambda v: 1 / v, lambda v: 1 / v)
+        )
+        apply_default_tick_format(fig)  # 1 / 0: no warning, no error
+        thin_crowded_date_ticks(fig)
+        assert type(top.xaxis.get_major_formatter()) is mticker.ScalarFormatter
+
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(ANNUAL, np.arange(21))
+    shifted = ax.secondary_xaxis(
+        "top", functions=mtransforms.Affine2D().translate(1, 0)
+    )
+    apply_default_tick_format(fig)  # the transform fails on 1-D values
+    assert type(shifted.xaxis.get_major_formatter()) is mticker.ScalarFormatter
+    assert _year_axis(ax)
+
+
 def test_quarterly_stackplot_reads_quarters():
     fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
     ax.stackplot(QUARTER_STARTS, np.ones(12), np.arange(12))

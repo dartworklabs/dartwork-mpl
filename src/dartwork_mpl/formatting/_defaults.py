@@ -582,13 +582,71 @@ def _year_axes(ax: Axes, digits: Digits, suffix: str) -> int:
     (``secondary_xaxis("top")``: the same years; ``y - 1990``: ages), so it
     takes the year treatment when what it shows are years, under the same
     flags; matplotlib keeps them on it until its parent's scale changes.
+    The functions see only a small sample of the data
+    (:func:`_secondary_values`).
     """
     years = plotted_dates(ax, "x", bar_slot=1.0)
     changed = _year_axis(ax.xaxis, years, digits, suffix)
-    for secondary in _secondary_x_axes(ax):
-        shown = secondary.xaxis.get_transform().inverted().transform(years)
-        changed += _year_axis(secondary.xaxis, shown, digits, suffix)
+    secondaries = _secondary_x_axes(ax)
+    sample = _sample(years) if secondaries else years
+    for secondary in secondaries:
+        shown = _secondary_values(secondary, sample)
+        if shown is not None:
+            changed += _year_axis(secondary.xaxis, shown, digits, suffix)
     return changed
+
+
+# How many plotted values a secondary axis's functions are asked about.
+_SAMPLE = 512
+
+
+def _sample(values: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """At most :data:`_SAMPLE` of ``values`` that decide year data alike.
+
+    Few values: all of them. Whole numbers over a short span (years): each
+    distinct value once (a count per value, no sort). Otherwise the
+    smallest, the largest, the first value that is not whole (so a stride
+    cannot miss the fractions) and an even stride through the rest.
+    """
+    if values.size <= _SAMPLE:
+        return values
+    low, high = float(values.min()), float(values.max())
+    fraction = np.abs(values - np.rint(values)) > 1e-6
+    if not fraction.any() and high - low < 4 * _SAMPLE:
+        counts = np.bincount(np.rint(values - low).astype(np.int64))
+        present = low + np.flatnonzero(counts).astype(float)
+        if present.size <= _SAMPLE:
+            return present
+    picked = [low, high]
+    if fraction.any():
+        picked.append(float(values[int(np.argmax(fraction))]))
+    room = _SAMPLE - len(picked)
+    stride = values[:: max(1, values.size // room)][:room]
+    return np.concatenate([picked, stride])
+
+
+def _secondary_values(
+    secondary: SecondaryAxis, values: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64] | None:
+    """What ``secondary`` shows for ``values``; ``None`` if it cannot say.
+
+    Runs the secondary's functions (its scale's inverse transform) with
+    numpy's floating-point warnings off. A function that raises (a
+    ``Transform`` given as functions fails on 1-D values; ``-W error``
+    turns a warning into one), returns another shape or a non-finite
+    value (``1 / 0``) leaves the axis as matplotlib made it.
+    """
+    try:
+        with np.errstate(all="ignore"):
+            shown = np.asarray(
+                secondary.xaxis.get_transform().inverted().transform(values),
+                dtype=float,
+            )
+    except Exception:  # noqa: BLE001 - user functions may raise anything
+        return None
+    if shown.shape != values.shape or not np.all(np.isfinite(shown)):
+        return None
+    return shown
 
 
 def apply_default_tick_format(fig: Figure) -> int:
