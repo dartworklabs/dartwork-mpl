@@ -96,9 +96,12 @@ class LabelUnitFormatter(AxisUnitFormatter):
     ``sharex`` / ``sharey`` share one formatter, so one call rescales them
     all. Each keeps its own template: the one :meth:`share_label` (another
     ``axis_unit`` call) gave it, else one made at the first draw from its
-    own label (:func:`_sibling_template`: ``인구 (명)`` -> ``인구 (억명)``,
-    ``Cost (USD)`` -> ``Cost (USD B)``, ``인구`` -> ``인구 (억)``), kept
-    so later draws write the same text. An inner panel whose label
+    own label (:func:`_sibling_template`): trailing parentheses holding the
+    installing template's base unit take its unit group (``인구 (명)`` ->
+    ``인구 (억명)`` under ``가구 ({unit}명)``; ``Cost (USD)`` ->
+    ``Cost (USD B)``), any other label gets `` ({unit})`` (``인구`` ->
+    ``인구 (억)``), kept so later draws write the same text. An inner panel
+    whose label
     ``label_outer`` emptied (tick labels hidden, a sibling showing them)
     stays unlabelled; a template meant for it goes to the siblings that show
     the ticks and have no label. On a log or other non-linear axis the
@@ -118,6 +121,7 @@ class LabelUnitFormatter(AxisUnitFormatter):
     ) -> None:
         super().__init__(ladder, unit, decimals=decimals)
         self._template = template
+        self._group = _unit_group(template)
         self._shared: dict[Axis, str] = {}
 
     @property
@@ -150,7 +154,9 @@ class LabelUnitFormatter(AxisUnitFormatter):
         for other in siblings:
             text = other.label.get_text()
             if other is not own and other not in self._shared and text.strip():
-                self._shared[other] = _sibling_template(text, self._ladder)
+                self._shared[other] = _sibling_template(
+                    text, self._group, self._ladder
+                )
         written: dict[Axis, str] = {}
         handed: list[str] = []
         for axis, template in self.templates().items():
@@ -206,37 +212,44 @@ def _template(label: str) -> str:
     return f"{label} ({_PLACEHOLDER})" if label.strip() else f"({_PLACEHOLDER})"
 
 
-# A label ending in a parenthesised unit: ``인구 (명)``, ``Cost (USD)``.
-_TRAILING_UNIT = re.compile(
-    r"^(?P<text>.*?)(?P<gap>\s*)\((?P<inner>[^()]*\S[^()]*)\)(?P<tail>\s*)$",
-    re.DOTALL,
+# The parenthesised group of a template that holds the unit: ``({unit}명)``.
+_UNIT_GROUP = re.compile(r"\([^()]*\{unit\}[^()]*\)")
+# A label that ends in a parenthesised group: ``인구 (명)``, ``Cost (USD)``.
+_TRAILING_GROUP = re.compile(
+    r"^(?P<text>.*?)(?P<gap>\s*)(?P<group>\([^()]*\))(?P<tail>\s*)$", re.DOTALL
 )
-_LAST_WORD = re.compile(r"^(?P<lead>.*\s)?(?P<word>\S+)$", re.DOTALL)
 
 
-def _sibling_template(label: str, ladder: Sequence[Unit]) -> str:
+def _unit_group(template: str) -> str:
+    """The last parenthesised group of ``template`` that holds ``{unit}``.
+
+    ``인구 ({unit}명)`` -> ``({unit}명)``; ``Exports (USD {unit})`` ->
+    ``(USD {unit})``. A template with none (or the appended `` ({unit})``
+    of ``label=None``) gives ``({unit})``, the append form.
+    """
+    groups = _UNIT_GROUP.findall(template)
+    return groups[-1] if groups else f"({_PLACEHOLDER})"
+
+
+def _sibling_template(label: str, group: str, ladder: Sequence[Unit]) -> str:
     """A shared sibling's template, made from its own label.
 
-    A unit in trailing parentheses takes the ladder's unit where the
-    installing template puts it: in front of the unit word on 만/억/조
-    (``인구 (명)`` -> ``인구 ({unit}명)``, as ``가구 ({unit}명)``), after it
-    with a space on finance / SI ladders (``Cost (USD)`` ->
-    ``Cost (USD {unit})``). Any other label gets `` ({unit})`` appended.
-    The ones unit (``""``) fills back to the label as written.
+    ``group`` is the installing template's unit group (:func:`_unit_group`).
+    When the label's trailing parentheses read as that group with any unit
+    of ``ladder`` (``(명)`` or ``(억명)`` for ``({unit}명)``; ``(USD)`` or
+    ``(USD B)`` for ``(USD {unit})``), the group takes their place, so the
+    unit goes where the installer puts it and is never doubled. Any other
+    label gets `` ({unit})`` appended (``(별도)``, ``(2024)``, ``(est.)``,
+    a second line, or every label when the installer itself appends).
     """
     if _PLACEHOLDER in label:
         return label
-    match = _TRAILING_UNIT.match(label)
-    if match is None:
-        return _template(label)
-    inner = match["inner"].strip()
-    if tuple(ladder) == MYRIAD_LADDER:
-        word = _LAST_WORD.match(inner)
-        assert word is not None  # inner holds a non-space character
-        inner = f"{word['lead'] or ''}{_PLACEHOLDER}{word['word']}"
-    else:
-        inner = f"{inner} {_PLACEHOLDER}"
-    return f"{match['text']}{match['gap']}({inner}){match['tail']}"
+    match = _TRAILING_GROUP.match(label)
+    if match is not None:
+        written = fill(match["group"], "")
+        if any(written == fill(group, rung.label) for rung in ladder):
+            return f"{match['text']}{match['gap']}{group}{match['tail']}"
+    return _template(label)
 
 
 def _ladder(name: str, ax: Axes, template: str) -> tuple[Unit, ...]:
@@ -279,10 +292,12 @@ def axis_unit(
     The formatter owns the label text from then on: it rewrites the label on
     every draw, so change the label by calling ``axis_unit`` again. Axes made
     with ``sharex`` / ``sharey`` share one formatter, so one call rescales
-    the ticks of all of them and writes every label: a sibling's own label
-    takes the unit inside its trailing parentheses (``"인구 (명)"`` ->
-    ``"인구 (억명)"``, ``"Cost (USD)"`` -> ``"Cost (USD B)"``) or appended
-    (``"인구"`` -> ``"인구 (억)"``); call
+    the ticks of all of them and writes every label: a sibling's trailing
+    parentheses that hold this label's base unit take the unit inside
+    (``"인구 (명)"`` -> ``"인구 (억명)"`` for ``label="가구 ({unit}명)"``;
+    ``"Cost (USD)"`` -> ``"Cost (USD B)"``), any other sibling label gets
+    it appended (``"인구"`` -> ``"인구 (억)"``; all of them with
+    ``label=None``); call
     ``axis_unit`` on each (``for a in axes: dm.axis_unit(a, "y",
     label=...)``) to give each its own template. An inner panel whose label
     ``label_outer`` emptied (the upper panels of a stacked ``sharex`` grid)

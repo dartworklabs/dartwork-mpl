@@ -32,6 +32,7 @@ from dartwork_mpl.formatting._axis_wide import (
 from dartwork_mpl.formatting._label_unit import (
     LabelUnitFormatter,
     _sibling_template,
+    _unit_group,
     fill,
 )
 
@@ -524,18 +525,20 @@ class TestSharedAxes:
         [
             ("비용", "비용 (억)"),
             ("비용 (원)", "비용 (억원)"),
-            ("비용 (단위: 원)", "비용 (단위: 억원)"),
+            ("비용 (단위: 원)", "비용 (단위: 원) (억)"),
+            ("비용 (억원)", "비용 (억원)"),  # a unit already there: not doubled
+            ("매출 (별도)", "매출 (별도) (억)"),
         ],
     )
     def test_one_call_on_sharey_labels_the_sibling(self, other, expected):
         """One call rescales the shared ticks of every axes; each label says so.
 
-        A sibling without a template of its own keeps its label: a unit in
-        trailing parentheses takes the ladder's unit in front, as the
-        installing template places it (``비용 (원)`` -> ``비용 (억원)``);
-        without parentheses `` ({unit})`` is appended (review 2026-11-05,
-        R4: the sibling read ``비용 (원)`` over 억 ticks; user decision,
-        follow-up b).
+        A sibling without a template of its own keeps its label. Trailing
+        parentheses that hold the installing template's base unit (``(원)``
+        for ``매출 ({unit}원)``), or that unit with a ladder unit already in
+        it (``(억원)``), take the template's unit group; any other label gets
+        `` ({unit})`` appended (review 2026-11-05, R4; user decision,
+        follow-up b; re-review rulings N2 and N4).
         """
         fig, axes = self._stacked(sharey=True)
         for a, name in zip(axes, ("매출 (원)", other), strict=True):
@@ -572,6 +575,48 @@ class TestSharedAxes:
                 f"Revenue (USD {unit})",
                 f"Cost (USD {unit})",
             ]
+
+    @pytest.mark.parametrize(
+        ("other", "expected"),
+        [
+            ("Cost (USD)", "Cost (USD B)"),
+            ("Cost (USD B)", "Cost (USD B)"),  # not "(USD B B)"
+            ("Cost (est.)", "Cost (est.) (B)"),
+            ("Cost (2024)", "Cost (2024) (B)"),
+            ("Cost (USD)\n(nominal)", "Cost (USD)\n(nominal) (B)"),
+        ],
+    )
+    def test_only_the_templates_base_unit_takes_it_inside(
+        self, other, expected
+    ):
+        """Re-review 2026-11-05, N2: ``(est.)`` read ``(est. B)``."""
+        dm.style.use("report")
+        fig, axes = plt.subplots(
+            2, 1, sharey=True, figsize=dm.figsize("12cm", "standard")
+        )
+        for a, name in zip(axes, ("Revenue (USD)", other), strict=True):
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e10)
+            a.set_ylabel(name)
+        dm.axis_unit(
+            axes[0], "y", label="Revenue (USD {unit})", ladder="finance"
+        )
+        dm.simple_layout(fig)
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == ["Revenue (USD B)", expected]
+
+    def test_without_a_template_every_label_appends(self):
+        """label=None: the installer appends, so the siblings do too (N4)."""
+        fig, axes = self._stacked(sharey=True)
+        for a, name in zip(axes, ("매출 (원)", "비용 (원)"), strict=True):
+            a.bar(range(3), np.array([2.0, 4.0, 6.0]) * 1e11)
+            a.set_ylabel(name)
+        dm.axis_unit(axes[0], "y")
+        dm.simple_layout(fig)
+        fig.canvas.draw()
+        assert [a.get_ylabel() for a in axes] == [
+            "매출 (원) (억)",
+            "비용 (원) (억)",
+        ]
 
     def test_a_sibling_unit_reads_back_on_the_ones_rung(self):
         """No unit: ``비용 (원)`` stays as written, and returns later."""
@@ -647,34 +692,36 @@ class TestSharedAxes:
 
 
 @pytest.mark.parametrize(
-    ("label", "ladder", "template", "filled"),
+    ("label", "group", "ladder", "template"),
     [
-        ("비용 (원)", "myriad", "비용 ({unit}원)", "비용 (억원)"),
-        ("비용(원)", "myriad", "비용({unit}원)", "비용(억원)"),
-        (
-            "비용 (단위: 원)",
-            "myriad",
-            "비용 (단위: {unit}원)",
-            "비용 (단위: 억원)",
-        ),
-        ("Cost (USD)", "finance", "Cost (USD {unit})", "Cost (USD 억)"),
-        ("비용", "myriad", "비용 ({unit})", "비용 (억)"),
-        ("x (a) b", "si", "x (a) b ({unit})", "x (a) b (억)"),
-        ("비용 ({unit}원)", "myriad", "비용 ({unit}원)", "비용 (억원)"),
+        ("비용 (원)", "({unit}원)", "myriad", "비용 ({unit}원)"),
+        ("비용(원)", "({unit}원)", "myriad", "비용({unit}원)"),
+        ("비용 (억원)", "({unit}원)", "myriad", "비용 ({unit}원)"),
+        ("비용 (단위: 원)", "({unit}원)", "myriad", "비용 (단위: 원) ({unit})"),
+        ("매출 (별도)", "({unit}원)", "myriad", "매출 (별도) ({unit})"),
+        ("Cost (USD)", "(USD {unit})", "finance", "Cost (USD {unit})"),
+        ("Cost (USD B)", "(USD {unit})", "finance", "Cost (USD {unit})"),
+        ("Temp (°C)", "({unit}W)", "si", "Temp (°C) ({unit})"),
+        ("비용 (원)", "({unit})", "myriad", "비용 (원) ({unit})"),
+        ("비용 (원) (억)", "({unit})", "myriad", "비용 (원) ({unit})"),
+        ("비용", "({unit}원)", "myriad", "비용 ({unit})"),
+        ("비용 ({unit}원)", "({unit}원)", "myriad", "비용 ({unit}원)"),
     ],
 )
-def test_sibling_template(label, ladder, template, filled):
+def test_sibling_template(label, group, ladder, template):
     rungs = {
         "myriad": MYRIAD_LADDER,
         "finance": FINANCE_LADDER,
         "si": SI_LADDER,
     }
-    made = _sibling_template(label, rungs[ladder])
-    assert made == template
-    assert fill(made, "억") == filled
-    assert fill(made, "") == label.replace(" ({unit})", "").replace(
-        "{unit}", ""
-    )
+    assert _sibling_template(label, group, rungs[ladder]) == template
+
+
+def test_unit_group():
+    assert _unit_group("매출 ({unit}원)") == "({unit}원)"
+    assert _unit_group("Revenue (USD {unit})") == "(USD {unit})"
+    assert _unit_group("매출 (원) ({unit})") == "({unit})"
+    assert _unit_group("매출 {unit}원") == "({unit})"  # none: the append form
 
 
 def test_exported_as_experimental():
