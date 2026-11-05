@@ -720,6 +720,14 @@ def simple_layout(
     so they sit ``axes.titlepad`` above that legend; their text, size and
     weight are kept.
 
+    On a ``twinx`` / ``twiny`` pair, a side whose data draw one colour gets
+    that colour on its spine and tick marks (at least 3:1 against the
+    background) and the same hue darkened to 4.5:1 on its tick labels and
+    axis label, via :func:`dartwork_mpl.formatting.apply_twin_colors`.
+    Single axes, sides drawing several colours, two sides drawing the same
+    colour and colours you set are left alone; ``dm.config.twin_colors =
+    "neutral"`` turns it off.
+
     Examples
     --------
     >>> import matplotlib.pyplot as plt
@@ -765,9 +773,12 @@ def simple_layout(
         raise ValueError("margin must resolve to finite figure fractions")
 
     # Tick formats change label widths, so they go before fitting, but
-    # after every check that can still refuse the call.
+    # after every check that can still refuse the call. Twin colours follow
+    # the tick formats (the order bar labels rely on); they are not number
+    # formats, so ``format_ticks=False`` keeps them.
     if format_ticks:
         _format_ticks(fig)
+    _color_twins(fig)
 
     last: _GridEdges | None = None
     # Filter target axes by the gridspec the caller actually pointed at
@@ -849,6 +860,13 @@ def _format_ticks(fig: Figure) -> None:
     from ..formatting import apply_default_tick_format
 
     apply_default_tick_format(fig)
+
+
+def _color_twins(fig: Figure) -> None:
+    """Series colours on twin pairs, unless ``dm.config.twin_colors`` is off."""
+    from ..formatting import apply_twin_colors
+
+    apply_twin_colors(fig)
 
 
 def _figure_artist_reservations(

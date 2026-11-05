@@ -25,9 +25,11 @@ from ._defaults import (
     thin_crowded_date_ticks,
 )
 from ._label_unit import axis_unit, axis_unit_of
+from ._twin_colors import apply_twin_colors
 
 __all__ = [
     "apply_default_tick_format",
+    "apply_twin_colors",
     "avoid_tick_overlap",
     "axis_unit",
     "axis_unit_of",
