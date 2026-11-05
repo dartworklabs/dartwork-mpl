@@ -12,12 +12,12 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
   unless that needs more than two decimals;
 - x axes whose plotted data are integers 1900-2099 (annual lines, bars,
   bars grouped side by side within each year, scatter, ``stackplot`` and
-  ``fill_between`` areas; twins and shared axes included) are year axes:
-  ticks on whole years only (:class:`._years.WholeYearLocator`), read two
-  digits (``16, 18, 20``; four when two would print alike, or with
-  ``config.tick_years = 4``); integer data in that range that are not
-  years (elevations) read the same way, so give such an axis a formatter
-  of your own;
+  ``fill_between`` areas; twins, shared axes and a ``secondary_xaxis``
+  showing the same years included) are year axes: ticks on whole years
+  only (:class:`._years.WholeYearLocator`), read two digits (``16, 18,
+  20``; four when two would print alike, or with ``config.tick_years =
+  4``); integer data in that range that are not years (elevations) read
+  the same way, so give such an axis a formatter of your own;
 - smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
   sit in 1000-2999 (``1950.3`` elevations), log and category axes, colorbars
   and any axis with a formatter someone chose keep theirs;
@@ -63,6 +63,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 import numpy.typing as npt
 from matplotlib.axes import Axes
+from matplotlib.axes._secondary_axes import SecondaryAxis
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 from matplotlib.text import Text
@@ -534,12 +535,16 @@ def _restyle_dates(
     return 1
 
 
-def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
+def _year_axis(
+    axis: Axis, values: npt.NDArray[np.float64], digits: Digits, suffix: str
+) -> int:
     """Whole-year ticks and year labels on an x axis whose data are years.
 
-    The data decide (:func:`year_data` over :func:`plotted_dates`, twins and
-    shared axes included), not the ticks: ``dm.simple_layout`` refits the
-    margins after this call and the ticks move with them. Matplotlib's own
+    The data decide (:func:`year_data` over ``values``: the axes'
+    :func:`plotted_dates`, twins and shared axes included, or what a
+    secondary axis shows of them), not the ticks: ``dm.simple_layout``
+    refits the margins after this call and the ticks move with them.
+    Matplotlib's own
     locator gives way to :class:`WholeYearLocator`, which carries what
     someone asked of it in place (``ax.locator_params(axis="x", nbins=3)``),
     and its own formatter to :class:`YearTickFormatter` when every tick is
@@ -548,7 +553,7 @@ def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
     (``MaxNLocator``) matplotlib's formatter stays too, so every tick reads
     its value (``2005, 2007.5``). Returns 1 if anything changed.
     """
-    if not year_data(plotted_dates(ax, "x", bar_slot=1.0)):
+    if not year_data(values):
         return 0
     changed = 0
     if axis.isDefault_majloc:
@@ -558,6 +563,32 @@ def _year_axis(ax: Axes, axis: Axis, digits: Digits, suffix: str) -> int:
     if axis.isDefault_majfmt and _ticks_whole_years(axis.get_major_locator()):
         axis.set_major_formatter(YearTickFormatter(digits, suffix))
         changed = 1
+    return changed
+
+
+def _secondary_x_axes(ax: Axes) -> list[SecondaryAxis]:
+    """The ``ax.secondary_xaxis(...)`` children of ``ax``."""
+    return [
+        child
+        for child in ax.child_axes
+        if isinstance(child, SecondaryAxis)
+        and child.xaxis.get_scale() == "function"  # a secondary x on linear
+    ]
+
+
+def _year_axes(ax: Axes, digits: Digits, suffix: str) -> int:
+    """:func:`_year_axis` on ``ax``'s x axis and its secondary x axes.
+
+    A secondary x axis shows the plotted x data through its functions
+    (``secondary_xaxis("top")``: the same years; ``y - 1990``: ages), so it
+    takes the year treatment when what it shows are years, under the same
+    flags; matplotlib keeps them on it until its parent's scale changes.
+    """
+    years = plotted_dates(ax, "x", bar_slot=1.0)
+    changed = _year_axis(ax.xaxis, years, digits, suffix)
+    for secondary in _secondary_x_axes(ax):
+        shown = secondary.xaxis.get_transform().inverted().transform(years)
+        changed += _year_axis(secondary.xaxis, shown, digits, suffix)
     return changed
 
 
@@ -621,7 +652,7 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if which == "x":
                 suffix = "년" if korean and date_style == "concise" else ""
-                changed += _year_axis(ax, axis, tick_years, suffix)
+                changed += _year_axes(ax, tick_years, suffix)
             if not axis.isDefault_majfmt:
                 continue
             ticks = _visible_ticks(axis)
@@ -778,15 +809,16 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
     :class:`QuarterLocator`: 1, 2, 4, 8 … quarters, Q1 kept) are thinned
     the same way through the locator's steps, so the notation never
     changes; see :func:`_thin_by_steps`. Year axes (a
-    :class:`WholeYearLocator`) take fewer whole-year ticks; see
-    :func:`_thin_years`.
+    :class:`WholeYearLocator`, ``secondary_xaxis`` children included) take
+    fewer whole-year ticks; see :func:`_thin_years`.
     """
     renderer = get_renderer(fig)
     changed = 0
     for ax in fig.axes:
         if ax.name != "rectilinear":
             continue
-        for axis in (ax.xaxis, ax.yaxis):
+        secondaries = [s.xaxis for s in _secondary_x_axes(ax)]
+        for axis in (ax.xaxis, ax.yaxis, *secondaries):
             locator = axis.get_major_locator()
             if isinstance(locator, (CategoryDateLocator, QuarterLocator)):
                 changed += _thin_by_steps(axis, locator, fig, renderer)

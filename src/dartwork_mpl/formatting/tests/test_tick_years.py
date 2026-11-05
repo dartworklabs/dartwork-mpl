@@ -333,6 +333,58 @@ def test_an_interpolated_fill_does_not_unmake_a_year_axis():
     assert all(map(_reads_its_value, locs, labels)), labels
 
 
+def _on(axis) -> tuple[list[float], list[str]]:
+    """Locations and texts of an axis's major ticks inside its view."""
+    axis.axes.get_figure(root=True).canvas.draw()
+    low, high = sorted(axis.get_view_interval())
+    pairs = [
+        (float(loc), label.get_text())
+        for loc, label in zip(
+            axis.get_majorticklocs(), axis.get_majorticklabels(), strict=True
+        )
+        if low <= loc <= high
+    ]
+    return [p[0] for p in pairs], [p[1] for p in pairs]
+
+
+@pytest.mark.parametrize("width", ["9cm", "12cm", "17cm"])
+def test_a_secondary_x_axis_reads_the_parents_years(width):
+    """``secondary_xaxis("top")`` shows the same years, the same way.
+
+    Review 2026-11-05, R6: it read ``2002.5, 2005.0`` above ``05, 10``.
+    """
+
+    def draw(ax):
+        ax.plot(ANNUAL, np.arange(21))
+        ax.secondary_xaxis("top")
+
+    ax = _laid_out_axes(draw, width)
+    (top,) = ax.child_axes
+    assert _on(top.xaxis) == _shown(ax), (_on(top.xaxis), _shown(ax))
+    assert isinstance(top.xaxis.get_major_formatter(), YearTickFormatter)
+    _assert_year_ticks(ax)
+
+
+def test_a_secondary_axis_of_other_values_or_formats_is_kept():
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(ANNUAL, np.arange(21))
+    age = ax.secondary_xaxis(
+        "top", functions=(lambda y: (y - 2004) / 2, lambda a: a * 2 + 2004)
+    )
+    fiscal = ax.secondary_xaxis(
+        "bottom", functions=(lambda y: y + 1, lambda y: y - 1)
+    )
+    chosen = mticker.FuncFormatter(lambda v, pos: f"FY{v:.0f}")
+    fiscal.xaxis.set_major_formatter(chosen)
+    dm.simple_layout(fig)
+    assert type(age.xaxis.get_major_formatter()) is mticker.ScalarFormatter
+    assert type(age.xaxis.get_major_locator()) is mticker.AutoLocator
+    assert fiscal.xaxis.get_major_formatter() is chosen  # someone's: kept
+    assert isinstance(fiscal.xaxis.get_major_locator(), WholeYearLocator)
+    locs, labels = _on(fiscal.xaxis)
+    assert _whole(locs) and labels == [f"FY{v:.0f}" for v in locs], labels
+
+
 def test_quarterly_stackplot_reads_quarters():
     fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
     ax.stackplot(QUARTER_STARTS, np.ones(12), np.arange(12))
