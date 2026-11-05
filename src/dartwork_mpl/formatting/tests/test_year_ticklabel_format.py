@@ -202,3 +202,32 @@ def test_year_formatter_is_matplotlibs_scalar_formatter():
     assert fmt.get_useOffset() is False
     carried = YearTickFormatter(2, useOffset=2000, scientific=False)
     assert carried.get_useOffset() is False and carried.offset == 2000
+
+
+@pytest.mark.parametrize("limits", [(-3, 3), (-2, 2), (0, 0)])
+@pytest.mark.parametrize("order", ORDERS)
+def test_rc_power_limits_do_not_make_years_scientific(limits, order):
+    """Only an explicit request puts an exponent on years, never rc defaults.
+
+    Review of PR #595, item 4: with ``axes.formatter.limits: -3, 3`` in an
+    rc file the year axis read ``2.012 … 2.024`` under ``×1e3``.
+    """
+    with matplotlib.rc_context({"axes.formatter.limits": limits}):
+        ax = _year_line({"useOffset": False}, order)
+        locs, labels, offset = _shown(ax)
+        assert labels == _two_digits(locs) and offset == "", labels
+        ax.ticklabel_format(axis="x", style="sci")  # an explicit request
+        locs, labels, offset = _shown(ax)
+        assert offset != "", labels
+
+
+def test_requested_format_survives_a_renamed_private_attribute():
+    """A matplotlib that renames ``_scientific`` must not break every layout.
+
+    Review of PR #595, item 5: ``vars(formatter)["_scientific"]`` raised
+    ``KeyError`` once the attribute was gone.
+    """
+    fmt = mticker.ScalarFormatter()
+    fmt.set_useOffset(False)
+    del fmt._scientific, fmt._powerlimits
+    assert requested_format(fmt) == {"useOffset": False}

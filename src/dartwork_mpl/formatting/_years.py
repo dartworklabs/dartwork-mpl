@@ -181,12 +181,19 @@ def requested_format(formatter: ticker.Formatter) -> dict[str, Any]:
         asked["useOffset"] = formatter.offset  # a fixed offset
     elif formatter.get_useOffset() != fresh.get_useOffset():
         asked["useOffset"] = formatter.get_useOffset()
-    # No public getters for these two (matplotlib 3.11).
+    # No public getters for these two (matplotlib 3.11): read them where
+    # they are, and skip them if a later matplotlib renames them.
     mine, base = vars(formatter), vars(fresh)
-    if mine["_scientific"] != base["_scientific"]:
-        asked["scientific"] = mine["_scientific"]
-    if tuple(mine["_powerlimits"]) != tuple(base["_powerlimits"]):
-        asked["powerlimits"] = tuple(mine["_powerlimits"])
+    scientific = mine.get("_scientific")
+    if isinstance(scientific, bool) and scientific != base.get("_scientific"):
+        asked["scientific"] = scientific
+    limits, base_limits = mine.get("_powerlimits"), base.get("_powerlimits")
+    if (
+        isinstance(limits, (tuple, list))
+        and isinstance(base_limits, (tuple, list))
+        and tuple(limits) != tuple(base_limits)
+    ):
+        asked["powerlimits"] = tuple(limits)
     if formatter.get_useMathText() != fresh.get_useMathText():
         asked["useMathText"] = formatter.get_useMathText()
     if formatter.get_useLocale() != fresh.get_useLocale():
@@ -211,15 +218,19 @@ class YearTickFormatter(ticker.ScalarFormatter):
       2007.5``), no offset, never a rounded year; with every tick in view a
       whole year, the years.
 
-    It is matplotlib's ``ScalarFormatter`` without an offset (``useOffset``
-    defaults to ``False``), so ``ax.ticklabel_format`` and its setters work
-    on it; the keywords set the same settings at construction (what
-    :func:`requested_format` read off matplotlib's formatter). A year label
-    already has no offset and no exponent, so ``useOffset=False`` and
-    ``style="plain"`` keep the years. When the settings would give the ticks
-    in view an exponent or an offset (``scilimits=(0, 0)``,
-    ``useOffset=2000``), every tick prints as matplotlib's ScalarFormatter
-    prints it, corner label included, on the same whole-year ticks.
+    It is matplotlib's ``ScalarFormatter`` without an offset and without
+    scientific notation until asked (``useOffset`` defaults to ``False``;
+    the rc ``axes.formatter.limits`` alone never puts an exponent on
+    years), so ``ax.ticklabel_format`` and its setters work on it; the
+    keywords set the same settings at construction (what
+    :func:`requested_format` read off matplotlib's formatter). Power limits
+    asked without a ``style`` turn scientific notation on, as on
+    matplotlib's own formatter. A year label already has no offset and no
+    exponent, so ``useOffset=False`` and ``style="plain"`` keep the years.
+    When the settings would give the ticks in view an exponent or an offset
+    (``scilimits=(0, 0)``, ``useOffset=2000``), every tick prints as
+    matplotlib's ScalarFormatter prints it, corner label included, on the
+    same whole-year ticks.
 
     The cursor readout (:meth:`format_data_short`) is the value itself
     (``2007.53``), as matplotlib's number axes write it: a cursor sits
@@ -243,6 +254,9 @@ class YearTickFormatter(ticker.ScalarFormatter):
         super().__init__(
             useOffset=useOffset, useMathText=useMathText, useLocale=useLocale
         )
+        # Years carry no exponent unless someone asks: not from rc limits.
+        ticker.ScalarFormatter.set_scientific(self, False)
+        self._scientific_asked = False
         if scientific is not None:
             self.set_scientific(scientific)
         if powerlimits is not None:
@@ -251,6 +265,21 @@ class YearTickFormatter(ticker.ScalarFormatter):
         self.suffix = suffix
         self._four = digits == 4
         self._numbers = False
+
+    def set_scientific(self, b: bool) -> None:
+        """Turn scientific notation on or off (``ticklabel_format(style=)``)."""
+        super().set_scientific(b)
+        self._scientific_asked = True
+
+    def set_powerlimits(self, lims: tuple[int, int]) -> None:
+        """Set the exponent thresholds (``ticklabel_format(scilimits=)``).
+
+        Asked without a ``style``, they turn scientific notation on, as on
+        matplotlib's own formatter, where it is on by default.
+        """
+        super().set_powerlimits(lims)
+        if not self._scientific_asked:
+            ticker.ScalarFormatter.set_scientific(self, True)
 
     def set_locs(self, locs: Sequence[float]) -> None:
         """Choose years (two or four digits) or numbers from the ticks in view.
