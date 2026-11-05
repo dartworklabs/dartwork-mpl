@@ -190,6 +190,39 @@ def _n_basic_templates() -> int:
     return len(list((_ASSET / "prompt" / "05-templates").glob("*.py")))
 
 
+def _n_advanced_templates() -> int:
+    folder = _ASSET / "prompt" / "05-templates" / "advanced"
+    return len(list(folder.glob("*.py")))
+
+
+def _n_base_presets() -> int:
+    """Presets before the Korean variants, which the prose counts separately."""
+    presets = json.loads(
+        (_ASSET / "mplstyle" / "presets.json").read_text(encoding="utf-8")
+    )
+    return len([name for name in presets if not name.endswith("-kr")])
+
+
+def _n_artifact_resource_members() -> int:
+    """Artifact delivery's own resource members, counted at their source."""
+    path = _REPO / "src" / "dartwork_mpl" / "mcp" / "artifacts" / "transport.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    found = 0
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for dec in node.decorator_list:
+            target = dec.func if isinstance(dec, ast.Call) else dec
+            if (
+                isinstance(target, ast.Attribute)
+                and isinstance(target.value, ast.Name)
+                and target.value.id == "mcp"
+                and target.attr == "resource"
+            ):
+                found += 1
+    return found
+
+
 @lru_cache(maxsize=1)
 def _mcp_decorator_counts() -> dict[str, int]:
     counts = {"tool": 0, "resource": 0, "resource_template": 0, "prompt": 0}
@@ -413,6 +446,86 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ("README.md", r"(ten|\d+) aspect tokens", _n_aspect_tokens),
     ("llms.txt", r"(ten|\d+) aspect tokens", _n_aspect_tokens),
     ("docs/ai/index.md", r"Prompt corpus\*\* \((\d+) guides", _n_prompt_guides),
+    # The shipped prompt corpus: `dm.get_prompt` and the MCP resources hand
+    # these files to agents in other projects, so a stale count there is a
+    # wrong answer delivered to a consumer, not just a stale repo doc.
+    (
+        "src/dartwork_mpl/asset/prompt/00-index.md",
+        r"(\d+) templates",
+        _n_basic_templates,
+    ),
+    (
+        "src/dartwork_mpl/asset/prompt/01-policy.md",
+        r"(\d+) templates",
+        _n_basic_templates,
+    ),
+    (
+        "src/dartwork_mpl/asset/prompt/03-recipes.md",
+        r"(\d+) templates",
+        _n_basic_templates,
+    ),
+    # The inventory breakdown inside the MCP sentence: the resource-template
+    # total was already pinned, but its three named parts were not.
+    ("CLAUDE.md", r"\+ (\d+) basic", _n_basic_templates),
+    ("AGENTS.md", r"\+ (\d+) basic", _n_basic_templates),
+    ("README.md", r"\+ (\d+) basic", _n_basic_templates),
+    ("CLAUDE.md", r"(\d+) tier-2 advanced", _n_advanced_templates),
+    ("AGENTS.md", r"(\d+) tier-2 advanced", _n_advanced_templates),
+    ("README.md", r"(\d+) tier-2 advanced", _n_advanced_templates),
+    ("CLAUDE.md", r"(\w+) artifact members", _n_artifact_resource_members),
+    ("AGENTS.md", r"(\w+) artifact members", _n_artifact_resource_members),
+    ("README.md", r"(\w+) artifact members", _n_artifact_resource_members),
+    ("README.md", r"(\w+) presets \(`scientific`", _n_base_presets),
+    # `llms.txt` is the machine-readable index named in CLAUDE.md, and its
+    # inventory line carried none of the checks the prose entries above have.
+    ("llms.txt", r"(\d+) tools, \d+ static resources", _n_mcp_tools),
+    ("llms.txt", r"\d+ tools, (\d+) static resources", _n_mcp_resources),
+    ("llms.txt", r"(\d+) resource templates", _n_mcp_resource_templates),
+    ("llms.txt", r"resource templates, (\d+) prompts", _n_mcp_prompts),
+    # Both inventory sentences in the MCP guide. The Tools and Resources
+    # tables are already held against the live surface by
+    # tests/docs/test_docs_mcp_tools.py; these numbers in the surrounding
+    # prose were not, and that guide is the setup page a client reads first.
+    (
+        "docs/integrations/mcp_server.md",
+        r"inventory is \*\*(\d+) tools",
+        _n_mcp_tools,
+    ),
+    (
+        "docs/integrations/mcp_server.md",
+        r"inventory is \*\*\d+ tools, (\d+) static resources",
+        _n_mcp_resources,
+    ),
+    (
+        "docs/integrations/mcp_server.md",
+        r"inventory is \*\*\d+ tools, \d+ static resources, (\d+) resource\s",
+        _n_mcp_resource_templates,
+    ),
+    (
+        "docs/integrations/mcp_server.md",
+        r"templates, and (\d+) prompts\*\*",
+        _n_mcp_prompts,
+    ),
+    (
+        "docs/integrations/mcp_server.md",
+        r"exposes \*\*(\d+) tools",
+        _n_mcp_tools,
+    ),
+    (
+        "docs/integrations/mcp_server.md",
+        r"exposes \*\*\d+ tools, (\d+) static resources",
+        _n_mcp_resources,
+    ),
+    (
+        "docs/integrations/mcp_server.md",
+        r"exposes \*\*\d+ tools, \d+ static resources, (\d+) resource templates",
+        _n_mcp_resource_templates,
+    ),
+    (
+        "docs/integrations/mcp_server.md",
+        r"resource templates\s+and (\d+) prompts\*\*",
+        _n_mcp_prompts,
+    ),
 ]
 
 

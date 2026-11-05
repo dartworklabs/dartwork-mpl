@@ -147,3 +147,43 @@ def test_validation_docs_publish_the_complete_drift_check_contract() -> None:
     assert not re.search(r"\]\([^)]*build/color-system-comparison", text), (
         "ignored local comparison output must not be a repository link"
     )
+
+
+def test_installed_skill_names_every_live_colour_family() -> None:
+    """The shipped skill lists each ``dc.*`` family by name, not just a count.
+
+    ``references/colors.md`` installs into other projects, where it is the
+    only colour reference an agent reads. A family added or renamed in the
+    palette without this list following it would send that agent after a
+    name the runtime rejects at draw time.
+    """
+    from dartwork_mpl._colors._generated import PALETTE
+
+    text = (
+        _REPO
+        / "src"
+        / "dartwork_mpl"
+        / "skills"
+        / "dartwork-mpl"
+        / "references"
+        / "colors.md"
+    ).read_text(encoding="utf-8")
+    match = re.search(
+        r"`dc\.<family><step>`: (\d+) families \(([^)]*)\)", text, re.S
+    )
+    assert match, (
+        "colors.md no longer states the dc.* family list in the pinned shape "
+        "— update this regex so the check stays live"
+    )
+
+    claimed, listed = match.group(1), match.group(2)
+    names = [name.strip() for name in listed.split(",")]
+
+    assert int(claimed) == len(PALETTE), (
+        f"colors.md claims {claimed} families, palette has {len(PALETTE)}"
+    )
+    assert names == sorted(PALETTE), (
+        f"colors.md family list is out of step with the palette: "
+        f"missing {sorted(set(PALETTE) - set(names))}, "
+        f"unknown {sorted(set(names) - set(PALETTE))}"
+    )
