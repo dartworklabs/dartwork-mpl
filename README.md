@@ -39,11 +39,10 @@ That four-step pattern — **preset → `figsize(width, aspect)` → `simple_lay
 pip install dartwork-mpl        # or:  uv add dartwork-mpl
 ```
 
-Requires Python 3.11+ (from 0.6.0), Matplotlib 3.10.1–3.10.x and NumPy
-1.26–2.4.x. Matplotlib 3.11 changes font rendering and legend markers and is excluded while its
-compatibility with the frozen visual style is unresolved. NumPy 2.5 is
-excluded because its date-unit deprecations fail the Matplotlib 3.10
-date-rendering checks. The core install
+Requires Python 3.11+ (from 0.6.0), Matplotlib 3.11+ and NumPy 1.26+.
+Matplotlib 3.10 is not supported: the visual baselines and docs figures are
+made on 3.11, which sizes text boxes and draws legend markers differently. The
+core install
 is intentionally lean; add an extra only when you need it:
 
 | Extra        | Enables                                   | Pulls in              |

@@ -18,9 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- The `fastapi<0.137` upper cap is lifted. `numpy<2.5` stays with
-  `matplotlib<3.11`: Matplotlib 3.10's own `dates.py` still creates
-  generic-unit NumPy values that NumPy 2.5 deprecates.
+- **Requires Matplotlib ≥3.11; 3.10 is no longer supported.** Matplotlib
+  3.11 sizes text boxes and draws legend markers differently, so it renders
+  dartwork-mpl figures slightly differently from 3.10. Rather than patch
+  Matplotlib internals to imitate 3.10, dartwork-mpl follows 3.11 as it is:
+  the 14 pixel baselines and the colour-theory docs figures are regenerated
+  on 3.11 (3.11.0 and 3.11.2 render them byte-identically), and supporting
+  both series would mean two baseline sets. The `numpy<2.5` cap is lifted
+  with it: only Matplotlib 3.10's own `dates.py` tripped NumPy 2.5's
+  generic-unit deprecation.
+- The `fastapi<0.137` upper cap is lifted.
 
 ## [0.6.0] - 2026-11-05
 
