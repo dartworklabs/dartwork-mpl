@@ -560,11 +560,7 @@ def _year_axis(
         axis.set_major_locator(WholeYearLocator(**asked))
         changed = 1
     if axis.isDefault_majfmt:
-        ours = isinstance(axis.get_major_locator(), WholeYearLocator)
-        between: Literal["blank", "numbers"] = "blank" if ours else "numbers"
-        axis.set_major_formatter(
-            YearTickFormatter(digits, suffix, between=between)
-        )
+        axis.set_major_formatter(YearTickFormatter(digits, suffix))
         changed = 1
     return changed
 

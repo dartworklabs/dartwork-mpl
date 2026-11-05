@@ -162,36 +162,26 @@ class YearTickFormatter(ticker.Formatter):
     (every draw) reads the ticks in view: with ``digits=2`` the years print
     four digits when two would repeat (``1900, 2000``; ``2000 … 2100``).
     Every whole tick is a year, the ``2100`` at the edge of data reaching
-    2099 included. ``between`` says what a draw with a tick between years
-    prints:
+    2099 included. What a draw with a tick between years prints is decided
+    from the axis's locator at that draw, so a locator set later counts:
 
-    - ``"blank"`` (under :class:`WholeYearLocator`, which leaves whole years
-      only for a view under two years): that tick gets no label;
-    - ``"numbers"`` (under a locator someone set, ``MaxNLocator`` or pinned
-      ticks): every tick prints its plain value (``2005.0, 2007.5``), no
-      offset, never a rounded year; with every tick whole, the years.
+    - under :class:`WholeYearLocator` (whole years except in a view under
+      two years) that tick gets no label;
+    - under any other locator (``MaxNLocator``, ``AutoLocator``, pinned
+      ``set_xticks``) every tick prints its plain value (``2005.0,
+      2007.5``), no offset, never a rounded year; with every tick in view a
+      whole year, the years.
 
     The cursor readout (:meth:`format_data_short`) is the value itself
     (``2007.53``), as matplotlib's number axes write it: a cursor sits
     between years.
     """
 
-    def __init__(
-        self,
-        digits: Literal[2, 4],
-        suffix: str = "",
-        *,
-        between: Literal["blank", "numbers"] = "blank",
-    ) -> None:
+    def __init__(self, digits: Literal[2, 4], suffix: str = "") -> None:
         if digits not in (2, 4):
             raise ValueError(f"digits must be 2 or 4, got {digits!r}")
-        if between not in ("blank", "numbers"):
-            raise ValueError(
-                f"between must be 'blank' or 'numbers', got {between!r}"
-            )
         self.digits = digits
         self.suffix = suffix
-        self.between = between
         self._four = digits == 4
         self._numbers: ticker.ScalarFormatter | None = None
         self._cursor = ticker.ScalarFormatter()
@@ -214,7 +204,9 @@ class YearTickFormatter(ticker.Formatter):
             low, high = sorted(float(v) for v in axis.get_view_interval())
             shown = [v for v in values if low <= v <= high]
         self._numbers = None
-        if self.between == "numbers" and not all(_whole(v) for v in shown):
+        locator = axis.get_major_locator() if axis is not None else None
+        ours = isinstance(locator, WholeYearLocator)
+        if not ours and not all(_whole(v) for v in shown):
             self._plain.set_locs(values)
             self._numbers = self._plain
         years = [round(v) for v in shown if _whole(v)]

@@ -573,6 +573,41 @@ def test_a_locator_someone_set_follows_the_view():
         assert labels == [f"{round(v)}" for v in locs], labels
 
 
+@pytest.mark.parametrize(
+    "make",
+    [mticker.AutoLocator, lambda: mticker.MaxNLocator(nbins=4)],
+    ids=["AutoLocator", "MaxNLocator4"],
+)
+def test_a_locator_set_after_the_layout_reads_years_or_numbers(make):
+    """The year formatter decides from the locator in place at each draw.
+
+    Re-review 2026-11-05: a locator set after the first ``dm.simple_layout``
+    met a formatter fixed at install and read ``05, '', 10, ''``.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot(np.arange(2005, 2025), np.arange(20))
+    dm.simple_layout(fig)
+    ax.xaxis.set_major_locator(make())
+    dm.simple_layout(fig)
+    locs, labels = _shown(ax)
+    assert len(locs) >= 2 and all(labels), (locs, labels)
+    assert _years_or_values(locs, labels), (locs, labels)
+
+
+def test_ticks_pinned_after_the_layout_read_their_values():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot(np.arange(2005, 2025), np.arange(20))
+    dm.simple_layout(fig)
+    ax.set_xticks([2007.5, 2012.5, 2017.5])
+    dm.simple_layout(fig)
+    assert _shown(ax)[1] == ["2007.5", "2012.5", "2017.5"]
+    ax.set_xticks([2008, 2016])
+    assert _shown(ax)[1] == ["08", "16"]
+    ax.xaxis.set_major_locator(WholeYearLocator())  # the year locator again
+    ax.set_xlim(2016.2, 2016.8)
+    assert set(_shown(ax)[1]) == {""}  # between years under it: unlabelled
+
+
 def test_year_ticks_past_2099_are_labelled():
     """Data to 2099 tick 2100 at the edge: a year, labelled like the rest."""
     locs, labels = _shown(_line(np.arange(2050, 2100), width="12cm"))
@@ -637,19 +672,19 @@ def test_helpers():
     assert whole_years([2016, 2017, 2020]) and not whole_years([])
     assert not whole_years([2016, 2016.5])
     fmt = YearTickFormatter(2)
-    assert fmt.format_ticks([2016, 2016.5, 2017]) == ["16", "", "17"]
+    # No year locator behind it: a tick between years makes every tick a number.
+    assert fmt.format_ticks([2016, 2016.5, 2017]) == [
+        "2016.0",
+        "2016.5",
+        "2017.0",
+    ]
+    assert fmt.format_ticks([2016, 2017]) == ["16", "17"]
     assert fmt.format_ticks([1900, 2000]) == ["1900", "2000"]
     assert fmt.format_ticks([2080, 2090, 2100]) == ["80", "90", "00"]
     assert fmt.format_ticks([2000, 2100]) == ["2000", "2100"]
-    numbers = YearTickFormatter(2, "년", between="numbers")
-    assert numbers.format_ticks([2005, 2010]) == ["05년", "10년"]
-    assert numbers.format_ticks([2005, 2007.5, 2010]) == [
-        "2005.0",
-        "2007.5",
-        "2010.0",
-    ]
-    with pytest.raises(ValueError, match="between"):
-        YearTickFormatter(2, between="round")  # type: ignore[arg-type]
+    korean = YearTickFormatter(2, "년")
+    assert korean.format_ticks([2005, 2010]) == ["05년", "10년"]
+    assert korean.format_ticks([2005, 2007.5]) == ["2005.0", "2007.5"]
     assert fmt.format_data_short(2016.5) == "2016.5"
     locator = WholeYearLocator()
     assert locator.tick_values(2004.05, 2024.95) == pytest.approx(
