@@ -91,12 +91,12 @@ def _value_bytes(array: Any) -> bytes:
     point that appears or disappears does.
     """
     try:
-        masked = np.ma.asarray(array, dtype=float)  # type: ignore[no-untyped-call]
+        masked = np.ma.asarray(array, dtype=np.float64)
     except (TypeError, ValueError):
         objects = np.asarray(array, dtype=object)
         return repr((objects.shape, list(objects.ravel()))).encode()
-    mask = np.ma.getmaskarray(masked)  # type: ignore[no-untyped-call]
-    data = np.where(mask, 0.0, np.ma.getdata(masked))  # type: ignore[no-untyped-call]
+    mask = np.ma.getmaskarray(masked)
+    data = np.where(mask, 0.0, np.ma.getdata(masked))
     data = np.where(np.isnan(data), np.nan, data)
     return bytes(repr(masked.shape).encode() + mask.tobytes() + data.tobytes())
 

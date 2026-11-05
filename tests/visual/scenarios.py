@@ -51,8 +51,14 @@ class Scenario:
 
 
 def _blue_colors(count: int | None = None) -> tuple[str, ...]:
-    tokens = tuple(dm.colors("blue", n=10))
-    return tokens if count is None else tokens[:count]
+    """The blue family's designed discrete form for ``count`` series.
+
+    ``dm.colors(name, n)`` spreads ``n`` colors over the ladder; slicing the
+    10-step ladder instead would hand every scenario its lightest, nearly
+    invisible shades. ``None`` is the full 10-step ladder, which only the
+    swatch scenario shows.
+    """
+    return tuple(dm.colors("blue", n=10 if count is None else count))
 
 
 def _build_preset_report_line() -> Figure:
@@ -290,7 +296,9 @@ def _build_histogram_normal_fit() -> Figure:
         label=f"Normal fit\nmean={mean:.1f}, std={std:.1f}",
     )
 
-    ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=0))
+    # The density ticks fall on 0.5 % steps: one decimal is the fewest that
+    # renders every tick exactly and distinctly (zero repeats "2%").
+    ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=1))
     ax.set_xlabel("Value", fontsize=dm.fs(0))
     ax.set_ylabel("Density", fontsize=dm.fs(0))
     ax.set_title("Distribution Analysis", fontsize=dm.fs(1))
@@ -324,11 +332,12 @@ def _build_donut_composition() -> Figure:
     labels = ["범주 A", "범주 B", "범주 C", "범주 D", "기타"]
     colors = _blue_colors(5)
 
-    _wedges, _texts, autotexts = ax.pie(
+    # Whole-number shares print without a meaningless ".0".
+    wedges, _texts, autotexts = ax.pie(
         sizes,
         labels=labels,
         colors=colors,
-        autopct="%1.1f%%",
+        autopct="%1.0f%%",
         startangle=90,
         pctdistance=0.85,
     )
@@ -343,8 +352,9 @@ def _build_donut_composition() -> Figure:
         fontsize=dm.fs(1),
         fontweight=dm.fw(1),
     )
-    for autotext in autotexts:
-        autotext.set_color("white")
+    for wedge, autotext in zip(wedges, autotexts, strict=True):
+        # Ink chosen against the wedge it sits on, not a fixed white.
+        autotext.set_color(dm.readable_text_color(wedge.get_facecolor()))
         autotext.set_fontsize(dm.fs(-1))
         autotext.set_fontweight(dm.fw(1))
     ax.set_title("범주별 구성", fontsize=dm.fs(1))
@@ -363,10 +373,14 @@ def _build_dual_axis_timeseries() -> Figure:
     secondary = primary * 0.15 + rng.standard_normal(12) * 5
     palette = _blue_colors(2)
 
+    # Each y axis keeps its series' hue, darkened only as far as text needs
+    # to read on the axes background.
+    ink = [dm.ensure_contrast(color, ax.get_facecolor()) for color in palette]
+
     ax.bar(dates, primary, alpha=0.3, label="주 계열", color=palette[0])
     ax.set_xlabel("월", fontsize=dm.fs(0))
-    ax.set_ylabel("주 계열 (단위)", color=palette[0], fontsize=dm.fs(0))
-    ax.tick_params(axis="y", labelcolor=palette[0])
+    ax.set_ylabel("주 계열 (단위)", color=ink[0], fontsize=dm.fs(0))
+    ax.tick_params(axis="y", labelcolor=ink[0])
 
     ax2 = ax.twinx()
     ax2.plot(
@@ -377,8 +391,8 @@ def _build_dual_axis_timeseries() -> Figure:
         linewidth=dm.lw(0),
         label="보조 계열",
     )
-    ax2.set_ylabel("보조 계열 (단위)", color=palette[1], fontsize=dm.fs(0))
-    ax2.tick_params(axis="y", labelcolor=palette[1])
+    ax2.set_ylabel("보조 계열 (단위)", color=ink[1], fontsize=dm.fs(0))
+    ax2.tick_params(axis="y", labelcolor=ink[1])
     ax.set_title("월별 이중 축 계열", fontsize=dm.fs(1))
     ax.grid(True, alpha=0.3, linewidth=0.5)
 
@@ -465,12 +479,11 @@ def _build_kr_math_labels() -> Figure:
 
 
 def all_scenarios() -> list[Scenario]:
-    blue_palette = _blue_colors()
     return [
         Scenario(
             "preset_report_line",
             _build_preset_report_line,
-            Expectations(min_lines=3, palette=blue_palette[:3]),
+            Expectations(min_lines=3, palette=_blue_colors(3)),
         ),
         Scenario(
             "preset_report_kr_bars",
@@ -478,7 +491,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_patches=4,
                 texts_contain=("매출",),
-                palette=blue_palette[:4],
+                palette=_blue_colors(4),
                 tolerance=22.0,
             ),
         ),
@@ -486,7 +499,7 @@ def all_scenarios() -> list[Scenario]:
             "preset_scientific_scatter",
             _build_preset_scientific_scatter,
             Expectations(
-                min_lines=1, min_collections=1, palette=blue_palette[:2]
+                min_lines=1, min_collections=1, palette=_blue_colors(2)
             ),
         ),
         Scenario(
@@ -496,29 +509,27 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=5,
                 texts_contain=("확률 밀도",),
-                palette=blue_palette[:2],
+                palette=_blue_colors(2),
                 tolerance=22.0,
             ),
         ),
         Scenario(
             "line_signals",
             _build_line_signals,
-            Expectations(min_lines=2, palette=blue_palette[:2]),
+            Expectations(min_lines=2, palette=_blue_colors(2)),
         ),
         Scenario(
             "bar_value_labels",
             _build_bar_value_labels,
             Expectations(
-                min_patches=4,
-                texts_contain=("1.20M",),
-                palette=blue_palette[:4],
+                min_patches=4, texts_contain=("1.20M",), palette=_blue_colors(4)
             ),
         ),
         Scenario(
             "scatter_fit",
             _build_scatter_fit,
             Expectations(
-                min_lines=1, min_collections=1, palette=blue_palette[:2]
+                min_lines=1, min_collections=1, palette=_blue_colors(2)
             ),
         ),
         Scenario(
@@ -528,7 +539,7 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=5,
                 texts_contain=("Normal fit",),
-                palette=blue_palette[:2],
+                palette=_blue_colors(2),
             ),
         ),
         Scenario(
@@ -542,7 +553,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_patches=3,
                 texts_contain=("구성",),
-                palette=blue_palette[:5],
+                palette=_blue_colors(5),
                 require_ylabel=False,
                 tolerance=24.0,
             ),
@@ -555,14 +566,14 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=12,
                 texts_contain=("보조 계열",),
-                palette=blue_palette[:2],
+                palette=_blue_colors(2),
                 tolerance=24.0,
             ),
         ),
         Scenario(
             "palette_swatch",
             _build_palette_swatch,
-            Expectations(min_patches=8, palette=blue_palette),
+            Expectations(min_patches=8, palette=_blue_colors()),
         ),
         Scenario(
             "colormap_strip",
@@ -575,7 +586,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_lines=1,
                 texts_contain=("한글", _SPECIAL_CHARS),
-                palette=blue_palette[:1],
+                palette=_blue_colors(1),
                 tolerance=25.0,
             ),
         ),

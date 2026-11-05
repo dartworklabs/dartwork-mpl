@@ -1413,12 +1413,20 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
+## Unreleased: Matplotlib 3.11 minimum
+
+Use Matplotlib >=3.11.0. Matplotlib 3.10 is no longer supported: the pixel
+baselines and docs figures are made on 3.11, which sizes text boxes and
+draws legend markers differently, and dartwork-mpl does not imitate the 3.10
+output. Expect the same small shifts in your own figures when you upgrade
+from 3.10. NumPy >=1.26 is required with no upper cap; the NumPy 2.5
+date-unit deprecation came from Matplotlib 3.10's own date code.
+
 ## 0.6.0: Python 3.11 minimum
 
-Use Matplotlib >=3.10.1,<3.11 with 0.6.0. Matplotlib 3.11 is excluded
-because its rendered appearance differs from the frozen output.
-Use NumPy >=1.26,<2.5: NumPy 2.5 deprecates the generic date units still
-used by Matplotlib 3.10 and fails the date-rendering regression check.
+Use Matplotlib >=3.10.1,<3.11 with 0.6.0 (raised to >=3.11.0 after 0.6.0,
+see above). Use NumPy >=1.26,<2.5 with Matplotlib 3.10: NumPy 2.5 deprecates
+the generic date units Matplotlib 3.10 still uses.
 The UI extra requires FastAPI >=0.110.0. FastAPI 0.137 and later keep each
 included router as one wrapper route; the UI policy now matches against the
 routers it builds, so those versions serve requests normally.

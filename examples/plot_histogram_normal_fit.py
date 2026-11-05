@@ -46,7 +46,9 @@ ax.plot(
     xx, pdf, "r-", linewidth=2, label=f"Normal fit\nμ={mu:.1f}, σ={std:.1f}"
 )
 
-ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=0))
+# The density ticks fall on 0.5 % steps: one decimal is the fewest that
+# renders every tick exactly and distinctly (zero repeats "2%").
+ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=1))
 ax.set_xlabel("Value")
 ax.set_ylabel("Density")
 ax.set_title("Distribution Analysis")

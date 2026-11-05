@@ -27,7 +27,7 @@ wedges, _texts, autotexts = ax.pie(
     sizes,
     labels=labels,
     colors=colors,
-    autopct="%1.1f%%",
+    autopct="%1.0f%%",  # 정수 비중은 ".0" 없이
     startangle=90,
     pctdistance=0.85,
 )
@@ -40,8 +40,9 @@ ax.text(
     0, 0, "구성 비율", ha="center", va="center", fontsize=14, fontweight="bold"
 )
 
-for autotext in autotexts:
-    autotext.set_color("white")
+# 각 비중 라벨은 놓인 조각 색에 맞춰 읽히는 글자색을 고른다.
+for wedge, autotext in zip(wedges, autotexts, strict=True):
+    autotext.set_color(dm.readable_text_color(wedge.get_facecolor()))
     autotext.set_fontsize(10)
     autotext.set_fontweight("bold")
 

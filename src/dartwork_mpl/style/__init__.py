@@ -10,13 +10,16 @@ import difflib
 import json
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
 from .._rc import rc_lock
 from ._canvas import CANVAS_KINDS, SLIDE_SCALE, figsize_for, grid_shape
+
+if TYPE_CHECKING:
+    from matplotlib.typing import RcKeyType
 
 __all__ = [
     "CANVAS_KINDS",
@@ -120,7 +123,7 @@ def _restore_untouched_user_rcparams(
     for key, user_value in user_overrides.items():
         if key in preset_keys or key not in plt.rcParams:
             continue
-        plt.rcParams[key] = user_value
+        plt.rcParams[cast("RcKeyType", key)] = user_value
 
 
 def _style_declared_keys(style_names: list[str]) -> set[str]:
@@ -418,7 +421,8 @@ class Style:
             )
             # Capture normalized preset values before caller overrides.
             preset_values = {
-                key: copy.deepcopy(plt.rcParams[key]) for key in incoming_keys
+                key: copy.deepcopy(plt.rcParams[cast("RcKeyType", key)])
+                for key in incoming_keys
             }
             _restore_untouched_user_rcparams(user_overrides, incoming_keys)
             _dm_preset_values.clear()
@@ -587,7 +591,9 @@ class Style:
                 with rc_lock:
                     _dm_preset_values.update(
                         {
-                            key: copy.deepcopy(plt.rcParams[key])
+                            key: copy.deepcopy(
+                                plt.rcParams[cast("RcKeyType", key)]
+                            )
                             for key in incoming_keys
                         }
                     )
@@ -641,10 +647,12 @@ def active_preset_rcparams() -> dict[str, object]:
     changed = [
         key
         for key, value in values.items()
-        if key in defaults and _rcparam_differs(value, defaults[key])
+        if key in defaults
+        and _rcparam_differs(value, defaults[cast("RcKeyType", key)])
     ]
     if changed and all(
-        _rcparam_differs(plt.rcParams[key], values[key]) for key in changed
+        _rcparam_differs(plt.rcParams[cast("RcKeyType", key)], values[key])
+        for key in changed
     ):
         return {}
     return values
