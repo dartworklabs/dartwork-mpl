@@ -290,7 +290,9 @@ def _build_histogram_normal_fit() -> Figure:
         label=f"Normal fit\nmean={mean:.1f}, std={std:.1f}",
     )
 
-    ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=0))
+    # The density ticks fall on 0.5 % steps: one decimal is the fewest that
+    # renders every tick exactly and distinctly (zero repeats "2%").
+    ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=1))
     ax.set_xlabel("Value", fontsize=dm.fs(0))
     ax.set_ylabel("Density", fontsize=dm.fs(0))
     ax.set_title("Distribution Analysis", fontsize=dm.fs(1))
@@ -324,11 +326,12 @@ def _build_donut_composition() -> Figure:
     labels = ["범주 A", "범주 B", "범주 C", "범주 D", "기타"]
     colors = _blue_colors(5)
 
-    _wedges, _texts, autotexts = ax.pie(
+    # Whole-number shares print without a meaningless ".0".
+    wedges, _texts, autotexts = ax.pie(
         sizes,
         labels=labels,
         colors=colors,
-        autopct="%1.1f%%",
+        autopct="%1.0f%%",
         startangle=90,
         pctdistance=0.85,
     )
@@ -343,8 +346,9 @@ def _build_donut_composition() -> Figure:
         fontsize=dm.fs(1),
         fontweight=dm.fw(1),
     )
-    for autotext in autotexts:
-        autotext.set_color("white")
+    for wedge, autotext in zip(wedges, autotexts, strict=True):
+        # Ink chosen against the wedge it sits on, not a fixed white.
+        autotext.set_color(dm.readable_text_color(wedge.get_facecolor()))
         autotext.set_fontsize(dm.fs(-1))
         autotext.set_fontweight(dm.fw(1))
     ax.set_title("범주별 구성", fontsize=dm.fs(1))
@@ -363,10 +367,14 @@ def _build_dual_axis_timeseries() -> Figure:
     secondary = primary * 0.15 + rng.standard_normal(12) * 5
     palette = _blue_colors(2)
 
+    # Each y axis keeps its series' hue, darkened only as far as text needs
+    # to read on the axes background.
+    ink = [dm.ensure_contrast(color, ax.get_facecolor()) for color in palette]
+
     ax.bar(dates, primary, alpha=0.3, label="주 계열", color=palette[0])
     ax.set_xlabel("월", fontsize=dm.fs(0))
-    ax.set_ylabel("주 계열 (단위)", color=palette[0], fontsize=dm.fs(0))
-    ax.tick_params(axis="y", labelcolor=palette[0])
+    ax.set_ylabel("주 계열 (단위)", color=ink[0], fontsize=dm.fs(0))
+    ax.tick_params(axis="y", labelcolor=ink[0])
 
     ax2 = ax.twinx()
     ax2.plot(
@@ -377,8 +385,8 @@ def _build_dual_axis_timeseries() -> Figure:
         linewidth=dm.lw(0),
         label="보조 계열",
     )
-    ax2.set_ylabel("보조 계열 (단위)", color=palette[1], fontsize=dm.fs(0))
-    ax2.tick_params(axis="y", labelcolor=palette[1])
+    ax2.set_ylabel("보조 계열 (단위)", color=ink[1], fontsize=dm.fs(0))
+    ax2.tick_params(axis="y", labelcolor=ink[1])
     ax.set_title("월별 이중 축 계열", fontsize=dm.fs(1))
     ax.grid(True, alpha=0.3, linewidth=0.5)
 
