@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-06
+
 The rule behind these defaults: with no request the library's look applies;
 a request for another format gets that format.
 
-### Changed
+### Breaking / Changed defaults
 
 - **Two-digit years on untouched axes.** An x axis whose data are integer
   years (1900–2099: annual lines, bars, grouped bars, scatter, `stackplot`
@@ -38,10 +40,11 @@ a request for another format gets that format.
   decided at each draw (also for a locator set after `dm.simple_layout`),
   so no tick is left unlabelled or rounded.
 - **Requires Matplotlib ≥3.11; 3.10 is no longer supported.** Matplotlib
-  3.11 sizes text boxes and draws legend markers differently, so it renders
-  dartwork-mpl figures slightly differently from 3.10. Rather than patch
-  Matplotlib internals to imitate 3.10, dartwork-mpl follows 3.11 as it is:
-  the 14 pixel baselines and the colour-theory docs figures are regenerated
+  3.11 differs from 3.10 in text metrics, pixel rounding and FreeType
+  rasterization. The apparent legend-marker size change was a stale
+  historical baseline, not a Matplotlib 3.11 change. Rather
+  than patch Matplotlib internals to imitate 3.10, dartwork-mpl follows
+  3.11 as it is: the 14 pixel baselines and the colour-theory docs figures are regenerated
   on 3.11 (3.11.0 and 3.11.2 render them byte-identically), and supporting
   both series would mean two baseline sets. The `numpy<2.5` cap is lifted
   with it: only Matplotlib 3.10's own `dates.py` tripped NumPy 2.5's
@@ -50,9 +53,11 @@ a request for another format gets that format.
 
 ### Added
 
-- `dm.axis_unit(ax, axis, label="… ({unit}명)", ladder=..., scale=...)` puts the
-  unit in the axis label and keeps the ticks plain (`0, 0.2 … 1.0` under
-  `인구 (억명)`); `dm.axis_unit_of(ax)` returns the unit for value labels.
+- **Experimental axis units:**
+  `dm.axis_unit(ax, axis, label="… ({unit}명)", ladder=..., scale=...)` puts
+  the unit in the axis label and keeps the ticks plain (`0, 0.2 … 1.0` under
+  `인구 (억명)`); the experimental `dm.axis_unit_of(ax)` returns the unit
+  for value labels.
   The default rule is the largest unit (`scale="max"`).
 - `dm.config.tick_years` (2 or 4), `date_style` (`"period"` or `"concise"`)
   and `number_ladder` (`"auto"`, `"si"` or `"myriad"`): the tick formats a
@@ -1799,5 +1804,6 @@ The following fixes landed between the 0.4.0 cut commit and the PyPI publish.
 
 - Initial public release with style management, color system, font registration, colormap support, and visual validation.
 
-[Unreleased]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.5.6...v0.6.0

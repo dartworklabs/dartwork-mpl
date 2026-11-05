@@ -1,6 +1,6 @@
 [project]
 name = "dartwork-mpl"
-version = "0.6.0"
+version = "0.7.0"
 description = "Enhanced matplotlib styling, color management, and utility library for publication-quality figures"
 readme = "README.md"
 license = "MIT"
@@ -34,8 +34,9 @@ classifiers = [
 dependencies = [
     "cycler>=0.12",
     # The pixel baselines, docs figures and font registry are made on 3.11;
-    # 3.10 renders text boxes and legend markers differently, so it is not
-    # supported (no compatibility shim for older Matplotlib output).
+    # text metrics, pixel rounding and FreeType rasterization differ from
+    # 3.10 (the apparent legend-marker difference was a stale baseline).
+    # 3.10 is not supported (no compatibility shim for older Matplotlib output).
     "matplotlib>=3.11.0",
     # NumPy 2.5's generic date-unit deprecation was hit only by Matplotlib
     # 3.10's own dates.py; with the 3.11 floor there is no upper cap.
