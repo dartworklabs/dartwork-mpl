@@ -254,17 +254,29 @@ jobs:
 
   test-matplotlib:
     # A lock-only job cannot prove the published dependency range. Resolve
-    # the actual project with its minimum and latest supported 3.10 patch.
+    # the actual project with its minimum and latest supported 3.10 patch,
+    # and with the newest versions pyproject allows (latest-deps), which also
+    # runs the UI, formatting and font slices against NumPy / FastAPI /
+    # Starlette releases newer than uv.lock.
     strategy:
       fail-fast: false
       matrix:
         include:
           - label: minimum
             python-version: "3.11"
-            matplotlib: "3.10.1"
+            project: "."
+            pins: "matplotlib==3.10.1"
+            extra-tests: ""
           - label: latest-3.10
             python-version: "3.13"
-            matplotlib: "3.10.*"
+            project: "."
+            pins: "matplotlib==3.10.*"
+            extra-tests: ""
+          - label: latest-deps
+            python-version: "3.13"
+            project: ".[mcp,ui]"
+            pins: ""
+            extra-tests: "src/dartwork_mpl/ui src/dartwork_mpl/formatting src/dartwork_mpl/font"
     name: test-matplotlib (${{ matrix.label }})
     env:
       UV_PYTHON: ${{ matrix.python-version }}
@@ -282,6 +294,8 @@ jobs:
         shell: bash
         env:
           MPLBACKEND: Agg
+          PINS: ${{ matrix.pins }}
+          EXTRA_TESTS: ${{ matrix.extra-tests }}
         run: |
           set -euo pipefail
           task_store=$(mktemp -d "$RUNNER_TEMP/dmpl-matplotlib.XXXXXX")
@@ -289,20 +303,29 @@ jobs:
           export MPLCONFIGDIR="$task_store/matplotlib"
           uv venv --python "$UV_PYTHON" "$task_store/venv"
           task_python="$task_store/venv/bin/python"
-          uv pip install --python "$task_python" . \
-            "matplotlib==${{ matrix.matplotlib }}" pytest pytest-cov pytest-mpl
+          read -r -a pins <<< "$PINS"
+          uv pip install --python "$task_python" --resolution highest \
+            "${{ matrix.project }}" "${pins[@]}" pytest pytest-cov pytest-mpl pytest-xdist
           uv pip check --python "$task_python"
+          # The 3.10.x and numpy<2.5 assertions hold in every cell while
+          # pyproject caps matplotlib<3.11 and numpy<2.5 (Matplotlib 3.10's
+          # dates.py trips NumPy 2.5's generic-unit deprecation).
           "$task_python" -I -c 'import sys, matplotlib, numpy, PIL; print(sys.version); print(matplotlib.__version__, numpy.__version__, PIL.__version__); assert matplotlib.__version__.startswith("3.10."); assert tuple(map(int, numpy.__version__.split(".")[:2])) < (2, 5)'
           "$task_python" -m pytest tests/visual/test_visual_pixels.py \
             tests/test_shipped_colors_hash.py tests/docs/test_font_invariants.py \
             --mpl -v --no-cov \
             --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}.xml"
+          if [ -n "$EXTRA_TESTS" ]; then
+            # shellcheck disable=SC2086
+            "$task_python" -m pytest $EXTRA_TESTS -n auto -q --no-cov \
+              --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}-slices.xml"
+          fi
       - name: Preserve supported Matplotlib test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: matplotlib-${{ matrix.label }}
-          path: ${{ runner.temp }}/matplotlib-${{ matrix.label }}.xml
+          path: ${{ runner.temp }}/matplotlib-${{ matrix.label }}*.xml
           if-no-files-found: error
           retention-days: 7
 
