@@ -58,7 +58,7 @@ takes `-kr` (`report-kr`); edits keep its language and preset.
 Spines, grid, ticks, axis limits (bars start at 0), fonts, background and margins are the
 preset's; change them only on request. Tick numbers and dates are the library's (`1,750`,
 `0.5M`, `16 … 24` on whole-year ticks (x data all integers in 1900–2099, also elevations; `tick_years=4`: `2016`), `23.01`, `23.Q1`, Korean `50만`; dates under bars: `dm.format_axis_dates(ax, dates)`, not rotated): no
-formatter, locator or tick list unless asked or naming categories; no request, the default, a request, that format. No figure title, subtitle,
+formatter, locator or tick list unless asked or naming categories; no request, the default; a request, that format. No figure title, subtitle,
 source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
 named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`.

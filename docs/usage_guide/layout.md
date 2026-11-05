@@ -489,20 +489,27 @@ figure:
 
 Korean figures print the same dates and years, without a suffix.
 
-The rule: no request, the library default; a request, that format. Three
-lines give the 0.6.0 text back (`2016`, `2023, May, Sep`, `0.5M`):
+The rule: no request, the library default; a request, that format. A prompt
+can ask for three other formats, one `dm.config` field each:
+`tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
+(matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
+`tick_years=4`) and `number_ladder="si"` (`k/M/G/T` in Korean figures too).
 
 ```python
-dm.config.override(tick_years=4)            # four-digit years
-dm.config.override(date_style="concise")    # 2023, May, Sep (0.6.0)
-dm.config.override(number_ladder="si")      # k/M/G/T in Korean figures too
+with dm.config.override(tick_years=4):        # four-digit years
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot(range(2016, 2025), range(9))
+    dm.simple_layout(fig)                     # 2016, 2017 … 2024
 ```
 
-(Use them as `with dm.config.override(...):`, or set the fields on
-`dm.config` for the whole program.) A formatter you set yourself and an axis
-with a locator you set keep theirs. `dm.simple_layout(fig, format_ticks=False)`
-keeps matplotlib's numbers; `dm.format_axis_si(ax)` or
-`dm.format_axis_myriad(ax)` give `1.75k` or `0.25억` on the ticks.
+`dm.config.override(...)` is a context manager: a bare call changes nothing.
+It applies to what runs inside the `with` block, so wrap the code from
+figure creation to the last `dm.simple_layout` (and the save), or set the
+field on `dm.config` for the whole program (`dm.config.tick_years = 4`). A
+formatter or locator you set yourself is never replaced.
+`dm.simple_layout(fig, format_ticks=False)` keeps matplotlib's numbers;
+`dm.format_axis_si(ax)` or `dm.format_axis_myriad(ax)` give `1.75k` or
+`0.25억` on the ticks.
 
 To print the unit once, in the axis label, use `dm.axis_unit`:
 

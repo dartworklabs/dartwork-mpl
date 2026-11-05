@@ -193,7 +193,8 @@ def axis_unit(
         (``"인구 ({unit}명)"``, ``"Exports (USD {unit})"``). Without the
         placeholder the unit is appended in parentheses (``"인구"`` ->
         ``"인구 (억)"``). ``None`` (default) does the same with the axis's
-        current label (``"Exports"`` -> ``"Exports (B)"``), read once here.
+        current label (``"Exports"`` -> ``"Exports (G)"`` on the default SI
+        ladder, ``"(B)"`` with ``ladder="finance"``), read once here.
         An axis without a unit drops empty parentheses
         (``"Count ({unit})"`` -> ``"Count"``).
     ladder:
