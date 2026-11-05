@@ -62,8 +62,10 @@ class LabelUnitFormatter(AxisUnitFormatter):
     the axis label, and to the label of every axis :meth:`share_label`
     added: axes made with ``sharex`` / ``sharey`` share one formatter, and
     each keeps its own template. On a log or other non-linear axis the
-    ticks span decades, which one label cannot name, so the ticks print
-    linearly in full (``100``, ``1,000,000``) and the label carries no unit.
+    ticks span decades, which one label cannot name, so every tick prints
+    its whole value with thousands separators (``100``, ``1,000,000``), the
+    label carries no unit and :attr:`unit` is the empty one
+    (``Unit(1.0, "")``).
     """
 
     def __init__(
@@ -178,9 +180,11 @@ def axis_unit(
     every draw, so change the label by calling ``axis_unit`` again. Axes made
     with ``sharex`` / ``sharey`` share one formatter: call ``axis_unit`` on
     each (``for a in axes: dm.axis_unit(a, "y", label=...)``); every label
-    keeps its own template and they read the same unit. On a log
-    axis the ticks span decades, which one label cannot name, so they print
-    in full (``100``, ``1,000,000``) and the label carries no unit.
+    keeps its own template and they read the same unit. On a log (or any
+    non-linear) axis the ticks span decades, which one label cannot name,
+    so each tick prints its whole value with thousands separators (``100``,
+    ``1,000,000``), the label carries no unit and :func:`axis_unit_of`
+    returns ``Unit(1.0, "")``.
 
     Parameters
     ----------
@@ -271,7 +275,8 @@ def axis_unit_of(ax: Axes, axis: Literal["x", "y"] = "y") -> Unit | None:
     For value labels that should match the axis: divide by ``factor`` and
     print ``label`` the way the axis label does. ``None`` when the axis has
     no :func:`axis_unit` formatter or has not been drawn since it got one
-    (``dm.simple_layout`` and saving draw).
+    (``dm.simple_layout`` and saving draw); ``Unit(1.0, "")`` on a log or
+    other non-linear axis, whose ticks print whole values.
 
     Raises
     ------
