@@ -36,6 +36,12 @@ _EXPECTED_MIN_FONTS: int = 5
 # path with os.path idioms).
 _FONT_DIR: Path = Path(__file__).parent.parent / "asset" / "font"
 _FONT_SUFFIXES: frozenset[str] = frozenset({".ttf", ".otf"})
+
+# (resolved file, family) of the entry ``FontManager.addfont`` creates from
+# ``FT2Font.family_name``. Matplotlib >= 3.11 also appends alias entries for a
+# file's other name-table families (name IDs 1/16/21, e.g. "Inter Black"
+# at weight 400); those stay resolvable but are not curated families.
+_PRIMARY_ENTRIES: set[tuple[str, str]] = set()
 _BUNDLED_FONT_WEIGHT_OVERRIDES: Mapping[str, int] = MappingProxyType(
     {
         # Both files report OS/2 weight 250, which makes Matplotlib choose
@@ -580,6 +586,8 @@ def list_registered() -> list[str]:
             entry.name
             for entry in font_manager.fontManager.ttflist
             if _is_bundled_font_entry(entry, bundle_dir)
+            and (str(Path(entry.fname).resolve()), entry.name)
+            in _PRIMARY_ENTRIES
         }
     )
 
@@ -674,8 +682,15 @@ def _add_fonts() -> None:
     imported; users do not need to call it directly.
     """
     found = font_manager.findSystemFonts([_FONT_DIR])
+    ttflist = font_manager.fontManager.ttflist
     for font in found:
+        start = len(ttflist)
         font_manager.fontManager.addfont(font)
+        if len(ttflist) > start:  # first appended entry is ttfFontProperty's
+            primary = ttflist[start]
+            _PRIMARY_ENTRIES.add(
+                (str(Path(primary.fname).resolve()), primary.name)
+            )
 
     _correct_bundled_weight_metadata()
 

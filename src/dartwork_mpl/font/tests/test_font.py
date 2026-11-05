@@ -50,6 +50,10 @@ class TestFontDiagnostics:
         assert "Roboto" in registered
         assert "Noto Sans Symbols 2" in registered
 
+    def test_list_registered_is_the_curated_registry(self) -> None:
+        """Alias families matplotlib 3.11 adds per file are not reported."""
+        assert set(list_registered()) == set(font_module.font_families())
+
 
 class TestAddFonts:
     """Tests for _add_fonts()."""
@@ -299,3 +303,4 @@ def test_paperlogy_light_resolution_is_stable_across_cold_and_warm_cache(
         "Paperlogy-2ExtraLight.ttf",
         "Paperlogy-2ExtraLight.ttf",
     ]
+
