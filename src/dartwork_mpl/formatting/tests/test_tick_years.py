@@ -161,6 +161,28 @@ def test_wider_year_labels_stay_one_em_apart(options):
             plt.close(ax.figure)
 
 
+def test_thinning_again_keeps_the_count_it_started_from():
+    """A repeat layout that finds no better count leaves the last one.
+
+    Review 2026-11-05, R7: it reset ``nbins`` to ``"auto"``, so a thinned
+    axis got its crowded ticks back.
+    """
+    dm.style.use("report-kr")
+    with dm.config.override(tick_years=4, date_style="concise"):
+        ax = _line(np.arange(2016, 2025), "매출")
+        locator = ax.xaxis.get_major_locator()
+        first = locator.nbins
+        assert isinstance(first, int), first  # "2016년" labels were thinned
+        thinned = _shown(ax)
+        ax.tick_params(axis="x", labelsize=40)  # now no count fits
+        dm.simple_layout(ax.figure)
+        assert locator.nbins == first
+        ax.tick_params(
+            axis="x", labelsize=matplotlib.rcParams["xtick.labelsize"]
+        )
+        assert _shown(ax) == thinned
+
+
 def test_zoomed_year_axis_never_rounds_a_fraction():
     ax = _line(np.arange(2005, 2025))
     ax.set_xlim(2016, 2017)

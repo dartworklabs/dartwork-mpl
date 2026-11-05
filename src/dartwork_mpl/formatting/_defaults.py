@@ -705,8 +705,9 @@ def _thin_years(
 
     Leaves rotated x labels and a requested ``nbins`` alone. Tries ever
     fewer bins and keeps the first that gives two or more ticks
-    :data:`_MIN_DATE_GAP_EM` ems apart; with none, the count is restored.
-    Returns 1 when it changed, else 0.
+    :data:`_MIN_DATE_GAP_EM` ems apart; with none, the count it started
+    from is restored (a repeat layout keeps an earlier thinning). Returns 1
+    when it changed, else 0.
     """
     if "nbins" in locator.requested:
         return 0
@@ -716,6 +717,7 @@ def _thin_years(
     locs = _view_locs(axis, locator())
     if _date_label_gap_em(axis, locs, fig, renderer) >= _MIN_DATE_GAP_EM:
         return 0
+    original = locator.nbins
     for nbins in range(max(len(locs) - 1, 1), 0, -1):
         locator.thin(nbins)
         candidate = _view_locs(axis, locator())
@@ -725,7 +727,7 @@ def _thin_years(
             _MIN_DATE_GAP_EM
         ):
             return 1
-    locator.thin("auto")
+    locator.thin(original)
     return 0
 
 
