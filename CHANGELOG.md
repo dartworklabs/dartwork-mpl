@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Matplotlib 3.11 fonts.** `dm.font.list_registered()` lists only the
   bundled primary families, and the per-render "Failed to find font weight"
   notice for one-weight fallback families is muted.
+- **Matplotlib 3.11 formatter warning.** dartwork-mpl's default number tick
+  labels and `dm.format_axis_si` / `_millions` / `_billions` / `_myriad` no
+  longer emit a `MatplotlibDeprecationWarning` about `Formatter.locs` on
+  every draw.
 
 ### Changed
 
