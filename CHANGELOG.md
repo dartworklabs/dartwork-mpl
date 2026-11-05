@@ -22,7 +22,6 @@ a request for another format gets that format.
 - **Korean figures count in 만/억/조 from 1,000,000** on axes you did not
   format (`50만 … 250만`, `0.2조`). English figures keep `k/M/G/T`;
   `number_ladder="si"` gives `k/M/G/T` in Korean figures too.
-- Symmetric axes no longer print floating-point noise (`-0.4 … 0.4`).
 - **A formatter or locator you set is never replaced**, of any class. The
   defaults go only where matplotlib's own `axis.isDefault_majfmt` /
   `isDefault_majloc` flags still hold, so matplotlib's idiom
@@ -54,6 +53,7 @@ a request for another format gets that format.
 
 ### Fixed
 
+- Symmetric axes no longer print floating-point noise (`-0.4 … 0.4`).
 - **FastAPI >=0.137 UI.** The UI policy matches against the routers it builds,
   so the included-router wrapper no longer makes every request 403.
 - **NumPy 2.5.** Date formatting no longer creates generic-unit NumPy values.
