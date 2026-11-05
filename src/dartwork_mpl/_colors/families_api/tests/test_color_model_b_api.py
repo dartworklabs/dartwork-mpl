@@ -130,7 +130,7 @@ def test_old_color_vocabulary_removed_from_package_root(name: str) -> None:
     assert not hasattr(dm, name)
     with pytest.raises(
         AttributeError,
-        match=r"Model B color API.*dm\.(colors|set_colors|list_colors|show_colors)",
+        match=r"removed in 0\.6\.0.*(dm\.(colors|set_colors|list_colors|show_colors)|color inputs|matplotlib\.colors\.Colormap)",
     ):
         getattr(dm, name)
 

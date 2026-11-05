@@ -9,8 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.6.0] - 2026-11-05
 
+### Breaking / Removed
+
+- The 0.5.6 root exports `get_palette`, `set_cycle`, `cycle`,
+  `cycle_cycler`, `list_palettes`, `list_colormaps`, `plot_colors`,
+  `plot_colormaps`, `show_palette`, `classify_colormap`, `DartworkColor`,
+  `DartworkColormap`, and `set_palette_version` have been removed, as has
+  `dartwork_mpl.cmap` (`dm.cmap`). Use the current `dm.colors`,
+  `dm.set_colors`, `dm.list_colors`, and `dm.show_colors` APIs as appropriate;
+  their behavior and arguments differ from the old helpers. See the
+  [migration guide](docs/migration.md#v5--generative-color-system-060)
+  for each name and type guidance.
+- The v4-only numeric cycle aliases `0`–`7` and ad-hoc color families were
+  removed; curated categorical sets remain available. The 0.5.6 deprecation
+  notice promised v4-only tokens at least two minor releases before removal;
+  that promise was not met for these removed legacy tokens. Some surviving
+  names also refer to different v5 colors; see the migration guide before
+  substituting tokens.
+
 ### Changed
 
+- **Matplotlib 3.10.x support.** The supported range is >=3.10.1,<3.11;
+  3.11 is excluded because rendered appearance differs from the frozen output.
+  NumPy is restricted to >=1.26,<2.5 because its 2.5 date-unit deprecation
+  breaks the supported Matplotlib date tests.
+- **UI FastAPI compatibility.** The UI extra requires FastAPI >=0.110.0,<0.137.
+  Newer included-router wrappers prevent the current policy matcher from
+  finding routes, causing every request to be rejected with 403.
 - **Python 3.11 minimum.** Python 3.11–3.13 remain tested; Python 3.10 is
   no longer supported from 0.6.0 because the security patch set requires
   Pillow 13 and other dependencies whose minimum is 3.11.

@@ -193,7 +193,7 @@ def _removed_name(*parts: str) -> str:
     return "".join(parts)
 
 
-_MODEL_B_REMOVED = "the Model B color API"
+_MODEL_B_REMOVED = "0.6.0"
 _REMOVED_NAMES.update(
     {
         _removed_name("get", "_", "palette"): (
@@ -239,13 +239,17 @@ _REMOVED_NAMES.update(
         ),
         _removed_name("Dartwork", "Color"): (
             _MODEL_B_REMOVED,
-            "the internal _colors._typing aliases; runtime code should use "
-            "dm.colors(); see docs/color_system",
+            "documented color inputs such as color names, hex strings or RGB(A) tuples; "
+            "see docs/color_system",
         ),
         _removed_name("Dartwork", "Colormap"): (
             _MODEL_B_REMOVED,
-            "the internal _colors._typing aliases; runtime code should use "
-            "dm.colors(); see docs/color_system",
+            "matplotlib.colors.Colormap for colormap objects; see docs/color_system",
+        ),
+        _removed_name("set", "_", "palette", "_", "version"): (
+            _MODEL_B_REMOVED,
+            "the current color catalog (no palette-version switch exists); "
+            "see docs/color_system",
         ),
     }
 )

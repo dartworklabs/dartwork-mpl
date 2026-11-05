@@ -237,10 +237,11 @@ rules:
     severity: critical
     detector:
       kind: regex
-      pattern: "\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap)\\b"
+      pattern: "\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap|set_palette_version)\\b"
     message: |
-      The Model B color API removed the old palette, cycle, diagnostic,
-      and color-class vocabulary. Use `dm.colors(...)`,
+      Version 0.6.0 removed the old palette, cycle, diagnostic,
+      and color-class vocabulary; there is no palette-version switch.
+      For current color operations use `dm.colors(...)`,
       `dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`.
     fix_suggestion: 'dm.colors("blue", n=5)'
 

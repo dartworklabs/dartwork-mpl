@@ -178,8 +178,13 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
     (
         re.compile(r"\bdm\.(?:" + _MODEL_B_REMOVED_COLOR_PATTERN + r")\b"),
-        "Model B removed this color API vocabulary; use dm.colors(...), "
+        "Version 0.6.0 removed this color API vocabulary; use dm.colors(...), "
         "dm.set_colors(...), dm.list_colors(), or dm.show_colors().",
+    ),
+    (
+        re.compile(r"\bdm\.set_palette_version\b"),
+        "dm.set_palette_version was removed in 0.6.0; there is no palette-version "
+        "switch. Review the current color catalog and docs/migration.md.",
     ),
 )
 

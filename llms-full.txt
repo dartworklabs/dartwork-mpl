@@ -1405,14 +1405,23 @@ orphan: true
 This guide collects every rename / deprecation that has shipped on PyPI
 (v0.4.0 onwards), **newest release first**. Every removed symbol now
 raises `AttributeError` / `ModuleNotFoundError` / `TypeError` (or, for
-palette tokens, the usual "not a valid color" error) with a message
-naming its replacement.
+palette tokens, the usual "not a valid color" error), with migration guidance
+where available. A bare submodule import can instead
+raise `ModuleNotFoundError` without a replacement hint.
 
 > **New to dartwork-mpl?** You don't need this page. Head to the
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
 ## 0.6.0: Python 3.11 minimum
+
+Use Matplotlib >=3.10.1,<3.11 with 0.6.0. Matplotlib 3.11 is excluded
+because its rendered appearance differs from the frozen output.
+Use NumPy >=1.26,<2.5: NumPy 2.5 deprecates the generic date units still
+used by Matplotlib 3.10 and fails the date-rendering regression check.
+The UI extra requires FastAPI >=0.110.0,<0.137. Later versions currently
+cause every UI request to be rejected with 403; upgrading Starlette or
+Pydantic alone does not cause that failure.
 
 Upgrade to Python 3.11 or newer before installing 0.6.0. Supported test
 runtimes are 3.11, 3.12 and 3.13. The security patch set requires Pillow 13
@@ -1448,7 +1457,37 @@ coming from:
 The per-release sections below carry the full detail and runnable
 snippets.
 
-## v5 — generative color system (0.5.6 clean break)
+## v5 — generative color system (0.6.0)
+
+For a PyPI upgrade, the clean-break boundary is **0.5.6 → 0.6.0**.
+The 0.5.6 deprecation notice promised v4-only `dc.*` tokens at least two
+minor releases before removal. That promise was not met for removed legacy
+aliases. Some names exist in both catalogs with different meanings or colors:
+check the rendered result and do not assume the same token preserves the old
+color. The curated categorical sets remain available.
+
+### Removed root color APIs and module
+
+These are migration directions, not drop-in replacements; arguments, return
+values and catalog contents may differ.
+
+| Removed 0.5.6 surface | Current direction |
+| --- | --- |
+| `dm.get_palette` | `dm.colors(name, n=...)` for a list; `dm.set_colors(...)` sets a cycle. |
+| `dm.set_cycle` | `dm.set_colors(...)` sets a global or axes color cycle. |
+| `dm.cycle` | `dm.colors("octave", n=8)` returns colors; `dm.set_colors()` sets a cycle. |
+| `dm.cycle_cycler` | `dm.set_colors(..., styles=True)` sets color and line-style cycles; it does not return a cycler. |
+| `dm.list_palettes` | `dm.list_colors()` lists color families and metadata. |
+| `dm.list_colormaps` | `dm.list_colors()` lists families; `matplotlib.colormaps` lists registered colormaps. |
+| `dm.plot_colors` | `dm.show_colors()` previews color families. |
+| `dm.plot_colormaps` | `dm.show_colors()` previews color families. |
+| `dm.show_palette` | `dm.show_colors(names=[...])` previews selected families. |
+| `dm.classify_colormap` | Inspect `dm.list_colors()` metadata; it is not a general classifier for arbitrary colormaps. |
+| `dm.DartworkColor` | Type against the accepted inputs of the relevant API, such as color names, hex strings and RGB(A) tuples; no public equivalent literal alias is provided. |
+| `dm.DartworkColormap` | Use `matplotlib.colors.Colormap` for colormap objects; it is not the former catalog-name literal. |
+| `dm.set_palette_version` | No version switch exists; use the current catalog and review changed colors. |
+| `dartwork_mpl.cmap` / `dm.cmap` | Use `dm.colors(name)` for a colormap or `matplotlib.colormaps` for registered colormaps. A bare submodule import raises `ModuleNotFoundError`. |
+
 
 A 107-number generative palette (19 arc-length-equalized chromatic ladders plus
 one directly sampled gray ladder, each with 10 `dc.{family}{step}` tokens)
@@ -1987,10 +2026,11 @@ rules:
     severity: critical
     detector:
       kind: regex
-      pattern: "\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap)\\b"
+      pattern: "\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap|set_palette_version)\\b"
     message: |
-      The Model B color API removed the old palette, cycle, diagnostic,
-      and color-class vocabulary. Use `dm.colors(...)`,
+      Version 0.6.0 removed the old palette, cycle, diagnostic,
+      and color-class vocabulary; there is no palette-version switch.
+      For current color operations use `dm.colors(...)`,
       `dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`.
     fix_suggestion: 'dm.colors("blue", n=5)'
 
