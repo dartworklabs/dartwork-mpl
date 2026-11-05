@@ -21,8 +21,9 @@ import matplotlib.ticker as ticker
 import numpy as np
 import numpy.typing as npt
 from matplotlib.axes import Axes
-from matplotlib.collections import PathCollection
+from matplotlib.collections import FillBetweenPolyCollection, PathCollection
 from matplotlib.container import BarContainer
+from matplotlib.transforms import Transform
 
 from ._dates import DateStyle, Digits, _date2num, _in_view, _num2date
 from ._years import two_digits_repeat
@@ -46,6 +47,8 @@ QUARTER_STEPS = (1, 2, 4, 8)
 # notation with 4, 5, 10, 20, 50 and 100-year steps.
 _LONG_QUARTER_STEPS = (*QUARTER_STEPS, 16, 20, 40, 80, 200, 400)
 _FIRST_YEAR, _LAST_YEAR = 1, 9999  # what datetime can hold
+# A fill's outline point this close to a whole number sits on it.
+_OUTLINE_TOL = 1e-6
 
 
 def quarterly(nums: Sequence[float] | npt.ArrayLike) -> bool:
@@ -92,6 +95,37 @@ def _bar_positions(
     return placed
 
 
+def _fill_outline(
+    coll: FillBetweenPolyCollection, which: Literal["x", "y"], data: Transform
+) -> npt.NDArray[np.float64] | None:
+    """The ``t`` values of a ``fill_between`` / ``stackplot`` area along ``which``.
+
+    The outline's points along the fill's own variable (x for
+    ``fill_between``, y for ``fill_betweenx``) in data units, or ``None``
+    when any is not a whole number: ``interpolate=True`` crossings and
+    ``step="mid"`` corners are outline, not data, so such a fill is left
+    out rather than outvoting the data plotted with it. Annual data and
+    midnight dates sit on whole numbers.
+    """
+    if getattr(coll, "t_direction", None) != which:  # not in the stubs
+        return None
+    column = 0 if which == "x" else 1
+    if not coll.get_transform().contains_branch_seperately(data)[column]:
+        return None
+    paths = coll.get_paths()
+    if not paths:
+        return None
+    values = np.concatenate(
+        [np.asarray(p.vertices, dtype=float)[:, column] for p in paths]
+    )
+    if not np.all(np.isfinite(values)):
+        return None
+    if np.any(np.abs(values - np.rint(values)) > _OUTLINE_TOL):
+        return None
+    outline: npt.NDArray[np.float64] = values
+    return outline
+
+
 def plotted_dates(
     ax: Axes, which: Literal["x", "y"], *, bar_slot: float | None = None
 ) -> npt.NDArray[np.float64]:
@@ -102,8 +136,10 @@ def plotted_dates(
     (a ``twinx`` line counts for the shared x). Lines count only when they
     are in data units on both axes: an ``axhline`` (x from 0 to 1 in axes
     fractions) or an ``axvline`` (a date marker spanning the height) marks
-    a value rather than plotting data. Collections without offsets
-    (``fill_between``) are left out. ``bar_slot`` (``1`` for years) reads
+    a value rather than plotting data. ``fill_between`` / ``stackplot``
+    areas count by their outline when it sits on whole numbers
+    (:func:`_fill_outline`); other collections without offsets are left
+    out. ``bar_slot`` (``1`` for years) reads
     a bar inside one slot as the slot's centre (:func:`_bar_positions`), so
     grouped bars stand for their year.
     """
@@ -135,6 +171,10 @@ def plotted_dates(
                     dtype=float,
                 )
                 chunks.append(offsets.reshape(-1, 2)[:, column])
+            elif isinstance(coll, FillBetweenPolyCollection):
+                outline = _fill_outline(coll, which, data)
+                if outline is not None:
+                    chunks.append(outline)
         for container in member.containers:
             if not isinstance(container, BarContainer):
                 continue

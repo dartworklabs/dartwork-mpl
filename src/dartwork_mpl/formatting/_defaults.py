@@ -11,13 +11,13 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
   2.5M``; ``50만 … 250만`` in Korean figures, ``config.number_ladder``),
   unless that needs more than two decimals;
 - x axes whose plotted data are integers 1900-2099 (annual lines, bars,
-  bars grouped side by side within each year, scatter; twins and shared
-  axes included) are year axes: ticks on whole
-  years only (:class:`._years.WholeYearLocator`), read two digits (``16,
-  18, 20``; four when two would print alike, or with
-  ``config.tick_years = 4``); integer data in that range that are not years
-  (elevations) read the same way, so give such an axis a formatter of
-  your own;
+  bars grouped side by side within each year, scatter, ``stackplot`` and
+  ``fill_between`` areas; twins and shared axes included) are year axes:
+  ticks on whole years only (:class:`._years.WholeYearLocator`), read two
+  digits (``16, 18, 20``; four when two would print alike, or with
+  ``config.tick_years = 4``); integer data in that range that are not
+  years (elevations) read the same way, so give such an axis a formatter
+  of your own;
 - smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
   sit in 1000-2999 (``1950.3`` elevations), log and category axes, colorbars
   and any axis with a formatter someone chose keep theirs;

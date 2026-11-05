@@ -291,6 +291,56 @@ def test_bars_wider_than_a_year_slot_keep_matplotlibs(draw):
     assert type(ax.xaxis.get_major_locator()) is mticker.AutoLocator
 
 
+ANNUAL = np.arange(2004, 2025)
+
+
+@pytest.mark.parametrize(
+    "draw",
+    [
+        lambda ax: ax.stackplot(ANNUAL, np.ones(21), np.arange(21)),
+        lambda ax: ax.fill_between(ANNUAL, np.zeros(21), np.arange(21)),
+        lambda ax: ax.fill_betweenx(np.arange(21), 0, 1),  # x not years
+    ],
+    ids=["stackplot", "fill_between", "fill_betweenx"],
+)
+def test_filled_areas_read_their_x_data(draw):
+    """``stackplot`` / ``fill_between`` outlines are plotted x data.
+
+    Review 2026-11-05, R6: such charts read ``2005.0, 2007.5``.
+    """
+    ax = _laid_out_axes(draw)
+    if ax.xaxis.get_view_interval()[1] < 1900:
+        assert not _year_axis(ax)  # fill_betweenx: x from 0 to 1
+    else:
+        _assert_year_ticks(ax)
+
+
+def test_an_interpolated_fill_does_not_unmake_a_year_axis():
+    """Crossing points are outline, not data: such a fill is left out."""
+    a, b = np.sin(ANNUAL), np.cos(ANNUAL)
+
+    def draw(ax):
+        ax.plot(ANNUAL, a)
+        ax.plot(ANNUAL, b)
+        ax.fill_between(ANNUAL, a, b, where=a > b, interpolate=True)
+
+    _assert_year_ticks(_laid_out_axes(draw))
+    mid_steps = _laid_out_axes(
+        lambda ax: ax.fill_between(ANNUAL, 0, np.arange(21), step="mid")
+    )
+    assert not _year_axis(mid_steps)  # outline at 2004.5 …: not year data
+    locs, labels = _shown(mid_steps)
+    assert all(map(_reads_its_value, locs, labels)), labels
+
+
+def test_quarterly_stackplot_reads_quarters():
+    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
+    ax.stackplot(QUARTER_STARTS, np.ones(12), np.arange(12))
+    dm.simple_layout(fig)
+    labels = _xticks(ax)
+    assert labels and all(PERIOD_QUARTER.fullmatch(t) for t in labels), labels
+
+
 @pytest.mark.parametrize(
     "x",
     [
@@ -1128,13 +1178,21 @@ def test_plotted_dates():
     ax.axhline(2)  # x in axes fractions
     ax.scatter(QUARTER_STARTS[4:6], [1, 2])
     ax.bar(QUARTER_STARTS[6:8], [1, 2], width=30)
-    ax.fill_between(QUARTER_STARTS[:2], [0, 0], [1, 1])  # no offsets
     twin = ax.twinx()
     twin.plot(QUARTER_STARTS[8:], [1, 2, 3, 4])
     got = np.sort(plotted_dates(ax, "x"))
     np.testing.assert_allclose(got, mdates.date2num(QUARTER_STARTS))
+    # A fill's outline counts when it sits on whole numbers (midnight dates).
+    ax.fill_between(QUARTER_STARTS[:2], [0, 0], [1, 1])
+    got = plotted_dates(ax, "x")
+    assert len(got) > len(QUARTER_STARTS)
+    np.testing.assert_allclose(np.unique(got), mdates.date2num(QUARTER_STARTS))
     assert len(plotted_dates(ax, "y")) > 0  # the line's y values
     assert all(abs(v) < 10 for v in plotted_dates(ax, "y"))
+    noon = QUARTER_STARTS[:2].astype("datetime64[h]") + 12
+    fig, ax = plt.subplots()
+    ax.fill_between(noon, [0, 0], [1, 1])  # a fraction of a day: left out
+    assert len(plotted_dates(ax, "x")) == 0
 
 
 def test_quarter_locator_and_words():
