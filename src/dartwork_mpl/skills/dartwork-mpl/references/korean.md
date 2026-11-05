@@ -32,9 +32,9 @@ plt.close(fig)
 - Do not set `font.family` by hand; the preset's family list holds the
   bundled math and symbol fallbacks.
 - Korean numbers: an axis you did not format already counts in 만/억/조 from
-  1,000,000 (`50만 … 250만`, `0.2조`); `dm.axis_unit(ax, "y", label="매출
-  ({unit}원)")` moves the unit into the label (`0, 0.2 … 1.0` under
-  `매출 (조원)`, `dm.axis_unit_of(ax)` for value labels);
+  1,000,000 (`50만 … 250만`, `0.2조`); `dm.axis_unit(ax, "y", label="인구
+  ({unit}명)")` moves the unit into the label (`0, 0.2 … 1.0` under
+  `인구 (억명)`, `dm.axis_unit_of(ax)` for value labels);
   `dm.format_axis_myriad(ax)` puts 만/억 on each tick and
   `dm.format_axis_year(ax)` prints `25년`. k/M/G/T in a Korean figure only
   when asked: `dm.config.override(number_ladder="si")`.
