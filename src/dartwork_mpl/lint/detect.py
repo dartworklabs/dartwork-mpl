@@ -17,6 +17,7 @@ from typing import TypeAlias
 from matplotlib import colormaps
 from matplotlib.colors import is_color_like
 
+from .._compat import _LINT_RULES, LintRule
 from .catalog import (
     Issue,
     Rule,
@@ -38,6 +39,9 @@ from .syntax import (
     _source_registrations,
     _Syntax,
 )
+
+_Detect: TypeAlias = Callable[[_Syntax, Rule], Iterable[int]]
+"""A bundled rule's static detector: source offsets of its violations."""
 
 
 def _issue(code: str, rule: Rule, offset: int) -> Issue:
@@ -277,16 +281,20 @@ def _figsize_direct(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
         yield syntax.span(keyword)[0]
 
 
-def _cm2in_figsize(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
-    """A ``figsize=(...)`` tuple that converts with ``dm.cm2in``."""
-    for keyword in _figsize_tuples(syntax):
-        if any(
-            isinstance(item, ast.Attribute)
-            and item.attr == "cm2in"
-            and syntax.kind(item.value, conventional=True) == "dm"
-            for item in ast.walk(keyword.value)
-        ):
-            yield syntax.span(keyword)[0]
+def _dm_in_figsize(names: frozenset[str]) -> _Detect:
+    """A ``figsize=(...)`` tuple that uses one of the ``dm`` ``names``."""
+
+    def detect(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
+        for keyword in _figsize_tuples(syntax):
+            if any(
+                isinstance(item, ast.Attribute)
+                and item.attr in names
+                and syntax.kind(item.value, conventional=True) == "dm"
+                for item in ast.walk(keyword.value)
+            ):
+                yield syntax.span(keyword)[0]
+
+    return detect
 
 
 def _raw_width_number(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
@@ -373,15 +381,23 @@ def _dm_referenced(syntax: _Syntax, rule: Rule) -> Iterator[int]:
     return _dm_names(syntax, rule, called=False)
 
 
+def _removed_name_detector(rule: LintRule) -> _Detect:
+    """The static detector of a registry rule's form."""
+    match rule.form:
+        case "call":
+            return _dm_called
+        case "reference":
+            return _dm_referenced
+        case "figsize":
+            return _dm_in_figsize(frozenset(rule.names))
+
+
 def _literal_names(syntax: _Syntax, rule: Rule) -> Iterator[int]:
     """A literal colormap or colour name matplotlib does not know."""
     detector = _rule_detector(rule)
     if isinstance(detector, _AstNameDetector):
         yield from _literal_name_offsets(syntax, detector.check)
 
-
-_Detect: TypeAlias = Callable[[_Syntax, Rule], Iterable[int]]
-"""A bundled rule's static detector: source offsets of its violations."""
 
 _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
     {
@@ -393,17 +409,7 @@ _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
         "multirow-subplots-no-gridspec-kw": _multirow_subplots,
         "plt-style-use": _plt_style_use,
         "plt-show-only": _plt_show_only,
-        "dm-subplots-removed": _dm_called,
-        "cm2in-figsize": _cm2in_figsize,
-        "dm-spines-removed": _dm_called,
-        "dm-legacy-wrappers-removed": _dm_called,
-        "dm-auto-select-colors-renamed": _dm_called,
-        "dm-auto-layout-removed": _dm_called,
-        "dm-named-renamed": _dm_called,
-        "dm-model-b-color-api-removed": _dm_referenced,
-        "dm-removed-namespaces": _dm_referenced,
-        "dm-install-llm-txt-removed": _dm_referenced,
-        "deprecated-width-token": _dm_referenced,
+        **{rule.id: _removed_name_detector(rule) for rule in _LINT_RULES},
         "raw-width-number": _raw_width_number,
         "dpi-arg": _dpi_arg,
         "raw-hex-color": _keyword_pattern,
@@ -418,7 +424,9 @@ _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
 
 A bundled rule is matched on the parsed syntax, so strings, comments and
 look-alike names do not trip it. The catalog regex stays the rule's
-documentation and the detector for edited copies of the rule.
+documentation and the detector for edited copies of the rule. The
+removed-name rules take the detector of their form in the registry
+(``dartwork_mpl._compat._LINT_RULES``).
 """
 
 _TEXT_ONLY_RULES = frozenset({"zero-resize-mention"})
