@@ -66,6 +66,8 @@ _ORACLE_MARKERS = (
     "global-constraints",
     "task-2-runtime-notes",
 )
+# Minimum spacing between owned-tree/evidence polls while streams are drained.
+_POLL_SECONDS = 0.05
 
 
 def _dump(path: Path, value: Any) -> None:
@@ -196,6 +198,10 @@ def capture_process(
     Limits observe stream bytes/calls and optionally the total evidence tree.
     No shell is used. Calls are counted at complete assistant tool-use events.
     Cleanup kills observed descendants and verifies their absence on every exit.
+    The owned process tree and evidence tree are polled at most once per
+    ``max(_POLL_SECONDS, previous poll duration)``; streams are drained between
+    polls, so a slow process table cannot hold back a stream limit until the
+    wall limit wins.
     """
     started = time.monotonic()
     process = subprocess.Popen(
@@ -216,22 +222,36 @@ def capture_process(
     reason = "exit"
     call_limit_reason = None
     cleanup = False
+    poll_due = started
+    evidence_over = False
     try:
         with events_path.open("wb") as stdout, stderr_path.open("ab") as stderr:
             while selector.get_map():
-                _owned(process.pid, known)
+                if time.monotonic() >= poll_due:
+                    polled = time.monotonic()
+                    _owned(process.pid, known)
+                    evidence_over = evidence_root is not None and (
+                        sum(
+                            path.stat().st_size
+                            for path in evidence_root.rglob("*")
+                            if path.is_file() and not path.is_symlink()
+                        )
+                        > max_bytes
+                    )
+                    # A `ps` scan of a busy shared host can take most of a
+                    # second, and a pipe holds 64 KiB, or 8 KiB once the user
+                    # passes pipe-user-pages-soft. Polling before every read
+                    # put one scan per pipe buffer (10 to ~75 for a 600 KB
+                    # call) in front of a call already written, while the wall
+                    # clock ran. Read for at least as long as the poll took.
+                    finished = time.monotonic()
+                    poll_due = finished + max(_POLL_SECONDS, finished - polled)
                 if time.monotonic() - started > wall_seconds:
                     reason = "wall_limit"
                     break
-                if evidence_root is not None:
-                    disk = sum(
-                        path.stat().st_size
-                        for path in evidence_root.rglob("*")
-                        if path.is_file() and not path.is_symlink()
-                    )
-                    if disk > max_bytes:
-                        reason = "evidence_limit"
-                        break
+                if evidence_over:
+                    reason = "evidence_limit"
+                    break
                 for key, _ in selector.select(timeout=0.05):
                     chunk = os.read(key.fd, 65536)
                     if not chunk:

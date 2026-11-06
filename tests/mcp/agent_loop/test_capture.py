@@ -149,6 +149,17 @@ def test_capture_rejects_incomplete_or_contaminated_run(tmp_path):
     )
 
 
+_WATCHDOG_CHILD = """import json, os, subprocess, sys, time
+p = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=True)
+print(json.dumps({'child_pid': p.pid}), flush=True)
+time.sleep(0.15)
+for i in range(100):
+    print(json.dumps({'type':'assistant','message':{'content':[{'type':'tool_use','name':'mcp__dartwork_mpl__render_plot','input':{'code':'x' * 1000}}]}}), flush=True)
+    time.sleep(0.01)
+time.sleep(60)
+"""
+
+
 @pytest.mark.parametrize(
     "limit", ["wall", "calls", "reader_calls", "bytes", "source", "render_time"]
 )
@@ -157,15 +168,7 @@ def test_watchdog_stops_process_tree_and_keeps_partial_evidence(
 ):
     """External limits terminate an owned child plus detached grandchild."""
     child = tmp_path / "child.py"
-    child.write_text("""import json, os, subprocess, sys, time
-p = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=True)
-print(json.dumps({'child_pid': p.pid}), flush=True)
-time.sleep(0.15)
-for i in range(100):
-    print(json.dumps({'type':'assistant','message':{'content':[{'type':'tool_use','name':'mcp__dartwork_mpl__render_plot','input':{'code':'x' * 1000}}]}}), flush=True)
-    time.sleep(0.01)
-time.sleep(60)
-""")
+    child.write_text(_WATCHDOG_CHILD)
     if limit == "reader_calls":
         child.write_text(
             child.read_text().replace(
@@ -242,6 +245,66 @@ def test_watchdog_wall_limit_includes_startup_without_output(tmp_path):
     assert result["cleanup_ok"]
     assert result["elapsed_seconds"] >= 0.4
     assert (tmp_path / "events.jsonl").read_bytes() == b""
+
+
+def test_watchdog_source_limit_is_not_held_behind_slow_process_polls(
+    tmp_path, monkeypatch
+):
+    """A call already in the stream wins even when process polls take all the time.
+
+    On a contended host one owned-tree ``ps`` scan took ~0.6 s and made up
+    nearly all of the watchdog's elapsed time. Here the watchdog clock moves
+    0.6 s per scan and does not move otherwise, so the result does not depend
+    on host load. A watchdog that scans before every pipe read needs one scan
+    per pipe buffer, ten or more for the 600 KB call, and stops on
+    ``wall_limit`` first.
+    """
+    import run_agent_plot_eval as capture
+
+    child = tmp_path / "child.py"
+    child.write_text(_WATCHDOG_CHILD.replace("'x' * 1000", "'x' * 600000"))
+    origin = time.monotonic()
+    state = {"scans": 0, "cleanup": False}
+    scan, stop = capture._process_table, capture._stop_tree
+
+    def counted_scan():
+        """Charge one contended scan to the watchdog clock."""
+        state["scans"] += 1
+        return scan()
+
+    def marked_stop(process, known):
+        """Cleanup waits in real time once the stop reason is chosen."""
+        state["cleanup"] = True
+        return stop(process, known)
+
+    def scan_driven_monotonic():
+        """Only scans move time before cleanup, behind a real 5 s hang guard."""
+        elapsed = time.monotonic() - origin
+        charged = origin + 0.6 * state["scans"]
+        return charged + elapsed if state["cleanup"] or elapsed > 5 else charged
+
+    monkeypatch.setattr(capture, "_process_table", counted_scan)
+    monkeypatch.setattr(capture, "_stop_tree", marked_stop)
+    monkeypatch.setattr(
+        capture,
+        "time",
+        SimpleNamespace(monotonic=scan_driven_monotonic, sleep=time.sleep),
+    )
+    result = capture_process(
+        [sys.executable, str(child)],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+        max_calls=1000,
+        max_bytes=1000000,
+    )
+    assert result["stop_reason"] == "source_limit"
+    assert result["cleanup_ok"]
+    first = json.loads((tmp_path / "events.jsonl").read_text().splitlines()[0])
+    with pytest.raises(ProcessLookupError):
+        os.kill(first["child_pid"], 0)
 
 
 def test_replay_keeps_exact_source_and_absolute_csv_until_finished(tmp_path):
