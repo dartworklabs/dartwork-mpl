@@ -28,6 +28,8 @@ SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+import dartwork_mpl as dm
+
 
 def _save_svg(fig: plt.Figure, path: Path, **savefig_kwargs) -> Path:
     """Write *fig* as a byte-stable SVG (fixed hashsalt, no wall-clock Date)."""
@@ -173,7 +175,9 @@ def _save_all_fonts_preview(images_dir: Path) -> Path:
     family_spacing = 2
     total_height = families_per_column * (max_fonts_in_family + family_spacing)
 
-    fig, ax = plt.subplots(figsize=(10, total_height * 0.22))
+    fig, ax = plt.subplots(
+        figsize=dm.figsize("10in", f"{total_height * 0.22}in")
+    )
     fig.patch.set_facecolor("#fbfaf7")
     ax.set_facecolor("#ffffff")
 
@@ -242,7 +246,7 @@ def _save_family_preview(
     n_fonts = len(sorted_fonts)
     fig_height = max(4, n_fonts * 0.6 + 2.5)
 
-    fig, ax = plt.subplots(figsize=(12, fig_height))
+    fig, ax = plt.subplots(figsize=dm.figsize("12in", f"{fig_height}in"))
     fig.patch.set_facecolor("#fbfaf7")
     ax.set_facecolor("#ffffff")
 
@@ -306,7 +310,7 @@ def _save_family_preview(
 
         # Recreate figure with proper size for math lines
         plt.close(fig)
-        fig, ax = plt.subplots(figsize=(12, fig_height))
+        fig, ax = plt.subplots(figsize=dm.figsize("12in", f"{fig_height}in"))
         fig.patch.set_facecolor("#fbfaf7")
         ax.set_facecolor("#ffffff")
         ax.set_xlim(0, 10)

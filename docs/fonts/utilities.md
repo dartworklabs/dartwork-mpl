@@ -200,7 +200,7 @@ plt.show()
 
 # Preview custom fonts
 fig = dm.plot_fonts(font_dir="/path/to/custom/fonts", ncols=2)
-plt.savefig("custom_fonts.png", dpi=150)
+dm.save_formats(fig, "custom_fonts", formats=("png",))
 ```
 
 :::{figure} images/fonts_all_families.svg

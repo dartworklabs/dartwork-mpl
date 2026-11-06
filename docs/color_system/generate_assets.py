@@ -595,7 +595,7 @@ def _save_color_space_creation(images_dir: Path) -> Path:
     """Generate example showing different ways to create Color objects."""
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=dm.figsize("15cm", "13cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "13cm"))
     fig.patch.set_facecolor("#fbfaf7")
 
     gs = fig.add_gridspec(
@@ -686,7 +686,7 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
     """Generate example showing color space conversions."""
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=dm.figsize("15cm", "6.5cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "6.5cm"))
     fig.patch.set_facecolor("#fbfaf7")
 
     # GridSpec: title + 2×(label row + box row)
@@ -792,7 +792,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
     dm.style.use("scientific")
 
     # Create figure
-    fig = plt.figure(figsize=dm.figsize("15cm", "10cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "10cm"))
     fig.patch.set_facecolor("#fbfaf7")
 
     # GridSpec layout: title + 3x(gradient + Lightness) = 7 rows

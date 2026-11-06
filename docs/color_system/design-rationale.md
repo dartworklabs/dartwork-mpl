@@ -460,8 +460,8 @@ The generated `dc.*` ramps are not hand-picked tables of hex codes. Their
 palette-authoring recipe uses the bookkeeping and scalar-leaf counts below.
 Continuous maps carry additional topology-specific recipe data, while curated
 categorical sets are a separate, preserved manual surface. These figures
-describe palette authoring, not the MCP API (which exposes 16 tools, 10
-resources, 4 resource templates, and 2 prompts).
+describe palette authoring, not the MCP API (which exposes 19 tools, 10
+resources, 9 resource templates, and 2 prompts).
 
 The generated system has two related recipe counts.
 Its bookkeeping total is **107 named slots**:
