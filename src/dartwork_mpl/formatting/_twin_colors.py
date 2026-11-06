@@ -72,9 +72,9 @@ from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 from matplotlib.typing import ColorType
 
-from .._colors.contrast import ensure_contrast
+from .._colors.contrast import composite_layers, composite_over, ensure_contrast
 from .._colors.model import srgb_to_oklab
-from .._figure_geometry import same_position_axes
+from .._figure_geometry import backdrop_layers, same_position_axes
 from ..config import config
 
 __all__ = ["apply_twin_colors"]
@@ -128,16 +128,6 @@ def _same(left: RGBA, right: RGBA) -> bool:
     return all(
         abs(a - b) <= _RGBA_TOL for a, b in zip(left, right, strict=True)
     )
-
-
-def _over(top: RGBA, below: RGB) -> RGB:
-    """``top`` composited over the opaque ``below``."""
-    alpha = top[3]
-    r, g, b = (
-        alpha * t + (1.0 - alpha) * u
-        for t, u in zip(top[:3], below, strict=True)
-    )
-    return (r, g, b)
 
 
 def _key(color: RGBA) -> str:
@@ -261,7 +251,7 @@ def _line_colors(line: Line2D, background: RGB) -> list[RGBA]:
     colors = stroke + [
         mark
         for mark in marks
-        if not _near((*_over(mark, background), 1.0), ground)
+        if not _near((*composite_over(mark, background), 1.0), ground)
     ]
     if all(_near(a, b) for a, b in combinations(colors, 2)):
         return [max(colors, key=lambda color: color[3])] if colors else []
@@ -332,22 +322,12 @@ def _near(left: RGBA, right: RGBA) -> bool:
 
 def _background(group: Sequence[Axes]) -> RGB:
     """What shows behind the pair's data: the figure, then visible patches."""
-    below: RGB = (1.0, 1.0, 1.0)
-    root = group[0].get_figure(root=True)
-    parent = group[0].get_figure(root=False)
-    for container in (root, parent if parent is not root else None):
-        if container is not None and container.patch.get_visible():
-            below = _over(_rgba(container.get_facecolor()), below)
-    # Axes draw in zorder (stable on figure order), each patch over the last.
-    for member in sorted(group, key=lambda m: m.get_zorder()):
-        if member.get_frame_on() and member.patch.get_visible():
-            below = _over(_rgba(member.get_facecolor()), below)
-    return below
+    return composite_layers(backdrop_layers(group))
 
 
 def _inks(color: RGBA, background: RGB) -> tuple[str, str]:
     """(spine and tick marks, text) for a series ``color`` on ``background``."""
-    shown = mcolors.to_hex(_over(color, background))
+    shown = mcolors.to_hex(composite_over(color, background))
     ground = mcolors.to_hex(background)
     return (
         ensure_contrast(shown, ground, min_ratio=_LINE_RATIO),
