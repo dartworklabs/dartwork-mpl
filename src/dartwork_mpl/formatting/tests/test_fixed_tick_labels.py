@@ -192,6 +192,23 @@ def test_fixed_labels_made_for_other_ticks_are_left_alone():
     assert type(ax.xaxis.get_major_locator()) is mticker.AutoLocator
 
 
+def test_a_pinned_axis_keeps_its_ticks_when_zoomed_later():
+    """The pin is a ``FixedLocator``: a later zoom shows no new ticks.
+
+    A documented limit (review 2026-11-06): 0-5,000 zoomed to 1,000-2,500
+    after the layout shows the two pinned ticks in view, still under their
+    own texts. Fixed texts exist for those ticks only.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(np.linspace(0, 5000, 20), np.arange(20))
+    _fix_labels(ax.xaxis)
+    dm.simple_layout(fig)
+    assert isinstance(ax.xaxis.get_major_locator(), mticker.FixedLocator)
+    ax.set_xlim(1000, 2500)
+    assert _on(ax.xaxis)[0] == [1000.0, 2000.0]
+    assert _misplaced(ax.xaxis) == [], _on(ax.xaxis)
+
+
 def test_labels_fixed_after_the_layout_are_not_thinned():
     """A second layout does not thin the year ticks under fixed labels.
 

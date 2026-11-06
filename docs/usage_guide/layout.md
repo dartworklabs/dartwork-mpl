@@ -522,7 +522,9 @@ field on `dm.config` for the whole program (`dm.config.tick_years = 4`). A
 formatter or locator you set yourself is never replaced. Labels you fix,
 as in `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)`, keep the
 ticks they were made for: the layout pins those ticks, since matplotlib
-gives fixed texts to ticks by order. To rotate labels without fixing their
+gives fixed texts to ticks by order. Pinned ticks stay: a later
+`ax.set_xlim` zoom shows no new ones (0–5,000 zoomed to 1,000–2,500 keeps
+two). To rotate labels without fixing their
 text, `ax.tick_params(axis="x", rotation=45)` keeps the library's ticks.
 A tick count asked
 of the axis, `ax.locator_params(axis="x", nbins=3)`, is kept on whole years

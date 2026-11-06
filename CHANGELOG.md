@@ -66,8 +66,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   went in under labels matplotlib gives to ticks by order, and the refit
   could change matplotlib's own tick count too (a 6 cm axis over 0–5,000
   read `2000` at 1,000). Such an axis now keeps the ticks its labels were
-  made for, pinned before the refit, and is not thinned. To rotate without
-  fixing the text, use `ax.tick_params(axis="x", rotation=45)`.
+  made for, pinned before the refit, and is not thinned. Pinned ticks stay
+  when you zoom later with `set_xlim` (no new ticks appear). To rotate
+  without fixing the text, use `ax.tick_params(axis="x", rotation=45)`.
 - **Secondary axes read the library's numbers.** A `secondary_yaxis` over a
   price line printed `1600 … 2400` beside the parent's `1,600 … 2,400`,
   and over millions `0.0 … 3.0` under `1e6` beside `0.5M`. A
