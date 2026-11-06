@@ -32,9 +32,12 @@ is written alone under :class:`TickText` rules (``per_tick``).
 
 Text that should read like the ticks (value labels on bars) asks
 :func:`tick_scale_of` how an axis printed its ticks at the last draw: the
-factor to divide by and the prefix and suffix around the number
-(:class:`TickScale`), and prints the number with :func:`number_text`, the
-same separators, minus and zero as a tick.
+factor to divide by, the prefix and suffix around the number and whether a
+zero keeps them (:class:`TickScale`), and prints the number with
+:func:`number_text`, the same separators, minus and zero as a tick. A
+``per_tick`` formatter with one fixed unit (millions, billions, currency)
+reports that unit; one whose values each take their own unit (si, myriad
+with ``unit="max"``) has no unit to share and reports the plain scale.
 """
 
 from __future__ import annotations
@@ -154,11 +157,16 @@ class TickScale:
     ``prefix``, then the value divided by ``factor``, then ``suffix``:
     ``TickScale(1e9, "", "G")`` prints ``33e9`` as ``33G``. The plain scale
     (``TickScale()``) prints the value itself.
+
+    ``zero``: a value that prints as zero drops the prefix and suffix
+    (``"bare"``: ``0``) or keeps them (``"affixed"``: ``$0``, ``0€``, as
+    ``format_axis_currency`` ticks).
     """
 
     factor: float = 1.0
     prefix: str = ""
     suffix: str = ""
+    zero: Literal["bare", "affixed"] = "bare"
 
 
 @dataclass(frozen=True)
@@ -192,17 +200,20 @@ def number_text(
     fixed: bool = False,
     prefix: str = "",
     suffix: str = "",
+    zero: Literal["bare", "affixed"] = "bare",
 ) -> str:
     """``value`` printed as an axis-wide tick prints it.
 
     Thousands separators, ``decimals`` places, matplotlib's minus (U+2212
     unless ``axes.unicode_minus`` is off) before ``prefix``. A value that
-    rounds to zero prints ``0`` without prefix or suffix, or ``0.00`` (as
-    many zeros as ``decimals``) when the count is ``fixed`` by the caller.
+    rounds to zero prints ``0`` without sign, or ``0.00`` (as many zeros as
+    ``decimals``) when the count is ``fixed`` by the caller; without prefix
+    or suffix (``zero="bare"``) or with them (``"affixed"``: ``$0``).
     """
     number = format(abs(value), f",.{decimals}f")
     if float(number.replace(",", "")) == 0:
-        return f"{0:.{decimals}f}" if fixed else "0"
+        digits = f"{0:.{decimals}f}" if fixed else "0"
+        return f"{prefix}{digits}{suffix}" if zero == "affixed" else digits
     # The same minus as matplotlib's own ticks (U+2212 unless turned off).
     minus = "\N{MINUS SIGN}" if mpl.rcParams["axes.unicode_minus"] else "-"
     sign = minus if value < 0 else ""
@@ -246,8 +257,9 @@ class AxisUnitFormatter(ticker.Formatter):
     its own (``unit="whole"`` needs an axis and is refused). Ticks of one
     axis can then mix units (``800.0``, ``1.2k``); this keeps the output of
     the ``decimals=n`` paths of the ``format_axis_*`` helpers and of
-    ``format_axis_currency``. Such a formatter has no axis unit, so
-    :func:`tick_scale_of` reports the plain scale for it.
+    ``format_axis_currency``. With a fixed unit every value takes that unit,
+    so :meth:`scale_for` reports it; with ``unit="max"`` there is no axis
+    unit, and it reports the plain scale.
 
     The decision is made in :meth:`set_locs`, which :meth:`format_ticks`
     calls with every major tick on each draw; only ticks inside the view
@@ -429,10 +441,24 @@ class AxisUnitFormatter(ticker.Formatter):
         The axis unit's factor, this formatter's currency prefix and the
         unit label as suffix; on a non-linear axis, ``value``'s own unit.
         Before any draw ``value`` decides alone, as :meth:`__call__` does.
-        A ``per_tick`` formatter has no axis unit: the plain scale.
+
+        A ``per_tick`` formatter with a fixed unit (``decimals=n`` of
+        millions and billions, currency) writes every value in that unit:
+        its factor, currency and label, and its zero rule (``"affixed"``
+        keeps them on zero). Its fixed decimals size tick text and are not
+        reported. Without one (``unit="max"``: each value takes its own
+        unit) there is no unit to share: the plain scale.
         """
-        if self._per_tick is not None:
-            return TickScale()
+        rules = self._per_tick
+        if rules is not None:
+            if self._fixed is None:
+                return TickScale()
+            return TickScale(
+                self._fixed.factor,
+                self._currency,
+                self._fixed.label,
+                zero="affixed" if rules.zero == "affixed" else "bare",
+            )
         unit, _decimals = self._decision(float(value))
         return TickScale(unit.factor, self._currency, unit.label)
 
@@ -449,8 +475,11 @@ def tick_scale_of(axis: Axis, value: float) -> TickScale:
       formatter puts the unit in the axis label instead, so its scale has
       no suffix (``33`` under ``Energy (GWh)``).
       An :class:`AxisUnitFormatter` made with ``per_tick`` (each value
-      alone, so no axis unit exists: the ``decimals=n`` paths and
-      ``format_axis_currency``) reports the plain scale.
+      alone) reports its fixed unit, currency and zero rule
+      (``decimals=n`` of millions and billions: ``1.2M``;
+      ``format_axis_currency``: ``-$1,500``, ``$0``), or the plain scale
+      when each value takes its own unit (``decimals=n`` of si and myriad
+      with ``unit="max"``).
     - :class:`matplotlib.ticker.PercentFormatter`: ``xmax / 100`` and its
       symbol (``31%``).
     - Any other formatter, matplotlib's own ``ScalarFormatter`` on an axis

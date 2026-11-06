@@ -13,6 +13,7 @@ are read after a real canvas draw.
 from __future__ import annotations
 
 import io
+import re
 
 import matplotlib
 import matplotlib.colors as mcolors
@@ -436,6 +437,452 @@ def test_percent_formatter_follows_ticks():
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
     assert _texts(texts) == ["31.0%", "22.4%", "11.6%"]
+
+
+FIXED_UNIT = {
+    # name: (install, values, labels)
+    "millions-1": (
+        lambda ax: dm.format_axis_millions(ax, decimals=1),
+        [1.25e6, 2.05e6, -0.8e6, 0.0, 3.4e6],
+        ["1.25M", "2.05M", f"{MINUS}0.80M", "0", "3.40M"],
+    ),
+    "billions-2": (
+        lambda ax: dm.format_axis_billions(ax, decimals=2),
+        [12.4e9, 8.0e9, -3.5e9, 0.0, 15.0e9],
+        ["12.4B", "8.0B", f"{MINUS}3.5B", "0", "15.0B"],
+    ),
+    "currency": (
+        lambda ax: dm.format_axis_currency(ax),
+        [1250.0, 2050.0, -800.0, 0.0, 3400.0],
+        ["$1,250", "$2,050", f"{MINUS}$800", "$0", "$3,400"],
+    ),
+    "currency-small": (
+        lambda ax: dm.format_axis_currency(ax),
+        [4.25, 3.8, -1.5, 0.0, 6.1],
+        ["$4.25", "$3.80", f"{MINUS}$1.50", "$0", "$6.10"],
+    ),
+    "currency-suffix-2": (
+        lambda ax: dm.format_axis_currency(
+            ax, symbol="€", position="suffix", decimals=2
+        ),
+        [12.5, 20.55, -8.0, 0.0, 34.0],
+        ["12.5€", "20.6€", f"{MINUS}8.0€", "0€", "34.0€"],
+    ),
+}
+
+
+def _affixes(text):
+    """The sign and symbols around the digits: ``("-$", "")`` for -$800."""
+    found = re.fullmatch(r"(\D*)[\d,.]+(\D*)", text.replace(MINUS, "-"))
+    assert found is not None, text
+    return found.groups()
+
+
+@pytest.mark.parametrize("name", list(FIXED_UNIT))
+def test_fixed_unit_formatters_print_like_their_ticks(name):
+    """Ticks written each alone in one fixed unit (``decimals=n`` of
+    millions / billions, ``format_axis_currency``) give the labels that
+    unit, the currency on its side, the sign before both and the ticks'
+    zero rule (bare ``0``; ``$0``, ``0€``). The decimals are the label
+    rule's: the ticks' fixed count sizes tick text only."""
+    install, values, expected = FIXED_UNIT[name]
+    fig, ax, _ = _plain(values)
+    install(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+    # Sign, currency and unit sit where a tick at that value puts them.
+    tick = ax.yaxis.get_major_formatter()
+    assert [_affixes(t) for t in expected] == [
+        _affixes(tick(v)) for v in values
+    ]
+
+
+def test_fixed_unit_labels_follow_and_explicit_wins():
+    values = [1.25e6, 2.05e6, -0.8e6, 0.0, 3.4e6]
+
+    # A formatter set after the call: the labels follow at the draw.
+    fig, ax, _ = _plain(values)
+    texts = dm.label_bars(ax)
+    assert _texts(texts)[0] == "1,250,000"
+    dm.format_axis_millions(ax, decimals=1)
+    fig.canvas.draw()
+    assert _texts(texts)[0] == "1.25M"
+
+    # The same labels as under the axis-wide millions (decimals=None).
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == FIXED_UNIT["millions-1"][2]
+
+    # decimals= fixes the count, the unit stays the ticks'.
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax, decimals=1)
+    texts = dm.label_bars(ax, decimals=2)
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["1.25M", "2.05M", f"{MINUS}0.80M", "0.00", "3.40M"]
+
+    # fmt= writes the text: a template around the number in the tick unit,
+    # a callable that gets that number; no tick suffix or currency added.
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax, decimals=1)
+    texts = dm.label_bars(ax, fmt="{} mn")
+    assert _texts(texts)[:3] == ["1.25 mn", "2.05 mn", f"{MINUS}0.80 mn"]
+    seen: list[float] = []
+    dm.label_bars(ax, fmt=lambda v: seen.append(v) or "x")
+    assert seen[:5] == pytest.approx([1.25, 2.05, -0.8, 0.0, 3.4])
+
+    fig, ax, _ = _plain([1250.0, -800.0, 0.0])
+    dm.format_axis_currency(ax)
+    texts = dm.label_bars(ax, fmt="USD {}")
+    assert _texts(texts) == ["USD 1,250", f"USD {MINUS}800", "USD 0"]
+
+
+def _millions_1(ax):
+    dm.format_axis_millions(ax, decimals=1)
+
+
+def _billions_bn_1(ax):
+    dm.format_axis_billions(ax, suffix="bn", decimals=1)
+
+
+def _euro_suffix_2(ax):
+    dm.format_axis_currency(ax, symbol="€", position="suffix", decimals=2)
+
+
+@pytest.mark.parametrize(
+    ("install", "values", "asked", "expected"),
+    [
+        # decimals= with fewer and more places than the ticks' fixed count.
+        (
+            _millions_1,
+            [1.25e6, -0.04e6, 0.0],
+            {"decimals": 0},
+            ["1M", "0", "0"],
+        ),
+        (
+            _millions_1,
+            [1.25e6, -0.04e6, 0.0],
+            {"decimals": 3},
+            ["1.250M", f"{MINUS}0.040M", "0.000"],
+        ),
+        (
+            _billions_bn_1,
+            [12.4e9, -3.6e9, 0.0],
+            {"decimals": 0},
+            ["12bn", f"{MINUS}4bn", "0"],
+        ),
+        (
+            dm.format_axis_currency,
+            [4.25, -0.3, 0.0],
+            {"decimals": 2},
+            ["$4.25", f"{MINUS}$0.30", "$0.00"],
+        ),
+        (
+            _euro_suffix_2,
+            [12.4, -0.04, 0.0],
+            {"decimals": 0},
+            ["12€", "0€", "0€"],
+        ),
+        (
+            _euro_suffix_2,
+            [12.4, -0.04, 0.0],
+            {"decimals": 3},
+            ["12.400€", f"{MINUS}0.040€", "0.000€"],
+        ),
+        # A format spec in fmt formats the value in the tick unit itself.
+        (
+            _millions_1,
+            [1.25e6, -0.04e6, 0.0],
+            {"fmt": "{:.3f} mn"},
+            ["1.250 mn", f"{MINUS}0.040 mn", "0.000 mn"],
+        ),
+    ],
+    ids=[
+        "millions-1-asked-0",
+        "millions-1-asked-3",
+        "billions-bn-1-asked-0",
+        "currency-0-asked-2",
+        "euro-2-asked-0",
+        "euro-2-asked-3",
+        "millions-1-fmt-spec",
+    ],
+)
+def test_asked_precision_wins_over_the_ticks(install, values, asked, expected):
+    """The precision the caller gives the labels wins over the formatter's
+    fixed count, fewer places or more: the formatter's count is only a
+    default when nothing is asked. The unit, currency side and zero rule
+    stay the ticks'."""
+    fig, ax, _ = _plain(values)
+    install(ax)
+    texts = dm.label_bars(ax, **asked)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+
+
+# Boundary charts: zero, negatives, small non-zero values that round to
+# zero, currency on either side, the user's suffix (``bn``, ``백만``, ``""``).
+BOUNDARY = {
+    # name: (preset, install, values)
+    "millions-1-small": (
+        "report",
+        _millions_1,
+        [1.25e6, 0.03e6, -0.04e6, 0.0, -0.8e6, 3.4e6],
+    ),
+    "millions-1-wide": (
+        "report",
+        _millions_1,
+        [12.5e6, 0.03e6, -0.04e6, 0.0, -2.6e6, 8.1e6],
+    ),
+    "billions-bn-1": (
+        "report",
+        _billions_bn_1,
+        [12.4e9, 0.02e9, -0.03e9, 0.0, -3.5e9, 8.0e9],
+    ),
+    "millions-baekman-1": (
+        "report-kr",
+        lambda ax: dm.format_axis_millions(ax, suffix="백만", decimals=1),
+        [2.4e6, 0.03e6, -0.04e6, 0.0, -1.1e6, 5.6e6],
+    ),
+    "millions-empty-1": (
+        "report",
+        lambda ax: dm.format_axis_millions(ax, suffix="", decimals=1),
+        [1.25e6, 0.03e6, -0.04e6, 0.0, -0.8e6, 3.4e6],
+    ),
+    "currency-prefix-0": (
+        "report",
+        dm.format_axis_currency,
+        [4.25, 0.4, -0.3, 0.0, -1.5, 6.1],
+    ),
+    "currency-suffix-2": (
+        "report",
+        _euro_suffix_2,
+        [12.5, 0.03, -0.04, 0.0, -8.0, 34.0],
+    ),
+}
+# Nothing asked: the label rule in the tick unit (three significant digits
+# on the largest value), so a small value shows while the largest leaves
+# room for it (0.03M beside 3.4M) and reads 0 when it does not (beside
+# 12.5M, or €0.03 beside €34).
+BOUNDARY_DEFAULT = {
+    "millions-1-small": [
+        "1.25M",
+        "0.03M",
+        f"{MINUS}0.04M",
+        "0",
+        f"{MINUS}0.80M",
+        "3.40M",
+    ],
+    "millions-1-wide": ["12.5M", "0", "0", "0", f"{MINUS}2.6M", "8.1M"],
+    "billions-bn-1": ["12.4bn", "0", "0", "0", f"{MINUS}3.5bn", "8.0bn"],
+    "millions-baekman-1": [
+        "2.40백만",
+        "0.03백만",
+        f"{MINUS}0.04백만",
+        "0",
+        f"{MINUS}1.10백만",
+        "5.60백만",
+    ],
+    "millions-empty-1": [
+        "1.25",
+        "0.03",
+        f"{MINUS}0.04",
+        "0",
+        f"{MINUS}0.80",
+        "3.40",
+    ],
+    "currency-prefix-0": [
+        "$4.25",
+        "$0.40",
+        f"{MINUS}$0.30",
+        "$0",
+        f"{MINUS}$1.50",
+        "$6.10",
+    ],
+    "currency-suffix-2": ["12.5€", "0€", "0€", "0€", f"{MINUS}8.0€", "34.0€"],
+}
+# label_bars(decimals=2): the asked count wins over the ticks'.
+BOUNDARY_ASKED = {
+    "millions-1-small": [
+        "1.25M",
+        "0.03M",
+        f"{MINUS}0.04M",
+        "0.00",
+        f"{MINUS}0.80M",
+        "3.40M",
+    ],
+    "millions-1-wide": [
+        "12.50M",
+        "0.03M",
+        f"{MINUS}0.04M",
+        "0.00",
+        f"{MINUS}2.60M",
+        "8.10M",
+    ],
+    "billions-bn-1": [
+        "12.40bn",
+        "0.02bn",
+        f"{MINUS}0.03bn",
+        "0.00",
+        f"{MINUS}3.50bn",
+        "8.00bn",
+    ],
+    "millions-baekman-1": [
+        "2.40백만",
+        "0.03백만",
+        f"{MINUS}0.04백만",
+        "0.00",
+        f"{MINUS}1.10백만",
+        "5.60백만",
+    ],
+    "millions-empty-1": [
+        "1.25",
+        "0.03",
+        f"{MINUS}0.04",
+        "0.00",
+        f"{MINUS}0.80",
+        "3.40",
+    ],
+    "currency-prefix-0": [
+        "$4.25",
+        "$0.40",
+        f"{MINUS}$0.30",
+        "$0.00",
+        f"{MINUS}$1.50",
+        "$6.10",
+    ],
+    "currency-suffix-2": [
+        "12.50€",
+        "0.03€",
+        f"{MINUS}0.04€",
+        "0.00€",
+        f"{MINUS}8.00€",
+        "34.00€",
+    ],
+}
+
+
+@pytest.mark.parametrize("name", list(BOUNDARY))
+def test_fixed_unit_boundaries_default_and_asked(name):
+    preset, install, values = BOUNDARY[name]
+    dm.style.use(preset)
+    for asked, expected in (
+        ({}, BOUNDARY_DEFAULT[name]),
+        ({"decimals": 2}, BOUNDARY_ASKED[name]),
+    ):
+        fig, ax, _ = _plain(values)
+        install(ax)
+        texts = dm.label_bars(ax, **asked)
+        dm.simple_layout(fig)
+        assert _texts(texts) == expected, asked
+
+
+# Bar shapes on the fixed-unit paths (the 2026-11-07 review's measured
+# texts): barh reads the x formatter, axis="both", log value axes, and
+# NaN / infinite bars (no label; the rest unchanged).
+SHAPED = {
+    # name: (values, install, shape, default, decimals=2)
+    "barh-millions-1-x": (
+        [1.25e6, -0.8e6, 0.0, 3.4e6],
+        lambda ax: dm.format_axis_millions(ax, axis="x", decimals=1),
+        "barh",
+        ["1.25M", f"{MINUS}0.80M", "0", "3.40M"],
+        ["1.25M", f"{MINUS}0.80M", "0.00", "3.40M"],
+    ),
+    "barh-currency-x": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="x"),
+        "barh",
+        ["$1,250", f"{MINUS}$800", "$0"],
+        ["$1,250.00", f"{MINUS}$800.00", "$0.00"],
+    ),
+    # The value axis of barh is x: a formatter on y alone leaves it plain.
+    "barh-currency-y-only": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="y"),
+        "barh",
+        ["1,250", f"{MINUS}800", "0"],
+        ["1,250.00", f"{MINUS}800.00", "0.00"],
+    ),
+    "bar-currency-both": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="both"),
+        "bar",
+        ["$1,250", f"{MINUS}$800", "$0"],
+        ["$1,250.00", f"{MINUS}$800.00", "$0.00"],
+    ),
+    "barh-millions-1-both": (
+        [1.25e6, -0.8e6, 0.0],
+        lambda ax: dm.format_axis_millions(ax, axis="both", decimals=1),
+        "barh",
+        ["1.25M", f"{MINUS}0.80M", "0"],
+        ["1.25M", f"{MINUS}0.80M", "0.00"],
+    ),
+    # One count per call on a log axis: 1e4 reads 0 beside 4.5e7 (the
+    # spec's round-to-zero rule; a log-axis rule is a follow-up).
+    "log-millions-1": (
+        [1e4, 2e5, 3.4e6, 4.5e7],
+        _millions_1,
+        "log",
+        ["0", "0.2M", "3.4M", "45.0M"],
+        ["0.01M", "0.20M", "3.40M", "45.00M"],
+    ),
+    "log-currency": (
+        [3.0, 45.0, 1250.0, 98000.0],
+        dm.format_axis_currency,
+        "log",
+        ["$3", "$45", "$1,250", "$98,000"],
+        ["$3.00", "$45.00", "$1,250.00", "$98,000.00"],
+    ),
+    "nan-millions-1": (
+        [1.25e6, np.nan, -0.8e6, 3.4e6],
+        _millions_1,
+        "bar",
+        ["1.25M", f"{MINUS}0.80M", "3.40M"],
+        ["1.25M", f"{MINUS}0.80M", "3.40M"],
+    ),
+    "nan-currency": (
+        [1250.0, np.nan, -800.0],
+        dm.format_axis_currency,
+        "bar",
+        ["$1,250", f"{MINUS}$800"],
+        ["$1,250.00", f"{MINUS}$800.00"],
+    ),
+    "inf-millions-1": (
+        [1.25e6, np.inf, 3.4e6],
+        _millions_1,
+        "bar",
+        ["1.25M", "3.40M"],
+        ["1.25M", "3.40M"],
+    ),
+    "inf-currency": (
+        [1250.0, -np.inf, 800.0],
+        dm.format_axis_currency,
+        "bar",
+        ["$1,250", "$800"],
+        ["$1,250.00", "$800.00"],
+    ),
+}
+
+
+# matplotlib's own transform warns on an infinite bar, before any label.
+@pytest.mark.filterwarnings(
+    "ignore:invalid value encountered in dot:RuntimeWarning"
+)
+@pytest.mark.parametrize("name", list(SHAPED))
+def test_fixed_unit_labels_on_other_bar_shapes(name):
+    values, install, shape, default, asked = SHAPED[name]
+    for keywords, expected in (({}, default), ({"decimals": 2}, asked)):
+        fig, ax = _fig()
+        draw = ax.barh if shape == "barh" else ax.bar
+        draw(np.arange(len(values)), values)
+        if shape == "log":
+            ax.set_yscale("log")
+        install(ax)
+        texts = dm.label_bars(ax, **keywords)
+        dm.simple_layout(fig)
+        assert _texts(texts) == expected, keywords
 
 
 def test_fmt_string_and_callable():

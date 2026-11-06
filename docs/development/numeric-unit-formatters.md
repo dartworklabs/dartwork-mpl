@@ -5,10 +5,14 @@ orphan: true
 # Numeric-unit formatters: one engine and its contract map (D4)
 
 Root decision D4: converge the numeric-unit implementations on one formatter
-engine, prefer `axis_unit` / `axis_unit_of`, and promote a canonical API or
-start dated deprecations only once an exact mapping of arguments, output,
-label, precision, locator and scale exists. This page is that mapping, after
-the internal merge. Nothing public was promoted, renamed or deprecated.
+engine, and promote a canonical API or start dated deprecations only once an
+exact mapping of arguments, output, label, precision, locator and scale
+exists. This page is that mapping, after the internal merge. Nothing public
+was promoted, renamed or deprecated.
+
+Choose by purpose, not by a general preference: the `format_axis_*` helpers
+print the unit (or currency) on every tick; `axis_unit` / `axis_unit_of`
+move the unit into the axis label. Both are frontends over the same engine.
 
 ## One engine, two modes
 
@@ -21,9 +25,12 @@ numbers (`DefaultNumberFormatter`). It has two modes:
   decimal count for the axis. `tick_scale_of` reports that unit, so
   `dm.label_bars` prints like the ticks.
 - **Per value** (`per_tick=TickText(...)`): no axis decision; each value is
-  written alone with fixed decimals. `tick_scale_of` reports the plain
-  scale. `TickText` holds the only rules that differ: thousands separators,
-  the zero rule (`"bare"`, `"affixed"`, `"exact"`) and myriad's `compact`.
+  written alone with fixed decimals. `tick_scale_of` reports the fixed
+  unit when there is one (millions, billions, currency) and the plain scale
+  when each value takes its own (si, myriad with `unit="max"`); see
+  [bar-labels-fixed-unit.md](bar-labels-fixed-unit.md). `TickText` holds
+  the only rules that differ: thousands separators, the zero rule
+  (`"bare"`, `"affixed"`, `"exact"`) and myriad's `compact`.
 
 | Call | Mode | Ladder / unit | Text rules |
 |---|---|---|---|
@@ -96,7 +103,7 @@ Returns: `C: test_return_label_locator_and_limits`.
 | negative `decimals` | accepted; `ValueError` at the draw | `ValueError` at the call | `ValueError` at the call | C: `test_negative_decimals_fail…` |
 | log scale | axis-wide: unit per tick (`1, 10 … 1k`); millions/billions keep their unit (`0.000001M`); per value and currency: as linear | axis-wide: unit per tick | whole values, label without unit | G: `y log` |
 | zoom / redraw | axis-wide: decided again; per value: each value alone | same | decided again, label rewritten | G: ranges are `format_ticks` under set views |
-| bar labels | axis-wide: tick suffix (`1.25M`); per value and currency: plain (`1,250,000`) | axis-wide: `125만`; per value: plain | scaled, no suffix (`1.25`) | T: `test_value_alone_formatters_give_the_plain_scale`, `test_suffix_formatters_give_unit_and_currency`, `test_axis_unit_scale_has_no_suffix` |
+| bar labels | axis-wide: tick suffix (`1.25M`); millions / billions per value and currency: the fixed unit, currency and zero (`1.25M`, `−$800`, `$0`); si per value: plain (`1,250,000`) | axis-wide: `125만`; per value: plain | scaled, no suffix (`1.25`) | T: `test_unit_per_value_formatters_give_the_plain_scale`, `test_fixed_unit_formatters_give_their_unit`, `test_suffix_formatters_give_unit_and_currency`, `test_axis_unit_scale_has_no_suffix` |
 | installed class | `AxisUnitFormatter`, one per axis | same | `LabelUnitFormatter` | this change |
 
 ## Where `axis_unit` is the same
@@ -131,8 +138,9 @@ a dated deprecation would change for callers.
 6. **`axis="both"`.** `axis_unit` takes one axis per call.
 7. **Error contract.** Four helpers ignore an unknown `axis` and fail at the
    draw on a negative `decimals`; `axis_unit` raises at the call.
-8. **Bar labels.** Under the helpers `dm.label_bars` shows the tick suffix or
-   plain values; under `axis_unit`, scaled numbers without a unit.
+8. **Bar labels.** Under the helpers `dm.label_bars` shows the tick unit and
+   currency (plain values only under si / myriad per value); under
+   `axis_unit`, scaled numbers without a unit.
 9. **Log axes.** si and myriad print a unit per tick and millions/billions a
    fixed unit; `axis_unit` prints whole values and drops the unit.
 
