@@ -79,3 +79,8 @@ docs/examples_source/**/*.pdf
 
 # Superpowers / SDD agent working notes, like .claude/ above.
 .superpowers/
+
+# Sphinx audit by-products (nitpick target counts / warning tallies).
+/docs/missing_targets.json
+/docs/sphinx_warnings.txt
+/BRIEF-report.md
