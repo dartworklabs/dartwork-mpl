@@ -27,6 +27,7 @@ REQUIRED_MODULES = (
     "tests.contracts.test_mcp_render_smoke",
     "tests.contracts.test_mcp_tool_hardening",
     "tests.contracts.test_mcp_validation_contract",
+    "tests.contracts.test_removed_names_golden",
     "src.dartwork_mpl.mcp.plot_data.tests.test_validators",
     "tests.mcp.artifacts.test_artifact_boundaries",
     "tests.mcp.artifacts.test_artifact_discovery",
@@ -49,6 +50,7 @@ REQUIRED_MODULES = (
     "src.dartwork_mpl.mcp.plot_data.tests.test_reports",
     "src.dartwork_mpl.mcp._platform.tests.test_process",
     "src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github",
+    "src.dartwork_mpl.mcp.recommend.tests.test_chart_type_transport",
     "src.dartwork_mpl.ui.tests.test_ui_boundary",
     "src.dartwork_mpl.ui.saving.tests.test_ui_files",
     "src.dartwork_mpl.ui.tests.test_ui_http_security",
@@ -59,6 +61,11 @@ REQUIRED_MODULES = (
     "src.dartwork_mpl.ui.params.tests.test_ui_widget",
     "src.dartwork_mpl.ui.tests.test_ui_wire_golden",
 )
+
+
+# ``pytest.importorskip`` reason. A module-level importorskip is reported as a
+# "collection skipped" case whose text carries the same reason.
+IMPORT_SKIP_REASON = "could not import"
 
 
 # Closed focused inventory; independent CLI tests pin every member.
@@ -107,8 +114,14 @@ def main() -> int:
     passed_modules = set()
     failed_modules = set()
     skipped_modules = set()
+    import_skips = []
     for case in root.iter("testcase"):
         classname = case.get("classname", "")
+        skipped = case.find("skipped")
+        if skipped is not None and IMPORT_SKIP_REASON in " ".join(
+            (skipped.get("message") or "", skipped.text or "")
+        ):
+            import_skips.append(f"{classname}::{case.get('name', '')}")
         for module in required:
             if classname != module and not classname.startswith(module + "."):
                 continue
@@ -122,6 +135,16 @@ def main() -> int:
             else:
                 passed_modules.add(module)
     missing = set(required) - passed_modules
+    # The all-extras run must import every optional dependency; a skip for a
+    # failed import (module- or case-level, inside or outside the inventory)
+    # means part of the suite never ran, even when its module also passed.
+    import_skipped = args.scope == "full" and bool(import_skips)
+    if import_skipped:
+        print(
+            "Cases skipped because an import failed: "
+            + ", ".join(sorted(import_skips)),
+            file=sys.stderr,
+        )
     if args.scope == "artifacts" and skipped_modules:
         print(
             "Required artifact modules contain skipped cases: "
@@ -142,7 +165,7 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    if failed_modules:
+    if failed_modules or import_skipped:
         return 1
     print(f"OK: {len(required)} required modules passed executed tests")
     return 0

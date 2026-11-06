@@ -43,12 +43,7 @@ BAR_LINE, BAR_TEXT = "#2d99f0", "#0f79cf"
 LINE_LINE, LINE_TEXT = "#f06d00", "#c15800"
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _luminance(color: str) -> float:

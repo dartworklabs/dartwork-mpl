@@ -1,6 +1,7 @@
 """The CI guard requires a passing executed case from each protected module."""
 
 import random
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -28,6 +29,7 @@ MODULES = (
     "tests.contracts.test_mcp_render_smoke",
     "tests.contracts.test_mcp_tool_hardening",
     "tests.contracts.test_mcp_validation_contract",
+    "tests.contracts.test_removed_names_golden",
     "src.dartwork_mpl.mcp.plot_data.tests.test_validators",
     "tests.mcp.artifacts.test_artifact_boundaries",
     "tests.mcp.artifacts.test_artifact_discovery",
@@ -50,6 +52,7 @@ MODULES = (
     "src.dartwork_mpl.mcp.plot_data.tests.test_reports",
     "src.dartwork_mpl.mcp._platform.tests.test_process",
     "src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github",
+    "src.dartwork_mpl.mcp.recommend.tests.test_chart_type_transport",
     "src.dartwork_mpl.ui.tests.test_ui_boundary",
     "src.dartwork_mpl.ui.saving.tests.test_ui_files",
     "src.dartwork_mpl.ui.tests.test_ui_http_security",
@@ -188,6 +191,121 @@ def test_passing_sibling_does_not_conceal_protected_error(
     result = _check(path)
     assert result.returncode == 1
     assert module in result.stderr
+
+
+def _with_skip(path: Path, classname: str, message: str, text: str) -> None:
+    """Append one skipped case shaped like pytest's own JUnit output."""
+    tree = ET.parse(path)
+    suite = tree.getroot().find("testsuite")
+    assert suite is not None
+    case = ET.SubElement(
+        suite, "testcase", classname=classname, name="test_skipped"
+    )
+    ET.SubElement(case, "skipped", message=message).text = text
+    tree.write(path)
+
+
+_IMPORT_SKIPS = {
+    # pytest 9 reports a module-level importorskip as a collection skip.
+    "module-level": (
+        "collection skipped",
+        "('tests/x.py', 2, \"Skipped: could not import 'fastmcp': "
+        "No module named 'fastmcp'\")",
+    ),
+    "case-level": (
+        "could not import 'fastmcp': No module named 'fastmcp'",
+        "tests/x.py:3: could not import 'fastmcp': No module named 'fastmcp'",
+    ),
+}
+
+
+@pytest.mark.parametrize("shape", sorted(_IMPORT_SKIPS))
+@pytest.mark.parametrize(
+    "classname", [MODULES[2], "tests.docs.test_unlisted", ""]
+)
+def test_full_scope_rejects_any_failed_import_skip(
+    tmp_path: Path, shape: str, classname: str
+) -> None:
+    """A passing inventory cannot hide a case skipped for a missing import."""
+    path = tmp_path / "junit.xml"
+    _report(path, [(module, None) for module in MODULES])
+    _with_skip(path, classname, *_IMPORT_SKIPS[shape])
+    result = _check(path)
+    assert result.returncode == 1
+    assert "skipped because an import failed" in result.stderr
+    assert f"{classname}::test_skipped" in result.stderr
+
+
+def test_full_scope_keeps_skips_for_other_reasons(tmp_path: Path) -> None:
+    """An option-gated skip (``--mpl``) is not an import failure."""
+    path = tmp_path / "junit.xml"
+    _report(path, [(module, None) for module in MODULES])
+    _with_skip(
+        path,
+        "tests.visual.test_visual_pixels",
+        "pixel baselines are compared only under --mpl",
+        "tests/visual/test_visual_pixels.py:85: pixel baselines ...",
+    )
+    result = _check(path)
+    assert result.returncode == 0, result.stderr
+
+
+# ``pytest.importorskip`` of an optional extra (or one of its submodules),
+# whatever the spacing, quote style, ``modname=`` or trailing arguments.
+_EXTRA_IMPORTORSKIP = re.compile(
+    r"""importorskip\(\s*(?:modname\s*=\s*)?(['"])(?:fastmcp|fastapi)(?:\.[\w.]+)?\1"""
+)
+
+
+@pytest.mark.parametrize(
+    ("source", "found"),
+    [
+        ('pytest.importorskip("fastmcp")', True),
+        ("pytest.importorskip( 'fastapi' )", True),
+        (
+            'pytest.importorskip(\n    "fastmcp",\n    reason="needs [mcp]",\n)',
+            True,
+        ),
+        ('pytest.importorskip(modname="fastmcp", minversion="2")', True),
+        ('pytest.importorskip("fastmcp.client")', True),
+        ('pytest.importorskip("fastmcpx")', False),
+        ('pytest.importorskip("pandas")', False),
+        ('import fastmcp  # importorskip("fastmcp") not here', True),
+    ],
+)
+def test_extra_importorskip_pattern(source: str, found: bool) -> None:
+    """The inventory scan sees every spelling of an extra importorskip."""
+    assert bool(_EXTRA_IMPORTORSKIP.search(source)) is found
+
+
+def test_every_optional_extra_importorskip_module_is_inventoried() -> None:
+    """A tracked test module that skips without an extra must be protected.
+
+    Otherwise a new FastMCP/FastAPI module could skip whole in the all-extras
+    run with only the import-skip rule, not the per-module proof, guarding it.
+    Only files tracked by git count, so local scratch files cannot pass or
+    fail the gate.
+    """
+    root = CHECKER.parents[1]
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z", "--", "tests", "src/dartwork_mpl"],
+        cwd=root,
+        capture_output=True,
+        check=True,
+    ).stdout.decode("utf-8")
+    found = set()
+    for name in filter(None, tracked.split("\0")):
+        path = Path(name)
+        if not (path.name.startswith("test_") and path.suffix == ".py"):
+            continue
+        if (root / path).resolve() == Path(__file__).resolve():
+            continue  # this file's pattern examples are not importorskips
+        if _EXTRA_IMPORTORSKIP.search(
+            (root / path).read_text(encoding="utf-8")
+        ):
+            found.add(".".join(path.with_suffix("").parts))
+    assert found, "the scan found no optional-extra test modules"
+    assert sorted(found - set(MODULES)) == []
 
 
 def test_empty_report_cannot_prove_any_module(tmp_path: Path) -> None:

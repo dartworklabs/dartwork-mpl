@@ -38,13 +38,7 @@ from dartwork_mpl.formatting._years import (
     year_data,
 )
 
-
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _xticks(ax) -> list[str]:
@@ -903,7 +897,13 @@ def test_year_detection_costs_a_few_numpy_passes(kind):
     values took 0.6-3.6 s on a 10M-point line, about 200 times one numpy
     pass over the same values. The check is relative, in this process: the
     best of five detection runs against the best of five ``np.rint``
-    passes, interleaved so machine load hits both alike (re-review N6).
+    passes, interleaved (re-review N6), in this thread's CPU time.
+
+    Not in wall time: on a loaded host a 1 ms pass often ends inside one
+    scheduler slice, so its best of five is not preempted, while every ~5 ms
+    detection run is, and the waits count as detection (CI 2026-11-06, 64
+    xdist workers on a shared host: 108 ms against 1.03 ms). CPU time leaves
+    out the waits; today's detection costs 3-8 passes.
     """
     if kind == "numbers":
         x = np.arange(_POINTS, dtype=float)  # not years: out of range
@@ -913,12 +913,12 @@ def test_year_detection_costs_a_few_numpy_passes(kind):
     ax.plot(x, np.zeros(len(x)), linewidth=0.3)
     detect, one_pass = [], []
     for _ in range(5):
-        start = time.perf_counter()
+        start = time.thread_time()
         apply_default_tick_format(fig)
-        detect.append(time.perf_counter() - start)
-        start = time.perf_counter()
+        detect.append(time.thread_time() - start)
+        start = time.thread_time()
         np.rint(x)
-        one_pass.append(time.perf_counter() - start)
+        one_pass.append(time.thread_time() - start)
     assert min(detect) < 30 * min(one_pass), (detect, one_pass)
     assert year_data(x) == (kind == "years")
 
@@ -1231,7 +1231,11 @@ def test_period_dates_keep_the_offset_and_tex_choice():
     assert apply_default_tick_format(fig) == 1
     fmt = ax.xaxis.get_major_formatter()
     assert type(fmt) is PeriodDateFormatter
-    assert fmt.show_offset is False and fmt._usetex is True
+    assert fmt.show_offset is False
+    # Date formatters have no public usetex getter; the TeX choice shows
+    # in the labels they make (Matplotlib wraps digits in TeX).
+    labels = fmt.format_ticks(ax.xaxis.get_major_locator()())
+    assert any("\\mathdefault{" in label for label in labels), labels
     assert ax.xaxis.get_major_locator() is locator
 
 

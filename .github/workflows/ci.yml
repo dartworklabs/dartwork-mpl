@@ -46,6 +46,9 @@ jobs:
       UV_PYTHON: ${{ matrix.python-version }}
       # Bound shared ml-main load; an empty override preserves hosted PR auto detection.
       PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
+      # The bar-label readability tests read the saved PDF through
+      # Ghostscript; here a missing gs fails them instead of skipping.
+      DARTWORK_MPL_REQUIRE_GHOSTSCRIPT: "1"
     strategy:
       # Shared ml-main runs two Python jobs at once; hosted PRs retain all three.
       max-parallel: ${{ github.event_name == 'pull_request' && 4 || 2 }}
@@ -78,6 +81,18 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
+      # The bar-label readability tests (annotation/tests/test_label_bars.py)
+      # rasterise the saved PDF with Ghostscript. Ubuntu runners ship without
+      # it; ml-main has /usr/bin/gs.
+      - name: Install Ghostscript for hosted PR builds
+        if: github.event_name == 'pull_request'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ghostscript
+
+      - name: Verify Ghostscript (gs for the PDF readability tests)
+        run: gs --version
+
       # Keep the coverage gate on one representative interpreter. The
       # remaining matrix jobs still run the test suite for version
       # compatibility (minus color_pipeline, see below), but skip coverage
@@ -85,6 +100,10 @@ jobs:
       # `-n auto` uses the job's worker bound or the hosted runner's vCPUs;
       # the serial run took 16-30 min per job. Keep -n here, not in addopts,
       # so local runs and scripts/test_id_map.py stay serial by default.
+      # `--dist worksteal` lets idle workers take queued tests, so a module's
+      # back-to-back 30-60 s colour subprocess tests do not hold one worker
+      # (docs/development/ci-execution.md). It needs xdist, so it lives here
+      # with -n rather than in addopts.
       - name: Run tests with coverage
         if: matrix.python-version == '3.12'
         env:
@@ -96,7 +115,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run pytest -v -n auto --cov --cov-report=term-missing --durations=30 \
+          uv run pytest -v -n auto --dist worksteal --cov --cov-report=term-missing --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       # `color_pipeline` tests (colour build, regeneration, comparison,
@@ -111,14 +130,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 \
+          uv run pytest -v -n auto --dist worksteal -m "not color_pipeline" --no-cov --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       # Prove every protected module contributed a passing executed case in
-      # the same full-suite run. A missing optional extra must not silently
-      # skip a whole module. Pytest's own nonzero status still fails the job.
+      # the same full-suite run, and that no case anywhere was skipped for a
+      # failed import. Every matrix job syncs all extras, so each is checked
+      # (no protected module is color_pipeline-only). A missing optional
+      # extra must not silently skip a whole module or a single case.
+      # Pytest's own nonzero status still fails the job.
       - name: Assert MCP / integration tests actually ran
-        if: matrix.python-version == '3.12'
         run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
 
       - name: Preserve test execution evidence
@@ -278,6 +299,10 @@ jobs:
     name: test-matplotlib (${{ matrix.label }})
     env:
       UV_PYTHON: ${{ matrix.python-version }}
+      # Same bound as the test job: on shared ml-main `-n auto` took every
+      # core (64 workers on 2026-11-06) beside the other jobs; an empty
+      # override preserves hosted PR auto detection.
+      PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -325,7 +350,7 @@ jobs:
             --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}.xml"
           if [ -n "$EXTRA_TESTS" ]; then
             # shellcheck disable=SC2086
-            "$task_python" -m pytest $EXTRA_TESTS -n auto -q --no-cov \
+            "$task_python" -m pytest $EXTRA_TESTS -n auto --dist worksteal -q --no-cov \
               --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}-slices.xml"
           fi
           if [ "${{ matrix.label }}" = "minimum" ]; then
