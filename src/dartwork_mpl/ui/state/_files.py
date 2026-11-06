@@ -1,7 +1,7 @@
 """The names of the viewer's two fixed state files, the one place they are spelled.
 
-Imports nothing, so the legacy preset helpers (``ui._config``) can name the
-presets file on a base install without the ``ui`` extra. Surface (through the
+Imports nothing, so code on a base install can name the state files without
+the ``ui`` extra. Surface (through the
 ``state`` package): ``StateFile``.
 """
 
