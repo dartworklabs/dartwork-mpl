@@ -1,6 +1,7 @@
 """The CI guard requires a passing executed case from each protected module."""
 
 import random
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -248,23 +249,60 @@ def test_full_scope_keeps_skips_for_other_reasons(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
 
 
-_EXTRAS = ("fastmcp", "fastapi")
+# ``pytest.importorskip`` of an optional extra (or one of its submodules),
+# whatever the spacing, quote style, ``modname=`` or trailing arguments.
+_EXTRA_IMPORTORSKIP = re.compile(
+    r"""importorskip\(\s*(?:modname\s*=\s*)?(['"])(?:fastmcp|fastapi)(?:\.[\w.]+)?\1"""
+)
+
+
+@pytest.mark.parametrize(
+    ("source", "found"),
+    [
+        ('pytest.importorskip("fastmcp")', True),
+        ("pytest.importorskip( 'fastapi' )", True),
+        (
+            'pytest.importorskip(\n    "fastmcp",\n    reason="needs [mcp]",\n)',
+            True,
+        ),
+        ('pytest.importorskip(modname="fastmcp", minversion="2")', True),
+        ('pytest.importorskip("fastmcp.client")', True),
+        ('pytest.importorskip("fastmcpx")', False),
+        ('pytest.importorskip("pandas")', False),
+        ('import fastmcp  # importorskip("fastmcp") not here', True),
+    ],
+)
+def test_extra_importorskip_pattern(source: str, found: bool) -> None:
+    """The inventory scan sees every spelling of an extra importorskip."""
+    assert bool(_EXTRA_IMPORTORSKIP.search(source)) is found
 
 
 def test_every_optional_extra_importorskip_module_is_inventoried() -> None:
-    """A test module that skips without an extra must be a protected module.
+    """A tracked test module that skips without an extra must be protected.
 
     Otherwise a new FastMCP/FastAPI module could skip whole in the all-extras
     run with only the import-skip rule, not the per-module proof, guarding it.
+    Only files tracked by git count, so local scratch files cannot pass or
+    fail the gate.
     """
     root = CHECKER.parents[1]
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z", "--", "tests", "src/dartwork_mpl"],
+        cwd=root,
+        capture_output=True,
+        check=True,
+    ).stdout.decode("utf-8")
     found = set()
-    for base in (root / "tests", root / "src" / "dartwork_mpl"):
-        for path in base.rglob("test_*.py"):
-            text = path.read_text(encoding="utf-8")
-            if any(f'importorskip("{extra}")' in text for extra in _EXTRAS):
-                relative = path.relative_to(root).with_suffix("")
-                found.add(".".join(relative.parts))
+    for name in filter(None, tracked.split("\0")):
+        path = Path(name)
+        if not (path.name.startswith("test_") and path.suffix == ".py"):
+            continue
+        if (root / path).resolve() == Path(__file__).resolve():
+            continue  # this file's pattern examples are not importorskips
+        if _EXTRA_IMPORTORSKIP.search(
+            (root / path).read_text(encoding="utf-8")
+        ):
+            found.add(".".join(path.with_suffix("").parts))
     assert found, "the scan found no optional-extra test modules"
     assert sorted(found - set(MODULES)) == []
 

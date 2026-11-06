@@ -118,6 +118,14 @@ def report_preset() -> Iterator[None]:
     Opt in per module with ``pytestmark = pytest.mark.usefixtures(
     "report_preset")``; the preset is applied after the isolation fixture
     below has taken its snapshot and is undone before that fixture resets.
+
+    Order: pytest sets up every autouse fixture before a ``usefixtures`` one,
+    so a class-level autouse fixture (``_concise_dates`` in
+    ``test_default_tick_format``, a ``dm.config`` override) now starts before
+    this preset; the per-module autouse copies it replaced started after
+    the preset. ``dm.style.use`` neither reads nor writes ``dm.config``, so
+    the swap changes no result; a fixture that needs the preset in place
+    must request ``report_preset`` itself.
     """
     import dartwork_mpl as dm
 
