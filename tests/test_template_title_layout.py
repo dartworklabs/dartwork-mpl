@@ -19,6 +19,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib.text import Text
 
 import dartwork_mpl as dm
 
@@ -53,26 +54,30 @@ def _flagged(fig, text: str) -> bool:
     return any(w.detail.get("text") == text for w in found)
 
 
-_TITLE_ATTRS = {
-    "center": "title",
-    "left": "_left_title",
-    "right": "_right_title",
-}
-
-
 def _titles(fig):
     """Yield ``(axes, loc, text)`` per non-empty title; suptitle axes None.
 
-    Enumerated independently of the adapter under test.
+    Enumerated independently of the adapter under test, through public
+    Matplotlib only: an Axes' three title Texts are the Text children that
+    are not in ``ax.texts`` (their ``ha`` is their ``loc``), and the
+    suptitle is the one ``fig.texts`` entry reading ``get_suptitle()``.
     """
     for ax in fig.axes:
-        for loc, attr in _TITLE_ATTRS.items():
-            text = getattr(ax, attr)
+        titles = {
+            child.get_ha(): child
+            for child in ax.get_children()
+            if isinstance(child, Text)
+            and not any(child is text for text in ax.texts)
+        }
+        assert set(titles) == {"left", "center", "right"}, titles
+        for loc, text in titles.items():
             if ax.get_title(loc=loc).strip():
                 assert text.get_text() == ax.get_title(loc=loc)
                 yield ax, loc, text
-    suptitle = getattr(fig, "_suptitle", None)
-    if suptitle is not None and suptitle.get_text().strip():
+    if fig.get_suptitle().strip():
+        (suptitle,) = (
+            text for text in fig.texts if text.get_text() == fig.get_suptitle()
+        )
         yield None, "center", suptitle
 
 

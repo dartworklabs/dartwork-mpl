@@ -20,6 +20,7 @@ from dartwork_mpl.annotation import (
     wrap_axis_label,
     wrap_axis_labels,
 )
+from tests.support.mpl_observe import legend_corner, legend_ncols
 
 
 class TestLabelAxes:
@@ -346,7 +347,7 @@ class TestPlaceLegend:
         legend = place_legend(ax)
 
         assert legend is not None
-        assert legend._loc == 1  # upper right
+        assert legend_corner(legend) == "upper right"
         plt.close(fig)
 
     def test_place_legend_repositions_existing_legend(self) -> None:
@@ -357,7 +358,7 @@ class TestPlaceLegend:
         legend = place_legend(ax, loc="upper right")
 
         assert legend is ax.get_legend()
-        assert legend._loc == 1
+        assert legend_corner(legend) == "upper right"
         plt.close(fig)
 
     def test_place_legend_avoids_existing_text_obstacle(self) -> None:
@@ -379,7 +380,7 @@ class TestPlaceLegend:
         legend = place_legend(ax)
 
         assert legend is not None
-        assert legend._loc == 2  # upper left
+        assert legend_corner(legend) == "upper left"
         plt.close(fig)
 
     def test_place_legend_raises_ncol_for_tall_legend(self) -> None:
@@ -397,7 +398,7 @@ class TestPlaceLegend:
         legend = place_legend(ax)
 
         assert legend is not None
-        assert legend._ncols > 1
+        assert legend_ncols(legend) > 1
         plt.close(fig)
 
     def test_public_exports(self) -> None:

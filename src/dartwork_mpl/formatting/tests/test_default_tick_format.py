@@ -269,7 +269,10 @@ class TestDates:
         fmt = ax.xaxis.get_major_formatter()
         assert type(fmt).__name__ == "KoreanConciseDateFormatter"
         assert fmt.show_offset is False
-        assert fmt._usetex is True
+        # Date formatters have no public usetex getter; the TeX choice
+        # shows in the labels they make (Matplotlib wraps digits in TeX).
+        labels = fmt.format_ticks(ax.xaxis.get_major_locator()())
+        assert any("\\mathdefault{" in label for label in labels), labels
 
     def test_a_concise_formatter_someone_set_stays_english(self):
         """Set explicitly, matplotlib's stock formatter is a choice too."""
