@@ -35,7 +35,9 @@ __all__ = [
     "respread_line_end_labels",
     "same_position_axes",
     "secondary_axes",
+    "shared_axes",
     "spread_line_end_labels",
+    "twin_partners",
 ]
 
 if TYPE_CHECKING:
@@ -247,6 +249,59 @@ def secondary_axes(ax: Axes) -> list[Axes]:
 def axes_with_secondaries(fig: Figure | SubFigure) -> list[Axes]:
     """Return ``fig.axes``, each followed by its :func:`secondary_axes`."""
     return [owner for ax in fig.axes for owner in (ax, *secondary_axes(ax))]
+
+
+def shared_axes(ax: Axes, which: Literal["x", "y"]) -> list[Axes]:
+    """``ax`` and every Axes sharing its ``which`` axis, in figure order.
+
+    These are the Axes made with ``sharex`` / ``sharey`` and the partners of
+    ``twinx`` (shares x) and ``twiny`` (shares y): they read one scale, so
+    their limits and tick formatters move together. An Axes the figure no
+    longer holds sorts last.
+    """
+    group = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
+    members: list[Axes] = list(group.get_siblings(ax))
+    fig = ax.get_figure(root=True)
+    order = fig.axes if fig is not None else []
+    members.sort(key=lambda m: order.index(m) if m in order else len(order))
+    return members
+
+
+def twin_partners(ax: Axes) -> list[Axes]:
+    """The other Axes ``twinx`` / ``twiny`` tied to ``ax``, in figure order.
+
+    A twin is drawn in the box of the Axes it was made from, shares one of
+    its axes (``ax.twinx()`` shares x, ``ax.twiny()`` shares y) and, like its
+    parent, adjusts the data limits to an aspect (``adjustable="datalim"``,
+    which matplotlib sets on both). A twin of a twin belongs to the same set,
+    and so does the ``twiny`` of a ``twinx``, through their common parent.
+    Axes of ``sharex`` / ``sharey`` panels sit in boxes of their own and are
+    not partners; neither is a plain Axes laid over ``ax`` that shares an axis
+    but keeps ``adjustable="box"``. Invisible partners count.
+    """
+    parent = ax.get_figure(root=False)
+    if parent is None:
+        return []
+    bounds = ax.get_position().bounds
+
+    def in_box(other: Axes) -> bool:
+        return other.get_adjustable() == "datalim" and all(
+            abs(a - b) <= 1e-9
+            for a, b in zip(other.get_position().bounds, bounds, strict=True)
+        )
+
+    box = [other for other in parent.axes if other is ax or in_box(other)]
+    if ax.get_adjustable() != "datalim":
+        return []
+    tied: list[Axes] = [ax]
+    for current in tied:
+        for other in box:
+            if other not in tied and (
+                other in shared_axes(current, "x")
+                or other in shared_axes(current, "y")
+            ):
+                tied.append(other)
+    return [other for other in box if other is not ax and other in tied]
 
 
 def same_position_axes(ax: Axes) -> list[Axes]:

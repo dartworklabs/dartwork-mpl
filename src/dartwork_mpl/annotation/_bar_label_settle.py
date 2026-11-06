@@ -64,7 +64,7 @@ import numpy as np
 import numpy.typing as npt
 from matplotlib.container import BarContainer
 
-from .._figure_geometry import get_renderer, same_position_axes
+from .._figure_geometry import get_renderer, same_position_axes, shared_axes
 from ._bar_label_geometry import OFFSET_PT, fits_on_bar, outward
 from ._bar_label_ink import label_ink
 from ._bar_label_lifecycle import families_of, prune, rehost
@@ -599,11 +599,7 @@ def _value_axes(families: list[BarLabelFamily]) -> list[_ValueAxis]:
             )
             key = keys.get((id(axes), name))
             if key is None:
-                shared = (
-                    axes.get_shared_y_axes()
-                    if name == "y"
-                    else axes.get_shared_x_axes()
-                ).get_siblings(axes)
+                shared = shared_axes(axes, name)
                 key = (name, frozenset(map(id, shared)))
                 keys[(id(axes), name)] = key
                 if key not in groups:
