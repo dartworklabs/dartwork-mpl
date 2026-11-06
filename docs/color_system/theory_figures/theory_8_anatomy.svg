@@ -1858,17 +1858,17 @@ z
     <g id="ytick_13">
      <g id="line2d_21">
       <defs>
-       <path id="mabc89282e9" d="M 0 0
+       <path id="m64389d6f20" d="M 0 0
 L 2 0
-" style="stroke: #000000; stroke-width: 0.3"/>
+" style="stroke: #e64980; stroke-width: 0.3"/>
       </defs>
       <g>
-       <use xlink:href="#mabc89282e9" x="262.734941" y="113.355295" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#m64389d6f20" x="262.734941" y="113.355295" style="fill: #e64980; stroke: #e64980; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_37">
       <!-- 0.05 -->
-      <g transform="translate(265.734941 117.161936) scale(0.08 -0.08)">
+      <g style="fill: #e12567" transform="translate(265.734941 117.161936) scale(0.08 -0.08)">
        <use xlink:href="#Pretendard-ExtraLight-32c9"/>
        <use xlink:href="#Pretendard-ExtraLight-3359" transform="translate(53.859375 0)"/>
        <use xlink:href="#Pretendard-ExtraLight-32c9" transform="translate(74.328125 0)"/>
@@ -1879,12 +1879,12 @@ L 2 0
     <g id="ytick_14">
      <g id="line2d_22">
       <g>
-       <use xlink:href="#mabc89282e9" x="262.734941" y="84.28542" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#m64389d6f20" x="262.734941" y="84.28542" style="fill: #e64980; stroke: #e64980; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_38">
       <!-- 0.10 -->
-      <g transform="translate(265.734941 88.092061) scale(0.08 -0.08)">
+      <g style="fill: #e12567" transform="translate(265.734941 88.092061) scale(0.08 -0.08)">
        <use xlink:href="#Pretendard-ExtraLight-32c9"/>
        <use xlink:href="#Pretendard-ExtraLight-3359" transform="translate(53.859375 0)"/>
        <use xlink:href="#Pretendard-ExtraLight-32ca" transform="translate(69.53125 0)"/>
@@ -1895,12 +1895,12 @@ L 2 0
     <g id="ytick_15">
      <g id="line2d_23">
       <g>
-       <use xlink:href="#mabc89282e9" x="262.734941" y="55.215546" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#m64389d6f20" x="262.734941" y="55.215546" style="fill: #e64980; stroke: #e64980; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_39">
       <!-- 0.15 -->
-      <g transform="translate(265.734941 59.022186) scale(0.08 -0.08)">
+      <g style="fill: #e12567" transform="translate(265.734941 59.022186) scale(0.08 -0.08)">
        <use xlink:href="#Pretendard-ExtraLight-32c9"/>
        <use xlink:href="#Pretendard-ExtraLight-3359" transform="translate(53.859375 0)"/>
        <use xlink:href="#Pretendard-ExtraLight-32ca" transform="translate(69.53125 0)"/>
@@ -1968,7 +1968,7 @@ L 177.087752 35.058898
    <g id="patch_20">
     <path d="M 262.734941 135.291969
 L 262.734941 35.058898
-" style="fill: none; stroke: #000000; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
+" style="fill: none; stroke: #e64980; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_21">
     <path d="M 177.087752 135.291969

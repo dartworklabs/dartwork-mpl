@@ -667,17 +667,17 @@ z
     <g id="ytick_1">
      <g id="line2d_9">
       <defs>
-       <path id="mbef0329f84" d="M 0 0 
+       <path id="mfbb6a0c4b9" d="M 0 0 
 L -2 0 
-" style="stroke: #000000; stroke-width: 0.3"/>
+" style="stroke: #26aa34; stroke-width: 0.3"/>
       </defs>
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="267.792315" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="267.792315" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_10">
       <!-- 0 -->
-      <g transform="translate(31.970313 270.417315) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(31.970313 270.417315) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-14"/>
       </g>
      </g>
@@ -685,12 +685,12 @@ L -2 0
     <g id="ytick_2">
      <g id="line2d_10">
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="230.939841" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="230.939841" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_11">
       <!-- 200 -->
-      <g transform="translate(24.265938 233.564841) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(24.265938 233.564841) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-16"/>
        <use xlink:href="#Roboto-ExtraLight-14" transform="translate(55.03125 0)"/>
        <use xlink:href="#Roboto-ExtraLight-14" transform="translate(110.0625 0)"/>
@@ -700,12 +700,12 @@ L -2 0
     <g id="ytick_3">
      <g id="line2d_11">
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="194.087368" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="194.087368" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_12">
       <!-- 400 -->
-      <g transform="translate(24.265938 196.712368) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(24.265938 196.712368) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-18"/>
        <use xlink:href="#Roboto-ExtraLight-14" transform="translate(55.03125 0)"/>
        <use xlink:href="#Roboto-ExtraLight-14" transform="translate(110.0625 0)"/>
@@ -715,12 +715,12 @@ L -2 0
     <g id="ytick_4">
      <g id="line2d_12">
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="157.234894" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="157.234894" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_13">
       <!-- 600 -->
-      <g transform="translate(24.265938 159.859894) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(24.265938 159.859894) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-1a"/>
        <use xlink:href="#Roboto-ExtraLight-14" transform="translate(55.03125 0)"/>
        <use xlink:href="#Roboto-ExtraLight-14" transform="translate(110.0625 0)"/>
@@ -730,12 +730,12 @@ L -2 0
     <g id="ytick_5">
      <g id="line2d_13">
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="120.382421" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="120.382421" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_14">
       <!-- 800 -->
-      <g transform="translate(24.265938 123.007421) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(24.265938 123.007421) scale(0.07 -0.07)">
        <defs>
         <path id="Roboto-ExtraLight-1c" d="M 3219 1194 
 Q 3219 781 3025 500 
@@ -805,12 +805,12 @@ z
     <g id="ytick_6">
      <g id="line2d_14">
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="83.529947" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="83.529947" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_15">
       <!-- 1,000 -->
-      <g transform="translate(19.091406 86.154947) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(19.091406 86.154947) scale(0.07 -0.07)">
        <defs>
         <path id="Roboto-ExtraLight-10" d="M 778 534 
 L 778 113 
@@ -836,12 +836,12 @@ z
     <g id="ytick_7">
      <g id="line2d_15">
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="46.677474" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="46.677474" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_16">
       <!-- 1,200 -->
-      <g transform="translate(19.091406 49.302474) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(19.091406 49.302474) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-15"/>
        <use xlink:href="#Roboto-ExtraLight-10" transform="translate(55.03125 0)"/>
        <use xlink:href="#Roboto-ExtraLight-16" transform="translate(73.921875 0)"/>
@@ -853,12 +853,12 @@ z
     <g id="ytick_8">
      <g id="line2d_16">
       <g>
-       <use xlink:href="#mbef0329f84" x="38.8225" y="9.825" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mfbb6a0c4b9" x="38.8225" y="9.825" style="fill: #26aa34; stroke: #26aa34; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_17">
       <!-- 1,400 -->
-      <g transform="translate(19.091406 12.45) scale(0.07 -0.07)">
+      <g style="fill: #1e872a" transform="translate(19.091406 12.45) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-15"/>
        <use xlink:href="#Roboto-ExtraLight-10" transform="translate(55.03125 0)"/>
        <use xlink:href="#Roboto-ExtraLight-18" transform="translate(73.921875 0)"/>
@@ -869,7 +869,7 @@ z
     </g>
     <g id="text_18">
      <!-- Output (units/s) -->
-     <g transform="translate(13.216406 164.560085) rotate(-90) scale(0.075 -0.075)">
+     <g style="fill: #1e872a" transform="translate(13.216406 164.560085) rotate(-90) scale(0.075 -0.075)">
       <defs>
        <path id="Roboto-Regular-33" d="M 4031 2419 
 L 4031 2131 
@@ -1198,7 +1198,7 @@ z
    <g id="patch_11">
     <path d="M 38.8225 267.792315 
 L 38.8225 8.350901 
-" style="fill: none; stroke: #000000; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
+" style="fill: none; stroke: #26aa34; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_12">
     <path d="M 38.8225 267.792315 
@@ -1211,17 +1211,17 @@ L 380.8325 267.792315
     <g id="ytick_9">
      <g id="line2d_17">
       <defs>
-       <path id="m918c6627db" d="M 0 0 
+       <path id="mea1ab6522e" d="M 0 0 
 L 2 0 
-" style="stroke: #000000; stroke-width: 0.3"/>
+" style="stroke: #de7a05; stroke-width: 0.3"/>
       </defs>
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="263.331021" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="263.331021" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_19">
       <!-- 18 -->
-      <g transform="translate(383.8325 265.956021) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 265.956021) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-15"/>
        <use xlink:href="#Roboto-ExtraLight-1c" transform="translate(55.03125 0)"/>
       </g>
@@ -1230,12 +1230,12 @@ L 2 0
     <g id="ytick_10">
      <g id="line2d_18">
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="229.013373" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="229.013373" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_20">
       <!-- 19 -->
-      <g transform="translate(383.8325 231.638373) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 231.638373) scale(0.07 -0.07)">
        <defs>
         <path id="Roboto-ExtraLight-1d" d="M 941 181 
 L 1031 181 
@@ -1296,12 +1296,12 @@ z
     <g id="ytick_11">
      <g id="line2d_19">
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="194.695726" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="194.695726" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_21">
       <!-- 20 -->
-      <g transform="translate(383.8325 197.320726) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 197.320726) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-16"/>
        <use xlink:href="#Roboto-ExtraLight-14" transform="translate(55.03125 0)"/>
       </g>
@@ -1310,12 +1310,12 @@ z
     <g id="ytick_12">
      <g id="line2d_20">
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="160.378079" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="160.378079" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_22">
       <!-- 21 -->
-      <g transform="translate(383.8325 163.003079) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 163.003079) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-16"/>
        <use xlink:href="#Roboto-ExtraLight-15" transform="translate(55.03125 0)"/>
       </g>
@@ -1324,12 +1324,12 @@ z
     <g id="ytick_13">
      <g id="line2d_21">
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="126.060431" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="126.060431" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_23">
       <!-- 22 -->
-      <g transform="translate(383.8325 128.685431) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 128.685431) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-16"/>
        <use xlink:href="#Roboto-ExtraLight-16" transform="translate(55.03125 0)"/>
       </g>
@@ -1338,12 +1338,12 @@ z
     <g id="ytick_14">
      <g id="line2d_22">
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="91.742784" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="91.742784" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_24">
       <!-- 23 -->
-      <g transform="translate(383.8325 94.367784) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 94.367784) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-16"/>
        <use xlink:href="#Roboto-ExtraLight-17" transform="translate(55.03125 0)"/>
       </g>
@@ -1352,12 +1352,12 @@ z
     <g id="ytick_15">
      <g id="line2d_23">
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="57.425137" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="57.425137" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_25">
       <!-- 24 -->
-      <g transform="translate(383.8325 60.050137) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 60.050137) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-16"/>
        <use xlink:href="#Roboto-ExtraLight-18" transform="translate(55.03125 0)"/>
       </g>
@@ -1366,12 +1366,12 @@ z
     <g id="ytick_16">
      <g id="line2d_24">
       <g>
-       <use xlink:href="#m918c6627db" x="380.8325" y="23.107489" style="stroke: #000000; stroke-width: 0.3"/>
+       <use xlink:href="#mea1ab6522e" x="380.8325" y="23.107489" style="fill: #de7a05; stroke: #de7a05; stroke-width: 0.3"/>
       </g>
      </g>
      <g id="text_26">
       <!-- 25 -->
-      <g transform="translate(383.8325 25.732489) scale(0.07 -0.07)">
+      <g style="fill: #b36204" transform="translate(383.8325 25.732489) scale(0.07 -0.07)">
        <use xlink:href="#Roboto-ExtraLight-16"/>
        <use xlink:href="#Roboto-ExtraLight-19" transform="translate(55.03125 0)"/>
       </g>
@@ -1379,7 +1379,7 @@ z
     </g>
     <g id="text_27">
      <!-- Efficiency (%) -->
-     <g transform="translate(401.553281 160.34192) rotate(-90) scale(0.075 -0.075)">
+     <g style="fill: #b36204" transform="translate(401.553281 160.34192) rotate(-90) scale(0.075 -0.075)">
       <defs>
        <path id="Roboto-Regular-29" d="M 3419 491 
 L 3419 0 
@@ -1641,12 +1641,12 @@ z
    <g id="patch_13">
     <path d="M 38.8225 267.792315 
 L 38.8225 8.350901 
-" style="fill: none; stroke: #000000; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
+" style="fill: none; stroke: #26aa34; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_14">
     <path d="M 380.8325 267.792315 
 L 380.8325 8.350901 
-" style="fill: none; stroke: #000000; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
+" style="fill: none; stroke: #de7a05; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_15">
     <path d="M 38.8225 267.792315 
