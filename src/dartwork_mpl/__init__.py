@@ -362,11 +362,11 @@ from ._compat import missing_attribute as _missing_attribute
 
 
 def __getattr__(name: str) -> _Any:
-    """Surface deprecation aliases and removed-name migration hints.
+    """Surface removed-name migration hints.
 
     Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.subplots`` /
     ``dm.install_llm_txt`` / ``dm.FS_SINGLE`` would raise Python's
     default ``AttributeError`` with no pointer to the replacement. See
     docs/migration.md for the full mapping.
     """
-    return _missing_attribute(name, globals())
+    _missing_attribute(name)

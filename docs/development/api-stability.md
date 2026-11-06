@@ -34,13 +34,15 @@ currently an advertised top-level `dm.ui` attribute.
 
 ## Deprecation cycle
 
-To remove a public name, first move it out of `__all__` and add it to
-`_DEPRECATED_NAMES`. Deprecated names keep working, emit a
-`DeprecationWarning`, and alias to the replacement target.
-
-Keep a name in `_DEPRECATED_NAMES` for at least 2 minor releases before
-moving it to `_REMOVED_NAMES`. Removed names no longer resolve; accessing
-one raises `AttributeError` with the version removed and a migration hint.
+To remove a public name, first announce the deprecation in `CHANGELOG.md`
+and in the name's docstring, and have the name emit a `DeprecationWarning`
+at its definition (a function wrapper, a module-level `__getattr__` on the
+owning module) while it keeps working. Keep it that way for at least 2
+minor releases before moving it to `_REMOVED_NAMES`. Removed names no
+longer resolve; accessing one raises `AttributeError` with the version
+removed and a migration hint. The package root has no deprecated-name
+registry: none is in use, so add one only together with the first name that
+needs it.
 
 ## Registries
 
@@ -48,15 +50,10 @@ one raises `AttributeError` with the version removed and a migration hint.
 : Advertised public surface. Every function or class listed here must have
   a non-empty docstring.
 
-`_DEPRECATED_NAMES`
-: Soft-deprecated names. They are not advertised, still work, emit
-  `DeprecationWarning`, and point to their replacement.
-
 `_REMOVED_NAMES`
 : Hard-removed names. They raise `AttributeError` with a migration hint.
 
-A name lives in exactly one of these states: advertised, deprecated, or
-removed.
+A name lives in exactly one of these states: advertised or removed.
 
 ## Adding a public name
 

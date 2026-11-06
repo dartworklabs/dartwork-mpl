@@ -1,25 +1,17 @@
-"""Removed and deprecated ``dm.*`` names, and the hints raised for them.
+"""Removed ``dm.*`` names and the hints raised for them.
 
 Owned by the package root, the only module that imports it: the root's
 ``__getattr__`` delegates here so a removed name raises an
-``AttributeError`` naming its replacement, and a deprecated alias warns
-and resolves. ``lint``'s migration hints are checked against
+``AttributeError`` naming its replacement. ``lint``'s migration hints are checked against
 ``_REMOVED_NAMES`` by tests/contracts/test_deprecation_registry_parity.py. Not part
 of the public API.
 """
 
 from __future__ import annotations
 
-import warnings
-from collections.abc import Mapping
-from typing import Any, NamedTuple
+from typing import NoReturn
 
-__all__ = [
-    "_DEPRECATED_NAMES",
-    "_REMOVED_NAMES",
-    "_Deprecation",
-    "missing_attribute",
-]
+__all__ = ["_REMOVED_NAMES", "missing_attribute"]
 
 
 # 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*), the
@@ -32,26 +24,8 @@ __all__ = [
 # raises AttributeError. The ``__getattr__`` hook below turns those
 # bare misses into an actionable message naming the version and the
 # replacement API, instead of Python's default "module has no
-# attribute" string. Future removals now pass through
-# ``_DEPRECATED_NAMES`` for at least two minor releases (soft alias with
-# warning) before landing here (hard removal); see
-# docs/development/api-stability.md. Migration paths: see
-# docs/migration.md.
-
-
-class _Deprecation(NamedTuple):
-    """A soft-deprecated alias: its target name, versions, and the hint shown."""
-
-    target: str
-    since: str
-    removed_in: str
-    hint: str
-
-
-# Public names that still work but emit DeprecationWarning and alias to a
-# replacement. Removals now go through here for >= 2 minor releases BEFORE
-# moving to _REMOVED_NAMES. Ships empty -- infrastructure for future removals.
-_DEPRECATED_NAMES: dict[str, _Deprecation] = {}
+# attribute" string. Deprecation policy: docs/development/api-stability.md.
+# Migration paths: see docs/migration.md.
 
 # Removed names → ``(version-removed, replacement-hint)``. Keyed by exact
 # attribute name; the ``FS_*`` family is handled by the prefix branch.
@@ -255,23 +229,12 @@ _REMOVED_NAMES.update(
 )
 
 
-def missing_attribute(name: str, namespace: Mapping[str, Any]) -> Any:
-    """Resolve or reject an attribute the package root does not define.
+def missing_attribute(name: str) -> NoReturn:
+    """Reject an attribute the package root does not define.
 
-    ``namespace`` is the root's ``globals()``. A deprecated alias warns
-    (``DeprecationWarning`` attributed to the caller of ``dm.<name>``) and
-    returns ``namespace[target]``; a removed name, an ``FS_*`` tuple name,
-    or any other unknown name raises ``AttributeError`` with the hint.
+    A removed name, an ``FS_*`` tuple name, or any other unknown name raises
+    ``AttributeError`` with the hint.
     """
-    if name in _DEPRECATED_NAMES:
-        dep = _DEPRECATED_NAMES[name]
-        warnings.warn(
-            f"dm.{name} is deprecated since {dep.since} and will be "
-            f"removed in {dep.removed_in}. Use {dep.hint}.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-        return namespace[dep.target]
     if name in _REMOVED_NAMES:
         version, hint = _REMOVED_NAMES[name]
         raise AttributeError(
