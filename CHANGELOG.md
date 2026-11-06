@@ -35,13 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
   import); import still registers the bundled colours, colormaps and fonts.
   `dm.simple_layout` shows the right spine, which the presets hide, of an
-  Axes drawing its own y scale on the right of a shared plot area, y ticks
-  and y label on the right (the Axes `twinx()` returns, of an inset too).
-  Figures laid out with `dm.simple_layout` look as in 0.7, except: a
-  `sharex` overlay whose y ticks and label you moved to the right gets that
-  line; when a twin and its parent swap sides, the line moves to the parent;
-  a twin whose y axis is hidden, or whose y ticks or label you moved to the
-  left (also `b.twinx()` of a twin, which moves `b`'s ticks), gets none.
+  Axes drawing its own y scale on the right of a shared plot area: y ticks
+  and y label on the right, or one of them when its x axis is hidden as a
+  twin's is (the Axes `twinx()` returns, of an inset too). Figures laid out
+  with `dm.simple_layout` look as in 0.7, except: a `sharex` overlay whose
+  y ticks and label you moved to the right gets that line, and so does an
+  overlay you made like a twin (x axis hidden, y ticks or label on the
+  right); when a twin and its parent swap sides, the line moves to the
+  parent; a twin whose y axis is hidden, or whose y ticks and label you both
+  moved to the left, gets none.
   Without the layout a twin keeps the hidden spine; show it with
   `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
   first `dm.simple_layout` now shows; hide it after the layout, or give it

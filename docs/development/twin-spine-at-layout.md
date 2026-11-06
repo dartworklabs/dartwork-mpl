@@ -8,8 +8,10 @@ Status: implemented on `t3/twinx-explicit-20261106`, first shipped in 0.8.
 Decision: root API decision D7 (2026-11-06). Not a release blocker.
 Approved by the user on 2026-11-07, including the look changes 11-1 to 11-5
 listed below (2026-11-07 사용자 승인). Revised the same day after the
-independent review: inset twins, the tick condition, one line per place, an
-independent 0.7 oracle and the full import contract.
+independent review: inset twins, the tick condition, the twin's line first,
+an independent 0.7 oracle and the full import contract. 2026-11-07 사용자
+결정 14: 대안 (the counterexample pair below: twins keep 0.7's line, an
+overlay drawn like a twin gains one).
 
 ## What import used to do
 
@@ -49,13 +51,16 @@ area, read from public state only:
    other consumers keep their own walk over `fig.axes`, so inset pairs still
    get no series colours.
 2. *Shared axes*: it shares x with a member and not y (public groupers).
-3. *Scale on the right*: its y axis is visible, its y label sits on the
-   right and its y ticks too: tick labels shown on the right and not on the
-   left (`tick_params(right=False)` keeps a scale of labels); an axis with
-   no tick labels is read by its tick marks. `twinx()` leaves all three.
-4. *One line per place*: when several such Axes would draw a right spine in
-   the same place (`spine.get_position()`), only the last drawn (zorder,
-   then figure order) shows it.
+3. *Scale on the right*: its y axis is visible and its scale sits on the
+   right. An Axes whose x axis shows needs its y ticks and its y label there;
+   one whose x axis is hidden shows nothing but its y scale (`twinx()` hides
+   the twin's), so its y ticks or its y label there is enough (decision 14).
+   Ticks are on the right when the tick labels show there and not on the
+   left (`tick_params(right=False)` keeps a scale of labels); an axis with no
+   tick labels is read by its tick marks.
+4. *The twin's line first*: where an Axes with a hidden x axis draws its
+   right spine, one whose x axis shows draws none in the same place
+   (`spine.get_position()`). Twins of one parent all keep theirs.
 
 **Once.** An Axes whose line the layout showed (or found showing) is
 recorded and not touched again, so a spine hidden after a layout stays
@@ -71,26 +76,23 @@ hidden.
 | `sharex` overlay; with only its label moved right (x20) | no | no |
 | `twinx()`; with its tick marks off | twin | twin |
 | `twinx()` with the parent's label moved right (x01) | twin | twin |
-| `twinx()` with the parent moved right too (x22) | twin (one per place) | twin |
+| `twinx()` with the parent moved right too (x22) | twin (twin's line first) | twin |
 | `twiny()` | no | no |
 | three y axes, offset third spine | both twins | both twins |
 | inset `twinx()` (x23) | twin | twin |
+| x02 / x03 twin with only its ticks / only its label moved left | twin | twin |
+| x04 `b.twinx()` of a twin (matplotlib moves `b`'s ticks left) | `b` and `c` | `b` and `c` |
 | 11-3 `sharex` overlay, ticks and label moved right (x12) | overlay | no |
 | 11-4 twin's ticks and label moved left; parent moved right (x19) or not (x13) | parent (x19), none (x13) | twin |
 | 11-5 twin with its y axis hidden (x14) | no | twin |
-| x02 twin with its ticks moved left | no | twin |
-| x03 twin with its label moved left | no | twin |
-| x04 `b.twinx()` of a twin (matplotlib moves `b`'s ticks left) | `b`: no | `b`: yes |
+| 14 `sharex` overlay drawn like a twin (x axis and background hidden), only its ticks or only its label on the right | overlay | no |
 
-Rows 1-10 match 0.7 pixel for pixel. 11-3 to 11-5 are approved. x02-x04 are
-not approved and cannot be matched from public state: a `sharex` overlay
-whose x axis and background are hidden, with the same half-moved scale, has
-the same public state as the twin (only the private `_twinned_axes` differs),
-and 0.7 drew no line on it. Any public rule gives both the same answer, so
-one side of that pair changes. The current rule (ticks and label) changes
-the twin side (x02-x04); "either one" for Axes with a hidden x axis would
-change the overlay side instead. That narrow choice is open (PoC in the
-report).
+The first twelve rows match 0.7 pixel for pixel; 11-3 to 11-5 and 14 are
+approved. Decision 14 settles a pair public state cannot tell apart: the
+overlay in the last row and the twin of x02 / x03 with the same half-moved scale
+differ only in the private `_twinned_axes`, and 0.7 drew a line on the twin
+alone. Any public rule answers both alike; the user chose to keep the twin's
+line, so the overlay gains one.
 
 ## Explicit settings and neutral mode
 
@@ -128,15 +130,17 @@ spines.right`). It is the layout's line, not an override to undo.
   `Legend`) looked up statically over `dir()`, every MRO class namespace and
   every class and callable of the imported matplotlib modules stay the same
   objects.
-- `formatting/tests/test_twin_spines.py`: 51 cases (14 builds, each also
+- `formatting/tests/test_twin_spines.py`: 60 cases (17 builds, each also
   neutral and `format_ticks=False`, three presets, five edits) must equal
   `twin_spines_07_golden.json`, recorded from origin/main (no D7 code) with
   0.7's wrapper, and the pixels of a live 0.7 re-enactment with the new step
-  off. 11-1 to 11-5 and x02-x04 are pinned against the live 0.7 run.
+  off. 11-1 to 11-5 and 14 are pinned against the live 0.7 run.
 - Mutants that survived the review (width overwrite, no box condition, no
   "not y" condition, no "x shared" condition, step inside `format_ticks`,
-  inherited rebinding on `Artist` and `FigureBase`) now fail. Moving the step
-  after the colours is equivalent and is not a target.
+  inherited rebinding on `Artist` and `FigureBase`) now fail, as do mutants
+  of the new parts (inset walk, tick condition, twin's line first, tick
+  reading, the hidden-x-axis clause either way). Moving the step after the
+  colours is equivalent and is not a target.
 - PoC (outside the repository): the 21 approved renders are pixel-identical.
 
 ## Shipping (0.8) and wording
@@ -147,13 +151,15 @@ CHANGELOG, *Changed*:
 > function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
 > import); import still registers the bundled colours, colormaps and fonts.
 > `dm.simple_layout` shows the right spine, which the presets hide, of an
-> Axes drawing its own y scale on the right of a shared plot area, y ticks
-> and y label on the right (the Axes `twinx()` returns, of an inset too).
-> Figures laid out with `dm.simple_layout` look as in 0.7, except: a
-> `sharex` overlay whose y ticks and label you moved to the right gets that
-> line; when a twin and its parent swap sides, the line moves to the parent;
-> a twin whose y axis is hidden, or whose y ticks or label you moved to the
-> left (also `b.twinx()` of a twin, which moves `b`'s ticks), gets none.
+> Axes drawing its own y scale on the right of a shared plot area: y ticks
+> and y label on the right, or one of them when its x axis is hidden as a
+> twin's is (the Axes `twinx()` returns, of an inset too). Figures laid out
+> with `dm.simple_layout` look as in 0.7, except: a `sharex` overlay whose
+> y ticks and label you moved to the right gets that line, and so does an
+> overlay you made like a twin (x axis hidden, y ticks or label on the
+> right); when a twin and its parent swap sides, the line moves to the
+> parent; a twin whose y axis is hidden, or whose y ticks and label you both
+> moved to the left, gets none.
 > Without the layout a twin keeps the hidden spine; show it with
 > `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
 > first `dm.simple_layout` now shows; hide it after the layout, or give it
@@ -165,7 +171,6 @@ alias (internal, never in `__all__`).
 
 ## Open points (not decided here)
 
-- x02-x04 (above): which side of the indistinguishable pair changes.
 - `twiny` top spine: still hidden, as in 0.7; showing it needs its own PoC.
 - `PRESET_OVERRIDE` still uses `_twinned_axes`; aligning it with the public
   rule would change root's pinned shared-axes contract test.

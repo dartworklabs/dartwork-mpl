@@ -11,20 +11,27 @@ shows that line:
 * **Which Axes.** One that draws its own y scale on the right of a shared
   plot area: it is drawn in the same box as another visible rectilinear
   Axes (inset Axes count here, so an inset's ``twinx`` does too; the twin
-  colours still leave inset pairs alone), it shares x
-  with such a member and not y, its y axis is visible, and both its y ticks
-  and its y label sit on the right, as ``ax.twinx()`` leaves them. The
-  ticks are on the right when the y tick labels show there and not on the
-  left (``tick_params(right=False)`` keeps a scale of labels without marks);
-  an axis without tick labels is read by its tick marks. All of it is
-  public state (positions, the shared axes groupers, axis visibility, tick
-  and label positions), not how the Axes was made, which public state
-  cannot tell. So a ``sharex`` overlay whose ticks and label were moved to
-  the right counts; a twin whose ticks or label were moved to the left, or
-  whose y axis is hidden, does not.
-* **One line per place.** When several such Axes would draw their right
-  spine in the same place (``spine.get_position()``), only the one drawn
-  last (by zorder, then figure order) shows it; it would cover the others.
+  colours still leave inset pairs alone), it shares x with such a member
+  and not y, its y axis is visible, and its scale sits on the right:
+  - an Axes whose x axis shows needs both its y ticks and its y label on
+    the right;
+  - an Axes whose x axis is hidden shows nothing but its y scale
+    (``ax.twinx()`` hides the twin's), so its y ticks or its y label on the
+    right is enough.
+  The ticks are on the right when the y tick labels show there and not on
+  the left (``tick_params(right=False)`` keeps a scale of labels without
+  marks); an axis without tick labels is read by its tick marks. All of it
+  is public state (positions, the shared axes groupers, axis visibility,
+  tick and label positions), not how the Axes was made. So a twin keeps
+  its line when only its ticks or only its label moved left (``b.twinx()``
+  of a twin moves ``b``'s ticks), and so does an overlay drawn like a twin
+  (x axis hidden, ticks or label on the right). A ``sharex`` overlay whose
+  ticks and label were moved to the right counts; a twin whose ticks and
+  label both moved left, or whose y axis is hidden, does not.
+* **The twin's line first.** Where an Axes with a hidden x axis draws its
+  right spine, an Axes whose x axis shows draws none in the same place
+  (``spine.get_position()``): a parent moved to the right under its twin
+  keeps the preset's look, while twins of one parent all keep theirs.
 * **What.** ``spines["right"].set_visible(True)``. The line width, colour,
   position and bounds stay as they are; a spine is made with the preset's
   ``axes.linewidth`` already. Nothing else changes: ``twiny`` top spines,
@@ -93,17 +100,23 @@ def _ticks_on_right(axis: Axis) -> bool:
 def _draws_scale_on_right(ax: Axes, group: Sequence[Axes]) -> bool:
     """Whether ``ax`` draws its own y scale on the right of the box.
 
-    ``_own_sides`` gives "right" when the y axis shows, x is shared with a
-    member and y is not, and the y label sits on the right; the ticks must
-    be on the right too.
+    ``_own_sides`` gives a y side when the y axis shows, x is shared with a
+    member and y is not. Then the ticks and the label must both be on the
+    right, or one of them when the x axis is hidden.
     """
-    return "right" in _own_sides(ax, group) and _ticks_on_right(ax.yaxis)
+    if not any(side in ("left", "right") for side in _own_sides(ax, group)):
+        return False
+    ticks = _ticks_on_right(ax.yaxis)
+    label = str(ax.yaxis.get_label_position()) == "right"
+    if ax.xaxis.get_visible():
+        return ticks and label
+    return ticks or label
 
 
 def show_twin_spines(fig: Figure) -> int:
     """Show the right spine of each Axes drawing a twin y scale on the right.
 
-    The rule (which Axes, one line per place, what changes, once per Axes)
+    The rule (which Axes, the twin's line first, what changes, once per Axes)
     is stated in the docstring of the module
     ``dartwork_mpl.formatting._twin_spines``. ``dm.simple_layout`` calls
     this with the twin colours.
@@ -111,17 +124,19 @@ def show_twin_spines(fig: Figure) -> int:
     Returns the number of spines this call showed. Safe to call again: an
     Axes it settled is not touched.
     """
-    order = {id(ax): i for i, ax in enumerate(with_insets(fig.axes))}
     shown = 0
     for group in _boxes(fig):
-        drawing = sorted(
-            (ax for ax in group if _draws_scale_on_right(ax, group)),
-            key=lambda ax: (ax.get_zorder(), order.get(id(ax), len(order))),
-        )
-        # The last drawn at each place covers the others there.
-        top = {ax.spines["right"].get_position(): ax for ax in drawing}
-        for ax in top.values():
-            if getattr(ax, _SETTLED, False):
+        drawing = [ax for ax in group if _draws_scale_on_right(ax, group)]
+        twin_places = {
+            ax.spines["right"].get_position()
+            for ax in drawing
+            if not ax.xaxis.get_visible()
+        }
+        for ax in drawing:
+            if getattr(ax, _SETTLED, False) or (
+                ax.xaxis.get_visible()
+                and ax.spines["right"].get_position() in twin_places
+            ):
                 continue
             spine = ax.spines["right"]
             if not spine.get_visible():

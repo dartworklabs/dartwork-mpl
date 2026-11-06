@@ -26,9 +26,11 @@ side panels (with a shared x too), two Axes in one box, ``sharex`` and
 ``sharex`` + ``sharey`` overlays, ``twinx``, ``twiny``, three y axes with an
 offset spine and an inset's ``twinx``; with scales moved to the right where
 0.7 drew no line. Every one also runs under neutral twin colours and with
-``format_ticks=False``. The rest pins where 0.8 differs from 0.7 on purpose
-(approved 2026-11-07, 11-1 to 11-5) and the cases public state cannot tell
-from a 0.7 difference (x02, x03, x04 of the D7 review).
+``format_ticks=False``. Twins with half-moved scales (only the ticks or only
+the label moved left, x02 and x03 of the D7 review, and ``b.twinx()`` of a
+twin, x04) keep 0.7's line too. The rest pins where 0.8 differs from 0.7 on
+purpose: 11-1 to 11-5 and decision 14, all approved by the user on
+2026-11-07.
 """
 
 from __future__ import annotations
@@ -194,6 +196,13 @@ BUILDS: dict[str, Callable[[], Built]] = {
     "twinx_b_marks_off": lambda: _moved(
         _twinx_pair, lambda a, b: b.tick_params(axis="y", right=False)
     ),
+    "twinx_b_ticks_left": lambda: _moved(
+        _twinx_pair, lambda a, b: b.yaxis.tick_left()
+    ),
+    "twinx_b_label_left": lambda: _moved(
+        _twinx_pair, lambda a, b: b.yaxis.set_label_position("left")
+    ),
+    "twin_of_the_twin": lambda: _moved(_twinx_pair, lambda a, b: b.twinx()),
     "twiny": _twiny_pair,
     "three_y_axes": _three_y_axes,
     "inset_twinx": _inset_twinx,
@@ -480,31 +489,42 @@ def test_11_5_twin_with_its_y_axis_hidden_shows_none(
     _differs_from_07(_twinx_pair, hide, monkeypatch, owner=1, shown=False)
 
 
+def _overlay_like_a_twin() -> Built:
+    """A ``sharex`` overlay drawn like a twin: x axis and background hidden."""
+    fig, a, b = _one_box(sharex=True)
+    b.xaxis.set_visible(False)
+    a.set_adjustable("datalim")
+    b.set_adjustable("datalim")
+    _to_right(b)
+    return fig, a, b
+
+
 @pytest.mark.parametrize(
     "move",
     [
-        pytest.param(lambda a, b: b.yaxis.tick_left(), id="x02_ticks_left"),
+        pytest.param(lambda b: b.yaxis.tick_left(), id="ticks_left"),
         pytest.param(
-            lambda a, b: b.yaxis.set_label_position("left"), id="x03_label_left"
+            lambda b: b.yaxis.set_label_position("left"), id="label_left"
         ),
-        pytest.param(lambda a, b: b.twinx(), id="x04_twin_of_the_twin"),
     ],
 )
-def test_twin_with_a_half_moved_scale_shows_none(
-    move: Callable[[Axes, Axes], object], monkeypatch: pytest.MonkeyPatch
+def test_14_overlay_drawn_like_a_twin_shows_with_half_its_scale_right(
+    move: Callable[[Axes], object], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Awaiting a decision: public state cannot tell these from 0.7's misses.
+    """Decision 14: the overlay of the x02/x03 counterexample pairs.
 
-    A ``sharex`` overlay with its x axis and background hidden and the same
-    half-moved scale has the same public state, and 0.7 drew no line on it.
-    ``b.twinx()`` moves ``b``'s ticks to the left itself (x04).
+    Its public state equals the twin's with the same half-moved scale (only
+    matplotlib's private ``_twinned_axes`` differs). The twin keeps 0.7's
+    line, so this overlay gains one, which 0.7 did not draw.
     """
 
     def edit(fig: Figure, a: Axes, b: Axes) -> None:
-        move(a, b)
+        move(b)
         dm.simple_layout(fig)
 
-    _differs_from_07(_twinx_pair, edit, monkeypatch, owner=1, shown=False)
+    _differs_from_07(
+        _overlay_like_a_twin, edit, monkeypatch, owner=1, shown=True
+    )
 
 
 # ------------------------------------------------------- the rule itself

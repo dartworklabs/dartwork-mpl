@@ -758,9 +758,10 @@ def simple_layout(
     so they sit ``axes.titlepad`` above that legend; their text, size and
     weight are kept.
 
-    An Axes drawing its own y scale on the right of a shared plot area, with
-    its y ticks and y label on the right (the Axes ``ax.twinx()`` returns,
-    of an inset too), gets its right spine shown, which the presets hide;
+    An Axes drawing its own y scale on the right of a shared plot area (y
+    ticks and y label on the right, or one of them when its x axis is hidden
+    as a twin's is: the Axes ``ax.twinx()`` returns, of an inset too) gets
+    its right spine shown, which the presets hide;
     its line width and colour stay, and a spine you hide after a layout
     stays hidden. The rule is in the docstring of
     ``dartwork_mpl.formatting._twin_spines``.
