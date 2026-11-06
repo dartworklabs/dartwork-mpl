@@ -58,7 +58,8 @@ from matplotlib.container import BarContainer
 from .._figure_geometry import get_renderer, same_position_axes
 from ._bar_label_geometry import OFFSET_PT, fits_on_bar, outward
 from ._bar_label_ink import label_ink
-from ._bar_labels import BarLabel, BarLabelFamily, families_of, format_ticks_now
+from ._bar_label_lifecycle import families_of, prune, rehost
+from ._bar_labels import BarLabel, BarLabelFamily, format_ticks_now
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -108,9 +109,9 @@ def _live_families(fig: Figure) -> list[BarLabelFamily]:
     live: list[BarLabelFamily] = []
     for ax in fig.axes:
         families = families_of(ax)
-        families[:] = [family for family in families if family.prune()]
+        families[:] = [family for family in families if prune(family)]
         for family in families:
-            family.rehost()
+            rehost(family)
         live.extend(families)
     return live
 
