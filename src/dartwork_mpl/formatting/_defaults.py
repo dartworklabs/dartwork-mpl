@@ -701,10 +701,11 @@ def _year_axis(
     was asked of that in place (``ax.ticklabel_format(axis="x",
     useOffset=False)``; :func:`requested_format`). A locator or
     formatter someone set stays, and so does matplotlib's locator under
-    labels someone fixed (:func:`_fixed_labels`). Under a locator someone set
-    (``MaxNLocator``, pinned ticks) the year formatter decides at each draw:
-    years while every tick in view is a whole year (``05, 10``), else every
-    tick's plain value (``2005.0, 2007.5``). Returns 1 if anything changed.
+    labels someone fixed (:func:`_fixed_labels`). Under any locator (one
+    someone set, ``MaxNLocator`` or pinned ticks, and the year locator in a
+    view under two years) the year formatter decides at each draw: years
+    while every tick in view is a whole year (``05, 10``), else every tick's
+    plain value (``2005.0, 2007.5``). Returns 1 if anything changed.
     """
     if not year_data(values):
         return 0

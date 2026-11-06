@@ -6,8 +6,9 @@ year axis is decided from the plotted data (:func:`year_data`: integers in
 when ``dm.simple_layout`` refits the margins. On such an axis
 :class:`WholeYearLocator` puts every tick on a whole year and
 :class:`YearTickFormatter` prints it, four digits when two visible years would
-print alike (``1900`` and ``2000``); a tick that is not a whole year (a zoom
-between two years) gets no label rather than a rounded one. What someone asked
+print alike (``1900`` and ``2000``); when a tick in view is not a whole year
+(a zoom under two years) every tick prints its value (``2023.2 … 2023.7``),
+never a rounded year and never an empty label. What someone asked
 of matplotlib's own locator or formatter in place (``ax.locator_params``,
 ``ax.ticklabel_format``) carries over (:func:`requested_params`,
 :func:`requested_format`).
@@ -22,7 +23,6 @@ from typing import Any, Literal
 import matplotlib.ticker as ticker
 import numpy as np
 import numpy.typing as npt
-from matplotlib.axis import Axis
 
 __all__ = [
     "WholeYearLocator",
@@ -128,7 +128,7 @@ class WholeYearLocator(ticker.MaxNLocator):
     ``dm.simple_layout`` lowers an unrequested ``nbins`` (:meth:`thin`) when
     the labels end up closer than one em; a requested one is kept. A view
     narrower than two whole years falls back to fractions, which
-    :class:`YearTickFormatter` leaves unlabelled.
+    :class:`YearTickFormatter` prints as values (``2023.2``).
     """
 
     requested: frozenset[str] = frozenset()
@@ -208,15 +208,12 @@ class YearTickFormatter(ticker.ScalarFormatter):
     (every draw) reads the ticks in view: with ``digits=2`` the years print
     four digits when two would repeat (``1900, 2000``; ``2000 … 2100``).
     Every whole tick is a year, the ``2100`` at the edge of data reaching
-    2099 included. What a draw with a tick between years prints is decided
-    from the axis's locator at that draw, so a locator set later counts:
-
-    - under :class:`WholeYearLocator` (whole years except in a view under
-      two years) that tick gets no label;
-    - under any other locator (``MaxNLocator``, ``AutoLocator``, pinned
-      ``set_xticks``) every tick prints its plain value (``2005.0,
-      2007.5``), no offset, never a rounded year; with every tick in view a
-      whole year, the years.
+    2099 included. A draw with a tick in view between years, under any
+    locator (:class:`WholeYearLocator` in a view under two years,
+    ``MaxNLocator``, ``AutoLocator``, pinned ``set_xticks``), prints every
+    tick's plain value (``2005.0, 2007.5``; ``2023.2 … 2023.7``): one decimal
+    count for the axis, no offset, no suffix, never a rounded year, never an
+    empty label. With every tick in view a whole year, the years.
 
     It is matplotlib's ``ScalarFormatter`` without an offset and without
     scientific notation until asked (``useOffset`` defaults to ``False``;
@@ -295,16 +292,17 @@ class YearTickFormatter(ticker.ScalarFormatter):
         super().set_locs(values)
         low, high = sorted(float(v) for v in axis.get_view_interval())
         shown = [v for v in values if low <= v <= high]
-        ours = isinstance(axis, Axis) and isinstance(
-            axis.get_major_locator(), WholeYearLocator
-        )
         between = not all(_whole(v) for v in shown)
-        self._numbers = bool(self.get_offset()) or (between and not ours)
+        self._numbers = bool(self.get_offset()) or between
         years = [round(v) for v in shown if _whole(v)]
         self._four = self.digits == 4 or two_digits_repeat(years)
 
     def __call__(self, x: float, pos: int | None = None) -> str:
-        """One tick's label: the year, a number, or nothing."""
+        """One tick's label: the year or the value.
+
+        A fraction while the ticks in view are whole years (one past the
+        view, never drawn) gets nothing.
+        """
         if self._numbers:
             return str(super().__call__(x, pos))
         if not _whole(float(x)):
