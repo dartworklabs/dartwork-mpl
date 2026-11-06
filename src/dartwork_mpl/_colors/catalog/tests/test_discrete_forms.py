@@ -171,10 +171,6 @@ def test_v6_multi_hue_manifest_matches_every_frozen_index_row(
 @pytest.mark.parametrize(
     ("name", "n", "expected_indices", "expected_hex"), MULTI_HUE_CASES
 )
-@pytest.mark.skipif(
-    not hasattr(_generated, "MULTI_HUE_DISCRETE_INDICES"),
-    reason="generated multi-hue manifest is the Task 7 RED contract",
-)
 def test_generated_module_exposes_every_frozen_multi_hue_index_row(
     name: str,
     n: int,

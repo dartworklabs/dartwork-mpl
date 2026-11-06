@@ -68,10 +68,15 @@ def _generator_contract_violations() -> tuple[str, ...]:
 
 
 def _require_hermetic_generator() -> None:
-    """Skip behavioral checks until the unsafe legacy CLI is removed."""
+    """Fail before running a generator that breaks the hermetic CLI contract.
+
+    A violation is a defect in the tracked generator, so it fails rather than
+    skips: a skip would let the behavioural checks below vanish from a green
+    run.
+    """
     violations = _generator_contract_violations()
     if violations:
-        pytest.skip("; ".join(violations))
+        pytest.fail("; ".join(violations))
 
 
 def _run_generator(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:

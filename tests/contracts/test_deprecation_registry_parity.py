@@ -79,19 +79,16 @@ def test_agent_doc_bundle_matches_pyproject_force_include() -> None:
     in the wheel exactly one way: package data under
     ``src/dartwork_mpl/asset/agent/`` or a repo-root file in pyproject's
     wheel ``force-include`` table — so a doc added to one list can't
-    silently miss the wheel (PA-2). Skipped on py<3.11 (no stdlib
-    tomllib) or when running against an installed wheel (pyproject not
-    reachable)."""
+    silently miss the wheel (PA-2)."""
+    import tomllib
     from pathlib import Path
-
-    tomllib = pytest.importorskip("tomllib")
 
     from dartwork_mpl.agent import _FILENAMES, _PACKAGE_DOCS, AGENT_DOCS
 
     repo = Path(__file__).resolve().parents[2]
     pyproject = repo / "pyproject.toml"
-    if not pyproject.is_file():
-        pytest.skip("pyproject.toml not reachable (installed-wheel run)")
+    # Tests are not in the wheel (ADR 0005); this is always a checkout.
+    assert pyproject.is_file(), f"missing {pyproject}"
     data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
     force_include = data["tool"]["hatch"]["build"]["targets"]["wheel"][
         "force-include"
