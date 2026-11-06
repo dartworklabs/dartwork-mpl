@@ -732,8 +732,9 @@ def test_watchdog_leaves_no_scan_or_ps_behind(tmp_path, monkeypatch, ending):
 
     def held_scan():
         """Hold every loop scan; the first one fails in the error case."""
+        in_loop = not calls["cleanup"]
         table = scan()
-        if calls["cleanup"]:
+        if not in_loop:
             return table
         calls["n"] += 1
         time.sleep(1.5)
