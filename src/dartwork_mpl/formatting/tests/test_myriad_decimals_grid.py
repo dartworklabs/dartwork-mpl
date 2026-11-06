@@ -13,11 +13,12 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 import dartwork_mpl as dm
 
-_GOLDEN = Path(__file__).with_name("myriad_decimals_golden.json")
+_GOLDEN = Path(__file__).with_name("myriad_decimals_golden.tsv")
 
 _VALUES = (
     0.0,
@@ -64,6 +65,12 @@ _RANGES = (
     (-1.0, 1.0),
     (0.0, 2.5),
 )
+#: Fixed tick locations per range: the golden does not depend on matplotlib's
+#: tick placement, text size or canvas.
+_TICKS = {
+    (low, high): [float(v) for v in np.linspace(low, high, 6)]
+    for low, high in _RANGES
+}
 _CASES = tuple(
     itertools.product(("ko", "ja", "zh"), (0, 1, 2, 3), ("", "$"), ("max",))
 ) + tuple(
@@ -93,10 +100,9 @@ def _render_case(
         out = {"values": [formatter(v) for v in _VALUES]}
         for low, high in _RANGES:
             ax.set_ylim(low, high)
-            fig.canvas.draw()
-            out[f"range {low:g}..{high:g}"] = [
-                t.get_text() for t in ax.get_yticklabels()
-            ]
+            out[f"range {low:g}..{high:g}"] = formatter.format_ticks(
+                _TICKS[(low, high)]
+            )
         return out
     finally:
         plt.close(fig)
@@ -106,9 +112,18 @@ def _compute() -> dict[str, dict[str, list[str]]]:
     return {_case_id(*case): _render_case(*case) for case in _CASES}
 
 
+def _load() -> dict[str, dict[str, list[str]]]:
+    """One line per case: ``id<TAB>json``."""
+    golden: dict[str, dict[str, list[str]]] = {}
+    for line in _GOLDEN.read_text(encoding="utf-8").splitlines():
+        key, payload = line.split("\t", 1)
+        golden[key] = json.loads(payload)
+    return golden
+
+
 @pytest.fixture(scope="module")
 def golden() -> dict[str, dict[str, list[str]]]:
-    return json.loads(_GOLDEN.read_text(encoding="utf-8"))
+    return _load()
 
 
 @pytest.mark.filterwarnings("ignore:Glyph .* missing from font")
@@ -128,8 +143,12 @@ def test_myriad_decimals_golden_covers_every_case(
 
 
 if __name__ == "__main__":
+    # Rewrites the golden. Run it only for an intended change of the output
+    # of ``format_axis_myriad(decimals=n)``; never to make a failure pass.
     _GOLDEN.write_text(
-        json.dumps(_compute(), ensure_ascii=False, indent=1, sort_keys=True)
-        + "\n",
+        "".join(
+            f"{key}\t{json.dumps(value, ensure_ascii=False)}\n"
+            for key, value in sorted(_compute().items())
+        ),
         encoding="utf-8",
     )
