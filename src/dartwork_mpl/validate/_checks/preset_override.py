@@ -24,7 +24,6 @@ import matplotlib as mpl
 import matplotlib.colors as mcolors
 from matplotlib.patches import Wedge
 
-from ..._figure_geometry import twin_partners
 from ...style import active_preset_rcparams
 from .._types import Severity, VisualWarning
 from ._detail import AXES, SIDES, Axis, Side, choice, wire
@@ -101,13 +100,15 @@ def _preset_value(preset: Mapping[str, object], key: str) -> object:
 def _is_twin(ax: Axes, fig_axes: list[Axes]) -> bool:
     """Whether an earlier Axes of this figure is twinned with ``ax``.
 
-    ``twinx`` / ``twiny`` partners share the box of the Axes they came from;
-    ``sharex`` / ``sharey`` panels are not twins.
+    ``twinx`` / ``twiny`` join the pair in Matplotlib's class-level
+    ``_twinned_axes`` grouper; ``sharex`` / ``sharey`` panels are not joined.
     """
-    if ax not in fig_axes:
+    twinned = getattr(ax, "_twinned_axes", None)
+    if twinned is None or ax not in twinned:
         return False
-    earlier = fig_axes[: fig_axes.index(ax)]
-    return any(other in earlier for other in twin_partners(ax))
+    siblings = twinned.get_siblings(ax)
+    index = fig_axes.index(ax)
+    return any(other in siblings for other in fig_axes[:index])
 
 
 def _is_inspected(ax: Axes, fig_axes: list[Axes]) -> bool:
