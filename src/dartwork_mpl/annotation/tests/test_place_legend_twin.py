@@ -316,6 +316,137 @@ class TestExplicitLegendWins:
             plt.close(fig)
 
 
+def _texts(legend) -> list[str]:
+    return [t.get_text() for t in legend.get_texts()]
+
+
+def _lone_axes():
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    (a,) = ax.plot([1, 2], label="A")
+    return fig, ax, a
+
+
+class TestPlacedLegendFollowsTheArtists:
+    """A legend ``place_legend`` built is the library's: it follows the data.
+
+    Series added or removed since appear in or leave the next call's
+    legend, which keeps the settings; a legend the caller built (or
+    edited) after it is the caller's and keeps the explicit rule.
+    """
+
+    def test_series_added_on_a_lone_axes(self) -> None:
+        fig, ax, _a = _lone_axes()
+        try:
+            first = place_legend(ax, title="Series", frameon=False)
+            assert first._dm_placed_legend is True
+            ax.plot([2, 1], label="B")
+            legend = place_legend(ax)
+            assert _texts(legend) == ["A", "B"]
+            assert legend.get_title().get_text() == "Series"
+            assert not legend.get_frame_on()
+            assert ax.get_legend() is legend
+            assert legend._dm_placed_legend is True
+        finally:
+            plt.close(fig)
+
+    def test_series_added_on_a_twin_pair(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            place_legend(ax, title="Series", frameon=False)
+            twin.plot(np.arange(1, 7), np.full(6, 6.0), label="Target")
+            legend = place_legend(ax)
+            assert _texts(legend) == ["Sales", "Margin", "Target"]
+            assert legend.get_title().get_text() == "Series"
+            assert not legend.get_frame_on()
+            assert twin.get_legend() is legend
+            assert ax.get_legend() is None
+        finally:
+            plt.close(fig)
+
+    def test_series_added_on_the_other_twin_by_zorder(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            ax.set_zorder(twin.get_zorder() + 1)
+            ax.patch.set_visible(False)
+            place_legend(twin, title="Series")
+            ax.plot(np.arange(1, 7), np.full(6, 12.0), label="Plan")
+            legend = place_legend(twin)
+            # matplotlib lists an Axes' lines before its bar containers.
+            assert _texts(legend) == ["Plan", "Sales", "Margin"]
+            assert legend.get_title().get_text() == "Series"
+            assert ax.get_legend() is legend
+            assert twin.get_legend() is None
+        finally:
+            plt.close(fig)
+
+    def test_series_removed_on_a_lone_axes(self) -> None:
+        fig, ax, a = _lone_axes()
+        try:
+            ax.plot([2, 1], label="B")
+            place_legend(ax, title="Series")
+            a.remove()
+            legend = place_legend(ax)
+            assert _texts(legend) == ["B"]
+            assert legend.get_title().get_text() == "Series"
+        finally:
+            plt.close(fig)
+
+    def test_series_removed_on_a_twin_pair(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            place_legend(ax, loc="above")
+            twin.get_lines()[0].remove()
+            legend = place_legend(ax, loc="above")
+            assert _texts(legend) == ["Sales"]
+            assert [a.get_legend() for a in (ax, twin)].count(legend) == 1
+        finally:
+            plt.close(fig)
+
+    def test_last_series_removed_takes_the_legend(self) -> None:
+        fig, ax, a = _lone_axes()
+        try:
+            place_legend(ax)
+            a.remove()
+            assert place_legend(ax) is None
+            assert ax.get_legend() is None
+        finally:
+            plt.close(fig)
+
+    def test_caller_partial_legend_after_a_placement_wins(self) -> None:
+        fig, ax, _a = _lone_axes()
+        try:
+            (b,) = ax.plot([2, 1], label="B")
+            place_legend(ax)
+            kept = ax.legend([b], ["B"])
+            assert place_legend(ax) is kept
+            assert _texts(kept) == ["B"]
+            assert not getattr(kept, "_dm_placed_legend", False)
+        finally:
+            plt.close(fig)
+
+    def test_caller_edit_of_a_placed_entry_wins(self) -> None:
+        fig, ax, _a = _lone_axes()
+        try:
+            legend = place_legend(ax)
+            legend.get_texts()[0].set_text("Pretty A")
+            assert place_legend(ax) is legend
+            assert _texts(legend) == ["Pretty A"]
+        finally:
+            plt.close(fig)
+
+    def test_settings_passed_again_win(self) -> None:
+        fig, ax, _a = _lone_axes()
+        try:
+            place_legend(ax, title="Old")
+            ax.plot([2, 1], label="B")
+            legend = place_legend(ax, title="New")
+            assert _texts(legend) == ["A", "B"]
+            assert legend.get_title().get_text() == "New"
+        finally:
+            plt.close(fig)
+
+
 class TestMoreSettingsKept:
     """Draggable, font properties, label colour and marker scale survive."""
 

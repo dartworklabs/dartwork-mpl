@@ -588,8 +588,9 @@ it cannot be told from the default and is painted. For black or neutral
 twin axes, `with dm.config.override(twin_colors="neutral"):` (or
 `dm.config.twin_colors = "neutral"`) keeps the preset's. One
 legend for both: `dm.place_legend(ax1)`, not `ax1.legend(h1 + h2, l1 + l2)`;
-it keeps the legend's title and settings (pass `ncols` again) and leaves a
-legend of tuple or custom handles as it is.
+it keeps the legend's title and settings (pass `ncols` again), rebuilds a
+legend it made with the series added or removed since, and leaves a legend
+of tuple or custom handles as it is.
 
 ## "Korean labels"
 

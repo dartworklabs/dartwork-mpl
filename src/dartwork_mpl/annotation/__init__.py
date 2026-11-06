@@ -1360,6 +1360,41 @@ def _rebuildable(
     return False
 
 
+def _mark_placed(legend: Legend) -> None:
+    """Mark ``legend`` as built by ``place_legend``, with its entries as built.
+
+    ``_dm_placed_legend`` (documented) says the legend is the library's;
+    ``_dm_placed_entries`` holds what its entries read now, so a later call
+    can tell an entry the caller edited since (``[]`` when unreadable).
+    """
+    try:
+        entries = _entry_signatures(legend)
+    except _UNREADABLE:
+        entries = []
+    legend._dm_placed_legend = True  # type: ignore[attr-defined]
+    legend._dm_placed_entries = entries  # type: ignore[attr-defined]
+
+
+def _placed_as_built(legend: Legend) -> bool:
+    """Whether ``place_legend`` built ``legend`` and its entries read as built.
+
+    Such a legend is the library's: the next call rebuilds it from the
+    artists drawn then (series added or removed since). One whose entries
+    changed since (a text set by the caller) or cannot be read is not, and
+    meets the structure rule of a caller's legend (:func:`_rebuildable`).
+    """
+    if getattr(legend, "_dm_placed_legend", False) is not True:
+        return False
+    built = getattr(legend, "_dm_placed_entries", None)
+    if not built:
+        return False
+    try:
+        now = _entry_signatures(legend)
+    except _UNREADABLE:
+        return False
+    return bool(now == built)
+
+
 def _legend_settings(
     legend: Legend | None, default: Legend | None
 ) -> dict[str, Any]:
@@ -1427,7 +1462,9 @@ def _merge_twin_legends(
 
     The last item is a legend to leave untouched: one that is not what the
     pair's own artists would draw (tuple handles, custom handlers, explicit
-    labels). The explicit legend wins and nothing is removed.
+    labels). The explicit legend wins and nothing is removed. A legend an
+    earlier ``place_legend`` built, its entries as built, is the library's
+    and is always rebuilt from the artists now (:func:`_placed_as_built`).
     """
     owners = same_position_axes(ax)
     host = host_axes(ax)
@@ -1447,7 +1484,7 @@ def _merge_twin_legends(
     ]
     for owner in owners:
         legend = owner.get_legend()
-        if legend is None:
+        if legend is None or _placed_as_built(legend):
             continue
         own = _legend_entries(owner)
         if not _rebuildable(legend, host, [(handles, labels), own]):
@@ -1558,14 +1595,34 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     other keyword, need a rebuild, so they raise a ``UserWarning`` and the
     legend stays as it is. Any other ``loc`` is passed to
     ``ax.legend`` unchanged.
+
+    A legend this function built is the library's (``_dm_placed_legend`` is
+    True on it): the next call rebuilds it from the artists drawn then, so
+    series added or removed since appear or go, with the settings above
+    kept; with no labelled artist left it is removed and ``None`` returned.
+    An entry text set on it since makes it the caller's, under the rule
+    above.
     """
     ax, handles, labels, kept, untouched = _merge_twin_legends(ax)
     if untouched is not None:
         return _place_untouched(untouched, loc, kw)
     if not handles:
+        if (legend := ax.get_legend()) is not None and _placed_as_built(legend):
+            legend.remove()
         return None
-    kw = _caller_wins(kept, kw)
+    legend = _place_rebuilt(ax, handles, labels, loc, _caller_wins(kept, kw))
+    _mark_placed(legend)
+    return legend
 
+
+def _place_rebuilt(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    loc: str,
+    kw: dict[str, Any],
+) -> Legend:
+    """Draw the legend of ``ax`` from ``handles`` at ``loc`` (:func:`place_legend`)."""
     side = _parse_outside_side(loc)
     if side is not None:
         return _place_outside_legend(ax, list(handles), list(labels), side, kw)

@@ -50,7 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   puts the legend on `ax`. The merged legend keeps the existing legend's
   title, `handler_map`, frame, alignment, fonts, label colour,
   `markerscale` and `draggable` (a single Axes' rebuilt legend too);
-  `ncols` cannot be read back, so pass it again.
+  `ncols` cannot be read back, so pass it again. A legend it built is
+  rebuilt from the artists on its next call, so series added or removed
+  since appear or go.
   A legend it cannot rebuild faithfully (tuple or custom handles, labels
   other than the artists') is left as it is: an explicit `loc=` or
   `bbox_to_anchor=` still moves it, and a side (`loc="above"` …) warns

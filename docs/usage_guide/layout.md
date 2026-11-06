@@ -728,8 +728,11 @@ so `ax.set_zorder(ax2.get_zorder() + 1)` puts it on `ax`), and removes the
 partners' own legends. The merged legend keeps the existing legend's title,
 `handler_map`, frame, alignment, fonts, label colour, `markerscale` and
 `draggable` (the top twin's legend when both have one); `ncols` cannot be
-read back, so pass it again. A legend it cannot rebuild faithfully (tuple
-or custom handles, labels other than the artists') is left as it is: an
+read back, so pass it again. A legend `dm.place_legend` built is rebuilt
+from the artists on its next call: series added or removed since appear or
+go, the settings stay. A legend it cannot rebuild faithfully (tuple
+or custom handles, labels other than the artists', including an entry text
+you set on its own legend) is left as it is: an
 explicit `loc=` or `bbox_to_anchor=` still moves it, while `loc="above"`
 and the other sides need a rebuild, so they warn and leave it.
 The lint rule `twin-legend-hand-merge` flags a hand merge
