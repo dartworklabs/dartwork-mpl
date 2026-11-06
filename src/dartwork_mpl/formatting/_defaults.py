@@ -10,6 +10,9 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 - from one million the axis takes the largest tick's unit (``0.5M …
   2.5M``; ``50만 … 250만`` in Korean figures, ``config.number_ladder``),
   unless that needs more than two decimals;
+- a ``secondary_xaxis`` / ``secondary_yaxis`` whose functions are affine
+  over its view (the same values, ``x1.3``, degrees C as F) reads its
+  numbers by the same two rules; others (``1 / x``) keep matplotlib's;
 - x axes whose plotted data are integers 1900-2099 (annual lines, bars,
   bars grouped side by side within each year, scatter, ``stackplot`` and
   ``fill_between`` areas; twins, shared axes and a ``secondary_xaxis``
@@ -77,7 +80,13 @@ from matplotlib.text import Text
 
 from .._figure_geometry import get_renderer
 from ..config import config
-from ._axis_wide import MYRIAD_LADDER, SI_LADDER, AxisUnitFormatter, Unit
+from ._axis_wide import (
+    MYRIAD_LADDER,
+    SI_LADDER,
+    AxisUnitFormatter,
+    Unit,
+    draws_linearly,
+)
 from ._dates import (
     DateStyle,
     Digits,
@@ -858,24 +867,69 @@ def apply_default_tick_format(fig: Figure) -> int:
             changed += _pin_fixed_labels(axis)
             suffix = "년" if korean and date_style == "concise" else ""
             changed += _year_axes(ax, which, tick_years, suffix)
-            if not axis.isDefault_majfmt:
-                continue
-            ticks = _visible_ticks(axis)
-            if not ticks or max(abs(t) for t in ticks) < _SEPARATOR_FROM:
-                continue
-            if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):
-                continue  # years: 2024, not 2,024
-            numbers = DefaultNumberFormatter(ladder)
-            scaled = numbers.wants_unit(ticks)
-            asked = requested_format(axis.get_major_formatter())
-            if not all(
-                _met_by_default_numbers(k, v, scaled=scaled)
-                for k, v in asked.items()
-            ):
-                continue  # matplotlib's notation asked of its formatter in place
-            numbers.keep(asked)  # met here; a later request replays them
-            axis.set_major_formatter(numbers)
-            changed += 1
+            changed += _default_numbers(axis, which, ladder)
+            changed += _secondary_numbers(ax, which, ladder)
+    return changed
+
+
+def _default_numbers(
+    axis: Axis, which: Literal["x", "y"], ladder: tuple[Unit, ...]
+) -> int:
+    """:class:`DefaultNumberFormatter` on one axis nobody formatted; 1 if put in.
+
+    Only on an axis whose visible ticks reach 1,000, except an x axis whose
+    ticks all sit in 1000-2999 (``1950.3`` elevations; years are decided
+    before), and only when what was asked of matplotlib's formatter in place
+    is met by these numbers.
+    """
+    if not axis.isDefault_majfmt:
+        return 0
+    ticks = _visible_ticks(axis)
+    if not ticks or max(abs(t) for t in ticks) < _SEPARATOR_FROM:
+        return 0
+    if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):
+        return 0  # years: 2024, not 2,024
+    numbers = DefaultNumberFormatter(ladder)
+    scaled = numbers.wants_unit(ticks)
+    asked = requested_format(axis.get_major_formatter())
+    if not all(
+        _met_by_default_numbers(k, v, scaled=scaled) for k, v in asked.items()
+    ):
+        return 0  # matplotlib's notation asked of its formatter in place
+    numbers.keep(asked)  # met here; a later request replays them
+    axis.set_major_formatter(numbers)
+    return 1
+
+
+def _secondary_numbers(
+    ax: Axes, which: Literal["x", "y"], ladder: tuple[Unit, ...]
+) -> int:
+    """:func:`_default_numbers` on ``ax``'s secondary axes that draw linearly.
+
+    A secondary axis whose functions are affine over its view
+    (:func:`._axis_wide.draws_linearly`: the same values, ``x1.3``, degrees C
+    as F) shows the parent's kind of quantity on a linear scale, so it reads
+    the same numbers under the same rules (``1,600``; ``0.5M``). Others
+    (``1 / x``) keep matplotlib's, as log axes do. Matplotlib moves a
+    secondary axis's view onto its parent's only when it draws
+    (``apply_aspect``); that public call moves it here first, so the ticks
+    read are the ticks drawn. The functions run under the same safety
+    contract as :func:`_secondary_values`: numpy's floating-point warnings
+    off, and one that raises leaves the axis as matplotlib made it.
+    """
+    changed = 0
+    for secondary in _secondary_axes(ax, which):
+        axis = _axis_of(secondary, which)
+        if not axis.isDefault_majfmt or axis.get_converter() is not None:
+            continue
+        try:
+            with np.errstate(all="ignore"):
+                # Its own position: only the view follows the parent.
+                secondary.apply_aspect(secondary.get_position())
+        except Exception:  # noqa: BLE001 - user functions may raise anything
+            continue
+        if draws_linearly(axis):
+            changed += _default_numbers(axis, which, ladder)
     return changed
 
 
