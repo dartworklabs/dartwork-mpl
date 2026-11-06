@@ -7,7 +7,6 @@ trusted local process: workspace separation and the watchdog are not a sandbox.
 import argparse
 import asyncio
 import base64
-import collections
 import contextlib
 import hashlib
 import importlib.metadata
@@ -68,14 +67,14 @@ _ORACLE_MARKERS = (
     "global-constraints",
     "task-2-runtime-notes",
 )
-# Owned-tree/evidence polls: _POLL_SECONDS after the last poll while the
-# streams are quiet; _DRAIN_SECONDS after the first output processed since
-# the last poll; or once _DRAIN_BYTES have been processed since it. The pipes
-# are read on a thread that keeps at most _READ_AHEAD_BYTES unprocessed.
+# Owned-tree scans run one at a time on a helper thread. The next one starts
+# _POLL_SECONDS after the last one finished while the streams are quiet;
+# once output has been processed since the last one started, it starts as soon
+# as that one finishes and _DRAIN_SECONDS have passed since the output, or
+# once _DRAIN_BYTES have been processed since it started.
 _POLL_SECONDS = 0.05
 _DRAIN_SECONDS = 0.01
 _DRAIN_BYTES = 1024 * 1024
-_READ_AHEAD_BYTES = 2 * 1024 * 1024
 
 
 def _dump(path: Path, value: Any) -> None:
@@ -153,9 +152,10 @@ def _process_table() -> dict[int, tuple[int, int, str]]:
     return rows
 
 
-def _owned(root: int, known: set[int]) -> dict[int, tuple[int, int, str]]:
-    """Track descendants including new sessions while their parent is still live."""
-    table = _process_table()
+def _adopt(
+    table: dict[int, tuple[int, int, str]], root: int, known: set[int]
+) -> dict[int, tuple[int, int, str]]:
+    """Add the table's descendants of ``root`` to ``known``; return the live ones."""
     changed = True
     known.add(root)
     while changed:
@@ -171,6 +171,11 @@ def _owned(root: int, known: set[int]) -> dict[int, tuple[int, int, str]]:
         for pid, value in table.items()
         if pid in known and "Z" not in value[2]
     }
+
+
+def _owned(root: int, known: set[int]) -> dict[int, tuple[int, int, str]]:
+    """Track descendants including new sessions while their parent is still live."""
+    return _adopt(_process_table(), root, known)
 
 
 def _stop_tree(process: subprocess.Popen[bytes], known: set[int]) -> bool:
@@ -189,82 +194,39 @@ def _stop_tree(process: subprocess.Popen[bytes], known: set[int]) -> bool:
     return not _owned(process.pid, known)
 
 
-class _StreamPump:
-    """Read the child's pipes on a thread, so reading continues during scans.
+class _BackgroundScan:
+    """One ``_process_table`` scan on a helper thread, so reading continues.
 
-    Chunks wait in order until the watchdog takes them. Once ``limit`` bytes
-    wait unprocessed the pump stops reading, and the child blocks on its full
-    pipe as it would with no pump. A read error is raised from ``take`` after
-    the chunks read before it.
+    ``ps`` is reaped by the scan itself; ``finish`` waits for the thread, then
+    returns the table or raises the scan's error on the watchdog thread.
     """
 
-    def __init__(self, streams: dict[str, Any], limit: int) -> None:
-        self._ready = threading.Condition()
-        self._chunks: collections.deque[tuple[str, bytes]] = collections.deque()
-        self._waiting = 0
-        self._limit = limit
-        self._stopping = False
+    def __init__(self, wake: int) -> None:
+        self._table: dict[int, tuple[int, int, str]] | None = None
         self._failure: Exception | None = None
-        self._wake_read, self._wake_write = os.pipe()
-        self._thread = threading.Thread(
-            target=self._run, args=(streams,), daemon=True
-        )
+        self._wake = wake
+        self._finished = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
-    def _run(self, streams: dict[str, Any]) -> None:
-        selector = selectors.DefaultSelector()
+    def _run(self) -> None:
         try:
-            for name, stream in streams.items():
-                selector.register(stream, selectors.EVENT_READ, name)
-            selector.register(self._wake_read, selectors.EVENT_READ, None)
-            open_streams = len(streams)
-            while open_streams:
-                with self._ready:
-                    while self._waiting >= self._limit and not self._stopping:
-                        self._ready.wait()
-                    if self._stopping:
-                        return
-                for key, _ in selector.select():
-                    if key.data is None:
-                        return
-                    chunk = os.read(key.fd, 65536)
-                    if not chunk:
-                        selector.unregister(key.fileobj)
-                        open_streams -= 1
-                    with self._ready:
-                        self._chunks.append((key.data, chunk))
-                        self._waiting += len(chunk)
-                        self._ready.notify_all()
-        except Exception as error:  # noqa: BLE001 - re-raised by take()
-            with self._ready:
-                self._failure = error
-                self._ready.notify_all()
+            self._table = _process_table()
+        except Exception as error:  # noqa: BLE001 - re-raised by finish()
+            self._failure = error
         finally:
-            selector.close()
+            self._finished.set()
+            os.write(self._wake, b"\0")
 
-    def take(self, timeout: float) -> tuple[str, bytes] | None:
-        """The next chunk (``b""`` at a stream's EOF), or None after ``timeout``."""
-        with self._ready:
-            if not self._chunks and self._failure is None:
-                self._ready.wait(timeout)
-            if self._chunks:
-                name, chunk = self._chunks.popleft()
-                self._waiting -= len(chunk)
-                self._ready.notify_all()
-                return name, chunk
-            if self._failure is not None:
-                raise self._failure
-            return None
+    def done(self) -> bool:
+        return self._finished.is_set()
 
-    def close(self) -> None:
-        """Stop reading and wait for the thread; unread output stays in the pipes."""
-        with self._ready:
-            self._stopping = True
-            self._ready.notify_all()
-        os.write(self._wake_write, b"\0")
+    def finish(self) -> dict[int, tuple[int, int, str]]:
         self._thread.join()
-        os.close(self._wake_read)
-        os.close(self._wake_write)
+        if self._failure is not None:
+            raise self._failure
+        assert self._table is not None
+        return self._table
 
 
 def _tree_bytes(root: Path) -> int:
@@ -293,13 +255,14 @@ def capture_process(
     Limits observe stream bytes/calls and optionally the total evidence tree.
     No shell is used. Calls are counted at complete assistant tool-use events.
     Cleanup kills observed descendants and verifies their absence on every exit.
-    The pipes are read on a thread, so reading continues while the owned
-    process tree is scanned. The process and evidence trees are polled
-    ``_POLL_SECONDS`` after the previous poll while the streams are quiet,
-    ``_DRAIN_SECONDS`` after the first output processed since the previous
-    poll, or once ``_DRAIN_BYTES`` have been processed since it. Output is
-    processed chunk by chunk, with the wall limit and every stream limit
-    checked at each chunk; the evidence tree is measured at polls. Cleanup
+    The owned process tree is scanned on a helper thread, one scan at a time,
+    so reading and the per-chunk wall and stream-limit checks continue while
+    ``ps`` runs. The next scan starts ``_POLL_SECONDS`` after the previous one
+    finished while the streams are quiet; once output has been processed since
+    the previous one started, it starts as soon as that one finishes and
+    ``_DRAIN_SECONDS`` have passed since the output, or once ``_DRAIN_BYTES``
+    have been processed. The evidence tree is measured when a scan starts. The
+    in-flight scan is always joined, so no ``ps`` outlives the call. Cleanup
     scans again, so a descendant whose owned parent is still alive is found
     however late it started; one that detaches and loses its parent between
     two scans is never observed and is not cleaned up. A normal exit is
@@ -374,33 +337,39 @@ def capture_process(
     # A `ps` scan of a busy shared host can take most of a second, and a pipe
     # holds 64 KiB, or 8 KiB once the user passes pipe-user-pages-soft. Reading
     # one chunk per scan put 10 to ~75 scans in front of a 600 KB call already
-    # written. The pump keeps reading while a scan runs, and output schedules
-    # the next scan _DRAIN_SECONDS after it arrives instead of postponing it.
+    # written. Scans therefore run on a helper thread, one at a time, while
+    # this thread keeps reading and checking every chunk; while output flows,
+    # the next scan starts as soon as the previous one finishes.
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+    wake_read, wake_write = os.pipe()
+    selector.register(wake_read, selectors.EVENT_READ, None)
+    scan: _BackgroundScan | None = None
     idle_due = started
     data_due: float | None = None
     pending = 0
     open_streams = 2
     evidence_over = False
-    pump: _StreamPump | None = None
+    scan_failure: Exception | None = None
     try:
-        pump = _StreamPump(
-            {"stdout": process.stdout, "stderr": process.stderr},
-            _READ_AHEAD_BYTES,
-        )
         with events_path.open("wb") as stdout, stderr_path.open("ab") as stderr:
             while open_streams:
+                if scan is not None and scan.done():
+                    _adopt(scan.finish(), process.pid, known)
+                    scan = None
+                    idle_due = time.monotonic() + _POLL_SECONDS
                 now = time.monotonic()
-                if (
+                if scan is None and (
                     now >= idle_due
                     or (data_due is not None and now >= data_due)
                     or pending >= _DRAIN_BYTES
                 ):
-                    _owned(process.pid, known)
                     evidence_over = (
                         evidence_root is not None
                         and _tree_bytes(evidence_root) > max_bytes
                     )
-                    idle_due = time.monotonic() + _POLL_SECONDS
+                    scan = _BackgroundScan(wake_write)
                     data_due, pending = None, 0
                 if time.monotonic() - started > wall_seconds:
                     reason = "wall_limit"
@@ -409,20 +378,27 @@ def capture_process(
                     reason = "evidence_limit"
                     break
                 due = idle_due if data_due is None else min(idle_due, data_due)
-                item = pump.take(
-                    min(_POLL_SECONDS, max(0.0, due - time.monotonic()))
+                timeout = (
+                    _POLL_SECONDS
+                    if scan is not None
+                    else min(_POLL_SECONDS, max(0.0, due - time.monotonic()))
                 )
-                if item is None:
-                    continue
-                name, chunk = item
-                if not chunk:
-                    open_streams -= 1
-                    continue
-                if data_due is None:
-                    data_due = time.monotonic() + _DRAIN_SECONDS
-                pending += len(chunk)
-                absorb(name, chunk, stdout, stderr)
-                reason = stream_limit() or reason
+                for key, _ in selector.select(timeout=timeout):
+                    if key.data is None:
+                        os.read(wake_read, 64)
+                        continue
+                    chunk = os.read(key.fd, 65536)
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                        open_streams -= 1
+                        continue
+                    if data_due is None:
+                        data_due = time.monotonic() + _DRAIN_SECONDS
+                    pending += len(chunk)
+                    absorb(key.data, chunk, stdout, stderr)
+                    reason = stream_limit() or reason
+                    if reason != "exit":
+                        break
                 if reason != "exit":
                     break
             if reason == "exit":
@@ -435,11 +411,21 @@ def capture_process(
                 except subprocess.TimeoutExpired:
                     reason = "wall_limit"
     finally:
-        if pump is not None:
-            pump.close()
+        if scan is not None:
+            # Join the scan still running (its ps is reaped by the scan), keep
+            # what it observed, and raise its error once cleanup has run.
+            try:
+                _adopt(scan.finish(), process.pid, known)
+            except Exception as error:  # noqa: BLE001 - raised after cleanup
+                scan_failure = error
+        selector.close()
+        os.close(wake_read)
+        os.close(wake_write)
         cleanup = _stop_tree(process, known)
         process.stdout.close()
         process.stderr.close()
+    if scan_failure is not None:
+        raise scan_failure
     # The last poll can predate the final writes. A normal exit (EOF and a
     # successful wait) is admitted only if the evidence left once cleanup has
     # stopped every observed writer is within the limit.

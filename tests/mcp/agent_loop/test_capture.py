@@ -3,12 +3,12 @@
 import asyncio
 import base64
 import hashlib
-import itertools
 import json
 import os
 import random
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -577,33 +577,35 @@ def test_watchdog_keeps_polling_while_output_drains(tmp_path, monkeypatch):
     Right after the first poll, a middle process starts a new-session
     grandchild; it exits once the watchdog has read 4 MiB more output, which
     leaves the grandchild with another parent and process group. Only scans
-    move the watchdog clock, so a poll happens during that output only if
-    processed output itself triggers one: polling before each chunk (the
-    original loop) or after each 1 MiB does, while a cooldown measured on the
-    clock never ends and the grandchild escapes. At most 1 MiB plus one chunk
-    is processed between two polls.
+    move the watchdog clock, so a scan starts during that output only if
+    processed output itself starts one: a scan before each chunk (the original
+    loop) or after each 1 MiB does, while a cooldown measured on the clock
+    never ends and the grandchild escapes. A scan already under way when the
+    4 MiB are reached is allowed to finish first.
     """
     import run_agent_plot_eval as capture
 
     spawn, release = tmp_path / "spawn", tmp_path / "release"
     pids = tmp_path / "pids"
     state = {"after_spawn": 0}
-    processed: list[int] = []
+    scanning = threading.Event()
     real_table = capture._process_table
     _scan_driven_clock(monkeypatch, lambda: None)
     scan = capture._process_table
 
     def scan_then_spawn():
         """After the first scan, wait until the grandchild exists."""
-        events = tmp_path / "events.jsonl"
-        processed.append(events.stat().st_size if events.exists() else 0)
-        table = scan()
-        if not spawn.exists():
-            spawn.write_text("go")
-            deadline = time.monotonic() + 5
-            while not pids.exists() and time.monotonic() < deadline:
-                time.sleep(0.001)
-        return table
+        scanning.set()
+        try:
+            table = scan()
+            if not spawn.exists():
+                spawn.write_text("go")
+                deadline = time.monotonic() + 5
+                while not pids.exists() and time.monotonic() < deadline:
+                    time.sleep(0.001)
+            return table
+        finally:
+            scanning.clear()
 
     def count_and_release(size):
         """After 4 MiB more output, let the middle process exit and wait."""
@@ -611,6 +613,10 @@ def test_watchdog_keeps_polling_while_output_drains(tmp_path, monkeypatch):
             return
         state["after_spawn"] += size
         if state["after_spawn"] > 4 * 1024 * 1024:
+            # A scan already under way may finish before the middle exits.
+            deadline = time.monotonic() + 5
+            while scanning.is_set() and time.monotonic() < deadline:
+                time.sleep(0.001)
             release.write_text("go")
             middle = int(pids.read_text().split()[0])
             deadline = time.monotonic() + 5
@@ -639,9 +645,6 @@ def test_watchdog_keeps_polling_while_output_drains(tmp_path, monkeypatch):
     assert grandchild in result["observed_pids"]
     with pytest.raises(ProcessLookupError):
         os.kill(grandchild, 0)
-    assert max(b - a for a, b in itertools.pairwise(processed)) <= (
-        1024 * 1024 + 65536
-    )
 
 
 _TRICKLE_CHILD = """import signal, sys, time
@@ -695,6 +698,76 @@ def test_watchdog_keeps_reading_while_a_scan_runs(tmp_path, monkeypatch):
     assert state["read_during_scan"]
     assert result["stop_reason"] == "byte_limit"
     assert result["cleanup_ok"]
+
+
+def _child_ps_pids():
+    """Running ``ps`` processes started by this test process, besides the probe."""
+    probe = subprocess.Popen(
+        ["/bin/ps", "-axo", "pid=,ppid=,comm="],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    out, _ = probe.communicate()
+    rows = (line.split(None, 2) for line in out.splitlines())
+    return [
+        int(pid)
+        for pid, parent, command in rows
+        if int(parent) == os.getpid()
+        and int(pid) != probe.pid
+        and Path(command.strip()).name == "ps"
+    ]
+
+
+@pytest.mark.parametrize("ending", ["eof", "limit", "error"])
+def test_watchdog_leaves_no_scan_or_ps_behind(tmp_path, monkeypatch, ending):
+    """A scan still running when capture ends is joined on every exit path.
+
+    Every loop scan is held for 0.3 s after ``ps`` returns, so the capture
+    ends (EOF, byte limit, or the scan's own error) while one is in flight.
+    """
+    import run_agent_plot_eval as capture
+
+    scan = capture._process_table
+    calls = {"n": 0}
+
+    def held_scan():
+        """Hold every scan; the first one fails in the error case."""
+        calls["n"] += 1
+        table = scan()
+        time.sleep(0.3)
+        if ending == "error" and calls["n"] == 1:
+            raise RuntimeError("scan failed")
+        return table
+
+    monkeypatch.setattr(capture, "_process_table", held_scan)
+    child = (
+        "print('{}', flush=True)"
+        if ending == "eof"
+        else "import time\nwhile True:\n    print('x' * 4095, flush=True)\n"
+        "    time.sleep(0.001)"
+    )
+    threads = set(threading.enumerate())
+    run = lambda: capture_process(  # noqa: E731
+        [sys.executable, "-c", child],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+        max_bytes=64 * 1024,
+    )
+    if ending == "error":
+        with pytest.raises(RuntimeError, match="scan failed"):
+            run()
+    else:
+        result = run()
+        assert (
+            result["stop_reason"]
+            == {"eof": "exit", "limit": "byte_limit"}[ending]
+        )
+        assert result["cleanup_ok"]
+    assert set(threading.enumerate()) <= threads
+    assert _child_ps_pids() == []
 
 
 _STREAMING_CALLS_CHILD = """import json, signal
