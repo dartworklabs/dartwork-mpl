@@ -2968,6 +2968,19 @@ def test_series_turns_follow_the_screen_not_the_calls(
     assert _overlapping(_shown(fig, list(ax.texts))) == []
 
 
+def test_barh_on_an_inverted_axis_keeps_every_series_main_keeps():
+    # Review I2 at its own size: three series in 24 barh rows at 12 cm on
+    # an inverted y axis. Turns counted in call order had kept 8/0/8 (one
+    # series gone) with a misleading warning. Rows this thin cannot hold
+    # one label each, so the plain rule decides as on main (6/6/6) and the
+    # warning reports labels genuinely lost for room.
+    fig, ax, containers = _review_grouped(3, 24, "12cm", horizontal=True)
+    caught = _layout_warnings(fig)
+    assert _kept_per_series(fig, ax, containers) == [6, 6, 6]
+    assert len(caught) == 1 and "taller figure" in str(caught[0].message)
+    assert _overlapping(_shown(fig, list(ax.texts))) == []
+
+
 def test_a_replacing_turn_stays_clear_of_the_label_kept_before():
     # Review M3: a label that takes the turn from the last kept one at its
     # bar index must also clear the one kept before that, even when it is
