@@ -19,7 +19,7 @@ from .._figure_geometry import BBOX_ERRORS
 __all__ = ["BBOX_ERRORS", "Severity", "VisualWarning"]
 
 
-class Severity(str, Enum):
+class Severity(str, Enum):  # noqa: UP042 -- StrEnum would change str()/format() of the members
     WARNING = "WARNING"
     INFO = "INFO"
 

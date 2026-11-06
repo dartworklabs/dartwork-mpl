@@ -291,12 +291,7 @@ select = [
     "D106",
     "D107",
 ]
-ignore = [
-    "E501",
-    # ``class X(str, Enum)`` -> ``StrEnum`` changes ``str()``/``format()`` of
-    # the members, which is observable behaviour; migrate case by case.
-    "UP042",
-]
+ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["dartwork_mpl"]
@@ -319,12 +314,11 @@ split-on-trailing-comma = false
 # ``svg.hashsalt`` before importing pyplot, so imports follow module-level
 # setup statements by design.
 "scripts/build_palette_demos.py" = ["E402"]
-# BLE001 + PERF203: these asset generators run a best-effort batch loop
-# that must continue past any individual failure (one broken example
-# shouldn't abort the whole build). The blind-except + try/except-in-
-# loop pattern is intentional.
-"docs/api/generate_assets.py" = ["BLE001", "PERF203"]
-"docs/usage_guide/generate_assets.py" = ["BLE001", "PERF203"]
+# BLE001: these asset generators run a best-effort batch loop that must
+# continue past any individual failure (one broken example shouldn't abort
+# the whole build). The blind-except pattern is intentional.
+"docs/api/generate_assets.py" = ["BLE001"]
+"docs/usage_guide/generate_assets.py" = ["BLE001"]
 # Tests legitimately use unused unpacked variables (e.g. fig, ax tuples
 # where only one is asserted), nested context managers, manual list
 # comprehensions, blind excepts in cleanup code, ambiguous unicode in

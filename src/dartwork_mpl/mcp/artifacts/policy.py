@@ -91,7 +91,7 @@ class ArtifactId:
             raise ValueError("Expected a full lowercase UUID4 hex identity")
 
 
-class ArtifactMember(str, Enum):
+class ArtifactMember(str, Enum):  # noqa: UP042 -- StrEnum would change str()/format() of the members
     """The only five names permitted in a ready bundle, in delivery order."""
 
     PNG = "plot.png"
