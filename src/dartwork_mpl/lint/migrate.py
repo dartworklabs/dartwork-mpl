@@ -122,9 +122,9 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
     (
         re.compile(r"\bdm\.add_value_labels\s*\("),
-        "dm.add_value_labels removed in 0.4.1; use a plain loop of "
-        "ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(), "
-        'f"{bar.get_height():.0f}", ha="center", va="bottom").',
+        "dm.add_value_labels removed in 0.4.1; use dm.label_bars(ax) for "
+        "values on bars, or dm.annotate_value(ax, x, y, text) for a point "
+        "or a line end.",
     ),
     (
         re.compile(r"\bdm\.set_xmargin\s*\("),

@@ -3,8 +3,8 @@ helpers.labels — Legend and Value Annotations
 ==============================================
 
 ``dm.helpers.labels`` provides ``optimize_legend`` for smart legend
-placement and ``add_value_labels`` (now inlined) for per-point
-numeric annotations. Axis labels are set directly via
+placement and ``dm.label_bars`` for the per-bar
+value labels. Axis labels are set directly via
 ``ax.set_xlabel`` / ``ax.set_ylabel``.
 
 The 2×2 grid below shows each pattern on synthetic data.
@@ -69,18 +69,7 @@ ax3 = axes[1, 0]
 x_points = np.array([1, 2, 3, 4, 5])
 y_points = np.array([23.5, 45.2, 38.9, 52.1, 41.3])
 ax3.bar(x_points, y_points, color="oc.purple5")
-y_min, y_max = ax3.get_ylim()
-_offset = (y_max - y_min) * 0.02
-for xi, yi in zip(x_points, y_points, strict=False):
-    ax3.text(
-        xi,
-        yi + _offset,
-        f"{yi:.1f}",
-        ha="center",
-        va="bottom",
-        fontsize=dm.fs(-1),
-        color="dc.indigo3",
-    )
+dm.label_bars(ax3)
 ax3.set_title("Value Labels on Bars", fontsize=dm.fs(1))
 ax3.set_xlabel("Category", fontsize=dm.fs(0))
 ax3.set_ylabel("Value", fontsize=dm.fs(0))

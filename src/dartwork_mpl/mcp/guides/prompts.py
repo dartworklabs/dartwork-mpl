@@ -232,9 +232,8 @@ colors = [c.to_hex() for c in gradient]
 fig, ax = plt.subplots(figsize=dm.figsize(dm.col1, "standard"))
 
 # Plot + optional value labels when they help the reader.
-bars = ax.bar(categories, values, color=colors,
-              edgecolor="white", linewidth=0.3)
-ax.bar_label(bars, fmt="%.1f", fontsize=dm.fs(-1), fontweight=dm.fw(1))
+ax.bar(categories, values, color=colors, edgecolor="white", linewidth=0.3)
+dm.label_bars(ax)
 
 # Add a reference line only for an actual, documented threshold.
 # ax.axhline(threshold, linestyle="--", linewidth=0.5, color="dc.amber4")

@@ -16,7 +16,7 @@ MCP ``dartwork-mpl://template/advanced/tornado``.
 # data_shape: variables: list[str], low_impact: list[float], high_impact: list[float]
 # tags: tornado, sensitivity, two-sided, ranking, narrative
 # narrative: Six model parameters ranked by absolute impact on output; output drops red, output rises green
-# advanced_apis: horizontal bars at axvline x=0, color by sign of effect, signed value labels
+# advanced_apis: horizontal bars at axvline x=0, color by sign of effect, dm.label_bars signed value labels
 # ai-template-meta-end
 
 import matplotlib.patches as mpatches
@@ -69,33 +69,16 @@ for y_pos, lo, hi in zip(ys, low, high, strict=False):
 
 ax.axvline(0, color="oc.gray7", linewidth=0.5, zorder=3)
 
-# Signed value labels on outer end of each bar.
-for y_pos, lo, hi in zip(ys, low, high, strict=False):
-    ax.text(
-        lo + (-1 if lo < 0 else 1) * 0.6,
-        y_pos,
-        f"{lo:+.1f}%",
-        va="center",
-        ha="right" if lo < 0 else "left",
-        fontsize=dm.fs(-1),
-        fontweight=dm.fw(1),
-        color=(pos_color if lo >= 0 else neg_color),
-    )
-    ax.text(
-        hi + (-1 if hi < 0 else 1) * 0.6,
-        y_pos,
-        f"{hi:+.1f}%",
-        va="center",
-        ha="right" if hi < 0 else "left",
-        fontsize=dm.fs(-1),
-        fontweight=dm.fw(1),
-        color=(pos_color if hi >= 0 else neg_color),
-    )
+# Signed value labels on the outer end of each bar. The low and high bar of
+# a row stand together, so ask for plain labels (no per-row net total).
+dm.label_bars(ax, where="outside", total=False, fmt="{:+.1f}%")
 
 ax.set_yticks(ys)
 ax.set_yticklabels(variables)
 ax.invert_yaxis()
 ax.set_xlabel("Impact on model output (%)")
+# Symmetric limits around the zero line (a stated choice, so they stay),
+# with room at both ends for the outer labels.
 xmax = max(abs(low).max(), abs(high).max()) * 1.20
 ax.set_xlim(-xmax, xmax)
 

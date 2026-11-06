@@ -44,8 +44,7 @@ ax2 = ax.twinx()
 ax2.plot(
     x, change_pct, "o-", color="dc.orange3", linewidth=dm.lw(1), markersize=5
 )
-ax2.set_ylabel("Change (%)", fontsize=dm.fs(0), color="dc.orange3")
-ax2.tick_params(axis="y", labelcolor="dc.orange3")
+ax2.set_ylabel("Change (%)", fontsize=dm.fs(0))
 
 ax.set_title(
     "Hourly temperature and rate of change", fontsize=dm.fs(1), weight="bold"

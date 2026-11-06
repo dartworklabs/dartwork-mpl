@@ -216,7 +216,8 @@ class TestValueLabelDecimal:
         )
         fixes = dm.validate_fixes.get_fix_suggestions(warning)
         assert "but labels print decimals" in fixes[0]
-        assert "{:,.0f}" in fixes[0]
+        assert "dm.label_bars(ax)" in fixes[0]
+        assert "{value:,.0f}" in fixes[1]
 
     @pytest.mark.parametrize(
         "labels",

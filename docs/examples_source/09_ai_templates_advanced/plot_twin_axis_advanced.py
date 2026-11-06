@@ -16,7 +16,7 @@ MCP ``dartwork-mpl://template/advanced/twin_axis``.
 # data_shape: x: list[float], y_price: list[float], y_volume: list[float]
 # tags: twin-axis, price-volume, color-coded, narrative
 # narrative: Daily price + volume; price target axhline on the left axis
-# advanced_apis: ax.twinx, color-coded axis labels and tick colors, axhline target, no chart-junk
+# advanced_apis: ax.twinx (each axis takes its series colour from dartwork-mpl), axhline target, no chart-junk
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -53,15 +53,13 @@ ax_vol.bar(
     alpha=0.55,
     zorder=1,
 )
-ax_vol.set_ylabel("Volume (shares)", color=vol_color)
-ax_vol.tick_params(axis="y", colors=vol_color)
+ax_vol.set_ylabel("Volume (shares)")
 dm.format_axis_si(ax_vol, axis="y")
 ax_vol.set_ylim(0, volume.max() * 2.0)  # squeeze bars into the bottom third
 
 # Price — drawn on top.
 ax_price.plot(days, price, color=price_color, linewidth=dm.lw(0), zorder=3)
-ax_price.set_ylabel("Price ($)", color=price_color)
-ax_price.tick_params(axis="y", colors=price_color)
+ax_price.set_ylabel("Price ($)")
 ax_price.set_zorder(ax_vol.get_zorder() + 1)
 ax_price.patch.set_visible(False)  # transparent so volume bars show
 

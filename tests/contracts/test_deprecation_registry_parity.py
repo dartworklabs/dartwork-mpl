@@ -112,3 +112,23 @@ def test_agent_doc_bundle_matches_pyproject_force_include() -> None:
         f"wheel bundle {sorted(set(forced) | packaged)} != AGENT_DOCS "
         f"{sorted(expected)}"
     )
+
+
+def test_value_label_hints_name_the_same_replacements() -> None:
+    """The runtime hint and the codemod hint for add_value_labels agree.
+
+    The registries keep separate copies of the replacement text; this pins
+    the bar-label one so the two cannot drift apart silently.
+    """
+    runtime = _REMOVED_NAMES["add_value_labels"][1]
+    codemod = next(
+        message
+        for pattern, message in _MIGRATE_HINTS
+        if pattern.search("dm.add_value_labels(")
+    )
+    for replacement in (
+        "dm.label_bars(ax)",
+        "dm.annotate_value(ax, x, y, text)",
+    ):
+        assert replacement in runtime
+        assert replacement in codemod

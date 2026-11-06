@@ -300,8 +300,7 @@ ax.set_ylabel("Temperature (°C)")
 
 ax2 = ax.twinx()             # right spine visible by design
 ax2.plot(x, change_pct, "o-", color="dc.orange3", lw=dm.lw(1))
-ax2.set_ylabel("Change (%)", color="dc.orange3")
-ax2.tick_params(axis="y", labelcolor="dc.orange3")
+ax2.set_ylabel("Change (%)")   # the axis takes the line's colour
 
 dm.simple_layout(fig)
 ```

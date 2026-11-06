@@ -108,7 +108,7 @@ above an outside legend and the margins around both.
 | 12000 → 12k | `dm.format_axis_si(ax)` |
 | unit in the axis label, plain ticks (`0, 0.2 … 1.0` under `인구 (억명)`) | `dm.axis_unit(ax, "y", label="인구 ({unit}명)")`; `dm.axis_unit_of(ax)` for value labels |
 | four-digit years (`2016`, `2023.01`) / concise date words (`23, May, Sep`) / `k, M` in a Korean figure | `with dm.config.override(tick_years=4):` / `(date_style="concise")` / `(number_ladder="si")` around the code from figure creation to the last `dm.simple_layout`, or the field set on `dm.config` |
-| show the values on bars or points | bars `dm.label_bars(ax)`; points and line ends `ax.text(...)` in the value-label look, see below |
+| show the values on bars or points | bars `dm.label_bars(ax)`; points and line ends `dm.annotate_value(ax, x, y, text)`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 
 ```python
@@ -177,8 +177,7 @@ bar_ax.bar(["A", "B", "C"], [12, 30, 21])
 dm.label_bars(bar_ax)            # 12, 30, 21 above the bars
 days, visits = np.arange(1, 8), np.array([40, 42, 47, 45, 51, 58, 63])
 line_ax.plot(days, visits)
-line_ax.text(days[-1], visits[-1], f" {visits[-1]}", va="center",
-             fontsize=dm.fs(-1), fontweight=dm.fw(1))
+dm.annotate_value(line_ax, days[-1], visits[-1], f"{visits[-1]}")  # picks a free side
 dm.simple_layout(fig)
 plt.close(fig)
 ```
