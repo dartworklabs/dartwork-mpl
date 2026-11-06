@@ -63,7 +63,7 @@ ax.axvline(0, color="oc.gray7", linewidth=0.5, zorder=3)
 
 # Signed value labels on the outer end of each bar. The low and high bar of
 # a row stand together, so ask for plain labels (no per-row net total).
-dm.label_bars(ax, where="outside", total=False, fmt=lambda v: f"{v:+.1f}%")
+dm.label_bars(ax, where="outside", total=False, fmt="{:+.1f}%")
 
 ax.set_yticks(ys)
 ax.set_yticklabels(variables)
