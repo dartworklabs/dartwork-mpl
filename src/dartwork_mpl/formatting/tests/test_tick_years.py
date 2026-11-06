@@ -38,13 +38,7 @@ from dartwork_mpl.formatting._years import (
     year_data,
 )
 
-
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _xticks(ax) -> list[str]:
@@ -1231,7 +1225,11 @@ def test_period_dates_keep_the_offset_and_tex_choice():
     assert apply_default_tick_format(fig) == 1
     fmt = ax.xaxis.get_major_formatter()
     assert type(fmt) is PeriodDateFormatter
-    assert fmt.show_offset is False and fmt._usetex is True
+    assert fmt.show_offset is False
+    # Date formatters have no public usetex getter; the TeX choice shows
+    # in the labels they make (Matplotlib wraps digits in TeX).
+    labels = fmt.format_ticks(ax.xaxis.get_major_locator()())
+    assert any("\\mathdefault{" in label for label in labels), labels
     assert ax.xaxis.get_major_locator() is locator
 
 
