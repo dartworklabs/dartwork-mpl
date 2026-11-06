@@ -46,6 +46,9 @@ jobs:
       UV_PYTHON: ${{ matrix.python-version }}
       # Bound shared ml-main load; an empty override preserves hosted PR auto detection.
       PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
+      # The bar-label readability tests read the saved PDF through
+      # Ghostscript; here a missing gs fails them instead of skipping.
+      DARTWORK_MPL_REQUIRE_GHOSTSCRIPT: "1"
     strategy:
       # Shared ml-main runs two Python jobs at once; hosted PRs retain all three.
       max-parallel: ${{ github.event_name == 'pull_request' && 4 || 2 }}
@@ -77,6 +80,18 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --all-extras --dev
+
+      # The bar-label readability tests (annotation/tests/test_label_bars.py)
+      # rasterise the saved PDF with Ghostscript. Ubuntu runners ship without
+      # it; ml-main has /usr/bin/gs.
+      - name: Install Ghostscript for hosted PR builds
+        if: github.event_name == 'pull_request'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ghostscript
+
+      - name: Verify Ghostscript (gs for the PDF readability tests)
+        run: gs --version
 
       # Keep the coverage gate on one representative interpreter. The
       # remaining matrix jobs still run the test suite for version

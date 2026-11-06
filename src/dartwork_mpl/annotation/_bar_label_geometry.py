@@ -21,8 +21,19 @@ text, unit and option handling:
   the bar that ends the stack, so it sits beyond the stack's end, and
   beyond the label it must clear (``beyond``: the top segment's, labelled
   ``"outside"`` at the same end) by that label's length and 3 pt more.
+* **On the bar or off it.** A plain bar's end label meant to sit on its bar
+  (``"inside"``, asked or moved there by ``crowded="inside"``) is drawn
+  there only while the bar holds it both ways: along the bar
+  (:func:`fits_on_bar`) and across it (:func:`fits_across`,
+  :data:`FIT_TOL_PX` slack). Otherwise it sits beyond the bar's end, off
+  the bar, so no part of it is drawn over the background in the ink
+  chosen for the bar. The ink follows where it sits
+  (:mod:`._bar_label_ink`), set at each draw, so a wider bar or a larger
+  figure moves it back.
 * **Room.** A label on a stack segment fits when the segment is at least as
-  long as the label along the value axis (:func:`fits_on_bar`).
+  long as the label along the value axis (:func:`fits_on_bar`); a plain
+  bar's end label on its bar, also when the bar is at least as thick as
+  the label across (:func:`fits_across`).
 * **Host.** On a ``twinx`` / ``twiny`` pair the labels live on the Axes
   drawn last, by zorder and then figure order, so no partner draws over
   them.
@@ -47,20 +58,25 @@ if TYPE_CHECKING:
 
 __all__ = [
     "EDGE_TOL_PX",
+    "FIT_TOL_PX",
     "OFFSET_PT",
     "bar_point",
+    "fits_across",
     "fits_on_bar",
     "host_axes",
     "in_view",
     "outward",
     "place",
-    "text_length",
+    "text_extent",
 ]
 
 # Point offset between a bar end and its label (``dm.annotate_value``'s).
 OFFSET_PT = 3.0
 # How far (display pixels) an anchor may sit past the view and still show.
 EDGE_TOL_PX = 1.0
+# How far (display pixels) a label on its bar may reach past the bar's sides:
+# antialiasing, not a visible part of the text.
+FIT_TOL_PX = 0.5
 
 
 def host_axes(bar_axes: Axes) -> Axes:
@@ -113,21 +129,37 @@ def in_view(label: BarLabel, where: Where) -> bool:
     )
 
 
-def text_length(label: BarLabel, renderer: RendererBase | None) -> float:
-    """The label's text extent along the value axis, in display pixels.
+def text_extent(
+    label: BarLabel, renderer: RendererBase | None
+) -> tuple[float, float]:
+    """The label's text extent ``(along, across)`` the bar, display pixels.
 
-    Its font, size and rotation as drawn, measured with ``renderer`` (the
-    canvas's renderer at the figure's current dpi); with ``None``,
-    matplotlib uses the renderer of the label's last draw.
+    Along the value axis and across the bars, its font, size and rotation
+    as drawn, measured with ``renderer`` (the canvas's renderer at the
+    figure's current dpi); with ``None``, matplotlib uses the renderer of
+    the label's last draw.
     """
     text = Text.get_window_extent(label, renderer)  # the text, not the anchor
-    return float(text.height if label.orientation == "vertical" else text.width)
+    if label.orientation == "vertical":
+        return (float(text.height), float(text.width))
+    return (float(text.width), float(text.height))
+
+
+def fits_across(label: BarLabel, across_px: float) -> bool:
+    """Whether ``label`` is no wider than its bar across the bars.
+
+    ``across_px`` (:func:`text_extent`) against the bar's thickness on
+    screen, read afresh, with :data:`FIT_TOL_PX` to spare.
+    """
+    box = label.bar.get_window_extent()
+    thickness = box.width if label.orientation == "vertical" else box.height
+    return bool(np.isfinite(thickness) and across_px <= thickness + FIT_TOL_PX)
 
 
 def fits_on_bar(label: BarLabel, text_px: float) -> bool:
     """Whether ``label`` is no longer than its bar along the value axis.
 
-    ``text_px`` (:func:`text_length`), plus the 3 pt inset for
+    ``text_px`` (:func:`text_extent`, along), plus the 3 pt inset for
     ``"inside"``, against the bar's length on screen, read afresh.
     """
     vertical = label.orientation == "vertical"
@@ -250,7 +282,9 @@ def _setter(label: BarLabel, name: str) -> Callable[[Any], None]:
 def place(label: BarLabel, where: Where) -> None:
     """Anchor and align ``label`` on its bar for ``where``.
 
-    Writes only what ``label`` still owns (:meth:`BarLabel.own`).
+    A label that its bar does not hold (``label.off_bar``, decided by
+    ``BarLabelFamily.follow``) sits beyond the bar's end instead. Writes
+    only what ``label`` still owns (:meth:`BarLabel.own`).
     """
     if where == "center":
         # Fractions of the bar's own extent: its middle on any scale.
@@ -258,7 +292,7 @@ def place(label: BarLabel, where: Where) -> None:
         xyann = (0.0, 0.0)
         ha, va = "center", "center"
     else:
-        inside = where == "inside"
+        inside = where == "inside" and not label.off_bar
         x, y = bar_point(label)
         if label.orientation == "vertical":
             if not inside:
