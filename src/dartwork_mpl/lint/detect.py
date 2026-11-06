@@ -128,20 +128,34 @@ def _is_concatenation(node: ast.expr) -> bool:
 
 
 def _twin_legend_hand_merge(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
-    """``ax.legend(h1 + h2, l1 + l2)`` after two ``get_legend_handles_labels``.
+    """A legend call that merges the entries of two Axes by hand.
 
-    Handles and labels are both concatenations, in a source that reads the
-    legend entries of more than one Axes: the merge ``dm.place_legend``
-    does for a twin pair.
+    Two shapes: ``ax.legend(h1 + h2, l1 + l2)`` after two
+    ``get_legend_handles_labels`` reads, and, in a source that makes a
+    ``twinx`` / ``twiny``, ``ax.legend(lns, labs)`` whose handles are, or
+    name a variable bound to, a concatenation (``lns = l1 + l2``). That is
+    the merge ``dm.place_legend`` does for a twin pair.
     """
-    reads = sum(
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "get_legend_handles_labels"
-        for node in ast.walk(syntax.tree)
-    )
-    if reads < 2:
-        return
+    reads = twins = 0
+    concatenated: set[str] = set()
+    for node in ast.walk(syntax.tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            reads += node.func.attr == "get_legend_handles_labels"
+            twins += node.func.attr in {"twinx", "twiny"}
+        elif (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and _is_concatenation(node.value)
+        ):
+            concatenated.add(node.targets[0].id)
+
+    def merged(node: ast.expr | None) -> bool:
+        return node is not None and (
+            _is_concatenation(node)
+            or (isinstance(node, ast.Name) and node.id in concatenated)
+        )
+
     for node in ast.walk(syntax.tree):
         if not (
             isinstance(node, ast.Call)
@@ -157,12 +171,14 @@ def _twin_legend_hand_merge(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
         positional = list(node.args)
         handles = positional[0] if positional else given.get("handles")
         labels = positional[1] if len(positional) > 1 else given.get("labels")
-        if (
-            handles is not None
+        both = (
+            reads >= 2
+            and handles is not None
             and labels is not None
             and _is_concatenation(handles)
             and _is_concatenation(labels)
-        ):
+        )
+        if both or (twins and merged(handles)):
             yield _method_offset(syntax, node.func)
 
 

@@ -1535,3 +1535,53 @@ class TestTwinLegendHandMerge:
         assert not [
             i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
         ]
+
+
+BOUND_CONCAT = """
+ax2 = ax.twinx()
+l1 = ax.plot([1], label="a")
+l2 = ax2.plot([1], label="b")
+lns = l1 + l2
+labs = [l.get_label() for l in lns]
+ax.legend(lns, labs, loc="upper left")
+"""
+
+BOUND_STAR = """
+ax2 = ax.twiny()
+lns = [*l1, *l2]
+ax.legend(handles=lns)
+"""
+
+CONCAT_WITHOUT_TWIN = """
+lns = l1 + l2
+labs = [l.get_label() for l in lns]
+ax.legend(lns, labs)
+"""
+
+
+class TestTwinLegendBoundConcatenation:
+    """The ``lns = l1 + l2`` idiom counts when the module has a twin axes."""
+
+    @pytest.mark.parametrize("code", [BOUND_CONCAT, BOUND_STAR])
+    def test_bound_concatenation_with_twin_is_linted(self, code: str) -> None:
+        found = [i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"]
+        assert len(found) == 1
+
+    def test_concatenation_without_a_twin_is_quiet(self) -> None:
+        assert not [
+            i
+            for i in lint(CONCAT_WITHOUT_TWIN)
+            if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_plain_name_with_twin_is_quiet(self) -> None:
+        code = "ax2 = ax.twinx()\nlns = l1\nax.legend(lns, labs)\n"
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_list_literal_handles_with_twin_is_quiet(self) -> None:
+        code = "ax2 = ax.twinx()\nax.legend([a, b], ['x', 'y'])\n"
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
