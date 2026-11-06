@@ -7,9 +7,9 @@
   colour.
 * **Text.** :func:`compose_text` writes one label's text from its value in
   the axis's tick unit: the number with the call's decimals and the ticks'
-  prefix and suffix, or the ``fmt`` template around the number (a field with
-  a format spec formats the value itself), or what the ``fmt`` callable
-  returns.
+  prefix, suffix and zero rule, or the ``fmt`` template around the number
+  (a field with a format spec formats the value itself), or what the
+  ``fmt`` callable returns.
 """
 
 from __future__ import annotations
@@ -219,9 +219,14 @@ def parse_options(
 def compose_text(
     scaled: float, scale: TickScale, decimals: int, options: BarLabelOptions
 ) -> str:
-    """The label text for a value already divided by ``scale.factor``."""
+    """The label text for a value already divided by ``scale.factor``.
+
+    ``decimals`` is fixed (a zero prints ``0.0``, not ``0``) when the call
+    or the ticks fixed it. A zero keeps the ticks' prefix and suffix when
+    theirs does (``$0``); a ``fmt`` template supplies its own.
+    """
     fmt = options.fmt
-    fixed = options.decimals is not None
+    fixed = options.decimals is not None or scale.decimals is not None
     if callable(fmt):
         return str(fmt(scaled))
     if isinstance(fmt, str):
@@ -229,5 +234,10 @@ def compose_text(
             fmt, number_text(scaled, decimals, fixed=fixed), scaled
         )
     return number_text(
-        scaled, decimals, fixed=fixed, prefix=scale.prefix, suffix=scale.suffix
+        scaled,
+        decimals,
+        fixed=fixed,
+        prefix=scale.prefix,
+        suffix=scale.suffix,
+        zero=scale.zero,
     )

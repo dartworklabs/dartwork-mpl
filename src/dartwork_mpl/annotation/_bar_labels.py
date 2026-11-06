@@ -11,14 +11,20 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   scaled numbers (``33.0`` under ``Energy (GWh)``); a formatter whose
   ticks carry a suffix gives the labels the same unit and suffix (``33G``
   under the library's default numbers or ``format_axis_si``, ``31%`` under
-  a ``PercentFormatter``). The decision is re-read at every draw, so a
-  later ``set_ylim``, ``dm.axis_unit`` or ``dm.simple_layout`` that moves
-  the tick unit moves the labels with it.
+  a ``PercentFormatter``). Ticks written each alone in one fixed unit
+  (``decimals=n`` of ``format_axis_millions`` / ``_billions``,
+  ``format_axis_currency``) give that unit, the currency on its side and
+  the ticks' zero (``1.2M``, ``-$800``, ``$0``); ticks that each take their
+  own unit (``decimals=n`` of ``format_axis_si`` / ``_myriad``) share none,
+  and the labels print plain values. The decision is re-read at every
+  draw, so a later ``set_ylim``, ``dm.axis_unit`` or ``dm.simple_layout``
+  that moves the tick unit moves the labels with it.
 * **Decimals.** Three significant digits on the largest ``|value|``, cut to
   the fewest decimals that print every value exactly, one count for the
   whole call (:func:`value_label_decimals`): ``21.4, 18.0, 21.5``;
   ``120, 135``; never a meaningless ``.0``. Zero prints ``0``; U+2212 minus
-  like the ticks.
+  like the ticks. Ticks that fix their own count per value (the fixed-unit
+  paths above) give the labels that count (``0.0`` for zero).
 * **Side.** Outside the bar end; a negative bar's label below it (``barh``:
   left of it); an inverted value axis flips the side with the bar; error
   bars push the label past their caps, but not past the view.
@@ -303,18 +309,29 @@ class BarLabelFamily:
     def refresh(self) -> None:
         """Write every label's text in its axis's current tick scale.
 
-        One decimal count for the whole call, unless ``decimals=`` fixed it.
-        A text someone else set is kept.
+        One decimal count for the whole call, unless ``decimals=`` fixed it;
+        a label whose ticks fix their decimals (``format_axis_millions(ax,
+        decimals=1)``) takes the ticks' count. A text someone else set is
+        kept.
         """
         scales = [tick_scale_of(t.value_axis, t.value) for t in self.texts]
         scaled = [
             t.value / s.factor for t, s in zip(self.texts, scales, strict=True)
         ]
-        decimals = self.options.decimals
-        if decimals is None:
-            decimals = value_label_decimals(scaled)
+        family = self.options.decimals
+        if family is None:
+            family = value_label_decimals(
+                [
+                    v
+                    for v, s in zip(scaled, scales, strict=True)
+                    if s.decimals is None
+                ]
+            )
         for label, scale, value in zip(self.texts, scales, scaled, strict=True):
             label.tick_scale = scale
+            decimals = family
+            if self.options.decimals is None and scale.decimals is not None:
+                decimals = scale.decimals
             text = compose_text(value, scale, decimals, self.options)
             label.own("text", label.get_text(), text, label.set_text)
 
@@ -450,13 +467,19 @@ def label_bars(
       beyond the bar end; negative bars below (``barh``: left);
     - the value in the axis's tick unit with no unit repeated under
       ``dm.axis_unit`` (``33.0`` under ``Energy (GWh)``), or the ticks'
-      suffix when they carry one (``33G``, ``31%``); other formatters print
-      the plain value (pass ``fmt=``). The unit is re-read at every draw,
-      so later limit or formatter changes keep the labels in step;
+      suffix when they carry one (``33G``, ``31%``); under
+      ``format_axis_currency`` and ``decimals=n`` of
+      ``format_axis_millions`` / ``_billions`` the ticks' unit, currency
+      and zero (``1.2M``, ``-$800``, ``$0``); other formatters, and the
+      ``decimals=n`` ticks of ``format_axis_si`` / ``_myriad`` that each
+      take their own unit, print the plain value (pass ``fmt=``). The unit
+      is re-read at every draw, so later limit or formatter changes keep
+      the labels in step;
     - three significant digits on the largest ``|value|``, then the fewest
       decimals that print every value exactly, one count for the call,
       totals included (``21.4, 18.0, 21.5``; ``120, 135``); zero prints
-      ``0``; U+2212 minus;
+      ``0``; U+2212 minus; ticks that fix their decimals per value (the
+      currency and ``decimals=n`` paths above) give theirs;
     - stacked bars (containers at the same positions, each starting where
       the ones before it ended, as ``bottom=`` / ``left=`` build them;
       positives on the positive end, negatives on the negative end): each
@@ -525,7 +548,8 @@ def label_bars(
         (one call per series), and a kept label wider than its bar is
         lifted past the taller bars it spans.
     decimals : int, optional
-        A fixed decimal count instead of the rule above.
+        A fixed decimal count instead of the rule above (the ticks' count
+        included); the unit stays the ticks'.
     fmt : str or callable, optional
         A ``{}`` template around the number (``fmt="${}B"`` -> ``$38.5B``;
         the template supplies any unit, the tick suffix is not added;
