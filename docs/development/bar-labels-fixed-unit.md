@@ -143,6 +143,13 @@ A small value reads zero when the largest value leaves too few places
 (three significant digits on 12.5M or €34); `decimals=` shows it, as it does
 for cents.
 
+**Log axes, changed from main.** Millions `d=1` on a log y axis, bars
+1e4, 2e5, 3.4e6, 4.5e7: main labelled the first bar `10,000`; B labels it
+`0` (three significant digits on 45M), though a log axis has no zero.
+`decimals=` shows it. Whether labels on a log axis should keep every
+non-zero value is a separate decision, to be made on a before/after PoC;
+this change keeps B and the asked-precision priority as they are.
+
 ## Tests
 
 - `formatting/tests/test_tick_scale.py`: fixed-unit formatters report
