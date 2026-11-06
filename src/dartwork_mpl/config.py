@@ -99,8 +99,10 @@ class Config:
         ``dm.simple_layout``. ``"series"``: a side whose data draw one colour
         gets that colour on its spine and tick marks (at least 3:1 against
         the background) and the same hue darkened to 4.5:1 on its tick labels
-        and axis label; sides drawing several colours, both sides drawing the
-        same colour, single axes and colours you set stay as they are.
+        and axis label. It needs two series colour can tell apart: a twin
+        whose partner draws no data, sides drawing several colours, two
+        sides whose colours are under 0.10 apart in OKLab, single axes and
+        colours you set stay as they are.
         ``"neutral"`` keeps the preset's axis colours on twins too
         (``dm.config.twin_colors = "neutral"``, or
         ``with dm.config.override(twin_colors="neutral"):``); a figure laid

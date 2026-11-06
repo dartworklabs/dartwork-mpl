@@ -171,6 +171,53 @@ def test_same_hue_both_neutral():
     assert _side(ax2, "right") == _neutral()
 
 
+@pytest.mark.parametrize(
+    ("bar_color", "line_color"),
+    [
+        ("dc.blue6", "dc.blue7"),  # OKLab distance 0.057
+        ("dc.blue6", "dc.indigo6"),  # 0.074
+        ("dc.blue6", "dc.blue6"),  # one colour, alpha apart
+    ],
+)
+def test_near_hues_both_neutral(bar_color, line_color):
+    """Two series closer than 0.10 in OKLab cannot tell the scales apart."""
+    fig, ax, ax2 = _bar_line_twin(
+        bar_color=bar_color, line_color=line_color, alpha=0.5
+    )
+    dm.simple_layout(fig)
+
+    assert apply_twin_colors(fig) == 0
+    assert _side(ax, "left") == _neutral()
+    assert _side(ax2, "right") == _neutral()
+
+
+def test_distinct_shades_stay_coloured():
+    """dc.blue6 bars and a dc.blue9 line are 0.17 apart in OKLab."""
+    fig, ax, ax2 = _bar_line_twin(line_color="dc.blue9")
+    dm.simple_layout(fig)
+
+    assert apply_twin_colors(fig) == 2
+    assert _side(ax, "left")["ticklabels"] == BAR_TEXT
+    assert _side(ax2, "right")["ticklabels"] == _hex("dc.blue9")
+
+
+@pytest.mark.parametrize("data_on", ["parent", "twin"])
+@pytest.mark.parametrize("partner", ["empty", "reference line only"])
+def test_partner_without_data_is_not_a_pair(data_on, partner):
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax2 = ax.twinx()
+    drawn, other = (ax, ax2) if data_on == "parent" else (ax2, ax)
+    drawn.bar(X, REVENUE, color="dc.blue6")
+    other.set_ylim(0, 50)  # a second scale for the same bars
+    if partner == "reference line only":
+        other.axhline(25, color="dc.orange6")
+    dm.simple_layout(fig)
+
+    assert apply_twin_colors(fig) == 0
+    assert _side(ax, "left") == _neutral()
+    assert _side(ax2, "right") == _neutral()
+
+
 def test_light_alpha_series_spine_reaches_3_to_1():
     fig, ax, ax2 = _bar_line_twin(bar_color="#c9e8ff", alpha=0.3)
     dm.simple_layout(fig)

@@ -724,9 +724,10 @@ def simple_layout(
     that colour on its spine and tick marks (at least 3:1 against the
     background) and the same hue darkened to 4.5:1 on its tick labels and
     axis label, via :func:`dartwork_mpl.formatting.apply_twin_colors`.
-    Single axes, sides drawing several colours, two sides drawing the same
-    colour and colours you set are left alone; ``dm.config.twin_colors =
-    "neutral"`` turns it off.
+    Single axes, a twin whose partner draws no data, sides drawing several
+    colours, two sides whose colours are under 0.10 apart in OKLab and
+    colours you set are left alone; ``dm.config.twin_colors = "neutral"``
+    turns it off.
 
     Examples
     --------

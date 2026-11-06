@@ -14,8 +14,11 @@ shared-axes groupers among the Axes drawn in the same box. Its data are the
 lines, patches and collections drawn in data coordinates; reference artists
 in axes coordinates (``axhline``, ``axvspan``, ``axline``) are not a series.
 A side qualifies when every data artist draws the same colour; a
-colour-mapped collection or an image disqualifies it, and two sides drawing
-the same colour both stay neutral because colour cannot tell them apart.
+colour-mapped collection or an image disqualifies it. Colour has to tell two
+series apart, so a pair is coloured only when it holds two distinguishable
+series: a side whose partners draw no data (a second scale for the same
+series) stays neutral, and two sides whose colours are less than 0.10 apart
+in OKLab (Euclidean, alpha ignored) both stay neutral.
 
 Single Axes are never touched. On a twin, a part (spine, tick marks, tick
 labels, axis label) is painted only while its colour is the rcParams default
@@ -27,6 +30,7 @@ replaced: a side that stops qualifying, or ``dm.config.twin_colors =
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Literal, TypeAlias
 
@@ -38,6 +42,7 @@ from matplotlib.axis import Axis, Tick
 from matplotlib.figure import Figure
 
 from .._colors.contrast import ensure_contrast
+from .._colors.model import srgb_to_oklab
 from .._figure_geometry import same_position_axes
 from ..config import config
 
@@ -51,6 +56,8 @@ RGBA: TypeAlias = tuple[float, float, float, float]
 # WCAG 2.x: 3:1 for graphical objects (spines, tick marks), 4.5:1 for text.
 _LINE_RATIO = 3.0
 _TEXT_RATIO = 4.5
+# Series colours closer than this in OKLab cannot tell two scales apart.
+_SAME_HUE_OKLAB = 0.10
 # Up to one 8-bit channel step apart counts as the same colour.
 _RGBA_TOL = 1.5 / 255
 # Painted parts per Axes: (side, part) -> (default replaced, colour painted).
@@ -202,12 +209,17 @@ def _data_colors(ax: Axes) -> list[RGBA] | None:
     return [color for color in colors if color[3] > 0]
 
 
-def _series_color(ax: Axes) -> RGBA | None:
-    """The one colour every data artist of ``ax`` draws, most opaque first."""
-    colors = _data_colors(ax)
+def _series_color(colors: list[RGBA] | None) -> RGBA | None:
+    """The one colour every data artist draws (``colors``), most opaque."""
     if not colors or len({_key(color) for color in colors}) != 1:
         return None
     return max(colors, key=lambda color: color[3])
+
+
+def _near(left: RGBA, right: RGBA) -> bool:
+    """Whether two series colours (alpha ignored) read as one hue."""
+    distance = math.dist(srgb_to_oklab(left[:3]), srgb_to_oklab(right[:3]))
+    return distance < _SAME_HUE_OKLAB
 
 
 def _background(group: Sequence[Axes]) -> RGB:
@@ -367,8 +379,9 @@ def apply_twin_colors(fig: Figure) -> int:
     A side whose data draw one colour gets it on its spine and tick marks as
     it shows (alpha composited, at least 3:1 against the background) and on
     its tick labels, offset text and axis label darkened to 4.5:1. A side
-    drawing several colours, two sides drawing the same colour, single Axes
-    and every part whose colour someone set stay as they are.
+    drawing several colours, a side whose partners draw no data, two sides
+    whose colours are under 0.10 apart in OKLab, single Axes and every part
+    whose colour someone set stay as they are.
     ``dm.config.twin_colors = "neutral"`` gives painted parts their defaults
     back. ``dm.simple_layout`` calls this after the default tick formats.
 
@@ -386,18 +399,28 @@ def apply_twin_colors(fig: Figure) -> int:
     for group in _twin_groups(fig):
         sides = [(ax, side) for ax in group for side in _own_sides(ax, group)]
         owners = {(id(ax), side) for ax, side in sides}
-        colors = {id(ax): _series_color(ax) if series else None for ax in group}
-        # One colour on two owners: neither side can be told apart by it.
-        holders: dict[str, set[int]] = {}
-        for ax, _side in sides:
-            color = colors[id(ax)]
-            if color is not None:
-                holders.setdefault(_key(color), set()).add(id(ax))
+        drawn = {id(ax): _data_colors(ax) for ax, _side in sides}
+        # Colour-mapped data (None) is data too; only an empty list is not.
+        with_data = {key for key, found in drawn.items() if found != []}
+        colors = {
+            key: _series_color(found) if series else None
+            for key, found in drawn.items()
+        }
         background = _background(group)
         for ax, side in sides:
             color = colors[id(ax)]
+            partners = with_data - {id(ax)}
             inks = None
-            if color is not None and len(holders[_key(color)]) == 1:
+            # Colour must tell this series from a partner's: a partner with
+            # data, none of them in (nearly) the same colour.
+            if (
+                color is not None
+                and partners
+                and not any(
+                    (other := colors[key]) is not None and _near(color, other)
+                    for key in partners
+                )
+            ):
                 inks = _inks(color, background)
             coloured += _settle_side(group, owners, ax, side, inks, settled)
     # Parts painted on an earlier call whose pair is gone get their default.

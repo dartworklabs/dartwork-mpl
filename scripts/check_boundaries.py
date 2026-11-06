@@ -253,6 +253,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.formatting", "dartwork_mpl._colors.contrast"): (
         "twin-axis tick text keeps its series' hue at a readable contrast"
     ),
+    ("dartwork_mpl.formatting", "dartwork_mpl._colors.model"): (
+        "twin axes stay neutral when their series colours are close in OKLab"
+    ),
     ("dartwork_mpl.formatting", "dartwork_mpl.config"): (
         "default tick text follows the user's tick_years, date_style and "
         "number_ladder; twin axes follow twin_colors"
