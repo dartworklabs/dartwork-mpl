@@ -17,10 +17,12 @@ raise `ModuleNotFoundError` without a replacement hint.
 
 ## Deprecated in 0.8: `dartwork_mpl.util`
 
-`import dartwork_mpl.util` and `from dartwork_mpl.util import X` emit a
-`DeprecationWarning` (once per process, at your import line). The module is
-may be removed in 0.10 or later. Until then each name is the owner's own
-object (`dartwork_mpl.util.X is <owner>.X`). Every name below is also
+Every access to a name through `dartwork_mpl.util` (`from dartwork_mpl.util
+import X`, `dartwork_mpl.util.X`) emits a `DeprecationWarning` per access,
+pointing at your line, so a second import or another module warns too;
+`import dartwork_mpl.util` alone does not. The module may be removed in 0.10
+or later. Until then each name is the owner's own object
+(`dartwork_mpl.util.X is <owner>.X`). Every name below is also
 `dm.X` at the package root.
 
 | Names | Import from |

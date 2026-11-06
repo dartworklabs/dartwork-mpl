@@ -62,17 +62,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Deprecated
 
-- **`dartwork_mpl.util`** is deprecated in 0.8 (a `DeprecationWarning`,
-  once on import, pointing at your import line) and may be removed in 0.10
-  or later. Until then every name in it is the owner's own object. Import
+- **`dartwork_mpl.util`** is deprecated in 0.8 (a `DeprecationWarning`
+  on every access to a name, pointing at your line) and may be removed in
+  0.10 or later. Until then every name in it is the owner's own object. Import
   each name from its owner; the table is in
   [docs/migration.md](docs/migration.md#deprecated-in-08-dartwork_mpl-util).
 - **`FontFamily.tnum`, `FontMeasurement.tnum`, `FontFaceMeasurement.tnum`**
   are deprecated in 0.8 (a `DeprecationWarning` on each access) and may be
-  removed in 0.10 or later; they return the same value as `.tnum_available` (whether a bundled
-  font declares the OpenType `tnum` feature for browsers; matplotlib does not
-  apply it, see `numeric_axes` for real plot digits). The font browser data
-  no longer carries a separate `tnum` key.
+  removed in 0.10 or later; they return the same value as
+  `.tnum_available` (whether a bundled font declares the OpenType `tnum`
+  feature for browsers; matplotlib does not apply it, see `numeric_axes` for
+  real plot digits). The font browser data no longer carries a separate
+  `tnum` key.
 
 ### Removed
 

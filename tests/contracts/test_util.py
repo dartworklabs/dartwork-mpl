@@ -1,8 +1,8 @@
-"""dartwork_mpl.util is a deprecated compatibility module (warned in 0.8).
+"""dartwork_mpl.util is a deprecated compatibility module (0.8).
 
 util once held these functions; they now live in the slices that own them
 (ADR 0005). During the warning window util re-exports them unchanged, so
-``from dartwork_mpl.util import X`` still works but warns once on import.
+``from dartwork_mpl.util import X`` still works but warns on every access.
 Removal is no earlier than 0.10 (docs/development/api-stability.md). The
 behaviour tests live with each owner.
 """
@@ -12,9 +12,8 @@ from __future__ import annotations
 import importlib
 import subprocess
 import sys
-import textwrap
 import warnings
-from types import ModuleType
+from pathlib import Path
 
 import pytest
 
@@ -40,78 +39,118 @@ _OWNERS = {
 }
 
 
-def _fresh_import() -> tuple[ModuleType, list[warnings.WarningMessage]]:
-    """Import dartwork_mpl.util as if for the first time; return warnings."""
-    import dartwork_mpl
+def _run(code: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import warnings\nwarnings.simplefilter('always')\n" + code,
+        ],
+        capture_output=True,
+        text=True,
+    )
 
-    sys.modules.pop("dartwork_mpl.util", None)
-    if hasattr(dartwork_mpl, "util"):
-        delattr(dartwork_mpl, "util")
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        module = importlib.import_module("dartwork_mpl.util")
-    return module, [w for w in caught if w.category is DeprecationWarning]
+
+def _lines(result: subprocess.CompletedProcess[str]) -> list[str]:
+    assert result.returncode == 0, result.stderr
+    return [
+        ln for ln in result.stderr.splitlines() if "DeprecationWarning" in ln
+    ]
 
 
 def test_util_lists_exactly_the_compatibility_names() -> None:
-    """util's surface is the historical name set, no more and no less."""
-    util, _ = _fresh_import()
+    from dartwork_mpl import util
+
     assert set(util.__all__) == set(_OWNERS)
+    assert set(_OWNERS) <= set(dir(util))
 
 
 @pytest.mark.parametrize("name", sorted(_OWNERS))
-def test_util_name_is_the_owners_object(name: str) -> None:
-    """A util name is the owning slice's function itself, not a copy."""
-    util, _ = _fresh_import()
+def test_util_name_is_the_owners_object_and_warns(name: str) -> None:
+    from dartwork_mpl import util
+
     owner = importlib.import_module(_OWNERS[name])
-    assert getattr(util, name) is getattr(owner, name)
-
-
-def test_importing_util_warns_exactly_once_naming_the_owners() -> None:
-    _, caught = _fresh_import()
-    assert len(caught) == 1
-    text = str(caught[0].message)
-    assert "dartwork_mpl.util" in text
-    assert "deprecated in 0.8" in text
-    assert "0.10 or later" in text
-    for owner in set(_OWNERS.values()):
-        assert owner in text
-
-
-def test_warning_points_at_the_importing_user_code() -> None:
-    """stacklevel reports the user's import line, not importlib or util."""
-    code = textwrap.dedent(
-        """
-        import warnings
+    with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        from dartwork_mpl.util import save_formats
-        """
+        value = getattr(util, name)
+    assert value is getattr(owner, name)
+    assert [w.category for w in caught] == [DeprecationWarning]
+    assert caught[0].filename == __file__
+    text = str(caught[0].message)
+    assert f"util.{name}" in text and _OWNERS[name] in text
+    assert "deprecated in 0.8" in text and "0.10 or later" in text
+
+
+def test_unknown_name_raises_attribute_error() -> None:
+    from dartwork_mpl import util
+
+    with pytest.raises(AttributeError):
+        util.not_a_name  # noqa: B018
+
+
+def test_importing_the_module_alone_does_not_warn() -> None:
+    for stmt in ("import dartwork_mpl.util", "from dartwork_mpl import util"):
+        assert _lines(_run(stmt)) == [], stmt
+
+
+def test_from_import_warns_at_the_user_line_each_time() -> None:
+    code = (
+        "from dartwork_mpl.util import save_formats\n"
+        "from dartwork_mpl.util import save_formats as again\n"
+        "import dartwork_mpl.io as io\n"
+        "assert save_formats is io.save_formats is again\n"
     )
-    result = subprocess.run(
-        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    lines = _lines(_run(code))
+    assert len(lines) == 2
+    assert lines[0].startswith("<string>:3:")
+    assert lines[1].startswith("<string>:4:")
+
+
+def test_attribute_access_warns_at_the_user_line_each_time() -> None:
+    code = (
+        "import dartwork_mpl, dartwork_mpl.util\n"
+        "a = dartwork_mpl.util.fs\n"
+        "b = dartwork_mpl.util.fs\n"
+        "assert a is b is dartwork_mpl.fs\n"
     )
-    lines = [
-        ln for ln in result.stderr.splitlines() if "DeprecationWarning" in ln
-    ]
+    lines = _lines(_run(code))
+    assert len(lines) == 2
+    assert lines[0].startswith("<string>:4:") and lines[1].startswith(
+        "<string>:5:"
+    )
+
+
+def test_other_module_importing_util_warns_at_its_own_line(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "consumer.py").write_text(
+        "from dartwork_mpl.util import mix_colors\n", encoding="utf-8"
+    )
+    code = (
+        f"import sys; sys.path.insert(0, {str(tmp_path)!r})\n"
+        "import consumer\n"
+        "import dartwork_mpl as dm\n"
+        "assert consumer.mix_colors is dm.mix_colors\n"
+    )
+    lines = _lines(_run(code))
     assert len(lines) == 1
-    assert lines[0].startswith("<string>:4:")
+    assert "consumer.py:1:" in lines[0]
 
 
-def test_from_import_and_plain_import_each_warn_once() -> None:
-    for stmt in (
-        "import dartwork_mpl.util",
-        "from dartwork_mpl.util import fs",
-    ):
-        code = (
-            "import warnings\nwarnings.simplefilter('always')\n" + stmt + "\n"
-        )
-        result = subprocess.run(
-            [sys.executable, "-c", code],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        assert result.stderr.count("DeprecationWarning") == 1, stmt
+def test_error_filter_turns_access_into_an_error() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-W",
+            "error::DeprecationWarning",
+            "-c",
+            "import dartwork_mpl.util\nimport dartwork_mpl.util as u\nu.fs",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "DeprecationWarning" in result.stderr
 
 
 def test_package_import_alone_does_not_warn() -> None:
@@ -127,27 +166,3 @@ def test_package_import_alone_does_not_warn() -> None:
         text=True,
     )
     assert result.returncode == 0, result.stderr
-
-
-@pytest.mark.parametrize(
-    "stmt",
-    [
-        "import dartwork_mpl.util",
-        "from dartwork_mpl.util import fs",
-        "import dartwork_mpl\nimport dartwork_mpl.util\n"
-        "assert dartwork_mpl.util.fs is dartwork_mpl.fs",
-        "import dartwork_mpl.util as u\nimport dartwork_mpl as dm\n"
-        "assert u.mix_colors is dm.mix_colors",
-        "from dartwork_mpl import util\nimport dartwork_mpl as dm\n"
-        "assert util.save_formats is dm.save_formats",
-    ],
-)
-def test_every_access_path_warns_exactly_once_with_same_objects(
-    stmt: str,
-) -> None:
-    code = "import warnings\nwarnings.simplefilter('always')\n" + stmt + "\n"
-    result = subprocess.run(
-        [sys.executable, "-c", code], capture_output=True, text=True
-    )
-    assert result.returncode == 0, result.stderr
-    assert result.stderr.count("DeprecationWarning") == 1, result.stderr

@@ -1,46 +1,21 @@
 """Deprecated: names that used to live in ``dartwork_mpl.util``.
 
 Each function now lives in the slice that owns it (ADR 0005). Until removal
-(0.10 at the earliest, docs/development/api-stability.md) this module only
-re-exports them unchanged, so ``from dartwork_mpl.util import X`` keeps
-working and ``dartwork_mpl.util.X is <owner>.X``. Importing it warns once
-with a ``DeprecationWarning`` naming each owner. Import from the owner
-instead; the table is in docs/migration.md.
+(0.10 or later, docs/development/api-stability.md) this module holds no
+names of its own: a module ``__getattr__`` (PEP 562) imports the owner's
+object on every access and warns with a ``DeprecationWarning`` pointing at
+the accessing line, so ``from dartwork_mpl.util import X`` and
+``dartwork_mpl.util.X`` warn each time and return the owner's own object
+(``dartwork_mpl.util.X is <owner>.X``). Importing the module alone does not
+warn. Import from the owner instead; the table is in docs/migration.md.
 tests/contracts/test_util.py pins the identity and the warning.
 """
 
 from __future__ import annotations
 
+import importlib
 import warnings
-
-from ._colors.blend import mix_colors, pseudo_alpha
-from .annotation import arrow_axis, label_axes, make_offset
-from .formatting import set_decimal
-from .io import save_and_show, save_formats, show
-from .layout import get_bounding_box, simple_layout
-from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
-from .scale import fs, fw, lw
-
-__all__ = [
-    "arrow_axis",
-    "copy_prompt",
-    "fs",
-    "fw",
-    "get_bounding_box",
-    "get_prompt",
-    "label_axes",
-    "list_prompts",
-    "lw",
-    "make_offset",
-    "mix_colors",
-    "prompt_path",
-    "pseudo_alpha",
-    "save_and_show",
-    "save_formats",
-    "set_decimal",
-    "show",
-    "simple_layout",
-]
+from typing import Any
 
 _OWNERS = {
     "arrow_axis": "dartwork_mpl.annotation",
@@ -64,21 +39,41 @@ _OWNERS = {
 }
 
 
-def _warning_text() -> str:
-    by_owner: dict[str, list[str]] = {}
-    for name, owner in _OWNERS.items():
-        by_owner.setdefault(owner, []).append(name)
-    table = "; ".join(
-        f"{owner}: {', '.join(sorted(names))}"
-        for owner, names in sorted(by_owner.items())
-    )
-    return (
-        "dartwork_mpl.util is deprecated in 0.8 and may be removed in 0.10 "
-        "or later; import each name from its owner instead "
-        f"({table})."
-    )
+# Names bound nowhere in this module: __getattr__ supplies them.
+__all__ = [  # noqa: F822
+    "arrow_axis",
+    "copy_prompt",
+    "fs",
+    "fw",
+    "get_bounding_box",
+    "get_prompt",
+    "label_axes",
+    "list_prompts",
+    "lw",
+    "make_offset",
+    "mix_colors",
+    "prompt_path",
+    "pseudo_alpha",
+    "save_and_show",
+    "save_formats",
+    "set_decimal",
+    "show",
+    "simple_layout",
+]
 
 
-# stacklevel=2 is the importing line: the warnings module skips the
-# importlib frames between this module body and the user's import statement.
-warnings.warn(_warning_text(), DeprecationWarning, stacklevel=2)
+def __getattr__(name: str) -> Any:
+    owner = _OWNERS.get(name)
+    if owner is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    warnings.warn(
+        f"dartwork_mpl.util.{name} is deprecated in 0.8 and may be removed "
+        f"in 0.10 or later; use `from {owner} import {name}`.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return getattr(importlib.import_module(owner), name)
+
+
+def __dir__() -> list[str]:
+    return sorted({*globals(), *__all__})
