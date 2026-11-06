@@ -30,20 +30,23 @@ further layout steps give the same result; nothing compounds.
   labels come within :data:`GAP_PT` of the last kept position's is hidden,
   so ``"skip"`` keeps every other label of evenly crowded bars.
 
-  Series take turns. When the positions are plain bars of two or more
-  containers (grouped bars, one call or one call per series; no stack
-  segments or totals, no bars overlaid at one position), a label that
-  meets the last kept one at the same bar index takes its place when its
-  series' turn there comes first: two series alternate, the first on even
-  bar indices and the second on odd ones, so neither disappears whole;
-  more series count down (the first at index 0, the last at 1, ...). A
-  label hidden only because another series had the turn is hidden for its
-  ``"turn"``; any other hidden label for ``"room"`` (``BarLabel.hidden_for``).
-  Rows too thin even for one label each (``barh``) still lose labels to
-  the overlap rule; :func:`warn_hidden_bar_labels`, run once by
-  ``dm.simple_layout`` after its fit, warns when a label was hidden for
-  room under a rule other than ``"skip"`` (which asks for hiding), and
-  names the cure: a taller (``barh``) or wider figure.
+  Series take turns where that keeps more. When the positions are plain
+  bars of two or more containers (grouped bars, one call or one call per
+  series; no stack segments or totals, no bars overlaid at one position),
+  the series take turns by bar index, ranked in reading order on screen
+  (left to right, ``barh`` top to bottom): two series alternate, the one
+  read first in the first group read; more series count down. A label
+  that meets the last kept one at the same bar index takes its place when
+  its turn there comes first. The turns are used only when they keep every
+  label whose turn came first and no fewer labels than the plain rule;
+  otherwise the plain rule decides, as it did before turns (rows too thin
+  even for one label each, dense groups). A label hidden only because
+  another series had the turn is hidden for its ``"turn"``; any other
+  hidden label for ``"room"`` (``BarLabel.hidden_for``).
+  :func:`warn_hidden_bar_labels`, run once by ``dm.simple_layout`` after
+  its fit, warns when a label was hidden for room under a rule other than
+  ``"skip"`` (which asks for hiding), and names the cure: a taller
+  (``barh``) or wider figure.
 
   A kept outside label wider than its bar (a plain bar's, a stack's total)
   is pushed past the ends of the other bars it spans, never drawn on them;
@@ -102,6 +105,7 @@ if TYPE_CHECKING:
 __all__ = [
     "GAP_PT",
     "grown_span",
+    "keep_apart",
     "settle_bar_labels",
     "warn_hidden_bar_labels",
 ]
@@ -344,7 +348,7 @@ def _crowd(area: _Area, renderer: RendererBase) -> None:
     if crowded:
         every = [label for _options, labels in area.calls for label in labels]
         positions = _positions(every, bars, renderer)
-        kept = _hide_overlaps(positions, gap, _turns(positions, every))
+        kept = _hide_overlaps(positions, gap, _turns(positions, bars.vertical))
         _clear_neighbours(kept, bars)
 
 
@@ -377,57 +381,77 @@ def _move_inside(label: BarLabel, options: BarLabelOptions) -> None:
     label.own_color(label.ink if ink is None else ink)
 
 
-def _turns(
-    positions: list[_Position], labels: Sequence[BarLabel]
-) -> dict[int, int] | None:
-    """Each position's turn at its bar index, when the positions are series.
+def _reading_order(values: dict[int, float], vertical: bool) -> dict[int, int]:
+    """Rank keys by their screen coordinate in reading order.
+
+    Left to right across vertical bars; top to bottom across ``barh`` rows
+    (display y falls downwards on screen).
+    """
+    ordered = sorted(
+        values, key=lambda key: values[key] * (1 if vertical else -1)
+    )
+    return {key: rank for rank, key in enumerate(ordered)}
+
+
+def _turns(positions: list[_Position], vertical: bool) -> dict[int, int] | None:
+    """Each position's turn at its group, when the positions are series.
 
     Series apply when every position holds one plain bar's label and those
-    come from two or more containers (``labels`` gives their order: call by
-    call, container by container). Series ``s`` of ``n`` has turn
-    ``(s + i) % n`` at bar index ``i``; turn 0 goes first. Two series
-    alternate, the first on even indices. More series count down (the
-    first at index 0, the last at 1, the one before it at 2...): grouped
-    bars drawn in series order then keep labels at least a bar width
-    short of the pitch apart, where counting up would put the last
-    series' label next to the first's of the next group. ``None``
-    otherwise: a stack's segments or totals, or bars overlaid at one
-    position, keep the plain overlap rule.
+    come from two or more containers (one call or one call per series). A
+    group is a bar index; groups and the series within a group are ranked
+    in reading order on screen (left to right, ``barh`` top to bottom),
+    whatever the call order or an inverted axis. Series ``r`` of ``n`` has
+    turn ``(r + g) % n`` in group ``g``; turn 0 goes first. Two series
+    alternate, the one read first in the group read first. More series
+    count down (the first-read series in the first group, the last-read in
+    the second, ...), so the kept labels stand at least a bar width short
+    of the pitch apart. ``None`` otherwise: a stack's segments or totals,
+    or bars overlaid at one position, keep the plain overlap rule.
     """
     if any(
         len(position.labels) != 1 or position.labels[0].kind != "edge"
         for position in positions
     ):
         return None
-    drawn = {id(position.labels[0]) for position in positions}
-    series: dict[int, int] = {}
-    for label in labels:
-        if id(label) in drawn:
-            series.setdefault(id(label.container), len(series))
-    if len(series) < 2:
+    containers = {id(position.labels[0].container) for position in positions}
+    if len(containers) < 2:
         return None
+    groups: dict[int, list[float]] = {}
+    for position in positions:
+        groups.setdefault(position.labels[0].index, []).append(position.centre)
+    middle = {index: float(np.mean(c)) for index, c in groups.items()}
+    offsets: dict[int, list[float]] = {}
+    for position in positions:
+        label = position.labels[0]
+        offsets.setdefault(id(label.container), []).append(
+            position.centre - middle[label.index]
+        )
+    group = _reading_order(middle, vertical)
+    series = _reading_order(
+        {key: float(np.mean(v)) for key, v in offsets.items()}, vertical
+    )
     return {
         id(position): (
-            series[id(position.labels[0].container)] + position.labels[0].index
+            series[id(position.labels[0].container)]
+            + group[position.labels[0].index]
         )
         % len(series)
         for position in positions
     }
 
 
-def _hide_overlaps(
-    positions: list[_Position], gap: float, turns: dict[int, int] | None
+def keep_apart(
+    positions: Sequence[_Position],
+    gap: float,
+    turns: dict[int, int] | None = None,
 ) -> list[_Position]:
-    """Hide the positions that come within ``gap`` of the last kept one.
+    """The positions kept by the overlap rule, from the last on screen.
 
-    Walks from the last position on screen; returns the kept positions.
+    A position is kept when it stays ``gap`` clear of the last kept one.
     With ``turns`` (:func:`_turns`), a position that meets the last kept
     one at the same bar index takes its place when its turn there comes
-    first and it clears the kept one before.
-
-    A hidden label is hidden for its ``"turn"`` when another series' turn
-    came first at its bar index, else for ``"room"``
-    (``BarLabel.hidden_for``).
+    first and it stays clear of the one kept before that. Pure: nothing is
+    hidden here.
     """
     kept: list[_Position] = []
     for position in reversed(positions):
@@ -442,20 +466,46 @@ def _hide_overlaps(
             and (len(kept) < 2 or position.high + gap <= kept[-2].low)
         ):
             kept[-1] = position
+    return kept
+
+
+def _loses_room(
+    positions: list[_Position], kept: list[_Position], turns: dict[int, int]
+) -> bool:
+    """Whether a position whose turn came first at its bar index is lost."""
+    first: dict[int, int] = {}
+    for position in positions:
+        index, turn = position.labels[0].index, turns[id(position)]
+        first[index] = min(turn, first.get(index, turn))
     shown = {id(position) for position in kept}
-    first: dict[int, int] = {}  # the first turn at each bar index
+    return any(
+        id(position) not in shown
+        and turns[id(position)] == first[position.labels[0].index]
+        for position in positions
+    )
+
+
+def _hide_overlaps(
+    positions: list[_Position], gap: float, turns: dict[int, int] | None
+) -> list[_Position]:
+    """Hide the positions the overlap rule does not keep; return the kept.
+
+    The plain rule (:func:`keep_apart` without turns) decides, unless the
+    series' turns keep every label whose turn came first and no fewer
+    labels than it: then the series alternate, and the labels they hide
+    are hidden for their ``"turn"``. Otherwise every hidden label is hidden
+    for ``"room"`` (``BarLabel.hidden_for``), as the plain rule hides it.
+    """
+    kept = keep_apart(positions, gap)
+    for_turn = False
     if turns is not None:
-        for position in positions:
-            index, turn = position.labels[0].index, turns[id(position)]
-            if turn < first.get(index, turn + 1):
-                first[index] = turn
+        taken = keep_apart(positions, gap, turns)
+        if len(taken) >= len(kept) and not _loses_room(positions, taken, turns):
+            kept, for_turn = taken, True
+    shown = {id(position) for position in kept}
     for position in positions:
         if id(position) in shown:
             continue
-        for_turn = (
-            turns is not None
-            and turns[id(position)] > first[position.labels[0].index]
-        )
         for label in position.labels:
             label.own_visible(False)
             if not Artist.get_visible(label):  # not shown by the caller

@@ -2465,20 +2465,23 @@ def test_overlapping_series_alternate_by_bar_index(per_series):
 def test_grouped_barh_alternates_across_calls():
     # PoC figure a (one label_bars call per series): the rows hold one
     # label each, so the series alternate as in figure b, 7/14 each, and
-    # nothing is lost. summary.json's B shows 2024 14/14 and 2025 0/14
+    # nothing is lost. Turns run in reading order: the top row first, and
+    # in each row the bar read first (2025, drawn above 2024 on this
+    # inverted axis). summary.json's B shows 2024 14/14 and 2025 0/14
     # here: the PoC numbered each call's container 0, so both calls looked
     # like one series; with the series told apart (PoC rerun, b3impl
-    # report) the same candidate alternates too.
+    # report) the same candidate alternates too (review I5: the user sees
+    # the three versions again).
     fig, ax, first, second = _poc_grouped_barh()
     assert _layout_warnings(fig) == []
     labels_2024, labels_2025 = _labels_of(ax, first), _labels_of(ax, second)
     assert _texts(labels_2024) == H_2024
     assert _texts(labels_2025) == H_2025
     _drawn(fig)
-    assert [t.get_visible() for t in labels_2024] == [
+    assert [t.get_visible() for t in labels_2025] == [
         i % 2 == 0 for i in range(14)
     ]
-    assert [t.get_visible() for t in labels_2025] == [
+    assert [t.get_visible() for t in labels_2024] == [
         i % 2 == 1 for i in range(14)
     ]
     shown = _shown(fig, labels_2024 + labels_2025)
@@ -2487,10 +2490,13 @@ def test_grouped_barh_alternates_across_calls():
     assert {t.get_rotation() for t in labels_2024 + labels_2025} == {0.0}
 
 
-def test_thin_rows_still_overlap_and_warn():
+def test_thin_rows_keep_the_series_mains_rule_keeps_and_warn():
     # The same rows at 9 x 7.2 cm: one label per row still meets the next
-    # row's, so the overlap rule hides labels as before (from the top row
-    # down; the first series stays here) and the layout says so.
+    # row's, so the turns would lose labels. Decision 12-2 A: the plain
+    # overlap rule decides, the path main takes, so the series main keeps
+    # stays. That rule walks from the top row down and keeps, in each row,
+    # the label of the bar drawn uppermost on screen; no year order, no
+    # series name. The layout says labels were hidden.
     fig, ax, first, second = _poc_grouped_barh(aspect=0.8)
     caught = _layout_warnings(fig)
     assert len(caught) == 1
@@ -2499,9 +2505,15 @@ def test_thin_rows_still_overlap_and_warn():
     assert "taller figure" in message
     assert "crowded='skip'" in message
     labels_2024, labels_2025 = _labels_of(ax, first), _labels_of(ax, second)
-    _drawn(fig)
-    assert [t.get_visible() for t in labels_2024] == [True] * 14
-    assert [t.get_visible() for t in labels_2025] == [False] * 14
+    renderer = _drawn(fig)
+    for pair in zip(labels_2024, labels_2025, strict=True):
+        upper, lower = sorted(
+            pair,
+            key=lambda t: t.bar.get_window_extent(renderer).y0,
+            reverse=True,
+        )
+        assert upper.get_visible()
+        assert not lower.get_visible()
     shown = _shown(fig, labels_2024 + labels_2025)
     assert _overlapping(shown) == []
     assert _on_bars(fig, shown) == []
@@ -2556,6 +2568,126 @@ def test_three_series_take_turns():
     shown = _shown(fig, list(ax.texts))
     assert _overlapping(shown) == []
     assert _on_bars(fig, shown) == []
+
+
+def _review_grouped(
+    n,
+    groups,
+    width,
+    *,
+    horizontal=False,
+    values="scan",
+    reverse=False,
+    per_series=False,
+):
+    """The independent review's grouped charts (b3review scan / probes).
+
+    ``values="scan"``: its seeded random values (scan_overlaps.py);
+    ``"linear"``: falling values per series (probe_bars.py grouped_n).
+    ``reverse`` labels the series in the reverse of their drawing order.
+    """
+    matplotlib.rcdefaults()
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"), dpi=150)
+    x = np.arange(groups, dtype=float)
+    w = 0.8 / n
+    rng = np.random.default_rng(groups * 10 + n)
+    containers = []
+    for j in range(n):
+        if values == "scan":
+            data = rng.uniform(40, 99, groups).round()
+        else:
+            data = np.linspace(40.0, 12.0, groups) * (1 - 0.07 * j)
+        pos = x + (j - (n - 1) / 2) * w
+        draw = ax.barh if horizontal else ax.bar
+        containers.append(draw(pos, data, w))
+    if horizontal:
+        ax.invert_yaxis()
+    order = containers[::-1] if reverse else containers
+    if per_series:
+        for container in order:
+            dm.label_bars(ax, container)
+    else:
+        dm.label_bars(ax, order)
+    return fig, ax, containers
+
+
+def _kept_per_series(fig, ax, containers):
+    _drawn(fig)
+    return [sum(t.get_visible() for t in _labels_of(ax, c)) for c in containers]
+
+
+@pytest.mark.parametrize(
+    ("n", "width", "on_main"),
+    [
+        (2, "7cm", [8, 8]),  # the turns would keep 12/1
+        (3, "17cm", [12, 12, 12]),  # the turns would keep 16/8/8
+    ],
+)
+def test_turns_never_keep_fewer_labels_than_the_plain_rule(n, width, on_main):
+    # Review I1: where taking turns would lose labels for room or keep fewer
+    # of them, the plain rule decides, as on main (bd2b61f8, same figures:
+    # 8/8 and 12/12/12). Labels it hides are lost for room: warned.
+    fig, ax, containers = _review_grouped(n, 24, width)
+    caught = _layout_warnings(fig)
+    assert _kept_per_series(fig, ax, containers) == on_main
+    assert _overlapping(_shown(fig, list(ax.texts))) == []
+    assert len(caught) == 1
+
+
+@pytest.mark.parametrize(
+    ("n", "width", "horizontal", "reverse", "per_series", "kept"),
+    [
+        (3, "12cm", False, True, False, [8, 8, 8]),
+        (3, "12cm", False, True, True, [8, 8, 8]),
+        (4, "12cm", False, True, False, [6, 6, 6, 6]),
+        (3, "17cm", True, False, False, [8, 8, 8]),  # barh, inverted y
+        (3, "17cm", True, True, True, [8, 8, 8]),
+    ],
+)
+def test_series_turns_follow_the_screen_not_the_calls(
+    n, width, horizontal, reverse, per_series, kept
+):
+    # Review I2: series are ranked in reading order on screen, so labelling
+    # them in reverse, or barh on an inverted y axis, takes the same turns
+    # (main: 0/0/24, 0/0/0/24 and 24/0/0 here) with no warning.
+    fig, ax, containers = _review_grouped(
+        n,
+        24,
+        width,
+        horizontal=horizontal,
+        values="linear",
+        reverse=reverse,
+        per_series=per_series,
+    )
+    assert _layout_warnings(fig) == []
+    assert _kept_per_series(fig, ax, containers) == kept
+    assert _overlapping(_shown(fig, list(ax.texts))) == []
+
+
+def test_a_replacing_turn_stays_clear_of_the_label_kept_before():
+    # Review M3: a label that takes the turn from the last kept one at its
+    # bar index must also clear the one kept before that, even when it is
+    # wider; otherwise the last kept one stays.
+    from types import SimpleNamespace
+
+    from dartwork_mpl.annotation._bar_label_settle import keep_apart
+
+    def position(index, low, high):
+        label = SimpleNamespace(index=index)
+        return SimpleNamespace(labels=[label], low=low, high=high)
+
+    wide = position(1, 40.0, 99.5)  # its turn first, reaches 99.5
+    narrow = position(1, 70.0, 88.0)
+    before = position(0, 100.0, 120.0)
+    positions = [wide, narrow, before]  # in screen order
+    turns = {id(wide): 0, id(narrow): 1, id(before): 0}
+    assert keep_apart(positions, 2.0, turns) == [before, narrow]
+    # With room for it, the wide label takes its turn.
+    wide.high = 97.0
+    assert keep_apart(positions, 2.0, turns) == [before, wide]
+    # The plain rule keeps the last on screen, then what clears it.
+    assert keep_apart(positions, 2.0) == [before, narrow]
 
 
 def test_stacked_series_keep_the_overlap_rule():
