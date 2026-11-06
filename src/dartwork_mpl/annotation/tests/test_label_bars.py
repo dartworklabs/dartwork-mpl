@@ -1321,17 +1321,20 @@ def _dark_stack(**label_kw):
 
 @FORMATS
 @pytest.mark.parametrize("color", [None, "series"])
+@pytest.mark.parametrize("where", ["auto", "inside"])
 def test_inside_stack_segments_keep_the_ink_for_their_segment(
-    tmp_path, fmt, color
+    tmp_path, fmt, where, color
 ):
     # PR #613 review: where="inside" on a stack puts each segment's label
     # inside its segment. Those labels are on their bar, so they take the
     # ink that reads on it, as on main (white here, whatever color= says
     # for labels off a bar); the move off a bar is for plain bars only.
     # Classed off the bar, they had turned black (3.49:1 and 2.75:1), or
-    # with color="series" the segment's own colour (1.0:1).
+    # with color="series" the segment's own colour (1.0:1). The default,
+    # where="auto", centres each segment's label in its segment: the same
+    # ink, held here as on main.
     _start(fmt)
-    fig, ax, labels = _dark_stack(where="inside", color=color)
+    fig, ax, labels = _dark_stack(where=where, color=color)
     dm.simple_layout(fig)
     drawn_renderer(fig)
     segments = [t for t in labels if t.kind == "segment"]
