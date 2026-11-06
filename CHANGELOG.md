@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Experimental `dm.label_bars(ax)`: each bar's value on it.** No request,
+  its defaults; a request, one keyword. The defaults: `dm.fs(-1)` at
+  `dm.fw(1)` in the text colour, 3 pt beyond the bar end; the number printed
+  like the axis ticks (plain scaled numbers under `dm.axis_unit`, the ticks'
+  suffix under `dm.format_axis_si` or a `PercentFormatter`, plain values
+  under a formatter it cannot read); three significant digits on the
+  largest value, then the fewest exact decimals, one count per call, no
+  meaningless `.0`; stacked bars' segments centred with a total beyond the
+  stack. `dm.simple_layout` turns crowded labels on vertical bars vertical
+  (`barh` hides every other one instead) and grows autoscaled limits just
+  enough for the labels; limits you set stay. On a twin pair the labels go
+  on the top axes. The keywords: `where`, `total`, `crowded`, `decimals`,
+  `fmt` (a `{}` template, a format-spec field such as `"{:.2f}"`, or a
+  callable), `size`, `color` (`"series"` colours labels off their bar).
+- `dm.config.twin_colors` (`"series"`, the default, or `"neutral"`): the
+  axis colours of `twinx` / `twiny` pairs.
+- Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
+  by hand (`ax.legend(h1 + h2, l1 + l2)`, or `lns = l1 + l2` then
+  `ax.legend(lns, labs)`) points to `dm.place_legend(ax)`.
+
+### Changed
+
+- **Twin pairs get series colours.** `dm.simple_layout` colours each side
+  of a `twinx` / `twiny` pair like the one series read on it: the spine
+  and tick marks in the series colour raised to 3:1 against the
+  background, the tick labels and axis label in the same hue at 4.5:1. A
+  side whose series draw several colours, or a hue close to the other
+  side's, stays neutral; single Axes are never touched; a colour you set
+  (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins.
+  `with dm.config.override(twin_colors="neutral"):` keeps the preset's
+  colours.
+- **`dm.place_legend` keeps legend details.** A twin pair's legends merge
+  onto the top twin with the existing legend's title, `handler_map`, frame,
+  alignment, fonts, label colour, `markerscale` and `draggable` (a single
+  Axes' rebuilt legend too); `ncols` cannot be read back, so pass it again.
+  A legend it cannot rebuild faithfully (tuple or custom handles, labels
+  other than the artists') is left as it is: an explicit `loc=` or
+  `bbox_to_anchor=` still moves it, and a side (`loc="above"` …) warns
+  and leaves it.
+
 ## [0.7.0] - 2026-11-06
 
 The rule behind these defaults: with no request the library's look applies;

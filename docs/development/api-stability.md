@@ -23,13 +23,14 @@ in a minor release without the full deprecation cycle.
 The current set is `figsize_for` (the active preset's default canvas),
 `grid_shape` (the layout of small multiples), `add_note` (a source line in
 the preset's note style), `label_line_ends` (line names instead of a
-legend), `review` (save, findings, figure summary and baseline diff) and
-`axis_unit` / `axis_unit_of` (the axis unit in its label): their kinds,
-width tiers, density hints, layouts, the note's placement, the labels'
-spacing and colour, the review summary's fields and the unit ladders,
-label template and unit rules may still change. The interactive UI
-exists as the `dartwork_mpl.ui` subpackage, but it is not currently an
-advertised top-level `dm.ui` attribute.
+legend), `review` (save, findings, figure summary and baseline diff),
+`axis_unit` / `axis_unit_of` (the axis unit in its label) and `label_bars`
+(value labels on bars): their kinds, width tiers, density hints, layouts,
+the note's placement, the labels' spacing and colour, the review summary's
+fields, the unit ladders, label template and unit rules, and the bar
+labels' placement, crowding and stacked-total rules may still change. The
+interactive UI exists as the `dartwork_mpl.ui` subpackage, but it is not
+currently an advertised top-level `dm.ui` attribute.
 
 ## Deprecation cycle
 

@@ -90,8 +90,9 @@ Label and Legend Helpers
 ------------------------
 
 Functions for placing and formatting legends. Axis labels use
-matplotlib's native ``ax.set_xlabel`` / ``ax.set_ylabel`` calls; value
-annotations use ``ax.text`` or ``ax.bar_label`` directly.
+matplotlib's native ``ax.set_xlabel`` / ``ax.set_ylabel`` calls; values on
+bars use :func:`dartwork_mpl.label_bars`, and other value annotations
+:func:`dartwork_mpl.annotate_value` or ``ax.text``.
 
 .. automodule:: dartwork_mpl.helpers.labels
    :members:

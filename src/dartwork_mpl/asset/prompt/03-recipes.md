@@ -534,6 +534,41 @@ ax.legend(fontsize=dm.fs(-1))
 dm.simple_layout(fig)
 ```
 
+## "Values on the bars"
+
+No request, `dm.label_bars(ax)` with its defaults; a request, that keyword.
+The defaults: `dm.fs(-1)` at `dm.fw(1)` in the text colour, 3 pt beyond the
+bar end; the number printed like the axis ticks (plain scaled numbers under
+`dm.axis_unit`, the ticks' suffix under `dm.format_axis_si` or a
+`PercentFormatter`, plain values under a formatter it cannot read, such as
+a `FuncFormatter`: pass `fmt=`); three significant digits on the largest
+value, then the fewest exact decimals, one count per call, no meaningless
+`.0`; stacked bars' segments centred and a total beyond the stack; crowded
+labels on vertical bars turned vertical by `dm.simple_layout`, which also
+grows autoscaled limits just enough for the labels (limits you set stay; a
+bar past them gets no label).
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+ax.bar(["A", "B", "C", "D"], [21.4e9, 18.0e9, 21.5e9, 33.0e9])
+dm.axis_unit(ax, "y", label="Energy ({unit}Wh)")
+dm.label_bars(ax)            # 21.4, 18.0, 21.5, 33.0 under Energy (GWh)
+dm.simple_layout(fig)
+```
+
+Requests, one keyword each: `where="inside"` / `"center"` / `"outside"`;
+`total="only"` / `False` (stacks); `crowded="skip"` (every other label) /
+`"inside"`; `decimals=1`; `fmt="{} GWh"`, `"{:.2f}"` or a callable (a
+template wraps the signed number, `$−3.5B`; a callable for `−$3.5B`);
+`size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar.
+Stacks need matching bottoms (a waterfall is not one); pad split series with
+NaN, not 0. Thin `barh` rows hide every other label: a taller figure shows
+them all. On a twin pair the labels go on the top axes.
+
 ## "Twin axis"
 
 ```python
@@ -545,6 +580,13 @@ ax2.plot(x, temp, color="oc.red6", marker="o", markersize=3,
          linewidth=dm.lw(0))
 dm.simple_layout(fig)
 ```
+
+`dm.simple_layout` colours each side like its one series (spine and ticks at
+3:1, tick labels and axis label at 4.5:1); colours you set win, and
+`with dm.config.override(twin_colors="neutral"):` keeps the preset's. One
+legend for both: `dm.place_legend(ax1)`, not `ax1.legend(h1 + h2, l1 + l2)`;
+it keeps the legend's title and settings (pass `ncols` again) and leaves a
+legend of tuple or custom handles as it is.
 
 ## "Korean labels"
 

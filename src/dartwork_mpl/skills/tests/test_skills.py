@@ -214,10 +214,11 @@ def test_value_labels_are_one_weight_step_heavier() -> None:
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     section = editing.split("## Value labels", 1)[1].split("\n## ", 1)[0]
     (block,) = _FENCE.findall(section)
-    for call in ("bar_label(", ".text("):
-        line = next(ln for ln in block.split("\n") if call in ln)
-        call_text = block[block.index(line) :].split(")\n", 1)[0]
-        assert "fontweight=dm.fw(1)" in call_text, call
+    # B3 (2026-11-06): bars take dm.label_bars, whose defaults are this look.
+    assert "dm.label_bars(" in block and "bar_label(" not in block
+    line = next(ln for ln in block.split("\n") if ".text(" in ln)
+    call_text = block[block.index(line) :].split(")\n", 1)[0]
+    assert "fontweight=dm.fw(1)" in call_text
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     for getter in (
         "get_lines()",
@@ -361,21 +362,30 @@ def test_skill_examples_do_not_quote_the_eval_cases() -> None:
 def test_every_shown_bar_label_uses_the_value_label_size() -> None:
     """Decision 6-A (2026-11-03): value labels default to dm.fs(-1), dm.fw(1).
 
-    Every ``bar_label`` call the skill shows an agent, table rows included,
-    carries both, so copying any one of them draws the decided label.
+    B3 (2026-11-06): values on bars are ``dm.label_bars``, whose defaults
+    are that look; the skill shows it wherever an agent labels bars, so
+    copying any row draws the decided label. A ``bar_label`` call the skill
+    still shows, table rows included, carries both.
     """
-    calls = [
-        (path.name, call)
-        for path in [SKILL_MD, *sorted((SKILL / "references").glob("*.md"))]
-        for call in re.findall(
-            r"bar_label\((?:[^()]|\([^()]*\))*\)",
-            path.read_text(encoding="utf-8"),
-        )
+    docs = [SKILL_MD, *sorted((SKILL / "references").glob("*.md"))]
+    texts = {path.name: path.read_text(encoding="utf-8") for path in docs}
+    shown = [
+        name
+        for name, text in texts.items()
+        for _ in re.finditer(r"dm\.label_bars\(", text)
     ]
-    assert len(calls) >= 3
-    for name, call in calls:
-        assert "fontsize=dm.fs(-1)" in call, (name, call)
-        assert "fontweight=dm.fw(1)" in call, (name, call)
+    assert len(shown) >= 3 and "SKILL.md" in shown
+    for name, text in texts.items():
+        for call in re.findall(r"bar_label\((?:[^()]|\([^()]*\))*\)", text):
+            assert "fontsize=dm.fs(-1)" in call, (name, call)
+            assert "fontweight=dm.fw(1)" in call, (name, call)
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.bar(["A", "B"], [1, 2])
+    label = dm.label_bars(ax)[0]
+    assert label.get_fontsize() == dm.fs(-1)
+    assert label.get_fontweight() == dm.fw(1)
+    plt.close(fig)
 
 
 def test_skill_states_how_to_coexist_with_generic_chart_advice() -> None:
