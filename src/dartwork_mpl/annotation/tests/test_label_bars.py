@@ -711,7 +711,7 @@ BOUNDARY_DEFAULT = {
     ],
     "currency-suffix-2": ["12.5€", "0€", "0€", "0€", f"{MINUS}8.0€", "34.0€"],
 }
-# label_bars(decimals=2): the same in every candidate.
+# label_bars(decimals=2): the asked count wins over the ticks'.
 BOUNDARY_ASKED = {
     "millions-1-small": [
         "1.25M",

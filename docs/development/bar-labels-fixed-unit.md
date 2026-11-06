@@ -4,11 +4,11 @@ orphan: true
 
 # Bar labels under fixed-unit tick formatters
 
-Status: draft for the user's decision, 2026-11-06. Sources: root decision D4
-("D4 decision after PR604's exact mapping", API-DECISIONS-20261106) and call
-1 of the label-bars design (`docs/superpowers/specs/2026-11-06-label-bars-design.md`:
-"labels print like the ticks"). Output changes merge only after the user
-approves the before/after PoC.
+Status: decided, 2026-11-07: the user chose B (the label decimal rule) on
+the before/after PoC review (item 10). Sources: root decision D4 ("D4
+decision after PR604's exact mapping", API-DECISIONS-20261106) and call 1 of
+the label-bars design (`docs/superpowers/specs/2026-11-06-label-bars-design.md`:
+"labels print like the ticks").
 
 ## Problem
 
@@ -64,7 +64,7 @@ drops the sign (`affixed`: `$0`, `0.00€`); the minus is the hyphen-minus
 and millions/billions print no thousands separators (both kept from the
 pre-engine `FuncFormatter` output for parity).
 
-## Rules (both candidates)
+## Rules
 
 `tick_scale_of` reports the fixed unit as a `TickScale`: factor, currency
 prefix, unit label (or a suffix symbol) and the zero rule. Labels take from
@@ -78,7 +78,7 @@ the ticks:
 4. **Zero.** The ticks' rule. Millions/billions (`bare`): no sign, no unit
    (`0`, or `0.0` when the count is fixed). Currency (`affixed`): the symbol
    stays, the sign goes (`$0`, `0€`). A non-zero value that rounds to zero
-   under the count in force prints as zero (`0.03M` at one place: `0.0`).
+   under the count in force prints as zero (0.03M beside 12.5M: `0`).
 
 Labels keep their own rules where the ticks only keep legacy parity:
 
@@ -93,75 +93,55 @@ Labels keep their own rules where the ticks only keep legacy parity:
 8. **Follows.** The scale is re-read at each draw: a formatter installed
    after `label_bars` moves the labels at the next draw.
 
-## Precision priority (both candidates)
+## Precision priority
 
 The precision the caller gives the labels always wins; the formatter's
-`decimals=n` is at most a default for when nothing is asked:
+`decimals=n` sizes tick text and never the labels:
 
 1. A `fmt` format spec (`"{:.3f} mn"`) or a `fmt` callable writes the number.
 2. `label_bars(decimals=k)`: `k` places in the tick unit, fewer or more than
    the ticks' (`1M` or `1.250M` under `decimals=1` ticks; zero `0.000`,
    `$0.00`, `0€`).
-3. Nothing asked: the candidate's default (below).
+3. Nothing asked: the label rule below.
 
-## Decimals: two candidates
+## Decision: B, the label rule (user, 2026-11-07)
 
-- **A — the ticks' count.** Labels take the formatter's fixed `decimals`
-  (currency's default is 0). The label is the tick text of the same value
-  up to rules 5–6.
-- **B — the label rule.** Three significant digits on the largest
-  `|value|`, cut to the fewest decimals that print every value exactly, one
-  count per call, zero `0` — the rule every other formatter's labels use,
-  applied in the tick unit.
+With nothing asked, the labels take the label rule in the tick unit: three
+significant digits on the largest `|value|`, cut to the fewest decimals that
+print every value exactly, one count per call, zero `0`. It is the rule
+every other formatter's labels use: `format_axis_millions(decimals=1)` now
+labels exactly as `format_axis_millions()` and `format_axis_si(unit="M",
+decimals=1)` do (ticks `1.0M`, labels `1.25M`).
+
+Not chosen: A, labels in the formatter's fixed `decimals` (`1.2M`, `0.0`,
+`$4` for $4.25; cents kept as `20.55€`).
 
 Labels of the PoC data (before = main; `−` is U+2212):
 
-| Figure (values) | before | A | B |
-|---|---|---|---|
-| millions, `decimals=1` (1.25e6, 2.05e6, −0.8e6, 0, 3.4e6) | `1,250,000` `2,050,000` `−800,000` `0` `3,400,000` | `1.2M` `2.0M` `−0.8M` `0.0` `3.4M` | `1.25M` `2.05M` `−0.80M` `0` `3.40M` |
-| billions, `decimals=2` (12.4e9, 8e9, −3.5e9, 0, 15e9) | `12,400,000,000` … `0` | `12.40B` `8.00B` `−3.50B` `0.00` `15.00B` | `12.4B` `8.0B` `−3.5B` `0` `15.0B` |
-| currency `$` (1250, 2050, −800, 0, 3400) | `1,250` `2,050` `−800` `0` `3,400` | `$1,250` `$2,050` `−$800` `$0` `$3,400` | same as A |
-| currency `€` suffix, `decimals=2` (12.5, 20.55, −8, 0, 34) | `12.5` `20.6` `−8.0` `0` `34.0` | `12.50€` `20.55€` `−8.00€` `0.00€` `34.00€` | `12.5€` `20.6€` `−8.0€` `0€` `34.0€` |
-| currency `$`, small (4.25, 3.8, −1.5, 0, 6.1) | `4.25` `3.80` `−1.50` `0` `6.10` | `$4` `$4` `−$2` `$0` `$6` | `$4.25` `$3.80` `−$1.50` `$0` `$6.10` |
-
-| | A | B |
+| Formatter (values) | before | after |
 |---|---|---|
-| decimals equal the ticks' | yes | no (`1.25M` beside `1.0M` ticks) |
-| values readable to 3 digits | no: `1.25M` → `1.2M`, `$4.25` → `$4`, `−$1.50` → `−$2` | yes |
-| meaningless `.0` / `.00` | `0.0`, `12.40B`, `15.00B` | none beyond one count per call (`15.0B` beside `12.4B`) |
-| cents under `decimals=2` | kept (`20.55€`) | `20.6€`; `label_bars(decimals=2)` gives `20.55€` |
-| same labels as the axis-wide sibling | no: `format_axis_si(unit="M", decimals=1)` and `format_axis_millions()` label `1.25M` | yes |
-| code | `TickScale.decimals`, a per-label count | no extra field |
+| millions `d=1` (1.25e6, 2.05e6, −0.8e6, 0, 3.4e6) | `1,250,000` `2,050,000` `−800,000` `0` `3,400,000` | `1.25M` `2.05M` `−0.80M` `0` `3.40M` |
+| billions `d=2` (12.4e9, 8e9, −3.5e9, 0, 15e9) | `12,400,000,000` … `0` | `12.4B` `8.0B` `−3.5B` `0` `15.0B` |
+| currency `$` (1250, 2050, −800, 0, 3400) | `1,250` `2,050` `−800` `0` `3,400` | `$1,250` `$2,050` `−$800` `$0` `$3,400` |
+| currency `€` suffix `d=2` (12.5, 20.55, −8, 0, 34) | `12.5` `20.6` `−8.0` `0` `34.0` | `12.5€` `20.6€` `−8.0€` `0€` `34.0€` |
+| currency `$`, small (4.25, 3.8, −1.5, 0, 6.1) | `4.25` `3.80` `−1.50` `0` `6.10` | `$4.25` `$3.80` `−$1.50` `$0` `$6.10` |
 
 **Boundaries** (six bars: a value, a small positive and a small negative
-that round to zero at the ticks' count, 0, a negative, a value). Asked =
-`label_bars(decimals=2)`, the same in A and B:
+that round to zero at the ticks' count, 0, a negative, a value):
 
-| Formatter (small values) | A default | B default | asked |
-|---|---|---|---|
-| millions `d=1`, max 3.4M (0.03M, −0.04M) | `0.0` `0.0` | `0.03M` `−0.04M` | `0.03M` `−0.04M` |
-| millions `d=1`, max 12.5M (same) | `0.0` `0.0` | `0` `0` | `0.03M` `−0.04M` |
-| billions `suffix="bn"`, `d=1` (0.02e9, −0.03e9) | `0.0` `0.0` | `0` `0` | `0.02bn` `−0.03bn` |
-| millions `suffix="백만"`, `d=1`, max 5.6M | `0.0` `0.0` | `0.03백만` `−0.04백만` | same as B |
-| millions `suffix=""`, `d=1`, max 3.4M | `0.0` `0.0` | `0.03` `−0.04` | same as B |
-| currency `$`, `d=0` (0.4, −0.3) | `$0` `$0` | `$0.40` `−$0.30` | same as B |
-| currency `€` suffix, `d=2` (0.03, −0.04) | `0.03€` `−0.04€` | `0€` `0€` | same as A |
+| Formatter (small values) | nothing asked | `decimals=2` |
+|---|---|---|
+| millions `d=1`, max 3.4M (0.03M, −0.04M) | `0.03M` `−0.04M` | `0.03M` `−0.04M` |
+| millions `d=1`, max 12.5M (same) | `0` `0` | `0.03M` `−0.04M` |
+| billions `suffix="bn"`, `d=1` (0.02e9, −0.03e9) | `0` `0` | `0.02bn` `−0.03bn` |
+| millions `suffix="백만"`, `d=1`, max 5.6M | `0.03백만` `−0.04백만` | same |
+| millions `suffix=""`, `d=1`, max 3.4M | `0.03` `−0.04` | same |
+| currency `$`, `d=0` (0.4, −0.3) | `$0.40` `−$0.30` | same |
+| currency `€` suffix, `d=2` (0.03, −0.04) | `0€` `0€` | `0.03€` `−0.04€` |
 
-A hides a small value wherever the ticks would; B hides it when the largest
-value leaves too few places (three significant digits on 12.5M or €34).
-Either way `decimals=` shows it.
-
-## Recommendation: B (not yet decided)
-
-- The label rule is the one rule for value labels; tick `decimals=n` sizes
-  tick text. Every axis-wide formatter with fixed decimals already labels by
-  the label rule (`format_axis_si(unit="M", decimals=1)`: ticks `1.0M`,
-  labels `1.25M`), so B makes the per-value siblings agree with it.
-- A rounds values away (`$4.25` → `$4`, `−$1.50` → `−$2`) and brings back
-  the meaningless `0.0` and `15.00B` the label rule removed.
-- Cents are the one case A reads better (B prints €0.03 as `0€` beside
-  €34); under B they are one keyword (`decimals=2`), as for every other
-  formatter.
+A small value reads zero when the largest value leaves too few places
+(three significant digits on 12.5M or €34); `decimals=` shows it, as it does
+for cents.
 
 ## Tests
 
@@ -169,16 +149,9 @@ Either way `decimals=` shows it.
   their unit, currency and zero rule; si/myriad per value report the plain
   scale (labels `1,250,000`); `number_text(zero="affixed")`.
 - `annotation/tests/test_label_bars.py`: the five PoC charts' label texts,
-  sign/currency position against the tick text, a formatter set after the
-  call is followed; the seven boundary charts with nothing asked and with
-  `decimals=2`; asked precision (`decimals=0`, `3`, a `fmt` spec) beating
-  the ticks' count under millions, `bn`, `$` and `€` — the same
-  expectations in A and B.
+  sign/currency position against the tick text, the same labels as the
+  axis-wide millions, a formatter set after the call is followed; the seven
+  boundary charts with nothing asked and with `decimals=2`; asked precision
+  (`decimals=0`, `3`, a `fmt` spec) beating the ticks' count under
+  millions, `bn`, `$` and `€`.
 - Every other label and tick test unchanged.
-
-## Reproducing the candidates
-
-Two commits on `t3/label-units-fixed-20261106`: candidate A (`e71a33c4`,
-`TickScale.decimals` carries the ticks' count), then candidate B on top of
-it (drops that field; labels keep the label rule). Choosing A reverts the
-B commit; the tests of each commit pin its own label texts.
