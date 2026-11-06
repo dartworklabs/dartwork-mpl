@@ -32,7 +32,10 @@ names in pieces (``"get" "_" "palette"``, ``"\\u0070"`` escapes) so that a
 plain-text search of the source for them found only real callers, a one-off
 check of the 0.6.0 colour redesign. No test enforced it and the names were
 already spelled out in tests, docs and the codemod; a search for callers
-should exclude this file and the catalog.
+should exclude this file and the catalog. Only the catalog text of that
+rule's pattern keeps the escaped spelling (``published_pattern``), because
+the MCP ``dartwork-mpl://guide/anti-patterns`` resource serves the catalog's
+bytes and they stay as main published them.
 
 Deprecation policy: docs/development/api-stability.md. Migration paths:
 docs/migration.md.
@@ -150,6 +153,9 @@ class LintRule:
     under: str | None = None
     capturing: bool = False
     severity: Literal["critical"] = "critical"
+    published_pattern: str | None = None
+    """The YAML scalar the catalog prints for ``pattern``, when it is not the
+    plain single-quoted form; it must parse to ``pattern``."""
 
     @property
     def pattern(self) -> str:
@@ -665,6 +671,15 @@ _LINT_RULES: tuple[LintRule, ...] = (
             "`dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`."
         ),
         fix_suggestion='dm.colors("blue", n=5)',
+        # The catalog bytes main published (MCP anti-patterns resource): a
+        # double-quoted scalar with escaped letters. It parses to ``pattern``.
+        published_pattern=(
+            r'"\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|'
+            r"cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|"
+            r"plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|"
+            r"classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap|"
+            r'set_palette_version)\\b"'
+        ),
     ),
     LintRule(
         "dm-removed-namespaces",

@@ -258,7 +258,7 @@ rules:
     severity: critical
     detector:
       kind: regex
-      pattern: '\bdm\.(?:get_palette|set_cycle|cycle|cycle_cycler|list_palettes|list_colormaps|plot_colors|plot_colormaps|show_palette|classify_colormap|DartworkColor|DartworkColormap|set_palette_version)\b'
+      pattern: "\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap|set_palette_version)\\b"
     message: |
       Version 0.6.0 removed the old palette, cycle, diagnostic,
       and color-class vocabulary; there is no palette-version switch.

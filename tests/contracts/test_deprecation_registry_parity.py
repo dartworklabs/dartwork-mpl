@@ -22,6 +22,7 @@ consumer is pinned against a record of main by test_removed_names_golden.py.
 
 from __future__ import annotations
 
+import dataclasses
 import importlib.util
 import json
 import os
@@ -225,6 +226,23 @@ def test_generator_refuses_a_hand_rule_inside_the_block() -> None:
     second = text.index(f"  - id: {rules[1].id}\n")
     with pytest.raises(generator.CatalogError, match="hand-written-probe"):
         generator.build(text[:second] + hand + text[second:], rules)
+
+
+def test_generator_refuses_a_published_pattern_that_parses_differently() -> (
+    None
+):
+    """A rule's published catalog text may differ from its pattern in quoting only."""
+    generator = _load_generator()
+    rules = generator.load_registry(generator.REGISTRY)._LINT_RULES
+    (published,) = [rule for rule in rules if rule.published_pattern]
+    wrong = dataclasses.replace(
+        published,
+        published_pattern=published.published_pattern.replace(
+            "cycle|", "cycles|", 1
+        ),
+    )
+    with pytest.raises(generator.CatalogError, match=published.id):
+        generator.render_rule(wrong)
 
 
 def test_only_registry_rules_report_a_removed_name() -> None:

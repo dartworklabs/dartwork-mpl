@@ -10,7 +10,10 @@ metadata moves to one registry:
 - ``dm.lint_code``: every issue of the removed-name rules (id, line,
   column, snippet) and those rules' severity, detector, message, why and fix;
 - the MCP ``migrate_legacy_code`` and lint tools: name, description, input
-  and output schema, and the order of every tool.
+  and output schema, and the order of every tool;
+- the bytes of the removed-name rules in the anti-pattern catalog, as the
+  installed package reads it and as the MCP ``dartwork-mpl://guide/anti-patterns``
+  resource serves it (the rest of the catalog is hand-written by other work).
 
 ``tests/contracts/fixtures/removed_names_golden.json`` is an independent
 record: the inputs and the outputs of origin/main d952266b, recorded before
@@ -158,3 +161,46 @@ def test_mcp_lint_and_migrate_tools_keep_their_surface(
     """Tool order and the lint/migrate tools' docstrings and schemas."""
     pytest.importorskip("fastmcp")
     assert _mcp_surface(list(golden["mcp"]["tools"])) == golden["mcp"]
+
+
+def _removed_rule_block(text: str, ids: list[str]) -> str:
+    """The catalog text from the first to the last of ``ids``' rules."""
+    start = text.index(f"  - id: {ids[0]}\n")
+    last = text.index(f"  - id: {ids[-1]}\n")
+    return text[start : text.index("\n  - id: ", last) + 1]
+
+
+def test_anti_pattern_catalog_keeps_the_recorded_removed_rule_bytes(
+    golden: dict[str, Any],
+) -> None:
+    """The installed catalog and the MCP resource keep main's exact bytes."""
+    from dartwork_mpl.prompt import open_anti_pattern_catalog
+
+    recorded = golden["anti_patterns_resource"]["removed_rule_block"]
+    ids = list(golden["lint_rules"])
+    with open_anti_pattern_catalog() as fh:
+        installed = fh.read()
+    assert _removed_rule_block(installed, ids) == recorded
+    assert (
+        _removed_rule_block(dm.get_prompt("02-anti-patterns"), ids) == recorded
+    )
+
+
+def test_mcp_anti_patterns_resource_keeps_the_recorded_removed_rule_bytes(
+    golden: dict[str, Any],
+) -> None:
+    """``dartwork-mpl://guide/anti-patterns`` serves main's exact rule bytes."""
+    fastmcp = pytest.importorskip("fastmcp")
+
+    from dartwork_mpl.mcp.server import mcp
+
+    resource = golden["anti_patterns_resource"]
+
+    async def served() -> str:
+        async with fastmcp.Client(mcp) as client:
+            (content,) = await client.read_resource(resource["uri"])
+            return str(content.text)
+
+    text = asyncio.run(served())
+    ids = list(golden["lint_rules"])
+    assert _removed_rule_block(text, ids) == resource["removed_rule_block"]

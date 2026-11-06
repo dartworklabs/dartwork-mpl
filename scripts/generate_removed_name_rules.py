@@ -29,6 +29,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REGISTRY = REPO_ROOT / "src" / "dartwork_mpl" / "_compat.py"
 CATALOG = (
@@ -77,6 +79,23 @@ def _literal_block(key: str, text: str) -> list[str]:
     ]
 
 
+def _pattern_scalar(rule: Any) -> str:
+    """The YAML scalar for the rule's pattern: its published text, if any.
+
+    A published text that does not parse back to the derived pattern is
+    refused, so the catalog can only differ from the registry in quoting.
+    """
+    if rule.published_pattern is None:
+        return _quoted(rule.pattern)
+    parsed = yaml.safe_load(f"pattern: {rule.published_pattern}")["pattern"]
+    if parsed != rule.pattern:
+        raise CatalogError(
+            f"{rule.id}: published_pattern parses to {parsed!r}, "
+            f"not the derived pattern {rule.pattern!r}"
+        )
+    return str(rule.published_pattern)
+
+
 def render_rule(rule: Any) -> str:
     """One catalog rule in the catalog's layout, with its trailing blank line."""
     lines = [
@@ -84,7 +103,7 @@ def render_rule(rule: Any) -> str:
         f"    severity: {rule.severity}",
         "    detector:",
         "      kind: regex",
-        f"      pattern: {_quoted(rule.pattern)}",
+        f"      pattern: {_pattern_scalar(rule)}",
         *_literal_block("message", rule.message),
     ]
     if rule.why is not None:
