@@ -59,6 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   and leaves it.
 - `dm.format_axis_myriad(ax, decimals=n)` now sets an `AxisUnitFormatter`
   instead of a `FuncFormatter`. The tick text is the same.
+- `dm.format_axis_currency` and `decimals=n` of `dm.format_axis_millions`,
+  `_billions` and `_si` now set an `AxisUnitFormatter` too, one per axis
+  (`axis="both"` no longer shares one `FuncFormatter`). The tick text and
+  the bar labels of `dm.label_bars` are the same; a figure with these
+  formatters can now be pickled.
 
 ### Removed
 
