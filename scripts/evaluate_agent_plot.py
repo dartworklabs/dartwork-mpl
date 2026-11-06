@@ -1008,7 +1008,7 @@ def evaluate(run: Path) -> dict[str, Any]:
                 semantics[stage] = _saved_semantics(run, stage, case_id, bundle)
             except (OSError, ValueError, KeyError, TypeError) as exc:
                 semantics[stage] = _gate("unchecked", reason=str(exc))
-        except (OSError, ValueError, KeyError, TypeError) as exc:  # noqa: PERF203
+        except (OSError, ValueError, KeyError, TypeError) as exc:
             errors[stage] = str(exc)
             semantics.setdefault(stage, _gate("unchecked", reason=str(exc)))
     recovery = _gate(

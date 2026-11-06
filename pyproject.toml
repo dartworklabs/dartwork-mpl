@@ -253,10 +253,8 @@ markers = [
 
 [tool.ruff]
 line-length = 80
-# Keep the pre-existing authoring/modernization baseline: Python 3.11 is
-# the supported runtime floor, but raising Ruff's target adds 37 unrelated
-# syntax/noqa findings and must be a separately scoped source migration.
-target-version = "py310"
+# Python 3.11 is the supported runtime floor (``requires-python``).
+target-version = "py311"
 # Deterministic build artifact: rows are one hex tuple per line (256 hex
 # per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
 # and break `test_rebuild_is_byte_identical`. Never hand-edited.
@@ -293,7 +291,12 @@ select = [
     "D106",
     "D107",
 ]
-ignore = ["E501"]
+ignore = [
+    "E501",
+    # ``class X(str, Enum)`` -> ``StrEnum`` changes ``str()``/``format()`` of
+    # the members, which is observable behaviour; migrate case by case.
+    "UP042",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["dartwork_mpl"]

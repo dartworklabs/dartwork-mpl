@@ -10,7 +10,7 @@ import contextlib
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -106,7 +106,7 @@ def save_preset(label: str, params: dict[str, Any]) -> None:
         {
             "label": label,
             "params": _serializable(params),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
     )
     _write_preset_file(presets)

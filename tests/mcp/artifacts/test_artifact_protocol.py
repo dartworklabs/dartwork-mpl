@@ -6,7 +6,7 @@ import hashlib
 import io
 import json
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import matplotlib.image as mpimg
@@ -292,7 +292,7 @@ def failure(fig, renderer):
     store = configure_store(str(tmp_path / "clock"))
     assert isinstance(store, ArtifactStore)
     marker = tmp_path / "finished"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     def clock():
         """The clock can observe child completion before assigning publication time."""
@@ -354,7 +354,7 @@ def test_stored_failures_and_publication_errors_are_safe(
                 await client.call_tool("render_plot", {"code": SOURCE})
             )
             if failure == "expired":
-                future = datetime.now(timezone.utc) + timedelta(days=8)
+                future = datetime.now(UTC) + timedelta(days=8)
 
                 class FutureDateTime:
                     """Inject only our adapter clock; the real store decides expiry."""

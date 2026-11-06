@@ -11,7 +11,7 @@ import math
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, TypeAlias
@@ -431,7 +431,7 @@ def _parse_time(raw: Any) -> datetime:
     """Recognize only UTC RFC3339 Z timestamps with representable precision."""
     if not isinstance(raw, str) or not _TIME.fullmatch(raw):
         raise ValueError("Invalid UTC timestamp")
-    return datetime.fromisoformat(raw[:-1]).replace(tzinfo=timezone.utc)
+    return datetime.fromisoformat(raw[:-1]).replace(tzinfo=UTC)
 
 
 def parse_manifest(raw: bytes) -> Manifest | CorruptArtifact:

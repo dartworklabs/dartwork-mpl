@@ -10,7 +10,7 @@ import subprocess
 import sys
 import threading
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -79,7 +79,7 @@ def fd_count():
         try:
             os.fstat(fd)
             count += 1
-        except OSError:  # noqa: PERF203 -- only fstat defines descriptor liveness
+        except OSError:
             pass
     return count
 
@@ -100,7 +100,7 @@ def lock_available(path, store):
     grant = authorize_inputs(str(path), store.check_input_roots)
     assert isinstance(grant, InputGrant)
     try:
-        second = InputStore.open(grant, datetime.now(timezone.utc))
+        second = InputStore.open(grant, datetime.now(UTC))
         if isinstance(second, InputStore):
             second.close()
             return True
@@ -467,7 +467,7 @@ def test_cancelled_call_and_final_close_keep_lock_fds_and_reap(
                         lambda: render_artifact(
                             store,
                             RenderRequest(code, timeout_seconds=20),
-                            lambda: datetime.now(timezone.utc),
+                            lambda: datetime.now(UTC),
                             revision=parsed,
                             inputs=inputs,
                         )
@@ -551,7 +551,7 @@ def test_operation_tail_and_periodic_maintenance_use_fresh_clocks(
         """An operation observes no maintenance before yield, then fresh tail/tick."""
         async with runtime.session():
             assert len(clocks) == 1
-            started = datetime.now(timezone.utc)
+            started = datetime.now(UTC)
             async with runtime.admission() as inputs:
                 assert isinstance(inputs, InputStore)
                 assert len(clocks) == 1
@@ -1100,7 +1100,7 @@ def test_expired_unswept_retained_wire_precedes_tail_maintenance(
                 )
             )["artifact_id"]
             assert (storage / parent / "000.bin").exists()
-            future = datetime.now(timezone.utc) + timedelta(days=8)
+            future = datetime.now(UTC) + timedelta(days=8)
 
             class FutureClock:
                 """Provide only the owned adapters' fresh wall clock without a real wait."""
@@ -1197,7 +1197,7 @@ def test_internal_resource_pairing_rejects_invalid_construction(
     path, _, _, store = fixture(owned_input_root)
     grant = authorize_inputs(str(path), store.check_input_roots)
     assert isinstance(grant, InputGrant)
-    inputs = InputStore.open(grant, datetime.now(timezone.utc))
+    inputs = InputStore.open(grant, datetime.now(UTC))
     assert isinstance(inputs, InputStore)
     try:
         for value, owner in [

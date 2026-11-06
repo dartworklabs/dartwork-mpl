@@ -8,7 +8,7 @@ is user-facing output and stays byte-for-byte as it was.
 import inspect
 import textwrap
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -77,7 +77,7 @@ def _generate_script(
         params_lines.append(f"    {key}={val!r},")
     params_str = "\n".join(params_lines)
 
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    ts = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     return f'''"""Auto-generated figure script.
 

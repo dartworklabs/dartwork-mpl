@@ -5,7 +5,7 @@ import json
 import os
 import random
 from dataclasses import replace
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -27,7 +27,7 @@ from dartwork_mpl.mcp.artifacts.policy import (
 )
 from dartwork_mpl.mcp.artifacts.store import ArtifactStore
 
-NOW = datetime(2026, 10, 20, 1, 2, 3, 456789, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 20, 1, 2, 3, 456789, tzinfo=UTC)
 MANIFEST_LIMIT = 512 * 1024
 REPORT = {"status": "ok", "validation_complete": True, "failed_checks": []}
 

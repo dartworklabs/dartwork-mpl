@@ -4,7 +4,7 @@ import copy
 import json
 import random
 from dataclasses import FrozenInstanceError, fields
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -39,7 +39,7 @@ from dartwork_mpl.mcp.artifacts.policy import (
 PARENT = ArtifactId("123456789abc4def8123456789abcdef")
 CHILD = ArtifactId("abcdef1234564abc9def123456789abc")
 HASH = "a" * 64
-NOW = datetime(2026, 10, 20, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 20, tzinfo=UTC)
 MIB = 1024 * 1024
 
 

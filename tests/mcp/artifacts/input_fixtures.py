@@ -8,7 +8,7 @@ way so a broken surface fails inside the test that needed it. Imported by ``test
 import hashlib
 import importlib
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from dartwork_mpl.mcp.artifacts import configure_store
 from dartwork_mpl.mcp.artifacts.input_access import InputGrant, authorize_inputs
@@ -23,7 +23,7 @@ from dartwork_mpl.mcp.artifacts.policy import (
     ValidationSummary,
 )
 
-NOW = datetime(2030, 1, 1, tzinfo=timezone.utc)
+NOW = datetime(2030, 1, 1, tzinfo=UTC)
 
 
 def api():

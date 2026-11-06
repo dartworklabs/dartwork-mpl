@@ -2,12 +2,12 @@
 
 import random
 import subprocess
+import tomllib
 import zipfile
 from email.parser import Parser
 from pathlib import Path
 
 import pytest
-import tomllib
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version

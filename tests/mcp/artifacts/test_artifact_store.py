@@ -8,7 +8,7 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event
 from typing import Any
@@ -34,7 +34,7 @@ from dartwork_mpl.mcp.artifacts.policy import (
 )
 from dartwork_mpl.mcp.artifacts.store import ArtifactStore
 
-NOW = datetime(2026, 10, 18, 3, 4, 5, 123456, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 18, 3, 4, 5, 123456, tzinfo=UTC)
 SOURCE = '# exact submitted source\nlabel = "한글 café"\n'
 REPORT = {
     "status": "ok",
