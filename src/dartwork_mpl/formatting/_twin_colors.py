@@ -19,8 +19,10 @@ pair like the one series read on it:
   Reference artists in axes coordinates (``axhline``, ``axvspan``,
   ``axline``) are not data. A line counts by what it draws: its line colour
   where a line shows and its markers' face and edge where markers show
-  (``"none"`` and alpha 0 draw nothing); colours of one hue (within 0.10
-  in OKLab) make one series colour, several hues several.
+  (``"none"`` and alpha 0 draw nothing, and a marker part that vanishes into
+  the background, such as a white halo edge, is not series ink); colours of
+  one hue (within 0.10 in OKLab) make one series colour, several hues
+  several.
 * **Qualifying.** A side is coloured when its series all draw one colour
   (a colour-mapped collection or an image is not one colour), its partners
   hold data (otherwise it is a second scale for the same series), and no
@@ -206,21 +208,23 @@ def _drawn(face: RGBA, edge: RGBA, linewidth: float) -> RGBA | None:
     return None
 
 
-def _line_shows(line: Line2D) -> list[RGBA]:
-    """The colours ``line`` draws: line, then marker face(s) and edge.
+def _line_shows(line: Line2D) -> tuple[list[RGBA], list[RGBA]]:
+    """The colours ``line`` draws: its line, and its marker face(s) and edge.
 
     The line colour counts where a line is drawn (a line style and a width
     above 0), the marker colours where markers are (a marker and a size
     above 0): the face of a filled marker (both halves of a half-filled
     one) and the edge when its width is above 0. ``"none"`` and alpha 0
     draw nothing. The line's alpha applies to every part, as it draws.
+    Returns the line's colours and the markers' apart.
     """
+    stroke: list[ColorType] = []
     shown: list[ColorType] = []
     if (
         str(line.get_linestyle()) not in _NOTHING
         and float(line.get_linewidth()) > 0
     ):
-        shown.append(line.get_color())
+        stroke.append(line.get_color())
     if (
         str(line.get_marker()) not in _NOTHING
         and float(line.get_markersize()) > 0
@@ -233,25 +237,38 @@ def _line_shows(line: Line2D) -> list[RGBA]:
         if float(line.get_markeredgewidth()) > 0:
             shown.append(line.get_markeredgecolor())
     alpha = line.get_alpha()
-    colors = [_rgba(mcolors.to_rgba(c, alpha)) for c in shown]
-    return [color for color in colors if color[3] > 0]
+
+    def drawn(parts: list[ColorType]) -> list[RGBA]:
+        colors = [_rgba(mcolors.to_rgba(c, alpha)) for c in parts]
+        return [color for color in colors if color[3] > 0]
+
+    return drawn(stroke), drawn(shown)
 
 
-def _line_colors(line: Line2D) -> list[RGBA]:
+def _line_colors(line: Line2D, background: RGB) -> list[RGBA]:
     """``line``'s series colour, or all it shows when that is several hues.
 
-    Colours within 0.10 of each other in OKLab, pair by pair, are one hue
-    (the partner test's tolerance): the line counts as its most opaque one,
-    the line colour first. Otherwise every colour counts, so the line's side
-    has no one colour and the line's hues stand against the other scale.
+    A marker part that vanishes into the background where it is drawn (a
+    white halo edge, a white face on a white Axes: within 0.10 of it in
+    OKLab once composited) is not series ink and does not count. Colours
+    within 0.10 of each other in OKLab, pair by pair, are one hue (the
+    partner test's tolerance): the line counts as its most opaque one, the
+    line colour first. Otherwise every colour counts, so the line's side has
+    no one colour and the line's hues stand against the other scale.
     """
-    colors = _line_shows(line)
+    stroke, marks = _line_shows(line)
+    ground: RGBA = (*background, 1.0)
+    colors = stroke + [
+        mark
+        for mark in marks
+        if not _near((*_over(mark, background), 1.0), ground)
+    ]
     if all(_near(a, b) for a, b in combinations(colors, 2)):
         return [max(colors, key=lambda color: color[3])] if colors else []
     return colors
 
 
-def _data_colors(ax: Axes) -> list[RGBA] | None:
+def _data_colors(ax: Axes, background: RGB) -> list[RGBA] | None:
     """Colours the data artists of ``ax`` draw; ``None`` when colour-mapped."""
     if any(image.get_visible() for image in ax.images):
         return None
@@ -260,7 +277,7 @@ def _data_colors(ax: Axes) -> list[RGBA] | None:
     for line in ax.lines:
         if not line.get_visible() or line.get_transform() is not data:
             continue
-        colors.extend(_line_colors(line))
+        colors.extend(_line_colors(line, background))
     for patch in ax.patches:
         if not patch.get_visible() or patch.get_data_transform() is not data:
             continue
@@ -556,8 +573,8 @@ def apply_twin_colors(fig: Figure) -> int:
     for group in _twin_groups(fig):
         sides = [(ax, side) for ax in group for side in _own_sides(ax, group)]
         owners = {(id(ax), side) for ax, side in sides}
-        drawn = {id(m): _data_colors(m) for m in group}
         background = _background(group)
+        drawn = {id(m): _data_colors(m, background) for m in group}
         for ax, side in sides:
             inks = (
                 _side_inks(ax, side, group, drawn, background)

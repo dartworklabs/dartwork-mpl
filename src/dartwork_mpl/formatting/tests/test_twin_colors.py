@@ -530,6 +530,11 @@ def test_marker_colour_matching_the_partner_keeps_both_neutral():
         {"marker": "x", "markerfacecolor": "dc.green6"},  # x draws no face
         {"markeredgewidth": 0, "markeredgecolor": "dc.green6"},  # no edge
         {"markeredgecolor": "dc.orange7"},  # one hue (OKLab 0.05)
+        # A white halo edge or a white face on the white Axes vanishes into
+        # the background: it is not series ink.
+        {"markeredgecolor": "white"},
+        {"markerfacecolor": "white"},
+        {"markerfacecolor": "white", "markeredgecolor": "white", "ms": 3},
     ],
 )
 def test_marker_parts_that_do_not_show_or_share_the_hue(markers):
