@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
-from matplotlib import backend_bases
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 from matplotlib.transforms import ScaledTranslation
@@ -75,16 +75,35 @@ def canvas_renderer(fig: Figure | SubFigure) -> RendererBase | None:
     return None
 
 
+class _PngCanvas(FigureCanvasAgg):
+    """A temporary Agg canvas whose default output is PNG.
+
+    ``Figure.draw_without_rendering`` draws with the renderer of the
+    canvas's default file type, which an Agg canvas reads from
+    ``rcParams["savefig.format"]``. A PDF, SVG or PS default would switch
+    to that print canvas, which sets the Figure DPI to 72 and leaves it
+    there. Fixing the default here keeps the measurement at the Figure DPI
+    without writing to the process-wide rcParams.
+    """
+
+    @classmethod
+    def get_default_filetype(cls) -> str:
+        """Return ``"png"`` whatever ``savefig.format`` says."""
+        return "png"
+
+
 def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     """Return a measurement renderer without replacing the caller's canvas.
 
-    Live rendering canvases keep their native renderer. A plain Figure,
-    a vector canvas, or a Figure closed by matplotlib 3.11 may have no
-    ``canvas.get_renderer``. In that case, use matplotlib's temporary PNG
-    print canvas at the Figure's current DPI and draw without output to
-    update artist positions. The native context restores the original
-    canvas even when rendering fails; artist errors propagate unchanged.
-    PNG avoids the DPI change made by native PDF/SVG print renderers.
+    Live rendering canvases keep their native renderer, without a draw. A
+    plain Figure, a vector canvas, or a Figure closed by matplotlib 3.11
+    has no ``canvas.get_renderer``. Then a temporary Agg canvas at the
+    Figure's current DPI draws the root Figure once without output
+    (``Figure.draw_without_rendering``) so artist positions are current,
+    and its renderer is returned. The caller's canvas is set back even
+    when drawing fails; artist errors propagate unchanged. The temporary
+    canvas prints PNG whatever ``savefig.format`` says, which avoids the
+    DPI change made by the PDF/SVG/PS print renderers.
 
     Parameters
     ----------
@@ -101,11 +120,13 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     if native is not None:
         return native
     root = fig.get_figure(root=True)
-    print_canvas = root.canvas._switch_canvas_and_return_print_method("png")  # type: ignore[attr-defined]
-    with print_canvas as print_method:
-        renderer: RendererBase = backend_bases._get_renderer(root, print_method)  # type: ignore[attr-defined]
-        with renderer._draw_disabled():  # type: ignore[attr-defined]
-            root.draw(renderer)
+    original = root.canvas
+    try:
+        measuring = _PngCanvas(root)  # attaches itself as root.canvas
+        root.draw_without_rendering()
+        renderer: RendererBase = measuring.get_renderer()  # type: ignore[no-untyped-call]
+    finally:
+        root.set_canvas(original)
     return renderer
 
 
