@@ -2,7 +2,9 @@
 Generate SVG/PNG figures for API reference code examples.
 
 Each function produces one figure matching a code block in the API docs.
-Run standalone or via Sphinx build hooks.
+Run standalone or via Sphinx build hooks. The figures are paper canvases
+(15 cm), so they use ``scientific``, not ``presentation`` (scientific x 2.6,
+for slide canvases); see docs/usage_guide/generate_assets.py.
 
     python docs/api/generate_assets.py
 """
@@ -67,7 +69,7 @@ def _save_svg(fig, path: Path, **savefig_kwargs) -> Path:
 def _save_layout_example(images_dir: Path) -> Path:
     """API layout: 2×2-panel with label_axes, arrow_axis, set_decimal."""
     np.random.seed(42)
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig = plt.figure(figsize=dm.figsize("15cm", "12cm"), dpi=300)
     gs = fig.add_gridspec(2, 2, hspace=0.45, wspace=0.35)
@@ -85,10 +87,11 @@ def _save_layout_example(images_dir: Path) -> Path:
     ax4.axis("off")
 
     dm.label_axes([ax1, ax2, ax3])
-    dm.simple_layout(fig, gs=gs)
     dm.set_decimal(ax1, xn=2, yn=1)
     dm.arrow_axis(ax2, "x", "Installation cost")
     dm.arrow_axis(ax3, "y", "Information richness")
+    # Lay out after every label exists, so the arrow labels get room too.
+    dm.simple_layout(fig, gs=gs)
 
     path = images_dir / "layout_example.svg"
     _save_svg(fig, path, bbox_inches="tight")
@@ -110,7 +113,7 @@ def _save_icon_example(images_dir: Path) -> Path:
         "ignore", message=".*missing from font.*Material Design Icons.*"
     )
 
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     mdi = dm.icon_font("mdi")
 
@@ -177,7 +180,7 @@ def _save_icon_example(images_dir: Path) -> Path:
 
 def _save_font_example(images_dir: Path) -> Path:
     """API font: fs(), fw(), lw() scaling demo."""
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     fig, ax = plt.subplots(figsize=dm.figsize("15cm", "9cm"), dpi=300)
 
@@ -234,7 +237,7 @@ def _save_font_example(images_dir: Path) -> Path:
 
 def _save_xplot_example(images_dir: Path) -> Path:
     """API xplot/templates: diverging bar chart."""
-    dm.style.use("presentation")
+    dm.style.use("scientific")
     from dartwork_mpl.templates import plot_diverging_bar
 
     fig, _ax = plot_diverging_bar(

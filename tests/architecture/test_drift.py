@@ -528,7 +528,8 @@ def test_llms_full_txt_in_sync() -> None:
 def test_template_index_in_sync() -> None:
     """``05-templates/_index.json`` must mirror the metadata blocks in
     ``docs/examples_source/09_ai_templates/plot_*.py`` (basic tier) and
-    ``docs/examples_source/09_ai_templates_advanced/plot_*.py`` (tier 2).
+    ``docs/examples_source/09_ai_templates_advanced/plot_*_advanced.py``
+    (tier 2, registered under the basic tier's ids).
     """
     out = (
         REPO_ROOT
@@ -554,10 +555,7 @@ def test_template_index_in_sync() -> None:
             meta = build_hooks._parse_template_meta(
                 match.group(1), source=str(path.relative_to(REPO_ROOT))
             )
-            stem = path.stem
-            template_id = (
-                stem if stem == "plot_3d" else stem.removeprefix("plot_")
-            )
+            template_id = build_hooks.template_id_of(path.stem, tier)
             meta["source_path"] = str(path.relative_to(REPO_ROOT))
             meta.setdefault("tier", tier)
             section[template_id] = meta

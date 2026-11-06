@@ -26,8 +26,9 @@ class Expectations:
     """Minimum content a scenario's figure must show.
 
     Counts are lower bounds over all axes; ``palette`` colors must appear among
-    artist colors and ``texts_contain`` substrings among Text artists.
-    ``tolerance`` is the pixel-comparison RMS tolerance for the baseline image.
+    artist colors and ``texts_contain`` substrings among Text artists. The
+    pixel comparison uses one tolerance for every scenario
+    (``test_visual_pixels.PIXEL_TOLERANCE``).
     """
 
     n_axes: int = 1
@@ -38,7 +39,6 @@ class Expectations:
     texts_contain: tuple[str, ...] = ()
     palette: tuple[str, ...] = ()
     require_ylabel: bool = True
-    tolerance: float = 20.0
 
 
 @dataclass(frozen=True)
@@ -489,10 +489,7 @@ def all_scenarios() -> list[Scenario]:
             "preset_report_kr_bars",
             _build_preset_report_kr_bars,
             Expectations(
-                min_patches=4,
-                texts_contain=("매출",),
-                palette=_blue_colors(4),
-                tolerance=22.0,
+                min_patches=4, texts_contain=("매출",), palette=_blue_colors(4)
             ),
         ),
         Scenario(
@@ -510,7 +507,6 @@ def all_scenarios() -> list[Scenario]:
                 min_patches=5,
                 texts_contain=("확률 밀도",),
                 palette=_blue_colors(2),
-                tolerance=22.0,
             ),
         ),
         Scenario(
@@ -555,7 +551,6 @@ def all_scenarios() -> list[Scenario]:
                 texts_contain=("구성",),
                 palette=_blue_colors(5),
                 require_ylabel=False,
-                tolerance=24.0,
             ),
         ),
         Scenario(
@@ -567,7 +562,6 @@ def all_scenarios() -> list[Scenario]:
                 min_patches=12,
                 texts_contain=("보조 계열",),
                 palette=_blue_colors(2),
-                tolerance=24.0,
             ),
         ),
         Scenario(
@@ -587,7 +581,6 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 texts_contain=("한글", _SPECIAL_CHARS),
                 palette=_blue_colors(1),
-                tolerance=25.0,
             ),
         ),
     ]

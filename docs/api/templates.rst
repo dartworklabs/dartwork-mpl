@@ -26,7 +26,7 @@ Example
    import dartwork_mpl as dm
    from dartwork_mpl.templates import plot_diverging_bar
 
-   dm.style.use("presentation")
+   dm.style.use("scientific")
 
    fig, ax = plot_diverging_bar(
        labels=["Category A", "Category B", "Category C"],

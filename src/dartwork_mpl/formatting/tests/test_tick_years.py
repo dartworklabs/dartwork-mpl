@@ -747,7 +747,15 @@ def test_helpers():
     assert not year_data([2016, float("nan")])
     assert whole_years([2016, 2017, 2020]) and not whole_years([])
     assert not whole_years([2016, 2016.5])
-    fmt = YearTickFormatter(2)
+
+    def attached(formatter: YearTickFormatter) -> YearTickFormatter:
+        """On an axis viewing 1890-2110 (a ScalarFormatter formats an axis)."""
+        _fig, ax = plt.subplots()
+        ax.set_xlim(1890, 2110)
+        formatter.set_axis(ax.xaxis)
+        return formatter
+
+    fmt = attached(YearTickFormatter(2))
     # No year locator behind it: a tick between years makes every tick a number.
     assert fmt.format_ticks([2016, 2016.5, 2017]) == [
         "2016.0",
@@ -758,10 +766,12 @@ def test_helpers():
     assert fmt.format_ticks([1900, 2000]) == ["1900", "2000"]
     assert fmt.format_ticks([2080, 2090, 2100]) == ["80", "90", "00"]
     assert fmt.format_ticks([2000, 2100]) == ["2000", "2100"]
-    korean = YearTickFormatter(2, "년")
+    korean = attached(YearTickFormatter(2, "년"))
     assert korean.format_ticks([2005, 2010]) == ["05년", "10년"]
     assert korean.format_ticks([2005, 2007.5]) == ["2005.0", "2007.5"]
     assert fmt.format_data_short(2016.5) == "2016.5"
+    with pytest.raises(ValueError, match="set_axis"):
+        YearTickFormatter(2).format_ticks([2016, 2017])
     locator = WholeYearLocator()
     assert locator.tick_values(2004.05, 2024.95) == pytest.approx(
         [2000, 2005, 2010, 2015, 2020, 2025]

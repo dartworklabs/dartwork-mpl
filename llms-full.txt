@@ -399,7 +399,7 @@ to click-and-copy color names from your browser.
 import dartwork_mpl as dm
 import numpy as np
 
-dm.style.use("presentation")
+dm.style.use("scientific")
 
 x = np.linspace(0, 10, 100)
 fig = plt.figure(figsize=dm.figsize("15cm", "wide"))

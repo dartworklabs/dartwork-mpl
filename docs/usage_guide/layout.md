@@ -303,8 +303,10 @@ parsing margins; the latter retain their warning.
 
 1. Draws the figure once to populate text metrics.
 2. Walks every visible artist on each axes (texts, title, axis labels,
-   tick labels in view, axis offset text, legend) and computes the
-   content-extent overhang relative to each axes' plot area.
+   tick labels in view, axis offset text, legend; the tick labels and
+   label of a `secondary_xaxis` / `secondary_yaxis` count as that axes'
+   own) and computes the content-extent overhang relative to each axes'
+   plot area.
 3. Sets GridSpec edges arithmetically so the union of all axes
    content sits at exactly the requested distance from each figure
    edge.
@@ -482,14 +484,17 @@ figure:
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
 | reaches one million, Korean axis labels, titles or legend | `0, 50만 … 250만` (만/억/조) |
 | below 1,000 | unchanged: `0, 250 … 750` |
-| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; a `secondary_xaxis` showing them too; also non-year data such as elevations) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4` |
+| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; a `secondary_xaxis` showing them too; also non-year data such as elevations), or a y axis whose data *positions* are such years (horizontal bars `ax.barh(range(2014, 2025), …)`, grouped too, `fill_betweenx` spans; a `secondary_yaxis` following them). A line's, scatter's or bar's y values are quantities and keep their numbers (`1,985 … 2,045`) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4` |
 | monthly dates | `23.01, 23.07, 24.01` (year, then month; two-digit years) |
 | quarterly dates | `23.Q1, 23.Q3, 24.Q1` |
 | dates on a narrow axis | fewer ticks until labels are one em apart |
 
 Korean figures print the same dates and years, without a suffix.
 
-The rule: no request, the library default; a request, that format. A prompt
+The rule: no request, the library default; a request, that format.
+`ax.ticklabel_format(...)` is such a request: `style="plain"` prints full
+numbers (`500000`) where the default would read `0.5M`, and scientific
+notation or an offset gets matplotlib's own formatter. A prompt
 can ask for three other formats, one `dm.config` field each:
 `tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
 (matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
