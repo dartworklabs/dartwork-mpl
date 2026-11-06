@@ -668,10 +668,12 @@ def _pin_fixed_labels(axis: Axis) -> int:
 
     Matplotlib's own locator picks its tick count from the axis length, which
     ``dm.simple_layout`` is about to change: texts made for 2.5-year steps
-    would land on 5-year ones (``2010`` at 2007.5). The ticks the locator
-    gives now are the ones the texts were made for when there are as many of
-    them as texts; they become the axis's ticks. Texts made for other ticks
-    (the view moved since), or a locator someone set, are left alone.
+    would land on 5-year ones (``2010`` at 2007.5). When the locator gives as
+    many ticks now as there are texts, those ticks become the axis's ticks.
+    Only the count is checked: when the counts differ (the view moved since
+    the texts were taken, say), or the locator is someone's, the axis is
+    left alone. A pinned axis keeps these ticks: a later ``set_xlim`` zoom
+    shows no new ones.
     """
     formatter = axis.get_major_formatter()
     if not (
