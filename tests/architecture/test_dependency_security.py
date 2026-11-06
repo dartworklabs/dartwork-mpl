@@ -82,7 +82,7 @@ def test_fresh_wheel_accepts_numpy_25_with_the_matplotlib_311_floor(
 ):
     """Only Matplotlib 3.10's dates.py tripped NumPy 2.5, so 2.5 is allowed."""
     requirements = _requirements(wheel_metadata, extra)
-    for version in ("1.26.4", "2.4.6", "2.5.0", "2.5.4"):
+    for version in ("1.26.0", "2.4.6", "2.5.0", "2.5.4"):
         assert _accepts(requirements, "numpy", version), version
     assert not _accepts(requirements, "numpy", "1.25.2")
 

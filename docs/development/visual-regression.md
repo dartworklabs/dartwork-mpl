@@ -55,6 +55,7 @@ Measured on 2026-11-06 against the committed baselines:
 | Render | RMS |
 |---|---|
 | lock environment (Python 3.11, Matplotlib 3.11.2, NumPy 2.4); Matplotlib 3.11.0 and 3.11.1; NumPy without its AVX-512 or AVX2 kernels | 0 (byte-identical) |
+| Python 3.11, Matplotlib 3.11.2, NumPy 1.26.0 (the `test-matplotlib (minimum)` cell; 14 images) | 0 (byte-identical) |
 | NumPy 2.5.4, as the `visual` job (Python 3.12) and `test-matplotlib (latest-deps)` resolve it | 0.007 (`scatter_fit` only, 95 pixels) |
 | one character of one tick label changed | 1.65 – 22 |
 | `dual_axis_timeseries` with `tick_years=4` (every x tick relabelled) | 11.2 |

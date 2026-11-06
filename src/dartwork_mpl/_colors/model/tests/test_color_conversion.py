@@ -353,9 +353,15 @@ def test_gamma_array_preserves_shape(function: Callable[..., object]) -> None:
 # Linear-branch inputs, then nonlinear-branch inputs, per transfer function.
 # The linear branch is one correctly rounded division or product, so it must
 # match the scalar branch bit for bit, including the sign of zero. The
-# nonlinear branch goes through ndarray ``**``, which NumPy 1.26 rounds
-# 1-2 ULP differently from Python float ``**`` just above the breakpoint
-# (NumPy 2.x agrees exactly); the contract there is a 2 ULP budget.
+# nonlinear branch goes through ndarray ``**``, which differs from Python
+# float ``**``: NumPy 1.26 differs by 1-2 ULP at the sampled points below
+# only on its AVX-512 path (with AVX-512 disabled the difference is 0).
+# The locked NumPy 2.4.6 agrees at these points but not everywhere: the
+# subtraction in the encode formula amplifies a 1 ULP ``pow`` difference to
+# up to 4 ULP (e.g. linear 0.041009802339487283). So the 2 ULP budget holds
+# for these sampled points only, not for the whole domain. Re-measure on
+# NumPy 1.26.0 (AVX-512 on and off) and the locked NumPy before adding a
+# sample point; do not widen the budget to make a new point pass.
 _GAMMA_ULP_BUDGET = 2
 _GAMMA_BRANCH_CASES = (
     (
@@ -485,7 +491,8 @@ class TestGammaArrayContractRejectsDefects:
             function, linear_values, nonlinear_values
         )
         n = len(linear_values)
-        # Linear-branch element evaluated by the nonlinear formula.
+        # The last linear-branch element takes the value of a different
+        # input, f(x + 0.5), far outside any ULP budget.
         wrong = scalar.copy()
         wrong[n - 1] = function(
             np.array([channels[n - 1] + 0.5], dtype=np.float64)
