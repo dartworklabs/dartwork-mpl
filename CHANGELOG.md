@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The Matplotlib floor is now `>=3.11.2`, the patch release the declared
+  floor environment (Python 3.11, NumPy 1.26) is verified on. Matplotlib
+  3.11.0 logs font-weight misses without naming the family, so the quiet
+  math-font handling cannot tell them from a caller's own font notices.
 - **Twin pairs get series colours.** `dm.simple_layout` colours each side
   of a `twinx` / `twiny` pair like the one series read on it: the spine
   and tick marks in the series colour raised to 3:1 against the

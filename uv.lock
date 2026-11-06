@@ -748,7 +748,7 @@ requires-dist = [
     { name = "inquirerpy", marker = "extra == 'ui'", specifier = ">=0.3.4" },
     { name = "ipython", marker = "extra == 'notebook'", specifier = ">=8.32.0" },
     { name = "joserfc", marker = "extra == 'mcp'", specifier = ">=1.7.6" },
-    { name = "matplotlib", specifier = ">=3.11.0" },
+    { name = "matplotlib", specifier = ">=3.11.2" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.30.0,<2" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "opentelemetry-api", marker = "extra == 'mcp'", specifier = ">=1.45.1" },
