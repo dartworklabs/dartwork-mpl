@@ -13,6 +13,7 @@ are read after a real canvas draw.
 from __future__ import annotations
 
 import io
+import os
 import re
 import shutil
 import subprocess
@@ -1113,9 +1114,25 @@ def test_where_inside_and_center():
 # A label reads when the whole number can be read in the file a user
 # keeps: every glyph pixel stands on a background its ink contrasts with,
 # and the text box lies on one background (a bar or the plot background),
-# not across a bar edge. Checked on the PNG and on the PDF, rasterised.
+# not across a bar edge. Each case runs once for the PNG (always) and once
+# for the PDF, rasterised by Ghostscript. CI installs Ghostscript and sets
+# DARTWORK_MPL_REQUIRE_GHOSTSCRIPT, so there a missing gs fails the PDF
+# case; on a machine without gs it is skipped with that reason.
 READ_RATIO = 3.0  # WCAG 2.x, graphics and large text: the floor here
 _PROBE = (1.0, 0.0, 1.0)  # a colour no test bar or background takes
+_REQUIRE_GS = "DARTWORK_MPL_REQUIRE_GHOSTSCRIPT"
+FORMATS = pytest.mark.parametrize("fmt", ["png", "pdf"])
+
+
+def _ghostscript():
+    """The ``gs`` executable; a missing one fails under CI, else skips."""
+    gs = shutil.which("gs")
+    if gs is not None:
+        return gs
+    reason = "reading the PDF needs Ghostscript (gs) to rasterise it"
+    if os.environ.get(_REQUIRE_GS):
+        pytest.fail(f"{reason}, and {_REQUIRE_GS} requires it (CI)")
+    pytest.skip(f"{reason}; not installed here ({_REQUIRE_GS} is unset)")
 
 
 def _luminance(rgb):
@@ -1142,15 +1159,10 @@ def _raster(fig, fmt, folder):
     with matplotlib.rc_context({"savefig.bbox": "standard"}):
         fig.savefig(path, format=fmt, dpi=fig.dpi)
     if fmt == "pdf":
-        gs = shutil.which("gs")
-        if gs is None:
-            pytest.skip(
-                "reading the PDF needs Ghostscript (gs) to rasterise it"
-            )
         png = folder / "page_pdf.png"
         subprocess.run(
             [
-                gs,
+                _ghostscript(),
                 "-q",
                 "-dSAFER",
                 "-dBATCH",
@@ -1205,9 +1217,14 @@ def _unreadable(fig, labels, folder, fmt):
     return bad
 
 
-def _assert_readable(fig, labels, folder):
-    for fmt in ("png", "pdf"):
-        assert _unreadable(fig, labels, folder, fmt) == [], fmt
+def _assert_readable(fig, labels, folder, fmt):
+    assert _unreadable(fig, labels, folder, fmt) == [], fmt
+
+
+def _start(fmt):
+    """Before any work in a PDF case: Ghostscript, or fail/skip (above)."""
+    if fmt == "pdf":
+        _ghostscript()
 
 
 def _narrow_dark(width, **label_kw):
@@ -1222,11 +1239,13 @@ def _narrow_dark(width, **label_kw):
     return fig, ax, bars, dm.label_bars(ax, **label_kw)
 
 
-def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path):
+@FORMATS
+def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path, fmt):
     # where="inside" on dark bars narrower than the numbers: white ink on
     # the bar would leave part of each number on the white background
     # (12,500 read as 2,50). A label its bar does not hold sits beyond the
     # bar's end in the text colour instead, and reads in the PNG and PDF.
+    _start(fmt)
     fig, ax, bars, labels = _narrow_dark(0.3, where="inside")
     dm.simple_layout(fig)
     renderer = drawn_renderer(fig)
@@ -1237,7 +1256,7 @@ def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path):
         assert box.y0 == pytest.approx(
             patch.get_window_extent(renderer).y1 + _offset_px(fig), abs=0.6
         )
-    _assert_readable(fig, labels, tmp_path)
+    _assert_readable(fig, labels, tmp_path, fmt)
 
     # Wide bars hold the numbers across: the tall ones keep them inside in
     # white; the short ones (too short along) put them beyond their ends.
@@ -1255,15 +1274,20 @@ def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path):
         else:
             assert _hex(label) == "#000000"
             assert box.y0 == pytest.approx(bar.y1 + _offset_px(fig), abs=0.6)
-    _assert_readable(fig, labels, tmp_path)
+    _assert_readable(fig, labels, tmp_path, fmt)
 
 
-def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(tmp_path):
-    # crowded="inside" on barh rows thinner than the text: the labels stay
-    # beyond the bar ends in the text colour (they used to move onto the
-    # rows in white and run past them); a later taller figure that holds
-    # them moves them in.
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+@FORMATS
+def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(
+    tmp_path, fmt
+):
+    # crowded="inside" on barh rows thinner than the text (a 9 x 3.15 cm
+    # figure: 12 rows of about 6 pt, bars of 1.5 pt): the rows crowd, so the
+    # rule moves the labels in, but no row holds a number across; they stay
+    # beyond the bar ends in the text colour. Before, they moved onto the
+    # rows in white and ran past them onto the background.
+    _start(fmt)
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", 0.35), dpi=200)
     values = np.linspace(4000.0, 1500.0, 12)
     ax.barh(np.arange(12), values, height=0.25, color="dc.blue9")
     ax.invert_yaxis()
@@ -1275,7 +1299,7 @@ def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(tmp_path):
     assert shown
     assert all(t.where == "outside" and not t.on_bar for t in shown)
     assert {_hex(t) for t in shown} == {"#000000"}
-    _assert_readable(fig, labels, tmp_path)
+    _assert_readable(fig, labels, tmp_path, fmt)
 
 
 def test_error_bars_push_labels_past_caps():
