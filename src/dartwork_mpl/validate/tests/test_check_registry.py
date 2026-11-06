@@ -106,3 +106,72 @@ class TestOrchestratorParity:
         warnings = validate_figure(fig, checks=("EMPTY_AXES",), quiet=True)
         assert [w for w in warnings if w.check_id == "EMPTY_AXES"]
         plt.close(fig)
+
+
+_EXPECTED_FIX_IDS = {
+    "CLIPPED_TEXT",
+    "EMPTY_AXES",
+    "LEGEND_OVERFLOW",
+    "LEGEND_OVERLAP",
+    "MARGIN_ASYMMETRY",
+    "OVERFLOW",
+    "OVERLAP",
+    "PIE_LABEL_OFFSET",
+    "PRESET_OVERRIDE",
+    "TICK_CROWD",
+    "TICK_DECIMAL",
+    "TICK_ROTATION",
+    "UNIT_DUP",
+    "VALUE_LABEL_DECIMAL",
+}
+
+
+class TestRegistrationIsImportDriven:
+    """Importing the package registers every check and fix; no private
+    ``check_*`` names are re-exported from it (D6)."""
+
+    @staticmethod
+    def _fresh(snippet: str) -> str:
+        import subprocess
+        import sys
+
+        out = subprocess.run(
+            [sys.executable, "-c", snippet],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return out.stdout.strip()
+
+    def test_fresh_import_registers_exact_check_and_fix_ids(self) -> None:
+        import json
+
+        raw = self._fresh(
+            "import json\n"
+            "from dartwork_mpl.validate._checks import registered_checks\n"
+            "from dartwork_mpl.validate._checks import _registry\n"
+            "print(json.dumps({'checks': [c.check_id for c in "
+            "registered_checks()], 'fixes': sorted(_registry._FIX_HANDLERS)}))"
+        )
+        got = json.loads(raw)
+        assert got["checks"] == _EXPECTED_ORDER
+        assert set(got["fixes"]) == _EXPECTED_FIX_IDS
+
+    def test_validate_figure_import_alone_registers_everything(self) -> None:
+        import json
+
+        raw = self._fresh(
+            "import json\n"
+            "from dartwork_mpl.validate import validate_figure\n"
+            "from dartwork_mpl.validate._checks import registered_checks\n"
+            "print(json.dumps([c.check_id for c in registered_checks()]))"
+        )
+        assert json.loads(raw) == _EXPECTED_ORDER
+
+    def test_package_does_not_reexport_private_check_functions(self) -> None:
+        import dartwork_mpl.validate._checks as checks
+
+        leaked = sorted(
+            n for n in vars(checks) if n.startswith("check_")
+        ) + sorted(n for n in checks.__all__ if n.startswith("check_"))
+        assert leaked == []

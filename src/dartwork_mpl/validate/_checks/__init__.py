@@ -11,52 +11,33 @@ Importing this package runs every check module, which is what populates
 the registry — so ``from ._checks import registered_checks`` is enough to
 have all checks available.
 
-Public re-exports keep the ``check_*`` names available for backwards
-compatibility with code that imported them directly.
+The ``check_*`` functions are not re-exported here: they are reached
+through ``registered_checks()`` or their own module. The module imports
+below exist only for their registration side effect.
 """
 
 from __future__ import annotations
 
+from . import (  # noqa: F401  (imported to register their checks and fixes)
+    clipped_text,
+    cross_axes,
+    empty_axes,
+    grayscale_safety,
+    legend,
+    legend_overlap,
+    margin,
+    min_font_size,
+    overflow,
+    overlap,
+    pie_label,
+    preset_override,
+    text_contrast,
+    tick_crowd,
+    tick_decimal,
+    tick_rotation,
+    unit_dup,
+    value_label_decimal,
+)
 from ._registry import RegisteredCheck, register_check, registered_checks
-from .clipped_text import check_clipped_text
-from .cross_axes import check_cross_axes_overlap
-from .empty_axes import check_empty_axes
-from .grayscale_safety import check_grayscale_safety
-from .legend import check_legend_overflow
-from .legend_overlap import check_legend_overlap
-from .margin import check_margin_asymmetry
-from .min_font_size import check_min_font_size
-from .overflow import check_overflow
-from .overlap import check_overlap
-from .pie_label import check_pie_label_offset
-from .preset_override import check_preset_override
-from .text_contrast import check_text_contrast
-from .tick_crowd import check_tick_crowding
-from .tick_decimal import check_tick_decimal
-from .tick_rotation import check_tick_rotation
-from .unit_dup import check_unit_dup
-from .value_label_decimal import check_value_label_decimal
 
-__all__ = [
-    "RegisteredCheck",
-    "check_clipped_text",
-    "check_cross_axes_overlap",
-    "check_empty_axes",
-    "check_grayscale_safety",
-    "check_legend_overflow",
-    "check_legend_overlap",
-    "check_margin_asymmetry",
-    "check_min_font_size",
-    "check_overflow",
-    "check_overlap",
-    "check_pie_label_offset",
-    "check_preset_override",
-    "check_text_contrast",
-    "check_tick_crowding",
-    "check_tick_decimal",
-    "check_tick_rotation",
-    "check_unit_dup",
-    "check_value_label_decimal",
-    "register_check",
-    "registered_checks",
-]
+__all__ = ["RegisteredCheck", "register_check", "registered_checks"]

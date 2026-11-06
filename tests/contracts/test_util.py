@@ -87,10 +87,7 @@ def test_warning_points_at_the_importing_user_code() -> None:
         """
     )
     result = subprocess.run(
-        [sys.executable, "-c", code],
-        capture_output=True,
-        text=True,
-        check=True,
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
     lines = [
         ln for ln in result.stderr.splitlines() if "DeprecationWarning" in ln
@@ -100,7 +97,10 @@ def test_warning_points_at_the_importing_user_code() -> None:
 
 
 def test_from_import_and_plain_import_each_warn_once() -> None:
-    for stmt in ("import dartwork_mpl.util", "from dartwork_mpl.util import fs"):
+    for stmt in (
+        "import dartwork_mpl.util",
+        "from dartwork_mpl.util import fs",
+    ):
         code = (
             "import warnings\nwarnings.simplefilter('always')\n" + stmt + "\n"
         )
