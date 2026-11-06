@@ -64,26 +64,35 @@ def drawn_tick_labels(ax: Axes, which: Literal["x", "y"]) -> list[Text]:
     Matplotlib draws a tick only when the axes' axis is on
     (``ax.axis("off")`` turns it off) and the axis is visible, and when its
     location lies in the view interval, compared after the axis transform
-    with a 1e-10 relative slack. Every other label stays on the artist tree,
-    visible and positioned, but is never drawn: a colorbar tick a hair past
-    its limit, the ticks of a title-only panel.
+    with a 1e-10 relative slack. Each drawn tick draws its visible
+    ``label1`` (left / bottom) and ``label2`` (right / top, with
+    ``labelright`` / ``labeltop``). Every other label stays on the artist
+    tree, visible and positioned, but is never drawn: a colorbar tick a
+    hair past its limit, the ticks of a title-only panel.
     """
     axis = ax.xaxis if which == "x" else ax.yaxis
     if not getattr(ax, "axison", True) or not axis.get_visible():
         return []
     transform = axis.get_transform()
     locs = np.asarray(axis.get_majorticklocs(), dtype=float)
+    if not locs.size:
+        return []
     with np.errstate(all="ignore"):
         view = transform.transform(np.asarray(axis.get_view_interval(), float))
-        placed = transform.transform(locs) if locs.size else locs
+        placed = np.ravel(transform.transform(locs))
     low, high = sorted(float(v) for v in np.ravel(view))
     slack = _EDGE_RTOL * (high - low)
-    labels = axis.get_majorticklabels()
-    return [
-        label
-        for place, label in zip(np.ravel(placed), labels, strict=False)
-        if np.isfinite(place) and low - slack <= place <= high + slack
-    ]
+    drawn: list[Text] = []
+    # One Tick per location, as matplotlib pairs them when it draws.
+    for place, tick in zip(
+        placed, axis.get_major_ticks(len(locs)), strict=True
+    ):
+        if not (np.isfinite(place) and low - slack <= place <= high + slack):
+            continue
+        drawn += [
+            lab for lab in (tick.label1, tick.label2) if lab.get_visible()
+        ]
+    return drawn
 
 
 def iter_view_ticks(

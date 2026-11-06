@@ -85,3 +85,57 @@ def test_a_drawn_tick_label_past_the_canvas_is_still_flagged():
         "OVERFLOW",
         "CLIPPED_TEXT",
     }
+
+
+# Re-review of PR #595, item 6: drawn_tick_labels paired N tick locations
+# with matplotlib's label list (visible left/bottom labels, then right/top
+# ones), so labels on the second side were never checked and one hidden
+# label shifted every pairing after it.
+
+
+def test_labels_on_the_right_and_top_are_drawn_and_checked():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 1_000_000])
+    ax.tick_params(axis="y", labelright=True)
+    ax.tick_params(axis="x", labeltop=True)
+    fig.subplots_adjust(left=0.3, right=0.995, top=0.995, bottom=0.2)
+    fig.canvas.draw()
+    for which in ("x", "y"):
+        axis = ax.xaxis if which == "x" else ax.yaxis
+        drawn = drawn_tick_labels(ax, which)
+        seconds = [t.label2 for t in axis.get_major_ticks()]
+        assert any(label in drawn for label in seconds), which
+    found = dm.validate_figure(
+        fig, checks=("OVERFLOW", "CLIPPED_TEXT"), quiet=True
+    )
+    seconds_text = {
+        t.label2.get_text()
+        for axis in (ax.xaxis, ax.yaxis)
+        for t in axis.get_major_ticks()
+    }
+    over = {w.detail["text"] for w in found if w.check_id == "OVERFLOW"}
+    assert over and over <= seconds_text, found  # the right / top labels
+
+
+def test_a_hidden_label_shifts_nothing():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 1])
+    ax.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25])
+    ax.set_ylim(0, 1.1)  # 1.25 is out of view: not drawn
+    fig.canvas.draw()
+    ticks = ax.yaxis.get_major_ticks()
+    ticks[0].label1.set_visible(False)  # the shared-panel idiom
+    drawn = drawn_tick_labels(ax, "y")
+    assert drawn == [t.label1 for t in ticks[1:5]], [
+        t.get_text() for t in drawn
+    ]
+
+
+def test_a_left_panels_right_labels_running_into_the_next_panel():
+    fig, (left, right) = plt.subplots(1, 2, figsize=dm.figsize("12cm", "6cm"))
+    left.plot([0, 1], [0, 123456.789])
+    right.plot([0, 1], [0, 1])
+    left.ticklabel_format(useOffset=False, style="plain")
+    left.tick_params(axis="y", labelright=True)
+    fig.subplots_adjust(wspace=0.05, left=0.2, right=0.95)
+    assert "CROSS_AXES_OVERLAP" in _ids(fig, "CROSS_AXES_OVERLAP")
