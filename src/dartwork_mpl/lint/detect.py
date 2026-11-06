@@ -128,14 +128,21 @@ def _is_concatenation(node: ast.expr) -> bool:
 
 
 def _twin_legend_hand_merge(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
-    """A legend call that merges the entries of two Axes by hand.
+    """An Axes legend call that merges a twin pair's entries by hand.
 
-    Two shapes: ``ax.legend(h1 + h2, l1 + l2)`` after two
-    ``get_legend_handles_labels`` reads, and, in a source that makes a
-    ``twinx`` / ``twiny``, ``ax.legend(lns, labs)`` whose handles are, or
-    name a variable bound to, a concatenation (``lns = l1 + l2``). That is
-    the merge ``dm.place_legend`` does for a twin pair.
+    Only in a source that makes a ``twinx`` / ``twiny``, and only on an
+    Axes (or pyplot's current Axes): ``ax.legend(h1 + h2, l1 + l2)`` after
+    two ``get_legend_handles_labels`` reads, or ``ax.legend(lns, labs)``
+    whose handles are, or name a variable bound to, a concatenation
+    (``lns = l1 + l2``). That is the merge ``dm.place_legend`` does for a
+    twin pair. One legend for two panels, or a figure legend, is the
+    caller's layout: ``dm.place_legend(ax)`` would drop entries there.
     """
+    figure_legends = {
+        id(site.node)
+        for site in _call_sites(syntax)
+        if site.kind == "figure" and site.method == "legend"
+    }
     reads = twins = 0
     concatenated: set[str] = set()
     for node in ast.walk(syntax.tree):
@@ -156,11 +163,14 @@ def _twin_legend_hand_merge(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
             or (isinstance(node, ast.Name) and node.id in concatenated)
         )
 
+    if not twins:
+        return
     for node in ast.walk(syntax.tree):
         if not (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
             and node.func.attr == "legend"
+            and id(node) not in figure_legends
         ):
             continue
         given = {
@@ -178,7 +188,7 @@ def _twin_legend_hand_merge(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
             and _is_concatenation(handles)
             and _is_concatenation(labels)
         )
-        if both or (twins and merged(handles)):
+        if both or merged(handles):
             yield _method_offset(syntax, node.func)
 
 

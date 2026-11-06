@@ -1456,15 +1456,46 @@ ax.legend(h1 + h2, l1 + l2, loc="upper left")
 """
 
 HAND_MERGED_KEYWORDS = """
+ax2 = ax.twinx()
 h1, l1 = ax.get_legend_handles_labels()
 h2, l2 = ax2.get_legend_handles_labels()
 ax2.legend(handles=h1 + h2, labels=l1 + l2)
 """
 
 HAND_MERGED_STAR = """
+ax2 = ax.twiny()
 h1, l1 = ax.get_legend_handles_labels()
 h2, l2 = ax2.get_legend_handles_labels()
 ax.legend([*h1, *h2], [*l1, *l2])
+"""
+
+# Two panels, no twin: one legend for both is the caller's figure design,
+# not a twin merge; dm.place_legend(ax) would drop the other panel's entries.
+MERGED_PANELS_AXES = """
+import matplotlib.pyplot as plt
+fig, (ax, bx) = plt.subplots(1, 2)
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = bx.get_legend_handles_labels()
+ax.legend(h1 + h2, l1 + l2)
+"""
+
+MERGED_PANELS_FIGURE = """
+import matplotlib.pyplot as plt
+fig, (ax, bx) = plt.subplots(1, 2)
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = bx.get_legend_handles_labels()
+fig.legend(h1 + h2, l1 + l2, loc="lower center")
+"""
+
+# A figure legend over a twin pair is a figure-level choice place_legend
+# does not make.
+TWIN_FIGURE_LEGEND = """
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+ax2 = ax.twinx()
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+fig.legend(h1 + h2, l1 + l2, loc="upper center")
 """
 
 SINGLE_LEGENDS = (
@@ -1489,6 +1520,16 @@ class TestTwinLegendHandMerge:
         assert found[0].severity == "info"
         assert "dm.place_legend(ax)" in (found[0].fix_suggestion or "")
         assert "legend(" in (found[0].snippet or "")
+
+    @pytest.mark.parametrize(
+        "code", [MERGED_PANELS_AXES, MERGED_PANELS_FIGURE, TWIN_FIGURE_LEGEND]
+    )
+    def test_merges_that_are_not_a_twin_axes_legend_are_quiet(
+        self, code: str
+    ) -> None:
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
 
     @pytest.mark.parametrize("code", SINGLE_LEGENDS)
     def test_single_legend_does_not_fire(self, code: str) -> None:
