@@ -19,9 +19,9 @@ import dartwork_mpl as dm
 from dartwork_mpl.annotation import place_legend
 from tests.support.mpl_observe import (
     drawn_renderer,
-    legend_corner,
     legend_gap_px,
     legend_ncols,
+    pinned_legend_corner,
 )
 
 PRESETS = ("report", "scientific", "presentation")
@@ -213,7 +213,7 @@ class TestOutsideRobustness:
     def test_matplotlib_locs_are_unchanged(self) -> None:
         fig, ax = _chart("report")
         legend = place_legend(ax, loc="lower right")
-        assert legend_corner(legend) == "lower right"
+        assert pinned_legend_corner(legend) == "lower right"
         assert legend.get_bbox_to_anchor().bounds == ax.bbox.bounds
         plt.close(fig)
 

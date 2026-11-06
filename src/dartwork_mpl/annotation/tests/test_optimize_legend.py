@@ -10,7 +10,7 @@ import pytest
 import dartwork_mpl as dm
 from dartwork_mpl import annotation, helpers
 from dartwork_mpl.helpers import labels
-from tests.support.mpl_observe import legend_corner, legend_ncols
+from tests.support.mpl_observe import legend_ncols, pinned_legend_corner
 
 # Protocol 4 global reference produced before annotation owned the implementation.
 OLD_PICKLE = (
@@ -74,7 +74,7 @@ def test_native_columns_format_and_placement(count, cap, columns, outside):
         )
         legend = ax.get_legend()
         assert legend_ncols(legend) == columns
-        assert legend_corner(legend) == (
+        assert pinned_legend_corner(legend) == (
             "upper left" if outside else "lower left"
         )
         assert [t.get_text() for t in legend.get_texts()] == [
@@ -106,7 +106,7 @@ def test_empty_discoverable_handles_leave_explicit_legend_untouched():
         original = ax.legend([line], ["explicit"], loc="lower right")
         assert dm.optimize_legend(ax, preferred_loc="invalid") is None
         assert ax.get_legend() is original
-        assert legend_corner(original) == "lower right"
+        assert pinned_legend_corner(original) == "lower right"
         assert [t.get_text() for t in original.get_texts()] == ["explicit"]
     finally:
         plt.close(fig)

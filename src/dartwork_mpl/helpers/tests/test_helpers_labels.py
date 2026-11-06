@@ -6,7 +6,7 @@ from matplotlib.axes import Axes
 
 import dartwork_mpl as dm
 from dartwork_mpl.helpers.labels import optimize_legend
-from tests.support.mpl_observe import legend_corner, legend_ncols
+from tests.support.mpl_observe import legend_ncols, pinned_legend_corner
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ class TestOptimizeLegend:
         optimize_legend(ax, preferred_loc="upper right")
         legend = ax.get_legend()
         assert legend is not None
-        assert legend_corner(legend) == "upper right"  # requested above
+        assert pinned_legend_corner(legend) == "upper right"  # requested above
         assert [text.get_text() for text in legend.get_texts()] == ["series"]
 
     def test_few_items_use_single_column(self, ax: Axes) -> None:
@@ -91,7 +91,7 @@ class TestOptimizeLegend:
         optimize_legend(ax, outside=True)
         legend = ax.get_legend()
         assert legend is not None
-        assert legend_corner(legend) == "upper left"
+        assert pinned_legend_corner(legend) == "upper left"
         anchor = legend.get_bbox_to_anchor().transformed(
             ax.transAxes.inverted()
         )

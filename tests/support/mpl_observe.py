@@ -10,6 +10,7 @@ from __future__ import annotations
 from matplotlib.backend_bases import RendererBase
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
+from matplotlib.patches import Rectangle
 
 # Corner ``loc`` names in Matplotlib's code order (1-4).
 CORNERS = ("upper right", "upper left", "lower left", "lower right")
@@ -61,6 +62,30 @@ def legend_corner(legend: Legend, tol_px: float = 0.5) -> str | None:
         if abs(dx) <= tol_px and abs(dy) <= tol_px
     ]
     return matched[0] if len(matched) == 1 else None
+
+
+def pinned_legend_corner(legend: Legend) -> str | None:
+    """:func:`legend_corner`, but only if the legend keeps it once data fills it.
+
+    Matplotlib's ``loc="best"`` re-picks its spot on every draw, so a legend
+    that only happened to land on a corner moves when that corner of the
+    axes fills up. This puts an opaque patch over the observed corner (40%
+    of the axes each way, axes coordinates, so data limits stay), redraws,
+    and returns the corner only if the legend stayed. The patch is removed
+    again either way.
+    """
+    corner = legend_corner(legend)
+    ax = legend.axes
+    if corner is None or ax is None:
+        return corner
+    x0 = 0.0 if corner.endswith("left") else 0.6
+    y0 = 0.6 if corner.startswith("upper") else 0.0
+    occupant = Rectangle((x0, y0), 0.4, 0.4, transform=ax.transAxes)
+    ax.add_patch(occupant)
+    try:
+        return corner if legend_corner(legend) == corner else None
+    finally:
+        occupant.remove()
 
 
 def legend_ncols(legend: Legend) -> int:
