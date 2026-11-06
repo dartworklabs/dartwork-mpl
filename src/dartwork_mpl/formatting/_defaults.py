@@ -654,6 +654,28 @@ def _fixed_labels(axis: Axis) -> bool:
     return isinstance(axis.get_major_formatter(), ticker.FixedFormatter)
 
 
+def _pin_fixed_labels(axis: Axis) -> int:
+    """Keep matplotlib's ticks under fixed texts through the refit; 1 if pinned.
+
+    Matplotlib's own locator picks its tick count from the axis length, which
+    ``dm.simple_layout`` is about to change: texts made for 2.5-year steps
+    would land on 5-year ones (``2010`` at 2007.5). The ticks the locator
+    gives now are the ones the texts were made for when there are as many of
+    them as texts; they become the axis's ticks. Texts made for other ticks
+    (the view moved since), or a locator someone set, are left alone.
+    """
+    formatter = axis.get_major_formatter()
+    if not (
+        isinstance(formatter, ticker.FixedFormatter) and axis.isDefault_majloc
+    ):
+        return 0
+    locs = [float(v) for v in axis.get_majorticklocs()]
+    if len(locs) != len(formatter.seq):
+        return 0
+    axis.set_major_locator(ticker.FixedLocator(locs))
+    return 1
+
+
 def _year_axis(
     axis: Axis, values: npt.NDArray[np.float64], digits: Digits, suffix: str
 ) -> int:
@@ -796,7 +818,9 @@ def apply_default_tick_format(fig: Figure) -> int:
     locator only while ``axis.isDefault_majloc`` holds; ``set_major_formatter``
     and ``set_major_locator`` clear them (on every axes sharing the ticker),
     so anything someone set, of any class, a stock ``ConciseDateFormatter``
-    or ``ScalarFormatter`` included, is never replaced.
+    or ``ScalarFormatter`` included, is never replaced. Texts someone fixed
+    under matplotlib's locator get that locator's current ticks pinned
+    (:func:`_pin_fixed_labels`), so the refit cannot move them.
 
     Returns the number of axes changed. Safe to call again: what this call
     installs clears the same flags.
@@ -831,6 +855,7 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if not _plain_numbers(axis):
                 continue
+            changed += _pin_fixed_labels(axis)
             suffix = "년" if korean and date_style == "concise" else ""
             changed += _year_axes(ax, which, tick_years, suffix)
             if not axis.isDefault_majfmt:

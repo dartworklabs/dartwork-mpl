@@ -140,6 +140,58 @@ def test_fixed_labels_on_a_number_axis_keep_their_formatter():
     assert _misplaced(ax.yaxis) == [], _on(ax.yaxis)
 
 
+FIXED_CASES = [
+    # (x data, y data, axis)
+    (np.arange(2005, 2025), None, "x"),
+    (np.arange(1995, 2025), None, "x"),
+    (np.arange(2011, 2025), None, "x"),
+    (np.linspace(0, 5000, 20), None, "x"),
+    (np.linspace(0, 1, 20), None, "x"),
+    (None, np.linspace(1500, 2400, 20), "y"),
+    (None, np.linspace(-37, 412, 20), "y"),
+]
+
+
+@pytest.mark.parametrize("width", ["6cm", "9cm", "12cm", "17cm"])
+@pytest.mark.parametrize("preset", ["report", "scientific"])
+def test_fixed_labels_survive_the_refit_at_every_width(preset, width):
+    """The refit changes the axis length, and with it matplotlib's ticks.
+
+    Matplotlib's locator picks its tick count from the axis length, so a
+    refit 9 cm axis over 2005-2024 ticked every 5 years where the labels
+    were made for 2.5-year steps (``2010`` at 2007.5), and a 6 cm one over
+    0-5,000 put ``2000`` at 1,000; years and other numbers alike. The
+    ticks the texts were made for are pinned before the refit.
+    """
+    for x, y, which in FIXED_CASES:
+        for aspect in ("standard", "wide"):
+            dm.style.use(preset)
+            fig, ax = plt.subplots(figsize=dm.figsize(width, aspect))
+            if x is None:
+                x = np.arange(len(y))
+            if y is None:
+                y = np.arange(len(x))
+            ax.plot(x, y)
+            axis = ax.xaxis if which == "x" else ax.yaxis
+            made_for = list(axis.get_majorticklocs())
+            _fix_labels(axis, rotation=45 if which == "x" else 0)
+            dm.simple_layout(fig)
+            case = (preset, width, aspect, which, x[0], _on(axis))
+            assert _misplaced(axis) == [], case
+            assert list(axis.get_majorticklocs()) == made_for, case
+            plt.close(fig)
+
+
+def test_fixed_labels_made_for_other_ticks_are_left_alone():
+    """Texts that no longer match the ticks in number: nothing to keep."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(np.linspace(0, 5000, 20), np.arange(20))
+    _fix_labels(ax.xaxis)
+    ax.set_xlim(0, 1200)  # the view moved after the texts were taken
+    dm.simple_layout(fig)
+    assert type(ax.xaxis.get_major_locator()) is mticker.AutoLocator
+
+
 def test_labels_fixed_after_the_layout_are_not_thinned():
     """A second layout does not thin the year ticks under fixed labels.
 
