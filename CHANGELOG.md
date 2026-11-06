@@ -129,6 +129,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **`TEXT_CONTRAST` reads a shape only where it is drawn.** A bar past the
+  axes limit is drawn up to the axes edge, but `dm.validate_figure` read
+  text beyond the limit (a bar's value there) against the whole bar and
+  reported a contrast fault that was not drawn (black on `#1f4e79`,
+  2.42:1). A shape that clips now counts only inside its clip box; real
+  faults on a bar, or white text off it, are still found.
 - **Labels fixed by `set_xticklabels` print the right years.**
   `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)` on annual data
   read `2007.5` at 2010 after `dm.simple_layout`: the whole-year locator
