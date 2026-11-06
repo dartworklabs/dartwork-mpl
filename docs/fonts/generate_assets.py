@@ -28,7 +28,7 @@ SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-import dartwork_mpl as dm  # noqa: E402
+import dartwork_mpl as dm
 
 
 def _save_svg(fig: plt.Figure, path: Path, **savefig_kwargs) -> Path:
@@ -175,7 +175,9 @@ def _save_all_fonts_preview(images_dir: Path) -> Path:
     family_spacing = 2
     total_height = families_per_column * (max_fonts_in_family + family_spacing)
 
-    fig, ax = plt.subplots(figsize=dm.figsize("10in", f"{total_height * 0.22}in"))
+    fig, ax = plt.subplots(
+        figsize=dm.figsize("10in", f"{total_height * 0.22}in")
+    )
     fig.patch.set_facecolor("#fbfaf7")
     ax.set_facecolor("#ffffff")
 

@@ -280,7 +280,9 @@ def _make_evolution_figure(step: int) -> plt.Figure:
         c_pos, c_env = "tab:blue", "tab:gray"
     else:
         dm.style.use("scientific")
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=dm.figsize("19cm", "7.5cm"))
+        fig, (ax1, ax2) = plt.subplots(
+            1, 2, figsize=dm.figsize("19cm", "7.5cm")
+        )
         c_pos, c_env = "dc.teal3", "dc.indigo2"
 
     # Panel 1: Time Domain
