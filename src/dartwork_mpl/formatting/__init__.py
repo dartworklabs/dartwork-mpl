@@ -263,43 +263,19 @@ def format_axis_myriad(
     # Validate ``unit`` before touching the axes.
     AxisUnitFormatter(ladder, unit)
 
-    if decimals is not None and unit == "max":
-        legacy_decimals = decimals
-    else:
-        _set_formatter(
-            ax,
-            axis,
-            lambda: AxisUnitFormatter(
-                ladder, unit, decimals=decimals, currency=currency
-            ),
-        )
-        return
-
-    def _format_myriad(value: float, _pos: int | None = None) -> str:
-        if value == 0:
-            return "0"
-
-        sign = "-" if value < 0 else ""
-        prefix = f"{sign}{currency}"
-        abs_value = abs(value)
-
-        if abs_value < 10_000:
-            return f"{prefix}{abs_value:,.0f}"
-
-        threshold, unit = max(
-            item for item in unit_ladder if item[0] <= abs_value
-        )
-        scaled = abs_value / threshold
-        formatted = f"{scaled:,.{legacy_decimals}f}"
-        if legacy_decimals > 0:
-            formatted = formatted.rstrip("0").rstrip(".")
-        return f"{prefix}{formatted}{unit}"
-
-    formatter = ticker.FuncFormatter(_format_myriad)
-    if axis in {"x", "both"}:
-        ax.xaxis.set_major_formatter(formatter)
-    if axis in {"y", "both"}:
-        ax.yaxis.set_major_formatter(formatter)
+    # An integer with ``unit="max"`` keeps each tick in its own unit.
+    per_tick = decimals is not None and unit == "max"
+    _set_formatter(
+        ax,
+        axis,
+        lambda: AxisUnitFormatter(
+            ladder,
+            unit,
+            decimals=decimals,
+            currency=currency,
+            per_tick=per_tick,
+        ),
+    )
 
 
 def format_axis_millions(

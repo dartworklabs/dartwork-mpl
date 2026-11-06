@@ -177,7 +177,10 @@ class AxisUnitFormatter(ticker.Formatter):
         *,
         decimals: int | None = None,
         currency: str = "",
+        per_tick: bool = False,
     ) -> None:
+        if per_tick and (decimals is None or unit != "max"):
+            raise ValueError("per_tick needs decimals and unit='max'")
         self._ladder = tuple(sorted(ladder, key=lambda rung: rung.factor))
         self._fixed = next(
             (rung for rung in self._ladder if rung.label == unit), None
@@ -190,6 +193,7 @@ class AxisUnitFormatter(ticker.Formatter):
         self._rule = unit
         self._decimals = decimals
         self._currency = currency
+        self._per_tick = per_tick
         self._plan: _Plan | None = None
 
     # -- unit choice ----------------------------------------------------
@@ -277,8 +281,28 @@ class AxisUnitFormatter(ticker.Formatter):
         )
         return plan.axis_unit or self._max_unit(abs(value)), plan.decimals
 
+    def _per_tick_text(self, value: float) -> str:
+        """``value`` in its own unit, ``decimals`` places, zeros trimmed."""
+        decimals = self._decimals or 0
+        if value == 0:
+            return "0"
+        prefix = f"{'-' if value < 0 else ''}{self._currency}"
+        magnitude = abs(value)
+        rungs = [rung for rung in self._ladder if rung.factor > 1]
+        if magnitude < rungs[0].factor:
+            return f"{prefix}{magnitude:,.0f}"
+        rung = max(
+            (r for r in rungs if r.factor <= magnitude), key=lambda r: r.factor
+        )
+        text = f"{magnitude / rung.factor:,.{decimals}f}"
+        if decimals > 0:
+            text = text.rstrip("0").rstrip(".")
+        return f"{prefix}{text}{rung.label}"
+
     def __call__(self, x: float, pos: int | None = None) -> str:
         """Format one value with the last axis decision (or its own)."""
+        if self._per_tick:
+            return self._per_tick_text(float(x))
         value = float(x)
         if not math.isfinite(value):
             return str(value)
@@ -293,7 +317,10 @@ class AxisUnitFormatter(ticker.Formatter):
         The axis unit's factor, this formatter's currency prefix and the
         unit label as suffix; on a non-linear axis, ``value``'s own unit.
         Before any draw ``value`` decides alone, as :meth:`__call__` does.
+        A ``per_tick`` formatter has no axis unit: the plain scale.
         """
+        if self._per_tick:
+            return TickScale()
         unit, _decimals = self._decision(float(value))
         return TickScale(unit.factor, self._currency, unit.label)
 
