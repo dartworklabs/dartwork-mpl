@@ -88,6 +88,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   before is kept) and uses the library's year formatter: whole years with
   the suffix (`19년`; four digits when two would repeat), every value
   between years (`2019.2 …`), and `ax.ticklabel_format` works on it.
+  The formatter class is now `YearTickFormatter` (was `FuncFormatter`): the
+  cursor reads the value (`2007.53`, was `08년`), and calling it directly
+  before a draw on a fraction (`f(2025.5)`) gives `""` (was `26년`).
 
 ## [0.7.0] - 2026-11-06
 
