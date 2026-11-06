@@ -118,6 +118,7 @@ from ._bar_stacks import BarStack, bar_values, pile_bars
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.legend import Legend
     from matplotlib.patches import Rectangle
     from matplotlib.typing import CoordsType
 
@@ -152,8 +153,9 @@ class BarLabel(Annotation):
     ``hidden_for`` says why the layout's last pass hid the label where it
     would overlap something: ``"turn"``, another series' label took the
     bar index (series alternate); ``"room"``, it could not be kept clear of
-    the other labels; ``"legend"``, a legend covers it. ``None`` while the
-    layout has not hidden it.
+    the other labels; ``"legend"``, a legend covers it (``hidden_by``: that
+    legend); ``"text"``, as a bar's value past a limit it would cover other
+    text. ``None`` while the layout has not hidden it.
     """
 
     def __init__(
@@ -188,8 +190,10 @@ class BarLabel(Annotation):
         self.stack = stack
         self.clear_of: tuple[Rectangle, ...] = ()
         self.beyond: BarLabel | None = None
-        # Why the layout's last pass hid it where it would overlap, if it did.
+        # Why the layout's last pass hid it where it would overlap, if it did,
+        # and the legend that covers it when that is why.
         self.hidden_for: HiddenFor | None = None
+        self.hidden_by: Legend | None = None
         # Whether a plain bar's end label meant for its bar (inside, or
         # inside a limit) sits off it: the bar does not hold it (follow).
         self.off_bar = False

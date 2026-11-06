@@ -1870,6 +1870,113 @@ def test_a_value_beyond_the_limit_never_covers_other_text(tmp_path, fmt, case):
     _assert_readable(fig, shown, tmp_path, fmt)
 
 
+def _cut_by_a_side_legend(side):
+    """Thin dark bars past a limit you set, their values beyond it.
+
+    ``"above"``: two bars past ``set_ylim(0, 1000)`` under a title (the
+    re-review's N-I2 figure); ``"right"``: the middle one of five thin barh
+    rows past ``set_xlim(0, 1000)``, where a legend centred on the right
+    side lands. The series is labelled for a legend.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    if side == "above":
+        values = [480, 520, 12500, 1350, 610, 700]
+        ax.bar(np.arange(6), values, width=0.3, color="dc.blue9", label="Rev")
+        ax.set_ylim(0, 1000)
+        ax.set_title("Quarterly revenue")
+        return fig, ax, dm.label_bars(ax), ["12,500", "1,350"]
+    values = [480, 520, 12500, 610, 700]
+    ax.barh(np.arange(5), values, height=0.15, color="dc.blue9", label="Rev")
+    ax.set_xlim(0, 1000)
+    return fig, ax, dm.label_bars(ax), ["12,500"]
+
+
+@FORMATS
+@pytest.mark.parametrize("side", ["above", "right"])
+def test_a_legend_placed_on_a_side_clears_the_values_beyond_it(
+    tmp_path, fmt, side
+):
+    # Re-review N-I2 (pending the user's choice): dm.place_legend(ax,
+    # loc="above") anchored the legend past the tick and axis labels only,
+    # so it covered the true values just beyond the top limit (9-3 B), the
+    # legend rule hid them, and the warning named dm.place_legend(ax), the
+    # call already made. The layout now anchors such a legend past those
+    # values too (and lifts the title over the legend as before).
+    _start(fmt)
+    fig, ax, labels, cut = _cut_by_a_side_legend(side)
+    dm.place_legend(ax, loc=side)
+    caught = _all_layout_warnings(fig)
+    renderer = drawn_renderer(fig)
+    assert not [w for w in caught if "legend" in w]
+    values = [t for t in labels if t.get_text() in cut]
+    assert all(t.get_visible() and t.clipped and t.off_bar for t in values)
+    assert all(t.hidden_for is None for t in labels)
+    legend = ax.get_legend().get_window_extent(renderer)
+    for t in values:
+        box = t.get_window_extent(renderer)
+        assert not _cover(box, legend, 0.5)
+        if side == "above":
+            assert legend.y0 >= box.y1
+        else:
+            assert legend.x0 >= box.x1
+    if side == "above":
+        title = ax.title.get_window_extent(renderer)
+        assert title.y0 >= legend.y1  # lifted over the legend
+        assert not any(
+            _cover(t.get_window_extent(renderer), title, 0.5) for t in values
+        )
+    _assert_readable(fig, values, tmp_path, fmt)
+
+
+def _legend_over_cut_values(how):
+    """A legend over values of bars past a limit, as ``how`` put it there."""
+    if how == "axes above":  # the N-I2 figure, the caller's legend above
+        fig, ax, labels, _ = _cut_by_a_side_legend("above")
+        ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0))
+        return fig, ax, labels
+    # The I4 figure: the first value sits just inside the limit, at the
+    # upper left corner.
+    fig, ax, _ = _plain([135, 48, 52, 61, 58, 120], color="dc.teal2")
+    ax.containers[0].set_label("series")
+    ax.set_ylim(0, 100)
+    if how == "axes inside":
+        ax.legend(loc="upper left")
+    elif how == "placed inside":
+        dm.place_legend(ax, loc="upper left")
+    else:
+        fig.legend(
+            loc="upper left", bbox_to_anchor=(0, 1), bbox_transform=ax.transAxes
+        )
+    return fig, ax, dm.label_bars(ax)
+
+
+@pytest.mark.parametrize(
+    ("how", "cure"),
+    [
+        ("axes above", 'dm.place_legend(ax, loc="above") puts the legend'),
+        ("axes inside", "dm.place_legend(ax) puts the legend"),
+        ("placed inside", 'dm.place_legend(ax, loc="above") puts the legend'),
+        ("figure", "a figure legend moved off them shows them"),
+    ],
+)
+def test_the_legend_warning_names_the_cure_for_that_legend(how, cure):
+    # Re-review N-I2: a legend the layout does not move hides the labels it
+    # covers (review I4), and the warning's cure fits where that legend came
+    # from: the caller's legend outside the axes keeps its side through
+    # dm.place_legend(ax, loc=<side>), the caller's inside one goes clear
+    # with dm.place_legend(ax), one dm.place_legend already put inside goes
+    # above, and a figure legend is not dm.place_legend's to move.
+    fig, ax, labels = _legend_over_cut_values(how)
+    caught = [w for w in _all_layout_warnings(fig) if "under a legend" in w]
+    drawn_renderer(fig)
+    hidden = [t for t in labels if t.hidden_for == "legend"]
+    assert hidden and all(not t.get_visible() for t in hidden)
+    assert len(caught) == 1
+    assert f"{len(hidden)} of {len(labels)}" in caught[0]
+    assert cure in caught[0]
+    assert "dm.place_legend(ax) puts" not in caught[0] or how == "axes inside"
+
+
 def test_labels_go_on_the_axes_drawn_on_top():
     # The twin idiom that keeps the bars' axes on top: zorder, not order.
     fig, ax, _ = _quarterly()

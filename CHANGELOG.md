@@ -40,8 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   groups), `dm.simple_layout` warns once with the count and the cure (a
   taller or wider figure); `crowded="skip"`, which asks for hiding, stays
   silent. A label a legend covers is hidden too, with its own warning
-  (`dm.place_legend(ax)` keeps the legend clear of the labels). On a twin
-  pair the labels go on the top axes. The keywords:
+  that names the cure for that legend (`dm.place_legend(ax)` keeps the
+  legend clear of the labels; a legend it puts on a side, `loc="above"`
+  say, is anchored past the values beyond that limit). On a twin pair the
+  labels go on the top axes. The keywords:
   `where`, `total`, `crowded`, `decimals`, `fmt` (a `{}` template, a
   format-spec field such as `"{:.2f}"`, or a callable), `size`, `color`
   (`"series"` colours labels off their bar).

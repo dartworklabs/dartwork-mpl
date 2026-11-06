@@ -695,8 +695,13 @@ rather than `"standard"`); for vertical bars, wider. A taller or wider
 figure brings the labels back.
 
 **Legends.** A label that a legend covers is hidden, and `dm.simple_layout`
-warns once with the count. `dm.place_legend(ax)` puts the legend clear of
-the labels; a legend you fix with `ax.legend(loc=...)` keeps its place.
+warns once with the count and the cure for that legend. `dm.place_legend(ax)`
+puts the legend clear of the labels; on a side (`loc="above"`, `"below"`,
+`"right"`, `"left"`) the layout anchors it past the values beyond that
+limit, so a cut bar keeps its true value. A legend you fix with
+`ax.legend(loc=...)` or `fig.legend` keeps its place: the warning names
+`dm.place_legend(ax)`, or for a legend outside the axes the same side
+through `loc=`.
 
 On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
 last, so the partner's line is never drawn over them. A later `Text.set_*`

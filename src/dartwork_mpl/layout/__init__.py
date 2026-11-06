@@ -42,6 +42,7 @@ from .._figure_geometry import (
     axes_titles,
     get_renderer,
     iter_figure_level_extents,
+    outside_side,
     reanchor_outside,
     respread_line_end_labels,
     same_position_axes,
@@ -752,7 +753,8 @@ def simple_layout(
 
     Before measuring, a legend placed with ``dm.place_legend(ax,
     loc="above" | "below" | "right" | "left")`` is re-anchored past the
-    tick and axis labels present now, and the titles of an axes whose
+    tick and axis labels present now (and past the ``dm.label_bars``
+    values beyond that limit it would cover), and the titles of an axes whose
     legend sits above it (``place_legend(loc="above")`` or a raw
     ``ax.legend(..., bbox_to_anchor=(x, 1.0))``) get their offset raised
     so they sit ``axes.titlepad`` above that legend; their text, size and
@@ -949,6 +951,20 @@ def _settle_bar_labels(fig: Figure, renderer: RendererBase) -> bool:
     return before != [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
 
 
+def _bar_values_past_limits(ax: Axes, renderer: RendererBase) -> list[Bbox]:
+    """Where ``dm.label_bars`` values beyond a limit of ``ax`` are drawn."""
+    from ..annotation import bar_values_past_limits
+
+    return bar_values_past_limits(ax, renderer)
+
+
+def _clear_bar_labels(fig: Figure, renderer: RendererBase) -> None:
+    """Hide the bar labels a legend or other text covers, where they are now."""
+    from ..annotation import clear_bar_labels
+
+    clear_bar_labels(fig, renderer)
+
+
 def _figure_artist_reservations(
     fig: Figure, renderer: Any, fw_px: float, fh_px: float
 ) -> _Sides:
@@ -1123,15 +1139,19 @@ def _settle_outside_legends(fig: Figure, renderer: RendererBase) -> bool:
     """Re-anchor outside legends, re-space line-end labels, lift titles over legends.
 
     Runs on every Axes of ``fig`` before the layout measures it, so a
-    legend placed before its axis labels existed moves past them and a
+    legend placed before its axis labels existed moves past them (and past
+    the ``dm.label_bars`` values beyond that limit it would cover) and a
     title never sits on a legend above its Axes. Returns whether anything
     moved (the caller redraws before measuring).
     """
     moved = False
     for ax in fig.axes:
         legend = ax.get_legend()
-        if legend is not None and reanchor_outside(legend, ax, renderer):
-            moved = True
+        if legend is not None and outside_side(legend) is not None:
+            # Past the bar values beyond that limit it would cover, too.
+            values = _bar_values_past_limits(ax, renderer)
+            if reanchor_outside(legend, ax, renderer, values):
+                moved = True
         # Line-end labels (dm.label_line_ends) were spaced at the size the
         # Axes had then; space them again at its size now.
         if respread_line_end_labels(ax, renderer):
@@ -1166,12 +1186,14 @@ def _solve_layout_step(
        :func:`_settle_bar_labels`), redrawing when a limit moved. Each
        step starts again from matplotlib's autoscaled limits, so the
        headroom follows the final size without compounding.
-    4. Re-anchors outside legends and lifts titles over legends above
-       their axes (:func:`_settle_outside_legends`), redrawing after a
-       move.
-    5. Measures the content overhang of every target axes and the room
+    4. Re-anchors outside legends (past the bar values beyond that limit
+       they would cover too) and lifts titles over legends above their
+       axes (:func:`_settle_outside_legends`), redrawing after a move.
+    5. Hides the bar labels a legend or other text covers where those are
+       drawn now (:func:`_clear_bar_labels`).
+    6. Measures the content overhang of every target axes and the room
        figure-level artists reserve.
-    6. Hands those measurements to the pure :func:`_solve_edges`.
+    7. Hands those measurements to the pure :func:`_solve_edges`.
 
     The caller writes the returned edges into the GridSpec and decides
     whether to stop iterating based on ``delta_px``.
@@ -1191,6 +1213,7 @@ def _solve_layout_step(
             break
         fig.canvas.draw()
         renderer = get_renderer(fig)
+    _clear_bar_labels(fig, renderer)
     fbox = fig.bbox
     fw_px, fh_px = fbox.width, fbox.height
 

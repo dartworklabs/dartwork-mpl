@@ -13,10 +13,12 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib.transforms import Bbox
 
 from dartwork_mpl._figure_geometry import (
     anchor_outside,
     outside_clearance_px,
+    outside_side,
     reanchor_outside,
     same_position_axes,
 )
@@ -66,4 +68,27 @@ def test_reanchor_ignores_artists_it_did_not_anchor() -> None:
     ax.plot([0, 1], [0, 1], label="line")
     legend = ax.legend()
     assert reanchor_outside(legend, ax, drawn_renderer(fig)) is False
+    plt.close(fig)
+
+
+def test_anchor_clears_the_obstacles_in_its_way_and_not_the_others() -> None:
+    # Re-review N-I2: bar values past the top limit sit above the axes; a
+    # legend anchored above moves past the ones it overlaps along the top
+    # (in x), not past one beside it.
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [0, 1], label="line")
+    legend = ax.legend(loc="lower center")
+    renderer = drawn_renderer(fig)
+    assert anchor_outside(legend, ax, "above", renderer) is True
+    renderer = drawn_renderer(fig)
+    box = ax.get_window_extent(renderer)
+    own = legend.get_window_extent(renderer)
+    in_way = Bbox.from_extents(own.x0, box.y1 + 2, own.x1, box.y1 + 30)
+    beside = Bbox.from_extents(box.x0, box.y1 + 2, own.x0 - 5, box.y1 + 60)
+    assert outside_side(legend) == "above"
+    assert reanchor_outside(legend, ax, renderer, [beside]) is False
+    assert reanchor_outside(legend, ax, renderer, [in_way, beside]) is True
+    renderer = drawn_renderer(fig)
+    assert legend.get_window_extent(renderer).y0 >= in_way.y1 - 0.5
+    assert outside_side(ax.legend()) is None  # a legend it did not anchor
     plt.close(fig)
