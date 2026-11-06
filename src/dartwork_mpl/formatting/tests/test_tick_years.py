@@ -897,7 +897,13 @@ def test_year_detection_costs_a_few_numpy_passes(kind):
     values took 0.6-3.6 s on a 10M-point line, about 200 times one numpy
     pass over the same values. The check is relative, in this process: the
     best of five detection runs against the best of five ``np.rint``
-    passes, interleaved so machine load hits both alike (re-review N6).
+    passes, interleaved (re-review N6), in this thread's CPU time.
+
+    Not in wall time: on a loaded host a 1 ms pass often ends inside one
+    scheduler slice, so its best of five is not preempted, while every ~5 ms
+    detection run is, and the waits count as detection (CI 2026-11-06, 64
+    xdist workers on a shared host: 108 ms against 1.03 ms). CPU time leaves
+    out the waits; today's detection costs 3-8 passes.
     """
     if kind == "numbers":
         x = np.arange(_POINTS, dtype=float)  # not years: out of range
@@ -907,12 +913,12 @@ def test_year_detection_costs_a_few_numpy_passes(kind):
     ax.plot(x, np.zeros(len(x)), linewidth=0.3)
     detect, one_pass = [], []
     for _ in range(5):
-        start = time.perf_counter()
+        start = time.thread_time()
         apply_default_tick_format(fig)
-        detect.append(time.perf_counter() - start)
-        start = time.perf_counter()
+        detect.append(time.thread_time() - start)
+        start = time.thread_time()
         np.rint(x)
-        one_pass.append(time.perf_counter() - start)
+        one_pass.append(time.thread_time() - start)
     assert min(detect) < 30 * min(one_pass), (detect, one_pass)
     assert year_data(x) == (kind == "years")
 
