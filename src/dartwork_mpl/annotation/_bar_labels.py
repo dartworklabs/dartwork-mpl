@@ -21,17 +21,23 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   like the ticks.
 * **Side.** Outside the bar end; a negative bar's label below it (``barh``:
   left of it); an inverted value axis flips the side with the bar; error
-  bars push the label past their caps.
-* **Twins.** On a ``twinx`` / ``twiny`` pair the labels go on the twin drawn
-  last, placed with the bars' own data transform, so no partner's line is
-  drawn over them.
+  bars push the label past their caps, but not past the view.
+* **View.** A label shows while its bar's end (its middle for
+  ``where="center"``) lies in the view, within one pixel: a bar ending on a
+  limit keeps its label just outside the axes, a bar outside the view or
+  running past a limit the caller set has none (nor any room in a
+  ``bbox_inches="tight"`` save).
+* **Twins.** On a ``twinx`` / ``twiny`` pair the labels go on the Axes drawn
+  last (by zorder, then figure order), placed with the bars' own data
+  transform, so no partner's line is drawn over them.
 * **Explicit wins.** A label's text and placement are rewritten only while
   they still hold what this module last wrote; a later ``Text.set_*`` on a
   returned label is kept through every draw and layout.
 
 Each call is recorded on its Axes as a :class:`BarLabelFamily` in
 ``ax._dm_bar_label_families`` (the labels, the containers, the options) for
-the layout's later passes.
+the layout's later passes. The geometry (anchor, side, view, host Axes)
+lives in :mod:`._bar_label_geometry`.
 """
 
 from __future__ import annotations
@@ -61,6 +67,7 @@ from ..formatting import (
     value_label_decimals,
 )
 from ..scale import fs, fw
+from ._bar_label_geometry import host_axes, in_view, place
 
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
@@ -76,9 +83,6 @@ Crowded: TypeAlias = Literal["rotate", "skip", "inside"]
 Orientation: TypeAlias = Literal["vertical", "horizontal"]
 Fmt: TypeAlias = str | Callable[[float], object] | None
 RGB: TypeAlias = tuple[float, float, float]
-
-# Point offset between a bar end and its label (``dm.annotate_value``'s).
-OFFSET_PT = 3.0
 
 _UNSET: Any = object()
 
@@ -267,15 +271,7 @@ class BarLabel(Annotation):
         xycoords: CoordsType,
         **text_kw: Any,
     ) -> None:
-        super().__init__(
-            "",
-            (0.0, 0.0),
-            xytext=(0.0, 0.0),
-            xycoords=xycoords,
-            textcoords="offset points",
-            annotation_clip=False,
-            **text_kw,
-        )
+        # Set first: get_visible (overridden below) reads them.
         self.bar_family = bar_family
         self.container = container
         self.index = index
@@ -292,6 +288,15 @@ class BarLabel(Annotation):
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
         self._written: dict[str, object] = {}
+        super().__init__(
+            "",
+            (0.0, 0.0),
+            xytext=(0.0, 0.0),
+            xycoords=xycoords,
+            textcoords="offset points",
+            annotation_clip=False,
+            **text_kw,
+        )
 
     @property
     def value_axis(self) -> Axis:
@@ -319,108 +324,22 @@ class BarLabel(Annotation):
             write(wanted)
         self._written[name] = wanted
 
+    def get_visible(self) -> bool:
+        """Visible, and the bar's anchor lies in the bar axes' view.
+
+        A bar outside the view (or past a limit the caller set) shows no
+        label: matplotlib neither draws an invisible text nor counts it in a
+        tight bbox (``Text.get_tightbbox`` is null), and the layout and the
+        validation checks skip it.
+        """
+        return super().get_visible() and in_view(
+            self, self.bar_family.options.where
+        )
+
     def update_positions(self, renderer: RendererBase) -> None:
         """Follow the tick unit and the bar end, then position as usual."""
         self.bar_family.follow(self)
         super().update_positions(renderer)
-
-
-def _outward(label: BarLabel) -> int:
-    """+1 when the bar grows towards higher display coordinates, else -1."""
-    bar = label.bar
-    length = (
-        bar.get_height() if label.orientation == "vertical" else bar.get_width()
-    )
-    sign = -1 if length < 0 else 1
-    return -sign if label.value_axis.get_inverted() else sign
-
-
-def _error_end(label: BarLabel, end: float) -> float:
-    """``end`` pushed past the bar's error bar, as ``ax.bar_label`` does.
-
-    The error bar is the segment at the bar's index that runs along the
-    value axis (``yerr`` for ``bar``, ``xerr`` for ``barh``).
-    """
-    errorbar = label.container.errorbar
-    if errorbar is None:
-        return end
-    along = 1 if label.orientation == "vertical" else 0
-    for collection in errorbar.lines[2]:
-        segments = collection.get_segments()
-        if label.index >= len(segments):
-            continue
-        segment = np.asarray(segments[label.index], dtype=float)
-        if (
-            segment.shape != (2, 2)
-            or segment[0, 1 - along] != segment[1, 1 - along]
-        ):
-            continue  # the error bar across the value axis
-        extent = segment[:, along][np.isfinite(segment[:, along])]
-        if extent.size == 0:
-            return end
-        if label.value >= 0:
-            return max(end, float(extent.max()))
-        return min(end, float(extent.min()))
-    return end
-
-
-def _place(label: BarLabel) -> None:
-    """Anchor and align ``label`` on its bar for the call's ``where``."""
-    where = label.bar_family.options.where
-    vertical = label.orientation == "vertical"
-    if where == "center":
-        # Fractions of the bar's own extent: its middle on any scale.
-        label.own("xy", tuple(label.xy), (0.5, 0.5), _setter(label, "xy"))
-        label.own(
-            "offset", tuple(label.xyann), (0.0, 0.0), _setter(label, "xyann")
-        )
-        label.own(
-            "ha",
-            label.get_horizontalalignment(),
-            "center",
-            label.set_horizontalalignment,
-        )
-        label.own(
-            "va",
-            label.get_verticalalignment(),
-            "center",
-            label.set_verticalalignment,
-        )
-        return
-    bar = label.bar
-    x, y = float(bar.get_x()), float(bar.get_y())
-    width, height = float(bar.get_width()), float(bar.get_height())
-    inside = where == "inside"
-    if vertical:
-        end = y + height
-        xy = (x + width / 2, end if inside else _error_end(label, end))
-    else:
-        end = x + width
-        xy = (end if inside else _error_end(label, end), y + height / 2)
-    toward = _outward(label) * (-1 if inside else 1)
-    offset = toward * OFFSET_PT
-    if vertical:
-        ha, va = "center", ("bottom" if toward > 0 else "top")
-        xyann = (0.0, offset)
-    else:
-        ha, va = ("left" if toward > 0 else "right"), "center"
-        xyann = (offset, 0.0)
-    label.own("xy", tuple(label.xy), xy, _setter(label, "xy"))
-    label.own("offset", tuple(label.xyann), xyann, _setter(label, "xyann"))
-    label.own(
-        "ha", label.get_horizontalalignment(), ha, label.set_horizontalalignment
-    )
-    label.own(
-        "va", label.get_verticalalignment(), va, label.set_verticalalignment
-    )
-
-
-def _setter(label: BarLabel, name: str) -> Callable[[Any], None]:
-    def write(value: Any) -> None:
-        setattr(label, name, value)
-        label.stale = True
-
-    return write
 
 
 @dataclass(eq=False)
@@ -454,7 +373,7 @@ class BarLabelFamily:
         """Re-read the tick scale for ``label``; rewrite the call when it moved."""
         if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
             self.refresh()
-        _place(label)
+        place(label, self.options.where)
 
 
 # ------------------------------------------------------------ the call
@@ -482,15 +401,18 @@ def _containers(ax: Axes, bars: object) -> list[BarContainer]:
     return items
 
 
-def _host(bar_axes: Axes) -> Axes:
-    """The Axes drawn last in ``bar_axes``' box: the top-most twin."""
-    owners = same_position_axes(bar_axes)
-    parent = bar_axes.get_figure(root=False)
-    order = parent.axes if parent is not None else owners
-    return max(
-        owners,
-        key=lambda member: order.index(member) if member in order else -1,
-    )
+def _check_plot_area(ax: Axes, containers: list[BarContainer]) -> None:
+    """Every container is drawn on ``ax`` or a twin of it (the same box)."""
+    plot_area = same_position_axes(ax)
+    for container in containers:
+        for patch in container.patches:
+            drawn_on = patch.axes
+            if drawn_on is not None and drawn_on not in plot_area:
+                raise ValueError(
+                    f"bars must be drawn on {ax!r} or a twin of it (an Axes "
+                    f"in the same box); these are on {drawn_on!r}: pass that "
+                    "Axes as ax"
+                )
 
 
 def _over(top: tuple[float, float, float, float], below: RGB) -> RGB:
@@ -536,9 +458,9 @@ def label_bars(
     ax: Axes,
     bars: BarContainer | Iterable[BarContainer] | None = None,
     *,
-    where: str = "auto",
-    total: Literal["auto", "only", False] = "auto",
-    crowded: str = "rotate",
+    where: Where = "auto",
+    total: Total = "auto",
+    crowded: Crowded = "rotate",
     decimals: int | None = None,
     fmt: str | Callable[[float], object] | None = None,
     size: float | str | None = None,
@@ -566,9 +488,14 @@ def label_bars(
     - three significant digits on the largest ``|value|``, then the fewest
       decimals that print every value exactly, one count for the call
       (``21.4, 18.0, 21.5``; ``120, 135``); zero prints ``0``; U+2212 minus;
-    - on a ``twinx`` / ``twiny`` pair the labels are added to the twin drawn
-      last (placed with the bars' data), so the partner's line never covers
-      them.
+    - on a ``twinx`` / ``twiny`` pair the labels are added to the Axes drawn
+      last (by zorder, then figure order; placed with the bars' data), so
+      the partner's line never covers them;
+    - a label shows while its bar's end (its middle for ``"center"``) lies
+      in the view, within one pixel: a bar ending on a limit you set keeps
+      its label just outside the axes, a bar outside the view or running
+      past such a limit has none. Error bars push a label at most to the
+      edge of the view.
 
     A later ``Text.set_*`` on a returned label (text, colour, size, weight,
     alignment) wins over every redraw and ``dm.simple_layout``.
@@ -595,7 +522,9 @@ def label_bars(
         A ``{}`` template around the number (``fmt="${}B"`` -> ``$38.5B``;
         the template supplies any unit, the tick suffix is not added;
         ``{:.2f}`` formats the scaled value itself), or a callable that gets
-        the value in the axis's tick unit and returns the whole text.
+        the value in the axis's tick unit and returns the whole text. A
+        template wraps the signed number, so ``"${}B"`` on -3.5 prints
+        ``$-3.5B`` (the minus is U+2212); for ``-$3.5B`` use a callable.
     size : float or str, optional
         Font size; default ``dm.fs(-1)``.
     color : color, optional
@@ -614,7 +543,8 @@ def label_bars(
     ValueError
         For an unknown ``where`` / ``total`` / ``crowded``, a negative
         ``decimals``, a ``fmt`` template without ``{}``, an invalid
-        ``color``, or ``bars=None`` on an Axes without bars.
+        ``color``, ``bars=None`` on an Axes without bars, or bars drawn on
+        an Axes other than ``ax`` and its twins.
     TypeError
         If ``bars`` is not a ``BarContainer`` or a list of them.
     """
@@ -628,6 +558,7 @@ def label_bars(
         color=_parse_color(color),
     )
     containers = _containers(ax, bars)
+    _check_plot_area(ax, containers)
     for container in containers:
         if container.orientation not in ("vertical", "horizontal") or (
             container.datavalues is None
@@ -653,7 +584,7 @@ def label_bars(
             bar_axes = patch.axes
             if not isinstance(bar_axes, Axes) or not math.isfinite(value):
                 continue
-            host = _host(bar_axes)
+            host = host_axes(bar_axes)
             xycoords: CoordsType
             if options.where == "center":
                 xycoords = patch
@@ -694,7 +625,7 @@ def label_bars(
         _format_ticks_now(axis)
     family.refresh()
     for label in family.texts:
-        _place(label)
+        place(label, options.where)
 
     families = getattr(ax, "_dm_bar_label_families", None)
     if families is None:

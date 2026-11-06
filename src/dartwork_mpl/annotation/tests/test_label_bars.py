@@ -325,6 +325,15 @@ def test_fmt_string_and_callable():
     dm.simple_layout(fig)
     assert _texts(texts) == ["$21.4B", "$38.5B", "$30.9B"]
 
+    # The template wraps the signed number (a callable gives -$3.5B).
+    fig, ax, _ = _quarterly(np.array([-3.5, 2.0]) * 1e9)
+    texts = dm.label_bars(ax, fmt="${}B")
+    assert _texts(texts) == [f"${MINUS}3.5B", "$2.0B"]
+    texts = dm.label_bars(
+        ax, fmt=lambda v: f"{MINUS if v < 0 else ''}${abs(v)}B"
+    )
+    assert _texts(texts)[0] == f"{MINUS}$3.5B"
+
     seen: list[float] = []
 
     def billions(value):
@@ -581,6 +590,98 @@ def test_labels_beyond_the_axes_are_not_clipped():
     rows = slice(int(height - box.y1), int(height - box.y0))
     cols = slice(int(box.x0), int(box.x1) + 1)
     assert (pixels[rows, cols, :3].min(axis=2) < 128).any()
+
+
+def _tight_shape(fig):
+    """(height, width) in pixels of a ``bbox_inches="tight"`` PNG save."""
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format="png", bbox_inches="tight")
+    buffer.seek(0)
+    return plt.imread(buffer).shape[:2]
+
+
+def test_bars_out_of_view_get_no_labels():
+    # The reviewer's probe: 12 bars, a view of the first six.
+    def chart(label):
+        fig, ax, _ = _plain(np.arange(1.0, 13.0))
+        ax.set_xlim(-0.5, 5.5)
+        return fig, ax, (dm.label_bars(ax) if label else [])
+
+    fig, ax, texts = chart(True)
+    renderer = _drawn(fig)
+    shown = [t for t in texts if t.get_visible()]
+    assert _texts(shown) == ["1", "2", "3", "4", "5", "6"]
+    axes_box = ax.get_window_extent(renderer)
+    for text in shown:
+        box = text.get_window_extent(renderer)
+        assert axes_box.x0 <= box.x0 and box.x1 <= axes_box.x1
+    hidden = texts[6]
+    assert not np.isfinite(hidden.get_tightbbox(renderer).extents).all()
+    assert _tight_shape(fig) == _tight_shape(chart(False)[0])
+
+    # Back in view, the labels come back.
+    ax.set_xlim(-0.5, 11.5)
+    fig.canvas.draw()
+    assert all(t.get_visible() for t in texts)
+
+
+def test_bar_past_a_user_limit_has_no_label_off_the_axes():
+    # The reviewer's probe: a bar of 40 under a limit of 5 the user set.
+    def chart(label):
+        fig, ax, _ = _plain([3.0, 40.0, 2.0])
+        ax.set_ylim(0, 5)
+        return fig, ax, (dm.label_bars(ax) if label else [])
+
+    fig, ax, texts = chart(True)
+    renderer = _drawn(fig)
+    assert [t.get_visible() for t in texts] == [True, False, True]
+    width, height = fig.canvas.get_width_height()
+    for text in texts:
+        if text.get_visible():
+            box = text.get_window_extent(renderer)
+            assert box.y0 >= 0
+            assert box.y1 <= height
+    assert _tight_shape(fig) == _tight_shape(chart(False)[0])
+
+    # An error bar past the limit pushes a visible label only to the edge.
+    fig, ax = _fig()
+    ax.bar([0, 1], [4.0, 2.0], yerr=[3.0, 0.5])
+    ax.set_ylim(0, 5)
+    texts = dm.label_bars(ax)
+    renderer = _drawn(fig)
+    top = ax.get_window_extent(renderer).y1
+    assert texts[0].get_visible()
+    assert texts[0].get_window_extent(renderer).y0 == pytest.approx(
+        top + _offset_px(fig), abs=0.6
+    )
+
+
+def test_labels_go_on_the_axes_drawn_on_top():
+    # The twin idiom that keeps the bars' axes on top: zorder, not order.
+    fig, ax, _ = _quarterly()
+    ax2 = ax.twinx()
+    ax2.plot(np.arange(12), np.linspace(37, 19, 12), color="dc.orange6")
+    ax.set_zorder(ax2.get_zorder() + 1)
+    ax.patch.set_visible(False)
+    texts = dm.label_bars(ax)
+    assert all(t.axes is ax for t in texts)
+    assert not any(t in ax2.texts for t in texts)
+
+
+def test_bars_from_another_axes_raise():
+    fig, (left, right) = plt.subplots(1, 2, figsize=dm.figsize("12cm", "wide"))
+    bars = right.bar([0, 1], [1.0, 2.0])
+    with pytest.raises(ValueError, match="twin"):
+        dm.label_bars(left, bars)
+    assert not hasattr(left, "_dm_bar_label_families")
+
+    # A twin's bars share the plot area: accepted.
+    fig, ax = _fig()
+    ax.plot([0, 1], [5.0, 6.0])
+    ax2 = ax.twinx()
+    twin_bars = ax2.bar([0, 1], [120.0, 135.0])
+    texts = dm.label_bars(ax, twin_bars)
+    assert all(t.axes is ax2 for t in texts)
 
 
 def test_invalid_arguments_raise():
