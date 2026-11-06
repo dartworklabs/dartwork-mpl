@@ -1167,6 +1167,55 @@ def test_bar_past_the_limit_keeps_explicit_and_series_choices():
     assert [t.get_visible() for t in labels] == [True, False]
 
 
+def _past_limit_cases():
+    """The review's C1 figures: numbers wider than the cut bars they label."""
+    fig, ax, bars, labels = _narrow_dark(0.3)
+    ax.set_ylim(0, 1000)
+    yield "narrow dark bars", fig, ax, labels, ["4,100", "12,500"], "top"
+
+    matplotlib.rcdefaults()  # matplotlib's own style: C0 bars, white ink
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"), dpi=200)
+    ax.bar(np.arange(24), D_REV, width=0.7)
+    ax.set_ylim(0, 1400e6)
+    labels = dm.label_bars(ax, crowded="skip")
+    yield "24 bars, skip", fig, ax, labels, ["1.43G"], "top"
+
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", 0.5), dpi=200)
+    ax.barh(MARKETS, MARKET_SIZE, height=0.3, color="dc.blue9")
+    ax.invert_yaxis()
+    ax.set_xlim(0, 800)
+    yield "thin dark rows", fig, ax, dm.label_bars(ax), ["2,410"], "right"
+
+
+def test_a_number_wider_than_its_cut_bar_reads_beyond_the_limit(tmp_path):
+    # Review C1: the true value of a bar past the caller's limit sits on the
+    # bar only while the bar holds it; a number wider than the bar (or
+    # thicker than the row) goes just beyond the limit in the text colour,
+    # and the whole number reads in the saved PNG and PDF (12,500 had read
+    # as 2,50 and 1.43G as 43 in white running off the bar).
+    for name, fig, ax, labels, cut, edge in _past_limit_cases():
+        dm.simple_layout(fig)
+        _drawn(fig)
+        clipped = [t for t in labels if t.clipped and t.get_visible()]
+        assert [t.get_text() for t in clipped] == cut, name
+        for label in clipped:
+            assert label.off_bar and not label.on_bar, name
+            assert _hex(label) == "#000000", name
+            assert _inside_edge(fig, ax, label, edge) == pytest.approx(
+                -_offset_px(fig) - _extent_along(fig, label), abs=0.6
+            ), name
+        # The cut bars' labels: in the matplotlib style a label lifted over
+        # a taller neighbour may cross the top spine (as on main), which is
+        # no part of this rule.
+        _assert_readable(fig, clipped, tmp_path)
+
+
+def _extent_along(fig, label):
+    box = label.get_window_extent(fig.canvas.get_renderer())
+    return box.height if label.orientation == "vertical" else box.width
+
+
 def test_labels_go_on_the_axes_drawn_on_top():
     # The twin idiom that keeps the bars' axes on top: zorder, not order.
     fig, ax, _ = _quarterly()
