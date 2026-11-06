@@ -57,6 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   other than the artists') is left as it is: an explicit `loc=` or
   `bbox_to_anchor=` still moves it, and a side (`loc="above"` …) warns
   and leaves it.
+- `dm.format_axis_myriad(ax, decimals=n)` now sets an `AxisUnitFormatter`
+  instead of a `FuncFormatter`. The tick text is the same.
+
+### Removed
+
+- `dartwork_mpl.ui._config` (private): the legacy preset-file helpers.
+  Nothing in the package used them; the viewer keeps its state in
+  `dartwork_mpl.ui.state`.
 
 ## [0.7.0] - 2026-11-06
 
