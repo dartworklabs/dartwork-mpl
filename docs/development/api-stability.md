@@ -62,6 +62,25 @@ The root registry records only advertised and removed names; no name is
 deprecated today. Deprecated is a separate lifecycle state between the two:
 the name keeps working and warns for at least two minor releases.
 
+### Removing a name
+
+`src/dartwork_mpl/_compat.py` is the only place removed-name metadata is
+edited. A removed name goes into three tables there:
+
+- `_REMOVED_NAMES`: the release that removed it and its replacement, which
+  `dm.<name>` reports in its `AttributeError`;
+- `_CODEMOD_HINTS`: the `# TODO(dm-migrate):` comment that
+  `dm.migrate_legacy_code` writes above a use of it;
+- `_LINT_RULES`: the anti-pattern rule that `dm.lint_code` reports it under.
+
+Then run `uv run python scripts/generate_removed_name_rules.py`, which
+writes `_LINT_RULES` into `asset/prompt/02-anti-patterns.yaml`; do not edit
+those rules in the YAML. `tests/contracts/test_deprecation_registry_parity.py`
+fails until every consumer reports the new name and the catalog matches the
+registry. `tests/contracts/test_removed_names_golden.py` pins the published
+wording of the names removed so far against a record of the earlier output;
+a wording change there is a separate decision.
+
 ## Adding a public name
 
 Add the name to `__all__`, make sure the object is importable as

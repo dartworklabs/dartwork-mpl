@@ -55,8 +55,6 @@ ENTRY_POINTS = frozenset(
         "dartwork_mpl._build_entry",
         # `python -m dartwork_mpl._colors._build`
         "dartwork_mpl._colors._build",
-        # the root's removed/deprecated-name registry behind its __getattr__
-        "dartwork_mpl._compat",
         "dartwork_mpl.cli",
         # compatibility re-exports of names that moved to their owners
         "dartwork_mpl.util",
@@ -94,6 +92,9 @@ PLATFORM = frozenset(
 # Units holding one capability each.
 SLICES = frozenset(
     {
+        # Removed public names: the one registry of their migration
+        # metadata, and the root __getattr__'s rejection.
+        "dartwork_mpl._compat",
         "dartwork_mpl._colors",
         "dartwork_mpl._colors._curated",
         "dartwork_mpl._colors._ssot",
@@ -159,6 +160,10 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.lint", "dartwork_mpl.prompt"): (
         "lint parses the bundled anti-pattern catalog opened by its corpus owner"
+    ),
+    ("dartwork_mpl.lint", "dartwork_mpl._compat"): (
+        "the codemod's hints and the removed-name rules' detectors come from "
+        "the removed-name registry"
     ),
     ("dartwork_mpl._colors", "dartwork_mpl._colors.construction"): (
         "the colour build command compiles the candidate catalogue and publishes the generated module"
