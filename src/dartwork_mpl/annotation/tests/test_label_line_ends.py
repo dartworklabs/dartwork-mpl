@@ -22,12 +22,7 @@ import dartwork_mpl as dm
 YEARS = np.arange(2012, 2024)
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _gdp(ax):

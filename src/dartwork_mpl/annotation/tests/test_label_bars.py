@@ -28,6 +28,7 @@ matplotlib.use("Agg")
 
 import dartwork_mpl as dm
 from dartwork_mpl._colors.contrast import contrast_ratio
+from tests.support.mpl_observe import drawn_renderer
 
 MINUS = "\N{MINUS SIGN}"
 OFFSET_PT = 3.0
@@ -184,12 +185,7 @@ H_A_HEADROOM = 1.069
 AUTOSCALE_HEADROOM = 1.1  # the report preset's axes.ymargin
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 # ---------------------------------------------------------------- charts
@@ -278,18 +274,13 @@ def _texts(texts):
     return [t.get_text() for t in texts]
 
 
-def _drawn(fig):
-    fig.canvas.draw()
-    return fig.canvas.get_renderer()
-
-
 def _offset_px(fig):
     return OFFSET_PT * fig.dpi / 72.0
 
 
 def _assert_outside(fig, texts, patches, orientation="vertical"):
     """Each label sits 3 pt beyond its bar's end, centred on the bar."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     for text, patch in zip(texts, patches, strict=True):
         tb = text.get_window_extent(renderer)
@@ -314,7 +305,7 @@ def _assert_outside(fig, texts, patches, orientation="vertical"):
 
 def _assert_centred(fig, texts, patches):
     """Each label's middle is its bar's middle."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     for text, patch in zip(texts, patches, strict=True):
         tb = text.get_window_extent(renderer)
         pb = patch.get_window_extent(renderer)
@@ -1096,7 +1087,7 @@ def test_returns_texts_and_later_edits_survive():
 def test_where_inside_and_center():
     fig, ax, bars = _plain([4.0, -3.0], width=0.6)
     inside = dm.label_bars(ax, where="inside")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     for text, patch in zip(inside, bars.patches, strict=True):
         tb = text.get_window_extent(renderer)
@@ -1108,7 +1099,7 @@ def test_where_inside_and_center():
 
     fig, ax, bars = _plain([4.0, -3.0], width=0.6)
     centred = dm.label_bars(ax, where="center")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     for text, patch in zip(centred, bars.patches, strict=True):
         tb = text.get_window_extent(renderer)
         pb = patch.get_window_extent(renderer)
@@ -1120,7 +1111,7 @@ def test_error_bars_push_labels_past_caps():
     fig, ax = _fig()
     bars = ax.bar([0, 1], [4.0, -3.0], yerr=[1.0, 0.5], capsize=2)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     up = ax.transData.transform((0, 5.0))[1]
     down = ax.transData.transform((1, -3.5))[1]
@@ -1138,7 +1129,7 @@ def test_inverted_value_axis_keeps_labels_outside():
     texts = dm.label_bars(ax)
     ax.invert_xaxis()  # mirrored bars, inverted after labelling
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     for text, patch in zip(texts, bars.patches, strict=True):
         tb = text.get_window_extent(renderer)
@@ -1184,7 +1175,7 @@ def test_bars_out_of_view_get_no_labels():
         return fig, ax, (dm.label_bars(ax) if label else [])
 
     fig, ax, texts = chart(True)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     shown = [t for t in texts if t.get_visible()]
     assert _texts(shown) == ["1", "2", "3", "4", "5", "6"]
     axes_box = ax.get_window_extent(renderer)
@@ -1209,7 +1200,7 @@ def test_bar_past_a_user_limit_has_no_label_off_the_axes():
         return fig, ax, (dm.label_bars(ax) if label else [])
 
     fig, ax, texts = chart(True)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     assert [t.get_visible() for t in texts] == [True, False, True]
     width, height = fig.canvas.get_width_height()
     for text in texts:
@@ -1224,7 +1215,7 @@ def test_bar_past_a_user_limit_has_no_label_off_the_axes():
     ax.bar([0, 1], [4.0, 2.0], yerr=[3.0, 0.5])
     ax.set_ylim(0, 5)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     top = ax.get_window_extent(renderer).y1
     assert texts[0].get_visible()
     assert texts[0].get_window_extent(renderer).y0 == pytest.approx(
@@ -1314,7 +1305,7 @@ def test_short_segment_label_hidden():
     _stack(ax, [([30.0, 30.0], {}), ([1.0, 12.0], {})], np.arange(2))
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     short = texts[2]
     assert short.get_text() == "1"
     # 1 of 42 on a 12 cm chart: a few points, shorter than a 7 pt label.
@@ -1353,7 +1344,7 @@ def test_segment_room_after_a_dpi_change():
     ax.set_ylim(0, 100)
     containers = _stack(ax, [([50.0], {}), ([10.0], {})], [0])
     seg = dm.label_bars(ax, total=False)[1]
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     height = seg.get_window_extent(renderer).height
     unit_px = (
         ax.transData.transform((0, 1))[1] - ax.transData.transform((0, 0))[1]
@@ -1389,7 +1380,7 @@ def test_segment_room_counts_the_inside_inset():
         return fig, ax, texts[1]
 
     fig, ax, label = chart("center")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     height = label.get_window_extent(renderer).height
     unit_px = (
         ax.transData.transform((0, 1))[1] - ax.transData.transform((0, 0))[1]
@@ -1440,7 +1431,7 @@ def test_mixed_sign_stack_net_total_side():
     ]
     assert _kinds(texts) == ["segment"] * 6 + ["total"] * 2
     _assert_centred(fig, texts[:6], seg)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     up, down = texts[6:]
     # Net 6 >= 0: beyond the positive end (5 + 3), above it.
@@ -1697,7 +1688,7 @@ def test_stack_where_places_segments():
     # "inside": just inside each segment's end; the totals stay outside.
     fig, ax, containers = chart()
     texts = dm.label_bars(ax, where="inside")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     segments = [p for c in containers for p in c.patches]
     for text, patch in zip(texts[:4], segments, strict=True):
@@ -1783,7 +1774,7 @@ def test_segment_room_reads_the_text_the_draw_writes():
     _stack(ax, parts, [0], horizontal=True, height=0.6)
     seg = dm.label_bars(ax, total=False)[1]
     assert seg.get_text() == "1,234,567"
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
 
     def width(text):
         probe = ax.text(0, 0, text, fontsize=seg.get_fontsize())
@@ -1866,7 +1857,7 @@ def test_stack_on_an_inverted_value_axis():
     texts = dm.label_bars(ax)
     ax.invert_yaxis()  # after labelling
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     assert _texts(texts[4:]) == ["5", "2"]
     # Both nets are >= 0: beyond the positive ends (5 and 4), which the
@@ -1884,7 +1875,7 @@ def test_stack_on_an_inverted_value_axis():
     ax.invert_yaxis()
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     total = texts[-1]
     assert total.get_text() == f"{MINUS}2"
     assert total.get_verticalalignment() == "bottom"
@@ -1947,7 +1938,7 @@ def _twin_chart(*, label=True):
 
 def _shown(fig, texts):
     """``(label, display box)`` of each label drawn."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     return [
         (t, t.get_window_extent(renderer)) for t in texts if t.get_visible()
     ]
@@ -2198,14 +2189,14 @@ def test_user_limits_respected_label_outside_margin_reserved():
     fig, ax, texts = chart(True)
     assert ax.get_ylim() == (0.0, 33e9)
     assert not ax.get_autoscaley_on()
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     top = texts[-1].get_window_extent(renderer)
     axes_box = ax.get_window_extent(renderer)
     assert texts[-1].get_visible()
     assert top.y0 == pytest.approx(axes_box.y1 + _offset_px(fig), abs=0.6)
     assert top.y1 <= fig.bbox.height + 0.5  # inside the figure
     bare, bare_ax, _ = chart(False)
-    bare_top = bare_ax.get_window_extent(_drawn(bare)).y1
+    bare_top = bare_ax.get_window_extent(drawn_renderer(bare)).y1
     assert bare_top - axes_box.y1 >= top.height  # the margin reserved
 
 
@@ -2266,7 +2257,7 @@ def test_centred_label_on_a_log_axis_shows_where_it_sits(limits, shown):
     ax.set_ylim(*limits)
     (label,) = dm.label_bars(ax, where="center")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
 
     assert label.get_visible() is shown
     middle = float(ax.transData.transform((0, np.sqrt(1000.0)))[1])
@@ -2288,7 +2279,7 @@ def test_centred_label_on_a_linear_axis_shows_while_its_middle_does(
     ax.set_ylim(*limits)
     (label,) = dm.label_bars(ax, where="center")
     dm.simple_layout(fig)
-    _drawn(fig)
+    drawn_renderer(fig)
 
     assert label.get_visible() is shown
     if shown:
@@ -2298,7 +2289,7 @@ def test_centred_label_on_a_linear_axis_shows_while_its_middle_does(
 def test_repeat_simple_layout_idempotent():
     def state(fig, ax, texts):
         """Limits, Axes box (px) and label boxes (px); what is drawn."""
-        renderer = _drawn(fig)
+        renderer = drawn_renderer(fig)
         limits = np.r_[ax.get_xlim(), ax.get_ylim()]
         boxes = np.ravel(
             [ax.get_window_extent(renderer).extents]
@@ -2392,9 +2383,11 @@ def test_crowded_when_wider_than_the_pitch_less_1_5_pt():
     fig, ax = _fig()
     ax.bar(np.arange(40), np.full(40, 33.0), width=0.4)
     texts = dm.label_bars(ax)
-    width = texts[0].get_window_extent(_drawn(fig)).width  # not turned yet
+    width = (
+        texts[0].get_window_extent(drawn_renderer(fig)).width
+    )  # not turned yet
     dm.simple_layout(fig)
-    axes_width = ax.get_window_extent(_drawn(fig)).width
+    axes_width = ax.get_window_extent(drawn_renderer(fig)).width
     gap = 1.5 * fig.dpi / 72.0
     for pitch, crowded in (
         (width + 0.5 * gap, True),
@@ -2402,7 +2395,7 @@ def test_crowded_when_wider_than_the_pitch_less_1_5_pt():
     ):
         ax.set_xlim(-0.5, -0.5 + axes_width / pitch)
         dm.simple_layout(fig)
-        renderer = _drawn(fig)
+        renderer = drawn_renderer(fig)
         assert ax.get_window_extent(renderer).width == pytest.approx(
             axes_width, abs=0.01
         )
@@ -2416,10 +2409,10 @@ def test_crowding_reads_each_label_against_its_nearest_bar():
     fig, ax = _fig()
     ax.bar([0.0, 1.0], [1.0, 1000.0], width=0.3)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     narrow, wide = (t.get_window_extent(renderer).width for t in texts)
     dm.simple_layout(fig)
-    axes_width = ax.get_window_extent(_drawn(fig)).width
+    axes_width = ax.get_window_extent(drawn_renderer(fig)).width
     pitch = (narrow + wide) / 2 + 1.5 * fig.dpi / 72.0
     ax.set_xlim(-0.5, -0.5 + axes_width / pitch)
     dm.simple_layout(fig)
@@ -2431,12 +2424,12 @@ def test_crowding_reads_each_label_against_its_nearest_bar():
     ax.bar(x, np.full(30, 500.0), width=0.6)
     ax.bar(x, np.full(30, 500.0), bottom=500.0, width=0.6)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     segment = texts[0].get_window_extent(renderer).width  # "500"
     total = texts[-1].get_window_extent(renderer).width  # "1,000"
     assert total > segment
     dm.simple_layout(fig)
-    axes_width = ax.get_window_extent(_drawn(fig)).width
+    axes_width = ax.get_window_extent(drawn_renderer(fig)).width
     pitch = (segment + total) / 2 + 1.5 * fig.dpi / 72.0
     ax.set_xlim(-0.5, -0.5 + axes_width / pitch)
     dm.simple_layout(fig)
@@ -2451,7 +2444,7 @@ def test_crowded_lift_stays_in_view_and_off_overlaid_labels():
     ax.set_ylim(0, 1400e6)
     texts = dm.label_bars(ax, crowded="skip")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     assert not texts[23].get_visible()
     assert texts[22].get_visible()  # 1,337 spans the 1,432 bar
     top = ax.get_window_extent(renderer).y1
@@ -2491,7 +2484,7 @@ def test_crowded_stack_keeps_outside_segments_on_their_own_bars():
     ax.bar(x, D_REV * 0.4, bottom=D_REV * 0.6, width=0.7)
     texts = dm.label_bars(ax, where="outside", total=False, crowded="skip")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     for text, patch in zip(texts[:24], base.patches, strict=True):
         if text.get_visible():
             assert text.get_window_extent(renderer).y0 == pytest.approx(
@@ -2605,7 +2598,7 @@ def test_separate_calls_that_fit_are_left_alone():
 
 def _room_to_own_edge(fig, texts, along):
     """Each drawn label's distance (px) to its own Axes' far edge."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     room = []
     for text in texts:
         if not text.get_visible():
@@ -2704,7 +2697,7 @@ def test_bounds_set_while_autoscaling_are_kept():
     texts = dm.label_bars(ax, longest)
     dm.simple_layout(fig)
     assert ax.get_xlim()[1] > max(grown[1], 40.0)
-    right = ax.get_window_extent(_drawn(fig)).x1
+    right = ax.get_window_extent(drawn_renderer(fig)).x1
     box = texts[0].get_window_extent(fig.canvas.get_renderer())
     assert right - box.x1 == pytest.approx(_offset_px(fig), abs=0.6)
 
@@ -2733,7 +2726,7 @@ def test_outside_segments_put_the_total_beyond_the_top_label():
 
     # The top label hidden by the caller: the total comes back to the end.
     tops[0].set_visible(False)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     end = ax.transData.transform((0, 20.0))[1]
     assert totals[0].get_window_extent(renderer).y0 == pytest.approx(
         end + _offset_px(fig), abs=0.6

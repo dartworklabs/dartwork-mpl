@@ -79,20 +79,22 @@ class TestStdioEndToEnd:
         """Both real entrypoints keep JSON-RPC usable without promotional banners."""
         pytest.importorskip("fastmcp")
         import json
-        import shutil
         import subprocess
         import sys
+        import sysconfig
+        from pathlib import Path
 
-        cli_path = shutil.which("dartwork-mpl-mcp")
-        cmd = (
-            [cli_path]
-            if module == "console" and cli_path
-            else [
-                sys.executable,
-                "-m",
-                "dartwork_mpl.cli" if module == "console" else module,
-            ]
-        )
+        if module == "console":
+            # The console script of the environment running this suite, not
+            # the first one on PATH: a user-site ``~/.local/bin`` install
+            # with another interpreter would test that install instead
+            # (2026-11-06: ``#!/usr/bin/python3``, no fastmcp). A missing
+            # script is a broken install, not a reason to test ``-m``.
+            console = Path(sysconfig.get_path("scripts")) / "dartwork-mpl-mcp"
+            assert console.is_file(), f"no console script at {console}"
+            cmd = [str(console)]
+        else:
+            cmd = [sys.executable, "-m", module]
 
         request = (
             json.dumps(
