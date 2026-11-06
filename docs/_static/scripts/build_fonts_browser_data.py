@@ -538,7 +538,6 @@ def build_catalog() -> tuple[
             "mono": measurement.fixed_pitch,
             "hangul": measurement.hangul,
             "numeric_axes": record.numeric_axes,
-            "tnum": record.tnum,
             "tnum_available": measurement.tnum_available,
             "chart_glyphs": "".join(measurement.chart_glyphs),
             "license": measurement.licenses[0],

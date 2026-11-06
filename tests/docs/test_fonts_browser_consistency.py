@@ -162,14 +162,14 @@ def test_payload_flags_and_ladders_match_measurements() -> None:
 
         assert isinstance(entry["role"], str) and entry["role"]
         assert entry["role"] == record.role
-        assert "tnum" in entry
-        assert type(entry["tnum"]) is bool
-        assert entry["tnum"] is record.tnum
+        assert "tnum" not in entry  # the deprecated alias is not exported
         assert entry["italic"] is measurement.italic
         assert entry["mono"] is measurement.fixed_pitch
         assert entry["hangul"] is measurement.hangul
         assert entry["numeric_axes"] is record.numeric_axes
+        assert type(entry["tnum_available"]) is bool
         assert entry["tnum_available"] is measurement.tnum_available
+        assert entry["tnum_available"] is record.tnum_available
         assert entry["chart_glyphs"] == "".join(measurement.chart_glyphs)
         assert entry["licenses"] == list(measurement.licenses)
         assert entry["license"] == measurement.licenses[0]
