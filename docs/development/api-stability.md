@@ -68,6 +68,7 @@ Deprecated today (first warning, earliest removal; replacements in
 | Name | First warning | Earliest removal | Use instead |
 |---|---|---|---|
 | module `dartwork_mpl.util` | 0.8 | 0.10 | the owner module of each name (table in migration.md) |
+| `FontFamily.tnum`, `FontMeasurement.tnum`, `FontFaceMeasurement.tnum` | 0.8 | 0.10 | `.tnum_available` (same value) |
 
 ## Adding a public name
 

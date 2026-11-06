@@ -33,6 +33,14 @@ object (`dartwork_mpl.util.X is <owner>.X`). Every name below is also
 | `save_and_show`, `save_formats`, `show` | `dartwork_mpl.io` |
 | `set_decimal` | `dartwork_mpl.formatting` |
 
+## Deprecated in 0.8: `.tnum` on font records
+
+`FontFamily.tnum`, `FontMeasurement.tnum` and `FontFaceMeasurement.tnum`
+emit a `DeprecationWarning` and are removed no earlier than 0.10. Read
+`.tnum_available` instead; it is the same value. It reports the OpenType
+`tnum` feature a browser can apply to the bundled font. It does not say
+whether matplotlib draws aligned digits; `FontFamily.numeric_axes` does.
+
 ## 0.7.0: two-digit tick years, axis units, 만/억/조
 
 One rule: with no request the library's look applies; ask for another format
