@@ -5,12 +5,14 @@ metadata moves to one registry:
 
 - ``dm.<name>`` access: the exception type and the full message;
 - ``dm.migrate_legacy_code``: the whole rewritten source, for each removed
-  name used as a reference and as a call, for similar names that must stay
-  untouched, and for statements where several hints meet;
+  name used as a reference, a call, a subscript and an attribute owner
+  (``dm.<name>.foo(...)``), for similar names that must stay untouched, and
+  for statements where several hints meet or that import from a removed
+  module;
 - ``dm.lint_code``: every issue of the removed-name rules (id, line,
   column, snippet) and those rules' severity, detector, message, why and fix;
-- the MCP ``migrate_legacy_code`` and lint tools: name, description, input
-  and output schema, and the order of every tool;
+- the MCP ``migrate_legacy_code`` and lint tools: name, relative order,
+  description, input and output schema;
 - the bytes of the removed-name rules in the anti-pattern catalog, as the
   installed package reads it and as the MCP ``dartwork-mpl://guide/anti-patterns``
   resource serves it (the rest of the catalog is hand-written by other work).
@@ -72,7 +74,11 @@ def _rule_fields(rule_id: str) -> dict[str, Any] | None:
 
 
 def _mcp_surface(names: list[str]) -> dict[str, Any]:
-    """Every tool's name in order, and the contracts of the tools ``names``."""
+    """The tools ``names``: their relative order and their contracts.
+
+    The order of every tool is the discovery contract's job
+    (tests/mcp/artifacts/test_artifact_discovery.py).
+    """
     import fastmcp
 
     from dartwork_mpl.mcp.server import mcp
@@ -83,7 +89,7 @@ def _mcp_surface(names: list[str]) -> dict[str, Any]:
 
     tools = asyncio.run(listed())
     return {
-        "tool_names": [tool.name for tool in tools],
+        "tool_names": [tool.name for tool in tools if tool.name in names],
         "tools": {
             tool.name: {
                 "description": tool.description,
@@ -158,7 +164,7 @@ def test_removed_name_rules_report_as_recorded(golden: dict[str, Any]) -> None:
 def test_mcp_lint_and_migrate_tools_keep_their_surface(
     golden: dict[str, Any],
 ) -> None:
-    """Tool order and the lint/migrate tools' docstrings and schemas."""
+    """The lint/migrate tools' order, docstrings and schemas."""
     pytest.importorskip("fastmcp")
     assert _mcp_surface(list(golden["mcp"]["tools"])) == golden["mcp"]
 

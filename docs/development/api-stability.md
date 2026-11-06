@@ -75,7 +75,9 @@ edited. A removed name goes into three tables there:
 
 Then run `uv run python scripts/generate_removed_name_rules.py`, which
 writes `_LINT_RULES` into `asset/prompt/02-anti-patterns.yaml`; do not edit
-those rules in the YAML. `tests/contracts/test_deprecation_registry_parity.py`
+those rules in the YAML. The catalog is part of `llms-full.txt`, so
+regenerate that too: `generate_llms_full_txt(app, write=True)` in
+`docs/_ext/build_hooks.py`. `tests/contracts/test_deprecation_registry_parity.py`
 fails until every consumer reports the new name and the catalog matches the
 registry. `tests/contracts/test_removed_names_golden.py` pins the published
 wording of the names removed so far against a record of the earlier output;
