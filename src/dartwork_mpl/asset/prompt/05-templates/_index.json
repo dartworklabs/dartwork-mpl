@@ -258,7 +258,7 @@
       "use_case": "Parameter sensitivity ranking with two-sided bars colored by direction of output impact"
     },
     "twin_axis": {
-      "advanced_apis": "ax.twinx, color-coded axis labels and tick colors, axhline target, no chart-junk",
+      "advanced_apis": "ax.twinx (each axis takes its series colour from dartwork-mpl), axhline target, no chart-junk",
       "basic_counterpart": "twin_axis",
       "data_shape": "x: list[float], y_price: list[float], y_volume: list[float]",
       "difficulty": "advanced",
