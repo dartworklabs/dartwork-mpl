@@ -671,8 +671,11 @@ value at that limit: just inside it, on the bar, when the bar holds the
 number (`set_ylim(0, 100)` on a bar of 135 prints `135` under the top edge,
 in white or the text colour, whichever reads on the bar); on a bar too
 narrow (or a part in view too short) for it, just beyond the limit in the
-text colour. A bar wholly outside the view, or a stack's segments and total
-past the limit, get none. Crowding and the fit of labels inside the bars
+text colour (the series colour under `color="series"`). Beyond a lower or
+left limit lie the tick labels, above a top limit the title: a value that
+would cover such text is hidden, and `dm.simple_layout` warns; a wider limit
+or wider bars show it. A bar wholly outside the view, or a stack's segments
+and total past the limit, get none. Crowding and the fit of labels inside the bars
 are decided before the axis grows.
 
 **Overlaps.** Labels that would still overlap are hidden, from the last bar

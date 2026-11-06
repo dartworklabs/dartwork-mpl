@@ -25,9 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   enough for the labels; limits you set stay, and a bar running past one
   shows its true value at that limit: just inside it, on the bar, in white
   or the text colour (whichever reads on it) when the bar holds the
-  number, otherwise just beyond it in the text colour (no label only for
-  bars wholly outside the view, and for stack segments and totals past the
-  limit). A label asked inside its bar (`where="inside"`,
+  number, otherwise just beyond it in the text colour (the series colour
+  under `color="series"`); a value there that would cover tick labels, an
+  axis label or a title is hidden instead, with a warning (no label also
+  for bars wholly outside the view, and for stack segments and totals past
+  the limit). A label asked inside its bar (`where="inside"`,
   `crowded="inside"`) likewise stays there only while the bar holds it
   along and across; otherwise it sits beyond the bar's end in the text
   colour, so a narrow dark bar never leaves part of a white number on the

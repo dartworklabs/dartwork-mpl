@@ -1766,6 +1766,110 @@ def _extent_along(fig, label):
     return box.height if label.orientation == "vertical" else box.width
 
 
+def _cut_onto_text(case):
+    """The re-review's N-C1 figures: a value beyond the limit meets text.
+
+    K1 negative bars past set_ylim(-1000, 1000) (x tick labels below), K2
+    negative thin barh rows past set_xlim(-1000, 1000) (y tick labels to
+    the left), K3 a cut middle bar under a title. Dark bars too narrow for
+    their numbers, so the values go just beyond the limit.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    if case == "K1":
+        ax.bar(
+            np.arange(6),
+            [300, -4100, 520, -12500, 700, -610],
+            width=0.3,
+            color="dc.blue9",
+        )
+        ax.set_ylim(-1000, 1000)
+        ax.set_xticks(
+            np.arange(6), ["Alpha", "Beta", "Gamma", "Delta", "Eps", "Zeta"]
+        )
+        ax.set_xlabel("Quarter")
+        cut = [f"{MINUS}4,100", f"{MINUS}12,500"]
+    elif case == "K2":
+        values = [
+            300,
+            -4100,
+            520,
+            -12500,
+            700,
+            -610,
+            450,
+            -3800,
+            220,
+            640,
+            -9100,
+            510,
+        ]
+        ax.barh(np.arange(12), values, height=0.3, color="dc.blue9")
+        ax.set_xlim(-1000, 1000)
+        ax.set_yticks(np.arange(12), [f"Region {i}" for i in range(12)])
+        ax.invert_yaxis()
+        cut = [
+            f"{MINUS}4,100",
+            f"{MINUS}12,500",
+            f"{MINUS}3,800",
+            f"{MINUS}9,100",
+        ]
+    else:
+        ax.bar(
+            np.arange(5),
+            [480, 520, 12500, 610, 700],
+            width=0.3,
+            color="dc.blue9",
+        )
+        ax.set_ylim(0, 1000)
+        ax.set_title("Quarterly revenue")
+        cut = ["12,500"]
+    return fig, ax, dm.label_bars(ax), cut
+
+
+def _other_text(fig, ax):
+    renderer = fig.canvas.get_renderer()
+    texts = [
+        *ax.get_xticklabels(),
+        *ax.get_yticklabels(),
+        ax.xaxis.label,
+        ax.title,
+    ]
+    return [t.get_window_extent(renderer) for t in texts if t.get_text()]
+
+
+@FORMATS
+@pytest.mark.parametrize("case", ["K1", "K2", "K3"])
+def test_a_value_beyond_the_limit_never_covers_other_text(tmp_path, fmt, case):
+    # Re-review N-C1 (candidate A, pending the user's choice): just beyond
+    # a lower or left limit lie the tick labels, above a top limit the
+    # title. A value placed there would print over them (both unreadable:
+    # 1.0-1.66:1 in PNG and PDF). It is hidden instead, as the overlap rule
+    # hides labels that meet, and the layout says so; the other labels and
+    # the top/right results of 13-1 (tests above) stay.
+    _start(fmt)
+    fig, ax, labels, cut = _cut_onto_text(case)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    renderer = drawn_renderer(fig)
+    hidden = [t for t in labels if not t.get_visible()]
+    assert [t.get_text() for t in hidden] == cut
+    assert {t.hidden_for for t in hidden} == {"text"}
+    assert all(t.clipped and t.off_bar for t in hidden)
+    message = [
+        str(w.message) for w in caught if "cover other text" in str(w.message)
+    ]
+    assert len(message) == 1 and f"{len(cut)} of {len(labels)}" in message[0]
+    shown = [t for t in labels if t.get_visible()]
+    others = _other_text(fig, ax)
+    assert not any(
+        _cover(t.get_window_extent(renderer), box, 0.5)
+        for t in shown
+        for box in others
+    )
+    _assert_readable(fig, shown, tmp_path, fmt)
+
+
 def test_labels_go_on_the_axes_drawn_on_top():
     # The twin idiom that keeps the bars' axes on top: zorder, not order.
     fig, ax, _ = _quarterly()

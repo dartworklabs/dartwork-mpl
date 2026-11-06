@@ -57,6 +57,11 @@ further layout steps give the same result; nothing compounds.
   figure's, wherever its caller put it) is hidden, as the overlap rule
   hides a label that meets another, and reported: ``dm.place_legend``
   puts a legend clear of the labels instead.
+* **Other text.** A cut bar's value placed just beyond the limit (too wide
+  for its bar) sits outside the axes, where tick labels, axis labels and
+  titles are. One that would cover any of them is hidden too, and
+  reported: a wider limit, or bars wide enough for their numbers, shows
+  it.
 * **Headroom.** A value axis whose limits matplotlib still autoscales
   (``get_autoscaley_on()``) starts from matplotlib's limits for the data
   (``autoscale_view``) and grows, on the side each outside label points to,
@@ -90,7 +95,13 @@ import numpy.typing as npt
 from matplotlib.artist import Artist
 from matplotlib.container import BarContainer
 
-from .._figure_geometry import get_renderer, same_position_axes, shared_axes
+from .._figure_geometry import (
+    axes_text_artists,
+    axes_with_secondaries,
+    get_renderer,
+    same_position_axes,
+    shared_axes,
+)
 from ._bar_label_geometry import OFFSET_PT, outward
 from ._bar_label_lifecycle import families_of, prune, rehost
 from ._bar_labels import BarLabel, BarLabelFamily, format_ticks_now
@@ -101,6 +112,7 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.patches import Rectangle
+    from matplotlib.text import Text
     from matplotlib.transforms import Bbox
 
     from ._bar_label_options import BarLabelOptions
@@ -141,7 +153,59 @@ def settle_bar_labels(fig: Figure, renderer: RendererBase | None = None) -> int:
     for value_axis in value_axes:
         value_axis.grow(renderer)
     _clear_legends(fig, families, renderer)
+    _clear_texts(fig, families, renderer)
     return len(families)
+
+
+def _texts_drawn(fig: Figure) -> list[Text]:
+    """The figure's other text: tick labels, axis labels, titles, texts.
+
+    Every Axes' (and secondary axis's) tick labels in view, offset texts,
+    axis labels, titles and ``ax.texts`` other than bar labels, and the
+    figure's own texts (``suptitle`` included); visible and not empty.
+    """
+    found: list[Text] = []
+    for ax in axes_with_secondaries(fig):
+        for axis in (ax.xaxis, ax.yaxis):
+            found += axis.get_ticklabels(which="both")
+            found.append(axis.get_offset_text())
+        found += axes_text_artists(ax)
+    found += fig.texts
+    return [
+        text
+        for text in found
+        if not isinstance(text, BarLabel)
+        and text.get_visible()
+        and text.get_text()
+    ]
+
+
+def _clear_texts(
+    fig: Figure, families: list[BarLabelFamily], renderer: RendererBase
+) -> None:
+    """Hide a value beyond its limit that would cover other text.
+
+    A label off its bar beyond the limit the bar runs past (a cut bar too
+    narrow for its number) sits outside the axes, where tick labels, axis
+    labels and titles are; one that covers any of them (:func:`_texts_drawn`)
+    is hidden for ``"text"``, as the overlap rule hides labels that meet.
+    """
+    boxes = None
+    for family in families:
+        for label in family.texts:
+            if not label.get_visible():
+                continue
+            box = label.get_window_extent(renderer)  # places it: off_bar now
+            if not (label.off_bar and label.clipped):
+                continue
+            if boxes is None:
+                boxes = [
+                    t.get_window_extent(renderer) for t in _texts_drawn(fig)
+                ]
+            if any(_covers(box, other) for other in boxes):
+                label.own_visible(False)
+                if not Artist.get_visible(label):  # not shown by the caller
+                    label.hidden_for = "text"
 
 
 def _clear_legends(
@@ -564,8 +628,10 @@ def warn_hidden_bar_labels(fig: Figure, *, stacklevel: int = 1) -> int:
     rule's own outcome (series alternate), not a loss. Its count covers
     every label of those calls the overlap rule hid. Another when a legend
     covers labels (``"legend"``, whatever the rule), naming
-    ``dm.place_legend``. ``stacklevel`` counts from the caller (1: the line
-    calling this). Returns the labels reported (0: nothing to report).
+    ``dm.place_legend``. Another when values of bars past a limit were
+    hidden where they would cover other text (``"text"``). ``stacklevel``
+    counts from the caller (1: the line calling this). Returns the labels
+    reported (0: nothing to report).
     """
     labels = [
         label
@@ -586,6 +652,17 @@ def warn_hidden_bar_labels(fig: Figure, *, stacklevel: int = 1) -> int:
             UserWarning,
             stacklevel=stacklevel + 1,
         )
+    blocked = [label for label in every if label.hidden_for == "text"]
+    if blocked:
+        warnings.warn(
+            f"dm.label_bars: {len(blocked)} of {len(every)} bar value labels "
+            "of bars past a limit you set are hidden where they would cover "
+            "other text (tick labels, an axis label or a title); a wider "
+            "limit, or bars wide enough for their numbers, shows them",
+            UserWarning,
+            stacklevel=stacklevel + 1,
+        )
+    covered += blocked
     if not any(label.hidden_for == "room" for label in labels):
         return len(covered)
     hidden = [label for label in labels if label.hidden_for in ("turn", "room")]
