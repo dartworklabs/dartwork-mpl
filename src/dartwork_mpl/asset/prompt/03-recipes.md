@@ -546,7 +546,7 @@ value, then the fewest exact decimals, one count per call, no meaningless
 `.0`; stacked bars' segments centred and a total beyond the stack; crowded
 labels on vertical bars turned vertical by `dm.simple_layout`, which also
 grows autoscaled limits just enough for the labels (limits you set stay; a
-bar past them gets no label).
+bar past them shows its true value just inside the limit, on the bar).
 
 ```python
 import matplotlib.pyplot as plt
@@ -566,8 +566,11 @@ Requests, one keyword each: `where="inside"` / `"center"` / `"outside"`;
 template wraps the signed number, `$−3.5B`; a callable for `−$3.5B`);
 `size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar.
 Stacks need matching bottoms (a waterfall is not one); pad split series with
-NaN, not 0. Thin `barh` rows hide every other label: a taller figure shows
-them all. On a twin pair the labels go on the top axes.
+NaN, not 0. Grouped series whose labels meet take turns by bar index (two
+alternate, first series on even indices), one call or one per series. If
+labels are still lost for room (thin `barh` rows), `dm.simple_layout` warns
+with the count: make the figure taller (wider for vertical bars); keep the
+warning in the report. On a twin pair the labels go on the top axes.
 
 ## "Twin axis"
 
@@ -582,9 +585,11 @@ dm.simple_layout(fig)
 ```
 
 `dm.simple_layout` colours each side like its one series (spine and ticks at
-3:1, tick labels and axis label at 4.5:1); colours you set win, except one
-set before the first layout that equals the preset's default (`"black"`):
-it cannot be told from the default and is painted. For black or neutral
+3:1, tick labels and axis label at 4.5:1); a colour you set on any part of
+a side makes that whole side yours (its other parts keep the preset's
+colours; the other side keeps its series colour), except one set before the
+first layout that equals the preset's default (`"black"`): it cannot be
+told from the default and is painted. For black or neutral
 twin axes, `with dm.config.override(twin_colors="neutral"):` (or
 `dm.config.twin_colors = "neutral"`) keeps the preset's. One
 legend for both: `dm.place_legend(ax1)`, not `ax1.legend(h1 + h2, l1 + l2)`;

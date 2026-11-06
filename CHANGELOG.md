@@ -19,10 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   meaningless `.0`; stacked bars' segments centred with a total beyond the
   stack. `dm.simple_layout` turns crowded labels on vertical bars vertical
   (`barh` hides every other one instead) and grows autoscaled limits just
-  enough for the labels; limits you set stay. On a twin pair the labels go
-  on the top axes. The keywords: `where`, `total`, `crowded`, `decimals`,
-  `fmt` (a `{}` template, a format-spec field such as `"{:.2f}"`, or a
-  callable), `size`, `color` (`"series"` colours labels off their bar).
+  enough for the labels; limits you set stay, and a bar running past one
+  shows its true value just inside it, on the bar, in white or the text
+  colour, whichever reads on it (no label only for bars wholly outside the
+  view, and for stack segments and totals past the limit). Labels that
+  would still overlap are hidden; grouped series take turns where their
+  labels meet (two series alternate by bar index, the first on even
+  indices), in one call or one call per series, so no series disappears.
+  When labels are still lost for room (thin `barh` rows),
+  `dm.simple_layout` warns once with the count and the cure (a taller or
+  wider figure); `crowded="skip"`, which asks for hiding, stays silent. On
+  a twin pair the labels go on the top axes. The keywords: `where`,
+  `total`, `crowded`, `decimals`, `fmt` (a `{}` template, a format-spec
+  field such as `"{:.2f}"`, or a callable), `size`, `color` (`"series"`
+  colours labels off their bar).
 - `dm.config.twin_colors` (`"series"`, the default, or `"neutral"`): the
   axis colours of `twinx` / `twiny` pairs.
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
@@ -37,10 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   background, the tick labels and axis label in the same hue at 4.5:1. A
   side whose series draw several colours, or a hue close to the other
   side's, stays neutral; single Axes are never touched; a colour you set
-  (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins, except one
-  set before the first `dm.simple_layout` that equals the preset's default
+  (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins and makes
+  that whole side yours: its other parts keep the preset's colours while
+  the other side keeps its series colour. The exception is a colour set
+  before the first `dm.simple_layout` that equals the preset's default
   (`"black"` under the light presets), which cannot be told from the
-  default and is painted.
+  default and is painted with the rest of the side.
   `with dm.config.override(twin_colors="neutral"):` (or
   `dm.config.twin_colors = "neutral"`) keeps the preset's colours, for
   black or neutral twin axes.
