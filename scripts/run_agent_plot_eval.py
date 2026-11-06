@@ -66,7 +66,7 @@ _ORACLE_MARKERS = (
     "global-constraints",
     "task-2-runtime-notes",
 )
-# Minimum spacing between owned-tree/evidence polls while streams are drained.
+# Owned-tree/evidence poll interval for idle streams; the floor while draining.
 _POLL_SECONDS = 0.05
 
 
@@ -207,13 +207,15 @@ def capture_process(
     Limits observe stream bytes/calls and optionally the total evidence tree.
     No shell is used. Calls are counted at complete assistant tool-use events.
     Cleanup kills observed descendants and verifies their absence on every exit.
-    The owned process tree and evidence tree are polled at most once per
-    ``max(_POLL_SECONDS, previous poll duration)``; streams are drained between
-    polls, so a slow process table cannot hold back a stream limit until the
-    wall limit wins. Cleanup scans again, so a descendant whose owned parent is
-    still alive is found however late it started; one that detaches and loses
-    its parent between two scans is never observed and is not cleaned up. A
-    normal exit is re-checked against the evidence tree after cleanup.
+    The owned process tree and evidence tree are polled every
+    ``_POLL_SECONDS`` while the streams are idle and, once output has been
+    read, no sooner than ``max(_POLL_SECONDS, previous poll duration)``; the
+    streams are drained in between, so a slow process table cannot hold back a
+    stream limit until the wall limit wins. Cleanup scans again, so a
+    descendant whose owned parent is still alive is found however late it
+    started; one that detaches and loses its parent between two scans is never
+    observed and is not cleaned up. A normal exit is re-checked against the
+    evidence tree after cleanup.
     """
     started = time.monotonic()
     process = subprocess.Popen(
@@ -234,12 +236,13 @@ def capture_process(
     reason = "exit"
     call_limit_reason = None
     cleanup = False
-    poll_due = started
+    idle_due = drain_due = started
+    drained = False
     evidence_over = False
     try:
         with events_path.open("wb") as stdout, stderr_path.open("ab") as stderr:
             while selector.get_map():
-                if time.monotonic() >= poll_due:
+                if time.monotonic() >= (drain_due if drained else idle_due):
                     polled = time.monotonic()
                     _owned(process.pid, known)
                     evidence_over = (
@@ -251,9 +254,13 @@ def capture_process(
                     # passes pipe-user-pages-soft. Polling before every read
                     # put one scan per pipe buffer (10 to ~75 for a 600 KB
                     # call) in front of a call already written, while the wall
-                    # clock ran. Read for at least as long as the poll took.
+                    # clock ran. Once output has been read since a poll, read
+                    # for at least as long as that poll took; idle streams
+                    # keep the short poll interval.
                     finished = time.monotonic()
-                    poll_due = finished + max(_POLL_SECONDS, finished - polled)
+                    idle_due = finished + _POLL_SECONDS
+                    drain_due = finished + max(_POLL_SECONDS, finished - polled)
+                    drained = False
                 if time.monotonic() - started > wall_seconds:
                     reason = "wall_limit"
                     break
@@ -265,6 +272,7 @@ def capture_process(
                     if not chunk:
                         selector.unregister(key.fileobj)
                         continue
+                    drained = True
                     size += len(chunk)
                     target = stdout if key.data == "stdout" else stderr
                     target.write(chunk)
