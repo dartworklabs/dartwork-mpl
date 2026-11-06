@@ -19,6 +19,7 @@ from ._axis_wide import (
     SI_LADDER,
     AxisUnitFormatter,
     TickScale,
+    TickText,
     Unit,
     number_text,
     tick_scale_of,
@@ -66,6 +67,14 @@ _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
 # this name.
 _SI_LADDER = SI_LADDER
 
+# What the fixed-decimal paths print, each value alone (``per_tick``):
+# ``decimals=n`` of millions / billions / si (``1000.0k``, ``-1.5M``, ``0.0``),
+# ``format_axis_currency`` (``-$1,500``, ``$0``) and ``decimals=n`` of myriad
+# (``1.5억``, ``7,500``, ``-$0``).
+_FIXED_TEXT = TickText(separators=False)
+_CURRENCY_TEXT = TickText(zero="affixed")
+_MYRIAD_TEXT = TickText(zero="exact", compact=True)
+
 
 def _set_formatter(
     ax: Axes, axis: str, make: Callable[[], ticker.Formatter]
@@ -75,6 +84,20 @@ def _set_formatter(
         ax.yaxis.set_major_formatter(make())
     if axis in ("x", "both"):
         ax.xaxis.set_major_formatter(make())
+
+
+def _one_unit(unit: Unit, decimals: int | None) -> AxisUnitFormatter:
+    """``unit`` on every tick: decimals per axis, or ``decimals`` per value.
+
+    An integer keeps the fixed-decimal output: no thousands separators, the
+    hyphen-minus, and a value that rounds to zero as a bare ``0.0`` (never
+    ``-0.0M``).
+    """
+    if decimals is None:
+        return AxisUnitFormatter([unit], unit.label)
+    return AxisUnitFormatter(
+        [unit], unit.label, decimals=decimals, per_tick=_FIXED_TEXT
+    )
 
 
 def format_axis_year(
@@ -268,7 +291,7 @@ def format_axis_myriad(
     AxisUnitFormatter(ladder, unit)
 
     # An integer with ``unit="max"`` keeps each tick in its own unit.
-    per_tick = decimals is not None and unit == "max"
+    per_tick = _MYRIAD_TEXT if decimals is not None and unit == "max" else None
     _set_formatter(
         ax,
         axis,
@@ -310,41 +333,7 @@ def format_axis_millions(
     --------
     >>> format_axis_millions(ax)  # Show as 1.5M instead of 1500000
     """
-    if decimals is None:
-        _set_formatter(
-            ax, axis, lambda: AxisUnitFormatter([Unit(1e6, suffix)], suffix)
-        )
-        return
-
-    def millions_formatter(x: float, pos: int) -> str:
-        """Internal formatter function for millions scale.
-
-        Parameters
-        ----------
-        x : float
-            The tick value to format
-        pos : int
-            The tick position (unused but required by matplotlib)
-
-        Returns
-        -------
-        str
-            Formatted string with millions suffix
-        """
-        # Any value that rounds to zero at the requested precision (0, or
-        # a small negative like -40 000 → -0.04 → -0.0) renders as the
-        # bare zero tick — suffix-less and never "-0.0M".
-        scaled = x / 1e6
-        if round(scaled, decimals) == 0:
-            return f"{0:.{decimals}f}"
-        return f"{scaled:.{decimals}f}{suffix}"
-
-    formatter = ticker.FuncFormatter(millions_formatter)
-
-    if axis in ("y", "both"):
-        ax.yaxis.set_major_formatter(formatter)
-    if axis in ("x", "both"):
-        ax.xaxis.set_major_formatter(formatter)
+    _set_formatter(ax, axis, lambda: _one_unit(Unit(1e6, suffix), decimals))
 
 
 def format_axis_billions(
@@ -372,40 +361,7 @@ def format_axis_billions(
     --------
     >>> format_axis_billions(ax)  # Show as 1.5B instead of 1500000000
     """
-    if decimals is None:
-        _set_formatter(
-            ax, axis, lambda: AxisUnitFormatter([Unit(1e9, suffix)], suffix)
-        )
-        return
-
-    def billions_formatter(x: float, pos: int) -> str:
-        """Internal formatter function for billions scale.
-
-        Parameters
-        ----------
-        x : float
-            The tick value to format
-        pos : int
-            The tick position (unused but required by matplotlib)
-
-        Returns
-        -------
-        str
-            Formatted string with billions suffix
-        """
-        # Any value that rounds to zero at the requested precision
-        # renders as the bare zero tick — suffix-less and never "-0.0B".
-        scaled = x / 1e9
-        if round(scaled, decimals) == 0:
-            return f"{0:.{decimals}f}"
-        return f"{scaled:.{decimals}f}{suffix}"
-
-    formatter = ticker.FuncFormatter(billions_formatter)
-
-    if axis in ("y", "both"):
-        ax.yaxis.set_major_formatter(formatter)
-    if axis in ("x", "both"):
-        ax.xaxis.set_major_formatter(formatter)
+    _set_formatter(ax, axis, lambda: _one_unit(Unit(1e9, suffix), decimals))
 
 
 def format_axis_currency(
@@ -435,41 +391,22 @@ def format_axis_currency(
     >>> format_axis_currency(ax)  # Format as $1,000
     >>> format_axis_currency(ax, symbol="€", position="suffix")  # Format as 1,000€
     """
-
-    def currency_formatter(x: float, pos: int) -> str:
-        """Internal formatter function for currency values.
-
-        Parameters
-        ----------
-        x : float
-            The tick value to format
-        pos : int
-            The tick position (unused but required by matplotlib)
-
-        Returns
-        -------
-        str
-            Formatted string with currency symbol
-        """
-        # Format the magnitude (always positive) so the minus sign can
-        # be placed outside the currency symbol — convention is
-        # ``-$1,000``, not ``$-1,000``.
-        abs_formatted = f"{abs(x):,.{decimals}f}"
-        # Suppress the sign when the magnitude rounds to exactly zero
-        # at the requested decimals (e.g. ``x=-0.0`` or ``x=-0.4``
-        # with ``decimals=0`` would otherwise render as ``"-$0"``).
-        zero_form = f"{0:,.{decimals}f}"
-        sign = "-" if (x < 0 and abs_formatted != zero_form) else ""
-        if position == "prefix":
-            return f"{sign}{symbol}{abs_formatted}"
-        return f"{sign}{abs_formatted}{symbol}"
-
-    formatter = ticker.FuncFormatter(currency_formatter)
-
-    if axis in ("y", "both"):
-        ax.yaxis.set_major_formatter(formatter)
-    if axis in ("x", "both"):
-        ax.xaxis.set_major_formatter(formatter)
+    # The sign goes outside the symbol (``-$1,000``, not ``$-1,000``) and
+    # drops when the value rounds to zero (``$0``, never ``-$0``). Any
+    # position other than "prefix" writes the symbol after the number.
+    prefix = position == "prefix"
+    unit = Unit(1.0, "" if prefix else symbol)
+    _set_formatter(
+        ax,
+        axis,
+        lambda: AxisUnitFormatter(
+            [unit],
+            unit.label,
+            decimals=decimals,
+            currency=symbol if prefix else "",
+            per_tick=_CURRENCY_TEXT,
+        ),
+    )
 
 
 def format_axis_si(
@@ -524,52 +461,15 @@ def format_axis_si(
     """
     # Validate ``unit`` before touching the axes.
     AxisUnitFormatter(_SI_LADDER, unit)
-    if decimals is None or unit != "max":
-        _set_formatter(
-            ax,
-            axis,
-            lambda: AxisUnitFormatter(_SI_LADDER, unit, decimals=decimals),
-        )
-        return
-
-    def si_formatter(x: float, pos: int) -> str:
-        """Internal formatter function for SI prefix notation.
-
-        Parameters
-        ----------
-        x : float
-            The tick value to format
-        pos : int
-            The tick position (unused but required by matplotlib)
-
-        Returns
-        -------
-        str
-            Formatted string with SI prefix (k, M, G, T)
-        """
-        if x == 0:
-            return f"{0:.{decimals}f}"
-
-        abs_x = abs(x)
-        sign = "-" if x < 0 else ""
-
-        if abs_x >= 1e12:
-            return f"{sign}{abs_x / 1e12:.{decimals}f}T"
-        if abs_x >= 1e9:
-            return f"{sign}{abs_x / 1e9:.{decimals}f}G"
-        if abs_x >= 1e6:
-            return f"{sign}{abs_x / 1e6:.{decimals}f}M"
-        if abs_x >= 1e3:
-            return f"{sign}{abs_x / 1e3:.{decimals}f}k"
-        # Sub-1000: no SI prefix. Normalise ``-0.0`` to ``0.0``.
-        return f"{round(x, decimals) or 0.0:.{decimals}f}"
-
-    formatter = ticker.FuncFormatter(si_formatter)
-
-    if axis in ("y", "both"):
-        ax.yaxis.set_major_formatter(formatter)
-    if axis in ("x", "both"):
-        ax.xaxis.set_major_formatter(formatter)
+    # An integer with ``unit="max"`` keeps each tick in its own prefix.
+    per_tick = _FIXED_TEXT if decimals is not None and unit == "max" else None
+    _set_formatter(
+        ax,
+        axis,
+        lambda: AxisUnitFormatter(
+            _SI_LADDER, unit, decimals=decimals, per_tick=per_tick
+        ),
+    )
 
 
 def rotate_tick_labels(

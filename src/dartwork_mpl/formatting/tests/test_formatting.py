@@ -191,7 +191,7 @@ class TestFormatAxisSiBoundaries:
         fig, ax = _axes()
         dm.format_axis_si(ax, axis="y", decimals=decimals)
         formatter = ax.yaxis.get_major_formatter()
-        # FuncFormatter's call signature is (value, pos).
+        # A matplotlib formatter is called as (value, pos).
         assert formatter(value, 0) == expected
         plt.close(fig)
 

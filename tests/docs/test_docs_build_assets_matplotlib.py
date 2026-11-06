@@ -31,7 +31,7 @@ _VERSION = re.compile(r"Matplotlib v(\d+)\.(\d+)\.(\d+)")
 
 
 def _floor() -> tuple[int, int]:
-    """The Matplotlib floor in pyproject (``matplotlib>=3.11.0``)."""
+    """The Matplotlib floor in pyproject (``matplotlib>=3.11.2``)."""
     text = (_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     match = re.search(r'"matplotlib>=(\d+)\.(\d+)', text)
     assert match, "matplotlib floor not found in pyproject.toml"
