@@ -516,10 +516,15 @@ def test_11_4_swapped_sides_move_the_line_to_the_parent(
     _differs_from_07(_twinx_pair, swap, monkeypatch, owner=1, shown=False)
 
 
-def test_11_4_twin_label_left_and_right_ticks_off_shows_none(
+def test_pending_m02_twin_label_left_and_right_ticks_off_shows_none(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """11-4 also covers a twin whose right ticks are turned off (m02)."""
+    """Awaiting the user's decision (m02, 결정 대기): pins today's behaviour.
+
+    A twin whose y label moved left and whose right ticks are turned off
+    draws no y scale on the right, so it gets no line; 0.7 drew one. This is
+    not part of the approved 11-4; the decision waits for its own PoC.
+    """
 
     def turn_off(fig: Figure, a: Axes, b: Axes) -> None:
         b.yaxis.set_label_position("left")

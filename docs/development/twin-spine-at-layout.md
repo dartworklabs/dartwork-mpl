@@ -85,12 +85,14 @@ hidden.
 | x02 / x03 twin with only its ticks / only its label moved left | twin | twin |
 | x04 `b.twinx()` of a twin (matplotlib moves `b`'s ticks left) | `b` and `c` | `b` and `c` |
 | 11-3 `sharex` overlay, ticks and label moved right (x12) | overlay | no |
-| 11-4 twin's ticks and label moved left or turned off (m02); parent moved right (x19) or not (x13) | parent (x19), none (x13) | twin |
+| 11-4 twin's ticks and label moved left; parent moved right (x19) or not (x13) | parent (x19), none (x13) | twin |
 | 11-5 twin with its y axis hidden (x14) | no | twin |
 | 14 `sharex` overlay drawn like a twin (x axis and background hidden), only its ticks or only its label on the right | overlay | no |
+| m02, awaiting the user's decision: twin's label moved left and its right ticks turned off | none | twin |
 
 The first twelve rows match 0.7 pixel for pixel; 11-3 to 11-5 and 14 are
-approved. Decision 14 settles a pair public state cannot tell apart: the
+approved; m02 awaits a decision on its own rendered PoC (the 11-4 approval
+does not extend to it). Decision 14 settles a pair public state cannot tell apart: the
 overlay in the last row and the twin of x02 / x03 with the same half-moved scale
 differ only in the private `_twinned_axes`, and 0.7 drew a line on the twin
 alone. Any public rule answers both alike; the user chose to keep the twin's
@@ -162,7 +164,7 @@ CHANGELOG, *Changed*:
 > overlay you made like a twin (x axis hidden, y ticks or label on the
 > right); when a twin and its parent swap sides, the line moves to the
 > parent; a twin whose y axis is hidden, or whose y ticks and label you both
-> moved to the left or turned off, gets none.
+> moved to the left, gets none.
 > Without the layout a twin keeps the hidden spine; show it with
 > `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
 > first `dm.simple_layout` now shows; hide it after the layout, or give it
@@ -174,6 +176,8 @@ alias (internal, never in `__all__`).
 
 ## Open points (not decided here)
 
+- m02 (table above): keep the current rule, under which a twin with no
+  y ticks and no y label on the right gets no line, or not.
 - `twiny` top spine: still hidden, as in 0.7; showing it needs its own PoC.
 - `PRESET_OVERRIDE` still uses `_twinned_axes`; aligning it with the public
   rule would change root's pinned shared-axes contract test.
