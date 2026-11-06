@@ -34,7 +34,10 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   takes white or the preset text colour, whichever reads better on the bar
   as drawn; a label off the bar keeps the text colour, or with
   ``color="series"`` its bar's colour, totals excepted
-  (:mod:`._bar_label_ink`).
+  (:mod:`._bar_label_ink`). A plain bar's ``"inside"`` label sits on its
+  bar only while the bar holds it along and across; otherwise it sits
+  beyond the bar's end in the ink for a label off the bar, so no part of it
+  is drawn on the background in white.
 * **View.** A label shows while its bar's end (its middle for
   ``where="center"``) lies in the view, within one pixel: a bar ending on a
   limit keeps its label just outside the axes, a bar outside the view has
@@ -591,7 +594,10 @@ def label_bars(
         Where each bar's label sits; a stack segment is a bar.
         ``"auto"`` (default): beyond a plain bar's end, at a segment's
         middle; ``"outside"``: beyond the end; ``"inside"``: just inside the
-        end; ``"center"``: the bar's middle. Totals always sit beyond the
+        end of a plain bar that holds the label (as long and as wide),
+        beyond the end in the text colour otherwise, so a narrow dark bar
+        never shows part of a white number on the background;
+        ``"center"``: the bar's middle. Totals always sit beyond the
         stack's end, and beyond the top segment's label when segments are
         labelled ``"outside"`` (3 pt past it).
     total : {"auto", "only", False}
@@ -604,7 +610,8 @@ def label_bars(
         ``"skip"`` hides every other label, keeping the last bar's (the
         top row's for ``barh``); ``"inside"`` puts plain bars' labels
         inside their ends (vertical text on vertical bars, readable ink),
-        leaving a bar too short for its label with the label outside.
+        leaving a bar too short or too thin for its label with the label
+        outside.
         ``barh`` never turns: rows thinner than the text hide every other
         label. Under any rule, labels that would still overlap are hidden
         the same way, other calls' labels on the same plot area included

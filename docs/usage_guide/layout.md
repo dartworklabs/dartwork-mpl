@@ -614,10 +614,16 @@ bars vertical. Each alternative is one keyword:
 | another size | `size=dm.fs(0)` |
 | another colour; the bar's colour for labels off their bar | `color="dc.gray7"`; `color="series"` (labels on a bar and totals keep theirs) |
 
+A label asked inside its bar stays there only while the bar holds it, as
+long and as wide as the text; on a bar too short or too narrow it sits
+beyond the end in the text colour, so a dark bar never leaves part of a
+white number on the background.
+
 **Numbers.** A label prints like its axis's ticks. Under `dm.axis_unit` the
 axis label names the unit, so the labels are plain scaled numbers (`33.0`
 under `Energy (GWh)`). A formatter whose ticks carry a suffix gives the
-labels the same suffix: `1.20k` under `dm.format_axis_si`, `47.5%` under a
+labels the same suffix: `1.20k` under `dm.format_axis_si` (its default
+`decimals=None`), `47.5%` under a
 `PercentFormatter`, `33.0M` under the library's default numbers once
 `dm.simple_layout` has set them. A formatter the labels cannot read
 (`FuncFormatter`, `StrMethodFormatter`, `dm.format_axis_currency`) leaves

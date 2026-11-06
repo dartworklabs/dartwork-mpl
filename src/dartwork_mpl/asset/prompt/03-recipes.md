@@ -539,7 +539,8 @@ dm.simple_layout(fig)
 No request, `dm.label_bars(ax)` with its defaults; a request, that keyword.
 The defaults: `dm.fs(-1)` at `dm.fw(1)` in the text colour, 3 pt beyond the
 bar end; the number printed like the axis ticks (plain scaled numbers under
-`dm.axis_unit`, the ticks' suffix under `dm.format_axis_si` or a
+`dm.axis_unit`, the ticks' suffix under `dm.format_axis_si` with its
+default `decimals=None` or a
 `PercentFormatter`, plain values under a formatter it cannot read, such as
 a `FuncFormatter`: pass `fmt=`); three significant digits on the largest
 value, then the fewest exact decimals, one count per call, no meaningless

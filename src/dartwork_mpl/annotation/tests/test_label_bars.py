@@ -13,6 +13,8 @@ are read after a real canvas draw.
 from __future__ import annotations
 
 import io
+import shutil
+import subprocess
 import warnings
 
 import matplotlib
@@ -668,6 +670,175 @@ def test_where_inside_and_center():
         pb = patch.get_window_extent(renderer)
         assert (tb.y0 + tb.y1) / 2 == pytest.approx((pb.y0 + pb.y1) / 2, abs=1)
         assert (tb.x0 + tb.x1) / 2 == pytest.approx((pb.x0 + pb.x1) / 2, abs=1)
+
+
+# ------------------------------------------------- reading the saved file
+# A label reads when the whole number can be read in the file a user
+# keeps: every glyph pixel stands on a background its ink contrasts with,
+# and the text box lies on one background (a bar or the plot background),
+# not across a bar edge. Checked on the PNG and on the PDF, rasterised.
+READ_RATIO = 3.0  # WCAG 2.x, graphics and large text: the floor here
+_PROBE = (1.0, 0.0, 1.0)  # a colour no test bar or background takes
+
+
+def _luminance(rgb):
+    rgb = np.asarray(rgb, dtype=float)
+    linear = np.where(
+        rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4
+    )
+    return linear @ np.array([0.2126, 0.7152, 0.0722])
+
+
+def _ratios(ink, grounds):
+    """WCAG contrast of ``ink`` against each background pixel."""
+    a, b = _luminance(ink), _luminance(grounds)
+    return (np.maximum(a, b) + 0.05) / (np.minimum(a, b) + 0.05)
+
+
+def _raster(fig, fmt, folder):
+    """The figure saved as ``fmt`` and read back as pixels (RGB, 0-1).
+
+    A PDF is rasterised by Ghostscript at the figure's dpi, so its pixels
+    line up with the figure's display coordinates as a PNG's do.
+    """
+    path = folder / f"page.{fmt}"
+    with matplotlib.rc_context({"savefig.bbox": "standard"}):
+        fig.savefig(path, format=fmt, dpi=fig.dpi)
+    if fmt == "pdf":
+        gs = shutil.which("gs")
+        if gs is None:
+            pytest.skip(
+                "reading the PDF needs Ghostscript (gs) to rasterise it"
+            )
+        png = folder / "page_pdf.png"
+        subprocess.run(
+            [
+                gs,
+                "-q",
+                "-dSAFER",
+                "-dBATCH",
+                "-dNOPAUSE",
+                "-sDEVICE=png16m",
+                "-dTextAlphaBits=4",
+                "-dGraphicsAlphaBits=4",
+                f"-r{fig.dpi:g}",
+                f"-sOutputFile={png}",
+                str(path),
+            ],
+            check=True,
+        )
+        path = png
+    return plt.imread(path)[..., :3].astype(float)
+
+
+def _unreadable(fig, labels, folder, fmt):
+    """The drawn labels whose number does not read in the saved ``fmt``.
+
+    Three saves: as drawn; the labels hidden (what lies behind them); the
+    labels in a probe colour (where their glyphs are, whatever their ink).
+    A label fails when a glyph pixel's background contrasts with its ink
+    less than READ_RATIO, or when its text box (2 px in from its edge, for
+    antialiasing) lies across more than one background.
+    """
+    drawn = [t for t in labels if t.get_visible()]
+    inks = [t.get_color() for t in drawn]
+    renderer = _drawn(fig)
+    boxes = [t.get_window_extent(renderer) for t in drawn]
+    for t in drawn:
+        t.set_visible(False)
+    ground = _raster(fig, fmt, folder)
+    for t in drawn:
+        t.set_visible(True)
+        t.set_color(_PROBE)
+    probe = _raster(fig, fmt, folder)
+    for t, ink in zip(drawn, inks, strict=True):
+        t.set_color(ink)
+    height = ground.shape[0]
+    bad = []
+    for t, ink, box in zip(drawn, inks, boxes, strict=True):
+        rows = slice(int(height - box.y1), int(np.ceil(height - box.y0)))
+        cols = slice(int(box.x0), int(np.ceil(box.x1)))
+        behind, glyphs = ground[rows, cols], probe[rows, cols]
+        mask = np.abs(glyphs - behind).max(axis=2) > 0.15
+        inner = behind[2:-2, 2:-2].reshape(-1, 3)
+        spread = float(np.abs(inner - np.median(inner, axis=0)).max())
+        worst = float(_ratios(mcolors.to_rgb(ink), behind[mask]).min())
+        if not mask.any() or spread > 0.1 or worst < READ_RATIO:
+            bad.append((t.get_text(), round(worst, 2), round(spread, 2)))
+    return bad
+
+
+def _assert_readable(fig, labels, folder):
+    for fmt in ("png", "pdf"):
+        assert _unreadable(fig, labels, folder, fmt) == [], fmt
+
+
+def _narrow_dark(width, **label_kw):
+    """Dark bars narrower than their numbers (the review's C1 data)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    bars = ax.bar(
+        np.arange(6),
+        [300, 4100, 520, 610, 12500, 700],
+        width=width,
+        color="dc.blue9",
+    )
+    return fig, ax, bars, dm.label_bars(ax, **label_kw)
+
+
+def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path):
+    # where="inside" on dark bars narrower than the numbers: white ink on
+    # the bar would leave part of each number on the white background
+    # (12,500 read as 2,50). A label its bar does not hold sits beyond the
+    # bar's end in the text colour instead, and reads in the PNG and PDF.
+    fig, ax, bars, labels = _narrow_dark(0.3, where="inside")
+    dm.simple_layout(fig)
+    renderer = _drawn(fig)
+    for label, patch in zip(labels, bars.patches, strict=True):
+        assert label.off_bar and not label.on_bar and label.beyond_end
+        assert _hex(label) == "#000000"
+        box = label.get_window_extent(renderer)
+        assert box.y0 == pytest.approx(
+            patch.get_window_extent(renderer).y1 + _offset_px(fig), abs=0.6
+        )
+    _assert_readable(fig, labels, tmp_path)
+
+    # Wide bars hold the numbers across: the tall ones keep them inside in
+    # white; the short ones (too short along) put them beyond their ends.
+    fig, ax, bars, labels = _narrow_dark(0.85, where="inside")
+    dm.simple_layout(fig)
+    renderer = _drawn(fig)
+    assert [t.get_text() for t in labels if t.on_bar] == ["4,100", "12,500"]
+    for label, patch in zip(labels, bars.patches, strict=True):
+        box = label.get_window_extent(renderer)
+        bar = patch.get_window_extent(renderer)
+        if label.on_bar:
+            assert _hex(label) == "#ffffff"
+            assert bar.x0 - 0.5 <= box.x0 and box.x1 <= bar.x1 + 0.5
+            assert box.y1 == pytest.approx(bar.y1 - _offset_px(fig), abs=0.6)
+        else:
+            assert _hex(label) == "#000000"
+            assert box.y0 == pytest.approx(bar.y1 + _offset_px(fig), abs=0.6)
+    _assert_readable(fig, labels, tmp_path)
+
+
+def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(tmp_path):
+    # crowded="inside" on barh rows thinner than the text: the labels stay
+    # beyond the bar ends in the text colour (they used to move onto the
+    # rows in white and run past them); a later taller figure that holds
+    # them moves them in.
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    values = np.linspace(4000.0, 1500.0, 12)
+    ax.barh(np.arange(12), values, height=0.25, color="dc.blue9")
+    ax.invert_yaxis()
+    ax.set_xlim(0, 4600)
+    labels = dm.label_bars(ax, crowded="inside")
+    dm.simple_layout(fig)
+    _drawn(fig)
+    shown = [t for t in labels if t.get_visible()]
+    assert shown
+    assert all(t.where == "outside" and not t.on_bar for t in shown)
+    assert {_hex(t) for t in shown} == {"#000000"}
+    _assert_readable(fig, labels, tmp_path)
 
 
 def test_error_bars_push_labels_past_caps():

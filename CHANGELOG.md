@@ -20,19 +20,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   stack. `dm.simple_layout` turns crowded labels on vertical bars vertical
   (`barh` hides every other one instead) and grows autoscaled limits just
   enough for the labels; limits you set stay, and a bar running past one
-  shows its true value just inside it, on the bar, in white or the text
-  colour, whichever reads on it (no label only for bars wholly outside the
-  view, and for stack segments and totals past the limit). Labels that
-  would still overlap are hidden; grouped series take turns where their
-  labels meet (two series alternate by bar index, the first on even
-  indices), in one call or one call per series, so no series disappears.
-  When labels are still lost for room (thin `barh` rows),
-  `dm.simple_layout` warns once with the count and the cure (a taller or
-  wider figure); `crowded="skip"`, which asks for hiding, stays silent. On
-  a twin pair the labels go on the top axes. The keywords: `where`,
-  `total`, `crowded`, `decimals`, `fmt` (a `{}` template, a format-spec
-  field such as `"{:.2f}"`, or a callable), `size`, `color` (`"series"`
-  colours labels off their bar).
+  shows its true value at that limit: just inside it, on the bar, in white
+  or the text colour (whichever reads on it) when the bar holds the
+  number, otherwise just beyond it in the text colour (no label only for
+  bars wholly outside the view, and for stack segments and totals past the
+  limit). A label asked inside its bar (`where="inside"`,
+  `crowded="inside"`) likewise stays there only while the bar holds it
+  along and across; otherwise it sits beyond the bar's end in the text
+  colour, so a narrow dark bar never leaves part of a white number on the
+  background. Labels that would still overlap are hidden; grouped series
+  take turns where their labels meet (two series alternate by bar index),
+  in one call or one call per series, when that keeps as many labels as
+  the plain rule. When labels are lost for room (thin `barh` rows, dense
+  groups), `dm.simple_layout` warns once with the count and the cure (a
+  taller or wider figure); `crowded="skip"`, which asks for hiding, stays
+  silent. On a twin pair the labels go on the top axes. The keywords:
+  `where`, `total`, `crowded`, `decimals`, `fmt` (a `{}` template, a
+  format-spec field such as `"{:.2f}"`, or a callable), `size`, `color`
+  (`"series"` colours labels off their bar).
 - `dm.config.twin_colors` (`"series"`, the default, or `"neutral"`): the
   axis colours of `twinx` / `twiny` pairs.
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
@@ -41,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The Matplotlib floor is now `>=3.11.2`, the patch release the declared
+  floor environment (Python 3.11, NumPy 1.26) is verified on. Matplotlib
+  3.11.0 logs font-weight misses without naming the family, so the quiet
+  math-font handling cannot tell them from a caller's own font notices.
 - **Twin pairs get series colours.** `dm.simple_layout` colours each side
   of a `twinx` / `twiny` pair like the one series read on it: the spine
   and tick marks in the series colour raised to 3:1 against the
@@ -71,6 +80,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   and leaves it.
 - `dm.format_axis_myriad(ax, decimals=n)` now sets an `AxisUnitFormatter`
   instead of a `FuncFormatter`. The tick text is the same.
+- `dm.format_axis_currency` and `decimals=n` of `dm.format_axis_millions`,
+  `_billions` and `_si` now set an `AxisUnitFormatter` too, one per axis
+  (`axis="both"` no longer shares one `FuncFormatter`). The tick text and
+  the bar labels of `dm.label_bars` are the same; a figure with these
+  formatters can now be pickled. The old formatter's `.func` and
+  `set_offset_string` are gone with it.
+- **A Figure without a live renderer is always measured with Agg.** A
+  plain `Figure()`, a Figure on a PDF, SVG or PS canvas, or one that
+  `plt.close` detached is measured for layout, tick formatting and checks
+  by a temporary Agg canvas at the Figure DPI, now through public
+  matplotlib API only. Where another canvas is registered for PNG
+  (`matplotlib.backend_bases.register_backend("png", ...)`, cairo say),
+  such a Figure used to be measured with that canvas and is now measured
+  with Agg; margins can move by a few pixels (about 7 px at 200 dpi in one
+  cairo case). Figures on a live canvas, of any backend, are measured with
+  their own renderer as before.
 
 ### Deprecated
 

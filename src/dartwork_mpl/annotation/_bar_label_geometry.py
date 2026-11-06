@@ -36,6 +36,15 @@ text, unit and option handling:
   the bar that ends the stack, so it sits beyond the stack's end, and
   beyond the label it must clear (``beyond``: the top segment's, labelled
   ``"outside"`` at the same end) by that label's length and 3 pt more.
+* **On the bar or off it.** A plain bar's end label meant to sit on its bar
+  (``"inside"``, asked or moved there by ``crowded="inside"``) is drawn
+  there only while the bar holds it both ways: along the bar
+  (:func:`fits_on_bar`) and across it (:func:`fits_across`,
+  :data:`FIT_TOL_PX` slack). Otherwise it sits beyond the bar's end, off
+  the bar, so no part of it is drawn over the background in the ink
+  chosen for the bar. The ink follows where it sits
+  (:mod:`._bar_label_ink`), set at each draw, so a wider bar or a larger
+  figure moves it back.
 * **Room.** A label on a stack segment fits when the segment is at least as
   long as the label along the value axis (:func:`fits_on_bar`); a label
   inside a limit, when the part of its bar in view is that long and 3 pt;
