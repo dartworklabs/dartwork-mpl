@@ -127,7 +127,7 @@ jobs:
           set -euo pipefail
           # Main CI already runs this complete suite on four workers. Keep
           # every case and the JUnit guard while avoiding a serial release gate.
-          uv run pytest -q -n 4 -rs --durations=30 \
+          uv run pytest -q -n 4 --dist worksteal -rs --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
       - name: Assert MCP / integration tests actually ran
         run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"

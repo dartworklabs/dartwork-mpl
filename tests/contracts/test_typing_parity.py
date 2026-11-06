@@ -25,6 +25,11 @@ import pytest
 
 import dartwork_mpl  # noqa: F401 — registers color namespaces
 from dartwork_mpl._colors._typing import DartworkColor, DartworkColormap
+from dartwork_mpl._colors.construction._catalog import (
+    CatalogSnapshot,
+    build_typing_payload,
+    load_vendor_color_names,
+)
 
 _ROOT = Path(__file__).resolve().parents[2]
 _GENERATOR = _ROOT / "scripts" / "generate_typing.py"
@@ -168,9 +173,19 @@ def test_color_literal_has_no_foreign_prefixes() -> None:
 
 
 @pytest.mark.color_pipeline
-def test_generated_typing_source_is_byte_identical() -> None:
-    """Pin the tracked module to the generator's in-memory result."""
+def test_generated_typing_source_is_byte_identical(
+    candidate_catalog: CatalogSnapshot, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pin the tracked module to the generator's rendering of this checkout.
+
+    The payload comes from ``candidate_catalog``, this run's one compile of
+    the same source, instead of a second full compile here. The generator's
+    own source-isolated compile stays pinned by the non-writing ``--check``
+    subprocess and the cold isolated-build subprocess below.
+    """
     module = _load_generator()
+    payload = build_typing_payload(candidate_catalog, load_vendor_color_names())
+    monkeypatch.setattr(module, "_source_typing_payload", lambda: payload)
 
     expected = module.build().encode("utf-8")
 
