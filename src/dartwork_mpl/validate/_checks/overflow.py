@@ -36,9 +36,6 @@ class OverflowTickDetail(TypedDict):
     px: float
 
 
-OverflowDetail = OverflowTextDetail | OverflowTickDetail
-
-
 @register_check("OVERFLOW", order=10)
 def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
     """Detect elements whose bounding boxes extend beyond the figure canvas.
