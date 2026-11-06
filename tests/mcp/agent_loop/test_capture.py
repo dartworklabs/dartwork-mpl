@@ -519,7 +519,11 @@ def test_watchdog_cleanup_stops_observed_descendant_after_its_parent_exits(
 
 
 class _ReadSeam:
-    """Stand-in for the watchdog's ``os`` that hooks every stream read."""
+    """Stand-in for the watchdog's ``os`` that hooks every stream read.
+
+    Stream reads ask for 64 KiB; the watchdog's own wake-pipe reads are
+    smaller and are not reported.
+    """
 
     def __init__(self, after_read):
         self.after_read = after_read
@@ -529,7 +533,8 @@ class _ReadSeam:
 
     def read(self, fd, size):
         data = os.read(fd, size)
-        self.after_read(len(data))
+        if size == 65536:
+            self.after_read(len(data))
         return data
 
 
@@ -728,7 +733,7 @@ def test_watchdog_leaves_no_scan_or_ps_behind(tmp_path, monkeypatch, ending):
     import run_agent_plot_eval as capture
 
     scan, stop = capture._process_table, capture._stop_tree
-    calls = {"n": 0, "cleanup": False}
+    calls = {"n": 0, "cleanup": False, "stopped": False}
 
     def held_scan():
         """Hold every loop scan; the first one fails in the error case."""
@@ -743,17 +748,18 @@ def test_watchdog_leaves_no_scan_or_ps_behind(tmp_path, monkeypatch, ending):
         return table
 
     def marked_stop(process, known):
-        """Cleanup scans run unheld."""
+        """Cleanup scans run unheld; record that cleanup stopped the tree."""
         calls["cleanup"] = True
-        return stop(process, known)
+        calls["stopped"] = stop(process, known) and process.poll() is not None
+        return calls["stopped"]
 
     monkeypatch.setattr(capture, "_process_table", held_scan)
     monkeypatch.setattr(capture, "_stop_tree", marked_stop)
     child = (
         "print('{}', flush=True)"
         if ending == "eof"
-        else "import time\nwhile True:\n    print('x' * 4095, flush=True)\n"
-        "    time.sleep(0.001)"
+        else "import signal, time\nsignal.alarm(20)\nwhile True:\n"
+        "    print('x' * 4095, flush=True)\n    time.sleep(0.001)"
     )
     threads = set(threading.enumerate())
     run = lambda: capture_process(  # noqa: E731
@@ -768,6 +774,7 @@ def test_watchdog_leaves_no_scan_or_ps_behind(tmp_path, monkeypatch, ending):
     if ending == "error":
         with pytest.raises(RuntimeError, match="scan failed"):
             run()
+        assert calls["stopped"]
     else:
         result = run()
         assert (
@@ -777,6 +784,239 @@ def test_watchdog_leaves_no_scan_or_ps_behind(tmp_path, monkeypatch, ending):
         assert result["cleanup_ok"]
     assert set(threading.enumerate()) <= threads
     assert _child_ps_pids() == []
+
+
+_CADENCE_CHILD = """import pathlib, signal, sys, time
+signal.alarm(20)
+stop = pathlib.Path(sys.argv[1])
+while not stop.exists():
+    print('x' * 4000, flush=True)
+    time.sleep(0.001)
+"""
+
+
+def test_watchdog_starts_the_next_scan_at_once_while_output_flows(
+    tmp_path, monkeypatch
+):
+    """While output flows, a finished scan is followed by the next one at once.
+
+    The watchdog clock moves 0.6 s per scan and 2 ms per stream read, so the
+    quiet-stream interval (0.05 s) and the 10 ms after output are measured in
+    reads, not host time. Each loop scan is held until 20 more stream reads
+    have happened, so output certainly flowed during it. Between one scan's
+    end and the next scan's start at most a few reads may pass; a cooldown
+    measured on the clock (0.05 s here is 25 reads) cannot fit.
+    """
+    import run_agent_plot_eval as capture
+
+    stop_file = tmp_path / "stop"
+    origin = time.monotonic()
+    lock = threading.Lock()
+    state = {"scans": 0, "reads": 0, "cleanup": False}
+    starts: list[int] = []
+    ends: list[int] = []
+    held: list[bool] = []
+    scan, stop = capture._process_table, capture._stop_tree
+
+    def count(size):
+        """Count stream reads that returned data."""
+        if size:
+            with lock:
+                state["reads"] += 1
+
+    def held_scan():
+        """Hold each loop scan until 20 more stream reads have happened."""
+        if state["cleanup"] or stop_file.exists():
+            return scan()
+        with lock:
+            state["scans"] += 1
+            starts.append(state["reads"])
+            target = state["reads"] + 20
+        table = scan()
+        deadline = time.monotonic() + 5
+        while state["reads"] < target and time.monotonic() < deadline:
+            time.sleep(0.001)
+        with lock:
+            held.append(state["reads"] >= target)
+            ends.append(state["reads"])
+            if len(ends) >= 4:
+                stop_file.write_text("stop")
+        return table
+
+    def marked_stop(process, known):
+        """Cleanup waits in real time."""
+        state["cleanup"] = True
+        return stop(process, known)
+
+    def read_driven_monotonic():
+        """0.6 s per scan start, 2 ms per stream read; real 15 s hang guard."""
+        elapsed = time.monotonic() - origin
+        charged = origin + 0.6 * state["scans"] + 0.002 * state["reads"]
+        if state["cleanup"]:
+            return charged + elapsed
+        return charged + 1000 if elapsed > 15 else charged
+
+    monkeypatch.setattr(capture, "_process_table", held_scan)
+    monkeypatch.setattr(capture, "_stop_tree", marked_stop)
+    monkeypatch.setattr(capture, "os", _ReadSeam(count))
+    monkeypatch.setattr(
+        capture,
+        "time",
+        SimpleNamespace(monotonic=read_driven_monotonic, sleep=time.sleep),
+    )
+    result = capture_process(
+        [sys.executable, "-c", _CADENCE_CHILD, str(stop_file)],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+    )
+    between = [
+        start - end for end, start in zip(ends, starts[1:], strict=False)
+    ]
+    assert result["stop_reason"] == "exit"
+    assert result["cleanup_ok"]
+    assert len(ends) >= 4
+    assert all(held)
+    assert max(between) <= 8
+
+
+_INFLIGHT_CHILD = """import os, pathlib, signal, subprocess, sys, time
+signal.alarm(20)
+spawn, release, pids = map(pathlib.Path, sys.argv[1:4])
+middle = subprocess.Popen(
+    [sys.executable, '-c', '''import os, pathlib, subprocess, sys, time
+spawn, release, pids = map(pathlib.Path, sys.argv[1:4])
+while not spawn.exists():
+    time.sleep(0.001)
+grandchild = subprocess.Popen(
+    [sys.executable, '-c', 'import time; time.sleep(20)'],
+    start_new_session=True,
+    stdin=subprocess.DEVNULL,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+staged = pids.with_suffix('.tmp')
+staged.write_text(f'{os.getppid()} {grandchild.pid}')
+staged.rename(pids)
+while not release.exists():
+    time.sleep(0.001)
+''', *sys.argv[1:4]],
+    stdin=subprocess.DEVNULL,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+middle.wait()
+"""
+
+
+def test_watchdog_keeps_what_the_scan_in_flight_at_exit_observed(
+    tmp_path, monkeypatch
+):
+    """The scan still running when output ends counts toward cleanup.
+
+    Only the first loop scan can see the new-session grandchild with its
+    parent alive: the scan lists it, then the parent exits and so does the
+    child, while the scan is still held. Cleanup scans can no longer link the
+    grandchild, so it is stopped only if the in-flight scan's result is kept.
+    """
+    import run_agent_plot_eval as capture
+
+    spawn, release = tmp_path / "spawn", tmp_path / "release"
+    pids = tmp_path / "pids"
+    real_table = capture._process_table
+    state = {"first": True}
+
+    def first_scan_sees_then_releases():
+        """List the grandchild, then let parent and child exit, then return."""
+        if not state["first"]:
+            return real_table()
+        state["first"] = False
+        spawn.write_text("go")
+        deadline = time.monotonic() + 5
+        while not pids.exists() and time.monotonic() < deadline:
+            time.sleep(0.001)
+        table = real_table()
+        release.write_text("go")
+        child = int(pids.read_text().split()[0])
+        deadline = time.monotonic() + 5
+        while not _gone(child, real_table) and time.monotonic() < deadline:
+            time.sleep(0.001)
+        return table
+
+    monkeypatch.setattr(
+        capture, "_process_table", first_scan_sees_then_releases
+    )
+    result = capture_process(
+        [
+            sys.executable,
+            "-c",
+            _INFLIGHT_CHILD,
+            str(spawn),
+            str(release),
+            str(pids),
+        ],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+    )
+    grandchild = int(pids.read_text().split()[1])
+    assert result["stop_reason"] == "exit"
+    assert result["cleanup_ok"]
+    assert grandchild in result["observed_pids"]
+    with pytest.raises(ProcessLookupError):
+        os.kill(grandchild, 0)
+
+
+_OVER_THEN_CALLS_CHILD = """import json, pathlib, signal, sys, time
+signal.alarm(4)
+go, payload = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+while not go.exists():
+    time.sleep(0.001)
+payload.write_bytes(b'x' * 4096)
+call = {'type': 'assistant', 'message': {'content': [{'type': 'tool_use', 'name': 'mcp__dartwork_mpl__render_plot', 'input': {'code': 'x'}}]}}
+for _ in range(2):
+    print(json.dumps(call), flush=True)
+time.sleep(20)
+"""
+
+
+def test_watchdog_final_evidence_check_keeps_an_earlier_stop_reason(
+    tmp_path, monkeypatch
+):
+    """The final evidence check reclassifies only a normal exit.
+
+    The child writes 4096 bytes against a 1024-byte limit after the first
+    poll, then exceeds the call limit; no later poll measures the evidence.
+    The stop reason stays ``call_limit`` although the final tree is over.
+    """
+    evidence = tmp_path / "evidence"
+    evidence.mkdir()
+    go = tmp_path / "go"
+    _scan_driven_clock(monkeypatch, lambda: go.write_text("go"))
+    result = capture_process(
+        [
+            sys.executable,
+            "-c",
+            _OVER_THEN_CALLS_CHILD,
+            str(go),
+            str(evidence / "payload.bin"),
+        ],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+        max_calls=1,
+        max_bytes=1024,
+        evidence_root=evidence,
+    )
+    assert (evidence / "payload.bin").stat().st_size == 4096
+    assert result["cleanup_ok"]
+    assert result["stop_reason"] == "call_limit"
 
 
 _STREAMING_CALLS_CHILD = """import json, signal
