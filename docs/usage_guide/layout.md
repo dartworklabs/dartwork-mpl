@@ -644,7 +644,9 @@ for it in the figure. A bar that runs past a limit you set gets no label.
 Crowding and the fit of labels inside the bars are decided before the axis
 grows. `barh` labels never turn: rows thinner than the text hide every
 other label, and a taller figure shows them all (for example
-`dm.figsize("12cm", "16cm")` rather than `"standard"`).
+`dm.figsize("12cm", "16cm")` rather than `"standard"`). Labels from
+separate calls on one plot area (one `dm.label_bars` per series) are
+checked together, so they do not overlap each other either.
 
 On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
 last, so the partner's line is never drawn over them. A later `Text.set_*`

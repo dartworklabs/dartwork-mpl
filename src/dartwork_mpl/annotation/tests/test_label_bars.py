@@ -2060,6 +2060,57 @@ def test_crowding_pitch_reads_every_bar_on_the_axes():
     assert _on_bars(fig, shown) == []
 
 
+@pytest.mark.parametrize(
+    ("layout", "n"),
+    [
+        ("grouped barh", 14),  # rows thinner than the text, two per row
+        ("grouped bar", 20),  # still overlapping once turned vertical
+        ("interleaved bar", 48),  # one call per alternate bar
+    ],
+)
+def test_overlap_selection_spans_separate_calls(layout, n):
+    # One label_bars call per series: each call's own labels stand apart,
+    # but the two calls' labels meet. The last overlap check sees every
+    # call labelling the plot area, so none overlap and none sit on a bar.
+    fig, ax = _fig()
+    pos = np.arange(n, dtype=float)
+    values = np.linspace(40.0, 12.0, n)
+    if layout == "grouped barh":
+        first = ax.barh(pos - 0.2, values, height=0.4)
+        second = ax.barh(pos + 0.2, values, height=0.4)
+        ax.invert_yaxis()
+    elif layout == "grouped bar":
+        first = ax.bar(pos - 0.2, values, width=0.4)
+        second = ax.bar(pos + 0.2, values, width=0.4)
+    else:
+        first = ax.bar(pos[0::2], values[0::2], width=0.8)
+        second = ax.bar(pos[1::2], values[1::2], width=0.8)
+    texts = dm.label_bars(ax, first) + dm.label_bars(ax, second)
+    dm.simple_layout(fig)
+    shown = _shown(fig, texts)
+
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    assert len(shown) >= len(texts) // 2  # every other position kept
+    assert _inside_axes(ax, shown)
+    visible = [t.get_visible() for t in texts]
+    dm.simple_layout(fig)  # a repeat layout makes the same choice
+    assert [t.get_visible() for t in texts] == visible
+
+
+def test_separate_calls_that_fit_are_left_alone():
+    # Two calls whose labels do not meet: nothing hidden, nothing turned.
+    fig, ax = _fig()
+    pos = np.arange(4, dtype=float)
+    first = ax.bar(pos - 0.2, [3, 4, 5, 6], width=0.4)
+    second = ax.bar(pos + 0.2, [2, 3, 4, 5], width=0.4)
+    texts = dm.label_bars(ax, first) + dm.label_bars(ax, second)
+    dm.simple_layout(fig)
+    assert all(t.get_visible() for t in texts)
+    assert {t.get_rotation() for t in texts} == {0.0}
+    _assert_outside(fig, texts, [*first.patches, *second.patches])
+
+
 def _room_to_own_edge(fig, texts, along):
     """Each drawn label's distance (px) to its own Axes' far edge."""
     renderer = _drawn(fig)

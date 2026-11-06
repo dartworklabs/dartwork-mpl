@@ -23,14 +23,16 @@ further layout steps give the same result; nothing compounds.
   - ``"skip"``: nothing turns or moves.
 
   Then, under any rule, labels that would still overlap are hidden a bar
-  position at a time: from the last position on screen (the right end, or
-  the top row of ``barh``), a position whose labels come within
-  :data:`GAP_PT` of the last kept position's is hidden, so ``"skip"`` keeps
-  every other label of evenly crowded bars. A kept outside label wider
-  than its bar (a plain bar's, a stack's total) is pushed past the ends of
-  the other bars it spans, never drawn on them; a label with a longer bar
-  at its own position (a lower stack segment asked ``"outside"``, an actual
-  inside its target) stays at its own bar's end.
+  position at a time, over the labels of every call on the same plot area
+  (the Axes drawn in one box) once any of those calls is crowded, so one
+  call per series meets the others' labels: from the last position on
+  screen (the right end, or the top row of ``barh``), a position whose
+  labels come within :data:`GAP_PT` of the last kept position's is hidden,
+  so ``"skip"`` keeps every other label of evenly crowded bars. A kept
+  outside label wider than its bar (a plain bar's, a stack's total) is
+  pushed past the ends of the other bars it spans, never drawn on them; a
+  label with a longer bar at its own position (a lower stack segment asked
+  ``"outside"``, an actual inside its target) stays at its own bar's end.
 * **Headroom.** A value axis whose limits matplotlib still autoscales
   (``get_autoscaley_on()``) starts from matplotlib's limits for the data
   (``autoscale_view``) and grows, on the side each outside label points to,
@@ -103,8 +105,8 @@ def settle_bar_labels(fig: Figure, renderer: RendererBase | None = None) -> int:
     value_axes = _value_axes(families)
     for value_axis in value_axes:
         value_axis.reset()
-    for family in families:
-        _crowd(family, renderer)
+    for area in _areas(families):
+        _crowd(area, renderer)
     for value_axis in value_axes:
         value_axis.grow(renderer)
     return len(families)
@@ -262,31 +264,67 @@ def _reset(label: BarLabel) -> None:
     label.own_color(label.ink)
 
 
-def _crowd(family: BarLabelFamily, renderer: RendererBase) -> None:
-    """Apply the call's ``crowded`` rule when its labels are crowded."""
-    for label in family.texts:
-        _reset(label)
-    for vertical in (True, False):
-        labels = [
-            label
-            for label in family.texts
-            if (label.orientation == "vertical") is vertical
-        ]
-        if not labels:
-            continue
-        bars = _Bars.around(labels[0].bar_axes, vertical)
-        gap = _px(labels[0], GAP_PT)
+@dataclass(eq=False)
+class _Area:
+    """The labels of every call on the bars of one plot area, one orientation.
+
+    ``calls`` holds each call's options and its labels here, in call order.
+    """
+
+    vertical: bool
+    calls: list[tuple[BarLabelOptions, list[BarLabel]]] = field(
+        default_factory=list
+    )
+
+
+def _areas(families: list[BarLabelFamily]) -> list[_Area]:
+    """The calls' labels by plot area (the Axes drawn in one box) and side.
+
+    Every label is put back as its call placed it first (:func:`_reset`).
+    """
+    areas: dict[tuple[frozenset[int], bool], _Area] = {}
+    for family in families:
+        for label in family.texts:
+            _reset(label)
+        for vertical in (True, False):
+            labels = [
+                label
+                for label in family.texts
+                if (label.orientation == "vertical") is vertical
+            ]
+            if not labels:
+                continue
+            box = frozenset(map(id, same_position_axes(labels[0].bar_axes)))
+            area = areas.setdefault((box, vertical), _Area(vertical))
+            area.calls.append((family.options, labels))
+    return list(areas.values())
+
+
+def _crowd(area: _Area, renderer: RendererBase) -> None:
+    """Apply each crowded call's rule, then hide what still overlaps.
+
+    A call is crowded by its own labels (against every bar of the area). The
+    overlap selection, once any call here is crowded, runs over the labels
+    of every call in the area: separate calls (one per series) meet there.
+    """
+    first = area.calls[0][1][0]
+    bars = _Bars.around(first.bar_axes, area.vertical)
+    gap = _px(first, GAP_PT)
+    crowded = False
+    for options, labels in area.calls:
         if _crowded(_positions(labels, bars, renderer), bars, gap):
-            _apply(family.options, labels, bars, renderer, gap)
+            _apply(options, labels, bars)
+            crowded = True
+    if crowded:
+        every = [label for _options, labels in area.calls for label in labels]
+        kept = _hide_overlaps(_positions(every, bars, renderer), gap)
+        _clear_neighbours(kept, bars)
 
 
 def _apply(
-    options: BarLabelOptions,
-    labels: list[BarLabel],
-    bars: _Bars,
-    renderer: RendererBase,
-    gap: float,
+    options: BarLabelOptions, labels: list[BarLabel], bars: _Bars
 ) -> None:
+    """The call's ``crowded`` rule: turn its labels, or move them inside."""
     rule = options.crowded
     if bars.vertical and rule in ("rotate", "inside"):
         for label in labels:
@@ -295,8 +333,6 @@ def _apply(
         for label in labels:
             if label.kind == "edge" and label.asked == "outside":
                 _move_inside(label, options)
-    kept = _hide_overlaps(_positions(labels, bars, renderer), gap)
-    _clear_neighbours(kept, bars)
 
 
 def _move_inside(label: BarLabel, options: BarLabelOptions) -> None:

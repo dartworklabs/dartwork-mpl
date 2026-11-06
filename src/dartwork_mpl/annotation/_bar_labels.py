@@ -521,8 +521,9 @@ def label_bars(
         leaving a bar too short for its label with the label outside.
         ``barh`` never turns: rows thinner than the text hide every other
         label. Under any rule, labels that would still overlap are hidden
-        the same way, and a kept label wider than its bar is lifted past
-        the taller bars it spans.
+        the same way, other calls' labels on the same plot area included
+        (one call per series), and a kept label wider than its bar is
+        lifted past the taller bars it spans.
     decimals : int, optional
         A fixed decimal count instead of the rule above.
     fmt : str or callable, optional
