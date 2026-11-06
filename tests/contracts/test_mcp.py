@@ -1424,3 +1424,30 @@ class TestMcpTemplatePathTraversal:
         assert result["status"] == "unknown_template"
         # The traversal target's contents must not leak into ``code``.
         assert "root:" not in result["code"]
+
+
+class TestComposeValueLabelsLayer:
+    """The ``value_labels`` layer is detected for ``dm.label_bars`` templates."""
+
+    @pytest.mark.parametrize(
+        "plot_type", ["bar", "bar_horizontal", "stacked_bar", "tornado"]
+    )
+    def test_label_bars_templates_report_value_labels_applied(
+        self, plot_type: str
+    ) -> None:
+        from dartwork_mpl.mcp.templates.compose import compose
+
+        result = compose(plot_type, ["value_labels"], "advanced")
+
+        assert result["status"] == "ok"
+        assert "dm.label_bars(" in result["code"]
+        assert "value_labels" in result["applied"]
+        assert result["missing"] == []
+
+    def test_template_without_value_labels_still_reports_missing(self) -> None:
+        from dartwork_mpl.mcp.templates.compose import compose
+
+        result = compose("contour", ["value_labels"], "advanced")
+
+        assert result["status"] == "ok"
+        assert result["missing"] == ["value_labels"]

@@ -323,8 +323,7 @@ from matplotlib import ticker
 ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0))
 ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}"))
 fig.patches.append(plt.Rectangle((0, 0), 1, 1, fill=False, transform=fig.transFigure))
-for bar in bars: ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                          f"{bar.get_height():.0f}", ha="center", va="bottom")
+dm.label_bars(ax)
 ax.set_xmargin(0.05); ax.set_ymargin(0.05)
 ```
 

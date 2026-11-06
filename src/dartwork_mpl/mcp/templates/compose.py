@@ -16,7 +16,7 @@ from . import bundled
 _DETECT_PATTERNS = {
     "reference_line": ("axhline(", "axvline("),
     "event_window": ("axvspan(", "axhspan("),
-    "value_labels": ("ax.text(", "ax.bar_label("),
+    "value_labels": ("ax.text(", "ax.bar_label(", "dm.label_bars("),
     "trendline": ("np.polyfit", "polyfit"),
     "highlight": ("dc.amber5", "accent", 'marker="D"'),
     "callout": ("ax.annotate(", "arrowprops="),
