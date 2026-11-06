@@ -88,7 +88,9 @@ def test_an_identity_secondary_reads_like_its_parent():
     parent = _on(ax.yaxis)
     assert _on(secondary.yaxis) == parent
     assert all("," in t for t in parent[1]), parent  # 1,600 … 2,400
-    assert isinstance(secondary.yaxis.get_major_formatter(), DefaultNumberFormatter)
+    assert isinstance(
+        secondary.yaxis.get_major_formatter(), DefaultNumberFormatter
+    )
     assert apply_default_tick_format(fig) == 0  # nothing left to install
 
 
@@ -111,7 +113,9 @@ def test_a_secondary_x_axis_gets_separators():
 
 
 @pytest.mark.parametrize(
-    ("ylabel", "unit"), [("Population", "M"), ("인구", "만")], ids=["si", "myriad"]
+    ("ylabel", "unit"),
+    [("Population", "M"), ("인구", "만")],
+    ids=["si", "myriad"],
 )
 def test_a_secondary_over_millions_takes_the_parents_unit(ylabel, unit):
     if unit == "만":
@@ -137,7 +141,9 @@ def test_a_secondary_someone_formatted_keeps_its_formatter():
     assert all("," not in t for t in _labels(secondary.yaxis))
 
 
-@pytest.mark.parametrize("values", [PRICE, np.linspace(0, 3e6, 60)], ids=["price", "millions"])
+@pytest.mark.parametrize(
+    "values", [PRICE, np.linspace(0, 3e6, 60)], ids=["price", "millions"]
+)
 def test_plain_asked_of_a_secondary_reads_as_on_its_parent(values):
     """``ticklabel_format(style="plain")`` before the layout: the same rule.
 
@@ -165,7 +171,9 @@ def test_a_reciprocal_secondary_keeps_matplotlibs():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)  # 1 / 0 at draw
         dm.simple_layout(fig)
-    assert type(secondary.yaxis.get_major_formatter()) is mticker.ScalarFormatter
+    assert (
+        type(secondary.yaxis.get_major_formatter()) is mticker.ScalarFormatter
+    )
 
 
 def test_a_secondary_over_elevations_keeps_matplotlibs():

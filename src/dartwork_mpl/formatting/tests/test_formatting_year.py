@@ -123,7 +123,9 @@ def test_format_axis_year_gives_each_axis_its_own_formatter() -> None:
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     try:
         dm.format_axis_year(ax, axis="both")
-        assert ax.xaxis.get_major_formatter() is not ax.yaxis.get_major_formatter()
+        assert (
+            ax.xaxis.get_major_formatter() is not ax.yaxis.get_major_formatter()
+        )
     finally:
         plt.close(fig)
 
