@@ -21,6 +21,12 @@ the axis actually shows:
 On log and other non-linear scales the ticks span decades, which cannot
 share one unit (``0.000001k`` beside ``1,000k``), so there each tick takes
 its own unit and the fewest decimals it needs (``0.1, 1, 10, 1k``).
+
+Text that should read like the ticks (value labels on bars) asks
+:func:`tick_scale_of` how an axis printed its ticks at the last draw: the
+factor to divide by and the prefix and suffix around the number
+(:class:`TickScale`), and prints the number with :func:`number_text`, the
+same separators, minus and zero as a tick.
 """
 
 from __future__ import annotations
@@ -32,6 +38,7 @@ from dataclasses import dataclass
 import matplotlib as mpl
 import matplotlib.ticker as ticker
 import numpy as np
+from matplotlib.axis import Axis
 
 from ._decimals import fewest_exact_decimals
 
@@ -41,7 +48,10 @@ __all__ = [
     "SI_LADDER",
     "UNIT_RULES",
     "AxisUnitFormatter",
+    "TickScale",
     "Unit",
+    "number_text",
+    "tick_scale_of",
 ]
 
 UNIT_RULES = ("max", "whole")
@@ -84,6 +94,44 @@ FINANCE_LADDER = (
     Unit(1e12, "T"),
 )
 """Money abbreviations: none, k, M, B (billion), T (trillion)."""
+
+
+@dataclass(frozen=True)
+class TickScale:
+    """How an axis's ticks print a number.
+
+    ``prefix``, then the value divided by ``factor``, then ``suffix``:
+    ``TickScale(1e9, "", "G")`` prints ``33e9`` as ``33G``. The plain scale
+    (``TickScale()``) prints the value itself.
+    """
+
+    factor: float = 1.0
+    prefix: str = ""
+    suffix: str = ""
+
+
+def number_text(
+    value: float,
+    decimals: int,
+    *,
+    fixed: bool = False,
+    prefix: str = "",
+    suffix: str = "",
+) -> str:
+    """``value`` printed as an axis-wide tick prints it.
+
+    Thousands separators, ``decimals`` places, matplotlib's minus (U+2212
+    unless ``axes.unicode_minus`` is off) before ``prefix``. A value that
+    rounds to zero prints ``0`` without prefix or suffix, or ``0.00`` (as
+    many zeros as ``decimals``) when the count is ``fixed`` by the caller.
+    """
+    number = format(abs(value), f",.{decimals}f")
+    if float(number.replace(",", "")) == 0:
+        return f"{0:.{decimals}f}" if fixed else "0"
+    # The same minus as matplotlib's own ticks (U+2212 unless turned off).
+    minus = "\N{MINUS SIGN}" if mpl.rcParams["axes.unicode_minus"] else "-"
+    sign = minus if value < 0 else ""
+    return f"{sign}{prefix}{number}{suffix}"
 
 
 def _axis_decimals(values: Sequence[float], unit: Unit) -> int:
@@ -155,13 +203,13 @@ class AxisUnitFormatter(ticker.Formatter):
         return chosen
 
     def _label(self, value: float, unit: Unit, decimals: int) -> str:
-        number = format(abs(value) / unit.factor, f",.{decimals}f")
-        if float(number.replace(",", "")) == 0:
-            return "0" if self._decimals is None else f"{0:.{decimals}f}"
-        # The same minus as matplotlib's own ticks (U+2212 unless turned off).
-        minus = "\N{MINUS SIGN}" if mpl.rcParams["axes.unicode_minus"] else "-"
-        sign = minus if value < 0 else ""
-        return f"{sign}{self._currency}{number}{unit.label}"
+        return number_text(
+            value / unit.factor,
+            decimals,
+            fixed=self._decimals is not None,
+            prefix=self._currency,
+            suffix=unit.label,
+        )
 
     def _cost(
         self, values: Sequence[float], unit: Unit
@@ -218,16 +266,59 @@ class AxisUnitFormatter(ticker.Formatter):
         self.set_locs(values)
         return [self(value, pos) for pos, value in enumerate(values)]
 
+    def _decision(self, value: float) -> tuple[Unit, int | None]:
+        """The unit and decimals of the last axis decision (or ``value``'s own).
+
+        On a non-linear axis the unit is ``value``'s and the decimals
+        ``None`` (each tick settles its own).
+        """
+        plan = (
+            self._plan if self._plan is not None else self._make_plan([value])
+        )
+        return plan.axis_unit or self._max_unit(abs(value)), plan.decimals
+
     def __call__(self, x: float, pos: int | None = None) -> str:
         """Format one value with the last axis decision (or its own)."""
         value = float(x)
         if not math.isfinite(value):
             return str(value)
-        plan = (
-            self._plan if self._plan is not None else self._make_plan([value])
-        )
-        unit = plan.axis_unit or self._max_unit(abs(value))
-        decimals = plan.decimals
+        unit, decimals = self._decision(value)
         if decimals is None:
             decimals = fewest_exact_decimals([abs(value) / unit.factor])
         return self._label(value, unit, decimals)
+
+    def scale_for(self, value: float) -> TickScale:
+        """How a tick at ``value`` prints under the last axis decision.
+
+        The axis unit's factor, this formatter's currency prefix and the
+        unit label as suffix; on a non-linear axis, ``value``'s own unit.
+        Before any draw ``value`` decides alone, as :meth:`__call__` does.
+        """
+        unit, _decimals = self._decision(float(value))
+        return TickScale(unit.factor, self._currency, unit.label)
+
+
+def tick_scale_of(axis: Axis, value: float) -> TickScale:
+    """How ``axis``'s major ticks print ``value``, as of their last formatting.
+
+    A tick formatter decides when it formats the ticks (every draw, or a
+    call to its ``format_ticks``), so read this after a draw:
+
+    - :class:`AxisUnitFormatter` (``format_axis_si`` / ``_millions`` /
+      ``_billions`` / ``_myriad`` and the library's default numbers): the
+      axis unit and currency (``33G``, ``1.2k``); ``dm.axis_unit``'s
+      formatter puts the unit in the axis label instead, so its scale has
+      no suffix (``33`` under ``Energy (GWh)``).
+    - :class:`matplotlib.ticker.PercentFormatter`: ``xmax / 100`` and its
+      symbol (``31%``).
+    - Any other formatter, matplotlib's own ``ScalarFormatter`` on an axis
+      nobody formatted included: the plain scale. Its ticks' text cannot be
+      read back as a unit (``dm.simple_layout`` gives such an axis the
+      library's numbers first).
+    """
+    formatter = axis.get_major_formatter()
+    if isinstance(formatter, AxisUnitFormatter):
+        return formatter.scale_for(value)
+    if isinstance(formatter, ticker.PercentFormatter) and formatter.xmax:
+        return TickScale(formatter.xmax / 100.0, "", formatter.symbol)
+    return TickScale()

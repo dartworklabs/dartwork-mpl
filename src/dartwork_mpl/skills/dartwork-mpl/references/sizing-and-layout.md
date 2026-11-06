@@ -193,5 +193,11 @@ plt.close(fig)
   `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
   the clearance of tick labels, and `dm.simple_layout(fig)` keeps a title
   above it.
+- A twin pair: `dm.simple_layout` colours each side like its one series, so
+  leave the axis colours to it (`with dm.config.override(twin_colors="neutral"):`
+  when neutral axes are asked); one legend for both is `dm.place_legend(ax)`,
+  never `ax.legend(h1 + h2, l1 + l2)`; it and `dm.label_bars(ax)` put the
+  legend and the bar values on the top twin, so the other twin's data is
+  never drawn over them.
 - A twin pair may report `CROSS_AXES_OVERLAP` for its shared x ticks; that
   finding is a false positive for twins.

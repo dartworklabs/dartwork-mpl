@@ -15,8 +15,15 @@ import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
 from .._figure_geometry import get_renderer
-from ._axis_wide import SI_LADDER, AxisUnitFormatter, Unit
-from ._decimals import recommend_tick_decimals
+from ._axis_wide import (
+    SI_LADDER,
+    AxisUnitFormatter,
+    TickScale,
+    Unit,
+    number_text,
+    tick_scale_of,
+)
+from ._decimals import recommend_tick_decimals, value_label_decimals
 from ._defaults import (
     CategoryDateFormatter,
     _category_locator,
@@ -25,9 +32,12 @@ from ._defaults import (
     thin_crowded_date_ticks,
 )
 from ._label_unit import axis_unit, axis_unit_of
+from ._twin_colors import apply_twin_colors
 
 __all__ = [
+    "TickScale",
     "apply_default_tick_format",
+    "apply_twin_colors",
     "avoid_tick_overlap",
     "axis_unit",
     "axis_unit_of",
@@ -38,10 +48,13 @@ __all__ = [
     "format_axis_myriad",
     "format_axis_si",
     "format_axis_year",
+    "number_text",
     "recommend_tick_decimals",
     "rotate_tick_labels",
     "set_decimal",
     "thin_crowded_date_ticks",
+    "tick_scale_of",
+    "value_label_decimals",
 ]
 
 _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}

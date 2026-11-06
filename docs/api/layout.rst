@@ -6,10 +6,11 @@ Utilities for tightening layouts without juggling ``plt.subplots_adjust``.
 edges so axes content lands at the requested distance from the figure bounds;
 ``make_offset`` nudges text/legends in point units; ``label_axes`` adds
 standardized panel labels; ``annotate_value``, ``annotate_corner``, and
-``label_hline`` create compact point-offset labels; ``place_legend`` chooses
+``label_hline`` create compact point-offset labels; ``label_bars`` writes each
+bar's value on it, printed like the axis ticks; ``place_legend`` chooses
 data/text-aware axes legend positions and can raise legend columns, or puts the
 legend outside one side (``loc="above"``, ``"below"``, ``"right"``,
-``"left"``); ``arrow_axis``
+``"left"``), and merges a twin pair's legends into one; ``arrow_axis``
 draws annotated bidirectional arrows; and ``wrap_axis_label`` /
 ``set_decimal``/``get_bounding_box`` provide quick helpers when formatting axes.
 
@@ -71,6 +72,28 @@ Annotation Functions
 .. autofunction:: dartwork_mpl.wrap_axis_label
 .. autofunction:: dartwork_mpl.wrap_axis_labels
 .. autofunction:: dartwork_mpl.arrow_axis
+
+Value Labels on Bars
+^^^^^^^^^^^^^^^^^^^^
+
+Provisional (listed in ``dartwork_mpl.EXPERIMENTAL``): the placement,
+crowding and stacked-total rules may still change in a minor release.
+:func:`~dartwork_mpl.simple_layout` settles the labels' crowding and
+headroom at the size it fits.
+
+.. code-block:: python
+
+   import matplotlib.pyplot as plt
+   import dartwork_mpl as dm
+
+   dm.style.use("report")
+   fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+   ax.bar(["A", "B", "C"], [120, 135, 98])
+   dm.label_bars(ax)                     # 120, 135, 98 above the bars
+   # dm.label_bars(ax, where="inside")   # a request: that keyword
+   dm.simple_layout(fig)
+
+.. autofunction:: dartwork_mpl.label_bars
 
 Utility Functions
 ^^^^^^^^^^^^^^^^^

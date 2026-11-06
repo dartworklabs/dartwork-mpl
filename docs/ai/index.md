@@ -281,7 +281,7 @@ composition helper is reachable as `dm.<name>`.
 | Verify input data shape before plotting | `dm.validate_data(...)` |
 | Pick a chart type from a data description | `dm.suggest_chart_type(...)` |
 | Get a curated palette for N data series | `dm.make_palette(n, kind=...)` |
-| Label bar tops with their values | `ax.bar_label(bars, ...)` (matplotlib 3.4+) |
+| Label bar tops with their values | `dm.label_bars(ax)` (printed like the ticks; one keyword per request) |
 | Place the legend without overlapping data | `dm.optimize_legend(ax, ...)` |
 | Run heuristic quality checks on a figure | `dm.check_figure_quality(fig)` |
 | Save with hi-res presets in multiple formats | `dm.save_formats(fig, "out")` |

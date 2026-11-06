@@ -224,10 +224,14 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "the gates read the quality baseline the validated authority pins"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl._colors.contrast"): (
-        "line-end labels keep their line's colour at a readable contrast"
+        "line-end and bar value labels keep their series' colour at a "
+        "readable contrast"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
         "legend edge colours require registered shipped colours"
+    ),
+    ("dartwork_mpl.annotation", "dartwork_mpl.formatting"): (
+        "bar value labels print in their axis's tick unit, like the ticks"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
@@ -250,9 +254,15 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.figure_review", "dartwork_mpl.validate"): (
         "a review reports validate_figure's findings, unfiltered"
     ),
+    ("dartwork_mpl.formatting", "dartwork_mpl._colors.contrast"): (
+        "twin-axis tick text keeps its series' hue at a readable contrast"
+    ),
+    ("dartwork_mpl.formatting", "dartwork_mpl._colors.model"): (
+        "twin axes stay neutral when their series colours are close in OKLab"
+    ),
     ("dartwork_mpl.formatting", "dartwork_mpl.config"): (
         "default tick text follows the user's tick_years, date_style and "
-        "number_ladder"
+        "number_ladder; twin axes follow twin_colors"
     ),
     ("dartwork_mpl.helpers", "dartwork_mpl._colors"): (
         "historical curated palette imports re-export the color owner's callable"
@@ -268,6 +278,10 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.io", "dartwork_mpl.validate"): (
         "saving runs the visual validation the user asked for"
+    ),
+    ("dartwork_mpl.layout", "dartwork_mpl.annotation"): (
+        "bar value labels settle crowding and headroom at the size the "
+        "layout fits, before it measures the margins"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.config"): (
         "layout follows the user's tick-label font adoption setting"

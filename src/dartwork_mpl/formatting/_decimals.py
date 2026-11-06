@@ -4,6 +4,8 @@
 ``dm.recommend_tick_decimals``). ``fewest_exact_decimals`` is the stricter
 rule the axis-wide formatters use: a 2.5 step needs one decimal to stay
 exact (``17.5, 20.0, 22.5``) even though the step rule would say zero.
+``value_label_decimals`` is the value-label rule: three significant digits
+on the largest value, cut to the fewest that print every value exactly.
 """
 
 from __future__ import annotations
@@ -12,7 +14,11 @@ import math
 from collections.abc import Sequence
 from itertools import pairwise
 
-__all__ = ["fewest_exact_decimals", "recommend_tick_decimals"]
+__all__ = [
+    "fewest_exact_decimals",
+    "recommend_tick_decimals",
+    "value_label_decimals",
+]
 
 # Most decimals tried for an exact rendering (a 1e-9 log tick needs nine).
 _MAX_DECIMALS = 12
@@ -96,3 +102,19 @@ def fewest_exact_decimals(values: Sequence[float]) -> int:
     while decimals < _MAX_DECIMALS and not _all_distinct(finite, decimals):
         decimals += 1
     return decimals
+
+
+def value_label_decimals(values: Sequence[float]) -> int:
+    """One decimal count for a family of value labels.
+
+    Three significant digits on the largest ``|value|``, cut to the fewest
+    decimals that print every value exactly (:func:`fewest_exact_decimals`):
+    whole numbers print none (``120, 135``), and a family never mixes
+    counts (``21.4, 18.0, 21.5``). Non-finite values are ignored; no finite
+    nonzero value gives ``0``.
+    """
+    finite = [float(v) for v in values if math.isfinite(v)]
+    largest = max((abs(v) for v in finite), default=0.0)
+    if largest == 0:
+        return 0
+    return min(_significant_decimals(largest), fewest_exact_decimals(finite))

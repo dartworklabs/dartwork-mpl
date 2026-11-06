@@ -83,7 +83,8 @@ weight, colour and spacing, so every agent draws the same element.
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
 | bigger or smaller text, no amount | one step, `step = dm.fs(1) - dm.fs(0)` (1 pt; 2.6 pt under `presentation`): `t.set_fontsize(t.get_fontsize() + step)`; all text: `dm.style.use(preset, font_size=dm.fs(0) + step)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
-| values on the bars | `ax.bar_label(bars, fmt="{:.0f}", padding=2, fontsize=dm.fs(-1), fontweight=dm.fw(1))` |
+| black or neutral twin axes (no series colours) | `dm.config.twin_colors = "neutral"` before `dm.simple_layout`; not `tick_params(colors="black")`, which the first layout cannot tell from the default and paints |
+| values on the bars | `dm.label_bars(ax)`; a named detail is its keyword (`where="inside"`, `decimals=1`, `fmt="{} GWh"` …), see Value labels below |
 | a log axis | `ax.set_yscale("log")` |
 
 A detail the user does name wins exactly ("a bold 12 pt title", "dashed grey
@@ -107,7 +108,7 @@ above an outside legend and the margins around both.
 | 12000 → 12k | `dm.format_axis_si(ax)` |
 | unit in the axis label, plain ticks (`0, 0.2 … 1.0` under `인구 (억명)`) | `dm.axis_unit(ax, "y", label="인구 ({unit}명)")`; `dm.axis_unit_of(ax)` for value labels |
 | four-digit years (`2016`, `2023.01`) / concise date words (`23, May, Sep`) / `k, M` in a Korean figure | `with dm.config.override(tick_years=4):` / `(date_style="concise")` / `(number_ladder="si")` around the code from figure creation to the last `dm.simple_layout`, or the field set on `dm.config` |
-| show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontsize=dm.fs(-1), fontweight=dm.fw(1))`, see below |
+| show the values on bars or points | bars `dm.label_bars(ax)`; points and line ends `ax.text(...)` in the value-label look, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 
 ```python
@@ -149,13 +150,31 @@ weight step heavier than body text (`fontsize=dm.fs(-1)`,
 meaningless decimals. Titles, axis labels, ticks and legends keep the preset
 size and weight.
 
+Values on bars are `dm.label_bars(ax)`: no request, its defaults; a request,
+that keyword. The defaults are that look in the text colour, 3 pt beyond the
+bar end; the number printed like the axis ticks (plain under
+`dm.axis_unit`, with the ticks' `k` under `dm.format_axis_si`), three
+significant digits on the largest value and no meaningless decimals
+(`21.4, 18.0, 21.5`; `120, 135`); stacked bars' segments centred with a
+total; crowded labels on vertical bars turned vertical by
+`dm.simple_layout`. Thin `barh` rows hide every other label; a taller figure
+shows them all.
+
+| Asked | Keyword |
+|---|---|
+| inside the bar ends, at the middle | `where="inside"`, `where="center"` |
+| only the stack totals, no totals | `total="only"`, `total=False` |
+| crowded: every other label, or inside the bars | `crowded="skip"`, `crowded="inside"` |
+| a fixed decimal count | `decimals=1` |
+| a unit or another format on the labels | `fmt="{} GWh"`, `fmt="{:.2f}"`, a callable |
+| bigger, another colour, the bar's colour | `size=dm.fs(0)`, `color="dc.gray7"`, `color="series"` (labels off their bar) |
+
 ```python
 fig, (bar_ax, line_ax) = plt.subplots(
     1, 2, figsize=dm.figsize("17cm", "7cm"), gridspec_kw={"wspace": 0.3}
 )
-bars = bar_ax.bar(["A", "B", "C"], [12, 30, 21])
-bar_ax.bar_label(bars, fmt="{:.0f}", padding=2, fontsize=dm.fs(-1),
-                 fontweight=dm.fw(1))
+bar_ax.bar(["A", "B", "C"], [12, 30, 21])
+dm.label_bars(bar_ax)            # 12, 30, 21 above the bars
 days, visits = np.arange(1, 8), np.array([40, 42, 47, 45, 51, 58, 63])
 line_ax.plot(days, visits)
 line_ax.text(days[-1], visits[-1], f" {visits[-1]}", va="center",

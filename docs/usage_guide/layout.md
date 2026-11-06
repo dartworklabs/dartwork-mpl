@@ -415,9 +415,10 @@ requested margin from each figure edge. This means:
 | `simple_layout(fig, gs=gs)`   | Places content at requested margin — replaces `tight_layout()` |
 | `label_axes(axes)`            | Adds (a), (b), (c) labels with auto-positioning for ylabels   |
 | `annotate_value(ax, x, y, s)` | Adds compact value labels with vertical/horizontal fallback    |
+| `label_bars(ax)`              | Writes each bar's value on it, printed like the ticks; `simple_layout` settles crowding and headroom |
 | `annotate_corner(ax, s)`      | Adds spine-tight narrative notes in the least obstructed corner |
 | `label_hline(ax, y, s)`       | Attaches text tightly to a horizontal reference-line endpoint  |
-| `place_legend(ax)`            | Places legends around data/text obstacles and can raise ncol   |
+| `place_legend(ax)`            | Places legends around data/text obstacles and can raise ncol; one legend for a twin pair |
 | `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels; `simple_layout` keeps titles above it |
 | `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
@@ -561,6 +562,97 @@ dm.place_legend(ax)
 dm.wrap_axis_label(ax, axis="y")
 ```
 
+### Value labels on bars (`label_bars`)
+
+`dm.label_bars(ax)` writes each bar's value on it (an experimental helper:
+its placement, crowding and stacked-total rules may still change). The
+rule: no request, `dm.label_bars(ax)` with its defaults; a request, that
+keyword.
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+ax.bar(["A", "B", "C", "D"], [21.4e9, 18.0e9, 21.5e9, 33.0e9])
+dm.axis_unit(ax, "y", label="Energy ({unit}Wh)")
+dm.label_bars(ax)          # 21.4, 18.0, 21.5, 33.0 under Energy (GWh)
+dm.simple_layout(fig)      # settles crowding and headroom
+dm.save_formats(fig, "bar_labels", formats=("png", "pdf"))
+```
+
+The defaults: `dm.fs(-1)` text at `dm.fw(1)` in the preset's text colour,
+3 pt beyond the bar end (below a negative bar; left of it for `barh`).
+Stacked bars get each segment's label at its middle and the stack's total
+beyond its end; a label on a bar takes white or the text colour, whichever
+reads better on it. When a label is wider than the distance between bar
+centres less 1.5 pt, `dm.simple_layout` turns the call's labels on vertical
+bars vertical. Each alternative is one keyword:
+
+| Asked for | Keyword |
+|---|---|
+| labels inside the bar ends, at the middle, beyond the end | `where="inside"`, `"center"`, `"outside"` (default `"auto"`: beyond a plain bar's end, at a segment's middle) |
+| only the stacks' totals, or no totals | `total="only"`, `total=False` (default `"auto"`: segments and totals) |
+| crowded labels: every other one hidden, or inside the bars | `crowded="skip"`, `crowded="inside"` (default `"rotate"`) |
+| a fixed number of decimals | `decimals=1` |
+| a unit or another number format | `fmt="{} GWh"`, `fmt="{:.2f}"`, or a callable |
+| another size | `size=dm.fs(0)` |
+| another colour; the bar's colour for labels off their bar | `color="dc.gray7"`; `color="series"` (labels on a bar and totals keep theirs) |
+
+**Numbers.** A label prints like its axis's ticks. Under `dm.axis_unit` the
+axis label names the unit, so the labels are plain scaled numbers (`33.0`
+under `Energy (GWh)`). A formatter whose ticks carry a suffix gives the
+labels the same suffix: `1.20k` under `dm.format_axis_si`, `47.5%` under a
+`PercentFormatter`, `33.0M` under the library's default numbers once
+`dm.simple_layout` has set them. A formatter the labels cannot read
+(`FuncFormatter`, `StrMethodFormatter`, `dm.format_axis_currency`) leaves
+them as plain values (`12,000`); pass `fmt=` for its look. The decimals are
+three significant digits on the largest value, then the fewest decimals
+that print every value exactly, one count for the whole call: `21.4, 18.0,
+21.5`; `120, 135`; never a meaningless `.0`. `fmt` takes a `{}` template
+around that number (`"{} GWh"`), a format-spec field that formats the value
+in the tick unit (`"{:.2f}"`: `21.40` under `Energy (GWh)`), or a callable
+that gets the value in the tick unit and returns the whole text. A template
+wraps the signed number, so `"${}B"` on −3.5 prints `$−3.5B`; for `−$3.5B`
+use a callable.
+
+**Stacks.** Containers at the same positions, each starting where the ones
+before it ended (`bottom=` / `left=`), are a stack: a segment's label shows
+while the segment is at least as long as the label, and the total is the
+net sum. Floating bars (a waterfall) are not a stack and get one label per
+bar. Pad a series split across containers with NaN, not 0: a zero can print
+a `0` label.
+
+```python
+import numpy as np
+
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+base, top = np.array([3, 4, 2]), np.array([2, 2, 3])
+ax.bar(["A", "B", "C"], base, label="Base")
+ax.bar(["A", "B", "C"], top, bottom=base, label="Top")
+dm.label_bars(ax)                 # 3, 4, 2 and 2, 2, 3 centred; totals 5, 6, 5
+dm.place_legend(ax)
+dm.simple_layout(fig)
+```
+
+**Room.** A value axis whose limits matplotlib autoscales grows just enough
+to keep the outside labels and 3 pt inside the axes. Limits you set
+(`ax.set_ylim`, also `ax.set_ybound`; the x ones for `barh`) stay: a label
+that does not fit sits outside the axes, and `dm.simple_layout` keeps room
+for it in the figure. A bar that runs past a limit you set gets no label.
+Crowding and the fit of labels inside the bars are decided before the axis
+grows. `barh` labels never turn: rows thinner than the text hide every
+other label, and a taller figure shows them all (for example
+`dm.figsize("12cm", "16cm")` rather than `"standard"`). Labels from
+separate calls on one plot area (one `dm.label_bars` per series) are
+checked together, so they do not overlap each other either.
+
+On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
+last, so the partner's line is never drawn over them. A later `Text.set_*`
+on a returned label wins over every redraw and layout, and calling
+`dm.label_bars` again on the same bars replaces their labels.
+
 ### Bidirectional arrow axes (`arrow_axis`)
 
 For conceptual or qualitative plots (like "Risk vs Return"), drawing bidirectional label axes manually is surprisingly difficult in matplotlib. `dm.arrow_axis()` handles the positioning, offsets, and arrows automatically.
@@ -614,6 +706,56 @@ exact same code.
 
 ```{raw} html
 :file: ../_static/wipe_l4_dual.html
+```
+
+### Series colours and one legend
+
+`dm.simple_layout(fig)` colours each side of a `twinx` / `twiny` pair like
+the one series read on it: the spine and tick marks take the series colour,
+raised to 3:1 against the background, and the tick labels and axis label
+the same hue raised to 4.5:1. A side whose series draw several colours,
+or a hue close to the other side's, stays neutral, and single Axes are
+never touched. `with dm.config.override(twin_colors="neutral"):` around
+the figure, or `dm.config.twin_colors = "neutral"`, keeps the preset's axis
+colours. A colour you set wins: `ax2.tick_params(axis="y", colors=...)`,
+`labelcolor=`, `ax2.yaxis.label.set_color(...)`,
+`ax2.spines["right"].set_color(...)`. One exception: a colour set before the
+first `dm.simple_layout` that equals the preset's default (`"black"` under
+the light presets) cannot be told from the default and is painted; for
+black or neutral twin axes use `dm.config.twin_colors = "neutral"`.
+
+`dm.place_legend(ax)` on either twin merges the pair's entries into one
+legend on the top twin, the one drawn last (by zorder, then figure order,
+so `ax.set_zorder(ax2.get_zorder() + 1)` puts it on `ax`), and removes the
+partners' own legends. The merged legend keeps the existing legend's title,
+`handler_map`, frame, alignment, fonts, label colour, `markerscale` and
+`draggable` (the top twin's legend when both have one); `ncols` cannot be
+read back, so pass it again. A legend `dm.place_legend` built is rebuilt
+from the artists on its next call: series added or removed since appear or
+go, the settings stay. A legend it cannot rebuild faithfully (tuple
+or custom handles, labels other than the artists', including an entry text
+you set on its own legend) is left as it is: an
+explicit `loc=` or `bbox_to_anchor=` still moves it, while `loc="above"`
+and the other sides need a rebuild, so they warn and leave it.
+The lint rule `twin-legend-hand-merge` flags a hand merge
+(`ax.legend(h1 + h2, l1 + l2)`) and points to `dm.place_legend(ax)`.
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")
+months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+ax.bar(months, [42, 38, 51, 64, 75, 88], color="dc.blue6", label="Rain")
+ax2 = ax.twinx()
+ax2.plot(months, [3, 5, 9, 14, 18, 22], color="dc.orange6", marker="o",
+         label="Temperature")
+ax.set(xlabel="Month", ylabel="Rain (mm)")
+ax2.set_ylabel("Temperature (°C)")
+dm.place_legend(ax)      # one legend for both, on ax2
+dm.simple_layout(fig)    # blue left side, orange right side
+dm.save_formats(fig, "twin_axes", formats=("png", "pdf"))
 ```
 
 ## See also

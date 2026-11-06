@@ -94,6 +94,22 @@ class Config:
         it is read.
         ``"si"`` is the option for k/M/G/T in Korean figures too
         (``with dm.config.override(number_ladder="si"):``, or assign it).
+    twin_colors : {"series", "neutral"}, default ``"series"``
+        Axis colours of ``twinx`` / ``twiny`` pairs, set by
+        ``dm.simple_layout``. ``"series"``: a side whose series all draw
+        one colour that no series on the other scale shares gets that colour
+        on its spine and tick marks (at least 3:1 against the background)
+        and the same hue darkened to 4.5:1 on its tick labels and axis
+        label; single axes stay as they are. The full rules are in the
+        docstring of ``dartwork_mpl.formatting._twin_colors``. A colour you
+        set after a layout is kept; one set before the first layout that
+        equals the preset default (``"black"``) cannot be told from the
+        default and is painted, so use ``"neutral"`` for such figures.
+        ``"neutral"`` keeps the preset's axis colours on twins too
+        (``dm.config.twin_colors = "neutral"``, or
+        ``with dm.config.override(twin_colors="neutral"):``); a figure laid
+        out before gets them back on its next ``dm.simple_layout``. Any other
+        value raises ``ValueError`` where it is read.
     """
 
     adopt_orphan_tick_font: bool = False
@@ -101,6 +117,7 @@ class Config:
     tick_years: Literal[2, 4] = 2
     date_style: Literal["period", "concise"] = "period"
     number_ladder: Literal["auto", "si", "myriad"] = "auto"
+    twin_colors: Literal["series", "neutral"] = "series"
 
     @contextmanager
     def override(self, **overrides: object) -> Iterator[None]:

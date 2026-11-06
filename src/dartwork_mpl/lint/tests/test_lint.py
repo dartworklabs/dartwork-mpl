@@ -1444,3 +1444,185 @@ class TestCatalogBoundary:
         path.write_text("rules: [", encoding="utf-8")
         with pytest.raises(yaml.YAMLError):
             load_rules(path)
+
+
+HAND_MERGED_TWIN_LEGEND = """
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+ax2 = ax.twinx()
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax.legend(h1 + h2, l1 + l2, loc="upper left")
+"""
+
+HAND_MERGED_KEYWORDS = """
+ax2 = ax.twinx()
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax2.legend(handles=h1 + h2, labels=l1 + l2)
+"""
+
+HAND_MERGED_STAR = """
+ax2 = ax.twiny()
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax.legend([*h1, *h2], [*l1, *l2])
+"""
+
+# Two panels, no twin: one legend for both is the caller's figure design,
+# not a twin merge; dm.place_legend(ax) would drop the other panel's entries.
+MERGED_PANELS_AXES = """
+import matplotlib.pyplot as plt
+fig, (ax, bx) = plt.subplots(1, 2)
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = bx.get_legend_handles_labels()
+ax.legend(h1 + h2, l1 + l2)
+"""
+
+MERGED_PANELS_FIGURE = """
+import matplotlib.pyplot as plt
+fig, (ax, bx) = plt.subplots(1, 2)
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = bx.get_legend_handles_labels()
+fig.legend(h1 + h2, l1 + l2, loc="lower center")
+"""
+
+# A figure legend over a twin pair is a figure-level choice place_legend
+# does not make.
+TWIN_FIGURE_LEGEND = """
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+ax2 = ax.twinx()
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+fig.legend(h1 + h2, l1 + l2, loc="upper center")
+"""
+
+SINGLE_LEGENDS = (
+    'ax.legend([line], ["Sales"])',
+    'ax.legend(handles, labels, title="T")',
+    "ax.legend()",
+    "h, l = ax.get_legend_handles_labels()\nax.legend(h, l)",
+    'ax.legend(["a"] + ["b"], ["c"] + ["d"])',
+)
+
+
+class TestTwinLegendHandMerge:
+    """The hand-merged twin legend gets a pointer to ``dm.place_legend``."""
+
+    @pytest.mark.parametrize(
+        "code",
+        [HAND_MERGED_TWIN_LEGEND, HAND_MERGED_KEYWORDS, HAND_MERGED_STAR],
+    )
+    def test_hand_merge_pattern_is_linted(self, code: str) -> None:
+        found = [i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"]
+        assert len(found) == 1
+        assert found[0].severity == "info"
+        assert "dm.place_legend(ax)" in (found[0].fix_suggestion or "")
+        assert "legend(" in (found[0].snippet or "")
+
+    @pytest.mark.parametrize(
+        "code", [MERGED_PANELS_AXES, MERGED_PANELS_FIGURE, TWIN_FIGURE_LEGEND]
+    )
+    def test_merges_that_are_not_a_twin_axes_legend_are_quiet(
+        self, code: str
+    ) -> None:
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    @pytest.mark.parametrize("code", SINGLE_LEGENDS)
+    def test_single_legend_does_not_fire(self, code: str) -> None:
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_merge_without_a_legend_call_does_not_fire(self) -> None:
+        code = (
+            "h1, l1 = ax.get_legend_handles_labels()\n"
+            "h2, l2 = ax2.get_legend_handles_labels()\n"
+            "handles = h1 + h2\n"
+        )
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_place_legend_call_does_not_fire(self) -> None:
+        code = "import dartwork_mpl as dm\ndm.place_legend(ax)\n"
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_comment_and_string_do_not_fire(self) -> None:
+        code = (
+            '# ax.legend(h1 + h2, l1 + l2)\ns = "ax.legend(h1 + h2, l1 + l2)"\n'
+        )
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_the_rule_has_no_autofix(self) -> None:
+        fixed, applied, unfixed = apply_lint_fixes(HAND_MERGED_TWIN_LEGEND)
+        assert fixed == HAND_MERGED_TWIN_LEGEND
+        assert not applied
+        assert "twin-legend-hand-merge" in {i.rule_id for i in unfixed}
+
+    def test_only_handles_concatenated_does_not_fire(self) -> None:
+        code = (
+            "h1, l1 = ax.get_legend_handles_labels()\n"
+            "h2, l2 = ax2.get_legend_handles_labels()\n"
+            'ax.legend(h1 + h2, ["a", "b"])\n'
+        )
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+
+BOUND_CONCAT = """
+ax2 = ax.twinx()
+l1 = ax.plot([1], label="a")
+l2 = ax2.plot([1], label="b")
+lns = l1 + l2
+labs = [l.get_label() for l in lns]
+ax.legend(lns, labs, loc="upper left")
+"""
+
+BOUND_STAR = """
+ax2 = ax.twiny()
+lns = [*l1, *l2]
+ax.legend(handles=lns)
+"""
+
+CONCAT_WITHOUT_TWIN = """
+lns = l1 + l2
+labs = [l.get_label() for l in lns]
+ax.legend(lns, labs)
+"""
+
+
+class TestTwinLegendBoundConcatenation:
+    """The ``lns = l1 + l2`` idiom counts when the module has a twin axes."""
+
+    @pytest.mark.parametrize("code", [BOUND_CONCAT, BOUND_STAR])
+    def test_bound_concatenation_with_twin_is_linted(self, code: str) -> None:
+        found = [i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"]
+        assert len(found) == 1
+
+    def test_concatenation_without_a_twin_is_quiet(self) -> None:
+        assert not [
+            i
+            for i in lint(CONCAT_WITHOUT_TWIN)
+            if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_plain_name_with_twin_is_quiet(self) -> None:
+        code = "ax2 = ax.twinx()\nlns = l1\nax.legend(lns, labs)\n"
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
+
+    def test_list_literal_handles_with_twin_is_quiet(self) -> None:
+        code = "ax2 = ax.twinx()\nax.legend([a, b], ['x', 'y'])\n"
+        assert not [
+            i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
+        ]
