@@ -167,6 +167,32 @@ def _inset_twinx() -> Built:
     return fig, a, b
 
 
+def _nested_inset_twinx() -> Built:
+    fig = _figure("12cm")
+    host = fig.add_subplot()
+    host.plot(X, X, color="dc.gray6")
+    inset = host.inset_axes((0.5, 0.1, 0.45, 0.5))
+    inset.plot(X, X, color="dc.gray6")
+    a = inset.inset_axes((0.5, 0.5, 0.45, 0.45))
+    b = a.twinx()
+    _draw_pair(a, b)
+    return fig, a, b
+
+
+def _parent_right_offset(a: Axes, b: Axes) -> None:
+    """The parent's scale to the right, at its own offset place (n11)."""
+    _to_right(a)
+    a.spines["right"].set_position(("outward", 30))
+
+
+def _ticks_both_label_right(a: Axes, b: Axes) -> None:
+    """Tick labels on both sides and the label right (m03)."""
+    b.tick_params(
+        axis="y", left=True, labelleft=True, right=True, labelright=True
+    )
+    b.yaxis.set_label_position("right")
+
+
 def _moved(build: Callable[[], Built], move: Callable[..., None]) -> Built:
     fig, a, b = build()
     move(a, b)
@@ -185,6 +211,9 @@ BUILDS: dict[str, Callable[[], Built]] = {
         lambda: _one_box(sharex=True),
         lambda a, b: b.yaxis.set_label_position("right"),
     ),
+    "sharex_overlay_b_ticks_both_label_right": lambda: _moved(
+        lambda: _one_box(sharex=True), _ticks_both_label_right
+    ),
     "sharex_sharey_overlay_b_right": lambda: _moved(
         lambda: _one_box(sharex=True, sharey=True), lambda a, b: _to_right(b)
     ),
@@ -193,6 +222,7 @@ BUILDS: dict[str, Callable[[], Built]] = {
         _twinx_pair, lambda a, b: a.yaxis.set_label_position("right")
     ),
     "twinx_a_right_too": lambda: _moved(_twinx_pair, lambda a, b: _to_right(a)),
+    "twinx_a_right_offset": lambda: _moved(_twinx_pair, _parent_right_offset),
     "twinx_b_marks_off": lambda: _moved(
         _twinx_pair, lambda a, b: b.tick_params(axis="y", right=False)
     ),
@@ -206,6 +236,7 @@ BUILDS: dict[str, Callable[[], Built]] = {
     "twiny": _twiny_pair,
     "three_y_axes": _three_y_axes,
     "inset_twinx": _inset_twinx,
+    "nested_inset_twinx": _nested_inset_twinx,
 }
 
 
@@ -483,6 +514,19 @@ def test_11_4_swapped_sides_move_the_line_to_the_parent(
 
     _differs_from_07(_twinx_pair, swap, monkeypatch, owner=0, shown=True)
     _differs_from_07(_twinx_pair, swap, monkeypatch, owner=1, shown=False)
+
+
+def test_11_4_twin_label_left_and_right_ticks_off_shows_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """11-4 also covers a twin whose right ticks are turned off (m02)."""
+
+    def turn_off(fig: Figure, a: Axes, b: Axes) -> None:
+        b.yaxis.set_label_position("left")
+        b.tick_params(axis="y", right=False, labelright=False)
+        dm.simple_layout(fig)
+
+    _differs_from_07(_twinx_pair, turn_off, monkeypatch, owner=1, shown=False)
 
 
 def test_11_5_twin_with_its_y_axis_hidden_shows_none(

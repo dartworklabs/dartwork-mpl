@@ -28,10 +28,12 @@ shows that line:
   (x axis hidden, ticks or label on the right). A ``sharex`` overlay whose
   ticks and label were moved to the right counts; a twin whose ticks and
   label both moved left, or whose y axis is hidden, does not.
-* **The twin's line first.** Where an Axes with a hidden x axis draws its
-  right spine, an Axes whose x axis shows draws none in the same place
-  (``spine.get_position()``): a parent moved to the right under its twin
-  keeps the preset's look, while twins of one parent all keep theirs.
+* **The twin's line first.** When an Axes with a hidden x axis draws its
+  right spine in a box, no Axes whose x axis shows draws one there,
+  wherever its spine sits: a parent whose scale was moved to the right of
+  its twin keeps the preset's look, also with
+  ``spines["right"].set_position(("outward", 30))``, while twins of one
+  parent all keep theirs.
 * **What.** ``spines["right"].set_visible(True)``. The line width, colour,
   position and bounds stay as they are; a spine is made with the preset's
   ``axes.linewidth`` already. Nothing else changes: ``twiny`` top spines,
@@ -127,15 +129,10 @@ def show_twin_spines(fig: Figure) -> int:
     shown = 0
     for group in _boxes(fig):
         drawing = [ax for ax in group if _draws_scale_on_right(ax, group)]
-        twin_places = {
-            ax.spines["right"].get_position()
-            for ax in drawing
-            if not ax.xaxis.get_visible()
-        }
+        twin_draws = any(not ax.xaxis.get_visible() for ax in drawing)
         for ax in drawing:
             if getattr(ax, _SETTLED, False) or (
-                ax.xaxis.get_visible()
-                and ax.spines["right"].get_position() in twin_places
+                twin_draws and ax.xaxis.get_visible()
             ):
                 continue
             spine = ax.spines["right"]

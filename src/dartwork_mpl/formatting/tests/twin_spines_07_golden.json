@@ -1,5 +1,5 @@
 {
- "recorded_from": "origin/main eb8dc6b1 with the 0.7 twinx wrapper installed",
+ "recorded_from": "origin/main 2838622d with the 0.7 twinx wrapper installed",
  "method": "d7-poc/scripts/record_07_golden.py: the test module's CASES built under the pre-D7 package with install_07(); state() of each figure",
  "matplotlib": "3.11.2",
  "cases": {
@@ -1479,6 +1479,252 @@
     ]
    }
   ],
+  "sharex_overlay_b_ticks_both_label_right": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#0f79cfff",
+     "#2d99f0ff",
+     "#2d99f0ff",
+     "#0f79cfff",
+     "#0f79cfff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#f06d00ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#c15800ff",
+     "#f06d00ff",
+     "#f06d00ff",
+     "#c15800ff",
+     "#c15800ff"
+    ]
+   }
+  ],
+  "sharex_overlay_b_ticks_both_label_right/neutral": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   }
+  ],
+  "sharex_overlay_b_ticks_both_label_right/format_ticks_off": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#0f79cfff",
+     "#2d99f0ff",
+     "#2d99f0ff",
+     "#0f79cfff",
+     "#0f79cfff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#f06d00ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#c15800ff",
+     "#f06d00ff",
+     "#f06d00ff",
+     "#c15800ff",
+     "#c15800ff"
+    ]
+   }
+  ],
   "sharex_sharey_overlay_b_right": [
    {
     "spines": {
@@ -2382,6 +2628,252 @@
    }
   ],
   "twinx_a_right_too/format_ticks_off": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#0f79cfff",
+     "#2d99f0ff",
+     "#2d99f0ff",
+     "#0f79cfff",
+     "#0f79cfff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      true,
+      0.3,
+      "#f06d00ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     false,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#c15800ff",
+     "#f06d00ff",
+     "#f06d00ff",
+     "#c15800ff",
+     "#c15800ff"
+    ]
+   }
+  ],
+  "twinx_a_right_offset": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#0f79cfff",
+     "#2d99f0ff",
+     "#2d99f0ff",
+     "#0f79cfff",
+     "#0f79cfff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      true,
+      0.3,
+      "#f06d00ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     false,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#c15800ff",
+     "#f06d00ff",
+     "#f06d00ff",
+     "#c15800ff",
+     "#c15800ff"
+    ]
+   }
+  ],
+  "twinx_a_right_offset/neutral": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     false,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   }
+  ],
+  "twinx_a_right_offset/format_ticks_off": [
    {
     "spines": {
      "left": [
@@ -4424,6 +4916,492 @@
    }
   ],
   "inset_twinx/format_ticks_off": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     false,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   }
+  ],
+  "nested_inset_twinx": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     false,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   }
+  ],
+  "nested_inset_twinx/neutral": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     false,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   }
+  ],
+  "nested_inset_twinx/format_ticks_off": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ]
+   },
    {
     "spines": {
      "left": [

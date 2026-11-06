@@ -11,7 +11,8 @@ listed below (2026-11-07 사용자 승인). Revised the same day after the
 independent review: inset twins, the tick condition, the twin's line first,
 an independent 0.7 oracle and the full import contract. 2026-11-07 사용자
 결정 14: 대안 (the counterexample pair below: twins keep 0.7's line, an
-overlay drawn like a twin gains one).
+overlay drawn like a twin gains one). Re-review the same day: the twin's
+line first no longer depends on the spine's place (n11).
 
 ## What import used to do
 
@@ -58,9 +59,10 @@ area, read from public state only:
    Ticks are on the right when the tick labels show there and not on the
    left (`tick_params(right=False)` keeps a scale of labels); an axis with no
    tick labels is read by its tick marks.
-4. *The twin's line first*: where an Axes with a hidden x axis draws its
-   right spine, one whose x axis shows draws none in the same place
-   (`spine.get_position()`). Twins of one parent all keep theirs.
+4. *The twin's line first*: when an Axes with a hidden x axis draws its
+   right spine in a box, no Axes whose x axis shows draws one there,
+   wherever its spine sits (a parent moved right, even to `("outward", 30)`,
+   keeps the preset's look). Twins of one parent all keep theirs.
 
 **Once.** An Axes whose line the layout showed (or found showing) is
 recorded and not touched again, so a spine hidden after a layout stays
@@ -76,14 +78,14 @@ hidden.
 | `sharex` overlay; with only its label moved right (x20) | no | no |
 | `twinx()`; with its tick marks off | twin | twin |
 | `twinx()` with the parent's label moved right (x01) | twin | twin |
-| `twinx()` with the parent moved right too (x22) | twin (twin's line first) | twin |
+| `twinx()` with the parent moved right too (x22), also to `("outward", 30)` (n11) | twin (twin's line first) | twin |
 | `twiny()` | no | no |
 | three y axes, offset third spine | both twins | both twins |
 | inset `twinx()` (x23) | twin | twin |
 | x02 / x03 twin with only its ticks / only its label moved left | twin | twin |
 | x04 `b.twinx()` of a twin (matplotlib moves `b`'s ticks left) | `b` and `c` | `b` and `c` |
 | 11-3 `sharex` overlay, ticks and label moved right (x12) | overlay | no |
-| 11-4 twin's ticks and label moved left; parent moved right (x19) or not (x13) | parent (x19), none (x13) | twin |
+| 11-4 twin's ticks and label moved left or turned off (m02); parent moved right (x19) or not (x13) | parent (x19), none (x13) | twin |
 | 11-5 twin with its y axis hidden (x14) | no | twin |
 | 14 `sharex` overlay drawn like a twin (x axis and background hidden), only its ticks or only its label on the right | overlay | no |
 
@@ -119,8 +121,8 @@ tick formats and bar label settling. Without the layout:
 
 The check is unchanged and still skips native twins. A line the layout shows
 on an Axes that is not a native twin is reported as INFO: the overlay in
-11-3 (`axes 1, spines.right`) and the parent in 11-4 (`axes 0,
-spines.right`). It is the layout's line, not an override to undo.
+11-3 and in decision 14 (`axes 1, spines.right`) and the parent in 11-4
+(`axes 0, spines.right`). It is the layout's line, not an override to undo.
 
 ## Verification (mechanical, in this repository)
 
@@ -130,7 +132,7 @@ spines.right`). It is the layout's line, not an override to undo.
   `Legend`) looked up statically over `dir()`, every MRO class namespace and
   every class and callable of the imported matplotlib modules stay the same
   objects.
-- `formatting/tests/test_twin_spines.py`: 60 cases (17 builds, each also
+- `formatting/tests/test_twin_spines.py`: 69 cases (20 builds, each also
   neutral and `format_ticks=False`, three presets, five edits) must equal
   `twin_spines_07_golden.json`, recorded from origin/main (no D7 code) with
   0.7's wrapper, and the pixels of a live 0.7 re-enactment with the new step
@@ -138,8 +140,9 @@ spines.right`). It is the layout's line, not an override to undo.
 - Mutants that survived the review (width overwrite, no box condition, no
   "not y" condition, no "x shared" condition, step inside `format_ticks`,
   inherited rebinding on `Artist` and `FigureBase`) now fail, as do mutants
-  of the new parts (inset walk, tick condition, twin's line first, tick
-  reading, the hidden-x-axis clause either way). Moving the step after the
+  of the new parts (inset walk and its recursion, tick condition, tick
+  reading on both sides, twin's line first and its place-free form, the
+  hidden-x-axis clause either way). Moving the step after the
   colours is equivalent and is not a target.
 - PoC (outside the repository): the 21 approved renders are pixel-identical.
 
@@ -159,12 +162,12 @@ CHANGELOG, *Changed*:
 > overlay you made like a twin (x axis hidden, y ticks or label on the
 > right); when a twin and its parent swap sides, the line moves to the
 > parent; a twin whose y axis is hidden, or whose y ticks and label you both
-> moved to the left, gets none.
+> moved to the left or turned off, gets none.
 > Without the layout a twin keeps the hidden spine; show it with
 > `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
 > first `dm.simple_layout` now shows; hide it after the layout, or give it
-> `linewidth=0`. `dm.validate_figure` reports the line on a moved overlay or
-> a swapped parent as `PRESET_OVERRIDE` (INFO); it is the layout's.
+> `linewidth=0`. `dm.validate_figure` reports the line on such an overlay
+> or a swapped parent as `PRESET_OVERRIDE` (INFO); it is the layout's.
 
 CHANGELOG, *Removed*: `dartwork_mpl.style.install_twinx_patch` and its root
 alias (internal, never in `__all__`).
