@@ -56,7 +56,7 @@ ENTRY_POINTS = frozenset(
         # `python -m dartwork_mpl._colors._build`
         "dartwork_mpl._colors._build",
         "dartwork_mpl.cli",
-        # compatibility re-exports of names that moved to their owners
+        # deprecated re-exports of names that moved to their owners (0.8, 0.10+)
         "dartwork_mpl.util",
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",

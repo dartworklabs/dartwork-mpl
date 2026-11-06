@@ -140,6 +140,17 @@ FontRole = Literal[
 ]
 
 
+def _warn_tnum_alias() -> None:
+    """Warn that ``.tnum`` is deprecated; the caller's line is reported."""
+    warnings.warn(
+        "`.tnum` is deprecated in 0.8 and may be removed in 0.10 or "
+        "later; use `.tnum_available` (same value: whether the font "
+        "declares the OpenType `tnum` feature in browsers).",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
 @dataclass(frozen=True)
 class FontFaceMeasurement:
     """Measured facts for one bundled font file."""
@@ -157,7 +168,8 @@ class FontFaceMeasurement:
 
     @property
     def tnum(self) -> bool:
-        """Backward-compatible alias for browser tabular-numeral support."""
+        """Deprecated alias of :attr:`tnum_available` (removal >= 0.10)."""
+        _warn_tnum_alias()
         return self.tnum_available
 
 
@@ -178,7 +190,8 @@ class FontMeasurement:
 
     @property
     def tnum(self) -> bool:
-        """Backward-compatible alias for browser tabular-numeral support."""
+        """Deprecated alias of :attr:`tnum_available` (removal >= 0.10)."""
+        _warn_tnum_alias()
         return self.tnum_available
 
 
@@ -210,7 +223,8 @@ class FontFamily:
 
     @property
     def tnum(self) -> bool:
-        """Alias of :attr:`tnum_available`, kept for backward compatibility."""
+        """Deprecated alias of :attr:`tnum_available` (removal >= 0.10)."""
+        _warn_tnum_alias()
         return _measure(self.name).tnum_available
 
     @property

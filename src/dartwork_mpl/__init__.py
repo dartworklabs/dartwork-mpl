@@ -284,7 +284,7 @@ __all__ = [  # noqa: RUF022
     "grid_shape",
     "list_aspect_tokens",
     "tokens",
-    # Units (legacy helpers, kept for compatibility)
+    # Point-unit offsets
     "make_offset",
     # Formatting
     "set_decimal",

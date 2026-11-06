@@ -15,6 +15,34 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
+## Deprecated in 0.8: `dartwork_mpl.util`
+
+Every access to a name through `dartwork_mpl.util` (`from dartwork_mpl.util
+import X`, `dartwork_mpl.util.X`) emits a `DeprecationWarning` per access,
+pointing at your line, so a second import or another module warns too;
+`import dartwork_mpl.util` alone does not. The module may be removed in 0.10
+or later. Until then each name is the owner's own object
+(`dartwork_mpl.util.X is <owner>.X`). Every name below is also
+`dm.X` at the package root.
+
+| Names | Import from |
+|---|---|
+| `arrow_axis`, `label_axes`, `make_offset` | `dartwork_mpl.annotation` |
+| `copy_prompt`, `get_prompt`, `list_prompts`, `prompt_path` | `dartwork_mpl.prompt` |
+| `fs`, `fw`, `lw` | `dartwork_mpl.scale` |
+| `get_bounding_box`, `simple_layout` | `dartwork_mpl.layout` |
+| `mix_colors`, `pseudo_alpha` | `dartwork_mpl` (`dm.mix_colors`, `dm.pseudo_alpha`) |
+| `save_and_show`, `save_formats`, `show` | `dartwork_mpl.io` |
+| `set_decimal` | `dartwork_mpl.formatting` |
+
+## Deprecated in 0.8: `.tnum` on font records
+
+`FontFamily.tnum`, `FontMeasurement.tnum` and `FontFaceMeasurement.tnum`
+emit a `DeprecationWarning` and may be removed in 0.10 or later. Read
+`.tnum_available` instead; it is the same value. It reports the OpenType
+`tnum` feature a browser can apply to the bundled font. It does not say
+whether matplotlib draws aligned digits; `FontFamily.numeric_axes` does.
+
 ## 0.7.0: two-digit tick years, axis units, 만/억/조
 
 One rule: with no request the library's look applies; ask for another format
