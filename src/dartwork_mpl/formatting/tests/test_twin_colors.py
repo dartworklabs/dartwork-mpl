@@ -384,6 +384,41 @@ def test_partly_explicit_side_is_the_users(explicit, right):
         assert _side(ax2, "right") == right
 
 
+def test_the_spine_seen_on_a_side_counts_as_its_part():
+    """Review I3: on a twinx pair the left spine seen is the twin's copy.
+
+    A colour set there makes the parent's (left) side the user's, so no
+    series colour is mixed into it; the right side keeps its own. The
+    parent's right spine lies under the twin's: a colour set on it is not
+    seen and leaves the right side coloured.
+    """
+    fig, ax, ax2 = _bar_line_twin()
+    ax2.spines["left"].set_color("crimson")
+    for _ in range(2):
+        dm.simple_layout(fig)
+    fig.canvas.draw()
+    tick = ax.yaxis.get_major_ticks()[1]
+    assert _hex(ax2.spines["left"].get_edgecolor()) == _hex("crimson")
+    assert {
+        "spine under it": _hex(ax.spines["left"].get_edgecolor()),
+        "ticks": _hex(tick.tick1line.get_markeredgecolor()),
+        "ticklabels": _hex(tick.label1.get_color()),
+        "label": _hex(ax.yaxis.label.get_color()),
+    } == dict.fromkeys(
+        ("spine under it", "ticks", "ticklabels", "label"), BLACK
+    )
+    assert _side(ax2, "right")["ticklabels"] == LINE_TEXT
+    assert apply_twin_colors(fig) == 1
+
+    fig, ax, ax2 = _bar_line_twin()
+    ax.spines["right"].set_color("crimson")  # drawn under ax2's right spine
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert _hex(ax2.spines["right"].get_edgecolor()) == LINE_LINE
+    assert _hex(ax2.yaxis.label.get_color()) == LINE_TEXT
+    assert _side(ax, "left")["ticklabels"] == BAR_TEXT
+
+
 def test_default_colour_before_the_first_layout_cannot_be_told():
     """The known limit: black set before any layout reads as the default.
 
