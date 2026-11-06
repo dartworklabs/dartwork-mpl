@@ -14,11 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `dm.fw(1)` in the text colour, 3 pt beyond the bar end; the number printed
   like the axis ticks (plain scaled numbers under `dm.axis_unit`, the ticks'
   suffix under `dm.format_axis_si` or a `PercentFormatter`, the ticks'
-  unit, currency, zero and decimals under `dm.format_axis_currency` and
-  `decimals=n` of `dm.format_axis_millions` / `_billions`: `1.2M`,
+  unit, currency and zero under `dm.format_axis_currency` and
+  `decimals=n` of `dm.format_axis_millions` / `_billions`: `1.25M`,
   `−$800`, `$0`; plain values under a formatter it cannot read and under
   `decimals=n` of `dm.format_axis_si` / `_myriad`, whose ticks each take
-  their own unit); otherwise three significant digits on the
+  their own unit); three significant digits on the
   largest value, then the fewest exact decimals, one count per call, no
   meaningless `.0`; stacked bars' segments centred with a total beyond the
   stack. `dm.simple_layout` turns crowded labels on vertical bars vertical

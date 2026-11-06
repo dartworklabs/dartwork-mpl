@@ -99,7 +99,7 @@ Returns: `C: test_return_label_locator_and_limits`.
 | negative `decimals` | accepted; `ValueError` at the draw | `ValueError` at the call | `ValueError` at the call | C: `test_negative_decimals_fail…` |
 | log scale | axis-wide: unit per tick (`1, 10 … 1k`); millions/billions keep their unit (`0.000001M`); per value and currency: as linear | axis-wide: unit per tick | whole values, label without unit | G: `y log` |
 | zoom / redraw | axis-wide: decided again; per value: each value alone | same | decided again, label rewritten | G: ranges are `format_ticks` under set views |
-| bar labels | axis-wide: tick suffix (`1.25M`); millions / billions per value and currency: the fixed unit, currency and zero (`1.2M`, `−$800`, `$0`); si per value: plain (`1,250,000`) | axis-wide: `125만`; per value: plain | scaled, no suffix (`1.25`) | T: `test_unit_per_value_formatters_give_the_plain_scale`, `test_fixed_unit_formatters_give_their_unit`, `test_suffix_formatters_give_unit_and_currency`, `test_axis_unit_scale_has_no_suffix` |
+| bar labels | axis-wide: tick suffix (`1.25M`); millions / billions per value and currency: the fixed unit, currency and zero (`1.25M`, `−$800`, `$0`); si per value: plain (`1,250,000`) | axis-wide: `125만`; per value: plain | scaled, no suffix (`1.25`) | T: `test_unit_per_value_formatters_give_the_plain_scale`, `test_fixed_unit_formatters_give_their_unit`, `test_suffix_formatters_give_unit_and_currency`, `test_axis_unit_scale_has_no_suffix` |
 | installed class | `AxisUnitFormatter`, one per axis | same | `LabelUnitFormatter` | this change |
 
 ## Where `axis_unit` is the same

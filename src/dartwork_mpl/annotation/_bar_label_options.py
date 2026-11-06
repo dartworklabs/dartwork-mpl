@@ -221,12 +221,12 @@ def compose_text(
 ) -> str:
     """The label text for a value already divided by ``scale.factor``.
 
-    ``decimals`` is fixed (a zero prints ``0.0``, not ``0``) when the call
-    or the ticks fixed it. A zero keeps the ticks' prefix and suffix when
-    theirs does (``$0``); a ``fmt`` template supplies its own.
+    ``decimals`` is fixed (a zero prints ``0.00``, not ``0``) when the call
+    fixed it. A zero keeps the ticks' prefix and suffix when theirs does
+    (``$0``); a ``fmt`` template supplies its own.
     """
     fmt = options.fmt
-    fixed = options.decimals is not None or scale.decimals is not None
+    fixed = options.decimals is not None
     if callable(fmt):
         return str(fmt(scaled))
     if isinstance(fmt, str):

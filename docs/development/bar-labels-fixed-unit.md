@@ -178,5 +178,7 @@ Either way `decimals=` shows it.
 
 ## Reproducing the candidates
 
-Two commits on `t3/label-units-fixed-20261106`: candidate A, then
-candidate B on top of it. Choosing A drops the B commit.
+Two commits on `t3/label-units-fixed-20261106`: candidate A (`e71a33c4`,
+`TickScale.decimals` carries the ticks' count), then candidate B on top of
+it (drops that field; labels keep the label rule). Choosing A reverts the
+B commit; the tests of each commit pin its own label texts.

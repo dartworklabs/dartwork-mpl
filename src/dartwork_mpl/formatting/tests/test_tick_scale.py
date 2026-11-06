@@ -85,35 +85,40 @@ def test_unit_per_value_formatters_give_the_plain_scale(install):
     [
         (
             lambda ax: dm.format_axis_millions(ax, decimals=1),
-            TickScale(1e6, "", "M", decimals=1),
+            TickScale(1e6, "", "M"),
         ),
         (
             lambda ax: dm.format_axis_billions(ax, suffix="bn", decimals=2),
-            TickScale(1e9, "", "bn", decimals=2),
+            TickScale(1e9, "", "bn"),
         ),
         (
             lambda ax: dm.format_axis_currency(ax),
-            TickScale(1.0, "$", "", zero="affixed", decimals=0),
+            TickScale(1.0, "$", "", zero="affixed"),
         ),
         (
             lambda ax: dm.format_axis_currency(
                 ax, symbol="€", position="suffix", decimals=2
             ),
-            TickScale(1.0, "", "€", zero="affixed", decimals=2),
+            TickScale(1.0, "", "€", zero="affixed"),
         ),
     ],
     ids=["millions-1", "billions-bn-2", "currency", "currency-suffix-2"],
 )
 def test_fixed_unit_formatters_give_their_unit(install, scale):
     """``decimals=n`` of millions / billions and ``format_axis_currency``
-    write every tick in one unit: that unit, its currency, its zero rule
-    and its decimals, whatever the value."""
+    write every tick in one unit: that unit, its currency and its zero
+    rule, whatever the value. The axis-wide millions report the same."""
     fig, ax = _bars([1.25e6, 3.4e6])
     install(ax)
     for value in (1.25e6, -800.0, 0.0):
         assert tick_scale_of(ax.yaxis, value) == scale
     fig.canvas.draw()
     assert tick_scale_of(ax.yaxis, 1.25e6) == scale
+
+    fig, ax = _bars([1.25e6, 3.4e6])
+    dm.format_axis_millions(ax)  # axis-wide
+    fig.canvas.draw()
+    assert tick_scale_of(ax.yaxis, 1.25e6) == TickScale(1e6, "", "M")
 
 
 def test_log_axis_scale_is_per_value():

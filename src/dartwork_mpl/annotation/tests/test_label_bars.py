@@ -13,6 +13,7 @@ are read after a real canvas draw.
 from __future__ import annotations
 
 import io
+import re
 
 import matplotlib
 import matplotlib.colors as mcolors
@@ -452,12 +453,12 @@ FIXED_UNIT = {
     "millions-1": (
         lambda ax: dm.format_axis_millions(ax, decimals=1),
         [1.25e6, 2.05e6, -0.8e6, 0.0, 3.4e6],
-        ["1.2M", "2.0M", f"{MINUS}0.8M", "0.0", "3.4M"],
+        ["1.25M", "2.05M", f"{MINUS}0.80M", "0", "3.40M"],
     ),
     "billions-2": (
         lambda ax: dm.format_axis_billions(ax, decimals=2),
         [12.4e9, 8.0e9, -3.5e9, 0.0, 15.0e9],
-        ["12.40B", "8.00B", f"{MINUS}3.50B", "0.00", "15.00B"],
+        ["12.4B", "8.0B", f"{MINUS}3.5B", "0", "15.0B"],
     ),
     "currency": (
         lambda ax: dm.format_axis_currency(ax),
@@ -467,34 +468,42 @@ FIXED_UNIT = {
     "currency-small": (
         lambda ax: dm.format_axis_currency(ax),
         [4.25, 3.8, -1.5, 0.0, 6.1],
-        ["$4", "$4", f"{MINUS}$2", "$0", "$6"],
+        ["$4.25", "$3.80", f"{MINUS}$1.50", "$0", "$6.10"],
     ),
     "currency-suffix-2": (
         lambda ax: dm.format_axis_currency(
             ax, symbol="€", position="suffix", decimals=2
         ),
         [12.5, 20.55, -8.0, 0.0, 34.0],
-        ["12.50€", "20.55€", f"{MINUS}8.00€", "0.00€", "34.00€"],
+        ["12.5€", "20.6€", f"{MINUS}8.0€", "0€", "34.0€"],
     ),
 }
+
+
+def _affixes(text):
+    """The sign and symbols around the digits: ``("-$", "")`` for -$800."""
+    found = re.fullmatch(r"(\D*)[\d,.]+(\D*)", text.replace(MINUS, "-"))
+    assert found is not None, text
+    return found.groups()
 
 
 @pytest.mark.parametrize("name", list(FIXED_UNIT))
 def test_fixed_unit_formatters_print_like_their_ticks(name):
     """Ticks written each alone in one fixed unit (``decimals=n`` of
     millions / billions, ``format_axis_currency``) give the labels that
-    unit, the currency on its side, the sign before both, the ticks' zero
-    rule (bare ``0.0``; ``$0``, ``0.00€``) and the ticks' decimals."""
+    unit, the currency on its side, the sign before both and the ticks'
+    zero rule (bare ``0``; ``$0``, ``0€``). The decimals are the label
+    rule's: the ticks' fixed count sizes tick text only."""
     install, values, expected = FIXED_UNIT[name]
     fig, ax, _ = _plain(values)
     install(ax)
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
     assert _texts(texts) == expected
-    # The text a tick at that value reads, but for matplotlib's minus.
+    # Sign, currency and unit sit where a tick at that value puts them.
     tick = ax.yaxis.get_major_formatter()
-    assert [t.replace(MINUS, "-") for t in expected] == [
-        tick(v) for v in values
+    assert [_affixes(t) for t in expected] == [
+        _affixes(tick(v)) for v in values
     ]
 
 
@@ -507,7 +516,14 @@ def test_fixed_unit_labels_follow_and_explicit_wins():
     assert _texts(texts)[0] == "1,250,000"
     dm.format_axis_millions(ax, decimals=1)
     fig.canvas.draw()
-    assert _texts(texts)[0] == "1.2M"
+    assert _texts(texts)[0] == "1.25M"
+
+    # The same labels as under the axis-wide millions (decimals=None).
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == FIXED_UNIT["millions-1"][2]
 
     # decimals= fixes the count, the unit stays the ticks'.
     fig, ax, _ = _plain(values)
@@ -521,7 +537,7 @@ def test_fixed_unit_labels_follow_and_explicit_wins():
     fig, ax, _ = _plain(values)
     dm.format_axis_millions(ax, decimals=1)
     texts = dm.label_bars(ax, fmt="{} mn")
-    assert _texts(texts)[:3] == ["1.2 mn", "2.0 mn", f"{MINUS}0.8 mn"]
+    assert _texts(texts)[:3] == ["1.25 mn", "2.05 mn", f"{MINUS}0.80 mn"]
     seen: list[float] = []
     dm.label_bars(ax, fmt=lambda v: seen.append(v) or "x")
     assert seen[:5] == pytest.approx([1.25, 2.05, -0.8, 0.0, 3.4])
@@ -654,30 +670,46 @@ BOUNDARY = {
         [12.5, 0.03, -0.04, 0.0, -8.0, 34.0],
     ),
 }
-# Nothing asked: the formatter's count (a value under half its last place
-# reads as the tick at that value does, 0.0 / $0).
+# Nothing asked: the label rule in the tick unit (three significant digits
+# on the largest value), so a small value shows while the largest leaves
+# room for it (0.03M beside 3.4M) and reads 0 when it does not (beside
+# 12.5M, or €0.03 beside €34).
 BOUNDARY_DEFAULT = {
-    "millions-1-small": ["1.2M", "0.0", "0.0", "0.0", f"{MINUS}0.8M", "3.4M"],
-    "millions-1-wide": ["12.5M", "0.0", "0.0", "0.0", f"{MINUS}2.6M", "8.1M"],
-    "billions-bn-1": ["12.4bn", "0.0", "0.0", "0.0", f"{MINUS}3.5bn", "8.0bn"],
+    "millions-1-small": [
+        "1.25M",
+        "0.03M",
+        f"{MINUS}0.04M",
+        "0",
+        f"{MINUS}0.80M",
+        "3.40M",
+    ],
+    "millions-1-wide": ["12.5M", "0", "0", "0", f"{MINUS}2.6M", "8.1M"],
+    "billions-bn-1": ["12.4bn", "0", "0", "0", f"{MINUS}3.5bn", "8.0bn"],
     "millions-baekman-1": [
-        "2.4백만",
-        "0.0",
-        "0.0",
-        "0.0",
-        f"{MINUS}1.1백만",
-        "5.6백만",
+        "2.40백만",
+        "0.03백만",
+        f"{MINUS}0.04백만",
+        "0",
+        f"{MINUS}1.10백만",
+        "5.60백만",
     ],
-    "millions-empty-1": ["1.2", "0.0", "0.0", "0.0", f"{MINUS}0.8", "3.4"],
-    "currency-prefix-0": ["$4", "$0", "$0", "$0", f"{MINUS}$2", "$6"],
-    "currency-suffix-2": [
-        "12.50€",
-        "0.03€",
-        f"{MINUS}0.04€",
-        "0.00€",
-        f"{MINUS}8.00€",
-        "34.00€",
+    "millions-empty-1": [
+        "1.25",
+        "0.03",
+        f"{MINUS}0.04",
+        "0",
+        f"{MINUS}0.80",
+        "3.40",
     ],
+    "currency-prefix-0": [
+        "$4.25",
+        "$0.40",
+        f"{MINUS}$0.30",
+        "$0",
+        f"{MINUS}$1.50",
+        "$6.10",
+    ],
+    "currency-suffix-2": ["12.5€", "0€", "0€", "0€", f"{MINUS}8.0€", "34.0€"],
 }
 # label_bars(decimals=2): the same in every candidate.
 BOUNDARY_ASKED = {

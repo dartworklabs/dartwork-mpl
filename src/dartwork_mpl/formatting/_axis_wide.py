@@ -160,15 +160,13 @@ class TickScale:
 
     ``zero``: a value that prints as zero drops the prefix and suffix
     (``"bare"``: ``0``) or keeps them (``"affixed"``: ``$0``, ``0€``, as
-    ``format_axis_currency`` ticks). ``decimals``: the decimal count the
-    ticks fix (a ``per_tick`` formatter with one unit), else ``None``.
+    ``format_axis_currency`` ticks).
     """
 
     factor: float = 1.0
     prefix: str = ""
     suffix: str = ""
     zero: Literal["bare", "affixed"] = "bare"
-    decimals: int | None = None
 
 
 @dataclass(frozen=True)
@@ -446,10 +444,10 @@ class AxisUnitFormatter(ticker.Formatter):
 
         A ``per_tick`` formatter with a fixed unit (``decimals=n`` of
         millions and billions, currency) writes every value in that unit:
-        its factor, currency and label, its zero rule (``"affixed"`` keeps
-        them on zero) and its fixed decimals. Without one (``unit="max"``:
-        each value takes its own unit) there is no unit to share: the plain
-        scale.
+        its factor, currency and label, and its zero rule (``"affixed"``
+        keeps them on zero). Its fixed decimals size tick text and are not
+        reported. Without one (``unit="max"``: each value takes its own
+        unit) there is no unit to share: the plain scale.
         """
         rules = self._per_tick
         if rules is not None:
@@ -460,7 +458,6 @@ class AxisUnitFormatter(ticker.Formatter):
                 self._currency,
                 self._fixed.label,
                 zero="affixed" if rules.zero == "affixed" else "bare",
-                decimals=self._decimals,
             )
         unit, _decimals = self._decision(float(value))
         return TickScale(unit.factor, self._currency, unit.label)
@@ -478,7 +475,7 @@ def tick_scale_of(axis: Axis, value: float) -> TickScale:
       formatter puts the unit in the axis label instead, so its scale has
       no suffix (``33`` under ``Energy (GWh)``).
       An :class:`AxisUnitFormatter` made with ``per_tick`` (each value
-      alone) reports its fixed unit, currency, zero rule and decimals
+      alone) reports its fixed unit, currency and zero rule
       (``decimals=n`` of millions and billions: ``1.2M``;
       ``format_axis_currency``: ``-$1,500``, ``$0``), or the plain scale
       when each value takes its own unit (``decimals=n`` of si and myriad
