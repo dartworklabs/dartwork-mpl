@@ -3,6 +3,7 @@
 import asyncio
 import base64
 import hashlib
+import itertools
 import json
 import os
 import random
@@ -577,21 +578,25 @@ def test_watchdog_keeps_polling_while_output_drains(tmp_path, monkeypatch):
     grandchild; it exits once the watchdog has read 4 MiB more output, which
     leaves the grandchild with another parent and process group. Only scans
     move the watchdog clock, so a poll happens during that output only if
-    reading itself triggers one: polling before each chunk (the original loop)
-    or after each bounded batch does, a cooldown measured on the clock never
-    ends and the grandchild escapes.
+    processed output itself triggers one: polling before each chunk (the
+    original loop) or after each 1 MiB does, while a cooldown measured on the
+    clock never ends and the grandchild escapes. At most 1 MiB plus one chunk
+    is processed between two polls.
     """
     import run_agent_plot_eval as capture
 
     spawn, release = tmp_path / "spawn", tmp_path / "release"
     pids = tmp_path / "pids"
     state = {"after_spawn": 0}
+    processed: list[int] = []
     real_table = capture._process_table
     _scan_driven_clock(monkeypatch, lambda: None)
     scan = capture._process_table
 
     def scan_then_spawn():
         """After the first scan, wait until the grandchild exists."""
+        events = tmp_path / "events.jsonl"
+        processed.append(events.stat().st_size if events.exists() else 0)
         table = scan()
         if not spawn.exists():
             spawn.write_text("go")
@@ -634,6 +639,62 @@ def test_watchdog_keeps_polling_while_output_drains(tmp_path, monkeypatch):
     assert grandchild in result["observed_pids"]
     with pytest.raises(ProcessLookupError):
         os.kill(grandchild, 0)
+    assert max(b - a for a, b in itertools.pairwise(processed)) <= (
+        1024 * 1024 + 65536
+    )
+
+
+_TRICKLE_CHILD = """import signal, sys, time
+signal.alarm(20)
+line = 'x' * 4095
+while True:
+    print(line, flush=True)
+    time.sleep(0.005)
+"""
+
+
+def test_watchdog_keeps_reading_while_a_scan_runs(tmp_path, monkeypatch):
+    """A slow process-table scan does not stop the pipes from being read.
+
+    The first scan is held open until 16 KiB more output has been read from
+    the child's pipes, for at most 5 s. A watchdog that reads only between
+    scans reads nothing while the scan is held, so the deadline passes.
+    """
+    import run_agent_plot_eval as capture
+
+    state = {"read": 0, "held_scans": 0, "read_during_scan": False}
+    scan = capture._process_table
+
+    def count(size):
+        """Count bytes read from the child's pipes."""
+        state["read"] += size
+
+    def held_scan():
+        """Hold the first scan until the pipes have yielded 16 KiB more."""
+        table = scan()
+        if not state["held_scans"]:
+            state["held_scans"] += 1
+            target = state["read"] + 16 * 1024
+            deadline = time.monotonic() + 5
+            while state["read"] < target and time.monotonic() < deadline:
+                time.sleep(0.001)
+            state["read_during_scan"] = state["read"] >= target
+        return table
+
+    monkeypatch.setattr(capture, "_process_table", held_scan)
+    monkeypatch.setattr(capture, "os", _ReadSeam(count))
+    result = capture_process(
+        [sys.executable, "-c", _TRICKLE_CHILD],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+        max_bytes=64 * 1024,
+    )
+    assert state["read_during_scan"]
+    assert result["stop_reason"] == "byte_limit"
+    assert result["cleanup_ok"]
 
 
 _STREAMING_CALLS_CHILD = """import json, signal
@@ -649,10 +710,11 @@ while True:
 def test_watchdog_stream_limits_stop_within_one_chunk_while_draining(
     tmp_path, monkeypatch, limit
 ):
-    """Batched reading still checks stream limits after every chunk.
+    """Output processed between polls is still checked after every chunk.
 
-    Only scans move the watchdog clock, so a batch of continuous output ends
-    only at its byte bound. Reading stops within one 64 KiB chunk of the limit.
+    Only scans move the watchdog clock, so up to 1 MiB of continuous output is
+    processed between two polls. Processing stops within one 64 KiB chunk of
+    the byte or call limit.
     """
     _scan_driven_clock(monkeypatch, lambda: None)
     line = len(

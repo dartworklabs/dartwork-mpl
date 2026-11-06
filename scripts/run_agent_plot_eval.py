@@ -7,6 +7,7 @@ trusted local process: workspace separation and the watchdog are not a sandbox.
 import argparse
 import asyncio
 import base64
+import collections
 import contextlib
 import hashlib
 import importlib.metadata
@@ -17,6 +18,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -66,11 +68,14 @@ _ORACLE_MARKERS = (
     "global-constraints",
     "task-2-runtime-notes",
 )
-# Owned-tree/evidence polls: every _POLL_SECONDS while the streams are quiet,
-# and after at most _DRAIN_SECONDS or _DRAIN_BYTES of continuous reading.
+# Owned-tree/evidence polls: _POLL_SECONDS after the last poll while the
+# streams are quiet; _DRAIN_SECONDS after the first output processed since
+# the last poll; or once _DRAIN_BYTES have been processed since it. The pipes
+# are read on a thread that keeps at most _READ_AHEAD_BYTES unprocessed.
 _POLL_SECONDS = 0.05
 _DRAIN_SECONDS = 0.01
 _DRAIN_BYTES = 1024 * 1024
+_READ_AHEAD_BYTES = 2 * 1024 * 1024
 
 
 def _dump(path: Path, value: Any) -> None:
@@ -184,6 +189,84 @@ def _stop_tree(process: subprocess.Popen[bytes], known: set[int]) -> bool:
     return not _owned(process.pid, known)
 
 
+class _StreamPump:
+    """Read the child's pipes on a thread, so reading continues during scans.
+
+    Chunks wait in order until the watchdog takes them. Once ``limit`` bytes
+    wait unprocessed the pump stops reading, and the child blocks on its full
+    pipe as it would with no pump. A read error is raised from ``take`` after
+    the chunks read before it.
+    """
+
+    def __init__(self, streams: dict[str, Any], limit: int) -> None:
+        self._ready = threading.Condition()
+        self._chunks: collections.deque[tuple[str, bytes]] = collections.deque()
+        self._waiting = 0
+        self._limit = limit
+        self._stopping = False
+        self._failure: Exception | None = None
+        self._wake_read, self._wake_write = os.pipe()
+        self._thread = threading.Thread(
+            target=self._run, args=(streams,), daemon=True
+        )
+        self._thread.start()
+
+    def _run(self, streams: dict[str, Any]) -> None:
+        selector = selectors.DefaultSelector()
+        try:
+            for name, stream in streams.items():
+                selector.register(stream, selectors.EVENT_READ, name)
+            selector.register(self._wake_read, selectors.EVENT_READ, None)
+            open_streams = len(streams)
+            while open_streams:
+                with self._ready:
+                    while self._waiting >= self._limit and not self._stopping:
+                        self._ready.wait()
+                    if self._stopping:
+                        return
+                for key, _ in selector.select():
+                    if key.data is None:
+                        return
+                    chunk = os.read(key.fd, 65536)
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                        open_streams -= 1
+                    with self._ready:
+                        self._chunks.append((key.data, chunk))
+                        self._waiting += len(chunk)
+                        self._ready.notify_all()
+        except Exception as error:  # noqa: BLE001 - re-raised by take()
+            with self._ready:
+                self._failure = error
+                self._ready.notify_all()
+        finally:
+            selector.close()
+
+    def take(self, timeout: float) -> tuple[str, bytes] | None:
+        """The next chunk (``b""`` at a stream's EOF), or None after ``timeout``."""
+        with self._ready:
+            if not self._chunks and self._failure is None:
+                self._ready.wait(timeout)
+            if self._chunks:
+                name, chunk = self._chunks.popleft()
+                self._waiting -= len(chunk)
+                self._ready.notify_all()
+                return name, chunk
+            if self._failure is not None:
+                raise self._failure
+            return None
+
+    def close(self) -> None:
+        """Stop reading and wait for the thread; unread output stays in the pipes."""
+        with self._ready:
+            self._stopping = True
+            self._ready.notify_all()
+        os.write(self._wake_write, b"\0")
+        self._thread.join()
+        os.close(self._wake_read)
+        os.close(self._wake_write)
+
+
 def _tree_bytes(root: Path) -> int:
     """Total regular-file bytes under one evidence tree, ignoring symlinks."""
     return sum(
@@ -210,16 +293,17 @@ def capture_process(
     Limits observe stream bytes/calls and optionally the total evidence tree.
     No shell is used. Calls are counted at complete assistant tool-use events.
     Cleanup kills observed descendants and verifies their absence on every exit.
-    The owned process tree and evidence tree are polled ``_POLL_SECONDS``
-    after the previous poll while the streams are quiet, and right after
-    ``_DRAIN_SECONDS`` or ``_DRAIN_BYTES`` of continuous reading. Between polls
-    the streams are read chunk by chunk with every stream limit checked after
-    each chunk, so a slow process table cannot hold back a stream limit until
-    the wall limit wins. Cleanup scans again, so a descendant whose owned
-    parent is still alive is found however late it started; one that detaches
-    and loses its parent between two scans is never observed and is not
-    cleaned up. A normal exit is re-checked against the evidence tree after
-    cleanup.
+    The pipes are read on a thread, so reading continues while the owned
+    process tree is scanned. The process and evidence trees are polled
+    ``_POLL_SECONDS`` after the previous poll while the streams are quiet,
+    ``_DRAIN_SECONDS`` after the first output processed since the previous
+    poll, or once ``_DRAIN_BYTES`` have been processed since it. Output is
+    processed chunk by chunk, with the wall limit and every stream limit
+    checked at each chunk; the evidence tree is measured at polls. Cleanup
+    scans again, so a descendant whose owned parent is still alive is found
+    however late it started; one that detaches and loses its parent between
+    two scans is never observed and is not cleaned up. A normal exit is
+    re-checked against the evidence tree after cleanup.
     """
     started = time.monotonic()
     process = subprocess.Popen(
@@ -231,28 +315,21 @@ def capture_process(
         start_new_session=True,
     )
     known: set[int] = set()
-    selector = selectors.DefaultSelector()
     assert process.stdout is not None and process.stderr is not None
-    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
-    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
     buffer = b""
     count, size = 0, 0
     reason = "exit"
     call_limit_reason: str | None = None
     cleanup = False
 
-    def take(key: selectors.SelectorKey, stdout: Any, stderr: Any) -> int:
-        """Copy one chunk, count its calls and return its size (0 at EOF)."""
+    def absorb(name: str, chunk: bytes, stdout: Any, stderr: Any) -> None:
+        """Copy one chunk and count the calls it completes."""
         nonlocal buffer, count, size, call_limit_reason
-        chunk = os.read(key.fd, 65536)
-        if not chunk:
-            selector.unregister(key.fileobj)
-            return 0
         size += len(chunk)
-        target = stdout if key.data == "stdout" else stderr
+        target = stdout if name == "stdout" else stderr
         target.write(chunk)
         target.flush()
-        if key.data == "stdout":
+        if name == "stdout":
             buffer += chunk
             while b"\n" in buffer:
                 line, buffer = buffer.split(b"\n", 1)
@@ -283,7 +360,6 @@ def capture_process(
                         )
                         for call in _calls([event])
                     )
-        return len(chunk)
 
     def stream_limit() -> str | None:
         """The stream limit already crossed, in the existing priority order."""
@@ -296,20 +372,27 @@ def capture_process(
         return None
 
     # A `ps` scan of a busy shared host can take most of a second, and a pipe
-    # holds 64 KiB, or 8 KiB once the user passes pipe-user-pages-soft. One
-    # chunk per scan put 10 to ~75 scans in front of a 600 KB call already
-    # written. Reading is therefore batched between polls, but a batch ends
-    # after _DRAIN_SECONDS or _DRAIN_BYTES and the next poll follows at once,
-    # so continuous output does not space the polls further apart.
+    # holds 64 KiB, or 8 KiB once the user passes pipe-user-pages-soft. Reading
+    # one chunk per scan put 10 to ~75 scans in front of a 600 KB call already
+    # written. The pump keeps reading while a scan runs, and output schedules
+    # the next scan _DRAIN_SECONDS after it arrives instead of postponing it.
     idle_due = started
-    pending, flowing = 0, False
+    data_due: float | None = None
+    pending = 0
+    open_streams = 2
     evidence_over = False
+    pump: _StreamPump | None = None
     try:
+        pump = _StreamPump(
+            {"stdout": process.stdout, "stderr": process.stderr},
+            _READ_AHEAD_BYTES,
+        )
         with events_path.open("wb") as stdout, stderr_path.open("ab") as stderr:
-            while selector.get_map():
+            while open_streams:
+                now = time.monotonic()
                 if (
-                    time.monotonic() >= idle_due
-                    or flowing
+                    now >= idle_due
+                    or (data_due is not None and now >= data_due)
                     or pending >= _DRAIN_BYTES
                 ):
                     _owned(process.pid, known)
@@ -318,36 +401,28 @@ def capture_process(
                         and _tree_bytes(evidence_root) > max_bytes
                     )
                     idle_due = time.monotonic() + _POLL_SECONDS
-                    pending, flowing = 0, False
+                    data_due, pending = None, 0
                 if time.monotonic() - started > wall_seconds:
                     reason = "wall_limit"
                     break
                 if evidence_over:
                     reason = "evidence_limit"
                     break
-                ready = selector.select(
-                    timeout=min(
-                        _POLL_SECONDS, max(0.0, idle_due - time.monotonic())
-                    )
+                due = idle_due if data_due is None else min(idle_due, data_due)
+                item = pump.take(
+                    min(_POLL_SECONDS, max(0.0, due - time.monotonic()))
                 )
-                batch_end = time.monotonic() + _DRAIN_SECONDS
-                while ready:
-                    for key, _ in ready:
-                        pending += take(key, stdout, stderr)
-                        reason = stream_limit() or reason
-                        if reason != "exit":
-                            break
-                    if (
-                        reason != "exit"
-                        or pending >= _DRAIN_BYTES
-                        or not selector.get_map()
-                    ):
-                        break
-                    remaining = batch_end - time.monotonic()
-                    if remaining <= 0:
-                        flowing = True
-                        break
-                    ready = selector.select(timeout=remaining)
+                if item is None:
+                    continue
+                name, chunk = item
+                if not chunk:
+                    open_streams -= 1
+                    continue
+                if data_due is None:
+                    data_due = time.monotonic() + _DRAIN_SECONDS
+                pending += len(chunk)
+                absorb(name, chunk, stdout, stderr)
+                reason = stream_limit() or reason
                 if reason != "exit":
                     break
             if reason == "exit":
@@ -360,7 +435,8 @@ def capture_process(
                 except subprocess.TimeoutExpired:
                     reason = "wall_limit"
     finally:
-        selector.close()
+        if pump is not None:
+            pump.close()
         cleanup = _stop_tree(process, known)
         process.stdout.close()
         process.stderr.close()
