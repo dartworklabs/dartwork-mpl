@@ -23,6 +23,13 @@ days. The latter contains pytest output, including its slowest 30 durations.
 merged into the one JUnit report with unchanged module/class names, so the
 guard below reads it as before. `-n` lives on the CI command lines only, never
 in `addopts`: local runs and `scripts/test_id_map.py` stay serial.
+`addopts` does carry `--dist=worksteal`, which only acts with `-n`: idle
+workers take queued tests from busy ones, so a module's consecutive 40-60 s
+colour subprocess tests stop running back to back on one worker. Measured
+locally on 2026-11-06 with paired concurrent runs, 4 workers: wall 445 s to
+364 s, CPU 2465 s to 2410 s; 32 workers: wall about 20-30% lower for 5-8%
+more CPU (module fixtures set up on more workers). Hosted speed is read from
+the same GitHub run, as below.
 The `color_pipeline` marker (pyproject) selects the slow, interpreter-independent
 colour build/byte-identity checks; only the 3.12 job runs them.
 Release also includes `python-runtime.txt` (actual version and executable).

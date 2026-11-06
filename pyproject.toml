@@ -245,6 +245,11 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "--import-mode=importlib",
+    # Only acts with -n (serial runs ignore it). Idle xdist workers steal
+    # queued tests, so a module's back-to-back 40-60 s colour subprocess
+    # tests no longer run on one worker while the others sit idle (that
+    # single worker was the 2026-11-06 full-suite wall time).
+    "--dist=worksteal",
 ]
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
