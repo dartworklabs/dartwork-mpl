@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import random
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -305,6 +306,215 @@ def test_watchdog_source_limit_is_not_held_behind_slow_process_polls(
     first = json.loads((tmp_path / "events.jsonl").read_text().splitlines()[0])
     with pytest.raises(ProcessLookupError):
         os.kill(first["child_pid"], 0)
+
+
+def _scan_driven_clock(monkeypatch, after_first_poll):
+    """Let only real ``ps`` scans (0.6 s each) move the watchdog clock.
+
+    ``after_first_poll`` runs once, at the first clock read after the first
+    scan, which is after the first poll has measured the process and evidence
+    trees. No later poll happens unless the watchdog polls per read. Cleanup
+    runs in real time; a real 5 s guard bounds hangs.
+    """
+    import run_agent_plot_eval as capture
+
+    origin = time.monotonic()
+    state = {"scans": 0, "cleanup": False, "released": False}
+    scan, stop = capture._process_table, capture._stop_tree
+
+    def counted_scan():
+        """Charge one contended scan to the watchdog clock."""
+        state["scans"] += 1
+        return scan()
+
+    def marked_stop(process, known):
+        """Cleanup waits in real time once the stop reason is chosen."""
+        state["cleanup"] = True
+        return stop(process, known)
+
+    def monotonic():
+        """Release the child after the first poll; then only scans move time."""
+        if state["scans"] and not state["released"]:
+            state["released"] = True
+            after_first_poll()
+        elapsed = time.monotonic() - origin
+        charged = origin + 0.6 * state["scans"]
+        return charged + elapsed if state["cleanup"] or elapsed > 5 else charged
+
+    monkeypatch.setattr(capture, "_process_table", counted_scan)
+    monkeypatch.setattr(capture, "_stop_tree", marked_stop)
+    monkeypatch.setattr(
+        capture, "time", SimpleNamespace(monotonic=monotonic, sleep=time.sleep)
+    )
+
+
+_FINAL_WRITE_CHILD = """import pathlib, signal, sys, time
+signal.alarm(4)
+go, payload, size = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), int(sys.argv[3])
+while not go.exists():
+    time.sleep(0.001)
+payload.write_bytes(b'x' * size)
+print('{}', flush=True)
+"""
+
+
+@pytest.mark.parametrize(
+    ("written", "stop_reason"),
+    [(512, "exit"), (4096, "evidence_limit")],
+    ids=["within", "over"],
+)
+def test_watchdog_admits_exit_only_within_final_evidence_limit(
+    tmp_path, monkeypatch, written, stop_reason
+):
+    """Evidence written after the last poll still decides whether an exit is normal.
+
+    The child writes a real file only after the first poll has measured the
+    evidence tree, prints its last line and exits; no later poll runs. 4096
+    bytes against a 1024-byte limit must not be admitted as ``exit``.
+    """
+    evidence = tmp_path / "evidence"
+    evidence.mkdir()
+    go = tmp_path / "go"
+    _scan_driven_clock(monkeypatch, lambda: go.write_text("go"))
+    result = capture_process(
+        [
+            sys.executable,
+            "-c",
+            _FINAL_WRITE_CHILD,
+            str(go),
+            str(evidence / "payload.bin"),
+            str(written),
+        ],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+        max_bytes=1024,
+        evidence_root=evidence,
+    )
+    assert (evidence / "payload.bin").stat().st_size == written
+    assert (tmp_path / "events.jsonl").read_bytes() == b"{}\n"
+    assert result["returncode"] == 0
+    assert result["cleanup_ok"]
+    assert result["stop_reason"] == stop_reason
+
+
+_LATE_DESCENDANT_CHILD = """import json, pathlib, signal, subprocess, sys, time
+signal.alarm(20)
+go = pathlib.Path(sys.argv[1])
+while not go.exists():
+    time.sleep(0.001)
+late = subprocess.Popen(
+    [sys.executable, '-c', 'import time; time.sleep(20)'],
+    start_new_session=True,
+    stdin=subprocess.DEVNULL,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+print(json.dumps({'late_pid': late.pid}), flush=True)
+call = {'type': 'assistant', 'message': {'content': [{'type': 'tool_use', 'name': 'mcp__dartwork_mpl__render_plot', 'input': {'code': 'x'}}]}}
+for _ in range(2):
+    print(json.dumps(call), flush=True)
+time.sleep(20)
+"""
+
+
+def test_watchdog_cleanup_finds_late_detached_descendant_and_spares_unrelated(
+    tmp_path, monkeypatch
+):
+    """Cleanup rescans, so a new-session descendant started after the last poll stops.
+
+    The child starts its grandchild only after the first poll and no later
+    poll runs, so only cleanup's own scan can find it through its live parent.
+    A process the test started in its own session is not owned and survives.
+    """
+    go = tmp_path / "go"
+    _scan_driven_clock(monkeypatch, lambda: go.write_text("go"))
+    unrelated = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(20)"],
+        start_new_session=True,
+    )
+    try:
+        result = capture_process(
+            [sys.executable, "-c", _LATE_DESCENDANT_CHILD, str(go)],
+            tmp_path,
+            dict(os.environ),
+            tmp_path / "events.jsonl",
+            tmp_path / "stderr.txt",
+            wall_seconds=5,
+            max_calls=1,
+        )
+        late = json.loads(
+            (tmp_path / "events.jsonl").read_text().splitlines()[0]
+        )["late_pid"]
+        assert result["stop_reason"] == "call_limit"
+        assert result["cleanup_ok"]
+        assert late in result["observed_pids"]
+        with pytest.raises(ProcessLookupError):
+            os.kill(late, 0)
+        assert unrelated.poll() is None
+        assert unrelated.pid not in result["observed_pids"]
+    finally:
+        unrelated.kill()
+        unrelated.wait()
+
+
+_ORPHANING_CHILD = """import pathlib, signal, subprocess, sys, time
+signal.alarm(20)
+go, pidfile = map(pathlib.Path, sys.argv[1:3])
+orphan = subprocess.Popen(
+    [sys.executable, '-c', 'import time; time.sleep(20)'],
+    start_new_session=True,
+    stdin=subprocess.DEVNULL,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+staged = pidfile.with_suffix('.tmp')
+staged.write_text(str(orphan.pid))
+staged.rename(pidfile)
+while not go.exists():
+    time.sleep(0.001)
+"""
+
+
+def test_watchdog_cleanup_stops_observed_descendant_after_its_parent_exits(
+    tmp_path, monkeypatch
+):
+    """A new-session descendant seen by one real scan stays owned once orphaned.
+
+    The child exits only after a real process-table scan has listed its
+    grandchild, so at cleanup the grandchild has another parent and another
+    process group; it is found only because a poll observed it.
+    """
+    import run_agent_plot_eval as capture
+
+    go, pidfile = tmp_path / "go", tmp_path / "orphan.pid"
+    scan = capture._process_table
+
+    def scan_then_release():
+        """Let the child exit once a real scan has listed the grandchild."""
+        table = scan()
+        if pidfile.exists() and int(pidfile.read_text()) in table:
+            go.write_text("go")
+        return table
+
+    monkeypatch.setattr(capture, "_process_table", scan_then_release)
+    result = capture_process(
+        [sys.executable, "-c", _ORPHANING_CHILD, str(go), str(pidfile)],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+    )
+    orphan = int(pidfile.read_text())
+    assert result["stop_reason"] == "exit"
+    assert result["returncode"] == 0
+    assert result["cleanup_ok"]
+    assert orphan in result["observed_pids"]
+    with pytest.raises(ProcessLookupError):
+        os.kill(orphan, 0)
 
 
 def test_replay_keeps_exact_source_and_absolute_csv_until_finished(tmp_path):

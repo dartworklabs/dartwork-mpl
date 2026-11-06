@@ -181,6 +181,15 @@ def _stop_tree(process: subprocess.Popen[bytes], known: set[int]) -> bool:
     return not _owned(process.pid, known)
 
 
+def _tree_bytes(root: Path) -> int:
+    """Total regular-file bytes under one evidence tree, ignoring symlinks."""
+    return sum(
+        path.stat().st_size
+        for path in root.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    )
+
+
 def capture_process(
     argv: list[str],
     cwd: Path,
@@ -201,7 +210,10 @@ def capture_process(
     The owned process tree and evidence tree are polled at most once per
     ``max(_POLL_SECONDS, previous poll duration)``; streams are drained between
     polls, so a slow process table cannot hold back a stream limit until the
-    wall limit wins.
+    wall limit wins. Cleanup scans again, so a descendant whose owned parent is
+    still alive is found however late it started; one that detaches and loses
+    its parent between two scans is never observed and is not cleaned up. A
+    normal exit is re-checked against the evidence tree after cleanup.
     """
     started = time.monotonic()
     process = subprocess.Popen(
@@ -230,13 +242,9 @@ def capture_process(
                 if time.monotonic() >= poll_due:
                     polled = time.monotonic()
                     _owned(process.pid, known)
-                    evidence_over = evidence_root is not None and (
-                        sum(
-                            path.stat().st_size
-                            for path in evidence_root.rglob("*")
-                            if path.is_file() and not path.is_symlink()
-                        )
-                        > max_bytes
+                    evidence_over = (
+                        evidence_root is not None
+                        and _tree_bytes(evidence_root) > max_bytes
                     )
                     # A `ps` scan of a busy shared host can take most of a
                     # second, and a pipe holds 64 KiB, or 8 KiB once the user
@@ -325,6 +333,15 @@ def capture_process(
         cleanup = _stop_tree(process, known)
         process.stdout.close()
         process.stderr.close()
+    # The last poll can predate the final writes. A normal exit (EOF and a
+    # successful wait) is admitted only if the evidence left once cleanup has
+    # stopped every observed writer is within the limit.
+    if (
+        reason == "exit"
+        and evidence_root is not None
+        and _tree_bytes(evidence_root) > max_bytes
+    ):
+        reason = "evidence_limit"
     return {
         "stop_reason": reason if cleanup else "cleanup_failed",
         "returncode": process.returncode,
