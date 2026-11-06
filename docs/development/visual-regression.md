@@ -65,6 +65,17 @@ there: it fails if the tolerance would let the `tick_years=4` relabel pass.
 A pixel test that fails after a dependency update means the render really
 changed: look at the diff images, and regenerate the baselines on purpose.
 
+Where the pixel tests run in CI:
+
+- `visual` (the lock) and `test-matplotlib (minimum)` (Matplotlib 3.11.0)
+  run them on pinned versions. A failure there is a defect in the PR.
+- `test-matplotlib (latest-deps)` resolves the newest releases that
+  pyproject allows. It is not a required check: branch protection requires
+  pre-commit, lint, test (3.11–3.13), test-no-extras and docs. A pixel
+  failure there that main shares signals an upstream rendering change, not
+  a PR defect. Look at its diff images, and rebaseline deliberately in its
+  own PR when the new rendering is accepted.
+
 ## Updating Baselines
 
 Baselines are Ubuntu-native. Do not regenerate them on macOS.
