@@ -73,6 +73,13 @@ def pinned_legend_corner(legend: Legend) -> str | None:
     of the axes each way, axes coordinates, so data limits stay), redraws,
     and returns the corner only if the legend stayed. The patch is removed
     again either way.
+
+    Only a legend anchored to its axes is checked this way. A legend anchored
+    outside them (``bbox_to_anchor=(1.02, 1)``) is not under the patch, so
+    its corner comes back unchecked: a ``"best"`` there is not caught by this
+    helper. ``test_helpers_labels.py::TestOptimizeLegend::
+    test_outside_placement_sets_anchor`` catches it for ``optimize_legend``
+    (its data makes ``"best"`` pick another corner on the first draw).
     """
     corner = legend_corner(legend)
     ax = legend.axes

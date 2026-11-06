@@ -122,8 +122,9 @@ def report_preset() -> Iterator[None]:
     Order: pytest sets up every autouse fixture before a ``usefixtures`` one,
     so a class-level autouse fixture (``_concise_dates`` in
     ``test_default_tick_format``, a ``dm.config`` override) now starts before
-    this preset; the per-module autouse copies it replaced started after
-    the preset. ``dm.style.use`` neither reads nor writes ``dm.config``, so
+    this preset; under the per-module autouse copies it replaced,
+    ``_concise_dates`` started after the preset. ``dm.style.use`` neither
+    reads nor writes ``dm.config``, so
     the swap changes no result; a fixture that needs the preset in place
     must request ``report_preset`` itself.
     """
