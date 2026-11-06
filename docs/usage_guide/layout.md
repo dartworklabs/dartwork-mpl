@@ -661,25 +661,33 @@ to keep the outside labels and 3 pt inside the axes. Limits you set
 (`ax.set_ylim`, also `ax.set_ybound`; the x ones for `barh`) stay: a label
 that does not fit sits outside the axes, and `dm.simple_layout` keeps room
 for it in the figure. A bar that runs past a limit you set shows its true
-value just inside that limit, on the bar (`set_ylim(0, 100)` on a bar of
-135 prints `135` under the top edge, in white or the text colour, whichever
-reads on the bar); a bar wholly outside the view, or a stack's segments and
-total past the limit, get none. Crowding and the fit of labels inside the
-bars are decided before the axis grows.
+value at that limit: just inside it, on the bar, when the bar holds the
+number (`set_ylim(0, 100)` on a bar of 135 prints `135` under the top edge,
+in white or the text colour, whichever reads on the bar); on a bar too
+narrow (or a part in view too short) for it, just beyond the limit in the
+text colour. A bar wholly outside the view, or a stack's segments and total
+past the limit, get none. Crowding and the fit of labels inside the bars
+are decided before the axis grows.
 
 **Overlaps.** Labels that would still overlap are hidden, from the last bar
 on screen (the right end, the top row of `barh`) back. Labels from separate
 calls on one plot area (one `dm.label_bars` per series) are checked
 together, so they do not overlap each other either. Grouped series take
-turns where their labels meet: two series alternate by bar index, the first
-on even indices and the second on odd ones, so neither series disappears;
-three or more count down (first, last, …). Stacks keep the plain rule.
-`barh` labels never turn: rows thinner than the text lose labels, and when
-labels are lost that way (not by `crowded="skip"`, which asks for it)
-`dm.simple_layout` warns once, with the count. If the rows are thin, make the
-figure taller (for example `dm.figsize("12cm", "16cm")` rather than
-`"standard"`); for vertical bars, wider. A taller or wider figure brings
-the labels back.
+turns where their labels meet, in reading order on screen (left to right,
+`barh` top to bottom): two series alternate by bar index, three or more
+count down (first, last, …). The turns are used only when they keep every
+label whose turn comes first and as many labels as the plain rule;
+otherwise the plain rule decides, and in thin `barh` rows or dense groups
+one series can lose its labels. Stacks keep the plain rule. `barh` labels
+never turn. When labels are lost for room (not by `crowded="skip"`, which
+asks for it) `dm.simple_layout` warns once, with the count. If the rows are
+thin, make the figure taller (for example `dm.figsize("12cm", "16cm")`
+rather than `"standard"`); for vertical bars, wider. A taller or wider
+figure brings the labels back.
+
+**Legends.** A label that a legend covers is hidden, and `dm.simple_layout`
+warns once with the count. `dm.place_legend(ax)` puts the legend clear of
+the labels; a legend you fix with `ax.legend(loc=...)` keeps its place.
 
 On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
 last, so the partner's line is never drawn over them. A later `Text.set_*`
@@ -755,7 +763,9 @@ colours. A colour you set wins, and makes that whole side yours:
 `ax2.yaxis.label.set_color(...)` or `ax2.spines["right"].set_color(...)` on
 any part of a side leaves its other parts in the preset's colours (no
 series colour mixed with yours), while the other side keeps its series
-colour. One exception: a colour set before the first `dm.simple_layout`
+colour. The left spine you see on a `twinx` pair is the twin's copy,
+`ax2.spines["left"]`: a colour there makes the left side yours. One
+exception: a colour set before the first `dm.simple_layout`
 that equals the preset's default (`"black"` under the light presets) cannot
 be told from the default and is painted with the rest of the side; for
 black or neutral twin axes use `dm.config.twin_colors = "neutral"`.

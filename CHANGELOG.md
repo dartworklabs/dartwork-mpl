@@ -34,7 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the plain rule. When labels are lost for room (thin `barh` rows, dense
   groups), `dm.simple_layout` warns once with the count and the cure (a
   taller or wider figure); `crowded="skip"`, which asks for hiding, stays
-  silent. On a twin pair the labels go on the top axes. The keywords:
+  silent. A label a legend covers is hidden too, with its own warning
+  (`dm.place_legend(ax)` keeps the legend clear of the labels). On a twin
+  pair the labels go on the top axes. The keywords:
   `where`, `total`, `crowded`, `decimals`, `fmt` (a `{}` template, a
   format-spec field such as `"{:.2f}"`, or a callable), `size`, `color`
   (`"series"` colours labels off their bar).
@@ -57,7 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   side whose series draw several colours, or a hue close to the other
   side's, stays neutral; single Axes are never touched; a colour you set
   (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins and makes
-  that whole side yours: its other parts keep the preset's colours while
+  that whole side yours (on a `twinx` pair the left spine you see is
+  `ax2.spines["left"]`): its other parts keep the preset's colours while
   the other side keeps its series colour. The exception is a colour set
   before the first `dm.simple_layout` that equals the preset's default
   (`"black"` under the light presets), which cannot be told from the

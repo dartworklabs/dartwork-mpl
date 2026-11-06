@@ -547,7 +547,8 @@ value, then the fewest exact decimals, one count per call, no meaningless
 `.0`; stacked bars' segments centred and a total beyond the stack; crowded
 labels on vertical bars turned vertical by `dm.simple_layout`, which also
 grows autoscaled limits just enough for the labels (limits you set stay; a
-bar past them shows its true value just inside the limit, on the bar).
+bar past them shows its true value at the limit: on the bar when the bar
+holds the number, else just beyond it).
 
 ```python
 import matplotlib.pyplot as plt
@@ -567,10 +568,13 @@ Requests, one keyword each: `where="inside"` / `"center"` / `"outside"`;
 template wraps the signed number, `$−3.5B`; a callable for `−$3.5B`);
 `size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar.
 Stacks need matching bottoms (a waterfall is not one); pad split series with
-NaN, not 0. Grouped series whose labels meet take turns by bar index (two
-alternate, first series on even indices), one call or one per series. If
-labels are still lost for room (thin `barh` rows), `dm.simple_layout` warns
-with the count: make the figure taller (wider for vertical bars); keep the
+NaN, not 0. A label asked inside a bar too narrow or short for it sits
+beyond the end in the text colour. Grouped series whose labels meet take
+turns by bar index (two alternate, in reading order), one call or one per
+series, where that keeps as many labels as the plain rule. If labels are
+lost for room (thin `barh` rows, dense groups) or under a fixed legend,
+`dm.simple_layout` warns with the count: make the figure taller (wider for
+vertical bars), or place the legend with `dm.place_legend(ax)`; keep the
 warning in the report. On a twin pair the labels go on the top axes.
 
 ## "Twin axis"

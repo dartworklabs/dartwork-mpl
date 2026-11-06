@@ -34,17 +34,20 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   takes white or the preset text colour, whichever reads better on the bar
   as drawn; a label off the bar keeps the text colour, or with
   ``color="series"`` its bar's colour, totals excepted
-  (:mod:`._bar_label_ink`). A plain bar's ``"inside"`` label sits on its
-  bar only while the bar holds it along and across; otherwise it sits
-  beyond the bar's end in the ink for a label off the bar, so no part of it
+  (:mod:`._bar_label_ink`). A plain bar's label meant for its bar
+  (``"inside"``, or inside a limit, below) sits there only while the bar
+  holds it along and across; otherwise it sits beyond the bar's end, or
+  beyond the limit, in the ink for a label off the bar, so no part of it
   is drawn on the background in white.
 * **View.** A label shows while its bar's end (its middle for
   ``where="center"``) lies in the view, within one pixel: a bar ending on a
   limit keeps its label just outside the axes, a bar outside the view has
   none (nor any room in a ``bbox_inches="tight"`` save). A plain bar
-  running past a limit the caller set shows its true value just inside
-  that limit, on the bar in the ink for a label on its bar, while the part
-  in view holds it (a stack's segments and totals keep the rule above).
+  running past a limit the caller set shows its true value at that limit:
+  just inside it, on the bar, while the bar holds the number, otherwise
+  just beyond it (a stack's segments and totals keep the rule above).
+* **Legends.** A label a legend covers is hidden, and the layout says so
+  (:mod:`._bar_label_settle`); ``dm.place_legend`` keeps a legend clear.
 * **Twins.** On a ``twinx`` / ``twiny`` pair the labels go on the Axes drawn
   last (by zorder, then figure order), placed with the bars' own data
   transform, so no partner's line is drawn over them.
@@ -567,9 +570,11 @@ def label_bars(
       the partner's line never covers them;
     - a label shows while its bar's end (its middle for ``"center"``) lies
       in the view, within one pixel: a bar ending on a limit you set keeps
-      its label just outside the axes, a bar outside the view or running
-      past such a limit has none. Error bars push a label at most to the
-      edge of the view;
+      its label just outside the axes, a bar outside the view has none, a
+      bar running past such a limit shows its true value at the limit
+      (inside it on the bar when the bar holds the number, else just
+      beyond it). Error bars push a label at most to the edge of the view;
+      a label a legend covers is hidden (``dm.place_legend`` keeps clear);
     - ``dm.simple_layout`` settles the labels at the size it fits: labels
       wider than the distance to the next bar less 1.5 pt follow
       ``crowded`` (below), and a value axis whose limits matplotlib
@@ -618,12 +623,14 @@ def label_bars(
         the same way, other calls' labels on the same plot area included
         (one call per series), and a kept label wider than its bar is
         lifted past the taller bars it spans. Grouped series take turns
-        where their labels meet: two series alternate by bar index (the
-        first on even indices), so neither disappears whole; stacks keep
-        the plain rule. When labels are still lost for room (``barh`` rows
-        too thin for even one label each), ``dm.simple_layout`` warns once
-        and a taller (wider) figure brings them back; ``"skip"`` hides
-        on purpose, without the warning.
+        where their labels meet, in reading order on screen (two series
+        alternate by bar index), when that keeps every label whose turn
+        comes first and as many labels as the plain rule; otherwise the
+        plain rule decides (thin ``barh`` rows, dense groups), and a series
+        can lose its labels. Stacks keep the plain rule. When labels are
+        lost for room, ``dm.simple_layout`` warns once and a taller (wider)
+        figure brings them back; ``"skip"`` hides on purpose, without the
+        warning.
     decimals : int, optional
         A fixed decimal count instead of the rule above.
     fmt : str or callable, optional

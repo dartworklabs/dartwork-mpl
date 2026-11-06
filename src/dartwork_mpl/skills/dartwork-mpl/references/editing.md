@@ -84,7 +84,7 @@ weight, colour and spacing, so every agent draws the same element.
 | bigger or smaller text, no amount | one step, `step = dm.fs(1) - dm.fs(0)` (1 pt; 2.6 pt under `presentation`): `t.set_fontsize(t.get_fontsize() + step)`; all text: `dm.style.use(preset, font_size=dm.fs(0) + step)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
 | black or neutral twin axes (no series colours) | `dm.config.twin_colors = "neutral"` before `dm.simple_layout`; not `tick_params(colors="black")`, which the first layout cannot tell from the default and paints |
-| one twin axis (or one part of it) in a named colour | set just that part (`ax2.tick_params(axis="y", colors=…)`, `ax2.yaxis.label.set_color(…)`); that side is then yours, its other parts keep the preset's colours, the other side keeps its series colour |
+| one twin axis (or one part of it) in a named colour | set just that part (`ax2.tick_params(axis="y", colors=…)`, `ax2.yaxis.label.set_color(…)`; the left spine you see is `ax2.spines["left"]`); that side is then yours, its other parts keep the preset's colours, the other side keeps its series colour |
 | values on the bars | `dm.label_bars(ax)`; a named detail is its keyword (`where="inside"`, `decimals=1`, `fmt="{} GWh"` …), see Value labels below |
 | a log axis | `ax.set_yscale("log")` |
 
@@ -159,11 +159,13 @@ significant digits on the largest value and no meaningless decimals
 (`21.4, 18.0, 21.5`; `120, 135`); stacked bars' segments centred with a
 total; crowded labels on vertical bars turned vertical by
 `dm.simple_layout`; grouped series whose labels meet take turns by bar index
-(two alternate), so no series vanishes; a bar past a limit you set shows its
-true value just inside the limit. Labels still lost for room (thin `barh`
-rows) make `dm.simple_layout` warn with the count: if the rows are thin,
-make the figure taller (wider for vertical bars), and report the warning if
-the size is fixed.
+(two alternate) where that keeps as many labels as the plain rule; a bar
+past a limit you set shows its true value at the limit (on the bar when it
+holds the number, else just beyond); a label a legend covers is hidden.
+Labels lost for room (thin `barh` rows, dense groups) or under a legend make
+`dm.simple_layout` warn with the count: if the rows are thin, make the
+figure taller (wider for vertical bars); move a fixed legend with
+`dm.place_legend(ax)`; report the warning if the size is fixed.
 
 | Asked | Keyword |
 |---|---|

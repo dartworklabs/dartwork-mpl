@@ -38,13 +38,15 @@ Twin-axis colours
 
 ``dm.simple_layout`` colours each side of a ``twinx`` / ``twiny`` pair like
 the one series read on it (``twin_colors="series"``, the default). A colour
-you set on any part of a side (spine, tick marks, tick labels, axis label)
-makes that whole side yours: its other parts keep the preset's colours,
-and the other side keeps its series colour. The exception is a colour set
-before the first ``dm.simple_layout`` that equals the preset's default
-(``"black"`` under the light presets): it cannot be told from the default
-and is painted with the rest of the side. ``"neutral"`` keeps the preset's axis colours, so it is the way to
-black or neutral twin axes:
+you set on any part of a side (spine, tick marks, tick labels, axis label;
+on a ``twinx`` pair the left spine you see is the twin's copy,
+``ax2.spines["left"]``) makes that whole side yours: its other parts keep
+the preset's colours, and the other side keeps its series colour. The
+exception is a colour set before the first ``dm.simple_layout`` that
+equals the preset's default (``"black"`` under the light presets): it
+cannot be told from the default and is painted with the rest of the side.
+``"neutral"`` keeps the preset's axis colours, so it is the way to black
+or neutral twin axes:
 
 .. code-block:: python
 
