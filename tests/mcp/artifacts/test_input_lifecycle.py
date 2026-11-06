@@ -440,7 +440,7 @@ def test_cancelled_call_and_final_close_keep_lock_fds_and_reap(
     marker, release = owned_input_root / "pid", owned_input_root / "release"
     code = FIGURE
     if blocked_phase != "copy":
-        code += f"import os, time\nfrom pathlib import Path\nPath({str(marker)!r}).write_text(str(os.getpid()))\nwhile not Path({str(release)!r}).exists(): time.sleep(0.01)\n"
+        code += f"import os, time\nfrom pathlib import Path\nPath({str(marker)!r} + '.tmp').write_text(str(os.getpid())); os.replace({str(marker)!r} + '.tmp', {str(marker)!r})\nwhile not Path({str(release)!r}).exists(): time.sleep(0.01)\n"
     else:
         from dartwork_mpl.mcp.artifacts import input_io
 
@@ -450,7 +450,7 @@ def test_cancelled_call_and_final_close_keep_lock_fds_and_reap(
             """Block the actual owned worker's first read, without weakening guards."""
             return original().replace(
                 "return os.pread(fd, amount, offset)",
-                f"\n    import time\n    from pathlib import Path\n    Path({str(marker)!r}).write_text(str(os.getpid()))\n    while not Path({str(release)!r}).exists(): time.sleep(0.01)\n    return os.pread(fd, amount, offset)",
+                f"\n    import time\n    from pathlib import Path\n    Path({str(marker)!r} + '.tmp').write_text(str(os.getpid())); os.replace({str(marker)!r} + '.tmp', {str(marker)!r})\n    while not Path({str(release)!r}).exists(): time.sleep(0.01)\n    return os.pread(fd, amount, offset)",
             )
 
         monkeypatch.setattr(input_io, "_worker_code", worker_code)
@@ -943,7 +943,7 @@ def test_client_cancellation_and_final_close_join_real_transport_delivery(
     marker, release = owned_input_root / "pid", owned_input_root / "release"
     code = (
         FIGURE
-        + f"import os, time\nfrom pathlib import Path\nPath({str(marker)!r}).write_text(str(os.getpid()))\nwhile not Path({str(release)!r}).exists(): time.sleep(0.01)\n"
+        + f"import os, time\nfrom pathlib import Path\nPath({str(marker)!r} + '.tmp').write_text(str(os.getpid())); os.replace({str(marker)!r} + '.tmp', {str(marker)!r})\nwhile not Path({str(release)!r}).exists(): time.sleep(0.01)\n"
     )
     spec = revision(source)
     before = fd_count()
@@ -1002,7 +1002,7 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
     marker, release = owned_input_root / "pid", owned_input_root / "release"
     code = (
         FIGURE
-        + f"import os, time\nfrom pathlib import Path\nPath({str(marker)!r}).write_text(str(os.getpid()))\nwhile not Path({str(release)!r}).exists(): time.sleep(0.01)\n"
+        + f"import os, time\nfrom pathlib import Path\nPath({str(marker)!r} + '.tmp').write_text(str(os.getpid())); os.replace({str(marker)!r} + '.tmp', {str(marker)!r})\nwhile not Path({str(release)!r}).exists(): time.sleep(0.01)\n"
     )
     spec = revision(source)
     from fastmcp.client.transports import PythonStdioTransport
