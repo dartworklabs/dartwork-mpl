@@ -66,8 +66,11 @@ _ORACLE_MARKERS = (
     "global-constraints",
     "task-2-runtime-notes",
 )
-# Owned-tree/evidence poll interval for idle streams; the floor while draining.
+# Owned-tree/evidence polls: every _POLL_SECONDS while the streams are quiet,
+# and after at most _DRAIN_SECONDS or _DRAIN_BYTES of continuous reading.
 _POLL_SECONDS = 0.05
+_DRAIN_SECONDS = 0.01
+_DRAIN_BYTES = 1024 * 1024
 
 
 def _dump(path: Path, value: Any) -> None:
@@ -207,15 +210,16 @@ def capture_process(
     Limits observe stream bytes/calls and optionally the total evidence tree.
     No shell is used. Calls are counted at complete assistant tool-use events.
     Cleanup kills observed descendants and verifies their absence on every exit.
-    The owned process tree and evidence tree are polled every
-    ``_POLL_SECONDS`` while the streams are idle and, once output has been
-    read, no sooner than ``max(_POLL_SECONDS, previous poll duration)``; the
-    streams are drained in between, so a slow process table cannot hold back a
-    stream limit until the wall limit wins. Cleanup scans again, so a
-    descendant whose owned parent is still alive is found however late it
-    started; one that detaches and loses its parent between two scans is never
-    observed and is not cleaned up. A normal exit is re-checked against the
-    evidence tree after cleanup.
+    The owned process tree and evidence tree are polled ``_POLL_SECONDS``
+    after the previous poll while the streams are quiet, and right after
+    ``_DRAIN_SECONDS`` or ``_DRAIN_BYTES`` of continuous reading. Between polls
+    the streams are read chunk by chunk with every stream limit checked after
+    each chunk, so a slow process table cannot hold back a stream limit until
+    the wall limit wins. Cleanup scans again, so a descendant whose owned
+    parent is still alive is found however late it started; one that detaches
+    and loses its parent between two scans is never observed and is not
+    cleaned up. A normal exit is re-checked against the evidence tree after
+    cleanup.
     """
     started = time.monotonic()
     process = subprocess.Popen(
@@ -234,98 +238,117 @@ def capture_process(
     buffer = b""
     count, size = 0, 0
     reason = "exit"
-    call_limit_reason = None
+    call_limit_reason: str | None = None
     cleanup = False
-    idle_due = drain_due = started
-    drained = False
+
+    def take(key: selectors.SelectorKey, stdout: Any, stderr: Any) -> int:
+        """Copy one chunk, count its calls and return its size (0 at EOF)."""
+        nonlocal buffer, count, size, call_limit_reason
+        chunk = os.read(key.fd, 65536)
+        if not chunk:
+            selector.unregister(key.fileobj)
+            return 0
+        size += len(chunk)
+        target = stdout if key.data == "stdout" else stderr
+        target.write(chunk)
+        target.flush()
+        if key.data == "stdout":
+            buffer += chunk
+            while b"\n" in buffer:
+                line, buffer = buffer.split(b"\n", 1)
+                try:
+                    event = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if isinstance(event, dict):
+                    for call in _calls([event]):
+                        if call.get("name") == "mcp__dartwork_mpl__render_plot":
+                            arguments = call.get("input", {})
+                            code = arguments.get("code", "")
+                            timeout = arguments.get("timeout_seconds", 20)
+                            if (
+                                not isinstance(code, str)
+                                or len(code.encode("utf-8")) > 512 * 1024
+                            ):
+                                call_limit_reason = "source_limit"
+                            if (
+                                not isinstance(timeout, (float, int))
+                                or not 0 < timeout <= 20
+                            ):
+                                call_limit_reason = "render_time_limit"
+                    count += sum(
+                        (
+                            call.get("name", "").startswith("mcp__")
+                            or call.get("name") in _READERS
+                        )
+                        for call in _calls([event])
+                    )
+        return len(chunk)
+
+    def stream_limit() -> str | None:
+        """The stream limit already crossed, in the existing priority order."""
+        if call_limit_reason:
+            return call_limit_reason
+        if size > max_bytes:
+            return "byte_limit"
+        if count > max_calls:
+            return "call_limit"
+        return None
+
+    # A `ps` scan of a busy shared host can take most of a second, and a pipe
+    # holds 64 KiB, or 8 KiB once the user passes pipe-user-pages-soft. One
+    # chunk per scan put 10 to ~75 scans in front of a 600 KB call already
+    # written. Reading is therefore batched between polls, but a batch ends
+    # after _DRAIN_SECONDS or _DRAIN_BYTES and the next poll follows at once,
+    # so continuous output does not space the polls further apart.
+    idle_due = started
+    pending, flowing = 0, False
     evidence_over = False
     try:
         with events_path.open("wb") as stdout, stderr_path.open("ab") as stderr:
             while selector.get_map():
-                if time.monotonic() >= (drain_due if drained else idle_due):
-                    polled = time.monotonic()
+                if (
+                    time.monotonic() >= idle_due
+                    or flowing
+                    or pending >= _DRAIN_BYTES
+                ):
                     _owned(process.pid, known)
                     evidence_over = (
                         evidence_root is not None
                         and _tree_bytes(evidence_root) > max_bytes
                     )
-                    # A `ps` scan of a busy shared host can take most of a
-                    # second, and a pipe holds 64 KiB, or 8 KiB once the user
-                    # passes pipe-user-pages-soft. Polling before every read
-                    # put one scan per pipe buffer (10 to ~75 for a 600 KB
-                    # call) in front of a call already written, while the wall
-                    # clock ran. Once output has been read since a poll, read
-                    # for at least as long as that poll took; idle streams
-                    # keep the short poll interval.
-                    finished = time.monotonic()
-                    idle_due = finished + _POLL_SECONDS
-                    drain_due = finished + max(_POLL_SECONDS, finished - polled)
-                    drained = False
+                    idle_due = time.monotonic() + _POLL_SECONDS
+                    pending, flowing = 0, False
                 if time.monotonic() - started > wall_seconds:
                     reason = "wall_limit"
                     break
                 if evidence_over:
                     reason = "evidence_limit"
                     break
-                for key, _ in selector.select(timeout=0.05):
-                    chunk = os.read(key.fd, 65536)
-                    if not chunk:
-                        selector.unregister(key.fileobj)
-                        continue
-                    drained = True
-                    size += len(chunk)
-                    target = stdout if key.data == "stdout" else stderr
-                    target.write(chunk)
-                    target.flush()
-                    if key.data == "stdout":
-                        buffer += chunk
-                        while b"\n" in buffer:
-                            line, buffer = buffer.split(b"\n", 1)
-                            try:
-                                event = json.loads(line)
-                            except (ValueError, UnicodeDecodeError):
-                                continue
-                            if isinstance(event, dict):
-                                for call in _calls([event]):
-                                    if (
-                                        call.get("name")
-                                        == "mcp__dartwork_mpl__render_plot"
-                                    ):
-                                        arguments = call.get("input", {})
-                                        code = arguments.get("code", "")
-                                        timeout = arguments.get(
-                                            "timeout_seconds", 20
-                                        )
-                                        if (
-                                            not isinstance(code, str)
-                                            or len(code.encode("utf-8"))
-                                            > 512 * 1024
-                                        ):
-                                            call_limit_reason = "source_limit"
-                                        if (
-                                            not isinstance(
-                                                timeout, (float, int)
-                                            )
-                                            or not 0 < timeout <= 20
-                                        ):
-                                            call_limit_reason = (
-                                                "render_time_limit"
-                                            )
-                                count += sum(
-                                    (
-                                        call.get("name", "").startswith("mcp__")
-                                        or call.get("name") in _READERS
-                                    )
-                                    for call in _calls([event])
-                                )
-                if call_limit_reason:
-                    reason = call_limit_reason
-                    break
-                if size > max_bytes:
-                    reason = "byte_limit"
-                    break
-                if count > max_calls:
-                    reason = "call_limit"
+                ready = selector.select(
+                    timeout=min(
+                        _POLL_SECONDS, max(0.0, idle_due - time.monotonic())
+                    )
+                )
+                batch_end = time.monotonic() + _DRAIN_SECONDS
+                while ready:
+                    for key, _ in ready:
+                        pending += take(key, stdout, stderr)
+                        reason = stream_limit() or reason
+                        if reason != "exit":
+                            break
+                    if (
+                        reason != "exit"
+                        or pending >= _DRAIN_BYTES
+                        or not selector.get_map()
+                    ):
+                        break
+                    remaining = batch_end - time.monotonic()
+                    if remaining <= 0:
+                        flowing = True
+                        break
+                    ready = selector.select(timeout=remaining)
+                if reason != "exit":
                     break
             if reason == "exit":
                 try:

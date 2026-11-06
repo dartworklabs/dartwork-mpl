@@ -517,6 +517,179 @@ def test_watchdog_cleanup_stops_observed_descendant_after_its_parent_exits(
         os.kill(orphan, 0)
 
 
+class _ReadSeam:
+    """Stand-in for the watchdog's ``os`` that hooks every stream read."""
+
+    def __init__(self, after_read):
+        self.after_read = after_read
+
+    def __getattr__(self, name):
+        return getattr(os, name)
+
+    def read(self, fd, size):
+        data = os.read(fd, size)
+        self.after_read(len(data))
+        return data
+
+
+def _gone(pid, process_table):
+    """Whether a process has exited (absent or a zombie) in a real ``ps`` table."""
+    row = process_table().get(pid)
+    return row is None or "Z" in row[2]
+
+
+_DRAINING_PARENT_CHILD = '''import pathlib, signal, subprocess, sys
+signal.alarm(20)
+release = pathlib.Path(sys.argv[2])
+middle = """import os, pathlib, subprocess, sys, time
+spawn, release, pids = map(pathlib.Path, sys.argv[1:4])
+while not spawn.exists():
+    time.sleep(0.001)
+grandchild = subprocess.Popen(
+    [sys.executable, '-c', 'import time; time.sleep(20)'],
+    start_new_session=True,
+    stdin=subprocess.DEVNULL,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+staged = pids.with_suffix('.tmp')
+staged.write_text(f'{os.getpid()} {grandchild.pid}')
+staged.rename(pids)
+while not release.exists():
+    time.sleep(0.001)
+"""
+subprocess.Popen(
+    [sys.executable, '-c', middle, *sys.argv[1:4]],
+    stdin=subprocess.DEVNULL,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+line = 'x' * 16383
+while not release.exists():
+    print(line, flush=True)
+'''
+
+
+def test_watchdog_keeps_polling_while_output_drains(tmp_path, monkeypatch):
+    """Continuous output cannot postpone the next owned-tree poll by a cooldown.
+
+    Right after the first poll, a middle process starts a new-session
+    grandchild; it exits once the watchdog has read 4 MiB more output, which
+    leaves the grandchild with another parent and process group. Only scans
+    move the watchdog clock, so a poll happens during that output only if
+    reading itself triggers one: polling before each chunk (the original loop)
+    or after each bounded batch does, a cooldown measured on the clock never
+    ends and the grandchild escapes.
+    """
+    import run_agent_plot_eval as capture
+
+    spawn, release = tmp_path / "spawn", tmp_path / "release"
+    pids = tmp_path / "pids"
+    state = {"after_spawn": 0}
+    real_table = capture._process_table
+    _scan_driven_clock(monkeypatch, lambda: None)
+    scan = capture._process_table
+
+    def scan_then_spawn():
+        """After the first scan, wait until the grandchild exists."""
+        table = scan()
+        if not spawn.exists():
+            spawn.write_text("go")
+            deadline = time.monotonic() + 5
+            while not pids.exists() and time.monotonic() < deadline:
+                time.sleep(0.001)
+        return table
+
+    def count_and_release(size):
+        """After 4 MiB more output, let the middle process exit and wait."""
+        if not pids.exists() or release.exists():
+            return
+        state["after_spawn"] += size
+        if state["after_spawn"] > 4 * 1024 * 1024:
+            release.write_text("go")
+            middle = int(pids.read_text().split()[0])
+            deadline = time.monotonic() + 5
+            while not _gone(middle, real_table) and time.monotonic() < deadline:
+                time.sleep(0.001)
+
+    monkeypatch.setattr(capture, "_process_table", scan_then_spawn)
+    monkeypatch.setattr(capture, "os", _ReadSeam(count_and_release))
+    result = capture_process(
+        [
+            sys.executable,
+            "-c",
+            _DRAINING_PARENT_CHILD,
+            str(spawn),
+            str(release),
+            str(pids),
+        ],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+    )
+    grandchild = int(pids.read_text().split()[1])
+    assert result["cleanup_ok"]
+    assert grandchild in result["observed_pids"]
+    with pytest.raises(ProcessLookupError):
+        os.kill(grandchild, 0)
+
+
+_STREAMING_CALLS_CHILD = """import json, signal
+signal.alarm(20)
+call = {'type': 'assistant', 'message': {'content': [{'type': 'tool_use', 'name': 'mcp__dartwork_mpl__render_plot', 'input': {'code': 'x' * 900}}]}}
+line = json.dumps(call)
+while True:
+    print(line, flush=True)
+"""
+
+
+@pytest.mark.parametrize("limit", ["bytes", "calls"])
+def test_watchdog_stream_limits_stop_within_one_chunk_while_draining(
+    tmp_path, monkeypatch, limit
+):
+    """Batched reading still checks stream limits after every chunk.
+
+    Only scans move the watchdog clock, so a batch of continuous output ends
+    only at its byte bound. Reading stops within one 64 KiB chunk of the limit.
+    """
+    _scan_driven_clock(monkeypatch, lambda: None)
+    line = len(
+        json.dumps(
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "name": "mcp__dartwork_mpl__render_plot",
+                            "input": {"code": "x" * 900},
+                        }
+                    ]
+                },
+            }
+        )
+    )
+    result = capture_process(
+        [sys.executable, "-c", _STREAMING_CALLS_CHILD],
+        tmp_path,
+        dict(os.environ),
+        tmp_path / "events.jsonl",
+        tmp_path / "stderr.txt",
+        wall_seconds=5,
+        max_calls=100 if limit == "calls" else 100000,
+        max_bytes=300000 if limit == "bytes" else 128 * 1024 * 1024,
+    )
+    assert result["cleanup_ok"]
+    if limit == "bytes":
+        assert result["stop_reason"] == "byte_limit"
+        assert result["stream_bytes"] <= 300000 + 65536
+    else:
+        assert result["stop_reason"] == "call_limit"
+        assert result["mcp_calls"] <= 100 + 65536 // (line + 1) + 1
+
+
 def test_replay_keeps_exact_source_and_absolute_csv_until_finished(tmp_path):
     """Fresh-process replay reads the original absolute CSV without rewriting."""
     csv = tmp_path / "input.csv"
