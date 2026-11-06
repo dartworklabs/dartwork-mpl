@@ -83,6 +83,25 @@ rules:
       handling. Use `dm.simple_layout(fig)` instead.
     fix_suggestion: 'dm.simple_layout(fig)'
 
+  - id: twin-legend-hand-merge
+    severity: info
+    detector:
+      kind: regex
+      pattern: '\.legend\s*\(\s*\w+\s*\+\s*\w+\s*,\s*\w+\s*\+\s*\w+'
+    message: |
+      Merging two Axes' legend entries by hand
+      (`ax.legend(h1 + h2, l1 + l2)`) rebuilds the legend with matplotlib
+      defaults. `dm.place_legend(ax)` merges a twin pair's entries onto the
+      top Axes, keeps the existing legend's title, `handler_map` and other
+      settings, and places it clear of both Axes' data.
+    why: |
+      Advisory: an explicit hand-built legend is valid and stays when the
+      request needs it. A hand merge also tends to leave the partner
+      Axes' own legend behind, or to land under the twin's drawn data.
+      The rule also matches `lns = l1 + l2; ax.legend(lns, labs)` in a
+      source that makes a `twinx` / `twiny`.
+    fix_suggestion: 'dm.place_legend(ax)'
+
   - id: multirow-subplots-no-gridspec-kw
     severity: info
     detector:
