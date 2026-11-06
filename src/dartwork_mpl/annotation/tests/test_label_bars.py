@@ -1692,12 +1692,18 @@ def test_headroom_grows_only_autoscaled_limit():
     )
     assert ax.get_autoscalex_on()
 
-    # It grows from matplotlib's autoscaled limit, not from the view: a
-    # view widened behind autoscale's back comes back to the same limit.
+    # It grows from matplotlib's autoscaled limit, never from its own last
+    # write: another layout finds the same limit.
     grown = ax.get_xlim()
+    dm.simple_layout(fig)
+    assert ax.get_xlim() == pytest.approx(grown, rel=1e-6)
+
+    # A view the caller set while autoscaling stays on (set_xlim(...,
+    # auto=None), set_xbound) is theirs: kept, nothing grows.
     ax.set_xlim(0, 80, auto=None)
     dm.simple_layout(fig)
-    assert ax.get_xlim() == pytest.approx(grown)
+    assert ax.get_xlim() == (0.0, 80.0)
+    assert ax.get_autoscalex_on()
 
     # A later explicit limit wins from then on.
     ax.set_xlim(0, 40)
@@ -1754,6 +1760,15 @@ def test_log_value_axis():
 
     # An inverted log axis grows its bottom (where the bars point) instead.
     ax.invert_yaxis()
+    dm.simple_layout(fig)
+    shown = _shown(fig, texts)
+    axes_bottom = ax.get_window_extent(fig.canvas.get_renderer()).y0
+    assert min(b.y0 for _, b in shown) - axes_bottom == pytest.approx(
+        _offset_px(fig), abs=0.6
+    )
+    # Inverting is no view of the caller's: a taller figure regrows less.
+    width, height = fig.get_size_inches()
+    fig.set_size_inches(width, height * 1.6)
     dm.simple_layout(fig)
     shown = _shown(fig, texts)
     axes_bottom = ax.get_window_extent(fig.canvas.get_renderer()).y0
@@ -1993,6 +2008,169 @@ def test_grown_span_is_the_least_room_for_every_label():
     assert grown_span(0.0, 1000.0, [(990.0, 1000.0, 1)]) is None
 
 
+def test_crowding_pitch_reads_every_bar_on_the_axes():
+    # One call per container of interleaved bars: a call's own bars stand
+    # two slots apart, but its labels are crowded by the other call's bars.
+    fig, ax = _fig()
+    x = np.arange(24)
+    first = ax.bar(x[0::2], D_REV[0::2], width=0.7)
+    second = ax.bar(x[1::2], D_REV[1::2], width=0.7)
+    texts = dm.label_bars(ax, first) + dm.label_bars(ax, second)
+    dm.simple_layout(fig)
+    shown = _shown(fig, texts)
+    assert len(shown) == 24
+    assert {t.get_rotation() for t in texts} == {90.0}
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+
+    # Bars left unlabelled crowd the labels all the same.
+    fig, ax = _fig()
+    labelled = ax.bar(x[0::2], D_REV[0::2], width=0.7)
+    ax.bar(x[1::2], D_REV[1::2], width=0.7, color="dc.gray4")
+    texts = dm.label_bars(ax, labelled)
+    dm.simple_layout(fig)
+    shown = _shown(fig, texts)
+    assert {t.get_rotation() for t in texts} == {90.0}
+    assert _on_bars(fig, shown) == []
+
+
+def _room_to_own_edge(fig, texts, along):
+    """Each drawn label's distance (px) to its own Axes' far edge."""
+    renderer = _drawn(fig)
+    room = []
+    for text in texts:
+        if not text.get_visible():
+            continue
+        box = text.get_window_extent(renderer)
+        edge = text.bar_axes.get_window_extent(renderer)
+        room.append(edge.y1 - box.y1 if along == "y" else edge.x1 - box.x1)
+    return room
+
+
+def test_shared_value_axis_grows_for_each_panel():
+    # Panels sharing a value axis sit at other places on screen: each
+    # label's room is read in its own panel; the limit grows just enough.
+    gap = None
+    fig, (top, low) = plt.subplots(
+        2, 1, sharey=True, figsize=dm.figsize("12cm", "standard")
+    )
+    top.bar(np.arange(6), [10.0, 12.0, 9.0, 11.0, 13.0, 10.0])
+    low.bar(np.arange(6), [20.0, 25.0, 31.0, 28.0, 30.0, 27.0])
+    texts = dm.label_bars(top) + dm.label_bars(low)
+    dm.simple_layout(fig)
+    gap = _offset_px(fig)
+    room = _room_to_own_edge(fig, texts, "y")
+    assert min(room) == pytest.approx(gap, abs=0.6)  # the least growth
+    assert all(r >= gap - 0.6 for r in room)  # every label inside its panel
+
+    fig, (left, right) = plt.subplots(
+        1, 2, sharex=True, figsize=dm.figsize("12cm", "standard")
+    )
+    left.barh(np.arange(5), [20.0, 35.0, 40.0, 25.0, 30.0])
+    right.barh(np.arange(5), [50.0, 70.0, 88.0, 60.0, 45.0])
+    texts = dm.label_bars(left) + dm.label_bars(right)
+    dm.simple_layout(fig)
+    room = _room_to_own_edge(fig, texts, "x")
+    assert min(room) == pytest.approx(gap, abs=0.6)
+    assert all(r >= gap - 0.6 for r in room)
+    assert left.get_xlim()[1] < 88.0 * 1.3
+
+    fig, axes = plt.subplots(
+        2, 2, sharey=True, figsize=dm.figsize("12cm", "standard")
+    )
+    texts = []
+    for i, ax in enumerate(axes.flat):
+        ax.bar(np.arange(4), np.array([10.0, 14.0, 12.0, 11.0]) * (1 + 0.6 * i))
+        texts += dm.label_bars(ax)
+    dm.simple_layout(fig)
+    room = _room_to_own_edge(fig, texts, "y")
+    assert min(room) == pytest.approx(gap, abs=0.6)
+    assert all(r >= gap - 0.6 for r in room)
+
+    # Panels of other heights: the label's room scales with its panel.
+    fig, (small, large) = plt.subplots(
+        2,
+        1,
+        sharey=True,
+        figsize=dm.figsize("12cm", "standard"),
+        gridspec_kw={"height_ratios": [1, 3]},
+    )
+    # The tallest bar in the larger panel, read against the smaller one.
+    small.bar(np.arange(6), [10.0, 12.0, 9.0, 11.0, 13.0, 10.0])
+    large.bar(np.arange(6), [20.0, 25.0, 31.0, 28.0, 30.0, 27.0])
+    for ax in (small, large):
+        ax.margins(y=0.02)  # too little room in either panel
+    texts = dm.label_bars(small) + dm.label_bars(large)
+    dm.simple_layout(fig)
+    room = _room_to_own_edge(fig, texts, "y")
+    assert min(room) == pytest.approx(gap, abs=0.6)
+    assert all(r >= gap - 0.6 for r in room)
+
+
+def test_bounds_set_while_autoscaling_are_kept():
+    # set_ybound keeps autoscaling on; the view it sets is still explicit.
+    fig, ax, _ = _quarterly()
+    dm.label_bars(ax)
+    ax.set_ybound(0, 60e9)
+    dm.simple_layout(fig)
+    assert ax.get_ylim() == (0.0, 60e9)
+    assert ax.get_autoscaley_on()
+
+    fig, ax, _ = _quarterly()
+    dm.label_bars(ax)
+    dm.simple_layout(fig)
+    ax.set_ybound(0, 60e9)
+    for _ in range(2):
+        dm.simple_layout(fig)
+    assert ax.get_ylim() == (0.0, 60e9)
+
+    # New data after a layout: matplotlib autoscales anew, and the labels'
+    # room grows from there again.
+    fig, ax, _ = _horizontal()
+    ax.margins(x=0)
+    dm.label_bars(ax)
+    dm.simple_layout(fig)
+    grown = ax.get_xlim()
+    longest = ax.barh([10], [40.0])
+    texts = dm.label_bars(ax, longest)
+    dm.simple_layout(fig)
+    assert ax.get_xlim()[1] > max(grown[1], 40.0)
+    right = ax.get_window_extent(_drawn(fig)).x1
+    box = texts[0].get_window_extent(fig.canvas.get_renderer())
+    assert right - box.x1 == pytest.approx(_offset_px(fig), abs=0.6)
+
+
+def test_outside_segments_put_the_total_beyond_the_top_label():
+    # where="outside" on a stack: the top segment's label sits at the
+    # stack's end, and the total goes 3 pt beyond that label.
+    fig, ax = _fig()
+    x = np.arange(6)
+    base = np.array([14.0, 15.0, 16.0, 16.0, 18.0, 19.0])
+    ax.bar(x, base, width=0.6)
+    ax.bar(x, [6.0, 7.0, 9.0, 11.0, 13.0, 15.0], bottom=base, width=0.6)
+    texts = dm.label_bars(ax, where="outside")
+    dm.simple_layout(fig)
+    shown = _shown(fig, texts)
+    assert len(shown) == 18
+    assert _overlapping(shown) == []
+    renderer = fig.canvas.get_renderer()
+    tops = texts[6:12]
+    totals = [t for t in texts if t.kind == "total"]
+    for top_label, total in zip(tops, totals, strict=True):
+        assert total.get_window_extent(renderer).y0 == pytest.approx(
+            top_label.get_window_extent(renderer).y1 + _offset_px(fig), abs=0.6
+        )
+    assert _inside_axes(ax, shown)
+
+    # The top label hidden by the caller: the total comes back to the end.
+    tops[0].set_visible(False)
+    renderer = _drawn(fig)
+    end = ax.transData.transform((0, 20.0))[1]
+    assert totals[0].get_window_extent(renderer).y0 == pytest.approx(
+        end + _offset_px(fig), abs=0.6
+    )
+
+
 def test_validate_figure_clean_on_six_charts():
     def q():
         fig, ax, _ = _quarterly()
@@ -2033,15 +2211,21 @@ def test_validate_figure_clean_on_six_charts():
         dm.place_legend(ax)
         return fig, ax, texts
 
-    # The approved captures' findings: g's default palette draws a
-    # grayscale INFO note that has nothing to do with the labels.
-    expected = {"g": ["GRAYSCALE_SAFETY"]}
+    # The one finding allowed is about series colours, not labels: g's
+    # default palette draws a grayscale INFO note, as in the approved
+    # capture (a palette matter outside B3). Every other finding counts.
+    palette_only = "GRAYSCALE_SAFETY"
     for name, build in {"q": q, "g": g, "s": s, "h": h, "d": d, "t": t}.items():
         fig, ax, texts = build()
         dm.simple_layout(fig)
         found = dm.validate_figure(fig, quiet=True)
-        assert [w.check_id for w in found] == expected.get(name, []), name
-        assert all(str(w.severity).endswith("INFO") for w in found), name
+        label_findings = [
+            w.check_id for w in found if w.check_id != palette_only
+        ]
+        assert label_findings == [], name
+        palette = [w for w in found if w.check_id == palette_only]
+        assert len(palette) == (1 if name == "g" else 0), name
+        assert all(str(w.severity).endswith("INFO") for w in palette), name
         shown = _shown(fig, texts)
         assert len(shown) == len(texts), name
         assert _overlapping(shown) == [], name

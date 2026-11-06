@@ -10,9 +10,10 @@ further layout steps give the same result; nothing compounds.
   or whose bar is gone is dropped, and a call with no label left is
   forgotten. A label whose host is no longer the Axes drawn last in its
   bars' box (a twin made after the call) moves onto that Axes, as it is.
-* **Crowding.** A drawn label wider than its bar pitch (the distance to the
-  nearest other bar position on screen) less :data:`GAP_PT` makes its whole
-  call crowded, and the call's ``crowded`` rule applies:
+* **Crowding.** A drawn label wider than its bar pitch less :data:`GAP_PT`
+  makes its whole call crowded. The pitch is the distance on screen to the
+  nearest other bar drawn in the plot area, whichever call labels it, if
+  any. The call's ``crowded`` rule applies:
 
   - ``"rotate"``: vertical text on vertical bars. ``barh`` never turns: rows
     thinner than the text fall back to hiding labels (below).
@@ -35,11 +36,17 @@ further layout steps give the same result; nothing compounds.
   (``autoscale_view``) and grows, on the side each outside label points to,
   just enough to hold the label and 3 pt (``OFFSET_PT``) inside the axes:
   solved on screen at the Axes' current size and mapped back through the
-  data transform (log axes included). It is written with ``set_ylim(...,
-  auto=None)``: autoscaling stays on, and a later ``set_ylim`` of the
-  caller's turns it off. Limits the caller set are never touched; a label
-  that does not fit sits outside the axes and the layout keeps it inside
-  the figure.
+  data transform (log axes included). Axes sharing the axis (``sharey``
+  panels) show the view at other places and sizes: each label's room is
+  read in its own Axes. It is written with ``set_ylim(..., auto=None)``:
+  autoscaling stays on, and a later ``set_ylim`` of the caller's turns it
+  off. Limits the caller set are never touched, nor is a view the caller
+  set while autoscaling stays on (``set_ybound``, ``set_ylim(...,
+  auto=None)``): neither what this module last wrote nor what
+  ``autoscale_view`` gives for the data. New data, ``margins`` or an
+  inverted axis are matplotlib's own view again, and the room grows from
+  there. A label that does not fit sits outside the axes and the layout
+  keeps it inside the figure.
 * **Explicit wins.** Rotation, visibility, colour and placement are written
   through :meth:`~._bar_labels.BarLabel.own`: a later ``Text.set_*`` keeps
   its value through every layout.
@@ -178,6 +185,16 @@ class _Bars:
         low, high = self._extents(bar)[1]
         return float(high if toward > 0 else low)
 
+    def pitch(self, centre: float) -> float:
+        """The distance on screen from ``centre`` to the nearest other bar.
+
+        Every bar drawn in the plot area counts, labelled or not, by its
+        middle; bars at ``centre`` itself (within 0.5 px) do not.
+        """
+        away = np.abs(self.spans.mean(axis=1) - centre)
+        away = away[away > _SAME_POSITION_PX]  # NaN bars drop out too
+        return float(away.min()) if away.size else np.inf
+
 
 @dataclass(eq=False)
 class _Position:
@@ -224,15 +241,15 @@ def _positions(
     return positions
 
 
-def _crowded(positions: list[_Position], gap: float) -> bool:
-    """Whether a drawn label is wider than its bar pitch less ``gap``."""
-    if len(positions) < 2:
-        return False
-    steps = np.diff([position.centre for position in positions])
-    pitch = np.minimum(np.r_[np.inf, steps], np.r_[steps, np.inf])
+def _crowded(positions: list[_Position], bars: _Bars, gap: float) -> bool:
+    """Whether a drawn label is wider than its bar pitch less ``gap``.
+
+    The pitch is the distance to the nearest other bar of the plot area,
+    whichever call (if any) labels it.
+    """
     return any(
-        position.width > room - gap
-        for position, room in zip(positions, pitch, strict=True)
+        position.width > bars.pitch(position.centre) - gap
+        for position in positions
     )
 
 
@@ -259,7 +276,7 @@ def _crowd(family: BarLabelFamily, renderer: RendererBase) -> None:
             continue
         bars = _Bars.around(labels[0].bar_axes, vertical)
         gap = _px(labels[0], GAP_PT)
-        if _crowded(_positions(labels, bars, renderer), gap):
+        if _crowded(_positions(labels, bars, renderer), bars, gap):
             _apply(family.options, labels, bars, renderer, gap)
 
 
@@ -342,13 +359,34 @@ def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
 
 
 # ------------------------------------------------------------ headroom
+# Where each Axes keeps the bounds this module last wrote on its value axis.
+_WRITTEN_ATTR = "_dm_bar_label_bounds"
+
+
+def _bounds(limits: Sequence[float]) -> tuple[float, float]:
+    """A view's limits as ``(low, high)``, whichever way the axis runs."""
+    low, high = sorted(float(v) for v in limits)
+    return (low, high)
+
+
+def _same(a: tuple[float, float], b: tuple[float, float] | None) -> bool:
+    return b is not None and bool(np.allclose(a, b, rtol=1e-12, atol=0.0))
+
+
 @dataclass(eq=False)
 class _ValueAxis:
-    """The labels whose bars share one value axis's limits."""
+    """The labels whose bars share one value axis's limits.
+
+    ``axes`` is one of the Axes sharing it (``siblings``, itself included).
+    ``explicit`` is set by :meth:`reset` when the view, though autoscaled,
+    is the caller's own (``set_ybound``, ``set_ylim(..., auto=None)``).
+    """
 
     axes: Axes
     name: Literal["x", "y"]
+    siblings: list[Axes]
     labels: list[BarLabel] = field(default_factory=list)
+    explicit: bool = False
 
     @property
     def axis(self) -> Axis:
@@ -360,39 +398,89 @@ class _ValueAxis:
             return bool(self.axes.get_autoscaley_on())
         return bool(self.axes.get_autoscalex_on())
 
+    def limits(self) -> tuple[float, float]:
+        low, high = (
+            self.axes.get_ylim() if self.name == "y" else self.axes.get_xlim()
+        )
+        return (float(low), float(high))
+
+    def set_limits(self, low: float, high: float) -> None:
+        """Write the view; autoscaling stays as it is (``auto=None``)."""
+        if self.name == "y":
+            self.axes.set_ylim(low, high, auto=None)
+        else:
+            self.axes.set_xlim(low, high, auto=None)
+
     def reset(self) -> None:
-        """Matplotlib's own limits for the data, and the ticks they give."""
+        """Matplotlib's own limits for the data, and the ticks they give.
+
+        Not when the view is the caller's: an autoscaled view that is
+        neither what this module last wrote nor what ``autoscale_view``
+        gives for the data now was set on purpose, and is put back.
+        New data, ``margins`` and ``relim`` + ``autoscale_view`` leave
+        matplotlib's own view, so the room grows again from there.
+        """
+        self.explicit = False
         if self.autoscaled:
+            view = self.limits()
+            written = getattr(self.axes, _WRITTEN_ATTR, {}).get(self.name)
             self.axes.autoscale_view(
                 scalex=self.name == "x", scaley=self.name == "y"
             )
+            fresh = self.limits()
+            if not (
+                _same(_bounds(view), written)
+                or _same(_bounds(view), _bounds(fresh))
+            ):
+                self.set_limits(*view)
+                self.explicit = True
         format_ticks_now(self.axis)
 
     def grow(self, renderer: RendererBase) -> None:
-        """Grow autoscaled limits just enough for the outside labels."""
-        if not self.autoscaled:
+        """Grow autoscaled limits just enough for the outside labels.
+
+        Each label's room is read in its own Axes and scaled to this one's:
+        Axes sharing the axis show the same view at other places on screen
+        (and sizes). The bounds written are remembered on every sibling.
+        """
+        if not self.autoscaled or self.explicit:
             return
         along = 1 if self.name == "y" else 0
         box = self.axes.get_window_extent(renderer)
         low, high = (box.y0, box.y1) if along else (box.x0, box.x1)
-        wants = [
-            want
-            for label in self.labels
-            if (want := _want(label, along, renderer)) is not None
-        ]
+        frames: dict[int, tuple[float, float]] = {}
+        wants = []
+        for label in self.labels:
+            want = _want(label, along, renderer)
+            if want is None:
+                continue
+            frame = frames.get(id(label.bar_axes))
+            if frame is None:
+                own = label.bar_axes.get_window_extent(renderer)
+                frame = (own.y0, own.y1) if along else (own.x0, own.x1)
+                frames[id(label.bar_axes)] = frame
+            if not frame[1] > frame[0]:
+                continue
+            anchor, need, toward = want
+            scale = (high - low) / (frame[1] - frame[0])
+            wants.append(
+                (low + (anchor - frame[0]) * scale, need * scale, toward)
+            )
         grown = grown_span(low, high, wants)
-        if grown is None:
-            return
-        middle = ((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2)
-        edges = np.array([middle, middle])
-        edges[:, along] = grown
-        limits = self.axes.transData.inverted().transform(edges)[:, along]
-        if not np.all(np.isfinite(limits)):
-            return
-        if self.name == "y":
-            self.axes.set_ylim(limits[0], limits[1], auto=None)
-        else:
-            self.axes.set_xlim(limits[0], limits[1], auto=None)
+        if grown is not None:
+            middle = ((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2)
+            edges = np.array([middle, middle])
+            edges[:, along] = grown
+            limits = self.axes.transData.inverted().transform(edges)[:, along]
+            if np.all(np.isfinite(limits)):
+                self.set_limits(float(limits[0]), float(limits[1]))
+        written = _bounds(self.limits())
+        for member in self.siblings:
+            bounds = getattr(member, _WRITTEN_ATTR, None)
+            if bounds is None:
+                bounds = {}
+                setattr(member, _WRITTEN_ATTR, bounds)
+            bounds[self.name] = written
 
 
 def _want(
@@ -472,11 +560,10 @@ def _value_axes(families: list[BarLabelFamily]) -> list[_ValueAxis]:
                     axes.get_shared_y_axes()
                     if name == "y"
                     else axes.get_shared_x_axes()
-                )
-                key = (name, frozenset(map(id, shared.get_siblings(axes))))
+                ).get_siblings(axes)
+                key = (name, frozenset(map(id, shared)))
                 keys[(id(axes), name)] = key
-            group = groups.get(key)
-            if group is None:
-                group = groups[key] = _ValueAxis(axes, name)
-            group.labels.append(label)
+                if key not in groups:
+                    groups[key] = _ValueAxis(axes, name, list(shared))
+            groups[key].labels.append(label)
     return list(groups.values())

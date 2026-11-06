@@ -129,6 +129,8 @@ class BarLabel(Annotation):
     ``where`` is where it sits now (the layout's ``crowded="inside"`` may
     move an outside label into its bar). ``clear_of`` holds the other bars
     an outside label must clear (a crowded label wider than its own bar).
+    ``beyond`` is the label a total sits beyond: the top segment's, when
+    the call put segment labels ``"outside"`` (at the same stack end).
     """
 
     def __init__(
@@ -162,6 +164,7 @@ class BarLabel(Annotation):
         self.where: Placement = where
         self.stack = stack
         self.clear_of: tuple[Rectangle, ...] = ()
+        self.beyond: BarLabel | None = None
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
@@ -390,12 +393,12 @@ def _add_label(
     kind: Kind,
     stack: BarStack | None,
     fontsize: float | str,
-) -> None:
+) -> BarLabel | None:
     """Create the label of bar ``index`` of ``container`` and add it."""
     patch = container.patches[index]
     bar_axes = patch.axes
     if not isinstance(bar_axes, Axes):
-        return
+        return None
     where = _placement(kind, family.options.where)
     text_kw: dict[str, Any] = {"fontsize": fontsize, "fontweight": fw(1)}
     color = label_ink(family.options.color, kind, where, patch, bar_axes)
@@ -416,6 +419,7 @@ def _add_label(
     )
     attach(label, host_axes(bar_axes))
     family.texts.append(label)
+    return label
 
 
 def label_bars(
@@ -502,7 +506,8 @@ def label_bars(
         ``"auto"`` (default): beyond a plain bar's end, at a segment's
         middle; ``"outside"``: beyond the end; ``"inside"``: just inside the
         end; ``"center"``: the bar's middle. Totals always sit beyond the
-        stack's end.
+        stack's end, and beyond the top segment's label when segments are
+        labelled ``"outside"`` (3 pt past it).
     total : {"auto", "only", False}
         Stacked bars: segment labels plus a total (``"auto"``), the totals
         only, or the segments only. Bars in no stack are labelled alike.
@@ -606,6 +611,12 @@ def label_bars(
                     stack=stack,
                     fontsize=fontsize,
                 )
+    # A segment label outside its end shares the stack's end with the total.
+    at_end = {
+        (id(label.container), label.index): label
+        for label in family.texts
+        if label.kind == "segment" and label.where == "outside"
+    }
     if options.total is not False:
         for stack in family.stacks:
             for index in range(len(stack.containers[0].patches)):
@@ -613,7 +624,7 @@ def label_bars(
                 if found is None:  # no bar stands at this position
                     continue
                 net, outer = found
-                _add_label(
+                label = _add_label(
                     family,
                     outer,
                     index,
@@ -622,6 +633,8 @@ def label_bars(
                     stack=stack,
                     fontsize=fontsize,
                 )
+                if label is not None:
+                    label.beyond = at_end.get((id(outer), index))
 
     for axis in dict.fromkeys(label.value_axis for label in family.texts):
         format_ticks_now(axis)

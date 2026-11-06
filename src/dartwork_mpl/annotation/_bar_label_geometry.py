@@ -16,7 +16,9 @@ text, unit and option handling:
   down or left on screen (a negative value, or an inverted value axis) has
   its label below or left of the end. ``"inside"`` mirrors that inwards,
   ``"center"`` centres the label on the bar. A stack's total is anchored on
-  the bar that ends the stack, so it sits beyond the stack's end.
+  the bar that ends the stack, so it sits beyond the stack's end, and
+  beyond the label it must clear (``beyond``: the top segment's, labelled
+  ``"outside"`` at the same end) by that label's length and 3 pt more.
 * **Room.** A label on a stack segment fits when the segment is at least as
   long as the label along the value axis (:func:`fits_on_bar`).
 * **Host.** On a ``twinx`` / ``twiny`` pair the labels live on the Axes
@@ -214,6 +216,20 @@ def _past_bars(label: BarLabel, end: float) -> float:
     return float(axes.transData.inverted().transform(shown)[along])
 
 
+def _beyond_pt(label: BarLabel) -> float:
+    """How far (points) ``label`` moves out to clear ``label.beyond``.
+
+    The other label's length along the value axis plus 3 pt, while it is
+    drawn (added to an Axes and visible); else nothing.
+    """
+    other = label.beyond
+    if other is None or other.axes is None or not other.get_visible():
+        return 0.0
+    figure = label.get_figure(root=True)
+    dpi = figure.dpi if figure is not None else 72.0
+    return other.measured_length() * 72.0 / dpi + OFFSET_PT
+
+
 def _setter(label: BarLabel, name: str) -> Callable[[Any], None]:
     def write(value: Any) -> None:
         setattr(label, name, value)
@@ -242,7 +258,7 @@ def place(label: BarLabel, where: Where) -> None:
             x = _past_bars(label, _past_error_bar(label, x))
         xy = (x, y)
         toward = outward(label) * (-1 if inside else 1)
-        offset = toward * OFFSET_PT
+        offset = toward * (OFFSET_PT + (0.0 if inside else _beyond_pt(label)))
         if label.orientation == "vertical":
             ha, va = "center", ("bottom" if toward > 0 else "top")
             xyann = (0.0, offset)

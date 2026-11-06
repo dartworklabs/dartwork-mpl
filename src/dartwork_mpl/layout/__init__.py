@@ -734,8 +734,9 @@ def simple_layout(
     limits matplotlib autoscales grows from matplotlib's own limits just
     enough to keep the outside labels and 3 pt inside the axes (``auto``
     stays on, so repeated calls give the same limits). Limits you set are
-    kept; a label that does not fit sits outside the axes and the margins
-    make room for it. The rules are in the docstring of
+    kept, a view set with ``set_ybound`` included; a label that does not
+    fit sits outside the axes and the margins make room for it. The rules
+    are in the docstring of
     ``dartwork_mpl.annotation._bar_label_settle``.
 
     Examples
