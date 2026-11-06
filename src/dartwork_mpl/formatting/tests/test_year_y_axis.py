@@ -166,14 +166,19 @@ def test_twiny_and_secondary_yaxis_read_the_same_years():
     assert isinstance(right.yaxis.get_major_formatter(), YearTickFormatter)
 
 
-def test_a_y_year_axis_never_labels_a_tick_between_years():
+def test_a_y_year_axis_labels_a_tick_between_years_with_its_value():
+    """No whole year in view: every tick its value (diagnosis D, bug 2)."""
     ax = _laid_out(lambda ax: ax.barh(YEARS, np.arange(11) + 1))
     ax.set_ylim(2016, 2017)
     assert _on(ax.yaxis) == ([2016.0, 2017.0], ["16", "17"])
     ax.set_ylim(2016.2, 2016.8)  # no whole year in view
     locs, labels = _on(ax.yaxis)
     assert locs and not _whole(locs), locs
-    assert labels == [""] * len(locs), labels
+    assert all(
+        text and float(text) == pytest.approx(loc)
+        for loc, text in zip(locs, labels, strict=True)
+    ), labels
+    assert ax.yaxis.get_offset_text().get_text() == ""
 
 
 def test_crowded_y_years_thin_to_one_em():

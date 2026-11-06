@@ -114,6 +114,7 @@ def _fix_value_label_decimal(warning: VisualWarning) -> list[str]:
     which = f"{count} labels print" if count else "labels print"
     return [
         f"# Every value is a whole number but {which} decimals: drop them\n"
-        "ax.bar_label(bars, fmt='{:,.0f}')",
-        "# Or in a manual label\nax.text(x, y, f'{value:,.0f}')",
+        "dm.label_bars(ax)  # prints whole numbers without a decimal point",
+        "# Or a label on a point or a line end\n"
+        "dm.annotate_value(ax, x, y, f'{value:,.0f}')",
     ]

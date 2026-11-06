@@ -107,7 +107,7 @@ throughput = [1234, 1456, 1389, 1567, 1650]   # primary: 처리량 (건)
 utilization = [82.5, 84.2, 83.1, 85.8, 86.3]  # secondary: 가동률 (%)
 
 # 4. Bar chart for the primary series
-bars = ax.bar(weeks, throughput, color="dc.teal2", width=0.6, zorder=2)
+ax.bar(weeks, throughput, color="dc.teal2", width=0.6, zorder=2)
 ax.set_ylabel("처리량 (건)")
 ax.yaxis.set_major_formatter(mticker.StrMethodFormatter("{x:,.0f}"))
 
@@ -119,10 +119,8 @@ ax2.set_ylabel("가동률 (%)")
 ax2.yaxis.set_major_formatter(mticker.PercentFormatter(decimals=1))
 ax2.spines["right"].set_visible(True)
 
-# 6. Add value labels on bars
-for bar, val in zip(bars, throughput):
-    ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 20,
-            f"{val:,}", ha="center", va="bottom", fontsize=dm.fs(-1.5))
+# 6. Add value labels on bars (printed like the axis ticks: 1,234)
+dm.label_bars(ax)
 
 # 7. Layout and save
 dm.simple_layout(fig)

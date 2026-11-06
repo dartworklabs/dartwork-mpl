@@ -33,6 +33,7 @@ from ._defaults import (
 )
 from ._label_unit import axis_unit, axis_unit_of
 from ._twin_colors import apply_twin_colors
+from ._years import WholeYearLocator, YearTickFormatter, requested_params
 
 __all__ = [
     "TickScale",
@@ -84,8 +85,15 @@ def format_axis_year(
 
     Tick years use the last two digits by default (``2025`` -> ``25년``):
     four-digit years double the tick width and crowd neighbouring labels.
-    Pass ``digits=4`` only when an axis spans a century or more, where two
-    digits cannot tell ``1965`` from ``2065``.
+    Two digits that would repeat (``1965`` and ``2065`` in view) print four;
+    ``digits=4`` prints four always. Unless someone set the axis's locator,
+    it ticks whole years (a tick count asked with ``ax.locator_params`` is
+    kept), so fractional-year data such as months read ``05년, 06년``. When a
+    tick in view still falls between years (a zoom under two years, a
+    locator someone set), every tick prints its value (``2019.2 …
+    2019.7``), never a rounded year. The formatter is the library's year
+    formatter, matplotlib's ``ScalarFormatter`` underneath, so
+    ``ax.ticklabel_format`` works on it.
 
     Parameters
     ----------
@@ -106,19 +114,13 @@ def format_axis_year(
         raise ValueError(f"digits must be 2 or 4, got {digits!r}")
 
     suffix = _YEAR_SUFFIX[locale]
-
-    def formatter(value: float, _pos: int | None = None) -> str:
-        year = round(value)
-        if digits == 2:
-            return f"{year % 100:02d}{suffix}"
-        return f"{year}{suffix}"
-
-    year_formatter = ticker.FuncFormatter(formatter)
-
-    if axis in ("x", "both"):
-        ax.xaxis.set_major_formatter(year_formatter)
-    if axis in ("y", "both"):
-        ax.yaxis.set_major_formatter(year_formatter)
+    for name, target in (("x", ax.xaxis), ("y", ax.yaxis)):
+        if axis not in (name, "both"):
+            continue
+        if target.isDefault_majloc:  # a locator someone set stays
+            asked = requested_params(target.get_major_locator())
+            target.set_major_locator(WholeYearLocator(**asked))
+        target.set_major_formatter(YearTickFormatter(digits, suffix))
 
 
 def format_axis_dates(

@@ -8,7 +8,7 @@
 # data_shape: categories: list[str], values: list[float]
 # tags: bar, horizontal, ranking, reference-line, highlight, narrative
 # narrative: Top-8 metro housing-price indices; SF leads, axvline at median
-# advanced_apis: per-bar value labels at end of bar, axvline at median, top-1 accent color, sorted descending, format_axis_si
+# advanced_apis: dm.label_bars at the end of each bar, axvline at median, top-1 accent color, sorted descending, format_axis_si
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -43,23 +43,11 @@ fig, ax = plt.subplots(
     figsize=dm.figsize_for("barh", n_points=len(categories), n_series=1)
 )
 
-bars = ax.barh(
-    categories, values, color=colors, edgecolor="white", linewidth=0.3
-)
+ax.barh(categories, values, color=colors, edgecolor="white", linewidth=0.3)
 ax.invert_yaxis()  # rank 1 at top
 
-# End-of-bar value labels.
-for b, v in zip(bars, values, strict=False):
-    ax.text(
-        v + 6,
-        b.get_y() + b.get_height() / 2,
-        f"{v}",
-        va="center",
-        ha="left",
-        fontsize=dm.fs(-1),
-        fontweight=dm.fw(1),
-        color="oc.gray8",
-    )
+# End-of-bar value labels; the axis grows just enough to keep them inside.
+dm.label_bars(ax)
 
 # Median axvline reference.
 ax.axvline(median, color="oc.gray5", linewidth=0.5, linestyle="--", zorder=1)
@@ -74,7 +62,6 @@ ax.text(
     va="bottom",
 )
 
-ax.set_xlim(0, values.max() * 1.12)
 ax.set_xlabel("Index value")
 dm.format_axis_si(ax, axis="x")
 

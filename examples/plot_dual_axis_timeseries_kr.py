@@ -29,8 +29,7 @@ secondary = primary * 0.15 + rng.standard_normal(12) * 5
 
 ax.bar(dates, primary, alpha=0.3, label="주 계열", color="oc.blue5")
 ax.set_xlabel("월")
-ax.set_ylabel("주 계열 (단위)", color="oc.blue7")
-ax.tick_params(axis="y", labelcolor="oc.blue7")
+ax.set_ylabel("주 계열 (단위)")
 
 ax2 = ax.twinx()
 ax2.plot(
@@ -41,8 +40,7 @@ ax2.plot(
     linewidth=2,
     label="보조 계열",
 )
-ax2.set_ylabel("보조 계열 (단위)", color="oc.teal7")
-ax2.tick_params(axis="y", labelcolor="oc.teal7")
+ax2.set_ylabel("보조 계열 (단위)")
 
 ax.set_title("월별 이중 축 계열")
 ax.grid(True, alpha=0.3)
