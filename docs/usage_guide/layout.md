@@ -617,7 +617,8 @@ bars vertical. Each alternative is one keyword:
 **Numbers.** A label prints like its axis's ticks. Under `dm.axis_unit` the
 axis label names the unit, so the labels are plain scaled numbers (`33.0`
 under `Energy (GWh)`). A formatter whose ticks carry a suffix gives the
-labels the same suffix: `1.20k` under `dm.format_axis_si`, `47.5%` under a
+labels the same suffix: `1.20k` under `dm.format_axis_si` (its default
+`decimals=None`), `47.5%` under a
 `PercentFormatter`, `33.0M` under the library's default numbers once
 `dm.simple_layout` has set them. A formatter the labels cannot read
 (`FuncFormatter`, `StrMethodFormatter`, `dm.format_axis_currency`) leaves

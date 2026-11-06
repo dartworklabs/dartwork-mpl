@@ -63,7 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `_billions` and `_si` now set an `AxisUnitFormatter` too, one per axis
   (`axis="both"` no longer shares one `FuncFormatter`). The tick text and
   the bar labels of `dm.label_bars` are the same; a figure with these
-  formatters can now be pickled.
+  formatters can now be pickled. The old formatter's `.func` and
+  `set_offset_string` are gone with it.
 
 ### Removed
 
