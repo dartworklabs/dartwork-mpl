@@ -763,10 +763,10 @@ def _legend_cure(fig: Figure, legend: Legend | None) -> str:
     """What puts ``legend`` clear of the labels it hides, for the warning.
 
     A figure legend is not ``dm.place_legend``'s to move. The caller's own
-    Axes legend keeps its place's kind: inside the axes,
-    ``dm.place_legend(ax)`` finds a clear spot; outside on a side, the
-    same side through ``loc=<side>``, which the layout anchors past the
-    labels and the values beyond that limit. A legend ``dm.place_legend``
+    Axes legend keeps its place's kind: wholly outside on a side, the same
+    side through ``loc=<side>``, which the layout anchors past the labels
+    and the values beyond that limit; otherwise (inside, or reaching into
+    the axes) ``dm.place_legend(ax)``, which finds a clear spot. A legend ``dm.place_legend``
     put inside the axes goes above them (on a side it clears the values
     beyond that limit already, so the cure names another side).
     """
@@ -786,18 +786,22 @@ def _legend_cure(fig: Figure, legend: Legend | None) -> str:
 
 
 def _side_of(fig: Figure, legend: Legend, ax: Axes) -> str | None:
-    """The side of ``ax`` past which ``legend``'s middle lies, or ``None`` inside."""
+    """The side of ``ax`` that ``legend`` lies wholly beyond, or ``None``.
+
+    ``None`` for a legend that reaches into the axes (anchored inside, if
+    too large for them).
+    """
     renderer = get_renderer(fig)
     box = ax.get_window_extent(renderer)
     ext = legend.get_window_extent(renderer)
-    cx, cy = (ext.x0 + ext.x1) / 2, (ext.y0 + ext.y1) / 2
-    if cy > box.y1:
+    edge = _SAME_POSITION_PX
+    if ext.y0 >= box.y1 - edge:
         return "above"
-    if cy < box.y0:
+    if ext.y1 <= box.y0 + edge:
         return "below"
-    if cx > box.x1:
+    if ext.x0 >= box.x1 - edge:
         return "right"
-    if cx < box.x0:
+    if ext.x1 <= box.x0 + edge:
         return "left"
     return None
 

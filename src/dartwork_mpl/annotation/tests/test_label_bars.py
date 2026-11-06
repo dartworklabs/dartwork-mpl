@@ -1944,6 +1944,9 @@ def _legend_over_cut_values(how):
     ax.set_ylim(0, 100)
     if how == "axes inside":
         ax.legend(loc="upper left")
+    elif how == "axes reaching in":  # its middle right of the axes
+        ax.containers[0].set_label("a rather long series name")
+        ax.legend(loc="upper left", bbox_to_anchor=(0.85, 1.0))
     elif how == "placed inside":
         dm.place_legend(ax, loc="upper left")
     else:
@@ -1958,6 +1961,7 @@ def _legend_over_cut_values(how):
     [
         ("axes above", 'dm.place_legend(ax, loc="above") puts the legend'),
         ("axes inside", "dm.place_legend(ax) puts the legend"),
+        ("axes reaching in", "dm.place_legend(ax) puts the legend"),
         ("placed inside", 'dm.place_legend(ax, loc="above") puts the legend'),
         ("figure", "a figure legend moved off them shows them"),
     ],
@@ -1965,10 +1969,11 @@ def _legend_over_cut_values(how):
 def test_the_legend_warning_names_the_cure_for_that_legend(how, cure):
     # Re-review N-I2: a legend the layout does not move hides the labels it
     # covers (review I4), and the warning's cure fits where that legend came
-    # from: the caller's legend outside the axes keeps its side through
-    # dm.place_legend(ax, loc=<side>), the caller's inside one goes clear
-    # with dm.place_legend(ax), one dm.place_legend already put inside goes
-    # above, and a figure legend is not dm.place_legend's to move.
+    # from: the caller's legend wholly outside the axes keeps its side
+    # through dm.place_legend(ax, loc=<side>), the caller's inside one (or
+    # one reaching into the axes) goes clear with dm.place_legend(ax), one
+    # dm.place_legend already put inside goes above, and a figure legend is
+    # not dm.place_legend's to move.
     fig, ax, labels = _legend_over_cut_values(how)
     caught = [w for w in _all_layout_warnings(fig) if "under a legend" in w]
     drawn_renderer(fig)
@@ -1977,7 +1982,9 @@ def test_the_legend_warning_names_the_cure_for_that_legend(how, cure):
     assert len(caught) == 1
     assert f"{len(hidden)} of {len(labels)}" in caught[0]
     assert cure in caught[0]
-    assert "dm.place_legend(ax) puts" not in caught[0] or how == "axes inside"
+    assert "dm.place_legend(ax) puts" not in caught[0] or how.startswith(
+        "axes "
+    )
 
 
 def test_labels_go_on_the_axes_drawn_on_top():
