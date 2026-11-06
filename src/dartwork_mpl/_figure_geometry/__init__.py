@@ -105,6 +105,14 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     canvas prints PNG whatever ``savefig.format`` says, which avoids the
     DPI change made by the PDF/SVG/PS print renderers.
 
+    Such a Figure is always measured with Agg, also when another canvas is
+    registered for PNG (``backend_bases.register_backend("png", ...)``,
+    cairo say), whose text metrics can differ by a few pixels; a live
+    canvas of any backend measures with its own renderer. The temporary
+    canvas does not take over the caller's saving state: called while the
+    figure is saved, ``canvas.is_saving()`` reads ``False`` in the
+    measuring draw, so animated artists are left out of it.
+
     Parameters
     ----------
     fig : matplotlib.figure.Figure or matplotlib.figure.SubFigure
