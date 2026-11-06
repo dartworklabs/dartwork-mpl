@@ -454,11 +454,17 @@ def test_11_2_hidden_before_the_first_layout_shows(
     )
 
 
+@pytest.mark.parametrize("marks", [True, False], ids=["marks", "labels_only"])
 def test_11_3_sharex_overlay_moved_right_shows(
-    monkeypatch: pytest.MonkeyPatch,
+    marks: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Its x axis shows, so ticks and label both count; tick labels without
+    marks (``tick_params(right=False)``) are still ticks on the right."""
+
     def move(fig: Figure, a: Axes, b: Axes) -> None:
         _to_right(b)
+        if not marks:
+            b.tick_params(axis="y", right=False)
         dm.simple_layout(fig)
 
     _differs_from_07(
