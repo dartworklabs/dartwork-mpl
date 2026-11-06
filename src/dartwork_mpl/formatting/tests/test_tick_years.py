@@ -495,10 +495,10 @@ def test_other_data_keep_matplotlibs_locator_and_formatter(x):
 
 
 def test_a_chosen_year_formatter_still_gets_whole_year_ticks():
-    """``dm.format_axis_year`` set the formatter, not the locator.
+    """``dm.format_axis_year`` puts the year locator in with its formatter.
 
-    The locator is still matplotlib's, so the year locator goes in and the
-    chosen formatter stays: no ``2007.5`` rounded to ``08년``.
+    The layout keeps the chosen formatter on whole-year ticks: no
+    ``2007.5`` rounded to ``08년``.
     """
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "wide"))
     ax.plot(np.arange(2004, 2025), np.arange(21))

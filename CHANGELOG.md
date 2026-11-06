@@ -82,8 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   rounded year, never an empty label.
 - **`dm.format_axis_year` never rounds.** A zoom to `2019.2–2019.8` read
   `19 19 19 20 20 20`, and matplotlib's 2.5-year steps `05 08 10 12`
-  before a layout. It now uses the library's year formatter: whole years
-  with the suffix (`19년`; four digits when two would repeat), every value
+  before a layout. It now ticks whole years unless you set a locator
+  (monthly data read `05년, 06년`; `ax.locator_params(nbins=...)` asked
+  before is kept) and uses the library's year formatter: whole years with
+  the suffix (`19년`; four digits when two would repeat), every value
   between years (`2019.2 …`), and `ax.ticklabel_format` works on it.
 
 ## [0.7.0] - 2026-11-06

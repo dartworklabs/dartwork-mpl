@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import dartwork_mpl as dm
+from dartwork_mpl.formatting._years import WholeYearLocator
 
 
 def _year_formatter(locale: str, **kwargs):
@@ -100,20 +101,66 @@ def test_format_axis_year_zoomed_reads_values_not_rounded_years(layout, which):
         plt.close(fig)
 
 
-def test_format_axis_year_never_rounds_matplotlibs_half_years() -> None:
-    """Without a layout matplotlib's locator steps 2.5 years: values, not ``08년``."""
-    dm.style.use("scientific")
-    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
-    ax.plot(np.arange(2005, 2025), np.arange(20))
+# Monthly data on a year scale: 2005.0, 2005.083 … 2024.917.
+MONTHLY = 2005 + np.arange(20 * 12) / 12
+
+
+@pytest.mark.parametrize("width", ["9cm", "13cm", "17cm"])
+def test_format_axis_year_on_monthly_data_ticks_whole_years(width) -> None:
+    """Review of the S4 fix: fractional-year data lost their years.
+
+    Monthly values are not year data, so the layout put no year locator in,
+    and matplotlib's 2.5-year steps read ``2005.0, 2007.5 …`` at every width,
+    without the suffix. ``format_axis_year`` says the axis is a year axis,
+    so it ticks whole years itself, before and after the layout.
+    """
+    dm.style.use("scientific-kr")
+    fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"))
+    ax.plot(MONTHLY, np.arange(MONTHLY.size))
     dm.format_axis_year(ax, locale="ko")
     try:
+        for _ in ("drawn", "laid-out"):
+            assert isinstance(ax.xaxis.get_major_locator(), WholeYearLocator)
+            locs, labels = _on(ax.xaxis)
+            assert len(locs) >= 2 and all(v == round(v) for v in locs), locs
+            assert labels == [f"{round(v) % 100:02d}년" for v in locs], labels
+            dm.simple_layout(fig)
+    finally:
+        plt.close(fig)
+
+
+def test_format_axis_year_keeps_a_locator_someone_set() -> None:
+    """A locator someone set stays; its half years read values, not ``08년``."""
+    dm.style.use("scientific-kr")
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
+    ax.plot(MONTHLY, np.arange(MONTHLY.size))
+    chosen = mticker.MultipleLocator(2.5)
+    ax.xaxis.set_major_locator(chosen)
+    dm.format_axis_year(ax, locale="ko")
+    dm.simple_layout(fig)
+    try:
+        assert ax.xaxis.get_major_locator() is chosen
         locs, labels = _on(ax.xaxis)
         assert any(v != round(v) for v in locs), locs  # 2007.5 …
         plain = _plain_values(ax.xaxis)
         assert labels == [plain[v] for v in locs], labels
-        dm.simple_layout(fig)  # the year locator: whole years, with 년
-        locs, labels = _on(ax.xaxis)
-        assert labels == [f"{round(v) % 100:02d}년" for v in locs], labels
+    finally:
+        plt.close(fig)
+
+
+def test_format_axis_year_carries_a_requested_tick_count() -> None:
+    """``ax.locator_params(nbins=3)`` asked before stays on whole years."""
+    dm.style.use("scientific-kr")
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
+    ax.plot(2000 + np.arange(25 * 12) / 12, np.arange(25 * 12))
+    ax.locator_params(axis="x", nbins=3)
+    dm.format_axis_year(ax, locale="ko")
+    dm.simple_layout(fig)
+    try:
+        locator = ax.xaxis.get_major_locator()
+        assert isinstance(locator, WholeYearLocator)
+        assert locator.requested == {"nbins"} and locator.nbins == 3
+        assert _on(ax.xaxis)[1] == ["00년", "10년", "20년"]
     finally:
         plt.close(fig)
 
