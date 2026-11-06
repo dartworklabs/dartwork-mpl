@@ -32,10 +32,12 @@ from dataclasses import dataclass
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
+import matplotlib as mpl
 import numpy as np
 from matplotlib import cbook
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, ScaledTranslation
@@ -50,6 +52,7 @@ from .._figure_geometry import (
     spread_line_end_labels,
 )
 from ..scale import fs, fw
+from ._bar_label_geometry import host_axes
 from ._bar_labels import label_bars
 from ._optimize_legend import optimize_legend
 
@@ -712,7 +715,6 @@ def add_note(fig: Figure, text: str, **kw: Any) -> Text:
 
     Returns the :class:`~matplotlib.text.Text`.
     """
-    import matplotlib as mpl
 
     style: dict[str, Any] = {"ha": "left", "va": "bottom", "fontsize": fs(-1)}
     style.update(kw)
@@ -761,7 +763,6 @@ def label_line_ends(
 
     Returns the labels in the order of ``lines``.
     """
-    import matplotlib as mpl
     import matplotlib.colors as mcolors
 
     from .._colors.contrast import ensure_contrast
@@ -1273,20 +1274,66 @@ def _legend_entries(ax: Axes) -> tuple[list[Any], list[str]]:
     return [h for h, _ in pairs], [t for _, t in pairs]
 
 
-def _merge_twin_legends(ax: Axes) -> tuple[Axes, list[Any], list[str]]:
+def _legend_settings(legend: Legend | None) -> dict[str, Any]:
+    """The settings of ``legend`` a rebuilt legend repeats, as ``Legend`` keywords.
+
+    Only what the public ``Legend`` API reads, and only what differs from the
+    preset's default, so an untouched default stays a default (and follows a
+    later style change). ``ncols`` and ``markerscale`` have no public getter:
+    pass them to ``place_legend`` to keep them.
+    """
+    if legend is None:
+        return {}
+    kept: dict[str, Any] = {}
+    title = legend.get_title()
+    if title.get_text():
+        kept["title"] = title.get_text()
+        default_title = FontProperties(
+            size=mpl.rcParams["legend.title_fontsize"]
+        ).get_size_in_points()
+        if title.get_fontsize() != default_title:
+            kept["title_fontsize"] = title.get_fontsize()
+    default_map = Legend.get_default_handler_map()
+    custom = {
+        key: handler
+        for key, handler in legend.get_legend_handler_map().items()
+        if default_map.get(key) is not handler
+    }
+    if custom:
+        kept["handler_map"] = custom
+    if legend.get_frame_on() != mpl.rcParams["legend.frameon"]:
+        kept["frameon"] = legend.get_frame_on()
+    if legend.get_alignment() != "center":
+        kept["alignment"] = legend.get_alignment()
+    texts = legend.get_texts()
+    if texts:
+        default_size = FontProperties(
+            size=mpl.rcParams["legend.fontsize"]
+        ).get_size_in_points()
+        if texts[0].get_fontsize() != default_size:
+            kept["fontsize"] = texts[0].get_fontsize()
+    return kept
+
+
+def _merge_twin_legends(
+    ax: Axes,
+) -> tuple[Axes, list[Any], list[str], dict[str, Any], Legend | None]:
     """One legend for a twin pair: every partner's entries, on the top axes.
 
-    The legend goes on the twin drawn last, so no partner's data is drawn
-    over it; the partners' own legends are removed. A single Axes returns
-    itself and its own entries.
+    The legend goes on the top twin (the Axes drawn last), so no partner's
+    data is drawn over it; the partners' own legends are removed after their
+    settings (title, ``handler_map`` and so on) are read for the rebuild. A
+    single Axes returns itself and its own entries.
+
+    The last item is a legend to leave untouched: one whose entries are not
+    all among the merged entries (tuple handles, explicit labels), which
+    cannot be rebuilt faithfully. The explicit legend wins, and nothing is
+    removed.
     """
     owners = same_position_axes(ax)
-    if len(owners) == 1:
-        handles, labels = _legend_entries(ax)
-        return ax, handles, labels
-    parent = ax.get_figure(root=False)
+    host = host_axes(ax)
+    parent = host.get_figure(root=False)
     order = parent.axes if parent is not None else owners
-    host = max(owners, key=order.index)
     handles, labels, seen = [], [], set()
     for owner in sorted(owners, key=order.index):
         for handle, label in zip(*_legend_entries(owner), strict=True):
@@ -1294,11 +1341,19 @@ def _merge_twin_legends(ax: Axes) -> tuple[Axes, list[Any], list[str]]:
                 seen.add(label)
                 handles.append(handle)
                 labels.append(label)
+    existing = [
+        legend for o in owners if (legend := o.get_legend()) is not None
+    ]
+    for legend in existing:
+        if not {t.get_text() for t in legend.get_texts()} <= seen:
+            return host, handles, labels, {}, legend
+    source = host.get_legend() or next(iter(existing), None)
+    settings = _legend_settings(source)
     for owner in owners:
         legend = owner.get_legend()
         if owner is not host and legend is not None:
             legend.remove()
-    return host, handles, labels
+    return host, handles, labels, settings, None
 
 
 def _outside_fallback(
@@ -1343,12 +1398,25 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
 
     A ``twinx`` / ``twiny`` pair gets one legend: the entries of every twin,
     on the twin drawn last (so no partner's data covers it), and the
-    partners' own legends are removed. Any other ``loc`` is passed to
+    partners' own legends are removed. "Last" is by Axes zorder, then figure
+    order, so the ``ax.set_zorder(twin.get_zorder() + 1)`` idiom puts the
+    legend on ``ax``.
+
+    The rebuilt legend keeps what the existing legend's public API reads: its
+    title and title size, ``handler_map``, ``frameon``, ``alignment`` and
+    ``fontsize`` (only where they differ from the preset); keywords passed
+    here win. ``ncols`` and ``markerscale`` cannot be read back, so pass them
+    again. A legend with entries that are not artists of the pair (tuple
+    handles, explicit labels) cannot be rebuilt faithfully and is returned
+    untouched: the explicit legend wins. Any other ``loc`` is passed to
     ``ax.legend`` unchanged.
     """
-    ax, handles, labels = _merge_twin_legends(ax)
+    ax, handles, labels, kept, untouched = _merge_twin_legends(ax)
+    if untouched is not None:
+        return untouched
     if not handles:
         return None
+    kw = {**kept, **kw}
 
     side = _parse_outside_side(loc)
     if side is not None:
