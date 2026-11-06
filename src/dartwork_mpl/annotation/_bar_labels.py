@@ -14,7 +14,7 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   a ``PercentFormatter``). Ticks written each alone in one fixed unit
   (``decimals=n`` of ``format_axis_millions`` / ``_billions``,
   ``format_axis_currency``) give that unit, the currency on its side and
-  the ticks' zero (``1.25M``, ``-$800``, ``$0``); ticks that each take their
+  the ticks' zero (``1.25M``, ``−$800``, ``$0``); ticks that each take their
   own unit (``decimals=n`` of ``format_axis_si`` / ``_myriad``) share none,
   and the labels print plain values. The decision is re-read at every
   draw, so a later ``set_ylim``, ``dm.axis_unit`` or ``dm.simple_layout``
@@ -64,7 +64,7 @@ attaching, dropping cleared labels, replacing and re-hosting live in
 :mod:`._bar_label_lifecycle`; the geometry (anchor, side, view, room, host
 Axes) in :mod:`._bar_label_geometry`; the keywords and the text they
 compose in :mod:`._bar_label_options`.
-"""
+"""  # noqa: RUF002 - the labels' real minus (U+2212)
 
 from __future__ import annotations
 
@@ -460,7 +460,7 @@ def label_bars(
       suffix when they carry one (``33G``, ``31%``); under
       ``format_axis_currency`` and ``decimals=n`` of
       ``format_axis_millions`` / ``_billions`` the ticks' unit, currency
-      and zero (``1.25M``, ``-$800``, ``$0``); other formatters, and the
+      and zero (``1.25M``, ``−$800``, ``$0``); other formatters, and the
       ``decimals=n`` ticks of ``format_axis_si`` / ``_myriad`` that each
       take their own unit, print the plain value (pass ``fmt=``). The unit
       is re-read at every draw, so later limit or formatter changes keep
@@ -574,7 +574,7 @@ def label_bars(
         an Axes other than ``ax`` and its twins.
     TypeError
         If ``bars`` is not a ``BarContainer`` or a list of them.
-    """
+    """  # noqa: RUF002 - the labels' real minus (U+2212)
     options = parse_options(
         where=where,
         total=total,

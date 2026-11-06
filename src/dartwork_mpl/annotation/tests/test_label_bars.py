@@ -787,6 +787,113 @@ def test_fixed_unit_boundaries_default_and_asked(name):
         assert _texts(texts) == expected, asked
 
 
+# Bar shapes on the fixed-unit paths (the 2026-11-07 review's measured
+# texts): barh reads the x formatter, axis="both", log value axes, and
+# NaN / infinite bars (no label; the rest unchanged).
+SHAPED = {
+    # name: (values, install, shape, default, decimals=2)
+    "barh-millions-1-x": (
+        [1.25e6, -0.8e6, 0.0, 3.4e6],
+        lambda ax: dm.format_axis_millions(ax, axis="x", decimals=1),
+        "barh",
+        ["1.25M", f"{MINUS}0.80M", "0", "3.40M"],
+        ["1.25M", f"{MINUS}0.80M", "0.00", "3.40M"],
+    ),
+    "barh-currency-x": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="x"),
+        "barh",
+        ["$1,250", f"{MINUS}$800", "$0"],
+        ["$1,250.00", f"{MINUS}$800.00", "$0.00"],
+    ),
+    # The value axis of barh is x: a formatter on y alone leaves it plain.
+    "barh-currency-y-only": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="y"),
+        "barh",
+        ["1,250", f"{MINUS}800", "0"],
+        ["1,250.00", f"{MINUS}800.00", "0.00"],
+    ),
+    "bar-currency-both": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="both"),
+        "bar",
+        ["$1,250", f"{MINUS}$800", "$0"],
+        ["$1,250.00", f"{MINUS}$800.00", "$0.00"],
+    ),
+    "barh-millions-1-both": (
+        [1.25e6, -0.8e6, 0.0],
+        lambda ax: dm.format_axis_millions(ax, axis="both", decimals=1),
+        "barh",
+        ["1.25M", f"{MINUS}0.80M", "0"],
+        ["1.25M", f"{MINUS}0.80M", "0.00"],
+    ),
+    # One count per call on a log axis: 1e4 reads 0 beside 4.5e7 (the
+    # spec's round-to-zero rule; a log-axis rule is a follow-up).
+    "log-millions-1": (
+        [1e4, 2e5, 3.4e6, 4.5e7],
+        _millions_1,
+        "log",
+        ["0", "0.2M", "3.4M", "45.0M"],
+        ["0.01M", "0.20M", "3.40M", "45.00M"],
+    ),
+    "log-currency": (
+        [3.0, 45.0, 1250.0, 98000.0],
+        dm.format_axis_currency,
+        "log",
+        ["$3", "$45", "$1,250", "$98,000"],
+        ["$3.00", "$45.00", "$1,250.00", "$98,000.00"],
+    ),
+    "nan-millions-1": (
+        [1.25e6, np.nan, -0.8e6, 3.4e6],
+        _millions_1,
+        "bar",
+        ["1.25M", f"{MINUS}0.80M", "3.40M"],
+        ["1.25M", f"{MINUS}0.80M", "3.40M"],
+    ),
+    "nan-currency": (
+        [1250.0, np.nan, -800.0],
+        dm.format_axis_currency,
+        "bar",
+        ["$1,250", f"{MINUS}$800"],
+        ["$1,250.00", f"{MINUS}$800.00"],
+    ),
+    "inf-millions-1": (
+        [1.25e6, np.inf, 3.4e6],
+        _millions_1,
+        "bar",
+        ["1.25M", "3.40M"],
+        ["1.25M", "3.40M"],
+    ),
+    "inf-currency": (
+        [1250.0, -np.inf, 800.0],
+        dm.format_axis_currency,
+        "bar",
+        ["$1,250", "$800"],
+        ["$1,250.00", "$800.00"],
+    ),
+}
+
+
+# matplotlib's own transform warns on an infinite bar, before any label.
+@pytest.mark.filterwarnings(
+    "ignore:invalid value encountered in dot:RuntimeWarning"
+)
+@pytest.mark.parametrize("name", list(SHAPED))
+def test_fixed_unit_labels_on_other_bar_shapes(name):
+    values, install, shape, default, asked = SHAPED[name]
+    for keywords, expected in (({}, default), ({"decimals": 2}, asked)):
+        fig, ax = _fig()
+        draw = ax.barh if shape == "barh" else ax.bar
+        draw(np.arange(len(values)), values)
+        if shape == "log":
+            ax.set_yscale("log")
+        install(ax)
+        texts = dm.label_bars(ax, **keywords)
+        dm.simple_layout(fig)
+        assert _texts(texts) == expected, keywords
+
+
 def test_fmt_string_and_callable():
     revenue = np.array([21.4, 38.5, 30.9]) * 1e9
     fig, ax, _ = _quarterly(revenue)

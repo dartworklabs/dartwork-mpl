@@ -18,10 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `decimals=n` of `dm.format_axis_millions` / `_billions`: `1.25M`,
   `−$800`, `$0`; plain values under a formatter it cannot read and under
   `decimals=n` of `dm.format_axis_si` / `_myriad`, whose ticks each take
-  their own unit); three significant digits on the
-  largest value, then the fewest exact decimals, one count per call, no
-  meaningless `.0`; stacked bars' segments centred with a total beyond the
-  stack. `dm.simple_layout` turns crowded labels on vertical bars vertical
+  their own unit); three significant digits on the largest value, then the
+  fewest exact decimals, one count per call, no meaningless `.0`; stacked
+  bars' segments centred with a total beyond the stack. `dm.simple_layout` turns crowded labels on vertical bars vertical
   (`barh` hides every other one instead) and grows autoscaled limits just
   enough for the labels; limits you set stay. On a twin pair the labels go
   on the top axes. The keywords: `where`, `total`, `crowded`, `decimals`,
@@ -70,9 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `dm.format_axis_currency` and `decimals=n` of `dm.format_axis_millions`,
   `_billions` and `_si` now set an `AxisUnitFormatter` too, one per axis
   (`axis="both"` no longer shares one `FuncFormatter`). The tick text is
-  the same; a figure with these
-  formatters can now be pickled. The old formatter's `.func` and
-  `set_offset_string` are gone with it.
+  the same; a figure with these formatters can now be pickled. The old
+  formatter's `.func` and `set_offset_string` are gone with it.
 
 ### Deprecated
 
