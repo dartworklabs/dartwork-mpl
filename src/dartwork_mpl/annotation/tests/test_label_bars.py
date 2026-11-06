@@ -932,18 +932,31 @@ def test_bar_past_a_log_limit_and_a_negative_one():
     )
 
 
-def test_bars_beyond_the_view_or_too_short_in_it_have_none():
+def test_bars_beyond_the_view_have_none_and_a_short_part_labels_off_it():
     # Only bars cut by the limit along their value count: a bar wholly
-    # below the view, one starting above it, and one that shows too little
-    # of itself to hold the label get none.
+    # below the view and one starting above it get none. One that shows
+    # too little of itself to hold the label keeps its true value, beyond
+    # the limit, off the bar, in the text colour (review C1, candidate A).
     fig, ax = _fig()
-    ax.bar([0, 1, 2], [30.0, 20.0, 40.0], bottom=[0.0, 120.0, 98.0])
+    ax.bar(
+        [0, 1, 2],
+        [30.0, 20.0, 40.0],
+        bottom=[0.0, 120.0, 98.0],
+        color="dc.blue9",
+    )
     ax.set_ylim(50, 100)
     labels = dm.label_bars(ax)
     dm.simple_layout(fig)
-    _drawn(fig)
-    assert [t.get_visible() for t in labels] == [False, False, False]
+    renderer = _drawn(fig)
+    assert [t.get_visible() for t in labels] == [False, False, True]
     assert not any(t.clipped for t in labels[:2])
+    short = labels[2]
+    assert short.clipped and short.off_bar and not short.on_bar
+    assert _hex(short) == "#000000"
+    top = ax.get_window_extent(renderer).y1
+    assert short.get_window_extent(renderer).y0 == pytest.approx(
+        top + _offset_px(fig), abs=0.6
+    )
 
     # The full bar back in view: an outside label in the text colour again.
     fig, ax, _ = _plain([3.0, 40.0], color="dc.blue9")

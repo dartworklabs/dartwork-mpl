@@ -87,8 +87,7 @@ from matplotlib.artist import Artist
 from matplotlib.container import BarContainer
 
 from .._figure_geometry import get_renderer, same_position_axes, shared_axes
-from ._bar_label_geometry import OFFSET_PT, fits_on_bar, outward
-from ._bar_label_ink import label_ink
+from ._bar_label_geometry import OFFSET_PT, outward
 from ._bar_label_lifecycle import families_of, prune, rehost
 from ._bar_labels import BarLabel, BarLabelFamily, format_ticks_now
 
@@ -291,7 +290,8 @@ def _reset(label: BarLabel) -> None:
     label.own_rotation(0.0)
     label.own_visible(True)
     label.own_color(label.ink)
-    label.limit_inked = False  # the next placement inks a cut bar again
+    label.off_bar = False
+    label.inked_for = label.asked  # the next placement inks it afresh
 
 
 @dataclass(eq=False)
@@ -363,22 +363,21 @@ def _apply(
     if rule == "inside":
         for label in labels:
             if label.kind == "edge" and label.asked == "outside":
-                _move_inside(label, options)
+                _move_inside(label)
 
 
-def _move_inside(label: BarLabel, options: BarLabelOptions) -> None:
-    """Inside the bar end in readable ink, if the bar holds the label."""
+def _move_inside(label: BarLabel) -> None:
+    """Inside the bar end in readable ink, if the bar holds the label.
+
+    ``BarLabelFamily.follow`` decides whether the bar holds it both ways
+    and writes the ink for where it sits; a label the bar does not hold
+    stays where its call put it.
+    """
     label.where = "inside"
     label.bar_family.follow(label)
-    if not label.get_visible() or not fits_on_bar(
-        label, label.measured_length()
-    ):
+    if not label.get_visible() or label.off_bar:
         label.where = label.asked
-        return
-    ink = label_ink(
-        options.color, label.kind, "inside", label.bar, label.bar_axes
-    )
-    label.own_color(label.ink if ink is None else ink)
+        label.bar_family.follow(label)
 
 
 def _reading_order(values: dict[int, float], vertical: bool) -> dict[int, int]:
@@ -560,8 +559,9 @@ def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
     end (a stack segment below the top, asked ``"outside"``; an actual
     inside its target): it sits on that bar already, and lifting it would
     put it on that bar's label. The bars at its position that end short of
-    its own count harmlessly. Nor a label inside the limit its bar runs
-    past (``BarLabel.clipped``): it sits on its own bar.
+    its own count harmlessly. Only a label beyond its own bar's end
+    (``BarLabel.beyond_end``: outside, or an end label its bar does not
+    hold) is lifted; one anchored on a limit stays on that edge.
     """
     middles = bars.spans.mean(axis=1)
     for position in positions:
@@ -569,7 +569,7 @@ def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
         for label, (low, high) in zip(
             position.labels, position.spans, strict=True
         ):
-            if label.where != "outside" or label.clipped:
+            if not label.beyond_end:
                 continue
             toward = outward(label)
             ends = bars.reach[:, 1] if toward > 0 else bars.reach[:, 0]
@@ -718,13 +718,16 @@ class _ValueAxis:
 def _want(
     label: BarLabel, along: int, renderer: RendererBase
 ) -> tuple[float, float, int] | None:
-    """``(anchor px, px needed to the edge, side)`` of a drawn outside label.
+    """``(anchor px, px needed to the edge, side)`` of a label past its end.
 
-    None for a label inside the limit its bar runs past: it needs no room.
+    A drawn label beyond its own bar's end (``BarLabel.beyond_end``); None
+    for any other, a label anchored on a limit included (no room grows).
     """
-    if label.where != "outside" or label.clipped or not label.get_visible():
+    if not label.get_visible():
         return None
     box = label.get_window_extent(renderer)  # places it, anchor included
+    if not label.beyond_end:
+        return None
     anchor = float(label.bar_axes.transData.transform(label.xy)[along])
     toward = outward(label)
     if along:

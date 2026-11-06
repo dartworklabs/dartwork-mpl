@@ -17,11 +17,18 @@ text, unit and option handling:
   runs more than :data:`EDGE_TOL_PX` past the view in the direction it
   grows, while it starts inside that edge and its middle across the bars
   is in view, is cut by a limit the caller set (an autoscaled view holds
-  its bars): its end label (``"outside"`` or ``"inside"``) sits just inside
-  that edge, 3 pt in, with its true value (:func:`clipped_edge`), and
-  shows while the part of the bar in view holds it. Its ink is the one for
-  a label on its bar (:mod:`._bar_label_ink`), set at each draw, so a
-  wider view puts the label back outside in its own ink.
+  its bars): its end label (``"outside"`` or ``"inside"``) is anchored on
+  that edge with its true value (:func:`clipped_edge`): 3 pt inside it, on
+  the bar, while the part of the bar in view holds it; otherwise 3 pt
+  beyond it, off the bar (below).
+* **On the bar or off it.** A plain bar's end label meant to sit on its bar
+  (``"inside"``, or inside a limit) is drawn there only while the bar
+  holds it both ways: along the bar (:func:`fits_on_bar`) and across it
+  (:func:`fits_across`, :data:`FIT_TOL_PX` slack). Otherwise it sits off
+  the bar, beyond its end (beyond the limit for a cut bar), so no part of
+  it is drawn over the background in the ink chosen for the bar. The ink
+  follows where it sits (:mod:`._bar_label_ink`), set at each draw, so a
+  wider view or a wider bar moves it back.
 * **Side.** Outside the end, 3 pt (:data:`OFFSET_PT`) away; a bar growing
   down or left on screen (a negative value, or an inverted value axis) has
   its label below or left of the end. ``"inside"`` mirrors that inwards,
@@ -31,7 +38,9 @@ text, unit and option handling:
   ``"outside"`` at the same end) by that label's length and 3 pt more.
 * **Room.** A label on a stack segment fits when the segment is at least as
   long as the label along the value axis (:func:`fits_on_bar`); a label
-  inside a limit, when the part of its bar in view is that long and 3 pt.
+  inside a limit, when the part of its bar in view is that long and 3 pt;
+  a plain bar's end label on its bar, also when the bar is at least as
+  thick as the label across (:func:`fits_across`).
 * **Host.** On a ``twinx`` / ``twiny`` pair the labels live on the Axes
   drawn last, by zorder and then figure order, so no partner draws over
   them.
@@ -56,21 +65,26 @@ if TYPE_CHECKING:
 
 __all__ = [
     "EDGE_TOL_PX",
+    "FIT_TOL_PX",
     "OFFSET_PT",
     "bar_point",
     "clipped_edge",
+    "fits_across",
     "fits_on_bar",
     "host_axes",
     "in_view",
     "outward",
     "place",
-    "text_length",
+    "text_extent",
 ]
 
 # Point offset between a bar end and its label (``dm.annotate_value``'s).
 OFFSET_PT = 3.0
 # How far (display pixels) an anchor may sit past the view and still show.
 EDGE_TOL_PX = 1.0
+# How far (display pixels) a label on its bar may reach past the bar's sides:
+# antialiasing, not a visible part of the text.
+FIT_TOL_PX = 0.5
 
 
 def host_axes(bar_axes: Axes) -> Axes:
@@ -190,21 +204,37 @@ def in_view(label: BarLabel, where: Where) -> bool:
     )
 
 
-def text_length(label: BarLabel, renderer: RendererBase | None) -> float:
-    """The label's text extent along the value axis, in display pixels.
+def text_extent(
+    label: BarLabel, renderer: RendererBase | None
+) -> tuple[float, float]:
+    """The label's text extent ``(along, across)`` the bar, display pixels.
 
-    Its font, size and rotation as drawn, measured with ``renderer`` (the
-    canvas's renderer at the figure's current dpi); with ``None``,
-    matplotlib uses the renderer of the label's last draw.
+    Along the value axis and across the bars, its font, size and rotation
+    as drawn, measured with ``renderer`` (the canvas's renderer at the
+    figure's current dpi); with ``None``, matplotlib uses the renderer of
+    the label's last draw.
     """
     text = Text.get_window_extent(label, renderer)  # the text, not the anchor
-    return float(text.height if label.orientation == "vertical" else text.width)
+    if label.orientation == "vertical":
+        return (float(text.height), float(text.width))
+    return (float(text.width), float(text.height))
+
+
+def fits_across(label: BarLabel, across_px: float) -> bool:
+    """Whether ``label`` is no wider than its bar across the bars.
+
+    ``across_px`` (:func:`text_extent`) against the bar's thickness on
+    screen, read afresh, with :data:`FIT_TOL_PX` to spare.
+    """
+    box = label.bar.get_window_extent()
+    thickness = box.width if label.orientation == "vertical" else box.height
+    return bool(np.isfinite(thickness) and across_px <= thickness + FIT_TOL_PX)
 
 
 def fits_on_bar(label: BarLabel, text_px: float) -> bool:
     """Whether ``label`` is no longer than its bar along the value axis.
 
-    ``text_px`` (:func:`text_length`), plus the 3 pt inset for
+    ``text_px`` (:func:`text_extent`, along), plus the 3 pt inset for
     ``"inside"`` and for a label inside a limit, against the bar's length
     on screen, read afresh; for a bar cut by a limit
     (:func:`clipped_edge`), the length of the part in view.
@@ -327,9 +357,11 @@ def _setter(label: BarLabel, name: str) -> Callable[[Any], None]:
 def place(label: BarLabel, where: Where) -> None:
     """Anchor and align ``label`` on its bar for ``where``.
 
-    A bar cut by a limit (:func:`clipped_edge`) has its label inside that
-    edge, as ``"inside"`` places it at the bar end. Writes only what
-    ``label`` still owns (:meth:`BarLabel.own`).
+    A bar cut by a limit (:func:`clipped_edge`) has its label anchored on
+    that edge, inside it as ``"inside"`` places it at a bar end. A label
+    that its bar does not hold (``label.off_bar``, decided by
+    ``BarLabelFamily.follow``) sits beyond the end, or beyond the limit,
+    instead. Writes only what ``label`` still owns (:meth:`BarLabel.own`).
     """
     if where == "center":
         # Fractions of the bar's own extent: its middle on any scale.
@@ -337,11 +369,10 @@ def place(label: BarLabel, where: Where) -> None:
         xyann = (0.0, 0.0)
         ha, va = "center", "center"
     else:
-        inside = where == "inside"
         x, y = bar_point(label)
         edge = clipped_edge(label)
-        if edge is not None:  # inside the limit the bar runs past
-            inside = True
+        inside = (where == "inside" or edge is not None) and not label.off_bar
+        if edge is not None:  # anchored on the limit the bar runs past
             x, y = _at_edge(label, edge)
         elif label.orientation == "vertical":
             if not inside:

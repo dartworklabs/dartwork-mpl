@@ -69,6 +69,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+import matplotlib as mpl
 import matplotlib.colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
@@ -79,11 +80,12 @@ from ..formatting import TickScale, tick_scale_of, value_label_decimals
 from ..scale import fs, fw
 from ._bar_label_geometry import (
     clipped_edge,
+    fits_across,
     fits_on_bar,
     host_axes,
     in_view,
     place,
-    text_length,
+    text_extent,
 )
 from ._bar_label_ink import label_ink
 from ._bar_label_lifecycle import attach, families_of, record, release
@@ -175,17 +177,23 @@ class BarLabel(Annotation):
         self.beyond: BarLabel | None = None
         # Why the layout's last pass hid it where it would overlap, if it did.
         self.hidden_for: HiddenFor | None = None
-        # Whether the ink last written is the one for a label inside the
-        # limit its bar runs past (BarLabelFamily.follow; the layout resets).
-        self.limit_inked = False
+        # Whether a plain bar's end label meant for its bar (inside, or
+        # inside a limit) sits off it: the bar does not hold it (follow).
+        self.off_bar = False
+        # Where the ink last written was chosen for (follow; layout resets).
+        self.inked_for: Placement = where
+        # The preset text colour when the call was made: the ink off a bar.
+        self.text_ink = mcolors.to_rgba(mpl.rcParams["text.color"])
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
         self._written: dict[str, object] = {}
         # True while get_visible measures the text (which asks it again).
         self._measuring = False
-        # The last text measurement: (what decides it, pixels).
-        self._text_px: tuple[tuple[object, ...], float] | None = None
+        # The last text measurement: (what decides it, (along, across) px).
+        self._text_px: tuple[tuple[object, ...], tuple[float, float]] | None = (
+            None
+        )
         super().__init__(
             "",
             (0.0, 0.0),
@@ -243,7 +251,7 @@ class BarLabel(Annotation):
 
     @property
     def clipped(self) -> bool:
-        """Whether the bar runs past a limit and the label sits inside it.
+        """Whether the bar runs past a limit and the label is anchored on it.
 
         Read afresh (:func:`clipped_edge`): a plain bar's end label whose
         bar ends past the view, while it starts inside it.
@@ -251,26 +259,49 @@ class BarLabel(Annotation):
         return clipped_edge(self) is not None
 
     @property
-    def must_fit(self) -> bool:
-        """Whether the label sits on its bar's part in view and must fit.
+    def wants_bar(self) -> bool:
+        """Whether this is a plain bar's end label meant to sit on its bar.
 
-        A stack segment's label on the segment, and a label inside the
-        limit its bar runs past.
+        ``"inside"`` (asked, or moved there by ``crowded="inside"``), or
+        anchored inside the limit its bar runs past; it sits there only
+        while the bar holds it (``off_bar``).
         """
-        if self.kind == "segment" and self.where != "outside":
+        if self.kind != "edge" or self.where == "center":
+            return False
+        return self.where == "inside" or self.clipped
+
+    @property
+    def on_bar(self) -> bool:
+        """Whether the label is drawn on its bar (in the ink for a bar)."""
+        if self.where == "center":
             return True
-        return self.clipped
+        return self.wants_bar and not self.off_bar
+
+    @property
+    def beyond_end(self) -> bool:
+        """Whether it sits beyond its own bar's end, in the view's room.
+
+        An outside label, or an end label its bar does not hold; not one
+        anchored on a limit (the caller's view, which never grows).
+        """
+        if self.where == "center" or self.clipped:
+            return False
+        return self.where == "outside" or self.off_bar
+
+    @property
+    def must_fit(self) -> bool:
+        """Whether the label sits on a stack segment and so must fit on it."""
+        return self.kind == "segment" and self.where != "outside"
 
     def get_visible(self) -> bool:
         """Visible, the bar's anchor in the bar axes' view, and room for it.
 
         A bar outside the view shows no label, nor does a stack segment
-        shorter than its label along the value axis, nor a bar past a limit
-        whose part in view is (:func:`fits_on_bar`). Both are measured at
-        each call, so a wider view or a taller figure brings the label back.
-        Matplotlib neither draws an invisible text nor counts it in a tight
-        bbox (``Text.get_tightbbox`` is null), and the layout and the
-        validation checks skip it.
+        shorter than its label along the value axis (:func:`fits_on_bar`).
+        Both are measured at each call, so a wider view or a taller figure
+        brings the label back. Matplotlib neither draws an invisible text
+        nor counts it in a tight bbox (``Text.get_tightbbox`` is null), and
+        the layout and the validation checks skip it.
         """
         if not (super().get_visible() and in_view(self, self.where)):
             return False
@@ -285,7 +316,11 @@ class BarLabel(Annotation):
             self._measuring = False
 
     def measured_length(self) -> float:
-        """:func:`text_length`, measured again only when what decides it moved.
+        """The text's extent along the value axis (:meth:`measured_extent`)."""
+        return self.measured_extent()[0]
+
+    def measured_extent(self) -> tuple[float, float]:
+        """:func:`text_extent`, measured again only when what decides it moved.
 
         A draw asks a label's visibility twice (``Annotation.draw``, then
         ``Text.draw``); the text, font, rotation and dpi rarely change
@@ -305,7 +340,7 @@ class BarLabel(Annotation):
             None if renderer is None else renderer.points_to_pixels(72.0),
         )
         if self._text_px is None or self._text_px[0] != key:
-            self._text_px = (key, text_length(self, renderer))
+            self._text_px = (key, text_extent(self, renderer))
         return self._text_px[1]
 
     def update_positions(self, renderer: RendererBase) -> None:
@@ -349,20 +384,31 @@ class BarLabelFamily:
     def follow(self, label: BarLabel) -> None:
         """Re-read the tick scale for ``label``; rewrite the call when it moved.
 
-        Then place it, and give a label that went inside (or came back
-        from) the limit its bar runs past the ink for where it now sits.
+        Then decide whether a label meant for its bar fits on it both ways
+        (``off_bar``), place it, and give it the ink for where it now sits
+        when that changed: on its bar, or off it (the text colour, or the
+        series colour under ``color="series"``).
         """
         if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
             self.refresh()
-        place(label, label.where)
-        clipped = label.clipped
-        if clipped != label.limit_inked:
-            where = "inside" if clipped else label.where
-            ink = label_ink(
-                self.options.color, label.kind, where, label.bar, label.bar_axes
+        label.off_bar = False
+        if label.wants_bar:
+            along, across = label.measured_extent()
+            label.off_bar = not (
+                fits_on_bar(label, along) and fits_across(label, across)
             )
-            label.own_color(label.ink if ink is None else ink)
-            label.limit_inked = clipped
+        place(label, label.where)
+        spot: Placement
+        if not label.on_bar:
+            spot = "outside"
+        else:
+            spot = "center" if label.where == "center" else "inside"
+        if spot != label.inked_for:
+            ink = label_ink(
+                self.options.color, label.kind, spot, label.bar, label.bar_axes
+            )
+            label.own_color(label.text_ink if ink is None else ink)
+            label.inked_for = spot
 
 
 # ------------------------------------------------------------ the call
