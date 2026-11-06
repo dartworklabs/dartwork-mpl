@@ -188,3 +188,50 @@ def test_plain_on_a_unit_axis_prints_full_numbers(order):
     labels, offset = _y(ax)
     assert not any("M" in t for t in labels), labels
     assert (labels, offset) == _oracle(ax, ("scientific", False))
+
+
+THOUSANDS = np.array([1200.0, 1500.0, 1750.0])
+
+
+def _split(first: dict, second: dict, values=THOUSANDS):
+    """``first`` asked before dm.simple_layout, ``second`` after it."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(np.arange(len(values)), values)
+    ax.ticklabel_format(axis="y", **first)
+    dm.simple_layout(fig)
+    ax.ticklabel_format(axis="y", **second)
+    return ax
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        ({"style": "plain"}, {"scilimits": (0, 0)}),
+        ({"scilimits": (0, 0)}, {"style": "plain"}),
+    ],
+    ids=["plain-then-scilimits", "scilimits-then-plain"],
+)
+def test_a_request_before_the_layout_counts_with_one_after_it(first, second):
+    """Re-review of PR #595, item 3: settings asked before the layout and met
+    by the library's numbers were not remembered, so ``style="plain"``
+    before and ``scilimits=(0, 0)`` after printed ``1.1 … 1.9`` under
+    ``×1e3``; matplotlib alone prints ``1100 … 1900``.
+    """
+    ax = _split(first, second)
+    calls = [("scientific", False), ("powerlimits", (0, 0))]
+    if "scilimits" in first:
+        calls.reverse()  # matplotlib applies them in the order asked
+    assert _y(ax) == _oracle(ax, *calls)
+    assert _y(ax)[1] == ""  # plain: no exponent in either order
+
+
+def test_plain_kept_when_the_axis_later_reaches_millions():
+    """``style="plain"`` met on 1,750 still holds when the view reaches 3M."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot([0, 1, 2], THOUSANDS)
+    dm.simple_layout(fig)
+    ax.ticklabel_format(axis="y", style="plain")
+    ax.set_ylim(0, 3_000_000)
+    labels, offset = _y(ax)
+    assert offset == "" and not any("M" in t for t in labels), labels
+    assert "3,000,000" in labels, labels

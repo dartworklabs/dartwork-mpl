@@ -194,6 +194,15 @@ class DefaultNumberFormatter(AxisUnitFormatter):
         """``ticklabel_format(useLocale=...)``; see the class docstring."""
         self._asked("useLocale", val)
 
+    def keep(self, settings: dict[str, object]) -> None:
+        """Remember settings asked before this formatter took the axis.
+
+        ``ax.ticklabel_format(style="plain")`` on matplotlib's formatter,
+        before ``dm.simple_layout`` put this one in, is met here as asked
+        after it would be: kept, and replayed on a later handover.
+        """
+        self._kept.update(settings)
+
     def scales(self) -> bool:
         """Whether the axis prints in a unit (``0.5M``) at its current ticks."""
         if self._plan is None and isinstance(self.axis, Axis):
@@ -221,6 +230,8 @@ class DefaultNumberFormatter(AxisUnitFormatter):
         return bool(values) and self._axis_unit(values).factor != 1.0
 
     def _axis_unit(self, values: Sequence[float]) -> Unit:
+        if self._kept.get("scientific") is False:
+            return self._ladder[0]  # plain asked: full numbers, never a unit
         top = max(abs(v) for v in values)
         if top < _UNIT_FROM * (1 - 1e-9):
             return self._ladder[0]
@@ -821,6 +832,7 @@ def apply_default_tick_format(fig: Figure) -> int:
                 for k, v in asked.items()
             ):
                 continue  # matplotlib's notation asked of its formatter in place
+            numbers.keep(asked)  # met here; a later request replays them
             axis.set_major_formatter(numbers)
             changed += 1
     return changed
