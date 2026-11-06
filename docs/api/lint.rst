@@ -56,7 +56,8 @@ Catalog highlights
   ``dm.simple_layout(fig)``.
 - ``deprecated-width-token`` — deprecated 0.3 width tokens
   (``dm.SW`` / ``MW`` / ``TW`` / ``DW``).
-- ``oversize-width`` — widths beyond 17 cm break most page layouts.
+- ``oversize-width`` — 17 cm (``dm.col2``) is page-fit advice, not a maximum;
+  review the target page and keep explicitly requested widths.
 - ``fontsize-literal`` / ``linewidth-literal`` — pass numeric values
   via ``dm.fs(n)`` / ``dm.lw(n)`` so they track the active style.
 - ``raw-hex-color`` — prefer named palette tokens (``oc.``, ``tw.``,

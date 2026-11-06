@@ -27,8 +27,6 @@ _WRITTEN = (
     "docs/_static/before_default.svg",
     "docs/_static/after_dartwork.svg",
 )
-# In usage_guide/images but not written by the docs build.
-_NOT_WRITTEN = ("docs/usage_guide/images/compare_*.svg",)
 _VERSION = re.compile(r"Matplotlib v(\d+)\.(\d+)\.(\d+)")
 
 
@@ -52,7 +50,7 @@ def _tracked(*patterns: str) -> set[str]:
 
 
 def test_docs_build_assets_are_rendered_by_a_supported_matplotlib():
-    assets = sorted(_tracked(*_WRITTEN) - _tracked(*_NOT_WRITTEN))
+    assets = sorted(_tracked(*_WRITTEN))
     assert len(assets) >= 20, assets
     floor = _floor()
     stale = {}

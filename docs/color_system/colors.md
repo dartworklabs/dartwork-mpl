@@ -33,7 +33,7 @@ import numpy as np
 
 dm.style.use("scientific")
 t = np.linspace(0, 2 * np.pi, 200)
-plt.plot(t, np.sin(t), color="oc.indigo6", linewidth=2.4, label="Indigo 6")
+plt.plot(t, np.sin(t), color="oc.indigo6", label="Indigo 6")
 plt.scatter(t[::12], np.cos(t[::12]), color="tw.rose500", edgecolor="none")
 plt.legend()
 plt.show()

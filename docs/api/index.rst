@@ -12,7 +12,7 @@ The essential modules you'll use in every project.
 
 .. tip::
 
-   New here? **Style Management**, **Figure Creation**, and **Save &
+   New here? **Style Management**, **Units**, and **Save &
    Export** cover almost every plot; reach for the rest as you need them.
 
 .. toctree::
@@ -20,7 +20,6 @@ The essential modules you'll use in every project.
    :titlesonly:
 
    Style Management <style>
-   Figure Creation <figure>
    Units (cm/inch/mm) <units>
    Layout Utilities <layout>
    Color Utilities <color>
@@ -48,7 +47,6 @@ Additional tools for specialized use cases.
    Asset Diagnostics (visualization) <visualization>
    Diagnostics (module) <diagnostics>
    Prompt Utilities <prompt>
-   Figure Constants (deprecated) <constant>
 
 Upgrading
 ---------

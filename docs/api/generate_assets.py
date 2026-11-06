@@ -71,7 +71,7 @@ def _save_layout_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=dm.figsize("15cm", "12cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "12cm"))
     gs = fig.add_gridspec(2, 2, hspace=0.45, wspace=0.35)
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[0, 1])
@@ -126,7 +126,7 @@ def _save_icon_example(images_dir: Path) -> Path:
         ("\U000f0597", "Weather-snowy"),
     ]
 
-    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "6cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "6cm"))
     colors = [
         "tw.teal500",
         "tw.amber500",
@@ -182,7 +182,7 @@ def _save_font_example(images_dir: Path) -> Path:
     """API font: fs(), fw(), lw() scaling demo."""
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "9cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "9cm"))
 
     # Show hierarchy levels
     levels = [
