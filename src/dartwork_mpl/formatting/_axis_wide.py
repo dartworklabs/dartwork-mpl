@@ -1,7 +1,8 @@
 """Tick formatters that settle one unit and one decimal count per axis.
 
-The ``decimals=None`` default of ``format_axis_si`` / ``_millions`` /
-``_billions`` / ``_myriad`` installs :class:`AxisUnitFormatter`. A fixed
+:class:`AxisUnitFormatter` is the one engine behind ``format_axis_si`` /
+``_millions`` / ``_billions`` / ``_myriad`` / ``_currency`` and
+``dm.axis_unit``. Their ``decimals=None`` default decides per axis. A fixed
 ``.1f`` turns integer ticks into ``200.0`` and ``1.0k``, rounds half steps
 such as ``1250`` to ``1.2k``, and a per-tick unit mixes ``800`` with
 ``1.2k`` on one axis. This formatter decides once per axis, from the ticks
@@ -25,6 +26,10 @@ its own unit and the fewest decimals it needs (``0.1, 1, 10, 1k``). A
 ``secondary_yaxis`` showing the same values, ``x1.3`` or degrees C as F)
 draws its ticks evenly and counts as linear (:func:`draws_linearly`).
 
+The fixed-decimal paths (``decimals=n`` of the ``format_axis_*`` helpers,
+and ``format_axis_currency`` always) make no axis-wide decision: each value
+is written alone under :class:`TickText` rules (``per_tick``).
+
 Text that should read like the ticks (value labels on bars) asks
 :func:`tick_scale_of` how an axis printed its ticks at the last draw: the
 factor to divide by and the prefix and suffix around the number
@@ -37,6 +42,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 import matplotlib as mpl
 import matplotlib.ticker as ticker
@@ -52,6 +58,7 @@ __all__ = [
     "UNIT_RULES",
     "AxisUnitFormatter",
     "TickScale",
+    "TickText",
     "Unit",
     "draws_linearly",
     "number_text",
@@ -154,6 +161,30 @@ class TickScale:
     suffix: str = ""
 
 
+@dataclass(frozen=True)
+class TickText:
+    """How a ``per_tick`` :class:`AxisUnitFormatter` writes one value.
+
+    The value takes the formatter's fixed unit, else the largest rung at or
+    below its magnitude (the smallest rung under the ladder), and
+    ``decimals`` places, after the hyphen-minus ``-`` and the currency
+    (``-1.5k``, ``-$1,500``).
+
+    ``separators``: thousands separators (``1,000.0k``) or none
+    (``1000.0k``). ``zero``: a value that prints as zero reads ``0.0``
+    (``decimals`` zeros) with no sign, currency or unit (``"bare"``); keeps
+    the currency and unit and drops the sign (``"affixed"``: ``$0``,
+    ``0.00€``); or only an exact zero is set apart, as ``0``, and any other
+    value keeps its sign and affixes (``"exact"``: ``-$0`` for ``-0.2``).
+    ``compact``: trailing zeros go (``1.5억``, not ``1.50억``), and a value
+    under the first rung above one prints whole with no unit (``7,500``).
+    """
+
+    separators: bool = True
+    zero: Literal["bare", "affixed", "exact"] = "bare"
+    compact: bool = False
+
+
 def number_text(
     value: float,
     decimals: int,
@@ -209,14 +240,14 @@ class AxisUnitFormatter(ticker.Formatter):
     decimals) or one ladder label (that unit, always). ``decimals`` fixes
     the decimal count instead of choosing it.
 
-    ``per_tick=True`` is the one exception to "one unit per axis": it needs
-    ``decimals`` and ``unit="max"`` and makes no axis-wide decision. Each
-    tick takes the largest ladder rung at or below its own magnitude, is
-    rounded to ``decimals`` places with trailing zeros trimmed, and a
-    magnitude below the first rung prints as a whole number (``7,500``,
-    ``1.5억``). Ticks of one axis can then mix units; this keeps the output
-    of ``format_axis_myriad(decimals=n)``. Such a formatter has no axis
-    unit, so :func:`tick_scale_of` reports the plain scale for it.
+    ``per_tick`` (a :class:`TickText`) is the one exception to "one unit
+    per axis": it makes no axis-wide decision, and each value is written
+    alone with ``decimals`` places under those rules, in the fixed unit or
+    its own (``unit="whole"`` needs an axis and is refused). Ticks of one
+    axis can then mix units (``800.0``, ``1.2k``); this keeps the output of
+    the ``decimals=n`` paths of the ``format_axis_*`` helpers and of
+    ``format_axis_currency``. Such a formatter has no axis unit, so
+    :func:`tick_scale_of` reports the plain scale for it.
 
     The decision is made in :meth:`set_locs`, which :meth:`format_ticks`
     calls with every major tick on each draw; only ticks inside the view
@@ -230,10 +261,8 @@ class AxisUnitFormatter(ticker.Formatter):
         *,
         decimals: int | None = None,
         currency: str = "",
-        per_tick: bool = False,
+        per_tick: TickText | None = None,
     ) -> None:
-        if per_tick and (decimals is None or unit != "max"):
-            raise ValueError("per_tick needs decimals and unit='max'")
         self._ladder = tuple(sorted(ladder, key=lambda rung: rung.factor))
         self._fixed = next(
             (rung for rung in self._ladder if rung.label == unit), None
@@ -243,6 +272,8 @@ class AxisUnitFormatter(ticker.Formatter):
             raise ValueError(
                 f"unit must be 'max', 'whole' or one of {labels} (got {unit!r})"
             )
+        if per_tick is not None and self._fixed is None and unit != "max":
+            raise ValueError("per_tick needs unit='max' or a ladder label")
         self._rule = unit
         self._decimals = decimals
         self._currency = currency
@@ -315,6 +346,8 @@ class AxisUnitFormatter(ticker.Formatter):
     def set_locs(self, locs: list[float]) -> None:
         """Record the tick locations and settle this axis's unit/decimals."""
         super().set_locs(locs)
+        if self._per_tick is not None:
+            return  # each value decides alone
         values = [float(v) for v in locs]
         self._plan = self._make_plan(self._in_view(values)) if values else None
 
@@ -334,28 +367,54 @@ class AxisUnitFormatter(ticker.Formatter):
         )
         return plan.axis_unit or self._max_unit(abs(value)), plan.decimals
 
-    def _per_tick_text(self, value: float) -> str:
-        """``value`` in its own unit, ``decimals`` places, zeros trimmed."""
-        decimals = self._decimals or 0
-        if value == 0:
-            return "0"
-        prefix = f"{'-' if value < 0 else ''}{self._currency}"
-        magnitude = abs(value)
-        rungs = [rung for rung in self._ladder if rung.factor > 1]
-        if magnitude < rungs[0].factor:
-            return f"{prefix}{magnitude:,.0f}"
-        rung = max(
-            (r for r in rungs if r.factor <= magnitude), key=lambda r: r.factor
+    def _own_unit(self, magnitude: float, rules: TickText) -> Unit:
+        """The unit a ``per_tick`` value takes; see :class:`TickText`.
+
+        No float tolerance: ``999.9999999`` stays under ``k``. ``compact``
+        gives a value under the first rung above one the plain unit; NaN is
+        under no rung there and raises ``ValueError``, as
+        ``format_axis_myriad(decimals=n)`` always has.
+        """
+        if self._fixed is not None:
+            return self._fixed
+        if not rules.compact:
+            return max(
+                (r for r in self._ladder if r.factor <= magnitude),
+                key=lambda r: r.factor,
+                default=self._ladder[0],
+            )
+        above = [r for r in self._ladder if r.factor > 1]
+        if magnitude < above[0].factor:
+            return Unit(1.0, "")
+        return max(
+            (r for r in above if r.factor <= magnitude), key=lambda r: r.factor
         )
-        text = f"{magnitude / rung.factor:,.{decimals}f}"
-        if decimals > 0:
-            text = text.rstrip("0").rstrip(".")
-        return f"{prefix}{text}{rung.label}"
+
+    def _per_tick_text(self, value: float, rules: TickText) -> str:
+        """``value`` alone, in its own unit, under ``rules``."""
+        if rules.zero == "exact" and value == 0:
+            return "0"
+        magnitude = abs(value)
+        unit = self._own_unit(magnitude, rules)
+        decimals = self._decimals
+        if rules.compact:
+            # A plain value under the first rung prints whole.
+            decimals = 0 if unit.factor == 1 else decimals or 0
+        separator = "," if rules.separators else ""
+        number = format(magnitude / unit.factor, f"{separator}.{decimals}f")
+        if rules.compact and decimals:
+            number = number.rstrip("0").rstrip(".")
+        sign = "-" if value < 0 else ""
+        if rules.zero != "exact" and float(number.replace(",", "")) == 0:
+            if rules.zero == "bare":
+                return f"{0:.{decimals}f}"
+            sign = ""
+        return f"{sign}{self._currency}{number}{unit.label}"
 
     def __call__(self, x: float, pos: int | None = None) -> str:
         """Format one value with the last axis decision (or its own)."""
-        if self._per_tick:
-            return self._per_tick_text(float(x))
+        if self._per_tick is not None:
+            return self._per_tick_text(float(x), self._per_tick)
         value = float(x)
         if not math.isfinite(value):
             return str(value)
@@ -372,7 +431,7 @@ class AxisUnitFormatter(ticker.Formatter):
         Before any draw ``value`` decides alone, as :meth:`__call__` does.
         A ``per_tick`` formatter has no axis unit: the plain scale.
         """
-        if self._per_tick:
+        if self._per_tick is not None:
             return TickScale()
         unit, _decimals = self._decision(float(value))
         return TickScale(unit.factor, self._currency, unit.label)
@@ -389,8 +448,9 @@ def tick_scale_of(axis: Axis, value: float) -> TickScale:
       axis unit and currency (``33G``, ``1.2k``); ``dm.axis_unit``'s
       formatter puts the unit in the axis label instead, so its scale has
       no suffix (``33`` under ``Energy (GWh)``).
-      An :class:`AxisUnitFormatter` made with ``per_tick=True`` (each tick
-      in its own unit, so no axis unit exists) reports the plain scale.
+      An :class:`AxisUnitFormatter` made with ``per_tick`` (each value
+      alone, so no axis unit exists: the ``decimals=n`` paths and
+      ``format_axis_currency``) reports the plain scale.
     - :class:`matplotlib.ticker.PercentFormatter`: ``xmax / 100`` and its
       symbol (``31%``).
     - Any other formatter, matplotlib's own ``ScalarFormatter`` on an axis
