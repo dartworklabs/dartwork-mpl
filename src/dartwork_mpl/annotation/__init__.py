@@ -1264,24 +1264,37 @@ def _legend_entries(ax: Axes) -> tuple[list[Any], list[str]]:
     return list(handles), list(labels)
 
 
-def _entry_signatures(legend: Legend) -> dict[str, tuple[type, ...]]:
-    """Each drawn entry of ``legend``: its text and the artist types of its handle.
+_EntrySignature: TypeAlias = tuple[str, tuple[type, ...]]
+"""One legend entry: its text and the artist types its handle draws."""
+
+# What reading a legend's offset boxes or building a probe legend can raise on
+# a handle or handler matplotlib lays out unexpectedly: a missing attribute or
+# child (AttributeError, IndexError) or a rejected argument (TypeError,
+# ValueError). Anything else is a bug and propagates.
+_UNREADABLE = (AttributeError, IndexError, TypeError, ValueError)
+
+
+def _entry_signatures(legend: Legend) -> list[_EntrySignature]:
+    """Each drawn entry of ``legend``, in legend order: text and handle artist types.
 
     Read through the public ``get_children`` of the legend's offset boxes:
     an entry is the box that holds a handle area and a text. A tuple handle
     draws several artists where a plain one draws one, and a custom handler
     draws its own types, so the signature tells a rebuildable entry from one
-    that is not.
+    that is not. A legend with no readable entry gives ``[]``.
     """
-    found: dict[str, tuple[type, ...]] = {}
+    found: list[_EntrySignature] = []
 
     def walk(node: Any) -> None:
         children = node.get_children()
         areas = [c for c in children if isinstance(c, DrawingArea)]
         texts = [c for c in children if isinstance(c, TextArea)]
         if areas and texts:
-            found[texts[0].get_text()] = tuple(
-                type(a) for a in areas[0].get_children()
+            found.append(
+                (
+                    texts[0].get_text(),
+                    tuple(type(a) for a in areas[0].get_children()),
+                )
             )
             return
         for child in children:
@@ -1292,25 +1305,41 @@ def _entry_signatures(legend: Legend) -> dict[str, tuple[type, ...]]:
     return found
 
 
-def _rebuildable(
-    legend: Legend, host: Axes, handles: list[Any], labels: list[str]
-) -> bool:
-    """Whether ``legend`` is what the pair's own artists would draw.
-
-    Every entry text must be a label of the pair and draw the same artist
-    types as the plain artist of that label does through the legend's own
-    ``handler_map``. A detached probe legend (never attached to an Axes)
-    supplies the plain signatures.
-    """
-    if not handles:
-        return False
-    handler_map: dict[Any, Any] = dict(legend.get_legend_handler_map())
+def _probe_signatures(
+    host: Axes,
+    handles: list[Any],
+    labels: list[str],
+    handler_map: dict[Any, Any],
+) -> list[_EntrySignature]:
+    """What plain ``handles`` draw through ``handler_map``, via a detached legend."""
     probe = Legend(host, handles, labels, handler_map=handler_map)
-    plain = _entry_signatures(probe)
-    return all(
-        text in plain and plain[text] == types
-        for text, types in _entry_signatures(legend).items()
-    )
+    return _entry_signatures(probe)
+
+
+def _rebuildable(
+    legend: Legend, host: Axes, candidates: list[tuple[list[Any], list[str]]]
+) -> bool:
+    """Whether ``legend`` is what plain artists would draw, entry for entry.
+
+    ``candidates`` are the (handles, labels) the legend may have been built
+    from: the whole pair's artists (a hand merge, or the merged legend) or one
+    Axes' own. The legend is rebuildable when its entries equal, position by
+    position and in count, what some candidate draws through the legend's own
+    ``handler_map``. Fails safe: an empty or unreadable legend, or any
+    ``_UNREADABLE`` error while reading it or the probe, is not rebuildable.
+    """
+    handler_map: dict[Any, Any] = dict(legend.get_legend_handler_map())
+    try:
+        drawn = _entry_signatures(legend)
+        if not drawn:
+            return False
+        return any(
+            handles
+            and drawn == _probe_signatures(host, handles, labels, handler_map)
+            for handles, labels in candidates
+        )
+    except _UNREADABLE:
+        return False
 
 
 def _legend_settings(
@@ -1398,8 +1427,12 @@ def _merge_twin_legends(
     existing = [
         legend for o in owners if (legend := o.get_legend()) is not None
     ]
-    for legend in existing:
-        if not _rebuildable(legend, host, handles, labels):
+    for owner in owners:
+        legend = owner.get_legend()
+        if legend is None:
+            continue
+        own = _legend_entries(owner)
+        if not _rebuildable(legend, host, [(handles, labels), own]):
             return host, handles, labels, {}, legend
     source = host.get_legend() or next(iter(existing), None)
     default = Legend(host, handles, labels) if handles else None

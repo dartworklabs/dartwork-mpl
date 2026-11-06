@@ -364,6 +364,17 @@ class TestMoreSettingsKept:
             plt.close(fig)
 
 
+def _corner(fig, ax, legend) -> tuple[float, float]:
+    """The legend's centre as a fraction of the axes box, after a draw."""
+    fig.canvas.draw()
+    box = legend.get_window_extent()
+    frame = ax.get_window_extent()
+    return (
+        (box.x0 + box.x1) / 2 / frame.width - frame.x0 / frame.width,
+        (box.y0 + box.y1) / 2 / frame.height - frame.y0 / frame.height,
+    )
+
+
 class TestUntouchedLegendFollowsPlacement:
     """An explicit loc moves an untouched legend; a rebuild-only one warns."""
 
@@ -378,8 +389,8 @@ class TestUntouchedLegendFollowsPlacement:
             with warnings.catch_warnings():
                 warnings.simplefilter("error")
                 assert place_legend(ax, loc="lower right") is kept
-            fig.canvas.draw()
-            assert kept._loc == 4  # lower right
+            cx, cy = _corner(fig, ax, kept)
+            assert cx > 0.5 and cy < 0.5  # lower right
         finally:
             plt.close(fig)
 
@@ -397,7 +408,8 @@ class TestUntouchedLegendFollowsPlacement:
             with warnings.catch_warnings():
                 warnings.simplefilter("error")
                 place_legend(ax)
-            assert kept._loc == 2  # upper left
+            cx, cy = _corner(fig, ax, kept)
+            assert cx < 0.5 and cy > 0.5  # upper left
         finally:
             plt.close(fig)
 
@@ -406,7 +418,8 @@ class TestUntouchedLegendFollowsPlacement:
         try:
             with pytest.warns(UserWarning, match="above"):
                 assert place_legend(ax, loc="above") is kept
-            assert kept._loc == 2
+            cx, cy = _corner(fig, ax, kept)
+            assert cx < 0.5 and cy > 0.5  # still upper left
         finally:
             plt.close(fig)
 
@@ -418,6 +431,91 @@ class TestUntouchedLegendFollowsPlacement:
             kept = ax.legend(["Pretty"], loc="upper left")
             assert place_legend(ax, loc="lower left") is kept
             assert [t.get_text() for t in kept.get_texts()] == ["Pretty"]
-            assert kept._loc == 3
+            cx, cy = _corner(fig, ax, kept)
+            assert cx < 0.5 and cy < 0.5  # lower left
+        finally:
+            plt.close(fig)
+
+
+class TestFailsSafeWhenStructureIsUnreadable:
+    """A legend whose entries cannot be read or matched is never rebuilt."""
+
+    @pytest.mark.parametrize("order", ["tuple-first", "plain-first"])
+    def test_duplicate_label_tuple_and_plain_stays_untouched(
+        self, order: str
+    ) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            bar = ax.containers[0]
+            line = twin.get_lines()[0]
+            entries = [(bar, line), bar]
+            if order == "plain-first":
+                entries.reverse()
+            kept = ax.legend(entries, ["Sales", "Sales"])
+            assert place_legend(ax) is kept
+            assert ax.get_legend() is kept
+            assert len(kept.get_texts()) == 2
+        finally:
+            plt.close(fig)
+
+    def test_legend_with_a_dropped_entry_of_its_own_axes_untouched(
+        self,
+    ) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            ax.plot([1, 2], label="Extra")
+            kept = ax.legend(
+                [ax.containers[0], twin.get_lines()[0]], ["Sales", "Margin"]
+            )
+            assert place_legend(ax) is kept
+            assert len(kept.get_texts()) == 2
+        finally:
+            plt.close(fig)
+
+    def test_legend_of_one_axes_only_still_merges_the_twin(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            ax.legend()
+            legend = place_legend(ax)
+            assert [t.get_text() for t in legend.get_texts()] == [
+                "Sales",
+                "Margin",
+            ]
+        finally:
+            plt.close(fig)
+
+    @pytest.mark.parametrize("failure", ["empty", "raises"])
+    def test_unreadable_structure_is_untouched_and_still_placed(
+        self, monkeypatch, failure: str
+    ) -> None:
+        import dartwork_mpl.annotation as annotation
+
+        fig, ax, twin = _twin_pair()
+        try:
+            kept = ax.legend(*_merged(ax, twin), loc="upper left")
+
+            def unreadable(legend):
+                if failure == "raises":
+                    raise AttributeError("no offset boxes")
+                return []
+
+            monkeypatch.setattr(annotation, "_entry_signatures", unreadable)
+            assert place_legend(ax, loc="lower right") is kept
+            assert ax.get_legend() is kept
+            cx, cy = _corner(fig, ax, kept)
+            assert cx > 0.5 and cy < 0.5
+        finally:
+            plt.close(fig)
+
+    def test_ordinary_twin_pair_still_merges(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            ax.legend()
+            twin.legend()
+            legend = place_legend(ax)
+            assert [t.get_text() for t in legend.get_texts()] == [
+                "Sales",
+                "Margin",
+            ]
         finally:
             plt.close(fig)
