@@ -76,7 +76,7 @@ def _save_quickstart_first_figure(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"))
     x = np.linspace(0, 10, 200)
     ax.plot(x, np.sin(x), color="dc.teal2", label="signal")
     ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
@@ -96,7 +96,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     dm.style.use("scientific")
 
     x = np.linspace(0, 10, 200)
-    fig = plt.figure(figsize=dm.figsize("15cm", "8.5cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "8.5cm"))
     gs = fig.add_gridspec(1, 2, wspace=0.3)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -141,7 +141,7 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
     # height keeps the *square* heatmap (aspect="equal") from floating in
     # a tall panel — the right panel is now close to the heatmap's own
     # square footprint, so the two panels read as a balanced pair.
-    fig = plt.figure(figsize=dm.figsize("17cm", "8.5cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("17cm", "8.5cm"))
     fig.patch.set_facecolor("#f6f5f1")
     fig.patch.set_edgecolor("#c8c6c0")
     fig.patch.set_linewidth(1.0)
@@ -202,7 +202,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=dm.figsize("15cm", "12cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "12cm"))
     gs = fig.add_gridspec(
         2,
         2,
@@ -234,7 +234,7 @@ def _save_layout_typography(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"))
     x = np.array([0, 1, 2])
     y = np.array([0, 1, 0.4])
     ax.plot(x, y, color="dc.green3", lw=dm.lw(0.5))
@@ -280,9 +280,7 @@ def _make_evolution_figure(step: int) -> plt.Figure:
         c_pos, c_env = "tab:blue", "tab:gray"
     else:
         dm.style.use("scientific")
-        fig, (ax1, ax2) = plt.subplots(
-            1, 2, figsize=dm.figsize("19cm", "7.5cm"), dpi=300
-        )
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=dm.figsize("19cm", "7.5cm"))
         c_pos, c_env = "dc.teal3", "dc.indigo2"
 
     # Panel 1: Time Domain
@@ -399,7 +397,7 @@ def _make_label_axes_compare(use_dm: bool) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, axes = plt.subplots(3, 1, figsize=dm.figsize("10cm", "12cm"), dpi=300)
+    fig, axes = plt.subplots(3, 1, figsize=dm.figsize("10cm", "12cm"))
     ylabels = ["y", "Velocity [m/s]", "A very long descriptive label"]
 
     for i, ax in enumerate(axes):
@@ -452,7 +450,7 @@ def _make_set_decimal_compare(use_dm: bool) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "6cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "6cm"))
     x = np.linspace(0, 10, 100)
     y = np.sin(x) * 0.5 + 1.0
 
@@ -491,7 +489,7 @@ def _save_arrow_axis_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "square"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "square"))
 
     x = np.random.rand(20)
     y = x + np.random.randn(20) * 0.2
@@ -535,7 +533,7 @@ def _save_validation_example(images_dir: Path) -> Path:
     """
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "10cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "10cm"))
     ax.plot([1, 2, 3], [1, 4, 9], color="dc.orange3")
     ax.set_ylabel(
         "A very very long y-axis label that overflows bounds", fontsize=dm.fs(1)
@@ -597,7 +595,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"))
     ax.plot(
         np.arange(50),
         np.cumsum(np.random.randn(50)) + 20,

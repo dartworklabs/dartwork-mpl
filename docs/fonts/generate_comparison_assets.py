@@ -60,7 +60,7 @@ def generate_before_after() -> None:
 
     # ── RIGHT: dartwork-mpl styled ──
     dm.style.use("scientific")
-    fig_after, ax = plt.subplots(figsize=(5.5, 4))
+    fig_after, ax = plt.subplots(figsize=dm.figsize("5.5in", "4in"))
     ax.bar(
         QUARTERS,
         OUTPUT,
@@ -104,7 +104,7 @@ def generate_chart_context() -> None:
 
     # 7.5 × 4.1 in = ~540 × 295 pt, lands inside the 720 px body
     # column without browser downscaling.
-    fig, ax = plt.subplots(figsize=(7.5, 4.1))
+    fig, ax = plt.subplots(figsize=dm.figsize("7.5in", "4.1in"))
 
     x = np.arange(len(phases))
     w = 0.35
