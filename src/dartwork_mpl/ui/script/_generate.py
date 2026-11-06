@@ -1,8 +1,8 @@
 """Generate a standalone Python script that reproduces the current figure.
 
 The script holds the figure function and ParamModel source and the active
-values. Its body (including ``from dartwork_mpl.util import save_formats``)
-is user-facing output and stays byte-for-byte as it was.
+values. Its body (including ``from dartwork_mpl.io import save_formats``)
+is user-facing output.
 """
 
 import inspect
@@ -89,7 +89,7 @@ Function:   {figure_fn.__name__}
 {imports_block}
 from pydantic import Field
 
-from dartwork_mpl.util import save_formats
+from dartwork_mpl.io import save_formats
 
 
 {model_source}
