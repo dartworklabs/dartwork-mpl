@@ -649,10 +649,9 @@ def test_watchdog_keeps_polling_while_output_drains(tmp_path, monkeypatch):
 
 _TRICKLE_CHILD = """import signal, sys, time
 signal.alarm(20)
-line = 'x' * 4095
-while True:
-    print(line, flush=True)
-    time.sleep(0.005)
+for _ in range(64):
+    print('x' * 4095, flush=True)
+    time.sleep(0.001)
 """
 
 
@@ -660,8 +659,9 @@ def test_watchdog_keeps_reading_while_a_scan_runs(tmp_path, monkeypatch):
     """A slow process-table scan does not stop the pipes from being read.
 
     The first scan is held open until 16 KiB more output has been read from
-    the child's pipes, for at most 5 s. A watchdog that reads only between
-    scans reads nothing while the scan is held, so the deadline passes.
+    the child's pipes, for at most 5 s; the child writes 256 KiB and exits. A
+    watchdog that reads only between scans reads nothing while the scan is
+    held, so the deadline passes.
     """
     import run_agent_plot_eval as capture
 
@@ -674,10 +674,10 @@ def test_watchdog_keeps_reading_while_a_scan_runs(tmp_path, monkeypatch):
 
     def held_scan():
         """Hold the first scan until the pipes have yielded 16 KiB more."""
+        target = state["read"] + 16 * 1024
         table = scan()
         if not state["held_scans"]:
             state["held_scans"] += 1
-            target = state["read"] + 16 * 1024
             deadline = time.monotonic() + 5
             while state["read"] < target and time.monotonic() < deadline:
                 time.sleep(0.001)
@@ -693,10 +693,9 @@ def test_watchdog_keeps_reading_while_a_scan_runs(tmp_path, monkeypatch):
         tmp_path / "events.jsonl",
         tmp_path / "stderr.txt",
         wall_seconds=5,
-        max_bytes=64 * 1024,
     )
     assert state["read_during_scan"]
-    assert result["stop_reason"] == "byte_limit"
+    assert result["stop_reason"] == "exit"
     assert result["cleanup_ok"]
 
 
@@ -722,24 +721,33 @@ def _child_ps_pids():
 def test_watchdog_leaves_no_scan_or_ps_behind(tmp_path, monkeypatch, ending):
     """A scan still running when capture ends is joined on every exit path.
 
-    Every loop scan is held for 0.3 s after ``ps`` returns, so the capture
-    ends (EOF, byte limit, or the scan's own error) while one is in flight.
+    Every loop scan is held for 1.5 s after ``ps`` returns (cleanup scans are
+    not), so the capture ends (EOF, byte limit, or the scan's own error) while
+    one is in flight, and returns before a scan left running would finish.
     """
     import run_agent_plot_eval as capture
 
-    scan = capture._process_table
-    calls = {"n": 0}
+    scan, stop = capture._process_table, capture._stop_tree
+    calls = {"n": 0, "cleanup": False}
 
     def held_scan():
-        """Hold every scan; the first one fails in the error case."""
-        calls["n"] += 1
+        """Hold every loop scan; the first one fails in the error case."""
         table = scan()
-        time.sleep(0.3)
+        if calls["cleanup"]:
+            return table
+        calls["n"] += 1
+        time.sleep(1.5)
         if ending == "error" and calls["n"] == 1:
             raise RuntimeError("scan failed")
         return table
 
+    def marked_stop(process, known):
+        """Cleanup scans run unheld."""
+        calls["cleanup"] = True
+        return stop(process, known)
+
     monkeypatch.setattr(capture, "_process_table", held_scan)
+    monkeypatch.setattr(capture, "_stop_tree", marked_stop)
     child = (
         "print('{}', flush=True)"
         if ending == "eof"
