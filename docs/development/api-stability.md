@@ -36,13 +36,18 @@ currently an advertised top-level `dm.ui` attribute.
 
 To remove a public name, first announce the deprecation in `CHANGELOG.md`
 and in the name's docstring, and have the name emit a `DeprecationWarning`
-at its definition (a function wrapper, a module-level `__getattr__` on the
-owning module) while it keeps working. Keep it that way for at least 2
-minor releases before moving it to `_REMOVED_NAMES`. Removed names no
-longer resolve; accessing one raises `AttributeError` with the version
-removed and a migration hint. The package root has no deprecated-name
-registry: none is in use, so add one only together with the first name that
-needs it.
+while it keeps working. Keep it that way for at least 2 minor releases
+before moving it to `_REMOVED_NAMES`; the count starts at the minor that
+first shipped the warning (a first warning in 0.8 allows removal in 0.10 at
+the earliest). Removed names no longer resolve; accessing one raises
+`AttributeError` with the version removed and a migration hint.
+
+Where the warning comes from depends on the name. A function or class warns
+at its definition (a wrapper), or through a module-level `__getattr__` on
+the module that owns it. A name the package root imports from a submodule
+and re-exports is already bound in the root, so the owning module's
+`__getattr__` never runs for `dm.X`; the warning then fires at import time
+only. Such a name needs a warning path on the root side.
 
 ## Registries
 
@@ -53,7 +58,9 @@ needs it.
 `_REMOVED_NAMES`
 : Hard-removed names. They raise `AttributeError` with a migration hint.
 
-A name lives in exactly one of these states: advertised or removed.
+The root registry records only advertised and removed names; no name is
+deprecated today. Deprecated is a separate lifecycle state between the two:
+the name keeps working and warns for at least two minor releases.
 
 ## Adding a public name
 

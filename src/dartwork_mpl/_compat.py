@@ -2,9 +2,10 @@
 
 Owned by the package root, the only module that imports it: the root's
 ``__getattr__`` delegates here so a removed name raises an
-``AttributeError`` naming its replacement. ``lint``'s migration hints are checked against
-``_REMOVED_NAMES`` by tests/contracts/test_deprecation_registry_parity.py. Not part
-of the public API.
+``AttributeError`` naming its replacement. ``lint``'s migration hints are
+checked against ``_REMOVED_NAMES`` by
+tests/contracts/test_deprecation_registry_parity.py. Not part of the public
+API.
 """
 
 from __future__ import annotations
