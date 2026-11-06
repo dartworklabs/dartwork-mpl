@@ -57,15 +57,18 @@ _SETTLED = "_dm_twin_spine_settled"
 
 
 def _boxes(fig: Figure) -> list[list[Axes]]:
-    """Visible rectilinear Axes drawn in one box, two or more; insets count."""
+    """Visible rectilinear Axes drawn in one box, two or more.
+
+    The walk covers inset Axes too (:func:`with_insets`, depth first): an
+    inset is not in ``fig.axes`` but its ``twinx`` is, so the inset finds
+    its twin among the figure's Axes.
+    """
     groups: list[list[Axes]] = []
     seen: set[int] = set()
     for ax in with_insets(fig.axes):
         if id(ax) in seen or not _rectilinear(ax):
             continue
-        group = [
-            m for m in same_position_axes(ax, insets=True) if _rectilinear(m)
-        ]
+        group = [m for m in same_position_axes(ax) if _rectilinear(m)]
         if len(group) < 2:
             continue
         seen.update(id(m) for m in group)

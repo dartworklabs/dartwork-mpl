@@ -315,22 +315,21 @@ def with_insets(axes: Sequence[Axes]) -> list[Axes]:
     return out
 
 
-def same_position_axes(ax: Axes, *, insets: bool = False) -> list[Axes]:
+def same_position_axes(ax: Axes) -> list[Axes]:
     """Return ``ax`` and the visible Axes drawn in the same box as it.
 
     Those are its ``twinx`` / ``twiny`` partners: their tick labels, axis
-    labels and legends sit around the same plot area as ``ax``'s own. With
-    ``insets``, inset Axes (:func:`with_insets`) are candidates too, so an
-    inset and its ``twinx`` form a box.
+    labels and legends sit around the same plot area as ``ax``'s own. The
+    candidates are the Axes of ``ax``'s figure (or subfigure); for an inset
+    that includes its ``twinx``, which matplotlib adds to the figure.
     """
     parent = ax.get_figure(root=False)
     if parent is None:
         return [ax]
     bounds = ax.get_position().bounds
-    pool = with_insets(parent.axes) if insets else parent.axes
     partners = [
         other
-        for other in pool
+        for other in parent.axes
         if other is not ax
         and other.get_visible()
         and all(

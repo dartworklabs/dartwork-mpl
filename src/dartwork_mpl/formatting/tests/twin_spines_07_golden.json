@@ -4261,6 +4261,88 @@
     ]
    }
   ],
+  "twinx/shown_by_hand_then_hidden_after_a_layout": [
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#000000ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     true,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#0f79cfff",
+     "#2d99f0ff",
+     "#2d99f0ff",
+     "#0f79cfff",
+     "#0f79cfff"
+    ]
+   },
+   {
+    "spines": {
+     "left": [
+      true,
+      0.3,
+      "#2d99f0ff"
+     ],
+     "right": [
+      false,
+      0.3,
+      "#f06d00ff"
+     ],
+     "bottom": [
+      true,
+      0.3,
+      "#000000ff"
+     ],
+     "top": [
+      false,
+      0.3,
+      "#000000ff"
+     ]
+    },
+    "x": [
+     false,
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff",
+     "#000000ff"
+    ],
+    "y": [
+     true,
+     "#c15800ff",
+     "#f06d00ff",
+     "#f06d00ff",
+     "#c15800ff",
+     "#c15800ff"
+    ]
+   }
+  ],
   "twin_made_after_a_layout": [
    {
     "spines": {

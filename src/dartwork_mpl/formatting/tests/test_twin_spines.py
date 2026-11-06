@@ -222,6 +222,14 @@ def _hidden_after_a_layout(fig: Figure, a: Axes, b: Axes) -> None:
     b.spines["right"].set_visible(False)
 
 
+def _shown_by_hand_then_hidden_after_a_layout(
+    fig: Figure, a: Axes, b: Axes
+) -> None:
+    b.spines["right"].set_visible(True)
+    dm.simple_layout(fig)
+    b.spines["right"].set_visible(False)
+
+
 def _twin_made_after_a_layout() -> Built:
     fig = _figure()
     a = fig.add_subplot()
@@ -269,6 +277,7 @@ for _edit in (
     _shown_on_the_parent,
     _frame_off,
     _hidden_after_a_layout,
+    _shown_by_hand_then_hidden_after_a_layout,
 ):
     CASES[f"twinx/{_edit.__name__.strip('_')}"] = _case(_twinx_pair, edit=_edit)
 CASES["twin_made_after_a_layout"] = _case(_twin_made_after_a_layout)

@@ -41,11 +41,13 @@ bounds stay.
 **Which Axes.** One that draws its own y scale on the right of a shared plot
 area, read from public state only:
 
-1. *Box*: drawn in the same box as another visible rectilinear Axes
-   (`get_position()` within 1e-9 among the parent figure's Axes and their
-   inset children, depth first: `same_position_axes(ax, insets=True)`).
-   Insets count for the spine only; the twin colours and every other
-   consumer of `same_position_axes` keep the default (`insets=False`).
+1. *Box*: drawn in the same box as another visible rectilinear Axes of its
+   figure (`get_position()` within 1e-9; `same_position_axes`, unchanged).
+   The spine step walks inset Axes too (`with_insets`: figure order, each
+   Axes followed by its insets, depth first): an inset is not in `fig.axes`
+   but its `twinx` is, so the inset finds its twin. The twin colours and the
+   other consumers keep their own walk over `fig.axes`, so inset pairs still
+   get no series colours.
 2. *Shared axes*: it shares x with a member and not y (public groupers).
 3. *Scale on the right*: its y axis is visible, its y label sits on the
    right and its y ticks too: tick labels shown on the right and not on the
@@ -126,8 +128,8 @@ spines.right`). It is the layout's line, not an override to undo.
   `Legend`) looked up statically over `dir()`, every MRO class namespace and
   every class and callable of the imported matplotlib modules stay the same
   objects.
-- `formatting/tests/test_twin_spines.py`: 50 cases (14 builds, each also
-  neutral and `format_ticks=False`, three presets, four edits) must equal
+- `formatting/tests/test_twin_spines.py`: 51 cases (14 builds, each also
+  neutral and `format_ticks=False`, three presets, five edits) must equal
   `twin_spines_07_golden.json`, recorded from origin/main (no D7 code) with
   0.7's wrapper, and the pixels of a live 0.7 re-enactment with the new step
   off. 11-1 to 11-5 and x02-x04 are pinned against the live 0.7 run.
