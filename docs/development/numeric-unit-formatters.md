@@ -5,10 +5,14 @@ orphan: true
 # Numeric-unit formatters: one engine and its contract map (D4)
 
 Root decision D4: converge the numeric-unit implementations on one formatter
-engine, prefer `axis_unit` / `axis_unit_of`, and promote a canonical API or
-start dated deprecations only once an exact mapping of arguments, output,
-label, precision, locator and scale exists. This page is that mapping, after
-the internal merge. Nothing public was promoted, renamed or deprecated.
+engine, and promote a canonical API or start dated deprecations only once an
+exact mapping of arguments, output, label, precision, locator and scale
+exists. This page is that mapping, after the internal merge. Nothing public
+was promoted, renamed or deprecated.
+
+Choose by purpose, not by a general preference: the `format_axis_*` helpers
+print the unit (or currency) on every tick; `axis_unit` / `axis_unit_of`
+move the unit into the axis label. Both are frontends over the same engine.
 
 ## One engine, two modes
 
