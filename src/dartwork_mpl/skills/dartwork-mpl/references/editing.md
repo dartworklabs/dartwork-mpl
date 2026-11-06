@@ -83,6 +83,7 @@ weight, colour and spacing, so every agent draws the same element.
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
 | bigger or smaller text, no amount | one step, `step = dm.fs(1) - dm.fs(0)` (1 pt; 2.6 pt under `presentation`): `t.set_fontsize(t.get_fontsize() + step)`; all text: `dm.style.use(preset, font_size=dm.fs(0) + step)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
+| black or neutral twin axes (no series colours) | `dm.config.twin_colors = "neutral"` before `dm.simple_layout`; not `tick_params(colors="black")`, which the first layout cannot tell from the default and paints |
 | values on the bars | `dm.label_bars(ax)`; a named detail is its keyword (`where="inside"`, `decimals=1`, `fmt="{} GWh"` …), see Value labels below |
 | a log axis | `ax.set_yscale("log")` |
 

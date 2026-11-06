@@ -612,9 +612,10 @@ three significant digits on the largest value, then the fewest decimals
 that print every value exactly, one count for the whole call: `21.4, 18.0,
 21.5`; `120, 135`; never a meaningless `.0`. `fmt` takes a `{}` template
 around that number (`"{} GWh"`), a format-spec field that formats the value
-itself (`"{:.2f}"`), or a callable that gets the value in the tick unit and
-returns the whole text. A template wraps the signed number, so `"${}B"` on
-−3.5 prints `$−3.5B`; for `−$3.5B` use a callable.
+in the tick unit (`"{:.2f}"`: `21.40` under `Energy (GWh)`), or a callable
+that gets the value in the tick unit and returns the whole text. A template
+wraps the signed number, so `"${}B"` on −3.5 prints `$−3.5B`; for `−$3.5B`
+use a callable.
 
 **Stacks.** Containers at the same positions, each starting where the ones
 before it ended (`bottom=` / `left=`), are a stack: a segment's label shows
@@ -716,11 +717,15 @@ never touched. `with dm.config.override(twin_colors="neutral"):` around
 the figure, or `dm.config.twin_colors = "neutral"`, keeps the preset's axis
 colours. A colour you set wins: `ax2.tick_params(axis="y", colors=...)`,
 `labelcolor=`, `ax2.yaxis.label.set_color(...)`,
-`ax2.spines["right"].set_color(...)`.
+`ax2.spines["right"].set_color(...)`. One exception: a colour set before the
+first `dm.simple_layout` that equals the preset's default (`"black"` under
+the light presets) cannot be told from the default and is painted; for
+black or neutral twin axes use `dm.config.twin_colors = "neutral"`.
 
 `dm.place_legend(ax)` on either twin merges the pair's entries into one
-legend on the top twin, the one drawn last, and removes the partners' own
-legends. The merged legend keeps the existing legend's title,
+legend on the top twin, the one drawn last (by zorder, then figure order,
+so `ax.set_zorder(ax2.get_zorder() + 1)` puts it on `ax`), and removes the
+partners' own legends. The merged legend keeps the existing legend's title,
 `handler_map`, frame, alignment, fonts, label colour, `markerscale` and
 `draggable` (the top twin's legend when both have one); `ncols` cannot be
 read back, so pass it again. A legend it cannot rebuild faithfully (tuple

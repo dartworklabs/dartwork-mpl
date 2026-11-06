@@ -37,13 +37,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   background, the tick labels and axis label in the same hue at 4.5:1. A
   side whose series draw several colours, or a hue close to the other
   side's, stays neutral; single Axes are never touched; a colour you set
-  (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins.
-  `with dm.config.override(twin_colors="neutral"):` keeps the preset's
-  colours.
+  (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins, except one
+  set before the first `dm.simple_layout` that equals the preset's default
+  (`"black"` under the light presets), which cannot be told from the
+  default and is painted.
+  `with dm.config.override(twin_colors="neutral"):` (or
+  `dm.config.twin_colors = "neutral"`) keeps the preset's colours, for
+  black or neutral twin axes.
 - **`dm.place_legend` keeps legend details.** A twin pair's legends merge
-  onto the top twin with the existing legend's title, `handler_map`, frame,
-  alignment, fonts, label colour, `markerscale` and `draggable` (a single
-  Axes' rebuilt legend too); `ncols` cannot be read back, so pass it again.
+  onto the top twin, now chosen by Axes zorder, then figure order (it was
+  figure order alone), so the `ax.set_zorder(ax2.get_zorder() + 1)` idiom
+  puts the legend on `ax`. The merged legend keeps the existing legend's
+  title, `handler_map`, frame, alignment, fonts, label colour,
+  `markerscale` and `draggable` (a single Axes' rebuilt legend too);
+  `ncols` cannot be read back, so pass it again.
   A legend it cannot rebuild faithfully (tuple or custom handles, labels
   other than the artists') is left as it is: an explicit `loc=` or
   `bbox_to_anchor=` still moves it, and a side (`loc="above"` …) warns

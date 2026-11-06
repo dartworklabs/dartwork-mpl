@@ -582,8 +582,11 @@ dm.simple_layout(fig)
 ```
 
 `dm.simple_layout` colours each side like its one series (spine and ticks at
-3:1, tick labels and axis label at 4.5:1); colours you set win, and
-`with dm.config.override(twin_colors="neutral"):` keeps the preset's. One
+3:1, tick labels and axis label at 4.5:1); colours you set win, except one
+set before the first layout that equals the preset's default (`"black"`):
+it cannot be told from the default and is painted. For black or neutral
+twin axes, `with dm.config.override(twin_colors="neutral"):` (or
+`dm.config.twin_colors = "neutral"`) keeps the preset's. One
 legend for both: `dm.place_legend(ax1)`, not `ax1.legend(h1 + h2, l1 + l2)`;
 it keeps the legend's title and settings (pass `ncols` again) and leaves a
 legend of tuple or custom handles as it is.
