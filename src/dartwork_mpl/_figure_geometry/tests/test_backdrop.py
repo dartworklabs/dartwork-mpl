@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+import dartwork_mpl as dm
 from dartwork_mpl._colors.contrast import composite_layers, composite_over
 from dartwork_mpl._figure_geometry import backdrop_layers
 
@@ -56,7 +57,9 @@ def test_hidden_patches_add_nothing() -> None:
 
 @pytest.mark.parametrize("alpha", [0.0, 0.4, 1.0])
 def test_folded_layers_match_the_rendered_pixel(alpha: float) -> None:
-    fig, ax = plt.subplots(figsize=(2, 2), dpi=50)
+    # A 100 x 100 px canvas: 2 in at 50 dpi, so pixel (50, 50) is mid-Axes.
+    fig, ax = plt.subplots(figsize=dm.figsize("2in", "2in"))
+    fig.set_dpi(50)
     fig.patch.set_facecolor("#336699")
     ax.set_facecolor((0.9, 0.2, 0.1, alpha))
     fig.canvas.draw()
