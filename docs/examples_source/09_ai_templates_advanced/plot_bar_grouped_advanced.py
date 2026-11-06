@@ -16,7 +16,7 @@ MCP ``dartwork-mpl://template/advanced/bar_grouped``.
 # data_shape: categories: list[str], series: dict[str, list[float]]
 # tags: bar, grouped, multi-series, annotated, narrative
 # narrative: Throughput by zone across four periods (Plant / Lab / Field) — totals annotated
-# advanced_apis: per-bar value labels, total annotation above each group, format_axis_si, legend frameon=False
+# advanced_apis: dm.label_bars per bar, total annotation above each group, format_axis_si, legend frameon=False
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -46,7 +46,7 @@ fig, ax = plt.subplots(
 for i, name in enumerate(series_names):
     offset = (i - 1) * bar_width
     vals = series[name]
-    bars = ax.bar(
+    ax.bar(
         x + offset,
         vals,
         bar_width,
@@ -55,17 +55,10 @@ for i, name in enumerate(series_names):
         edgecolor="white",
         linewidth=0.3,
     )
-    for b, v in zip(bars, vals, strict=False):
-        ax.text(
-            b.get_x() + b.get_width() / 2,
-            v + 3,
-            f"{v}",
-            ha="center",
-            va="bottom",
-            fontsize=dm.fs(-2),
-            fontweight=dm.fw(1),
-            color="oc.gray8",
-        )
+
+# Per-bar value labels. dm.label_bars has no per-group total, so the
+# totals below stay hand-placed.
+dm.label_bars(ax)
 
 # Per-category total above the cluster.
 totals = [
