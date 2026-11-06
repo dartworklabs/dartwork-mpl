@@ -2,15 +2,17 @@
 
 * **Off the bar** (outside the bar end, and every stack total): the preset
   text colour.
-* **On the bar** (a stack segment's label, ``where="inside"`` or
-  ``"center"``): white or the preset text colour, whichever reads better on
-  the bar as drawn (its face composited over what shows behind it), by
-  ``dm.readable_text_color``. ``dc.blue7`` (``#1686e0``) takes the dark ink:
-  5.52:1 against white's 3.80:1.
-* **Series.** ``color="series"``: each bar's colour as drawn, darkened to
-  4.5:1 against the background (``dm.ensure_contrast``). A total belongs to
-  no single series and keeps the text colour.
-* **Explicit.** Any other ``color=`` is used as given, totals included.
+* **On the bar** (a stack segment's label at its middle or inside its end,
+  ``where="inside"`` or ``"center"``): white or the preset text colour,
+  whichever reads better on the bar as drawn (its face composited over what
+  shows behind it), by ``dm.readable_text_color``. ``dc.blue7``
+  (``#1686e0``) takes the dark ink: 5.52:1 against white's 3.80:1.
+* **Series.** ``color="series"`` colours the labels off their own bar (an
+  outside label that is not a total): the bar's colour as drawn, darkened
+  to 4.5:1 against the background (``dm.ensure_contrast``). A label on its
+  own bar keeps the readable ink (the bar's own hue would not read on it);
+  a total belongs to no single series and keeps the text colour.
+* **Explicit.** Any other ``color=`` is used as given, everywhere.
 """
 
 from __future__ import annotations
@@ -93,13 +95,13 @@ def label_ink(
 ) -> object | None:
     """The colour for a label of ``kind`` at ``where`` on ``patch``.
 
-    ``color`` is the call's ``color=``; ``None`` means the preset text colour
-    (Text's own default), so nothing is set.
+    ``color`` is the call's ``color=``. ``None`` returned means the preset
+    text colour (Text's own default), so nothing is set.
     """
-    if color is None:
-        return None if where == "outside" else _on_bar_ink(patch, bar_axes)
-    if is_series(color):
-        if kind == "total":
-            return None
+    if color is not None and not is_series(color):
+        return color
+    if where != "outside":
+        return _on_bar_ink(patch, bar_axes)
+    if is_series(color) and kind != "total":
         return _series_ink(patch, _background(bar_axes))
-    return color
+    return None

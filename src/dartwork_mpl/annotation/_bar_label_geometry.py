@@ -35,6 +35,8 @@ from matplotlib.text import Text
 from .._figure_geometry import same_position_axes
 
 if TYPE_CHECKING:
+    from matplotlib.backend_bases import RendererBase
+
     from ._bar_labels import BarLabel, Where
 
 __all__ = [
@@ -45,6 +47,7 @@ __all__ = [
     "host_axes",
     "in_view",
     "place",
+    "text_length",
 ]
 
 # Point offset between a bar end and its label (``dm.annotate_value``'s).
@@ -96,15 +99,25 @@ def in_view(label: BarLabel, where: Where) -> bool:
     )
 
 
-def fits_on_bar(label: BarLabel) -> bool:
+def text_length(label: BarLabel, renderer: RendererBase | None) -> float:
+    """The label's text extent along the value axis, in display pixels.
+
+    Its font, size and rotation as drawn, measured with ``renderer`` (the
+    canvas's renderer at the figure's current dpi); with ``None``,
+    matplotlib uses the renderer of the label's last draw.
+    """
+    text = Text.get_window_extent(label, renderer)  # the text, not the anchor
+    return float(text.height if label.orientation == "vertical" else text.width)
+
+
+def fits_on_bar(label: BarLabel, text_px: float) -> bool:
     """Whether ``label`` is no longer than its bar along the value axis.
 
-    The label's own text extent (its font, size and rotation as drawn), plus
-    the 3 pt inset for ``"inside"``, against the bar's length on screen.
+    ``text_px`` (:func:`text_length`), plus the 3 pt inset for
+    ``"inside"``, against the bar's length on screen, read afresh.
     """
-    text = Text.get_window_extent(label)  # the text alone, not the anchor
     vertical = label.orientation == "vertical"
-    need = text.height if vertical else text.width
+    need = text_px
     if label.where == "inside":
         figure = label.get_figure(root=True)
         dpi = figure.dpi if figure is not None else 72.0

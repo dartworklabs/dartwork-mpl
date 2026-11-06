@@ -1,16 +1,24 @@
 """Which bar containers of a :func:`~._bar_labels.label_bars` call stack.
 
-A stack is two or more containers drawn on one Axes, in one orientation, at
-the same positions, each starting where the ones before it ended: at every
-position a positive bar starts on the positive end, a negative bar on the
-negative end, as callers build stacks with ``ax.bar(x, v, bottom=...)``
-(``barh``: ``left=``). A zero bar may start on either end; a bar whose value
-or start is not finite (NaN) is not drawn and adds nothing.
+Containers drawn on one Axes, in one orientation, at the same positions,
+each starting where the ones before it ended, pile up: at every position a
+positive bar starts on the positive end, a negative bar on the negative end,
+as callers build stacks with ``ax.bar(x, v, bottom=...)`` (``barh``:
+``left=``). A zero bar may start on either end; a bar whose value or start
+is not finite (NaN) is not drawn and adds nothing. "Where it ended" allows
+for rounding: 1e-9 of the two values compared.
 
-Floating bars, which start anywhere else (a waterfall, ranges, bars overlaid
-from one base), form no stack, and neither do bars at other positions
-(grouped bars). A stack's label at each position is its net sum, written
-beyond the end the net points to (:meth:`BarStack.total`).
+A pile is a **stack** when, at some position, two bars of non-zero length
+stand together. Containers that never do (a two-colour waterfall's rises
+and falls, a highlight split into grey and an accent, an all-NaN container)
+pile up without stacking: their bars are labelled as plain bars. Floating
+bars, which start anywhere else (a waterfall, ranges, bars overlaid from
+one base), and bars at other positions (grouped bars) do not pile at all.
+
+In any pile, a zero bar beside a non-zero bar at its position pads the
+position and gets no label; where every bar is zero, the first one keeps
+its label. A stack's label at each position is its net sum, written beyond
+the end the net points to (:meth:`BarStack.total`).
 """
 
 from __future__ import annotations
@@ -27,7 +35,7 @@ if TYPE_CHECKING:
     from matplotlib.container import BarContainer
     from matplotlib.patches import Rectangle
 
-__all__ = ["BarStack", "bar_values", "find_stacks"]
+__all__ = ["BarPiles", "BarStack", "bar_values", "pile_bars"]
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -69,11 +77,8 @@ def _geometry(container: BarContainer) -> _Geometry:
 
 
 def _same(a: FloatArray, b: FloatArray) -> npt.NDArray[np.bool_]:
-    """Elementwise equal within ``_REL_TOL`` of the values' magnitude."""
-    both = np.abs(np.concatenate([a, b]))
-    finite = both[np.isfinite(both)]
-    scale = float(finite.max()) if finite.size else 0.0
-    return np.abs(a - b) <= _REL_TOL * scale
+    """Elementwise equal within ``_REL_TOL`` of the larger of each pair."""
+    return np.abs(a - b) <= _REL_TOL * np.maximum(np.abs(a), np.abs(b))
 
 
 def _axes_of(container: BarContainer) -> object:
@@ -83,14 +88,18 @@ def _axes_of(container: BarContainer) -> object:
 
 @dataclass(eq=False)
 class _Pile:
-    """Containers stacked so far, with the running ends at each position."""
+    """Containers piled so far, with the running ends at each position."""
 
     axes: object
     orientation: str | None
     centres: FloatArray
     high: FloatArray  # the positive end; NaN until a bar stands there
     low: FloatArray  # the negative end
+    # How many bars of non-zero length stand at each position.
+    together: npt.NDArray[np.int_]
     containers: list[BarContainer] = field(default_factory=list)
+    # Per container: which of its bars stand with zero length.
+    zeros: list[npt.NDArray[np.bool_]] = field(default_factory=list)
 
     @classmethod
     def start(cls, container: BarContainer) -> _Pile:
@@ -102,9 +111,30 @@ class _Pile:
             centres,
             unknown,
             unknown.copy(),
+            np.zeros(centres.shape, dtype=int),
         )
         pile.add(container)
         return pile
+
+    @property
+    def stacked(self) -> bool:
+        """Whether two bars of non-zero length stand together somewhere."""
+        return bool(np.any(self.together >= 2))
+
+    def padding(self) -> set[tuple[int, int]]:
+        """``(id(container), index)`` of the zero bars that pad a position.
+
+        A zero bar pads when a non-zero bar stands at its position, or when
+        an earlier zero bar of the pile already stands there.
+        """
+        out: set[tuple[int, int]] = set()
+        seen = self.together > 0
+        for container, zero in zip(self.containers, self.zeros, strict=True):
+            out.update(
+                (id(container), int(i)) for i in np.flatnonzero(zero & seen)
+            )
+            seen = seen | zero
+        return out
 
     def takes(self, container: BarContainer) -> bool:
         """Whether ``container`` starts on this pile's running ends."""
@@ -140,7 +170,9 @@ class _Pile:
         down = standing & (bars.lengths < 0)
         self.high[up] = ends[up]
         self.low[down] = ends[down]
+        self.together += up | down
         self.containers.append(container)
+        self.zeros.append(standing & (bars.lengths == 0))
 
 
 def _standing(
@@ -200,11 +232,21 @@ class BarStack:
         return net, outer.container
 
 
-def find_stacks(containers: Iterable[BarContainer]) -> list[BarStack]:
-    """The stacks among ``containers``, in the order their bases come.
+class BarPiles(NamedTuple):
+    """How a call's containers pile up."""
 
-    Each container joins the first stack whose running ends it starts on,
-    or starts its own; only piles of two or more containers are stacks.
+    #: The stacks, in the order their bases come.
+    stacks: list[BarStack]
+    #: ``(id(container), index)`` of the zero bars that get no label.
+    padding: frozenset[tuple[int, int]]
+
+
+def pile_bars(containers: Iterable[BarContainer]) -> BarPiles:
+    """The stacks among ``containers`` and the zero bars that pad them.
+
+    Each container joins the first pile whose running ends it starts on,
+    or starts its own; a pile is a stack when two bars of non-zero length
+    stand together at some position.
     """
     piles: list[_Pile] = []
     for container in containers:
@@ -213,4 +255,7 @@ def find_stacks(containers: Iterable[BarContainer]) -> list[BarStack]:
             piles.append(_Pile.start(container))
         else:
             pile.add(container)
-    return [BarStack(p.containers) for p in piles if len(p.containers) > 1]
+    return BarPiles(
+        [BarStack(p.containers) for p in piles if p.stacked],
+        frozenset().union(*(p.padding() for p in piles)),
+    )

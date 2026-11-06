@@ -24,6 +24,7 @@ __all__ = [
     "axes_decoration_extents",
     "axes_text_artists",
     "axes_titles",
+    "canvas_renderer",
     "get_renderer",
     "iter_figure_level_extents",
     "outside_clearance_px",
@@ -56,6 +57,19 @@ BBOX_ERRORS: tuple[type[BaseException], ...] = (
 )
 
 
+def canvas_renderer(fig: Figure | SubFigure) -> RendererBase | None:
+    """The canvas's own renderer at the Figure's current size and DPI.
+
+    ``None`` when the canvas has no ``get_renderer`` (a plain Figure, or a
+    vector canvas while matplotlib saves). Unlike :func:`get_renderer` it
+    never draws, so an artist may call it while the figure is drawn.
+    """
+    canvas = fig.canvas
+    if hasattr(canvas, "get_renderer"):
+        return canvas.get_renderer()  # type: ignore[no-any-return]
+    return None
+
+
 def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     """Return a measurement renderer without replacing the caller's canvas.
 
@@ -78,8 +92,9 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     matplotlib.backend_bases.RendererBase
         Native canvas renderer, or a temporary renderer at the Figure DPI.
     """
-    if hasattr(fig.canvas, "get_renderer"):
-        return fig.canvas.get_renderer()  # type: ignore[no-any-return]
+    native = canvas_renderer(fig)
+    if native is not None:
+        return native
     root = fig.get_figure(root=True)
     print_canvas = root.canvas._switch_canvas_and_return_print_method("png")  # type: ignore[attr-defined]
     with print_canvas as print_method:

@@ -23,13 +23,17 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   left of it); an inverted value axis flips the side with the bar; error
   bars push the label past their caps, but not past the view.
 * **Stacks.** Containers at the same positions, each starting where the
-  ones before it ended (:mod:`._bar_stacks`), are a stack: each segment's
-  label at its middle, shown while the segment is at least as long as the
-  label, and the stack's net sum beyond the end the net points to.
-  Floating bars (a waterfall) and grouped bars are no stack.
-* **Ink.** A label on a bar (a segment's, ``"inside"``, ``"center"``) takes
-  white or the preset text colour, whichever reads better on the bar as
-  drawn; a label off the bar keeps the text colour
+  ones before it ended, with two non-zero bars standing together somewhere
+  (:mod:`._bar_stacks`), are a stack: each segment's label at its middle,
+  shown while the segment is at least as long as the label, and the
+  stack's net sum beyond the end the net points to. Floating bars (a
+  waterfall), bars that never stand together (a two-colour waterfall, a
+  highlight split in two) and grouped bars are no stack; a zero bar beside
+  a non-zero one at its position pads it and gets no label.
+* **Ink.** A label on its bar (a segment's, ``"inside"``, ``"center"``)
+  takes white or the preset text colour, whichever reads better on the bar
+  as drawn; a label off the bar keeps the text colour, or with
+  ``color="series"`` its bar's colour, totals excepted
   (:mod:`._bar_label_ink`).
 * **View.** A label shows while its bar's end (its middle for
   ``where="center"``) lies in the view, within one pixel: a bar ending on a
@@ -65,7 +69,7 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
-from .._figure_geometry import same_position_axes
+from .._figure_geometry import canvas_renderer, same_position_axes
 from ..formatting import (
     TickScale,
     number_text,
@@ -73,9 +77,15 @@ from ..formatting import (
     value_label_decimals,
 )
 from ..scale import fs, fw
-from ._bar_label_geometry import fits_on_bar, host_axes, in_view, place
+from ._bar_label_geometry import (
+    fits_on_bar,
+    host_axes,
+    in_view,
+    place,
+    text_length,
+)
 from ._bar_label_ink import is_series, label_ink
-from ._bar_stacks import BarStack, bar_values, find_stacks
+from ._bar_stacks import BarStack, bar_values, pile_bars
 
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
@@ -307,6 +317,8 @@ class BarLabel(Annotation):
         self._written: dict[str, object] = {}
         # True while get_visible measures the text (which asks it again).
         self._measuring = False
+        # The last text measurement: (what decides it, pixels).
+        self._text_px: tuple[tuple[object, ...], float] | None = None
         super().__init__(
             "",
             (0.0, 0.0),
@@ -367,9 +379,33 @@ class BarLabel(Annotation):
         try:
             # Measure the text this draw will write (the unit may move).
             self.bar_family.follow(self)
-            return fits_on_bar(self)
+            return fits_on_bar(self, self._text_length())
         finally:
             self._measuring = False
+
+    def _text_length(self) -> float:
+        """:func:`text_length`, measured again only when what decides it moved.
+
+        A draw asks a label's visibility twice (``Annotation.draw``, then
+        ``Text.draw``); the text, font, rotation and dpi rarely change
+        between the two. The renderer is the canvas's at the current dpi, or
+        (a vector canvas while saving) the one matplotlib's draw set.
+        """
+        figure = self.get_figure(root=True)
+        renderer = canvas_renderer(figure) if figure is not None else None
+        key = (
+            self.get_text(),
+            hash(self.get_fontproperties()),
+            self.get_rotation(),
+            self.get_linespacing(),
+            self.get_usetex(),
+            self.get_parse_math(),
+            None if figure is None else figure.dpi,
+            None if renderer is None else renderer.points_to_pixels(72.0),
+        )
+        if self._text_px is None or self._text_px[0] != key:
+            self._text_px = (key, text_length(self, renderer))
+        return self._text_px[1]
 
     def update_positions(self, renderer: RendererBase) -> None:
         """Follow the tick unit and the bar end, then position as usual."""
@@ -566,10 +602,14 @@ def label_bars(
       positives on the positive end, negatives on the negative end): each
       segment's label at its middle, hidden while the segment is shorter
       than the label (a taller figure brings it back), and the stack's net
-      sum 3 pt beyond the end the net points to. Floating bars (a
-      waterfall) and grouped bars are no stack: plain labels, no totals;
-    - a label on a bar (a segment's, ``"inside"``, ``"center"``) in white or
-      the preset text colour, whichever reads better on the bar as drawn
+      sum 3 pt beyond the end the net points to. A stack needs two
+      non-zero bars standing together at some position: floating bars (a
+      waterfall), bars that never stand together (a two-colour waterfall,
+      a highlight split into grey and an accent) and grouped bars get
+      plain labels, no totals, each value once (a zero bar beside a
+      non-zero one is padding and gets no label);
+    - a label on its bar (a segment's, ``"inside"``, ``"center"``) in white
+      or the preset text colour, whichever reads better on the bar as drawn
       (``dm.readable_text_color``); labels off the bars, totals included,
       in the text colour;
     - on a ``twinx`` / ``twiny`` pair the labels are added to the Axes drawn
@@ -615,10 +655,11 @@ def label_bars(
     size : float or str, optional
         Font size; default ``dm.fs(-1)``.
     color : color, optional
-        ``None`` (default) the readable ink above; ``"series"`` each bar's
-        colour as drawn, darkened to 4.5:1 against the background
-        (``dm.ensure_contrast``; a total, of no single series, keeps the
-        text colour); any matplotlib colour, for every label.
+        ``None`` (default) the inks above; ``"series"``: a label off its bar
+        in the bar's colour as drawn, darkened to 4.5:1 against the
+        background (``dm.ensure_contrast``), while a label on its bar keeps
+        the readable ink and a total (of no single series) the text colour;
+        any matplotlib colour, for every label.
 
     Returns
     -------
@@ -660,9 +701,8 @@ def label_bars(
     if not containers:
         return []
 
-    family = BarLabelFamily(
-        ax, containers, options, stacks=find_stacks(containers)
-    )
+    piles = pile_bars(containers)
+    family = BarLabelFamily(ax, containers, options, stacks=piles.stacks)
     stack_of = {
         id(c): stack for stack in family.stacks for c in stack.containers
     }
@@ -674,7 +714,8 @@ def label_bars(
         # Masked values (np.ma) are missing values, like NaN: no label.
         values = bar_values(container)[: len(container.patches)]
         for index, value in enumerate(values):
-            if math.isfinite(value):
+            padding = (id(container), index) in piles.padding
+            if math.isfinite(value) and not padding:
                 _add_label(
                     family,
                     container,

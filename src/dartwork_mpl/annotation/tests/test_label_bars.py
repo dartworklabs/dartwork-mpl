@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 import pytest
+from matplotlib.figure import Figure
 from matplotlib.text import Text
 
 matplotlib.use("Agg")
@@ -840,6 +841,46 @@ def test_short_segment_label_hidden():
     short.set_fontsize(2)
     fig.canvas.draw()
     assert short.get_visible()
+    # Along the value axis as drawn: a long text fits flat, not turned.
+    short.set_text("1,000,000")
+    fig.canvas.draw()
+    assert short.get_visible()
+    short.set_rotation(90)
+    fig.canvas.draw()
+    assert not short.get_visible()
+
+
+def test_segment_room_after_a_dpi_change():
+    # Text and bar both scale with the dpi, so the answer must not change;
+    # asked before the next draw, the label is measured at the new dpi,
+    # not with the renderer of the last draw.
+    fig, ax = _fig()
+    ax.set_ylim(0, 100)
+    containers = _stack(ax, [([50.0], {}), ([10.0], {})], [0])
+    seg = dm.label_bars(ax, total=False)[1]
+    renderer = _drawn(fig)
+    height = seg.get_window_extent(renderer).height
+    unit_px = (
+        ax.transData.transform((0, 1))[1] - ax.transData.transform((0, 0))[1]
+    )
+    containers[1].patches[0].set_height(1.3 * height / unit_px)
+    fig.canvas.draw()
+    assert seg.get_visible()
+    fig.set_dpi(fig.dpi / 2)
+    assert seg.get_visible()
+    fig.canvas.draw()
+    assert seg.get_visible()
+
+    # A plain Figure's canvas has no renderer of its own: matplotlib
+    # measures at the figure's current dpi, so a dpi change measures anew.
+    fig = Figure(figsize=dm.figsize("12cm", "standard"), dpi=72)
+    ax = fig.add_subplot()
+    _stack(ax, [([30.0, 30.0], {}), ([1.0, 12.0], {})], np.arange(2))
+    short = dm.label_bars(ax)[2]
+    fig.savefig(io.BytesIO(), format="png", dpi="figure")
+    assert not short.get_visible()
+    fig.set_dpi(288)
+    assert not short.get_visible()
 
 
 def test_segment_room_counts_the_inside_inset():
@@ -961,6 +1002,59 @@ def test_waterfall_is_not_a_stack():
     _assert_outside(fig, texts, actual.patches + gap.patches)
 
 
+def test_bars_that_never_stand_together_are_no_stack():
+    # A two-colour waterfall: rises and falls at the same positions, each
+    # from the running level, the other colour padded with NaN or zero.
+    steps = np.array([10.0, -3.0, 5.0, -2.0])
+    level = np.array([0.0, 10.0, 7.0, 12.0])
+    for pad in (np.nan, 0.0):
+        fig, ax = _fig()
+        x = np.arange(4)
+        ups = ax.bar(x, np.where(steps > 0, steps, pad), bottom=level)
+        downs = ax.bar(x, np.where(steps < 0, steps, pad), bottom=level)
+        texts = dm.label_bars(ax)
+        dm.simple_layout(fig)
+        # Each value once, no totals, no "0" for the padding.
+        assert _texts(texts) == ["10", "5", f"{MINUS}3", f"{MINUS}2"]
+        assert set(_kinds(texts)) == {"edge"}
+        assert ax._dm_bar_label_families[0].stacks == []
+        shown = [ups.patches[0], ups.patches[2], downs.patches[1]]
+        _assert_outside(fig, texts, [*shown, downs.patches[3]])
+
+    # The highlight idiom: one series split into grey and an accent.
+    values = np.array([3.0, 5.0, 4.0, 6.0])
+    mask = np.array([False, True, False, False])
+    for pad in (np.nan, 0.0):
+        fig, ax = _fig()
+        ax.bar(np.arange(4), np.where(mask, pad, values), color="0.7")
+        ax.bar(np.arange(4), np.where(mask, values, pad), color="dc.red6")
+        texts = dm.label_bars(ax)
+        assert _texts(texts) == ["3", "4", "6", "5"]
+        assert set(_kinds(texts)) == {"edge"}
+        assert ax._dm_bar_label_families[0].stacks == []
+
+    # An all-NaN container, then the real one: one plain family.
+    fig, ax = _fig()
+    ax.bar([0, 1], [np.nan, np.nan])
+    bars = ax.bar([0, 1], [3.0, 4.0])
+    texts = dm.label_bars(ax)
+    assert _texts(texts) == ["3", "4"]
+    assert set(_kinds(texts)) == {"edge"}
+    (family,) = ax._dm_bar_label_families
+    assert family.stacks == []
+    _assert_outside(fig, texts, bars.patches)
+
+
+def test_running_end_tolerance_is_per_bar():
+    # 501 is not 1 because another bar is 1e12 tall.
+    fig, ax = _fig()
+    ax.bar([0, 1], [1e12, 1.0])
+    ax.bar([0, 1], [5.0, 5.0], bottom=[1e12, 501.0])
+    texts = dm.label_bars(ax)
+    assert set(_kinds(texts)) == {"edge"}
+    assert ax._dm_bar_label_families[0].stacks == []
+
+
 def test_inside_ink_by_contrast():
     blue7 = mcolors.to_hex("dc.blue7")
     assert blue7 == "#1686e0"
@@ -1008,13 +1102,51 @@ def test_inside_ink_by_contrast():
     # An explicit colour wins, totals included.
     texts = dm.label_bars(chart(color="dc.blue9"), color="dc.red7")
     assert {_hex(t) for t in texts} == {mcolors.to_hex("dc.red7")}
-    # "series": each segment its series' ink; a total belongs to no single
-    # series and keeps the text colour.
+    # "series" colours only labels off their own bar: a segment keeps the
+    # readable ink, a total (of no single series) the text colour.
     texts = dm.label_bars(chart(color="dc.blue9"), color="series")
-    assert [_hex(t) for t in texts[4:]] == ["#000000"] * 2
-    for text in texts[:4]:
-        assert _hex(text) not in ("#000000", "#ffffff")
-        assert _contrast_on_white(text) >= 4.5
+    assert [_hex(t) for t in texts] == ["#000000"] * 2 + ["#ffffff"] * 2 + [
+        "#000000"
+    ] * 2
+
+
+def _shown_on(text, patch):
+    """Contrast of ``text``'s ink against ``patch`` as drawn on white."""
+    r, g, b, a = mcolors.to_rgba(patch.get_facecolor())
+    shown = tuple(a * c + (1 - a) for c in (r, g, b))
+    return contrast_ratio(mcolors.to_rgb(text.get_color()), shown)
+
+
+def test_series_ink_only_off_the_bar():
+    navy = "#0b3d91"
+    # A segment and a "center" label under "series" sit on their own bar:
+    # readable ink, never the bar's own hue.
+    fig, ax = _fig()
+    containers = _stack(
+        ax, [([4.0], {"color": "dc.blue2"}), ([3.0], {"color": navy})], [0]
+    )
+    texts = dm.label_bars(ax, color="series")
+    for text, bars in zip(texts[:2], containers, strict=True):
+        assert _shown_on(text, bars.patches[0]) >= 4.5
+    assert _hex(texts[2]) == "#000000"  # the total
+    for where in ("center", "inside"):
+        fig, ax, bars = _plain([4.0], color=navy)
+        (text,) = dm.label_bars(ax, where=where, color="series")
+        assert _shown_on(text, bars.patches[0]) >= 4.5
+        assert _hex(text) != navy
+
+    # Off the bar the series hue reads on the background: outside labels,
+    # a stack's segments placed outside included.
+    fig, ax, _ = _plain([4.0], color=navy)
+    (text,) = dm.label_bars(ax, color="series")
+    assert _hex(text) == navy  # already 4.5:1 on white
+    fig, ax = _fig()
+    _stack(ax, [([4.0], {"color": "dc.blue2"}), ([3.0], {"color": navy})], [0])
+    texts = dm.label_bars(ax, where="outside", color="series")
+    assert _hex(texts[1]) == navy
+    assert _hex(texts[0]) not in ("#000000", "#ffffff")  # blue2, darkened
+    assert _contrast_on_white(texts[0]) >= 4.5
+    assert _hex(texts[2]) == "#000000"  # the total
 
 
 def test_grouped_and_stacked_layout():
@@ -1105,16 +1237,23 @@ def test_stack_nan_and_zero_segments():
     )
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
-    # No label for the NaN segment; it adds nothing to its total.
-    assert _texts(texts) == ["3", "4", "2", "1", "0", "4", "6"]
-    assert _kinds(texts) == ["segment"] * 5 + ["total"] * 2
+    # No label for the NaN segment, which adds nothing to its total, nor
+    # for the zero segment beside bars that carry the value.
+    assert _texts(texts) == ["3", "4", "2", "1", "4", "6"]
+    assert _kinds(texts) == ["segment"] * 4 + ["total"] * 2
     fig.canvas.draw()
-    zero = texts[4]
-    assert not zero.get_visible()  # a zero segment has no room
-    assert all(t.get_visible() for t in texts if t is not zero)
+    assert all(t.get_visible() for t in texts)
     _assert_outside(
-        fig, texts[5:], [containers[2].patches[0], containers[1].patches[1]]
+        fig, texts[4:], [containers[2].patches[0], containers[1].patches[1]]
     )
+
+    # Where every bar is zero, the first one keeps its label (no room to
+    # show on a stack segment) and the total reads 0.
+    fig, ax = _fig()
+    _stack(ax, [([0.0, 2.0], {}), ([0.0, 3.0], {})], np.arange(2))
+    texts = dm.label_bars(ax)
+    assert _texts(texts) == ["0", "2", "3", "0", "5"]
+    assert _kinds(texts) == ["segment"] * 3 + ["total"] * 2
 
     # bottom + values carried the NaN on: the bar above it is not drawn,
     # shows no label, and the total counts what stands.
@@ -1134,7 +1273,7 @@ def test_stack_nan_and_zero_segments():
     ax.bar([0], [-2.0])
     ax.bar([0], [0.0], bottom=[-2.0])
     texts = dm.label_bars(ax)
-    assert _texts(texts) == ["5", f"{MINUS}2", "0", "3"]
+    assert _texts(texts) == ["5", f"{MINUS}2", "3"]
     assert _kinds(texts)[-1] == "total"
     _assert_outside(fig, texts[-1:], top.patches)
 
@@ -1242,6 +1381,21 @@ def test_stack_on_an_inverted_value_axis():
         assert text.get_window_extent(renderer).y1 == pytest.approx(
             ax.transData.transform((x, end))[1] - gap, abs=0.6
         )
+
+    # A negative net (2 - 5 + 1) sits beyond the negative end (-5), which
+    # the inverted axis shows higher on screen.
+    fig, ax = _fig()
+    _stack(ax, [([2.0], {}), ([-5.0], {}), ([1.0], {})], [0], width=0.6)
+    ax.invert_yaxis()
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    renderer = _drawn(fig)
+    total = texts[-1]
+    assert total.get_text() == f"{MINUS}2"
+    assert total.get_verticalalignment() == "bottom"
+    assert total.get_window_extent(renderer).y0 == pytest.approx(
+        ax.transData.transform((0, -5.0))[1] + _offset_px(fig), abs=0.6
+    )
 
 
 def test_invalid_arguments_raise():
