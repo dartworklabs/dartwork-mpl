@@ -20,7 +20,10 @@ the axis actually shows:
 
 On log and other non-linear scales the ticks span decades, which cannot
 share one unit (``0.000001k`` beside ``1,000k``), so there each tick takes
-its own unit and the fewest decimals it needs (``0.1, 1, 10, 1k``).
+its own unit and the fewest decimals it needs (``0.1, 1, 10, 1k``). A
+``"function"`` scale whose functions are affine over the view (a
+``secondary_yaxis`` showing the same values, ``x1.3`` or degrees C as F)
+draws its ticks evenly and counts as linear (:func:`draws_linearly`).
 
 Text that should read like the ticks (value labels on bars) asks
 :func:`tick_scale_of` how an axis printed its ticks at the last draw: the
@@ -50,6 +53,7 @@ __all__ = [
     "AxisUnitFormatter",
     "TickScale",
     "Unit",
+    "draws_linearly",
     "number_text",
     "tick_scale_of",
 ]
@@ -58,6 +62,46 @@ UNIT_RULES = ("max", "whole")
 """Unit rules besides naming one ladder label."""
 
 _TOL = 1e-9
+# Points of the view at which a function scale is checked for being affine.
+_AFFINE_PROBES = 5
+
+
+def draws_linearly(axis: Axis) -> bool:
+    """Whether ``axis`` draws its view on a linear scale.
+
+    A ``"linear"`` scale does, and so does a ``"function"`` scale (what
+    ``ax.secondary_xaxis`` / ``secondary_yaxis`` and ``set_yscale("function",
+    ...)`` make) whose transform is affine over the view: the same values,
+    ``x1.3``, degrees C shown as F. The functions run on a few points of the
+    view with numpy's floating-point warnings off; one that raises (a
+    ``Transform`` given as functions fails on 1-D values; ``-W error`` turns
+    a warning into one), returns another shape or a non-finite value
+    (``1 / 0``) does not draw linearly, nor does ``1 / x``.
+    """
+    scale = axis.get_scale()
+    if scale == "linear":
+        return True
+    if scale != "function":
+        return False
+    low, high = sorted(float(v) for v in axis.get_view_interval())
+    if not (math.isfinite(low) and math.isfinite(high)) or high <= low:
+        return False
+    probe = np.linspace(low, high, _AFFINE_PROBES)
+    try:
+        with np.errstate(all="ignore"):
+            drawn = np.asarray(
+                axis.get_transform().transform(probe), dtype=float
+            )
+    except Exception:  # noqa: BLE001 - user functions may raise anything
+        return False
+    if drawn.shape != probe.shape or not np.all(np.isfinite(drawn)):
+        return False
+    span = float(drawn[-1] - drawn[0])
+    line = drawn[0] + span * (probe - low) / (high - low)
+    # Off the straight line by more than float noise: on the span, and on
+    # the values themselves when they sit far from zero (1e9 + 1).
+    noise = _TOL * abs(span) + 4 * np.finfo(float).eps * np.abs(drawn).max()
+    return span != 0 and bool(np.all(np.abs(drawn - line) <= noise))
 
 
 @dataclass(frozen=True)
@@ -227,8 +271,8 @@ class AxisUnitFormatter(ticker.Formatter):
 
     # -- decision -------------------------------------------------------
     def _is_linear(self) -> bool:
-        get_scale = getattr(self.axis, "get_scale", None)
-        return get_scale is None or get_scale() == "linear"
+        axis = self.axis
+        return not isinstance(axis, Axis) or draws_linearly(axis)
 
     def _make_plan(self, values: Sequence[float]) -> _Plan:
         finite = [v for v in values if math.isfinite(v)]
