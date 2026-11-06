@@ -66,6 +66,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   formatters can now be pickled. The old formatter's `.func` and
   `set_offset_string` are gone with it.
 
+### Deprecated
+
+- **`dartwork_mpl.util`** is deprecated in 0.8 (a `DeprecationWarning`
+  on every access to a name, pointing at your line) and may be removed in
+  0.10 or later. Until then every name in it is the owner's own object. Import
+  each name from its owner; the table is in
+  [docs/migration.md](docs/migration.md#deprecated-in-08-dartwork_mpl-util).
+- **`FontFamily.tnum`, `FontMeasurement.tnum`, `FontFaceMeasurement.tnum`**
+  are deprecated in 0.8 (a `DeprecationWarning` on each access) and may be
+  removed in 0.10 or later; they return the same value as
+  `.tnum_available` (whether a bundled font declares the OpenType `tnum`
+  feature for browsers; matplotlib does not apply it, see `numeric_axes` for
+  real plot digits). The font browser data no longer carries a separate
+  `tnum` key.
+
 ### Removed
 
 - `dartwork_mpl.ui._config` (private): the legacy preset-file helpers.

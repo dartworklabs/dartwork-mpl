@@ -422,8 +422,8 @@ requested margin from each figure edge. This means:
 | `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels; `simple_layout` keeps titles above it |
 | `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
-| `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |
-| `make_offset(x, y, fig)`      | Creates point-based offsets for precise text positioning      |
+| `set_decimal(ax, xn, yn)`     | Fixes tick label decimals with a dynamic formatter; locator and limits stay |
+| `make_offset(x, y, fig)`      | Point-unit offset transform (Figure DPI) for precise text positioning |
 | `get_bounding_box(boxes)`     | Merges multiple axes bounding boxes into one                  |
 
 ## Annotation & Formatting
@@ -550,7 +550,7 @@ stay plain numbers.
 
 ### Consistent tick decimals (`set_decimal`)
 
-Raw matplotlib ticks can sometimes mix integers and floats (e.g. `0.5`, `1`, `1.5`), which looks unprofessional. `dm.set_decimal()` forces consistent decimal places for publication-ready formatting.
+Raw matplotlib ticks can sometimes mix integers and floats (e.g. `0.5`, `1`, `1.5`), which looks unprofessional. `dm.set_decimal()` formats every tick label, now and after the view changes, with the same number of decimals. It installs a `FuncFormatter` and leaves the axis locator and limits as they are.
 
 ```{raw} html
 :file: images/set_decimal_slider.html

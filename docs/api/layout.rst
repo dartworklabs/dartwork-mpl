@@ -4,7 +4,7 @@ Layout Utilities
 Utilities for tightening layouts without juggling ``plt.subplots_adjust``.
 ``simple_layout`` measures visible artists and arithmetically places GridSpec
 edges so axes content lands at the requested distance from the figure bounds;
-``make_offset`` nudges text/legends in point units; ``label_axes`` adds
+``make_offset`` converts point offsets to a transform through the Figure DPI; ``label_axes`` adds
 standardized panel labels; ``annotate_value``, ``annotate_corner``, and
 ``label_hline`` create compact point-offset labels; ``label_bars`` writes each
 bar's value on it, printed like the axis ticks; ``place_legend`` chooses

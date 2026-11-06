@@ -153,6 +153,37 @@ def test_numeric_axis_flips_and_tnum_available_are_pinned() -> None:
         assert measurement.tnum_available is tnum_available
 
 
+def _alias_objects():
+    family = font.font_families()["Inter"]
+    measurement = font._measure("Inter")
+    return {
+        "FontFamily": family,
+        "FontMeasurement": measurement,
+        "FontFaceMeasurement": measurement.files[0],
+    }
+
+
+def test_tnum_aliases_warn_once_and_return_the_canonical_value() -> None:
+    """The three ``tnum`` aliases are deprecated in 0.8 (removal >= 0.10)."""
+    for label, obj in _alias_objects().items():
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            value = obj.tnum
+        deprecations = [w for w in caught if w.category is DeprecationWarning]
+        assert len(deprecations) == 1, label
+        assert deprecations[0].filename == __file__, label
+        text = str(deprecations[0].message)
+        assert "tnum_available" in text and "0.10 or later" in text, label
+        assert value is obj.tnum_available, label
+
+
+def test_canonical_tnum_available_does_not_warn() -> None:
+    for obj in _alias_objects().values():
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            obj.tnum_available  # noqa: B018
+
+
 def test_base_chain_chart_glyph_resolver_is_pinned() -> None:
     chain = _base_font_family_chain()
     assert chain == _BASE_CHAIN

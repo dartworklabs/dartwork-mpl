@@ -581,6 +581,8 @@ def avoid_tick_overlap(
 def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
     """Format current and future ticks with Python fixed-point precision.
 
+    Installs a dynamic ``FuncFormatter`` that formats every tick value
+    when drawn, so ticks that appear after the view changes follow it too.
     Keep each axis's locator and view limits, including after data changes.
     Half-even rounding and negative zero follow Python float formatting.
     Invalid precision raises immediately before installing that axis's formatter;
