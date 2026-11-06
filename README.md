@@ -39,7 +39,7 @@ That four-step pattern — **preset → `figsize(width, aspect)` → `simple_lay
 pip install dartwork-mpl        # or:  uv add dartwork-mpl
 ```
 
-Requires Python 3.11+ (from 0.6.0), Matplotlib 3.11+ and NumPy 1.26+.
+Requires Python 3.11+ (from 0.6.0), Matplotlib 3.11.2+ and NumPy 1.26+.
 Matplotlib 3.10 is not supported: the visual baselines and docs figures are
 made on 3.11, with differences in text metrics, pixel rounding and FreeType
 rasterization. The apparent legend-marker size difference came from a stale

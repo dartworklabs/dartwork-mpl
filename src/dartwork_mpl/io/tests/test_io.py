@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+import importlib.util
 import time
 import warnings
 from pathlib import Path
@@ -469,9 +470,28 @@ class TestSaveAndShowNonSvgAudit:
         assert _resolve_saved_path("out.png", {}, fig) == "out.png"
         plt.close(fig)
 
-    def test_show_non_svg_raises_clear_error(self, tmp_path) -> None:
-        import pytest
+    @pytest.mark.skipif(
+        importlib.util.find_spec("IPython") is not None,
+        reason="no-extras contract: see TestShowOptionalIPython",
+    )
+    def test_show_without_notebook_extra_names_the_install_command(
+        self, tmp_path
+    ) -> None:
+        """In an install without the ``[notebook]`` extra, IPython really
+        is missing, so ``dm.show`` raises ImportError before it reads the
+        file and the message names the extra."""
+        import dartwork_mpl as dm
 
+        png = tmp_path / "x.png"
+        png.write_bytes(b"\x89PNG\r\n\x1a\n not really")
+        with pytest.raises(ImportError, match=r"dartwork-mpl\[notebook\]"):
+            dm.show(str(png))
+
+    @pytest.mark.skipif(
+        importlib.util.find_spec("IPython") is None,
+        reason="needs the [notebook] extra (IPython)",
+    )
+    def test_show_non_svg_raises_clear_error(self, tmp_path) -> None:
         import dartwork_mpl as dm
 
         png = tmp_path / "x.png"

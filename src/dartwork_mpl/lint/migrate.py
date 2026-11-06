@@ -1,8 +1,9 @@
 """Legacy-code migration: rewrite proven styles and annotate removed APIs.
 
 Surface (re-exported by :mod:`dartwork_mpl.lint`): ``migrate_legacy_code``.
-The hint table changes together with the package root's removed-name
-registry.
+The removed-name hints, their names and how each name is used come from
+``dartwork_mpl._compat``, the one registry of removed names; this module
+only compiles them and adds its two native-call hints.
 """
 
 from __future__ import annotations
@@ -10,182 +11,55 @@ from __future__ import annotations
 import ast
 import re
 
+from .._compat import _CODEMOD_HINTS
 from .detect import lint
 from .fix import _apply_edits, _Edit, _planned_fixes
 from .syntax import SourceRejected, _OwnerKind, _parse_source, _Syntax
 
-# Legacy migration hint wording remains owned by the existing catalog below.
-_MODEL_B_REMOVED_COLOR_NAMES: tuple[str, ...] = (
-    "get_\u0070alette",
-    "set_\u0063ycle",
-    "cycle",
-    "cycle_\u0063ycler",
-    "list_\u0070alettes",
-    "list_\u0063olormaps",
-    "plot_\u0063olors",
-    "plot_\u0063olormaps",
-    "show_\u0070alette",
-    "classify_\u0063olormap",
-    "Dartwork\u0043olor",
-    "Dartwork\u0043olormap",
+# Two hints for native calls that are not removed names. Hint comments over
+# one statement are written in catalog order; these two have always followed
+# the hint for the removed figure constructors, whose replacement they
+# complete. Every other hint comes from the removed-name registry.
+_FIGSIZE_TUPLE_HINT = (
+    re.compile(r"\bfigsize\s*=\s*\("),
+    "raw figsize=(w, h) tuple bypasses physical-width contract; "
+    "use figsize=dm.figsize(<width>, <aspect>).",
 )
-_MODEL_B_REMOVED_COLOR_PATTERN = "|".join(
-    re.escape(name) for name in _MODEL_B_REMOVED_COLOR_NAMES
+_TIGHT_LAYOUT_HINT = (
+    re.compile(r"\btight_layout\s*\("),
+    "tight_layout() collides with dm spines; use dm.simple_layout(fig).",
 )
-
+_AFTER_CONSTRUCTORS = 1 + next(
+    index
+    for index, hint in enumerate(_CODEMOD_HINTS)
+    if "subplots" in hint.names
+)
+_REGISTRY_HINTS = tuple(
+    (re.compile(hint.pattern), hint.text) for hint in _CODEMOD_HINTS
+)
 _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (
-        re.compile(r"\bdm\.cm2in\b"),
-        "dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, "
-        'use figsize=dm.figsize("<n>cm", "<aspect>"); elsewhere use '
-        "dm.cm(<n>), which returns a Length, not a float.",
-    ),
-    (
-        re.compile(r"\bdm\.(?:SW|MW|TW|DW)\b"),
-        "dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).",
-    ),
-    (
-        re.compile(r"\bdm\.FS_[A-Z_]+\b"),
-        "dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).",
-    ),
-    (
-        re.compile(r"\bdm\.WIDTHS\["),
-        'dm.WIDTHS removed; pick a width string (e.g. "9cm") instead.',
-    ),
-    (
-        re.compile(r"\bdm\.(?:subplots|figure)\s*\("),
-        "dm.subplots / dm.figure removed; use "
-        "plt.subplots(figsize=dm.figsize(<width>, <aspect>)) "
-        "(call dm.style.use(...) separately for styling).",
-    ),
-    (
-        re.compile(r"\bfigsize\s*=\s*\("),
-        "raw figsize=(w, h) tuple bypasses physical-width contract; "
-        "use figsize=dm.figsize(<width>, <aspect>).",
-    ),
-    (
-        re.compile(r"\btight_layout\s*\("),
-        "tight_layout() collides with dm spines; use dm.simple_layout(fig).",
-    ),
-    (
-        re.compile(r"\bdm\.agent_utils\b"),
-        "dm.agent_utils removed; surfaces moved to dm.lint, "
-        "dm.validate_figure, dm.helpers, etc.",
-    ),
-    (
-        re.compile(r"\bdm\.xplot\b"),
-        "dm.xplot removed; templates now live in dm.templates / "
-        "dm.helpers (see docs/migration.md).",
-    ),
-    (
-        re.compile(r"\bdm\.auto_layout\s*\("),
-        "dm.auto_layout removed in 0.5.4; use "
-        "dm.simple_layout(fig, margin=...) (legacy padding maps to "
-        "margin; max_iter/tolerance are obsolete).",
-    ),
-    (
-        re.compile(
-            r"\bdm\.(?:install_llm_txt|uninstall_llm_txt|INSTALL_TARGETS)\b"
-        ),
-        "install_llm_txt family removed in 0.5; use "
-        "dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP "
-        "dartwork-mpl://guide/* resources.",
-    ),
-    (
-        re.compile(r"\bdm\.(?:style_spines|add_grid|minimal_axes)\b"),
-        "dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline "
-        "the raw matplotlib calls (see docs/usage_guide/recipes.md).",
-    ),
-    (
-        re.compile(r"\bdm\.format_axis_percent\s*\("),
-        "dm.format_axis_percent removed in 0.4.1; use "
-        "ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0)) "
-        "(from matplotlib import ticker).",
-    ),
-    (
-        re.compile(r"\bdm\.format_axis_labels\s*\("),
-        "dm.format_axis_labels removed in 0.4.1; use "
-        'ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}")) '
-        "(from matplotlib import ticker).",
-    ),
-    (
-        re.compile(r"\bdm\.format_axis_thousands\s*\("),
-        "dm.format_axis_thousands removed in 0.4.1; use "
-        'ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:,.0f}")) '
-        "(from matplotlib import ticker).",
-    ),
-    (
-        re.compile(r"\bdm\.add_frame\s*\("),
-        "dm.add_frame removed in 0.4.1; use "
-        "fig.patches.append(plt.Rectangle((0, 0), 1, 1, fill=False, "
-        "transform=fig.transFigure)).",
-    ),
-    (
-        re.compile(r"\bdm\.add_value_labels\s*\("),
-        "dm.add_value_labels removed in 0.4.1; use dm.label_bars(ax) for "
-        "values on bars, or dm.annotate_value(ax, x, y, text) for a point "
-        "or a line end.",
-    ),
-    (
-        re.compile(r"\bdm\.set_xmargin\s*\("),
-        "dm.set_xmargin removed in 0.4.1; use ax.set_xmargin(...) "
-        "(the matplotlib Axes method).",
-    ),
-    (
-        re.compile(r"\bdm\.set_ymargin\s*\("),
-        "dm.set_ymargin removed in 0.4.1; use ax.set_ymargin(...) "
-        "(the matplotlib Axes method).",
-    ),
-    (
-        re.compile(r"\bdm\.hide_spines\s*\("),
-        "dm.hide_spines removed in 0.4.1; use "
-        'for s in ("top", "right"): ax.spines[s].set_visible(False).',
-    ),
-    (
-        re.compile(r"\bdm\.hide_all_spines\s*\("),
-        "dm.hide_all_spines removed in 0.4.1; use "
-        "for s in ax.spines: ax.spines[s].set_visible(False).",
-    ),
-    (
-        re.compile(r"\bdm\.show_only_spines\s*\("),
-        "dm.show_only_spines removed in 0.4.1; use "
-        'for s in ax.spines: ax.spines[s].set_visible(s in ("left", "bottom")).',
-    ),
-    (
-        re.compile(r"\bdm\.remove_grid\s*\("),
-        "dm.remove_grid removed in 0.4.1; use ax.grid(False).",
-    ),
-    (
-        re.compile(r"\bdm\.save_figure\s*\("),
-        "dm.save_figure removed in 0.4.1; use fig.savefig(...) "
-        "(or dm.save_formats(fig, path) for multi-format).",
-    ),
-    (
-        re.compile(r"\bdm\.create_figure_with_style\s*\("),
-        "dm.create_figure_with_style removed in 0.4.1; use "
-        'dm.style.use(style); plt.subplots(figsize=dm.figsize("<n>cm", '
-        '"<aspect>")).',
-    ),
-    (
-        re.compile(r"\bdm\.auto_select_colors\b"),
-        "dm.auto_select_colors renamed in 0.4.1; use "
-        "dm.make_palette(n, kind=..., highlight=...).",
-    ),
-    (
-        re.compile(r"\bdm\.named\s*\("),
-        "dm.named removed in 0.4.1; use dm.color(...) (accepts token "
-        "names, hex, rgb()/oklch()/oklab()).",
-    ),
-    (
-        re.compile(r"\bdm\.(?:" + _MODEL_B_REMOVED_COLOR_PATTERN + r")\b"),
-        "Version 0.6.0 removed this color API vocabulary; use dm.colors(...), "
-        "dm.set_colors(...), dm.list_colors(), or dm.show_colors().",
-    ),
-    (
-        re.compile(r"\bdm\.set_palette_version\b"),
-        "dm.set_palette_version was removed in 0.6.0; there is no palette-version "
-        "switch. Review the current color catalog and docs/migration.md.",
-    ),
+    *_REGISTRY_HINTS[:_AFTER_CONSTRUCTORS],
+    _FIGSIZE_TUPLE_HINT,
+    _TIGHT_LAYOUT_HINT,
+    *_REGISTRY_HINTS[_AFTER_CONSTRUCTORS:],
+)
+_FIGSIZE_TUPLE = _MIGRATE_HINTS.index(_FIGSIZE_TUPLE_HINT)
+_TIGHT_LAYOUT = _MIGRATE_HINTS.index(_TIGHT_LAYOUT_HINT)
+# Catalog index -> the registry hint it was compiled from.
+_REGISTRY_AT = {
+    _MIGRATE_HINTS.index(compiled): hint
+    for hint, compiled in zip(_CODEMOD_HINTS, _REGISTRY_HINTS, strict=True)
+}
+# ``from dm.<name> import ...`` module prefixes and their hint index.
+_IMPORT_HINTS = tuple(
+    (f"dm.{name}", index)
+    for index, hint in _REGISTRY_AT.items()
+    if hint.form == "import"
+    for name in hint.names
+)
+# The hints a ``dm.<path>`` reference, call or subscript can carry.
+_DM_HINTS = frozenset(
+    index for index, hint in _REGISTRY_AT.items() if hint.form != "import"
 )
 
 
@@ -258,12 +132,12 @@ def _migration_hints(syntax: _Syntax) -> list[_Edit]:
                 start, end = syntax.span(node)
                 owner_end = syntax.span(owner)[1]
                 text = "dm" + syntax.code[owner_end:end]
-                allowed = set(range(len(_MIGRATE_HINTS))) - {5, 6, 7}
+                allowed = set(_DM_HINTS)
             elif isinstance(node, ast.Call) and kind in {"figure", "pyplot"}:
                 if path == ["tight_layout"]:
                     start, end = syntax.span(node.func)
                     text = syntax.code[start:end] + "("
-                    allowed = {6}
+                    allowed = {_TIGHT_LAYOUT}
                 if path in (["figure"], ["subplots"]):
                     for keyword in node.keywords:
                         if keyword.arg == "figsize" and isinstance(
@@ -275,15 +149,17 @@ def _migration_hints(syntax: _Syntax) -> list[_Edit]:
                                 entry = insertions.setdefault(
                                     offset, (indent, newline, set())
                                 )
-                                entry[2].add(5)
-        elif (
-            isinstance(node, ast.ImportFrom)
-            and node.module
-            and node.module.startswith("dm.agent_utils")
-        ):
-            start, end = syntax.span(node)
-            text = syntax.code[start:end]
-            allowed = {7}
+                                entry[2].add(_FIGSIZE_TUPLE)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            module = node.module
+            allowed = {
+                index
+                for prefix, index in _IMPORT_HINTS
+                if module.startswith(prefix)
+            }
+            if allowed:
+                start, end = syntax.span(node)
+                text = syntax.code[start:end]
         if start is None or any(
             left <= start < right for left, right in syntax.protected
         ):
@@ -291,9 +167,9 @@ def _migration_hints(syntax: _Syntax) -> list[_Edit]:
         for index in allowed:
             pattern, _hint = _MIGRATE_HINTS[index]
             match = pattern.search(text)
-            if match is None or (
-                index != 7 and kind == "dm" and match.start() != 0
-            ):
+            # A dm-owned path must start with the removed name; an import
+            # statement's module follows its ``from``.
+            if match is None or (kind == "dm" and match.start() != 0):
                 continue
             boundary = _statement_boundary(syntax, node)
             if boundary:
