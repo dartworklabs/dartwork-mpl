@@ -233,7 +233,7 @@ def test_ordinary_import_preserves_eager_inventory_and_reload(
             "tokens",
             "validate_fixes",
         }
-        compat = {"_REMOVED_NAMES"}
+        compat = {"_Deprecation", "_DEPRECATED_NAMES", "_REMOVED_NAMES"}
         assert public <= set(dm.__all__)
         assert all(hasattr(dm, name) for name in modules | {"__getattr__"})
         assert all(hasattr(dm._compat, name) for name in compat)
