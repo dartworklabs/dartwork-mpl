@@ -22,6 +22,15 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
 * **Side.** Outside the bar end; a negative bar's label below it (``barh``:
   left of it); an inverted value axis flips the side with the bar; error
   bars push the label past their caps, but not past the view.
+* **Stacks.** Containers at the same positions, each starting where the
+  ones before it ended (:mod:`._bar_stacks`), are a stack: each segment's
+  label at its middle, shown while the segment is at least as long as the
+  label, and the stack's net sum beyond the end the net points to.
+  Floating bars (a waterfall) and grouped bars are no stack.
+* **Ink.** A label on a bar (a segment's, ``"inside"``, ``"center"``) takes
+  white or the preset text colour, whichever reads better on the bar as
+  drawn; a label off the bar keeps the text colour
+  (:mod:`._bar_label_ink`).
 * **View.** A label shows while its bar's end (its middle for
   ``where="center"``) lies in the view, within one pixel: a bar ending on a
   limit keeps its label just outside the axes, a bar outside the view or
@@ -35,9 +44,9 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   returned label is kept through every draw and layout.
 
 Each call is recorded on its Axes as a :class:`BarLabelFamily` in
-``ax._dm_bar_label_families`` (the labels, the containers, the options) for
-the layout's later passes. The geometry (anchor, side, view, host Axes)
-lives in :mod:`._bar_label_geometry`.
+``ax._dm_bar_label_families`` (the labels, the containers, the options, the
+stacks) for the layout's later passes. The geometry (anchor, side, view,
+room, host Axes) lives in :mod:`._bar_label_geometry`.
 """
 
 from __future__ import annotations
@@ -51,14 +60,11 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
-import numpy as np
-import numpy.typing as npt
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
-from .._colors.contrast import ensure_contrast
 from .._figure_geometry import same_position_axes
 from ..formatting import (
     TickScale,
@@ -67,7 +73,9 @@ from ..formatting import (
     value_label_decimals,
 )
 from ..scale import fs, fw
-from ._bar_label_geometry import host_axes, in_view, place
+from ._bar_label_geometry import fits_on_bar, host_axes, in_view, place
+from ._bar_label_ink import is_series, label_ink
+from ._bar_stacks import BarStack, bar_values, find_stacks
 
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
@@ -78,11 +86,14 @@ if TYPE_CHECKING:
 __all__ = ["BarLabel", "BarLabelFamily", "BarLabelOptions", "label_bars"]
 
 Where: TypeAlias = Literal["auto", "outside", "inside", "center"]
+# Where one label sits: "auto" resolved for its kind.
+Placement: TypeAlias = Literal["outside", "inside", "center"]
+# What a label labels: a plain bar's value, a stack segment's, a stack's net.
+Kind: TypeAlias = Literal["edge", "segment", "total"]
 Total: TypeAlias = Literal["auto", "only", False]
 Crowded: TypeAlias = Literal["rotate", "skip", "inside"]
 Orientation: TypeAlias = Literal["vertical", "horizontal"]
 Fmt: TypeAlias = str | Callable[[float], object] | None
-RGB: TypeAlias = tuple[float, float, float]
 
 _UNSET: Any = object()
 
@@ -205,12 +216,8 @@ def _parse_fmt(fmt: object) -> Fmt:
     return fmt
 
 
-def _is_series(color: object) -> bool:
-    return isinstance(color, str) and color == "series"
-
-
 def _parse_color(color: object) -> object:
-    if color is None or _is_series(color):
+    if color is None or is_series(color):
         return color
     try:
         mcolors.to_rgba(color)  # type: ignore[arg-type]
@@ -258,6 +265,11 @@ class BarLabel(Annotation):
     It belongs to its call's :class:`BarLabelFamily`. Each time matplotlib
     positions it (every draw, every extent measurement) the family re-reads
     the bar axis's tick unit and rewrites what it still owns.
+
+    ``kind`` says what it labels: ``"edge"`` a plain bar, ``"segment"`` one
+    bar of a :class:`BarStack` (``stack``), ``"total"`` that stack's net sum
+    at position ``index``, anchored on the bar that ends the stack on the
+    net's side (``bar``). ``where`` is where it sits on ``bar``.
     """
 
     def __init__(
@@ -269,6 +281,9 @@ class BarLabel(Annotation):
         *,
         bar_axes: Axes,
         xycoords: CoordsType,
+        kind: Kind = "edge",
+        where: Placement = "outside",
+        stack: BarStack | None = None,
         **text_kw: Any,
     ) -> None:
         # Set first: get_visible (overridden below) reads them.
@@ -283,11 +298,15 @@ class BarLabel(Annotation):
             if container.orientation == "horizontal"
             else "vertical"
         )
-        self.kind = "edge"
+        self.kind: Kind = kind
+        self.where: Placement = where
+        self.stack = stack
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
         self._written: dict[str, object] = {}
+        # True while get_visible measures the text (which asks it again).
+        self._measuring = False
         super().__init__(
             "",
             (0.0, 0.0),
@@ -324,17 +343,33 @@ class BarLabel(Annotation):
             write(wanted)
         self._written[name] = wanted
 
+    @property
+    def must_fit(self) -> bool:
+        """Whether the label sits on a stack segment and so must fit on it."""
+        return self.kind == "segment" and self.where != "outside"
+
     def get_visible(self) -> bool:
-        """Visible, and the bar's anchor lies in the bar axes' view.
+        """Visible, the bar's anchor in the bar axes' view, and room for it.
 
         A bar outside the view (or past a limit the caller set) shows no
-        label: matplotlib neither draws an invisible text nor counts it in a
-        tight bbox (``Text.get_tightbbox`` is null), and the layout and the
-        validation checks skip it.
+        label, nor does a stack segment shorter than its label along the
+        value axis (:func:`fits_on_bar`). Both are measured at each call, so
+        a wider view or a taller figure brings the label back. Matplotlib
+        neither draws an invisible text nor counts it in a tight bbox
+        (``Text.get_tightbbox`` is null), and the layout and the validation
+        checks skip it.
         """
-        return super().get_visible() and in_view(
-            self, self.bar_family.options.where
-        )
+        if not (super().get_visible() and in_view(self, self.where)):
+            return False
+        if not self.must_fit or self._measuring:
+            return True
+        self._measuring = True
+        try:
+            # Measure the text this draw will write (the unit may move).
+            self.bar_family.follow(self)
+            return fits_on_bar(self)
+        finally:
+            self._measuring = False
 
     def update_positions(self, renderer: RendererBase) -> None:
         """Follow the tick unit and the bar end, then position as usual."""
@@ -344,12 +379,17 @@ class BarLabel(Annotation):
 
 @dataclass(eq=False)
 class BarLabelFamily:
-    """One :func:`label_bars` call: its labels, the bars and the options."""
+    """One :func:`label_bars` call: its labels, the bars and the options.
+
+    ``stacks`` holds the stacks found among ``containers``; each segment
+    and total label points to its own (``BarLabel.stack``).
+    """
 
     ax: Axes
     containers: list[BarContainer]
     options: BarLabelOptions
     texts: list[BarLabel] = field(default_factory=list)
+    stacks: list[BarStack] = field(default_factory=list)
 
     def refresh(self) -> None:
         """Write every label's text in its axis's current tick scale.
@@ -373,7 +413,7 @@ class BarLabelFamily:
         """Re-read the tick scale for ``label``; rewrite the call when it moved."""
         if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
             self.refresh()
-        place(label, self.options.where)
+        place(label, label.where)
 
 
 # ------------------------------------------------------------ the call
@@ -415,43 +455,75 @@ def _check_plot_area(ax: Axes, containers: list[BarContainer]) -> None:
                 )
 
 
-def _over(top: tuple[float, float, float, float], below: RGB) -> RGB:
-    alpha = top[3]
-    r, g, b = (
-        alpha * t + (1.0 - alpha) * u
-        for t, u in zip(top[:3], below, strict=True)
-    )
-    return (r, g, b)
-
-
-def _background(bar_axes: Axes) -> RGB:
-    """What shows behind the bars: the figure, then each visible Axes patch."""
-    below: RGB = (1.0, 1.0, 1.0)
-    root = bar_axes.get_figure(root=True)
-    parent = bar_axes.get_figure(root=False)
-    for container in (root, parent if parent is not root else None):
-        if container is not None and container.patch.get_visible():
-            below = _over(mcolors.to_rgba(container.get_facecolor()), below)
-    for member in sorted(
-        same_position_axes(bar_axes), key=lambda m: m.get_zorder()
-    ):
-        if member.get_frame_on() and member.patch.get_visible():
-            below = _over(mcolors.to_rgba(member.get_facecolor()), below)
-    return below
-
-
-def _series_ink(patch: Rectangle, background: RGB) -> str:
-    """The bar's colour as drawn, darkened (or lightened) to 4.5:1 text."""
-    face = mcolors.to_rgba(patch.get_facecolor())
-    if face[3] == 0 and patch.get_linewidth() > 0:
-        face = mcolors.to_rgba(patch.get_edgecolor())
-    shown = mcolors.to_hex(_over(face, background))
-    return ensure_contrast(shown, mcolors.to_hex(background))
-
-
 def _format_ticks_now(axis: Axis) -> None:
     """Let ``axis``'s formatter decide now, as the next draw would."""
     axis.get_major_formatter().format_ticks(list(axis.get_majorticklocs()))
+
+
+def _placement(kind: Kind, where: Where) -> Placement:
+    """Where a label of ``kind`` sits for the call's ``where``.
+
+    ``"auto"`` puts a plain bar's label outside its end and a stack
+    segment's at its middle; a total always sits beyond the stack's end.
+    """
+    if kind == "total":
+        return "outside"
+    match where:
+        case "auto":
+            return "center" if kind == "segment" else "outside"
+        case "outside" | "inside" | "center":
+            return where
+
+
+def _add_label(
+    family: BarLabelFamily,
+    container: BarContainer,
+    index: int,
+    value: float,
+    *,
+    kind: Kind,
+    stack: BarStack | None,
+    fontsize: float | str,
+) -> None:
+    """Create the label of bar ``index`` of ``container`` and add it."""
+    patch = container.patches[index]
+    bar_axes = patch.axes
+    if not isinstance(bar_axes, Axes):
+        return
+    where = _placement(kind, family.options.where)
+    host = host_axes(bar_axes)
+    xycoords: CoordsType
+    if where == "center":
+        xycoords = patch
+    elif host is bar_axes:
+        xycoords = "data"
+    else:
+        xycoords = bar_axes.transData
+    text_kw: dict[str, Any] = {"fontsize": fontsize, "fontweight": fw(1)}
+    color = label_ink(family.options.color, kind, where, patch, bar_axes)
+    if color is not None:
+        text_kw["color"] = color
+    label = BarLabel(
+        family,
+        container,
+        index,
+        value,
+        bar_axes=bar_axes,
+        xycoords=xycoords,
+        kind=kind,
+        where=where,
+        stack=stack,
+        **text_kw,
+    )
+    # As ax.annotate does: the text is placed in display space, and nothing
+    # clips it (a label beyond the bar end may leave the axes). add_artist
+    # clips to the Axes patch, a rectangle that matplotlib stores as the
+    # clip box: clear both.
+    label.set_transform(IdentityTransform())
+    host.add_artist(label)
+    label.set_clip_box(None)
+    label.set_clip_path(None)
+    family.texts.append(label)
 
 
 def label_bars(
@@ -486,8 +558,20 @@ def label_bars(
       the plain value (pass ``fmt=``). The unit is re-read at every draw,
       so later limit or formatter changes keep the labels in step;
     - three significant digits on the largest ``|value|``, then the fewest
-      decimals that print every value exactly, one count for the call
-      (``21.4, 18.0, 21.5``; ``120, 135``); zero prints ``0``; U+2212 minus;
+      decimals that print every value exactly, one count for the call,
+      totals included (``21.4, 18.0, 21.5``; ``120, 135``); zero prints
+      ``0``; U+2212 minus;
+    - stacked bars (containers at the same positions, each starting where
+      the ones before it ended, as ``bottom=`` / ``left=`` build them;
+      positives on the positive end, negatives on the negative end): each
+      segment's label at its middle, hidden while the segment is shorter
+      than the label (a taller figure brings it back), and the stack's net
+      sum 3 pt beyond the end the net points to. Floating bars (a
+      waterfall) and grouped bars are no stack: plain labels, no totals;
+    - a label on a bar (a segment's, ``"inside"``, ``"center"``) in white or
+      the preset text colour, whichever reads better on the bar as drawn
+      (``dm.readable_text_color``); labels off the bars, totals included,
+      in the text colour;
     - on a ``twinx`` / ``twiny`` pair the labels are added to the Axes drawn
       last (by zorder, then figure order; placed with the bars' data), so
       the partner's line never covers them;
@@ -508,11 +592,14 @@ def label_bars(
         The bars to label (what ``ax.bar`` / ``ax.barh`` / ``ax.hist``
         return). ``None`` (default) labels every bar container on ``ax``.
     where : {"auto", "outside", "inside", "center"}
-        ``"auto"`` (default) and ``"outside"``: beyond the bar end;
-        ``"inside"``: just inside the end; ``"center"``: the bar's middle.
+        Where each bar's label sits; a stack segment is a bar.
+        ``"auto"`` (default): beyond a plain bar's end, at a segment's
+        middle; ``"outside"``: beyond the end; ``"inside"``: just inside the
+        end; ``"center"``: the bar's middle. Totals always sit beyond the
+        stack's end.
     total : {"auto", "only", False}
-        Stacked bars: segment labels plus a total (``"auto"``), the total
-        only, or no total.
+        Stacked bars: segment labels plus a total (``"auto"``), the totals
+        only, or the segments only. Bars in no stack are labelled alike.
     crowded : {"rotate", "skip", "inside"}
         What labels wider than the bar pitch do: turn vertical (default),
         hide alternate labels, or move inside the bars.
@@ -528,15 +615,18 @@ def label_bars(
     size : float or str, optional
         Font size; default ``dm.fs(-1)``.
     color : color, optional
-        ``None`` (default) the preset text colour; ``"series"`` each bar's
+        ``None`` (default) the readable ink above; ``"series"`` each bar's
         colour as drawn, darkened to 4.5:1 against the background
-        (``dm.ensure_contrast``); any matplotlib colour.
+        (``dm.ensure_contrast``; a total, of no single series, keeps the
+        text colour); any matplotlib colour, for every label.
 
     Returns
     -------
     list of Text
-        The labels, container by container and bar by bar; a bar whose
-        value is NaN or infinite gets none.
+        The labels, container by container and bar by bar, then each
+        stack's totals position by position; a bar whose value is NaN or
+        infinite gets none. Each label's ``kind`` is ``"edge"``,
+        ``"segment"`` or ``"total"``.
 
     Raises
     ------
@@ -570,62 +660,52 @@ def label_bars(
     if not containers:
         return []
 
-    family = BarLabelFamily(ax, containers, options)
+    family = BarLabelFamily(
+        ax, containers, options, stacks=find_stacks(containers)
+    )
+    stack_of = {
+        id(c): stack for stack in family.stacks for c in stack.containers
+    }
     fontsize = fs(-1) if size is None else size
-    value_axes: list[Axis] = []
     for container in containers:
+        stack = stack_of.get(id(container))
+        if stack is not None and options.total == "only":
+            continue
         # Masked values (np.ma) are missing values, like NaN: no label.
-        values: npt.NDArray[np.float64] = np.ma.filled(
-            np.ma.asarray(container.datavalues, dtype=float), np.nan
-        )
-        for index, (patch, value) in enumerate(
-            zip(container.patches, values, strict=False)
-        ):
-            bar_axes = patch.axes
-            if not isinstance(bar_axes, Axes) or not math.isfinite(value):
-                continue
-            host = host_axes(bar_axes)
-            xycoords: CoordsType
-            if options.where == "center":
-                xycoords = patch
-            elif host is bar_axes:
-                xycoords = "data"
-            else:
-                xycoords = bar_axes.transData
-            text_kw: dict[str, Any] = {
-                "fontsize": fontsize,
-                "fontweight": fw(1),
-            }
-            if _is_series(options.color):
-                text_kw["color"] = _series_ink(patch, _background(bar_axes))
-            elif options.color is not None:
-                text_kw["color"] = options.color
-            label = BarLabel(
-                family,
-                container,
-                index,
-                float(value),
-                bar_axes=bar_axes,
-                xycoords=xycoords,
-                **text_kw,
-            )
-            # As ax.annotate does: the text is placed in display space, and
-            # nothing clips it (a label beyond the bar end may leave the
-            # axes). add_artist clips to the Axes patch, a rectangle that
-            # matplotlib stores as the clip box: clear both.
-            label.set_transform(IdentityTransform())
-            host.add_artist(label)
-            label.set_clip_box(None)
-            label.set_clip_path(None)
-            family.texts.append(label)
-            if label.value_axis not in value_axes:
-                value_axes.append(label.value_axis)
+        values = bar_values(container)[: len(container.patches)]
+        for index, value in enumerate(values):
+            if math.isfinite(value):
+                _add_label(
+                    family,
+                    container,
+                    index,
+                    float(value),
+                    kind="edge" if stack is None else "segment",
+                    stack=stack,
+                    fontsize=fontsize,
+                )
+    if options.total is not False:
+        for stack in family.stacks:
+            for index in range(len(stack.containers[0].patches)):
+                found = stack.total(index)
+                if found is None:  # no bar stands at this position
+                    continue
+                net, outer = found
+                _add_label(
+                    family,
+                    outer,
+                    index,
+                    net,
+                    kind="total",
+                    stack=stack,
+                    fontsize=fontsize,
+                )
 
-    for axis in value_axes:
+    for axis in dict.fromkeys(label.value_axis for label in family.texts):
         _format_ticks_now(axis)
     family.refresh()
     for label in family.texts:
-        place(label, options.where)
+        place(label, label.where)
 
     families = getattr(ax, "_dm_bar_label_families", None)
     if families is None:

@@ -14,7 +14,10 @@ text, unit and option handling:
 * **Side.** Outside the end, 3 pt (:data:`OFFSET_PT`) away; a bar growing
   down or left on screen (a negative value, or an inverted value axis) has
   its label below or left of the end. ``"inside"`` mirrors that inwards,
-  ``"center"`` centres the label on the bar.
+  ``"center"`` centres the label on the bar. A stack's total is anchored on
+  the bar that ends the stack, so it sits beyond the stack's end.
+* **Room.** A label on a stack segment fits when the segment is at least as
+  long as the label along the value axis (:func:`fits_on_bar`).
 * **Host.** On a ``twinx`` / ``twiny`` pair the labels live on the Axes
   drawn last, by zorder and then figure order, so no partner draws over
   them.
@@ -27,6 +30,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.text import Text
 
 from .._figure_geometry import same_position_axes
 
@@ -37,6 +41,7 @@ __all__ = [
     "EDGE_TOL_PX",
     "OFFSET_PT",
     "bar_point",
+    "fits_on_bar",
     "host_axes",
     "in_view",
     "place",
@@ -89,6 +94,32 @@ def in_view(label: BarLabel, where: Where) -> bool:
         box.x0 - EDGE_TOL_PX <= shown[0] <= box.x1 + EDGE_TOL_PX
         and box.y0 - EDGE_TOL_PX <= shown[1] <= box.y1 + EDGE_TOL_PX
     )
+
+
+def fits_on_bar(label: BarLabel) -> bool:
+    """Whether ``label`` is no longer than its bar along the value axis.
+
+    The label's own text extent (its font, size and rotation as drawn), plus
+    the 3 pt inset for ``"inside"``, against the bar's length on screen.
+    """
+    text = Text.get_window_extent(label)  # the text alone, not the anchor
+    vertical = label.orientation == "vertical"
+    need = text.height if vertical else text.width
+    if label.where == "inside":
+        figure = label.get_figure(root=True)
+        dpi = figure.dpi if figure is not None else 72.0
+        need += OFFSET_PT * dpi / 72.0
+    bar = label.bar
+    x, y = float(bar.get_x()), float(bar.get_y())
+    ends = label.bar_axes.transData.transform(
+        [(x, y), (x + float(bar.get_width()), y + float(bar.get_height()))]
+    )
+    length = (
+        abs(ends[1, 1] - ends[0, 1])
+        if vertical
+        else abs(ends[1, 0] - ends[0, 0])
+    )
+    return bool(np.isfinite(length) and length >= need)
 
 
 def _outward(label: BarLabel) -> int:

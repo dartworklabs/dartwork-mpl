@@ -5,8 +5,9 @@ Downstream code hand-wrote these labels in 418 files: ten font sizes,
 The helper settles the look, the unit, the decimals and the side. The
 expected texts are the approved captures' (review page
 ``2026-11-06-b3-labels``; ``b3/img/report.json`` entries ``q-A``, ``g-A``,
-``g-A-series``, ``h-A``), drawn from the same data as ``b3/scripts/charts.py``.
-The observed values are read after a real canvas draw.
+``g-A-series``, ``h-A``, and for stacks ``s-A``, ``s-A-tot``, ``s-A-seg``),
+drawn from the same data as ``b3/scripts/charts.py``. The observed values
+are read after a real canvas draw.
 """
 
 from __future__ import annotations
@@ -60,6 +61,13 @@ H_NAMES = [
     "Lucerne",
 ]
 H_SHARE = np.array([31.0, 22.4, 11.6, 4.2, 3.9, 3.1, 2.4, 1.9, 1.6, 1.2])
+S_YEARS = ["FY20", "FY21", "FY22", "FY23", "FY24", "FY25"]
+S_PARTS = [
+    ("Products", np.array([14.2, 15.1, 15.8, 16.4, 17.9, 19.3]) * 1e9),
+    ("Services", np.array([6.1, 7.4, 8.9, 10.6, 12.8, 15.2]) * 1e9),
+    ("Licensing", np.array([2.0, 2.2, 2.1, 2.5, 2.6, 3.0]) * 1e9),
+]
+S_COLORS = ["dc.blue7", "dc.blue4", "dc.blue2"]
 # Korean quarterly revenue in 원 (the B2 axis-unit capture, first value 5,234억).
 Q_WON = (
     np.array(
@@ -102,6 +110,28 @@ G_A = [
 ]
 G_A_SERIES = ["#0f79cf"] * 5 + ["#d3441c"] * 5 + ["#248837"] * 5
 H_A = ["31.0", "22.4", "11.6", "4.2", "3.9", "3.1", "2.4", "1.9", "1.6", "1.2"]
+# The stacked chart (s): segments container by container, then the totals.
+S_A_SEG = [
+    "14.2",
+    "15.1",
+    "15.8",
+    "16.4",
+    "17.9",
+    "19.3",
+    "6.1",
+    "7.4",
+    "8.9",
+    "10.6",
+    "12.8",
+    "15.2",
+    "2.0",
+    "2.2",
+    "2.1",
+    "2.5",
+    "2.6",
+    "3.0",
+]
+S_A_TOT = ["22.3", "24.7", "26.8", "29.5", "33.3", "37.5"]
 
 
 @pytest.fixture(autouse=True)
@@ -157,6 +187,42 @@ def _plain(values, **bar_kw):
     return fig, ax, bars
 
 
+def _stack(ax, parts, positions, *, horizontal=False, **bar_kw):
+    """Stack ``parts`` (``(values, bar keywords)``) as callers build stacks.
+
+    Each container starts at the running end of the ones before it: a
+    positive value on the positive end, a negative one on the negative end;
+    a NaN value adds nothing.
+    """
+    high = np.zeros(len(positions))
+    low = np.zeros(len(positions))
+    draw, base = (ax.barh, "left") if horizontal else (ax.bar, "bottom")
+    containers = []
+    for values, kw in parts:
+        values = np.asarray(values, dtype=float)
+        start = np.where(values < 0, low, high)
+        containers.append(
+            draw(positions, values, **{base: start}, **bar_kw, **kw)
+        )
+        high = high + np.where(values > 0, values, 0.0)
+        low = low + np.where(values < 0, values, 0.0)
+    return containers
+
+
+def _stacked():
+    """The approved stacked chart (s): three revenue parts over six years."""
+    fig, ax = _fig()
+    x = np.arange(len(S_YEARS))
+    parts = [
+        (values, {"color": color, "label": name})
+        for (name, values), color in zip(S_PARTS, S_COLORS, strict=True)
+    ]
+    containers = _stack(ax, parts, x, width=0.6)
+    ax.set_xticks(x, S_YEARS)
+    dm.axis_unit(ax, "y", label="Revenue (USD {unit})", ladder="finance")
+    return fig, ax, containers
+
+
 # ---------------------------------------------------------------- reading
 def _texts(texts):
     return [t.get_text() for t in texts]
@@ -194,6 +260,20 @@ def _assert_outside(fig, texts, patches, orientation="vertical"):
                 assert tb.x0 == pytest.approx(pb.x1 + gap, abs=0.6)
             else:
                 assert tb.x1 == pytest.approx(pb.x0 - gap, abs=0.6)
+
+
+def _assert_centred(fig, texts, patches):
+    """Each label's middle is its bar's middle."""
+    renderer = _drawn(fig)
+    for text, patch in zip(texts, patches, strict=True):
+        tb = text.get_window_extent(renderer)
+        pb = patch.get_window_extent(renderer)
+        assert (tb.x0 + tb.x1) / 2 == pytest.approx((pb.x0 + pb.x1) / 2, abs=1)
+        assert (tb.y0 + tb.y1) / 2 == pytest.approx((pb.y0 + pb.y1) / 2, abs=1)
+
+
+def _kinds(texts):
+    return [t.kind for t in texts]
 
 
 def _hex(text):
@@ -682,6 +762,486 @@ def test_bars_from_another_axes_raise():
     twin_bars = ax2.bar([0, 1], [120.0, 135.0])
     texts = dm.label_bars(ax, twin_bars)
     assert all(t.axes is ax2 for t in texts)
+
+
+# ---------------------------------------------------------------- stacks
+def test_stack_segments_and_totals_match_approved():
+    fig, ax, containers = _stacked()
+    texts = dm.label_bars(ax)
+    dm.place_legend(ax)
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert _texts(texts) == S_A_SEG + S_A_TOT
+    assert _kinds(texts) == ["segment"] * 18 + ["total"] * 6
+    for text in texts:
+        assert text.get_visible()
+        assert text.get_fontsize() == pytest.approx(dm.fs(-1))
+        assert text.get_fontweight() == dm.fw(1)
+        assert _hex(text) == "#000000"  # dark ink on blue7/4/2; totals
+        assert text.get_rotation() == 0
+    segments = [p for c in containers for p in c.patches]
+    _assert_centred(fig, texts[:18], segments)
+    _assert_outside(fig, texts[18:], containers[-1].patches)
+
+    # The stack is recorded for the layout's later passes.
+    (family,) = ax._dm_bar_label_families
+    (stack,) = family.stacks
+    assert stack.containers == containers
+    assert all(t.stack is stack for t in texts)
+
+
+def test_total_only_and_off():
+    fig, ax, containers = _stacked()
+    texts = dm.label_bars(ax, total="only")
+    dm.simple_layout(fig)
+    assert _texts(texts) == S_A_TOT
+    assert set(_kinds(texts)) == {"total"}
+    _assert_outside(fig, texts, containers[-1].patches)
+
+    fig, ax, containers = _stacked()
+    texts = dm.label_bars(ax, total=False)
+    dm.simple_layout(fig)
+    assert _texts(texts) == S_A_SEG
+    assert set(_kinds(texts)) == {"segment"}
+    _assert_centred(fig, texts, [p for c in containers for p in c.patches])
+
+    # Bars that form no stack keep their edge labels under either option.
+    for total in ("only", False):
+        fig, ax, _ = _plain([3.0, 5.0])
+        texts = dm.label_bars(ax, total=total)
+        assert _texts(texts) == ["3", "5"]
+        assert set(_kinds(texts)) == {"edge"}
+
+
+def test_short_segment_label_hidden():
+    fig, ax = _fig()
+    _stack(ax, [([30.0, 30.0], {}), ([1.0, 12.0], {})], np.arange(2))
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    renderer = _drawn(fig)
+    short = texts[2]
+    assert short.get_text() == "1"
+    # 1 of 42 on a 12 cm chart: a few points, shorter than a 7 pt label.
+    assert not short.get_visible()
+    assert short in ax.texts  # hidden, not deleted
+    assert not np.isfinite(short.get_tightbbox(renderer).extents).all()
+    assert all(t.get_visible() for t in texts if t is not short)
+
+    # A taller figure gives the segment room: the label comes back.
+    width, height = fig.get_size_inches()
+    fig.set_size_inches(width, 12)
+    fig.canvas.draw()
+    assert short.get_visible()
+
+    # Measured against the label itself: a smaller label fits again.
+    fig.set_size_inches(width, height)
+    fig.canvas.draw()
+    assert not short.get_visible()
+    short.set_fontsize(2)
+    fig.canvas.draw()
+    assert short.get_visible()
+
+
+def test_segment_room_counts_the_inside_inset():
+    def chart(where, length=None):
+        fig, ax = _fig()
+        ax.set_ylim(0, 100)
+        containers = _stack(ax, [([50.0], {}), ([10.0], {})], [0])
+        if length is not None:
+            containers[1].patches[0].set_height(length)
+        texts = dm.label_bars(ax, where=where, total=False)
+        return fig, ax, texts[1]
+
+    fig, ax, label = chart("center")
+    renderer = _drawn(fig)
+    height = label.get_window_extent(renderer).height
+    unit_px = (
+        ax.transData.transform((0, 1))[1] - ax.transData.transform((0, 0))[1]
+    )
+    # A segment longer than the label, but not by the 3 pt inset.
+    length = (height + _offset_px(fig) / 2) / unit_px
+    fig, _, centred = chart("center", length)
+    fig.canvas.draw()
+    assert centred.get_visible()
+    fig, _, inside = chart("inside", length)
+    fig.canvas.draw()
+    assert not inside.get_visible()
+
+
+def test_stack_bottoms_from_rounded_running_sums():
+    # Bottoms read from a table of running totals (0.3) rather than summed
+    # bar by bar (0.1 + 0.2 = 0.30000000000000004) still stack.
+    fig, ax = _fig()
+    ax.bar([0], [0.1])
+    ax.bar([0], [0.2], bottom=[0.1])
+    ax.bar([0], [0.4], bottom=[0.3])
+    assert 0.1 + 0.2 != 0.3
+    texts = dm.label_bars(ax)
+    assert _kinds(texts) == ["segment"] * 3 + ["total"]
+    assert _texts(texts)[-1] == "0.7"
+
+
+def test_mixed_sign_stack_net_total_side():
+    fig, ax = _fig()
+    containers = _stack(
+        ax,
+        [([5.0, 2.0], {}), ([-2.0, -5.0], {}), ([3.0, 1.0], {})],
+        np.arange(2),
+        width=0.6,
+    )
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    seg = [p for c in containers for p in c.patches]
+    assert _texts(texts) == [
+        "5",
+        "2",
+        f"{MINUS}2",
+        f"{MINUS}5",
+        "3",
+        "1",
+        "6",  # net 5 - 2 + 3
+        f"{MINUS}2",  # net 2 - 5 + 1
+    ]
+    assert _kinds(texts) == ["segment"] * 6 + ["total"] * 2
+    _assert_centred(fig, texts[:6], seg)
+    renderer = _drawn(fig)
+    gap = _offset_px(fig)
+    up, down = texts[6:]
+    # Net 6 >= 0: beyond the positive end (5 + 3), above it.
+    assert up.get_verticalalignment() == "bottom"
+    assert up.get_window_extent(renderer).y0 == pytest.approx(
+        ax.transData.transform((0, 8.0))[1] + gap, abs=0.6
+    )
+    # Net -2 < 0: beyond the negative end (-5), below it.
+    assert down.get_verticalalignment() == "top"
+    assert down.get_window_extent(renderer).y1 == pytest.approx(
+        ax.transData.transform((1, -5.0))[1] - gap, abs=0.6
+    )
+
+
+def test_waterfall_is_not_a_stack():
+    # A waterfall: one container of floating bars. Plain edge labels.
+    fig, ax = _fig()
+    bars = ax.bar(
+        np.arange(4), [10.0, -3.0, 5.0, -2.0], bottom=[0.0, 10.0, 7.0, 12.0]
+    )
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["10", f"{MINUS}3", "5", f"{MINUS}2"]
+    assert set(_kinds(texts)) == {"edge"}
+    _assert_outside(fig, texts, bars.patches)
+    (family,) = ax._dm_bar_label_families
+    assert family.stacks == []
+
+    # Bars at the same positions that float above the others: no stack.
+    fig, ax = _fig()
+    low = ax.bar([0, 1], [4.0, 5.0])
+    high = ax.bar([0, 1], [2.0, 2.0], bottom=[6.0, 7.0])
+    texts = dm.label_bars(ax)
+    assert _texts(texts) == ["4", "5", "2", "2"]
+    assert set(_kinds(texts)) == {"edge"}
+    _assert_outside(fig, texts, low.patches + high.patches)
+
+    # Overlaid bars from the same base (actual against target): no stack.
+    fig, ax = _fig()
+    ax.bar([0, 1], [5.0, 6.0])
+    ax.bar([0, 1], [3.0, 4.0], width=0.4)
+    texts = dm.label_bars(ax)
+    assert _texts(texts) == ["5", "6", "3", "4"]
+    assert set(_kinds(texts)) == {"edge"}
+
+    # Gap-to-target bars beside the actuals, starting at their tops: other
+    # positions, so no stack either.
+    fig, ax = _fig()
+    actual = ax.bar([0, 1], [3.0, 4.0], width=0.4)
+    gap = ax.bar([0.3, 1.3], [1.0, 1.5], bottom=[3.0, 4.0], width=0.2)
+    texts = dm.label_bars(ax)
+    assert _texts(texts) == ["3.0", "4.0", "1.0", "1.5"]
+    assert set(_kinds(texts)) == {"edge"}
+    _assert_outside(fig, texts, actual.patches + gap.patches)
+
+
+def test_inside_ink_by_contrast():
+    blue7 = mcolors.to_hex("dc.blue7")
+    assert blue7 == "#1686e0"
+    on_blue7 = mcolors.to_rgb(blue7)
+    assert contrast_ratio((0.0, 0.0, 0.0), on_blue7) == pytest.approx(
+        5.52, abs=0.01
+    )
+    assert contrast_ratio((1.0, 1.0, 1.0), on_blue7) == pytest.approx(
+        3.80, abs=0.01
+    )
+
+    def chart(**kw):
+        fig, ax = _fig()
+        parts = [([4.0, 5.0], {"color": "dc.blue7"}), ([3.0, 3.0], kw)]
+        _stack(ax, parts, np.arange(2))
+        return ax
+
+    # Segments take the more readable of white and the text colour; the
+    # totals sit off the bars, in the text colour.
+    texts = dm.label_bars(chart(color="dc.blue9"))
+    assert [_hex(t) for t in texts] == ["#000000"] * 2 + ["#ffffff"] * 2 + [
+        "#000000"
+    ] * 2
+
+    # The dark ink is the preset's text colour.
+    with matplotlib.rc_context({"text.color": "#212529"}):
+        texts = dm.label_bars(chart(color="dc.blue9"))
+    assert [_hex(t) for t in texts] == ["#212529"] * 2 + ["#ffffff"] * 2 + [
+        "#212529"
+    ] * 2
+
+    # The colour as drawn: dc.blue9 at alpha 0.3 shows light, so dark ink.
+    texts = dm.label_bars(chart(color="dc.blue9", alpha=0.3))
+    assert {_hex(t) for t in texts} == {"#000000"}
+
+    # where="inside" / "center" on plain bars: the same ink; outside labels
+    # keep the text colour.
+    for where in ("inside", "center"):
+        fig, ax, _ = _plain([4.0, 3.0], color=["dc.blue7", "dc.blue9"])
+        texts = dm.label_bars(ax, where=where)
+        assert [_hex(t) for t in texts] == ["#000000", "#ffffff"]
+    fig, ax, _ = _plain([4.0, 3.0], color=["dc.blue7", "dc.blue9"])
+    assert {_hex(t) for t in dm.label_bars(ax)} == {"#000000"}
+
+    # An explicit colour wins, totals included.
+    texts = dm.label_bars(chart(color="dc.blue9"), color="dc.red7")
+    assert {_hex(t) for t in texts} == {mcolors.to_hex("dc.red7")}
+    # "series": each segment its series' ink; a total belongs to no single
+    # series and keeps the text colour.
+    texts = dm.label_bars(chart(color="dc.blue9"), color="series")
+    assert [_hex(t) for t in texts[4:]] == ["#000000"] * 2
+    for text in texts[:4]:
+        assert _hex(text) not in ("#000000", "#ffffff")
+        assert _contrast_on_white(text) >= 4.5
+
+
+def test_grouped_and_stacked_layout():
+    # Two stacked groups side by side, drawn interleaved.
+    fig, ax = _fig()
+    x = np.arange(3)
+    w = 0.35
+    left, right = x - w / 2 - 0.01, x + w / 2 + 0.01
+    a1 = ax.bar(left, [3.0, 4.0, 5.0], width=w)
+    b1 = ax.bar(right, [2.0, 2.0, 2.0], width=w)
+    a2 = ax.bar(left, [1.0, 1.0, 1.0], bottom=[3.0, 4.0, 5.0], width=w)
+    b2 = ax.bar(right, [6.0, 5.0, 4.0], bottom=[2.0, 2.0, 2.0], width=w)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    (family,) = ax._dm_bar_label_families
+    assert [s.containers for s in family.stacks] == [[a1, a2], [b1, b2]]
+    segments = [t for t in texts if t.kind == "segment"]
+    totals = [t for t in texts if t.kind == "total"]
+    # Container by container: a1, b1, a2, b2.
+    assert _texts(segments) == [
+        "3",
+        "4",
+        "5",
+        "2",
+        "2",
+        "2",
+        "1",
+        "1",
+        "1",
+        "6",
+        "5",
+        "4",
+    ]
+    assert _texts(totals) == ["4", "5", "6", "8", "7", "6"]
+    _assert_centred(
+        fig, segments, a1.patches + b1.patches + a2.patches + b2.patches
+    )
+    _assert_outside(fig, totals, a2.patches + b2.patches)
+
+    # Grouped bars (side by side, from one base) form no stack.
+    fig, ax, _ = _grouped()
+    texts = dm.label_bars(ax)
+    assert set(_kinds(texts)) == {"edge"}
+    assert ax._dm_bar_label_families[0].stacks == []
+
+
+def test_stack_where_places_segments():
+    def chart():
+        fig, ax = _fig()
+        parts = [([6.0, 7.0], {}), ([5.0, 4.0], {})]
+        return fig, ax, _stack(ax, parts, np.arange(2), width=0.6)
+
+    # "inside": just inside each segment's end; the totals stay outside.
+    fig, ax, containers = chart()
+    texts = dm.label_bars(ax, where="inside")
+    renderer = _drawn(fig)
+    gap = _offset_px(fig)
+    segments = [p for c in containers for p in c.patches]
+    for text, patch in zip(texts[:4], segments, strict=True):
+        tb = text.get_window_extent(renderer)
+        assert tb.y1 == pytest.approx(
+            patch.get_window_extent(renderer).y1 - gap, abs=0.6
+        )
+    assert _texts(texts[4:]) == ["11", "11"]
+    _assert_outside(fig, texts[4:], containers[-1].patches)
+
+    # "outside": at each segment's end, as asked, in the text colour.
+    fig, ax, containers = chart()
+    texts = dm.label_bars(ax, where="outside", total=False)
+    _assert_outside(fig, texts, [p for c in containers for p in c.patches])
+    assert {_hex(t) for t in texts} == {"#000000"}
+
+    # A label outside its segment needs no room on it.
+    fig, ax = _fig()
+    _stack(ax, [([30.0, 30.0], {}), ([1.0, 12.0], {})], np.arange(2))
+    texts = dm.label_bars(ax, where="outside", total=False)
+    fig.canvas.draw()
+    assert all(t.get_visible() for t in texts)
+
+
+def test_stack_nan_and_zero_segments():
+    fig, ax = _fig()
+    containers = _stack(
+        ax,
+        [([3.0, 4.0], {}), ([np.nan, 2.0], {}), ([1.0, 0.0], {})],
+        np.arange(2),
+        width=0.6,
+    )
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    # No label for the NaN segment; it adds nothing to its total.
+    assert _texts(texts) == ["3", "4", "2", "1", "0", "4", "6"]
+    assert _kinds(texts) == ["segment"] * 5 + ["total"] * 2
+    fig.canvas.draw()
+    zero = texts[4]
+    assert not zero.get_visible()  # a zero segment has no room
+    assert all(t.get_visible() for t in texts if t is not zero)
+    _assert_outside(
+        fig, texts[5:], [containers[2].patches[0], containers[1].patches[1]]
+    )
+
+    # bottom + values carried the NaN on: the bar above it is not drawn,
+    # shows no label, and the total counts what stands.
+    fig, ax = _fig()
+    ax.bar([0, 1], [3.0, 4.0])
+    ax.bar([0, 1], [np.nan, 2.0], bottom=[3.0, 4.0])
+    ax.bar([0, 1], [1.0, 1.0], bottom=[np.nan, 6.0])
+    texts = dm.label_bars(ax)
+    fig.canvas.draw()
+    assert _texts(texts) == ["3", "4", "2", "1", "1", "3", "7"]
+    assert not texts[3].get_visible()
+
+    # A zero bar a caller put on the negative end: the total still sits
+    # beyond the farthest positive end.
+    fig, ax = _fig()
+    top = ax.bar([0], [5.0])
+    ax.bar([0], [-2.0])
+    ax.bar([0], [0.0], bottom=[-2.0])
+    texts = dm.label_bars(ax)
+    assert _texts(texts) == ["5", f"{MINUS}2", "0", "3"]
+    assert _kinds(texts)[-1] == "total"
+    _assert_outside(fig, texts[-1:], top.patches)
+
+
+def test_segment_room_reads_the_text_the_draw_writes():
+    # barh: the room a label needs is its width, which the tick unit moves.
+    fig, ax = _fig()
+    parts = [
+        ([3e6], {"color": "dc.blue2"}),
+        ([1234567.0], {"color": "dc.blue2"}),
+    ]
+    _stack(ax, parts, [0], horizontal=True, height=0.6)
+    seg = dm.label_bars(ax, total=False)[1]
+    assert seg.get_text() == "1,234,567"
+    renderer = _drawn(fig)
+
+    def width(text):
+        probe = ax.text(0, 0, text, fontsize=seg.get_fontsize())
+        probe.set_fontweight(seg.get_fontweight())
+        extent = probe.get_window_extent(renderer).width
+        probe.remove()
+        return extent
+
+    # A view in which the segment is narrower than "1,234,567" but wider
+    # than "1.23M".
+    room = (width("1,234,567") + width("1.23M")) / 2
+    ax.set_xlim(0, 1234567.0 * ax.get_window_extent(renderer).width / room)
+    fig.canvas.draw()
+    assert not seg.get_visible()
+
+    # A draw formats the axis before it asks the label: the label is
+    # measured on the text that draw writes.
+    dm.format_axis_si(ax, "x")
+    ax.xaxis.get_major_formatter().format_ticks(list(ax.get_xticks()))
+    assert seg.get_visible()
+    fig.canvas.draw()
+    assert seg.get_text() == "1.23M"
+    assert seg.get_visible()
+
+
+def test_negative_only_barh_stack():
+    fig, ax = _fig()
+    containers = _stack(
+        ax,
+        [([-3.0, -2.0], {}), ([-1.0, -4.0], {})],
+        np.arange(2),
+        horizontal=True,
+        height=0.6,
+    )
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == [
+        f"{MINUS}{v}" for v in ("3", "2", "1", "4", "4", "6")
+    ]
+    assert _kinds(texts) == ["segment"] * 4 + ["total"] * 2
+    _assert_centred(fig, texts[:4], [p for c in containers for p in c.patches])
+    assert {t.get_horizontalalignment() for t in texts[4:]} == {"right"}
+    _assert_outside(fig, texts[4:], containers[1].patches, "horizontal")
+
+
+def test_stack_on_a_twin():
+    # Stacked bars on the twin, a line on the parent.
+    fig, ax = _fig()
+    ax.plot([0, 1], [50.0, 70.0], color="dc.orange6")
+    ax2 = ax.twinx()
+    containers = _stack(
+        ax2, [([3.0, 4.0], {}), ([2.0, 2.0], {})], np.arange(2), width=0.6
+    )
+    texts = dm.label_bars(ax2)
+    dm.simple_layout(fig)
+    assert all(t.axes is ax2 for t in texts)
+    assert _texts(texts) == ["3", "4", "2", "2", "5", "6"]
+    _assert_centred(fig, texts[:4], [p for c in containers for p in c.patches])
+    _assert_outside(fig, texts[4:], containers[1].patches)
+
+    # Stacked bars on the parent, a line on the twin: the labels go on the
+    # twin, placed with the bars' data.
+    fig, ax = _fig()
+    containers = _stack(
+        ax, [([3.0, 4.0], {}), ([2.0, 2.0], {})], np.arange(2), width=0.6
+    )
+    ax2 = ax.twinx()
+    ax2.plot([0, 1], [50.0, 70.0], color="dc.orange6")
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert all(t.axes is ax2 for t in texts)
+    assert _texts(texts) == ["3", "4", "2", "2", "5", "6"]
+    _assert_centred(fig, texts[:4], [p for c in containers for p in c.patches])
+    _assert_outside(fig, texts[4:], containers[1].patches)
+
+
+def test_stack_on_an_inverted_value_axis():
+    fig, ax = _fig()
+    _stack(ax, [([3.0, 4.0], {}), ([2.0, -2.0], {})], np.arange(2), width=0.6)
+    texts = dm.label_bars(ax)
+    ax.invert_yaxis()  # after labelling
+    dm.simple_layout(fig)
+    renderer = _drawn(fig)
+    gap = _offset_px(fig)
+    assert _texts(texts[4:]) == ["5", "2"]
+    # Both nets are >= 0: beyond the positive ends (5 and 4), which the
+    # inverted axis shows lower on screen.
+    for text, end, x in zip(texts[4:], (5.0, 4.0), (0, 1), strict=True):
+        assert text.get_verticalalignment() == "top"
+        assert text.get_window_extent(renderer).y1 == pytest.approx(
+            ax.transData.transform((x, end))[1] - gap, abs=0.6
+        )
 
 
 def test_invalid_arguments_raise():
