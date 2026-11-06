@@ -118,6 +118,54 @@ def _tight_layout(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
             yield _method_offset(syntax, site.node.func)
 
 
+def _is_concatenation(node: ast.expr) -> bool:
+    """``a + b``, or a list or tuple that unpacks sequences (``[*a, *b]``)."""
+    if isinstance(node, ast.BinOp):
+        return isinstance(node.op, ast.Add)
+    return isinstance(node, (ast.List, ast.Tuple)) and any(
+        isinstance(item, ast.Starred) for item in node.elts
+    )
+
+
+def _twin_legend_hand_merge(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
+    """``ax.legend(h1 + h2, l1 + l2)`` after two ``get_legend_handles_labels``.
+
+    Handles and labels are both concatenations, in a source that reads the
+    legend entries of more than one Axes: the merge ``dm.place_legend``
+    does for a twin pair.
+    """
+    reads = sum(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "get_legend_handles_labels"
+        for node in ast.walk(syntax.tree)
+    )
+    if reads < 2:
+        return
+    for node in ast.walk(syntax.tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "legend"
+        ):
+            continue
+        given = {
+            keyword.arg: keyword.value
+            for keyword in node.keywords
+            if keyword.arg in {"handles", "labels"}
+        }
+        positional = list(node.args)
+        handles = positional[0] if positional else given.get("handles")
+        labels = positional[1] if len(positional) > 1 else given.get("labels")
+        if (
+            handles is not None
+            and labels is not None
+            and _is_concatenation(handles)
+            and _is_concatenation(labels)
+        ):
+            yield _method_offset(syntax, node.func)
+
+
 def _plt_style_use(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
     """``plt.style.use(...)``."""
     for site in _call_sites(syntax):
@@ -315,6 +363,7 @@ _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
         "invalid-color-name": _literal_names,
         "figsize-direct": _figsize_direct,
         "tight-layout": _tight_layout,
+        "twin-legend-hand-merge": _twin_legend_hand_merge,
         "multirow-subplots-no-gridspec-kw": _multirow_subplots,
         "plt-style-use": _plt_style_use,
         "plt-show-only": _plt_show_only,
