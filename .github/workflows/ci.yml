@@ -85,6 +85,10 @@ jobs:
       # `-n auto` uses the job's worker bound or the hosted runner's vCPUs;
       # the serial run took 16-30 min per job. Keep -n here, not in addopts,
       # so local runs and scripts/test_id_map.py stay serial by default.
+      # `--dist worksteal` lets idle workers take queued tests, so a module's
+      # back-to-back 30-60 s colour subprocess tests do not hold one worker
+      # (docs/development/ci-execution.md). It needs xdist, so it lives here
+      # with -n rather than in addopts.
       - name: Run tests with coverage
         if: matrix.python-version == '3.12'
         env:
@@ -96,7 +100,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run pytest -v -n auto --cov --cov-report=term-missing --durations=30 \
+          uv run pytest -v -n auto --dist worksteal --cov --cov-report=term-missing --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       # `color_pipeline` tests (colour build, regeneration, comparison,
@@ -111,7 +115,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 \
+          uv run pytest -v -n auto --dist worksteal -m "not color_pipeline" --no-cov --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       # Prove every protected module contributed a passing executed case in
@@ -314,7 +318,7 @@ jobs:
             --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}.xml"
           if [ -n "$EXTRA_TESTS" ]; then
             # shellcheck disable=SC2086
-            "$task_python" -m pytest $EXTRA_TESTS -n auto -q --no-cov \
+            "$task_python" -m pytest $EXTRA_TESTS -n auto --dist worksteal -q --no-cov \
               --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}-slices.xml"
           fi
       - name: Preserve supported Matplotlib test evidence

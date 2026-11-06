@@ -10,8 +10,8 @@ policy remains in `pyproject.toml`.
 
 | Gate | Workflow and local command | Durable output |
 | --- | --- | --- |
-| Full suite, Python 3.11–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
-| Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest -q -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
+| Full suite, Python 3.11–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto --dist worksteal -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
+| Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest -q -n 4 --dist worksteal -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
 | All-extras module execution | Both workflows, after successful full pytest (every CI full-suite job, 3.11–3.13): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
 | FastMCP legacy 2.13.3 / secure 2.14.7 / locked 3.4.10 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: secure cells install the project plus selected FastMCP, then `uv run --no-sync pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"` (legacy 2.13.3 uses the recorded Pydantic 2.14.1 overlay), then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
 | Src typing | `.github/workflows/ci.yml`: `uv run mypy` (paths and strictness live in `[tool.mypy]`) | Step log |
@@ -23,9 +23,10 @@ days. The latter contains pytest output, including its slowest 30 durations.
 merged into the one JUnit report with unchanged module/class names, so the
 guard below reads it as before. `-n` lives on the CI command lines only, never
 in `addopts`: local runs and `scripts/test_id_map.py` stay serial.
-`addopts` does carry `--dist=worksteal`, which only acts with `-n`: idle
-workers take queued tests from busy ones, so a module's consecutive 40-60 s
-colour subprocess tests stop running back to back on one worker. Measured
+`--dist worksteal` sits next to `-n` on the same command lines (it needs
+pytest-xdist, so it is not in `addopts` either; `-p no:xdist` keeps working):
+idle workers take queued tests from busy ones, so a module's consecutive
+30-60 s colour subprocess tests stop running back to back on one worker. Measured
 locally on 2026-11-06 with paired concurrent runs, 4 workers: wall 445 s to
 364 s, CPU 2465 s to 2410 s; 32 workers: wall about 20-30% lower for 5-8%
 more CPU (module fixtures set up on more workers). Hosted speed is read from
