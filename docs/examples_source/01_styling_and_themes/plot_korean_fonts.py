@@ -23,9 +23,8 @@ ax.bar(categories, values, color="tw.blue500", width=0.6)
 ax.set_title("대한민국 주요 도시 인구수")
 ax.set_ylabel("인구 (백만 명)")
 
-# dm.fs() scales font size relative to the active preset's base
-for i, v in enumerate(values):
-    ax.text(i, v + 0.15, f"{v}M", ha="center", va="bottom", fontsize=dm.fs(-1))
+# dm.label_bars prints each value above its bar, sized from the preset
+dm.label_bars(ax, fmt="{}M")
 
 ax.set_ylim(0, 11)
 

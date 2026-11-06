@@ -127,9 +127,8 @@ _REMOVED_NAMES: dict[str, tuple[str, str]] = {
     ),
     "add_value_labels": (
         "0.4.1",
-        "a plain loop of ax.text(bar.get_x() + bar.get_width()/2, "
-        'bar.get_height(), f"{bar.get_height():.0f}", ha="center", '
-        'va="bottom")',
+        "dm.label_bars(ax) (values on bars); dm.annotate_value(ax, x, y, "
+        "text) for a point or a line end",
     ),
     "set_xmargin": (
         "0.4.1",

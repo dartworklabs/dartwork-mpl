@@ -120,7 +120,7 @@ column is the suggestion delivered by
 | `TICK_CROWD`         | info     | Tick labels consume too much of the axis span      | Reduce tick density (`MaxNLocator`) or rotate labels                |
 | `TICK_ROTATION`      | info     | X tick labels are rotated needlessly or overlap    | Set `rotation=0`, rotate to 45°, or reduce tick count               |
 | `TICK_DECIMAL`       | warn/info | Tick labels have mixed, duplicate, trailing-zero or excessive decimals | Leave `decimals` unset on `dm.format_axis_*`, or match `dm.recommend_tick_decimals(values)` |
-| `VALUE_LABEL_DECIMAL` | warning  | Whole-number value labels print trailing zeros (`120.0`) | On bars, `dm.label_bars(ax)` (no meaningless decimals); else format labels without decimals (`f'{v:,.0f}'`, `bar_label(fmt='{:,.0f}')`) |
+| `VALUE_LABEL_DECIMAL` | warning  | Whole-number value labels print trailing zeros (`120.0`) | On bars, `dm.label_bars(ax)` (no meaningless decimals); else format labels without decimals (`dm.annotate_value(ax, x, y, f'{v:,.0f}')`) |
 | `EMPTY_AXES`         | info     | Axes carry no plotted artist                       | Plot data or remove the empty axes via `fig.delaxes(ax)`            |
 | `MARGIN_ASYMMETRY`   | warning  | Left / right or top / bottom margins differ a lot  | Re-run `dm.simple_layout(fig)` (or call it for the first time)      |
 | `PIE_LABEL_OFFSET`   | info     | Pie wedge label sits outside its wedge             | Set `pctdistance = 1.0 - wedge_width / 2`                           |

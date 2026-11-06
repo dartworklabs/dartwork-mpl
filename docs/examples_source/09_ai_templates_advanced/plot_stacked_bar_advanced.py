@@ -11,12 +11,12 @@ MCP ``dartwork-mpl://template/advanced/stacked_bar``.
 # ai-template-meta-start
 # tier: advanced
 # basic_counterpart: stacked_bar
-# use_case: Composition over 4 periods x 3 components with segment + total labels
+# use_case: Composition over 4 periods x 3 components with segment + total labels (dm.label_bars)
 # difficulty: intermediate
 # data_shape: categories: list[str], components: dict[str, list[float]]
 # tags: stacked-bar, composition, components, annotated, narrative
 # narrative: Energy mix by period (Solar / Wind / Gas); totals annotated
-# advanced_apis: cumulative bottom calc, per-segment label only if >= 8%, total label above each stack, dm.cspace
+# advanced_apis: cumulative bottom calc, dm.label_bars (segment labels + stack totals), dm.cspace
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -33,10 +33,6 @@ components = {
     "Gas": [28, 26, 22, 19],
 }
 component_names = list(components.keys())
-totals = [
-    sum(components[n][q] for n in component_names)
-    for q in range(len(categories))
-]
 
 gradient = dm.cspace("dc.teal5", "dc.teal2", n=len(component_names))
 colors = [c.to_hex() for c in gradient]
@@ -52,7 +48,7 @@ bottom = np.zeros(len(categories))
 
 for name, color in zip(component_names, colors, strict=False):
     vals = np.array(components[name])
-    bars = ax.bar(
+    ax.bar(
         x,
         vals,
         bottom=bottom,
@@ -62,40 +58,16 @@ for name, color in zip(component_names, colors, strict=False):
         edgecolor="white",
         linewidth=0.3,
     )
-    # In-segment label only if the segment is at least 8% of its stack.
-    for q, (b, v) in enumerate(zip(bars, vals, strict=False)):
-        share = v / totals[q]
-        if share >= 0.08:
-            ax.text(
-                b.get_x() + b.get_width() / 2,
-                bottom[q] + v / 2,
-                f"{v:.0f}",
-                ha="center",
-                va="center",
-                fontsize=dm.fs(-1),
-                color="white",
-                fontweight=dm.fw(1),
-            )
     bottom += vals
 
-# Total label above each stack.
-for q, t in enumerate(totals):
-    ax.text(
-        x[q],
-        t + 6,
-        f"{t} MWh",
-        ha="center",
-        va="bottom",
-        fontsize=dm.fs(-1),
-        fontweight=dm.fw(1),
-        color="oc.gray8",
-    )
+# Segment labels at each segment's middle and the stack total above each
+# stack; the axis grows just enough to keep the totals inside.
+dm.label_bars(ax)
 
 ax.set_xticks(x)
 ax.set_xticklabels(categories)
 ax.set_ylabel("Generation (MWh)")
 ax.set_xlabel("Period")
-ax.set_ylim(0, max(totals) * 1.12)
 dm.format_axis_si(ax, axis="y")
 
 ax.legend(loc="upper left", fontsize=dm.fs(-1), frameon=False, ncol=3)

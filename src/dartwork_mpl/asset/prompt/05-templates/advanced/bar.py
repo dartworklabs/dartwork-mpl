@@ -8,7 +8,7 @@
 # data_shape: categories: list[str], values: list[float], threshold: float
 # tags: bar, ranking, reference-line, annotated, narrative
 # narrative: 2024 BEV market share, top-5 leaders vs. EU 2030 mandate (55%)
-# advanced_apis: dm.cspace, dm.format_axis_si (for non-percent), PercentFormatter, axhline, ax.text per bar, dm.check_figure_quality
+# advanced_apis: dm.cspace, dm.format_axis_si (for non-percent), PercentFormatter, axhline, dm.label_bars, dm.check_figure_quality
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -44,19 +44,9 @@ fig, ax = plt.subplots(
 )
 
 # 5. Bars + per-bar value labels (annotation density carries the story).
-bars = ax.bar(
-    countries, bev_share, color=bar_colors, edgecolor="white", linewidth=0.3
-)
-for bar_, v in zip(bars, bev_share, strict=False):
-    ax.text(
-        bar_.get_x() + bar_.get_width() / 2,
-        v + 1.5,
-        f"{v:.1f}%",
-        ha="center",
-        va="bottom",
-        fontsize=dm.fs(-1),
-        fontweight=dm.fw(1),
-    )
+#    dm.label_bars prints each value like the axis ticks (here "88.9%").
+ax.bar(countries, bev_share, color=bar_colors, edgecolor="white", linewidth=0.3)
+dm.label_bars(ax)
 
 # 6. Reference threshold — EU 2030 mandate as a horizontal context line.
 ax.axhline(

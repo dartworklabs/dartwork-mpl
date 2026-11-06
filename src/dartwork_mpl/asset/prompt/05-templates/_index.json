@@ -1,7 +1,7 @@
 {
   "advanced": {
     "bar": {
-      "advanced_apis": "dm.cspace, dm.format_axis_si (for non-percent), PercentFormatter, axhline, ax.text per bar, dm.check_figure_quality",
+      "advanced_apis": "dm.cspace, dm.format_axis_si (for non-percent), PercentFormatter, axhline, dm.label_bars, dm.check_figure_quality",
       "basic_counterpart": "bar",
       "data_shape": "categories: list[str], values: list[float], threshold: float",
       "difficulty": "intermediate",
@@ -18,7 +18,7 @@
       "use_case": "Rank a small categorical set with a reference threshold and per-bar value labels"
     },
     "bar_grouped": {
-      "advanced_apis": "per-bar value labels, total annotation above each group, format_axis_si, legend frameon=False",
+      "advanced_apis": "dm.label_bars per bar, total annotation above each group, format_axis_si, legend frameon=False",
       "basic_counterpart": "bar_grouped",
       "data_shape": "categories: list[str], series: dict[str, list[float]]",
       "difficulty": "intermediate",
@@ -35,7 +35,7 @@
       "use_case": "Multi-series quarterly comparison with per-bar value labels and per-category totals"
     },
     "bar_horizontal": {
-      "advanced_apis": "per-bar value labels at end of bar, axvline at median, top-1 accent color, sorted descending, format_axis_si",
+      "advanced_apis": "dm.label_bars at the end of each bar, axvline at median, top-1 accent color, sorted descending, format_axis_si",
       "basic_counterpart": "bar_horizontal",
       "data_shape": "categories: list[str], values: list[float]",
       "difficulty": "intermediate",
@@ -224,7 +224,7 @@
       "use_case": "Same KPI trend across 6 product lines with panel IDs (a)-(f) and a shared y-axis"
     },
     "stacked_bar": {
-      "advanced_apis": "cumulative bottom calc, per-segment label only if >= 8%, total label above each stack, dm.cspace",
+      "advanced_apis": "cumulative bottom calc, dm.label_bars (segment labels + stack totals), dm.cspace",
       "basic_counterpart": "stacked_bar",
       "data_shape": "categories: list[str], components: dict[str, list[float]]",
       "difficulty": "intermediate",
@@ -238,10 +238,10 @@
         "narrative"
       ],
       "tier": "advanced",
-      "use_case": "Composition over 4 periods x 3 components with segment + total labels"
+      "use_case": "Composition over 4 periods x 3 components with segment + total labels (dm.label_bars)"
     },
     "tornado": {
-      "advanced_apis": "horizontal bars at axvline x=0, color by sign of effect, signed value labels",
+      "advanced_apis": "horizontal bars at axvline x=0, color by sign of effect, dm.label_bars signed value labels",
       "basic_counterpart": "tornado",
       "data_shape": "variables: list[str], low_impact: list[float], high_impact: list[float]",
       "difficulty": "intermediate",
@@ -258,7 +258,7 @@
       "use_case": "Parameter sensitivity ranking with two-sided bars colored by direction of output impact"
     },
     "twin_axis": {
-      "advanced_apis": "ax.twinx, color-coded axis labels and tick colors, axhline target, no chart-junk",
+      "advanced_apis": "ax.twinx (each axis takes its series colour from dartwork-mpl), axhline target, no chart-junk",
       "basic_counterpart": "twin_axis",
       "data_shape": "x: list[float], y_price: list[float], y_volume: list[float]",
       "difficulty": "advanced",
