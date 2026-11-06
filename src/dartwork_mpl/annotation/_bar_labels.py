@@ -37,9 +37,11 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   (:mod:`._bar_label_ink`).
 * **View.** A label shows while its bar's end (its middle for
   ``where="center"``) lies in the view, within one pixel: a bar ending on a
-  limit keeps its label just outside the axes, a bar outside the view or
-  running past a limit the caller set has none (nor any room in a
-  ``bbox_inches="tight"`` save).
+  limit keeps its label just outside the axes, a bar outside the view has
+  none (nor any room in a ``bbox_inches="tight"`` save). A plain bar
+  running past a limit the caller set shows its true value just inside
+  that limit, on the bar in the ink for a label on its bar, while the part
+  in view holds it (a stack's segments and totals keep the rule above).
 * **Twins.** On a ``twinx`` / ``twiny`` pair the labels go on the Axes drawn
   last (by zorder, then figure order), placed with the bars' own data
   transform, so no partner's line is drawn over them.
@@ -76,6 +78,7 @@ from .._figure_geometry import canvas_renderer, same_position_axes
 from ..formatting import TickScale, tick_scale_of, value_label_decimals
 from ..scale import fs, fw
 from ._bar_label_geometry import (
+    clipped_edge,
     fits_on_bar,
     host_axes,
     in_view,
@@ -172,6 +175,9 @@ class BarLabel(Annotation):
         self.beyond: BarLabel | None = None
         # Why the layout's last pass hid it where it would overlap, if it did.
         self.hidden_for: HiddenFor | None = None
+        # Whether the ink last written is the one for a label inside the
+        # limit its bar runs past (BarLabelFamily.follow; the layout resets).
+        self.limit_inked = False
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
@@ -236,20 +242,35 @@ class BarLabel(Annotation):
         self.own("color", current, rgba, self.set_color)
 
     @property
+    def clipped(self) -> bool:
+        """Whether the bar runs past a limit and the label sits inside it.
+
+        Read afresh (:func:`clipped_edge`): a plain bar's end label whose
+        bar ends past the view, while it starts inside it.
+        """
+        return clipped_edge(self) is not None
+
+    @property
     def must_fit(self) -> bool:
-        """Whether the label sits on a stack segment and so must fit on it."""
-        return self.kind == "segment" and self.where != "outside"
+        """Whether the label sits on its bar's part in view and must fit.
+
+        A stack segment's label on the segment, and a label inside the
+        limit its bar runs past.
+        """
+        if self.kind == "segment" and self.where != "outside":
+            return True
+        return self.clipped
 
     def get_visible(self) -> bool:
         """Visible, the bar's anchor in the bar axes' view, and room for it.
 
-        A bar outside the view (or past a limit the caller set) shows no
-        label, nor does a stack segment shorter than its label along the
-        value axis (:func:`fits_on_bar`). Both are measured at each call, so
-        a wider view or a taller figure brings the label back. Matplotlib
-        neither draws an invisible text nor counts it in a tight bbox
-        (``Text.get_tightbbox`` is null), and the layout and the validation
-        checks skip it.
+        A bar outside the view shows no label, nor does a stack segment
+        shorter than its label along the value axis, nor a bar past a limit
+        whose part in view is (:func:`fits_on_bar`). Both are measured at
+        each call, so a wider view or a taller figure brings the label back.
+        Matplotlib neither draws an invisible text nor counts it in a tight
+        bbox (``Text.get_tightbbox`` is null), and the layout and the
+        validation checks skip it.
         """
         if not (super().get_visible() and in_view(self, self.where)):
             return False
@@ -326,10 +347,22 @@ class BarLabelFamily:
             label.own("text", label.get_text(), text, label.set_text)
 
     def follow(self, label: BarLabel) -> None:
-        """Re-read the tick scale for ``label``; rewrite the call when it moved."""
+        """Re-read the tick scale for ``label``; rewrite the call when it moved.
+
+        Then place it, and give a label that went inside (or came back
+        from) the limit its bar runs past the ink for where it now sits.
+        """
         if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
             self.refresh()
         place(label, label.where)
+        clipped = label.clipped
+        if clipped != label.limit_inked:
+            where = "inside" if clipped else label.where
+            ink = label_ink(
+                self.options.color, label.kind, where, label.bar, label.bar_axes
+            )
+            label.own_color(label.ink if ink is None else ink)
+            label.limit_inked = clipped
 
 
 # ------------------------------------------------------------ the call

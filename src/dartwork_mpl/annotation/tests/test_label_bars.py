@@ -755,22 +755,34 @@ def test_bars_out_of_view_get_no_labels():
     assert all(t.get_visible() for t in texts)
 
 
-def test_bar_past_a_user_limit_has_no_label_off_the_axes():
+def test_bar_past_a_user_limit_shows_its_value_inside_the_limit():
     # The reviewer's probe: a bar of 40 under a limit of 5 the user set.
+    # Its true value sits just inside the limit, on the bar (decision 9-3
+    # B); nothing goes off the axes, so a tight save keeps its size.
     def chart(label):
-        fig, ax, _ = _plain([3.0, 40.0, 2.0])
+        fig, ax, _ = _plain([3.0, 40.0, 2.0], color="dc.blue9")
         ax.set_ylim(0, 5)
         return fig, ax, (dm.label_bars(ax) if label else [])
 
     fig, ax, texts = chart(True)
     renderer = _drawn(fig)
-    assert [t.get_visible() for t in texts] == [True, False, True]
+    assert [t.get_visible() for t in texts] == [True, True, True]
+    assert _texts(texts) == ["3", "40", "2"]
+    clipped = texts[1]
+    box = clipped.get_window_extent(renderer)
+    top = ax.get_window_extent(renderer).y1
+    bar = clipped.bar.get_window_extent(renderer)
+    assert box.y1 == pytest.approx(top - _offset_px(fig), abs=0.6)
+    assert (box.x0 + box.x1) / 2 == pytest.approx(
+        (bar.x0 + bar.x1) / 2, abs=0.6
+    )
+    assert _hex(clipped) == "#ffffff"  # readable on the dark bar
+    assert _hex(texts[0]) == "#000000"  # the others keep the text colour
     width, height = fig.canvas.get_width_height()
     for text in texts:
-        if text.get_visible():
-            box = text.get_window_extent(renderer)
-            assert box.y0 >= 0
-            assert box.y1 <= height
+        box = text.get_window_extent(renderer)
+        assert box.y0 >= 0
+        assert box.y1 <= height
     assert _tight_shape(fig) == _tight_shape(chart(False)[0])
 
     # An error bar past the limit pushes a visible label only to the edge.
@@ -784,6 +796,191 @@ def test_bar_past_a_user_limit_has_no_label_off_the_axes():
     assert texts[0].get_window_extent(renderer).y0 == pytest.approx(
         top + _offset_px(fig), abs=0.6
     )
+
+
+# ------------------------------------------- bars past a limit (9-3 B)
+# The approved PoC figures of decision 9-3 (review page
+# 2026-11-06-b3-followups, b3poc/3-clipped-bar-label/summary.json, B).
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+MONTHS += ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+ORDERS = [48, 52, 61, 58, 64, 72, 135, 79, 83, 88, 96, 120]
+MARKETS = ["United States", "China", "Japan", "Germany", "India", "UK"]
+MARKET_SIZE = [2410, 760, 540, 410, 330, 290]
+
+
+def _poc_orders(limits=(0, 100)):
+    """Monthly orders (k), the caller's 0-100 limit (PoC figure a)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"), dpi=300)
+    ax.bar(MONTHS, ORDERS, color="dc.teal2")
+    ax.set_ylim(*limits)
+    ax.set_ylabel("Orders (k)")
+    return fig, ax, dm.label_bars(ax)
+
+
+def _poc_markets(limits=(0, 800)):
+    """Market size (USD B), the caller's 0-800 limit (PoC figure b)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", 0.55), dpi=300)
+    ax.barh(MARKETS, MARKET_SIZE, color="dc.blue4")
+    ax.invert_yaxis()
+    ax.set_xlim(*limits)
+    ax.set_xlabel("Market size (USD B)")
+    return fig, ax, dm.label_bars(ax)
+
+
+def _contrast_on_bar(label):
+    face = mcolors.to_rgb(label.bar.get_facecolor())
+    return contrast_ratio(mcolors.to_rgb(label.get_color()), face)
+
+
+def _inside_edge(fig, ax, label, edge):
+    """The label's distance (px) inside the axes ``edge`` it sits at."""
+    renderer = _drawn(fig)
+    box = label.get_window_extent(renderer)
+    view = ax.get_window_extent(renderer)
+    return {
+        "top": view.y1 - box.y1,
+        "bottom": box.y0 - view.y0,
+        "right": view.x1 - box.x1,
+        "left": box.x0 - view.x0,
+    }[edge]
+
+
+@pytest.mark.parametrize(
+    ("build", "clipped", "texts", "contrast", "edge"),
+    [
+        (_poc_orders, [6, 11], ["135", "120"], 15.22, "top"),
+        (_poc_markets, [0], ["2,410"], 10.24, "right"),
+    ],
+)
+def test_bars_past_the_limit_show_their_true_value(
+    build, clipped, texts, contrast, edge
+):
+    fig, ax, labels = build()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    assert [str(w.message) for w in caught] == []
+    renderer = _drawn(fig)
+    assert all(t.get_visible() for t in labels)
+    assert [labels[i].get_text() for i in clipped] == texts
+    for i, label in enumerate(labels):
+        assert label.clipped is (i in clipped)
+        if i not in clipped:
+            continue
+        assert _hex(label) == "#000000"
+        assert _contrast_on_bar(label) == pytest.approx(contrast, abs=0.02)
+        assert _inside_edge(fig, ax, label, edge) == pytest.approx(
+            _offset_px(fig), abs=0.6
+        )
+        box = label.get_window_extent(renderer)
+        bar = label.bar.get_window_extent(renderer)
+        assert bar.x0 <= box.x0 and box.x1 <= bar.x1
+        assert bar.y0 <= box.y0 and box.y1 <= bar.y1
+    shown = _shown(fig, labels)
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    # The limits stay the caller's.
+    assert not (ax.get_autoscaley_on() and ax.get_autoscalex_on())
+
+
+@pytest.mark.parametrize(
+    ("build", "limits", "edge"),
+    [
+        (_poc_orders, (100, 0), "bottom"),  # inverted: bars grow down
+        (_poc_markets, (800, 0), "left"),  # inverted: bars grow left
+    ],
+)
+def test_bars_past_an_inverted_limit(build, limits, edge):
+    fig, ax, labels = build(limits)
+    dm.simple_layout(fig)
+    clipped = [t for t in labels if t.clipped]
+    assert _texts(clipped) == (
+        ["135", "120"] if build is _poc_orders else ["2,410"]
+    )
+    for label in clipped:
+        assert label.get_visible()
+        assert _inside_edge(fig, ax, label, edge) == pytest.approx(
+            _offset_px(fig), abs=0.6
+        )
+    assert _overlapping(_shown(fig, labels)) == []
+
+
+def test_bar_past_a_log_limit_and_a_negative_one():
+    fig, ax = _fig()
+    ax.bar(np.arange(4), [3.0, 40.0, 900.0, 12000.0], width=0.6)
+    ax.set_yscale("log")
+    ax.set_ylim(1, 1000)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert [t.clipped for t in labels] == [False, False, False, True]
+    assert all(t.get_visible() for t in labels)
+    assert labels[3].get_text() == "12,000"
+    assert _inside_edge(fig, ax, labels[3], "top") == pytest.approx(
+        _offset_px(fig), abs=0.6
+    )
+
+    # A negative bar past the lower limit: its value inside that limit.
+    fig, ax, _ = _plain([-40.0, 3.0])
+    ax.set_ylim(-5, 5)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert [t.clipped for t in labels] == [True, False]
+    assert labels[0].get_visible()
+    assert labels[0].get_text() == f"{MINUS}40"
+    assert _inside_edge(fig, ax, labels[0], "bottom") == pytest.approx(
+        _offset_px(fig), abs=0.6
+    )
+
+
+def test_bars_beyond_the_view_or_too_short_in_it_have_none():
+    # Only bars cut by the limit along their value count: a bar wholly
+    # below the view, one starting above it, and one that shows too little
+    # of itself to hold the label get none.
+    fig, ax = _fig()
+    ax.bar([0, 1, 2], [30.0, 20.0, 40.0], bottom=[0.0, 120.0, 98.0])
+    ax.set_ylim(50, 100)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    _drawn(fig)
+    assert [t.get_visible() for t in labels] == [False, False, False]
+    assert not any(t.clipped for t in labels[:2])
+
+    # The full bar back in view: an outside label in the text colour again.
+    fig, ax, _ = _plain([3.0, 40.0], color="dc.blue9")
+    ax.set_ylim(0, 5)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    _drawn(fig)
+    assert _hex(labels[1]) == "#ffffff"
+    ax.set_ylim(0, 60)
+    _drawn(fig)
+    assert not labels[1].clipped
+    assert _hex(labels[1]) == "#000000"
+    _assert_outside(fig, labels, ax.containers[0].patches)
+
+
+def test_bar_past_the_limit_keeps_explicit_and_series_choices():
+    fig, ax, _ = _plain([3.0, 40.0, 50.0], color="dc.blue9")
+    ax.set_ylim(0, 5)
+    labels = dm.label_bars(ax, color="series")
+    series = _hex(labels[0])
+    labels[1].set_color("dc.red7")  # the caller's colour wins
+    dm.simple_layout(fig)
+    _drawn(fig)
+    assert [t.clipped for t in labels] == [False, True, True]
+    assert _hex(labels[1]) == mcolors.to_hex("dc.red7")
+    assert _hex(labels[2]) == "#ffffff"  # on its bar: readable, not series
+    assert _hex(labels[0]) == series not in ("#ffffff", "#000000")
+
+    # A stack's total past the limit keeps the plain rule: no label.
+    fig, ax = _fig()
+    ax.bar([0, 1], [3.0, 30.0])
+    ax.bar([0, 1], [1.0, 20.0], bottom=[3.0, 30.0])
+    labels = dm.label_bars(ax, total="only")
+    ax.set_ylim(0, 10)
+    dm.simple_layout(fig)
+    _drawn(fig)
+    assert [t.get_visible() for t in labels] == [True, False]
 
 
 def test_labels_go_on_the_axes_drawn_on_top():
@@ -1525,19 +1722,30 @@ def _overlapping(shown, tol=0.5):
 
 
 def _on_bars(fig, shown, tol=0.8):
-    """Labels off their bar (``"outside"``) that cover a bar anyway."""
+    """Labels off their bar (``"outside"``) that cover a bar anyway.
+
+    A label inside the limit its bar runs past (``clipped``) sits on its
+    own bar by design: it may cover no other bar.
+    """
     renderer = fig.canvas.get_renderer()
     bars = [
-        patch.get_window_extent(renderer)
+        (patch, patch.get_window_extent(renderer))
         for axes in fig.axes
         for patch in axes.patches
         if patch.get_visible()
     ]
-    return [
-        label.get_text()
-        for label, box in shown
-        if label.where == "outside" and any(_cover(box, b, tol) for b in bars)
-    ]
+
+    def covers(label, box):
+        clipped = getattr(label, "clipped", False)
+        if label.where != "outside" and not clipped:
+            return False
+        return any(
+            _cover(box, b, tol)
+            for patch, b in bars
+            if not (clipped and patch is label.bar)
+        )
+
+    return [label.get_text() for label, box in shown if covers(label, box)]
 
 
 def _inside_axes(ax, shown, tol=0.5):
@@ -1999,17 +2207,20 @@ def test_crowding_reads_each_label_against_its_nearest_bar():
 
 def test_crowded_lift_stays_in_view_and_off_overlaid_labels():
     # A kept label is lifted over a taller neighbour only up to the view
-    # the caller set (1,432 runs past 1,400: its own label is gone).
+    # the caller set (1,500 runs past 1,400; "skip" hides its label).
     fig, ax = _fig()
-    ax.bar(np.arange(24), D_REV, width=0.7)
+    values = D_REV.copy()
+    values[22], values[23] = 1500e6, 1000e6
+    ax.bar(np.arange(24), values, width=0.7)
     ax.set_ylim(0, 1400e6)
     texts = dm.label_bars(ax, crowded="skip")
     dm.simple_layout(fig)
     renderer = _drawn(fig)
-    assert not texts[23].get_visible()
-    assert texts[22].get_visible()  # 1,337 spans the 1,432 bar
+    assert texts[23].get_visible()
+    assert not texts[22].get_visible()
+    assert texts[21].get_visible()  # 1,357 spans the 1,500 bar
     top = ax.get_window_extent(renderer).y1
-    assert texts[22].get_window_extent(renderer).y0 == pytest.approx(
+    assert texts[21].get_window_extent(renderer).y0 == pytest.approx(
         top + _offset_px(fig), abs=0.6
     )
 

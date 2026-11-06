@@ -287,6 +287,7 @@ def _reset(label: BarLabel) -> None:
     label.own_rotation(0.0)
     label.own_visible(True)
     label.own_color(label.ink)
+    label.limit_inked = False  # the next placement inks a cut bar again
 
 
 @dataclass(eq=False)
@@ -509,7 +510,8 @@ def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
     end (a stack segment below the top, asked ``"outside"``; an actual
     inside its target): it sits on that bar already, and lifting it would
     put it on that bar's label. The bars at its position that end short of
-    its own count harmlessly.
+    its own count harmlessly. Nor a label inside the limit its bar runs
+    past (``BarLabel.clipped``): it sits on its own bar.
     """
     middles = bars.spans.mean(axis=1)
     for position in positions:
@@ -517,7 +519,7 @@ def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
         for label, (low, high) in zip(
             position.labels, position.spans, strict=True
         ):
-            if label.where != "outside":
+            if label.where != "outside" or label.clipped:
                 continue
             toward = outward(label)
             ends = bars.reach[:, 1] if toward > 0 else bars.reach[:, 0]
@@ -666,8 +668,11 @@ class _ValueAxis:
 def _want(
     label: BarLabel, along: int, renderer: RendererBase
 ) -> tuple[float, float, int] | None:
-    """``(anchor px, px needed to the edge, side)`` of a drawn outside label."""
-    if label.where != "outside" or not label.get_visible():
+    """``(anchor px, px needed to the edge, side)`` of a drawn outside label.
+
+    None for a label inside the limit its bar runs past: it needs no room.
+    """
+    if label.where != "outside" or label.clipped or not label.get_visible():
         return None
     box = label.get_window_extent(renderer)  # places it, anchor included
     anchor = float(label.bar_axes.transData.transform(label.xy)[along])
