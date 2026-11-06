@@ -285,10 +285,18 @@ class BarLabel(Annotation):
 
     @property
     def on_bar(self) -> bool:
-        """Whether the label is drawn on its bar (in the ink for a bar)."""
+        """Whether the label is drawn on its bar (in the ink for a bar).
+
+        Centred, or inside: a plain bar's end label while its bar holds it
+        (``off_bar``), a stack segment's always (it stays on its segment,
+        hidden when too short, as before; the move off a bar is only for
+        plain bars).
+        """
         if self.where == "center":
             return True
-        return self.wants_bar and not self.off_bar
+        if self.wants_bar:
+            return not self.off_bar
+        return self.where == "inside"
 
     @property
     def beyond_end(self) -> bool:

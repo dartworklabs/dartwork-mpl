@@ -1303,6 +1303,45 @@ def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(
     _assert_readable(fig, labels, tmp_path, fmt)
 
 
+def _dark_stack(**label_kw):
+    """Two dark segments per bar, each one holding its number.
+
+    On main, labels inside them are white: 6.02:1 on #1864b0, 7.64:1 on
+    #505458. Black would read 3.49:1 on the first (above the 3:1 floor, so
+    only the ink check catches it) and 2.75:1 on the second (below it).
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    x = np.arange(4)
+    low = np.array([40.0, 52.0, 47.0, 61.0])
+    high = np.array([30.0, 26.0, 35.0, 29.0])
+    ax.bar(x, low, width=0.6, color="#1864b0")
+    ax.bar(x, high, bottom=low, width=0.6, color="#505458")
+    return fig, ax, dm.label_bars(ax, **label_kw)
+
+
+@FORMATS
+@pytest.mark.parametrize("color", [None, "series"])
+def test_inside_stack_segments_keep_the_ink_for_their_segment(
+    tmp_path, fmt, color
+):
+    # PR #613 review: where="inside" on a stack puts each segment's label
+    # inside its segment. Those labels are on their bar, so they take the
+    # ink that reads on it, as on main (white here, whatever color= says
+    # for labels off a bar); the move off a bar is for plain bars only.
+    # Classed off the bar, they had turned black (3.49:1 and 2.75:1), or
+    # with color="series" the segment's own colour (1.0:1).
+    _start(fmt)
+    fig, ax, labels = _dark_stack(where="inside", color=color)
+    dm.simple_layout(fig)
+    drawn_renderer(fig)
+    segments = [t for t in labels if t.kind == "segment"]
+    assert len(segments) == 8
+    assert all(t.get_visible() for t in segments)
+    assert all(t.on_bar and not t.beyond_end for t in segments)
+    assert {_hex(t) for t in segments} == {"#ffffff"}
+    _assert_readable(fig, segments, tmp_path, fmt)
+
+
 def test_error_bars_push_labels_past_caps():
     fig, ax = _fig()
     bars = ax.bar([0, 1], [4.0, -3.0], yerr=[1.0, 0.5], capsize=2)
