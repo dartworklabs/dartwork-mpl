@@ -72,7 +72,8 @@ def test_importing_util_warns_exactly_once_naming_the_owners() -> None:
     assert len(caught) == 1
     text = str(caught[0].message)
     assert "dartwork_mpl.util" in text
-    assert "0.10" in text
+    assert "deprecated in 0.8" in text
+    assert "0.10 or later" in text
     for owner in set(_OWNERS.values()):
         assert owner in text
 
@@ -126,3 +127,27 @@ def test_package_import_alone_does_not_warn() -> None:
         text=True,
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    "stmt",
+    [
+        "import dartwork_mpl.util",
+        "from dartwork_mpl.util import fs",
+        "import dartwork_mpl\nimport dartwork_mpl.util\n"
+        "assert dartwork_mpl.util.fs is dartwork_mpl.fs",
+        "import dartwork_mpl.util as u\nimport dartwork_mpl as dm\n"
+        "assert u.mix_colors is dm.mix_colors",
+        "from dartwork_mpl import util\nimport dartwork_mpl as dm\n"
+        "assert util.save_formats is dm.save_formats",
+    ],
+)
+def test_every_access_path_warns_exactly_once_with_same_objects(
+    stmt: str,
+) -> None:
+    code = "import warnings\nwarnings.simplefilter('always')\n" + stmt + "\n"
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stderr.count("DeprecationWarning") == 1, result.stderr

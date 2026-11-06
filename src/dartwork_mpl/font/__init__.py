@@ -143,8 +143,8 @@ FontRole = Literal[
 def _warn_tnum_alias() -> None:
     """Warn that ``.tnum`` is deprecated; the caller's line is reported."""
     warnings.warn(
-        "`.tnum` is deprecated since 0.8 and will be removed no earlier "
-        "than 0.10; use `.tnum_available` (same value: whether the font "
+        "`.tnum` is deprecated in 0.8 and may be removed in 0.10 or "
+        "later; use `.tnum_available` (same value: whether the font "
         "declares the OpenType `tnum` feature in browsers).",
         DeprecationWarning,
         stacklevel=3,

@@ -73,8 +73,8 @@ def _warning_text() -> str:
         for owner, names in sorted(by_owner.items())
     )
     return (
-        "dartwork_mpl.util is deprecated since 0.8 and will be removed no "
-        "earlier than 0.10; import each name from its owner instead "
+        "dartwork_mpl.util is deprecated in 0.8 and may be removed in 0.10 "
+        "or later; import each name from its owner instead "
         f"({table})."
     )
 

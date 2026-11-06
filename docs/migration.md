@@ -19,7 +19,7 @@ raise `ModuleNotFoundError` without a replacement hint.
 
 `import dartwork_mpl.util` and `from dartwork_mpl.util import X` emit a
 `DeprecationWarning` (once per process, at your import line). The module is
-removed no earlier than 0.10. Until then each name is the owner's own
+may be removed in 0.10 or later. Until then each name is the owner's own
 object (`dartwork_mpl.util.X is <owner>.X`). Every name below is also
 `dm.X` at the package root.
 
@@ -36,7 +36,7 @@ object (`dartwork_mpl.util.X is <owner>.X`). Every name below is also
 ## Deprecated in 0.8: `.tnum` on font records
 
 `FontFamily.tnum`, `FontMeasurement.tnum` and `FontFaceMeasurement.tnum`
-emit a `DeprecationWarning` and are removed no earlier than 0.10. Read
+emit a `DeprecationWarning` and may be removed in 0.10 or later. Read
 `.tnum_available` instead; it is the same value. It reports the OpenType
 `tnum` feature a browser can apply to the bundled font. It does not say
 whether matplotlib draws aligned digits; `FontFamily.numeric_axes` does.

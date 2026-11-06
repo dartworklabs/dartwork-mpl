@@ -173,7 +173,7 @@ def test_tnum_aliases_warn_once_and_return_the_canonical_value() -> None:
         assert len(deprecations) == 1, label
         assert deprecations[0].filename == __file__, label
         text = str(deprecations[0].message)
-        assert "tnum_available" in text and "0.10" in text, label
+        assert "tnum_available" in text and "0.10 or later" in text, label
         assert value is obj.tnum_available, label
 
 
