@@ -2,8 +2,9 @@
 
 Provides ``label_axes`` for adding standard alphabetic sub-labels to figure
 panels, ``annotate_value`` / ``annotate_corner`` / ``label_hline`` for compact
-in-axes labels, ``place_legend`` for axes legends, and ``arrow_axis`` for
-drawing bidirectional Low-High arrow axes.
+in-axes labels, ``label_bars`` for value labels on bars, ``place_legend`` for
+axes legends, and ``arrow_axis`` for drawing bidirectional Low-High arrow
+axes.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ __all__ = [
     "annotate_value",
     "arrow_axis",
     "label_axes",
+    "label_bars",
     "label_hline",
     "label_line_ends",
     "make_offset",
@@ -48,6 +50,7 @@ from .._figure_geometry import (
     spread_line_end_labels,
 )
 from ..scale import fs, fw
+from ._bar_labels import label_bars
 from ._optimize_legend import optimize_legend
 
 if TYPE_CHECKING:

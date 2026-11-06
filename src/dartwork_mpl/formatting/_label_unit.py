@@ -23,6 +23,7 @@ from ._axis_wide import (
     SI_LADDER,
     UNIT_RULES,
     AxisUnitFormatter,
+    TickScale,
     Unit,
     _Plan,
 )
@@ -271,6 +272,11 @@ class LabelUnitFormatter(AxisUnitFormatter):
 
     def _label(self, value: float, unit: Unit, decimals: int) -> str:
         return super()._label(value, Unit(unit.factor, ""), decimals)
+
+    def scale_for(self, value: float) -> TickScale:
+        """The axis unit's factor with no suffix: the label names the unit."""
+        scale = super().scale_for(value)
+        return TickScale(scale.factor, scale.prefix, "")
 
     def set_locs(self, locs: list[float]) -> None:
         """Settle the unit and decimals, then write the unit to the labels."""

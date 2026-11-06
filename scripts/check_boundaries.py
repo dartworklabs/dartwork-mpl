@@ -224,10 +224,14 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "the gates read the quality baseline the validated authority pins"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl._colors.contrast"): (
-        "line-end labels keep their line's colour at a readable contrast"
+        "line-end and bar value labels keep their series' colour at a "
+        "readable contrast"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
         "legend edge colours require registered shipped colours"
+    ),
+    ("dartwork_mpl.annotation", "dartwork_mpl.formatting"): (
+        "bar value labels print in their axis's tick unit, like the ticks"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
