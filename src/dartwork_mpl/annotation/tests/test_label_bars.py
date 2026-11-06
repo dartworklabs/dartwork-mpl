@@ -1803,6 +1803,51 @@ def test_log_value_axis():
     )
 
 
+@pytest.mark.parametrize(
+    ("limits", "shown"),
+    [
+        ((1.0, 100.0), True),  # the middle (31.6) in view, 500.5 is not
+        ((100.0, 2000.0), False),  # 500.5 in view, the middle (31.6) is not
+    ],
+)
+def test_centred_label_on_a_log_axis_shows_where_it_sits(limits, shown):
+    # A centred label sits at the middle of its bar on screen: on a log
+    # axis the geometric middle (31.6 for 1 to 1000), not the data mean.
+    fig, ax = _fig()
+    bars = ax.bar([0], [999.0], bottom=1.0, width=0.6)
+    ax.set_yscale("log")
+    ax.set_ylim(*limits)
+    (label,) = dm.label_bars(ax, where="center")
+    dm.simple_layout(fig)
+    renderer = _drawn(fig)
+
+    assert label.get_visible() is shown
+    middle = float(ax.transData.transform((0, np.sqrt(1000.0)))[1])
+    box = ax.get_window_extent(renderer)
+    assert bool(box.y0 <= middle <= box.y1) is shown
+    if shown:
+        _assert_centred(fig, [label], bars.patches)
+
+
+@pytest.mark.parametrize(
+    ("limits", "shown"),
+    [((0.0, 1000.0), True), ((0.0, 400.0), False), ((600.0, 1200.0), False)],
+)
+def test_centred_label_on_a_linear_axis_shows_while_its_middle_does(
+    limits, shown
+):
+    fig, ax = _fig()
+    bars = ax.bar([0], [999.0], bottom=1.0, width=0.6)
+    ax.set_ylim(*limits)
+    (label,) = dm.label_bars(ax, where="center")
+    dm.simple_layout(fig)
+    _drawn(fig)
+
+    assert label.get_visible() is shown
+    if shown:
+        _assert_centred(fig, [label], bars.patches)
+
+
 def test_repeat_simple_layout_idempotent():
     def state(fig, ax, texts):
         """Limits, Axes box (px) and label boxes (px); what is drawn."""

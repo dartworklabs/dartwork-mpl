@@ -3,15 +3,17 @@
 The geometry behind :func:`~._bar_labels.label_bars`, kept apart from the
 text, unit and option handling:
 
-* **Anchor.** The bar end (the bar's middle for ``where="center"``) in the
-  bar axes' data coordinates. An outside label moves past the bar's error
-  bar and past the far ends of the bars it must clear (``clear_of``: the
-  neighbours a crowded label spans), but never past the edge of the view.
-* **View.** A label is shown while its anchor lies in the bar axes' view,
-  within :data:`EDGE_TOL_PX` (one pixel, as matplotlib's own annotation
-  clipping). A bar whose end sits on a limit keeps its label just outside
-  the axes; a bar beyond the view, or whose end runs past a limit the
-  caller set, has none.
+* **Anchor.** The bar end in the bar axes' data coordinates; for
+  ``where="center"`` the middle of the bar's box on screen (on a log axis
+  its geometric middle, not the data mean). An outside label moves past
+  the bar's error bar and past the far ends of the bars it must clear
+  (``clear_of``: the neighbours a crowded label spans), but never past the
+  edge of the view.
+* **View.** A label is shown while its anchor, on screen where it is drawn,
+  lies in the bar axes' view, within :data:`EDGE_TOL_PX` (one pixel, as
+  matplotlib's own annotation clipping). A bar whose end sits on a limit
+  keeps its label just outside the axes; a bar beyond the view, or whose
+  end runs past a limit the caller set, has none.
 * **Side.** Outside the end, 3 pt (:data:`OFFSET_PT`) away; a bar growing
   down or left on screen (a negative value, or an inverted value axis) has
   its label below or left of the end. ``"inside"`` mirrors that inwards,
@@ -79,22 +81,29 @@ def host_axes(bar_axes: Axes) -> Axes:
     )
 
 
-def bar_point(label: BarLabel, where: Where) -> tuple[float, float]:
-    """The bar end (its middle for ``"center"``) in data coordinates."""
+def bar_point(label: BarLabel) -> tuple[float, float]:
+    """The bar end in data coordinates (a centred label's anchor is the bar)."""
     bar = label.bar
     x, y = float(bar.get_x()), float(bar.get_y())
     width, height = float(bar.get_width()), float(bar.get_height())
-    if where == "center":
-        return (x + width / 2, y + height / 2)
     if label.orientation == "vertical":
         return (x + width / 2, y + height)
     return (x + width, y + height / 2)
 
 
 def in_view(label: BarLabel, where: Where) -> bool:
-    """Whether the label's anchor lies in the bar axes' view (1 px slack)."""
+    """Whether the label's anchor lies in the bar axes' view (1 px slack).
+
+    The anchor on screen where :func:`place` puts it: the bar end mapped
+    through the data transform, or for ``"center"`` the middle of the bar's
+    box on screen (on a log axis the geometric middle, not the data mean).
+    """
     axes = label.bar_axes
-    shown = axes.transData.transform(bar_point(label, where))
+    if where == "center":
+        box = label.bar.get_window_extent()
+        shown = np.array([(box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2])
+    else:
+        shown = axes.transData.transform(bar_point(label))
     if not np.all(np.isfinite(shown)):
         return False
     box = axes.get_window_extent()
@@ -199,7 +208,7 @@ def _past_bars(label: BarLabel, end: float) -> float:
     axes = label.bar_axes
     along = 1 if label.orientation == "vertical" else 0
     toward = outward(label)
-    anchor = np.array(bar_point(label, label.where), dtype=float)
+    anchor = np.array(bar_point(label), dtype=float)
     anchor[along] = end
     shown = axes.transData.transform(anchor)
     reach = float(shown[along])
@@ -250,7 +259,7 @@ def place(label: BarLabel, where: Where) -> None:
         ha, va = "center", "center"
     else:
         inside = where == "inside"
-        x, y = bar_point(label, where)
+        x, y = bar_point(label)
         if label.orientation == "vertical":
             if not inside:
                 y = _past_bars(label, _past_error_bar(label, y))
