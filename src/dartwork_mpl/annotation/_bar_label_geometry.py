@@ -5,7 +5,8 @@ text, unit and option handling:
 
 * **Anchor.** The bar end (the bar's middle for ``where="center"``) in the
   bar axes' data coordinates. An outside label moves past the bar's error
-  bar, but never past the edge of the view.
+  bar and past the far ends of the bars it must clear (``clear_of``: the
+  neighbours a crowded label spans), but never past the edge of the view.
 * **View.** A label is shown while its anchor lies in the bar axes' view,
   within :data:`EDGE_TOL_PX` (one pixel, as matplotlib's own annotation
   clipping). A bar whose end sits on a limit keeps its label just outside
@@ -47,6 +48,7 @@ __all__ = [
     "fits_on_bar",
     "host_axes",
     "in_view",
+    "outward",
     "place",
     "text_length",
 ]
@@ -136,7 +138,7 @@ def fits_on_bar(label: BarLabel, text_px: float) -> bool:
     return bool(np.isfinite(length) and length >= need)
 
 
-def _outward(label: BarLabel) -> int:
+def outward(label: BarLabel) -> int:
     """+1 when the bar grows towards higher display coordinates, else -1."""
     bar = label.bar
     length = (
@@ -183,6 +185,35 @@ def _past_error_bar(label: BarLabel, end: float) -> float:
     return min(end, max(float(extent.min()), low))
 
 
+def _past_bars(label: BarLabel, end: float) -> float:
+    """``end`` pushed past the far ends of ``label.clear_of``, within the view.
+
+    The far end is the one on the label's side on screen; a bar that ends
+    short of ``end`` (or that is gone) changes nothing.
+    """
+    bars = [bar for bar in label.clear_of if bar.axes is not None]
+    if not bars:
+        return end
+    axes = label.bar_axes
+    along = 1 if label.orientation == "vertical" else 0
+    toward = outward(label)
+    anchor = np.array(bar_point(label, label.where), dtype=float)
+    anchor[along] = end
+    shown = axes.transData.transform(anchor)
+    reach = float(shown[along])
+    for bar in bars:
+        box = bar.get_window_extent()
+        far = (box.y1, box.y0) if along else (box.x1, box.x0)
+        reach = max(reach, far[0]) if toward > 0 else min(reach, far[1])
+    view = axes.get_window_extent()
+    edges = (view.y0, view.y1) if along else (view.x0, view.x1)
+    reach = min(max(reach, edges[0]), edges[1])
+    if (reach - float(shown[along])) * toward <= 0:
+        return end
+    shown[along] = reach
+    return float(axes.transData.inverted().transform(shown)[along])
+
+
 def _setter(label: BarLabel, name: str) -> Callable[[Any], None]:
     def write(value: Any) -> None:
         setattr(label, name, value)
@@ -205,10 +236,12 @@ def place(label: BarLabel, where: Where) -> None:
         inside = where == "inside"
         x, y = bar_point(label, where)
         if label.orientation == "vertical":
-            xy = (x, y if inside else _past_error_bar(label, y))
-        else:
-            xy = (x if inside else _past_error_bar(label, x), y)
-        toward = _outward(label) * (-1 if inside else 1)
+            if not inside:
+                y = _past_bars(label, _past_error_bar(label, y))
+        elif not inside:
+            x = _past_bars(label, _past_error_bar(label, x))
+        xy = (x, y)
+        toward = outward(label) * (-1 if inside else 1)
         offset = toward * OFFSET_PT
         if label.orientation == "vertical":
             ha, va = "center", ("bottom" if toward > 0 else "top")

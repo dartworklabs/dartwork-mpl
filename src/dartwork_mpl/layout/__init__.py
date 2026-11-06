@@ -728,6 +728,16 @@ def simple_layout(
     the docstring of ``dartwork_mpl.formatting._twin_colors``;
     ``dm.config.twin_colors = "neutral"`` turns it off.
 
+    Labels made by ``dm.label_bars`` settle at the size being fitted, in
+    every step: a call whose labels are wider than the distance to the next
+    bar less 1.5 pt follows its ``crowded`` rule, and a value axis whose
+    limits matplotlib autoscales grows from matplotlib's own limits just
+    enough to keep the outside labels and 3 pt inside the axes (``auto``
+    stays on, so repeated calls give the same limits). Limits you set are
+    kept; a label that does not fit sits outside the axes and the margins
+    make room for it. The rules are in the docstring of
+    ``dartwork_mpl.annotation._bar_label_settle``.
+
     Examples
     --------
     >>> import matplotlib.pyplot as plt
@@ -867,6 +877,21 @@ def _color_twins(fig: Figure) -> None:
     from ..formatting import apply_twin_colors
 
     apply_twin_colors(fig)
+
+
+def _settle_bar_labels(fig: Figure, renderer: RendererBase) -> bool:
+    """Crowding and headroom of ``dm.label_bars`` labels at the size now.
+
+    Returns whether a view limit moved: the caller redraws before measuring,
+    since tick labels follow the limits only at draw (the bar labels
+    themselves are measured afresh).
+    """
+    from ..annotation import settle_bar_labels
+
+    before = [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
+    if not settle_bar_labels(fig, renderer):
+        return False
+    return before != [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
 
 
 def _figure_artist_reservations(
@@ -1081,12 +1106,17 @@ def _solve_layout_step(
     1. Draws the canvas so artist bboxes are populated.
     2. Optionally adopts the axis-label font on orphan-label axes
        (so the measurement reflects the post-restyle ticks).
-    3. Re-anchors outside legends and lifts titles over legends above
+    3. Settles ``dm.label_bars`` labels at the current Axes size
+       (crowding, headroom on autoscaled value axes;
+       :func:`_settle_bar_labels`), redrawing when a limit moved. Each
+       step starts again from matplotlib's autoscaled limits, so the
+       headroom follows the final size without compounding.
+    4. Re-anchors outside legends and lifts titles over legends above
        their axes (:func:`_settle_outside_legends`), redrawing after a
        move.
-    4. Measures the content overhang of every target axes and the room
+    5. Measures the content overhang of every target axes and the room
        figure-level artists reserve.
-    5. Hands those measurements to the pure :func:`_solve_edges`.
+    6. Hands those measurements to the pure :func:`_solve_edges`.
 
     The caller writes the returned edges into the GridSpec and decides
     whether to stop iterating based on ``delta_px``.
@@ -1098,6 +1128,9 @@ def _solve_layout_step(
     if adopt_orphan_tick_font:
         _adopt_axis_label_font_core(fig)
     renderer = get_renderer(fig)
+    if _settle_bar_labels(fig, renderer):
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
     for _round in range(_SETTLE_ROUNDS):
         if not _settle_outside_legends(fig, renderer):
             break

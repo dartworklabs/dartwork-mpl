@@ -43,15 +43,20 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
 * **Twins.** On a ``twinx`` / ``twiny`` pair the labels go on the Axes drawn
   last (by zorder, then figure order), placed with the bars' own data
   transform, so no partner's line is drawn over them.
-* **Explicit wins.** A label's text and placement are rewritten only while
-  they still hold what this module last wrote; a later ``Text.set_*`` on a
-  returned label is kept through every draw and layout.
+* **Explicit wins.** A label's text, placement, rotation, visibility and
+  colour are rewritten only while they still hold what this module last
+  wrote; a later ``Text.set_*`` on a returned label is kept through every
+  draw and layout.
+* **Calls.** A later call on bars already labelled replaces their earlier
+  labels (and the totals of their stacks); the earlier call keeps the rest.
 
 Each call is recorded on its Axes as a :class:`BarLabelFamily` in
 ``ax._dm_bar_label_families`` (the labels, the containers, the options, the
-stacks) for the layout's later passes. The geometry (anchor, side, view,
-room, host Axes) lives in :mod:`._bar_label_geometry`; the keywords and the
-text they compose in :mod:`._bar_label_options`.
+stacks) for the layout's later passes: crowding, headroom, dropping cleared
+labels and moving labels onto a twin made later
+(:mod:`._bar_label_settle`, run by ``dm.simple_layout``). The geometry
+(anchor, side, view, room, host Axes) lives in :mod:`._bar_label_geometry`;
+the keywords and the text they compose in :mod:`._bar_label_options`.
 """
 
 from __future__ import annotations
@@ -61,6 +66,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+import matplotlib.colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
@@ -96,7 +102,19 @@ if TYPE_CHECKING:
     from matplotlib.patches import Rectangle
     from matplotlib.typing import CoordsType
 
-__all__ = ["BarLabel", "BarLabelFamily", "BarLabelOptions", "label_bars"]
+__all__ = [
+    "FAMILIES_ATTR",
+    "BarLabel",
+    "BarLabelFamily",
+    "BarLabelOptions",
+    "attach",
+    "families_of",
+    "format_ticks_now",
+    "label_bars",
+]
+
+# Where each Axes records its label_bars calls (a list of BarLabelFamily).
+FAMILIES_ATTR = "_dm_bar_label_families"
 
 _UNSET: Any = object()
 
@@ -112,7 +130,10 @@ class BarLabel(Annotation):
     ``kind`` says what it labels: ``"edge"`` a plain bar, ``"segment"`` one
     bar of a :class:`BarStack` (``stack``), ``"total"`` that stack's net sum
     at position ``index``, anchored on the bar that ends the stack on the
-    net's side (``bar``). ``where`` is where it sits on ``bar``.
+    net's side (``bar``). ``asked`` is where the call put it on ``bar``;
+    ``where`` is where it sits now (the layout's ``crowded="inside"`` may
+    move an outside label into its bar). ``clear_of`` holds the other bars
+    an outside label must clear (a crowded label wider than its own bar).
     """
 
     def __init__(
@@ -142,8 +163,10 @@ class BarLabel(Annotation):
             else "vertical"
         )
         self.kind: Kind = kind
+        self.asked: Placement = where
         self.where: Placement = where
         self.stack = stack
+        self.clear_of: tuple[Rectangle, ...] = ()
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
@@ -160,6 +183,11 @@ class BarLabel(Annotation):
             textcoords="offset points",
             annotation_clip=False,
             **text_kw,
+        )
+        # What the call wrote: a later change by anyone else is theirs.
+        self.ink = mcolors.to_rgba(self.get_color())
+        self._written.update(
+            rotation=self.get_rotation(), visible=True, color=self.ink
         )
 
     @property
@@ -188,6 +216,20 @@ class BarLabel(Annotation):
             write(wanted)
         self._written[name] = wanted
 
+    def own_rotation(self, degrees: float) -> None:
+        """:meth:`own` for the text's rotation."""
+        self.own("rotation", self.get_rotation(), degrees, self.set_rotation)
+
+    def own_visible(self, shown: bool) -> None:
+        """:meth:`own` for the drawn flag (``Artist.set_visible``)."""
+        self.own("visible", super().get_visible(), shown, self.set_visible)
+
+    def own_color(self, color: object) -> None:
+        """:meth:`own` for the colour, compared as RGBA."""
+        rgba = mcolors.to_rgba(color)  # type: ignore[arg-type]
+        current = mcolors.to_rgba(self.get_color())
+        self.own("color", current, rgba, self.set_color)
+
     @property
     def must_fit(self) -> bool:
         """Whether the label sits on a stack segment and so must fit on it."""
@@ -212,11 +254,11 @@ class BarLabel(Annotation):
         try:
             # Measure the text this draw will write (the unit may move).
             self.bar_family.follow(self)
-            return fits_on_bar(self, self._text_length())
+            return fits_on_bar(self, self.measured_length())
         finally:
             self._measuring = False
 
-    def _text_length(self) -> float:
+    def measured_length(self) -> float:
         """:func:`text_length`, measured again only when what decides it moved.
 
         A draw asks a label's visibility twice (``Annotation.draw``, then
@@ -284,6 +326,103 @@ class BarLabelFamily:
             self.refresh()
         place(label, label.where)
 
+    def _drop(self, gone: Callable[[BarLabel], bool]) -> None:
+        """Remove the labels ``gone`` picks from their Axes and the family."""
+        kept = []
+        for label in self.texts:
+            if not gone(label):
+                kept.append(label)
+            elif label.axes is not None:
+                label.remove()
+        if len(kept) != len(self.texts):
+            self.texts = kept
+            if kept:
+                self.refresh()  # one decimal count for what the call keeps
+
+    def prune(self) -> bool:
+        """Drop the labels no longer drawn; whether any remain.
+
+        A label is gone when it left its Axes (``Artist.remove``, or
+        ``ax.cla()`` on the Axes holding it) or its bar did (``ax.cla()`` on
+        the bars' Axes, ``BarContainer.remove``); a label left behind on a
+        twin by its cleared bars is removed from it.
+        """
+        self._drop(lambda label: label.axes is None or label.bar.axes is None)
+        return bool(self.texts)
+
+    def release(self, containers: Iterable[BarContainer]) -> None:
+        """Give the labels of ``containers`` up to a later call.
+
+        Their labels go, and so do the totals of every stack holding one of
+        them (the later call labels that stack, or those bars, its own way).
+        """
+        taken = {id(c) for c in containers}
+        if not taken.intersection(id(c) for c in self.containers):
+            return
+
+        def stacked_with_taken(stack: BarStack | None) -> bool:
+            return stack is not None and any(
+                id(c) in taken for c in stack.containers
+            )
+
+        self._drop(
+            lambda label: (
+                id(label.container) in taken
+                or (label.kind == "total" and stacked_with_taken(label.stack))
+            )
+        )
+        self.containers = [c for c in self.containers if id(c) not in taken]
+        self.stacks = [s for s in self.stacks if not stacked_with_taken(s)]
+
+    def rehost(self) -> None:
+        """Move each label onto the Axes drawn last in its bars' box now.
+
+        A twin made after the call (or a zorder change) changes that Axes;
+        the label moves as it is, explicit edits and all (:func:`attach`).
+        """
+        for label in self.texts:
+            host = host_axes(label.bar_axes)
+            if label.axes is not host:
+                attach(label, host)
+
+
+def families_of(ax: Axes) -> list[BarLabelFamily]:
+    """The :func:`label_bars` calls recorded on ``ax``, oldest first.
+
+    The recorded list itself (edit it in place), or a new empty list when
+    ``ax`` has none.
+    """
+    return getattr(ax, FAMILIES_ATTR, [])
+
+
+def _record(ax: Axes, family: BarLabelFamily) -> None:
+    families = getattr(ax, FAMILIES_ATTR, None)
+    if families is None:
+        families = []
+        setattr(ax, FAMILIES_ATTR, families)
+    families.append(family)
+
+
+def attach(label: BarLabel, host: Axes) -> None:
+    """Add ``label`` to ``host``, off any Axes it was on, unclipped.
+
+    As ``ax.annotate`` does: the text is placed in display space, and
+    nothing clips it (a label beyond the bar end may leave the axes).
+    ``add_artist`` clips to the Axes patch, a rectangle that matplotlib
+    stores as the clip box: both are cleared. An end label is anchored in
+    the bars' data (``"data"`` on the bars' own Axes); a centred one on the
+    bar itself.
+    """
+    if label.axes is not None:
+        label.remove()
+    if label.asked != "center":
+        bar_axes = label.bar_axes
+        label.xycoords = "data" if host is bar_axes else bar_axes.transData
+    label.set_transform(IdentityTransform())
+    host.add_artist(label)
+    label.set_clip_box(None)
+    label.set_clip_path(None)
+
 
 # ------------------------------------------------------------ the call
 def _containers(ax: Axes, bars: object) -> list[BarContainer]:
@@ -324,7 +463,7 @@ def _check_plot_area(ax: Axes, containers: list[BarContainer]) -> None:
                 )
 
 
-def _format_ticks_now(axis: Axis) -> None:
+def format_ticks_now(axis: Axis) -> None:
     """Let ``axis``'s formatter decide now, as the next draw would."""
     axis.get_major_formatter().format_ticks(list(axis.get_majorticklocs()))
 
@@ -360,14 +499,6 @@ def _add_label(
     if not isinstance(bar_axes, Axes):
         return
     where = _placement(kind, family.options.where)
-    host = host_axes(bar_axes)
-    xycoords: CoordsType
-    if where == "center":
-        xycoords = patch
-    elif host is bar_axes:
-        xycoords = "data"
-    else:
-        xycoords = bar_axes.transData
     text_kw: dict[str, Any] = {"fontsize": fontsize, "fontweight": fw(1)}
     color = label_ink(family.options.color, kind, where, patch, bar_axes)
     if color is not None:
@@ -378,20 +509,14 @@ def _add_label(
         index,
         value,
         bar_axes=bar_axes,
-        xycoords=xycoords,
+        # A centred label's frame is its bar; attach sets an end label's.
+        xycoords=patch if where == "center" else "data",
         kind=kind,
         where=where,
         stack=stack,
         **text_kw,
     )
-    # As ax.annotate does: the text is placed in display space, and nothing
-    # clips it (a label beyond the bar end may leave the axes). add_artist
-    # clips to the Axes patch, a rectangle that matplotlib stores as the
-    # clip box: clear both.
-    label.set_transform(IdentityTransform())
-    host.add_artist(label)
-    label.set_clip_box(None)
-    label.set_clip_path(None)
+    attach(label, host_axes(bar_axes))
     family.texts.append(label)
 
 
@@ -452,10 +577,20 @@ def label_bars(
       in the view, within one pixel: a bar ending on a limit you set keeps
       its label just outside the axes, a bar outside the view or running
       past such a limit has none. Error bars push a label at most to the
-      edge of the view.
+      edge of the view;
+    - ``dm.simple_layout`` settles the labels at the size it fits: labels
+      wider than the distance to the next bar less 1.5 pt follow
+      ``crowded`` (below), and a value axis whose limits matplotlib
+      autoscales grows just enough to keep the outside labels and 3 pt
+      inside the axes. Limits you set stay: a label that does not fit sits
+      outside the axes, and the layout keeps it inside the figure.
 
-    A later ``Text.set_*`` on a returned label (text, colour, size, weight,
-    alignment) wins over every redraw and ``dm.simple_layout``.
+    Calling ``label_bars`` again on bars already labelled replaces the
+    earlier labels of those bars (and the totals of their stacks). Labels
+    made before a twin existed move onto it at the next
+    ``dm.simple_layout``, as they are. A later ``Text.set_*`` on a returned
+    label (text, colour, size, weight, alignment, rotation, visibility)
+    wins over every redraw and ``dm.simple_layout``.
 
     Parameters
     ----------
@@ -474,8 +609,17 @@ def label_bars(
         Stacked bars: segment labels plus a total (``"auto"``), the totals
         only, or the segments only. Bars in no stack are labelled alike.
     crowded : {"rotate", "skip", "inside"}
-        What labels wider than the bar pitch do: turn vertical (default),
-        hide alternate labels, or move inside the bars.
+        What a call does when one of its labels is wider than the distance
+        to the next bar less 1.5 pt (decided at each ``dm.simple_layout``):
+        ``"rotate"`` (default) turns the labels of vertical bars vertical;
+        ``"skip"`` hides every other label, keeping the last bar's (the
+        top row's for ``barh``); ``"inside"`` puts plain bars' labels
+        inside their ends (vertical text on vertical bars, readable ink),
+        leaving a bar too short for its label with the label outside.
+        ``barh`` never turns: rows thinner than the text hide every other
+        label. Under any rule, labels that would still overlap are hidden
+        the same way, and a kept label wider than its bar is lifted past
+        the taller bars it spans.
     decimals : int, optional
         A fixed decimal count instead of the rule above.
     fmt : str or callable, optional
@@ -533,6 +677,12 @@ def label_bars(
             )
     if not containers:
         return []
+    # A later call on bars already labelled replaces the earlier labels.
+    for member in same_position_axes(ax):
+        families = families_of(member)
+        for earlier in families:
+            earlier.release(containers)
+        families[:] = [f for f in families if f.texts]
 
     piles = pile_bars(containers)
     family = BarLabelFamily(ax, containers, options, stacks=piles.stacks)
@@ -576,14 +726,10 @@ def label_bars(
                 )
 
     for axis in dict.fromkeys(label.value_axis for label in family.texts):
-        _format_ticks_now(axis)
+        format_ticks_now(axis)
     family.refresh()
     for label in family.texts:
         place(label, label.where)
 
-    families = getattr(ax, "_dm_bar_label_families", None)
-    if families is None:
-        families = []
-        ax._dm_bar_label_families = families  # type: ignore[attr-defined]
-    families.append(family)
+    _record(ax, family)
     return list(family.texts)

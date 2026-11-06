@@ -279,6 +279,10 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.io", "dartwork_mpl.validate"): (
         "saving runs the visual validation the user asked for"
     ),
+    ("dartwork_mpl.layout", "dartwork_mpl.annotation"): (
+        "bar value labels settle crowding and headroom at the size the "
+        "layout fits, before it measures the margins"
+    ),
     ("dartwork_mpl.layout", "dartwork_mpl.config"): (
         "layout follows the user's tick-label font adoption setting"
     ),
