@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from matplotlib import backend_bases
+from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 from matplotlib.transforms import ScaledTranslation
 
@@ -25,6 +26,7 @@ __all__ = [
     "axes_text_artists",
     "axes_titles",
     "axes_with_secondaries",
+    "backdrop_layers",
     "canvas_renderer",
     "get_renderer",
     "iter_figure_level_extents",
@@ -33,11 +35,12 @@ __all__ = [
     "respread_line_end_labels",
     "same_position_axes",
     "secondary_axes",
+    "shared_axes",
     "spread_line_end_labels",
 ]
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
@@ -247,6 +250,22 @@ def axes_with_secondaries(fig: Figure | SubFigure) -> list[Axes]:
     return [owner for ax in fig.axes for owner in (ax, *secondary_axes(ax))]
 
 
+def shared_axes(ax: Axes, which: Literal["x", "y"]) -> list[Axes]:
+    """``ax`` and every Axes sharing its ``which`` axis, in figure order.
+
+    These are the Axes made with ``sharex`` / ``sharey`` and the partners of
+    ``twinx`` (shares x) and ``twiny`` (shares y): they read one scale, so
+    their limits and tick formatters move together. An Axes the figure no
+    longer holds sorts last.
+    """
+    group = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
+    members: list[Axes] = list(group.get_siblings(ax))
+    fig = ax.get_figure(root=True)
+    order = fig.axes if fig is not None else []
+    members.sort(key=lambda m: order.index(m) if m in order else len(order))
+    return members
+
+
 def same_position_axes(ax: Axes) -> list[Axes]:
     """Return ``ax`` and the visible Axes drawn in the same box as it.
 
@@ -268,6 +287,33 @@ def same_position_axes(ax: Axes) -> list[Axes]:
         )
     ]
     return [ax, *partners]
+
+
+def backdrop_layers(
+    axes: Sequence[Axes],
+) -> list[tuple[float, float, float, float]]:
+    """The patch colours that show behind ``axes``' data, lowest first.
+
+    The figure's patch, then its subfigure's (when the Axes sit in one),
+    then each Axes' own patch in zorder (stable on the order given); a patch
+    that is not drawn adds nothing. Fold them over white with
+    ``composite_layers``. The ``axes`` share one figure.
+    """
+    first = axes[0]
+    root = first.get_figure(root=True)
+    parent = first.get_figure(root=False)
+    containers = (root, parent if parent is not root else None)
+    layers = [
+        to_rgba(container.get_facecolor())
+        for container in containers
+        if container is not None and container.patch.get_visible()
+    ]
+    layers.extend(
+        to_rgba(member.get_facecolor())
+        for member in sorted(axes, key=lambda m: m.get_zorder())
+        if member.get_frame_on() and member.patch.get_visible()
+    )
+    return layers
 
 
 def axes_decoration_extents(ax: Axes, renderer: RendererBase) -> list[Bbox]:

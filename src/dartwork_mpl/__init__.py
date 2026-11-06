@@ -16,7 +16,7 @@ del _run_color_build
 # ``dm.PackageNotFoundError`` used to resolve).
 from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
 from importlib.metadata import version as _metadata_version
-from typing import Any as _Any
+from typing import NoReturn as _NoReturn
 
 # Derive the version from the installed distribution metadata so there
 # is a single source of truth. For a built/released wheel this always
@@ -361,12 +361,12 @@ font.ensure_loaded()
 from ._compat import missing_attribute as _missing_attribute
 
 
-def __getattr__(name: str) -> _Any:
-    """Surface deprecation aliases and removed-name migration hints.
+def __getattr__(name: str) -> _NoReturn:
+    """Surface removed-name migration hints.
 
     Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.subplots`` /
     ``dm.install_llm_txt`` / ``dm.FS_SINGLE`` would raise Python's
     default ``AttributeError`` with no pointer to the replacement. See
     docs/migration.md for the full mapping.
     """
-    return _missing_attribute(name, globals())
+    _missing_attribute(name)

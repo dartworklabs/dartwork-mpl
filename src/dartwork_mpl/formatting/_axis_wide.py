@@ -209,6 +209,15 @@ class AxisUnitFormatter(ticker.Formatter):
     decimals) or one ladder label (that unit, always). ``decimals`` fixes
     the decimal count instead of choosing it.
 
+    ``per_tick=True`` is the one exception to "one unit per axis": it needs
+    ``decimals`` and ``unit="max"`` and makes no axis-wide decision. Each
+    tick takes the largest ladder rung at or below its own magnitude, is
+    rounded to ``decimals`` places with trailing zeros trimmed, and a
+    magnitude below the first rung prints as a whole number (``7,500``,
+    ``1.5억``). Ticks of one axis can then mix units; this keeps the output
+    of ``format_axis_myriad(decimals=n)``. Such a formatter has no axis
+    unit, so :func:`tick_scale_of` reports the plain scale for it.
+
     The decision is made in :meth:`set_locs`, which :meth:`format_ticks`
     calls with every major tick on each draw; only ticks inside the view
     interval vote. Called without a draw, a value decides for itself.
@@ -221,7 +230,10 @@ class AxisUnitFormatter(ticker.Formatter):
         *,
         decimals: int | None = None,
         currency: str = "",
+        per_tick: bool = False,
     ) -> None:
+        if per_tick and (decimals is None or unit != "max"):
+            raise ValueError("per_tick needs decimals and unit='max'")
         self._ladder = tuple(sorted(ladder, key=lambda rung: rung.factor))
         self._fixed = next(
             (rung for rung in self._ladder if rung.label == unit), None
@@ -234,6 +246,7 @@ class AxisUnitFormatter(ticker.Formatter):
         self._rule = unit
         self._decimals = decimals
         self._currency = currency
+        self._per_tick = per_tick
         self._plan: _Plan | None = None
 
     # -- unit choice ----------------------------------------------------
@@ -321,8 +334,28 @@ class AxisUnitFormatter(ticker.Formatter):
         )
         return plan.axis_unit or self._max_unit(abs(value)), plan.decimals
 
+    def _per_tick_text(self, value: float) -> str:
+        """``value`` in its own unit, ``decimals`` places, zeros trimmed."""
+        decimals = self._decimals or 0
+        if value == 0:
+            return "0"
+        prefix = f"{'-' if value < 0 else ''}{self._currency}"
+        magnitude = abs(value)
+        rungs = [rung for rung in self._ladder if rung.factor > 1]
+        if magnitude < rungs[0].factor:
+            return f"{prefix}{magnitude:,.0f}"
+        rung = max(
+            (r for r in rungs if r.factor <= magnitude), key=lambda r: r.factor
+        )
+        text = f"{magnitude / rung.factor:,.{decimals}f}"
+        if decimals > 0:
+            text = text.rstrip("0").rstrip(".")
+        return f"{prefix}{text}{rung.label}"
+
     def __call__(self, x: float, pos: int | None = None) -> str:
         """Format one value with the last axis decision (or its own)."""
+        if self._per_tick:
+            return self._per_tick_text(float(x))
         value = float(x)
         if not math.isfinite(value):
             return str(value)
@@ -337,7 +370,10 @@ class AxisUnitFormatter(ticker.Formatter):
         The axis unit's factor, this formatter's currency prefix and the
         unit label as suffix; on a non-linear axis, ``value``'s own unit.
         Before any draw ``value`` decides alone, as :meth:`__call__` does.
+        A ``per_tick`` formatter has no axis unit: the plain scale.
         """
+        if self._per_tick:
+            return TickScale()
         unit, _decimals = self._decision(float(value))
         return TickScale(unit.factor, self._currency, unit.label)
 
@@ -353,6 +389,8 @@ def tick_scale_of(axis: Axis, value: float) -> TickScale:
       axis unit and currency (``33G``, ``1.2k``); ``dm.axis_unit``'s
       formatter puts the unit in the axis label instead, so its scale has
       no suffix (``33`` under ``Energy (GWh)``).
+      An :class:`AxisUnitFormatter` made with ``per_tick=True`` (each tick
+      in its own unit, so no axis unit exists) reports the plain scale.
     - :class:`matplotlib.ticker.PercentFormatter`: ``xmax / 100`` and its
       symbol (``31%``).
     - Any other formatter, matplotlib's own ``ScalarFormatter`` on an axis

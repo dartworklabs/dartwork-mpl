@@ -12,7 +12,6 @@ from __future__ import annotations
 __all__ = ["ensure_loaded"]
 
 import json
-import sys
 import threading
 from importlib.resources import files
 from typing import TYPE_CHECKING, NamedTuple
@@ -23,12 +22,7 @@ from .._curated import CURATED
 from ..catalog import DIVERGING_CANONICALS, GENERATED_DIVERGING, PALETTE
 
 if TYPE_CHECKING:
-    # ``Traversable`` moved from ``importlib.abc`` (3.10) to
-    # ``importlib.resources.abc`` (3.11+); only needed for typing.
-    if sys.version_info >= (3, 11):
-        from importlib.resources.abc import Traversable
-    else:
-        from importlib.abc import Traversable
+    from importlib.resources.abc import Traversable
 
 
 def _parse_color_data(text: str) -> dict[str, str]:

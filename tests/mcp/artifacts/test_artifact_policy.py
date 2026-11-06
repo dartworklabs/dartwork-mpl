@@ -4,7 +4,7 @@ import copy
 import json
 import math
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
@@ -24,7 +24,7 @@ from dartwork_mpl.mcp.artifacts.policy import (
     parse_render_request,
 )
 
-NOW = datetime(2026, 10, 18, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 18, tzinfo=UTC)
 SEED = 20261018
 
 

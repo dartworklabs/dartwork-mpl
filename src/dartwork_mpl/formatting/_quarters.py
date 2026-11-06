@@ -25,6 +25,7 @@ from matplotlib.collections import FillBetweenPolyCollection, PathCollection
 from matplotlib.container import BarContainer
 from matplotlib.transforms import Transform
 
+from .._figure_geometry import shared_axes
 from ._dates import DateStyle, Digits, _date2num, _in_view, _num2date
 from ._years import two_digits_repeat
 
@@ -155,10 +156,9 @@ def plotted_dates(
     values are quantities, whatever their numbers.
     """
     column = 0 if which == "x" else 1
-    shared = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
     bars = "vertical" if which == "x" else "horizontal"
     chunks: list[npt.NDArray[np.float64]] = []
-    for member in shared.get_siblings(ax):
+    for member in shared_axes(ax, which):
         data = member.transData
         for line in [] if positions_only else member.lines:
             # Data units on both axes: axhline / axvline span an axes

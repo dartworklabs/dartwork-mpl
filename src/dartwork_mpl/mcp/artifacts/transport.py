@@ -2,7 +2,7 @@
 
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastmcp import FastMCP
@@ -365,10 +365,7 @@ def register_artifacts(
         def deliver() -> StoredBundle | ArtifactFailure:
             """Use fresh clocks in synchronous delivery with disabled input authority."""
             return render_artifact(
-                store,
-                request,
-                lambda: datetime.now(timezone.utc),
-                revision=parsed,
+                store, request, lambda: datetime.now(UTC), revision=parsed
             )
 
         if runtime is None:
@@ -383,7 +380,7 @@ def register_artifacts(
                     lambda: render_artifact(
                         store,
                         request,
-                        lambda: datetime.now(timezone.utc),
+                        lambda: datetime.now(UTC),
                         revision=parsed,
                         inputs=inputs,
                     )
@@ -403,9 +400,7 @@ def register_artifacts(
             return _result(identity)
         if isinstance(store, ConfigurationError):
             return _result(store)
-        return _result(
-            get_artifact(store, identity, datetime.now(timezone.utc))
-        )
+        return _result(get_artifact(store, identity, datetime.now(UTC)))
 
     def read(artifact_id: str, member: ArtifactMember) -> Any:
         """Validate identity and complete bundle before serving a literal member."""
@@ -415,9 +410,7 @@ def register_artifacts(
         elif isinstance(store, ConfigurationError):
             failure = store
         else:
-            outcome = store.read_member(
-                identity, member, datetime.now(timezone.utc)
-            )
+            outcome = store.read_member(identity, member, datetime.now(UTC))
             if not isinstance(
                 outcome,
                 (

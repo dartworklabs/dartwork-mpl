@@ -22,8 +22,13 @@ from typing import TYPE_CHECKING, TypeAlias
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
-from .._colors.contrast import ensure_contrast, readable_text_color
-from .._figure_geometry import same_position_axes
+from .._colors.contrast import (
+    composite_layers,
+    composite_over,
+    ensure_contrast,
+    readable_text_color,
+)
+from .._figure_geometry import backdrop_layers, same_position_axes
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -41,29 +46,9 @@ def is_series(color: object) -> bool:
     return isinstance(color, str) and color == "series"
 
 
-def _over(top: tuple[float, float, float, float], below: RGB) -> RGB:
-    alpha = top[3]
-    r, g, b = (
-        alpha * t + (1.0 - alpha) * u
-        for t, u in zip(top[:3], below, strict=True)
-    )
-    return (r, g, b)
-
-
 def _background(bar_axes: Axes) -> RGB:
     """What shows behind the bars: the figure, then each visible Axes patch."""
-    below: RGB = (1.0, 1.0, 1.0)
-    root = bar_axes.get_figure(root=True)
-    parent = bar_axes.get_figure(root=False)
-    for container in (root, parent if parent is not root else None):
-        if container is not None and container.patch.get_visible():
-            below = _over(mcolors.to_rgba(container.get_facecolor()), below)
-    for member in sorted(
-        same_position_axes(bar_axes), key=lambda m: m.get_zorder()
-    ):
-        if member.get_frame_on() and member.patch.get_visible():
-            below = _over(mcolors.to_rgba(member.get_facecolor()), below)
-    return below
+    return composite_layers(backdrop_layers(same_position_axes(bar_axes)))
 
 
 def _series_ink(patch: Rectangle, background: RGB) -> str:
@@ -71,14 +56,14 @@ def _series_ink(patch: Rectangle, background: RGB) -> str:
     face = mcolors.to_rgba(patch.get_facecolor())
     if face[3] == 0 and patch.get_linewidth() > 0:
         face = mcolors.to_rgba(patch.get_edgecolor())
-    shown = mcolors.to_hex(_over(face, background))
+    shown = mcolors.to_hex(composite_over(face, background))
     return ensure_contrast(shown, mcolors.to_hex(background))
 
 
 def _on_bar_ink(patch: Rectangle, bar_axes: Axes) -> str:
     """White or the preset text colour, whichever reads better on the bar."""
     face = mcolors.to_rgba(patch.get_facecolor())
-    shown = _over(face, _background(bar_axes))
+    shown = composite_over(face, _background(bar_axes))
     return readable_text_color(
         mcolors.to_hex(shown),
         light="white",

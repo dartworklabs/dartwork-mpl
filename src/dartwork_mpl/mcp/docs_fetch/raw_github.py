@@ -151,7 +151,7 @@ async def fetch(
 
     try:
         return await asyncio.wait_for(transfer(), timeout_seconds)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return _DEADLINE
     except httpx.HTTPError as exc:
         # Transport failures (connect, read, protocol) name only their type.

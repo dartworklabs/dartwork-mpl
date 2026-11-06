@@ -17,6 +17,7 @@ from typing import Literal
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 
+from .._figure_geometry import shared_axes
 from ._axis_wide import (
     FINANCE_LADDER,
     MYRIAD_LADDER,
@@ -58,11 +59,7 @@ def _sharing(axis: Axis) -> list[Axis]:
     """Every axis that shares ``axis``'s ticker (``sharex`` / ``sharey``)."""
     ax = axis.axes
     along_x = axis is ax.xaxis
-    group = ax.get_shared_x_axes() if along_x else ax.get_shared_y_axes()
-    members = group.get_siblings(ax)
-    fig = ax.get_figure(root=True)
-    order = fig.axes if fig is not None else []
-    members.sort(key=lambda m: order.index(m) if m in order else len(order))
+    members = shared_axes(ax, "x" if along_x else "y")
     axes = [m.xaxis if along_x else m.yaxis for m in members]
     return [other for other in axes if other.major is axis.major]
 

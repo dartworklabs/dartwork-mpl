@@ -9,10 +9,10 @@ not the hand-maintained literal. Deriving it from
 from __future__ import annotations
 
 import importlib.metadata
+import tomllib
 from pathlib import Path
 
 import pytest
-import tomllib
 
 import dartwork_mpl as dm
 

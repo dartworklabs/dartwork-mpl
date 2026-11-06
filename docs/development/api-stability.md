@@ -34,13 +34,20 @@ currently an advertised top-level `dm.ui` attribute.
 
 ## Deprecation cycle
 
-To remove a public name, first move it out of `__all__` and add it to
-`_DEPRECATED_NAMES`. Deprecated names keep working, emit a
-`DeprecationWarning`, and alias to the replacement target.
+To remove a public name, first announce the deprecation in `CHANGELOG.md`
+and in the name's docstring, and have the name emit a `DeprecationWarning`
+while it keeps working. Keep it that way for at least 2 minor releases
+before moving it to `_REMOVED_NAMES`; the count starts at the minor that
+first shipped the warning (a first warning in 0.8 allows removal in 0.10 at
+the earliest). Removed names no longer resolve; accessing one raises
+`AttributeError` with the version removed and a migration hint.
 
-Keep a name in `_DEPRECATED_NAMES` for at least 2 minor releases before
-moving it to `_REMOVED_NAMES`. Removed names no longer resolve; accessing
-one raises `AttributeError` with the version removed and a migration hint.
+Where the warning comes from depends on the name. A function or class warns
+at its definition (a wrapper), or through a module-level `__getattr__` on
+the module that owns it. A name the package root imports from a submodule
+and re-exports is already bound in the root, so the owning module's
+`__getattr__` never runs for `dm.X`; the warning then fires at import time
+only. Such a name needs a warning path on the root side.
 
 ## Registries
 
@@ -48,15 +55,12 @@ one raises `AttributeError` with the version removed and a migration hint.
 : Advertised public surface. Every function or class listed here must have
   a non-empty docstring.
 
-`_DEPRECATED_NAMES`
-: Soft-deprecated names. They are not advertised, still work, emit
-  `DeprecationWarning`, and point to their replacement.
-
 `_REMOVED_NAMES`
 : Hard-removed names. They raise `AttributeError` with a migration hint.
 
-A name lives in exactly one of these states: advertised, deprecated, or
-removed.
+The root registry records only advertised and removed names; no name is
+deprecated today. Deprecated is a separate lifecycle state between the two:
+the name keeps working and warns for at least two minor releases.
 
 ## Adding a public name
 

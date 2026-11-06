@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import sys
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
 from pathlib import Path
 from types import SimpleNamespace
@@ -724,7 +724,7 @@ def direct_pair(journey, parent_at, child_at):
 @pytest.mark.parametrize("damage", ["deleted", "expired", "corrupt"])
 def test_child_reuse_survives_parent_damage_and_actual_restart(journey, damage):
     """Independent child bytes/inputs survive ancestor lookup failure after restart."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     parent_at = now - timedelta(days=8 if damage == "expired" else 2)
     child_at = now - timedelta(days=2 if damage == "expired" else 1)
     parent_id, child_id, child_bodies = direct_pair(
@@ -829,7 +829,7 @@ def test_restart_root_home_missing_and_restoration_preserve_committed_bytes(
     journey,
 ):
     """Unavailable artifact roots/HOME preserve all committed inputs for restoration."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     _, child_id, child_bodies = direct_pair(
         journey, now - timedelta(days=2), now - timedelta(days=1)
     )

@@ -253,10 +253,8 @@ markers = [
 
 [tool.ruff]
 line-length = 80
-# Keep the pre-existing authoring/modernization baseline: Python 3.11 is
-# the supported runtime floor, but raising Ruff's target adds 37 unrelated
-# syntax/noqa findings and must be a separately scoped source migration.
-target-version = "py310"
+# Python 3.11 is the supported runtime floor (``requires-python``).
+target-version = "py311"
 # Deterministic build artifact: rows are one hex tuple per line (256 hex
 # per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
 # and break `test_rebuild_is_byte_identical`. Never hand-edited.
@@ -316,12 +314,11 @@ split-on-trailing-comma = false
 # ``svg.hashsalt`` before importing pyplot, so imports follow module-level
 # setup statements by design.
 "scripts/build_palette_demos.py" = ["E402"]
-# BLE001 + PERF203: these asset generators run a best-effort batch loop
-# that must continue past any individual failure (one broken example
-# shouldn't abort the whole build). The blind-except + try/except-in-
-# loop pattern is intentional.
-"docs/api/generate_assets.py" = ["BLE001", "PERF203"]
-"docs/usage_guide/generate_assets.py" = ["BLE001", "PERF203"]
+# BLE001: these asset generators run a best-effort batch loop that must
+# continue past any individual failure (one broken example shouldn't abort
+# the whole build). The blind-except pattern is intentional.
+"docs/api/generate_assets.py" = ["BLE001"]
+"docs/usage_guide/generate_assets.py" = ["BLE001"]
 # Tests legitimately use unused unpacked variables (e.g. fig, ax tuples
 # where only one is asserted), nested context managers, manual list
 # comprehensions, blind excepts in cleanup code, ambiguous unicode in

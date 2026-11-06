@@ -801,7 +801,7 @@ def verify() -> None:
         try:
             f = ft2font.FT2Font(str(p))
             fams[f.family_name] = fams.get(f.family_name, 0) + 1
-        except Exception as e:  # noqa: BLE001, PERF203
+        except Exception as e:  # noqa: BLE001
             bad.append((p.name, str(e)))
     print(f"\nOn disk: {len(files)} font files, {len(fams)} families")
     for fam, n in sorted(fams.items()):

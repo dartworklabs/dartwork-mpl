@@ -221,7 +221,7 @@ preserved when you switch to the curated replacement:
 | `dartwork_mpl.asset_viz` | `dartwork_mpl.diagnostics` (`ModuleNotFoundError`) |
 | MCP `dartwork-mpl://guide/general-guide` | `dartwork-mpl://guide/agent-entry` |
 | MCP `dartwork-mpl://guide/layout-guide` | `dartwork-mpl://guide/policy` |
-| `ui._config.append_history` / `load_history` | `save_preset` / `load_presets` |
+| `ui._config` (`append_history` / `load_history`, then `save_preset` / `load_presets`) | none; the private module is gone. The viewer keeps its state in `dartwork_mpl.ui.state` |
 
 ## v0.5.0 — installer removal & lighter core
 

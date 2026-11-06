@@ -35,7 +35,7 @@ def fd_count():
         try:
             os.fstat(fd)
             count += 1
-        except OSError:  # noqa: PERF203 - each candidate FD may be absent.
+        except OSError:
             pass
     return count
 

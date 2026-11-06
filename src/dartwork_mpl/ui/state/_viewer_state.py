@@ -6,7 +6,7 @@ processes can still lose concurrent updates.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TypeAlias
 
 from ..params import InputFailure, InvalidRequest
@@ -123,7 +123,7 @@ class ViewerState:
                     "params": update.model.model_dump(
                         mode="json", by_alias=False
                     ),
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(UTC).isoformat(),
                 }
             except (ValueError, TypeError, OverflowError, RecursionError):
                 return InvalidRequest(
@@ -167,9 +167,7 @@ class ViewerState:
                 return InvalidRequest(
                     "Parameters cannot be serialized as finite JSON."
                 )
-            added = Preset(
-                parsed.label, params, datetime.now(timezone.utc).isoformat()
-            )
+            added = Preset(parsed.label, params, datetime.now(UTC).isoformat())
             return encode_state(
                 StoredPresets((*entries, added)).to_json(),
                 max_bytes=MAX_PRESET_BYTES,

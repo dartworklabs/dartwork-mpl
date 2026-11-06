@@ -529,7 +529,7 @@ def _remove_owned(
             info = os.stat(member, dir_fd=directory_fd, follow_symlinks=False)
             if (info.st_dev, info.st_ino) == expected:
                 os.unlink(member, dir_fd=directory_fd)
-        except OSError:  # noqa: PERF203 -- individual cleanup failures are independent
+        except OSError:
             # A concurrent cleanup or unsafe replacement cannot justify touching
             # anything else. The directory remains if an unknown object exists.
             continue

@@ -118,7 +118,7 @@ def grep_callsites(name: str, cwd: pathlib.Path) -> int:
     for line in result.stdout.splitlines():
         try:
             total += int(line.rsplit(":", 1)[1])
-        except (ValueError, IndexError):  # noqa: PERF203
+        except (ValueError, IndexError):
             continue
     return total
 

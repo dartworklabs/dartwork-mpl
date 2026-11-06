@@ -426,15 +426,6 @@ def _outside_area(inner: Bbox, outer: Bbox) -> float:
     return area - _intersection_area(inner, outer)
 
 
-def _bbox_inside(bbox: Bbox, container: Bbox, tol_px: float = 0.5) -> bool:
-    return bool(
-        bbox.x0 >= container.x0 - tol_px
-        and bbox.x1 <= container.x1 + tol_px
-        and bbox.y0 >= container.y0 - tol_px
-        and bbox.y1 <= container.y1 + tol_px
-    )
-
-
 def _collision_area(bbox: Bbox, obstacles: list[Bbox]) -> float:
     return sum(_overlap_area(bbox, obstacle) for obstacle in obstacles)
 

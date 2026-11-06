@@ -2,19 +2,47 @@
 
 from __future__ import annotations
 
-__all__ = ["ensure_contrast", "readable_text_color"]
+__all__ = [
+    "composite_layers",
+    "composite_over",
+    "ensure_contrast",
+    "readable_text_color",
+]
 
 import colorsys
 import math
-from typing import Any
+from collections.abc import Iterable
+from typing import Any, TypeAlias
 
 import matplotlib.colors as mcolors
 
 from ._luminance import _contrast_ratio
 
+RGB: TypeAlias = tuple[float, float, float]
+RGBA: TypeAlias = tuple[float, float, float, float]
+
 _DEFAULT_LIGHT_INK = "white"
 _DEFAULT_DARK_INK = "black"
 _SEARCH_ITERS = 32
+
+
+def composite_over(top: RGBA, below: RGB) -> RGB:
+    """``top`` (RGBA) composited over the opaque colour ``below``."""
+    alpha = top[3]
+    r, g, b = (
+        alpha * t + (1.0 - alpha) * u
+        for t, u in zip(top[:3], below, strict=True)
+    )
+    return (r, g, b)
+
+
+def composite_layers(
+    layers: Iterable[RGBA], below: RGB = (1.0, 1.0, 1.0)
+) -> RGB:
+    """``layers`` painted in order (first lowest) over the opaque ``below``."""
+    for layer in layers:
+        below = composite_over(layer, below)
+    return below
 
 
 def _rgb(color: Any) -> tuple[float, float, float]:

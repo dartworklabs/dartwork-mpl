@@ -176,7 +176,7 @@ def probe():
     for policy in ("strict", "preserve", "clean"):
         try:
             dm.validate_data(x, allow_nan=True, policy=policy)
-        except ValueError:  # noqa: PERF203 -- each policy must reject the conflict
+        except ValueError:
             pass
         else:
             raise AssertionError(
@@ -185,7 +185,7 @@ def probe():
     for unsupported in (np.array(3.0), np.array([1, 2], dtype=object)):
         try:
             dm.validate_data(unsupported, policy="preserve")
-        except ValueError as error:  # noqa: PERF203 -- each scope must reject
+        except ValueError as error:
             assert "x" in str(error)
         else:
             raise AssertionError(
@@ -194,7 +194,7 @@ def probe():
     for invalid_minimum in (np.timedelta64(2, "D"), np.timedelta64("NaT")):
         try:
             dm.validate_data(finite, policy="clean", min_points=invalid_minimum)
-        except ValueError as error:  # noqa: PERF203 -- temporal integers are not counts
+        except ValueError as error:
             assert "min_points" in str(error)
         else:
             raise AssertionError("temporal scalar was accepted as min_points")

@@ -1,14 +1,14 @@
 """Generate a standalone Python script that reproduces the current figure.
 
 The script holds the figure function and ParamModel source and the active
-values. Its body (including ``from dartwork_mpl.util import save_formats``)
-is user-facing output and stays byte-for-byte as it was.
+values. Its body (including ``from dartwork_mpl.io import save_formats``)
+is user-facing output.
 """
 
 import inspect
 import textwrap
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -77,7 +77,7 @@ def _generate_script(
         params_lines.append(f"    {key}={val!r},")
     params_str = "\n".join(params_lines)
 
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    ts = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     return f'''"""Auto-generated figure script.
 
@@ -89,7 +89,7 @@ Function:   {figure_fn.__name__}
 {imports_block}
 from pydantic import Field
 
-from dartwork_mpl.util import save_formats
+from dartwork_mpl.io import save_formats
 
 
 {model_source}

@@ -11,7 +11,7 @@ import inspect
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, TypeAlias, TypeVar
 
 import anyio
@@ -172,7 +172,7 @@ class ArtifactRuntime:
         if not isinstance(grant, InputGrant):
             return _Resources(grant)
         try:
-            inputs = InputStore.open(grant, datetime.now(timezone.utc))
+            inputs = InputStore.open(grant, datetime.now(UTC))
             if isinstance(inputs, InputStore):
                 return _Resources(inputs, grant)
             grant.close()
@@ -236,7 +236,7 @@ class ArtifactRuntime:
                     inputs = live.resources.inputs
                     if isinstance(inputs, InputStore):
                         await run_owned(
-                            lambda: inputs.maintain(datetime.now(timezone.utc))
+                            lambda: inputs.maintain(datetime.now(UTC))
                         )
         finally:
             live.calls -= 1
