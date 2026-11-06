@@ -210,15 +210,15 @@ def test_value_labels_are_one_weight_step_heavier() -> None:
     """User request 2026-10-22: numeric value labels use dm.fw(1)."""
     text = SKILL_MD.read_text(encoding="utf-8")
     values = text.split("## Values", 1)[1].split("## ", 1)[0]
-    assert "value labels" in values and "fontweight=dm.fw(1)" in values
+    # 2026-11-06: points and line ends take dm.annotate_value (fs(-1), fw(1)).
+    assert "value labels" in values and "dm.annotate_value(" in values
+    assert "fw(1)" in values
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     section = editing.split("## Value labels", 1)[1].split("\n## ", 1)[0]
     (block,) = _FENCE.findall(section)
     # B3 (2026-11-06): bars take dm.label_bars, whose defaults are this look.
     assert "dm.label_bars(" in block and "bar_label(" not in block
-    line = next(ln for ln in block.split("\n") if ".text(" in ln)
-    call_text = block[block.index(line) :].split(")\n", 1)[0]
-    assert "fontweight=dm.fw(1)" in call_text
+    assert "dm.annotate_value(" in block and ".text(" not in block
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     for getter in (
         "get_lines()",
