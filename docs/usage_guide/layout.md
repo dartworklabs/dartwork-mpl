@@ -740,12 +740,12 @@ the light presets) cannot be told from the default and is painted; for
 black or neutral twin axes use `dm.config.twin_colors = "neutral"`.
 
 The presets hide the right spine, so `dm.simple_layout(fig)` also shows it on
-an Axes drawing its own y scale on the right (the one `ax.twinx()` returns),
-in either mode. `ax.twinx()` itself is matplotlib's own: without the layout
-the twin keeps the hidden spine. A right spine you hide after
-`dm.simple_layout` stays hidden; one hidden before the first layout cannot be
-told from the preset's and shows, so hide it after the layout or give it
-`linewidth=0`.
+an Axes drawing its own y scale on the right, with its y ticks and y label
+there (the one `ax.twinx()` returns, of an inset too), in either mode.
+`ax.twinx()` itself is matplotlib's own: without the layout the twin keeps the
+hidden spine. A right spine you hide after `dm.simple_layout` stays hidden;
+one hidden before the first layout cannot be told from the preset's and
+shows, so hide it after the layout or give it `linewidth=0`.
 
 `dm.place_legend(ax)` on either twin merges the pair's entries into one
 legend on the top twin, the one drawn last (by zorder, then figure order,

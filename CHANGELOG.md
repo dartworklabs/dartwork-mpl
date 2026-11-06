@@ -31,15 +31,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **Importing dartwork-mpl no longer changes matplotlib.** `ax.twinx()` is
-  matplotlib's own again (it was replaced at import); `dm.simple_layout`
-  shows the right spine of an Axes drawing its own y scale on the right
-  (the one `twinx()` returns), which the presets hide. Figures laid out with
-  `dm.simple_layout` look the same. Without it the twin keeps the preset's
-  hidden right spine; show it with `ax2.spines["right"].set_visible(True)`.
-  A right spine you hide before the first `dm.simple_layout` now shows;
-  hide it after the layout, or give it `linewidth=0`. The rule:
-  [docs/development/twin-spine-at-layout.md](docs/development/twin-spine-at-layout.md).
+- **Importing dartwork-mpl no longer rebinds any matplotlib class or
+  function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
+  import); import still registers the bundled colours, colormaps and fonts.
+  `dm.simple_layout` shows the right spine, which the presets hide, of an
+  Axes drawing its own y scale on the right of a shared plot area, y ticks
+  and y label on the right (the Axes `twinx()` returns, of an inset too).
+  Figures laid out with `dm.simple_layout` look as in 0.7, except: a
+  `sharex` overlay whose y ticks and label you moved to the right gets that
+  line; when a twin and its parent swap sides, the line moves to the parent;
+  a twin whose y axis is hidden, or whose y ticks or label you moved to the
+  left (also `b.twinx()` of a twin, which moves `b`'s ticks), gets none.
+  Without the layout a twin keeps the hidden spine; show it with
+  `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
+  first `dm.simple_layout` now shows; hide it after the layout, or give it
+  `linewidth=0`. `dm.validate_figure` reports the line on a moved overlay or
+  a swapped parent as `PRESET_OVERRIDE` (INFO); it is the layout's. The
+  rule: [docs/development/twin-spine-at-layout.md](docs/development/twin-spine-at-layout.md).
 - The Matplotlib floor is now `>=3.11.2`, the patch release the declared
   floor environment (Python 3.11, NumPy 1.26) is verified on. Matplotlib
   3.11.0 logs font-weight misses without naming the family, so the quiet

@@ -7,23 +7,37 @@ with a wrapper that ran two lines on the Axes it returned::
     twin.spines["right"].set_linewidth(rcParams["axes.linewidth"])
 
 From 0.8 ``dm.simple_layout`` shows that spine instead (the rule is in the
-docstring of ``dartwork_mpl.formatting._twin_spines``). The oracle of the
-parity tests is that 0.7 behaviour re-enacted by hand: each figure is built
-twice, plainly and with those two lines run right after every ``twinx()``,
-both are laid out, and the drawn pixels and every spine's drawn state must
-match. The controls are the ones that tell position, shared axes and a native
-twin apart (``_figure_geometry/tests/test_shared_axes_contract.py``):
-side-by-side Axes, two Axes in one box, a ``sharex`` overlay, ``twinx``,
-``twiny``, plus three y axes with an offset spine.
+docstring of ``dartwork_mpl.formatting._twin_spines``). Each case in
+``CASES`` builds a figure and lays it out. A parity case must match 0.7 in
+two independent ways:
 
-The rest pins where 0.8 differs from 0.7 on purpose: a figure that is not laid
-out keeps the preset's hidden right spine, and a right spine hidden between
-``twinx()`` and the first layout cannot be told from the preset's and shows.
+* ``twin_spines_07_golden.json``: the drawn state of every Axes (each
+  spine shown / width / colour, the y and x label and tick colours) that
+  origin/main recorded with the 0.7 wrapper installed, before any D7 code
+  existed (its ``recorded_from`` field). Nothing here derives it from the
+  library, so a change to a helper both sides share cannot cancel out. A
+  difference is a look change that needs its own decision; never re-record
+  the fixture to make a test pass.
+* the pixels of the same case with the 0.7 wrapper re-installed and the new
+  spine step switched off, rendered in this run.
+
+The controls tell position, shared axes and a native twin apart: side by
+side panels (with a shared x too), two Axes in one box, ``sharex`` and
+``sharex`` + ``sharey`` overlays, ``twinx``, ``twiny``, three y axes with an
+offset spine and an inset's ``twinx``; with scales moved to the right where
+0.7 drew no line. Every one also runs under neutral twin colours and with
+``format_ticks=False``. The rest pins where 0.8 differs from 0.7 on purpose
+(approved 2026-11-07, 11-1 to 11-5) and the cases public state cannot tell
+from a 0.7 difference (x02, x03, x04 of the D7 review).
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import contextlib
+import json
+from collections.abc import Callable, Iterator
+from pathlib import Path
+from typing import Any
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -35,33 +49,48 @@ from matplotlib.figure import Figure
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-from dartwork_mpl.formatting import show_twin_spines
+import dartwork_mpl.layout as dm_layout
 
+GOLDEN = Path(__file__).with_name("twin_spines_07_golden.json")
 X = np.arange(6)
 SIDES = ("left", "right", "bottom", "top")
 
 
 @pytest.fixture(autouse=True)
-def _scientific():
+def _scientific() -> Iterator[None]:
     with matplotlib.rc_context():
         dm.style.use("scientific")
         yield
     plt.close("all")
 
 
-def _twinx(ax: Axes, old: bool) -> Axes:
-    """``ax.twinx()``; with ``old``, what the 0.7 import-time patch added."""
-    twin = ax.twinx()
-    if old:
-        twin.spines["right"].set_visible(True)
-        twin.spines["right"].set_linewidth(
-            matplotlib.rcParams["axes.linewidth"]
+def install_07(target: Any) -> None:
+    """Re-install the 0.7 import-time wrapper on ``target`` (a monkeypatch).
+
+    The body is 0.7's, verbatim. The new spine step is switched off, so the
+    figure is what 0.7's code drew.
+    """
+    original = Axes.twinx
+
+    def twinx(self: Axes, *args: Any, **kwargs: Any) -> Axes:
+        ax2 = original(self, *args, **kwargs)
+        ax2.spines["right"].set_visible(True)
+        ax2.spines["right"].set_linewidth(
+            matplotlib.rcParams.get("axes.linewidth", 0.3)
         )
-    return twin
+        return ax2
+
+    target.setattr(Axes, "twinx", twinx)
+    if hasattr(dm_layout, "_show_twin_spines"):
+        target.setattr(dm_layout, "_show_twin_spines", lambda fig: None)
 
 
-def _figure() -> Figure:
-    return plt.figure(figsize=dm.figsize("9cm", "standard"))
+# ------------------------------------------------------------ builders
+Built = tuple[Figure, Axes, Axes]
+
+
+def _figure(width: str = "9cm") -> Figure:
+    return plt.figure(figsize=dm.figsize(width, "standard"))
 
 
 def _draw_pair(a: Axes, b: Axes) -> None:
@@ -72,40 +101,40 @@ def _draw_pair(a: Axes, b: Axes) -> None:
     b.set_ylabel("B (units)")
 
 
-def _side_by_side(old: bool) -> tuple[Figure, Axes, Axes]:
+def _to_right(ax: Axes) -> None:
+    ax.yaxis.tick_right()
+    ax.yaxis.set_label_position("right")
+
+
+def _side_by_side(*, sharex: bool = False) -> Built:
     fig = _figure()
-    a, b = fig.subplots(1, 2)
+    a, b = fig.subplots(1, 2, sharex=sharex)
     _draw_pair(a, b)
     return fig, a, b
 
 
-def _one_box(*, sharex: bool) -> tuple[Figure, Axes, Axes]:
+def _one_box(*, sharex: bool = False, sharey: bool = False) -> Built:
     """Two Axes made separately in one GridSpec cell (no ``twinx``)."""
     fig = _figure()
     gs = fig.add_gridspec(1, 1)
     a = fig.add_subplot(gs[0])
-    b = fig.add_subplot(gs[0], sharex=a if sharex else None)
+    b = fig.add_subplot(
+        gs[0], sharex=a if sharex else None, sharey=a if sharey else None
+    )
+    b.patch.set_visible(False)
     _draw_pair(a, b)
     return fig, a, b
 
 
-def _coincident(old: bool) -> tuple[Figure, Axes, Axes]:
-    return _one_box(sharex=False)
-
-
-def _sharex_overlay(old: bool) -> tuple[Figure, Axes, Axes]:
-    return _one_box(sharex=True)
-
-
-def _twinx_pair(old: bool) -> tuple[Figure, Axes, Axes]:
+def _twinx_pair() -> Built:
     fig = _figure()
     a = fig.add_subplot()
-    b = _twinx(a, old)
+    b = a.twinx()
     _draw_pair(a, b)
     return fig, a, b
 
 
-def _twiny_pair(old: bool) -> tuple[Figure, Axes, Axes]:
+def _twiny_pair() -> Built:
     fig = _figure()
     a = fig.add_subplot()
     b = a.twiny()
@@ -114,10 +143,11 @@ def _twiny_pair(old: bool) -> tuple[Figure, Axes, Axes]:
     return fig, a, b
 
 
-def _three_y_axes(old: bool) -> tuple[Figure, Axes, Axes]:
-    fig, a = plt.subplots(figsize=dm.figsize("14cm", "standard"))
-    b = _twinx(a, old)
-    c = _twinx(a, old)
+def _three_y_axes() -> Built:
+    fig = _figure("14cm")
+    a = fig.add_subplot()
+    b = a.twinx()
+    c = a.twinx()
     c.spines["right"].set_position(("axes", 1.15))
     _draw_pair(a, b)
     c.plot(X, [100, 200, 150, 250, 230, 260], color="dc.green6")
@@ -125,92 +155,49 @@ def _three_y_axes(old: bool) -> tuple[Figure, Axes, Axes]:
     return fig, a, b
 
 
-Builder = Callable[[bool], tuple[Figure, Axes, Axes]]
-CONTROLS: dict[str, Builder] = {
+def _inset_twinx() -> Built:
+    fig = _figure("12cm")
+    host = fig.add_subplot()
+    host.plot(X, X, color="dc.gray6")
+    a = host.inset_axes((0.55, 0.15, 0.35, 0.35))
+    b = a.twinx()
+    _draw_pair(a, b)
+    return fig, a, b
+
+
+def _moved(build: Callable[[], Built], move: Callable[..., None]) -> Built:
+    fig, a, b = build()
+    move(a, b)
+    return fig, a, b
+
+
+BUILDS: dict[str, Callable[[], Built]] = {
     "side_by_side": _side_by_side,
-    "coincident": _coincident,
-    "sharex_overlay": _sharex_overlay,
+    "side_by_side_sharex_b_right": lambda: _moved(
+        lambda: _side_by_side(sharex=True), lambda a, b: _to_right(b)
+    ),
+    "one_box": _one_box,
+    "one_box_b_right": lambda: _moved(_one_box, lambda a, b: _to_right(b)),
+    "sharex_overlay": lambda: _one_box(sharex=True),
+    "sharex_overlay_b_label_right": lambda: _moved(
+        lambda: _one_box(sharex=True),
+        lambda a, b: b.yaxis.set_label_position("right"),
+    ),
+    "sharex_sharey_overlay_b_right": lambda: _moved(
+        lambda: _one_box(sharex=True, sharey=True), lambda a, b: _to_right(b)
+    ),
     "twinx": _twinx_pair,
+    "twinx_a_label_right": lambda: _moved(
+        _twinx_pair, lambda a, b: a.yaxis.set_label_position("right")
+    ),
+    "twinx_a_right_too": lambda: _moved(_twinx_pair, lambda a, b: _to_right(a)),
+    "twinx_b_marks_off": lambda: _moved(
+        _twinx_pair, lambda a, b: b.tick_params(axis="y", right=False)
+    ),
     "twiny": _twiny_pair,
     "three_y_axes": _three_y_axes,
+    "inset_twinx": _inset_twinx,
 }
-
-
-def _spines(fig: Figure) -> list[dict[str, tuple[bool, float, str]]]:
-    """Every spine as drawn: shown, line width, colour."""
-    return [
-        {
-            side: (
-                bool(
-                    ax.axison
-                    and ax.get_frame_on()
-                    and ax.spines[side].get_visible()
-                ),
-                float(ax.spines[side].get_linewidth()),
-                matplotlib.colors.to_hex(
-                    ax.spines[side].get_edgecolor(), keep_alpha=True
-                ),
-            )
-            for side in SIDES
-        }
-        for ax in fig.axes
-    ]
-
-
-def _pixels(fig: Figure) -> np.ndarray:
-    fig.canvas.draw()
-    return np.asarray(fig.canvas.buffer_rgba()).copy()
-
-
-def _laid_out(
-    build: Builder, old: bool, edit: Callable[..., None] | None = None
-) -> tuple[np.ndarray, list[dict[str, tuple[bool, float, str]]]]:
-    fig, a, b = build(old)
-    if edit is not None:
-        edit(fig, a, b)
-    dm.simple_layout(fig)
-    result = _pixels(fig), _spines(fig)
-    plt.close(fig)
-    return result
-
-
-def _assert_same_as_07(
-    build: Builder, edit: Callable[..., None] | None = None
-) -> None:
-    old_pixels, old_spines = _laid_out(build, True, edit)
-    new_pixels, new_spines = _laid_out(build, False, edit)
-    assert new_spines == old_spines
-    assert np.array_equal(new_pixels, old_pixels)
-
-
-# ------------------------------------------------------- import identity
-def test_twinx_is_matplotlibs_own() -> None:
-    # Axes inherits twinx; a rebinding would put it in Axes' own namespace.
-    assert "twinx" not in vars(Axes)
-    assert "twiny" not in vars(Axes)
-
-
-def test_twinx_alone_keeps_the_preset_spines() -> None:
-    fig, a, b = _twinx_pair(old=False)
-    assert not b.spines["right"].get_visible()  # scientific hides it
-
-
-# ------------------------------------------------------- 0.7 parity
-@pytest.mark.parametrize("name", CONTROLS)
-def test_controls_look_as_in_07_after_the_layout(name: str) -> None:
-    _assert_same_as_07(CONTROLS[name])
-
-
-@pytest.mark.parametrize("name", CONTROLS)
-def test_controls_under_neutral_twin_colours(name: str) -> None:
-    with dm.config.override(twin_colors="neutral"):
-        _assert_same_as_07(CONTROLS[name])
-
-
-@pytest.mark.parametrize("preset", ["report", "presentation", "minimal"])
-def test_twinx_under_other_presets(preset: str) -> None:
-    dm.style.use(preset)
-    _assert_same_as_07(_twinx_pair)
 
 
 def _hand_styled(fig: Figure, a: Axes, b: Axes) -> None:
@@ -230,52 +217,292 @@ def _frame_off(fig: Figure, a: Axes, b: Axes) -> None:
     b.set_frame_on(False)
 
 
-@pytest.mark.parametrize(
-    "edit", [_hand_styled, _shown_on_the_parent, _frame_off]
-)
-def test_explicit_settings_before_the_layout_stay(
-    edit: Callable[..., None],
+def _hidden_after_a_layout(fig: Figure, a: Axes, b: Axes) -> None:
+    dm.simple_layout(fig)
+    b.spines["right"].set_visible(False)
+
+
+def _twin_made_after_a_layout() -> Built:
+    fig = _figure()
+    a = fig.add_subplot()
+    dm.simple_layout(fig)
+    b = a.twinx()
+    _draw_pair(a, b)
+    return fig, a, b
+
+
+def _case(
+    build: Callable[[], Built],
+    *,
+    edit: Callable[[Figure, Axes, Axes], None] | None = None,
+    neutral: bool = False,
+    preset: str | None = None,
+    **layout: Any,
+) -> Callable[[], Figure]:
+    def make() -> Figure:
+        if preset is not None:
+            dm.style.use(preset)
+        colours = (
+            dm.config.override(twin_colors="neutral")
+            if neutral
+            else contextlib.nullcontext()
+        )
+        with colours:
+            fig, a, b = build()
+            if edit is not None:
+                edit(fig, a, b)
+            dm.simple_layout(fig, **layout)
+        return fig
+
+    return make
+
+
+CASES: dict[str, Callable[[], Figure]] = {}
+for _name, _build in BUILDS.items():
+    CASES[_name] = _case(_build)
+    CASES[f"{_name}/neutral"] = _case(_build, neutral=True)
+    CASES[f"{_name}/format_ticks_off"] = _case(_build, format_ticks=False)
+for _preset in ("report", "presentation", "minimal"):
+    CASES[f"twinx/{_preset}"] = _case(_twinx_pair, preset=_preset)
+for _edit in (
+    _hand_styled,
+    _shown_on_the_parent,
+    _frame_off,
+    _hidden_after_a_layout,
+):
+    CASES[f"twinx/{_edit.__name__.strip('_')}"] = _case(_twinx_pair, edit=_edit)
+CASES["twin_made_after_a_layout"] = _case(_twin_made_after_a_layout)
+
+
+# ------------------------------------------------------------ observing
+def _members(axes: list[Axes]) -> list[Axes]:
+    """``axes``, each followed by its inset Axes, depth first."""
+    out: list[Axes] = []
+    for ax in axes:
+        out.append(ax)
+        out.extend(_members([c for c in ax.child_axes if isinstance(c, Axes)]))
+    return out
+
+
+def _hex(color: Any) -> str:
+    return matplotlib.colors.to_hex(color, keep_alpha=True)
+
+
+def state(fig: Figure) -> list[dict[str, Any]]:
+    """What each Axes draws for its frame and scales, after a canvas draw."""
+    fig.canvas.draw()
+    out = []
+    for ax in _members(list(fig.axes)):
+        row: dict[str, Any] = {
+            "spines": {
+                side: [
+                    bool(
+                        ax.axison
+                        and ax.get_frame_on()
+                        and ax.spines[side].get_visible()
+                    ),
+                    round(float(ax.spines[side].get_linewidth()), 4),
+                    _hex(ax.spines[side].get_edgecolor()),
+                ]
+                for side in SIDES
+            }
+        }
+        for name, axis in (("x", ax.xaxis), ("y", ax.yaxis)):
+            tick = (axis.get_major_ticks() or axis.get_major_ticks(1))[0]
+            row[name] = [
+                bool(axis.get_visible()),
+                _hex(axis.label.get_color()),
+                _hex(tick.tick1line.get_color()),
+                _hex(tick.tick2line.get_color()),
+                _hex(tick.label1.get_color()),
+                _hex(tick.label2.get_color()),
+            ]
+        out.append(row)
+    return out
+
+
+def _pixels(fig: Figure) -> np.ndarray:
+    fig.canvas.draw()
+    return np.asarray(fig.canvas.buffer_rgba()).copy()
+
+
+def _run(name: str) -> tuple[np.ndarray, list[dict[str, Any]], Figure]:
+    fig = CASES[name]()
+    return _pixels(fig), state(fig), fig
+
+
+def _run_07(
+    name: str, monkeypatch: pytest.MonkeyPatch
+) -> tuple[np.ndarray, list[dict[str, Any]]]:
+    with monkeypatch.context() as patch:
+        install_07(patch)
+        fig = CASES[name]()
+        return _pixels(fig), state(fig)
+
+
+# ------------------------------------------------------------ import
+def test_twinx_is_matplotlibs_own() -> None:
+    # Axes inherits twinx; a rebinding would put it in Axes' own namespace.
+    assert "twinx" not in vars(Axes)
+    assert "twiny" not in vars(Axes)
+
+
+def test_twinx_alone_keeps_the_preset_spines() -> None:
+    fig, a, b = _twinx_pair()
+    assert not b.spines["right"].get_visible()  # scientific hides it
+
+
+# ------------------------------------------------------------ 0.7 parity
+def test_golden_names_every_parity_case() -> None:
+    recorded = json.loads(GOLDEN.read_text())
+    assert recorded["recorded_from"].startswith("origin/main ")
+    assert sorted(recorded["cases"]) == sorted(CASES)
+
+
+@pytest.mark.parametrize("name", sorted(CASES))
+def test_case_draws_what_07_drew(
+    name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _assert_same_as_07(_twinx_pair, edit)
+    golden = json.loads(GOLDEN.read_text())["cases"][name]
+    pixels, drawn, _ = _run(name)
+    assert drawn == golden
+    old_pixels, old_drawn = _run_07(name, monkeypatch)
+    assert old_drawn == golden  # the live re-enactment is 0.7 too
+    assert np.array_equal(pixels, old_pixels)
 
 
-def test_spine_hidden_after_a_layout_stays_hidden() -> None:
-    def build(old: bool) -> tuple[Figure, Axes, Axes]:
-        fig, a, b = _twinx_pair(old)
-        dm.simple_layout(fig)
-        b.spines["right"].set_visible(False)
-        return fig, a, b
-
-    _assert_same_as_07(build)
-    fig, _, b = build(False)
-    dm.simple_layout(fig)
-    dm.simple_layout(fig)
-    assert not b.spines["right"].get_visible()
-
-
-def test_twin_made_after_a_layout_shows_at_the_next() -> None:
-    def build(old: bool) -> tuple[Figure, Axes, Axes]:
-        fig = _figure()
-        a = fig.add_subplot()
-        dm.simple_layout(fig)
-        b = _twinx(a, old)
-        _draw_pair(a, b)
-        return fig, a, b
-
-    _assert_same_as_07(build)
-
-
-def test_series_colour_reaches_the_shown_spine() -> None:
-    fig, _, b = _twinx_pair(old=False)
-    dm.simple_layout(fig)
-    spine = b.spines["right"]
+def test_hand_set_width_and_colour_stay() -> None:
+    _, _, fig = _run("twinx/hand_styled")
+    spine = fig.axes[1].spines["right"]
     assert spine.get_visible()
-    assert matplotlib.colors.to_hex(spine.get_edgecolor()) != "#000000"
+    assert spine.get_linewidth() == 1.2
+    assert _hex(spine.get_edgecolor()) == _hex("dc.red6")
+    assert spine.get_position() == ("outward", 4)
+
+
+@pytest.mark.parametrize("format_ticks", [True, False])
+def test_shown_with_or_without_the_tick_formats(format_ticks: bool) -> None:
+    fig, _, b = _twinx_pair()
+    dm.simple_layout(fig, format_ticks=format_ticks)
+    assert b.spines["right"].get_visible()
+
+
+def test_inset_twin_gets_no_series_colours() -> None:
+    """The inset spine is 0.7's; inset pairs stay out of the twin colours."""
+    _, drawn, fig = _run("inset_twinx")
+    inset_twin = drawn[-1]
+    assert inset_twin["spines"]["right"][:2] == [True, 0.3]
+    assert inset_twin["spines"]["right"][2] == _hex("black")
+
+
+# ------------------------------------------------------- 0.8 differences
+def _differs_from_07(
+    build: Callable[[], Built],
+    edit: Callable[[Figure, Axes, Axes], None],
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    owner: int,
+    shown: bool,
+) -> None:
+    """``owner``'s right spine shows as ``shown`` in 0.8, the other way in 0.7."""
+    for old in (False, True):
+        with monkeypatch.context() as patch:
+            if old:
+                install_07(patch)
+            fig, a, b = build()
+            edit(fig, a, b)
+            spine = fig.axes[owner].spines["right"]
+            assert spine.get_visible() is (shown != old)
+            plt.close(fig)
+
+
+def test_11_1_no_layout_keeps_the_preset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _differs_from_07(
+        _twinx_pair, lambda *_: None, monkeypatch, owner=1, shown=False
+    )
+
+
+def test_11_2_hidden_before_the_first_layout_shows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def hide_then_lay_out(fig: Figure, a: Axes, b: Axes) -> None:
+        b.spines["right"].set_visible(False)
+        dm.simple_layout(fig)
+
+    _differs_from_07(
+        _twinx_pair, hide_then_lay_out, monkeypatch, owner=1, shown=True
+    )
+
+
+def test_11_3_sharex_overlay_moved_right_shows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def move(fig: Figure, a: Axes, b: Axes) -> None:
+        _to_right(b)
+        dm.simple_layout(fig)
+
+    _differs_from_07(
+        lambda: _one_box(sharex=True), move, monkeypatch, owner=1, shown=True
+    )
+
+
+def test_11_4_swapped_sides_move_the_line_to_the_parent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def swap(fig: Figure, a: Axes, b: Axes) -> None:
+        _to_right(a)
+        b.yaxis.tick_left()
+        b.yaxis.set_label_position("left")
+        dm.simple_layout(fig)
+
+    _differs_from_07(_twinx_pair, swap, monkeypatch, owner=0, shown=True)
+    _differs_from_07(_twinx_pair, swap, monkeypatch, owner=1, shown=False)
+
+
+def test_11_5_twin_with_its_y_axis_hidden_shows_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def hide(fig: Figure, a: Axes, b: Axes) -> None:
+        b.yaxis.set_visible(False)
+        dm.simple_layout(fig)
+
+    _differs_from_07(_twinx_pair, hide, monkeypatch, owner=1, shown=False)
+
+
+@pytest.mark.parametrize(
+    "move",
+    [
+        pytest.param(lambda a, b: b.yaxis.tick_left(), id="x02_ticks_left"),
+        pytest.param(
+            lambda a, b: b.yaxis.set_label_position("left"), id="x03_label_left"
+        ),
+        pytest.param(lambda a, b: b.twinx(), id="x04_twin_of_the_twin"),
+    ],
+)
+def test_twin_with_a_half_moved_scale_shows_none(
+    move: Callable[[Axes, Axes], object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Awaiting a decision: public state cannot tell these from 0.7's misses.
+
+    A ``sharex`` overlay with its x axis and background hidden and the same
+    half-moved scale has the same public state, and 0.7 drew no line on it.
+    ``b.twinx()`` moves ``b``'s ticks to the left itself (x04).
+    """
+
+    def edit(fig: Figure, a: Axes, b: Axes) -> None:
+        move(a, b)
+        dm.simple_layout(fig)
+
+    _differs_from_07(_twinx_pair, edit, monkeypatch, owner=1, shown=False)
 
 
 # ------------------------------------------------------- the rule itself
 def test_returns_the_spines_it_showed_once() -> None:
-    fig, a, b = _three_y_axes(old=False)
+    from dartwork_mpl.formatting import show_twin_spines
+
+    fig, a, b = _three_y_axes()
     assert show_twin_spines(fig) == 2
     assert show_twin_spines(fig) == 0
     assert [ax.spines["right"].get_visible() for ax in fig.axes] == [
@@ -285,40 +512,17 @@ def test_returns_the_spines_it_showed_once() -> None:
     ]
 
 
-def test_hidden_before_the_first_layout_shows() -> None:
-    """0.8 differs from 0.7: the preset hides it too, so it is not a choice."""
-    fig, _, b = _twinx_pair(old=False)
+def test_spine_hidden_after_a_layout_stays_hidden_on_relayout() -> None:
+    fig, _, b = _twinx_pair()
+    dm.simple_layout(fig)
     b.spines["right"].set_visible(False)
     dm.simple_layout(fig)
-    assert b.spines["right"].get_visible()
-
-
-def test_a_sharex_overlay_drawn_on_the_right_shows_its_spine() -> None:
-    fig, _, b = _sharex_overlay(old=False)
-    b.yaxis.tick_right()
-    b.yaxis.set_label_position("right")
-    dm.simple_layout(fig)
-    assert b.spines["right"].get_visible()
-
-
-def test_twin_scale_moved_left_shows_no_right_spine() -> None:
-    fig, a, b = _twinx_pair(old=False)
-    b.yaxis.tick_left()
-    b.yaxis.set_label_position("left")
-    dm.simple_layout(fig)
-    assert not b.spines["right"].get_visible()
-    assert not a.spines["right"].get_visible()
-
-
-def test_twin_with_its_y_axis_hidden_shows_no_right_spine() -> None:
-    fig, _, b = _twinx_pair(old=False)
-    b.yaxis.set_visible(False)
     dm.simple_layout(fig)
     assert not b.spines["right"].get_visible()
 
 
 def test_twiny_top_spine_is_left_to_the_preset() -> None:
-    fig, a, b = _twiny_pair(old=False)
+    fig, a, b = _twiny_pair()
     dm.simple_layout(fig)
     assert not b.spines["top"].get_visible()
     assert not a.spines["top"].get_visible()

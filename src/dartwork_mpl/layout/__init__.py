@@ -758,10 +758,11 @@ def simple_layout(
     so they sit ``axes.titlepad`` above that legend; their text, size and
     weight are kept.
 
-    An Axes drawing its own y scale on the right of a shared plot area (the
-    Axes ``ax.twinx()`` returns) gets its right spine shown, which the
-    presets hide; its line width and colour stay, and a spine you hide
-    after a layout stays hidden. The rule is in the docstring of
+    An Axes drawing its own y scale on the right of a shared plot area, with
+    its y ticks and y label on the right (the Axes ``ax.twinx()`` returns,
+    of an inset too), gets its right spine shown, which the presets hide;
+    its line width and colour stay, and a spine you hide after a layout
+    stays hidden. The rule is in the docstring of
     ``dartwork_mpl.formatting._twin_spines``.
 
     On a ``twinx`` / ``twiny`` pair, a side whose series all draw one
@@ -830,8 +831,9 @@ def simple_layout(
     # Tick formats change label widths, so they go before fitting, but
     # after every check that can still refuse the call. Twin spines and
     # colours follow the tick formats (the order bar labels rely on); they
-    # are not number formats, so ``format_ticks=False`` keeps them. The
-    # spine shows first so the colours reach it.
+    # are not number formats, so ``format_ticks=False`` keeps them. Their
+    # order between themselves does not change the figure: the colours paint
+    # a spine whether it shows or not.
     if format_ticks:
         _format_ticks(fig)
     _show_twin_spines(fig)

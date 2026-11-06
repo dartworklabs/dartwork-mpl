@@ -6,25 +6,34 @@ docs/development/twin-spine-at-layout.md (D7).
 
 The presets hide the right spine, so the second y scale of a ``twinx`` pair
 would have tick marks and labels but no axis line. ``dm.simple_layout``
-(before the twin colours, which then colour the spine) shows that line:
+shows that line:
 
 * **Which Axes.** One that draws its own y scale on the right of a shared
-  plot area: among the Axes drawn in the same box it shares x with a member
-  and not y, its y axis is visible, and its y label sits on the right.
-  ``ax.twinx()`` leaves its new Axes that way. These are the twin colours'
-  "sides" (``_twin_colors``), read from public state: positions, the shared
-  axes groupers and the label position, not from how the Axes was made. So a
-  ``sharex`` overlay moved to the right counts, and a twin whose scale was
-  moved to the left, or whose y axis is hidden, does not.
+  plot area: it is drawn in the same box as another visible rectilinear
+  Axes (inset Axes count here, so an inset's ``twinx`` does too; the twin
+  colours still leave inset pairs alone), it shares x
+  with such a member and not y, its y axis is visible, and both its y ticks
+  and its y label sit on the right, as ``ax.twinx()`` leaves them. The
+  ticks are on the right when the y tick labels show there and not on the
+  left (``tick_params(right=False)`` keeps a scale of labels without marks);
+  an axis without tick labels is read by its tick marks. All of it is
+  public state (positions, the shared axes groupers, axis visibility, tick
+  and label positions), not how the Axes was made, which public state
+  cannot tell. So a ``sharex`` overlay whose ticks and label were moved to
+  the right counts; a twin whose ticks or label were moved to the left, or
+  whose y axis is hidden, does not.
+* **One line per place.** When several such Axes would draw their right
+  spine in the same place (``spine.get_position()``), only the one drawn
+  last (by zorder, then figure order) shows it; it would cover the others.
 * **What.** ``spines["right"].set_visible(True)``. The line width, colour,
   position and bounds stay as they are; a spine is made with the preset's
   ``axes.linewidth`` already. Nothing else changes: ``twiny`` top spines,
   partners' spines and single Axes stay with the preset.
-* **Once.** The layout settles an Axes' right spine the first time it finds
-  the Axes drawing its scale there, shown or already showing, and never
-  again. A spine hidden after that layout stays hidden. A spine hidden before
-  the first layout cannot be told from the preset's hidden spine and shows;
-  hide it after ``dm.simple_layout``, or give it ``linewidth=0``.
+* **Once.** The layout settles an Axes' right spine the first time it shows
+  the line for it, shown or already showing, and never again. A spine
+  hidden after that layout stays hidden. A spine hidden before the first
+  layout cannot be told from the preset's hidden spine and shows; hide it
+  after ``dm.simple_layout``, or give it ``linewidth=0``.
 * **Only at the layout.** ``ax.twinx()`` itself is matplotlib's: a figure
   that is not laid out by ``dm.simple_layout`` (or whose call is refused,
   such as a figure without a GridSpec) keeps the preset's hidden spine.
@@ -32,9 +41,14 @@ would have tick marks and labels but no axis line. ``dm.simple_layout``
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
+from matplotlib.axes import Axes
+from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 
-from ._twin_colors import _own_sides, _twin_groups
+from .._figure_geometry import same_position_axes, with_insets
+from ._twin_colors import _own_sides, _rectilinear
 
 __all__ = ["show_twin_spines"]
 
@@ -42,22 +56,69 @@ __all__ = ["show_twin_spines"]
 _SETTLED = "_dm_twin_spine_settled"
 
 
+def _boxes(fig: Figure) -> list[list[Axes]]:
+    """Visible rectilinear Axes drawn in one box, two or more; insets count."""
+    groups: list[list[Axes]] = []
+    seen: set[int] = set()
+    for ax in with_insets(fig.axes):
+        if id(ax) in seen or not _rectilinear(ax):
+            continue
+        group = [
+            m for m in same_position_axes(ax, insets=True) if _rectilinear(m)
+        ]
+        if len(group) < 2:
+            continue
+        seen.update(id(m) for m in group)
+        groups.append(group)
+    return groups
+
+
+def _ticks_on_right(axis: Axis) -> bool:
+    """Whether the y ticks show on the right and not on the left.
+
+    The tick labels decide (``tick_params(right=False)`` leaves a scale of
+    labels without marks); an axis showing no tick labels is read by its
+    tick marks.
+    """
+    tick = (axis.get_major_ticks() or axis.get_major_ticks(1))[0]
+    labels = (tick.label1.get_visible(), tick.label2.get_visible())
+    marks = (tick.tick1line.get_visible(), tick.tick2line.get_visible())
+    left, right = labels if any(labels) else marks
+    return right and not left
+
+
+def _draws_scale_on_right(ax: Axes, group: Sequence[Axes]) -> bool:
+    """Whether ``ax`` draws its own y scale on the right of the box.
+
+    ``_own_sides`` gives "right" when the y axis shows, x is shared with a
+    member and y is not, and the y label sits on the right; the ticks must
+    be on the right too.
+    """
+    return "right" in _own_sides(ax, group) and _ticks_on_right(ax.yaxis)
+
+
 def show_twin_spines(fig: Figure) -> int:
     """Show the right spine of each Axes drawing a twin y scale on the right.
 
-    The rule (which Axes, what changes, once per Axes) is stated in the
-    docstring of the module ``dartwork_mpl.formatting._twin_spines``.
-    ``dm.simple_layout`` calls this before the twin colours.
+    The rule (which Axes, one line per place, what changes, once per Axes)
+    is stated in the docstring of the module
+    ``dartwork_mpl.formatting._twin_spines``. ``dm.simple_layout`` calls
+    this with the twin colours.
 
     Returns the number of spines this call showed. Safe to call again: an
     Axes it settled is not touched.
     """
+    order = {id(ax): i for i, ax in enumerate(with_insets(fig.axes))}
     shown = 0
-    for group in _twin_groups(fig):
-        for ax in group:
-            if getattr(ax, _SETTLED, False) or "right" not in _own_sides(
-                ax, group
-            ):
+    for group in _boxes(fig):
+        drawing = sorted(
+            (ax for ax in group if _draws_scale_on_right(ax, group)),
+            key=lambda ax: (ax.get_zorder(), order.get(id(ax), len(order))),
+        )
+        # The last drawn at each place covers the others there.
+        top = {ax.spines["right"].get_position(): ax for ax in drawing}
+        for ax in top.values():
+            if getattr(ax, _SETTLED, False):
                 continue
             spine = ax.spines["right"]
             if not spine.get_visible():

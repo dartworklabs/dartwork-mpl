@@ -37,6 +37,7 @@ __all__ = [
     "secondary_axes",
     "shared_axes",
     "spread_line_end_labels",
+    "with_insets",
 ]
 
 if TYPE_CHECKING:
@@ -295,19 +296,41 @@ def shared_axes(ax: Axes, which: Literal["x", "y"]) -> list[Axes]:
     return members
 
 
-def same_position_axes(ax: Axes) -> list[Axes]:
+def with_insets(axes: Sequence[Axes]) -> list[Axes]:
+    """Return ``axes``, each followed by its inset Axes, nested ones too.
+
+    ``ax.inset_axes`` keeps an inset in ``ax.child_axes``, not in
+    ``fig.axes``, while a ``twinx`` of that inset lands in ``fig.axes``.
+    ``secondary_xaxis`` / ``secondary_yaxis`` children are not Axes and are
+    left out (see :func:`secondary_axes`).
+    """
+    from matplotlib.axes import Axes as _Axes
+
+    out: list[Axes] = []
+    for ax in axes:
+        out.append(ax)
+        out.extend(
+            with_insets([c for c in ax.child_axes if isinstance(c, _Axes)])
+        )
+    return out
+
+
+def same_position_axes(ax: Axes, *, insets: bool = False) -> list[Axes]:
     """Return ``ax`` and the visible Axes drawn in the same box as it.
 
     Those are its ``twinx`` / ``twiny`` partners: their tick labels, axis
-    labels and legends sit around the same plot area as ``ax``'s own.
+    labels and legends sit around the same plot area as ``ax``'s own. With
+    ``insets``, inset Axes (:func:`with_insets`) are candidates too, so an
+    inset and its ``twinx`` form a box.
     """
     parent = ax.get_figure(root=False)
     if parent is None:
         return [ax]
     bounds = ax.get_position().bounds
+    pool = with_insets(parent.axes) if insets else parent.axes
     partners = [
         other
-        for other in parent.axes
+        for other in pool
         if other is not ax
         and other.get_visible()
         and all(
