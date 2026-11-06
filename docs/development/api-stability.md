@@ -58,9 +58,16 @@ only. Such a name needs a warning path on the root side.
 `_REMOVED_NAMES`
 : Hard-removed names. They raise `AttributeError` with a migration hint.
 
-The root registry records only advertised and removed names; no name is
-deprecated today. Deprecated is a separate lifecycle state between the two:
-the name keeps working and warns for at least two minor releases.
+The root registry records only advertised and removed names. Deprecated is
+a separate lifecycle state between the two: the name keeps working and warns
+for at least two minor releases.
+
+Deprecated today (first warning, earliest removal; replacements in
+[migration.md](../migration.md)):
+
+| Name | First warning | Earliest removal | Use instead |
+|---|---|---|---|
+| module `dartwork_mpl.util` | 0.8 | 0.10 | the owner module of each name (table in migration.md) |
 
 ## Adding a public name
 

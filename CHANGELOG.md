@@ -60,6 +60,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `dm.format_axis_myriad(ax, decimals=n)` now sets an `AxisUnitFormatter`
   instead of a `FuncFormatter`. The tick text is the same.
 
+### Deprecated
+
+- **`dartwork_mpl.util`** warns with a `DeprecationWarning` (once, on
+  import, pointing at your import line) since 0.8 and is removed no earlier
+  than 0.10. Until then every name in it is the owner's own object. Import
+  each name from its owner; the table is in
+  [docs/migration.md](docs/migration.md#deprecated-in-08-dartwork_mpl-util).
+
 ### Removed
 
 - `dartwork_mpl.ui._config` (private): the legacy preset-file helpers.

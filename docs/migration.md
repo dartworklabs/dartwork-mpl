@@ -15,6 +15,24 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
+## Deprecated in 0.8: `dartwork_mpl.util`
+
+`import dartwork_mpl.util` and `from dartwork_mpl.util import X` emit a
+`DeprecationWarning` (once per process, at your import line). The module is
+removed no earlier than 0.10. Until then each name is the owner's own
+object (`dartwork_mpl.util.X is <owner>.X`). Every name below is also
+`dm.X` at the package root.
+
+| Names | Import from |
+|---|---|
+| `arrow_axis`, `label_axes`, `make_offset` | `dartwork_mpl.annotation` |
+| `copy_prompt`, `get_prompt`, `list_prompts`, `prompt_path` | `dartwork_mpl.prompt` |
+| `fs`, `fw`, `lw` | `dartwork_mpl.scale` |
+| `get_bounding_box`, `simple_layout` | `dartwork_mpl.layout` |
+| `mix_colors`, `pseudo_alpha` | `dartwork_mpl` (`dm.mix_colors`, `dm.pseudo_alpha`) |
+| `save_and_show`, `save_formats`, `show` | `dartwork_mpl.io` |
+| `set_decimal` | `dartwork_mpl.formatting` |
+
 ## 0.7.0: two-digit tick years, axis units, 만/억/조
 
 One rule: with no request the library's look applies; ask for another format
