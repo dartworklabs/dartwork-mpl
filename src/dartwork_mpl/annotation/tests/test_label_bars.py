@@ -13,6 +13,7 @@ are read after a real canvas draw.
 from __future__ import annotations
 
 import io
+import re
 import shutil
 import subprocess
 
@@ -29,6 +30,7 @@ matplotlib.use("Agg")
 
 import dartwork_mpl as dm
 from dartwork_mpl._colors.contrast import contrast_ratio
+from tests.support.mpl_observe import drawn_renderer
 
 MINUS = "\N{MINUS SIGN}"
 OFFSET_PT = 3.0
@@ -185,12 +187,7 @@ H_A_HEADROOM = 1.069
 AUTOSCALE_HEADROOM = 1.1  # the report preset's axes.ymargin
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 # ---------------------------------------------------------------- charts
@@ -279,18 +276,13 @@ def _texts(texts):
     return [t.get_text() for t in texts]
 
 
-def _drawn(fig):
-    fig.canvas.draw()
-    return fig.canvas.get_renderer()
-
-
 def _offset_px(fig):
     return OFFSET_PT * fig.dpi / 72.0
 
 
 def _assert_outside(fig, texts, patches, orientation="vertical"):
     """Each label sits 3 pt beyond its bar's end, centred on the bar."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     for text, patch in zip(texts, patches, strict=True):
         tb = text.get_window_extent(renderer)
@@ -315,7 +307,7 @@ def _assert_outside(fig, texts, patches, orientation="vertical"):
 
 def _assert_centred(fig, texts, patches):
     """Each label's middle is its bar's middle."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     for text, patch in zip(texts, patches, strict=True):
         tb = text.get_window_extent(renderer)
         pb = patch.get_window_extent(renderer)
@@ -447,6 +439,452 @@ def test_percent_formatter_follows_ticks():
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
     assert _texts(texts) == ["31.0%", "22.4%", "11.6%"]
+
+
+FIXED_UNIT = {
+    # name: (install, values, labels)
+    "millions-1": (
+        lambda ax: dm.format_axis_millions(ax, decimals=1),
+        [1.25e6, 2.05e6, -0.8e6, 0.0, 3.4e6],
+        ["1.25M", "2.05M", f"{MINUS}0.80M", "0", "3.40M"],
+    ),
+    "billions-2": (
+        lambda ax: dm.format_axis_billions(ax, decimals=2),
+        [12.4e9, 8.0e9, -3.5e9, 0.0, 15.0e9],
+        ["12.4B", "8.0B", f"{MINUS}3.5B", "0", "15.0B"],
+    ),
+    "currency": (
+        lambda ax: dm.format_axis_currency(ax),
+        [1250.0, 2050.0, -800.0, 0.0, 3400.0],
+        ["$1,250", "$2,050", f"{MINUS}$800", "$0", "$3,400"],
+    ),
+    "currency-small": (
+        lambda ax: dm.format_axis_currency(ax),
+        [4.25, 3.8, -1.5, 0.0, 6.1],
+        ["$4.25", "$3.80", f"{MINUS}$1.50", "$0", "$6.10"],
+    ),
+    "currency-suffix-2": (
+        lambda ax: dm.format_axis_currency(
+            ax, symbol="€", position="suffix", decimals=2
+        ),
+        [12.5, 20.55, -8.0, 0.0, 34.0],
+        ["12.5€", "20.6€", f"{MINUS}8.0€", "0€", "34.0€"],
+    ),
+}
+
+
+def _affixes(text):
+    """The sign and symbols around the digits: ``("-$", "")`` for -$800."""
+    found = re.fullmatch(r"(\D*)[\d,.]+(\D*)", text.replace(MINUS, "-"))
+    assert found is not None, text
+    return found.groups()
+
+
+@pytest.mark.parametrize("name", list(FIXED_UNIT))
+def test_fixed_unit_formatters_print_like_their_ticks(name):
+    """Ticks written each alone in one fixed unit (``decimals=n`` of
+    millions / billions, ``format_axis_currency``) give the labels that
+    unit, the currency on its side, the sign before both and the ticks'
+    zero rule (bare ``0``; ``$0``, ``0€``). The decimals are the label
+    rule's: the ticks' fixed count sizes tick text only."""
+    install, values, expected = FIXED_UNIT[name]
+    fig, ax, _ = _plain(values)
+    install(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+    # Sign, currency and unit sit where a tick at that value puts them.
+    tick = ax.yaxis.get_major_formatter()
+    assert [_affixes(t) for t in expected] == [
+        _affixes(tick(v)) for v in values
+    ]
+
+
+def test_fixed_unit_labels_follow_and_explicit_wins():
+    values = [1.25e6, 2.05e6, -0.8e6, 0.0, 3.4e6]
+
+    # A formatter set after the call: the labels follow at the draw.
+    fig, ax, _ = _plain(values)
+    texts = dm.label_bars(ax)
+    assert _texts(texts)[0] == "1,250,000"
+    dm.format_axis_millions(ax, decimals=1)
+    fig.canvas.draw()
+    assert _texts(texts)[0] == "1.25M"
+
+    # The same labels as under the axis-wide millions (decimals=None).
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == FIXED_UNIT["millions-1"][2]
+
+    # decimals= fixes the count, the unit stays the ticks'.
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax, decimals=1)
+    texts = dm.label_bars(ax, decimals=2)
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["1.25M", "2.05M", f"{MINUS}0.80M", "0.00", "3.40M"]
+
+    # fmt= writes the text: a template around the number in the tick unit,
+    # a callable that gets that number; no tick suffix or currency added.
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax, decimals=1)
+    texts = dm.label_bars(ax, fmt="{} mn")
+    assert _texts(texts)[:3] == ["1.25 mn", "2.05 mn", f"{MINUS}0.80 mn"]
+    seen: list[float] = []
+    dm.label_bars(ax, fmt=lambda v: seen.append(v) or "x")
+    assert seen[:5] == pytest.approx([1.25, 2.05, -0.8, 0.0, 3.4])
+
+    fig, ax, _ = _plain([1250.0, -800.0, 0.0])
+    dm.format_axis_currency(ax)
+    texts = dm.label_bars(ax, fmt="USD {}")
+    assert _texts(texts) == ["USD 1,250", f"USD {MINUS}800", "USD 0"]
+
+
+def _millions_1(ax):
+    dm.format_axis_millions(ax, decimals=1)
+
+
+def _billions_bn_1(ax):
+    dm.format_axis_billions(ax, suffix="bn", decimals=1)
+
+
+def _euro_suffix_2(ax):
+    dm.format_axis_currency(ax, symbol="€", position="suffix", decimals=2)
+
+
+@pytest.mark.parametrize(
+    ("install", "values", "asked", "expected"),
+    [
+        # decimals= with fewer and more places than the ticks' fixed count.
+        (
+            _millions_1,
+            [1.25e6, -0.04e6, 0.0],
+            {"decimals": 0},
+            ["1M", "0", "0"],
+        ),
+        (
+            _millions_1,
+            [1.25e6, -0.04e6, 0.0],
+            {"decimals": 3},
+            ["1.250M", f"{MINUS}0.040M", "0.000"],
+        ),
+        (
+            _billions_bn_1,
+            [12.4e9, -3.6e9, 0.0],
+            {"decimals": 0},
+            ["12bn", f"{MINUS}4bn", "0"],
+        ),
+        (
+            dm.format_axis_currency,
+            [4.25, -0.3, 0.0],
+            {"decimals": 2},
+            ["$4.25", f"{MINUS}$0.30", "$0.00"],
+        ),
+        (
+            _euro_suffix_2,
+            [12.4, -0.04, 0.0],
+            {"decimals": 0},
+            ["12€", "0€", "0€"],
+        ),
+        (
+            _euro_suffix_2,
+            [12.4, -0.04, 0.0],
+            {"decimals": 3},
+            ["12.400€", f"{MINUS}0.040€", "0.000€"],
+        ),
+        # A format spec in fmt formats the value in the tick unit itself.
+        (
+            _millions_1,
+            [1.25e6, -0.04e6, 0.0],
+            {"fmt": "{:.3f} mn"},
+            ["1.250 mn", f"{MINUS}0.040 mn", "0.000 mn"],
+        ),
+    ],
+    ids=[
+        "millions-1-asked-0",
+        "millions-1-asked-3",
+        "billions-bn-1-asked-0",
+        "currency-0-asked-2",
+        "euro-2-asked-0",
+        "euro-2-asked-3",
+        "millions-1-fmt-spec",
+    ],
+)
+def test_asked_precision_wins_over_the_ticks(install, values, asked, expected):
+    """The precision the caller gives the labels wins over the formatter's
+    fixed count, fewer places or more: the formatter's count is only a
+    default when nothing is asked. The unit, currency side and zero rule
+    stay the ticks'."""
+    fig, ax, _ = _plain(values)
+    install(ax)
+    texts = dm.label_bars(ax, **asked)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+
+
+# Boundary charts: zero, negatives, small non-zero values that round to
+# zero, currency on either side, the user's suffix (``bn``, ``백만``, ``""``).
+BOUNDARY = {
+    # name: (preset, install, values)
+    "millions-1-small": (
+        "report",
+        _millions_1,
+        [1.25e6, 0.03e6, -0.04e6, 0.0, -0.8e6, 3.4e6],
+    ),
+    "millions-1-wide": (
+        "report",
+        _millions_1,
+        [12.5e6, 0.03e6, -0.04e6, 0.0, -2.6e6, 8.1e6],
+    ),
+    "billions-bn-1": (
+        "report",
+        _billions_bn_1,
+        [12.4e9, 0.02e9, -0.03e9, 0.0, -3.5e9, 8.0e9],
+    ),
+    "millions-baekman-1": (
+        "report-kr",
+        lambda ax: dm.format_axis_millions(ax, suffix="백만", decimals=1),
+        [2.4e6, 0.03e6, -0.04e6, 0.0, -1.1e6, 5.6e6],
+    ),
+    "millions-empty-1": (
+        "report",
+        lambda ax: dm.format_axis_millions(ax, suffix="", decimals=1),
+        [1.25e6, 0.03e6, -0.04e6, 0.0, -0.8e6, 3.4e6],
+    ),
+    "currency-prefix-0": (
+        "report",
+        dm.format_axis_currency,
+        [4.25, 0.4, -0.3, 0.0, -1.5, 6.1],
+    ),
+    "currency-suffix-2": (
+        "report",
+        _euro_suffix_2,
+        [12.5, 0.03, -0.04, 0.0, -8.0, 34.0],
+    ),
+}
+# Nothing asked: the label rule in the tick unit (three significant digits
+# on the largest value), so a small value shows while the largest leaves
+# room for it (0.03M beside 3.4M) and reads 0 when it does not (beside
+# 12.5M, or €0.03 beside €34).
+BOUNDARY_DEFAULT = {
+    "millions-1-small": [
+        "1.25M",
+        "0.03M",
+        f"{MINUS}0.04M",
+        "0",
+        f"{MINUS}0.80M",
+        "3.40M",
+    ],
+    "millions-1-wide": ["12.5M", "0", "0", "0", f"{MINUS}2.6M", "8.1M"],
+    "billions-bn-1": ["12.4bn", "0", "0", "0", f"{MINUS}3.5bn", "8.0bn"],
+    "millions-baekman-1": [
+        "2.40백만",
+        "0.03백만",
+        f"{MINUS}0.04백만",
+        "0",
+        f"{MINUS}1.10백만",
+        "5.60백만",
+    ],
+    "millions-empty-1": [
+        "1.25",
+        "0.03",
+        f"{MINUS}0.04",
+        "0",
+        f"{MINUS}0.80",
+        "3.40",
+    ],
+    "currency-prefix-0": [
+        "$4.25",
+        "$0.40",
+        f"{MINUS}$0.30",
+        "$0",
+        f"{MINUS}$1.50",
+        "$6.10",
+    ],
+    "currency-suffix-2": ["12.5€", "0€", "0€", "0€", f"{MINUS}8.0€", "34.0€"],
+}
+# label_bars(decimals=2): the asked count wins over the ticks'.
+BOUNDARY_ASKED = {
+    "millions-1-small": [
+        "1.25M",
+        "0.03M",
+        f"{MINUS}0.04M",
+        "0.00",
+        f"{MINUS}0.80M",
+        "3.40M",
+    ],
+    "millions-1-wide": [
+        "12.50M",
+        "0.03M",
+        f"{MINUS}0.04M",
+        "0.00",
+        f"{MINUS}2.60M",
+        "8.10M",
+    ],
+    "billions-bn-1": [
+        "12.40bn",
+        "0.02bn",
+        f"{MINUS}0.03bn",
+        "0.00",
+        f"{MINUS}3.50bn",
+        "8.00bn",
+    ],
+    "millions-baekman-1": [
+        "2.40백만",
+        "0.03백만",
+        f"{MINUS}0.04백만",
+        "0.00",
+        f"{MINUS}1.10백만",
+        "5.60백만",
+    ],
+    "millions-empty-1": [
+        "1.25",
+        "0.03",
+        f"{MINUS}0.04",
+        "0.00",
+        f"{MINUS}0.80",
+        "3.40",
+    ],
+    "currency-prefix-0": [
+        "$4.25",
+        "$0.40",
+        f"{MINUS}$0.30",
+        "$0.00",
+        f"{MINUS}$1.50",
+        "$6.10",
+    ],
+    "currency-suffix-2": [
+        "12.50€",
+        "0.03€",
+        f"{MINUS}0.04€",
+        "0.00€",
+        f"{MINUS}8.00€",
+        "34.00€",
+    ],
+}
+
+
+@pytest.mark.parametrize("name", list(BOUNDARY))
+def test_fixed_unit_boundaries_default_and_asked(name):
+    preset, install, values = BOUNDARY[name]
+    dm.style.use(preset)
+    for asked, expected in (
+        ({}, BOUNDARY_DEFAULT[name]),
+        ({"decimals": 2}, BOUNDARY_ASKED[name]),
+    ):
+        fig, ax, _ = _plain(values)
+        install(ax)
+        texts = dm.label_bars(ax, **asked)
+        dm.simple_layout(fig)
+        assert _texts(texts) == expected, asked
+
+
+# Bar shapes on the fixed-unit paths (the 2026-11-07 review's measured
+# texts): barh reads the x formatter, axis="both", log value axes, and
+# NaN / infinite bars (no label; the rest unchanged).
+SHAPED = {
+    # name: (values, install, shape, default, decimals=2)
+    "barh-millions-1-x": (
+        [1.25e6, -0.8e6, 0.0, 3.4e6],
+        lambda ax: dm.format_axis_millions(ax, axis="x", decimals=1),
+        "barh",
+        ["1.25M", f"{MINUS}0.80M", "0", "3.40M"],
+        ["1.25M", f"{MINUS}0.80M", "0.00", "3.40M"],
+    ),
+    "barh-currency-x": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="x"),
+        "barh",
+        ["$1,250", f"{MINUS}$800", "$0"],
+        ["$1,250.00", f"{MINUS}$800.00", "$0.00"],
+    ),
+    # The value axis of barh is x: a formatter on y alone leaves it plain.
+    "barh-currency-y-only": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="y"),
+        "barh",
+        ["1,250", f"{MINUS}800", "0"],
+        ["1,250.00", f"{MINUS}800.00", "0.00"],
+    ),
+    "bar-currency-both": (
+        [1250.0, -800.0, 0.0],
+        lambda ax: dm.format_axis_currency(ax, axis="both"),
+        "bar",
+        ["$1,250", f"{MINUS}$800", "$0"],
+        ["$1,250.00", f"{MINUS}$800.00", "$0.00"],
+    ),
+    "barh-millions-1-both": (
+        [1.25e6, -0.8e6, 0.0],
+        lambda ax: dm.format_axis_millions(ax, axis="both", decimals=1),
+        "barh",
+        ["1.25M", f"{MINUS}0.80M", "0"],
+        ["1.25M", f"{MINUS}0.80M", "0.00"],
+    ),
+    # One count per call on a log axis: 1e4 reads 0 beside 4.5e7 (the
+    # spec's round-to-zero rule; a log-axis rule is a follow-up).
+    "log-millions-1": (
+        [1e4, 2e5, 3.4e6, 4.5e7],
+        _millions_1,
+        "log",
+        ["0", "0.2M", "3.4M", "45.0M"],
+        ["0.01M", "0.20M", "3.40M", "45.00M"],
+    ),
+    "log-currency": (
+        [3.0, 45.0, 1250.0, 98000.0],
+        dm.format_axis_currency,
+        "log",
+        ["$3", "$45", "$1,250", "$98,000"],
+        ["$3.00", "$45.00", "$1,250.00", "$98,000.00"],
+    ),
+    "nan-millions-1": (
+        [1.25e6, np.nan, -0.8e6, 3.4e6],
+        _millions_1,
+        "bar",
+        ["1.25M", f"{MINUS}0.80M", "3.40M"],
+        ["1.25M", f"{MINUS}0.80M", "3.40M"],
+    ),
+    "nan-currency": (
+        [1250.0, np.nan, -800.0],
+        dm.format_axis_currency,
+        "bar",
+        ["$1,250", f"{MINUS}$800"],
+        ["$1,250.00", f"{MINUS}$800.00"],
+    ),
+    "inf-millions-1": (
+        [1.25e6, np.inf, 3.4e6],
+        _millions_1,
+        "bar",
+        ["1.25M", "3.40M"],
+        ["1.25M", "3.40M"],
+    ),
+    "inf-currency": (
+        [1250.0, -np.inf, 800.0],
+        dm.format_axis_currency,
+        "bar",
+        ["$1,250", "$800"],
+        ["$1,250.00", "$800.00"],
+    ),
+}
+
+
+# matplotlib's own transform warns on an infinite bar, before any label.
+@pytest.mark.filterwarnings(
+    "ignore:invalid value encountered in dot:RuntimeWarning"
+)
+@pytest.mark.parametrize("name", list(SHAPED))
+def test_fixed_unit_labels_on_other_bar_shapes(name):
+    values, install, shape, default, asked = SHAPED[name]
+    for keywords, expected in (({}, default), ({"decimals": 2}, asked)):
+        fig, ax = _fig()
+        draw = ax.barh if shape == "barh" else ax.bar
+        draw(np.arange(len(values)), values)
+        if shape == "log":
+            ax.set_yscale("log")
+        install(ax)
+        texts = dm.label_bars(ax, **keywords)
+        dm.simple_layout(fig)
+        assert _texts(texts) == expected, keywords
 
 
 def test_fmt_string_and_callable():
@@ -651,7 +1089,7 @@ def test_returns_texts_and_later_edits_survive():
 def test_where_inside_and_center():
     fig, ax, bars = _plain([4.0, -3.0], width=0.6)
     inside = dm.label_bars(ax, where="inside")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     for text, patch in zip(inside, bars.patches, strict=True):
         tb = text.get_window_extent(renderer)
@@ -663,7 +1101,7 @@ def test_where_inside_and_center():
 
     fig, ax, bars = _plain([4.0, -3.0], width=0.6)
     centred = dm.label_bars(ax, where="center")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     for text, patch in zip(centred, bars.patches, strict=True):
         tb = text.get_window_extent(renderer)
         pb = patch.get_window_extent(renderer)
@@ -741,7 +1179,7 @@ def _unreadable(fig, labels, folder, fmt):
     """
     drawn = [t for t in labels if t.get_visible()]
     inks = [t.get_color() for t in drawn]
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     boxes = [t.get_window_extent(renderer) for t in drawn]
     for t in drawn:
         t.set_visible(False)
@@ -791,7 +1229,7 @@ def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path):
     # bar's end in the text colour instead, and reads in the PNG and PDF.
     fig, ax, bars, labels = _narrow_dark(0.3, where="inside")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     for label, patch in zip(labels, bars.patches, strict=True):
         assert label.off_bar and not label.on_bar and label.beyond_end
         assert _hex(label) == "#000000"
@@ -805,7 +1243,7 @@ def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path):
     # white; the short ones (too short along) put them beyond their ends.
     fig, ax, bars, labels = _narrow_dark(0.85, where="inside")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     assert [t.get_text() for t in labels if t.on_bar] == ["4,100", "12,500"]
     for label, patch in zip(labels, bars.patches, strict=True):
         box = label.get_window_extent(renderer)
@@ -832,7 +1270,7 @@ def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(tmp_path):
     ax.set_xlim(0, 4600)
     labels = dm.label_bars(ax, crowded="inside")
     dm.simple_layout(fig)
-    _drawn(fig)
+    drawn_renderer(fig)
     shown = [t for t in labels if t.get_visible()]
     assert shown
     assert all(t.where == "outside" and not t.on_bar for t in shown)
@@ -844,7 +1282,7 @@ def test_error_bars_push_labels_past_caps():
     fig, ax = _fig()
     bars = ax.bar([0, 1], [4.0, -3.0], yerr=[1.0, 0.5], capsize=2)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     up = ax.transData.transform((0, 5.0))[1]
     down = ax.transData.transform((1, -3.5))[1]
@@ -862,7 +1300,7 @@ def test_inverted_value_axis_keeps_labels_outside():
     texts = dm.label_bars(ax)
     ax.invert_xaxis()  # mirrored bars, inverted after labelling
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     for text, patch in zip(texts, bars.patches, strict=True):
         tb = text.get_window_extent(renderer)
@@ -908,7 +1346,7 @@ def test_bars_out_of_view_get_no_labels():
         return fig, ax, (dm.label_bars(ax) if label else [])
 
     fig, ax, texts = chart(True)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     shown = [t for t in texts if t.get_visible()]
     assert _texts(shown) == ["1", "2", "3", "4", "5", "6"]
     axes_box = ax.get_window_extent(renderer)
@@ -933,7 +1371,7 @@ def test_bar_past_a_user_limit_has_no_label_off_the_axes():
         return fig, ax, (dm.label_bars(ax) if label else [])
 
     fig, ax, texts = chart(True)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     assert [t.get_visible() for t in texts] == [True, False, True]
     width, height = fig.canvas.get_width_height()
     for text in texts:
@@ -948,7 +1386,7 @@ def test_bar_past_a_user_limit_has_no_label_off_the_axes():
     ax.bar([0, 1], [4.0, 2.0], yerr=[3.0, 0.5])
     ax.set_ylim(0, 5)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     top = ax.get_window_extent(renderer).y1
     assert texts[0].get_visible()
     assert texts[0].get_window_extent(renderer).y0 == pytest.approx(
@@ -1038,7 +1476,7 @@ def test_short_segment_label_hidden():
     _stack(ax, [([30.0, 30.0], {}), ([1.0, 12.0], {})], np.arange(2))
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     short = texts[2]
     assert short.get_text() == "1"
     # 1 of 42 on a 12 cm chart: a few points, shorter than a 7 pt label.
@@ -1077,7 +1515,7 @@ def test_segment_room_after_a_dpi_change():
     ax.set_ylim(0, 100)
     containers = _stack(ax, [([50.0], {}), ([10.0], {})], [0])
     seg = dm.label_bars(ax, total=False)[1]
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     height = seg.get_window_extent(renderer).height
     unit_px = (
         ax.transData.transform((0, 1))[1] - ax.transData.transform((0, 0))[1]
@@ -1113,7 +1551,7 @@ def test_segment_room_counts_the_inside_inset():
         return fig, ax, texts[1]
 
     fig, ax, label = chart("center")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     height = label.get_window_extent(renderer).height
     unit_px = (
         ax.transData.transform((0, 1))[1] - ax.transData.transform((0, 0))[1]
@@ -1164,7 +1602,7 @@ def test_mixed_sign_stack_net_total_side():
     ]
     assert _kinds(texts) == ["segment"] * 6 + ["total"] * 2
     _assert_centred(fig, texts[:6], seg)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     up, down = texts[6:]
     # Net 6 >= 0: beyond the positive end (5 + 3), above it.
@@ -1421,7 +1859,7 @@ def test_stack_where_places_segments():
     # "inside": just inside each segment's end; the totals stay outside.
     fig, ax, containers = chart()
     texts = dm.label_bars(ax, where="inside")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     segments = [p for c in containers for p in c.patches]
     for text, patch in zip(texts[:4], segments, strict=True):
@@ -1507,7 +1945,7 @@ def test_segment_room_reads_the_text_the_draw_writes():
     _stack(ax, parts, [0], horizontal=True, height=0.6)
     seg = dm.label_bars(ax, total=False)[1]
     assert seg.get_text() == "1,234,567"
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
 
     def width(text):
         probe = ax.text(0, 0, text, fontsize=seg.get_fontsize())
@@ -1590,7 +2028,7 @@ def test_stack_on_an_inverted_value_axis():
     texts = dm.label_bars(ax)
     ax.invert_yaxis()  # after labelling
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     gap = _offset_px(fig)
     assert _texts(texts[4:]) == ["5", "2"]
     # Both nets are >= 0: beyond the positive ends (5 and 4), which the
@@ -1608,7 +2046,7 @@ def test_stack_on_an_inverted_value_axis():
     ax.invert_yaxis()
     texts = dm.label_bars(ax)
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     total = texts[-1]
     assert total.get_text() == f"{MINUS}2"
     assert total.get_verticalalignment() == "bottom"
@@ -1671,7 +2109,7 @@ def _twin_chart(*, label=True):
 
 def _shown(fig, texts):
     """``(label, display box)`` of each label drawn."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     return [
         (t, t.get_window_extent(renderer)) for t in texts if t.get_visible()
     ]
@@ -1922,14 +2360,14 @@ def test_user_limits_respected_label_outside_margin_reserved():
     fig, ax, texts = chart(True)
     assert ax.get_ylim() == (0.0, 33e9)
     assert not ax.get_autoscaley_on()
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     top = texts[-1].get_window_extent(renderer)
     axes_box = ax.get_window_extent(renderer)
     assert texts[-1].get_visible()
     assert top.y0 == pytest.approx(axes_box.y1 + _offset_px(fig), abs=0.6)
     assert top.y1 <= fig.bbox.height + 0.5  # inside the figure
     bare, bare_ax, _ = chart(False)
-    bare_top = bare_ax.get_window_extent(_drawn(bare)).y1
+    bare_top = bare_ax.get_window_extent(drawn_renderer(bare)).y1
     assert bare_top - axes_box.y1 >= top.height  # the margin reserved
 
 
@@ -1990,7 +2428,7 @@ def test_centred_label_on_a_log_axis_shows_where_it_sits(limits, shown):
     ax.set_ylim(*limits)
     (label,) = dm.label_bars(ax, where="center")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
 
     assert label.get_visible() is shown
     middle = float(ax.transData.transform((0, np.sqrt(1000.0)))[1])
@@ -2012,7 +2450,7 @@ def test_centred_label_on_a_linear_axis_shows_while_its_middle_does(
     ax.set_ylim(*limits)
     (label,) = dm.label_bars(ax, where="center")
     dm.simple_layout(fig)
-    _drawn(fig)
+    drawn_renderer(fig)
 
     assert label.get_visible() is shown
     if shown:
@@ -2022,7 +2460,7 @@ def test_centred_label_on_a_linear_axis_shows_while_its_middle_does(
 def test_repeat_simple_layout_idempotent():
     def state(fig, ax, texts):
         """Limits, Axes box (px) and label boxes (px); what is drawn."""
-        renderer = _drawn(fig)
+        renderer = drawn_renderer(fig)
         limits = np.r_[ax.get_xlim(), ax.get_ylim()]
         boxes = np.ravel(
             [ax.get_window_extent(renderer).extents]
@@ -2116,9 +2554,11 @@ def test_crowded_when_wider_than_the_pitch_less_1_5_pt():
     fig, ax = _fig()
     ax.bar(np.arange(40), np.full(40, 33.0), width=0.4)
     texts = dm.label_bars(ax)
-    width = texts[0].get_window_extent(_drawn(fig)).width  # not turned yet
+    width = (
+        texts[0].get_window_extent(drawn_renderer(fig)).width
+    )  # not turned yet
     dm.simple_layout(fig)
-    axes_width = ax.get_window_extent(_drawn(fig)).width
+    axes_width = ax.get_window_extent(drawn_renderer(fig)).width
     gap = 1.5 * fig.dpi / 72.0
     for pitch, crowded in (
         (width + 0.5 * gap, True),
@@ -2126,7 +2566,7 @@ def test_crowded_when_wider_than_the_pitch_less_1_5_pt():
     ):
         ax.set_xlim(-0.5, -0.5 + axes_width / pitch)
         dm.simple_layout(fig)
-        renderer = _drawn(fig)
+        renderer = drawn_renderer(fig)
         assert ax.get_window_extent(renderer).width == pytest.approx(
             axes_width, abs=0.01
         )
@@ -2140,10 +2580,10 @@ def test_crowding_reads_each_label_against_its_nearest_bar():
     fig, ax = _fig()
     ax.bar([0.0, 1.0], [1.0, 1000.0], width=0.3)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     narrow, wide = (t.get_window_extent(renderer).width for t in texts)
     dm.simple_layout(fig)
-    axes_width = ax.get_window_extent(_drawn(fig)).width
+    axes_width = ax.get_window_extent(drawn_renderer(fig)).width
     pitch = (narrow + wide) / 2 + 1.5 * fig.dpi / 72.0
     ax.set_xlim(-0.5, -0.5 + axes_width / pitch)
     dm.simple_layout(fig)
@@ -2155,12 +2595,12 @@ def test_crowding_reads_each_label_against_its_nearest_bar():
     ax.bar(x, np.full(30, 500.0), width=0.6)
     ax.bar(x, np.full(30, 500.0), bottom=500.0, width=0.6)
     texts = dm.label_bars(ax)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     segment = texts[0].get_window_extent(renderer).width  # "500"
     total = texts[-1].get_window_extent(renderer).width  # "1,000"
     assert total > segment
     dm.simple_layout(fig)
-    axes_width = ax.get_window_extent(_drawn(fig)).width
+    axes_width = ax.get_window_extent(drawn_renderer(fig)).width
     pitch = (segment + total) / 2 + 1.5 * fig.dpi / 72.0
     ax.set_xlim(-0.5, -0.5 + axes_width / pitch)
     dm.simple_layout(fig)
@@ -2175,7 +2615,7 @@ def test_crowded_lift_stays_in_view_and_off_overlaid_labels():
     ax.set_ylim(0, 1400e6)
     texts = dm.label_bars(ax, crowded="skip")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     assert not texts[23].get_visible()
     assert texts[22].get_visible()  # 1,337 spans the 1,432 bar
     top = ax.get_window_extent(renderer).y1
@@ -2215,7 +2655,7 @@ def test_crowded_stack_keeps_outside_segments_on_their_own_bars():
     ax.bar(x, D_REV * 0.4, bottom=D_REV * 0.6, width=0.7)
     texts = dm.label_bars(ax, where="outside", total=False, crowded="skip")
     dm.simple_layout(fig)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     for text, patch in zip(texts[:24], base.patches, strict=True):
         if text.get_visible():
             assert text.get_window_extent(renderer).y0 == pytest.approx(
@@ -2329,7 +2769,7 @@ def test_separate_calls_that_fit_are_left_alone():
 
 def _room_to_own_edge(fig, texts, along):
     """Each drawn label's distance (px) to its own Axes' far edge."""
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     room = []
     for text in texts:
         if not text.get_visible():
@@ -2428,7 +2868,7 @@ def test_bounds_set_while_autoscaling_are_kept():
     texts = dm.label_bars(ax, longest)
     dm.simple_layout(fig)
     assert ax.get_xlim()[1] > max(grown[1], 40.0)
-    right = ax.get_window_extent(_drawn(fig)).x1
+    right = ax.get_window_extent(drawn_renderer(fig)).x1
     box = texts[0].get_window_extent(fig.canvas.get_renderer())
     assert right - box.x1 == pytest.approx(_offset_px(fig), abs=0.6)
 
@@ -2457,7 +2897,7 @@ def test_outside_segments_put_the_total_beyond_the_top_label():
 
     # The top label hidden by the caller: the total comes back to the end.
     tops[0].set_visible(False)
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     end = ax.transData.transform((0, 20.0))[1]
     assert totals[0].get_window_extent(renderer).y0 == pytest.approx(
         end + _offset_px(fig), abs=0.6

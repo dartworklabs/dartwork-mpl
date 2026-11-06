@@ -19,6 +19,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib.text import Text
 
 import dartwork_mpl as dm
 
@@ -53,26 +54,30 @@ def _flagged(fig, text: str) -> bool:
     return any(w.detail.get("text") == text for w in found)
 
 
-_TITLE_ATTRS = {
-    "center": "title",
-    "left": "_left_title",
-    "right": "_right_title",
-}
-
-
 def _titles(fig):
     """Yield ``(axes, loc, text)`` per non-empty title; suptitle axes None.
 
-    Enumerated independently of the adapter under test.
+    Enumerated independently of the adapter under test, through public
+    Matplotlib only: an Axes' three title Texts are the Text children that
+    are not in ``ax.texts`` (their ``ha`` is their ``loc``), and the
+    suptitle is the one ``fig.texts`` entry reading ``get_suptitle()``.
     """
     for ax in fig.axes:
-        for loc, attr in _TITLE_ATTRS.items():
-            text = getattr(ax, attr)
+        titles = {
+            child.get_ha(): child
+            for child in ax.get_children()
+            if isinstance(child, Text)
+            and not any(child is text for text in ax.texts)
+        }
+        assert set(titles) == {"left", "center", "right"}, titles
+        for loc, text in titles.items():
             if ax.get_title(loc=loc).strip():
                 assert text.get_text() == ax.get_title(loc=loc)
                 yield ax, loc, text
-    suptitle = getattr(fig, "_suptitle", None)
-    if suptitle is not None and suptitle.get_text().strip():
+    if fig.get_suptitle().strip():
+        (suptitle,) = (
+            text for text in fig.texts if text.get_text() == fig.get_suptitle()
+        )
         yield None, "center", suptitle
 
 
@@ -146,19 +151,61 @@ def test_advanced_template_titles_stay_on_canvas(
     assert figures, f"{template.name} left no open figure"
     try:
         for fig in figures:
-            for ax, loc, title in list(_titles(fig)):
-                if not _outside_canvas(fig, title):
-                    continue
-                text, where = title.get_text(), f"{template.stem}[{preset}]"
-                width = _extent(fig, title).width
-                assert width > _room_px(fig, ax, loc), f"{where}: {text!r}"
-                assert _flagged(fig, text), f"{where}: unreported {text!r}"
-                assert calls, f"{where}: not laid out by simple_layout"
-                before = _slots(fig)
-                title.set_text(text[:1])
-                relayout(*calls[-1][0], **calls[-1][1])
-                title.set_text(text)
-                after = _slots(fig)
-                assert after == pytest.approx(before, abs=1e-3), where
+            _check_off_canvas_titles(
+                fig, calls, relayout, f"{template.stem}[{preset}]"
+            )
     finally:
         plt.close("all")
+
+
+def _check_off_canvas_titles(fig, calls, relayout, where: str) -> int:
+    """Apply the three checks to every off-canvas title; return their count.
+
+    Such a title must be wider than its room, reported by validate_figure,
+    and re-running the last recorded layout call with it cut to one
+    character must not move the axes slots.
+    """
+    checked = 0
+    for ax, loc, title in list(_titles(fig)):
+        if not _outside_canvas(fig, title):
+            continue
+        text = title.get_text()
+        width = _extent(fig, title).width
+        assert width > _room_px(fig, ax, loc), f"{where}: {text!r}"
+        assert _flagged(fig, text), f"{where}: unreported {text!r}"
+        assert calls, f"{where}: not laid out by simple_layout"
+        before = _slots(fig)
+        title.set_text(text[:1])
+        relayout(*calls[-1][0], **calls[-1][1])
+        title.set_text(text)
+        after = _slots(fig)
+        assert after == pytest.approx(before, abs=1e-3), where
+        checked += 1
+    return checked
+
+
+@pytest.mark.parametrize("preset", PRESETS)
+def test_off_canvas_suptitle_is_reported_and_not_chased(preset: str) -> None:
+    """A suptitle wider than the canvas gets the same three checks.
+
+    No bundled template sets a suptitle, so this drives the suptitle branch
+    of ``_titles`` (the ``fig.texts`` entry reading ``get_suptitle()``).
+    """
+    dm.style.use(preset)
+    fig, axes = plt.subplots(1, 2, figsize=dm.figsize("9cm", "wide"))
+    for ax in axes:
+        ax.plot([0, 1, 2], [1, 3, 2])
+    text = "Quarterly revenue by region and product line, 2019 to 2025 " * 2
+    fig.suptitle(text.strip())
+    calls = [((fig,), {})]
+    try:
+        dm.simple_layout(fig)
+        suptitles = [t for ax, _loc, t in _titles(fig) if ax is None]
+        assert [t.get_text() for t in suptitles] == [text.strip()]
+        assert _outside_canvas(fig, suptitles[0])
+        checked = _check_off_canvas_titles(
+            fig, calls, dm.simple_layout, f"suptitle[{preset}]"
+        )
+        assert checked == 1
+    finally:
+        plt.close(fig)

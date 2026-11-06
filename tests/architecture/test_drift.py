@@ -74,8 +74,10 @@ def _load_build_hooks() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "build_hooks", REPO_ROOT / "docs" / "_ext" / "build_hooks.py"
     )
-    if spec is None or spec.loader is None:
-        pytest.skip("docs/_ext/build_hooks.py not importable")
+    # A tracked file; an unimportable one is a broken checkout, not a skip.
+    assert spec is not None and spec.loader is not None, (
+        "docs/_ext/build_hooks.py not importable"
+    )
     mod = importlib.util.module_from_spec(spec)
     sys.modules.setdefault("build_hooks", mod)
     spec.loader.exec_module(mod)
@@ -499,8 +501,7 @@ def test_llms_full_txt_in_sync() -> None:
     file without rerunning the docs build.
     """
     out = REPO_ROOT / "llms-full.txt"
-    if not out.exists():
-        pytest.skip("llms-full.txt not present in this checkout")
+    assert out.is_file(), "tracked llms-full.txt is missing from this checkout"
     build_hooks = _load_build_hooks()
     expected = _compose_llms_full(build_hooks)
     actual = out.read_text(encoding="utf-8")
@@ -540,8 +541,7 @@ def test_template_index_in_sync() -> None:
         / "05-templates"
         / "_index.json"
     )
-    if not out.exists():
-        pytest.skip("_index.json not yet generated in this checkout")
+    assert out.is_file(), "tracked 05-templates/_index.json is missing"
 
     build_hooks = _load_build_hooks()
 
@@ -562,8 +562,7 @@ def test_template_index_in_sync() -> None:
         return section
 
     basic_dir = REPO_ROOT / "docs" / "examples_source" / "09_ai_templates"
-    if not basic_dir.exists():
-        pytest.skip("09_ai_templates source dir missing")
+    assert basic_dir.is_dir(), "tracked 09_ai_templates source dir is missing"
     expected: dict[str, dict[str, object]] = _scan_tier(basic_dir, "basic")
 
     advanced_dir = (

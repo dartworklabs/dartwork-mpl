@@ -20,17 +20,13 @@ import pytest
 import dartwork_mpl as dm
 from dartwork_mpl._figure_geometry import axes_titles
 from dartwork_mpl.annotation import label_axes
+from tests.support.mpl_observe import drawn_renderer
 
 TOL_PX = 0.5
 
 
 def _left(ax):
     return axes_titles(ax)["left"]
-
-
-def _renderer(fig):
-    fig.canvas.draw()
-    return fig.canvas.get_renderer()
 
 
 def _grid(preset: str):
@@ -66,7 +62,7 @@ class TestLeftTitles:
         fig, axes = _grid(preset)
         sizes = [_left(ax).get_fontsize() for ax in axes]
         texts = label_axes(axes)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         for ax, text, size in zip(axes, texts, sizes, strict=True):
             title = _left(ax)
             label_box = text.get_window_extent(renderer)
@@ -90,7 +86,7 @@ class TestLeftTitles:
         fig, axes = _grid("report")
         texts = label_axes(axes)
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         for ax, text in zip(axes, texts, strict=True):
             label_box = text.get_window_extent(renderer)
             title_box = _left(ax).get_window_extent(renderer)
@@ -109,7 +105,7 @@ class TestLeftTitles:
         (text,) = label_axes([ax])
         dm.place_legend(ax, loc="above")
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         legend_box = ax.get_legend().get_window_extent(renderer)
         assert _left(ax).get_window_extent(renderer).x1 > legend_box.x0
         label_box = text.get_window_extent(renderer)
@@ -133,7 +129,7 @@ class TestCallerAndOtherTitles:
     def test_explicit_y_is_kept_before_the_title(self) -> None:
         fig, axes = _grid("report")
         texts = label_axes(axes, y=1.2)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         for ax, text in zip(axes, texts, strict=True):
             label_box = text.get_window_extent(renderer)
             expected = ax.transAxes.transform((0.0, 1.2))[1]
@@ -163,7 +159,7 @@ class TestCallerAndOtherTitles:
         fig, ax = plt.subplots(figsize=dm.figsize("6cm", "standard"))
         ax.set_title("A centre title wider than its own panel here")
         (text,) = label_axes([ax])
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         label_box = text.get_window_extent(renderer)
         title_box = ax.title.get_window_extent(renderer)
         assert not label_box.overlaps(title_box)

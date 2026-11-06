@@ -17,15 +17,16 @@ import pytest
 
 import dartwork_mpl as dm
 from dartwork_mpl.annotation import place_legend
+from tests.support.mpl_observe import (
+    drawn_renderer,
+    legend_gap_px,
+    legend_ncols,
+    pinned_legend_corner,
+)
 
 PRESETS = ("report", "scientific", "presentation")
 SIDES = ("above", "below", "right", "left")
 TOL_PX = 0.5
-
-
-def _renderer(fig):
-    fig.canvas.draw()
-    return fig.canvas.get_renderer()
 
 
 def _chart(preset: str, n_series: int = 2, width: str = "12cm"):
@@ -53,14 +54,9 @@ def _decorations(ax, renderer):
     return boxes
 
 
-def _gap_px(fig, legend) -> float:
-    """The preset gap: ``legend.borderaxespad`` in legend font units."""
-    return legend.borderaxespad * legend._fontsize * fig.dpi / 72.0
-
-
 def _assert_outside(fig, ax, legend, side: str) -> None:
     """``legend`` sits centred outside ``side`` of ``ax``, past its labels."""
-    renderer = _renderer(fig)
+    renderer = drawn_renderer(fig)
     box = ax.get_window_extent(renderer)
     leg = legend.get_window_extent(renderer)
     decorations = _decorations(ax, renderer)
@@ -104,7 +100,7 @@ class TestOutsidePlacement:
         legend = place_legend(ax, loc=side)
         dm.simple_layout(fig)
         _assert_outside(fig, ax, legend, side)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         leg = legend.get_window_extent(renderer)
         assert fig.bbox.x0 - TOL_PX <= leg.x0 and leg.x1 <= fig.bbox.x1 + TOL_PX
         assert fig.bbox.y0 - TOL_PX <= leg.y0 and leg.y1 <= fig.bbox.y1 + TOL_PX
@@ -120,7 +116,7 @@ class TestOutsidePlacement:
     def test_gap_is_the_presets_border_axes_pad(self, side: str) -> None:
         fig, ax = _chart("report")
         legend = place_legend(ax, loc=side)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         box = ax.get_window_extent(renderer)
         leg = legend.get_window_extent(renderer)
         decorations = _decorations(ax, renderer)
@@ -132,7 +128,7 @@ class TestOutsidePlacement:
             gap = leg.x0 - box.x1
         else:
             gap = min(d.x0 for d in decorations if d.x1 <= box.x0) - leg.x1
-        assert gap == pytest.approx(_gap_px(fig, legend), abs=TOL_PX)
+        assert gap == pytest.approx(legend_gap_px(legend), abs=TOL_PX)
         plt.close(fig)
 
 
@@ -143,21 +139,21 @@ class TestOutsideColumns:
     def test_one_row_when_it_fits(self, side: str) -> None:
         fig, ax = _chart("report", n_series=3)
         legend = place_legend(ax, loc=side)
-        assert legend._ncols == 3
+        assert legend_ncols(legend) == 3
         plt.close(fig)
 
     @pytest.mark.parametrize("side", ("right", "left"))
     def test_one_column_at_the_sides(self, side: str) -> None:
         fig, ax = _chart("report", n_series=3)
-        assert place_legend(ax, loc=side)._ncols == 1
+        assert legend_ncols(place_legend(ax, loc=side)) == 1
         plt.close(fig)
 
     def test_fewest_rows_that_fit_a_narrow_axes(self) -> None:
         fig, ax = _chart("presentation", n_series=7, width="9cm")
         legend = place_legend(ax, loc="above")
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         width = ax.get_window_extent(renderer).width
-        ncols = legend._ncols
+        ncols = legend_ncols(legend)
         assert 1 < ncols < 7
         assert legend.get_window_extent(renderer).width <= width
         rows = -(-7 // ncols)
@@ -168,8 +164,8 @@ class TestOutsideColumns:
 
     def test_explicit_ncols_wins(self) -> None:
         fig, ax = _chart("report", n_series=4)
-        assert place_legend(ax, loc="above", ncols=1)._ncols == 1
-        assert place_legend(ax, loc="right", ncol=2)._ncols == 2
+        assert legend_ncols(place_legend(ax, loc="above", ncols=1)) == 1
+        assert legend_ncols(place_legend(ax, loc="right", ncol=2)) == 2
         plt.close(fig)
 
 
@@ -198,7 +194,7 @@ class TestOutsideRobustness:
         twin.set_ylabel("Right axis (units)")
         legend = place_legend(ax, loc="right")
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         leg = legend.get_window_extent(renderer)
         assert leg.x0 >= twin.yaxis.label.get_window_extent(renderer).x1
         for tick in twin.get_yticklabels():
@@ -217,7 +213,7 @@ class TestOutsideRobustness:
     def test_matplotlib_locs_are_unchanged(self) -> None:
         fig, ax = _chart("report")
         legend = place_legend(ax, loc="lower right")
-        assert legend._loc == 4
+        assert pinned_legend_corner(legend) == "lower right"
         assert legend.get_bbox_to_anchor().bounds == ax.bbox.bounds
         plt.close(fig)
 
@@ -270,7 +266,7 @@ class TestBestFallsBackOutside:
             legend = place_legend(ax)
             assert legend is not None
             assert not getattr(legend, "_dm_outside_fallback", False)
-            renderer = _renderer(fig)
+            renderer = drawn_renderer(fig)
             box = legend.get_window_extent(renderer)
             axes_box = ax.get_window_extent(renderer)
             assert box.y1 <= axes_box.y1 + TOL_PX

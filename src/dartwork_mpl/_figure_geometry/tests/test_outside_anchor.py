@@ -16,16 +16,11 @@ import pytest
 
 from dartwork_mpl._figure_geometry import (
     anchor_outside,
-    get_renderer,
     outside_clearance_px,
     reanchor_outside,
     same_position_axes,
 )
-
-
-def _drawn(fig):
-    fig.canvas.draw()
-    return get_renderer(fig)
+from tests.support.mpl_observe import drawn_renderer
 
 
 def test_twins_share_a_position_and_other_panels_do_not() -> None:
@@ -40,7 +35,7 @@ def test_clearance_reaches_the_outermost_label_of_each_side() -> None:
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1])
     ax.set(xlabel="x label", ylabel="y label")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     box = ax.get_window_extent(renderer)
     below = box.y0 - ax.xaxis.label.get_window_extent(renderer).y0
     left = box.x0 - ax.yaxis.label.get_window_extent(renderer).x0
@@ -55,11 +50,11 @@ def test_reanchor_follows_a_label_added_later() -> None:
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1], label="line")
     legend = ax.legend(loc="upper center")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     assert anchor_outside(legend, ax, "below", renderer) is True
     assert reanchor_outside(legend, ax, renderer) is False  # nothing changed
     ax.set_xlabel("added later")
-    renderer = _drawn(fig)
+    renderer = drawn_renderer(fig)
     assert reanchor_outside(legend, ax, renderer) is True
     legend_top = legend.get_window_extent(renderer).y1
     assert legend_top <= ax.xaxis.label.get_window_extent(renderer).y0
@@ -70,5 +65,5 @@ def test_reanchor_ignores_artists_it_did_not_anchor() -> None:
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1], label="line")
     legend = ax.legend()
-    assert reanchor_outside(legend, ax, _drawn(fig)) is False
+    assert reanchor_outside(legend, ax, drawn_renderer(fig)) is False
     plt.close(fig)
