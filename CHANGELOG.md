@@ -69,6 +69,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the bar labels of `dm.label_bars` are the same; a figure with these
   formatters can now be pickled. The old formatter's `.func` and
   `set_offset_string` are gone with it.
+- **A Figure without a live renderer is always measured with Agg.** A
+  plain `Figure()`, a Figure on a PDF, SVG or PS canvas, or one that
+  `plt.close` detached is measured for layout, tick formatting and checks
+  by a temporary Agg canvas at the Figure DPI, now through public
+  matplotlib API only. Where another canvas is registered for PNG
+  (`matplotlib.backend_bases.register_backend("png", ...)`, cairo say),
+  such a Figure used to be measured with that canvas and is now measured
+  with Agg; margins can move by a few pixels (about 7 px at 200 dpi in one
+  cairo case). Figures on a live canvas, of any backend, are measured with
+  their own renderer as before.
 
 ### Deprecated
 
