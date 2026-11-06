@@ -1,0 +1,2608 @@
+{
+ "recorded_from": "origin/main d952266b22beab83e817445b99232474a48130a4",
+ "lint_rules": {
+  "dm-subplots-removed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(?:subplots|figure)\\s*\\(",
+   "message": "`dm.subplots` and `dm.figure` were REMOVED — accessing them now\nraises `AttributeError`. Use `plt.subplots(figsize=dm.figsize(...))`\n(or `plt.figure(figsize=dm.figsize(...))` for custom GridSpec).\nApply style separately via `dm.style.use(...)`.",
+   "why": "Both functions were thin wrappers around `plt.subplots` / `plt.figure`\nthat bundled style mutation, polymorphic `width=`, and a deny-list\nof legacy kwargs. Removing them keeps the matplotlib API native and\nreduces dartwork-mpl's surface to a single sizing helper.\n",
+   "fix_suggestion": "plt.subplots(figsize=dm.figsize(\"13cm\", \"standard\"))"
+  },
+  "cm2in-figsize": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "figsize\\s*=\\s*\\([^)]*cm2in",
+   "message": "`figsize=(dm.cm2in(...), dm.cm2in(...))` is the legacy 0.3\npattern: `dm.cm2in` itself raises `AttributeError`. Use\n`figsize=dm.figsize(\"<n>cm\", \"<aspect>\")` instead.",
+   "why": null,
+   "fix_suggestion": "figsize=dm.figsize(\"9cm\", \"standard\")"
+  },
+  "dm-spines-removed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(?:style_spines|add_grid|minimal_axes)\\s*\\(",
+   "message": "`dm.style_spines`, `dm.add_grid`, and `dm.minimal_axes` were\nREMOVED in 0.4.1 (#156). They were thin matplotlib wrappers\nwhose only contribution was curated default kwargs. Inline the\nraw matplotlib calls instead, or copy a snippet from\n`docs/usage_guide/recipes.md` (publication grid, minimal axes,\nthin gray spines).",
+   "why": null,
+   "fix_suggestion": "see docs/usage_guide/recipes.md"
+  },
+  "dm-legacy-wrappers-removed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(?:format_axis_percent|format_axis_labels|format_axis_thousands|add_frame|add_value_labels|set_xmargin|set_ymargin|hide_spines|hide_all_spines|show_only_spines|remove_grid|save_figure|create_figure_with_style)\\s*\\(",
+   "message": "These legacy `dm.*` helpers were REMOVED in 0.4.1. They were\nthin formatter, spine, margin, and figure wrappers around native\nmatplotlib calls. Inline the matplotlib API directly, or use the\nrecipes in `docs/migration.md` / `docs/usage_guide/recipes.md`;\ndartwork-mpl keeps recipes and utilities rather than wrapper\nfunctions for simple matplotlib operations.",
+   "why": null,
+   "fix_suggestion": "see docs/migration.md"
+  },
+  "dm-auto-select-colors-renamed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(?:helpers\\.colors\\.)?auto_select_colors\\s*\\(",
+   "message": "`auto_select_colors` was renamed to `make_palette` in 0.4.1\n(#156) for vocabulary alignment with `make_offset`.\nArgument cleanup at the same time:\n`n_series` → `n`, `color_type` → `kind`,\n`highlight_index` → `highlight`.",
+   "why": null,
+   "fix_suggestion": "dm.make_palette(n, kind=\"categorical\")"
+  },
+  "dm-auto-layout-removed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.auto_layout\\s*\\(",
+   "message": "`dm.auto_layout` was REMOVED in 0.5.4 — accessing it now raises\n`AttributeError`. Use `dm.simple_layout(fig, margin=...)`: the\nlegacy `padding` inches argument maps to `margin`;\n`max_iter`/`tolerance` are obsolete (simple_layout is\ndirect-calc).",
+   "why": null,
+   "fix_suggestion": "dm.simple_layout(fig)"
+  },
+  "dm-named-renamed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.named\\s*\\(",
+   "message": "`dm.named` was REMOVED in 0.4.1 — the replacement is\n`dm.color(...)`, a single string-parser entry point that accepts\ntoken names, hex, and `rgb()`/`oklch()`/`oklab()` functional\nstrings.",
+   "why": null,
+   "fix_suggestion": "dm.color(\"oc.red5\")"
+  },
+  "dm-model-b-color-api-removed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(?:get_palette|set_cycle|cycle|cycle_cycler|list_palettes|list_colormaps|plot_colors|plot_colormaps|show_palette|classify_colormap|DartworkColor|DartworkColormap|set_palette_version)\\b",
+   "message": "Version 0.6.0 removed the old palette, cycle, diagnostic,\nand color-class vocabulary; there is no palette-version switch.\nFor current color operations use `dm.colors(...)`,\n`dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`.",
+   "why": null,
+   "fix_suggestion": "dm.colors(\"blue\", n=5)"
+  },
+  "dm-removed-namespaces": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(?:agent_utils|xplot)\\b",
+   "message": "`dm.agent_utils` and `dm.xplot` were REMOVED in 0.4. The\nagent_utils surfaces moved to `dm.lint` / `dm.validate_figure` /\n`dm.helpers`; the xplot templates now live in `dm.templates`\n(e.g. `dm.templates.plot_diverging_bar`). See docs/migration.md.",
+   "why": null,
+   "fix_suggestion": "see docs/migration.md"
+  },
+  "dm-install-llm-txt-removed": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(?:install_llm_txt|uninstall_llm_txt|INSTALL_TARGETS)\\b",
+   "message": "The `install_llm_txt` installer family\n(`install_llm_txt`/`uninstall_llm_txt`/`INSTALL_TARGETS`) was\nREMOVED in 0.5. The agent-doc corpus is read at runtime — use\n`dm.get_agent_doc(name)` / `dm.agent_doc_path(name)`, or the MCP\n`dartwork-mpl://guide/*` resources.",
+   "why": null,
+   "fix_suggestion": "dm.get_agent_doc(\"llms\")"
+  },
+  "deprecated-width-token": {
+   "severity": "critical",
+   "detector_kind": "regex",
+   "detector_value": "\\bdm\\.(SW|MW|TW|DW|FS_[A-Z_]+|WIDTHS)\\b",
+   "message": "`dm.SW/MW/TW/DW/FS_*/WIDTHS` were REMOVED in 0.4.0 — accessing\nthem now raises `AttributeError`. Use\n`figsize=dm.figsize(\"<n>cm\", \"<aspect>\")`, or `dm.col1`/`dm.col2`\nfor academic columns.",
+   "why": null,
+   "fix_suggestion": null
+  }
+ },
+ "runtime": {
+  "SW": {
+   "type": "AttributeError",
+   "message": "dm.SW was removed in 0.4. Use dm.col1 / dm.col2 / dm.cm(...) (e.g. width='9cm'). See docs/migration.md."
+  },
+  "MW": {
+   "type": "AttributeError",
+   "message": "dm.MW was removed in 0.4. Use dm.cm(...) (e.g. width='12cm'). See docs/migration.md."
+  },
+  "TW": {
+   "type": "AttributeError",
+   "message": "dm.TW was removed in 0.4. Use dm.cm(...) (e.g. width='14.5cm'). See docs/migration.md."
+  },
+  "DW": {
+   "type": "AttributeError",
+   "message": "dm.DW was removed in 0.4. Use dm.col2 / dm.cm(...) (e.g. width='17cm'). See docs/migration.md."
+  },
+  "WIDTHS": {
+   "type": "AttributeError",
+   "message": "dm.WIDTHS was removed in 0.4. Use iterate explicit widths inline. See docs/migration.md."
+  },
+  "cm2in": {
+   "type": "AttributeError",
+   "message": "dm.cm2in was removed in 0.4. Use dm.cm(...) (returns a Length; e.g. dm.figsize('13cm', ...)). See docs/migration.md."
+  },
+  "subplots": {
+   "type": "AttributeError",
+   "message": "dm.subplots was removed in 0.4. Use plt.subplots(figsize=dm.figsize('<n>cm', '<aspect>')) with a separate dm.style.use(...). See docs/migration.md."
+  },
+  "figure": {
+   "type": "AttributeError",
+   "message": "dm.figure was removed in 0.4. Use plt.figure(figsize=dm.figsize('<n>cm', '<aspect>')) with a separate dm.style.use(...). See docs/migration.md."
+  },
+  "agent_utils": {
+   "type": "AttributeError",
+   "message": "dm.agent_utils was removed in 0.4. Use dm.helpers (the agent_utils module was renamed to helpers). See docs/migration.md."
+  },
+  "xplot": {
+   "type": "AttributeError",
+   "message": "dm.xplot was removed in 0.4. Use dm.templates (e.g. dm.templates.plot_diverging_bar). See docs/migration.md."
+  },
+  "auto_layout": {
+   "type": "AttributeError",
+   "message": "dm.auto_layout was removed in 0.5.4. Use dm.simple_layout(fig, margin=...) (the legacy `padding` inches argument maps to `margin`; `max_iter`/`tolerance` are obsolete — simple_layout is direct-calc). See docs/migration.md."
+  },
+  "install_llm_txt": {
+   "type": "AttributeError",
+   "message": "dm.install_llm_txt was removed in 0.5. Use dm.agent_doc_path(name) / dm.get_agent_doc(name), or the MCP dartwork-mpl://guide/* resources. See docs/migration.md."
+  },
+  "uninstall_llm_txt": {
+   "type": "AttributeError",
+   "message": "dm.uninstall_llm_txt was removed in 0.5. Use dm.get_agent_doc(name) / the MCP resources (the corpus is read at runtime — there is no install to undo). See docs/migration.md."
+  },
+  "INSTALL_TARGETS": {
+   "type": "AttributeError",
+   "message": "dm.INSTALL_TARGETS was removed in 0.5. Use dm.get_agent_doc(name) / the MCP resources (install targets no longer exist). See docs/migration.md."
+  },
+  "style_spines": {
+   "type": "AttributeError",
+   "message": "dm.style_spines was removed in 0.4.1. Use raw matplotlib spine calls (ax.spines[s].set_color(...) / .set_linewidth(...)); see docs/usage_guide/recipes.md. See docs/migration.md."
+  },
+  "add_grid": {
+   "type": "AttributeError",
+   "message": "dm.add_grid was removed in 0.4.1. Use ax.grid(True, color='oc.gray3', alpha=0.3, linewidth=0.5) plus ax.set_axisbelow(True). See docs/migration.md."
+  },
+  "minimal_axes": {
+   "type": "AttributeError",
+   "message": "dm.minimal_axes was removed in 0.4.1. Use the minimal-axes recipe in docs/usage_guide/recipes.md. See docs/migration.md."
+  },
+  "auto_select_colors": {
+   "type": "AttributeError",
+   "message": "dm.auto_select_colors was removed in 0.4.1. Use dm.make_palette(n, kind=..., highlight=...) (arguments renamed: n_series→n, color_type→kind, highlight_index→highlight). See docs/migration.md."
+  },
+  "named": {
+   "type": "AttributeError",
+   "message": "dm.named was removed in 0.4.1. Use dm.color(...) (accepts token names, hex, rgb()/oklch()/oklab()). See docs/migration.md."
+  },
+  "format_axis_percent": {
+   "type": "AttributeError",
+   "message": "dm.format_axis_percent was removed in 0.4.1. Use ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0)) (from matplotlib import ticker). See docs/migration.md."
+  },
+  "format_axis_labels": {
+   "type": "AttributeError",
+   "message": "dm.format_axis_labels was removed in 0.4.1. Use ax.yaxis.set_major_formatter(ticker.StrMethodFormatter(\"{x:,.0f}\")) (from matplotlib import ticker). See docs/migration.md."
+  },
+  "format_axis_thousands": {
+   "type": "AttributeError",
+   "message": "dm.format_axis_thousands was removed in 0.4.1. Use ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f\"{x:,.0f}\")) (from matplotlib import ticker). See docs/migration.md."
+  },
+  "add_frame": {
+   "type": "AttributeError",
+   "message": "dm.add_frame was removed in 0.4.1. Use fig.patches.append(plt.Rectangle((0, 0), 1, 1, fill=False, transform=fig.transFigure)). See docs/migration.md."
+  },
+  "add_value_labels": {
+   "type": "AttributeError",
+   "message": "dm.add_value_labels was removed in 0.4.1. Use dm.label_bars(ax) (values on bars); dm.annotate_value(ax, x, y, text) for a point or a line end. See docs/migration.md."
+  },
+  "set_xmargin": {
+   "type": "AttributeError",
+   "message": "dm.set_xmargin was removed in 0.4.1. Use ax.set_xmargin(...) (the matplotlib Axes method). See docs/migration.md."
+  },
+  "set_ymargin": {
+   "type": "AttributeError",
+   "message": "dm.set_ymargin was removed in 0.4.1. Use ax.set_ymargin(...) (the matplotlib Axes method). See docs/migration.md."
+  },
+  "hide_spines": {
+   "type": "AttributeError",
+   "message": "dm.hide_spines was removed in 0.4.1. Use for s in (\"top\", \"right\"): ax.spines[s].set_visible(False). See docs/migration.md."
+  },
+  "hide_all_spines": {
+   "type": "AttributeError",
+   "message": "dm.hide_all_spines was removed in 0.4.1. Use for s in ax.spines: ax.spines[s].set_visible(False). See docs/migration.md."
+  },
+  "show_only_spines": {
+   "type": "AttributeError",
+   "message": "dm.show_only_spines was removed in 0.4.1. Use for s in ax.spines: ax.spines[s].set_visible(s in (\"left\", \"bottom\")). See docs/migration.md."
+  },
+  "remove_grid": {
+   "type": "AttributeError",
+   "message": "dm.remove_grid was removed in 0.4.1. Use ax.grid(False). See docs/migration.md."
+  },
+  "save_figure": {
+   "type": "AttributeError",
+   "message": "dm.save_figure was removed in 0.4.1. Use fig.savefig(...) (or dm.save_formats(fig, path) for multi-format). See docs/migration.md."
+  },
+  "create_figure_with_style": {
+   "type": "AttributeError",
+   "message": "dm.create_figure_with_style was removed in 0.4.1. Use dm.style.use(style); plt.subplots(figsize=dm.figsize(\"<n>cm\", \"<aspect>\")). See docs/migration.md."
+  },
+  "get_palette": {
+   "type": "AttributeError",
+   "message": "dm.get_palette was removed in 0.6.0. Use dm.colors(..., n=...) for lists or dm.set_colors(...) for cycles; see docs/color_system. See docs/migration.md."
+  },
+  "set_cycle": {
+   "type": "AttributeError",
+   "message": "dm.set_cycle was removed in 0.6.0. Use dm.set_colors(...); see docs/color_system. See docs/migration.md."
+  },
+  "cycle": {
+   "type": "AttributeError",
+   "message": "dm.cycle was removed in 0.6.0. Use dm.colors('octave', n=8) or dm.set_colors(); see docs/color_system. See docs/migration.md."
+  },
+  "cycle_cycler": {
+   "type": "AttributeError",
+   "message": "dm.cycle_cycler was removed in 0.6.0. Use dm.set_colors(..., styles=True); see docs/color_system. See docs/migration.md."
+  },
+  "list_palettes": {
+   "type": "AttributeError",
+   "message": "dm.list_palettes was removed in 0.6.0. Use dm.list_colors(); see docs/color_system. See docs/migration.md."
+  },
+  "list_colormaps": {
+   "type": "AttributeError",
+   "message": "dm.list_colormaps was removed in 0.6.0. Use dm.list_colors() or matplotlib.colormaps; see docs/color_system. See docs/migration.md."
+  },
+  "plot_colors": {
+   "type": "AttributeError",
+   "message": "dm.plot_colors was removed in 0.6.0. Use dm.show_colors(); see docs/color_system. See docs/migration.md."
+  },
+  "plot_colormaps": {
+   "type": "AttributeError",
+   "message": "dm.plot_colormaps was removed in 0.6.0. Use dm.show_colors(); see docs/color_system. See docs/migration.md."
+  },
+  "show_palette": {
+   "type": "AttributeError",
+   "message": "dm.show_palette was removed in 0.6.0. Use dm.show_colors(names=[...]); see docs/color_system. See docs/migration.md."
+  },
+  "classify_colormap": {
+   "type": "AttributeError",
+   "message": "dm.classify_colormap was removed in 0.6.0. Use dm.list_colors() metadata and dm.show_colors(); see docs/color_system. See docs/migration.md."
+  },
+  "DartworkColor": {
+   "type": "AttributeError",
+   "message": "dm.DartworkColor was removed in 0.6.0. Use documented color inputs such as color names, hex strings or RGB(A) tuples; see docs/color_system. See docs/migration.md."
+  },
+  "DartworkColormap": {
+   "type": "AttributeError",
+   "message": "dm.DartworkColormap was removed in 0.6.0. Use matplotlib.colors.Colormap for colormap objects; see docs/color_system. See docs/migration.md."
+  },
+  "set_palette_version": {
+   "type": "AttributeError",
+   "message": "dm.set_palette_version was removed in 0.6.0. Use the current color catalog (no palette-version switch exists); see docs/color_system. See docs/migration.md."
+  },
+  "FS_SINGLE": {
+   "type": "AttributeError",
+   "message": "dm.FS_SINGLE (0.3 figure-size tuple) was removed in 0.4. Use figsize=dm.figsize('<n>cm', '<aspect>'). See docs/migration.md."
+  },
+  "FS_WIDE": {
+   "type": "AttributeError",
+   "message": "dm.FS_WIDE (0.3 figure-size tuple) was removed in 0.4. Use figsize=dm.figsize('<n>cm', '<aspect>'). See docs/migration.md."
+  },
+  "FS_lower": {
+   "type": "AttributeError",
+   "message": "dm.FS_lower (0.3 figure-size tuple) was removed in 0.4. Use figsize=dm.figsize('<n>cm', '<aspect>'). See docs/migration.md."
+  },
+  "FS_": {
+   "type": "AttributeError",
+   "message": "dm.FS_ (0.3 figure-size tuple) was removed in 0.4. Use figsize=dm.figsize('<n>cm', '<aspect>'). See docs/migration.md."
+  },
+  "FS": {
+   "type": "AttributeError",
+   "message": "module 'dartwork_mpl' has no attribute 'FS'"
+  },
+  "SWX": {
+   "type": "AttributeError",
+   "message": "module 'dartwork_mpl' has no attribute 'SWX'"
+  },
+  "completely_made_up": {
+   "type": "AttributeError",
+   "message": "module 'dartwork_mpl' has no attribute 'completely_made_up'"
+  }
+ },
+ "cases": [
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.SW\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.SW\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.SW"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.SW(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.SW(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.SW(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.MW\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.MW\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.MW"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.MW(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.MW(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.MW(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.TW\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.TW\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.TW"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.TW(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.TW(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.TW(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.DW\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.DW\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.DW"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.DW(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.DW(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.DW(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.WIDTHS\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.WIDTHS\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.WIDTHS"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.WIDTHS(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.WIDTHS(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.WIDTHS(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.cm2in\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, use figsize=dm.figsize(\"<n>cm\", \"<aspect>\"); elsewhere use dm.cm(<n>), which returns a Length, not a float.\nx = dm.cm2in\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cm2in(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, use figsize=dm.figsize(\"<n>cm\", \"<aspect>\"); elsewhere use dm.cm(<n>), which returns a Length, not a float.\ndm.cm2in(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.subplots\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.subplots\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.subplots(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.subplots / dm.figure removed; use plt.subplots(figsize=dm.figsize(<width>, <aspect>)) (call dm.style.use(...) separately for styling).\ndm.subplots(1)\n",
+   "lint": [
+    [
+     "dm-subplots-removed",
+     2,
+     26,
+     "dm.subplots(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.figure\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.figure\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.figure(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.subplots / dm.figure removed; use plt.subplots(figsize=dm.figsize(<width>, <aspect>)) (call dm.style.use(...) separately for styling).\ndm.figure(1)\n",
+   "lint": [
+    [
+     "dm-subplots-removed",
+     2,
+     26,
+     "dm.figure(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.agent_utils\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.agent_utils\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     30,
+     "x = dm.agent_utils"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.agent_utils(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.agent_utils(1)\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     26,
+     "dm.agent_utils(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.xplot\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.xplot removed; templates now live in dm.templates / dm.helpers (see docs/migration.md).\nx = dm.xplot\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     30,
+     "x = dm.xplot"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.xplot(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.xplot removed; templates now live in dm.templates / dm.helpers (see docs/migration.md).\ndm.xplot(1)\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     26,
+     "dm.xplot(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.auto_layout\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.auto_layout\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.auto_layout(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.auto_layout removed in 0.5.4; use dm.simple_layout(fig, margin=...) (legacy padding maps to margin; max_iter/tolerance are obsolete).\ndm.auto_layout(1)\n",
+   "lint": [
+    [
+     "dm-auto-layout-removed",
+     2,
+     26,
+     "dm.auto_layout(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.install_llm_txt\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\nx = dm.install_llm_txt\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     30,
+     "x = dm.install_llm_txt"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.install_llm_txt(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\ndm.install_llm_txt(1)\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     26,
+     "dm.install_llm_txt(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.uninstall_llm_txt\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\nx = dm.uninstall_llm_txt\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     30,
+     "x = dm.uninstall_llm_txt"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.uninstall_llm_txt(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\ndm.uninstall_llm_txt(1)\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     26,
+     "dm.uninstall_llm_txt(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.INSTALL_TARGETS\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\nx = dm.INSTALL_TARGETS\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     30,
+     "x = dm.INSTALL_TARGETS"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.INSTALL_TARGETS(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\ndm.INSTALL_TARGETS(1)\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     26,
+     "dm.INSTALL_TARGETS(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.style_spines\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\nx = dm.style_spines\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.style_spines(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\ndm.style_spines(1)\n",
+   "lint": [
+    [
+     "dm-spines-removed",
+     2,
+     26,
+     "dm.style_spines(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.add_grid\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\nx = dm.add_grid\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.add_grid(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\ndm.add_grid(1)\n",
+   "lint": [
+    [
+     "dm-spines-removed",
+     2,
+     26,
+     "dm.add_grid(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.minimal_axes\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\nx = dm.minimal_axes\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.minimal_axes(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\ndm.minimal_axes(1)\n",
+   "lint": [
+    [
+     "dm-spines-removed",
+     2,
+     26,
+     "dm.minimal_axes(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.auto_select_colors\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.auto_select_colors renamed in 0.4.1; use dm.make_palette(n, kind=..., highlight=...).\nx = dm.auto_select_colors\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.auto_select_colors(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.auto_select_colors renamed in 0.4.1; use dm.make_palette(n, kind=..., highlight=...).\ndm.auto_select_colors(1)\n",
+   "lint": [
+    [
+     "dm-auto-select-colors-renamed",
+     2,
+     26,
+     "dm.auto_select_colors(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.named\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.named\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.named(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.named removed in 0.4.1; use dm.color(...) (accepts token names, hex, rgb()/oklch()/oklab()).\ndm.named(1)\n",
+   "lint": [
+    [
+     "dm-named-renamed",
+     2,
+     26,
+     "dm.named(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.format_axis_percent\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.format_axis_percent\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.format_axis_percent(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.format_axis_percent removed in 0.4.1; use ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0)) (from matplotlib import ticker).\ndm.format_axis_percent(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.format_axis_percent(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.format_axis_labels\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.format_axis_labels\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.format_axis_labels(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.format_axis_labels removed in 0.4.1; use ax.yaxis.set_major_formatter(ticker.StrMethodFormatter(\"{x:,.0f}\")) (from matplotlib import ticker).\ndm.format_axis_labels(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.format_axis_labels(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.format_axis_thousands\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.format_axis_thousands\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.format_axis_thousands(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.format_axis_thousands removed in 0.4.1; use ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f\"{x:,.0f}\")) (from matplotlib import ticker).\ndm.format_axis_thousands(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.format_axis_thousands(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.add_frame\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.add_frame\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.add_frame(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.add_frame removed in 0.4.1; use fig.patches.append(plt.Rectangle((0, 0), 1, 1, fill=False, transform=fig.transFigure)).\ndm.add_frame(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.add_frame(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.add_value_labels\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.add_value_labels\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.add_value_labels(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.add_value_labels removed in 0.4.1; use dm.label_bars(ax) for values on bars, or dm.annotate_value(ax, x, y, text) for a point or a line end.\ndm.add_value_labels(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.add_value_labels(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_xmargin\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.set_xmargin\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_xmargin(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.set_xmargin removed in 0.4.1; use ax.set_xmargin(...) (the matplotlib Axes method).\ndm.set_xmargin(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.set_xmargin(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_ymargin\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.set_ymargin\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_ymargin(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.set_ymargin removed in 0.4.1; use ax.set_ymargin(...) (the matplotlib Axes method).\ndm.set_ymargin(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.set_ymargin(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.hide_spines\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.hide_spines\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.hide_spines(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.hide_spines removed in 0.4.1; use for s in (\"top\", \"right\"): ax.spines[s].set_visible(False).\ndm.hide_spines(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.hide_spines(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.hide_all_spines\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.hide_all_spines\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.hide_all_spines(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.hide_all_spines removed in 0.4.1; use for s in ax.spines: ax.spines[s].set_visible(False).\ndm.hide_all_spines(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.hide_all_spines(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.show_only_spines\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.show_only_spines\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.show_only_spines(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.show_only_spines removed in 0.4.1; use for s in ax.spines: ax.spines[s].set_visible(s in (\"left\", \"bottom\")).\ndm.show_only_spines(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.show_only_spines(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.remove_grid\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.remove_grid\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.remove_grid(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.remove_grid removed in 0.4.1; use ax.grid(False).\ndm.remove_grid(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.remove_grid(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.save_figure\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.save_figure\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.save_figure(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.save_figure removed in 0.4.1; use fig.savefig(...) (or dm.save_formats(fig, path) for multi-format).\ndm.save_figure(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.save_figure(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.create_figure_with_style\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.create_figure_with_style\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.create_figure_with_style(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.create_figure_with_style removed in 0.4.1; use dm.style.use(style); plt.subplots(figsize=dm.figsize(\"<n>cm\", \"<aspect>\")).\ndm.create_figure_with_style(1)\n",
+   "lint": [
+    [
+     "dm-legacy-wrappers-removed",
+     2,
+     26,
+     "dm.create_figure_with_style(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.get_palette\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.get_palette\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.get_palette"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.get_palette(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.get_palette(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.get_palette(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_cycle\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.set_cycle\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.set_cycle"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_cycle(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.set_cycle(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.set_cycle(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.cycle\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.cycle\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.cycle"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cycle(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.cycle(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.cycle(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.cycle_cycler\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.cycle_cycler\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.cycle_cycler"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cycle_cycler(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.cycle_cycler(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.cycle_cycler(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.list_palettes\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.list_palettes\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.list_palettes"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.list_palettes(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.list_palettes(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.list_palettes(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.list_colormaps\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.list_colormaps\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.list_colormaps"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.list_colormaps(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.list_colormaps(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.list_colormaps(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.plot_colors\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.plot_colors\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.plot_colors"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.plot_colors(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.plot_colors(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.plot_colors(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.plot_colormaps\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.plot_colormaps\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.plot_colormaps"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.plot_colormaps(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.plot_colormaps(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.plot_colormaps(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.show_palette\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.show_palette\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.show_palette"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.show_palette(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.show_palette(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.show_palette(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.classify_colormap\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.classify_colormap\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.classify_colormap"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.classify_colormap(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.classify_colormap(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.classify_colormap(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.DartworkColor\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.DartworkColor\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.DartworkColor"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.DartworkColor(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.DartworkColor(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.DartworkColor(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.DartworkColormap\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.DartworkColormap\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.DartworkColormap"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.DartworkColormap(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.DartworkColormap(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.DartworkColormap(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_palette_version\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.set_palette_version was removed in 0.6.0; there is no palette-version switch. Review the current color catalog and docs/migration.md.\nx = dm.set_palette_version\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.set_palette_version"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_palette_version(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.set_palette_version was removed in 0.6.0; there is no palette-version switch. Review the current color catalog and docs/migration.md.\ndm.set_palette_version(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.set_palette_version(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.FS_SINGLE\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\nx = dm.FS_SINGLE\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.FS_SINGLE"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS_SINGLE(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\ndm.FS_SINGLE(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.FS_SINGLE(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.FS_WIDE\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\nx = dm.FS_WIDE\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.FS_WIDE"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS_WIDE(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\ndm.FS_WIDE(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.FS_WIDE(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.FS_lower\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.FS_lower\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS_lower(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.FS_lower(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.SWX(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.SWX(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cm2inch(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.cm2inch(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.subplot(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.subplot(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.figsize(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.figsize(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cycles(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.cycles(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.named_color(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.named_color(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.colors(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.colors(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_colors(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.set_colors(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.FS(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.WIDTH(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.WIDTH(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.format_axis_millions(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.format_axis_millions(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.label_bars(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.label_bars(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.make_palette(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.make_palette(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.simple_layout(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.simple_layout(1)\n",
+   "lint": []
+  },
+  {
+   "source": "from dm.agent_utils import lint_code\n",
+   "migrated": "# TODO(dm-migrate): dm.agent_utils removed; surfaces moved to dm.lint, dm.validate_figure, dm.helpers, etc.\nfrom dm.agent_utils import lint_code\n",
+   "lint": []
+  },
+  {
+   "source": "from dartwork_mpl.agent_utils import lint_code\n",
+   "migrated": "from dartwork_mpl.agent_utils import lint_code\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.agent_utils.lint_code(x)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.agent_utils.lint_code(x)\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     26,
+     "dm.agent_utils.lint_code(x)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\nfig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)))\n",
+   "migrated": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\n# TODO(dm-migrate): dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, use figsize=dm.figsize(\"<n>cm\", \"<aspect>\"); elsewhere use dm.cm(<n>), which returns a Length, not a float.\n# TODO(dm-migrate): raw figsize=(w, h) tuple bypasses physical-width contract; use figsize=dm.figsize(<width>, <aspect>).\nfig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)))\n",
+   "lint": [
+    [
+     "cm2in-figsize",
+     3,
+     75,
+     "fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)))"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(3, 2), facecolor=dm.named('x'))\n",
+   "migrated": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\n# TODO(dm-migrate): raw figsize=(w, h) tuple bypasses physical-width contract; use figsize=dm.figsize(<width>, <aspect>).\n# TODO(dm-migrate): dm.named removed in 0.4.1; use dm.color(...) (accepts token names, hex, rgb()/oklch()/oklab()).\nfig, ax = plt.subplots(figsize=(3, 2), facecolor=dm.named('x'))\n",
+   "lint": [
+    [
+     "dm-named-renamed",
+     3,
+     107,
+     "fig, ax = plt.subplots(figsize=(3, 2), facecolor=dm.named('x'))"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\nplt.tight_layout(); dm.xplot.bar(ax)\n",
+   "migrated": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\n# TODO(dm-migrate): tight_layout() collides with dm spines; use dm.simple_layout(fig).\n# TODO(dm-migrate): dm.xplot removed; templates now live in dm.templates / dm.helpers (see docs/migration.md).\nplt.tight_layout(); dm.xplot.bar(ax)\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     3,
+     78,
+     "plt.tight_layout(); dm.xplot.bar(ax)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\nfig.tight_layout(); dm.auto_layout(fig)\n",
+   "migrated": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\n# TODO(dm-migrate): tight_layout() collides with dm spines; use dm.simple_layout(fig).\n# TODO(dm-migrate): dm.auto_layout removed in 0.5.4; use dm.simple_layout(fig, margin=...) (legacy padding maps to margin; max_iter/tolerance are obsolete).\nfig.tight_layout(); dm.auto_layout(fig)\n",
+   "lint": [
+    [
+     "dm-auto-layout-removed",
+     3,
+     78,
+     "fig.tight_layout(); dm.auto_layout(fig)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(dm.SW, 3)); dm.get_palette('x')\n",
+   "migrated": "import dartwork_mpl as dm\nimport matplotlib.pyplot as plt\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\n# TODO(dm-migrate): raw figsize=(w, h) tuple bypasses physical-width contract; use figsize=dm.figsize(<width>, <aspect>).\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nfig, ax = plt.subplots(figsize=(dm.SW, 3)); dm.get_palette('x')\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     3,
+     102,
+     "fig, ax = plt.subplots(figsize=(dm.SW, 3)); dm.get_palette('x')"
+    ],
+    [
+     "deprecated-width-token",
+     3,
+     90,
+     "fig, ax = plt.subplots(figsize=(dm.SW, 3)); dm.get_palette('x')"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.SW; dm.WIDTHS['MW']\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\n# TODO(dm-migrate): dm.WIDTHS removed; pick a width string (e.g. \"9cm\") instead.\ndm.SW; dm.WIDTHS['MW']\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.SW; dm.WIDTHS['MW']"
+    ],
+    [
+     "deprecated-width-token",
+     2,
+     33,
+     "dm.SW; dm.WIDTHS['MW']"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nw = dm.WIDTHS\n",
+   "migrated": "import dartwork_mpl as dm\nw = dm.WIDTHS\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "w = dm.WIDTHS"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS_SINGLE; dm.FS_lower; dm.FS_\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\ndm.FS_SINGLE; dm.FS_lower; dm.FS_\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.FS_SINGLE; dm.FS_lower; dm.FS_"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.helpers.colors.auto_select_colors(3)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.helpers.colors.auto_select_colors(3)\n",
+   "lint": [
+    [
+     "dm-auto-select-colors-renamed",
+     2,
+     26,
+     "dm.helpers.colors.auto_select_colors(3)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.figure\ndm.subplots\n",
+   "migrated": "import dartwork_mpl as dm\ndm.figure\ndm.subplots\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = 'dm.SW'\n# dm.SW\ntext = f\"dm.cm2in(1) {v}\"\n",
+   "migrated": "import dartwork_mpl as dm\nx = 'dm.SW'\n# dm.SW\ntext = f\"dm.cm2in(1) {v}\"\n",
+   "lint": []
+  },
+  {
+   "source": "other.SW\nobj.dm.SW\nax.set_xmargin(0.1)\nax.grid(False)\n",
+   "migrated": "other.SW\nobj.dm.SW\nax.set_xmargin(0.1)\nax.grid(False)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as d\nd.SW\nd.cm2in(3)\nd.subplots()\nd.get_palette()\n",
+   "migrated": "import dartwork_mpl as d\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nd.SW\n# TODO(dm-migrate): dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, use figsize=dm.figsize(\"<n>cm\", \"<aspect>\"); elsewhere use dm.cm(<n>), which returns a Length, not a float.\nd.cm2in(3)\n# TODO(dm-migrate): dm.subplots / dm.figure removed; use plt.subplots(figsize=dm.figsize(<width>, <aspect>)) (call dm.style.use(...) separately for styling).\nd.subplots()\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nd.get_palette()\n",
+   "lint": [
+    [
+     "dm-subplots-removed",
+     4,
+     41,
+     "d.subplots()"
+    ],
+    [
+     "dm-model-b-color-api-removed",
+     5,
+     54,
+     "d.get_palette()"
+    ],
+    [
+     "deprecated-width-token",
+     2,
+     25,
+     "d.SW"
+    ]
+   ]
+  },
+  {
+   "source": "def f():\n    import dartwork_mpl as dm\n    w = dm.SW\n    dm.auto_layout(fig)\n",
+   "migrated": "def f():\n    import dartwork_mpl as dm\n    # TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\n    w = dm.SW\n    # TODO(dm-migrate): dm.auto_layout removed in 0.5.4; use dm.simple_layout(fig, margin=...) (legacy padding maps to margin; max_iter/tolerance are obsolete).\n    dm.auto_layout(fig)\n",
+   "lint": [
+    [
+     "dm-auto-layout-removed",
+     4,
+     57,
+     "dm.auto_layout(fig)"
+    ],
+    [
+     "deprecated-width-token",
+     3,
+     47,
+     "w = dm.SW"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\r\nw = dm.SW\r\ndm.get_palette('x')\r\n",
+   "migrated": "import dartwork_mpl as dm\r\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\r\nw = dm.SW\r\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\r\ndm.get_palette('x')\r\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     3,
+     38,
+     "dm.get_palette('x')"
+    ],
+    [
+     "deprecated-width-token",
+     2,
+     31,
+     "w = dm.SW"
+    ]
+   ]
+  },
+  {
+   "source": "w = dm.SW",
+   "migrated": "# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nw = dm.SW",
+   "lint": [
+    [
+     "deprecated-width-token",
+     1,
+     4,
+     "w = dm.SW"
+    ]
+   ]
+  },
+  {
+   "source": "fig, ax = dm.subplots(width=\"13cm\")",
+   "migrated": "# TODO(dm-migrate): dm.subplots / dm.figure removed; use plt.subplots(figsize=dm.figsize(<width>, <aspect>)) (call dm.style.use(...) separately for styling).\nfig, ax = dm.subplots(width=\"13cm\")",
+   "lint": [
+    [
+     "dm-subplots-removed",
+     1,
+     10,
+     "fig, ax = dm.subplots(width=\"13cm\")"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nvalue = (\n    dm.SW,\n    dm.WIDTHS['MW'],\n)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\n# TODO(dm-migrate): dm.WIDTHS removed; pick a width string (e.g. \"9cm\") instead.\nvalue = (\n    dm.SW,\n    dm.WIDTHS['MW'],\n)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     3,
+     40,
+     "dm.SW,"
+    ],
+    [
+     "deprecated-width-token",
+     4,
+     51,
+     "dm.WIDTHS['MW'],"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nif ready: value = dm.SW\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nif ready: value = dm.SW\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     44,
+     "if ready: value = dm.SW"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.WIDTHS['SW'] + dm.cm2in(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, use figsize=dm.figsize(\"<n>cm\", \"<aspect>\"); elsewhere use dm.cm(<n>), which returns a Length, not a float.\n# TODO(dm-migrate): dm.WIDTHS removed; pick a width string (e.g. \"9cm\") instead.\nx = dm.WIDTHS['SW'] + dm.cm2in(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.WIDTHS['SW'] + dm.cm2in(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.SW[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.SW[0]\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.SW[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.SW.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.SW.foo(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.SW.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.MW[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.MW[0]\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.MW[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.MW.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.MW.foo(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.MW.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.TW[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.TW[0]\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.TW[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.TW.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.TW.foo(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.TW.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.DW[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\nx = dm.DW[0]\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.DW[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.DW.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).\ndm.DW.foo(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.DW.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.WIDTHS[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.WIDTHS removed; pick a width string (e.g. \"9cm\") instead.\nx = dm.WIDTHS[0]\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.WIDTHS[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.WIDTHS.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.WIDTHS.foo(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.WIDTHS.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.cm2in[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, use figsize=dm.figsize(\"<n>cm\", \"<aspect>\"); elsewhere use dm.cm(<n>), which returns a Length, not a float.\nx = dm.cm2in[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cm2in.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, use figsize=dm.figsize(\"<n>cm\", \"<aspect>\"); elsewhere use dm.cm(<n>), which returns a Length, not a float.\ndm.cm2in.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.subplots[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.subplots[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.subplots.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.subplots.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.figure[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.figure[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.figure.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.figure.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.agent_utils[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.agent_utils[0]\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     30,
+     "x = dm.agent_utils[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.agent_utils.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.agent_utils.foo(1)\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     26,
+     "dm.agent_utils.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.xplot[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.xplot removed; templates now live in dm.templates / dm.helpers (see docs/migration.md).\nx = dm.xplot[0]\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     30,
+     "x = dm.xplot[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.xplot.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.xplot removed; templates now live in dm.templates / dm.helpers (see docs/migration.md).\ndm.xplot.foo(1)\n",
+   "lint": [
+    [
+     "dm-removed-namespaces",
+     2,
+     26,
+     "dm.xplot.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.auto_layout[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.auto_layout[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.auto_layout.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.auto_layout.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.install_llm_txt[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\nx = dm.install_llm_txt[0]\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     30,
+     "x = dm.install_llm_txt[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.install_llm_txt.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\ndm.install_llm_txt.foo(1)\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     26,
+     "dm.install_llm_txt.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.uninstall_llm_txt[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\nx = dm.uninstall_llm_txt[0]\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     30,
+     "x = dm.uninstall_llm_txt[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.uninstall_llm_txt.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\ndm.uninstall_llm_txt.foo(1)\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     26,
+     "dm.uninstall_llm_txt.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.INSTALL_TARGETS[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\nx = dm.INSTALL_TARGETS[0]\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     30,
+     "x = dm.INSTALL_TARGETS[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.INSTALL_TARGETS.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): install_llm_txt family removed in 0.5; use dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP dartwork-mpl://guide/* resources.\ndm.INSTALL_TARGETS.foo(1)\n",
+   "lint": [
+    [
+     "dm-install-llm-txt-removed",
+     2,
+     26,
+     "dm.INSTALL_TARGETS.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.style_spines[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\nx = dm.style_spines[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.style_spines.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\ndm.style_spines.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.add_grid[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\nx = dm.add_grid[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.add_grid.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\ndm.add_grid.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.minimal_axes[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\nx = dm.minimal_axes[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.minimal_axes.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline the raw matplotlib calls (see docs/usage_guide/recipes.md).\ndm.minimal_axes.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.auto_select_colors[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.auto_select_colors renamed in 0.4.1; use dm.make_palette(n, kind=..., highlight=...).\nx = dm.auto_select_colors[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.auto_select_colors.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.auto_select_colors renamed in 0.4.1; use dm.make_palette(n, kind=..., highlight=...).\ndm.auto_select_colors.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.named[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.named[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.named.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.named.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.format_axis_percent[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.format_axis_percent[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.format_axis_percent.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.format_axis_percent.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.format_axis_labels[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.format_axis_labels[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.format_axis_labels.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.format_axis_labels.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.format_axis_thousands[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.format_axis_thousands[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.format_axis_thousands.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.format_axis_thousands.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.add_frame[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.add_frame[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.add_frame.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.add_frame.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.add_value_labels[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.add_value_labels[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.add_value_labels.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.add_value_labels.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_xmargin[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.set_xmargin[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_xmargin.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.set_xmargin.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_ymargin[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.set_ymargin[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_ymargin.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.set_ymargin.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.hide_spines[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.hide_spines[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.hide_spines.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.hide_spines.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.hide_all_spines[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.hide_all_spines[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.hide_all_spines.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.hide_all_spines.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.show_only_spines[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.show_only_spines[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.show_only_spines.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.show_only_spines.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.remove_grid[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.remove_grid[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.remove_grid.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.remove_grid.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.save_figure[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.save_figure[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.save_figure.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.save_figure.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.create_figure_with_style[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.create_figure_with_style[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.create_figure_with_style.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.create_figure_with_style.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.get_palette[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.get_palette[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.get_palette[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.get_palette.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.get_palette.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.get_palette.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_cycle[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.set_cycle[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.set_cycle[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_cycle.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.set_cycle.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.set_cycle.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.cycle[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.cycle[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.cycle[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cycle.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.cycle.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.cycle.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.cycle_cycler[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.cycle_cycler[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.cycle_cycler[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.cycle_cycler.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.cycle_cycler.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.cycle_cycler.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.list_palettes[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.list_palettes[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.list_palettes[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.list_palettes.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.list_palettes.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.list_palettes.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.list_colormaps[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.list_colormaps[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.list_colormaps[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.list_colormaps.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.list_colormaps.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.list_colormaps.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.plot_colors[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.plot_colors[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.plot_colors[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.plot_colors.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.plot_colors.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.plot_colors.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.plot_colormaps[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.plot_colormaps[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.plot_colormaps[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.plot_colormaps.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.plot_colormaps.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.plot_colormaps.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.show_palette[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.show_palette[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.show_palette[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.show_palette.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.show_palette.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.show_palette.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.classify_colormap[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.classify_colormap[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.classify_colormap[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.classify_colormap.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.classify_colormap.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.classify_colormap.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.DartworkColor[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.DartworkColor[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.DartworkColor[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.DartworkColor.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.DartworkColor.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.DartworkColor.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.DartworkColormap[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\nx = dm.DartworkColormap[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.DartworkColormap[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.DartworkColormap.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): Version 0.6.0 removed this color API vocabulary; use dm.colors(...), dm.set_colors(...), dm.list_colors(), or dm.show_colors().\ndm.DartworkColormap.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.DartworkColormap.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.set_palette_version[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.set_palette_version was removed in 0.6.0; there is no palette-version switch. Review the current color catalog and docs/migration.md.\nx = dm.set_palette_version[0]\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     30,
+     "x = dm.set_palette_version[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.set_palette_version.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.set_palette_version was removed in 0.6.0; there is no palette-version switch. Review the current color catalog and docs/migration.md.\ndm.set_palette_version.foo(1)\n",
+   "lint": [
+    [
+     "dm-model-b-color-api-removed",
+     2,
+     26,
+     "dm.set_palette_version.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.FS_SINGLE[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\nx = dm.FS_SINGLE[0]\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.FS_SINGLE[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS_SINGLE.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\ndm.FS_SINGLE.foo(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.FS_SINGLE.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.FS_WIDE[0]\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\nx = dm.FS_WIDE[0]\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     30,
+     "x = dm.FS_WIDE[0]"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS_WIDE.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\n# TODO(dm-migrate): dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).\ndm.FS_WIDE.foo(1)\n",
+   "lint": [
+    [
+     "deprecated-width-token",
+     2,
+     26,
+     "dm.FS_WIDE.foo(1)"
+    ]
+   ]
+  },
+  {
+   "source": "import dartwork_mpl as dm\nx = dm.FS_lower[0]\n",
+   "migrated": "import dartwork_mpl as dm\nx = dm.FS_lower[0]\n",
+   "lint": []
+  },
+  {
+   "source": "import dartwork_mpl as dm\ndm.FS_lower.foo(1)\n",
+   "migrated": "import dartwork_mpl as dm\ndm.FS_lower.foo(1)\n",
+   "lint": []
+  },
+  {
+   "source": "from dm.agent_utils.sub import lint_code\n",
+   "migrated": "# TODO(dm-migrate): dm.agent_utils removed; surfaces moved to dm.lint, dm.validate_figure, dm.helpers, etc.\nfrom dm.agent_utils.sub import lint_code\n",
+   "lint": []
+  },
+  {
+   "source": "from dm.agent_utils.sub.deeper import lint_code\n",
+   "migrated": "# TODO(dm-migrate): dm.agent_utils removed; surfaces moved to dm.lint, dm.validate_figure, dm.helpers, etc.\nfrom dm.agent_utils.sub.deeper import lint_code\n",
+   "lint": []
+  },
+  {
+   "source": "from dm.xplot.sub import bar\n",
+   "migrated": "from dm.xplot.sub import bar\n",
+   "lint": []
+  },
+  {
+   "source": "from dartwork_mpl.agent_utils.sub import lint_code\n",
+   "migrated": "from dartwork_mpl.agent_utils.sub import lint_code\n",
+   "lint": []
+  }
+ ],
+ "mcp": {
+  "tool_names": [
+   "lint_dartwork_mpl_code",
+   "lint_dartwork_mpl_code_json",
+   "apply_lint_fixes",
+   "migrate_legacy_code"
+  ],
+  "tools": {
+   "lint_dartwork_mpl_code": {
+    "description": "Analyze Python code against the dartwork-mpl anti-pattern\ncatalog (asset/prompt/02-anti-patterns.yaml).\n\nReturns a newline-separated list of\n``[SEVERITY] rule-id (line N): message`` entries, or a success\nline.\n\nLiteral cmap/color names in conventional ax/plt plotting calls\n(and imported pyplot aliases) are checked against live matplotlib\nregistries without executing source. Discover valid colormaps via\n``sorted(matplotlib.colormaps)`` and named colors via\n``matplotlib.colors.get_named_colors_mapping()``; existing tools\n``get_color_value`` and ``list_color_families`` help inspect colors.\nThe resource ``dartwork-mpl://palette/colors`` lists exact package\ncolor names and values.\nFor example, ``cmap=\"coolwarm\"`` and ``color=\"dc.blue6\"`` are valid.\nDynamic expressions and unknown receivers are left unchecked;\nlive custom names and explicit inline literal registrations are\naccepted. Implicit/dynamic inline map registration defers map checks.\nDirect named-color mapping updates and dynamic assignment keys\nsimilarly defer color checks, while map checks still run.",
+    "inputSchema": {
+     "additionalProperties": false,
+     "properties": {
+      "code": {
+       "type": "string",
+       "description": "Python source to analyze."
+      }
+     },
+     "required": [
+      "code"
+     ],
+     "type": "object"
+    },
+    "outputSchema": {
+     "properties": {
+      "result": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "result"
+     ],
+     "type": "object",
+     "x-fastmcp-wrap-result": true
+    }
+   },
+   "lint_dartwork_mpl_code_json": {
+    "description": "Lint Python source against the dartwork-mpl anti-pattern\ncatalog and return a structured JSON-friendly list of issues.\n\nEach issue is a dict with keys:\n\n- ``rule_id``: str (e.g. ``\"figsize-direct\"``)\n- ``severity``: ``\"critical\" | \"warning\" | \"info\"``\n- ``line``: int (1-based) or ``None``\n- ``column``: int (absolute zero-based Python character offset within source) or ``None``\n- ``message``: str\n- ``fix_suggestion``: str | ``None``\n\nCompanion to :func:`lint_dartwork_mpl_code` which returns a\nformatted text report for human reading. This tool is preferred\nwhen an agent wants to programmatically pick fixes.\n\nValid names come from ``sorted(matplotlib.colormaps)`` and\n``matplotlib.colors.get_named_colors_mapping()``. Literal checks\nshare the text tool's static scope and never execute source.",
+    "inputSchema": {
+     "additionalProperties": false,
+     "properties": {
+      "code": {
+       "type": "string",
+       "description": "Python source to analyze."
+      }
+     },
+     "required": [
+      "code"
+     ],
+     "type": "object"
+    },
+    "outputSchema": {
+     "properties": {
+      "result": {
+       "items": {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       "type": "array"
+      }
+     },
+     "required": [
+      "result"
+     ],
+     "type": "object",
+     "x-fastmcp-wrap-result": true
+    }
+   },
+   "apply_lint_fixes": {
+    "description": "Apply safe identifier-level rewrites for a curated subset\nof lint rules, then return the fixed source plus the diff\nbetween before/after lint runs.\n\nWraps :func:`dartwork_mpl.lint.apply_lint_fixes`. Currently\nrewrites ``plt.style.use → dm.style.use`` and the no-arg\n``plt.tight_layout() / fig.tight_layout()`` calls →\n``dm.simple_layout(fig)``. Context-dependent rules (e.g.\n``figsize-direct`` — which needs the agent to choose a width\nand aspect token) are left untouched and surfaced in\n``unfixed`` so the agent knows what's still pending.",
+    "inputSchema": {
+     "additionalProperties": false,
+     "properties": {
+      "code": {
+       "type": "string",
+       "description": "Python source."
+      }
+     },
+     "required": [
+      "code"
+     ],
+     "type": "object"
+    },
+    "outputSchema": {
+     "additionalProperties": true,
+     "type": "object"
+    }
+   },
+   "migrate_legacy_code": {
+    "description": "Rewrite 0.3-era dartwork-mpl source toward the 0.4 idioms.\n\nTwo passes are applied:\n\n1. **Safe substitutions**: ``dm.cm2in`` → ``dm.cm``,\n   ``plt.style.use`` → ``dm.style.use``.\n2. **Hint comments** are inserted above lines using the\n   context-dependent patterns the agent must rewrite by hand —\n   the deprecated width tokens (``dm.SW``/``MW``/``TW``/``DW``,\n   ``dm.FS_*``, ``dm.WIDTHS[...]``), the removed\n   ``dm.subplots`` / ``dm.figure`` calls, bare\n   ``figsize=(w, h)`` tuples, ``tight_layout()`` calls, and the\n   removed ``dm.agent_utils`` / ``dm.xplot`` namespaces.\n\nThe output is always returned (never raises). Run\n:func:`lint_dartwork_mpl_code_json` on the result to confirm no\ncritical issues remain after the agent applies the manual hints.",
+    "inputSchema": {
+     "additionalProperties": false,
+     "properties": {
+      "code": {
+       "type": "string",
+       "description": "0.3-era Python source."
+      }
+     },
+     "required": [
+      "code"
+     ],
+     "type": "object"
+    },
+    "outputSchema": {
+     "properties": {
+      "result": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "result"
+     ],
+     "type": "object",
+     "x-fastmcp-wrap-result": true
+    }
+   }
+  }
+ },
+ "anti_patterns_resource": {
+  "recorded_from": "origin/main d952266b22beab83e817445b99232474a48130a4",
+  "uri": "dartwork-mpl://guide/anti-patterns",
+  "removed_rule_block": "  - id: dm-subplots-removed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.(?:subplots|figure)\\s*\\('\n    message: |\n      `dm.subplots` and `dm.figure` were REMOVED — accessing them now\n      raises `AttributeError`. Use `plt.subplots(figsize=dm.figsize(...))`\n      (or `plt.figure(figsize=dm.figsize(...))` for custom GridSpec).\n      Apply style separately via `dm.style.use(...)`.\n    why: |\n      Both functions were thin wrappers around `plt.subplots` / `plt.figure`\n      that bundled style mutation, polymorphic `width=`, and a deny-list\n      of legacy kwargs. Removing them keeps the matplotlib API native and\n      reduces dartwork-mpl's surface to a single sizing helper.\n    fix_suggestion: 'plt.subplots(figsize=dm.figsize(\"13cm\", \"standard\"))'\n\n  - id: cm2in-figsize\n    severity: critical\n    detector:\n      kind: regex\n      pattern: 'figsize\\s*=\\s*\\([^)]*cm2in'\n    message: |\n      `figsize=(dm.cm2in(...), dm.cm2in(...))` is the legacy 0.3\n      pattern: `dm.cm2in` itself raises `AttributeError`. Use\n      `figsize=dm.figsize(\"<n>cm\", \"<aspect>\")` instead.\n    fix_suggestion: 'figsize=dm.figsize(\"9cm\", \"standard\")'\n\n  - id: dm-spines-removed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.(?:style_spines|add_grid|minimal_axes)\\s*\\('\n    message: |\n      `dm.style_spines`, `dm.add_grid`, and `dm.minimal_axes` were\n      REMOVED in 0.4.1 (#156). They were thin matplotlib wrappers\n      whose only contribution was curated default kwargs. Inline the\n      raw matplotlib calls instead, or copy a snippet from\n      `docs/usage_guide/recipes.md` (publication grid, minimal axes,\n      thin gray spines).\n    fix_suggestion: 'see docs/usage_guide/recipes.md'\n\n  - id: dm-legacy-wrappers-removed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.(?:format_axis_percent|format_axis_labels|format_axis_thousands|add_frame|add_value_labels|set_xmargin|set_ymargin|hide_spines|hide_all_spines|show_only_spines|remove_grid|save_figure|create_figure_with_style)\\s*\\('\n    message: |\n      These legacy `dm.*` helpers were REMOVED in 0.4.1. They were\n      thin formatter, spine, margin, and figure wrappers around native\n      matplotlib calls. Inline the matplotlib API directly, or use the\n      recipes in `docs/migration.md` / `docs/usage_guide/recipes.md`;\n      dartwork-mpl keeps recipes and utilities rather than wrapper\n      functions for simple matplotlib operations.\n    fix_suggestion: 'see docs/migration.md'\n\n  - id: dm-auto-select-colors-renamed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.(?:helpers\\.colors\\.)?auto_select_colors\\s*\\('\n    message: |\n      `auto_select_colors` was renamed to `make_palette` in 0.4.1\n      (#156) for vocabulary alignment with `make_offset`.\n      Argument cleanup at the same time:\n      `n_series` → `n`, `color_type` → `kind`,\n      `highlight_index` → `highlight`.\n    fix_suggestion: 'dm.make_palette(n, kind=\"categorical\")'\n\n  - id: dm-auto-layout-removed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.auto_layout\\s*\\('\n    message: |\n      `dm.auto_layout` was REMOVED in 0.5.4 — accessing it now raises\n      `AttributeError`. Use `dm.simple_layout(fig, margin=...)`: the\n      legacy `padding` inches argument maps to `margin`;\n      `max_iter`/`tolerance` are obsolete (simple_layout is\n      direct-calc).\n    fix_suggestion: 'dm.simple_layout(fig)'\n\n  - id: dm-named-renamed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.named\\s*\\('\n    message: |\n      `dm.named` was REMOVED in 0.4.1 — the replacement is\n      `dm.color(...)`, a single string-parser entry point that accepts\n      token names, hex, and `rgb()`/`oklch()`/`oklab()` functional\n      strings.\n    fix_suggestion: 'dm.color(\"oc.red5\")'\n\n  - id: dm-model-b-color-api-removed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: \"\\\\bdm\\\\.(?:get_\\u0070alette|set_\\u0063ycle|cycle|cycle_\\u0063ycler|list_\\u0070alettes|list_\\u0063olormaps|plot_\\u0063olors|plot_\\u0063olormaps|show_\\u0070alette|classify_\\u0063olormap|Dartwork\\u0043olor|Dartwork\\u0043olormap|set_palette_version)\\\\b\"\n    message: |\n      Version 0.6.0 removed the old palette, cycle, diagnostic,\n      and color-class vocabulary; there is no palette-version switch.\n      For current color operations use `dm.colors(...)`,\n      `dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`.\n    fix_suggestion: 'dm.colors(\"blue\", n=5)'\n\n  - id: dm-removed-namespaces\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.(?:agent_utils|xplot)\\b'\n    message: |\n      `dm.agent_utils` and `dm.xplot` were REMOVED in 0.4. The\n      agent_utils surfaces moved to `dm.lint` / `dm.validate_figure` /\n      `dm.helpers`; the xplot templates now live in `dm.templates`\n      (e.g. `dm.templates.plot_diverging_bar`). See docs/migration.md.\n    fix_suggestion: 'see docs/migration.md'\n\n  - id: dm-install-llm-txt-removed\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.(?:install_llm_txt|uninstall_llm_txt|INSTALL_TARGETS)\\b'\n    message: |\n      The `install_llm_txt` installer family\n      (`install_llm_txt`/`uninstall_llm_txt`/`INSTALL_TARGETS`) was\n      REMOVED in 0.5. The agent-doc corpus is read at runtime — use\n      `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)`, or the MCP\n      `dartwork-mpl://guide/*` resources.\n    fix_suggestion: 'dm.get_agent_doc(\"llms\")'\n\n  - id: deprecated-width-token\n    severity: critical\n    detector:\n      kind: regex\n      pattern: '\\bdm\\.(SW|MW|TW|DW|FS_[A-Z_]+|WIDTHS)\\b'\n    message: |\n      `dm.SW/MW/TW/DW/FS_*/WIDTHS` were REMOVED in 0.4.0 — accessing\n      them now raises `AttributeError`. Use\n      `figsize=dm.figsize(\"<n>cm\", \"<aspect>\")`, or `dm.col1`/`dm.col2`\n      for academic columns.\n\n"
+ }
+}

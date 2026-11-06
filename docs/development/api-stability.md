@@ -70,6 +70,27 @@ Deprecated today (first warning, earliest removal; replacements in
 | module `dartwork_mpl.util` (warns per access) | 0.8 | 0.10 or later | the owner module of each name (table in migration.md) |
 | `FontFamily.tnum`, `FontMeasurement.tnum`, `FontFaceMeasurement.tnum` | 0.8 | 0.10 | `.tnum_available` (same value) |
 
+### Removing a name
+
+`src/dartwork_mpl/_compat.py` is the only place removed-name metadata is
+edited. A removed name goes into three tables there:
+
+- `_REMOVED_NAMES`: the release that removed it and its replacement, which
+  `dm.<name>` reports in its `AttributeError`;
+- `_CODEMOD_HINTS`: the `# TODO(dm-migrate):` comment that
+  `dm.migrate_legacy_code` writes above a use of it;
+- `_LINT_RULES`: the anti-pattern rule that `dm.lint_code` reports it under.
+
+Then run `uv run python scripts/generate_removed_name_rules.py`, which
+writes `_LINT_RULES` into `asset/prompt/02-anti-patterns.yaml`; do not edit
+those rules in the YAML. The catalog is part of `llms-full.txt`, so
+regenerate that too: `generate_llms_full_txt(app, write=True)` in
+`docs/_ext/build_hooks.py`. `tests/contracts/test_deprecation_registry_parity.py`
+fails until every consumer reports the new name and the catalog matches the
+registry. `tests/contracts/test_removed_names_golden.py` pins the published
+wording of the names removed so far against a record of the earlier output;
+a wording change there is a separate decision.
+
 ## Adding a public name
 
 Add the name to `__all__`, make sure the object is importable as
