@@ -111,6 +111,22 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
             item.add_marker(pytest.mark.color_pipeline)
 
 
+@pytest.fixture
+def report_preset() -> Iterator[None]:
+    """Run one test under the ``report`` preset inside its own ``rc_context``.
+
+    Opt in per module with ``pytestmark = pytest.mark.usefixtures(
+    "report_preset")``; the preset is applied after the isolation fixture
+    below has taken its snapshot and is undone before that fixture resets.
+    """
+    import dartwork_mpl as dm
+
+    with mpl.rc_context():
+        dm.style.use("report")
+        yield
+    plt.close("all")
+
+
 @pytest.fixture(autouse=True)
 def _matplotlib_state_isolation() -> Iterator[None]:
     """Close figures, reset rcParams/preset ownership, and restore ``dm.config``.

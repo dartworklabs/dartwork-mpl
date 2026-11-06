@@ -20,15 +20,11 @@ import numpy as np
 import pytest
 
 import dartwork_mpl as dm
+from tests.support.mpl_observe import drawn_renderer
 
 PRESETS = ("report", "scientific", "presentation")
 ENTRY_PATHS = ("place_legend", "raw")
 TOL_PX = 0.5
-
-
-def _renderer(fig):
-    fig.canvas.draw()
-    return fig.canvas.get_renderer()
 
 
 def _legend_above(ax, entry: str) -> None:
@@ -69,7 +65,7 @@ class TestTitleOverLegend:
         title = ax.set_title("Real GDP growth by country")
         _legend_above(ax, entry)
         size, weight = title.get_fontsize(), title.get_fontweight()
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         assert not _clear(
             title.get_window_extent(renderer),
             ax.get_legend().get_window_extent(renderer),
@@ -77,7 +73,7 @@ class TestTitleOverLegend:
 
         dm.simple_layout(fig)
 
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         title_box = title.get_window_extent(renderer)
         legend_box = ax.get_legend().get_window_extent(renderer)
         assert title_box.y0 >= legend_box.y1 - TOL_PX
@@ -97,7 +93,7 @@ class TestTitleOverLegend:
         title = ax.set_title("Real GDP growth by country")
         _legend_above(ax, entry)
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         baseline = title.get_transform().transform(title.get_position())[1]
         legend_top = ax.get_legend().get_window_extent(renderer).y1
         pad_px = plt.rcParams["axes.titlepad"] * fig.dpi / 72.0
@@ -113,7 +109,7 @@ class TestTitleOverLegend:
         ]
         ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncols=2)
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         legend_box = ax.get_legend().get_window_extent(renderer)
         baselines = set()
         for title in titles:
@@ -129,9 +125,9 @@ class TestTitleOverLegend:
         title = ax.set_title("Real GDP growth by country")
         dm.place_legend(ax, loc="above")
         dm.simple_layout(fig)
-        first = title.get_window_extent(_renderer(fig))
+        first = title.get_window_extent(drawn_renderer(fig))
         dm.simple_layout(fig)
-        second = title.get_window_extent(_renderer(fig))
+        second = title.get_window_extent(drawn_renderer(fig))
         assert second.y0 == pytest.approx(first.y0, abs=TOL_PX)
         assert second.y1 == pytest.approx(first.y1, abs=TOL_PX)
         plt.close(fig)
@@ -141,7 +137,7 @@ class TestTitleOverLegend:
         title = ax.set_title("Real GDP growth by country")
         ax.legend(loc="upper right")
         dm.simple_layout(fig)
-        _renderer(fig)
+        drawn_renderer(fig)
         base = ax.transAxes.transform(title.get_position())[1]
         pad = title.get_transform().transform(title.get_position())[1] - base
         assert pad == pytest.approx(
@@ -154,7 +150,7 @@ class TestTitleOverLegend:
         title = ax.set_title("Left", loc="left")
         ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.0), ncols=2)
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         assert _clear(
             title.get_window_extent(renderer),
             ax.get_legend().get_window_extent(renderer),
@@ -182,7 +178,7 @@ class TestSuptitleOverLegend:
         _legend_above(top, entry)
         suptitle = fig.suptitle("Figure suptitle")
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         sup_box = suptitle.get_window_extent(renderer)
         legend_box = top.get_legend().get_window_extent(renderer)
         assert _clear(sup_box, legend_box)
@@ -215,7 +211,7 @@ class TestBottomSourceNote:
             fontsize=dm.fs(-1),
         )
         dm.simple_layout(fig)
-        renderer = _renderer(fig)
+        renderer = drawn_renderer(fig)
         note_box = note.get_window_extent(renderer)
         xlabel_box = ax.xaxis.label.get_window_extent(renderer)
         assert note_box.y1 <= xlabel_box.y0 + TOL_PX

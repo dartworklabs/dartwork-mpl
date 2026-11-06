@@ -28,12 +28,7 @@ from dartwork_mpl.formatting._years import WholeYearLocator, YearTickFormatter
 YEARS = np.arange(2014, 2025)
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _on(axis) -> tuple[list[float], list[str]]:

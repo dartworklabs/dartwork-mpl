@@ -27,12 +27,7 @@ MONTHS = np.arange(np.datetime64("2023-01"), np.datetime64("2026-02")).astype(
 OPTIONS = {"tick_years": 4, "date_style": "concise", "number_ladder": "si"}
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _texts(axis) -> list[str]:

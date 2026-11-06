@@ -26,12 +26,7 @@ from dartwork_mpl.formatting import (
 MINUS = "\N{MINUS SIGN}"
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _bars(values):
