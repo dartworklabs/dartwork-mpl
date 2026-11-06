@@ -13,10 +13,15 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
 - x axes whose plotted data are integers 1900-2099 (annual lines, bars,
   bars grouped side by side within each year, scatter, ``stackplot`` and
   ``fill_between`` areas; twins, shared axes and a ``secondary_xaxis``
-  showing the same years included) are year axes: ticks on whole years
+  showing the same years included) are year axes, and so are y axes whose
+  data *positions* are such years (horizontal bars, grouped too, and
+  ``fill_betweenx`` spans; a ``twiny`` sibling or ``secondary_yaxis``
+  following them). A line's, a scatter's or a bar's y values are
+  quantities and never make a year axis (a price of 1,985 … 2,045 keeps
+  its separators). A year axis ticks whole years
   only (:class:`._years.WholeYearLocator`), read two digits (``16, 18,
   20``; four when two would print alike, or with ``config.tick_years =
-  4``); integer data in that range that are not years (elevations) read
+  4``); integer x data in that range that are not years (elevations) read
   the same way, so give such an axis a formatter of your own;
 - smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
   sit in 1000-2999 (``1950.3`` elevations), log and category axes, colorbars
@@ -91,6 +96,7 @@ from ._quarters import (
 from ._years import (
     WholeYearLocator,
     YearTickFormatter,
+    requested_format,
     requested_params,
     year_data,
 )
@@ -120,13 +126,112 @@ _OTHER_STEPS = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 15, 20, 25, 30, 50, 100)
 _MONTH_DAYS = (28.0, 31.0)
 
 
+# ScalarFormatter switches the library's default numbers already have off.
+_OFF_IN_DEFAULT_NUMBERS = (
+    "useOffset",
+    "scientific",
+    "useMathText",
+    "useLocale",
+)
+
+
+def _met_by_default_numbers(name: str, value: object, *, scaled: bool) -> bool:
+    """Whether a ScalarFormatter setting asks nothing these numbers lack.
+
+    They have no offset, no exponent, no math text and no locale, so turning
+    any of those off (``False``, or ``None``: the rc default) is met, except
+    ``style="plain"`` (``scientific=False``) on an axis the library scales
+    (``0.5M``): plain asks for full numbers.
+    """
+    if name == "scientific" and scaled:
+        return False
+    return name in _OFF_IN_DEFAULT_NUMBERS and (value is None or value is False)
+
+
+_SCALAR_SETTERS = {
+    "useOffset": ticker.ScalarFormatter.set_useOffset,
+    "scientific": ticker.ScalarFormatter.set_scientific,
+    "powerlimits": ticker.ScalarFormatter.set_powerlimits,
+    "useMathText": ticker.ScalarFormatter.set_useMathText,
+    "useLocale": ticker.ScalarFormatter.set_useLocale,
+}
+
+
 class DefaultNumberFormatter(AxisUnitFormatter):
-    """Thousands separators below one million, the largest tick's unit above."""
+    """Thousands separators below one million, the largest tick's unit above.
+
+    ``ax.ticklabel_format`` and the ScalarFormatter setters behind it work
+    on it: a request these numbers already meet (``useOffset=False``;
+    ``style="plain"`` while the axis has no unit) keeps them, and is
+    remembered; a request for matplotlib's own notation (scientific, power
+    limits, an offset, math text, locale; plain full numbers on a ``0.5M``
+    axis) puts matplotlib's ``ScalarFormatter`` on the axis with every
+    remembered setting replayed first, then that one, as matplotlib's own
+    formatter would have them.
+    """
 
     def __init__(self, ladder: Sequence[Unit]) -> None:
         super().__init__(ladder, "max")
+        self._kept: dict[str, object] = {}
+
+    def set_useOffset(self, val: bool | float) -> None:
+        """``ticklabel_format(useOffset=...)``; see the class docstring."""
+        self._asked("useOffset", val)
+
+    def set_scientific(self, b: bool) -> None:
+        """``ticklabel_format(style=...)``; see the class docstring."""
+        self._asked("scientific", b)
+
+    def set_powerlimits(self, lims: tuple[int, int]) -> None:
+        """``ticklabel_format(scilimits=...)``; see the class docstring."""
+        self._asked("powerlimits", lims)
+
+    def set_useMathText(self, val: bool | None) -> None:
+        """``ticklabel_format(useMathText=...)``; see the class docstring."""
+        self._asked("useMathText", val)
+
+    def set_useLocale(self, val: bool | None) -> None:
+        """``ticklabel_format(useLocale=...)``; see the class docstring."""
+        self._asked("useLocale", val)
+
+    def keep(self, settings: dict[str, object]) -> None:
+        """Remember settings asked before this formatter took the axis.
+
+        ``ax.ticklabel_format(style="plain")`` on matplotlib's formatter,
+        before ``dm.simple_layout`` put this one in, is met here as asked
+        after it would be: kept, and replayed on a later handover.
+        """
+        self._kept.update(settings)
+
+    def scales(self) -> bool:
+        """Whether the axis prints in a unit (``0.5M``) at its current ticks."""
+        if self._plan is None and isinstance(self.axis, Axis):
+            self.set_locs(list(self.axis.get_majorticklocs()))
+        unit = self._plan.axis_unit if self._plan is not None else None
+        return unit is not None and unit.factor != 1.0
+
+    def _asked(self, name: str, value: object) -> None:
+        if _met_by_default_numbers(name, value, scaled=self.scales()):
+            self._kept[name] = value
+            return
+        axis = self.axis
+        if not isinstance(axis, Axis):
+            raise ValueError(
+                "DefaultNumberFormatter hands a request for matplotlib's "
+                "notation to its axis: call set_axis first"
+            )
+        stock = ticker.ScalarFormatter()
+        for kept, kept_value in [*self._kept.items(), (name, value)]:
+            _SCALAR_SETTERS[kept](stock, kept_value)  # type: ignore[operator]
+        axis.set_major_formatter(stock)
+
+    def wants_unit(self, values: Sequence[float]) -> bool:
+        """Whether these tick values would print in a unit (``0.5M``)."""
+        return bool(values) and self._axis_unit(values).factor != 1.0
 
     def _axis_unit(self, values: Sequence[float]) -> Unit:
+        if self._kept.get("scientific") is False:
+            return self._ladder[0]  # plain asked: full numbers, never a unit
         top = max(abs(v) for v in values)
         if top < _UNIT_FROM * (1 - 1e-9):
             return self._ladder[0]
@@ -537,7 +642,7 @@ def _restyle_dates(
 def _year_axis(
     axis: Axis, values: npt.NDArray[np.float64], digits: Digits, suffix: str
 ) -> int:
-    """Whole-year ticks and year labels on an x axis whose data are years.
+    """Whole-year ticks and year labels on an axis whose data are years.
 
     The data decide (:func:`year_data` over ``values``: the axes'
     :func:`plotted_dates`, twins and shared axes included, or what a
@@ -546,7 +651,9 @@ def _year_axis(
     Matplotlib's own
     locator gives way to :class:`WholeYearLocator`, which carries what
     someone asked of it in place (``ax.locator_params(axis="x", nbins=3)``),
-    and its own formatter to :class:`YearTickFormatter`. A locator or
+    and its own formatter to :class:`YearTickFormatter`, which carries what
+    was asked of that in place (``ax.ticklabel_format(axis="x",
+    useOffset=False)``; :func:`requested_format`). A locator or
     formatter someone set stays. Under a locator someone set
     (``MaxNLocator``, pinned ticks) the year formatter decides at each draw:
     years while every tick in view is a whole year (``05, 10``), else every
@@ -560,39 +667,55 @@ def _year_axis(
         axis.set_major_locator(WholeYearLocator(**asked))
         changed = 1
     if axis.isDefault_majfmt:
-        axis.set_major_formatter(YearTickFormatter(digits, suffix))
+        format_asked = requested_format(axis.get_major_formatter())
+        axis.set_major_formatter(
+            YearTickFormatter(digits, suffix, **format_asked)
+        )
         changed = 1
     return changed
 
 
-def _secondary_x_axes(ax: Axes) -> list[SecondaryAxis]:
-    """The ``ax.secondary_xaxis(...)`` children of ``ax``."""
+def _axis_of(ax: Axes | SecondaryAxis, which: Literal["x", "y"]) -> Axis:
+    return ax.xaxis if which == "x" else ax.yaxis
+
+
+_WHICH: tuple[Literal["x", "y"], ...] = ("x", "y")
+
+
+def _secondary_axes(ax: Axes, which: Literal["x", "y"]) -> list[SecondaryAxis]:
+    """The ``ax.secondary_xaxis(...)`` (or ``secondary_yaxis``) children of ``ax``."""
     return [
         child
         for child in ax.child_axes
         if isinstance(child, SecondaryAxis)
-        and child.xaxis.get_scale() == "function"  # a secondary x on linear
+        # a secondary axis of a linear parent axis
+        and _axis_of(child, which).get_scale() == "function"
     ]
 
 
-def _year_axes(ax: Axes, digits: Digits, suffix: str) -> int:
-    """:func:`_year_axis` on ``ax``'s x axis and its secondary x axes.
+def _year_axes(
+    ax: Axes, which: Literal["x", "y"], digits: Digits, suffix: str
+) -> int:
+    """:func:`_year_axis` on ``ax``'s x (or y) axis and its secondary axes.
 
-    A secondary x axis shows the plotted x data through its functions
+    A secondary axis shows the plotted data through its functions
     (``secondary_xaxis("top")``: the same years; ``y - 1990``: ages), so it
     takes the year treatment when what it shows are years, under the same
     flags; matplotlib keeps them on it until its parent's scale changes.
     The functions see only a small sample of the data
     (:func:`_secondary_values`).
     """
-    years = plotted_dates(ax, "x", bar_slot=1.0)
-    changed = _year_axis(ax.xaxis, years, digits, suffix)
-    secondaries = _secondary_x_axes(ax)
+    # On y only positions count: horizontal bars and fill_betweenx spans.
+    # A line's or a scatter's y values are quantities (a price of 1,985 …).
+    years = plotted_dates(ax, which, bar_slot=1.0, positions_only=which == "y")
+    changed = _year_axis(_axis_of(ax, which), years, digits, suffix)
+    secondaries = _secondary_axes(ax, which)
     sample = _sample(years) if secondaries else years
     for secondary in secondaries:
-        shown = _secondary_values(secondary, sample)
+        axis = _axis_of(secondary, which)
+        shown = _secondary_values(axis, sample)
         if shown is not None:
-            changed += _year_axis(secondary.xaxis, shown, digits, suffix)
+            changed += _year_axis(axis, shown, digits, suffix)
     return changed
 
 
@@ -626,9 +749,9 @@ def _sample(values: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
 
 
 def _secondary_values(
-    secondary: SecondaryAxis, values: npt.NDArray[np.float64]
+    secondary: Axis, values: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64] | None:
-    """What ``secondary`` shows for ``values``; ``None`` if it cannot say.
+    """What a secondary axis shows for ``values``; ``None`` if it cannot say.
 
     Runs the secondary's functions (its scale's inverse transform) with
     numpy's floating-point warnings off. A function that raises (a
@@ -639,7 +762,7 @@ def _secondary_values(
     try:
         with np.errstate(all="ignore"):
             shown = np.asarray(
-                secondary.xaxis.get_transform().inverted().transform(values),
+                secondary.get_transform().inverted().transform(values),
                 dtype=float,
             )
     except Exception:  # noqa: BLE001 - user functions may raise anything
@@ -692,9 +815,8 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if not _plain_numbers(axis):
                 continue
-            if which == "x":
-                suffix = "년" if korean and date_style == "concise" else ""
-                changed += _year_axes(ax, tick_years, suffix)
+            suffix = "년" if korean and date_style == "concise" else ""
+            changed += _year_axes(ax, which, tick_years, suffix)
             if not axis.isDefault_majfmt:
                 continue
             ticks = _visible_ticks(axis)
@@ -702,7 +824,16 @@ def apply_default_tick_format(fig: Figure) -> int:
                 continue
             if which == "x" and all(_YEARS[0] <= t <= _YEARS[1] for t in ticks):
                 continue  # years: 2024, not 2,024
-            axis.set_major_formatter(DefaultNumberFormatter(ladder))
+            numbers = DefaultNumberFormatter(ladder)
+            scaled = numbers.wants_unit(ticks)
+            asked = requested_format(axis.get_major_formatter())
+            if not all(
+                _met_by_default_numbers(k, v, scaled=scaled)
+                for k, v in asked.items()
+            ):
+                continue  # matplotlib's notation asked of its formatter in place
+            numbers.keep(asked)  # met here; a later request replays them
+            axis.set_major_formatter(numbers)
             changed += 1
     return changed
 
@@ -851,15 +982,20 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
     :class:`QuarterLocator`: 1, 2, 4, 8 … quarters, Q1 kept) are thinned
     the same way through the locator's steps, so the notation never
     changes; see :func:`_thin_by_steps`. Year axes (a
-    :class:`WholeYearLocator`, ``secondary_xaxis`` children included) take
-    fewer whole-year ticks; see :func:`_thin_years`.
+    :class:`WholeYearLocator`, x or y, ``secondary_xaxis`` /
+    ``secondary_yaxis`` children included) take fewer whole-year ticks; see
+    :func:`_thin_years`.
     """
     renderer = get_renderer(fig)
     changed = 0
     for ax in fig.axes:
         if ax.name != "rectilinear":
             continue
-        secondaries = [s.xaxis for s in _secondary_x_axes(ax)]
+        secondaries = [
+            _axis_of(s, which)
+            for which in _WHICH
+            for s in _secondary_axes(ax, which)
+        ]
         for axis in (ax.xaxis, ax.yaxis, *secondaries):
             locator = axis.get_major_locator()
             if isinstance(locator, (CategoryDateLocator, QuarterLocator)):

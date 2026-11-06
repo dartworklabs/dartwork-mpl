@@ -7,7 +7,10 @@ when ``dm.simple_layout`` refits the margins. On such an axis
 :class:`WholeYearLocator` puts every tick on a whole year and
 :class:`YearTickFormatter` prints it, four digits when two visible years would
 print alike (``1900`` and ``2000``); a tick that is not a whole year (a zoom
-between two years) gets no label rather than a rounded one.
+between two years) gets no label rather than a rounded one. What someone asked
+of matplotlib's own locator or formatter in place (``ax.locator_params``,
+``ax.ticklabel_format``) carries over (:func:`requested_params`,
+:func:`requested_format`).
 """
 
 from __future__ import annotations
@@ -19,10 +22,12 @@ from typing import Any, Literal
 import matplotlib.ticker as ticker
 import numpy as np
 import numpy.typing as npt
+from matplotlib.axis import Axis
 
 __all__ = [
     "WholeYearLocator",
     "YearTickFormatter",
+    "requested_format",
     "requested_params",
     "two_digits_repeat",
     "whole_years",
@@ -155,7 +160,48 @@ class WholeYearLocator(ticker.MaxNLocator):
         ticker.MaxNLocator.set_params(self, nbins=nbins)
 
 
-class YearTickFormatter(ticker.Formatter):
+def requested_format(formatter: ticker.Formatter) -> dict[str, Any]:
+    """The settings someone changed on matplotlib's own tick formatter.
+
+    ``ax.ticklabel_format(axis="x", useOffset=False)`` and the
+    ``set_useOffset`` / ``set_scientific`` / ``set_powerlimits`` /
+    ``set_useMathText`` / ``set_useLocale`` calls behind it edit the default
+    ``ScalarFormatter`` in place, leaving ``isDefault_majfmt`` set. Returns
+    each setting that differs from a fresh ``ScalarFormatter``, keyed as
+    :class:`YearTickFormatter` takes it (``useOffset``: ``False``, ``True``
+    or a fixed offset; ``scientific``; ``powerlimits``; ``useMathText``;
+    ``useLocale``); ``{}`` for any other formatter. A value equal to
+    matplotlib's default (``useOffset=True``) cannot be told from no request.
+    """
+    if type(formatter) is not ticker.ScalarFormatter:
+        return {}
+    fresh = ticker.ScalarFormatter()
+    asked: dict[str, Any] = {}
+    if not formatter.get_useOffset() and formatter.offset:
+        asked["useOffset"] = formatter.offset  # a fixed offset
+    elif formatter.get_useOffset() != fresh.get_useOffset():
+        asked["useOffset"] = formatter.get_useOffset()
+    # No public getters for these two (matplotlib 3.11): read them where
+    # they are, and skip them if a later matplotlib renames them.
+    mine, base = vars(formatter), vars(fresh)
+    scientific = mine.get("_scientific")
+    if isinstance(scientific, bool) and scientific != base.get("_scientific"):
+        asked["scientific"] = scientific
+    limits, base_limits = mine.get("_powerlimits"), base.get("_powerlimits")
+    if (
+        isinstance(limits, (tuple, list))
+        and isinstance(base_limits, (tuple, list))
+        and tuple(limits) != tuple(base_limits)
+    ):
+        asked["powerlimits"] = tuple(limits)
+    if formatter.get_useMathText() != fresh.get_useMathText():
+        asked["useMathText"] = formatter.get_useMathText()
+    if formatter.get_useLocale() != fresh.get_useLocale():
+        asked["useLocale"] = formatter.get_useLocale()
+    return asked
+
+
+class YearTickFormatter(ticker.ScalarFormatter):
     """Whole years as two digits (``24``) or four (``2024``).
 
     ``suffix`` is appended to every year (``"년"``). Each :meth:`set_locs`
@@ -172,63 +218,97 @@ class YearTickFormatter(ticker.Formatter):
       2007.5``), no offset, never a rounded year; with every tick in view a
       whole year, the years.
 
+    It is matplotlib's ``ScalarFormatter`` without an offset and without
+    scientific notation until asked (``useOffset`` defaults to ``False``;
+    the rc ``axes.formatter.limits`` alone never puts an exponent on
+    years), so ``ax.ticklabel_format`` and its setters work on it; the
+    keywords set the same settings at construction (what
+    :func:`requested_format` read off matplotlib's formatter). Power limits
+    asked without a ``style`` turn scientific notation on, as on
+    matplotlib's own formatter. A year label already has no offset and no
+    exponent, so ``useOffset=False`` and ``style="plain"`` keep the years.
+    When the settings would give the ticks in view an exponent or an offset
+    (``scilimits=(0, 0)``, ``useOffset=2000``), every tick prints as
+    matplotlib's ScalarFormatter prints it, corner label included, on the
+    same whole-year ticks.
+
     The cursor readout (:meth:`format_data_short`) is the value itself
     (``2007.53``), as matplotlib's number axes write it: a cursor sits
-    between years.
+    between years. Like matplotlib's ScalarFormatter it formats an axis's
+    ticks: give it one (``set_axis``) before formatting.
     """
 
-    def __init__(self, digits: Literal[2, 4], suffix: str = "") -> None:
+    def __init__(
+        self,
+        digits: Literal[2, 4],
+        suffix: str = "",
+        *,
+        useOffset: bool | float = False,  # matplotlib's keyword names
+        scientific: bool | None = None,
+        powerlimits: tuple[int, int] | None = None,
+        useMathText: bool | None = None,
+        useLocale: bool | None = None,
+    ) -> None:
         if digits not in (2, 4):
             raise ValueError(f"digits must be 2 or 4, got {digits!r}")
+        super().__init__(
+            useOffset=useOffset, useMathText=useMathText, useLocale=useLocale
+        )
+        # Years carry no exponent unless someone asks: not from rc limits.
+        ticker.ScalarFormatter.set_scientific(self, False)
+        self._scientific_asked = False
+        if scientific is not None:
+            self.set_scientific(scientific)
+        if powerlimits is not None:
+            self.set_powerlimits(powerlimits)
         self.digits = digits
         self.suffix = suffix
         self._four = digits == 4
-        self._numbers: ticker.ScalarFormatter | None = None
-        self._cursor = ticker.ScalarFormatter()
-        self._plain = ticker.ScalarFormatter(useOffset=False)
-        self._plain.set_scientific(False)
+        self._numbers = False
 
-    def set_axis(self, axis: Any) -> None:
-        """Attach this formatter (and its number readouts) to ``axis``."""
-        super().set_axis(axis)
-        self._cursor.set_axis(axis)
-        self._plain.set_axis(axis)
+    def set_scientific(self, b: bool) -> None:
+        """Turn scientific notation on or off (``ticklabel_format(style=)``)."""
+        super().set_scientific(b)
+        self._scientific_asked = True
+
+    def set_powerlimits(self, lims: tuple[int, int]) -> None:
+        """Set the exponent thresholds (``ticklabel_format(scilimits=)``).
+
+        Asked without a ``style``, they turn scientific notation on, as on
+        matplotlib's own formatter, where it is on by default.
+        """
+        super().set_powerlimits(lims)
+        if not self._scientific_asked:
+            ticker.ScalarFormatter.set_scientific(self, True)
 
     def set_locs(self, locs: Sequence[float]) -> None:
-        """Choose years (two or four digits) or numbers from the ticks in view."""
+        """Choose years (two or four digits) or numbers from the ticks in view.
+
+        Matplotlib's ScalarFormatter settles the offset, exponent and
+        decimals first; the years stand unless those put an offset or an
+        exponent on the ticks.
+        """
+        axis = self.axis
+        if axis is None:
+            raise ValueError("YearTickFormatter needs an axis: call set_axis")
         values = [float(v) for v in locs]
         super().set_locs(values)
-        axis = getattr(self, "axis", None)
-        shown = values
-        if axis is not None:
-            low, high = sorted(float(v) for v in axis.get_view_interval())
-            shown = [v for v in values if low <= v <= high]
-        self._numbers = None
-        locator = axis.get_major_locator() if axis is not None else None
-        ours = isinstance(locator, WholeYearLocator)
-        if not ours and not all(_whole(v) for v in shown):
-            self._plain.set_locs(values)
-            self._numbers = self._plain
+        low, high = sorted(float(v) for v in axis.get_view_interval())
+        shown = [v for v in values if low <= v <= high]
+        ours = isinstance(axis, Axis) and isinstance(
+            axis.get_major_locator(), WholeYearLocator
+        )
+        between = not all(_whole(v) for v in shown)
+        self._numbers = bool(self.get_offset()) or (between and not ours)
         years = [round(v) for v in shown if _whole(v)]
         self._four = self.digits == 4 or two_digits_repeat(years)
 
     def __call__(self, x: float, pos: int | None = None) -> str:
-        """One tick's label: the year, a plain number, or nothing."""
-        if self._numbers is not None:
-            return str(self._numbers(x, pos))
+        """One tick's label: the year, a number, or nothing."""
+        if self._numbers:
+            return str(super().__call__(x, pos))
         if not _whole(float(x)):
             return ""
         year = round(x)
         body = f"{year}" if self._four else f"{year % 100:02d}"
         return f"{body}{self.suffix}"
-
-    def format_ticks(self, values: Sequence[float]) -> list[str]:
-        """Labels for the ticks, years or numbers chosen over those in view."""
-        self.set_locs(values)
-        return [self(value, i) for i, value in enumerate(values)]
-
-    def format_data_short(self, value: float) -> str:
-        """The cursor readout: the value at the axis's resolution."""
-        if getattr(self._cursor, "axis", None) is None:
-            return f"{value:g}"
-        return str(self._cursor.format_data_short(value))

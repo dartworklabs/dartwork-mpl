@@ -336,6 +336,21 @@ def _parse_template_meta(block_body: str, source: str) -> dict[str, object]:
     return fields
 
 
+#: The file-name suffix of a tier-2 gallery example (``plot_bar_advanced.py``).
+ADVANCED_SUFFIX = "_advanced"
+
+
+def template_id_of(stem: str, tier: str) -> str:
+    """The template id of gallery example ``stem`` in ``tier``.
+
+    ``plot_bar`` and ``plot_bar_advanced`` are both ``bar``; ``plot_3d``
+    keeps its prefix (``3d`` is not an identifier).
+    """
+    if tier == "advanced":
+        stem = stem.removesuffix(ADVANCED_SUFFIX)
+    return stem if stem == "plot_3d" else stem.removeprefix("plot_")
+
+
 def generate_template_index(app, *, write=False):
     """Check ``05-templates/_index.json`` against gallery metadata blocks.
 
@@ -346,8 +361,10 @@ def generate_template_index(app, *, write=False):
     or partial index.
 
     Tier-2 (advanced) templates live in
-    ``09_ai_templates/advanced/plot_*.py`` and get registered under the
-    ``"advanced"`` key in the JSON. Each entry carries an explicit
+    ``09_ai_templates_advanced/plot_*_advanced.py`` and get registered
+    under the ``"advanced"`` key in the JSON, with the basic tier's ids:
+    the ``_advanced`` suffix only keeps sphinx-gallery's example file
+    names unique across galleries. Each entry carries an explicit
     ``"tier"`` field (``"basic"`` / ``"advanced"``) so MCP / docs
     consumers can filter without re-parsing source paths.
     """
@@ -373,10 +390,7 @@ def generate_template_index(app, *, write=False):
             meta = _parse_template_meta(
                 match.group(1), source=str(path.relative_to(repo_root))
             )
-            stem = path.stem
-            template_id = (
-                stem if stem == "plot_3d" else stem.removeprefix("plot_")
-            )
+            template_id = template_id_of(path.stem, tier)
             meta["source_path"] = str(path.relative_to(repo_root))
             meta.setdefault("tier", tier)
             tier_index[template_id] = meta

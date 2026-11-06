@@ -22,9 +22,13 @@ a request for another format gets that format.
 
 - **Two-digit years on untouched axes.** An x axis whose data are integer
   years (1900–2099: annual lines, bars, grouped bars, scatter, `stackplot`
-  and `fill_between` areas; a `secondary_xaxis` showing them too) ticks
-  whole years only and reads `16, 18, 20 … 24` (no more `2005.0, 2007.5`,
-  nor a rounded `08`); monthly dates read `23.01, 23.07, 24.01`, quarterly
+  and `fill_between` areas; a `secondary_xaxis` showing them too), and a
+  y axis whose data *positions* are such years (horizontal bars such as
+  `ax.barh(range(2014, 2025), …)`, grouped too, `fill_betweenx` spans; a
+  `secondary_yaxis` following them), ticks whole years only and reads
+  `16, 18, 20 … 24` (no more `2005.0, 2007.5`, nor a rounded `08`, nor
+  `2,014` beside horizontal bars). Line, scatter and bar values on y are
+  quantities and keep their numbers (a price of `1,985 … 2,045`); monthly dates read `23.01, 23.07, 24.01`, quarterly
   dates `23.Q1, 23.Q3` (`stackplot` and `fill_between` areas included;
   `dm.format_axis_dates` and dated categories too). Korean figures print
   the same text, without the `년` suffix. Other
@@ -88,6 +92,34 @@ a request for another format gets that format.
   labels and `dm.format_axis_si` / `_millions` / `_billions` / `_myriad` no
   longer emit a `MatplotlibDeprecationWarning` about `Formatter.locs` on
   every draw.
+- **Docs build from `docs/`.** The 18 tier-2 gallery examples shared their
+  file names with the basic tier, so sphinx-gallery warned "Duplicate
+  example file name(s)" and `sphinx-build -W` failed when started in
+  `docs/`. They are now `plot_<id>_advanced.py`; template ids, MCP
+  resources and the bundled sources are unchanged, and
+  `find_template(..., tier="advanced")` reports the new `source_path`.
+- **Secondary axes stay on the canvas.** `dm.simple_layout` now fits the
+  tick labels, offset text and label of `ax.secondary_xaxis(...)` /
+  `ax.secondary_yaxis(...)` like the parent's own; they used to sit past
+  the figure edge. `dm.validate_figure`'s `OVERFLOW` and `CLIPPED_TEXT`
+  checks look at them too (matplotlib keeps them out of `fig.axes`).
+- **Layout checks judge drawn tick labels only.** `OVERFLOW`,
+  `CLIPPED_TEXT` and `CROSS_AXES_OVERLAP` no longer report tick labels
+  matplotlib never draws: those of an Axes with `ax.axis("off")`, and a
+  tick a hair past the view (a colorbar's `1.00` above a 0.9997 limit).
+- **`ax.ticklabel_format` on a year axis.** After `dm.simple_layout` it
+  raised `AttributeError: This method only works with the ScalarFormatter`,
+  and before it the request was dropped. The year formatter is now
+  matplotlib's `ScalarFormatter`, and what was asked of matplotlib's own
+  formatter before the layout carries over, so both orders draw the same
+  ticks: `useOffset=False` and `style="plain"` keep `14 … 24`; an exponent
+  or offset you ask for (`scilimits=(0, 0)`, `useOffset=2000`) reads as
+  matplotlib writes it, on whole-year ticks. The same holds on an axis with
+  the library's default numbers (`1,750`; `0.5M`): `ax.ticklabel_format()`
+  no longer raises there, `useOffset=False` keeps `1,750`, `style="plain"`
+  on a `0.5M … 3.0M` axis prints full numbers, and a request for
+  matplotlib's notation gets matplotlib's `ScalarFormatter`, with the
+  settings asked before it (`style="plain"`) kept.
 
 ## [0.6.0] - 2026-11-05
 

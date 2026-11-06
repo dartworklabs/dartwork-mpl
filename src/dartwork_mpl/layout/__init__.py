@@ -45,6 +45,7 @@ from .._figure_geometry import (
     reanchor_outside,
     respread_line_end_labels,
     same_position_axes,
+    secondary_axes,
 )
 from ..units import Length
 
@@ -297,7 +298,9 @@ def _axes_content_extent_px(
 
     Walks texts, title, axis labels, view-limited tick labels, axis
     offset text, and legend, plus the axes' own window extent so the
-    result is never smaller than the plot area. This is *almost* the
+    result is never smaller than the plot area. The tick labels, offset
+    text and axis label of its ``secondary_xaxis`` / ``secondary_yaxis``
+    children count as its own (:func:`secondary_axes`). This is *almost* the
     artist set the layout tests' ``measure_overflow`` oracle walks, with three deliberate
     deltas: the offset text and the axes window extent are only
     measured here, and the ``_LEGEND_FRAME_PAD`` slack is only added
@@ -329,15 +332,20 @@ def _axes_content_extent_px(
         pts.append((apos.x0, apos.y0))
         pts.append((apos.x1, apos.y1))
 
+    # ``secondary_xaxis`` / ``secondary_yaxis`` children: their tick
+    # labels, offset text and axis label sit around this axes' box like
+    # its own, but matplotlib keeps them out of ``fig.axes``.
+    owners = [ax, *secondary_axes(ax)]
+
     # Texts, centre/left/right titles, axis labels.
-    for txt in axes_text_artists(ax):
+    for txt in (t for owner in owners for t in axes_text_artists(owner)):
         if txt is None or not txt.get_visible() or not txt.get_text().strip():
             continue
         try:
             ext = txt.get_window_extent(renderer)
         except _BBOX_ERRORS:
             continue
-        if ext.width <= 0 or ext.height <= 0:
+        if not _measurable(ext):
             continue
         x0, x1 = _fixable_text_span(txt, ext, apos, fig.bbox.width)
         pts.append((x0, ext.y0))
@@ -347,12 +355,21 @@ def _axes_content_extent_px(
     # current view interval. Auto-generated ticks outside the data
     # range (e.g. ``10^16`` on a log axis with data up to ``10^9``)
     # are ignored, mirroring the layout tests' ``measure_overflow``.
-    for axis in (ax.xaxis, ax.yaxis):
+    # A tick label also counts only when its extent is finite and its tick
+    # sits across its own axis' box (as the OVERFLOW check asks): a reciprocal
+    # secondary axis puts a tick at infinity (a NaN width) and others in
+    # view but far off the canvas, which would squeeze the Axes to nothing.
+    for owner, axis in ((o, a) for o in owners for a in (o.xaxis, o.yaxis)):
         # ``get_view_interval`` returns the pair *reversed* on an inverted
         # axis (e.g. ``[1.05, -0.05]`` after ``invert_yaxis()``); sort so
         # the in-view test below doesn't drop every tick on such axes.
         vmin, vmax = sorted(axis.get_view_interval())
         tol = abs(vmax - vmin) * 1e-5
+        along_x = axis is owner.xaxis
+        try:
+            box = owner.get_window_extent(renderer)
+        except _BBOX_ERRORS:
+            continue
         for tick in axis.get_ticklabels():
             if not tick.get_visible() or not tick.get_text().strip():
                 continue
@@ -361,10 +378,10 @@ def _axes_content_extent_px(
                 pos = tick.get_position()
             except _BBOX_ERRORS:
                 continue
-            val = pos[0] if axis is ax.xaxis else pos[1]
+            val = pos[0] if along_x else pos[1]
             if val < vmin - tol or val > vmax + tol:
                 continue
-            if ext.width <= 0 or ext.height <= 0:
+            if not _measurable(ext) or not _across(owner, val, box, along_x):
                 continue
             pts.append((ext.x0, ext.y0))
             pts.append((ext.x1, ext.y1))
@@ -376,7 +393,7 @@ def _axes_content_extent_px(
         if ot.get_visible() and ot.get_text().strip():
             with contextlib.suppress(*_BBOX_ERRORS):
                 ext = ot.get_window_extent(renderer)
-                if ext.width > 0 and ext.height > 0:
+                if _measurable(ext):
                     pts.append((ext.x0, ext.y0))
                     pts.append((ext.x1, ext.y1))
 
@@ -394,6 +411,27 @@ def _axes_content_extent_px(
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     return min(xs), max(xs), min(ys), max(ys)
+
+
+def _measurable(ext: Bbox) -> bool:
+    """A finite, non-empty extent (text at infinity has a NaN width)."""
+    finite = all(math.isfinite(v) for v in ext.extents)
+    return finite and ext.width > 0 and ext.height > 0
+
+
+def _across(owner: Axes, value: float, box: Bbox, along_x: bool) -> bool:
+    """Whether the tick at ``value`` sits across ``box`` (0.5 px slack).
+
+    The tick's own place, not its label's centre, so rotated labels whose
+    text leans past the box still count.
+    """
+    if along_x:
+        place = owner.get_xaxis_transform().transform([(value, 0.0)])[0][0]
+        low, high = box.x0, box.x1
+    else:
+        place = owner.get_yaxis_transform().transform([(0.0, value)])[0][1]
+        low, high = box.y0, box.y1
+    return bool(low - 0.5 <= place <= high + 0.5)
 
 
 def _fixable_text_span(

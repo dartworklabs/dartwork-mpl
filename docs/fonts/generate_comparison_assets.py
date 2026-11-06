@@ -3,6 +3,9 @@
 
 Run: uv run python docs/fonts/generate_comparison_assets.py
 Output: docs/fonts/_generated/*.svg
+
+The dartwork side uses ``scientific``: these are 14-19 cm canvases, and
+``presentation`` (scientific x 2.6) belongs on a slide canvas.
 """
 
 from __future__ import annotations
@@ -56,7 +59,7 @@ def generate_before_after() -> None:
     print("[comparison] wrote before_default.svg")
 
     # ── RIGHT: dartwork-mpl styled ──
-    dm.style.use("presentation")
+    dm.style.use("scientific")
     fig_after, ax = plt.subplots(figsize=(5.5, 4))
     ax.bar(
         QUARTERS,
@@ -93,7 +96,7 @@ def generate_chart_context() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     import dartwork_mpl as dm
 
-    dm.style.use("presentation")
+    dm.style.use("scientific")
 
     phases = ["t=0", "t=1", "t=2", "t=3", "t=4", "t=5", "t=6"]
     throughput = [450, 480, 520, 560, 610, 670, 720]

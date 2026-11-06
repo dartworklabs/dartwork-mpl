@@ -6,7 +6,7 @@
       "data_shape": "categories: list[str], values: list[float], threshold: float",
       "difficulty": "intermediate",
       "narrative": "2024 BEV market share, top-5 leaders vs. EU 2030 mandate (55%)",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar_advanced.py",
       "tags": [
         "bar",
         "ranking",
@@ -23,7 +23,7 @@
       "data_shape": "categories: list[str], series: dict[str, list[float]]",
       "difficulty": "intermediate",
       "narrative": "Throughput by zone across four periods (Plant / Lab / Field) \u2014 totals annotated",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar_grouped.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar_grouped_advanced.py",
       "tags": [
         "bar",
         "grouped",
@@ -40,7 +40,7 @@
       "data_shape": "categories: list[str], values: list[float]",
       "difficulty": "intermediate",
       "narrative": "Top-8 metro housing-price indices; SF leads, axvline at median",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar_horizontal.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar_horizontal_advanced.py",
       "tags": [
         "bar",
         "horizontal",
@@ -58,7 +58,7 @@
       "data_shape": "groups: dict[str, list[float]]",
       "difficulty": "intermediate",
       "narrative": "A/B/C/D portfolio variant weekly returns; market baseline drawn as axhline",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_boxplot.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_boxplot_advanced.py",
       "tags": [
         "distribution",
         "boxplot",
@@ -75,7 +75,7 @@
       "data_shape": "x: 1D array, y: 1D array, z: 2D array",
       "difficulty": "advanced",
       "narrative": "gaussian-mixture landscape with two peaks; both annotated",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_contour.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_contour_advanced.py",
       "tags": [
         "contour",
         "2d-scalar",
@@ -92,7 +92,7 @@
       "data_shape": "matrix: 2D array (square, symmetric, values in [-1, 1])",
       "difficulty": "intermediate",
       "narrative": "Pairwise correlation of six asset classes; diagonal masked, off-diagonal labeled",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_heatmap.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_heatmap_advanced.py",
       "tags": [
         "heatmap",
         "correlation",
@@ -109,7 +109,7 @@
       "data_shape": "values: list[float]",
       "difficulty": "intermediate",
       "narrative": "API response-time distribution; SLA at p95 = 250ms; show how the tail breaches it",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_histogram.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_histogram_advanced.py",
       "tags": [
         "distribution",
         "histogram",
@@ -126,7 +126,7 @@
       "data_shape": "x: list[float], y_primary: list[float], y_compare: list[float]",
       "difficulty": "intermediate",
       "narrative": "Monthly active users vs. industry baseline; product launch window highlighted, peak annotated",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_line.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_line_advanced.py",
       "tags": [
         "line",
         "trend",
@@ -144,7 +144,7 @@
       "data_shape": "labels: list[str], sizes: list[float]",
       "difficulty": "intermediate",
       "narrative": "GPU vendor market share; leader exploded and called out",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_pie.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_pie_advanced.py",
       "tags": [
         "pie",
         "donut",
@@ -161,7 +161,7 @@
       "data_shape": "X: 2D array, Y: 2D array, Z: 2D array",
       "difficulty": "advanced",
       "narrative": "Energy landscape with two minima; viewing angle chosen to show both",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_3d.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_3d_advanced.py",
       "tags": [
         "3d",
         "surface",
@@ -178,7 +178,7 @@
       "data_shape": "theta: 1D array, r: list of 1D arrays",
       "difficulty": "advanced",
       "narrative": "Three time-of-day load profiles on a polar axis",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_polar.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_polar_advanced.py",
       "tags": [
         "polar",
         "radial",
@@ -195,7 +195,7 @@
       "data_shape": "x: list[float], y: list[float]",
       "difficulty": "intermediate",
       "narrative": "Price vs. demand fit across 60 SKUs; one outlier flagged",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_scatter.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_scatter_advanced.py",
       "tags": [
         "scatter",
         "correlation",
@@ -213,7 +213,7 @@
       "data_shape": "groups: dict[str, list[float]], x: list[float]",
       "difficulty": "advanced",
       "narrative": "24-month KPI trend across 6 product lines; sharey reveals the relative wins",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_small_multiples.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_small_multiples_advanced.py",
       "tags": [
         "small-multiples",
         "panel-ids",
@@ -229,7 +229,7 @@
       "data_shape": "categories: list[str], components: dict[str, list[float]]",
       "difficulty": "intermediate",
       "narrative": "Energy mix by period (Solar / Wind / Gas); totals annotated",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_stacked_bar.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_stacked_bar_advanced.py",
       "tags": [
         "stacked-bar",
         "composition",
@@ -246,7 +246,7 @@
       "data_shape": "variables: list[str], low_impact: list[float], high_impact: list[float]",
       "difficulty": "intermediate",
       "narrative": "Six model parameters ranked by absolute impact on output; output drops red, output rises green",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_tornado.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_tornado_advanced.py",
       "tags": [
         "tornado",
         "sensitivity",
@@ -263,7 +263,7 @@
       "data_shape": "x: list[float], y_price: list[float], y_volume: list[float]",
       "difficulty": "advanced",
       "narrative": "Daily price + volume; price target axhline on the left axis",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_twin_axis.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_twin_axis_advanced.py",
       "tags": [
         "twin-axis",
         "price-volume",
@@ -279,7 +279,7 @@
       "data_shape": "groups: dict[str, list[float]]",
       "difficulty": "intermediate",
       "narrative": "Customer satisfaction score by region; widest spread in APAC",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_violin.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_violin_advanced.py",
       "tags": [
         "violin",
         "distribution",
@@ -296,7 +296,7 @@
       "data_shape": "labels: list[str], values: list[float], is_total: list[bool]",
       "difficulty": "advanced",
       "narrative": "Energy bridge from generation to net delivery; positives green, negatives red, totals gray",
-      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_waterfall.py",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_waterfall_advanced.py",
       "tags": [
         "waterfall",
         "bridge",

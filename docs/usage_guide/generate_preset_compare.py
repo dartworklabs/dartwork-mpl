@@ -28,6 +28,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import dartwork_mpl as dm  # noqa: E402
+from dartwork_mpl.style import step_pt  # noqa: E402
 
 # ── Configuration ──────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ PRESET_META: dict[str, dict[str, str]] = {
     },
     "presentation": {
         "use": "slides & talks",
-        "desc": "Large fonts for projection",
+        "desc": "Scientific x 2.6 on its 23.4 cm slide canvas, shown scaled",
     },
     "poster": {
         "use": "conference posters",
@@ -84,9 +85,19 @@ _PANEL_PARAMS = [
     ("axes.linewidth", ""),
 ]
 
-# Fixed figure size so all presets align perfectly
+# The chart's canvas: one journal column. Every preset draws on it except
+# ``presentation``, which is ``scientific`` x 2.6 and draws on its own slide
+# canvas (``dm.figsize_for("slide")``, 23.4 x 10.5 cm); the widget scales
+# each panel to the same display width.
 FIG_WIDTH_CM = 9.0
 FIG_HEIGHT_CM = 6.0
+
+
+def _canvas(preset: str) -> tuple[float, float]:
+    """The figsize *preset* draws the sample chart on (call after style.use)."""
+    if preset.removesuffix("-kr") == "presentation":
+        return dm.figsize_for("slide")
+    return dm.figsize(f"{FIG_WIDTH_CM}cm", f"{FIG_HEIGHT_CM}cm")
 
 
 # ── Plot function ──────────────────────────────────────────────────────
@@ -147,10 +158,11 @@ def _render_preset_svg(preset: str) -> str:
     tick style, palette \u2014 are obvious at a glance.
     """
     dm.style.use(preset)
+    # Point sizes written here are a journal column's; on slides they grow
+    # with the preset (2.6 pt a step there).
+    pt = step_pt()
 
-    fig, ax = plt.subplots(
-        figsize=dm.figsize(f"{FIG_WIDTH_CM}cm", f"{FIG_HEIGHT_CM}cm"), dpi=150
-    )
+    fig, ax = plt.subplots(figsize=_canvas(preset), dpi=150)
 
     # Sample data: battery capacity retention over charge/discharge
     # cycles. This example exercises annotations + uncertainty band +
@@ -183,7 +195,7 @@ def _render_preset_svg(preset: str) -> str:
         cycles,
         measured,
         marker="o",
-        markersize=3.5,
+        markersize=3.5 * pt,
         color="dc.green3",
         lw=dm.lw(1),
         label="Measured",
@@ -197,7 +209,7 @@ def _render_preset_svg(preset: str) -> str:
         xytext=(720, 86),
         fontsize=dm.fs(-1),
         color="dc.violet4",
-        arrowprops={"arrowstyle": "->", "color": "dc.orange3", "lw": 0.6},
+        arrowprops={"arrowstyle": "->", "color": "dc.orange3", "lw": 0.6 * pt},
     )
 
     ax.set_title(
@@ -223,10 +235,12 @@ def _render_preset_svg(preset: str) -> str:
     return buf.getvalue()
 
 
-def _normalize_svg_viewbox(svg: str, target_vb: str) -> str:
-    """Force a uniform viewBox on an SVG so all presets occupy
-    the exact same pixel footprint."""
-    svg = re.sub(r'viewBox="[^"]*"', f'viewBox="{target_vb}"', svg, count=1)
+def _fit_svg_to_panel(svg: str) -> str:
+    """Let an SVG fill its panel, keeping its own viewBox.
+
+    Every panel has the column chart's aspect; a canvas of another shape
+    (the slide) is scaled down and centred in it, never cropped.
+    """
     svg = re.sub(r'width="[^"]*"', 'width="100%"', svg, count=1)
     return re.sub(r'height="[^"]*"', 'height="100%"', svg, count=1)
 
@@ -609,21 +623,11 @@ def build_preset_compare_html(output_path: Path | None = None) -> Path:
         svgs[preset] = _strip_xml_declaration(raw_svg)
         all_params[preset] = _collect_preset_params(preset)
 
-    # ── Extract the largest viewBox to use as common base ──
-    max_w, max_h = 0.0, 0.0
-    for svg in svgs.values():
-        m = re.search(r'viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"', svg)
-        if m:
-            w, h = float(m.group(1)), float(m.group(2))
-            max_w = max(max_w, w)
-            max_h = max(max_h, h)
-
-    target_vb = f"0 0 {max_w:.6f} {max_h:.6f}"
-    aspect_ratio = f"{max_w:.2f} / {max_h:.2f}"
-
-    # Normalize all SVGs to the same viewBox
+    # Every panel takes the column chart's aspect; each SVG keeps its own
+    # viewBox and is scaled into the panel.
+    aspect_ratio = f"{FIG_WIDTH_CM:.2f} / {FIG_HEIGHT_CM:.2f}"
     for preset in PRESETS:
-        svgs[preset] = _normalize_svg_viewbox(svgs[preset], target_vb)
+        svgs[preset] = _fit_svg_to_panel(svgs[preset])
 
     # ── Build dot-indicator HTML ──
     dots_lines = []

@@ -11,7 +11,7 @@ the Axes changed share one rule without importing each other.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from matplotlib import backend_bases
 from matplotlib.text import Text
@@ -24,6 +24,7 @@ __all__ = [
     "axes_decoration_extents",
     "axes_text_artists",
     "axes_titles",
+    "axes_with_secondaries",
     "canvas_renderer",
     "get_renderer",
     "iter_figure_level_extents",
@@ -31,6 +32,7 @@ __all__ = [
     "reanchor_outside",
     "respread_line_end_labels",
     "same_position_axes",
+    "secondary_axes",
     "spread_line_end_labels",
 ]
 
@@ -217,6 +219,32 @@ def axes_text_artists(ax: Axes) -> list[Text]:
     """Return ``ax.texts``, the three titles and the x/y axis labels."""
     titles = axes_titles(ax).values()
     return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
+
+
+def secondary_axes(ax: Axes) -> list[Axes]:
+    """Return the visible ``secondary_xaxis`` / ``secondary_yaxis`` children of ``ax``.
+
+    Matplotlib keeps them in ``ax.child_axes``, not in ``fig.axes``, so a
+    walk over ``fig.axes`` never sees their tick labels, offset text or axis
+    label, which sit around ``ax``'s box like its own. Inset Axes, also
+    children, are not included. Matplotlib's ``SecondaryAxis`` is not an
+    ``Axes`` subclass, but it has what the measurements read (its x/y axes,
+    texts, window extent; no titles), so the list is typed as ``Axes``.
+    """
+    # matplotlib.axes does not export SecondaryAxis (3.11).
+    from matplotlib.axes._secondary_axes import SecondaryAxis
+
+    children = [
+        child
+        for child in ax.child_axes
+        if isinstance(child, SecondaryAxis) and child.get_visible()
+    ]
+    return cast("list[Axes]", children)
+
+
+def axes_with_secondaries(fig: Figure | SubFigure) -> list[Axes]:
+    """Return ``fig.axes``, each followed by its :func:`secondary_axes`."""
+    return [owner for ax in fig.axes for owner in (ax, *secondary_axes(ax))]
 
 
 def same_position_axes(ax: Axes) -> list[Axes]:
