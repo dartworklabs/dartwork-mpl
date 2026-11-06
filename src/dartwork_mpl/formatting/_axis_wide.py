@@ -165,6 +165,15 @@ class AxisUnitFormatter(ticker.Formatter):
     decimals) or one ladder label (that unit, always). ``decimals`` fixes
     the decimal count instead of choosing it.
 
+    ``per_tick=True`` is the one exception to "one unit per axis": it needs
+    ``decimals`` and ``unit="max"`` and makes no axis-wide decision. Each
+    tick takes the largest ladder rung at or below its own magnitude, is
+    rounded to ``decimals`` places with trailing zeros trimmed, and a
+    magnitude below the first rung prints as a whole number (``7,500``,
+    ``1.5억``). Ticks of one axis can then mix units; this keeps the output
+    of ``format_axis_myriad(decimals=n)``. Such a formatter has no axis
+    unit, so :func:`tick_scale_of` reports the plain scale for it.
+
     The decision is made in :meth:`set_locs`, which :meth:`format_ticks`
     calls with every major tick on each draw; only ticks inside the view
     interval vote. Called without a draw, a value decides for itself.
@@ -336,6 +345,8 @@ def tick_scale_of(axis: Axis, value: float) -> TickScale:
       axis unit and currency (``33G``, ``1.2k``); ``dm.axis_unit``'s
       formatter puts the unit in the axis label instead, so its scale has
       no suffix (``33`` under ``Energy (GWh)``).
+      An :class:`AxisUnitFormatter` made with ``per_tick=True`` (each tick
+      in its own unit, so no axis unit exists) reports the plain scale.
     - :class:`matplotlib.ticker.PercentFormatter`: ``xmax / 100`` and its
       symbol (``31%``).
     - Any other formatter, matplotlib's own ``ScalarFormatter`` on an axis

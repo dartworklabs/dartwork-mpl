@@ -1,8 +1,7 @@
 """The names of the viewer's two fixed state files, the one place they are spelled.
 
 Imports nothing, so code on a base install can name the state files without
-the ``ui`` extra. Surface (through the
-``state`` package): ``StateFile``.
+the ``ui`` extra. Surface (through the ``state`` package): ``StateFile``.
 """
 
 from enum import Enum
