@@ -58,6 +58,38 @@ def test_suffix_formatters_give_unit_and_currency():
     assert tick_scale_of(ax.yaxis, 1.2e8) == TickScale(1e8, "$", "억")
 
 
+@pytest.mark.parametrize(
+    "install",
+    [
+        lambda ax: dm.format_axis_currency(ax),
+        lambda ax: dm.format_axis_currency(ax, symbol="€", position="suffix"),
+        lambda ax: dm.format_axis_millions(ax, decimals=1),
+        lambda ax: dm.format_axis_billions(ax, decimals=2),
+        lambda ax: dm.format_axis_si(ax, decimals=1),
+        lambda ax: dm.format_axis_myriad(ax, decimals=1),
+    ],
+    ids=[
+        "currency",
+        "currency-suffix",
+        "millions-1",
+        "billions-2",
+        "si-1",
+        "myriad-1",
+    ],
+)
+def test_value_alone_formatters_give_the_plain_scale(install):
+    """The fixed-decimal paths and currency write each tick alone (no axis
+    unit), so bar labels stay plain values (``1,250,000``), as before they
+    shared the axis-wide engine."""
+    fig, ax = _bars([1.25e6, 3.4e6])
+    install(ax)
+    fig.canvas.draw()
+    assert tick_scale_of(ax.yaxis, 1.25e6) == TickScale()
+    dm.label_bars(ax)
+    fig.canvas.draw()
+    assert [t.get_text() for t in ax.texts] == ["1,250,000", "3,400,000"]
+
+
 def test_log_axis_scale_is_per_value():
     fig, ax = _bars([10.0, 2_000.0, 3e6])
     ax.set_yscale("log")
