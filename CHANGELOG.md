@@ -22,7 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   enough for the labels; limits you set stay. On a twin pair the labels go
   on the top axes. The keywords: `where`, `total`, `crowded`, `decimals`,
   `fmt` (a `{}` template, a format-spec field such as `"{:.2f}"`, or a
-  callable), `size`, `color` (`"series"` colours labels off their bar).
+  callable), `size`, `color` (`"series"` colours labels off their bar). A
+  label asked inside its bar (`where="inside"`, `crowded="inside"`) stays
+  there only while the bar holds it along and across; otherwise it sits
+  beyond the bar's end in the text colour, so a narrow dark bar never
+  leaves part of a white number on the background.
 - `dm.config.twin_colors` (`"series"`, the default, or `"neutral"`): the
   axis colours of `twinx` / `twiny` pairs.
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged

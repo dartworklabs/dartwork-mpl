@@ -34,7 +34,10 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   takes white or the preset text colour, whichever reads better on the bar
   as drawn; a label off the bar keeps the text colour, or with
   ``color="series"`` its bar's colour, totals excepted
-  (:mod:`._bar_label_ink`).
+  (:mod:`._bar_label_ink`). A plain bar's ``"inside"`` label sits on its
+  bar only while the bar holds it along and across; otherwise it sits
+  beyond the bar's end in the ink for a label off the bar, so no part of it
+  is drawn on the background in white.
 * **View.** A label shows while its bar's end (its middle for
   ``where="center"``) lies in the view, within one pixel: a bar ending on a
   limit keeps its label just outside the axes, a bar outside the view or
@@ -67,6 +70,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+import matplotlib as mpl
 import matplotlib.colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
@@ -76,11 +80,12 @@ from .._figure_geometry import canvas_renderer, same_position_axes
 from ..formatting import TickScale, tick_scale_of, value_label_decimals
 from ..scale import fs, fw
 from ._bar_label_geometry import (
+    fits_across,
     fits_on_bar,
     host_axes,
     in_view,
     place,
-    text_length,
+    text_extent,
 )
 from ._bar_label_ink import label_ink
 from ._bar_label_lifecycle import attach, families_of, record, release
@@ -165,14 +170,23 @@ class BarLabel(Annotation):
         self.stack = stack
         self.clear_of: tuple[Rectangle, ...] = ()
         self.beyond: BarLabel | None = None
+        # Whether a plain bar's end label meant for its bar ("inside") sits
+        # off it: the bar does not hold it (BarLabelFamily.follow).
+        self.off_bar = False
+        # Where the ink last written was chosen for (follow; layout resets).
+        self.inked_for: Placement = where
+        # The preset text colour when the call was made: the ink off a bar.
+        self.text_ink = mcolors.to_rgba(mpl.rcParams["text.color"])
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
         self._written: dict[str, object] = {}
         # True while get_visible measures the text (which asks it again).
         self._measuring = False
-        # The last text measurement: (what decides it, pixels).
-        self._text_px: tuple[tuple[object, ...], float] | None = None
+        # The last text measurement: (what decides it, (along, across) px).
+        self._text_px: tuple[tuple[object, ...], tuple[float, float]] | None = (
+            None
+        )
         super().__init__(
             "",
             (0.0, 0.0),
@@ -229,6 +243,32 @@ class BarLabel(Annotation):
         self.own("color", current, rgba, self.set_color)
 
     @property
+    def wants_bar(self) -> bool:
+        """Whether this is a plain bar's end label meant to sit on its bar.
+
+        ``"inside"``, asked or moved there by ``crowded="inside"``; it sits
+        there only while the bar holds it (``off_bar``).
+        """
+        return self.kind == "edge" and self.where == "inside"
+
+    @property
+    def on_bar(self) -> bool:
+        """Whether the label is drawn on its bar (in the ink for a bar)."""
+        if self.where == "center":
+            return True
+        return self.wants_bar and not self.off_bar
+
+    @property
+    def beyond_end(self) -> bool:
+        """Whether it sits beyond its own bar's end.
+
+        An outside label, or an end label its bar does not hold.
+        """
+        if self.where == "center":
+            return False
+        return self.where == "outside" or self.off_bar
+
+    @property
     def must_fit(self) -> bool:
         """Whether the label sits on a stack segment and so must fit on it."""
         return self.kind == "segment" and self.where != "outside"
@@ -257,7 +297,11 @@ class BarLabel(Annotation):
             self._measuring = False
 
     def measured_length(self) -> float:
-        """:func:`text_length`, measured again only when what decides it moved.
+        """The text's extent along the value axis (:meth:`measured_extent`)."""
+        return self.measured_extent()[0]
+
+    def measured_extent(self) -> tuple[float, float]:
+        """:func:`text_extent`, measured again only when what decides it moved.
 
         A draw asks a label's visibility twice (``Annotation.draw``, then
         ``Text.draw``); the text, font, rotation and dpi rarely change
@@ -277,7 +321,7 @@ class BarLabel(Annotation):
             None if renderer is None else renderer.points_to_pixels(72.0),
         )
         if self._text_px is None or self._text_px[0] != key:
-            self._text_px = (key, text_length(self, renderer))
+            self._text_px = (key, text_extent(self, renderer))
         return self._text_px[1]
 
     def update_positions(self, renderer: RendererBase) -> None:
@@ -319,10 +363,33 @@ class BarLabelFamily:
             label.own("text", label.get_text(), text, label.set_text)
 
     def follow(self, label: BarLabel) -> None:
-        """Re-read the tick scale for ``label``; rewrite the call when it moved."""
+        """Re-read the tick scale for ``label``; rewrite the call when it moved.
+
+        Then decide whether a label meant for its bar fits on it both ways
+        (``off_bar``), place it, and give it the ink for where it now sits
+        when that changed: on its bar, or off it (the text colour, or the
+        series colour under ``color="series"``).
+        """
         if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
             self.refresh()
+        label.off_bar = False
+        if label.wants_bar:
+            along, across = label.measured_extent()
+            label.off_bar = not (
+                fits_on_bar(label, along) and fits_across(label, across)
+            )
         place(label, label.where)
+        spot: Placement
+        if not label.on_bar:
+            spot = "outside"
+        else:
+            spot = "center" if label.where == "center" else "inside"
+        if spot != label.inked_for:
+            ink = label_ink(
+                self.options.color, label.kind, spot, label.bar, label.bar_axes
+            )
+            label.own_color(label.text_ink if ink is None else ink)
+            label.inked_for = spot
 
 
 # ------------------------------------------------------------ the call
@@ -505,7 +572,10 @@ def label_bars(
         Where each bar's label sits; a stack segment is a bar.
         ``"auto"`` (default): beyond a plain bar's end, at a segment's
         middle; ``"outside"``: beyond the end; ``"inside"``: just inside the
-        end; ``"center"``: the bar's middle. Totals always sit beyond the
+        end of a plain bar that holds the label (as long and as wide),
+        beyond the end in the text colour otherwise, so a narrow dark bar
+        never shows part of a white number on the background;
+        ``"center"``: the bar's middle. Totals always sit beyond the
         stack's end, and beyond the top segment's label when segments are
         labelled ``"outside"`` (3 pt past it).
     total : {"auto", "only", False}
@@ -518,7 +588,8 @@ def label_bars(
         ``"skip"`` hides every other label, keeping the last bar's (the
         top row's for ``barh``); ``"inside"`` puts plain bars' labels
         inside their ends (vertical text on vertical bars, readable ink),
-        leaving a bar too short for its label with the label outside.
+        leaving a bar too short or too thin for its label with the label
+        outside.
         ``barh`` never turns: rows thinner than the text hide every other
         label. Under any rule, labels that would still overlap are hidden
         the same way, other calls' labels on the same plot area included
