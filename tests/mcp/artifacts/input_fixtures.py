@@ -26,6 +26,25 @@ from dartwork_mpl.mcp.artifacts.policy import (
 NOW = datetime(2030, 1, 1, tzinfo=timezone.utc)
 
 
+def publish_pid(marker, *, indent="", hold=None):
+    """Child code that publishes its pid at ``marker`` only once it is complete.
+
+    The pid is written to a temporary file beside ``marker`` and renamed over
+    it, so a reader that sees ``marker`` reads a whole pid, never ``""``.
+    ``hold`` pauses the child after the write and before the rename (a test
+    hook that proves the ordering). The child code must have ``os``, ``time``
+    and ``Path`` (``pathlib.Path``) in scope; ``indent`` prefixes every line.
+    """
+    staged = str(marker) + ".tmp"
+    lines = [f"Path({staged!r}).write_text(str(os.getpid()))"]
+    if hold is not None:
+        lines.append(
+            f"while not Path({str(hold)!r}).exists(): time.sleep(0.01)"
+        )
+    lines.append(f"os.replace({staged!r}, {str(marker)!r})")
+    return "".join(f"{indent}{line}\n" for line in lines)
+
+
 def api():
     """The input-store module (``InputStore``, ``InputStage`` and its outcomes)."""
     return importlib.import_module("dartwork_mpl.mcp.artifacts.inputs")

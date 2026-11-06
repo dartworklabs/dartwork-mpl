@@ -51,6 +51,7 @@ from tests.mcp.artifacts.input_fixtures import (
     STATES,
     fixture,
     identity,
+    publish_pid,
     seed,
     selection,
 )
@@ -627,7 +628,7 @@ def test_failed_or_cancelled_export_releases_owned_work(
     """No postcheck/publication follows rejected export; synchronous work is reaped first."""
     spec = selection(rig.source)
     marker = rig.root / "child-pid"
-    code = f"import os\nfrom pathlib import Path\nPath({str(marker)!r} + '.tmp').write_text(str(os.getpid())); os.replace({str(marker)!r} + '.tmp', {str(marker)!r})\n"
+    code = "import os\nfrom pathlib import Path\n" + publish_pid(marker)
     if failure == "execution":
         code += "raise RuntimeError('owned failure')\n"
     elif failure == "no_figure":
