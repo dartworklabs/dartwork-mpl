@@ -25,7 +25,9 @@ figure to figure. :func:`apply_default_tick_format` settles it once:
   the same way, so give such an axis a formatter of your own;
 - smaller axes (``0, 250 … 750``; ``0.5, 1.0``), other x axes whose ticks all
   sit in 1000-2999 (``1950.3`` elevations), log and category axes, colorbars
-  and any axis with a formatter someone chose keep theirs;
+  and any axis with a formatter someone chose keep theirs; labels someone
+  fixed (``ax.set_xticklabels(ax.get_xticklabels(), rotation=45)``) keep
+  the ticks they were made for;
 - date axes nobody formatted (every preset sets ``date.converter:
   concise``) read whole two-digit dates, ``23.01, 23.05 … 26.01``
   (``23.01.15`` daily, ``23`` yearly); quarterly data reads ``23.Q1, 23.Q3``,
@@ -639,6 +641,19 @@ def _restyle_dates(
     return 1
 
 
+def _fixed_labels(axis: Axis) -> bool:
+    """Whether someone fixed the axis's label texts to its ticks by order.
+
+    ``ax.set_xticklabels(ax.get_xticklabels(), rotation=45)``, a common way
+    to rotate labels, keeps the current texts in a ``FixedFormatter``, which
+    gives the n-th tick the n-th text whatever the tick's value. A locator
+    that ticks other values (whole years; fewer of them) would move every
+    text to another tick (``2007.5`` at 2010), so such an axis keeps its
+    ticks.
+    """
+    return isinstance(axis.get_major_formatter(), ticker.FixedFormatter)
+
+
 def _year_axis(
     axis: Axis, values: npt.NDArray[np.float64], digits: Digits, suffix: str
 ) -> int:
@@ -654,7 +669,8 @@ def _year_axis(
     and its own formatter to :class:`YearTickFormatter`, which carries what
     was asked of that in place (``ax.ticklabel_format(axis="x",
     useOffset=False)``; :func:`requested_format`). A locator or
-    formatter someone set stays. Under a locator someone set
+    formatter someone set stays, and so does matplotlib's locator under
+    labels someone fixed (:func:`_fixed_labels`). Under a locator someone set
     (``MaxNLocator``, pinned ticks) the year formatter decides at each draw:
     years while every tick in view is a whole year (``05, 10``), else every
     tick's plain value (``2005.0, 2007.5``). Returns 1 if anything changed.
@@ -662,7 +678,7 @@ def _year_axis(
     if not year_data(values):
         return 0
     changed = 0
-    if axis.isDefault_majloc:
+    if axis.isDefault_majloc and not _fixed_labels(axis):
         asked = requested_params(axis.get_major_locator())
         axis.set_major_locator(WholeYearLocator(**asked))
         changed = 1
@@ -984,7 +1000,8 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
     changes; see :func:`_thin_by_steps`. Year axes (a
     :class:`WholeYearLocator`, x or y, ``secondary_xaxis`` /
     ``secondary_yaxis`` children included) take fewer whole-year ticks; see
-    :func:`_thin_years`.
+    :func:`_thin_years`. An axis whose label texts someone fixed
+    (:func:`_fixed_labels`) keeps its ticks.
     """
     renderer = get_renderer(fig)
     changed = 0
@@ -997,6 +1014,8 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
             for s in _secondary_axes(ax, which)
         ]
         for axis in (ax.xaxis, ax.yaxis, *secondaries):
+            if _fixed_labels(axis):
+                continue  # fewer ticks would move the fixed texts
             locator = axis.get_major_locator()
             if isinstance(locator, (CategoryDateLocator, QuarterLocator)):
                 changed += _thin_by_steps(axis, locator, fig, renderer)
