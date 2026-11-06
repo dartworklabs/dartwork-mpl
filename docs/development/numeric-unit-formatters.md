@@ -39,6 +39,17 @@ numbers (`DefaultNumberFormatter`). It has two modes:
 Before this change the per-value rows of millions, billions, si and
 currency were separate `FuncFormatter` closures (myriad moved in #601).
 
+All five `format_axis_*` functions stay supported public API; none is
+deprecated, and `axis_unit` / `axis_unit_of` remain EXPERIMENTAL with a
+different purpose (the unit in the axis label). They are thin frontends
+over the one engine, not duplicate implementations.
+
+**Moving off the old attributes.** The installed formatter is no longer a
+`FuncFormatter`, so its `.func` and `set_offset_string` are gone. A caller
+that relied on them installs a native one itself, for example
+`ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(f))`, after
+(or instead of) the `format_axis_*` call. No shim is provided.
+
 ## Mapping
 
 Evidence keys: `G:` a case id of `formatting/tests/number_formatters_golden.tsv`
