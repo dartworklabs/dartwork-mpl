@@ -6,6 +6,8 @@ orphan: true
 
 Status: implemented on `t3/twinx-explicit-20261106`, first shipped in 0.8.
 Decision: root API decision D7 (2026-11-06). Not a release blocker.
+Approved by the user on 2026-11-07, including every look change listed
+under "Controls" and "Explicit settings" below (2026-11-07 사용자 승인).
 
 ## What import used to do
 
