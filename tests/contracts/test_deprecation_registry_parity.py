@@ -210,8 +210,10 @@ def test_generator_check_fails_on_a_stale_catalog_without_writing(
     monkeypatch.setattr(generator, "CATALOG", catalog)
     assert generator.main(["--check"]) == 1
     assert catalog.read_text(encoding="utf-8") == stale
+    rules = generator.load_registry(generator.REGISTRY)._LINT_RULES
     assert generator.main([]) == 0
-    assert catalog.read_text(encoding="utf-8") == shipped
+    assert catalog.read_text(encoding="utf-8") == generator.build(stale, rules)
+    assert generator.main(["--check"]) == 0
 
 
 def test_generator_refuses_a_hand_rule_inside_the_block() -> None:
