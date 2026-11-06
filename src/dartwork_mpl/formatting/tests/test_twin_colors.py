@@ -463,6 +463,92 @@ def test_two_twin_groups_and_a_single_axes():
     assert _side(axs[2], "left") == _neutral()
 
 
+def _marker_twin(bar_color="dc.blue6", **line_kw):
+    """Bars on the left; on the twin, a growth series drawn as ``line_kw``."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.bar(X, REVENUE, color=bar_color)
+    ax2 = ax.twinx()
+    ax2.plot(X, GROWTH, **line_kw)
+    return fig, ax, ax2
+
+
+RED_MARKERS = {
+    "linestyle": "none",
+    "marker": "o",
+    "color": "blue",
+    "markerfacecolor": "red",
+    "markeredgecolor": "red",
+}
+
+
+def test_marker_only_line_reads_its_markers():
+    """No line is drawn: the red markers are the series, not ``color``."""
+    fig, ax, ax2 = _marker_twin(**RED_MARKERS)
+    dm.simple_layout(fig)
+
+    right = _side(ax2, "right")
+    assert right["spine"] == right["ticks"] == "#ff0000"  # 4.0:1 already
+    assert right["ticklabels"] == right["label"]
+    assert _ratio(right["ticklabels"]) >= 4.5
+    shown = mcolors.rgb_to_hsv(mcolors.to_rgb(right["ticklabels"]))
+    assert min(shown[0], 1 - shown[0]) < 0.02  # red, not blue
+    assert _side(ax, "left")["ticklabels"] == BAR_TEXT
+
+
+@pytest.mark.parametrize(
+    "markers",
+    [
+        {"markerfacecolor": "dc.green6", "markeredgecolor": "dc.green6"},
+        {"fillstyle": "left", "markerfacecoloralt": "dc.green6"},  # one half
+    ],
+)
+def test_line_and_markers_in_two_hues_stay_neutral(markers):
+    """An orange line with green markers shows two colours: no one series."""
+    fig, ax, ax2 = _marker_twin(color="dc.orange6", marker="o", **markers)
+    dm.simple_layout(fig)
+
+    assert _side(ax2, "right") == _neutral()
+    assert _side(ax, "left")["ticklabels"] == BAR_TEXT
+    assert apply_twin_colors(fig) == 1
+
+
+def test_marker_colour_matching_the_partner_keeps_both_neutral():
+    """Red markers against red bars: the same hue on both scales."""
+    fig, ax, ax2 = _marker_twin(bar_color="red", **RED_MARKERS)
+    dm.simple_layout(fig)
+
+    assert apply_twin_colors(fig) == 0
+    assert _side(ax, "left") == _neutral()
+    assert _side(ax2, "right") == _neutral()
+
+
+@pytest.mark.parametrize(
+    "markers",
+    [
+        {"markerfacecolor": "none"},  # hollow: the edge shows the line colour
+        {"markerfacecolor": (0.0, 0.8, 0.0, 0.0)},  # a face at alpha 0
+        {"marker": "x", "markerfacecolor": "dc.green6"},  # x draws no face
+        {"markeredgewidth": 0, "markeredgecolor": "dc.green6"},  # no edge
+        {"markeredgecolor": "dc.orange7"},  # one hue (OKLab 0.05)
+    ],
+)
+def test_marker_parts_that_do_not_show_or_share_the_hue(markers):
+    """Only what draws counts; one hue across line and markers is one series."""
+    fig, _ax, ax2 = _marker_twin(
+        **{"color": "dc.orange6", "marker": "o", **markers}
+    )
+    dm.simple_layout(fig)
+
+    assert _side(ax2, "right")["ticklabels"] == LINE_TEXT
+
+
+def test_line_drawn_at_zero_width_shows_only_its_markers():
+    fig, _ax, ax2 = _marker_twin(**{**RED_MARKERS, "linestyle": "-", "lw": 0})
+    dm.simple_layout(fig)
+
+    assert _side(ax2, "right")["spine"] == "#ff0000"
+
+
 def test_dark_background_lightens_text():
     dm.style.use("dark")
     fig, ax, ax2 = _bar_line_twin()

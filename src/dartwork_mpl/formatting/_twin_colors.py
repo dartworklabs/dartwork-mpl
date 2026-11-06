@@ -17,7 +17,10 @@ pair like the one series read on it:
   members, and its *partners* are the data of the other members.
 * **Data.** Lines, patches and collections drawn in data coordinates.
   Reference artists in axes coordinates (``axhline``, ``axvspan``,
-  ``axline``) are not data.
+  ``axline``) are not data. A line counts by what it draws: its line colour
+  where a line shows and its markers' face and edge where markers show
+  (``"none"`` and alpha 0 draw nothing); colours of one hue (within 0.10
+  in OKLab) make one series colour, several hues several.
 * **Qualifying.** A side is coloured when its series all draw one colour
   (a colour-mapped collection or an image is not one colour), its partners
   hold data (otherwise it is a second scale for the same series), and no
@@ -54,6 +57,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from itertools import combinations
 from typing import Literal, TypeAlias
 
 import matplotlib as mpl
@@ -62,6 +66,9 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis, Tick
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+from matplotlib.markers import MarkerStyle
+from matplotlib.typing import ColorType
 
 from .._colors.contrast import ensure_contrast
 from .._colors.model import srgb_to_oklab
@@ -199,6 +206,51 @@ def _drawn(face: RGBA, edge: RGBA, linewidth: float) -> RGBA | None:
     return None
 
 
+def _line_shows(line: Line2D) -> list[RGBA]:
+    """The colours ``line`` draws: line, then marker face(s) and edge.
+
+    The line colour counts where a line is drawn (a line style and a width
+    above 0), the marker colours where markers are (a marker and a size
+    above 0): the face of a filled marker (both halves of a half-filled
+    one) and the edge when its width is above 0. ``"none"`` and alpha 0
+    draw nothing. The line's alpha applies to every part, as it draws.
+    """
+    shown: list[ColorType] = []
+    if (
+        str(line.get_linestyle()) not in _NOTHING
+        and float(line.get_linewidth()) > 0
+    ):
+        shown.append(line.get_color())
+    if (
+        str(line.get_marker()) not in _NOTHING
+        and float(line.get_markersize()) > 0
+    ):
+        marker = MarkerStyle(line.get_marker(), line.get_fillstyle())
+        if marker.is_filled():
+            shown.append(line.get_markerfacecolor())
+            if marker.get_alt_path() is not None:
+                shown.append(line.get_markerfacecoloralt())
+        if float(line.get_markeredgewidth()) > 0:
+            shown.append(line.get_markeredgecolor())
+    alpha = line.get_alpha()
+    colors = [_rgba(mcolors.to_rgba(c, alpha)) for c in shown]
+    return [color for color in colors if color[3] > 0]
+
+
+def _line_colors(line: Line2D) -> list[RGBA]:
+    """``line``'s series colour, or all it shows when that is several hues.
+
+    Colours within 0.10 of each other in OKLab, pair by pair, are one hue
+    (the partner test's tolerance): the line counts as its most opaque one,
+    the line colour first. Otherwise every colour counts, so the line's side
+    has no one colour and the line's hues stand against the other scale.
+    """
+    colors = _line_shows(line)
+    if all(_near(a, b) for a, b in combinations(colors, 2)):
+        return [max(colors, key=lambda color: color[3])] if colors else []
+    return colors
+
+
 def _data_colors(ax: Axes) -> list[RGBA] | None:
     """Colours the data artists of ``ax`` draw; ``None`` when colour-mapped."""
     if any(image.get_visible() for image in ax.images):
@@ -208,14 +260,7 @@ def _data_colors(ax: Axes) -> list[RGBA] | None:
     for line in ax.lines:
         if not line.get_visible() or line.get_transform() is not data:
             continue
-        if (
-            str(line.get_linestyle()) in _NOTHING
-            and str(line.get_marker()) in _NOTHING
-        ):
-            continue
-        colors.append(
-            _rgba(mcolors.to_rgba(line.get_color(), line.get_alpha()))
-        )
+        colors.extend(_line_colors(line))
     for patch in ax.patches:
         if not patch.get_visible() or patch.get_data_transform() is not data:
             continue
