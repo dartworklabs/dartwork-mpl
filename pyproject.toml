@@ -314,6 +314,11 @@ split-on-trailing-comma = false
 # template string whose blank lines carry whitespace as part of the
 # rendered HTML output, not Python source style.
 "docs/color_system/generate_assets.py" = ["E402", "W293"]
+# UP017 (datetime.UTC alias): the pre-registered evaluation plan keeps these
+# two files byte-identical to the frozen protocol (9134d36c); evals are owned
+# by the evaluation track, so no automatic modernisation applies to them.
+"evals/agentic/preregister.py" = ["UP017"]
+"evals/agentic/test_regressions.py" = ["UP017"]
 "docs/fonts/generate_assets.py" = ["E402"]
 # These SVG generators set the matplotlib backend + a deterministic
 # ``svg.hashsalt`` before importing pyplot, so imports follow module-level

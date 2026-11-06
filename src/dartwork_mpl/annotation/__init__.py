@@ -1940,7 +1940,13 @@ def arrow_axis(
 
 
 def make_offset(x: float, y: float, fig: Figure) -> ScaledTranslation:
-    """Create a translation offset transform for positioning figure elements.
+    """Return a point-unit offset transform for the figure's DPI.
+
+    ``ScaledTranslation(x / 72, y / 72, fig.dpi_scale_trans)``: the offset is
+    given in points and converted to pixels by the Figure's
+    ``dpi_scale_trans``, so it keeps its physical size at any DPI. Add it to
+    another transform (``ax.transData + dm.make_offset(0, 4, fig)``) to nudge
+    text or markers.
 
     Parameters
     ----------

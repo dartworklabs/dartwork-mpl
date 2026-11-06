@@ -17,7 +17,7 @@ import subprocess
 import sys
 import time
 from argparse import Namespace
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import matplotlib
@@ -67,7 +67,11 @@ def case_ok(case_id: str, fig) -> bool:
 
 
 def stamp(ts: float) -> str:
-    return datetime.fromtimestamp(ts, tz=UTC).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.fromtimestamp(ts, tz=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def png_bytes(fig) -> bytes:

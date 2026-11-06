@@ -58,7 +58,7 @@ ENTRY_POINTS = frozenset(
         # the root's removed/deprecated-name registry behind its __getattr__
         "dartwork_mpl._compat",
         "dartwork_mpl.cli",
-        # compatibility re-exports of names that moved to their owners
+        # deprecated re-exports of names that moved to their owners (0.8, 0.10+)
         "dartwork_mpl.util",
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",
