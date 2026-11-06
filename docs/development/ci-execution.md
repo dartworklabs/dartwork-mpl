@@ -12,7 +12,7 @@ policy remains in `pyproject.toml`.
 | --- | --- | --- |
 | Full suite, Python 3.11–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
 | Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest -q -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
-| All-extras module execution | Both workflows, after successful full pytest (CI 3.12): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
+| All-extras module execution | Both workflows, after successful full pytest (every CI full-suite job, 3.11–3.13): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
 | FastMCP legacy 2.13.3 / secure 2.14.7 / locked 3.4.10 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: secure cells install the project plus selected FastMCP, then `uv run --no-sync pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"` (legacy 2.13.3 uses the recorded Pydantic 2.14.1 overlay), then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
 | Src typing | `.github/workflows/ci.yml`: `uv run mypy` (paths and strictness live in `[tool.mypy]`) | Step log |
 | Isolated Ruff lint/format | `.github/workflows/pre-commit.yml`, `.pre-commit-config.yaml`: `SKIP=mypy pre-commit run --all-files` | Step log |
@@ -53,16 +53,22 @@ collection, without another full-suite run.
 | Durable MCP artifacts | With prefix `tests.mcp.artifacts.`: `test_artifact_boundaries`, `test_artifact_discovery`, `test_artifact_entry_policies`, `test_artifact_execution`, `test_artifact_policy`, `test_artifact_protocol`, `test_artifact_store` |
 | Retained input contracts | With prefix `tests.mcp.artifacts.`: `test_input_access`, `test_input_commit_observer`, `test_input_delivery`, `test_input_io`, `test_input_lifecycle`, `test_input_policy`, `test_input_recovery`, `test_input_stdio`, `test_input_store` |
 | Plot-data validation and repair | With prefix `src.dartwork_mpl.mcp.plot_data.tests.`: `test_limits`, `test_properties`, `test_reports`, `test_validators` |
-| MCP slice-owned tests | No prefix: `src.dartwork_mpl.mcp._platform.tests.test_process`, `src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github` |
+| MCP slice-owned tests | No prefix: `src.dartwork_mpl.mcp._platform.tests.test_process`, `src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github`, `src.dartwork_mpl.mcp.recommend.tests.test_chart_type_transport` |
 | Optional UI consumers | With prefix `src.dartwork_mpl.ui.`: `tests.test_ui_boundary`, `saving.tests.test_ui_files`, `tests.test_ui_http_security`, `render.tests.test_ui_hardening`, `tests.test_ui_init`, `state.tests.test_ui_viewer_state`, `render.tests.test_ui_render`, `params.tests.test_ui_widget`, `tests.test_ui_wire_golden` |
 
-All 45 modules must contribute a passed executed case. Missing modules,
+All 46 modules must contribute a passed executed case. Missing modules,
 zero-test suites, and modules whose cases all skip fail. Any failure/error in
 a protected module also fails, even alongside a passed case. Class-based
 pytest names are accepted; similarly named sibling modules cannot count.
 Pytest remains authoritative for every suite failure and collection error.
-The checker proves module execution, not that every optional case executed.
-In mixed modules, pytest skip reporting still identifies individual skips.
+The default scope also fails when any case in the report, protected or not,
+was skipped because an import failed: pytest's `importorskip` reason
+`could not import`, at module level (a "collection skipped" case) or inside
+one test. An all-extras run must import every optional dependency, so this
+covers case-level importorskips in mixed modules such as `tests.contracts.test_cli`.
+Option-gated skips (`--mpl`) and version-gated skips are not import failures.
+`tests/tools/test_check_integration_junit.py` also requires every test module
+that importorskips FastMCP or FastAPI to be in the explicit list.
 The 0.6.0 owner decision (ADR 0007) removes only the Python 3.10 support cell.
 
 The default guard scope protects all-extras full-suite jobs and remains the

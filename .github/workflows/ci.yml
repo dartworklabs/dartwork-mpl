@@ -115,10 +115,12 @@ jobs:
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       # Prove every protected module contributed a passing executed case in
-      # the same full-suite run. A missing optional extra must not silently
-      # skip a whole module. Pytest's own nonzero status still fails the job.
+      # the same full-suite run, and that no case anywhere was skipped for a
+      # failed import. Every matrix job syncs all extras, so each is checked
+      # (no protected module is color_pipeline-only). A missing optional
+      # extra must not silently skip a whole module or a single case.
+      # Pytest's own nonzero status still fails the job.
       - name: Assert MCP / integration tests actually ran
-        if: matrix.python-version == '3.12'
         run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
 
       - name: Preserve test execution evidence
