@@ -19,7 +19,7 @@ import re
 import shlex
 import subprocess
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -614,7 +614,7 @@ def freeze(
     for cohort in COHORTS:
         _unused(cfg, cohort)
     record: dict[str, object] = {
-        "frozen_at": datetime.now(UTC).isoformat(),
+        "frozen_at": datetime.now(timezone.utc).isoformat(),
         "snapshot": snapshot,
     }
     record["sha256"] = hashlib.sha256(_canonical(record)).hexdigest()
