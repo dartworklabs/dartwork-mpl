@@ -11,8 +11,12 @@ import matplotlib
 
 matplotlib.use("Agg")
 
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
+from matplotlib.colors import to_rgba
 from matplotlib.legend_handler import HandlerLine2D, HandlerPatch
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
@@ -165,7 +169,9 @@ class TestLeavesUnrebuildableLegends:
                 *_merged(ax, twin), handler_map={Rectangle: HandlerPatch()}
             )
             legend = place_legend(ax)
-            assert legend.get_legend_handler_map()[Rectangle] is not None
+            assert isinstance(
+                legend.get_legend_handler_map()[Rectangle], HandlerPatch
+            )
             assert len(legend.get_texts()) == 2
         finally:
             plt.close(fig)
@@ -182,3 +188,236 @@ def test_single_axes_legend_keeps_its_title() -> None:
         assert legend.get_title().get_text() == "T"
     finally:
         plt.close(fig)
+
+
+def _artist_count(legend) -> int:
+    """Artists drawn in the legend's handle boxes (a tuple entry has several)."""
+    from matplotlib.offsetbox import DrawingArea
+
+    def walk(node) -> int:
+        total = 0
+        for child in node.get_children():
+            if isinstance(child, DrawingArea):
+                total += len(child.get_children())
+            elif child.__class__.__module__ == "matplotlib.offsetbox":
+                total += walk(child)
+        return total
+
+    return walk(legend.get_children()[0])
+
+
+class _Obj:
+    """A handle matplotlib has no handler for."""
+
+
+class _ObjHandler:
+    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
+        patch = Rectangle((0, 0), handlebox.width, handlebox.height)
+        handlebox.add_artist(patch)
+        return patch
+
+
+def _unlabeled_pair():
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    twin = ax.twinx()
+    (a,) = ax.plot([1, 2])
+    (b,) = twin.plot([2, 1])
+    return fig, ax, twin, a, b
+
+
+class TestExplicitLegendWins:
+    """Structure, not labels, decides whether a legend can be rebuilt."""
+
+    @pytest.mark.parametrize("target", ["host", "twin"])
+    def test_unlabeled_tuple_on_a_twin_pair_untouched(self, target) -> None:
+        fig, ax, twin, a, b = _unlabeled_pair()
+        try:
+            kept = ax.legend([(a, b)], ["Both"])
+            before = _artist_count(kept)
+            assert place_legend(ax if target == "host" else twin) is kept
+            assert ax.get_legend() is kept
+            assert twin.get_legend() is None
+            assert _artist_count(kept) == before == 2
+        finally:
+            plt.close(fig)
+
+    def test_unlabeled_tuple_on_a_lone_axes_untouched(self) -> None:
+        dm.style.use("report")
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+        try:
+            (a,) = ax.plot([1, 2])
+            (b,) = ax.plot([2, 1])
+            kept = ax.legend([(a, b)], ["Both"])
+            assert place_legend(ax) is kept
+            assert _artist_count(kept) == 2
+        finally:
+            plt.close(fig)
+
+    def test_custom_object_handler_untouched(self) -> None:
+        fig, ax, twin, a, b = _unlabeled_pair()
+        try:
+            kept = ax.legend(
+                [_Obj()], ["Custom"], handler_map={_Obj: _ObjHandler()}
+            )
+            assert place_legend(ax) is kept
+            assert [t.get_text() for t in kept.get_texts()] == ["Custom"]
+            assert _artist_count(kept) == 1
+        finally:
+            plt.close(fig)
+
+    def test_tuple_whose_label_equals_an_artist_label_untouched(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            (extra,) = ax.plot([1, 2])
+            sales = ax.containers[0]
+            kept = ax.legend([(sales, extra)], ["Sales"])
+            assert place_legend(ax) is kept
+            assert _artist_count(kept) > 1
+            assert twin.get_legend() is None
+        finally:
+            plt.close(fig)
+
+    def test_tuple_over_labeled_artists_with_its_own_label_untouched(
+        self,
+    ) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            line = twin.get_lines()[0]
+            kept = ax.legend([(ax.containers[0], line)], ["Temp"])
+            assert place_legend(ax) is kept
+            assert [t.get_text() for t in kept.get_texts()] == ["Temp"]
+        finally:
+            plt.close(fig)
+
+    def test_a_plain_twin_legend_is_still_rebuilt(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            old = ax.legend(*_merged(ax, twin), title="Series")
+            legend = place_legend(ax)
+            assert legend is not old
+            assert legend.get_title().get_text() == "Series"
+            assert [t.get_text() for t in legend.get_texts()] == [
+                "Sales",
+                "Margin",
+            ]
+        finally:
+            plt.close(fig)
+
+    def test_separate_plain_legends_still_merge(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            ax.legend()
+            twin.legend()
+            legend = place_legend(ax)
+            assert len(legend.get_texts()) == 2
+            assert [a.get_legend() for a in (ax, twin)].count(None) == 1
+        finally:
+            plt.close(fig)
+
+
+class TestMoreSettingsKept:
+    """Draggable, font properties, label colour and marker scale survive."""
+
+    def test_font_weight_family_colour_markerscale_draggable(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            ax.legend(
+                *_merged(ax, twin),
+                title="T",
+                prop={"weight": "bold", "family": "monospace", "size": 8},
+                title_fontproperties={"weight": "bold", "size": 10},
+                labelcolor="red",
+                markerscale=2.0,
+                draggable=True,
+            )
+            legend = place_legend(ax)
+            text = legend.get_texts()[0]
+            assert text.get_fontweight() == "bold"
+            assert text.get_fontfamily() == ["monospace"]
+            assert text.get_fontsize() == 8
+            assert to_rgba(text.get_color()) == to_rgba("red")
+            assert legend.get_title().get_fontweight() == "bold"
+            assert legend.get_title().get_fontsize() == 10
+            assert legend.markerscale == 2.0
+            assert legend.get_draggable()
+        finally:
+            plt.close(fig)
+
+    def test_caller_fontsize_wins_over_kept_font_properties(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            ax.legend(*_merged(ax, twin), prop={"weight": "bold", "size": 8})
+            legend = place_legend(ax, fontsize=11)
+            assert legend.get_texts()[0].get_fontsize() == 11
+        finally:
+            plt.close(fig)
+
+    def test_defaults_are_not_pinned_by_the_new_settings(self) -> None:
+        fig, ax, twin = _twin_pair()
+        try:
+            twin.legend()
+            legend = place_legend(ax)
+            assert legend.markerscale == plt.rcParams["legend.markerscale"]
+            assert not legend.get_draggable()
+        finally:
+            plt.close(fig)
+
+
+class TestUntouchedLegendFollowsPlacement:
+    """An explicit loc moves an untouched legend; a rebuild-only one warns."""
+
+    def _kept(self):
+        fig, ax, twin, a, b = _unlabeled_pair()
+        kept = ax.legend([(a, b)], ["Both"], loc="upper left")
+        return fig, ax, kept
+
+    def test_loc_is_applied(self) -> None:
+        fig, ax, kept = self._kept()
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                assert place_legend(ax, loc="lower right") is kept
+            fig.canvas.draw()
+            assert kept._loc == 4  # lower right
+        finally:
+            plt.close(fig)
+
+    def test_bbox_to_anchor_is_applied(self) -> None:
+        fig, ax, kept = self._kept()
+        try:
+            place_legend(ax, loc="upper left", bbox_to_anchor=(1.0, 1.0))
+            assert tuple(kept.get_bbox_to_anchor().bounds[:2]) != (0.0, 0.0)
+        finally:
+            plt.close(fig)
+
+    def test_default_loc_leaves_it_where_it_is(self) -> None:
+        fig, ax, kept = self._kept()
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                place_legend(ax)
+            assert kept._loc == 2  # upper left
+        finally:
+            plt.close(fig)
+
+    def test_outside_side_warns_and_leaves_it(self) -> None:
+        fig, ax, kept = self._kept()
+        try:
+            with pytest.warns(UserWarning, match="above"):
+                assert place_legend(ax, loc="above") is kept
+            assert kept._loc == 2
+        finally:
+            plt.close(fig)
+
+    def test_lone_axes_explicit_labels_kept_and_placed(self) -> None:
+        dm.style.use("report")
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+        try:
+            ax.plot([1, 2], label="raw")
+            kept = ax.legend(["Pretty"], loc="upper left")
+            assert place_legend(ax, loc="lower left") is kept
+            assert [t.get_text() for t in kept.get_texts()] == ["Pretty"]
+            assert kept._loc == 3
+        finally:
+            plt.close(fig)

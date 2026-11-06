@@ -28,6 +28,7 @@ __all__ = [
 import inspect
 import re
 import string
+import warnings
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
@@ -36,9 +37,10 @@ import matplotlib as mpl
 import numpy as np
 from matplotlib import cbook
 from matplotlib.axes import Axes
+from matplotlib.colors import to_hex, to_rgba
 from matplotlib.figure import Figure
-from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
+from matplotlib.offsetbox import DrawingArea, TextArea
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, ScaledTranslation
 
@@ -1257,42 +1259,79 @@ def _pair_occupancy_bboxes(ax: Axes, renderer: Any) -> list[Bbox]:
 
 
 def _legend_entries(ax: Axes) -> tuple[list[Any], list[str]]:
-    """Legend handles and labels of ``ax``, from its artists or its legend."""
+    """The labelled artists of ``ax`` as legend handles and labels."""
     handles, labels = ax.get_legend_handles_labels()
-    if handles:
-        return list(handles), list(labels)
-    legend = ax.get_legend()
-    if legend is None:
-        return [], []
-    pairs = [
-        (handle, text.get_text())
-        for handle, text in zip(
-            legend.legend_handles, legend.get_texts(), strict=False
-        )
-        if handle is not None
-    ]
-    return [h for h, _ in pairs], [t for _, t in pairs]
+    return list(handles), list(labels)
 
 
-def _legend_settings(legend: Legend | None) -> dict[str, Any]:
+def _entry_signatures(legend: Legend) -> dict[str, tuple[type, ...]]:
+    """Each drawn entry of ``legend``: its text and the artist types of its handle.
+
+    Read through the public ``get_children`` of the legend's offset boxes:
+    an entry is the box that holds a handle area and a text. A tuple handle
+    draws several artists where a plain one draws one, and a custom handler
+    draws its own types, so the signature tells a rebuildable entry from one
+    that is not.
+    """
+    found: dict[str, tuple[type, ...]] = {}
+
+    def walk(node: Any) -> None:
+        children = node.get_children()
+        areas = [c for c in children if isinstance(c, DrawingArea)]
+        texts = [c for c in children if isinstance(c, TextArea)]
+        if areas and texts:
+            found[texts[0].get_text()] = tuple(
+                type(a) for a in areas[0].get_children()
+            )
+            return
+        for child in children:
+            if child.__class__.__module__ == "matplotlib.offsetbox":
+                walk(child)
+
+    walk(legend.get_children()[0])
+    return found
+
+
+def _rebuildable(
+    legend: Legend, host: Axes, handles: list[Any], labels: list[str]
+) -> bool:
+    """Whether ``legend`` is what the pair's own artists would draw.
+
+    Every entry text must be a label of the pair and draw the same artist
+    types as the plain artist of that label does through the legend's own
+    ``handler_map``. A detached probe legend (never attached to an Axes)
+    supplies the plain signatures.
+    """
+    if not handles:
+        return False
+    handler_map: dict[Any, Any] = dict(legend.get_legend_handler_map())
+    probe = Legend(host, handles, labels, handler_map=handler_map)
+    plain = _entry_signatures(probe)
+    return all(
+        text in plain and plain[text] == types
+        for text, types in _entry_signatures(legend).items()
+    )
+
+
+def _legend_settings(
+    legend: Legend | None, default: Legend | None
+) -> dict[str, Any]:
     """The settings of ``legend`` a rebuilt legend repeats, as ``Legend`` keywords.
 
-    Only what the public ``Legend`` API reads, and only what differs from the
-    preset's default, so an untouched default stays a default (and follows a
-    later style change). ``ncols`` and ``markerscale`` have no public getter:
-    pass them to ``place_legend`` to keep them.
+    Only what the public ``Legend`` API reads, and only what differs from
+    ``default`` (a fresh legend of the same entries under the current
+    preset), so an untouched default stays a default and follows a later
+    style change. ``ncols`` has no public getter: pass it to ``place_legend``
+    to keep it.
     """
-    if legend is None:
+    if legend is None or default is None:
         return {}
     kept: dict[str, Any] = {}
     title = legend.get_title()
     if title.get_text():
         kept["title"] = title.get_text()
-        default_title = FontProperties(
-            size=mpl.rcParams["legend.title_fontsize"]
-        ).get_size_in_points()
-        if title.get_fontsize() != default_title:
-            kept["title_fontsize"] = title.get_fontsize()
+    if title.get_fontproperties() != default.get_title().get_fontproperties():
+        kept["title_fontproperties"] = title.get_fontproperties().copy()
     default_map = Legend.get_default_handler_map()
     custom = {
         key: handler
@@ -1301,18 +1340,32 @@ def _legend_settings(legend: Legend | None) -> dict[str, Any]:
     }
     if custom:
         kept["handler_map"] = custom
-    if legend.get_frame_on() != mpl.rcParams["legend.frameon"]:
+    if legend.get_frame_on() != default.get_frame_on():
         kept["frameon"] = legend.get_frame_on()
-    if legend.get_alignment() != "center":
+    if legend.get_alignment() != default.get_alignment():
         kept["alignment"] = legend.get_alignment()
-    texts = legend.get_texts()
-    if texts:
-        default_size = FontProperties(
-            size=mpl.rcParams["legend.fontsize"]
-        ).get_size_in_points()
-        if texts[0].get_fontsize() != default_size:
-            kept["fontsize"] = texts[0].get_fontsize()
+    if legend.markerscale != default.markerscale:
+        kept["markerscale"] = legend.markerscale
+    if legend.get_draggable():
+        kept["draggable"] = True
+    texts, defaults = legend.get_texts(), default.get_texts()
+    if texts and defaults:
+        if texts[0].get_fontproperties() != defaults[0].get_fontproperties():
+            kept["prop"] = texts[0].get_fontproperties().copy()
+        colors = {to_rgba(t.get_color()) for t in texts}
+        if len(colors) == 1 and colors != {to_rgba(defaults[0].get_color())}:
+            kept["labelcolor"] = to_hex(texts[0].get_color(), keep_alpha=True)
     return kept
+
+
+def _caller_wins(kept: dict[str, Any], kw: dict[str, Any]) -> dict[str, Any]:
+    """Kept settings under the caller's keywords; a caller size drops the kept font."""
+    merged = {**kept, **kw}
+    if "fontsize" in kw and "prop" not in kw:
+        merged.pop("prop", None)
+    if "title_fontsize" in kw and "title_fontproperties" not in kw:
+        merged.pop("title_fontproperties", None)
+    return merged
 
 
 def _merge_twin_legends(
@@ -1325,16 +1378,17 @@ def _merge_twin_legends(
     settings (title, ``handler_map`` and so on) are read for the rebuild. A
     single Axes returns itself and its own entries.
 
-    The last item is a legend to leave untouched: one whose entries are not
-    all among the merged entries (tuple handles, explicit labels), which
-    cannot be rebuilt faithfully. The explicit legend wins, and nothing is
-    removed.
+    The last item is a legend to leave untouched: one that is not what the
+    pair's own artists would draw (tuple handles, custom handlers, explicit
+    labels). The explicit legend wins and nothing is removed.
     """
     owners = same_position_axes(ax)
     host = host_axes(ax)
     parent = host.get_figure(root=False)
     order = parent.axes if parent is not None else owners
-    handles, labels, seen = [], [], set()
+    handles: list[Any] = []
+    labels: list[str] = []
+    seen: set[str] = set()
     for owner in sorted(owners, key=order.index):
         for handle, label in zip(*_legend_entries(owner), strict=True):
             if label not in seen:
@@ -1345,15 +1399,50 @@ def _merge_twin_legends(
         legend for o in owners if (legend := o.get_legend()) is not None
     ]
     for legend in existing:
-        if not {t.get_text() for t in legend.get_texts()} <= seen:
+        if not _rebuildable(legend, host, handles, labels):
             return host, handles, labels, {}, legend
     source = host.get_legend() or next(iter(existing), None)
-    settings = _legend_settings(source)
+    default = Legend(host, handles, labels) if handles else None
+    settings = _legend_settings(source, default)
     for owner in owners:
         legend = owner.get_legend()
         if owner is not host and legend is not None:
             legend.remove()
     return host, handles, labels, settings, None
+
+
+def _place_untouched(legend: Legend, loc: str, kw: dict[str, Any]) -> Legend:
+    """Follow an explicit placement on a legend that cannot be rebuilt.
+
+    A matplotlib ``loc`` and ``bbox_to_anchor`` move it through ``set_loc`` /
+    ``set_bbox_to_anchor``. A side (``"above"``...) and any other keyword
+    need a rebuild: warn and leave the legend as it is.
+    """
+    ignored = sorted(
+        k for k in kw if k not in {"bbox_to_anchor", "bbox_transform"}
+    )
+    if _parse_outside_side(loc) is not None:
+        warnings.warn(
+            f"place_legend(loc={loc!r}) needs to rebuild the legend, but its "
+            "handles cannot be rebuilt faithfully (tuple handles, a custom "
+            "handler or explicit labels); the legend is left as it is",
+            UserWarning,
+            stacklevel=3,
+        )
+        return legend
+    if ignored:
+        warnings.warn(
+            f"place_legend left an explicit legend untouched; ignored {ignored}",
+            UserWarning,
+            stacklevel=3,
+        )
+    if loc != "best":
+        legend.set_loc(cast("LegendLocType", loc))
+    if "bbox_to_anchor" in kw:
+        legend.set_bbox_to_anchor(
+            kw["bbox_to_anchor"], kw.get("bbox_transform")
+        )
+    return legend
 
 
 def _outside_fallback(
@@ -1403,20 +1492,28 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     legend on ``ax``.
 
     The rebuilt legend keeps what the existing legend's public API reads: its
-    title and title size, ``handler_map``, ``frameon``, ``alignment`` and
-    ``fontsize`` (only where they differ from the preset); keywords passed
-    here win. ``ncols`` and ``markerscale`` cannot be read back, so pass them
-    again. A legend with entries that are not artists of the pair (tuple
-    handles, explicit labels) cannot be rebuilt faithfully and is returned
-    untouched: the explicit legend wins. Any other ``loc`` is passed to
+    title, ``handler_map``, ``frameon``, ``alignment``, ``markerscale``,
+    ``draggable``, and the font properties (size, weight, family) of its title
+    and entries and their colour, each only where it differs from the preset;
+    keywords passed here win (a ``fontsize`` replaces the kept entry font).
+    ``ncols`` cannot be read back, so pass it again.
+
+    A legend that is not what the pair's own artists would draw (tuple
+    handles, a custom handler, explicit labels) cannot be rebuilt faithfully
+    and is returned untouched: the explicit legend wins, decided by the
+    artist types each entry draws, not by its label. An explicit matplotlib
+    ``loc`` or ``bbox_to_anchor`` still moves it (``set_loc`` /
+    ``set_bbox_to_anchor``); ``loc="above"`` and the other sides, or any
+    other keyword, need a rebuild, so they raise a ``UserWarning`` and the
+    legend stays as it is. Any other ``loc`` is passed to
     ``ax.legend`` unchanged.
     """
     ax, handles, labels, kept, untouched = _merge_twin_legends(ax)
     if untouched is not None:
-        return untouched
+        return _place_untouched(untouched, loc, kw)
     if not handles:
         return None
-    kw = {**kept, **kw}
+    kw = _caller_wins(kept, kw)
 
     side = _parse_outside_side(loc)
     if side is not None:
