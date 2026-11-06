@@ -10,7 +10,7 @@ import difflib
 import json
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import matplotlib.pyplot as plt
 from matplotlib import RcParams
@@ -28,7 +28,6 @@ __all__ = [
     "active_preset_rcparams",
     "figsize_for",
     "grid_shape",
-    "install_twinx_patch",
     "list_styles",
     "load_style_dict",
     "step_pt",
@@ -678,33 +677,3 @@ def step_pt() -> float:
     if not active_preset_rcparams():
         return 1.0
     return SLIDE_SCALE
-
-
-def install_twinx_patch() -> None:
-    """Make ``Axes.twinx`` show the twin's right spine at the preset line width.
-
-    dartwork-mpl presets hide the right spine, so a twin axis would otherwise
-    have no visible axis line for its own scale. Called once by
-    ``import dartwork_mpl``. Idempotent: the wrapper is tagged
-    ``__dm_patched__``, so a repeated call (or ``importlib.reload``) never
-    wraps the patched method again and recurses.
-    """
-    import matplotlib as mpl
-    import matplotlib.axes
-
-    if getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
-        return
-    original_twinx = matplotlib.axes.Axes.twinx
-
-    def _patched_twinx(
-        self: matplotlib.axes.Axes, *args: Any, **kwargs: Any
-    ) -> matplotlib.axes.Axes:
-        ax2 = original_twinx(self, *args, **kwargs)
-        ax2.spines["right"].set_visible(True)
-        ax2.spines["right"].set_linewidth(
-            mpl.rcParams.get("axes.linewidth", 0.3)
-        )
-        return ax2
-
-    _patched_twinx.__dm_patched__ = True  # type: ignore[attr-defined]
-    matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign,assignment]

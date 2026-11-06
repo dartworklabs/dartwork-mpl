@@ -1,51 +1,61 @@
-"""Tests for module-level monkey patches applied by dartwork_mpl.__init__.
+"""Importing dartwork_mpl rebinds nothing on matplotlib's classes (D7).
 
-Currently covers the ``Axes.twinx`` reentrance guard: reloading
-``dartwork_mpl`` must not produce a self-wrapping infinite loop in
-``ax.twinx()``.
+Up to 0.7, ``import dartwork_mpl`` replaced ``matplotlib.axes.Axes.twinx``
+with a wrapper that showed the twin's right spine. From 0.8 that spine shows
+at ``dm.simple_layout`` (``dartwork_mpl.formatting._twin_spines``), and
+importing or reloading the package leaves every attribute of matplotlib's
+Axes, Figure, Axis and Spine classes the object it was. A fresh interpreter
+checks it, since this test session imported the package long ago.
 """
 
 from __future__ import annotations
 
+import subprocess
+import sys
+
+_PROBE = """
 import importlib
 
 import matplotlib
 
 matplotlib.use("Agg")
-
 import matplotlib.axes
-import matplotlib.pyplot as plt
+import matplotlib.axis
+import matplotlib.figure
+import matplotlib.spines
+
+classes = (
+    matplotlib.axes.Axes,
+    matplotlib.figure.Figure,
+    matplotlib.figure.SubFigure,
+    matplotlib.axis.XAxis,
+    matplotlib.axis.YAxis,
+    matplotlib.spines.Spine,
+)
+before = [dict(vars(cls)) for cls in classes]
+twinx, twiny = matplotlib.axes.Axes.twinx, matplotlib.axes.Axes.twiny
+
+import dartwork_mpl
+
+importlib.reload(dartwork_mpl)
+
+assert matplotlib.axes.Axes.twinx is twinx
+assert matplotlib.axes.Axes.twiny is twiny
+for cls, was in zip(classes, before):
+    now = dict(vars(cls))
+    rebound = sorted(k for k in was.keys() | now.keys() if was.get(k) is not now.get(k))
+    assert not rebound, (cls.__name__, rebound)
+print("untouched")
+"""
 
 
-class TestTwinxPatchReentranceGuard:
-    """The patched ``twinx`` is tagged with ``__dm_patched__`` so a reload
-    of dartwork_mpl does not capture the already-wrapped callable as the
-    "original", which would otherwise recurse forever on the next
-    ``ax.twinx()`` call.
-    """
-
-    def test_patched_twinx_is_marked(self) -> None:
-        import dartwork_mpl  # noqa: F401  # side-effect: applies the patch
-
-        assert (
-            getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False) is True
-        )
-
-    def test_reload_does_not_recurse(self) -> None:
-        """Reloading dartwork_mpl + invoking twinx must not RecursionError."""
-        import dartwork_mpl
-
-        importlib.reload(dartwork_mpl)
-        importlib.reload(dartwork_mpl)
-        # Should still be a single layer of wrapping.
-        assert (
-            getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False) is True
-        )
-
-        fig, ax = plt.subplots()
-        try:
-            ax2 = ax.twinx()
-            # Right spine visible (the patch's whole purpose).
-            assert ax2.spines["right"].get_visible() is True
-        finally:
-            plt.close(fig)
+def test_import_and_reload_rebind_nothing_on_matplotlib_classes() -> None:
+    result = subprocess.run(
+        [sys.executable, "-c", _PROBE],
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "untouched"

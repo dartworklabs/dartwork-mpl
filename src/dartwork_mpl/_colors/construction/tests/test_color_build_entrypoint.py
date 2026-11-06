@@ -243,12 +243,13 @@ def test_ordinary_import_preserves_eager_inventory_and_reload(
         )
         assert "dc.aurora" in mpl.colormaps
 
-        patched_twinx = mpl.axes.Axes.twinx
+        native_twinx = mpl.axes.Axes.twinx
         importlib.reload(dm)
         importlib.reload(dm)
 
-        assert mpl.axes.Axes.twinx is patched_twinx
-        assert getattr(patched_twinx, "__dm_patched__", False)
+        # Import and reload leave matplotlib's own twinx in place (D7).
+        assert mpl.axes.Axes.twinx is native_twinx
+        assert "twinx" not in vars(mpl.axes.Axes)
         assert public <= set(dm.__all__)
         assert all(hasattr(dm, name) for name in modules | {"__getattr__"})
         assert "dc.aurora" in mpl.colormaps

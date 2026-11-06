@@ -289,16 +289,18 @@ dm.simple_layout(fig)   # walks the colorbar's own axes too
 
 ## 5. Twinx (Dual Y-Axis)
 
-dartwork-mpl 0.4 monkey-patches `Axes.twinx()` so the **right spine
-is automatically visible** with the correct linewidth from the active
-style. You no longer need to call `ax2.spines["right"].set_visible(True)`.
+The presets hide the right spine; `dm.simple_layout(fig)` shows it on the
+Axes `ax.twinx()` returned, at the preset's line width, so the second scale
+gets its axis line. `ax.twinx()` itself is matplotlib's own: a figure not
+laid out with `dm.simple_layout` keeps the spine hidden unless you call
+`ax2.spines["right"].set_visible(True)`.
 
 ```python
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 ax.bar(x, temperature, color="dc.teal2", width=0.55)
 ax.set_ylabel("Temperature (°C)")
 
-ax2 = ax.twinx()             # right spine visible by design
+ax2 = ax.twinx()             # right spine shown by simple_layout
 ax2.plot(x, change_pct, "o-", color="dc.orange3", lw=dm.lw(1))
 ax2.set_ylabel("Change (%)")   # the axis takes the line's colour
 

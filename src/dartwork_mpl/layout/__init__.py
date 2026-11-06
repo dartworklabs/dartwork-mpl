@@ -758,6 +758,12 @@ def simple_layout(
     so they sit ``axes.titlepad`` above that legend; their text, size and
     weight are kept.
 
+    An Axes drawing its own y scale on the right of a shared plot area (the
+    Axes ``ax.twinx()`` returns) gets its right spine shown, which the
+    presets hide; its line width and colour stay, and a spine you hide
+    after a layout stays hidden. The rule is in the docstring of
+    ``dartwork_mpl.formatting._twin_spines``.
+
     On a ``twinx`` / ``twiny`` pair, a side whose series all draw one
     colour that no series on the other scale shares gets that colour on its
     spine and tick marks (at least 3:1 against the background) and the same
@@ -822,11 +828,13 @@ def simple_layout(
         raise ValueError("margin must resolve to finite figure fractions")
 
     # Tick formats change label widths, so they go before fitting, but
-    # after every check that can still refuse the call. Twin colours follow
-    # the tick formats (the order bar labels rely on); they are not number
-    # formats, so ``format_ticks=False`` keeps them.
+    # after every check that can still refuse the call. Twin spines and
+    # colours follow the tick formats (the order bar labels rely on); they
+    # are not number formats, so ``format_ticks=False`` keeps them. The
+    # spine shows first so the colours reach it.
     if format_ticks:
         _format_ticks(fig)
+    _show_twin_spines(fig)
     _color_twins(fig)
 
     last: _GridEdges | None = None
@@ -909,6 +917,13 @@ def _format_ticks(fig: Figure) -> None:
     from ..formatting import apply_default_tick_format
 
     apply_default_tick_format(fig)
+
+
+def _show_twin_spines(fig: Figure) -> None:
+    """The right spine of each twin y scale drawn on the right."""
+    from ..formatting import show_twin_spines
+
+    show_twin_spines(fig)
 
 
 def _color_twins(fig: Figure) -> None:

@@ -31,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Importing dartwork-mpl no longer changes matplotlib.** `ax.twinx()` is
+  matplotlib's own again (it was replaced at import); `dm.simple_layout`
+  shows the right spine of an Axes drawing its own y scale on the right
+  (the one `twinx()` returns), which the presets hide. Figures laid out with
+  `dm.simple_layout` look the same. Without it the twin keeps the preset's
+  hidden right spine; show it with `ax2.spines["right"].set_visible(True)`.
+  A right spine you hide before the first `dm.simple_layout` now shows;
+  hide it after the layout, or give it `linewidth=0`. The rule:
+  [docs/development/twin-spine-at-layout.md](docs/development/twin-spine-at-layout.md).
 - **Twin pairs get series colours.** `dm.simple_layout` colours each side
   of a `twinx` / `twiny` pair like the one series read on it: the spine
   and tick marks in the series colour raised to 3:1 against the
@@ -77,6 +86,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- `dartwork_mpl.style.install_twinx_patch` and its root alias
+  `dm.install_twinx_patch` (internal, never in `__all__`): the import-time
+  `twinx` wrapper. See *Changed*.
 - `dartwork_mpl.ui._config` (private): the legacy preset-file helpers.
   Nothing in the package used them; the viewer keeps its state in
   `dartwork_mpl.ui.state`.
