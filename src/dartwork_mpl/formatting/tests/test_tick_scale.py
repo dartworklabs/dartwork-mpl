@@ -56,26 +56,16 @@ def test_suffix_formatters_give_unit_and_currency():
 @pytest.mark.parametrize(
     "install",
     [
-        lambda ax: dm.format_axis_currency(ax),
-        lambda ax: dm.format_axis_currency(ax, symbol="€", position="suffix"),
-        lambda ax: dm.format_axis_millions(ax, decimals=1),
-        lambda ax: dm.format_axis_billions(ax, decimals=2),
         lambda ax: dm.format_axis_si(ax, decimals=1),
         lambda ax: dm.format_axis_myriad(ax, decimals=1),
+        lambda ax: dm.format_axis_myriad(ax, decimals=1, currency="$"),
     ],
-    ids=[
-        "currency",
-        "currency-suffix",
-        "millions-1",
-        "billions-2",
-        "si-1",
-        "myriad-1",
-    ],
+    ids=["si-1", "myriad-1", "myriad-1-currency"],
 )
-def test_value_alone_formatters_give_the_plain_scale(install):
-    """The fixed-decimal paths and currency write each tick alone (no axis
-    unit), so bar labels stay plain values (``1,250,000``), as before they
-    shared the axis-wide engine."""
+def test_unit_per_value_formatters_give_the_plain_scale(install):
+    """``decimals=n`` of si and myriad with ``unit="max"`` give each tick its
+    own unit (``800.0`` beside ``1.2M``): no unit is the axis's, so bar
+    labels stay plain values (``1,250,000``) rather than borrow one."""
     fig, ax = _bars([1.25e6, 3.4e6])
     install(ax)
     fig.canvas.draw()
@@ -83,6 +73,47 @@ def test_value_alone_formatters_give_the_plain_scale(install):
     dm.label_bars(ax)
     fig.canvas.draw()
     assert [t.get_text() for t in ax.texts] == ["1,250,000", "3,400,000"]
+
+
+@pytest.mark.parametrize(
+    ("install", "scale"),
+    [
+        (
+            lambda ax: dm.format_axis_millions(ax, decimals=1),
+            TickScale(1e6, "", "M"),
+        ),
+        (
+            lambda ax: dm.format_axis_billions(ax, suffix="bn", decimals=2),
+            TickScale(1e9, "", "bn"),
+        ),
+        (
+            lambda ax: dm.format_axis_currency(ax),
+            TickScale(1.0, "$", "", zero="affixed"),
+        ),
+        (
+            lambda ax: dm.format_axis_currency(
+                ax, symbol="€", position="suffix", decimals=2
+            ),
+            TickScale(1.0, "", "€", zero="affixed"),
+        ),
+    ],
+    ids=["millions-1", "billions-bn-2", "currency", "currency-suffix-2"],
+)
+def test_fixed_unit_formatters_give_their_unit(install, scale):
+    """``decimals=n`` of millions / billions and ``format_axis_currency``
+    write every tick in one unit: that unit, its currency and its zero
+    rule, whatever the value. The axis-wide millions report the same."""
+    fig, ax = _bars([1.25e6, 3.4e6])
+    install(ax)
+    for value in (1.25e6, -800.0, 0.0):
+        assert tick_scale_of(ax.yaxis, value) == scale
+    fig.canvas.draw()
+    assert tick_scale_of(ax.yaxis, 1.25e6) == scale
+
+    fig, ax = _bars([1.25e6, 3.4e6])
+    dm.format_axis_millions(ax)  # axis-wide
+    fig.canvas.draw()
+    assert tick_scale_of(ax.yaxis, 1.25e6) == TickScale(1e6, "", "M")
 
 
 def test_log_axis_scale_is_per_value():
@@ -114,6 +145,14 @@ def test_number_text_prints_like_a_tick():
     assert number_text(0.0, 2, fixed=True) == "0.00"
     with matplotlib.rc_context({"axes.unicode_minus": False}):
         assert number_text(-3.5, 1) == "-3.5"
+    # An affixed zero keeps prefix and suffix and never a sign.
+    assert number_text(0.0, 0, prefix="$", zero="affixed") == "$0"
+    assert number_text(-0.004, 2, suffix="€", zero="affixed") == "0€"
+    assert (
+        number_text(-0.004, 2, fixed=True, suffix="€", zero="affixed")
+        == "0.00€"
+    )
+    assert number_text(-8.0, 0, prefix="$", zero="affixed") == f"{MINUS}$8"
 
 
 def test_value_label_decimals():
