@@ -31,7 +31,9 @@ import inspect
 import re
 import string
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
@@ -1332,17 +1334,30 @@ def _rebuildable(
     ``_UNREADABLE`` error while reading it or the probe, is not rebuildable.
     """
     handler_map: dict[Any, Any] = dict(legend.get_legend_handler_map())
-    try:
-        drawn = _entry_signatures(legend)
-        if not drawn:
-            return False
-        return any(
-            handles
-            and drawn == _probe_signatures(host, handles, labels, handler_map)
-            for handles, labels in candidates
-        )
-    except _UNREADABLE:
+
+    def read(
+        signatures: Callable[[], list[_EntrySignature]],
+    ) -> list[_EntrySignature] | None:
+        # Only matplotlib's legend layout and a detached Legend are read
+        # under the guard; the comparison below stays outside it, so a
+        # defect there surfaces instead of reading as "leave it".
+        try:
+            return signatures()
+        except _UNREADABLE:
+            return None
+
+    drawn = read(lambda: _entry_signatures(legend))
+    if not drawn:
         return False
+    for handles, labels in candidates:
+        if not handles:
+            continue
+        probe = read(
+            partial(_probe_signatures, host, handles, labels, handler_map)
+        )
+        if probe is not None and drawn == probe:
+            return True
+    return False
 
 
 def _legend_settings(

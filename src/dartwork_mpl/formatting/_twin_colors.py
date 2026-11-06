@@ -37,8 +37,9 @@ pair like the one series read on it:
   colour matplotlib gives it from the rcParams in force at the layout, and
   is repainted later only while it still shows the colour painted here. A
   colour set after a layout is kept, whatever it is. A colour set before the
-  first layout that equals the default (``"black"`` under the light
-  presets) cannot be told from the default and is painted; use
+  first layout, or after ``ax.cla()``, that equals the default (``"black"``
+  under the light presets) cannot be told from the default and is painted;
+  use
   ``dm.config.twin_colors = "neutral"`` to keep such a figure neutral. A
   figure built under one preset and laid out under another sees its parts
   as set by hand and stays neutral (the safe side).
