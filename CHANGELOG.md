@@ -66,6 +66,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Nothing in the package used them; the viewer keeps its state in
   `dartwork_mpl.ui.state`.
 
+### Fixed
+
+- **Labels fixed by `set_xticklabels` print the right years.**
+  `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)` on annual data
+  read `2007.5` at 2010 after `dm.simple_layout`: the whole-year locator
+  went in under labels matplotlib gives to ticks by order, and the refit
+  could change matplotlib's own tick count too (a 6 cm axis over 0–5,000
+  read `2000` at 1,000). Such an axis now keeps the ticks its labels were
+  made for, pinned before the refit, and is not thinned. Pinned ticks stay
+  when you zoom later with `set_xlim` (no new ticks appear). To rotate
+  without fixing the text, use `ax.tick_params(axis="x", rotation=45)`.
+- **Secondary axes read the library's numbers.** A `secondary_yaxis` over a
+  price line printed `1600 … 2400` beside the parent's `1,600 … 2,400`,
+  and over millions `0.0 … 3.0` under `1e6` beside `0.5M`. A
+  `secondary_xaxis` / `secondary_yaxis` whose functions are affine (the
+  same values, `×1.3`, °C as °F) now follows the parent's rules; a curved
+  one (`1 / x`) keeps matplotlib's. `dm.format_axis_si` on such a
+  secondary takes one unit for the axis (`0.5M … 3.0M`, not `500k, 1M,
+  1.5M`).
+- **A year axis zoomed under two years is labelled.** `2023.2–2023.8` had
+  no tick label at all, `2023.5–2024.5` one of five. Every tick now prints
+  its value (`2023.2 … 2023.7`), as under a locator you set: never a
+  rounded year, never an empty label.
+- **`dm.format_axis_year` never rounds.** A zoom to `2019.2–2019.8` read
+  `19 19 19 20 20 20`, and matplotlib's 2.5-year steps `05 08 10 12`
+  before a layout. It now ticks whole years unless you set a locator
+  (monthly data read `05년, 06년`; `ax.locator_params(nbins=...)` asked
+  before is kept) and uses the library's year formatter: whole years with
+  the suffix (`19년`; four digits when two would repeat), every value
+  between years (`2019.2 …`), and `ax.ticklabel_format` works on it.
+  The formatter class is now `YearTickFormatter` (was `FuncFormatter`): the
+  cursor reads the value (`2007.53`, was `08년`), and calling it directly
+  before a draw on a fraction (`f(2025.5)`) gives `""` (was `26년`).
+
 ## [0.7.0] - 2026-11-06
 
 The rule behind these defaults: with no request the library's look applies;

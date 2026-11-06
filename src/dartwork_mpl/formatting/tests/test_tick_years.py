@@ -185,6 +185,14 @@ def test_thinning_again_keeps_the_count_it_started_from():
 
 
 def test_zoomed_year_axis_never_rounds_a_fraction():
+    """Between years every tick prints its value, never ``16`` / ``17``.
+
+    The year locator falls back to fractions in a view under two whole
+    years. Those ticks were left unlabelled until diagnosis D, bug 2
+    (2026-11-06): a view of 2016.2-2016.8 had no label at all. Now they
+    read as under any other locator (user decision 2026-11-05: never a
+    rounded year, never an empty label).
+    """
     ax = _line(np.arange(2005, 2025))
     ax.set_xlim(2016, 2017)
     locs, labels = _shown(ax)
@@ -192,7 +200,7 @@ def test_zoomed_year_axis_never_rounds_a_fraction():
     ax.set_xlim(2016.2, 2016.8)  # no whole year in view
     locs, labels = _shown(ax)
     assert locs and not _whole(locs), locs
-    assert labels == [""] * len(locs), labels  # unlabelled, never "16"/"17"
+    assert all(map(_reads_its_value, locs, labels)), labels
     assert ax.xaxis.get_offset_text().get_text() == ""
 
 
@@ -487,10 +495,10 @@ def test_other_data_keep_matplotlibs_locator_and_formatter(x):
 
 
 def test_a_chosen_year_formatter_still_gets_whole_year_ticks():
-    """``dm.format_axis_year`` set the formatter, not the locator.
+    """``dm.format_axis_year`` puts the year locator in with its formatter.
 
-    The locator is still matplotlib's, so the year locator goes in and the
-    chosen formatter stays: no ``2007.5`` rounded to ``08년``.
+    The layout keeps the chosen formatter on whole-year ticks: no
+    ``2007.5`` rounded to ``08년``.
     """
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "wide"))
     ax.plot(np.arange(2004, 2025), np.arange(21))
@@ -681,7 +689,107 @@ def test_ticks_pinned_after_the_layout_read_their_values():
     assert _shown(ax)[1] == ["08", "16"]
     ax.xaxis.set_major_locator(WholeYearLocator())  # the year locator again
     ax.set_xlim(2016.2, 2016.8)
-    assert set(_shown(ax)[1]) == {""}  # between years under it: unlabelled
+    locs, labels = _shown(ax)  # between years under it too: the values
+    assert locs and all(map(_reads_its_value, locs, labels)), labels
+
+
+def _plain_values(axis) -> dict[float, str]:
+    """Matplotlib's own numbers for the axis's ticks, no offset or exponent."""
+    oracle = mticker.ScalarFormatter(useOffset=False)
+    oracle.set_scientific(False)
+    oracle.set_axis(axis)
+    locs = [float(v) for v in axis.get_majorticklocs()]
+    return dict(zip(locs, oracle.format_ticks(locs), strict=True))
+
+
+def _zoomed(which, view, *, when="before-layout", width="13cm", ylabel=None):
+    fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"))
+    years = np.arange(2000, 2025)
+    if which == "x":
+        ax.plot(years, np.linspace(1, 3, len(years)), marker="o")
+        axis, set_lim = ax.xaxis, ax.set_xlim
+    else:
+        ax.barh(years, np.arange(len(years)) + 1)
+        axis, set_lim = ax.yaxis, ax.set_ylim
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if when == "before-layout":
+        set_lim(*view)
+        dm.simple_layout(fig)
+    else:
+        dm.simple_layout(fig)
+        set_lim(*view)
+    return ax, axis
+
+
+def _assert_values(axis):
+    """Every tick in view labelled with its own value, read as one axis."""
+    locs, labels = _on(axis)
+    assert len(locs) >= 2 and not _whole(locs), locs
+    plain = _plain_values(axis)
+    assert labels == [plain[v] for v in locs], labels
+    assert all(labels) and len(set(labels)) == len(labels), labels
+    assert not any(re.fullmatch(r"\d\d\D*", t) for t in labels), labels
+    assert axis.get_offset_text().get_text() == ""
+
+
+@pytest.mark.parametrize(
+    "view",
+    [(2023.2, 2023.8), (2023.5, 2024.5)],
+    ids=["no-whole-year", "one-whole-year"],
+)
+@pytest.mark.parametrize("when", ["before-layout", "after-layout"])
+@pytest.mark.parametrize("which", ["x", "y"])
+def test_a_year_axis_zoomed_under_two_years_reads_every_value(
+    which, when, view
+):
+    """The year locator's fractions read like any locator's (bug 2).
+
+    ``2023.2-2023.8`` had six ticks and no label; ``2023.5-2024.5`` labelled
+    one tick ``24`` of five. Every tick now prints its value as matplotlib
+    would without an offset (``2023.2 … 2023.7``): one decimal count on the
+    axis, no corner label, no rounded year, no empty label.
+    """
+    _ax, axis = _zoomed(which, view, when=when)
+    assert isinstance(axis.get_major_locator(), WholeYearLocator)
+    assert isinstance(axis.get_major_formatter(), YearTickFormatter)
+    _assert_values(axis)
+
+
+@pytest.mark.parametrize(
+    "view", [(2023.0, 2024.0), (2022.6, 2024.4)], ids=["edges", "inside"]
+)
+@pytest.mark.parametrize("which", ["x", "y"])
+def test_two_whole_years_in_view_still_read_two_digits(which, view):
+    _ax, axis = _zoomed(which, view)
+    locs, labels = _on(axis)
+    assert locs == [2023.0, 2024.0] and labels == ["23", "24"], (locs, labels)
+
+
+def test_a_narrow_zoomed_year_axis_thins_its_values_to_one_em():
+    ax, axis = _zoomed("x", (2023.05, 2023.95), width="6cm")
+    _assert_values(axis)
+    assert _min_gap_em(ax) >= 1.0
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"tick_years": 4}, {"date_style": "concise"}],
+    ids=["four-digits", "korean-concise"],
+)
+def test_zoomed_year_values_take_no_digits_option_or_suffix(options):
+    """``tick_years=4`` and the Korean ``년`` are for years, not values."""
+    dm.style.use("report-kr")
+    with dm.config.override(**options):
+        for which in ("x", "y"):
+            _ax, axis = _zoomed(which, (2023.2, 2023.8), ylabel="매출")
+            _assert_values(axis)
+            whole, _axis = _zoomed(which, (2022.6, 2024.4), ylabel="매출")
+            years = _on(_axis)[1]
+            if options.get("tick_years") == 4:
+                assert years == ["2023", "2024"], years
+            else:
+                assert years == ["23년", "24년"], years
 
 
 def test_year_ticks_past_2099_are_labelled():
