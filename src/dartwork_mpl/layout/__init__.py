@@ -897,11 +897,24 @@ def simple_layout(
         # Date ticks depend on the axis length only through their labels:
         # thin them at the fitted width, then fit once more if they moved.
         if not format_ticks:
-            return
+            break
         from ..formatting import thin_crowded_date_ticks
 
         if not thin_crowded_date_ticks(fig):
-            return
+            break
+    _report_hidden_bar_labels(fig)
+
+
+def _report_hidden_bar_labels(fig: Figure) -> None:
+    """Warn about bar labels the fitted size left no room for.
+
+    Once, after the fit: the warning speaks of the size laid out, not of a
+    step on the way (:func:`~..annotation.warn_hidden_bar_labels`).
+    """
+    from ..annotation import warn_hidden_bar_labels
+
+    # warn_hidden_bar_labels <- this <- simple_layout <- the caller.
+    warn_hidden_bar_labels(fig, stacklevel=3)
 
 
 def _format_ticks(fig: Figure) -> None:

@@ -13,6 +13,7 @@ are read after a real canvas draw.
 from __future__ import annotations
 
 import io
+import warnings
 
 import matplotlib
 import matplotlib.colors as mcolors
@@ -2154,6 +2155,218 @@ def test_separate_calls_that_fit_are_left_alone():
     assert all(t.get_visible() for t in texts)
     assert {t.get_rotation() for t in texts} == {0.0}
     _assert_outside(fig, texts, [*first.patches, *second.patches])
+
+
+# ------------------------------------------- overlapping series (9-2 B)
+# The approved PoC figures of decision 9-2 (review page
+# 2026-11-06-b3-followups, b3poc/2-overlapping-series/summary.json, B):
+# same data, size and preset (report, 300 dpi).
+PLAN_TEXTS = ["63", "88", "63", "75", "77", "86", "64", "74", "75"]
+ACTUAL_TEXTS = ["65", "86", "65", "73", "73", "84", "63", "77", "75"]
+POC_ROWS = [0, 2, 4, 5, 6, 8, 9, 10, 12]  # the rows summary.json lists
+H_2024 = ["92", "75", "78", "90", "72", "83", "86"]
+H_2024 += ["52", "43", "56", "55", "88", "91", "40"]
+H_2025 = ["96", "82", "80", "97", "73", "87", "93"]
+H_2025 += ["55", "46", "59", "61", "91", "99", "44"]
+
+
+def _poc_grouped_bar(per_series=False):
+    """14 weeks of Plan vs Actual, grouped bars, 9 cm (PoC figure b)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=300)
+    rng = np.random.default_rng(3)
+    x = np.arange(14)
+    a = rng.uniform(60, 95, 14).round()
+    b = (a + rng.uniform(-4, 4, 14).round()).clip(40, 99)
+    plan = ax.bar(x - 0.2, a, 0.4, color="dc.gray4", label="Plan")
+    actual = ax.bar(x + 0.2, b, 0.4, color="dc.orange3", label="Actual")
+    ax.set_xticks(x, [f"W{i + 1}" for i in x])
+    ax.set_ylabel("Output (units)")
+    ax.legend(loc="upper left", ncols=2)
+    if per_series:
+        dm.label_bars(ax, plan)
+        dm.label_bars(ax, actual)
+    else:
+        dm.label_bars(ax)
+    return fig, ax, plan, actual
+
+
+def _poc_grouped_barh(aspect=1.15):
+    """14 regions, 2024 vs 2025, one call per series, thin rows (PoC a)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", aspect), dpi=300)
+    regions = ["Korea", "Japan", "China", "India", "Vietnam", "Indonesia"]
+    regions += ["Australia", "Germany", "France", "UK", "Spain", "Brazil"]
+    regions += ["Mexico", "Canada"]
+    rng = np.random.default_rng(7)
+    a = rng.integers(40, 96, 14)
+    b = a + rng.integers(1, 9, 14)
+    y = np.arange(14)
+    first = ax.barh(y + 0.19, a, 0.38, color="dc.gray4", label="2024")
+    second = ax.barh(y - 0.19, b, 0.38, color="dc.teal2", label="2025")
+    ax.set_yticks(y, regions)
+    ax.invert_yaxis()
+    ax.set_xlabel("Revenue (USD M)")
+    ax.legend(loc="lower right")
+    dm.label_bars(ax, first)
+    dm.label_bars(ax, second)
+    return fig, ax, first, second
+
+
+def _labels_of(ax, container):
+    """The labels of ``container``'s bars, bar by bar."""
+    found = [t for t in ax.texts if getattr(t, "container", None) is container]
+    return sorted(found, key=lambda t: t.index)
+
+
+def _layout_warnings(fig):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    return [
+        w for w in caught if "hidden where they would overlap" in str(w.message)
+    ]
+
+
+@pytest.mark.parametrize("per_series", [False, True])
+def test_overlapping_series_alternate_by_bar_index(per_series):
+    # PoC figure b, B: the first series keeps its labels on even bar
+    # indices, the second on odd ones (7/14 each); neither vanishes.
+    fig, ax, plan, actual = _poc_grouped_bar(per_series)
+    assert _layout_warnings(fig) == []  # alternating is no loss to report
+    plan_labels, actual_labels = _labels_of(ax, plan), _labels_of(ax, actual)
+    assert [plan_labels[i].get_text() for i in POC_ROWS] == PLAN_TEXTS
+    assert [actual_labels[i].get_text() for i in POC_ROWS] == ACTUAL_TEXTS
+    _drawn(fig)
+    assert [t.get_visible() for t in plan_labels] == [
+        i % 2 == 0 for i in range(14)
+    ]
+    assert [t.get_visible() for t in actual_labels] == [
+        i % 2 == 1 for i in range(14)
+    ]
+    shown = _shown(fig, plan_labels + actual_labels)
+    assert len(shown) == 14
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    visible = [t.get_visible() for t in plan_labels + actual_labels]
+    dm.simple_layout(fig)  # a repeat layout makes the same choice
+    assert [t.get_visible() for t in plan_labels + actual_labels] == visible
+
+
+def test_grouped_barh_alternates_across_calls():
+    # PoC figure a (one label_bars call per series): the rows hold one
+    # label each, so the series alternate as in figure b, 7/14 each, and
+    # nothing is lost. summary.json's B shows 2024 14/14 and 2025 0/14
+    # here: the PoC numbered each call's container 0, so both calls looked
+    # like one series; with the series told apart (PoC rerun, b3impl
+    # report) the same candidate alternates too.
+    fig, ax, first, second = _poc_grouped_barh()
+    assert _layout_warnings(fig) == []
+    labels_2024, labels_2025 = _labels_of(ax, first), _labels_of(ax, second)
+    assert _texts(labels_2024) == H_2024
+    assert _texts(labels_2025) == H_2025
+    _drawn(fig)
+    assert [t.get_visible() for t in labels_2024] == [
+        i % 2 == 0 for i in range(14)
+    ]
+    assert [t.get_visible() for t in labels_2025] == [
+        i % 2 == 1 for i in range(14)
+    ]
+    shown = _shown(fig, labels_2024 + labels_2025)
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    assert {t.get_rotation() for t in labels_2024 + labels_2025} == {0.0}
+
+
+def test_thin_rows_still_overlap_and_warn():
+    # The same rows at 9 x 7.2 cm: one label per row still meets the next
+    # row's, so the overlap rule hides labels as before (from the top row
+    # down; the first series stays here) and the layout says so.
+    fig, ax, first, second = _poc_grouped_barh(aspect=0.8)
+    caught = _layout_warnings(fig)
+    assert len(caught) == 1
+    message = str(caught[0].message)
+    assert "14 of 28" in message
+    assert "taller figure" in message
+    assert "crowded='skip'" in message
+    labels_2024, labels_2025 = _labels_of(ax, first), _labels_of(ax, second)
+    _drawn(fig)
+    assert [t.get_visible() for t in labels_2024] == [True] * 14
+    assert [t.get_visible() for t in labels_2025] == [False] * 14
+    shown = _shown(fig, labels_2024 + labels_2025)
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    assert {t.get_rotation() for t in labels_2024 + labels_2025} == {0.0}
+
+    # A taller figure brings every label back, and the warning goes.
+    fig.set_size_inches(fig.get_size_inches()[0], 9)
+    assert _layout_warnings(fig) == []
+    assert all(t.get_visible() for t in labels_2024 + labels_2025)
+
+
+def test_hidden_label_warning_follows_the_rule():
+    # One series of thin rows (the barh fallback): warned under the
+    # default rule, silent under crowded="skip", which asks for it.
+    values = np.linspace(40.0, 2.5, 40)
+    for crowded, expected in (("rotate", 1), ("inside", 1), ("skip", 0)):
+        fig, ax = _fig()
+        ax.barh(np.arange(40), values, height=0.9)
+        ax.invert_yaxis()
+        texts = dm.label_bars(ax, crowded=crowded)
+        caught = _layout_warnings(fig)
+        assert len(caught) == expected, crowded
+        hidden = sum(not t.get_visible() for t in texts)
+        assert hidden > 0
+        if expected:
+            assert f"{hidden} of 40" in str(caught[0].message)
+
+    # Labels that all fit: no warning.
+    fig, ax, _ = _quarterly()
+    dm.label_bars(ax)
+    assert _layout_warnings(fig) == []
+
+
+def test_three_series_take_turns():
+    # Three series count down: the first at bar index 0, the last at 1,
+    # the middle one at 2, ... (series -i mod 3), so the kept labels stand
+    # at least a bar width short of the pitch apart; 8 of 24 each.
+    fig, ax = _fig()
+    x = np.arange(24, dtype=float)
+    values = np.linspace(40.0, 12.0, 24)
+    containers = [
+        ax.bar(x + (j - 1) * 0.27, values * (1 - 0.1 * j), width=0.27)
+        for j in range(3)
+    ]
+    dm.label_bars(ax)
+    assert _layout_warnings(fig) == []
+    for j, container in enumerate(containers):
+        labels = _labels_of(ax, container)
+        assert [t.get_visible() for t in labels] == [
+            (j + i) % 3 == 0 for i in range(24)
+        ], j
+    shown = _shown(fig, list(ax.texts))
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+
+
+def test_stacked_series_keep_the_overlap_rule():
+    # Totals (stacks) are no plain series: the overlap rule hides from the
+    # last position on screen, as before, so the left stacks lose theirs.
+    fig, ax = _fig()
+    x = np.arange(20, dtype=float)
+    low, high = np.linspace(40, 12, 20), np.linspace(30, 20, 20)
+    ax.bar(x - 0.2, low, width=0.4)
+    left = ax.bar(x - 0.2, high, bottom=low, width=0.4)
+    ax.bar(x + 0.2, low * 0.9, width=0.4)
+    right = ax.bar(x + 0.2, high, bottom=low * 0.9, width=0.4)
+    texts = dm.label_bars(ax, total="only")
+    dm.simple_layout(fig)
+    _drawn(fig)
+    assert {t.kind for t in texts} == {"total"}
+    assert [t.get_visible() for t in texts if t.bar in left.patches] == [
+        False
+    ] * 20
+    assert [t.get_visible() for t in texts if t.bar in right.patches] == [
+        True
+    ] * 20
 
 
 def _room_to_own_edge(fig, texts, along):

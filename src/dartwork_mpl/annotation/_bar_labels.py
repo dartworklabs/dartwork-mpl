@@ -87,6 +87,7 @@ from ._bar_label_lifecycle import attach, families_of, record, release
 from ._bar_label_options import (
     BarLabelOptions,
     Crowded,
+    HiddenFor,
     Kind,
     Orientation,
     Placement,
@@ -131,6 +132,10 @@ class BarLabel(Annotation):
     an outside label must clear (a crowded label wider than its own bar).
     ``beyond`` is the label a total sits beyond: the top segment's, when
     the call put segment labels ``"outside"`` (at the same stack end).
+    ``hidden_for`` says why the layout's last pass hid the label where it
+    would overlap another: ``"turn"``, another series' label took the bar
+    index (series alternate), or ``"room"``, it could not be kept;
+    ``None`` while the layout has not hidden it.
     """
 
     def __init__(
@@ -165,6 +170,8 @@ class BarLabel(Annotation):
         self.stack = stack
         self.clear_of: tuple[Rectangle, ...] = ()
         self.beyond: BarLabel | None = None
+        # Why the layout's last pass hid it where it would overlap, if it did.
+        self.hidden_for: HiddenFor | None = None
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
         # What this module last wrote to each property it owns.
@@ -523,7 +530,13 @@ def label_bars(
         label. Under any rule, labels that would still overlap are hidden
         the same way, other calls' labels on the same plot area included
         (one call per series), and a kept label wider than its bar is
-        lifted past the taller bars it spans.
+        lifted past the taller bars it spans. Grouped series take turns
+        where their labels meet: two series alternate by bar index (the
+        first on even indices), so neither disappears whole; stacks keep
+        the plain rule. When labels are still lost for room (``barh`` rows
+        too thin for even one label each), ``dm.simple_layout`` warns once
+        and a taller (wider) figure brings them back; ``"skip"`` hides
+        on purpose, without the warning.
     decimals : int, optional
         A fixed decimal count instead of the rule above.
     fmt : str or callable, optional

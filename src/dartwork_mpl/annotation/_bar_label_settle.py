@@ -28,11 +28,28 @@ further layout steps give the same result; nothing compounds.
   call per series meets the others' labels: from the last position on
   screen (the right end, or the top row of ``barh``), a position whose
   labels come within :data:`GAP_PT` of the last kept position's is hidden,
-  so ``"skip"`` keeps every other label of evenly crowded bars. A kept
-  outside label wider than its bar (a plain bar's, a stack's total) is
-  pushed past the ends of the other bars it spans, never drawn on them; a
-  label with a longer bar at its own position (a lower stack segment asked
-  ``"outside"``, an actual inside its target) stays at its own bar's end.
+  so ``"skip"`` keeps every other label of evenly crowded bars.
+
+  Series take turns. When the positions are plain bars of two or more
+  containers (grouped bars, one call or one call per series; no stack
+  segments or totals, no bars overlaid at one position), a label that
+  meets the last kept one at the same bar index takes its place when its
+  series' turn there comes first: two series alternate, the first on even
+  bar indices and the second on odd ones, so neither disappears whole;
+  more series count down (the first at index 0, the last at 1, ...). A
+  label hidden only because another series had the turn is hidden for its
+  ``"turn"``; any other hidden label for ``"room"`` (``BarLabel.hidden_for``).
+  Rows too thin even for one label each (``barh``) still lose labels to
+  the overlap rule; :func:`warn_hidden_bar_labels`, run once by
+  ``dm.simple_layout`` after its fit, warns when a label was hidden for
+  room under a rule other than ``"skip"`` (which asks for hiding), and
+  names the cure: a taller (``barh``) or wider figure.
+
+  A kept outside label wider than its bar (a plain bar's, a stack's total)
+  is pushed past the ends of the other bars it spans, never drawn on them;
+  a label with a longer bar at its own position (a lower stack segment
+  asked ``"outside"``, an actual inside its target) stays at its own bar's
+  end.
 * **Headroom.** A value axis whose limits matplotlib still autoscales
   (``get_autoscaley_on()``) starts from matplotlib's limits for the data
   (``autoscale_view``) and grows, on the side each outside label points to,
@@ -56,12 +73,14 @@ further layout steps give the same result; nothing compounds.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import numpy.typing as npt
+from matplotlib.artist import Artist
 from matplotlib.container import BarContainer
 
 from .._figure_geometry import get_renderer, same_position_axes, shared_axes
@@ -80,7 +99,12 @@ if TYPE_CHECKING:
 
     from ._bar_label_options import BarLabelOptions
 
-__all__ = ["GAP_PT", "grown_span", "settle_bar_labels"]
+__all__ = [
+    "GAP_PT",
+    "grown_span",
+    "settle_bar_labels",
+    "warn_hidden_bar_labels",
+]
 
 # The clear space between neighbouring labels: a label wider than its bar
 # pitch less this is crowded, and kept labels stay this far apart.
@@ -259,6 +283,7 @@ def _reset(label: BarLabel) -> None:
     """The label as its call placed it (what it still owns)."""
     label.where = label.asked
     label.clear_of = ()
+    label.hidden_for = None
     label.own_rotation(0.0)
     label.own_visible(True)
     label.own_color(label.ink)
@@ -317,7 +342,8 @@ def _crowd(area: _Area, renderer: RendererBase) -> None:
             crowded = True
     if crowded:
         every = [label for _options, labels in area.calls for label in labels]
-        kept = _hide_overlaps(_positions(every, bars, renderer), gap)
+        positions = _positions(every, bars, renderer)
+        kept = _hide_overlaps(positions, gap, _turns(positions, every))
         _clear_neighbours(kept, bars)
 
 
@@ -350,19 +376,130 @@ def _move_inside(label: BarLabel, options: BarLabelOptions) -> None:
     label.own_color(label.ink if ink is None else ink)
 
 
-def _hide_overlaps(positions: list[_Position], gap: float) -> list[_Position]:
+def _turns(
+    positions: list[_Position], labels: Sequence[BarLabel]
+) -> dict[int, int] | None:
+    """Each position's turn at its bar index, when the positions are series.
+
+    Series apply when every position holds one plain bar's label and those
+    come from two or more containers (``labels`` gives their order: call by
+    call, container by container). Series ``s`` of ``n`` has turn
+    ``(s + i) % n`` at bar index ``i``; turn 0 goes first. Two series
+    alternate, the first on even indices. More series count down (the
+    first at index 0, the last at 1, the one before it at 2...): grouped
+    bars drawn in series order then keep labels at least a bar width
+    short of the pitch apart, where counting up would put the last
+    series' label next to the first's of the next group. ``None``
+    otherwise: a stack's segments or totals, or bars overlaid at one
+    position, keep the plain overlap rule.
+    """
+    if any(
+        len(position.labels) != 1 or position.labels[0].kind != "edge"
+        for position in positions
+    ):
+        return None
+    drawn = {id(position.labels[0]) for position in positions}
+    series: dict[int, int] = {}
+    for label in labels:
+        if id(label) in drawn:
+            series.setdefault(id(label.container), len(series))
+    if len(series) < 2:
+        return None
+    return {
+        id(position): (
+            series[id(position.labels[0].container)] + position.labels[0].index
+        )
+        % len(series)
+        for position in positions
+    }
+
+
+def _hide_overlaps(
+    positions: list[_Position], gap: float, turns: dict[int, int] | None
+) -> list[_Position]:
     """Hide the positions that come within ``gap`` of the last kept one.
 
     Walks from the last position on screen; returns the kept positions.
+    With ``turns`` (:func:`_turns`), a position that meets the last kept
+    one at the same bar index takes its place when its turn there comes
+    first and it clears the kept one before.
+
+    A hidden label is hidden for its ``"turn"`` when another series' turn
+    came first at its bar index, else for ``"room"``
+    (``BarLabel.hidden_for``).
     """
     kept: list[_Position] = []
     for position in reversed(positions):
         if not kept or position.high + gap <= kept[-1].low:
             kept.append(position)
             continue
+        last = kept[-1]
+        if (
+            turns is not None
+            and position.labels[0].index == last.labels[0].index
+            and turns[id(position)] < turns[id(last)]
+            and (len(kept) < 2 or position.high + gap <= kept[-2].low)
+        ):
+            kept[-1] = position
+    shown = {id(position) for position in kept}
+    first: dict[int, int] = {}  # the first turn at each bar index
+    if turns is not None:
+        for position in positions:
+            index, turn = position.labels[0].index, turns[id(position)]
+            if turn < first.get(index, turn + 1):
+                first[index] = turn
+    for position in positions:
+        if id(position) in shown:
+            continue
+        for_turn = (
+            turns is not None
+            and turns[id(position)] > first[position.labels[0].index]
+        )
         for label in position.labels:
             label.own_visible(False)
+            if not Artist.get_visible(label):  # not shown by the caller
+                label.hidden_for = "turn" if for_turn else "room"
     return kept
+
+
+def warn_hidden_bar_labels(fig: Figure, *, stacklevel: int = 1) -> int:
+    """Warn that the last settle hid labels for want of room, if it did.
+
+    Run by ``dm.simple_layout`` once its fit is done, so the warning speaks
+    of the size laid out. It fires when a label of a call whose
+    ``crowded`` rule does not ask for hiding (``"skip"`` does) was hidden
+    for ``"room"``; labels hidden for another series' ``"turn"`` are the
+    rule's own outcome (series alternate), not a loss. The count covers
+    every label of those calls the overlap rule hid. ``stacklevel`` counts
+    from the caller (1: the line calling this). Returns that count (0:
+    nothing to report).
+    """
+    labels = [
+        label
+        for ax in fig.axes
+        for family in families_of(ax)
+        if family.options.crowded != "skip"
+        for label in family.texts
+    ]
+    if not any(label.hidden_for == "room" for label in labels):
+        return 0
+    hidden = [label for label in labels if label.hidden_for is not None]
+    rows = any(label.orientation == "horizontal" for label in hidden)
+    columns = any(label.orientation == "vertical" for label in hidden)
+    if rows and columns:
+        why, fix = "bars too close together for their text", "a larger figure"
+    elif rows:
+        why, fix = "barh rows thinner than the text", "a taller figure"
+    else:
+        why, fix = "bars closer together than their text", "a wider figure"
+    warnings.warn(
+        f"dm.label_bars: {len(hidden)} of {len(labels)} bar value labels are "
+        f"hidden where they would overlap ({why}); {fix} brings them back, "
+        "and crowded='skip' hides labels on purpose without this warning",
+        UserWarning,
+        stacklevel=stacklevel + 1,
+    )
+    return len(hidden)
 
 
 def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
