@@ -350,43 +350,164 @@ def test_gamma_array_preserves_shape(function: Callable[..., object]) -> None:
     assert result.shape == channels.shape
 
 
-@pytest.mark.parametrize(
-    ("function", "values"),
+# Linear-branch inputs, then nonlinear-branch inputs, per transfer function.
+# The linear branch is one correctly rounded division or product, so it must
+# match the scalar branch bit for bit, including the sign of zero. The
+# nonlinear branch goes through ndarray ``**``, which NumPy 1.26 rounds
+# 1-2 ULP differently from Python float ``**`` just above the breakpoint
+# (NumPy 2.x agrees exactly); the contract there is a 2 ULP budget.
+_GAMMA_ULP_BUDGET = 2
+_GAMMA_BRANCH_CASES = (
     (
-        (
-            conversion._srgb_to_linear,
-            (
-                -0.1,
-                math.nextafter(0.04045, -math.inf),
-                0.04045,
-                math.nextafter(0.04045, math.inf),
-                0.5,
-                1.1,
-            ),
-        ),
-        (
-            conversion._linear_to_srgb,
-            (
-                -0.1,
-                math.nextafter(0.0031308, -math.inf),
-                0.0031308,
-                math.nextafter(0.0031308, math.inf),
-                0.5,
-                1.1,
-            ),
-        ),
+        conversion._srgb_to_linear,
+        (-0.1, -0.0, 0.0, math.nextafter(0.04045, -math.inf), 0.04045),
+        (math.nextafter(0.04045, math.inf), 0.5, 1.1),
+    ),
+    (
+        conversion._linear_to_srgb,
+        (-0.1, -0.0, 0.0, math.nextafter(0.0031308, -math.inf), 0.0031308),
+        (math.nextafter(0.0031308, math.inf), 0.5, 1.1),
     ),
 )
-def test_gamma_array_matches_scalar_elementwise_exactly(
-    function: Callable[..., object], values: tuple[float, ...]
-) -> None:
-    """Pin ndarray arithmetic to the canonical scalar branch results."""
-    channels = np.array(values, dtype=np.float64)
-    array_result = function(channels)
-    scalar_result = np.array([function(float(value)) for value in channels])
 
+
+def _assert_gamma_array_contract(
+    array_result: object,
+    scalar_result: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    linear_count: int,
+) -> None:
+    """Exact on the linear branch, within the ULP budget on the other."""
     assert isinstance(array_result, np.ndarray)
-    assert np.array_equal(array_result, scalar_result)
+    assert array_result.dtype == scalar_result.dtype
+    assert array_result.shape == scalar_result.shape
+    linear = slice(0, linear_count)
+    assert np.array_equal(array_result[linear], scalar_result[linear])
+    assert np.array_equal(
+        np.signbit(array_result[linear]), np.signbit(scalar_result[linear])
+    )
+    np.testing.assert_array_max_ulp(
+        array_result[linear_count:],
+        scalar_result[linear_count:],
+        maxulp=_GAMMA_ULP_BUDGET,
+    )
+
+
+def _gamma_case(
+    function: Callable[..., object],
+    linear_values: tuple[float, ...],
+    nonlinear_values: tuple[float, ...],
+) -> tuple[
+    np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+]:
+    channels = np.array(linear_values + nonlinear_values, dtype=np.float64)
+    scalar = np.array([function(float(value)) for value in channels])
+    return channels, scalar
+
+
+@pytest.mark.parametrize(
+    ("function", "linear_values", "nonlinear_values"), _GAMMA_BRANCH_CASES
+)
+def test_gamma_array_matches_scalar_within_ulp_budget(
+    function: Callable[..., object],
+    linear_values: tuple[float, ...],
+    nonlinear_values: tuple[float, ...],
+) -> None:
+    """Linear branch exact, nonlinear branch within 2 ULP of the scalar."""
+    channels, scalar = _gamma_case(function, linear_values, nonlinear_values)
+
+    _assert_gamma_array_contract(function(channels), scalar, len(linear_values))
+
+
+@pytest.mark.parametrize(
+    ("function", "linear_values", "nonlinear_values"), _GAMMA_BRANCH_CASES
+)
+class TestGammaArrayContractRejectsDefects:
+    """The contract fails for a budget overrun, wrong branch or exponent."""
+
+    @staticmethod
+    def _perturbed(
+        function: Callable[..., object],
+        linear_values: tuple[float, ...],
+        nonlinear_values: tuple[float, ...],
+    ) -> tuple[
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+        int,
+    ]:
+        channels, scalar = _gamma_case(
+            function, linear_values, nonlinear_values
+        )
+        return function(channels), scalar, len(linear_values)
+
+    def test_budget_edge_passes_and_one_more_ulp_fails(
+        self,
+        function: Callable[..., object],
+        linear_values: tuple[float, ...],
+        nonlinear_values: tuple[float, ...],
+    ) -> None:
+        _, scalar, n = self._perturbed(
+            function, linear_values, nonlinear_values
+        )
+        edge = scalar.copy()
+        over = scalar.copy()
+        for _ in range(_GAMMA_ULP_BUDGET):
+            edge[n:] = np.nextafter(edge[n:], np.inf)
+        for _ in range(_GAMMA_ULP_BUDGET + 1):
+            over[n:] = np.nextafter(over[n:], np.inf)
+
+        _assert_gamma_array_contract(edge, scalar, n)
+        with pytest.raises(AssertionError):
+            _assert_gamma_array_contract(over, scalar, n)
+
+    def test_linear_branch_one_ulp_fails(
+        self,
+        function: Callable[..., object],
+        linear_values: tuple[float, ...],
+        nonlinear_values: tuple[float, ...],
+    ) -> None:
+        _, scalar, n = self._perturbed(
+            function, linear_values, nonlinear_values
+        )
+        off = scalar.copy()
+        off[0] = np.nextafter(off[0], -np.inf)
+
+        with pytest.raises(AssertionError):
+            _assert_gamma_array_contract(off, scalar, n)
+
+    def test_wrong_branch_fails(
+        self,
+        function: Callable[..., object],
+        linear_values: tuple[float, ...],
+        nonlinear_values: tuple[float, ...],
+    ) -> None:
+        channels, scalar = _gamma_case(
+            function, linear_values, nonlinear_values
+        )
+        n = len(linear_values)
+        # Linear-branch element evaluated by the nonlinear formula.
+        wrong = scalar.copy()
+        wrong[n - 1] = function(
+            np.array([channels[n - 1] + 0.5], dtype=np.float64)
+        )[0]
+
+        with pytest.raises(AssertionError):
+            _assert_gamma_array_contract(wrong, scalar, n)
+
+    def test_wrong_exponent_fails(
+        self,
+        function: Callable[..., object],
+        linear_values: tuple[float, ...],
+        nonlinear_values: tuple[float, ...],
+    ) -> None:
+        _, scalar, n = self._perturbed(
+            function, linear_values, nonlinear_values
+        )
+        wrong = scalar.copy()
+        wrong[n:] = wrong[n:] ** 1.01
+
+        with pytest.raises(AssertionError):
+            _assert_gamma_array_contract(wrong, scalar, n)
 
 
 def test_scalar_gamma_evaluates_only_the_selected_branch() -> None:

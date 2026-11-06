@@ -68,11 +68,11 @@ def test_wheel_python_boundary_excludes_310_and_supports_311_to_313(
 def test_fresh_wheel_requires_the_matplotlib_series_of_the_baselines(
     wheel_metadata, extra
 ):
-    """Fresh installs resolve Matplotlib 3.11+, the series the baselines are made on."""
+    """Fresh installs resolve Matplotlib 3.11.2+, the verified patch floor."""
     requirements = _requirements(wheel_metadata, extra)
-    for version in ("3.11.0", "3.11.2", "3.12.0"):
+    for version in ("3.11.2", "3.11.3", "3.12.0"):
         assert _accepts(requirements, "matplotlib", version), version
-    for version in ("3.10.1", "3.10.9", "3.10.99"):
+    for version in ("3.10.1", "3.10.99", "3.11.0", "3.11.1"):
         assert not _accepts(requirements, "matplotlib", version), version
 
 

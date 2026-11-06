@@ -67,7 +67,7 @@ changed: look at the diff images, and regenerate the baselines on purpose.
 
 Where the pixel tests run in CI:
 
-- `visual` (the lock) and `test-matplotlib (minimum)` (Matplotlib 3.11.0)
+- `visual` (the lock) and `test-matplotlib (minimum)` (Matplotlib 3.11.2, NumPy 1.26.0)
   run them on pinned versions. A failure there is a defect in the PR.
 - `test-matplotlib (latest-deps)` resolves the newest releases that
   pyproject allows. It is not a required check: branch protection requires

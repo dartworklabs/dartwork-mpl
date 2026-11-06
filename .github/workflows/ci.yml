@@ -254,11 +254,13 @@ jobs:
 
   test-matplotlib:
     # A lock-only job cannot prove the published dependency range. Resolve
-    # the actual project with the oldest supported Python and the Matplotlib
-    # floor (minimum), and with the newest versions pyproject allows
-    # (latest-deps), which also runs the UI, formatting and font slices
-    # against NumPy / FastAPI / Starlette releases newer than uv.lock. The
-    # locked Matplotlib itself is covered by the visual job.
+    # the actual project with the oldest supported Python and the declared
+    # floors (minimum: Python 3.11, matplotlib 3.11.2, numpy 1.26.*, no
+    # extras), and with the newest versions pyproject allows (latest-deps),
+    # which also runs the UI, formatting and font slices against NumPy /
+    # FastAPI / Starlette releases newer than uv.lock. Every pin must be the
+    # installed version. The locked Matplotlib itself is covered by the
+    # visual job.
     strategy:
       fail-fast: false
       matrix:
@@ -266,8 +268,8 @@ jobs:
           - label: minimum
             python-version: "3.11"
             project: "."
-            pins: "matplotlib==3.11.0"
-            extra-tests: ""
+            pins: "matplotlib==3.11.2 numpy==1.26.*"
+            extra-tests: "src/dartwork_mpl/_colors/model/tests/test_color_conversion.py src/dartwork_mpl/font src/dartwork_mpl/io src/dartwork_mpl/formatting"
           - label: latest-deps
             python-version: "3.13"
             project: ".[mcp,ui]"
@@ -303,6 +305,17 @@ jobs:
           uv pip install --python "$task_python" --resolution highest \
             "${{ matrix.project }}" "${pins[@]}" pytest pytest-cov pytest-mpl pytest-xdist
           uv pip check --python "$task_python"
+          # A pin the resolver could not honour must not pass as tested.
+          for pin in "${pins[@]}"; do
+            name=${pin%%==*}
+            want=${pin#*==}
+            installed=$("$task_python" -I -c 'import sys; from importlib.metadata import version; print(version(sys.argv[1]))' "$name")
+            echo "$name $installed (pinned $want)"
+            case "$installed" in
+              ${want}) ;;
+              *) echo "::error::$name resolved to $installed, not $want"; exit 1 ;;
+            esac
+          done
           # Every cell must resolve at or above the Matplotlib 3.11 floor the
           # pixel baselines are made on.
           "$task_python" -I -c 'import sys, matplotlib, numpy, PIL; print(sys.version); print(matplotlib.__version__, numpy.__version__, PIL.__version__); assert tuple(map(int, matplotlib.__version__.split(".")[:2])) >= (3, 11)'
@@ -314,6 +327,22 @@ jobs:
             # shellcheck disable=SC2086
             "$task_python" -m pytest $EXTRA_TESTS -n auto -q --no-cov \
               --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}-slices.xml"
+          fi
+          if [ "${{ matrix.label }}" = "minimum" ]; then
+            # This cell installs no extras: IPython must be absent and the
+            # no-notebook IO contract must have run here (not skipped).
+            "$task_python" -I - "$RUNNER_TEMP/matplotlib-minimum-slices.xml" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          from importlib.util import find_spec
+
+          assert find_spec("IPython") is None, "IPython present in no-extras cell"
+          name = "test_show_without_notebook_extra_names_the_install_command"
+          cases = [c for c in ET.parse(sys.argv[1]).iter("testcase") if c.get("name") == name]
+          assert len(cases) == 1, cases
+          assert not list(cases[0]), "no-extras IO test skipped or failed"
+          print("OK: no-extras IO contract ran")
+          PY
           fi
       - name: Preserve supported Matplotlib test evidence
         if: always()
