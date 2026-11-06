@@ -620,12 +620,18 @@ under `Energy (GWh)`). A formatter whose ticks carry a suffix gives the
 labels the same suffix: `1.20k` under `dm.format_axis_si` (its default
 `decimals=None`), `47.5%` under a
 `PercentFormatter`, `33.0M` under the library's default numbers once
-`dm.simple_layout` has set them. A formatter the labels cannot read
-(`FuncFormatter`, `StrMethodFormatter`, `dm.format_axis_currency`) leaves
-them as plain values (`12,000`); pass `fmt=` for its look. The decimals are
-three significant digits on the largest value, then the fewest decimals
-that print every value exactly, one count for the whole call: `21.4, 18.0,
-21.5`; `120, 135`; never a meaningless `.0`. `fmt` takes a `{}` template
+`dm.simple_layout` has set them. Ticks written in one fixed unit give the
+labels that unit, currency and zero: `1.25M` under
+`dm.format_axis_millions(ax, decimals=1)`, `−$800` and `$0` under
+`dm.format_axis_currency`. A formatter the labels cannot read
+(`FuncFormatter`, `StrMethodFormatter`, or `decimals=n` of
+`dm.format_axis_si` / `_myriad`, whose ticks each take their own unit)
+leaves them as plain values (`12,000`); pass `fmt=` for its look. The
+decimals are three significant digits on the largest value, then the
+fewest decimals that print every value exactly, one count for the whole
+call: `21.4, 18.0, 21.5`; `120, 135`; never a meaningless `.0`. A
+formatter's `decimals=n` sizes its ticks, not the labels (`1.25M` beside
+`1.0M`; `decimals=2` on the labels for cents). `fmt` takes a `{}` template
 around that number (`"{} GWh"`), a format-spec field that formats the value
 in the tick unit (`"{:.2f}"`: `21.40` under `Energy (GWh)`), or a callable
 that gets the value in the tick unit and returns the whole text. A template
