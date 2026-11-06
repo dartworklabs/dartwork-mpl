@@ -1705,6 +1705,32 @@ def test_headroom_grows_only_autoscaled_limit():
     assert ax.get_xlim() == (0.0, 80.0)
     assert ax.get_autoscalex_on()
 
+
+@pytest.mark.parametrize("sign", [1, -1])
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+def test_headroom_keeps_the_edge_it_does_not_grow(orientation, sign):
+    # With no margin the labels need room; only the label side grows. The
+    # other edge keeps matplotlib's exact value (a sticky 0, not 4e-16 from
+    # a round trip through display space).
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    values = sign * np.array([21.4, 18.0, 21.5, 33.0])
+    if orientation == "vertical":
+        ax.bar(range(4), values)
+        ax.margins(y=0)
+    else:
+        ax.barh(range(4), values)
+        ax.margins(x=0)
+    dm.label_bars(ax)
+    dm.simple_layout(fig)
+    low, high = ax.get_ylim() if orientation == "vertical" else ax.get_xlim()
+    if sign > 0:
+        assert low == 0.0
+        assert high > 33.0
+    else:
+        assert high == 0.0
+        assert low < -33.0
+    plt.close(fig)
+
     # A later explicit limit wins from then on.
     ax.set_xlim(0, 40)
     dm.simple_layout(fig)

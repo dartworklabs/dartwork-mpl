@@ -472,6 +472,13 @@ class _ValueAxis:
             edges = np.array([middle, middle])
             edges[:, along] = grown
             limits = self.axes.transData.inverted().transform(edges)[:, along]
+            # An edge that did not move keeps its exact value: the round
+            # trip through display space would turn a sticky 0 into 4e-16.
+            # get_*lim() lists the limit at the lower display edge first.
+            current = self.axes.get_ylim() if along else self.axes.get_xlim()
+            for side, edge in enumerate((low, high)):
+                if grown[side] == edge:
+                    limits[side] = current[side]
             if np.all(np.isfinite(limits)):
                 self.set_limits(float(limits[0]), float(limits[1]))
         written = _bounds(self.limits())
