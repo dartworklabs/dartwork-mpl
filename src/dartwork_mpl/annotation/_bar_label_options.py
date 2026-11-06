@@ -50,8 +50,9 @@ Crowded: TypeAlias = Literal["rotate", "skip", "inside"]
 Orientation: TypeAlias = Literal["vertical", "horizontal"]
 Fmt: TypeAlias = str | Callable[[float], object] | None
 # Why the layout hid a label where it would overlap: another series took
-# its bar index ("turn"), or there was no room for it ("room").
-HiddenFor: TypeAlias = Literal["turn", "room"]
+# its bar index ("turn"), there was no room for it ("room"), or a legend
+# covers it ("legend").
+HiddenFor: TypeAlias = Literal["turn", "room", "legend"]
 
 
 # ------------------------------------------------------------ the options

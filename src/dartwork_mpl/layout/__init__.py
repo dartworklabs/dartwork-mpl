@@ -846,6 +846,7 @@ def simple_layout(
     gs_id = id(requested_gs)
 
     for _ in range(2):
+        step: _LayoutStep | None = None
         for it in range(_MAX_ITER):
             step = _solve_layout_step(
                 fig,
@@ -856,7 +857,7 @@ def simple_layout(
                 adopt_orphan_tick_font=adopt_orphan_tick_font,
             )
             if step is None:
-                return
+                break  # no measurable Axes: nothing to place
             new_edges = step.edges
 
             if verbose:
@@ -896,7 +897,9 @@ def simple_layout(
                 break
         # Date ticks depend on the axis length only through their labels:
         # thin them at the fitted width, then fit once more if they moved.
-        if not format_ticks:
+        # The bar labels were settled in each step, so they are reported
+        # below even when nothing could be measured.
+        if step is None or not format_ticks:
             break
         from ..formatting import thin_crowded_date_ticks
 

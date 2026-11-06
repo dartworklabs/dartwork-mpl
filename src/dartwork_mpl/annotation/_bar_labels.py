@@ -141,9 +141,10 @@ class BarLabel(Annotation):
     ``beyond`` is the label a total sits beyond: the top segment's, when
     the call put segment labels ``"outside"`` (at the same stack end).
     ``hidden_for`` says why the layout's last pass hid the label where it
-    would overlap another: ``"turn"``, another series' label took the bar
-    index (series alternate), or ``"room"``, it could not be kept;
-    ``None`` while the layout has not hidden it.
+    would overlap something: ``"turn"``, another series' label took the
+    bar index (series alternate); ``"room"``, it could not be kept clear of
+    the other labels; ``"legend"``, a legend covers it. ``None`` while the
+    layout has not hidden it.
     """
 
     def __init__(

@@ -53,6 +53,10 @@ further layout steps give the same result; nothing compounds.
   a label with a longer bar at its own position (a lower stack segment
   asked ``"outside"``, an actual inside its target) stays at its own bar's
   end.
+* **Legends.** Last, a label that a visible legend covers (an Axes' or the
+  figure's, wherever its caller put it) is hidden, as the overlap rule
+  hides a label that meets another, and reported: ``dm.place_legend``
+  puts a legend clear of the labels instead.
 * **Headroom.** A value axis whose limits matplotlib still autoscales
   (``get_autoscaley_on()``) starts from matplotlib's limits for the data
   (``autoscale_view``) and grows, on the side each outside label points to,
@@ -136,7 +140,45 @@ def settle_bar_labels(fig: Figure, renderer: RendererBase | None = None) -> int:
         _crowd(area, renderer)
     for value_axis in value_axes:
         value_axis.grow(renderer)
+    _clear_legends(fig, families, renderer)
     return len(families)
+
+
+def _clear_legends(
+    fig: Figure, families: list[BarLabelFamily], renderer: RendererBase
+) -> None:
+    """Hide the labels a legend covers, as the overlap rule hides labels.
+
+    Every visible legend of the figure counts (an Axes' or the figure's),
+    wherever its caller put it, at the size and view this pass settled;
+    ``dm.place_legend`` puts one clear of the labels in the first place.
+    A label hidden here is hidden for ``"legend"``.
+    """
+    legends = [ax.get_legend() for ax in fig.axes] + list(fig.legends)
+    boxes = [
+        legend.get_window_extent(renderer)
+        for legend in legends
+        if legend is not None and legend.get_visible()
+    ]
+    if not boxes:
+        return
+    for family in families:
+        for label in family.texts:
+            if not label.get_visible():
+                continue
+            box = label.get_window_extent(renderer)
+            if any(_covers(box, legend) for legend in boxes):
+                label.own_visible(False)
+                if not Artist.get_visible(label):  # not shown by the caller
+                    label.hidden_for = "legend"
+
+
+def _covers(a: Bbox, b: Bbox) -> bool:
+    """Whether two display boxes overlap by more than half a pixel each way."""
+    return bool(
+        min(a.x1, b.x1) - max(a.x0, b.x0) > _SAME_POSITION_PX
+        and min(a.y1, b.y1) - max(a.y0, b.y0) > _SAME_POSITION_PX
+    )
 
 
 # ------------------------------------------------------------ lifecycle
@@ -513,16 +555,17 @@ def _hide_overlaps(
 
 
 def warn_hidden_bar_labels(fig: Figure, *, stacklevel: int = 1) -> int:
-    """Warn that the last settle hid labels for want of room, if it did.
+    """Warn that the last settle hid labels, for room or under a legend.
 
     Run by ``dm.simple_layout`` once its fit is done, so the warning speaks
-    of the size laid out. It fires when a label of a call whose
+    of the size laid out. One warning when a label of a call whose
     ``crowded`` rule does not ask for hiding (``"skip"`` does) was hidden
     for ``"room"``; labels hidden for another series' ``"turn"`` are the
-    rule's own outcome (series alternate), not a loss. The count covers
-    every label of those calls the overlap rule hid. ``stacklevel`` counts
-    from the caller (1: the line calling this). Returns that count (0:
-    nothing to report).
+    rule's own outcome (series alternate), not a loss. Its count covers
+    every label of those calls the overlap rule hid. Another when a legend
+    covers labels (``"legend"``, whatever the rule), naming
+    ``dm.place_legend``. ``stacklevel`` counts from the caller (1: the line
+    calling this). Returns the labels reported (0: nothing to report).
     """
     labels = [
         label
@@ -531,9 +574,21 @@ def warn_hidden_bar_labels(fig: Figure, *, stacklevel: int = 1) -> int:
         if family.options.crowded != "skip"
         for label in family.texts
     ]
+    every = [
+        label for ax in fig.axes for f in families_of(ax) for label in f.texts
+    ]
+    covered = [label for label in every if label.hidden_for == "legend"]
+    if covered:
+        warnings.warn(
+            f"dm.label_bars: {len(covered)} of {len(every)} bar value labels "
+            "are hidden under a legend; dm.place_legend(ax) puts the legend "
+            "clear of them",
+            UserWarning,
+            stacklevel=stacklevel + 1,
+        )
     if not any(label.hidden_for == "room" for label in labels):
-        return 0
-    hidden = [label for label in labels if label.hidden_for is not None]
+        return len(covered)
+    hidden = [label for label in labels if label.hidden_for in ("turn", "room")]
     rows = any(label.orientation == "horizontal" for label in hidden)
     columns = any(label.orientation == "vertical" for label in hidden)
     if rows and columns:
@@ -549,7 +604,7 @@ def warn_hidden_bar_labels(fig: Figure, *, stacklevel: int = 1) -> int:
         UserWarning,
         stacklevel=stacklevel + 1,
     )
-    return len(hidden)
+    return len(hidden) + len(covered)
 
 
 def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:

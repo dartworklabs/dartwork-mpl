@@ -1143,6 +1143,53 @@ def test_bars_beyond_the_view_have_none_and_a_short_part_labels_off_it():
     _assert_outside(fig, labels, ax.containers[0].patches)
 
 
+@pytest.mark.parametrize(
+    ("loc", "covered"), [("upper left", "135"), ("upper right", "120")]
+)
+def test_a_legend_hides_the_labels_it_covers_and_says_so(loc, covered):
+    # Review I4: a legend the caller fixed in a corner covers the value of
+    # the bar cut at that corner (main drew no label there). The overlap
+    # rule hides labels under a legend as it hides labels that meet, and
+    # the layout says so; dm.place_legend puts the legend clear instead.
+    fig, ax, _ = _plain([135, 48, 52, 61, 58, 120], color="dc.teal2")
+    ax.containers[0].set_label("series")
+    ax.set_ylim(0, 100)
+    ax.legend(loc=loc)
+    labels = dm.label_bars(ax)
+    caught = [w for w in _all_layout_warnings(fig) if "under a legend" in w]
+    renderer = _drawn(fig)
+    legend = ax.get_legend().get_window_extent(renderer)
+    hidden = [t.get_text() for t in labels if not t.get_visible()]
+    assert hidden == [covered]
+    assert [t.hidden_for for t in labels if t.get_text() == covered] == [
+        "legend"
+    ]
+    assert not any(
+        t.get_window_extent(renderer).overlaps(legend)
+        for t in labels
+        if t.get_visible()
+    )
+    assert len(caught) == 1 and "1 of 6" in caught[0]
+    assert "dm.place_legend(ax)" in caught[0]
+
+    # Placed by dm.place_legend, the legend keeps clear: nothing hidden.
+    fig, ax, _ = _plain([135, 48, 52, 61, 58, 120], color="dc.teal2")
+    ax.containers[0].set_label("series")
+    ax.set_ylim(0, 100)
+    labels = dm.label_bars(ax)
+    dm.place_legend(ax)
+    assert not [w for w in _all_layout_warnings(fig) if "legend" in w]
+    _drawn(fig)
+    assert all(t.get_visible() for t in labels)
+
+
+def _all_layout_warnings(fig):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    return [str(w.message) for w in caught]
+
+
 def test_bar_past_the_limit_keeps_explicit_and_series_choices():
     fig, ax, _ = _plain([3.0, 40.0, 50.0], color="dc.blue9")
     ax.set_ylim(0, 5)
@@ -2673,21 +2720,26 @@ def _layout_warnings(fig):
 @pytest.mark.parametrize("per_series", [False, True])
 def test_overlapping_series_alternate_by_bar_index(per_series):
     # PoC figure b, B: the first series keeps its labels on even bar
-    # indices, the second on odd ones (7/14 each); neither vanishes.
+    # indices, the second on odd ones (7/14 each); neither vanishes. Its
+    # legend, fixed at the upper left, covers W3's Plan label (88): the
+    # legend rule (review I4) hides that one and reports it.
     fig, ax, plan, actual = _poc_grouped_bar(per_series)
-    assert _layout_warnings(fig) == []  # alternating is no loss to report
+    caught = _all_layout_warnings(fig)
+    assert not [w for w in caught if "would overlap" in w]  # turns: no loss
+    assert len([w for w in caught if "under a legend" in w]) == 1
     plan_labels, actual_labels = _labels_of(ax, plan), _labels_of(ax, actual)
     assert [plan_labels[i].get_text() for i in POC_ROWS] == PLAN_TEXTS
     assert [actual_labels[i].get_text() for i in POC_ROWS] == ACTUAL_TEXTS
     _drawn(fig)
+    assert [t.hidden_for for t in plan_labels][2] == "legend"
     assert [t.get_visible() for t in plan_labels] == [
-        i % 2 == 0 for i in range(14)
+        i % 2 == 0 and i != 2 for i in range(14)
     ]
     assert [t.get_visible() for t in actual_labels] == [
         i % 2 == 1 for i in range(14)
     ]
     shown = _shown(fig, plan_labels + actual_labels)
-    assert len(shown) == 14
+    assert len(shown) == 13
     assert _overlapping(shown) == []
     assert _on_bars(fig, shown) == []
     visible = [t.get_visible() for t in plan_labels + actual_labels]
@@ -2778,6 +2830,24 @@ def test_hidden_label_warning_follows_the_rule():
     fig, ax, _ = _quarterly()
     dm.label_bars(ax)
     assert _layout_warnings(fig) == []
+
+
+def test_hidden_labels_are_reported_when_nothing_could_be_measured():
+    # Review M4: a layout asked to fit a GridSpec with no Axes measures
+    # nothing, but it settled the labels first; the hidden ones are still
+    # reported.
+    fig, ax = _fig()
+    ax.barh(np.arange(40), np.linspace(40.0, 2.5, 40), height=0.9)
+    ax.invert_yaxis()
+    dm.label_bars(ax)
+    empty = fig.add_gridspec(1, 1)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig, gs=empty, use_all_axes=False)
+    hidden = [
+        w for w in caught if "hidden where they would overlap" in str(w.message)
+    ]
+    assert len(hidden) == 1
 
 
 def test_three_series_take_turns():
