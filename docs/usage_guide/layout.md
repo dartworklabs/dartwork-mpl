@@ -485,7 +485,8 @@ figure:
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
 | reaches one million, Korean axis labels, titles or legend | `0, 50만 … 250만` (만/억/조) |
 | below 1,000 | unchanged: `0, 250 … 750` |
-| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; a `secondary_xaxis` showing them too; also non-year data such as elevations), or a y axis whose data *positions* are such years (horizontal bars `ax.barh(range(2014, 2025), …)`, grouped too, `fill_betweenx` spans; a `secondary_yaxis` following them). A line's, scatter's or bar's y values are quantities and keep their numbers (`1,985 … 2,045`) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4` |
+| a `secondary_xaxis` / `secondary_yaxis` whose functions are affine (the same values, `×1.3`, °C shown as °F) | the parent's rules: `1,600 … 2,400`; `0.5M`. A curved one (`1 / x`) keeps matplotlib's, as log axes do |
+| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; a `secondary_xaxis` showing them too; also non-year data such as elevations), or a y axis whose data *positions* are such years (horizontal bars `ax.barh(range(2014, 2025), …)`, grouped too, `fill_betweenx` spans; a `secondary_yaxis` following them). A line's, scatter's or bar's y values are quantities and keep their numbers (`1,985 … 2,045`) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4`. Zoomed under two whole years, every tick prints its value: `2023.2 … 2023.7`, never a rounded year or an empty label |
 | monthly dates | `23.01, 23.07, 24.01` (year, then month; two-digit years) |
 | quarterly dates | `23.Q1, 23.Q3, 24.Q1` |
 | dates on a narrow axis | fewer ticks until labels are one em apart |
@@ -495,7 +496,13 @@ Korean figures print the same dates and years, without a suffix.
 The rule: no request, the library default; a request, that format.
 `ax.ticklabel_format(...)` is such a request: `style="plain"` prints full
 numbers (`500000`) where the default would read `0.5M`, and scientific
-notation or an offset gets matplotlib's own formatter. A prompt
+notation or an offset gets matplotlib's own formatter. One limit: before
+`dm.simple_layout`, a request equal to matplotlib's own defaults
+(`style="sci"` alone, `useOffset=True`, `scilimits=` equal to the rc
+`axes.formatter.limits`) changes nothing matplotlib records, so it cannot
+be told from no request and the library's ticks stay. Call it after the
+layout, or set `ax.xaxis.set_major_formatter(ScalarFormatter())` first. A
+prompt
 can ask for three other formats, one `dm.config` field each:
 `tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
 (matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
@@ -512,7 +519,12 @@ with dm.config.override(tick_years=4):        # four-digit years
 It applies to what runs inside the `with` block, so wrap the code from
 figure creation to the last `dm.simple_layout` (and the save), or set the
 field on `dm.config` for the whole program (`dm.config.tick_years = 4`). A
-formatter or locator you set yourself is never replaced. A tick count asked
+formatter or locator you set yourself is never replaced. Labels you fix,
+as in `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)`, keep the
+ticks they were made for: the layout pins those ticks, since matplotlib
+gives fixed texts to ticks by order. To rotate labels without fixing their
+text, `ax.tick_params(axis="x", rotation=45)` keeps the library's ticks.
+A tick count asked
 of the axis, `ax.locator_params(axis="x", nbins=3)`, is kept on whole years
 (`00, 10, 20`); that is the way to ask for fewer ticks. Under a locator you
 set (`MaxNLocator`) year data read years while every tick is a whole year
