@@ -1,7 +1,7 @@
 """Every figure the docs generators draw passes the layout checks.
 
-The usage-guide, API and font-comparison generators re-render their figures
-on every docs build (``docs/_ext/build_hooks.generate_gallery_assets``). In
+The colour-system, usage-guide, API and font-comparison generators
+re-render their figures on every docs build (``docs/_ext/build_hooks.generate_gallery_assets``). In
 November 2026 the ``presentation`` preset became ``scientific`` x 2.6, and
 the generators that drew it on 10-17 cm canvases started publishing figures
 whose labels ran over each other and off the canvas, with no test noticing.
@@ -88,12 +88,17 @@ def findings(
                 "docs_usage_assets",
                 _DOCS / "usage_guide" / "generate_assets.py",
             )
+            colors = _load(
+                "docs_color_assets",
+                _DOCS / "color_system" / "generate_assets.py",
+            )
             api = _load("docs_api_assets", _DOCS / "api" / "generate_assets.py")
             fonts = _load(
                 "docs_font_comparison",
                 _DOCS / "fonts" / "generate_comparison_assets.py",
             )
             tmp = tmp_path_factory.mktemp("docs-figures")  # widget HTML only
+            colors.build_gallery_assets(base_dir=tmp)
             usage.build_usage_guide_assets(base_dir=tmp)
             api.build_api_assets(base_dir=tmp)
             fonts.generate_before_after()
@@ -109,6 +114,11 @@ def findings(
 
 # The figures the docs build publishes; each must be drawn and checked.
 EXPECTED = {
+    "color_space_creation",
+    "color_space_conversion",
+    "color_space_interpolation",
+    "color_space_colormap_sequential",
+    "color_space_colormap_diverging",
     "quickstart_first_figure",
     "quickstart_multi_panel",
     "layout_tight",
@@ -154,10 +164,12 @@ def test_every_docs_figure_is_drawn(findings):
     assert not missing, sorted(missing)
 
 
-@pytest.mark.parametrize("name", sorted(EXPECTED))
-def test_docs_figure_has_no_overflow_or_overlap(findings, name):
-    if name not in findings:
-        pytest.fail(f"{name} was not drawn")
-    allowed, _why = DEMONSTRATES.get(name, (frozenset(), ""))
-    unexpected = [f for f in findings[name] if f.split(":")[0] not in allowed]
-    assert unexpected == [], unexpected
+def test_every_drawn_docs_figure_passes(findings):
+    """Every figure drawn, listed in EXPECTED or not, has no finding."""
+    failing = {}
+    for name, found in sorted(findings.items()):
+        allowed, _why = DEMONSTRATES.get(name, (frozenset(), ""))
+        unexpected = [f for f in found if f.split(":")[0] not in allowed]
+        if unexpected:
+            failing[name] = unexpected
+    assert failing == {}, failing

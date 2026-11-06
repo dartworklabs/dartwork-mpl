@@ -8,6 +8,7 @@ from ..._figure_geometry import axes_titles
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
+from ._tick_utils import drawn_tick_labels
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -53,7 +54,12 @@ def check_cross_axes_overlap(
         # (twinx / twiny) hides the axis it shares, whose tick labels sit
         # exactly on the host's; counting them flagged every dual-axis
         # figure. Titles and the visible axes are still compared.
-        shown = {"x": ax.xaxis.get_visible(), "y": ax.yaxis.get_visible()}
+        # ``ax.axis("off")`` (a title-only panel) draws neither axis.
+        axison = getattr(ax, "axison", True)
+        shown = {
+            "x": axison and ax.xaxis.get_visible(),
+            "y": axison and ax.yaxis.get_visible(),
+        }
         candidates: list[tuple[str, Any]] = [
             *(("title", title) for title in axes_titles(ax).values()),
             *([("xlabel", ax.xaxis.label)] if shown["x"] else []),
@@ -77,8 +83,8 @@ def check_cross_axes_overlap(
         # and are within the view (matplotlib draws them outside the
         # visible range too).
         for role, ticklabels in (
-            ("xtick", ax.get_xticklabels() if shown["x"] else []),
-            ("ytick", ax.get_yticklabels() if shown["y"] else []),
+            ("xtick", drawn_tick_labels(ax, "x")),
+            ("ytick", drawn_tick_labels(ax, "y")),
         ):
             is_x = role == "xtick"
             for tl in ticklabels:

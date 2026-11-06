@@ -7,6 +7,8 @@ from collections.abc import Iterator, Sequence
 from itertools import pairwise
 from typing import TYPE_CHECKING, Literal
 
+import numpy as np
+
 from .._types import BBOX_ERRORS
 
 if TYPE_CHECKING:
@@ -17,6 +19,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "adjacent_bboxes_overlap",
+    "drawn_tick_labels",
     "iter_view_ticks",
     "parse_numeric_tick",
     "split_tick_affixes",
@@ -49,6 +52,38 @@ def _tick_in_view(
         return bool(ax_ext.x0 - 0.5 <= anchor <= ax_ext.x1 + 0.5)
     anchor = (ext.y0 + ext.y1) / 2
     return bool(ax_ext.y0 - 0.5 <= anchor <= ax_ext.y1 + 0.5)
+
+
+# Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
+_EDGE_RTOL = 1e-10
+
+
+def drawn_tick_labels(ax: Axes, which: Literal["x", "y"]) -> list[Text]:
+    """The major tick labels matplotlib draws on ``ax``'s x (or y) axis.
+
+    Matplotlib draws a tick only when the axes' axis is on
+    (``ax.axis("off")`` turns it off) and the axis is visible, and when its
+    location lies in the view interval, compared after the axis transform
+    with a 1e-10 relative slack. Every other label stays on the artist tree,
+    visible and positioned, but is never drawn: a colorbar tick a hair past
+    its limit, the ticks of a title-only panel.
+    """
+    axis = ax.xaxis if which == "x" else ax.yaxis
+    if not getattr(ax, "axison", True) or not axis.get_visible():
+        return []
+    transform = axis.get_transform()
+    locs = np.asarray(axis.get_majorticklocs(), dtype=float)
+    with np.errstate(all="ignore"):
+        view = transform.transform(np.asarray(axis.get_view_interval(), float))
+        placed = transform.transform(locs) if locs.size else locs
+    low, high = sorted(float(v) for v in np.ravel(view))
+    slack = _EDGE_RTOL * (high - low)
+    labels = axis.get_majorticklabels()
+    return [
+        label
+        for place, label in zip(np.ravel(placed), labels, strict=False)
+        if np.isfinite(place) and low - slack <= place <= high + slack
+    ]
 
 
 def iter_view_ticks(

@@ -103,6 +103,10 @@ a request for another format gets that format.
   `ax.secondary_yaxis(...)` like the parent's own; they used to sit past
   the figure edge. `dm.validate_figure`'s `OVERFLOW` and `CLIPPED_TEXT`
   checks look at them too (matplotlib keeps them out of `fig.axes`).
+- **Layout checks judge drawn tick labels only.** `OVERFLOW`,
+  `CLIPPED_TEXT` and `CROSS_AXES_OVERLAP` no longer report tick labels
+  matplotlib never draws: those of an Axes with `ax.axis("off")`, and a
+  tick a hair past the view (a colorbar's `1.00` above a 0.9997 limit).
 - **`ax.ticklabel_format` on a year axis.** After `dm.simple_layout` it
   raised `AttributeError: This method only works with the ScalarFormatter`,
   and before it the request was dropped. The year formatter is now
