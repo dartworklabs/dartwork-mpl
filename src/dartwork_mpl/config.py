@@ -96,13 +96,15 @@ class Config:
         (``with dm.config.override(number_ladder="si"):``, or assign it).
     twin_colors : {"series", "neutral"}, default ``"series"``
         Axis colours of ``twinx`` / ``twiny`` pairs, set by
-        ``dm.simple_layout``. ``"series"``: a side whose data draw one colour
-        gets that colour on its spine and tick marks (at least 3:1 against
-        the background) and the same hue darkened to 4.5:1 on its tick labels
-        and axis label. It needs two series colour can tell apart: a twin
-        whose partner draws no data, sides drawing several colours, two
-        sides whose colours are under 0.10 apart in OKLab, single axes and
-        colours you set stay as they are.
+        ``dm.simple_layout``. ``"series"``: a side whose series all draw
+        one colour that no series on the other scale shares gets that colour
+        on its spine and tick marks (at least 3:1 against the background)
+        and the same hue darkened to 4.5:1 on its tick labels and axis
+        label; single axes stay as they are. The full rules are in the
+        docstring of ``dartwork_mpl.formatting._twin_colors``. A colour you
+        set after a layout is kept; one set before the first layout that
+        equals the preset default (``"black"``) cannot be told from the
+        default and is painted, so use ``"neutral"`` for such figures.
         ``"neutral"`` keeps the preset's axis colours on twins too
         (``dm.config.twin_colors = "neutral"``, or
         ``with dm.config.override(twin_colors="neutral"):``); a figure laid

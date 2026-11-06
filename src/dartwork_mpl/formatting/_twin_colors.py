@@ -1,31 +1,52 @@
-"""Series colours on ``twinx`` / ``twiny`` pairs.
+"""Series colours on ``twinx`` / ``twiny`` pairs: the rules.
+
+This docstring is the one statement of the rules; ``apply_twin_colors``,
+``dm.config.twin_colors`` and ``dm.simple_layout`` refer here.
 
 A twin pair puts two scales around one plot area, and a reader matches each
 scale to its series by colour. :func:`apply_twin_colors` (run by
-``dm.simple_layout``) gives each side of a pair the colour of the one series
-it scales: the spine and tick marks take the colour as it shows (alpha
-composited over the background) raised to 3:1, and the tick labels, offset
-text and axis label take the same hue darkened (lightened on a dark
-background) to 4.5:1 with ``ensure_contrast``.
+``dm.simple_layout`` after the default tick formats) colours each side of a
+pair like the one series read on it:
 
-A *side* is a twin's own axis: the y axis of each ``twinx`` member (they share
-x) and the x axis of each ``twiny`` member, found with matplotlib's public
-shared-axes groupers among the Axes drawn in the same box. Its data are the
-lines, patches and collections drawn in data coordinates; reference artists
-in axes coordinates (``axhline``, ``axvspan``, ``axline``) are not a series.
-A side qualifies when every data artist draws the same colour; a
-colour-mapped collection or an image disqualifies it. Colour has to tell two
-series apart, so a pair is coloured only when it holds two distinguishable
-series: a side whose partners draw no data (a second scale for the same
-series) stays neutral, and two sides whose colours are less than 0.10 apart
-in OKLab (Euclidean, alpha ignored) both stay neutral.
-
-Single Axes are never touched. On a twin, a part (spine, tick marks, tick
-labels, axis label) is painted only while its colour is the rcParams default
-or the colour painted here last time, so a colour the user set wins whether
-it came before or after a layout. Each painted part remembers the default it
-replaced: a side that stops qualifying, or ``dm.config.twin_colors =
-"neutral"``, gets that default back on the next call.
+* **Sides.** A side is a twin's own axis: the y axis of each ``twinx``
+  member (left or right, wherever its label sits) and the x axis of each
+  ``twiny`` member (bottom or top), among the Axes drawn in the same box,
+  found with matplotlib's public shared-axes groupers. A side's scale is
+  read by every member that shares that axis with its owner (a ``twiny`` of
+  the parent reads the parent's y), so its *series* are the data of those
+  members, and its *partners* are the data of the other members.
+* **Data.** Lines, patches and collections drawn in data coordinates.
+  Reference artists in axes coordinates (``axhline``, ``axvspan``,
+  ``axline``) are not data.
+* **Qualifying.** A side is coloured when its series all draw one colour
+  (a colour-mapped collection or an image is not one colour), its partners
+  hold data (otherwise it is a second scale for the same series), and no
+  partner colour lies within 0.10 of it in OKLab (Euclidean, alpha
+  ignored), so the colour tells the side's series from every series read
+  on the other scale. Each side decides on its own; a side that fails stays
+  neutral.
+* **Colours.** The spine and tick marks take the series colour as it shows
+  (alpha composited over the figure and Axes backgrounds) raised to 3:1
+  against that background; the tick labels, offset text and axis label
+  take the same hue darkened (lightened on a dark background) to 4.5:1,
+  both with ``ensure_contrast``. Another member's spine on the same side
+  (a ``twinx`` draws its own copy of the left spine over its parent's)
+  follows the owner's spine.
+* **Explicit colours win.** Single Axes are never touched. A part (spine,
+  tick marks, tick labels, axis label) is painted only while it shows the
+  colour matplotlib gives it from the rcParams in force at the layout, and
+  is repainted later only while it still shows the colour painted here. A
+  colour set after a layout is kept, whatever it is. A colour set before the
+  first layout that equals the default (``"black"`` under the light
+  presets) cannot be told from the default and is painted; use
+  ``dm.config.twin_colors = "neutral"`` to keep such a figure neutral. A
+  figure built under one preset and laid out under another sees its parts
+  as set by hand and stays neutral (the safe side).
+* **Undoing.** A painted part remembers the default it replaced: a side
+  that stops qualifying, a pair that is gone, or ``dm.config.twin_colors =
+  "neutral"`` gets that default back at the next call. A part that
+  ``Axes.clear()`` reset to its default, wholly or partly, starts over as
+  unpainted.
 """
 
 from __future__ import annotations
@@ -60,11 +81,15 @@ _TEXT_RATIO = 4.5
 _SAME_HUE_OKLAB = 0.10
 # Up to one 8-bit channel step apart counts as the same colour.
 _RGBA_TOL = 1.5 / 255
-# Painted parts per Axes: (side, part) -> (default replaced, colour painted).
+# Parts per Axes: (side, part) -> (default replaced, colour painted), or
+# None for a part someone recoloured after it was painted (theirs for good).
 _RECORD = "_dm_twin_colors"
+# The Axes background patch when the record was last written: Axes.clear()
+# makes a new one, so a different patch means the Axes was cleared since.
+_RECORD_PATCH = "_dm_twin_colors_patch"
 _NOTHING = frozenset({"None", "none", "", " "})
 
-_Record: TypeAlias = dict[tuple[Side, Part], tuple[RGBA, RGBA]]
+_Record: TypeAlias = dict[tuple[Side, Part], tuple[RGBA, RGBA] | None]
 
 
 def _series_mode() -> bool:
@@ -128,6 +153,16 @@ def _twin_groups(fig: Figure) -> list[list[Axes]]:
         seen.update(id(m) for m in group)
         groups.append(sorted(group, key=fig.axes.index))
     return groups
+
+
+def _reads_on(owner: Axes, side: Side, member: Axes) -> bool:
+    """Whether ``member``'s data are read on ``owner``'s ``side`` scale."""
+    shared = (
+        owner.get_shared_y_axes()
+        if side in ("left", "right")
+        else owner.get_shared_x_axes()
+    )
+    return member is owner or shared.joined(owner, member)
 
 
 def _own_sides(ax: Axes, group: Sequence[Axes]) -> list[Side]:
@@ -207,6 +242,16 @@ def _data_colors(ax: Axes) -> list[RGBA] | None:
             shown = edges[edges[:, 3] > 0]
         colors.extend(_rgba(tuple(row)) for row in shown)
     return [color for color in colors if color[3] > 0]
+
+
+def _merged(found: Sequence[list[RGBA] | None]) -> list[RGBA] | None:
+    """The colours several Axes draw; ``None`` when any is colour-mapped."""
+    colors: list[RGBA] = []
+    for one in found:
+        if one is None:
+            return None
+        colors.extend(one)
+    return colors
 
 
 def _series_color(colors: list[RGBA] | None) -> RGBA | None:
@@ -314,17 +359,21 @@ def _write(ax: Axes, side: Side, part: Part, color: RGBA) -> None:
 def _settle(ax: Axes, side: Side, part: Part, target: str | None) -> bool:
     """Paint one part ``target`` (``None``: its default back).
 
-    Returns whether the part now shows ``target``. A part whose colour is
-    neither its default nor the colour painted here last was set by someone
-    else and is left as it is.
+    Returns whether the part now shows ``target``. An unpainted part that
+    does not show its rcParams default, or a painted part that no longer
+    shows the colour painted here, was set by someone else and is left as
+    it is, the latter for good.
     """
     record: _Record = getattr(ax, _RECORD, {})
     key = (side, part)
     current = _read(ax, side, part)
     if key in record:
-        default, painted = record[key]
-        if not all(_same(c, painted) or _same(c, default) for c in current):
-            del record[key]  # set by someone since: theirs now
+        entry = record[key]
+        if entry is None:
+            return False
+        default, painted = entry
+        if not all(_same(c, painted) for c in current):
+            record[key] = None  # set by someone since, even to the default
             return False
     elif target is None:
         return False
@@ -341,6 +390,36 @@ def _settle(ax: Axes, side: Side, part: Part, target: str | None) -> bool:
     record[key] = (default, color)
     setattr(ax, _RECORD, record)
     return True
+
+
+def _forget_cleared(fig: Figure) -> None:
+    """Start over on parts that ``Axes.clear()`` reset, wholly or partly.
+
+    Clearing an Axes puts some parts back to the rcParams colour (the axis
+    label, the offset text among the tick labels) and keeps others. That is
+    matplotlib's doing, not a user's choice: a part showing only its default
+    and the colour painted here goes back to its default, unpainted.
+    """
+    for ax in fig.axes:
+        record: _Record = getattr(ax, _RECORD, {})
+        if not record or getattr(ax, _RECORD_PATCH, None) is ax.patch:
+            continue
+        for (side, part), entry in list(record.items()):
+            default = _rc_default(side, part)
+            current = _read(ax, side, part)
+            reset = [_same(c, default) for c in current]
+            if all(reset):
+                del record[(side, part)]
+            elif (
+                entry is not None
+                and any(reset)
+                and all(
+                    was or _same(c, entry[1])
+                    for was, c in zip(reset, current, strict=True)
+                )
+            ):
+                _write(ax, side, part, default)
+                del record[(side, part)]
 
 
 def _settle_side(
@@ -373,17 +452,48 @@ def _settle_side(
     return painted
 
 
+def _side_inks(
+    owner: Axes,
+    side: Side,
+    group: Sequence[Axes],
+    drawn: dict[int, list[RGBA] | None],
+    background: RGB,
+) -> tuple[str, str] | None:
+    """(line, text) colours for one side, or ``None`` when it stays neutral.
+
+    The side's series are the data of the members reading its scale, its
+    partners the data of the others (module docstring, "Qualifying").
+    """
+    reading = [_reads_on(owner, side, m) for m in group]
+    color = _series_color(
+        _merged(
+            [drawn[id(m)] for m, on in zip(group, reading, strict=True) if on]
+        )
+    )
+    if color is None:
+        return None
+    partners = [
+        drawn[id(m)] for m, on in zip(group, reading, strict=True) if not on
+    ]
+    # Colour-mapped data (None) is data too; only an empty list is not.
+    if not any(found is None or found for found in partners):
+        return None  # a second scale for the same series
+    others = {_key(c): c for found in partners if found for c in found}
+    if any(_near(color, other) for other in others.values()):
+        return None
+    return _inks(color, background)
+
+
 def apply_twin_colors(fig: Figure) -> int:
     """Colour each side of a ``twinx`` / ``twiny`` pair like its series.
 
-    A side whose data draw one colour gets it on its spine and tick marks as
-    it shows (alpha composited, at least 3:1 against the background) and on
-    its tick labels, offset text and axis label darkened to 4.5:1. A side
-    drawing several colours, a side whose partners draw no data, two sides
-    whose colours are under 0.10 apart in OKLab, single Axes and every part
-    whose colour someone set stay as they are.
-    ``dm.config.twin_colors = "neutral"`` gives painted parts their defaults
-    back. ``dm.simple_layout`` calls this after the default tick formats.
+    The rules (which sides, which data, which colours, what is left alone)
+    are stated once, in the docstring of the module
+    ``dartwork_mpl.formatting._twin_colors``. In short: a side whose series
+    draw one colour that no series on the other scale shares gets it on its
+    spine and tick marks (3:1) and, darkened to 4.5:1, on its tick labels
+    and axis label; colours set by hand stay. ``dm.simple_layout`` calls
+    this after the default tick formats.
 
     Returns the number of sides showing a series colour. Safe to call
     again: a repeat paints the same colours.
@@ -394,39 +504,27 @@ def apply_twin_colors(fig: Figure) -> int:
         If ``dm.config.twin_colors`` is not ``"series"`` or ``"neutral"``.
     """
     series = _series_mode()
+    _forget_cleared(fig)
     coloured = 0
     settled: set[tuple[int, Side, Part]] = set()
     for group in _twin_groups(fig):
         sides = [(ax, side) for ax in group for side in _own_sides(ax, group)]
         owners = {(id(ax), side) for ax, side in sides}
-        drawn = {id(ax): _data_colors(ax) for ax, _side in sides}
-        # Colour-mapped data (None) is data too; only an empty list is not.
-        with_data = {key for key, found in drawn.items() if found != []}
-        colors = {
-            key: _series_color(found) if series else None
-            for key, found in drawn.items()
-        }
+        drawn = {id(m): _data_colors(m) for m in group}
         background = _background(group)
         for ax, side in sides:
-            color = colors[id(ax)]
-            partners = with_data - {id(ax)}
-            inks = None
-            # Colour must tell this series from a partner's: a partner with
-            # data, none of them in (nearly) the same colour.
-            if (
-                color is not None
-                and partners
-                and not any(
-                    (other := colors[key]) is not None and _near(color, other)
-                    for key in partners
-                )
-            ):
-                inks = _inks(color, background)
+            inks = (
+                _side_inks(ax, side, group, drawn, background)
+                if series
+                else None
+            )
             coloured += _settle_side(group, owners, ax, side, inks, settled)
     # Parts painted on an earlier call whose pair is gone get their default.
     for ax in fig.axes:
         record: _Record = getattr(ax, _RECORD, {})
-        for side, part in list(record):
-            if (id(ax), side, part) not in settled:
+        for (side, part), entry in list(record.items()):
+            if entry is not None and (id(ax), side, part) not in settled:
                 _settle(ax, side, part, None)
+        if record:
+            setattr(ax, _RECORD_PATCH, ax.patch)
     return coloured

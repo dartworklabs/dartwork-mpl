@@ -720,14 +720,13 @@ def simple_layout(
     so they sit ``axes.titlepad`` above that legend; their text, size and
     weight are kept.
 
-    On a ``twinx`` / ``twiny`` pair, a side whose data draw one colour gets
-    that colour on its spine and tick marks (at least 3:1 against the
-    background) and the same hue darkened to 4.5:1 on its tick labels and
-    axis label, via :func:`dartwork_mpl.formatting.apply_twin_colors`.
-    Single axes, a twin whose partner draws no data, sides drawing several
-    colours, two sides whose colours are under 0.10 apart in OKLab and
-    colours you set are left alone; ``dm.config.twin_colors = "neutral"``
-    turns it off.
+    On a ``twinx`` / ``twiny`` pair, a side whose series all draw one
+    colour that no series on the other scale shares gets that colour on its
+    spine and tick marks (at least 3:1 against the background) and the same
+    hue darkened to 4.5:1 on its tick labels and axis label; single axes
+    and colours set after a layout are left alone. The full rules are in
+    the docstring of ``dartwork_mpl.formatting._twin_colors``;
+    ``dm.config.twin_colors = "neutral"`` turns it off.
 
     Examples
     --------

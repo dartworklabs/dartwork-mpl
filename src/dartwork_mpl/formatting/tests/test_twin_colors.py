@@ -286,6 +286,39 @@ def test_explicit_colour_after_layout_survives():
     assert right["spine"] == LINE_LINE
 
 
+def test_default_colour_set_after_layout_survives():
+    """Black set after a layout is the user's, though black is the default."""
+    fig, _ax, ax2 = _bar_line_twin()
+    dm.simple_layout(fig)
+    ax2.yaxis.label.set_color("black")
+    ax2.tick_params(axis="y", colors="black")
+    ax2.spines["right"].set_color("black")
+    dm.simple_layout(fig)
+    dm.simple_layout(fig)
+
+    assert _side(ax2, "right") == _neutral()
+    assert apply_twin_colors(fig) == 1  # the bar side only
+
+
+def test_cleared_axes_colours_again():
+    """``Axes.clear()`` resets colours itself; that is not a user's choice."""
+    fig, ax, _ax2 = _bar_line_twin()
+    dm.simple_layout(fig)
+    ax.cla()  # resets the axis label and offset text, keeps the rest
+    ax.bar(X, REVENUE, color="dc.green6")
+    ax.set_ylabel("Revenue (USD B)")
+    dm.simple_layout(fig)
+    dm.simple_layout(fig)
+
+    left = _side(ax, "left")
+    assert left["spine"] == left["ticks"]
+    assert left["ticklabels"] == left["label"]
+    assert _hex(ax.yaxis.get_offset_text().get_color()) == left["label"]
+    green = mcolors.rgb_to_hsv(mcolors.to_rgb("dc.green6"))[0]
+    for color in (left["spine"], left["label"]):
+        assert abs(mcolors.rgb_to_hsv(mcolors.to_rgb(color))[0] - green) < 0.03
+
+
 def test_neutral_option():
     fig, ax, ax2 = _bar_line_twin()
     with dm.config.override(twin_colors="neutral"):
@@ -356,6 +389,78 @@ def test_twiny_pair_colours_x_sides():
     assert _side(ax, "bottom")["ticklabels"] == BAR_TEXT
     assert _side(ax2, "top")["ticklabels"] == LINE_TEXT
     assert _side(ax, "left") == _neutral()
+
+
+def test_twinx_and_twiny_on_one_parent():
+    """A scale shared by two series stays neutral; each own scale colours."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(X, REVENUE, color="dc.blue6")
+    tx = ax.twinx()
+    tx.plot(X, GROWTH, color="dc.orange6")
+    ty = ax.twiny()
+    ty.plot(X * 2, REVENUE, color="dc.green6")
+    dm.simple_layout(fig)
+
+    # Blue and green read on the left scale, blue and orange on the bottom.
+    assert _side(ax, "left") == _neutral()
+    assert _side(ax, "bottom") == _neutral()
+    assert _side(tx, "right")["ticklabels"] == LINE_TEXT
+    green_text = _side(ty, "top")["ticklabels"]
+    assert green_text != BLACK and _ratio(green_text) >= 4.5
+    assert apply_twin_colors(fig) == 2
+
+
+def test_twin_of_twin():
+    """``t.twiny()`` shares the twin's y: its line reads on the right too."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot(X, REVENUE, color="dc.blue6")
+    t = ax.twinx()
+    t.plot(X, GROWTH, color="dc.orange6")
+    t3 = t.twiny()
+    t3.plot(X * 2, GROWTH / 2, color="dc.green6")
+    dm.simple_layout(fig)
+
+    assert _side(t, "right") == _neutral()
+    assert _side(ax, "left")["ticklabels"] == BAR_TEXT
+    assert _side(t3, "top")["ticklabels"] not in (BLACK, BAR_TEXT)
+
+
+def test_partner_series_in_the_same_hue_on_a_multi_hue_side():
+    """Green bars on the left make a green right scale ambiguous."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.bar(X - 0.2, REVENUE, width=0.4, color="dc.blue6")
+    ax.bar(X + 0.2, REVENUE * 0.9, width=0.4, color="dc.green5")
+    ax2 = ax.twinx()
+    ax2.plot(X, GROWTH, color="dc.green5")
+    dm.simple_layout(fig)
+
+    assert apply_twin_colors(fig) == 0
+    assert _side(ax2, "right") == _neutral()
+
+
+def test_two_twin_groups_and_a_single_axes():
+    fig, axs = plt.subplots(1, 3, figsize=dm.figsize("17cm", "wide"))
+    pairs = []
+    for ax, (bars, line) in zip(
+        axs[:2],
+        [("dc.blue6", "dc.orange6"), ("dc.green6", "dc.violet6")],
+        strict=True,
+    ):
+        ax.bar(X, REVENUE, color=bars)
+        twin = ax.twinx()
+        twin.plot(X, GROWTH, color=line)
+        pairs.append((ax, twin, bars, line))
+    axs[2].plot(X, REVENUE, color="dc.red6")
+    dm.simple_layout(fig)
+
+    assert apply_twin_colors(fig) == 4
+    for ax, twin, bars, line in pairs:
+        left, right = _side(ax, "left"), _side(twin, "right")
+        for colors, series in ((left, bars), (right, line)):
+            hue = mcolors.rgb_to_hsv(mcolors.to_rgb(series))[0]
+            shown = mcolors.rgb_to_hsv(mcolors.to_rgb(colors["ticklabels"]))
+            assert abs(shown[0] - hue) < 0.03
+    assert _side(axs[2], "left") == _neutral()
 
 
 def test_dark_background_lightens_text():
