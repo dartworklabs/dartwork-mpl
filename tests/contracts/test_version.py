@@ -12,8 +12,6 @@ import importlib.metadata
 import tomllib
 from pathlib import Path
 
-import pytest
-
 import dartwork_mpl as dm
 
 _PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
@@ -37,12 +35,12 @@ def test_version_matches_pyproject() -> None:
     straight from ``pyproject.toml`` and so catches *real* drift: a
     release that bumped ``pyproject.toml`` without rebuilding, or a
     stale editable install (``pip install -e .`` captures the version at
-    install time). Skipped when ``pyproject.toml`` isn't reachable
-    (tests run against an installed wheel). All supported Python runtimes
-    provide the stdlib ``tomllib`` parser.
+    install time). All supported Python runtimes provide the stdlib
+    ``tomllib`` parser.
     """
-    if not _PYPROJECT.is_file():
-        pytest.skip("pyproject.toml not reachable (installed-wheel test run)")
+    # Tests are not in the wheel (ADR 0005), so they always run from a
+    # checkout; a missing pyproject.toml is a broken checkout, not a skip.
+    assert _PYPROJECT.is_file(), f"missing {_PYPROJECT}"
     data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
     pyproject_version = data["project"]["version"]
     assert dm.__version__ == pyproject_version, (

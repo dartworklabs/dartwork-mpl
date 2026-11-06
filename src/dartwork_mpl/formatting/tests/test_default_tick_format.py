@@ -25,12 +25,7 @@ from dartwork_mpl.formatting._defaults import apply_default_tick_format
 MINUS = "\N{MINUS SIGN}"
 
 
-@pytest.fixture(autouse=True)
-def _report_preset():
-    with matplotlib.rc_context():
-        dm.style.use("report")
-        yield
-    plt.close("all")
+pytestmark = pytest.mark.usefixtures("report_preset")
 
 
 def _drawn(ax: Axes, which: str = "y") -> list[str]:
@@ -269,7 +264,10 @@ class TestDates:
         fmt = ax.xaxis.get_major_formatter()
         assert type(fmt).__name__ == "KoreanConciseDateFormatter"
         assert fmt.show_offset is False
-        assert fmt._usetex is True
+        # Date formatters have no public usetex getter; the TeX choice
+        # shows in the labels they make (Matplotlib wraps digits in TeX).
+        labels = fmt.format_ticks(ax.xaxis.get_major_locator()())
+        assert any("\\mathdefault{" in label for label in labels), labels
 
     def test_a_concise_formatter_someone_set_stays_english(self):
         """Set explicitly, matplotlib's stock formatter is a choice too."""
