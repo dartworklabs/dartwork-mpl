@@ -50,32 +50,24 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
 Each call is recorded on its Axes as a :class:`BarLabelFamily` in
 ``ax._dm_bar_label_families`` (the labels, the containers, the options, the
 stacks) for the layout's later passes. The geometry (anchor, side, view,
-room, host Axes) lives in :mod:`._bar_label_geometry`.
+room, host Axes) lives in :mod:`._bar_label_geometry`; the keywords and the
+text they compose in :mod:`._bar_label_options`.
 """
 
 from __future__ import annotations
 
 import math
-import numbers
-import string
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any
 
-import matplotlib as mpl
-import matplotlib.colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
 from .._figure_geometry import canvas_renderer, same_position_axes
-from ..formatting import (
-    TickScale,
-    number_text,
-    tick_scale_of,
-    value_label_decimals,
-)
+from ..formatting import TickScale, tick_scale_of, value_label_decimals
 from ..scale import fs, fw
 from ._bar_label_geometry import (
     fits_on_bar,
@@ -84,7 +76,18 @@ from ._bar_label_geometry import (
     place,
     text_length,
 )
-from ._bar_label_ink import is_series, label_ink
+from ._bar_label_ink import label_ink
+from ._bar_label_options import (
+    BarLabelOptions,
+    Crowded,
+    Kind,
+    Orientation,
+    Placement,
+    Total,
+    Where,
+    compose_text,
+    parse_options,
+)
 from ._bar_stacks import BarStack, bar_values, pile_bars
 
 if TYPE_CHECKING:
@@ -95,180 +98,10 @@ if TYPE_CHECKING:
 
 __all__ = ["BarLabel", "BarLabelFamily", "BarLabelOptions", "label_bars"]
 
-Where: TypeAlias = Literal["auto", "outside", "inside", "center"]
-# Where one label sits: "auto" resolved for its kind.
-Placement: TypeAlias = Literal["outside", "inside", "center"]
-# What a label labels: a plain bar's value, a stack segment's, a stack's net.
-Kind: TypeAlias = Literal["edge", "segment", "total"]
-Total: TypeAlias = Literal["auto", "only", False]
-Crowded: TypeAlias = Literal["rotate", "skip", "inside"]
-Orientation: TypeAlias = Literal["vertical", "horizontal"]
-Fmt: TypeAlias = str | Callable[[float], object] | None
-
 _UNSET: Any = object()
 
 
-# ------------------------------------------------------------ the options
-def _parse_where(where: str) -> Where:
-    match where:
-        case "auto" | "outside" | "inside" | "center":
-            return where
-        case _:
-            raise ValueError(
-                "where must be 'auto', 'outside', 'inside' or 'center' "
-                f"(got {where!r})"
-            )
-
-
-def _parse_total(total: object) -> Total:
-    if total is False:
-        return False
-    match total:
-        case "auto" | "only":
-            return total
-        case _:
-            raise ValueError(
-                f"total must be 'auto', 'only' or False (got {total!r})"
-            )
-
-
-def _parse_crowded(crowded: str) -> Crowded:
-    match crowded:
-        case "rotate" | "skip" | "inside":
-            return crowded
-        case _:
-            raise ValueError(
-                "crowded must be 'rotate', 'skip' or 'inside' "
-                f"(got {crowded!r})"
-            )
-
-
-def _parse_decimals(decimals: object) -> int | None:
-    if decimals is None:
-        return None
-    if (
-        isinstance(decimals, bool)
-        or not isinstance(decimals, numbers.Integral)
-        or int(decimals) < 0
-    ):
-        raise ValueError(
-            f"decimals must be None or an integer >= 0 (got {decimals!r})"
-        )
-    return int(decimals)
-
-
-def _template_fields(template: str) -> list[tuple[str, str | None, str, str]]:
-    """``string.Formatter().parse`` of ``template`` with ``None`` specs as ``""``."""
-    return [
-        (literal, name, spec or "", conversion or "")
-        for literal, name, spec, conversion in string.Formatter().parse(
-            template
-        )
-    ]
-
-
-def _minus(text: str) -> str:
-    """Matplotlib's minus (U+2212 unless ``axes.unicode_minus`` is off)."""
-    if mpl.rcParams["axes.unicode_minus"]:
-        return text.replace("-", "\N{MINUS SIGN}")
-    return text
-
-
-def _render_template(template: str, number: str, value: float) -> str:
-    """``template`` with each ``{}`` replaced by ``number``.
-
-    A field with a format spec or conversion (``{:.2f}``) formats ``value``
-    itself instead, with matplotlib's minus.
-    """
-    formatter = string.Formatter()
-    out: list[str] = []
-    for literal, name, spec, conversion in _template_fields(template):
-        out.append(literal)
-        if name is None:
-            continue
-        if not spec and not conversion:
-            out.append(number)
-            continue
-        converted = formatter.convert_field(value, conversion or None)
-        out.append(_minus(formatter.format_field(converted, spec)))
-    return "".join(out)
-
-
-def _parse_fmt(fmt: object) -> Fmt:
-    if fmt is None or callable(fmt):
-        return fmt
-    if not isinstance(fmt, str):
-        raise ValueError(
-            f"fmt must be None, a '{{}}' template or a callable (got {fmt!r})"
-        )
-    hint = "e.g. fmt='${}B'; a callable gets the scaled value"
-    try:
-        fields = [name for _, name, _, _ in _template_fields(fmt)]
-    except ValueError as error:
-        raise ValueError(f"fmt {fmt!r} is not a template: {error}") from None
-    names = [name for name in fields if name is not None]
-    if not names:
-        raise ValueError(
-            f"fmt must hold a '{{}}' placeholder for the number ({hint}); "
-            f"got {fmt!r}"
-        )
-    if any(name not in ("", "0") for name in names):
-        raise ValueError(
-            f"fmt placeholders must be '{{}}' or '{{:spec}}' ({hint}); "
-            f"got {fmt!r}"
-        )
-    try:
-        _render_template(fmt, "1", 1.0)
-    except (ValueError, TypeError) as error:
-        raise ValueError(
-            f"fmt {fmt!r} cannot format a number: {error}"
-        ) from None
-    return fmt
-
-
-def _parse_color(color: object) -> object:
-    if color is None or is_series(color):
-        return color
-    try:
-        mcolors.to_rgba(color)  # type: ignore[arg-type]
-    except (TypeError, ValueError) as error:
-        raise ValueError(
-            f"color must be None, 'series' or a matplotlib colour: {error}"
-        ) from None
-    return color
-
-
-@dataclass(frozen=True)
-class BarLabelOptions:
-    """The keywords of one :func:`label_bars` call, validated."""
-
-    where: Where = "auto"
-    total: Total = "auto"
-    crowded: Crowded = "rotate"
-    decimals: int | None = None
-    fmt: Fmt = None
-    size: float | str | None = None
-    color: object = None
-
-
 # ------------------------------------------------------------ the labels
-def _compose(
-    scaled: float, scale: TickScale, decimals: int, options: BarLabelOptions
-) -> str:
-    """The label text for a value already divided by ``scale.factor``."""
-    fmt = options.fmt
-    fixed = options.decimals is not None
-    if callable(fmt):
-        return str(fmt(scaled))
-    if isinstance(fmt, str):
-        return _render_template(
-            fmt, number_text(scaled, decimals, fixed=fixed), scaled
-        )
-    return number_text(
-        scaled, decimals, fixed=fixed, prefix=scale.prefix, suffix=scale.suffix
-    )
-
-
 class BarLabel(Annotation):
     """One bar's value label: an ``Annotation`` that keeps reading like its axis.
 
@@ -442,7 +275,7 @@ class BarLabelFamily:
             decimals = value_label_decimals(scaled)
         for label, scale, value in zip(self.texts, scales, scaled, strict=True):
             label.tick_scale = scale
-            text = _compose(value, scale, decimals, self.options)
+            text = compose_text(value, scale, decimals, self.options)
             label.own("text", label.get_text(), text, label.set_text)
 
     def follow(self, label: BarLabel) -> None:
@@ -679,14 +512,14 @@ def label_bars(
     TypeError
         If ``bars`` is not a ``BarContainer`` or a list of them.
     """
-    options = BarLabelOptions(
-        where=_parse_where(where),
-        total=_parse_total(total),
-        crowded=_parse_crowded(crowded),
-        decimals=_parse_decimals(decimals),
-        fmt=_parse_fmt(fmt),
+    options = parse_options(
+        where=where,
+        total=total,
+        crowded=crowded,
+        decimals=decimals,
+        fmt=fmt,
         size=size,
-        color=_parse_color(color),
+        color=color,
     )
     containers = _containers(ax, bars)
     _check_plot_area(ax, containers)

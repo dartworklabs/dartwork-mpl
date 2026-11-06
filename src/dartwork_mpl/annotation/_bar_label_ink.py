@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.patches import Rectangle
 
-    from ._bar_labels import Kind, Placement
+    from ._bar_label_options import Kind, Placement
 
 __all__ = ["is_series", "label_ink"]
 

@@ -37,7 +37,8 @@ from .._figure_geometry import same_position_axes
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
 
-    from ._bar_labels import BarLabel, Where
+    from ._bar_label_options import Where
+    from ._bar_labels import BarLabel
 
 __all__ = [
     "EDGE_TOL_PX",
