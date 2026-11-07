@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 JsonValue: TypeAlias = (
-    str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+    str | int | float | bool | list["JsonValue"] | dict[str, "JsonValue"] | None
 )
 
 MAX_REQUEST_BYTES = 1024 * 1024

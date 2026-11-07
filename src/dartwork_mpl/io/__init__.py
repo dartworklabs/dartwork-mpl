@@ -189,14 +189,16 @@ def _check_save_format(
             raise ValueError(
                 f"The {backend!r} backend does not support {effective} output"
             )
-    elif not hasattr(fig.canvas, f"print_{effective}"):
-        if get_registered_canvas_class(effective) is None:
-            raise ValueError(
-                "Format {!r} is not supported (supported formats: {})".format(
-                    effective,
-                    ", ".join(sorted(fig.canvas.get_supported_filetypes())),
-                )
+    elif (
+        not hasattr(fig.canvas, f"print_{effective}")
+        and get_registered_canvas_class(effective) is None
+    ):
+        raise ValueError(
+            "Format {!r} is not supported (supported formats: {})".format(
+                effective,
+                ", ".join(sorted(fig.canvas.get_supported_filetypes())),
             )
+        )
 
 
 def save_formats(

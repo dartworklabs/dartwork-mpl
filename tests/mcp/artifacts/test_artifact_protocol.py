@@ -13,10 +13,7 @@ import matplotlib.image as mpimg
 import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
-from dartwork_mpl.mcp.artifacts import (  # noqa: E402
-    configure_store,
-    register_artifacts,
-)
+from dartwork_mpl.mcp.artifacts import configure_store, register_artifacts  # noqa: E402
 from dartwork_mpl.mcp.artifacts.policy import ConfigurationError  # noqa: E402
 from dartwork_mpl.mcp.artifacts.store import ArtifactStore  # noqa: E402
 

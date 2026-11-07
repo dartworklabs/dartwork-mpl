@@ -99,7 +99,7 @@ class NestedParams(ParamModel):
 class OptionalNestedParams(ParamModel):
     """A union cannot bypass the closed language of a selected model branch."""
 
-    nested: None | Nested = None
+    nested: Nested | None = None
     other: str | Nested = "default"
     sequence: str | list[Nested] = "default"
 

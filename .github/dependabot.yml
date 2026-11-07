@@ -22,7 +22,25 @@ updates:
       prefix: "chore(deps)"
     # Keep major bumps as separate PRs (they may need code changes);
     # batch minor/patch into one PR to cut review noise.
+    #
+    # `mcp-wire` holds the packages whose versions decide the MCP wire text
+    # clients receive, so a bump needs an audit and is not routine:
+    #   - A new FastMCP is only collected once
+    #     tests/contracts/test_mcp_data_repair_contract.py has an audited wire
+    #     capture for it (the suite stops at collection otherwise).
+    #   - A new pydantic changes the error URLs in the golden
+    #     tests/mcp/data_repair/fixtures/legacy_calls.json.
+    # To accept a bump: capture and audit the wire for the new version, update
+    # the golden, then merge. Until then this group's PR is expected to fail.
+    # Dependabot puts a dependency into the first group that matches, so
+    # `mcp-wire` must stay ahead of `python-minor-patch`, which also excludes
+    # these names. A parent dependency that requires a newer pydantic can still
+    # hold the resolution of the other group. Security updates are not grouped
+    # (the default), so they still arrive as separate PRs.
     groups:
+      mcp-wire:
+        patterns: ["fastmcp", "fastmcp-slim", "mcp", "pydantic", "pydantic-core"]
       python-minor-patch:
         patterns: ["*"]
+        exclude-patterns: ["fastmcp", "fastmcp-slim", "mcp", "pydantic", "pydantic-core"]
         update-types: ["minor", "patch"]
