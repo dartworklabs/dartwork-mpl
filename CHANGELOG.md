@@ -140,6 +140,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   The formatter class is now `YearTickFormatter` (was `FuncFormatter`): the
   cursor reads the value (`2007.53`, was `08년`), and calling it directly
   before a draw on a fraction (`f(2025.5)`) gives `""` (was `26년`).
+- **The whole-canvas recipes' presentation margin note says what a render
+  actually does.** It claimed that raising the local left margin from
+  1.15 cm to 1.70 cm "cleared that overflow in both examples". Measured on
+  a 20 × 16 cm `presentation` render of the shipped recipes, 1.15 cm puts
+  content outside the canvas on three sides (left 1.40 cm, bottom 1.05 cm,
+  top 0.34 cm) and 1.70 cm only narrows the left one to 0.85 cm. The note
+  now reports all three, prints margins measured to keep every artist
+  inside (L 2.60 / R 0.50 / B 2.15 / T 1.19 cm), and names what margins
+  cannot fix: `TICK_CROWD` on the 30 % row and `LEGEND_OVERLAP` in the
+  4.9 cm and 2.9 cm panels for an inside legend at 19.5 pt. For that last
+  one it now gives two measured ways out, each leaving `dm.validate_figure`
+  with no findings — the same page under `report` at the recipe's own
+  1.15 cm margins, or `presentation` with the four panel legends replaced
+  by one shared `fig.legend` below and a 3.40 cm bottom margin (adding the
+  figure legend without deleting the panel ones leaves five legends and
+  every overlap back) — and records that `dm.place_legend(ax)` does not
+  rescue it (it lifts each legend onto all four titles and 55 px past the
+  canvas). Same text in `dm.get_prompt("03-recipes")` and
+  `docs/usage_guide/layout.md`.
 
 ## [0.7.0] - 2026-11-06
 
