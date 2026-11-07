@@ -229,7 +229,7 @@ class _Malformed:
     """A checkpoint field outside the protocol."""
 
 
-def _raised(raw: dict[str, Any]) -> Raised | None | _Malformed:
+def _raised(raw: dict[str, Any]) -> Raised | _Malformed | None:
     """The recorded exception: both fields as strings, or neither."""
     if "exc_type" not in raw and "exc_msg" not in raw:
         return None

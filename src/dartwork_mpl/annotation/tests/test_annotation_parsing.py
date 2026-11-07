@@ -11,16 +11,18 @@ import math
 import matplotlib.pyplot as plt
 import pytest
 
-from dartwork_mpl.annotation import (
+from dartwork_mpl.annotation._axis_labels import _parse_axis
+from dartwork_mpl.annotation._place_legend import (
     _best_trial,
     _mark_placement,
     _MeasuredLegend,
-    _parse_axis,
+    _UnmeasuredLegend,
+)
+from dartwork_mpl.annotation._point_labels import (
     _parse_corner,
     _parse_hline_side,
     _parse_hline_x,
     _parse_value_side,
-    _UnmeasuredLegend,
 )
 
 

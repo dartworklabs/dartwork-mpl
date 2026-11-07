@@ -28,11 +28,46 @@ further layout steps give the same result; nothing compounds.
   call per series meets the others' labels: from the last position on
   screen (the right end, or the top row of ``barh``), a position whose
   labels come within :data:`GAP_PT` of the last kept position's is hidden,
-  so ``"skip"`` keeps every other label of evenly crowded bars. A kept
-  outside label wider than its bar (a plain bar's, a stack's total) is
-  pushed past the ends of the other bars it spans, never drawn on them; a
-  label with a longer bar at its own position (a lower stack segment asked
-  ``"outside"``, an actual inside its target) stays at its own bar's end.
+  so ``"skip"`` keeps every other label of evenly crowded bars.
+
+  Series take turns where that keeps more. When the positions are plain
+  bars of two or more containers (grouped bars, one call or one call per
+  series; no stack segments or totals, no bars overlaid at one position),
+  the series take turns by bar index, ranked in reading order on screen
+  (left to right, ``barh`` top to bottom): two series alternate, the one
+  read first in the first group read; more series count down. A label
+  that meets the last kept one at the same bar index takes its place when
+  its turn there comes first. The turns are used only when they keep every
+  label whose turn came first and no fewer labels than the plain rule;
+  otherwise the plain rule decides, as it did before turns (rows too thin
+  even for one label each, dense groups). A label hidden only because
+  another series had the turn is hidden for its ``"turn"``; any other
+  hidden label for ``"room"`` (``BarLabel.hidden_for``).
+  :func:`warn_hidden_bar_labels`, run once by ``dm.simple_layout`` after
+  its fit, warns when a label was hidden for room under a rule other than
+  ``"skip"`` (which asks for hiding), and names the cure: a taller
+  (``barh``) or wider figure.
+
+  A kept outside label wider than its bar (a plain bar's, a stack's total)
+  is pushed past the ends of the other bars it spans, never drawn on them;
+  a label with a longer bar at its own position (a lower stack segment
+  asked ``"outside"``, an actual inside its target) stays at its own bar's
+  end.
+* **Legends.** :func:`clear_bar_labels`, run by the layout once it has
+  re-anchored the legends ``dm.place_legend`` put on a side (past the
+  values beyond that limit they would cover,
+  :func:`bar_values_past_limits`) and lifted titles over legends above,
+  hides a label that a visible legend covers (an Axes' or the figure's,
+  wherever its caller put it), as the overlap rule hides a label that
+  meets another. The warning names the cure for that legend:
+  ``dm.place_legend(ax)``, the same side through ``loc=`` for the
+  caller's legend outside the axes, another side for one
+  ``dm.place_legend`` placed, moving a figure legend.
+* **Other text.** Then a cut bar's value placed just beyond the limit (too
+  wide for its bar) sits outside the axes, where tick labels, axis labels
+  and titles are. One that would cover any of them is hidden too, and
+  reported: a wider limit, or bars wide enough for their numbers, shows
+  it.
 * **Headroom.** A value axis whose limits matplotlib still autoscales
   (``get_autoscaley_on()``) starts from matplotlib's limits for the data
   (``autoscale_view``) and grows, on the side each outside label points to,
@@ -56,15 +91,26 @@ further layout steps give the same result; nothing compounds.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import numpy.typing as npt
+from matplotlib.artist import Artist
 from matplotlib.container import BarContainer
+from matplotlib.transforms import Bbox, TransformedPath
 
-from .._figure_geometry import get_renderer, same_position_axes, shared_axes
+from .._figure_geometry import (
+    axes_titles,
+    axes_with_secondaries,
+    drawn_tick_labels,
+    get_renderer,
+    outside_side,
+    same_position_axes,
+    shared_axes,
+)
 from ._bar_label_geometry import OFFSET_PT, outward
 from ._bar_label_lifecycle import families_of, prune, rehost
 from ._bar_labels import BarLabel, BarLabelFamily, format_ticks_now
@@ -74,12 +120,21 @@ if TYPE_CHECKING:
     from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
+    from matplotlib.legend import Legend
     from matplotlib.patches import Rectangle
-    from matplotlib.transforms import Bbox
+    from matplotlib.text import Text
 
     from ._bar_label_options import BarLabelOptions
 
-__all__ = ["GAP_PT", "grown_span", "settle_bar_labels"]
+__all__ = [
+    "GAP_PT",
+    "bar_values_past_limits",
+    "clear_bar_labels",
+    "grown_span",
+    "keep_apart",
+    "settle_bar_labels",
+    "warn_hidden_bar_labels",
+]
 
 # The clear space between neighbouring labels: a label wider than its bar
 # pitch less this is crowded, and kept labels stay this far apart.
@@ -109,6 +164,180 @@ def settle_bar_labels(fig: Figure, renderer: RendererBase | None = None) -> int:
     for value_axis in value_axes:
         value_axis.grow(renderer)
     return len(families)
+
+
+def clear_bar_labels(fig: Figure, renderer: RendererBase | None = None) -> None:
+    """Hide the settled labels a legend or other text covers.
+
+    Run by ``dm.simple_layout`` in every step after :func:`settle_bar_labels`
+    and after it re-anchored the legends placed on a side of their Axes
+    (past the values beyond that limit, :func:`bar_values_past_limits`) and
+    lifted titles over legends above: what is judged here is where the
+    legends and titles are drawn. Legends first (``"legend"``), then other
+    text (``"text"``); module docstring.
+    """
+    families = [family for ax in fig.axes for family in families_of(ax)]
+    if not families:
+        return
+    if renderer is None:
+        renderer = get_renderer(fig)
+    _clear_legends(fig, families, renderer)
+    _clear_texts(fig, families, renderer)
+
+
+def bar_values_past_limits(ax: Axes, renderer: RendererBase) -> list[Bbox]:
+    """The display boxes of the values drawn beyond a limit around ``ax``.
+
+    The shown labels of the calls on ``ax`` and the Axes sharing its box (a
+    twin) that sit off their bar, beyond the limit the bar runs past; not
+    one that covers other text there (the clearing hides it). The layout
+    anchors a legend placed on a side of ``ax`` past the ones it would
+    meet. A title it then lifts over a legend above leaves the values in
+    the next layout step.
+    """
+    boxes: list[Bbox] = []
+    others: list[Bbox] | None = None
+    for owner in same_position_axes(ax):
+        for family in families_of(owner):
+            for label in family.texts:
+                if not label.get_visible():
+                    continue
+                box = label.get_window_extent(renderer)  # places it
+                if not (label.off_bar and label.clipped):
+                    continue
+                if others is None:
+                    fig = ax.get_figure(root=True)
+                    others = _text_boxes_drawn(fig, renderer) if fig else []
+                if not any(_covers(box, other) for other in others):
+                    boxes.append(box)
+    return boxes
+
+
+def _text_boxes_drawn(fig: Figure, renderer: RendererBase) -> list[Bbox]:
+    """Where the figure's other text is drawn: tick labels, titles, texts.
+
+    Every visible Axes' (and secondary axis's) titles and ``ax.texts``
+    other than bar labels; where its axis is drawn (the Axes' axis on, the
+    axis visible), the tick labels matplotlib draws there
+    (:func:`drawn_tick_labels`, major and minor), its offset text and its
+    label; and the figure's own texts (``suptitle`` included); visible and
+    not empty. A hidden axis keeps its labels visible as artists but never
+    draws them, so they are left out. A text that clips counts only inside
+    its clip box and clip path, and one clipped wholly away prints nothing,
+    so it is left out too.
+    """
+    found: list[Text] = []
+    for ax in axes_with_secondaries(fig):
+        if not ax.get_visible():
+            continue
+        found += [*ax.texts, *axes_titles(ax).values()]
+        if not getattr(ax, "axison", True):  # ax.axis("off")
+            continue
+        axes: tuple[tuple[Literal["x", "y"], Axis], ...] = (
+            ("x", ax.xaxis),
+            ("y", ax.yaxis),
+        )
+        for which, axis in axes:
+            if not axis.get_visible():
+                continue
+            found += drawn_tick_labels(ax, which)
+            found += drawn_tick_labels(ax, which, minor=True)
+            found += [axis.get_offset_text(), axis.label]
+    found += fig.texts
+    boxes: list[Bbox] = []
+    for text in found:
+        if (
+            isinstance(text, BarLabel)
+            or not text.get_visible()
+            or not text.get_text()
+        ):
+            continue
+        box: Bbox | None = text.get_window_extent(renderer)
+        if text.get_clip_on():
+            for clip in _clip_extents(text):
+                box = Bbox.intersection(box, clip) if box else None
+        if box is not None and box.width > 0 and box.height > 0:
+            boxes.append(box)
+    return boxes
+
+
+def _clip_extents(artist: Artist) -> list[Bbox]:
+    """The display boxes ``artist`` is clipped to (its clip box and path)."""
+    clips: list[Bbox] = []
+    clip_box = artist.get_clip_box()
+    if clip_box is not None:
+        clips.append(clip_box)
+    clip_path = artist.get_clip_path()
+    if isinstance(clip_path, TransformedPath):  # what set_clip_path stores
+        clips.append(clip_path.get_fully_transformed_path().get_extents())
+    return clips
+
+
+def _clear_texts(
+    fig: Figure, families: list[BarLabelFamily], renderer: RendererBase
+) -> None:
+    """Hide a value beyond its limit that would cover other text.
+
+    A label off its bar beyond the limit the bar runs past (a cut bar too
+    narrow for its number) sits outside the axes, where tick labels, axis
+    labels and titles are; one that covers any of them where it is drawn
+    (:func:`_text_boxes_drawn`) is hidden for ``"text"``, as the overlap
+    rule hides labels that meet.
+    """
+    boxes = None
+    for family in families:
+        for label in family.texts:
+            if not label.get_visible():
+                continue
+            box = label.get_window_extent(renderer)  # places it: off_bar now
+            if not (label.off_bar and label.clipped):
+                continue
+            if boxes is None:
+                boxes = _text_boxes_drawn(fig, renderer)
+            if any(_covers(box, other) for other in boxes):
+                label.own_visible(False)
+                if not Artist.get_visible(label):  # not shown by the caller
+                    label.hidden_for = "text"
+
+
+def _clear_legends(
+    fig: Figure, families: list[BarLabelFamily], renderer: RendererBase
+) -> None:
+    """Hide the labels a legend covers, as the overlap rule hides labels.
+
+    Every visible legend of the figure counts (an Axes' or the figure's),
+    wherever its caller put it, at the size and view this step settled;
+    ``dm.place_legend`` puts one clear of the labels in the first place,
+    inside the axes or (re-anchored by the layout) on a side. A label
+    hidden here is hidden for ``"legend"``, ``hidden_by`` that legend.
+    """
+    legends = [ax.get_legend() for ax in fig.axes] + list(fig.legends)
+    boxes = [
+        (legend, legend.get_window_extent(renderer))
+        for legend in legends
+        if legend is not None and legend.get_visible()
+    ]
+    if not boxes:
+        return
+    for family in families:
+        for label in family.texts:
+            if not label.get_visible():
+                continue
+            box = label.get_window_extent(renderer)
+            over = [legend for legend, ext in boxes if _covers(box, ext)]
+            if over:
+                label.own_visible(False)
+                if not Artist.get_visible(label):  # not shown by the caller
+                    label.hidden_for = "legend"
+                    label.hidden_by = over[0]
+
+
+def _covers(a: Bbox, b: Bbox) -> bool:
+    """Whether two display boxes overlap by more than half a pixel each way."""
+    return bool(
+        min(a.x1, b.x1) - max(a.x0, b.x0) > _SAME_POSITION_PX
+        and min(a.y1, b.y1) - max(a.y0, b.y0) > _SAME_POSITION_PX
+    )
 
 
 # ------------------------------------------------------------ lifecycle
@@ -258,6 +487,8 @@ def _reset(label: BarLabel) -> None:
     """The label as its call placed it (what it still owns)."""
     label.where = label.asked
     label.clear_of = ()
+    label.hidden_for = None
+    label.hidden_by = None
     label.own_rotation(0.0)
     label.own_visible(True)
     label.own_color(label.ink)
@@ -318,7 +549,8 @@ def _crowd(area: _Area, renderer: RendererBase) -> None:
             crowded = True
     if crowded:
         every = [label for _options, labels in area.calls for label in labels]
-        kept = _hide_overlaps(_positions(every, bars, renderer), gap)
+        positions = _positions(every, bars, renderer)
+        kept = _hide_overlaps(positions, gap, _turns(positions, bars.vertical))
         _clear_neighbours(kept, bars)
 
 
@@ -350,19 +582,264 @@ def _move_inside(label: BarLabel) -> None:
         label.bar_family.follow(label)
 
 
-def _hide_overlaps(positions: list[_Position], gap: float) -> list[_Position]:
-    """Hide the positions that come within ``gap`` of the last kept one.
+def _reading_order(values: dict[int, float], vertical: bool) -> dict[int, int]:
+    """Rank keys by their screen coordinate in reading order.
 
-    Walks from the last position on screen; returns the kept positions.
+    Left to right across vertical bars; top to bottom across ``barh`` rows
+    (display y falls downwards on screen).
+    """
+    ordered = sorted(
+        values, key=lambda key: values[key] * (1 if vertical else -1)
+    )
+    return {key: rank for rank, key in enumerate(ordered)}
+
+
+def _turns(positions: list[_Position], vertical: bool) -> dict[int, int] | None:
+    """Each position's turn at its group, when the positions are series.
+
+    Series apply when every position holds one plain bar's label and those
+    come from two or more containers (one call or one call per series). A
+    group is a bar index; groups and the series within a group are ranked
+    in reading order on screen (left to right, ``barh`` top to bottom),
+    whatever the call order or an inverted axis. Series ``r`` of ``n`` has
+    turn ``(r + g) % n`` in group ``g``; turn 0 goes first. Two series
+    alternate, the one read first in the group read first. More series
+    count down (the first-read series in the first group, the last-read in
+    the second, ...), so the kept labels stand at least a bar width short
+    of the pitch apart. ``None`` otherwise: a stack's segments or totals,
+    or bars overlaid at one position, keep the plain overlap rule.
+    """
+    if any(
+        len(position.labels) != 1 or position.labels[0].kind != "edge"
+        for position in positions
+    ):
+        return None
+    containers = {id(position.labels[0].container) for position in positions}
+    if len(containers) < 2:
+        return None
+    groups: dict[int, list[float]] = {}
+    for position in positions:
+        groups.setdefault(position.labels[0].index, []).append(position.centre)
+    middle = {index: float(np.mean(c)) for index, c in groups.items()}
+    offsets: dict[int, list[float]] = {}
+    for position in positions:
+        label = position.labels[0]
+        offsets.setdefault(id(label.container), []).append(
+            position.centre - middle[label.index]
+        )
+    group = _reading_order(middle, vertical)
+    series = _reading_order(
+        {key: float(np.mean(v)) for key, v in offsets.items()}, vertical
+    )
+    return {
+        id(position): (
+            series[id(position.labels[0].container)]
+            + group[position.labels[0].index]
+        )
+        % len(series)
+        for position in positions
+    }
+
+
+def keep_apart(
+    positions: Sequence[_Position],
+    gap: float,
+    turns: dict[int, int] | None = None,
+) -> list[_Position]:
+    """The positions kept by the overlap rule, from the last on screen.
+
+    A position is kept when it stays ``gap`` clear of the last kept one.
+    With ``turns`` (:func:`_turns`), a position that meets the last kept
+    one at the same bar index takes its place when its turn there comes
+    first and it stays clear of the one kept before that. Pure: nothing is
+    hidden here.
     """
     kept: list[_Position] = []
     for position in reversed(positions):
         if not kept or position.high + gap <= kept[-1].low:
             kept.append(position)
             continue
+        last = kept[-1]
+        if (
+            turns is not None
+            and position.labels[0].index == last.labels[0].index
+            and turns[id(position)] < turns[id(last)]
+            and (len(kept) < 2 or position.high + gap <= kept[-2].low)
+        ):
+            kept[-1] = position
+    return kept
+
+
+def _loses_room(
+    positions: list[_Position], kept: list[_Position], turns: dict[int, int]
+) -> bool:
+    """Whether a position whose turn came first at its bar index is lost."""
+    first: dict[int, int] = {}
+    for position in positions:
+        index, turn = position.labels[0].index, turns[id(position)]
+        first[index] = min(turn, first.get(index, turn))
+    shown = {id(position) for position in kept}
+    return any(
+        id(position) not in shown
+        and turns[id(position)] == first[position.labels[0].index]
+        for position in positions
+    )
+
+
+def _hide_overlaps(
+    positions: list[_Position], gap: float, turns: dict[int, int] | None
+) -> list[_Position]:
+    """Hide the positions the overlap rule does not keep; return the kept.
+
+    The plain rule (:func:`keep_apart` without turns) decides, unless the
+    series' turns keep every label whose turn came first and no fewer
+    labels than it: then the series alternate, and the labels they hide
+    are hidden for their ``"turn"``. Otherwise every hidden label is hidden
+    for ``"room"`` (``BarLabel.hidden_for``), as the plain rule hides it.
+    """
+    kept = keep_apart(positions, gap)
+    for_turn = False
+    if turns is not None:
+        taken = keep_apart(positions, gap, turns)
+        if len(taken) >= len(kept) and not _loses_room(positions, taken, turns):
+            kept, for_turn = taken, True
+    shown = {id(position) for position in kept}
+    for position in positions:
+        if id(position) in shown:
+            continue
         for label in position.labels:
             label.own_visible(False)
+            if not Artist.get_visible(label):  # not shown by the caller
+                label.hidden_for = "turn" if for_turn else "room"
     return kept
+
+
+def warn_hidden_bar_labels(fig: Figure, *, stacklevel: int = 1) -> int:
+    """Warn that the last settle hid labels, for room or under a legend.
+
+    Run by ``dm.simple_layout`` once its fit is done, so the warning speaks
+    of the size laid out. One warning when a label of a call whose
+    ``crowded`` rule does not ask for hiding (``"skip"`` does) was hidden
+    for ``"room"``; labels hidden for another series' ``"turn"`` are the
+    rule's own outcome (series alternate), not a loss. Its count covers
+    every label of those calls the overlap rule hid. Another when a legend
+    covers labels (``"legend"``, whatever the rule), naming the cure for
+    that legend. Another when values of bars past a limit were
+    hidden where they would cover other text (``"text"``). ``stacklevel``
+    counts from the caller (1: the line calling this). Returns the labels
+    reported (0: nothing to report).
+
+    The legend warning comes once per cure (:func:`_legend_cure`), each
+    with the count of the labels that cure brings back.
+    """
+    labels = [
+        label
+        for ax in fig.axes
+        for family in families_of(ax)
+        if family.options.crowded != "skip"
+        for label in family.texts
+    ]
+    every = [
+        label for ax in fig.axes for f in families_of(ax) for label in f.texts
+    ]
+    covered = [label for label in every if label.hidden_for == "legend"]
+    cures: dict[str, int] = {}
+    for label in covered:
+        cure = _legend_cure(fig, label.hidden_by)
+        cures[cure] = cures.get(cure, 0) + 1
+    for cure, count in cures.items():
+        warnings.warn(
+            f"dm.label_bars: {count} of {len(every)} bar value labels "
+            f"are hidden under a legend; {cure}",
+            UserWarning,
+            stacklevel=stacklevel + 1,
+        )
+    blocked = [label for label in every if label.hidden_for == "text"]
+    if blocked:
+        warnings.warn(
+            f"dm.label_bars: {len(blocked)} of {len(every)} bar value labels "
+            "of bars past a limit you set are hidden where they would cover "
+            "other text (tick labels, an axis label or a title); a wider "
+            "limit, or bars wide enough for their numbers, shows them",
+            UserWarning,
+            stacklevel=stacklevel + 1,
+        )
+    covered += blocked
+    if not any(label.hidden_for == "room" for label in labels):
+        return len(covered)
+    hidden = [label for label in labels if label.hidden_for in ("turn", "room")]
+    rows = any(label.orientation == "horizontal" for label in hidden)
+    columns = any(label.orientation == "vertical" for label in hidden)
+    if rows and columns:
+        why, fix = "bars too close together for their text", "a larger figure"
+    elif rows:
+        why, fix = "barh rows thinner than the text", "a taller figure"
+    else:
+        why, fix = "bars closer together than their text", "a wider figure"
+    warnings.warn(
+        f"dm.label_bars: {len(hidden)} of {len(labels)} bar value labels are "
+        f"hidden where they would overlap ({why}); {fix} brings them back, "
+        "and crowded='skip' hides labels on purpose without this warning",
+        UserWarning,
+        stacklevel=stacklevel + 1,
+    )
+    return len(hidden) + len(covered)
+
+
+# The side of the Axes, as dm.place_legend names it, for the warning's cure.
+_SIDE_WORDS = {
+    "above": "above the axes",
+    "below": "below the axes",
+    "right": "right of the axes",
+    "left": "left of the axes",
+}
+
+
+def _legend_cure(fig: Figure, legend: Legend | None) -> str:
+    """What puts ``legend`` clear of the labels it hides, for the warning.
+
+    A figure legend is not ``dm.place_legend``'s to move. The caller's own
+    Axes legend keeps its place's kind: wholly outside on a side, the same
+    side through ``loc=<side>``, which the layout anchors past the labels
+    and the values beyond that limit; otherwise (inside, or reaching into
+    the axes) ``dm.place_legend(ax)``, which finds a clear spot. A legend ``dm.place_legend``
+    put inside the axes goes above them (on a side it clears the values
+    beyond that limit already, so the cure names another side).
+    """
+    if legend is None or legend.axes is None or legend in fig.legends:
+        return "a figure legend moved off them shows them"
+    side: str | None
+    if getattr(legend, "_dm_placed_legend", False) is True:
+        side = "below" if outside_side(legend) == "above" else "above"
+    else:
+        side = _side_of(fig, legend, legend.axes)
+    if side is None:
+        return "dm.place_legend(ax) puts the legend clear of them"
+    return (
+        f'dm.place_legend(ax, loc="{side}") puts the legend '
+        f"{_SIDE_WORDS[side]}, clear of them"
+    )
+
+
+def _side_of(fig: Figure, legend: Legend, ax: Axes) -> str | None:
+    """The side of ``ax`` that ``legend`` lies wholly beyond, or ``None``.
+
+    ``None`` for a legend that reaches into the axes (anchored inside, if
+    too large for them).
+    """
+    renderer = get_renderer(fig)
+    box = ax.get_window_extent(renderer)
+    ext = legend.get_window_extent(renderer)
+    edge = _SAME_POSITION_PX
+    if ext.y0 >= box.y1 - edge:
+        return "above"
+    if ext.y1 <= box.y0 + edge:
+        return "below"
+    if ext.x0 >= box.x1 - edge:
+        return "right"
+    if ext.x1 <= box.x0 + edge:
+        return "left"
+    return None
 
 
 def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
@@ -374,7 +851,7 @@ def _clear_neighbours(positions: list[_Position], bars: _Bars) -> None:
     put it on that bar's label. The bars at its position that end short of
     its own count harmlessly. Only a label beyond its own bar's end
     (``BarLabel.beyond_end``: outside, or an end label its bar does not
-    hold) is lifted.
+    hold) is lifted; one anchored on a limit stays on that edge.
     """
     middles = bars.spans.mean(axis=1)
     for position in positions:
@@ -533,7 +1010,8 @@ def _want(
 ) -> tuple[float, float, int] | None:
     """``(anchor px, px needed to the edge, side)`` of a label past its end.
 
-    A drawn label beyond its own bar's end (``BarLabel.beyond_end``).
+    A drawn label beyond its own bar's end (``BarLabel.beyond_end``); None
+    for any other, a label anchored on a limit included (no room grows).
     """
     if not label.get_visible():
         return None

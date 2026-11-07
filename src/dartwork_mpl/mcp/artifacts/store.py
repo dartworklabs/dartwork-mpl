@@ -73,7 +73,7 @@ class _UnsafeArtifactObject(OSError):
 def _descriptor_operations_available() -> bool:
     """Refuse unsafe fallback on hosts without the required handle operations."""
     flags = ("O_NOFOLLOW", "O_DIRECTORY", "O_NONBLOCK")
-    calls = ("getuid", "fchmod", "fstat", "fsync")
+    calls = ("geteuid", "fchmod", "fstat", "fsync")
     operations = ("open", "mkdir", "stat", "unlink", "rmdir", "rename", "link")
     return (
         all(hasattr(os, flag) for flag in flags)
@@ -99,7 +99,7 @@ def _check_directory(fd: int, *, private: bool) -> None:
     if not stat.S_ISDIR(info.st_mode):
         raise _UnsafeArtifactObject("Artifact directory is invalid")
     if private and (
-        info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700
+        info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != 0o700
     ):
         raise _UnsafeArtifactObject("Artifact directory is not private")
 
@@ -144,7 +144,7 @@ def _check_file(fd: int, *, private: bool) -> os.stat_result:
     info = os.fstat(fd)
     if (
         not stat.S_ISREG(info.st_mode)
-        or info.st_uid != os.getuid()
+        or info.st_uid != os.geteuid()
         or info.st_nlink != 1
     ):
         raise _UnsafeArtifactObject(

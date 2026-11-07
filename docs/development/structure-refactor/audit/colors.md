@@ -61,7 +61,9 @@ orphan: true
    반대로 `_compatibility_metrics`의 sRGB/OKLab 재구현은 "독립 오라클"이 존재 이유라 중복이 아니다.
 4. **diagnostics는 기술 계층 묶음.** "asset을 시각화한다"는 이유로 colormap·색·폰트를 묶었다. 이력상
    `diagnostics/_colormaps.py`(11커밋)는 `colors/_loader.py`와 6회, `test_color_v5_register.py`와 6회 함께 바뀌었고,
-   `_fonts.py`(2커밋)는 색과 같이 바뀐 적이 없다. `_colors.py:138 _text_brightness`는 의도적 휴리스틱(docstring)이라 합치지 않는다.
+   `_fonts.py`(2커밋)는 색과 같이 바뀐 적이 없다. `_colors.py:138 _text_brightness`는 의도적 휴리스틱(docstring)이라 합치지 않는다고 봤다.
+   2026-11-07 결정으로 뒤집었다. 감마 값에 휘도 계수를 곱한 이 규칙은 출하 색 13개에서 라벨 대비가 3:1 아래였고(최저 2.67),
+   더 낫다는 근거가 기록에 없었다. 지금은 카탈로그·docs 색표·`custom.js` 가 모두 `readable_text_color`(WCAG 휘도)로 고른다.
 5. **테스트가 코드에서 멀다.** 이 영역 테스트는 `tests/` 평면에 ≈40파일 ≈17,000줄(`test_color_v6_comparison.py` 2,072,
    `test_color_v6_architecture.py` 1,310 등), 이름은 기능이 아니라 `v5_`/`v6_` **버전 접두사**로 묶였다. `testpaths = ["tests"]`,
    휠 `packages = ["src/dartwork_mpl"]`(제외 규칙 없음)라 지금은 슬라이스 내부 `tests/`가 수집되지도, 휠에서 빠지지도 않는다.

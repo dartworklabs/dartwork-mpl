@@ -376,7 +376,7 @@ def copy_inputs(
 
 def check_copies(
     jobs: tuple[CheckJob, ...], deadline_seconds: float
-) -> None | InvalidRequest | PublicationError:
+) -> InvalidRequest | PublicationError | None:
     """Reread all copies within <=5s; only exact safe copies pass publication."""
     result = _run_phase(jobs, deadline_seconds, checking=True)
     return None if isinstance(result, tuple) else result

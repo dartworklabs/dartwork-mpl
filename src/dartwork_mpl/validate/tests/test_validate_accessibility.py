@@ -181,6 +181,113 @@ class TestTextContrast:
         assert hits[0].detail["background_color"] == "#111111"
         plt.close(fig)
 
+    @pytest.mark.parametrize("clip_on", [True, False])
+    def test_a_patch_counts_only_where_it_is_drawn(self, clip_on: bool) -> None:
+        # Re-review N-I3: a bar past the limit is clipped at the axes edge,
+        # so beyond it the text lies on the figure, not on the bar. An
+        # unclipped patch is drawn there, and its colour counts.
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.add_patch(
+            mpatches.Rectangle(
+                (0.4, 0.0),
+                0.2,
+                3.0,
+                facecolor="#222222",
+                edgecolor="none",
+                clip_on=clip_on,
+            )
+        )
+        ax.text(
+            0.5,
+            1.1,
+            "beyond",
+            color="black",
+            ha="center",
+            va="center",
+            fontsize=dm.fs(0),
+            clip_on=False,
+        )
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        if clip_on:
+            assert not hits
+        else:
+            assert hits and hits[0].detail["background_color"] == "#222222"
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "color", ["dc.blue9", "#1f4e79", "dc.gray9", "#222222"]
+    )
+    def test_bar_values_are_judged_on_what_is_drawn_behind_them(
+        self, color: str
+    ) -> None:
+        # Re-review N-I3: the value of a bar past the limit, too wide for its
+        # bar, sits beyond the limit on the figure in the text colour (13-1).
+        # Read against the unclipped bar it gave a false INFO/WARNING (2.42:1
+        # on #1f4e79). Real faults stay found: that value made white by the
+        # caller (white on white), and a value inside the limit on its bar
+        # made the bar's own colour.
+        dm.style.use("report")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+        ax.bar([0, 1, 2, 3], [300, 4100, 520, 12500], width=0.3, color=color)
+        ax.bar([5], [5000], width=0.9, color=color)  # holds its number
+        ax.set_ylim(0, 1000)
+        labels = dm.label_bars(ax)
+        dm.simple_layout(fig)
+        cut = [t for t in labels if t.get_text() in ("4,100", "12,500")]
+        assert all(t.get_visible() and t.clipped and t.off_bar for t in cut)
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+
+        cut[0].set_color("white")
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+        assert [
+            (h.detail["sample"], h.detail["background_color"]) for h in hits
+        ] == [("4,100", "#ffffff")]
+        assert hits[0].severity == Severity.WARNING
+
+        cut[0].set_color("black")
+        on_bar = [t for t in labels if t.get_text() == "5,000"]
+        assert on_bar and on_bar[0].clipped and on_bar[0].on_bar
+        assert not _warnings_for(fig, "TEXT_CONTRAST")  # its ink reads
+        on_bar[0].set_color(color)
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+        assert [h.detail["sample"] for h in hits] == ["5,000"]
+        assert hits[0].detail["ratio"] == pytest.approx(1.0)
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        ("ink", "ratio"), [("black", 2.75), ("#505458", 1.0)]
+    )
+    def test_stack_segment_values_in_the_wrong_ink_stay_found(
+        self, ink: str, ratio: float
+    ) -> None:
+        # The fault PR #613's review found (segment labels inside their
+        # segments classed off the bar: black, or with color="series" the
+        # segment's colour) is drawn on the segment, inside the axes: the
+        # clip box keeps it found. In their own ink they pass.
+        dm.style.use("report")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+        low, high = [40.0, 52.0, 47.0, 61.0], [30.0, 26.0, 35.0, 29.0]
+        ax.bar(range(4), low, width=0.6, color="#1864b0")
+        ax.bar(range(4), high, bottom=low, width=0.6, color="#505458")
+        labels = dm.label_bars(ax, where="inside", total=False)
+        dm.simple_layout(fig)
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+
+        top = [t for t in labels if t.kind == "segment"][4:]  # on #505458
+        for t in top:
+            t.set_color(ink)
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+        assert [h.detail["background_color"] for h in hits] == ["#505458"]
+        assert hits[0].detail["count"] == 4
+        assert hits[0].detail["ratio"] == pytest.approx(ratio, abs=0.01)
+        assert hits[0].severity == Severity.WARNING
+        plt.close(fig)
+
 
 class TestMinFontSize:
     """Text below the minimum readable size is reported."""

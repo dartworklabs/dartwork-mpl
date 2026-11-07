@@ -30,6 +30,7 @@ __all__ = [
     "BarLabelOptions",
     "Crowded",
     "Fmt",
+    "HiddenFor",
     "Kind",
     "Orientation",
     "Placement",
@@ -48,6 +49,11 @@ Total: TypeAlias = Literal["auto", "only", False]
 Crowded: TypeAlias = Literal["rotate", "skip", "inside"]
 Orientation: TypeAlias = Literal["vertical", "horizontal"]
 Fmt: TypeAlias = str | Callable[[float], object] | None
+# Why the layout hid a label where it would overlap: another series took
+# its bar index ("turn"), there was no room for it ("room"), a legend
+# covers it ("legend"), or, beyond the limit its bar runs past, it would
+# cover other text: tick labels, an axis label, a title ("text").
+HiddenFor: TypeAlias = Literal["turn", "room", "legend", "text"]
 
 
 # ------------------------------------------------------------ the options

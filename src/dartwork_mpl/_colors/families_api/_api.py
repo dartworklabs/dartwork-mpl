@@ -81,7 +81,7 @@ def _validate_kind(kind: str | None) -> FamilyKind | None:
         raise ValueError(
             f"Unknown color kind {kind!r}; expected one of: {expected}."
         )
-    return kind  # type: ignore[return-value]
+    return kind
 
 
 def _qualitative_cmap(

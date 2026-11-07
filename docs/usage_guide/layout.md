@@ -239,26 +239,63 @@ a new stem such as `layout-v2`; keep v1, exact source and geometry for review.
 ### Measured presentation text correction
 
 For the two whole-canvas recipes above, a measured 20 × 16 cm render using
-`presentation` clipped the leftmost `Response` y-label with the initial
-1.15 cm local left margin. Increasing only that margin to 1.70 cm cleared
-that overflow in both examples. After inspecting the full report and images,
-a revision can replace the `local = panel.add_gridspec(...)` call inside the
-existing panel loop with:
+`presentation` puts content outside the canvas on three sides with the
+initial 1.15 cm local left margin: the leftmost `Response` y-label by
+1.40 cm, `Time (s)` below the canvas by 1.05 cm, and the panel titles above
+it by 0.34 cm.
+
+Raising only the left margin to 1.70 cm narrows the left overflow to
+0.85 cm and leaves the other two sides exactly where they were, so it does
+not clear the overflow. Margins measured to keep every artist inside the
+canvas in both recipes, after inspecting the full report and images:
 
 <!-- snippet: no-run -->
 ```python
-# This measured example's candidate, not a universal fit value.
+# Measured for these two 20 x 16 cm presentation examples; not a
+# universal fit value and not an automatic preset override.
 local = panel.add_gridspec(
-    1, 1, left=1.70 / width_cm, right=1 - 0.45 / width_cm,
-    bottom=1.05 / height_cm, top=1 - 0.80 / height_cm)
+    1, 1, left=2.60 / width_cm, right=1 - 0.50 / width_cm,
+    bottom=2.15 / height_cm, top=1 - 1.19 / height_cm)
 ```
+
+What remains at those margins is not a margin problem. The 2×1 recipe's
+30 % row reports `TICK_CROWD` (four ticks in 0.57 in) and the 2×2 recipe's
+4.9 cm and 2.9 cm panels report `LEGEND_OVERLAP` for their inside legend at
+19.5 pt. `presentation` sizes text for one chart filling a slide: 19.5 pt is
+8.6 % of an 8 cm row against 3.5 % under `report`, and
+`dm.figsize_for(nrows=2, ncols=2)` under it returns 23.4 × 10.5 cm, not this
+page. `dm.place_legend(ax)` does not rescue it either — on this figure it
+lifts each legend above its Axes, onto all four titles and 55 px past the
+canvas edge (4 findings become 5).
+
+Two measured ways out of the 2×2 case, both of which leave
+`dm.validate_figure` with no findings at all:
+
+- **a page of four panels** — keep 20 × 16 cm and select `report` (or
+  `scientific`) by purpose, with this recipe's own 1.15 cm local margins.
+  Nothing else changes.
+- **keep `presentation`** — replace the four panel legends with one shared
+  figure legend, since they carry the same two series, and give it room
+  below. Both edits are needed: adding the figure legend while the panel
+  legends stay leaves five legends and every `LEGEND_OVERLAP` back.
+
+<!-- snippet: no-run -->
+```python
+# In the shared block above, delete the per-panel
+# `ax.legend(loc="upper right", ncol=2)` line and set
+# bottom=3.40 / height_cm in the local gridspec, then after the loop:
+handles, labels = next(iter(axes.values())).get_legend_handles_labels()
+fig.legend(handles, labels, loc="lower center", ncol=2,
+           bbox_to_anchor=(0.5, 0.0), frameon=False)
+```
+
+Do not shrink the preset's fonts to force the per-panel legends to fit.
 
 Rebuild the figure with that local edit, then repeat drawing, measurement,
 validation and image review, saving to a new output stem. Keep the 20 × 16 cm
 canvas, requested container ratios, data, colors, preset fonts and legend
-anchors. The larger left margin makes the data Axes narrower; it does not
-change the container allocations. The value 1.70 cm is a candidate for these
-measured examples, not an automatic preset override. If too little data space
+anchors. The larger margins make the data Axes smaller; they do not
+change the container allocations. If too little data space
 remains or content still clips, explain the constraint and ask which constraint
 may change; do not silently shrink fonts, remove data, resize the canvas or
 relocate legends. The scientific recipe defaults above remain unchanged.
@@ -666,13 +703,42 @@ dm.simple_layout(fig)
 to keep the outside labels and 3 pt inside the axes. Limits you set
 (`ax.set_ylim`, also `ax.set_ybound`; the x ones for `barh`) stay: a label
 that does not fit sits outside the axes, and `dm.simple_layout` keeps room
-for it in the figure. A bar that runs past a limit you set gets no label.
-Crowding and the fit of labels inside the bars are decided before the axis
-grows. `barh` labels never turn: rows thinner than the text hide every
-other label, and a taller figure shows them all (for example
-`dm.figsize("12cm", "16cm")` rather than `"standard"`). Labels from
-separate calls on one plot area (one `dm.label_bars` per series) are
-checked together, so they do not overlap each other either.
+for it in the figure. A bar that runs past a limit you set shows its true
+value at that limit: just inside it, on the bar, when the bar holds the
+number (`set_ylim(0, 100)` on a bar of 135 prints `135` under the top edge,
+in white or the text colour, whichever reads on the bar); on a bar too
+narrow (or a part in view too short) for it, just beyond the limit in the
+text colour (the series colour under `color="series"`). Beyond a lower or
+left limit lie the tick labels, above a top limit the title: a value that
+would cover such text is hidden, and `dm.simple_layout` warns; a wider limit
+or wider bars show it. A bar wholly outside the view, or a stack's segments
+and total past the limit, get none. Crowding and the fit of labels inside the bars
+are decided before the axis grows.
+
+**Overlaps.** Labels that would still overlap are hidden, from the last bar
+on screen (the right end, the top row of `barh`) back. Labels from separate
+calls on one plot area (one `dm.label_bars` per series) are checked
+together, so they do not overlap each other either. Grouped series take
+turns where their labels meet, in reading order on screen (left to right,
+`barh` top to bottom): two series alternate by bar index, three or more
+count down (first, last, …). The turns are used only when they keep every
+label whose turn comes first and as many labels as the plain rule;
+otherwise the plain rule decides, and in thin `barh` rows or dense groups
+one series can lose its labels. Stacks keep the plain rule. `barh` labels
+never turn. When labels are lost for room (not by `crowded="skip"`, which
+asks for it) `dm.simple_layout` warns once, with the count. If the rows are
+thin, make the figure taller (for example `dm.figsize("12cm", "16cm")`
+rather than `"standard"`); for vertical bars, wider. A taller or wider
+figure brings the labels back.
+
+**Legends.** A label that a legend covers is hidden, and `dm.simple_layout`
+warns once with the count and the cure for that legend. `dm.place_legend(ax)`
+puts the legend clear of the labels; on a side (`loc="above"`, `"below"`,
+`"right"`, `"left"`) the layout anchors it past the values beyond that
+limit, so a cut bar keeps its true value. A legend you fix with
+`ax.legend(loc=...)` or `fig.legend` keeps its place: the warning names
+`dm.place_legend(ax)`, or for a legend outside the axes the same side
+through `loc=`.
 
 On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
 last, so the partner's line is never drawn over them. A later `Text.set_*`
@@ -743,11 +809,16 @@ the same hue raised to 4.5:1. A side whose series draw several colours,
 or a hue close to the other side's, stays neutral, and single Axes are
 never touched. `with dm.config.override(twin_colors="neutral"):` around
 the figure, or `dm.config.twin_colors = "neutral"`, keeps the preset's axis
-colours. A colour you set wins: `ax2.tick_params(axis="y", colors=...)`,
-`labelcolor=`, `ax2.yaxis.label.set_color(...)`,
-`ax2.spines["right"].set_color(...)`. One exception: a colour set before the
-first `dm.simple_layout` that equals the preset's default (`"black"` under
-the light presets) cannot be told from the default and is painted; for
+colours. A colour you set wins, and makes that whole side yours:
+`ax2.tick_params(axis="y", colors=...)`, `labelcolor=`,
+`ax2.yaxis.label.set_color(...)` or `ax2.spines["right"].set_color(...)` on
+any part of a side leaves its other parts in the preset's colours (no
+series colour mixed with yours), while the other side keeps its series
+colour. The left spine you see on a `twinx` pair is the twin's copy,
+`ax2.spines["left"]`: a colour there makes the left side yours. One
+exception: a colour set before the first `dm.simple_layout`
+that equals the preset's default (`"black"` under the light presets) cannot
+be told from the default and is painted with the rest of the side; for
 black or neutral twin axes use `dm.config.twin_colors = "neutral"`.
 
 The presets hide the right spine, so `dm.simple_layout(fig)` also shows it on

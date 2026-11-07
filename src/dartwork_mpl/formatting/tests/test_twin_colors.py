@@ -243,6 +243,8 @@ def test_alpha_series_spine_is_the_colour_as_drawn():
 
 
 def test_explicit_colours_win():
+    # A colour set on any part of a side makes the whole side the user's
+    # (decision 9-1 C): the parts left unset keep matplotlib's default.
     fig, ax, ax2 = _bar_line_twin()
     violet, rose = _hex("dc.violet8"), _hex("dc.rose8")
     green, cyan = _hex("dc.green5"), _hex("dc.cyan8")
@@ -255,20 +257,23 @@ def test_explicit_colours_win():
         dm.simple_layout(fig)
 
     assert _side(ax, "left") == {
-        "spine": BAR_LINE,
+        "spine": BLACK,
         "ticks": violet,
         "ticklabels": violet,
         "label": rose,
     }
     assert _side(ax2, "right") == {
         "spine": cyan,
-        "ticks": LINE_LINE,
+        "ticks": BLACK,
         "ticklabels": green,
-        "label": LINE_TEXT,
+        "label": BLACK,
     }
+    assert apply_twin_colors(fig) == 0
 
 
 def test_explicit_colour_after_layout_survives():
+    # Recoloured after a layout: those parts are kept and the side is the
+    # user's from then on, so the spine painted earlier gets its default.
     fig, ax, ax2 = _bar_line_twin()
     dm.simple_layout(fig)
     ax2.yaxis.label.set_color("dc.violet8")
@@ -278,7 +283,154 @@ def test_explicit_colour_after_layout_survives():
     right = _side(ax2, "right")
     assert right["label"] == right["ticks"] == right["ticklabels"]
     assert right["label"] == _hex("dc.violet8")
-    assert right["spine"] == LINE_LINE
+    assert right["spine"] == BLACK
+    assert _side(ax, "left")["spine"] == BAR_LINE  # the other side stays
+
+
+# The approved PoC figures of decision 9-1 (review page
+# 2026-11-06-b3-followups, b3poc/1-partial-explicit/summary.json, C).
+POC_QUARTERS = [f"Q{q} {y}" for y in (24, 25) for q in range(1, 5)]
+
+
+def _poc_twin(explicit: str):
+    """Bars on the left, a line on the right; ``explicit`` colours a part."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    if explicit == "tick_colors":
+        ax.bar(POC_QUARTERS, [38, 41, 44, 52, 47, 51, 55, 63], color="dc.teal2")
+        ax.set_ylabel("Revenue (USD B)")
+        ax2 = ax.twinx()
+        ax2.plot(
+            POC_QUARTERS,
+            [11, 12, 12, 15, 13, 14, 16, 18],
+            color="dc.orange4",
+            marker="o",
+            markersize=3.5,
+        )
+        ax2.set_ylabel("Operating margin (%)")
+    else:
+        ax.bar(
+            POC_QUARTERS,
+            [120, 150, 190, 230, 300, 360, 410, 470],
+            color="dc.blue3",
+        )
+        ax.set_ylabel("Active users (k)")
+        ax2 = ax.twinx()
+        ax2.plot(
+            POC_QUARTERS,
+            [4.8, 4.6, 4.9, 4.2, 3.9, 3.7, 3.5, 3.1],
+            color="dc.red4",
+            marker="s",
+            markersize=3.2,
+        )
+        ax2.set_ylabel("Churn (%)")
+    ax.tick_params(axis="x", labelrotation=30)
+    if explicit == "tick_colors":  # tick marks and tick labels in one grey
+        ax2.tick_params(axis="y", colors="dc.gray7")
+    else:  # only the axis label
+        ax2.set_ylabel(ax2.get_ylabel(), color="crimson")
+    return fig, ax, ax2
+
+
+@pytest.mark.parametrize(
+    ("explicit", "right"),
+    [
+        (
+            "tick_colors",
+            {
+                "spine": BLACK,
+                "ticks": "#62666c",
+                "ticklabels": "#62666c",
+                "label": BLACK,
+            },
+        ),
+        (
+            "ylabel",
+            {
+                "spine": BLACK,
+                "ticks": BLACK,
+                "ticklabels": BLACK,
+                "label": "#dc143c",
+            },
+        ),
+    ],
+)
+def test_partly_explicit_side_is_the_users(explicit, right):
+    """Any explicit part of a side: dm paints nothing else on that side."""
+    fig, ax, ax2 = _poc_twin(explicit)
+    dm.simple_layout(fig)
+
+    assert _side(ax2, "right") == right
+    left = _side(ax, "left")  # the other side keeps its series colour
+    assert left["spine"] not in (BLACK, None)
+    assert left["ticklabels"] not in (BLACK, left["spine"])
+    assert _ratio(left["ticklabels"]) >= 4.5
+    assert apply_twin_colors(fig) == 1
+
+    # Repeat layouts give the same colours.
+    first = (_side(ax, "left"), _side(ax2, "right"))
+    dm.simple_layout(fig)
+    dm.simple_layout(fig)
+    assert (_side(ax, "left"), _side(ax2, "right")) == first
+
+    # The neutral option leaves both sides alone.
+    with dm.config.override(twin_colors="neutral"):
+        dm.simple_layout(fig)
+        assert _side(ax, "left") == _neutral()
+        assert _side(ax2, "right") == right
+
+
+def test_the_spine_seen_on_a_side_counts_as_its_part():
+    """Review I3: on a twinx pair the left spine seen is the twin's copy.
+
+    A colour set there makes the parent's (left) side the user's, so no
+    series colour is mixed into it; the right side keeps its own. The
+    parent's right spine lies under the twin's: a colour set on it is not
+    seen and leaves the right side coloured.
+    """
+    fig, ax, ax2 = _bar_line_twin()
+    ax2.spines["left"].set_color("crimson")
+    for _ in range(2):
+        dm.simple_layout(fig)
+    fig.canvas.draw()
+    tick = ax.yaxis.get_major_ticks()[1]
+    assert _hex(ax2.spines["left"].get_edgecolor()) == _hex("crimson")
+    assert {
+        "spine under it": _hex(ax.spines["left"].get_edgecolor()),
+        "ticks": _hex(tick.tick1line.get_markeredgecolor()),
+        "ticklabels": _hex(tick.label1.get_color()),
+        "label": _hex(ax.yaxis.label.get_color()),
+    } == dict.fromkeys(
+        ("spine under it", "ticks", "ticklabels", "label"), BLACK
+    )
+    assert _side(ax2, "right")["ticklabels"] == LINE_TEXT
+    assert apply_twin_colors(fig) == 1
+
+    fig, ax, ax2 = _bar_line_twin()
+    ax.spines["right"].set_color("crimson")  # drawn under ax2's right spine
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert _hex(ax2.spines["right"].get_edgecolor()) == LINE_LINE
+    assert _hex(ax2.yaxis.label.get_color()) == LINE_TEXT
+    assert _side(ax, "left")["ticklabels"] == BAR_TEXT
+
+
+def test_default_colour_before_the_first_layout_cannot_be_told():
+    """The known limit: black set before any layout reads as the default.
+
+    It is the colour matplotlib gives the part, so the side still
+    qualifies and gets its series colour everywhere; set it after a
+    layout, or use ``twin_colors="neutral"``.
+    """
+    fig, ax, ax2 = _bar_line_twin()
+    ax2.set_ylabel("YoY growth (%)", color="black")
+    dm.simple_layout(fig)
+
+    assert _side(ax2, "right") == {
+        "spine": LINE_LINE,
+        "ticks": LINE_LINE,
+        "ticklabels": LINE_TEXT,
+        "label": LINE_TEXT,
+    }
 
 
 def test_default_colour_set_after_layout_survives():

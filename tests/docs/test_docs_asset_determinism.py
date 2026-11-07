@@ -150,3 +150,18 @@ def test_generate_assets_has_no_duplicate_oklab_conversion_kernel() -> None:
     """Use the package conversion SSOT instead of a docs-only duplicate."""
     source = _GENERATE_COLOR_ASSETS.read_text(encoding="utf-8")
     assert "def _oklch_lightness(" not in source
+
+
+def test_swatch_ink_uses_the_package_wcag_rule_not_a_brightness_copy() -> None:
+    """Docs swatch labels pick ink with ``dm.readable_text_color``.
+
+    The colour sheets and the interpolation widget used to carry their own
+    gamma-weighted brightness with a 0.45 threshold, a second luminance that
+    disagreed with the package's WCAG rule on mid-tones.
+    """
+    source = _GENERATE_COLOR_ASSETS.read_text(encoding="utf-8")
+    assert "def _text_brightness_rgb(" not in source
+    assert "dm.readable_text_color(" in source
+    js = (_DOCS / "_static" / "custom.js").read_text(encoding="utf-8")
+    assert "lum < 0.45" not in js
+    assert "function wcagLuminance(" in js

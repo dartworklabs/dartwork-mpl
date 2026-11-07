@@ -1,47 +1,87 @@
-"""The diagnostics swatch heuristic must not masquerade as luminance."""
+"""Catalogue swatch labels pick their ink by WCAG contrast, not a second luminance."""
 
 from __future__ import annotations
 
-import inspect
-
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import pytest
 
 from dartwork_mpl._colors.diagnostics import _colors
 
+_INKS = ("white", "#333333")
+
+
+def _oracle_luminance(color: str) -> float:
+    """Independent WCAG 2.x relative luminance (sRGB linearised)."""
+
+    def lin(c: float) -> float:
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (lin(c) for c in mcolors.to_rgb(color))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _oracle_ratio(a: str, b: str) -> float:
+    hi, lo = sorted((_oracle_luminance(a), _oracle_luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
 
 @pytest.mark.parametrize(
-    ("color", "expected"),
+    ("background", "ink"),
     [
-        ("#000000", 0.0),
-        ("#ffffff", 1.0),
-        ("#ff0000", 0.2126),
-        ("#00ff00", 0.7152),
-        ("#0000ff", 0.0722),
-        ("#808080", 128 / 255),
+        ("#000000", "white"),
+        ("#ffffff", "#333333"),
+        # Mid-tones the retired gamma-weighted heuristic labelled #333333
+        # although white contrasts more.
+        ("#737373", "white"),
+        ("#3b82f6", "white"),
+        ("#1686e0", "white"),
+        # Saturated mid-tones it labelled white although #333333 contrasts more.
+        ("#ec4899", "#333333"),
+        ("#f4511e", "#333333"),
+        ("#00ff00", "#333333"),
+        ("#ff0000", "white"),
     ],
 )
-def test_text_brightness_preserves_the_gamma_weighted_heuristic(
-    color: str, expected: float
+def test_swatch_ink_is_the_higher_contrast_of_the_two_inks(
+    background: str, ink: str
 ) -> None:
-    assert _colors._text_brightness(color) == pytest.approx(expected, abs=1e-12)
+    other = _INKS[1] if ink == _INKS[0] else _INKS[0]
+    assert _oracle_ratio(ink, background) >= _oracle_ratio(other, background)
+    assert _colors._contrast_text_color(background) == ink
 
 
-def test_text_brightness_name_and_docs_do_not_claim_physical_or_wcag_y() -> (
-    None
-):
+def test_every_registered_library_colour_gets_the_higher_contrast_ink() -> None:
+    named = mcolors.get_named_colors_mapping()
+    prefixes = tuple(lib.prefix for lib in _colors.COLOR_LIBRARIES)
+    checked = 0
+    for name, spec in named.items():
+        if not name.startswith(prefixes):
+            continue
+        hexv = mcolors.to_hex(spec)
+        chosen = _colors._contrast_text_color(spec)
+        assert chosen in _INKS
+        other = _INKS[1] if chosen == _INKS[0] else _INKS[0]
+        assert _oracle_ratio(chosen, hexv) >= _oracle_ratio(other, hexv), name
+        checked += 1
+    assert checked > 1000
+
+
+def test_no_second_brightness_kernel_remains() -> None:
+    assert not hasattr(_colors, "_text_brightness")
     assert not hasattr(_colors, "_relative_luminance")
-    doc = inspect.getdoc(_colors._text_brightness)
-    assert doc is not None
-    lowered = doc.lower()
-    assert "text brightness" in lowered
-    assert "heuristic" in lowered
-    assert "gamma-encoded" in lowered
-    assert "relative luminance" not in lowered
-    assert "wcag" not in lowered
 
 
-def test_contrast_text_choice_is_behaviorally_unchanged() -> None:
-    assert _colors._contrast_text_color("#727272") == "white"
-    assert _colors._contrast_text_color("#737373") == "#333333"
-    assert _colors._contrast_text_color("#ff0000") == "white"
-    assert _colors._contrast_text_color("#00ff00") == "#333333"
+def test_catalogue_overlay_uses_the_picked_ink() -> None:
+    colors = {"tw.blue500": "#3b82f6", "tw.pink500": "#ec4899"}
+    figs = _colors.render_color_catalog(colors)
+    try:
+        overlays = {
+            t.get_text(): t.get_color()
+            for t in figs[0].axes[0].texts
+            if t.get_fontsize() == 6.5
+        }
+    finally:
+        for fig in figs:
+            plt.close(fig)
+    assert overlays == {"#3B82F6": "white", "#EC4899": "#333333"}

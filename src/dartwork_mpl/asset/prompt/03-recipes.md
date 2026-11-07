@@ -420,26 +420,63 @@ a new stem such as `layout-v2`; keep v1, exact source and geometry for review.
 ### Measured presentation text correction
 
 For the two whole-canvas recipes above, a measured 20 × 16 cm render using
-`presentation` clipped the leftmost `Response` y-label with the initial
-1.15 cm local left margin. Increasing only that margin to 1.70 cm cleared
-that overflow in both examples. After inspecting the full report and images,
-a revision can replace the `local = panel.add_gridspec(...)` call inside the
-existing panel loop with:
+`presentation` puts content outside the canvas on three sides with the
+initial 1.15 cm local left margin: the leftmost `Response` y-label by
+1.40 cm, `Time (s)` below the canvas by 1.05 cm, and the panel titles above
+it by 0.34 cm.
+
+Raising only the left margin to 1.70 cm narrows the left overflow to
+0.85 cm and leaves the other two sides exactly where they were, so it does
+not clear the overflow. Margins measured to keep every artist inside the
+canvas in both recipes, after inspecting the full report and images:
 
 <!-- snippet: no-run -->
 ```python
-# This measured example's candidate, not a universal fit value.
+# Measured for these two 20 x 16 cm presentation examples; not a
+# universal fit value and not an automatic preset override.
 local = panel.add_gridspec(
-    1, 1, left=1.70 / width_cm, right=1 - 0.45 / width_cm,
-    bottom=1.05 / height_cm, top=1 - 0.80 / height_cm)
+    1, 1, left=2.60 / width_cm, right=1 - 0.50 / width_cm,
+    bottom=2.15 / height_cm, top=1 - 1.19 / height_cm)
 ```
+
+What remains at those margins is not a margin problem. The 2×1 recipe's
+30 % row reports `TICK_CROWD` (four ticks in 0.57 in) and the 2×2 recipe's
+4.9 cm and 2.9 cm panels report `LEGEND_OVERLAP` for their inside legend at
+19.5 pt. `presentation` sizes text for one chart filling a slide: 19.5 pt is
+8.6 % of an 8 cm row against 3.5 % under `report`, and
+`dm.figsize_for(nrows=2, ncols=2)` under it returns 23.4 × 10.5 cm, not this
+page. `dm.place_legend(ax)` does not rescue it either — on this figure it
+lifts each legend above its Axes, onto all four titles and 55 px past the
+canvas edge (4 findings become 5).
+
+Two measured ways out of the 2×2 case, both of which leave
+`dm.validate_figure` with no findings at all:
+
+- **a page of four panels** — keep 20 × 16 cm and select `report` (or
+  `scientific`) by purpose, with this recipe's own 1.15 cm local margins.
+  Nothing else changes.
+- **keep `presentation`** — replace the four panel legends with one shared
+  figure legend, since they carry the same two series, and give it room
+  below. Both edits are needed: adding the figure legend while the panel
+  legends stay leaves five legends and every `LEGEND_OVERLAP` back.
+
+<!-- snippet: no-run -->
+```python
+# In the shared block above, delete the per-panel
+# `ax.legend(loc="upper right", ncol=2)` line and set
+# bottom=3.40 / height_cm in the local gridspec, then after the loop:
+handles, labels = next(iter(axes.values())).get_legend_handles_labels()
+fig.legend(handles, labels, loc="lower center", ncol=2,
+           bbox_to_anchor=(0.5, 0.0), frameon=False)
+```
+
+Do not shrink the preset's fonts to force the per-panel legends to fit.
 
 Rebuild the figure with that local edit, then repeat drawing, measurement,
 validation and image review, saving to a new output stem. Keep the 20 × 16 cm
 canvas, requested container ratios, data, colors, preset fonts and legend
-anchors. The larger left margin makes the data Axes narrower; it does not
-change the container allocations. The value 1.70 cm is a candidate for these
-measured examples, not an automatic preset override. If too little data space
+anchors. The larger margins make the data Axes smaller; they do not
+change the container allocations. If too little data space
 remains or content still clips, explain the constraint and ask which constraint
 may change; do not silently shrink fonts, remove data, resize the canvas or
 relocate legends. The scientific recipe defaults above remain unchanged.
@@ -547,7 +584,8 @@ value, then the fewest exact decimals, one count per call, no meaningless
 `.0`; stacked bars' segments centred and a total beyond the stack; crowded
 labels on vertical bars turned vertical by `dm.simple_layout`, which also
 grows autoscaled limits just enough for the labels (limits you set stay; a
-bar past them gets no label).
+bar past them shows its true value at the limit: on the bar when the bar
+holds the number, else just beyond it).
 
 ```python
 import matplotlib.pyplot as plt
@@ -567,8 +605,14 @@ Requests, one keyword each: `where="inside"` / `"center"` / `"outside"`;
 template wraps the signed number, `$−3.5B`; a callable for `−$3.5B`);
 `size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar.
 Stacks need matching bottoms (a waterfall is not one); pad split series with
-NaN, not 0. Thin `barh` rows hide every other label: a taller figure shows
-them all. On a twin pair the labels go on the top axes.
+NaN, not 0. A label asked inside a bar too narrow or short for it sits
+beyond the end in the text colour. Grouped series whose labels meet take
+turns by bar index (two alternate, in reading order), one call or one per
+series, where that keeps as many labels as the plain rule. If labels are
+lost for room (thin `barh` rows, dense groups) or under a fixed legend,
+`dm.simple_layout` warns with the count: make the figure taller (wider for
+vertical bars), or place the legend with `dm.place_legend(ax)`; keep the
+warning in the report. On a twin pair the labels go on the top axes.
 
 ## "Twin axis"
 
@@ -583,9 +627,11 @@ dm.simple_layout(fig)
 ```
 
 `dm.simple_layout` colours each side like its one series (spine and ticks at
-3:1, tick labels and axis label at 4.5:1); colours you set win, except one
-set before the first layout that equals the preset's default (`"black"`):
-it cannot be told from the default and is painted. For black or neutral
+3:1, tick labels and axis label at 4.5:1); a colour you set on any part of
+a side makes that whole side yours (its other parts keep the preset's
+colours; the other side keeps its series colour), except one set before the
+first layout that equals the preset's default (`"black"`): it cannot be
+told from the default and is painted. For black or neutral
 twin axes, `with dm.config.override(twin_colors="neutral"):` (or
 `dm.config.twin_colors = "neutral"`) keeps the preset's. One
 legend for both: `dm.place_legend(ax1)`, not `ax1.legend(h1 + h2, l1 + l2)`;

@@ -34,15 +34,7 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # (validate_fixes is the auto-fix companion to validate). F401 is
 # silenced because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
-from . import (  # noqa: F401
-    font,
-    helpers,
-    icon,
-    lint,
-    templates,
-    tokens,
-    validate_fixes,
-)
+from . import font, helpers, icon, lint, templates, tokens, validate_fixes  # noqa: F401
 
 # Import color module exports
 from ._colors import (

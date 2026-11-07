@@ -37,17 +37,26 @@ pair like the one series read on it:
   both with ``ensure_contrast``. Another member's spine on the same side
   (a ``twinx`` draws its own copy of the left spine over its parent's)
   follows the owner's spine.
-* **Explicit colours win.** Single Axes are never touched. A part (spine,
-  tick marks, tick labels, axis label) is painted only while it shows the
-  colour matplotlib gives it from the rcParams in force at the layout, and
-  is repainted later only while it still shows the colour painted here. A
-  colour set after a layout is kept, whatever it is. A colour set before the
-  first layout, or after ``ax.cla()``, that equals the default (``"black"``
-  under the light presets) cannot be told from the default and is painted;
-  use
-  ``dm.config.twin_colors = "neutral"`` to keep such a figure neutral. A
-  figure built under one preset and laid out under another sees its parts
-  as set by hand and stays neutral (the safe side).
+* **Explicit colours win, side by side.** Single Axes are never touched. A
+  part (spine, tick marks, tick labels, axis label) is set by hand when,
+  unpainted, it shows another colour than the one matplotlib gives it from
+  the rcParams in force at the layout, or, painted, it no longer shows the
+  colour painted here. One part set by hand makes the whole side the
+  user's: nothing on it is painted, and its parts painted on an earlier
+  call get their defaults back, so the parts left unset show matplotlib's
+  colours, not the series'. The spine a reader sees on a side counts as
+  one of its parts: on a ``twinx`` pair the left one is the twin's copy,
+  drawn over the parent's, so a colour set on ``ax2.spines["left"]`` makes
+  the parent's side the user's; a spine drawn under another member's (the
+  parent's right spine under the twin's) is not seen and does not count.
+  The other side decides on its own. A colour set
+  after a layout is the user's, whatever it is, and for good. A colour set
+  before the first layout, or after ``ax.cla()``, that equals the default
+  (``"black"`` under the light presets) cannot be told from the default and
+  is painted with the rest of the side; use ``dm.config.twin_colors =
+  "neutral"`` to keep such a figure neutral. A figure built under one
+  preset and laid out under another sees its parts as set by hand and stays
+  neutral (the safe side).
 * **Undoing.** A painted part remembers the default it replaced: a side
   that stops qualifying, a pair that is gone, or ``dm.config.twin_colors =
   "neutral"`` gets that default back at the next call. A part that
@@ -98,6 +107,8 @@ _RECORD = "_dm_twin_colors"
 # makes a new one, so a different patch means the Axes was cleared since.
 _RECORD_PATCH = "_dm_twin_colors_patch"
 _NOTHING = frozenset({"None", "none", "", " "})
+# The parts of one side, each read and painted on its own.
+_PARTS: tuple[Part, ...] = ("spine", "ticks", "ticklabels", "label")
 
 _Record: TypeAlias = dict[tuple[Side, Part], tuple[RGBA, RGBA] | None]
 
@@ -396,31 +407,40 @@ def _write(ax: Axes, side: Side, part: Part, color: RGBA) -> None:
         axis.set_tick_params(which="both", labelcolor=color)
 
 
+def _set_by_hand(ax: Axes, side: Side, part: Part) -> bool:
+    """Whether someone else set the part's colour.
+
+    Unpainted, it shows another colour than its rcParams default; painted,
+    it no longer shows the colour painted here, or was found so before.
+    The one test of "set by hand": :func:`_settle` and the side rule
+    (:func:`_settle_side`) both ask it.
+    """
+    record: _Record = getattr(ax, _RECORD, {})
+    current = _read(ax, side, part)
+    if (side, part) not in record:
+        default = _rc_default(side, part)
+        return not all(_same(c, default) for c in current)
+    entry = record[(side, part)]
+    return entry is None or not all(_same(c, entry[1]) for c in current)
+
+
 def _settle(ax: Axes, side: Side, part: Part, target: str | None) -> bool:
     """Paint one part ``target`` (``None``: its default back).
 
-    Returns whether the part now shows ``target``. An unpainted part that
-    does not show its rcParams default, or a painted part that no longer
-    shows the colour painted here, was set by someone else and is left as
-    it is, the latter for good.
+    Returns whether the part now shows ``target``. A part set by hand
+    (:func:`_set_by_hand`) is left as it is; one painted here before and
+    recoloured since is the user's for good.
     """
     record: _Record = getattr(ax, _RECORD, {})
     key = (side, part)
-    current = _read(ax, side, part)
-    if key in record:
-        entry = record[key]
-        if entry is None:
-            return False
-        default, painted = entry
-        if not all(_same(c, painted) for c in current):
+    if _set_by_hand(ax, side, part):
+        if key in record:
             record[key] = None  # set by someone since, even to the default
-            return False
-    elif target is None:
         return False
-    else:
-        default = _rc_default(side, part)
-        if not all(_same(c, default) for c in current):
-            return False
+    entry = record.get(key)
+    if entry is None and target is None:
+        return False  # unpainted, and nothing to paint
+    default = entry[0] if entry is not None else _rc_default(side, part)
     if target is None:
         _write(ax, side, part, default)
         del record[key]
@@ -462,6 +482,19 @@ def _forget_cleared(fig: Figure) -> None:
                 del record[(side, part)]
 
 
+def _drawn_over(group: Sequence[Axes], top: Axes, under: Axes) -> bool:
+    """Whether matplotlib draws ``top`` after ``under`` (zorder, then order).
+
+    ``group`` is in figure order (:func:`_twin_groups`), the order
+    matplotlib draws Axes of one zorder in.
+    """
+    rank = {id(member): i for i, member in enumerate(group)}
+    return (top.get_zorder(), rank[id(top)]) > (
+        under.get_zorder(),
+        rank[id(under)],
+    )
+
+
 def _settle_side(
     group: Sequence[Axes],
     owners: set[tuple[int, Side]],
@@ -470,15 +503,35 @@ def _settle_side(
     inks: tuple[str, str] | None,
     settled: set[tuple[int, Side, Part]],
 ) -> bool:
-    """Settle one side's parts; True when any shows the series colour."""
+    """Settle one side's parts; True when any shows the series colour.
+
+    A side with any part set by hand is the user's: every part gets its
+    default back where it shows the colour painted here, and keeps
+    whatever else it shows (module docstring, "Explicit colours win"). A
+    partner's spine drawn over the owner's on this side (a ``twinx``'s copy
+    of the left spine) is the spine the reader sees there, so it is one of
+    the side's parts.
+    """
+    # A partner's spine on this side draws in the same place (a twinx copy
+    # of the left spine sits over its partner's), so it follows the owner's.
+    partners = [
+        other
+        for other in group
+        if (id(other), side) not in owners and other.spines[side].get_visible()
+    ]
+    if inks is not None and (
+        any(_set_by_hand(owner, side, part) for part in _PARTS)
+        or any(
+            _drawn_over(group, other, owner)
+            and _set_by_hand(other, side, "spine")
+            for other in partners
+        )
+    ):
+        inks = None
     line, text = inks if inks is not None else (None, None)
     painted = _settle(owner, side, "spine", line)
     settled.add((id(owner), side, "spine"))
-    # A partner's spine on this side draws in the same place (a twinx copy
-    # of the left spine sits over its partner's), so it follows the owner's.
-    for other in group:
-        if (id(other), side) in owners or not other.spines[side].get_visible():
-            continue
+    for other in partners:
         _settle(other, side, "spine", line if painted else None)
         settled.add((id(other), side, "spine"))
     parts: tuple[tuple[Part, str | None], ...] = (
@@ -532,8 +585,9 @@ def apply_twin_colors(fig: Figure) -> int:
     ``dartwork_mpl.formatting._twin_colors``. In short: a side whose series
     draw one colour that no series on the other scale shares gets it on its
     spine and tick marks (3:1) and, darkened to 4.5:1, on its tick labels
-    and axis label; colours set by hand stay. ``dm.simple_layout`` calls
-    this after the default tick formats.
+    and axis label; a side with any colour set by hand (on any of those
+    parts) is left wholly to the user. ``dm.simple_layout`` calls this
+    after the default tick formats.
 
     Returns the number of sides showing a series colour. Safe to call
     again: a repeat paints the same colours.

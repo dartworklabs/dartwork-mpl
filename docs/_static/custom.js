@@ -910,13 +910,27 @@ document.addEventListener("click", function (e) {
     return colors;
   }
 
-  // Determine text color for readability
+  // Text color for readability: the ink (#fff or #333) with the higher
+  // WCAG contrast, the same rule as dm.readable_text_color.
+  function wcagLuminance(hex) {
+    var r = srgbLinearize(parseInt(hex.slice(1, 3), 16) / 255);
+    var g = srgbLinearize(parseInt(hex.slice(3, 5), 16) / 255);
+    var b = srgbLinearize(parseInt(hex.slice(5, 7), 16) / 255);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  function contrastRatio(a, b) {
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  }
+
+  var LIGHT_INK_LUM = wcagLuminance("#ffffff");
+  var DARK_INK_LUM = wcagLuminance("#333333");
+
   function textColorFor(hex) {
-    var r = parseInt(hex.slice(1, 3), 16) / 255;
-    var g = parseInt(hex.slice(3, 5), 16) / 255;
-    var b = parseInt(hex.slice(5, 7), 16) / 255;
-    var lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return lum < 0.45 ? "#fff" : "#333";
+    var bg = wcagLuminance(hex);
+    return contrastRatio(LIGHT_INK_LUM, bg) >= contrastRatio(DARK_INK_LUM, bg)
+      ? "#fff"
+      : "#333";
   }
 
   // ── Widget 0: Color Space Converter ─────────────────────────────

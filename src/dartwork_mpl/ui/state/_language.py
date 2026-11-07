@@ -369,7 +369,7 @@ class StoredPresets:
 
 def _optional_text(
     value: dict[str, JsonValue], key: str
-) -> str | None | InvalidStoredState:
+) -> str | InvalidStoredState | None:
     """Read an optional string member; a present non-string is corruption."""
     if key not in value:
         return None

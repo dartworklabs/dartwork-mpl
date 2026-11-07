@@ -16,21 +16,12 @@ from uuid import uuid4
 import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
-from dartwork_mpl.mcp.artifacts import (  # noqa: E402
-    configure_store,
-    register_artifacts,
-)
+from dartwork_mpl.mcp.artifacts import configure_store, register_artifacts  # noqa: E402
 from dartwork_mpl.mcp.artifacts.delivery import render_artifact  # noqa: E402
-from dartwork_mpl.mcp.artifacts.input_access import (  # noqa: E402
-    InputGrant,
-    authorize_inputs,
-)
+from dartwork_mpl.mcp.artifacts.input_access import InputGrant, authorize_inputs  # noqa: E402
 from dartwork_mpl.mcp.artifacts.input_policy import Revision  # noqa: E402
 from dartwork_mpl.mcp.artifacts.inputs import InputStore  # noqa: E402
-from dartwork_mpl.mcp.artifacts.policy import (  # noqa: E402
-    ConfigurationError,
-    RenderRequest,
-)
+from dartwork_mpl.mcp.artifacts.policy import ConfigurationError, RenderRequest  # noqa: E402
 from dartwork_mpl.mcp.artifacts.store import ArtifactStore  # noqa: E402
 from tests.mcp.artifacts.input_fixtures import publish_pid  # noqa: E402
 
