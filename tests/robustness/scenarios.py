@@ -219,14 +219,14 @@ def _build_triple_axis_parasite() -> Figure:
 
 def _build_triple_twinx_offset_spine() -> Figure:
     """Three y-axes via two consecutive ``ax.twinx()`` calls plus
-    spine offset at axes-fraction 1.15 for the third axis. Verifies
-    that the dartwork ``twinx`` monkey-patch (which forces the right
-    spine visible) still works on the *third* axis when its right
-    spine is repositioned via ``set_position``.
+    spine offset at axes-fraction 1.15 for the third axis: the offset
+    ylabel must still fit after ``simple_layout``.
 
-    This guards against a regression where the patch only kicked in
-    for the second axis (the immediate twin) and left the third
-    axis's right spine invisible after the position change."""
+    The scenario runs on matplotlib's defaults (no preset), which show
+    every right spine. Under a preset, which hides them, the right spines
+    of the second and third axis show at ``dm.simple_layout``; that is
+    tested with the offset in
+    ``src/dartwork_mpl/formatting/tests/test_twin_spines.py``."""
     fig, ax1 = plt.subplots(figsize=dm.figsize("14cm", "standard"))
     ax1.plot([1, 2, 3, 4], [1, 4, 9, 16], color="#1f77b4")
     ax1.set_ylabel("Series A")
@@ -239,15 +239,6 @@ def _build_triple_twinx_offset_spine() -> Figure:
     ax3.spines["right"].set_position(("axes", 1.15))
     ax3.plot([1, 2, 3, 4], [100, 200, 150, 250], color="#2ca02c")
     ax3.set_ylabel("Series C")
-
-    # All three right spines must end up visible (the monkey-patch
-    # in dartwork_mpl/__init__.py runs on every twinx() call).
-    assert ax2.spines["right"].get_visible(), (
-        "ax2 right spine should be visible after twinx() monkey-patch"
-    )
-    assert ax3.spines["right"].get_visible(), (
-        "ax3 right spine should be visible after twinx() monkey-patch"
-    )
     return fig
 
 

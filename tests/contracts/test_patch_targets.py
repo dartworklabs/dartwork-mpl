@@ -29,6 +29,14 @@ PATCH_TARGETS = [
         "dartwork_mpl.layout",
         "_figure_artist_reservations",
     ),
+    (
+        # formatting/tests/test_twin_spines.py turns the spine step off to
+        # re-enact 0.7 (install_07); simple_layout must still read it here.
+        "dartwork_mpl.layout",
+        "_show_twin_spines",
+        "dartwork_mpl.layout",
+        "simple_layout",
+    ),
 ]
 
 

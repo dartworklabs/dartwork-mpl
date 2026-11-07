@@ -136,7 +136,6 @@ from .style import (
     Style,
     figsize_for,
     grid_shape,
-    install_twinx_patch,
     list_styles,
     load_style_dict,
     style,
@@ -335,10 +334,6 @@ __all__ = [  # noqa: RUF022
     # Asset diagnostics (from diagnostics)
     "plot_fonts",
 ]
-
-# Twin axes always show their right spine (a dartwork-mpl style rule).
-install_twinx_patch()
-
 
 # Eagerly register the bundled fonts on import so that
 # ``plt.rcParams["font.family"] = "Inter"`` (or any bundled family) resolves
