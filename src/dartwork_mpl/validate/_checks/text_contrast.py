@@ -173,13 +173,22 @@ def _patch_facecolor(patch: Any) -> _RGBA | None:
 def _patch_contains_point(
     patch: Any, renderer: RendererBase, point: tuple[float, float]
 ) -> bool:
+    """Whether ``patch`` is drawn at display ``point``.
+
+    Within its extent, and within its clip box when it clips (a bar past
+    the axes limit is drawn up to the axes edge only, so text beyond the
+    limit does not lie on it).
+    """
     try:
         extent = patch.get_window_extent(renderer)
     except BBOX_ERRORS:
         return False
     if extent.width <= 0 or extent.height <= 0:
         return False
-    return bool(extent.contains(*point))
+    if not extent.contains(*point):
+        return False
+    clip = patch.get_clip_box() if patch.get_clip_on() else None
+    return clip is None or bool(clip.contains(*point))
 
 
 def _patch_background_rgba(

@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import axes_text_artists, axes_with_secondaries
+from ..._figure_geometry import (
+    axes_text_artists,
+    axes_with_secondaries,
+    drawn_tick_labels,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
-from ._tick_utils import drawn_tick_labels
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase

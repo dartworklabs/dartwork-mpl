@@ -102,8 +102,11 @@ class Config:
         and the same hue darkened to 4.5:1 on its tick labels and axis
         label; single axes stay as they are. The full rules are in the
         docstring of ``dartwork_mpl.formatting._twin_colors``. A colour you
-        set after a layout is kept; one set before the first layout that
-        equals the preset default (``"black"``) cannot be told from the
+        set on any part of a side (spine, tick marks, tick labels, axis
+        label) makes that whole side yours: its other parts keep the
+        preset's colours, and the other side still takes its series colour.
+        A colour set after a layout is kept; one set before the first layout
+        that equals the preset default (``"black"``) cannot be told from the
         default and is painted, so use ``"neutral"`` for such figures.
         ``"neutral"`` keeps the preset's axis colours on twins too
         (``dm.config.twin_colors = "neutral"``, or

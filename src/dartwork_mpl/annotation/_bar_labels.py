@@ -40,15 +40,20 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
   takes white or the preset text colour, whichever reads better on the bar
   as drawn; a label off the bar keeps the text colour, or with
   ``color="series"`` its bar's colour, totals excepted
-  (:mod:`._bar_label_ink`). A plain bar's ``"inside"`` label sits on its
-  bar only while the bar holds it along and across; otherwise it sits
-  beyond the bar's end in the ink for a label off the bar, so no part of it
+  (:mod:`._bar_label_ink`). A plain bar's label meant for its bar
+  (``"inside"``, or inside a limit, below) sits there only while the bar
+  holds it along and across; otherwise it sits beyond the bar's end, or
+  beyond the limit, in the ink for a label off the bar, so no part of it
   is drawn on the background in white.
 * **View.** A label shows while its bar's end (its middle for
   ``where="center"``) lies in the view, within one pixel: a bar ending on a
-  limit keeps its label just outside the axes, a bar outside the view or
-  running past a limit the caller set has none (nor any room in a
-  ``bbox_inches="tight"`` save).
+  limit keeps its label just outside the axes, a bar outside the view has
+  none (nor any room in a ``bbox_inches="tight"`` save). A plain bar
+  running past a limit the caller set shows its true value at that limit:
+  just inside it, on the bar, while the bar holds the number, otherwise
+  just beyond it (a stack's segments and totals keep the rule above).
+* **Legends.** A label a legend covers is hidden, and the layout says so
+  (:mod:`._bar_label_settle`); ``dm.place_legend`` keeps a legend clear.
 * **Twins.** On a ``twinx`` / ``twiny`` pair the labels go on the Axes drawn
   last (by zorder, then figure order), placed with the bars' own data
   transform, so no partner's line is drawn over them.
@@ -86,6 +91,7 @@ from .._figure_geometry import canvas_renderer, same_position_axes
 from ..formatting import TickScale, tick_scale_of, value_label_decimals
 from ..scale import fs, fw
 from ._bar_label_geometry import (
+    clipped_edge,
     fits_across,
     fits_on_bar,
     host_axes,
@@ -98,6 +104,7 @@ from ._bar_label_lifecycle import attach, families_of, record, release
 from ._bar_label_options import (
     BarLabelOptions,
     Crowded,
+    HiddenFor,
     Kind,
     Orientation,
     Placement,
@@ -111,6 +118,7 @@ from ._bar_stacks import BarStack, bar_values, pile_bars
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.legend import Legend
     from matplotlib.patches import Rectangle
     from matplotlib.typing import CoordsType
 
@@ -142,6 +150,12 @@ class BarLabel(Annotation):
     an outside label must clear (a crowded label wider than its own bar).
     ``beyond`` is the label a total sits beyond: the top segment's, when
     the call put segment labels ``"outside"`` (at the same stack end).
+    ``hidden_for`` says why the layout's last pass hid the label where it
+    would overlap something: ``"turn"``, another series' label took the
+    bar index (series alternate); ``"room"``, it could not be kept clear of
+    the other labels; ``"legend"``, a legend covers it (``hidden_by``: that
+    legend); ``"text"``, as a bar's value past a limit it would cover other
+    text. ``None`` while the layout has not hidden it.
     """
 
     def __init__(
@@ -176,8 +190,12 @@ class BarLabel(Annotation):
         self.stack = stack
         self.clear_of: tuple[Rectangle, ...] = ()
         self.beyond: BarLabel | None = None
-        # Whether a plain bar's end label meant for its bar ("inside") sits
-        # off it: the bar does not hold it (BarLabelFamily.follow).
+        # Why the layout's last pass hid it where it would overlap, if it did,
+        # and the legend that covers it when that is why.
+        self.hidden_for: HiddenFor | None = None
+        self.hidden_by: Legend | None = None
+        # Whether a plain bar's end label meant for its bar (inside, or
+        # inside a limit) sits off it: the bar does not hold it (follow).
         self.off_bar = False
         # Where the ink last written was chosen for (follow; layout resets).
         self.inked_for: Placement = where
@@ -249,13 +267,25 @@ class BarLabel(Annotation):
         self.own("color", current, rgba, self.set_color)
 
     @property
+    def clipped(self) -> bool:
+        """Whether the bar runs past a limit and the label is anchored on it.
+
+        Read afresh (:func:`clipped_edge`): a plain bar's end label whose
+        bar ends past the view, while it starts inside it.
+        """
+        return clipped_edge(self) is not None
+
+    @property
     def wants_bar(self) -> bool:
         """Whether this is a plain bar's end label meant to sit on its bar.
 
-        ``"inside"``, asked or moved there by ``crowded="inside"``; it sits
-        there only while the bar holds it (``off_bar``).
+        ``"inside"`` (asked, or moved there by ``crowded="inside"``), or
+        anchored inside the limit its bar runs past; it sits there only
+        while the bar holds it (``off_bar``).
         """
-        return self.kind == "edge" and self.where == "inside"
+        if self.kind != "edge" or self.where == "center":
+            return False
+        return self.where == "inside" or self.clipped
 
     @property
     def on_bar(self) -> bool:
@@ -274,11 +304,12 @@ class BarLabel(Annotation):
 
     @property
     def beyond_end(self) -> bool:
-        """Whether it sits beyond its own bar's end.
+        """Whether it sits beyond its own bar's end, in the view's room.
 
-        An outside label, or an end label its bar does not hold.
+        An outside label, or an end label its bar does not hold; not one
+        anchored on a limit (the caller's view, which never grows).
         """
-        if self.where == "center":
+        if self.where == "center" or self.clipped:
             return False
         return self.where == "outside" or self.off_bar
 
@@ -290,13 +321,12 @@ class BarLabel(Annotation):
     def get_visible(self) -> bool:
         """Visible, the bar's anchor in the bar axes' view, and room for it.
 
-        A bar outside the view (or past a limit the caller set) shows no
-        label, nor does a stack segment shorter than its label along the
-        value axis (:func:`fits_on_bar`). Both are measured at each call, so
-        a wider view or a taller figure brings the label back. Matplotlib
-        neither draws an invisible text nor counts it in a tight bbox
-        (``Text.get_tightbbox`` is null), and the layout and the validation
-        checks skip it.
+        A bar outside the view shows no label, nor does a stack segment
+        shorter than its label along the value axis (:func:`fits_on_bar`).
+        Both are measured at each call, so a wider view or a taller figure
+        brings the label back. Matplotlib neither draws an invisible text
+        nor counts it in a tight bbox (``Text.get_tightbbox`` is null), and
+        the layout and the validation checks skip it.
         """
         if not (super().get_visible() and in_view(self, self.where)):
             return False
@@ -565,9 +595,11 @@ def label_bars(
       the partner's line never covers them;
     - a label shows while its bar's end (its middle for ``"center"``) lies
       in the view, within one pixel: a bar ending on a limit you set keeps
-      its label just outside the axes, a bar outside the view or running
-      past such a limit has none. Error bars push a label at most to the
-      edge of the view;
+      its label just outside the axes, a bar outside the view has none, a
+      bar running past such a limit shows its true value at the limit
+      (inside it on the bar when the bar holds the number, else just
+      beyond it). Error bars push a label at most to the edge of the view;
+      a label a legend covers is hidden (``dm.place_legend`` keeps clear);
     - ``dm.simple_layout`` settles the labels at the size it fits: labels
       wider than the distance to the next bar less 1.5 pt follow
       ``crowded`` (below), and a value axis whose limits matplotlib
@@ -615,7 +647,15 @@ def label_bars(
         label. Under any rule, labels that would still overlap are hidden
         the same way, other calls' labels on the same plot area included
         (one call per series), and a kept label wider than its bar is
-        lifted past the taller bars it spans.
+        lifted past the taller bars it spans. Grouped series take turns
+        where their labels meet, in reading order on screen (two series
+        alternate by bar index), when that keeps every label whose turn
+        comes first and as many labels as the plain rule; otherwise the
+        plain rule decides (thin ``barh`` rows, dense groups), and a series
+        can lose its labels. Stacks keep the plain rule. When labels are
+        lost for room, ``dm.simple_layout`` warns once and a taller (wider)
+        figure brings them back; ``"skip"`` hides on purpose, without the
+        warning.
     decimals : int, optional
         A fixed decimal count instead of the rule above; the unit stays
         the ticks' (``decimals=2`` under ``format_axis_currency``:

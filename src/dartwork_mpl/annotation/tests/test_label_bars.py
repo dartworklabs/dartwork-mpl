@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import subprocess
+import warnings
 
 import matplotlib
 import matplotlib.colors as mcolors
@@ -1123,6 +1124,17 @@ _PROBE = (1.0, 0.0, 1.0)  # a colour no test bar or background takes
 _REQUIRE_GS = "DARTWORK_MPL_REQUIRE_GHOSTSCRIPT"
 FORMATS = pytest.mark.parametrize("fmt", ["png", "pdf"])
 
+# Tests that read placement on crowded figures, where the layout's "hidden"
+# warning is the expected outcome rather than the subject (re-review m3).
+# Its wording and counts are pinned by the 13-4 tests ("..._says_so",
+# "hidden where they would overlap"); only these two messages are accepted,
+# so any other warning still surfaces. (The "." after label_bars stands for
+# its ":", which would end the message field of the filter.)
+EXPECTS_HIDDEN_WARNING = pytest.mark.filterwarnings(
+    r"ignore:dm\.label_bars. \d+ of \d+ bar value labels are hidden "
+    r"(where they would overlap|under a legend):UserWarning"
+)
+
 
 def _ghostscript():
     """The ``gs`` executable; a missing one fails under CI, else skips."""
@@ -1277,6 +1289,7 @@ def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path, fmt):
     _assert_readable(fig, labels, tmp_path, fmt)
 
 
+@EXPECTS_HIDDEN_WARNING
 @FORMATS
 def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(
     tmp_path, fmt
@@ -1429,22 +1442,34 @@ def test_bars_out_of_view_get_no_labels():
     assert all(t.get_visible() for t in texts)
 
 
-def test_bar_past_a_user_limit_has_no_label_off_the_axes():
+def test_bar_past_a_user_limit_shows_its_value_inside_the_limit():
     # The reviewer's probe: a bar of 40 under a limit of 5 the user set.
+    # Its true value sits just inside the limit, on the bar (decision 9-3
+    # B); nothing goes off the axes, so a tight save keeps its size.
     def chart(label):
-        fig, ax, _ = _plain([3.0, 40.0, 2.0])
+        fig, ax, _ = _plain([3.0, 40.0, 2.0], color="dc.blue9")
         ax.set_ylim(0, 5)
         return fig, ax, (dm.label_bars(ax) if label else [])
 
     fig, ax, texts = chart(True)
     renderer = drawn_renderer(fig)
-    assert [t.get_visible() for t in texts] == [True, False, True]
+    assert [t.get_visible() for t in texts] == [True, True, True]
+    assert _texts(texts) == ["3", "40", "2"]
+    clipped = texts[1]
+    box = clipped.get_window_extent(renderer)
+    top = ax.get_window_extent(renderer).y1
+    bar = clipped.bar.get_window_extent(renderer)
+    assert box.y1 == pytest.approx(top - _offset_px(fig), abs=0.6)
+    assert (box.x0 + box.x1) / 2 == pytest.approx(
+        (bar.x0 + bar.x1) / 2, abs=0.6
+    )
+    assert _hex(clipped) == "#ffffff"  # readable on the dark bar
+    assert _hex(texts[0]) == "#000000"  # the others keep the text colour
     width, height = fig.canvas.get_width_height()
     for text in texts:
-        if text.get_visible():
-            box = text.get_window_extent(renderer)
-            assert box.y0 >= 0
-            assert box.y1 <= height
+        box = text.get_window_extent(renderer)
+        assert box.y0 >= 0
+        assert box.y1 <= height
     assert _tight_shape(fig) == _tight_shape(chart(False)[0])
 
     # An error bar past the limit pushes a visible label only to the edge.
@@ -1457,6 +1482,576 @@ def test_bar_past_a_user_limit_has_no_label_off_the_axes():
     assert texts[0].get_visible()
     assert texts[0].get_window_extent(renderer).y0 == pytest.approx(
         top + _offset_px(fig), abs=0.6
+    )
+
+
+# ------------------------------------------- bars past a limit (9-3 B)
+# The approved PoC figures of decision 9-3 (review page
+# 2026-11-06-b3-followups, b3poc/3-clipped-bar-label/summary.json, B).
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+MONTHS += ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+ORDERS = [48, 52, 61, 58, 64, 72, 135, 79, 83, 88, 96, 120]
+MARKETS = ["United States", "China", "Japan", "Germany", "India", "UK"]
+MARKET_SIZE = [2410, 760, 540, 410, 330, 290]
+
+
+def _poc_orders(limits=(0, 100)):
+    """Monthly orders (k), the caller's 0-100 limit (PoC figure a)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"), dpi=300)
+    ax.bar(MONTHS, ORDERS, color="dc.teal2")
+    ax.set_ylim(*limits)
+    ax.set_ylabel("Orders (k)")
+    return fig, ax, dm.label_bars(ax)
+
+
+def _poc_markets(limits=(0, 800)):
+    """Market size (USD B), the caller's 0-800 limit (PoC figure b)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", 0.55), dpi=300)
+    ax.barh(MARKETS, MARKET_SIZE, color="dc.blue4")
+    ax.invert_yaxis()
+    ax.set_xlim(*limits)
+    ax.set_xlabel("Market size (USD B)")
+    return fig, ax, dm.label_bars(ax)
+
+
+def _contrast_on_bar(label):
+    face = mcolors.to_rgb(label.bar.get_facecolor())
+    return contrast_ratio(mcolors.to_rgb(label.get_color()), face)
+
+
+def _inside_edge(fig, ax, label, edge):
+    """The label's distance (px) inside the axes ``edge`` it sits at."""
+    renderer = drawn_renderer(fig)
+    box = label.get_window_extent(renderer)
+    view = ax.get_window_extent(renderer)
+    return {
+        "top": view.y1 - box.y1,
+        "bottom": box.y0 - view.y0,
+        "right": view.x1 - box.x1,
+        "left": box.x0 - view.x0,
+    }[edge]
+
+
+@pytest.mark.parametrize(
+    ("build", "clipped", "texts", "contrast", "edge"),
+    [
+        (_poc_orders, [6, 11], ["135", "120"], 15.22, "top"),
+        (_poc_markets, [0], ["2,410"], 10.24, "right"),
+    ],
+)
+def test_bars_past_the_limit_show_their_true_value(
+    build, clipped, texts, contrast, edge
+):
+    fig, ax, labels = build()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    assert [str(w.message) for w in caught] == []
+    renderer = drawn_renderer(fig)
+    assert all(t.get_visible() for t in labels)
+    assert [labels[i].get_text() for i in clipped] == texts
+    for i, label in enumerate(labels):
+        assert label.clipped is (i in clipped)
+        if i not in clipped:
+            continue
+        assert _hex(label) == "#000000"
+        assert _contrast_on_bar(label) == pytest.approx(contrast, abs=0.02)
+        assert _inside_edge(fig, ax, label, edge) == pytest.approx(
+            _offset_px(fig), abs=0.6
+        )
+        box = label.get_window_extent(renderer)
+        bar = label.bar.get_window_extent(renderer)
+        assert bar.x0 <= box.x0 and box.x1 <= bar.x1
+        assert bar.y0 <= box.y0 and box.y1 <= bar.y1
+    shown = _shown(fig, labels)
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    # The limits stay the caller's.
+    assert not (ax.get_autoscaley_on() and ax.get_autoscalex_on())
+
+
+@pytest.mark.parametrize(
+    ("build", "limits", "edge"),
+    [
+        (_poc_orders, (100, 0), "bottom"),  # inverted: bars grow down
+        (_poc_markets, (800, 0), "left"),  # inverted: bars grow left
+    ],
+)
+def test_bars_past_an_inverted_limit(build, limits, edge):
+    fig, ax, labels = build(limits)
+    dm.simple_layout(fig)
+    clipped = [t for t in labels if t.clipped]
+    assert _texts(clipped) == (
+        ["135", "120"] if build is _poc_orders else ["2,410"]
+    )
+    for label in clipped:
+        assert label.get_visible()
+        assert _inside_edge(fig, ax, label, edge) == pytest.approx(
+            _offset_px(fig), abs=0.6
+        )
+    assert _overlapping(_shown(fig, labels)) == []
+
+
+def test_bar_past_a_log_limit_and_a_negative_one():
+    fig, ax = _fig()
+    ax.bar(np.arange(4), [3.0, 40.0, 900.0, 12000.0], width=0.6)
+    ax.set_yscale("log")
+    ax.set_ylim(1, 1000)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert [t.clipped for t in labels] == [False, False, False, True]
+    assert all(t.get_visible() for t in labels)
+    assert labels[3].get_text() == "12,000"
+    assert _inside_edge(fig, ax, labels[3], "top") == pytest.approx(
+        _offset_px(fig), abs=0.6
+    )
+
+    # A negative bar past the lower limit: its value inside that limit.
+    fig, ax, _ = _plain([-40.0, 3.0])
+    ax.set_ylim(-5, 5)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert [t.clipped for t in labels] == [True, False]
+    assert labels[0].get_visible()
+    assert labels[0].get_text() == f"{MINUS}40"
+    assert _inside_edge(fig, ax, labels[0], "bottom") == pytest.approx(
+        _offset_px(fig), abs=0.6
+    )
+
+
+def test_bars_beyond_the_view_have_none_and_a_short_part_labels_off_it():
+    # Only bars cut by the limit along their value count: a bar wholly
+    # below the view and one starting above it get none. One that shows
+    # too little of itself to hold the label keeps its true value, beyond
+    # the limit, off the bar, in the text colour (review C1, candidate A).
+    fig, ax = _fig()
+    ax.bar(
+        [0, 1, 2],
+        [30.0, 20.0, 40.0],
+        bottom=[0.0, 120.0, 98.0],
+        color="dc.blue9",
+    )
+    ax.set_ylim(50, 100)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    renderer = drawn_renderer(fig)
+    assert [t.get_visible() for t in labels] == [False, False, True]
+    assert not any(t.clipped for t in labels[:2])
+    short = labels[2]
+    assert short.clipped and short.off_bar and not short.on_bar
+    assert _hex(short) == "#000000"
+    top = ax.get_window_extent(renderer).y1
+    assert short.get_window_extent(renderer).y0 == pytest.approx(
+        top + _offset_px(fig), abs=0.6
+    )
+
+    # The full bar back in view: an outside label in the text colour again.
+    fig, ax, _ = _plain([3.0, 40.0], color="dc.blue9")
+    ax.set_ylim(0, 5)
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    drawn_renderer(fig)
+    assert _hex(labels[1]) == "#ffffff"
+    ax.set_ylim(0, 60)
+    drawn_renderer(fig)
+    assert not labels[1].clipped
+    assert _hex(labels[1]) == "#000000"
+    _assert_outside(fig, labels, ax.containers[0].patches)
+
+
+@pytest.mark.parametrize(
+    ("loc", "covered"), [("upper left", "135"), ("upper right", "120")]
+)
+def test_a_legend_hides_the_labels_it_covers_and_says_so(loc, covered):
+    # Review I4: a legend the caller fixed in a corner covers the value of
+    # the bar cut at that corner (main drew no label there). The overlap
+    # rule hides labels under a legend as it hides labels that meet, and
+    # the layout says so; dm.place_legend puts the legend clear instead.
+    fig, ax, _ = _plain([135, 48, 52, 61, 58, 120], color="dc.teal2")
+    ax.containers[0].set_label("series")
+    ax.set_ylim(0, 100)
+    ax.legend(loc=loc)
+    labels = dm.label_bars(ax)
+    caught = [w for w in _all_layout_warnings(fig) if "under a legend" in w]
+    renderer = drawn_renderer(fig)
+    legend = ax.get_legend().get_window_extent(renderer)
+    hidden = [t.get_text() for t in labels if not t.get_visible()]
+    assert hidden == [covered]
+    assert [t.hidden_for for t in labels if t.get_text() == covered] == [
+        "legend"
+    ]
+    assert not any(
+        t.get_window_extent(renderer).overlaps(legend)
+        for t in labels
+        if t.get_visible()
+    )
+    assert len(caught) == 1 and "1 of 6" in caught[0]
+    assert "dm.place_legend(ax)" in caught[0]
+
+    # Placed by dm.place_legend, the legend keeps clear: nothing hidden.
+    fig, ax, _ = _plain([135, 48, 52, 61, 58, 120], color="dc.teal2")
+    ax.containers[0].set_label("series")
+    ax.set_ylim(0, 100)
+    labels = dm.label_bars(ax)
+    dm.place_legend(ax)
+    assert not [w for w in _all_layout_warnings(fig) if "legend" in w]
+    drawn_renderer(fig)
+    assert all(t.get_visible() for t in labels)
+
+
+def _all_layout_warnings(fig):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    return [str(w.message) for w in caught]
+
+
+def test_bar_past_the_limit_keeps_explicit_and_series_choices():
+    fig, ax, _ = _plain([3.0, 40.0, 50.0], color="dc.blue9")
+    ax.set_ylim(0, 5)
+    labels = dm.label_bars(ax, color="series")
+    series = _hex(labels[0])
+    labels[1].set_color("dc.red7")  # the caller's colour wins
+    dm.simple_layout(fig)
+    drawn_renderer(fig)
+    assert [t.clipped for t in labels] == [False, True, True]
+    assert _hex(labels[1]) == mcolors.to_hex("dc.red7")
+    assert _hex(labels[2]) == "#ffffff"  # on its bar: readable, not series
+    assert _hex(labels[0]) == series not in ("#ffffff", "#000000")
+
+    # A stack's total past the limit keeps the plain rule: no label.
+    fig, ax = _fig()
+    ax.bar([0, 1], [3.0, 30.0])
+    ax.bar([0, 1], [1.0, 20.0], bottom=[3.0, 30.0])
+    labels = dm.label_bars(ax, total="only")
+    ax.set_ylim(0, 10)
+    dm.simple_layout(fig)
+    drawn_renderer(fig)
+    assert [t.get_visible() for t in labels] == [True, False]
+
+
+def _past_limit_cases():
+    """The review's C1 figures: numbers wider than the cut bars they label."""
+    fig, ax, bars, labels = _narrow_dark(0.3)
+    ax.set_ylim(0, 1000)
+    yield "narrow dark bars", fig, ax, labels, ["4,100", "12,500"], "top"
+
+    matplotlib.rcdefaults()  # matplotlib's own style: C0 bars, white ink
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"), dpi=200)
+    ax.bar(np.arange(24), D_REV, width=0.7)
+    ax.set_ylim(0, 1400e6)
+    labels = dm.label_bars(ax, crowded="skip")
+    yield "24 bars, skip", fig, ax, labels, ["1.43G"], "top"
+
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", 0.5), dpi=200)
+    ax.barh(MARKETS, MARKET_SIZE, height=0.3, color="dc.blue9")
+    ax.invert_yaxis()
+    ax.set_xlim(0, 800)
+    yield "thin dark rows", fig, ax, dm.label_bars(ax), ["2,410"], "right"
+
+
+@FORMATS
+def test_a_number_wider_than_its_cut_bar_reads_beyond_the_limit(tmp_path, fmt):
+    # Review C1: the true value of a bar past the caller's limit sits on the
+    # bar only while the bar holds it; a number wider than the bar (or
+    # thicker than the row) goes just beyond the limit in the text colour,
+    # and the whole number reads in the saved PNG and PDF (12,500 had read
+    # as 2,50 and 1.43G as 43 in white running off the bar).
+    _start(fmt)
+    for name, fig, ax, labels, cut, edge in _past_limit_cases():
+        dm.simple_layout(fig)
+        drawn_renderer(fig)
+        clipped = [t for t in labels if t.clipped and t.get_visible()]
+        assert [t.get_text() for t in clipped] == cut, name
+        for label in clipped:
+            assert label.off_bar and not label.on_bar, name
+            assert _hex(label) == "#000000", name
+            assert _inside_edge(fig, ax, label, edge) == pytest.approx(
+                -_offset_px(fig) - _extent_along(fig, label), abs=0.6
+            ), name
+        # The cut bars' labels: in the matplotlib style a label lifted over
+        # a taller neighbour may cross the top spine (as on main), which is
+        # no part of this rule.
+        _assert_readable(fig, clipped, tmp_path, fmt)
+
+
+def _extent_along(fig, label):
+    box = label.get_window_extent(fig.canvas.get_renderer())
+    return box.height if label.orientation == "vertical" else box.width
+
+
+def _cut_onto_text(case):
+    """The re-review's N-C1 figures: a value beyond the limit meets text.
+
+    K1 negative bars past set_ylim(-1000, 1000) (x tick labels below), K2
+    negative thin barh rows past set_xlim(-1000, 1000) (y tick labels to
+    the left), K3 a cut middle bar under a title. Dark bars too narrow for
+    their numbers, so the values go just beyond the limit.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    if case == "K1":
+        ax.bar(
+            np.arange(6),
+            [300, -4100, 520, -12500, 700, -610],
+            width=0.3,
+            color="dc.blue9",
+        )
+        ax.set_ylim(-1000, 1000)
+        ax.set_xticks(
+            np.arange(6), ["Alpha", "Beta", "Gamma", "Delta", "Eps", "Zeta"]
+        )
+        ax.set_xlabel("Quarter")
+        cut = [f"{MINUS}4,100", f"{MINUS}12,500"]
+    elif case == "K2":
+        values = [
+            300,
+            -4100,
+            520,
+            -12500,
+            700,
+            -610,
+            450,
+            -3800,
+            220,
+            640,
+            -9100,
+            510,
+        ]
+        ax.barh(np.arange(12), values, height=0.3, color="dc.blue9")
+        ax.set_xlim(-1000, 1000)
+        ax.set_yticks(np.arange(12), [f"Region {i}" for i in range(12)])
+        ax.invert_yaxis()
+        cut = [
+            f"{MINUS}4,100",
+            f"{MINUS}12,500",
+            f"{MINUS}3,800",
+            f"{MINUS}9,100",
+        ]
+    else:
+        ax.bar(
+            np.arange(5),
+            [480, 520, 12500, 610, 700],
+            width=0.3,
+            color="dc.blue9",
+        )
+        ax.set_ylim(0, 1000)
+        ax.set_title("Quarterly revenue")
+        cut = ["12,500"]
+    return fig, ax, dm.label_bars(ax), cut
+
+
+def _other_text(fig, ax):
+    renderer = fig.canvas.get_renderer()
+    texts = [
+        *ax.get_xticklabels(),
+        *ax.get_yticklabels(),
+        ax.xaxis.label,
+        ax.title,
+    ]
+    return [t.get_window_extent(renderer) for t in texts if t.get_text()]
+
+
+@FORMATS
+@pytest.mark.parametrize("case", ["K1", "K2", "K3"])
+def test_a_value_beyond_the_limit_never_covers_other_text(tmp_path, fmt, case):
+    # Re-review N-C1 (candidate A, the user's decision of 2026-11-07): just
+    # beyond a lower or left limit lie the tick labels, above a top limit the
+    # title. A value placed there would print over them (both unreadable:
+    # 1.0-1.66:1 in PNG and PDF). It is hidden instead, as the overlap rule
+    # hides labels that meet, and the layout says so; the other labels and
+    # the top/right results of 13-1 (tests above) stay.
+    _start(fmt)
+    fig, ax, labels, cut = _cut_onto_text(case)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    renderer = drawn_renderer(fig)
+    hidden = [t for t in labels if not t.get_visible()]
+    assert [t.get_text() for t in hidden] == cut
+    assert {t.hidden_for for t in hidden} == {"text"}
+    assert all(t.clipped and t.off_bar for t in hidden)
+    message = [
+        str(w.message) for w in caught if "cover other text" in str(w.message)
+    ]
+    assert len(message) == 1 and f"{len(cut)} of {len(labels)}" in message[0]
+    shown = [t for t in labels if t.get_visible()]
+    others = _other_text(fig, ax)
+    assert not any(
+        _cover(t.get_window_extent(renderer), box, 0.5)
+        for t in shown
+        for box in others
+    )
+    _assert_readable(fig, shown, tmp_path, fmt)
+
+
+@pytest.mark.parametrize(
+    ("clip_on", "legend"), [(True, False), (True, True), (False, False)]
+)
+def test_only_text_that_is_drawn_can_hide_a_value_beyond_the_limit(
+    clip_on, legend
+):
+    # Final re-review R-I1: a Text clipped wholly away (clip_on=True, past
+    # the top of the axes) prints nothing, so it neither hides the true
+    # value beyond the limit (9-3 B) nor keeps a legend above from moving
+    # past it; the same Text drawn unclipped does cover it and hides it.
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    ax.bar(
+        np.arange(5),
+        [480, 520, 12500, 610, 700],
+        width=0.15,
+        color="dc.blue9",
+        label="Rev",
+    )
+    ax.set_ylim(0, 1000)
+    labels = dm.label_bars(ax)
+    other = ax.text(2, 1020, "Note", ha="center", va="bottom", clip_on=clip_on)
+    if legend:
+        dm.place_legend(ax, loc="above")
+    caught = _all_layout_warnings(fig)
+    renderer = drawn_renderer(fig)
+    assert other.get_window_extent(renderer).y0 > ax.bbox.y1  # wholly past
+    value = labels[2]
+    assert value.get_text() == "12,500" and value.clipped and value.off_bar
+    covered = [w for w in caught if "cover other text" in w]
+    if clip_on:
+        assert value.get_visible() and value.hidden_for is None
+        assert not covered and not [w for w in caught if "legend" in w]
+    else:
+        assert not value.get_visible() and value.hidden_for == "text"
+        assert len(covered) == 1
+
+
+@pytest.mark.parametrize("hide", ["xaxis", "axis_off"])
+def test_text_on_a_hidden_axis_hides_no_value_beyond_the_limit(hide):
+    # PR #617 review (P2): a hidden axis (ax.xaxis.set_visible(False)) or
+    # ax.set_axis_off() keeps its tick labels and axis label visible as
+    # artists, but matplotlib never draws them, so they hide no value past
+    # the lower limit (K1 hides these two while the axis is drawn).
+    fig, ax, labels, cut = _cut_onto_text("K1")
+    if hide == "xaxis":
+        ax.xaxis.set_visible(False)
+    else:
+        ax.set_axis_off()
+    caught = _all_layout_warnings(fig)
+    values = [t for t in labels if t.get_text() in cut]
+    assert len(values) == len(cut)
+    assert all(t.get_visible() and t.hidden_for is None for t in values)
+    assert not [w for w in caught if "cover other text" in w]
+
+
+def _cut_by_a_side_legend(side):
+    """Thin dark bars past a limit you set, their values beyond it.
+
+    ``"above"``: two bars past ``set_ylim(0, 1000)`` under a title (the
+    re-review's N-I2 figure); ``"right"``: the middle one of five thin barh
+    rows past ``set_xlim(0, 1000)``, where a legend centred on the right
+    side lands. The series is labelled for a legend.
+    """
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    if side == "above":
+        values = [480, 520, 12500, 1350, 610, 700]
+        ax.bar(np.arange(6), values, width=0.3, color="dc.blue9", label="Rev")
+        ax.set_ylim(0, 1000)
+        ax.set_title("Quarterly revenue")
+        return fig, ax, dm.label_bars(ax), ["12,500", "1,350"]
+    values = [480, 520, 12500, 610, 700]
+    ax.barh(np.arange(5), values, height=0.15, color="dc.blue9", label="Rev")
+    ax.set_xlim(0, 1000)
+    return fig, ax, dm.label_bars(ax), ["12,500"]
+
+
+@FORMATS
+@pytest.mark.parametrize("side", ["above", "right"])
+def test_a_legend_placed_on_a_side_clears_the_values_beyond_it(
+    tmp_path, fmt, side
+):
+    # Re-review N-I2 (candidate A, the user's decision of 2026-11-07):
+    # dm.place_legend(ax, loc="above") anchored the legend past the tick and
+    # axis labels only, so it covered the true values just beyond the top
+    # limit (9-3 B), the
+    # legend rule hid them, and the warning named dm.place_legend(ax), the
+    # call already made. The layout now anchors such a legend past those
+    # values too (and lifts the title over the legend as before).
+    _start(fmt)
+    fig, ax, labels, cut = _cut_by_a_side_legend(side)
+    dm.place_legend(ax, loc=side)
+    caught = _all_layout_warnings(fig)
+    renderer = drawn_renderer(fig)
+    assert not [w for w in caught if "legend" in w]
+    values = [t for t in labels if t.get_text() in cut]
+    assert all(t.get_visible() and t.clipped and t.off_bar for t in values)
+    assert all(t.hidden_for is None for t in labels)
+    legend = ax.get_legend().get_window_extent(renderer)
+    for t in values:
+        box = t.get_window_extent(renderer)
+        assert not _cover(box, legend, 0.5)
+        if side == "above":
+            assert legend.y0 >= box.y1
+        else:
+            assert legend.x0 >= box.x1
+    if side == "above":
+        title = ax.title.get_window_extent(renderer)
+        assert title.y0 >= legend.y1  # lifted over the legend
+        assert not any(
+            _cover(t.get_window_extent(renderer), title, 0.5) for t in values
+        )
+    _assert_readable(fig, values, tmp_path, fmt)
+
+
+def _legend_over_cut_values(how):
+    """A legend over values of bars past a limit, as ``how`` put it there."""
+    if how == "axes above":  # the N-I2 figure, the caller's legend above
+        fig, ax, labels, _ = _cut_by_a_side_legend("above")
+        ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0))
+        return fig, ax, labels
+    # The I4 figure: the first value sits just inside the limit, at the
+    # upper left corner.
+    fig, ax, _ = _plain([135, 48, 52, 61, 58, 120], color="dc.teal2")
+    ax.containers[0].set_label("series")
+    ax.set_ylim(0, 100)
+    if how == "axes inside":
+        ax.legend(loc="upper left")
+    elif how == "axes reaching in":  # its middle right of the axes
+        ax.containers[0].set_label("a rather long series name")
+        ax.legend(loc="upper left", bbox_to_anchor=(0.85, 1.0))
+    elif how == "placed inside":
+        dm.place_legend(ax, loc="upper left")
+    else:
+        fig.legend(
+            loc="upper left", bbox_to_anchor=(0, 1), bbox_transform=ax.transAxes
+        )
+    return fig, ax, dm.label_bars(ax)
+
+
+@pytest.mark.parametrize(
+    ("how", "cure"),
+    [
+        ("axes above", 'dm.place_legend(ax, loc="above") puts the legend'),
+        ("axes inside", "dm.place_legend(ax) puts the legend"),
+        ("axes reaching in", "dm.place_legend(ax) puts the legend"),
+        ("placed inside", 'dm.place_legend(ax, loc="above") puts the legend'),
+        ("figure", "a figure legend moved off them shows them"),
+    ],
+)
+def test_the_legend_warning_names_the_cure_for_that_legend(how, cure):
+    # Re-review N-I2: a legend the layout does not move hides the labels it
+    # covers (review I4), and the warning's cure fits where that legend came
+    # from: the caller's legend wholly outside the axes keeps its side
+    # through dm.place_legend(ax, loc=<side>), the caller's inside one (or
+    # one reaching into the axes) goes clear with dm.place_legend(ax), one
+    # dm.place_legend already put inside goes above, and a figure legend is
+    # not dm.place_legend's to move.
+    fig, ax, labels = _legend_over_cut_values(how)
+    caught = [w for w in _all_layout_warnings(fig) if "under a legend" in w]
+    drawn_renderer(fig)
+    hidden = [t for t in labels if t.hidden_for == "legend"]
+    assert hidden and all(not t.get_visible() for t in hidden)
+    assert len(caught) == 1
+    assert f"{len(hidden)} of {len(labels)}" in caught[0]
+    assert cure in caught[0]
+    assert "dm.place_legend(ax) puts" not in caught[0] or how.startswith(
+        "axes "
     )
 
 
@@ -2199,19 +2794,30 @@ def _overlapping(shown, tol=0.5):
 
 
 def _on_bars(fig, shown, tol=0.8):
-    """Labels off their bar (``"outside"``) that cover a bar anyway."""
+    """Labels off their bar (``"outside"``) that cover a bar anyway.
+
+    A label inside the limit its bar runs past (``clipped``) sits on its
+    own bar by design: it may cover no other bar.
+    """
     renderer = fig.canvas.get_renderer()
     bars = [
-        patch.get_window_extent(renderer)
+        (patch, patch.get_window_extent(renderer))
         for axes in fig.axes
         for patch in axes.patches
         if patch.get_visible()
     ]
-    return [
-        label.get_text()
-        for label, box in shown
-        if label.where == "outside" and any(_cover(box, b, tol) for b in bars)
-    ]
+
+    def covers(label, box):
+        clipped = getattr(label, "clipped", False)
+        if label.where != "outside" and not clipped:
+            return False
+        return any(
+            _cover(box, b, tol)
+            for patch, b in bars
+            if not (clipped and patch is label.bar)
+        )
+
+    return [label.get_text() for label, box in shown if covers(label, box)]
 
 
 def _inside_axes(ax, shown, tol=0.5):
@@ -2305,6 +2911,7 @@ def test_crowded_skip_and_inside():
     assert {_hex(t) for t in others} == {"#ffffff"}
 
 
+@EXPECTS_HIDDEN_WARNING
 def test_barh_thin_rows_skip_alternate():
     # Rows thinner than the text: barh never turns its labels; it hides
     # every other one, keeping the top row (the first one read).
@@ -2381,6 +2988,7 @@ def test_headroom_grows_only_autoscaled_limit():
     assert ax.get_autoscalex_on()
 
 
+@EXPECTS_HIDDEN_WARNING
 @pytest.mark.parametrize("sign", [1, -1])
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
 def test_headroom_keeps_the_edge_it_does_not_grow(orientation, sign):
@@ -2614,6 +3222,7 @@ def test_repeat_simple_layout_idempotent():
     assert texts[2].get_rotation() == 90
 
 
+@EXPECTS_HIDDEN_WARNING
 def test_crowded_when_wider_than_the_pitch_less_1_5_pt():
     # Bars at a pitch set through the caller's x limits: a label wider than
     # the pitch less 1.5 pt is crowded, one narrower is not.
@@ -2675,17 +3284,20 @@ def test_crowding_reads_each_label_against_its_nearest_bar():
 
 def test_crowded_lift_stays_in_view_and_off_overlaid_labels():
     # A kept label is lifted over a taller neighbour only up to the view
-    # the caller set (1,432 runs past 1,400: its own label is gone).
+    # the caller set (1,500 runs past 1,400; "skip" hides its label).
     fig, ax = _fig()
-    ax.bar(np.arange(24), D_REV, width=0.7)
+    values = D_REV.copy()
+    values[22], values[23] = 1500e6, 1000e6
+    ax.bar(np.arange(24), values, width=0.7)
     ax.set_ylim(0, 1400e6)
     texts = dm.label_bars(ax, crowded="skip")
     dm.simple_layout(fig)
     renderer = drawn_renderer(fig)
-    assert not texts[23].get_visible()
-    assert texts[22].get_visible()  # 1,337 spans the 1,432 bar
+    assert texts[23].get_visible()
+    assert not texts[22].get_visible()
+    assert texts[21].get_visible()  # 1,357 spans the 1,500 bar
     top = ax.get_window_extent(renderer).y1
-    assert texts[22].get_window_extent(renderer).y0 == pytest.approx(
+    assert texts[21].get_window_extent(renderer).y0 == pytest.approx(
         top + _offset_px(fig), abs=0.6
     )
 
@@ -2782,6 +3394,7 @@ def test_crowding_pitch_reads_every_bar_on_the_axes():
     assert _on_bars(fig, shown) == []
 
 
+@EXPECTS_HIDDEN_WARNING
 @pytest.mark.parametrize(
     ("layout", "n"),
     [
@@ -2831,6 +3444,388 @@ def test_separate_calls_that_fit_are_left_alone():
     assert all(t.get_visible() for t in texts)
     assert {t.get_rotation() for t in texts} == {0.0}
     _assert_outside(fig, texts, [*first.patches, *second.patches])
+
+
+# ------------------------------------------- overlapping series (9-2 B)
+# The approved PoC figures of decision 9-2 (review page
+# 2026-11-06-b3-followups, b3poc/2-overlapping-series/summary.json, B):
+# same data, size and preset (report, 300 dpi).
+PLAN_TEXTS = ["63", "88", "63", "75", "77", "86", "64", "74", "75"]
+ACTUAL_TEXTS = ["65", "86", "65", "73", "73", "84", "63", "77", "75"]
+POC_ROWS = [0, 2, 4, 5, 6, 8, 9, 10, 12]  # the rows summary.json lists
+H_2024 = ["92", "75", "78", "90", "72", "83", "86"]
+H_2024 += ["52", "43", "56", "55", "88", "91", "40"]
+H_2025 = ["96", "82", "80", "97", "73", "87", "93"]
+H_2025 += ["55", "46", "59", "61", "91", "99", "44"]
+
+
+def _poc_grouped_bar(per_series=False):
+    """14 weeks of Plan vs Actual, grouped bars, 9 cm (PoC figure b)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=300)
+    rng = np.random.default_rng(3)
+    x = np.arange(14)
+    a = rng.uniform(60, 95, 14).round()
+    b = (a + rng.uniform(-4, 4, 14).round()).clip(40, 99)
+    plan = ax.bar(x - 0.2, a, 0.4, color="dc.gray4", label="Plan")
+    actual = ax.bar(x + 0.2, b, 0.4, color="dc.orange3", label="Actual")
+    ax.set_xticks(x, [f"W{i + 1}" for i in x])
+    ax.set_ylabel("Output (units)")
+    ax.legend(loc="upper left", ncols=2)
+    if per_series:
+        dm.label_bars(ax, plan)
+        dm.label_bars(ax, actual)
+    else:
+        dm.label_bars(ax)
+    return fig, ax, plan, actual
+
+
+def _poc_grouped_barh(aspect=1.15):
+    """14 regions, 2024 vs 2025, one call per series, thin rows (PoC a)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", aspect), dpi=300)
+    regions = ["Korea", "Japan", "China", "India", "Vietnam", "Indonesia"]
+    regions += ["Australia", "Germany", "France", "UK", "Spain", "Brazil"]
+    regions += ["Mexico", "Canada"]
+    rng = np.random.default_rng(7)
+    a = rng.integers(40, 96, 14)
+    b = a + rng.integers(1, 9, 14)
+    y = np.arange(14)
+    first = ax.barh(y + 0.19, a, 0.38, color="dc.gray4", label="2024")
+    second = ax.barh(y - 0.19, b, 0.38, color="dc.teal2", label="2025")
+    ax.set_yticks(y, regions)
+    ax.invert_yaxis()
+    ax.set_xlabel("Revenue (USD M)")
+    ax.legend(loc="lower right")
+    dm.label_bars(ax, first)
+    dm.label_bars(ax, second)
+    return fig, ax, first, second
+
+
+def _labels_of(ax, container):
+    """The labels of ``container``'s bars, bar by bar."""
+    found = [t for t in ax.texts if getattr(t, "container", None) is container]
+    return sorted(found, key=lambda t: t.index)
+
+
+def _layout_warnings(fig):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig)
+    return [
+        w for w in caught if "hidden where they would overlap" in str(w.message)
+    ]
+
+
+@EXPECTS_HIDDEN_WARNING
+@pytest.mark.parametrize("per_series", [False, True])
+def test_overlapping_series_alternate_by_bar_index(per_series):
+    # PoC figure b, B: the first series keeps its labels on even bar
+    # indices, the second on odd ones (7/14 each); neither vanishes. Its
+    # legend, fixed at the upper left, covers W3's Plan label (88): the
+    # legend rule (review I4) hides that one and reports it.
+    fig, ax, plan, actual = _poc_grouped_bar(per_series)
+    caught = _all_layout_warnings(fig)
+    assert not [w for w in caught if "would overlap" in w]  # turns: no loss
+    assert len([w for w in caught if "under a legend" in w]) == 1
+    plan_labels, actual_labels = _labels_of(ax, plan), _labels_of(ax, actual)
+    assert [plan_labels[i].get_text() for i in POC_ROWS] == PLAN_TEXTS
+    assert [actual_labels[i].get_text() for i in POC_ROWS] == ACTUAL_TEXTS
+    drawn_renderer(fig)
+    assert [t.hidden_for for t in plan_labels][2] == "legend"
+    assert [t.get_visible() for t in plan_labels] == [
+        i % 2 == 0 and i != 2 for i in range(14)
+    ]
+    assert [t.get_visible() for t in actual_labels] == [
+        i % 2 == 1 for i in range(14)
+    ]
+    shown = _shown(fig, plan_labels + actual_labels)
+    assert len(shown) == 13
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    visible = [t.get_visible() for t in plan_labels + actual_labels]
+    dm.simple_layout(fig)  # a repeat layout makes the same choice
+    assert [t.get_visible() for t in plan_labels + actual_labels] == visible
+
+
+def test_grouped_barh_alternates_across_calls():
+    # PoC figure a (one label_bars call per series): the rows hold one
+    # label each, so the series alternate as in figure b, 7/14 each, and
+    # nothing is lost. Turns run in reading order: the top row first, and
+    # in each row the bar read first (2025, drawn above 2024 on this
+    # inverted axis). summary.json's B shows 2024 14/14 and 2025 0/14
+    # here: the PoC numbered each call's container 0, so both calls looked
+    # like one series; with the series told apart (PoC rerun, b3impl
+    # report) the same candidate alternates too (review I5: the user sees
+    # the three versions again).
+    fig, ax, first, second = _poc_grouped_barh()
+    assert _layout_warnings(fig) == []
+    labels_2024, labels_2025 = _labels_of(ax, first), _labels_of(ax, second)
+    assert _texts(labels_2024) == H_2024
+    assert _texts(labels_2025) == H_2025
+    drawn_renderer(fig)
+    assert [t.get_visible() for t in labels_2025] == [
+        i % 2 == 0 for i in range(14)
+    ]
+    assert [t.get_visible() for t in labels_2024] == [
+        i % 2 == 1 for i in range(14)
+    ]
+    shown = _shown(fig, labels_2024 + labels_2025)
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    assert {t.get_rotation() for t in labels_2024 + labels_2025} == {0.0}
+
+
+def test_thin_rows_keep_the_series_mains_rule_keeps_and_warn():
+    # The same rows at 9 x 7.2 cm: one label per row still meets the next
+    # row's, so the turns would lose labels. Decision 12-2 A: the plain
+    # overlap rule decides, the path main takes, so the series main keeps
+    # stays. That rule walks from the top row down and keeps, in each row,
+    # the label of the bar drawn uppermost on screen; no year order, no
+    # series name. The layout says labels were hidden.
+    fig, ax, first, second = _poc_grouped_barh(aspect=0.8)
+    caught = _layout_warnings(fig)
+    assert len(caught) == 1
+    message = str(caught[0].message)
+    assert "14 of 28" in message
+    assert "taller figure" in message
+    assert "crowded='skip'" in message
+    labels_2024, labels_2025 = _labels_of(ax, first), _labels_of(ax, second)
+    renderer = drawn_renderer(fig)
+    for pair in zip(labels_2024, labels_2025, strict=True):
+        upper, lower = sorted(
+            pair,
+            key=lambda t: t.bar.get_window_extent(renderer).y0,
+            reverse=True,
+        )
+        assert upper.get_visible()
+        assert not lower.get_visible()
+    shown = _shown(fig, labels_2024 + labels_2025)
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+    assert {t.get_rotation() for t in labels_2024 + labels_2025} == {0.0}
+
+    # A taller figure brings every label back, and the warning goes.
+    fig.set_size_inches(fig.get_size_inches()[0], 9)
+    assert _layout_warnings(fig) == []
+    assert all(t.get_visible() for t in labels_2024 + labels_2025)
+
+
+def test_hidden_label_warning_follows_the_rule():
+    # One series of thin rows (the barh fallback): warned under the
+    # default rule, silent under crowded="skip", which asks for it.
+    values = np.linspace(40.0, 2.5, 40)
+    for crowded, expected in (("rotate", 1), ("inside", 1), ("skip", 0)):
+        fig, ax = _fig()
+        ax.barh(np.arange(40), values, height=0.9)
+        ax.invert_yaxis()
+        texts = dm.label_bars(ax, crowded=crowded)
+        caught = _layout_warnings(fig)
+        assert len(caught) == expected, crowded
+        hidden = sum(not t.get_visible() for t in texts)
+        assert hidden > 0
+        if expected:
+            assert f"{hidden} of 40" in str(caught[0].message)
+
+    # Labels that all fit: no warning.
+    fig, ax, _ = _quarterly()
+    dm.label_bars(ax)
+    assert _layout_warnings(fig) == []
+
+
+def test_hidden_labels_are_reported_when_nothing_could_be_measured():
+    # Review M4: a layout asked to fit a GridSpec with no Axes measures
+    # nothing, but it settled the labels first; the hidden ones are still
+    # reported.
+    fig, ax = _fig()
+    ax.barh(np.arange(40), np.linspace(40.0, 2.5, 40), height=0.9)
+    ax.invert_yaxis()
+    dm.label_bars(ax)
+    empty = fig.add_gridspec(1, 1)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dm.simple_layout(fig, gs=empty, use_all_axes=False)
+    hidden = [
+        w for w in caught if "hidden where they would overlap" in str(w.message)
+    ]
+    assert len(hidden) == 1
+
+
+def test_three_series_take_turns():
+    # Three series count down: the first at bar index 0, the last at 1,
+    # the middle one at 2, ... (series -i mod 3), so the kept labels stand
+    # at least a bar width short of the pitch apart; 8 of 24 each.
+    fig, ax = _fig()
+    x = np.arange(24, dtype=float)
+    values = np.linspace(40.0, 12.0, 24)
+    containers = [
+        ax.bar(x + (j - 1) * 0.27, values * (1 - 0.1 * j), width=0.27)
+        for j in range(3)
+    ]
+    dm.label_bars(ax)
+    assert _layout_warnings(fig) == []
+    for j, container in enumerate(containers):
+        labels = _labels_of(ax, container)
+        assert [t.get_visible() for t in labels] == [
+            (j + i) % 3 == 0 for i in range(24)
+        ], j
+    shown = _shown(fig, list(ax.texts))
+    assert _overlapping(shown) == []
+    assert _on_bars(fig, shown) == []
+
+
+def _review_grouped(
+    n,
+    groups,
+    width,
+    *,
+    horizontal=False,
+    values="scan",
+    reverse=False,
+    per_series=False,
+):
+    """The independent review's grouped charts (b3review scan / probes).
+
+    ``values="scan"``: its seeded random values (scan_overlaps.py);
+    ``"linear"``: falling values per series (probe_bars.py grouped_n).
+    ``reverse`` labels the series in the reverse of their drawing order.
+    """
+    matplotlib.rcdefaults()
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize(width, "standard"), dpi=150)
+    x = np.arange(groups, dtype=float)
+    w = 0.8 / n
+    rng = np.random.default_rng(groups * 10 + n)
+    containers = []
+    for j in range(n):
+        if values == "scan":
+            data = rng.uniform(40, 99, groups).round()
+        else:
+            data = np.linspace(40.0, 12.0, groups) * (1 - 0.07 * j)
+        pos = x + (j - (n - 1) / 2) * w
+        draw = ax.barh if horizontal else ax.bar
+        containers.append(draw(pos, data, w))
+    if horizontal:
+        ax.invert_yaxis()
+    order = containers[::-1] if reverse else containers
+    if per_series:
+        for container in order:
+            dm.label_bars(ax, container)
+    else:
+        dm.label_bars(ax, order)
+    return fig, ax, containers
+
+
+def _kept_per_series(fig, ax, containers):
+    drawn_renderer(fig)
+    return [sum(t.get_visible() for t in _labels_of(ax, c)) for c in containers]
+
+
+@pytest.mark.parametrize(
+    ("n", "width", "on_main"),
+    [
+        (2, "7cm", [8, 8]),  # the turns would keep 12/1
+        (3, "17cm", [12, 12, 12]),  # the turns would keep 16/8/8
+    ],
+)
+def test_turns_never_keep_fewer_labels_than_the_plain_rule(n, width, on_main):
+    # Review I1: where taking turns would lose labels for room or keep fewer
+    # of them, the plain rule decides, as on main (bd2b61f8, same figures:
+    # 8/8 and 12/12/12). Labels it hides are lost for room: warned.
+    fig, ax, containers = _review_grouped(n, 24, width)
+    caught = _layout_warnings(fig)
+    assert _kept_per_series(fig, ax, containers) == on_main
+    assert _overlapping(_shown(fig, list(ax.texts))) == []
+    assert len(caught) == 1
+
+
+@pytest.mark.parametrize(
+    ("n", "width", "horizontal", "reverse", "per_series", "kept"),
+    [
+        (3, "12cm", False, True, False, [8, 8, 8]),
+        (3, "12cm", False, True, True, [8, 8, 8]),
+        (4, "12cm", False, True, False, [6, 6, 6, 6]),
+        (3, "17cm", True, False, False, [8, 8, 8]),  # barh, inverted y
+        (3, "17cm", True, True, True, [8, 8, 8]),
+    ],
+)
+def test_series_turns_follow_the_screen_not_the_calls(
+    n, width, horizontal, reverse, per_series, kept
+):
+    # Review I2: series are ranked in reading order on screen, so labelling
+    # them in reverse, or barh on an inverted y axis, takes the same turns
+    # (main: 0/0/24, 0/0/0/24 and 24/0/0 here) with no warning.
+    fig, ax, containers = _review_grouped(
+        n,
+        24,
+        width,
+        horizontal=horizontal,
+        values="linear",
+        reverse=reverse,
+        per_series=per_series,
+    )
+    assert _layout_warnings(fig) == []
+    assert _kept_per_series(fig, ax, containers) == kept
+    assert _overlapping(_shown(fig, list(ax.texts))) == []
+
+
+def test_barh_on_an_inverted_axis_keeps_every_series_main_keeps():
+    # Review I2 at its own size: three series in 24 barh rows at 12 cm on
+    # an inverted y axis. Turns counted in call order had kept 8/0/8 (one
+    # series gone) with a misleading warning. Rows this thin cannot hold
+    # one label each, so the plain rule decides as on main (6/6/6) and the
+    # warning reports labels genuinely lost for room.
+    fig, ax, containers = _review_grouped(3, 24, "12cm", horizontal=True)
+    caught = _layout_warnings(fig)
+    assert _kept_per_series(fig, ax, containers) == [6, 6, 6]
+    assert len(caught) == 1 and "taller figure" in str(caught[0].message)
+    assert _overlapping(_shown(fig, list(ax.texts))) == []
+
+
+def test_a_replacing_turn_stays_clear_of_the_label_kept_before():
+    # Review M3: a label that takes the turn from the last kept one at its
+    # bar index must also clear the one kept before that, even when it is
+    # wider; otherwise the last kept one stays.
+    from types import SimpleNamespace
+
+    from dartwork_mpl.annotation._bar_label_settle import keep_apart
+
+    def position(index, low, high):
+        label = SimpleNamespace(index=index)
+        return SimpleNamespace(labels=[label], low=low, high=high)
+
+    wide = position(1, 40.0, 99.5)  # its turn first, reaches 99.5
+    narrow = position(1, 70.0, 88.0)
+    before = position(0, 100.0, 120.0)
+    positions = [wide, narrow, before]  # in screen order
+    turns = {id(wide): 0, id(narrow): 1, id(before): 0}
+    assert keep_apart(positions, 2.0, turns) == [before, narrow]
+    # With room for it, the wide label takes its turn.
+    wide.high = 97.0
+    assert keep_apart(positions, 2.0, turns) == [before, wide]
+    # The plain rule keeps the last on screen, then what clears it.
+    assert keep_apart(positions, 2.0) == [before, narrow]
+
+
+@EXPECTS_HIDDEN_WARNING
+def test_stacked_series_keep_the_overlap_rule():
+    # Totals (stacks) are no plain series: the overlap rule hides from the
+    # last position on screen, as before, so the left stacks lose theirs.
+    fig, ax = _fig()
+    x = np.arange(20, dtype=float)
+    low, high = np.linspace(40, 12, 20), np.linspace(30, 20, 20)
+    ax.bar(x - 0.2, low, width=0.4)
+    left = ax.bar(x - 0.2, high, bottom=low, width=0.4)
+    ax.bar(x + 0.2, low * 0.9, width=0.4)
+    right = ax.bar(x + 0.2, high, bottom=low * 0.9, width=0.4)
+    texts = dm.label_bars(ax, total="only")
+    dm.simple_layout(fig)
+    drawn_renderer(fig)
+    assert {t.kind for t in texts} == {"total"}
+    assert [t.get_visible() for t in texts if t.bar in left.patches] == [
+        False
+    ] * 20
+    assert [t.get_visible() for t in texts if t.bar in right.patches] == [
+        True
+    ] * 20
 
 
 def _room_to_own_edge(fig, texts, along):

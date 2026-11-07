@@ -5,7 +5,8 @@ panels, ``annotate_value`` / ``annotate_corner`` / ``label_hline`` for compact
 in-axes labels, ``label_bars`` for value labels on bars, ``place_legend`` for
 axes legends, and ``arrow_axis`` for drawing bidirectional Low-High arrow
 axes. ``settle_bar_labels`` is the layout's pass over the bar labels
-(crowding, headroom); ``dm.simple_layout`` runs it.
+(crowding, headroom); ``dm.simple_layout`` runs it, then
+``warn_hidden_bar_labels`` once its fit is done.
 """
 
 from __future__ import annotations
@@ -15,6 +16,8 @@ __all__ = [
     "annotate_corner",
     "annotate_value",
     "arrow_axis",
+    "bar_values_past_limits",
+    "clear_bar_labels",
     "label_axes",
     "label_bars",
     "label_hline",
@@ -23,6 +26,7 @@ __all__ = [
     "optimize_legend",
     "place_legend",
     "settle_bar_labels",
+    "warn_hidden_bar_labels",
     "wrap_axis_label",
     "wrap_axis_labels",
 ]
@@ -59,7 +63,12 @@ from .._figure_geometry import (
 )
 from ..scale import fs, fw
 from ._bar_label_geometry import host_axes
-from ._bar_label_settle import settle_bar_labels
+from ._bar_label_settle import (
+    bar_values_past_limits,
+    clear_bar_labels,
+    settle_bar_labels,
+    warn_hidden_bar_labels,
+)
 from ._bar_labels import label_bars
 from ._optimize_legend import optimize_legend
 
@@ -1558,8 +1567,9 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     column. ``ncol`` / ``ncols`` in ``kw`` overrides the count, and
     ``bbox_to_anchor`` / ``bbox_transform`` raise ``ValueError`` because the
     side sets the anchor. :func:`dartwork_mpl.simple_layout` re-anchors such
-    a legend to the labels present when it runs, makes room for it, and
-    raises the axes titles above an ``"above"`` legend.
+    a legend to the labels present when it runs (and past the
+    ``dm.label_bars`` values beyond that limit it would cover), makes room
+    for it, and raises the axes titles above an ``"above"`` legend.
     ``dm.optimize_legend(ax, outside=True)`` also places a legend outside,
     at the top of the right side with its own font size and frame; prefer
     ``loc="right"`` here, which keeps the preset's legend style.

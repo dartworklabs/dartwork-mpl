@@ -22,14 +22,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   fewest exact decimals, one count per call, no meaningless `.0`; stacked
   bars' segments centred with a total beyond the stack. `dm.simple_layout` turns crowded labels on vertical bars vertical
   (`barh` hides every other one instead) and grows autoscaled limits just
-  enough for the labels; limits you set stay. On a twin pair the labels go
-  on the top axes. The keywords: `where`, `total`, `crowded`, `decimals`,
-  `fmt` (a `{}` template, a format-spec field such as `"{:.2f}"`, or a
-  callable), `size`, `color` (`"series"` colours labels off their bar). A
-  label asked inside its bar (`where="inside"`, `crowded="inside"`) stays
-  there only while the bar holds it along and across; otherwise it sits
-  beyond the bar's end in the text colour, so a narrow dark bar never
-  leaves part of a white number on the background.
+  enough for the labels; limits you set stay, and a bar running past one
+  shows its true value at that limit: just inside it, on the bar, in white
+  or the text colour (whichever reads on it) when the bar holds the
+  number, otherwise just beyond it in the text colour (the series colour
+  under `color="series"`); a value there that would cover tick labels, an
+  axis label or a title is hidden instead, with a warning (no label also
+  for bars wholly outside the view, and for stack segments and totals past
+  the limit). A label asked inside its bar (`where="inside"`,
+  `crowded="inside"`) likewise stays there only while the bar holds it
+  along and across; otherwise it sits beyond the bar's end in the text
+  colour, so a narrow dark bar never leaves part of a white number on the
+  background. Labels that would still overlap are hidden; grouped series
+  take turns where their labels meet (two series alternate by bar index),
+  in one call or one call per series, when that keeps as many labels as
+  the plain rule. When labels are lost for room (thin `barh` rows, dense
+  groups), `dm.simple_layout` warns once with the count and the cure (a
+  taller or wider figure); `crowded="skip"`, which asks for hiding, stays
+  silent. A label a legend covers is hidden too, with its own warning
+  that names the cure for that legend (`dm.place_legend(ax)` keeps the
+  legend clear of the labels; a legend it puts on a side, `loc="above"`
+  say, is anchored past the values beyond that limit). On a twin pair the
+  labels go on the top axes. The keywords:
+  `where`, `total`, `crowded`, `decimals`, `fmt` (a `{}` template, a
+  format-spec field such as `"{:.2f}"`, or a callable), `size`, `color`
+  (`"series"` colours labels off their bar).
 - `dm.config.twin_colors` (`"series"`, the default, or `"neutral"`): the
   axis colours of `twinx` / `twiny` pairs.
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
@@ -56,10 +73,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   background, the tick labels and axis label in the same hue at 4.5:1. A
   side whose series draw several colours, or a hue close to the other
   side's, stays neutral; single Axes are never touched; a colour you set
-  (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins, except one
-  set before the first `dm.simple_layout` that equals the preset's default
+  (`tick_params(colors=...)`, `labelcolor=`, `set_color`) wins and makes
+  that whole side yours (on a `twinx` pair the left spine you see is
+  `ax2.spines["left"]`): its other parts keep the preset's colours while
+  the other side keeps its series colour. The exception is a colour set
+  before the first `dm.simple_layout` that equals the preset's default
   (`"black"` under the light presets), which cannot be told from the
-  default and is painted.
+  default and is painted with the rest of the side.
   `with dm.config.override(twin_colors="neutral"):` (or
   `dm.config.twin_colors = "neutral"`) keeps the preset's colours, for
   black or neutral twin axes.
@@ -117,6 +137,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **`TEXT_CONTRAST` reads a shape only where it is drawn.** A bar past the
+  axes limit is drawn up to the axes edge, but `dm.validate_figure` read
+  text beyond the limit (a bar's value there) against the whole bar and
+  reported a contrast fault that was not drawn (black on `#1f4e79`,
+  2.42:1). A shape that clips now counts only inside its clip box; real
+  faults on a bar, or white text off it, are still found.
 - **Labels fixed by `set_xticklabels` print the right years.**
   `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)` on annual data
   read `2007.5` at 2010 after `dm.simple_layout`: the whole-year locator

@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
+import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
@@ -28,9 +29,11 @@ __all__ = [
     "axes_with_secondaries",
     "backdrop_layers",
     "canvas_renderer",
+    "drawn_tick_labels",
     "get_renderer",
     "iter_figure_level_extents",
     "outside_clearance_px",
+    "outside_side",
     "reanchor_outside",
     "respread_line_end_labels",
     "same_position_axes",
@@ -253,6 +256,54 @@ def axes_text_artists(ax: Axes) -> list[Text]:
     return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
 
 
+# Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
+_EDGE_RTOL = 1e-10
+
+
+def drawn_tick_labels(
+    ax: Axes, which: Literal["x", "y"], *, minor: bool = False
+) -> list[Text]:
+    """The major (or ``minor``) tick labels matplotlib draws on an axis.
+
+    Matplotlib draws a tick only when the axes' axis is on
+    (``ax.axis("off")`` turns it off) and the axis is visible, and when its
+    location lies in the view interval, compared after the axis transform
+    with a 1e-10 relative slack. Each drawn tick draws its visible
+    ``label1`` (left / bottom) and ``label2`` (right / top, with
+    ``labelright`` / ``labeltop``). Every other label stays on the artist
+    tree, visible and positioned, but is never drawn: a colorbar tick a
+    hair past its limit, the ticks of a title-only panel, the labels of a
+    hidden axis.
+    """
+    axis = ax.xaxis if which == "x" else ax.yaxis
+    if not getattr(ax, "axison", True) or not axis.get_visible():
+        return []
+    transform = axis.get_transform()
+    raw = axis.get_minorticklocs() if minor else axis.get_majorticklocs()
+    locs = np.asarray(raw, dtype=float)
+    if not locs.size:
+        return []
+    with np.errstate(all="ignore"):
+        view = transform.transform(np.asarray(axis.get_view_interval(), float))
+        placed = np.ravel(transform.transform(locs))
+    low, high = sorted(float(v) for v in np.ravel(view))
+    slack = _EDGE_RTOL * (high - low)
+    ticks = (
+        axis.get_minor_ticks(len(locs))
+        if minor
+        else axis.get_major_ticks(len(locs))
+    )
+    drawn: list[Text] = []
+    # One Tick per location, as matplotlib pairs them when it draws.
+    for place, tick in zip(placed, ticks, strict=True):
+        if not (np.isfinite(place) and low - slack <= place <= high + slack):
+            continue
+        drawn += [
+            lab for lab in (tick.label1, tick.label2) if lab.get_visible()
+        ]
+    return drawn
+
+
 def secondary_axes(ax: Axes) -> list[Axes]:
     """Return the visible ``secondary_xaxis`` / ``secondary_yaxis`` children of ``ax``.
 
@@ -398,17 +449,55 @@ def outside_clearance_px(
     reach = 0.0
     for owner in same_position_axes(ax):
         for ext in axes_decoration_extents(owner, renderer):
-            cx, cy = (ext.x0 + ext.x1) / 2, (ext.y0 + ext.y1) / 2
-            match side:
-                case "above" if cy > box.y1 + 0.5:
-                    reach = max(reach, ext.y1 - box.y1)
-                case "below" if cy < box.y0 - 0.5:
-                    reach = max(reach, box.y0 - ext.y0)
-                case "right" if cx > box.x1 + 0.5:
-                    reach = max(reach, ext.x1 - box.x1)
-                case "left" if cx < box.x0 - 0.5:
-                    reach = max(reach, box.x0 - ext.x0)
+            reach = max(reach, _reach_past(box, ext, side))
     return float(reach)
+
+
+def _reach_past(box: Bbox, ext: Bbox, side: OutsideSide) -> float:
+    """How far ``ext`` reaches past ``side`` of ``box`` (0: its centre is not beyond)."""
+    cx, cy = (ext.x0 + ext.x1) / 2, (ext.y0 + ext.y1) / 2
+    match side:
+        case "above" if cy > box.y1 + 0.5:
+            return float(ext.y1 - box.y1)
+        case "below" if cy < box.y0 - 0.5:
+            return float(box.y0 - ext.y0)
+        case "right" if cx > box.x1 + 0.5:
+            return float(ext.x1 - box.x1)
+        case "left" if cx < box.x0 - 0.5:
+            return float(box.x0 - ext.x0)
+    return 0.0
+
+
+def _obstacle_reach_px(
+    artist: Any,
+    ax: Axes,
+    side: OutsideSide,
+    renderer: RendererBase,
+    obstacles: Sequence[Bbox],
+) -> float:
+    """How far past ``side`` of ``ax`` the obstacles in ``artist``'s way reach.
+
+    An obstacle counts when its centre lies beyond that side (as for the
+    decorations) and it overlaps ``artist`` along the side (in x above and
+    below, in y right and left), so moving the artist outward clears it;
+    one beside the artist leaves it where it is. In pixels, ``0.0`` when
+    none counts.
+    """
+    if not obstacles:
+        return 0.0
+    try:
+        box = ax.get_window_extent(renderer)
+        own = artist.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return 0.0
+    along_x = side in ("above", "below")
+    reach = 0.0
+    for ext in obstacles:
+        low, high = (ext.x0, ext.x1) if along_x else (ext.y0, ext.y1)
+        own_low, own_high = (own.x0, own.x1) if along_x else (own.y0, own.y1)
+        if min(high, own_high) - max(low, own_low) > 0.5:
+            reach = max(reach, _reach_past(box, ext, side))
+    return reach
 
 
 # Each side's anchor point on the Axes (axes fraction) and the unit
@@ -435,7 +524,11 @@ class _OutsideAnchor:
 
 
 def anchor_outside(
-    artist: Any, ax: Axes, side: OutsideSide, renderer: RendererBase
+    artist: Any,
+    ax: Axes,
+    side: OutsideSide,
+    renderer: RendererBase,
+    obstacles: Sequence[Bbox] = (),
 ) -> bool:
     """Anchor ``artist`` at the middle of ``side`` of ``ax``, past its decorations.
 
@@ -443,14 +536,21 @@ def anchor_outside(
     ``AnchoredOffsetbox``); its ``loc`` decides which of its own edges
     touches the anchor. The anchor is the middle of that side in axes
     fraction, moved outward by :func:`outside_clearance_px` as a physical
-    offset, so the artist keeps its distance when the Axes is resized. The
+    offset, so the artist keeps its distance when the Axes is resized.
+    ``obstacles`` are further display boxes beyond that side the artist
+    must clear where it would meet them (bar values past a limit, say): the
+    anchor also moves past the ones the artist overlaps along the side. The
     side is recorded on the artist for :func:`reanchor_outside`. Returns
     whether the anchor moved by more than 0.01 pt.
     """
     root = ax.get_figure(root=True)
     if root is None:
         return False
-    clearance_pt = outside_clearance_px(ax, side, renderer) * 72.0 / root.dpi
+    clearance_px = max(
+        outside_clearance_px(ax, side, renderer),
+        _obstacle_reach_px(artist, ax, side, renderer, obstacles),
+    )
+    clearance_pt = clearance_px * 72.0 / root.dpi
     previous = getattr(artist, _OUTSIDE_ATTR, None)
     if (
         isinstance(previous, _OutsideAnchor)
@@ -468,17 +568,31 @@ def anchor_outside(
     return True
 
 
-def reanchor_outside(artist: Any, ax: Axes, renderer: RendererBase) -> bool:
+def reanchor_outside(
+    artist: Any,
+    ax: Axes,
+    renderer: RendererBase,
+    obstacles: Sequence[Bbox] = (),
+) -> bool:
     """Re-anchor an artist :func:`anchor_outside` placed, after ``ax`` changed.
 
     Tick labels and axis labels added, removed or re-measured since the
-    first anchoring move the anchor with them. Returns ``False`` without
-    touching the artist when it was not anchored by :func:`anchor_outside`.
+    first anchoring move the anchor with them, and so do ``obstacles`` (as
+    in :func:`anchor_outside`). Returns ``False`` without touching the
+    artist when it was not anchored by :func:`anchor_outside`.
     """
+    side = outside_side(artist)
+    if side is None:
+        return False
+    return anchor_outside(artist, ax, side, renderer, obstacles)
+
+
+def outside_side(artist: Any) -> OutsideSide | None:
+    """The side :func:`anchor_outside` anchored ``artist`` on, or ``None``."""
     previous = getattr(artist, _OUTSIDE_ATTR, None)
     if not isinstance(previous, _OutsideAnchor):
-        return False
-    return anchor_outside(artist, ax, previous.side, renderer)
+        return None
+    return previous.side
 
 
 _LINE_ENDS_ATTR = "_dm_line_end_labels"
