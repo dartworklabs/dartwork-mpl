@@ -83,8 +83,9 @@ def install_07(target: Any) -> None:
         return ax2
 
     target.setattr(Axes, "twinx", twinx)
-    if hasattr(dm_layout, "_show_twin_spines"):
-        target.setattr(dm_layout, "_show_twin_spines", lambda fig: None)
+    # No hasattr guard: if the step moves, this raises instead of leaving
+    # the step on and quietly comparing 0.8 with itself.
+    target.setattr(dm_layout, "_show_twin_spines", lambda fig: None)
 
 
 # ------------------------------------------------------------ builders
