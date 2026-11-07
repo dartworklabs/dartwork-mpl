@@ -401,7 +401,7 @@ def _version_one(raw: object) -> None:
         raise ValueError("Unsupported schema")
 
 
-def parse_revision(raw: object) -> Revision | None | InvalidRequest:
+def parse_revision(raw: object) -> Revision | InvalidRequest | None:
     """Parse a closed bounded revision independently of the legacy RenderRequest."""
     if raw is None:
         return None

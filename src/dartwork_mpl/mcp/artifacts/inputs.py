@@ -387,7 +387,7 @@ class InputStore:
                 total += MAX_INPUT_STORE_BYTES
         return total, sets
 
-    def maintain(self, now: datetime) -> None | PublicationError:
+    def maintain(self, now: datetime) -> PublicationError | None:
         """After active work, clean owned pending/verified expiry, never bundle absence.
 
         The lifecycle supplies wall-clock instants (including its 60s tick).
@@ -397,7 +397,7 @@ class InputStore:
 
     def _maintain(
         self, now: datetime, excluded: tuple[ArtifactId, ...]
-    ) -> None | PublicationError:
+    ) -> PublicationError | None:
         """Skip only the current operation's target so failed cleanup stays visible."""
         _require_utc(now)
         with self._serial:
@@ -661,7 +661,7 @@ class InputTransaction:
             for parent, _, _, _ in pins:
                 os.close(parent)
 
-    def check(self, stage: InputStage) -> None | InputFailure:
+    def check(self, stage: InputStage) -> InputFailure | None:
         """Postcheck all pinned copies once with the production 5s worker deadline."""
         try:
             self._guard_stage(stage)
@@ -746,7 +746,7 @@ class InputTransaction:
 
     def settle(
         self, stage: InputStage, observation: CommitObservation
-    ) -> None | PublicationError:
+    ) -> PublicationError | None:
         """After artifact-stage exit, preserve matching/ambiguous committed sets.
 
         Only this call's stage and a public safe NotFound observation permit
