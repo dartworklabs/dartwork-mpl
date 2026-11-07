@@ -17,6 +17,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,14 @@ _ORACLE_MARKERS = (
     "global-constraints",
     "task-2-runtime-notes",
 )
+# Owned-tree scans run one at a time on a helper thread. The next one starts
+# _POLL_SECONDS after the last one finished while the streams are quiet;
+# once output has been processed since the last one started, it starts as soon
+# as that one finishes and _DRAIN_SECONDS have passed since the output, or
+# once _DRAIN_BYTES have been processed since it started.
+_POLL_SECONDS = 0.05
+_DRAIN_SECONDS = 0.01
+_DRAIN_BYTES = 1024 * 1024
 
 
 def _dump(path: Path, value: Any) -> None:
@@ -143,9 +152,10 @@ def _process_table() -> dict[int, tuple[int, int, str]]:
     return rows
 
 
-def _owned(root: int, known: set[int]) -> dict[int, tuple[int, int, str]]:
-    """Track descendants including new sessions while their parent is still live."""
-    table = _process_table()
+def _adopt(
+    table: dict[int, tuple[int, int, str]], root: int, known: set[int]
+) -> dict[int, tuple[int, int, str]]:
+    """Add the table's descendants of ``root`` to ``known``; return the live ones."""
     changed = True
     known.add(root)
     while changed:
@@ -163,6 +173,11 @@ def _owned(root: int, known: set[int]) -> dict[int, tuple[int, int, str]]:
     }
 
 
+def _owned(root: int, known: set[int]) -> dict[int, tuple[int, int, str]]:
+    """Track descendants including new sessions while their parent is still live."""
+    return _adopt(_process_table(), root, known)
+
+
 def _stop_tree(process: subprocess.Popen[bytes], known: set[int]) -> bool:
     """Terminate and verify every observed owned descendant, even detached groups."""
     for sig in (signal.SIGTERM, signal.SIGKILL):
@@ -177,6 +192,50 @@ def _stop_tree(process: subprocess.Popen[bytes], known: set[int]) -> bool:
         while _owned(process.pid, known) and time.monotonic() < deadline:
             time.sleep(0.025)
     return not _owned(process.pid, known)
+
+
+class _BackgroundScan:
+    """One ``_process_table`` scan on a helper thread, so reading continues.
+
+    ``ps`` is reaped by the scan itself; ``finish`` waits for the thread, then
+    returns the table or raises the scan's error on the watchdog thread.
+    """
+
+    def __init__(self, wake: int) -> None:
+        self._table: dict[int, tuple[int, int, str]] | None = None
+        self._failure: Exception | None = None
+        self._wake = wake
+        self._finished = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def _run(self) -> None:
+        try:
+            self._table = _process_table()
+        except Exception as error:  # noqa: BLE001 - re-raised by finish()
+            self._failure = error
+        finally:
+            self._finished.set()
+            os.write(self._wake, b"\0")
+
+    def done(self) -> bool:
+        return self._finished.is_set()
+
+    def finish(self) -> dict[int, tuple[int, int, str]]:
+        self._thread.join()
+        if self._failure is not None:
+            raise self._failure
+        assert self._table is not None
+        return self._table
+
+
+def _tree_bytes(root: Path) -> int:
+    """Total regular-file bytes under one evidence tree, ignoring symlinks."""
+    return sum(
+        path.stat().st_size
+        for path in root.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    )
 
 
 def capture_process(
@@ -196,6 +255,18 @@ def capture_process(
     Limits observe stream bytes/calls and optionally the total evidence tree.
     No shell is used. Calls are counted at complete assistant tool-use events.
     Cleanup kills observed descendants and verifies their absence on every exit.
+    The owned process tree is scanned on a helper thread, one scan at a time,
+    so reading and the per-chunk wall and stream-limit checks continue while
+    ``ps`` runs. The next scan starts ``_POLL_SECONDS`` after the previous one
+    finished while the streams are quiet; once output has been processed since
+    the previous one started, it starts as soon as that one finishes and
+    ``_DRAIN_SECONDS`` have passed since the output, or once ``_DRAIN_BYTES``
+    have been processed. The evidence tree is measured when a scan starts. The
+    in-flight scan is always joined, so no ``ps`` outlives the call. Cleanup
+    scans again, so a descendant whose owned parent is still alive is found
+    however late it started; one that detaches and loses its parent between
+    two scans is never observed and is not cleaned up. A normal exit is
+    re-checked against the evidence tree after cleanup.
     """
     started = time.monotonic()
     process = subprocess.Popen(
@@ -207,89 +278,128 @@ def capture_process(
         start_new_session=True,
     )
     known: set[int] = set()
-    selector = selectors.DefaultSelector()
     assert process.stdout is not None and process.stderr is not None
-    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
-    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
     buffer = b""
     count, size = 0, 0
     reason = "exit"
-    call_limit_reason = None
+    call_limit_reason: str | None = None
     cleanup = False
+
+    def absorb(name: str, chunk: bytes, stdout: Any, stderr: Any) -> None:
+        """Copy one chunk and count the calls it completes."""
+        nonlocal buffer, count, size, call_limit_reason
+        size += len(chunk)
+        target = stdout if name == "stdout" else stderr
+        target.write(chunk)
+        target.flush()
+        if name == "stdout":
+            buffer += chunk
+            while b"\n" in buffer:
+                line, buffer = buffer.split(b"\n", 1)
+                try:
+                    event = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if isinstance(event, dict):
+                    for call in _calls([event]):
+                        if call.get("name") == "mcp__dartwork_mpl__render_plot":
+                            arguments = call.get("input", {})
+                            code = arguments.get("code", "")
+                            timeout = arguments.get("timeout_seconds", 20)
+                            if (
+                                not isinstance(code, str)
+                                or len(code.encode("utf-8")) > 512 * 1024
+                            ):
+                                call_limit_reason = "source_limit"
+                            if (
+                                not isinstance(timeout, (float, int))
+                                or not 0 < timeout <= 20
+                            ):
+                                call_limit_reason = "render_time_limit"
+                    count += sum(
+                        (
+                            call.get("name", "").startswith("mcp__")
+                            or call.get("name") in _READERS
+                        )
+                        for call in _calls([event])
+                    )
+
+    def stream_limit() -> str | None:
+        """The stream limit already crossed, in the existing priority order."""
+        if call_limit_reason:
+            return call_limit_reason
+        if size > max_bytes:
+            return "byte_limit"
+        if count > max_calls:
+            return "call_limit"
+        return None
+
+    # A `ps` scan of a busy shared host can take most of a second, and a pipe
+    # holds 64 KiB, or 8 KiB once the user passes pipe-user-pages-soft. Reading
+    # one chunk per scan put 10 to ~75 scans in front of a 600 KB call already
+    # written. Scans therefore run on a helper thread, one at a time, while
+    # this thread keeps reading and checking every chunk; while output flows,
+    # the next scan starts as soon as the previous one finishes.
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+    wake_read, wake_write = os.pipe()
+    selector.register(wake_read, selectors.EVENT_READ, None)
+    scan: _BackgroundScan | None = None
+    idle_due = started
+    data_due: float | None = None
+    pending = 0
+    open_streams = 2
+    evidence_over = False
+    scan_failure: Exception | None = None
     try:
         with events_path.open("wb") as stdout, stderr_path.open("ab") as stderr:
-            while selector.get_map():
-                _owned(process.pid, known)
+            while open_streams:
+                if scan is not None and scan.done():
+                    _adopt(scan.finish(), process.pid, known)
+                    scan = None
+                    idle_due = time.monotonic() + _POLL_SECONDS
+                now = time.monotonic()
+                if scan is None and (
+                    now >= idle_due
+                    or (data_due is not None and now >= data_due)
+                    or pending >= _DRAIN_BYTES
+                ):
+                    evidence_over = (
+                        evidence_root is not None
+                        and _tree_bytes(evidence_root) > max_bytes
+                    )
+                    scan = _BackgroundScan(wake_write)
+                    data_due, pending = None, 0
                 if time.monotonic() - started > wall_seconds:
                     reason = "wall_limit"
                     break
-                if evidence_root is not None:
-                    disk = sum(
-                        path.stat().st_size
-                        for path in evidence_root.rglob("*")
-                        if path.is_file() and not path.is_symlink()
-                    )
-                    if disk > max_bytes:
-                        reason = "evidence_limit"
-                        break
-                for key, _ in selector.select(timeout=0.05):
+                if evidence_over:
+                    reason = "evidence_limit"
+                    break
+                due = idle_due if data_due is None else min(idle_due, data_due)
+                timeout = (
+                    _POLL_SECONDS
+                    if scan is not None
+                    else min(_POLL_SECONDS, max(0.0, due - time.monotonic()))
+                )
+                for key, _ in selector.select(timeout=timeout):
+                    if key.data is None:
+                        os.read(wake_read, 64)
+                        continue
                     chunk = os.read(key.fd, 65536)
                     if not chunk:
                         selector.unregister(key.fileobj)
+                        open_streams -= 1
                         continue
-                    size += len(chunk)
-                    target = stdout if key.data == "stdout" else stderr
-                    target.write(chunk)
-                    target.flush()
-                    if key.data == "stdout":
-                        buffer += chunk
-                        while b"\n" in buffer:
-                            line, buffer = buffer.split(b"\n", 1)
-                            try:
-                                event = json.loads(line)
-                            except (ValueError, UnicodeDecodeError):
-                                continue
-                            if isinstance(event, dict):
-                                for call in _calls([event]):
-                                    if (
-                                        call.get("name")
-                                        == "mcp__dartwork_mpl__render_plot"
-                                    ):
-                                        arguments = call.get("input", {})
-                                        code = arguments.get("code", "")
-                                        timeout = arguments.get(
-                                            "timeout_seconds", 20
-                                        )
-                                        if (
-                                            not isinstance(code, str)
-                                            or len(code.encode("utf-8"))
-                                            > 512 * 1024
-                                        ):
-                                            call_limit_reason = "source_limit"
-                                        if (
-                                            not isinstance(
-                                                timeout, (float, int)
-                                            )
-                                            or not 0 < timeout <= 20
-                                        ):
-                                            call_limit_reason = (
-                                                "render_time_limit"
-                                            )
-                                count += sum(
-                                    (
-                                        call.get("name", "").startswith("mcp__")
-                                        or call.get("name") in _READERS
-                                    )
-                                    for call in _calls([event])
-                                )
-                if call_limit_reason:
-                    reason = call_limit_reason
-                    break
-                if size > max_bytes:
-                    reason = "byte_limit"
-                    break
-                if count > max_calls:
-                    reason = "call_limit"
+                    if data_due is None:
+                        data_due = time.monotonic() + _DRAIN_SECONDS
+                    pending += len(chunk)
+                    absorb(key.data, chunk, stdout, stderr)
+                    reason = stream_limit() or reason
+                    if reason != "exit":
+                        break
+                if reason != "exit":
                     break
             if reason == "exit":
                 try:
@@ -301,10 +411,30 @@ def capture_process(
                 except subprocess.TimeoutExpired:
                     reason = "wall_limit"
     finally:
+        if scan is not None:
+            # Join the scan still running (its ps is reaped by the scan), keep
+            # what it observed, and raise its error once cleanup has run.
+            try:
+                _adopt(scan.finish(), process.pid, known)
+            except Exception as error:  # noqa: BLE001 - raised after cleanup
+                scan_failure = error
         selector.close()
+        os.close(wake_read)
+        os.close(wake_write)
         cleanup = _stop_tree(process, known)
         process.stdout.close()
         process.stderr.close()
+    if scan_failure is not None:
+        raise scan_failure
+    # The last poll can predate the final writes. A normal exit (EOF and a
+    # successful wait) is admitted only if the evidence left once cleanup has
+    # stopped every observed writer is within the limit.
+    if (
+        reason == "exit"
+        and evidence_root is not None
+        and _tree_bytes(evidence_root) > max_bytes
+    ):
+        reason = "evidence_limit"
     return {
         "stop_reason": reason if cleanup else "cleanup_failed",
         "returncode": process.returncode,
