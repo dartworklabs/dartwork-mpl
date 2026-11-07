@@ -29,7 +29,8 @@ Why each caller's policy differs:
 - ui state: the two fixed names live directly under the user's own pinned
   root. Anyone who can write that root is already the same user, so hard
   links, foreign owners and loose modes are read as they are; symlinks and
-  non-regular files are refused.
+  non-regular files are refused. Like every other reader it opens with
+  O_NOCTTY, so a state name can never hand the viewer a controlling terminal.
 
 Outside the matrix: store capability detection refuses each missing
 operation; UI modules import without ``os.O_NOFOLLOW`` (flags are computed
@@ -670,3 +671,31 @@ print("ui import available; persistence unsupported")
     )
     assert result.returncode == 0, result.stderr
     assert "persistence unsupported" in result.stdout
+
+
+def test_ui_state_read_never_acquires_a_controlling_terminal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The state read passes O_NOCTTY with its no-follow, non-blocking flags."""
+    root = directory(tmp_path / "primary", 0o700)
+    regular(root / StateFile.CONFIG.value, b"{}")
+    seen: list[int] = []
+    real_open = os.open
+
+    def record(path, flags, mode=0o777, *, dir_fd=None):
+        """Capture the flags used for the fixed state name."""
+        if path == StateFile.CONFIG.value:
+            seen.append(flags)
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    with opened_roots(root, tmp_path) as scope:
+        with monkeypatch.context() as patch:
+            patch.setattr(state.os, "open", record)
+            result = state.FixedStateStore(scope).read(
+                StateFile.CONFIG, max_bytes=64
+            )
+    assert result == b"{}"
+    assert seen, "state read did not open the fixed name"
+    for flags in seen:
+        for required in (os.O_NOCTTY, os.O_NOFOLLOW, os.O_NONBLOCK):
+            assert flags & required == required
