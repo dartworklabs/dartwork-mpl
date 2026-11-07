@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import FancyBboxPatch
 
+from ..contrast import readable_text_color
 from ..registry import COLOR_LIBRARIES
 
 if TYPE_CHECKING:
@@ -135,29 +136,16 @@ def _separate_colors_by_library(
     }
 
 
-def _text_brightness(color_spec: str | tuple[float, float, float]) -> float:
-    """Return a gamma-encoded BT.709-style text brightness heuristic.
-
-    This deliberately preserves the historical swatch-label threshold.  The
-    weighted channels are gamma-encoded sRGB, so this is a text brightness
-    heuristic rather than a physical or contrast metric.
-
-    Parameters
-    ----------
-    color_spec : str or tuple
-        Color specification accepted by matplotlib.
-
-    Returns
-    -------
-    float
-        Heuristic brightness in [0, 1].
-    """
-    r, g, b = mcolors.to_rgb(color_spec)
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+_SWATCH_LIGHT_INK = "white"
+_SWATCH_DARK_INK = "#333333"
 
 
 def _contrast_text_color(color_spec: str | tuple[float, float, float]) -> str:
-    """Return black or white text color for best contrast.
+    """Return the swatch-overlay ink with the higher WCAG contrast.
+
+    The choice is :func:`dartwork_mpl.readable_text_color` between the
+    catalogue's two inks, ``"white"`` and ``"#333333"``, so the catalogue
+    and the public helper share one luminance and one rule.
 
     Parameters
     ----------
@@ -167,10 +155,12 @@ def _contrast_text_color(color_spec: str | tuple[float, float, float]) -> str:
     Returns
     -------
     str
-        ``"white"`` or ``"#333333"`` depending on heuristic background
-        brightness.
+        ``"white"`` or ``"#333333"``, whichever contrasts more with the
+        background.
     """
-    return "#333333" if _text_brightness(color_spec) > 0.45 else "white"
+    return readable_text_color(
+        color_spec, light=_SWATCH_LIGHT_INK, dark=_SWATCH_DARK_INK
+    )
 
 
 def _color_to_hex(color_spec: str | tuple[float, float, float]) -> str:

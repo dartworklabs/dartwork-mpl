@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Colour catalogue labels pick their ink by WCAG contrast.** The swatch
+  labels in `dm.diagnostics.render_color_catalog` and the docs colour
+  tables choose white or
+  `#333333` with `dm.readable_text_color` instead of a gamma-encoded
+  brightness rule, so the catalogue, the docs tables and the public helper
+  share one luminance. 68 of the 1,408 shipped colours change ink, each to
+  the higher-contrast one; the lowest label contrast rises from 2.67:1
+  (`tw.neutral500`) to 3.56:1. The colour values do not change.
 - The Matplotlib floor is now `>=3.11.2`, the patch release the declared
   floor environment (Python 3.11, NumPy 1.26) is verified on. Matplotlib
   3.11.0 logs font-weight misses without naming the family, so the quiet

@@ -111,26 +111,9 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
 # ─── HTML/CSS native rendering ─────────────────────────────────────────
 
 
-def _text_brightness_rgb(r: float, g: float, b: float) -> float:
-    """Return a gamma-encoded BT.709-style text-brightness heuristic.
-
-    This intentionally preserves the historical foreground-selection
-    behavior. It is neither the project's modeled relative CIE Y nor WCAG
-    contrast luminance, and it must not be interpreted as a measurement.
-    """
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-
-def _hex_to_rgb01(hex_str: str) -> tuple[float, float, float]:
-    """Convert hex color to (r,g,b) in 0-1 range."""
-    h = hex_str.lstrip("#")
-    return tuple(int(h[i : i + 2], 16) / 255.0 for i in (0, 2, 4))
-
-
 def _text_color_for_bg(hex_str: str) -> str:
-    """Return white or dark text from the display-brightness heuristic."""
-    r, g, b = _hex_to_rgb01(hex_str)
-    return "#fff" if _text_brightness_rgb(r, g, b) < 0.45 else "#333"
+    """Return the swatch ink, ``#fff`` or ``#333``, with higher WCAG contrast."""
+    return dm.readable_text_color(hex_str, light="#fff", dark="#333")
 
 
 def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
