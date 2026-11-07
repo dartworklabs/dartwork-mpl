@@ -516,15 +516,16 @@ def test_11_4_swapped_sides_move_the_line_to_the_parent(
     _differs_from_07(_twinx_pair, swap, monkeypatch, owner=1, shown=False)
 
 
-def test_16_m02_twin_label_left_and_right_ticks_off_shows_none(
+def test_m02_twin_label_left_and_right_ticks_off_shows_none(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Decision 16 (m02, 2026-11-07): keep the current rule.
+    """m02: pins today's behaviour; not an approved difference.
 
     A twin whose y label moved left and whose right ticks are turned off
-    draws no y scale on the right, so it gets no line; 0.7 drew one. The
-    user approved this on its own rendered PoC and noted that such a figure
-    is not drawn in practice.
+    draws no y scale on the right, so it gets no line; 0.7 drew one. On its
+    rendered PoC the user said such a layout is not drawn in practice
+    (2026-11-07) and made no choice about the line; keeping the current
+    rule is the implementer's reading, not an approval.
     """
 
     def turn_off(fig: Figure, a: Axes, b: Axes) -> None:
