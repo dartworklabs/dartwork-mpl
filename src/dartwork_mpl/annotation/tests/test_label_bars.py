@@ -1873,6 +1873,43 @@ def test_a_value_beyond_the_limit_never_covers_other_text(tmp_path, fmt, case):
     _assert_readable(fig, shown, tmp_path, fmt)
 
 
+@pytest.mark.parametrize(
+    ("clip_on", "legend"), [(True, False), (True, True), (False, False)]
+)
+def test_only_text_that_is_drawn_can_hide_a_value_beyond_the_limit(
+    clip_on, legend
+):
+    # Final re-review R-I1: a Text clipped wholly away (clip_on=True, past
+    # the top of the axes) prints nothing, so it neither hides the true
+    # value beyond the limit (9-3 B) nor keeps a legend above from moving
+    # past it; the same Text drawn unclipped does cover it and hides it.
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    ax.bar(
+        np.arange(5),
+        [480, 520, 12500, 610, 700],
+        width=0.15,
+        color="dc.blue9",
+        label="Rev",
+    )
+    ax.set_ylim(0, 1000)
+    labels = dm.label_bars(ax)
+    other = ax.text(2, 1020, "Note", ha="center", va="bottom", clip_on=clip_on)
+    if legend:
+        dm.place_legend(ax, loc="above")
+    caught = _all_layout_warnings(fig)
+    renderer = drawn_renderer(fig)
+    assert other.get_window_extent(renderer).y0 > ax.bbox.y1  # wholly past
+    value = labels[2]
+    assert value.get_text() == "12,500" and value.clipped and value.off_bar
+    covered = [w for w in caught if "cover other text" in w]
+    if clip_on:
+        assert value.get_visible() and value.hidden_for is None
+        assert not covered and not [w for w in caught if "legend" in w]
+    else:
+        assert not value.get_visible() and value.hidden_for == "text"
+        assert len(covered) == 1
+
+
 def _cut_by_a_side_legend(side):
     """Thin dark bars past a limit you set, their values beyond it.
 

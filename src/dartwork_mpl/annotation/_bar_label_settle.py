@@ -100,6 +100,7 @@ import numpy as np
 import numpy.typing as npt
 from matplotlib.artist import Artist
 from matplotlib.container import BarContainer
+from matplotlib.transforms import Bbox, TransformedPath
 
 from .._figure_geometry import (
     axes_text_artists,
@@ -121,7 +122,6 @@ if TYPE_CHECKING:
     from matplotlib.legend import Legend
     from matplotlib.patches import Rectangle
     from matplotlib.text import Text
-    from matplotlib.transforms import Bbox
 
     from ._bar_label_options import BarLabelOptions
 
@@ -206,19 +206,20 @@ def bar_values_past_limits(ax: Axes, renderer: RendererBase) -> list[Bbox]:
                     continue
                 if others is None:
                     fig = ax.get_figure(root=True)
-                    texts = _texts_drawn(fig) if fig else []
-                    others = [t.get_window_extent(renderer) for t in texts]
+                    others = _text_boxes_drawn(fig, renderer) if fig else []
                 if not any(_covers(box, other) for other in others):
                     boxes.append(box)
     return boxes
 
 
-def _texts_drawn(fig: Figure) -> list[Text]:
-    """The figure's other text: tick labels, axis labels, titles, texts.
+def _text_boxes_drawn(fig: Figure, renderer: RendererBase) -> list[Bbox]:
+    """Where the figure's other text is drawn: tick labels, titles, texts.
 
     Every Axes' (and secondary axis's) tick labels in view, offset texts,
     axis labels, titles and ``ax.texts`` other than bar labels, and the
-    figure's own texts (``suptitle`` included); visible and not empty.
+    figure's own texts (``suptitle`` included); visible and not empty. A
+    text that clips counts only inside its clip box and clip path, and one
+    clipped wholly away prints nothing, so it is left out.
     """
     found: list[Text] = []
     for ax in axes_with_secondaries(fig):
@@ -227,13 +228,33 @@ def _texts_drawn(fig: Figure) -> list[Text]:
             found.append(axis.get_offset_text())
         found += axes_text_artists(ax)
     found += fig.texts
-    return [
-        text
-        for text in found
-        if not isinstance(text, BarLabel)
-        and text.get_visible()
-        and text.get_text()
-    ]
+    boxes: list[Bbox] = []
+    for text in found:
+        if (
+            isinstance(text, BarLabel)
+            or not text.get_visible()
+            or not text.get_text()
+        ):
+            continue
+        box: Bbox | None = text.get_window_extent(renderer)
+        if text.get_clip_on():
+            for clip in _clip_extents(text):
+                box = Bbox.intersection(box, clip) if box else None
+        if box is not None and box.width > 0 and box.height > 0:
+            boxes.append(box)
+    return boxes
+
+
+def _clip_extents(artist: Artist) -> list[Bbox]:
+    """The display boxes ``artist`` is clipped to (its clip box and path)."""
+    clips: list[Bbox] = []
+    clip_box = artist.get_clip_box()
+    if clip_box is not None:
+        clips.append(clip_box)
+    clip_path = artist.get_clip_path()
+    if isinstance(clip_path, TransformedPath):  # what set_clip_path stores
+        clips.append(clip_path.get_fully_transformed_path().get_extents())
+    return clips
 
 
 def _clear_texts(
@@ -243,8 +264,9 @@ def _clear_texts(
 
     A label off its bar beyond the limit the bar runs past (a cut bar too
     narrow for its number) sits outside the axes, where tick labels, axis
-    labels and titles are; one that covers any of them (:func:`_texts_drawn`)
-    is hidden for ``"text"``, as the overlap rule hides labels that meet.
+    labels and titles are; one that covers any of them where it is drawn
+    (:func:`_text_boxes_drawn`) is hidden for ``"text"``, as the overlap
+    rule hides labels that meet.
     """
     boxes = None
     for family in families:
@@ -255,9 +277,7 @@ def _clear_texts(
             if not (label.off_bar and label.clipped):
                 continue
             if boxes is None:
-                boxes = [
-                    t.get_window_extent(renderer) for t in _texts_drawn(fig)
-                ]
+                boxes = _text_boxes_drawn(fig, renderer)
             if any(_covers(box, other) for other in boxes):
                 label.own_visible(False)
                 if not Artist.get_visible(label):  # not shown by the caller
