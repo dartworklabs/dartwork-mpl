@@ -174,7 +174,7 @@ def _render_revision(
 
 def _pin_parent(
     store: ArtifactStore, artifact_id: ArtifactId | None, admitted_at: datetime
-) -> PinnedParent | None | StoreFailure:
+) -> PinnedParent | StoreFailure | None:
     """Hash verified parent manifest/source bytes once, without interpreting ancestry.
 
     Absence means this revision selected no parent. A selected parent's full load
@@ -242,7 +242,7 @@ def _settle_inputs(
     tx: InputTransaction,
     copied: InputStage,
     artifact_id: ArtifactId,
-) -> None | PublicationError:
+) -> PublicationError | None:
     """Settle after artifact exit, preserving matching or uncertain input commits.
 
     Only public NotFound permits rollback. Observer I/O exceptions are ambiguous;

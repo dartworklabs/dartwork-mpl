@@ -172,7 +172,7 @@ dev = [
     # Enables sphinx-gallery's parallel example execution (conf.py
     # `parallel`), which speeds up cache-miss docs builds.
     "joblib>=1.3.0",
-    "mypy>=1.8.0",
+    "mypy>=1.20",
     # PyYAML type stubs so `import yaml` type-checks identically on
     # every mypy version. Without the stubs installed, whether
     # ``ignore_missing_imports`` suppresses the ``import-untyped``
@@ -259,8 +259,15 @@ target-version = "py311"
 # per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
 # and break `test_rebuild_is_byte_identical`. Never hand-edited.
 extend-exclude = ["src/dartwork_mpl/_colors/_generated.py"]
+# Apply the excludes above and in [tool.ruff.format] to paths a hook or an
+# editor passes explicitly, not only to files found by directory discovery.
+force-exclude = true
 
 [tool.ruff.format]
+# Ruff 0.16+ formats the Python code blocks of Markdown files by default.
+# Adopting that is a separate decision: it would rewrite the shipped prompt
+# corpus, `llms-full.txt` and the MCP resource bytes together.
+exclude = ["*.md"]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = true

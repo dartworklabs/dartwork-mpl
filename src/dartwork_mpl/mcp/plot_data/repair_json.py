@@ -23,14 +23,14 @@ class _Number:
 
 
 _Json: TypeAlias = (
-    None
-    | bool
+    bool
     | str
     | int
     | float
     | _Number
     | list["_Json"]
     | dict[str, "_Json"]
+    | None
 )
 
 
