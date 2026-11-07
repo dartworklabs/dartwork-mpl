@@ -619,7 +619,7 @@ class TestFailsSafeWhenStructureIsUnreadable:
     def test_unreadable_structure_is_untouched_and_still_placed(
         self, monkeypatch, failure: str
     ) -> None:
-        import dartwork_mpl.annotation as annotation
+        import dartwork_mpl.annotation._legend_entries as legend_entries
 
         fig, ax, twin = _twin_pair()
         try:
@@ -630,7 +630,7 @@ class TestFailsSafeWhenStructureIsUnreadable:
                     raise AttributeError("no offset boxes")
                 return []
 
-            monkeypatch.setattr(annotation, "_entry_signatures", unreadable)
+            monkeypatch.setattr(legend_entries, "_entry_signatures", unreadable)
             assert place_legend(ax, loc="lower right") is kept
             assert ax.get_legend() is kept
             cx, cy = _corner(fig, ax, kept)

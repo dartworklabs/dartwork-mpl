@@ -18,9 +18,9 @@ import pytest
 # (module the test patches, patched name, module of the caller, caller)
 PATCH_TARGETS = [
     (
-        "dartwork_mpl.annotation",
+        "dartwork_mpl.annotation._legend_entries",
         "_entry_signatures",
-        "dartwork_mpl.annotation",
+        "dartwork_mpl.annotation._legend_entries",
         "_rebuildable",
     ),
     (
