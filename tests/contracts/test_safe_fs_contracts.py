@@ -8,7 +8,8 @@ is a security decision, not a test fix.
 
 Why each caller's policy differs:
 
-- store root: intermediate components are only no-follow directories, so a
+- store root: owned by the effective uid (files the process creates belong
+  to it). Intermediate components are only no-follow directories, so a
   store under a group-writable (0775) parent is accepted. The root's
   (dev, ino) is pinned at configuration and compared at every later open, so
   whoever can write that parent and swaps the root by rename is refused.
@@ -534,7 +535,7 @@ STORE_CAPABILITIES = [
     ("attribute", "O_NOFOLLOW"),
     ("attribute", "O_DIRECTORY"),
     ("attribute", "O_NONBLOCK"),
-    ("attribute", "getuid"),
+    ("attribute", "geteuid"),
     ("attribute", "fchmod"),
     ("attribute", "fstat"),
     ("attribute", "fsync"),
@@ -579,6 +580,29 @@ def test_store_refuses_each_missing_capability(
         result = configure_store(str(root))
     assert isinstance(result, ConfigurationError)
     assert not root.exists()
+
+
+@pytest.mark.parametrize("which", ["real_only", "effective_only"])
+def test_store_ownership_follows_the_effective_uid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, which: str
+) -> None:
+    """Files the process creates belong to its effective uid; getuid is ignored.
+
+    Only one of the two ids is moved to a foreign value. Moving the real uid
+    keeps the store working; moving the effective uid refuses the same root.
+    """
+    root = directory(tmp_path / "artifacts", 0o700)
+    foreign = os.geteuid() + 1
+    with monkeypatch.context() as patch:
+        if which == "real_only":
+            patch.setattr(disk.os, "getuid", lambda: foreign)
+            store = configured(root)
+            bundle = published(store)
+            loaded = store.load(bundle.manifest.artifact_id, NOW)
+            assert isinstance(loaded, StoredBundle), loaded
+        else:
+            patch.setattr(disk.os, "geteuid", lambda: foreign)
+            assert isinstance(configure_store(str(root)), ConfigurationError)
 
 
 @pytest.mark.parametrize(
