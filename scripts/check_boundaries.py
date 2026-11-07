@@ -207,6 +207,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.catalog"): (
         "the colormap catalogue groups colormaps by shipped family kind"
     ),
+    ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.contrast"): (
+        "catalogue swatch labels pick their ink by WCAG contrast"
+    ),
     ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.registry"): (
         "the colour catalogue draws every registered colour library"
     ),
