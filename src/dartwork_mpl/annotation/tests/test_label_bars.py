@@ -1124,6 +1124,17 @@ _PROBE = (1.0, 0.0, 1.0)  # a colour no test bar or background takes
 _REQUIRE_GS = "DARTWORK_MPL_REQUIRE_GHOSTSCRIPT"
 FORMATS = pytest.mark.parametrize("fmt", ["png", "pdf"])
 
+# Tests that read placement on crowded figures, where the layout's "hidden"
+# warning is the expected outcome rather than the subject (re-review m3).
+# Its wording and counts are pinned by the 13-4 tests ("..._says_so",
+# "hidden where they would overlap"); only these two messages are accepted,
+# so any other warning still surfaces. (The "." after label_bars stands for
+# its ":", which would end the message field of the filter.)
+EXPECTS_HIDDEN_WARNING = pytest.mark.filterwarnings(
+    r"ignore:dm\.label_bars. \d+ of \d+ bar value labels are hidden "
+    r"(where they would overlap|under a legend):UserWarning"
+)
+
 
 def _ghostscript():
     """The ``gs`` executable; a missing one fails under CI, else skips."""
@@ -1278,6 +1289,7 @@ def test_inside_label_wider_than_its_bar_sits_beyond_it(tmp_path, fmt):
     _assert_readable(fig, labels, tmp_path, fmt)
 
 
+@EXPECTS_HIDDEN_WARNING
 @FORMATS
 def test_crowded_inside_keeps_a_label_its_row_cannot_hold_outside(
     tmp_path, fmt
@@ -2881,6 +2893,7 @@ def test_crowded_skip_and_inside():
     assert {_hex(t) for t in others} == {"#ffffff"}
 
 
+@EXPECTS_HIDDEN_WARNING
 def test_barh_thin_rows_skip_alternate():
     # Rows thinner than the text: barh never turns its labels; it hides
     # every other one, keeping the top row (the first one read).
@@ -2957,6 +2970,7 @@ def test_headroom_grows_only_autoscaled_limit():
     assert ax.get_autoscalex_on()
 
 
+@EXPECTS_HIDDEN_WARNING
 @pytest.mark.parametrize("sign", [1, -1])
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
 def test_headroom_keeps_the_edge_it_does_not_grow(orientation, sign):
@@ -3190,6 +3204,7 @@ def test_repeat_simple_layout_idempotent():
     assert texts[2].get_rotation() == 90
 
 
+@EXPECTS_HIDDEN_WARNING
 def test_crowded_when_wider_than_the_pitch_less_1_5_pt():
     # Bars at a pitch set through the caller's x limits: a label wider than
     # the pitch less 1.5 pt is crowded, one narrower is not.
@@ -3361,6 +3376,7 @@ def test_crowding_pitch_reads_every_bar_on_the_axes():
     assert _on_bars(fig, shown) == []
 
 
+@EXPECTS_HIDDEN_WARNING
 @pytest.mark.parametrize(
     ("layout", "n"),
     [
@@ -3481,6 +3497,7 @@ def _layout_warnings(fig):
     ]
 
 
+@EXPECTS_HIDDEN_WARNING
 @pytest.mark.parametrize("per_series", [False, True])
 def test_overlapping_series_alternate_by_bar_index(per_series):
     # PoC figure b, B: the first series keeps its labels on even bar
@@ -3770,6 +3787,7 @@ def test_a_replacing_turn_stays_clear_of_the_label_kept_before():
     assert keep_apart(positions, 2.0) == [before, narrow]
 
 
+@EXPECTS_HIDDEN_WARNING
 def test_stacked_series_keep_the_overlap_rule():
     # Totals (stacks) are no plain series: the overlap rule hides from the
     # last position on screen, as before, so the left stacks lose theirs.
