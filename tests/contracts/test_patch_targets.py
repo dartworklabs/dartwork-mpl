@@ -32,9 +32,9 @@ PATCH_TARGETS = [
     (
         # formatting/tests/test_twin_spines.py turns the spine step off to
         # re-enact 0.7 (install_07); simple_layout must still read it here.
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._simple_layout",
         "_show_twin_spines",
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._simple_layout",
         "simple_layout",
     ),
 ]

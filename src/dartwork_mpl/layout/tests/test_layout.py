@@ -349,7 +349,7 @@ class TestSimpleLayoutAuditRegressions:
             get_bounding_box([])
 
     def test_inverted_axis_ticks_stay_on_canvas(self) -> None:
-        from dartwork_mpl.layout import get_renderer
+        from dartwork_mpl._figure_geometry import get_renderer
 
         fig, ax = plt.subplots()
         ax.plot([0, 1], [0, 1])
@@ -368,7 +368,7 @@ class TestSimpleLayoutAuditRegressions:
         plt.close(fig)
 
     def test_suptitle_not_overlapped_by_axes_content(self) -> None:
-        from dartwork_mpl.layout import get_renderer
+        from dartwork_mpl._figure_geometry import get_renderer
 
         fig, ax = plt.subplots()
         ax.plot([0, 1], [0, 1])
