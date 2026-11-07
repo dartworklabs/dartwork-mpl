@@ -88,11 +88,11 @@ hidden.
 | 11-4 twin's ticks and label moved left; parent moved right (x19) or not (x13) | parent (x19), none (x13) | twin |
 | 11-5 twin with its y axis hidden (x14) | no | twin |
 | 14 `sharex` overlay drawn like a twin (x axis and background hidden), only its ticks or only its label on the right | overlay | no |
-| m02, awaiting the user's decision: twin's label moved left and its right ticks turned off | none | twin |
+| 16 (m02) twin's label moved left and its right ticks turned off | none | twin |
 
-The first twelve rows match 0.7 pixel for pixel; 11-3 to 11-5 and 14 are
-approved; m02 awaits a decision on its own rendered PoC (the 11-4 approval
-does not extend to it). Decision 14 settles a pair public state cannot tell apart: the
+The first twelve rows match 0.7 pixel for pixel; 11-3 to 11-5, 14 and 16
+are approved (16 on its own rendered PoC, 2026-11-07: keep the current rule;
+the user noted that such a figure is not drawn in practice). Decision 14 settles a pair public state cannot tell apart: the
 overlay in the last row and the twin of x02 / x03 with the same half-moved scale
 differ only in the private `_twinned_axes`, and 0.7 drew a line on the twin
 alone. Any public rule answers both alike; the user chose to keep the twin's
@@ -176,8 +176,6 @@ alias (internal, never in `__all__`).
 
 ## Open points (not decided here)
 
-- m02 (table above): keep the current rule, under which a twin with no
-  y ticks and no y label on the right gets no line, or not.
 - `twiny` top spine: still hidden, as in 0.7; showing it needs its own PoC.
 - `PRESET_OVERRIDE` still uses `_twinned_axes`; aligning it with the public
   rule would change root's pinned shared-axes contract test.

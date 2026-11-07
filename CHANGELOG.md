@@ -45,8 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   y ticks and label you moved to the right gets that line, and so does an
   overlay you made like a twin (x axis hidden, y ticks or label on the
   right); when a twin and its parent swap sides, the line moves to the
-  parent; a twin whose y axis is hidden, or whose y ticks and label you both
-  moved to the left, gets none.
+  parent; a twin whose y axis is hidden, whose y ticks and label you both
+  moved to the left, or whose label you moved left with its right ticks
+  turned off, gets none.
   Without the layout a twin keeps the hidden spine; show it with
   `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
   first `dm.simple_layout` now shows; hide it after the layout, or give it
