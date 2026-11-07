@@ -155,16 +155,19 @@ class TestCheckFigureQuality:
 class TestSuggestChartTypeEdgeCases:
     """Branches not covered by parametrized happy paths."""
 
-    def test_unknown_x_type_with_y_returns_scatter_default(self) -> None:
-        """An unrecognized ``x_type`` falls through to the scatter default."""
-        result = suggest_chart_type("weird", "continuous", 10, 1)
-        assert result == "scatter"
+    def test_unknown_x_type_with_y_is_rejected(self) -> None:
+        """An unrecognized ``x_type`` is named, not answered with a default.
 
-    def test_unknown_x_type_no_y_returns_line(self) -> None:
-        """``y_type=None`` with unknown x_type hits the ``return 'line'``
-        branch (line 45)."""
-        result = suggest_chart_type("weird", None, 10, 1)
-        assert result == "line"
+        This replaces a test that pinned the fall-through to ``scatter``:
+        a typo used to come back as a confident recommendation (#501 task 8).
+        """
+        with pytest.raises(ValueError, match="x_type must be one of"):
+            suggest_chart_type("weird", "continuous", 10, 1)
+
+    def test_unknown_x_type_no_y_is_rejected(self) -> None:
+        """``y_type=None`` does not excuse an unrecognized ``x_type`` either."""
+        with pytest.raises(ValueError, match="x_type must be one of"):
+            suggest_chart_type("weird", None, 10, 1)
 
     def test_categorical_with_categorical_y_returns_bar(self) -> None:
         """Categorical x + non-continuous y still routes via ``n_series``."""
