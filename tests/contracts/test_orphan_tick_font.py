@@ -9,11 +9,8 @@ import pytest
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-from dartwork_mpl.layout import (
-    _adopt_axis_label_font_core,
-    adopt_axis_label_font,
-    simple_layout,
-)
+from dartwork_mpl.layout import adopt_axis_label_font, simple_layout
+from dartwork_mpl.layout._orphan_tick_font import _adopt_axis_label_font_core
 
 
 def _x_tick(ax):
