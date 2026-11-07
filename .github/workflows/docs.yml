@@ -22,12 +22,13 @@ jobs:
     env:
       UV_PYTHON: "3.12"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
@@ -43,7 +44,7 @@ jobs:
       # + lockfile, so any change forces a fresh full rebuild (no
       # restore-keys — a partial restore could ship stale images).
       - name: Cache sphinx-gallery output
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: docs/examples_gallery
           key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
@@ -80,7 +81,7 @@ jobs:
 
       - name: Upload color-system comparison
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: color-system-comparison
           path: build/color-system-comparison
@@ -96,7 +97,7 @@ jobs:
 
       - name: Upload build log
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sphinx-build-log
           path: docs/build.log
@@ -113,7 +114,7 @@ jobs:
           fi
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: docs/_build/html
 
@@ -126,4 +127,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
