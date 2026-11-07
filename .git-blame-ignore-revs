@@ -1,0 +1,15 @@
+# Commits that only moved code between files; git blame skips them (git config blame.ignoreRevsFile .git-blame-ignore-revs).
+# refactor: move the placement measurement helpers
+9e8b8388ae6d877d93f62de8d68647a88960b4ff
+# refactor: move the panel labels
+edd9d8529cdd6067bc5677e8a06184e6279ac85f
+# refactor: move the point, corner and hline labels
+bd461c16890c313f25ca7d85594b0642af01e44a
+# refactor: move label_line_ends
+76587fc1d676aa89ee9654c2548180fa53f6097d
+# refactor: move add_note and make_offset
+f483112dd3d05548d67a21a1091de891cd52de87
+# refactor: move the axis name helpers
+df897fae30d1d93c47dbf2ae92093e86771db929
+# refactor: move place_legend and the legend entry helpers
+066bcd04867b2ffb0feb2bc0471ddcf8358c828a
