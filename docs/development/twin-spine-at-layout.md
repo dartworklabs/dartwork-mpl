@@ -88,12 +88,15 @@ hidden.
 | 11-4 twin's ticks and label moved left; parent moved right (x19) or not (x13) | parent (x19), none (x13) | twin |
 | 11-5 twin with its y axis hidden (x14) | no | twin |
 | 14 `sharex` overlay drawn like a twin (x axis and background hidden), only its ticks or only its label on the right | overlay | no |
-| m02 twin's label moved left and its right ticks turned off (not approved, see below) | none | twin |
+| m02 twin's label moved left and its right ticks turned off (decided by delegation, see below) | none | twin |
 
 The first twelve rows match 0.7 pixel for pixel; 11-3 to 11-5 and 14 are
-approved. m02 is not: on its rendered PoC the user said such a layout is not
-drawn in practice (2026-11-07) and did not choose how its line is handled.
-Keeping the current rule for it is the implementer's reading, not an approval. Decision 14 settles a pair public state cannot tell apart: the
+approved. m02 was decided later the same day by delegation: on its rendered
+PoC the user said such a layout is not drawn in practice, then handed the
+remaining decision to the implementing session ("너가 해줘"), which kept the
+current rule (no line). A y axis with neither ticks nor a label on the right
+is the 11-5 case, and drawing 0.7's line would need a private twin test.
+Decision 14 settles a pair public state cannot tell apart: the
 overlay in the last row and the twin of x02 / x03 with the same half-moved scale
 differ only in the private `_twinned_axes`, and 0.7 drew a line on the twin
 alone. Any public rule answers both alike; the user chose to keep the twin's
@@ -177,8 +180,6 @@ alias (internal, never in `__all__`).
 
 ## Open points (not decided here)
 
-- m02 (table above): the user called the layout unnecessary but made no
-  choice about its line; whether it keeps the current rule awaits one.
 - `twiny` top spine: still hidden, as in 0.7; showing it needs its own PoC.
 - `PRESET_OVERRIDE` still uses `_twinned_axes`; aligning it with the public
   rule would change root's pinned shared-axes contract test.
