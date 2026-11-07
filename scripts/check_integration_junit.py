@@ -28,6 +28,7 @@ REQUIRED_MODULES = (
     "tests.contracts.test_mcp_tool_hardening",
     "tests.contracts.test_mcp_validation_contract",
     "tests.contracts.test_removed_names_golden",
+    "tests.contracts.test_safe_fs_contracts",
     "src.dartwork_mpl.mcp.plot_data.tests.test_validators",
     "tests.mcp.artifacts.test_artifact_boundaries",
     "tests.mcp.artifacts.test_artifact_discovery",
