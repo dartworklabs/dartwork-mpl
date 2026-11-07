@@ -55,6 +55,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Importing dartwork-mpl no longer rebinds any matplotlib class or
+  function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
+  import); import still registers the bundled colours, colormaps and fonts.
+  `dm.simple_layout` shows the right spine, which the presets hide, of an
+  Axes drawing its own y scale on the right of a shared plot area: y ticks
+  and y label on the right, or one of them when its x axis is hidden as a
+  twin's is (the Axes `twinx()` returns, of an inset too). Figures laid out
+  with `dm.simple_layout` look as in 0.7, except: a `sharex` overlay whose
+  y ticks and label you moved to the right gets that line, and so does an
+  overlay you made like a twin (x axis hidden, y ticks or label on the
+  right); when a twin and its parent swap sides, the line moves to the
+  parent; a twin whose y axis is hidden, or whose y ticks and label you both
+  moved to the left, gets none.
+  Without the layout a twin keeps the hidden spine; show it with
+  `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
+  first `dm.simple_layout` now shows; hide it after the layout, or give it
+  `linewidth=0`. `dm.validate_figure` reports the line on such an overlay
+  or a swapped parent as `PRESET_OVERRIDE` (INFO); it is the layout's. The
+  rule: [docs/development/twin-spine-at-layout.md](docs/development/twin-spine-at-layout.md).
 - **Colour catalogue labels pick their ink by WCAG contrast.** The swatch
   labels in `dm.diagnostics.render_color_catalog` and the docs colour
   tables choose white or
@@ -131,6 +150,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- `dartwork_mpl.style.install_twinx_patch` and its root alias
+  `dm.install_twinx_patch` (internal, never in `__all__`): the import-time
+  `twinx` wrapper. See *Changed*.
 - `dartwork_mpl.ui._config` (private): the legacy preset-file helpers.
   Nothing in the package used them; the viewer keeps its state in
   `dartwork_mpl.ui.state`.

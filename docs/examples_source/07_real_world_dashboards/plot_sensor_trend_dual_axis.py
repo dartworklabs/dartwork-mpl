@@ -9,8 +9,8 @@ questions about the same signal.
 
 The sample data is synthetic hourly mean temperature for a single site.
 
-In 0.4, ``ax.twinx()`` is monkey-patched to make the right spine
-visible automatically with the active style's linewidth — no need for
+``dm.simple_layout(fig)`` shows the twin's right spine, which the preset
+hides, at the preset's line width — no need for
 ``ax2.spines["right"].set_visible(True)``.
 """
 
@@ -39,7 +39,7 @@ ax.set_xlabel("Time", fontsize=dm.fs(0))
 ax.set_ylabel("Temperature (°C)", fontsize=dm.fs(0))
 ax.grid(axis="y", alpha=0.2)
 
-# twinx: 0.4 auto-shows the right spine via the dartwork-mpl monkey-patch.
+# twinx: dm.simple_layout below shows the twin's right spine.
 ax2 = ax.twinx()
 ax2.plot(
     x, change_pct, "o-", color="dc.orange3", linewidth=dm.lw(1), markersize=5
