@@ -82,7 +82,7 @@ class FixedStateStore:
             try:
                 fd = os.open(
                     file.value,
-                    os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                    os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY,
                     dir_fd=root.fd,
                 )
                 info = fs.stat_handle(fd)
