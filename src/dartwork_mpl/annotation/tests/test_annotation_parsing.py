@@ -16,11 +16,13 @@ from dartwork_mpl.annotation import (
     _mark_placement,
     _MeasuredLegend,
     _parse_axis,
+    _UnmeasuredLegend,
+)
+from dartwork_mpl.annotation._point_labels import (
     _parse_corner,
     _parse_hline_side,
     _parse_hline_x,
     _parse_value_side,
-    _UnmeasuredLegend,
 )
 
 
