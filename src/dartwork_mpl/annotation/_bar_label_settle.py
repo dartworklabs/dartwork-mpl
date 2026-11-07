@@ -103,8 +103,9 @@ from matplotlib.container import BarContainer
 from matplotlib.transforms import Bbox, TransformedPath
 
 from .._figure_geometry import (
-    axes_text_artists,
+    axes_titles,
     axes_with_secondaries,
+    drawn_tick_labels,
     get_renderer,
     outside_side,
     same_position_axes,
@@ -215,18 +216,33 @@ def bar_values_past_limits(ax: Axes, renderer: RendererBase) -> list[Bbox]:
 def _text_boxes_drawn(fig: Figure, renderer: RendererBase) -> list[Bbox]:
     """Where the figure's other text is drawn: tick labels, titles, texts.
 
-    Every Axes' (and secondary axis's) tick labels in view, offset texts,
-    axis labels, titles and ``ax.texts`` other than bar labels, and the
-    figure's own texts (``suptitle`` included); visible and not empty. A
-    text that clips counts only inside its clip box and clip path, and one
-    clipped wholly away prints nothing, so it is left out.
+    Every visible Axes' (and secondary axis's) titles and ``ax.texts``
+    other than bar labels; where its axis is drawn (the Axes' axis on, the
+    axis visible), the tick labels matplotlib draws there
+    (:func:`drawn_tick_labels`, major and minor), its offset text and its
+    label; and the figure's own texts (``suptitle`` included); visible and
+    not empty. A hidden axis keeps its labels visible as artists but never
+    draws them, so they are left out. A text that clips counts only inside
+    its clip box and clip path, and one clipped wholly away prints nothing,
+    so it is left out too.
     """
     found: list[Text] = []
     for ax in axes_with_secondaries(fig):
-        for axis in (ax.xaxis, ax.yaxis):
-            found += axis.get_ticklabels(which="both")
-            found.append(axis.get_offset_text())
-        found += axes_text_artists(ax)
+        if not ax.get_visible():
+            continue
+        found += [*ax.texts, *axes_titles(ax).values()]
+        if not getattr(ax, "axison", True):  # ax.axis("off")
+            continue
+        axes: tuple[tuple[Literal["x", "y"], Axis], ...] = (
+            ("x", ax.xaxis),
+            ("y", ax.yaxis),
+        )
+        for which, axis in axes:
+            if not axis.get_visible():
+                continue
+            found += drawn_tick_labels(ax, which)
+            found += drawn_tick_labels(ax, which, minor=True)
+            found += [axis.get_offset_text(), axis.label]
     found += fig.texts
     boxes: list[Bbox] = []
     for text in found:

@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
+import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
@@ -28,6 +29,7 @@ __all__ = [
     "axes_with_secondaries",
     "backdrop_layers",
     "canvas_renderer",
+    "drawn_tick_labels",
     "get_renderer",
     "iter_figure_level_extents",
     "outside_clearance_px",
@@ -252,6 +254,54 @@ def axes_text_artists(ax: Axes) -> list[Text]:
     """Return ``ax.texts``, the three titles and the x/y axis labels."""
     titles = axes_titles(ax).values()
     return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
+
+
+# Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
+_EDGE_RTOL = 1e-10
+
+
+def drawn_tick_labels(
+    ax: Axes, which: Literal["x", "y"], *, minor: bool = False
+) -> list[Text]:
+    """The major (or ``minor``) tick labels matplotlib draws on an axis.
+
+    Matplotlib draws a tick only when the axes' axis is on
+    (``ax.axis("off")`` turns it off) and the axis is visible, and when its
+    location lies in the view interval, compared after the axis transform
+    with a 1e-10 relative slack. Each drawn tick draws its visible
+    ``label1`` (left / bottom) and ``label2`` (right / top, with
+    ``labelright`` / ``labeltop``). Every other label stays on the artist
+    tree, visible and positioned, but is never drawn: a colorbar tick a
+    hair past its limit, the ticks of a title-only panel, the labels of a
+    hidden axis.
+    """
+    axis = ax.xaxis if which == "x" else ax.yaxis
+    if not getattr(ax, "axison", True) or not axis.get_visible():
+        return []
+    transform = axis.get_transform()
+    raw = axis.get_minorticklocs() if minor else axis.get_majorticklocs()
+    locs = np.asarray(raw, dtype=float)
+    if not locs.size:
+        return []
+    with np.errstate(all="ignore"):
+        view = transform.transform(np.asarray(axis.get_view_interval(), float))
+        placed = np.ravel(transform.transform(locs))
+    low, high = sorted(float(v) for v in np.ravel(view))
+    slack = _EDGE_RTOL * (high - low)
+    ticks = (
+        axis.get_minor_ticks(len(locs))
+        if minor
+        else axis.get_major_ticks(len(locs))
+    )
+    drawn: list[Text] = []
+    # One Tick per location, as matplotlib pairs them when it draws.
+    for place, tick in zip(placed, ticks, strict=True):
+        if not (np.isfinite(place) and low - slack <= place <= high + slack):
+            continue
+        drawn += [
+            lab for lab in (tick.label1, tick.label2) if lab.get_visible()
+        ]
+    return drawn
 
 
 def secondary_axes(ax: Axes) -> list[Axes]:

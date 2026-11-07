@@ -1922,6 +1922,24 @@ def test_only_text_that_is_drawn_can_hide_a_value_beyond_the_limit(
         assert len(covered) == 1
 
 
+@pytest.mark.parametrize("hide", ["xaxis", "axis_off"])
+def test_text_on_a_hidden_axis_hides_no_value_beyond_the_limit(hide):
+    # PR #617 review (P2): a hidden axis (ax.xaxis.set_visible(False)) or
+    # ax.set_axis_off() keeps its tick labels and axis label visible as
+    # artists, but matplotlib never draws them, so they hide no value past
+    # the lower limit (K1 hides these two while the axis is drawn).
+    fig, ax, labels, cut = _cut_onto_text("K1")
+    if hide == "xaxis":
+        ax.xaxis.set_visible(False)
+    else:
+        ax.set_axis_off()
+    caught = _all_layout_warnings(fig)
+    values = [t for t in labels if t.get_text() in cut]
+    assert len(values) == len(cut)
+    assert all(t.get_visible() and t.hidden_for is None for t in values)
+    assert not [w for w in caught if "cover other text" in w]
+
+
 def _cut_by_a_side_legend(side):
     """Thin dark bars past a limit you set, their values beyond it.
 

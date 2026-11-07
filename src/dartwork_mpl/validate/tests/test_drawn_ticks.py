@@ -19,7 +19,7 @@ import pytest
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-from dartwork_mpl.validate._checks._tick_utils import drawn_tick_labels
+from dartwork_mpl._figure_geometry import drawn_tick_labels
 
 
 @pytest.fixture(autouse=True)
