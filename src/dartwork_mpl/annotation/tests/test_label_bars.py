@@ -1843,8 +1843,8 @@ def _other_text(fig, ax):
 @FORMATS
 @pytest.mark.parametrize("case", ["K1", "K2", "K3"])
 def test_a_value_beyond_the_limit_never_covers_other_text(tmp_path, fmt, case):
-    # Re-review N-C1 (candidate A, pending the user's choice): just beyond
-    # a lower or left limit lie the tick labels, above a top limit the
+    # Re-review N-C1 (candidate A, the user's decision of 2026-11-07): just
+    # beyond a lower or left limit lie the tick labels, above a top limit the
     # title. A value placed there would print over them (both unreadable:
     # 1.0-1.66:1 in PNG and PDF). It is hidden instead, as the overlap rule
     # hides labels that meet, and the layout says so; the other labels and
@@ -1899,9 +1899,10 @@ def _cut_by_a_side_legend(side):
 def test_a_legend_placed_on_a_side_clears_the_values_beyond_it(
     tmp_path, fmt, side
 ):
-    # Re-review N-I2 (pending the user's choice): dm.place_legend(ax,
-    # loc="above") anchored the legend past the tick and axis labels only,
-    # so it covered the true values just beyond the top limit (9-3 B), the
+    # Re-review N-I2 (candidate A, the user's decision of 2026-11-07):
+    # dm.place_legend(ax, loc="above") anchored the legend past the tick and
+    # axis labels only, so it covered the true values just beyond the top
+    # limit (9-3 B), the
     # legend rule hid them, and the warning named dm.place_legend(ax), the
     # call already made. The layout now anchors such a legend past those
     # values too (and lifts the title over the legend as before).
