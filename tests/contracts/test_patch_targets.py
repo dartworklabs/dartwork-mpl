@@ -24,9 +24,9 @@ PATCH_TARGETS = [
         "_rebuildable",
     ),
     (
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._reservations",
         "_reservation_edge",
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._reservations",
         "_figure_artist_reservations",
     ),
     (
