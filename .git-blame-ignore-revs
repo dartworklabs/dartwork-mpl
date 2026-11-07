@@ -13,3 +13,17 @@ f483112dd3d05548d67a21a1091de891cd52de87
 df897fae30d1d93c47dbf2ae92093e86771db929
 # refactor: move place_legend and the legend entry helpers
 066bcd04867b2ffb0feb2bc0471ddcf8358c828a
+# refactor: move margin parsing and edge arithmetic (layout)
+38ae03d1e29089dc80aaf1f93e9208ff486a9947
+# refactor: move the per-Axes content extent measurement
+ce3c15a4653308603555f367512b26f20f743e26
+# refactor: move the orphan tick-label font adoption
+8119b0912e73b00ca42e02009adb4e709bb97bdc
+# refactor: move the figure-artist edge reservations
+f4fd072e11e726aae23617fadd8edce33de4e074
+# refactor: move the pre-measurement settling
+02dd96723f421a34a26fbd175f99a74c9f77607c
+# refactor: move tight_crop and get_bounding_box
+9c738ef0158dc51f3cc13f7cf99551338a89f564
+# refactor: move simple_layout and its steps
+e79775c06a41ffef9efa28698e0e57222e0a0979
