@@ -664,7 +664,10 @@ temporary paths); the server refuses symlinked components. Configuration binds
 once; requests cannot choose paths or roots. Directories/files are private (0700/0600). Unsafe roots
 and hosts without descriptor-relative no-follow opens and exclusive
 no-follow hard-link restoration return `configuration_error` for this capability;
-existing tools remain available. Local filesystem validation covers macOS with
+existing tools remain available. The server names the refused root's cause and
+fix once at startup, as one `dartwork-mpl: artifact storage disabled: …` line on
+stderr; responses keep the fixed `configuration_error` message. Local
+filesystem validation covers macOS with
 Python 3.10 historically; 0.6.0 requires Python 3.11+. That historical check
 is not verification of every current OS/filesystem.
 
