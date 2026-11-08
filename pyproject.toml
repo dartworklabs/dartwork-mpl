@@ -413,6 +413,12 @@ exclude = [
 module = ["fontTools.*"]
 ignore_missing_imports = true
 
+# matplotlib's mplot3d toolkit ships no type information; the text checks
+# project a 3D axes' text with its public proj3d.proj_transform.
+[[tool.mypy.overrides]]
+module = ["mpl_toolkits.mplot3d.proj3d"]
+ignore_missing_imports = true
+
 # InquirerPy's `inquirer` submodule exposes `text` and `select` via
 # dynamic attribute access; they are not listed in `__all__`, so mypy
 # strict raises attr-defined on every access. Skipping follow_imports

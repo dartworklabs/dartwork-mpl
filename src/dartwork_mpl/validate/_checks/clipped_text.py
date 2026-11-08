@@ -8,6 +8,7 @@ from ..._figure_geometry import (
     axes_text_artists,
     axes_with_secondaries,
     drawn_tick_labels,
+    text_window_extent,
 )
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
@@ -68,7 +69,7 @@ def check_clipped_text(
             ):
                 continue
             try:
-                ext = txt.get_window_extent(renderer)
+                ext = text_window_extent(txt, renderer)
             except BBOX_ERRORS:
                 continue
             if ext.width <= 0 or ext.height <= 0:

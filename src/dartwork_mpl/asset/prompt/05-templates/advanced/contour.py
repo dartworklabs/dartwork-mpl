@@ -36,10 +36,28 @@ fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
 levels = np.linspace(0, np.ceil(Z.max() * 10) / 10, 11)
 cf = ax.contourf(X, Y, Z, levels=levels, cmap="viridis", alpha=0.85)
 cs = ax.contour(X, Y, Z, levels=levels[::2], colors="white", linewidths=0.3)
-ax.clabel(cs, inline=True, fontsize=dm.fs(-2), fmt="%.1f", colors="white")
+# Label every other line (0.2, 0.6), each on the side of its hill away
+# from the hill's callout so no arrow runs through a number. matplotlib
+# puts a label on the line nearest each point; with other data, move the
+# points (or drop ``manual=`` for matplotlib's own placement).
+ax.clabel(
+    cs,
+    levels=levels[2::4],
+    manual=[(-1.5, 0.4), (-1.4, -0.9), (1.9, 1.0)],
+    inline=True,
+    fontsize=dm.fs(-2),
+    fmt="%.1f",
+    colors="white",
+)
 
-# Peak markers + callouts.
-for i, (cx, cy, amp, _) in enumerate(peaks):
+# Peak markers + callouts. Each callout sits in empty space past its
+# hill's outer contour (data coordinates): it clears the contour labels at
+# every preset's text size, where a fixed offset from the peak lands on
+# them. (x, y, ha, va) of each callout's text.
+callout_at = [(0.4, -1.2, "left", "top"), (-0.2, 1.2, "right", "bottom")]
+for i, ((cx, cy, amp, _), (tx, ty, ha, va)) in enumerate(
+    zip(peaks, callout_at, strict=True)
+):
     ax.scatter(
         cx,
         cy,
@@ -51,9 +69,11 @@ for i, (cx, cy, amp, _) in enumerate(peaks):
         marker="*",
     )
     ax.annotate(
-        f"Peak {i + 1}\n({cx:+.1f}, {cy:+.1f})\nz = {amp:.1f}",
+        f"Peak {i + 1}\nz = {amp:.1f}",
         xy=(cx, cy),
-        xytext=(cx + 0.4, cy + 0.6),
+        xytext=(tx, ty),
+        ha=ha,
+        va=va,
         fontsize=dm.fs(-1),
         color="dc.amber5",
         arrowprops={"arrowstyle": "->", "color": "dc.amber5", "lw": 0.5},
