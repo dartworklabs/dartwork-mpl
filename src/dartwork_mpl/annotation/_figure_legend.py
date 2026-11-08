@@ -12,7 +12,7 @@ from .._figure_geometry import (
     get_renderer,
     iter_figure_level_extents,
 )
-from ._legend_fit import ceil_div, legend_size, probe
+from ._legend_fit import ceil_div, legend_pad, legend_size, probe
 from ._legend_outside import OutsidePlan, choose, split_ncols
 
 if TYPE_CHECKING:
@@ -73,14 +73,18 @@ def _figure_plan(
 ) -> OutsidePlan:
     """Columns and cost of the figure legend on ``side`` of the panels.
 
-    Above and below: the fewest rows no wider than the (sub)figure.
-    Right and left: the fewest columns no taller than the panels. The loss
-    is the legend's height (above, below) or width (right, left) as a
-    share of the panels'.
+    Above and below: the fewest rows that fit the (sub)figure's width;
+    right and left: the fewest columns that fit its height. The legend is
+    centred on that edge and fits when it stays on the (sub)figure, its pad
+    from each end: the rule ``place_legend``'s outside legends follow,
+    with no neighbouring panel, since this one spans them all. The loss is
+    the legend's height (above, below) or width (right, left) as a share
+    of the panels'.
     """
     count = max(len(labels), 1)
     along_width = side in ("above", "below")
-    limit = fig.bbox.width if along_width else panels.height
+    edge = fig.bbox.width if along_width else fig.bbox.height
+    limit: float | None = None
     if explicit is not None:
         steps = [explicit]
     elif along_width:
@@ -95,6 +99,8 @@ def _figure_plan(
     fits = False
     for ncols in steps:
         trial = probe(fig, handles, labels, loc=loc, ncols=ncols, **legend_kw)
+        if limit is None:
+            limit = edge - 2 * legend_pad(trial, renderer)
         try:
             width, height = legend_size(trial, renderer)
         except BBOX_ERRORS:
@@ -163,8 +169,9 @@ def figure_legend(
     ``loc="best"`` puts the legend above the panels, or right of them when
     that takes clearly less of the panels (at least 10 % and 5 % of their
     size less; the rule of :func:`dartwork_mpl.place_legend`). Above and
-    below take the fewest rows no wider than the figure, right and left the
-    fewest columns no taller than the panels; ``ncol`` / ``ncols`` in
+    below take the fewest rows that fit the figure's width, right and left
+    the fewest columns that fit its height, the legend's pad from each end
+    (it may be longer than the panels); ``ncol`` / ``ncols`` in
     ``kw`` overrides the count. ``loc="above"``, ``"below"``, ``"right"``
     or ``"left"`` is that side; any other ``loc`` (with ``kw``) goes to
     ``fig.legend`` unchanged. Above, the legend sits under a

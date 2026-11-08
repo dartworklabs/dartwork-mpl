@@ -143,6 +143,21 @@ def test_a_named_side_is_used(side: str) -> None:
     assert dm.validate_figure(fig, checks=LEGEND_CHECKS, quiet=True) == []
 
 
+def test_a_right_figure_legend_may_be_taller_than_the_panels() -> None:
+    """The rule of place_legend's outside legends: it fits when it stays on
+    the figure, so one column taller than the panels is not split."""
+    fig, axs = _grid(1, 2, ("17cm", "6cm"))
+    for ax in axs:
+        _lines(ax, 16)
+    legend = dm.figure_legend(fig, loc="right")
+    assert legend is not None
+    renderer = drawn_renderer(fig)
+    box = legend.get_window_extent(renderer)
+    assert legend_ncols(legend) == 1
+    assert box.height > _panels(fig, axs).height
+    assert fig.bbox.y0 <= box.y0 and box.y1 <= fig.bbox.y1
+
+
 def test_a_matplotlib_loc_goes_to_fig_legend_unchanged() -> None:
     fig, axs = _grid(1, 2, ("17cm", "8cm"))
     for ax in axs:

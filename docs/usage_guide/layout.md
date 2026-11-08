@@ -852,15 +852,20 @@ or text of the Axes (and its twin) comes within 2 pt of. When none is free it
 goes outside, on a side no other panel sits beyond: above by default, right or
 below when that takes at least 10 % and 5 % of the plot less (many short
 names go right), the side the neighbouring panel's legend took when that fits
-as well. Names are broken at spaces only when the legend would otherwise run
-past the Axes along its side or take more than 60 % of the plot, or, on a
+as well. Outside, a legend fits when, centred on its Axes and moved in where
+it would cross the canvas edge, it stays on the canvas (its pad from the
+edge) and off the panels of the other columns (right and left: rows), their
+labels and titles. It may be wider (or taller) than its Axes; it then clears
+the tick labels it spans beside the plot, and the layout does not widen the
+figure's margins for that reach. Names are broken at spaces only when the
+legend would otherwise not fit or take more than 60 % of the plot, or, on a
 side you name right or left, when it is wider than 40 % of the Axes; a
 trailing unit in brackets stays whole. A way that fits better always comes
 first; among ways that fit as well, one breaking the names into more lines
 per name is taken only when it leaves the plot at least 5 % of the canvas
 more. `dm.simple_layout` places the legend again at the size it gives the
 Axes it lays out: inward only, and with the rows of an outside legend
-chosen again for the final width. A legend you restyle or move through the
+chosen again for the final size and span. A legend you restyle or move through the
 returned `Legend` (its texts and title, frame, a handle's colour, line
 style, width, marker, face or hatch, `set_loc`, `set_bbox_to_anchor`) stays
 as you left it.

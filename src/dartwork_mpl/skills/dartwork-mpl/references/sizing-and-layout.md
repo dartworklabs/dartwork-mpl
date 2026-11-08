@@ -207,7 +207,9 @@ plt.close(fig)
   panel. `dm.simple_layout(fig)` places it again at the laid-out size.
 - Legend outside one side ("legend above the plot"):
   `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
-  the clearance of tick labels, breaks names that run past the Axes, take
+  the clearance of tick labels; the legend may be wider than its Axes as
+  long as it stays on the canvas and off the other columns' panels. It
+  breaks names that would not fit so, take
   more than 60 % of the plot or (right, left) are wider than 40 % of the
   Axes, a better fit first and, among equal fits, never into more lines
   than a 5 % canvas gain is worth, and
