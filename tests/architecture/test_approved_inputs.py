@@ -106,16 +106,66 @@ def _write_manifest(path: Path, inputs: list[object]) -> Path:
     return path
 
 
+def _under(path: object, root: Path) -> bool:
+    """Whether ``path`` is ``root`` or below it, decided without disk access.
+
+    Accepts ``str``, ``bytes`` and path-like arguments and compares them
+    with ``os.path.abspath`` only (no symlink resolution). A descriptor is
+    not a path, so it is never "under" anything here.
+    """
+    if isinstance(path, int) or not isinstance(path, str | bytes | os.PathLike):
+        return False
+    text = os.path.abspath(os.fsdecode(os.fspath(path)))
+    base = os.path.abspath(root)
+    return text == base or text.startswith(base + os.sep)
+
+
+def _touches(
+    args: tuple[object, ...],
+    kwargs: dict[str, object],
+    root: Path,
+    descriptors: list[int],
+) -> bool:
+    """Whether one ``os`` call reaches the synthetic ``root``.
+
+    It does when its path is ``root`` or below it, when it is relative to a
+    directory descriptor (``dir_fd``), or when it acts on one of
+    ``descriptors``. Anything else -- the interpreter, site-packages, a
+    coverage tracer canonicalising a code file -- is not this test's input.
+    """
+    path = args[0] if args else kwargs.get("path", ".")
+    if kwargs.get("dir_fd") is not None:
+        return True
+    if isinstance(path, int) and not isinstance(path, bool):
+        return path in descriptors
+    return _under(path, root)
+
+
 @contextmanager
-def _refusing_filesystem(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Fail on any filesystem call while the block runs."""
+def _refusing_filesystem(
+    monkeypatch: pytest.MonkeyPatch, root: Path
+) -> Iterator[None]:
+    """Fail on any filesystem call that reaches ``root`` while the block runs.
+
+    Other calls go to the real functions, so a tracer or the test runner
+    that stats its own files cannot fail the check.
+    """
     originals = {name: getattr(os, name) for name in _FS_CALLS}
 
-    def refuse(*args: object, **kwargs: object) -> object:
-        raise AssertionError(f"the filesystem was touched: {args!r}")
+    def guard(name: str) -> Callable[..., object]:
+        original = originals[name]
+
+        def guarded(*args: object, **kwargs: object) -> object:
+            if _touches(args, kwargs, root, []):
+                raise AssertionError(
+                    f"the filesystem was touched: os.{name}{args!r}"
+                )
+            return original(*args, **kwargs)
+
+        return guarded
 
     for name in _FS_CALLS:
-        monkeypatch.setattr(os, name, refuse)
+        monkeypatch.setattr(os, name, guard(name))
     try:
         yield
     finally:
@@ -125,9 +175,13 @@ def _refusing_filesystem(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 @contextmanager
 def _after_each_call(
-    monkeypatch: pytest.MonkeyPatch, hook: Callable[[], None]
+    monkeypatch: pytest.MonkeyPatch, root: Path, hook: Callable[[], None]
 ) -> Iterator[list[int]]:
-    """Run ``hook`` after every filesystem call; yield the opened descriptors."""
+    """Run ``hook`` after every call that reaches ``root``; yield opened fds.
+
+    Calls that do not reach ``root`` are neither counted nor recorded, so a
+    tracer's own filesystem calls cannot move a race's swap point.
+    """
     opened: list[int] = []
     originals = {name: getattr(os, name) for name in _FS_CALLS}
 
@@ -135,10 +189,12 @@ def _after_each_call(
         original = originals[name]
 
         def wrapped(*args: object, **kwargs: object) -> object:
+            reaches = _touches(args, kwargs, root, opened)
             result = original(*args, **kwargs)
-            if name == "open":
-                opened.append(cast(int, result))
-            hook()
+            if reaches:
+                if name == "open":
+                    opened.append(cast(int, result))
+                hook()
             return result
 
         return wrapped
@@ -158,6 +214,39 @@ def _assert_closed(descriptors: list[int]) -> None:
         with pytest.raises(OSError) as error:
             os.fstat(descriptor)
         assert error.value.errno == errno.EBADF, descriptor
+
+
+def test_refusing_guard_blocks_the_synthetic_root_and_nothing_else(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The guard refuses calls that reach the root, and passes the rest.
+
+    A coverage tracer (``sys.monitoring`` on Python 3.12) canonicalises a
+    newly run code file with ``os.path.realpath``; that ``lstat`` must not
+    count as the reader touching its input.
+    """
+    (tmp_path / "inside").mkdir()
+    descriptor = os.open(tmp_path, os.O_RDONLY)
+    try:
+        with _refusing_filesystem(monkeypatch, tmp_path):
+            assert os.path.realpath(REPO_ROOT) == str(REPO_ROOT.resolve())
+            os.lstat(REPO_ROOT)
+            os.fstat(descriptor)  # a descriptor alone is not a path
+            for path in (
+                tmp_path,
+                tmp_path / "inside",
+                str(tmp_path / "inside" / "missing"),
+                os.fsencode(tmp_path / "inside"),
+                tmp_path / "inside" / ".." / "inside",
+            ):
+                with pytest.raises(AssertionError, match="was touched"):
+                    os.stat(path)
+            with pytest.raises(AssertionError, match="was touched"):
+                os.stat("inside", dir_fd=descriptor)
+            with pytest.raises(AssertionError, match="was touched"):
+                os.open(tmp_path, os.O_RDONLY)
+    finally:
+        os.close(descriptor)
 
 
 def test_manifest_lists_exactly_the_authorized_files() -> None:
@@ -231,7 +320,7 @@ def test_reader_refuses_an_unlisted_path_before_touching_disk(
     """Synthetic negative control: only exact manifest strings are read."""
     _synthetic_root(tmp_path)
 
-    with _refusing_filesystem(monkeypatch):
+    with _refusing_filesystem(monkeypatch, tmp_path):
         with pytest.raises(UnapprovedInputError, match="not an approved"):
             read_approved_bytes(relative, root=tmp_path)
 
@@ -242,7 +331,7 @@ def test_reader_refuses_an_absolute_path_to_a_listed_file(
     """An absolute spelling of a listed file is not a manifest entry."""
     _synthetic_root(tmp_path)
 
-    with _refusing_filesystem(monkeypatch):
+    with _refusing_filesystem(monkeypatch, tmp_path):
         with pytest.raises(UnapprovedInputError, match="not an approved"):
             read_approved_bytes(str(tmp_path / _DOCUMENT), root=tmp_path)
 
@@ -256,7 +345,7 @@ def test_reader_refuses_a_platform_without_descriptor_relative_opens(
         reader, "MISSING_DESCRIPTOR_SUPPORT", ("os.open(dir_fd=...)",)
     )
 
-    with _refusing_filesystem(monkeypatch):
+    with _refusing_filesystem(monkeypatch, tmp_path):
         with pytest.raises(UnapprovedInputError, match="descriptor-relative"):
             read_approved_bytes(_DOCUMENT, root=tmp_path)
 
@@ -391,7 +480,7 @@ def test_reader_closes_every_descriptor_it_opens(
     _synthetic_root(tmp_path)
     arrange(tmp_path)
 
-    with _after_each_call(monkeypatch, lambda: None) as opened:
+    with _after_each_call(monkeypatch, tmp_path, lambda: None) as opened:
         if expected is None:
             read_approved_bytes(relative, root=tmp_path)
         else:
@@ -448,7 +537,7 @@ def _race_sweep(
         calls += 1
 
     root, _ = _race_tree(base / "count")
-    with _after_each_call(monkeypatch, count):
+    with _after_each_call(monkeypatch, base, count):
         assert _outcome(root) == "approved"
     total = calls
 
@@ -467,7 +556,7 @@ def _race_sweep(
 
         if swap_after == 0:
             _swap(root, outside, component)
-        with _after_each_call(monkeypatch, maybe_swap) as opened:
+        with _after_each_call(monkeypatch, base, maybe_swap) as opened:
             outcomes.append(_outcome(root))
         _assert_closed(opened)
     return outcomes
