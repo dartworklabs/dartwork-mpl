@@ -308,6 +308,45 @@ def test_more_than_half_a_point_is_a_cover() -> None:
     assert w.detail["artists"] == [""]  # the line has no legend label
 
 
+def _band_under_the_legend(overlap_pt: float, edge_pt: float):
+    """A band from the bottom whose top outline, stroked ``edge_pt`` wide
+    (0: no edge), reaches ``overlap_pt`` into the legend's bottom."""
+    fig, ax = _fig()
+    ax.plot([], [], label="Mean")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    legend = ax.legend(loc="upper left")
+    renderer = drawn_renderer(fig)
+    box = legend.get_window_extent(renderer)
+    half = edge_pt / 2 * fig.dpi / 72.0
+    y_px = box.y0 - half + overlap_pt * fig.dpi / 72.0
+    ((_x, y),) = ax.transData.inverted().transform([(box.x0, y_px)])
+    ax.fill_between(
+        [0, 10],
+        0,
+        y,
+        facecolor="oc.gray2",
+        edgecolor="oc.gray6",
+        linewidth=edge_pt,
+        label="Band",
+    )
+    return fig
+
+
+@pytest.mark.parametrize("edge_pt", [0.0, 2.0], ids=["no_edge", "edge_2pt"])
+def test_an_area_outline_within_half_a_point_is_a_touch(edge_pt: float) -> None:
+    assert _found(_band_under_the_legend(0.25, edge_pt)) == []
+
+
+@pytest.mark.parametrize("edge_pt", [0.0, 2.0], ids=["no_edge", "edge_2pt"])
+def test_an_area_outline_more_than_half_a_point_in_is_a_cover(
+    edge_pt: float,
+) -> None:
+    """The edge's stroke counts: 2 pt wide, its path stays 0 pt below the
+    legend while the stroke reaches 1 pt into it."""
+    found = _found(_band_under_the_legend(1.0, edge_pt))
+    assert [w.detail["covered"] for w in found] == [["area"]]
+
+
 def test_a_legend_above_the_axes_is_clean() -> None:
     fig, ax = _fig()
     _dense(ax)
