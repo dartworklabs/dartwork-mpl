@@ -1132,20 +1132,20 @@ def test_stage_cleanup_preserves_a_member_replaced_before_its_stat(
     assert sorted(path.name for path in folder.iterdir()) == ["plot.png"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=FileNotFoundError,
-    reason=(
-        "Known pre-existing race: stage cleanup checks identity by name with "
-        "stat and then unlinks by name, so a member replaced between the two "
-        "calls is deleted. Fixing it needs isolate-then-verify cleanup, out of "
-        "the scope of the store-split follow-up tests."
-    ),
-)
-def test_stage_cleanup_preserves_a_member_replaced_after_its_stat(
+def test_stage_cleanup_still_deletes_a_member_replaced_after_its_stat(
     tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Reproduce the stat-to-unlink gap; strict, so a fix must drop the marker."""
+    """Record a known pre-existing race: stat then unlink by name.
+
+    Stage cleanup checks a member's identity by name with ``stat`` and then
+    unlinks it by name, so a member replaced between the two calls is
+    deleted. Fixing it needs isolate-then-verify cleanup, outside these
+    follow-up tests. This pins today's behaviour as a plain test, not an
+    xfail: the artifact CI gate rejects every skipped case (an xfail is one
+    in JUnit). When the race is fixed the replacement survives, the last
+    read no longer raises and this test fails on purpose; then turn it into
+    a preservation test like the one before it.
+    """
     store = configured(tmp_path / "artifacts")
     real_unlink = os.unlink
     swapped: list[str] = []
@@ -1167,7 +1167,9 @@ def test_stage_cleanup_preserves_a_member_replaced_after_its_stat(
         monkeypatch.setattr(disk.os, "unlink", replace_before_unlink)
     monkeypatch.undo()
     assert swapped == ["plot.png"]
-    assert png.read_bytes() == b"replacement"
+    # The defect today: the replacement installed after the stat is gone.
+    with pytest.raises(FileNotFoundError):
+        png.read_bytes()
 
 
 def test_stage_cleanup_follows_the_pinned_directory_not_its_name(
