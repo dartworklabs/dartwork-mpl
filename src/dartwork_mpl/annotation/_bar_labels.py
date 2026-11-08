@@ -22,9 +22,12 @@ the ``dm.fw(1)`` rule, mixed greys, formats that repeat the axis unit
 * **Decimals.** Three significant digits on the largest ``|value|``, cut to
   the fewest decimals that print every value exactly, one count for the
   whole call (:func:`value_label_decimals`): ``21.4, 18.0, 21.5``;
-  ``120, 135``; never a meaningless ``.0``. Zero prints ``0``; U+2212 minus
-  like the ticks. A count the ticks fix (``decimals=1`` of a formatter)
-  sizes the tick text only: ``1.25M`` beside ``1.0M`` ticks.
+  ``120, 135``; never a meaningless ``.0``. Zero prints ``0``; a non-zero
+  value that count rounds to zero prints the bound it lies within, one last
+  place (``<0.1M`` beside ``12.5M``, ``>−0.1M``, ``<$1``); U+2212 minus like
+  the ticks. On a log value axis each label takes its own count, as the log
+  ticks do (``0.01M, 0.2M, 45M``). A count the ticks fix (``decimals=1`` of
+  a formatter) sizes the tick text only: ``1.25M`` beside ``1.0M`` ticks.
 * **Side.** Outside the bar end; a negative bar's label below it (``barh``:
   left of it); an inverted value axis flips the side with the bar; error
   bars push the label past their caps, but not past the view.
@@ -88,7 +91,12 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 
 from .._figure_geometry import canvas_renderer, same_position_axes
-from ..formatting import TickScale, tick_scale_of, value_label_decimals
+from ..formatting import (
+    TickScale,
+    draws_linearly,
+    tick_scale_of,
+    value_label_decimals,
+)
 from ..scale import fs, fw
 from ._bar_label_geometry import (
     clipped_edge,
@@ -391,21 +399,39 @@ class BarLabelFamily:
     def refresh(self) -> None:
         """Write every label's text in its axis's current tick scale.
 
-        One decimal count for the whole call, unless ``decimals=`` fixed it;
-        decimals the ticks fix (``format_axis_millions(ax, decimals=1)``)
+        One decimal count for the labels on linear value axes, unless
+        ``decimals=`` fixed it; a label on a log (any non-linear) value axis
+        takes its own, as the axis's ticks do (``0.01M``, ``45M``).
+        Decimals the ticks fix (``format_axis_millions(ax, decimals=1)``)
         size tick text, not labels. A text someone else set is kept.
         """
         scales = [tick_scale_of(t.value_axis, t.value) for t in self.texts]
         scaled = [
             t.value / s.factor for t, s in zip(self.texts, scales, strict=True)
         ]
-        decimals = self.options.decimals
-        if decimals is None:
-            decimals = value_label_decimals(scaled)
-        for label, scale, value in zip(self.texts, scales, scaled, strict=True):
+        for label, scale, value, count in zip(
+            self.texts, scales, scaled, self._decimals(scaled), strict=True
+        ):
             label.tick_scale = scale
-            text = compose_text(value, scale, decimals, self.options)
+            text = compose_text(value, scale, count, self.options)
             label.own("text", label.get_text(), text, label.set_text)
+
+    def _decimals(self, scaled: list[float]) -> list[int]:
+        """Each label's decimal count (:meth:`refresh`)."""
+        if self.options.decimals is not None:
+            return [self.options.decimals] * len(scaled)
+        linear = {
+            axis: draws_linearly(axis)
+            for axis in dict.fromkeys(t.value_axis for t in self.texts)
+        }
+        on_linear = [linear[t.value_axis] for t in self.texts]
+        shared = value_label_decimals(
+            [v for v, flat in zip(scaled, on_linear, strict=True) if flat]
+        )
+        return [
+            shared if flat else value_label_decimals([v])
+            for v, flat in zip(scaled, on_linear, strict=True)
+        ]
 
     def follow(self, label: BarLabel) -> None:
         """Re-read the tick scale for ``label``; rewrite the call when it moved.
@@ -573,8 +599,11 @@ def label_bars(
     - three significant digits on the largest ``|value|``, then the fewest
       decimals that print every value exactly, one count for the call,
       totals included (``21.4, 18.0, 21.5``; ``120, 135``); zero prints
-      ``0``; U+2212 minus; a formatter's ``decimals=n`` sizes its ticks,
-      not the labels (``1.25M`` beside ``1.0M``);
+      ``0``, and a non-zero value that count rounds to zero the bound it
+      lies within (``<0.1M`` beside ``12.5M``, ``>−0.1M``, ``<$1``); on a
+      log value axis each label its own count, as the log ticks
+      (``0.01M``, ``45M``); U+2212 minus; a formatter's ``decimals=n`` sizes
+      its ticks, not the labels (``1.25M`` beside ``1.0M``);
     - stacked bars (containers at the same positions, each starting where
       the ones before it ended, as ``bottom=`` / ``left=`` build them;
       positives on the positive end, negatives on the negative end): each
@@ -659,12 +688,14 @@ def label_bars(
     decimals : int, optional
         A fixed decimal count instead of the rule above; the unit stays
         the ticks' (``decimals=2`` under ``format_axis_currency``:
-        ``$20.55``, ``$0.00``).
+        ``$20.55``, ``$0.00``), and a value it rounds to zero prints as
+        zero (no ``<`` bound).
     fmt : str or callable, optional
         A ``{}`` template around the number (``fmt="${}B"`` -> ``$38.5B``;
         the template supplies any unit, the tick suffix is not added;
-        ``{:.2f}`` formats the scaled value itself), or a callable that gets
-        the value in the axis's tick unit and returns the whole text. A
+        ``{:.2f}`` formats the scaled value itself, and no ``<`` bound
+        replaces it), or a callable that gets the value in the axis's tick
+        unit and returns the whole text. A
         template wraps the signed number, so ``"${}B"`` on -3.5 prints
         ``$-3.5B`` (the minus is U+2212); for ``-$3.5B`` use a callable.
     size : float or str, optional

@@ -672,6 +672,9 @@ leaves them as plain values (`12,000`); pass `fmt=` for its look. The
 decimals are three significant digits on the largest value, then the
 fewest decimals that print every value exactly, one count for the whole
 call: `21.4, 18.0, 21.5`; `120, 135`; never a meaningless `.0`. A
+non-zero value that this count rounds to zero prints the bound it lies
+within (`<0.1M` beside `12.5M`, `>−0.1M`), never `0`; on a log value axis
+each label takes its own count, as the log ticks do (`0.01M`, `45M`). A
 formatter's `decimals=n` sizes its ticks, not the labels (`1.25M` beside
 `1.0M`; `decimals=2` on the labels for cents). `fmt` takes a `{}` template
 around that number (`"{} GWh"`), a format-spec field that formats the value

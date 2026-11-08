@@ -78,7 +78,9 @@ the ticks:
 4. **Zero.** The ticks' rule. Millions/billions (`bare`): no sign, no unit
    (`0`, or `0.0` when the count is fixed). Currency (`affixed`): the symbol
    stays, the sign goes (`$0`, `0€`). A non-zero value that rounds to zero
-   under the count in force prints as zero (0.03M beside 12.5M: `0`).
+   under the label rule's count prints the bound it lies within, one last
+   place in the tick unit (0.03M beside 12.5M: `<0.1M`; −0.04M: `>−0.1M`;
+   see "Small values" below). A count the caller fixed prints zero.
 
 Labels keep their own rules where the ticks only keep legacy parity:
 
@@ -132,23 +134,42 @@ that round to zero at the ticks' count, 0, a negative, a value):
 | Formatter (small values) | nothing asked | `decimals=2` |
 |---|---|---|
 | millions `d=1`, max 3.4M (0.03M, −0.04M) | `0.03M` `−0.04M` | `0.03M` `−0.04M` |
-| millions `d=1`, max 12.5M (same) | `0` `0` | `0.03M` `−0.04M` |
-| billions `suffix="bn"`, `d=1` (0.02e9, −0.03e9) | `0` `0` | `0.02bn` `−0.03bn` |
+| millions `d=1`, max 12.5M (same) | `<0.1M` `>−0.1M` | `0.03M` `−0.04M` |
+| billions `suffix="bn"`, `d=1` (0.02e9, −0.03e9) | `<0.1bn` `>−0.1bn` | `0.02bn` `−0.03bn` |
 | millions `suffix="백만"`, `d=1`, max 5.6M | `0.03백만` `−0.04백만` | same |
 | millions `suffix=""`, `d=1`, max 3.4M | `0.03` `−0.04` | same |
 | currency `$`, `d=0` (0.4, −0.3) | `$0.40` `−$0.30` | same |
-| currency `€` suffix, `d=2` (0.03, −0.04) | `0€` `0€` | `0.03€` `−0.04€` |
+| currency `€` suffix, `d=2` (0.03, −0.04) | `<0.1€` `>−0.1€` | `0.03€` `−0.04€` |
 
-A small value reads zero when the largest value leaves too few places
-(three significant digits on 12.5M or €34); `decimals=` shows it, as it does
+A small value cannot show its digits when the largest value leaves too few
+places (three significant digits on 12.5M or €34); it prints the bound it
+lies within (next section), and `decimals=` shows the digits, as it does
 for cents.
 
-**Log axes, changed from main.** Millions `d=1` on a log y axis, bars
-1e4, 2e5, 3.4e6, 4.5e7: main labelled the first bar `10,000`; B labels it
-`0` (three significant digits on 45M), though a log axis has no zero.
-`decimals=` shows it. Whether labels on a log axis should keep every
-non-zero value is a separate decision, to be made on a before/after PoC;
-this change keeps B and the asked-precision priority as they are.
+## Small values and log axes (user, 2026-11-08)
+
+Decided on the before/after PoC review (W4, items 1-A and 1-L1). Main
+(`d5208212`) printed `0` for both rows below.
+
+- **1-A, the bound.** With nothing asked, a non-zero value that the call's
+  one count rounds to zero prints `<` and one last place at that count,
+  in the tick unit with the ticks' currency: `<0.1M` beside 12.5M, `<1M` at
+  no decimals, `<$0.1`, `<0.1€`. A negative one prints `>−0.1M` (the sign
+  before the currency: `>−$0.1`), so it keeps its sign as every other
+  negative label does; reading `0` would hide both its size and its sign.
+  An exact zero keeps the ticks' zero (`0`, `$0`). One unit per axis and
+  one count per call stay. Every path that divides by a unit does this,
+  the library's default numbers included (`<1` beside `125`).
+- **The asked precision still wins.** `decimals=k`, a `fmt` format spec
+  (`"{:.3f} mn"`) and a `fmt` callable write the number as asked (`0.00`,
+  `0.030 mn`). A plain `{}` template takes the rule's text, the bound
+  included (`<0.1 mn`; `"${}B"` wraps the signed bound: `>$−0.1B`).
+- **1-L1, log axes.** A label on a log (any non-linear) value axis takes
+  its own count, three significant digits cut to the fewest exact, as the
+  log ticks do: bars 1e4, 2e5, 3.4e6, 4.5e7 under millions `d=1` read
+  `0.01M 0.2M 3.4M 45M` (main: `0 0.2M 3.4M 45.0M`). No label there rounds
+  to zero, so the bound never shows on a log axis. Labels of one call on a
+  linear axis keep one count among themselves.
 
 ## Tests
 
@@ -160,5 +181,7 @@ this change keeps B and the asked-precision priority as they are.
   axis-wide millions, a formatter set after the call is followed; the seven
   boundary charts with nothing asked and with `decimals=2`; asked precision
   (`decimals=0`, `3`, a `fmt` spec) beating the ticks' count under
-  millions, `bn`, `$` and `€`.
+  millions, `bn`, `$` and `€`; the bound for small values (no decimals,
+  `$`, `€`, the library's numbers, `axes.unicode_minus` off) and the asked
+  precision beating it; log value axes, alone and beside a linear twin.
 - Every other label and tick test unchanged.

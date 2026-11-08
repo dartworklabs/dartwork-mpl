@@ -581,7 +581,8 @@ default `decimals=None` or a
 `PercentFormatter`, plain values under a formatter it cannot read, such as
 a `FuncFormatter`: pass `fmt=`); three significant digits on the largest
 value, then the fewest exact decimals, one count per call, no meaningless
-`.0`; stacked bars' segments centred and a total beyond the stack; crowded
+`.0` (a tiny value that count rounds to zero reads `<0.1M`, not `0`; on a
+log axis each label takes its own count: `0.01M`, `45M`); stacked bars' segments centred and a total beyond the stack; crowded
 labels on vertical bars turned vertical by `dm.simple_layout`, which also
 grows autoscaled limits just enough for the labels (limits you set stay; a
 bar past them shows its true value at the limit: on the bar when the bar

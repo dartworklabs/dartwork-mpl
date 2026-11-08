@@ -21,6 +21,7 @@ from ._axis_wide import (
     TickScale,
     TickText,
     Unit,
+    draws_linearly,
     number_text,
     tick_scale_of,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "avoid_tick_overlap",
     "axis_unit",
     "axis_unit_of",
+    "draws_linearly",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_dates",
