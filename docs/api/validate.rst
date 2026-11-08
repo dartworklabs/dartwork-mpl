@@ -51,6 +51,11 @@ Available Checks
      - Every numeric value label in an axes is a whole number, yet some print
        trailing zeros (``120.0``)
      - WARNING
+   * - ``VALUE_LABEL_ON_DATA``
+     - A value label is drawn over a bar, a line or a marker in its plot box
+       (twin Axes included); labels inside their own bar or bubble, boxed,
+       slanted and contour labels are left alone
+     - WARNING
    * - ``EMPTY_AXES``
      - Axes contain no visible plotted artist or annotation
      - INFO

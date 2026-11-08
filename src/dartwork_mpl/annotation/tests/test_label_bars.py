@@ -4009,10 +4009,25 @@ def test_validate_figure_clean_on_six_charts():
     # default palette draws a grayscale INFO note, as in the approved
     # capture (a palette matter outside B3). Every other finding counts.
     palette_only = "GRAYSCALE_SAFETY"
+    # One exception, for t only: VALUE_LABEL_ON_DATA (added 2026-11-08,
+    # after B3 approved t) reports the label '23.1' with the YoY line and
+    # its markers drawn through it. The defect is real: label_bars keeps
+    # labels off bars, other labels and the legend, not off a twin's line.
+    # The user chose (2026-11-08) to keep t as approved and leave teaching
+    # label_bars to avoid a partner Axes' lines to a later spec, so t is
+    # checked without that one check and the known finding is pinned
+    # below; when label_bars learns to avoid the line, drop the exception.
+    on_data = "VALUE_LABEL_ON_DATA"
     for name, build in {"q": q, "g": g, "s": s, "h": h, "d": d, "t": t}.items():
         fig, ax, texts = build()
         dm.simple_layout(fig)
-        found = dm.validate_figure(fig, quiet=True)
+        known = (on_data,) if name == "t" else ()
+        found = dm.validate_figure(fig, exclude=known, quiet=True)
+        if known:
+            (pinned,) = dm.validate_figure(fig, checks=known, quiet=True)
+            assert pinned.detail["count"] == 1, pinned.message
+            assert pinned.detail["example"] == "23.1", pinned.message
+            assert pinned.detail["covered"] == ["line"], pinned.message
         label_findings = [
             w.check_id for w in found if w.check_id != palette_only
         ]

@@ -52,6 +52,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
   by hand (`ax.legend(h1 + h2, l1 + l2)`, or `lns = l1 + l2` then
   `ax.legend(lns, labs)`) points to `dm.place_legend(ax)`.
+- **`VALUE_LABEL_ON_DATA` check (WARNING): a value label drawn over the
+  data.** `validate_figure` (and so `save_formats`, `dm.review` and the MCP
+  render report) now reports, one warning per Axes, the short numeric
+  labels whose ink lies on a bar, a line or a marker of the same plot box,
+  twin Axes included; the detail names the kinds covered, the first artists
+  and an example label. The label's glyphs count, not its text box, so a
+  label standing on a bar end (whatever its `va`) or beside a line only
+  touches it. Labels inside their own bar (`dm.label_bars(where="inside")`,
+  stack segments) or bubble, labels with a background box, slanted labels,
+  contour labels and an annotation's arrow are left alone, and so are
+  reference lines (`axhline`, `axvline`, `axline`), areas, images and
+  artists drawn without ink. The fix suggestions are `dm.label_bars(ax)`,
+  `dm.annotate_value(ax, x, y, text)` and an offset in points. Over the 91
+  docs example scripts it reports four figures, all real: the tier-2
+  boxplot, small multiples, twin axis and waterfall templates, which are
+  not changed here. `dm.label_bars` keeps labels off bars, other labels and
+  the legend but not off a twin's line, so a bar label under a twin's line
+  is reported too.
 
 ### Changed
 

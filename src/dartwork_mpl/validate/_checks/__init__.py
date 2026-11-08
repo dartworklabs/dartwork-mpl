@@ -37,6 +37,7 @@ from . import (  # noqa: F401  (imported to register their checks and fixes)
     tick_rotation,
     unit_dup,
     value_label_decimal,
+    value_label_on_data,
 )
 from ._registry import RegisteredCheck, register_check, registered_checks
 
