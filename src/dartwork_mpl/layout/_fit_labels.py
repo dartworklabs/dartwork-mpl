@@ -656,9 +656,9 @@ def climb(
     moved by less than the solver's tolerance, so a figure without a
     collision costs no extra draw. A round that harmed a plot or an axis
     (:func:`_harmed`) is taken back, with the grid's edges as they were
-    before it, and its changes are tried one at a time; a change that does
-    harm on its own is taken back the same way and not tried again in this
-    call.
+    before it, and its changes are tried one at a time (a round of one
+    change is not tried again alone); a change that does harm on its own
+    is taken back the same way and not tried again in this call.
 
     Each take-back fits the margins again from the round's edges, and the
     fit stops within its tolerance of a fixed point, a hair from where it
@@ -700,8 +700,9 @@ def climb(
         grid.update(**edges)
         if not refit():
             return None
-        if only is not None:
-            state.rejected.add(only)
+        if only is not None or len(changes) == 1:
+            # one change, alone already: the harm was its own
+            state.rejected.add(changes[0].key if only is None else only)
             return True
         for change in changes:
             if attempt(change.key) is None:

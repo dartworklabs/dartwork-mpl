@@ -707,8 +707,8 @@ def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
     tall and its y ticks overlapping. The turn is taken back and the figure
     draws exactly as without fitting (the margins are fitted afresh: each
     take-back's fit stopped 0.02-0.3 px from where the last one had), its x
-    labels reported. The harmful turn is tried twice (in its round, then
-    alone) and not again."""
+    labels reported. The harmful turn, the round's one change, is tried once
+    and not again (alone it would be the same round)."""
     import dartwork_mpl.layout._fit_labels as fit_module
 
     real = fit_module.fit_round
@@ -732,9 +732,8 @@ def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
         assert _angles(ax) == {0.0}
     assert draws[1] == draws[0]
     assert warned == [{"x"}, {"x"}]
-    # its round (found, made again after measuring), then alone (the same),
-    # then nothing left to try
-    assert rounds == [["rotate"]] * 4 + [[]]
+    # its round (found, made again after measuring), then nothing left to try
+    assert rounds == [["rotate"]] * 2 + [[]]
 
 
 def test_a_name_in_nobodys_way_draws_as_without_the_ladder() -> None:
