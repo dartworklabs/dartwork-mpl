@@ -41,9 +41,9 @@ takes `-kr` (`report-kr`); edits keep its language and preset.
 - No size asked, or a figure moved to slides: `dm.figsize_for(kind, n_points=, n_series=)`
   (report 9/12/14.5/17 cm by density, paper columns; `presentation` 10.5 cm tall, 11.4/15.4/
   23.4 cm wide for ≤4/≤6/more x points); count x points and series; `dual_axis=True` with
-  `twinx`; kind `"matrix"`; `"full_slide"` (25.4 × 14.29 cm) for a whole 16:9 slide; bars
-  vertical, `"barh"` + `ax.barh` only when names overlap or asked; n panels: `dm.grid_shape(n)`
-  → `figsize_for(nrows=, ncols=)`.
+  `twinx`; kind `"matrix"`, `"grouped"` for bars side by side (`n_series` bars per group),
+  `"full_slide"` (25.4 × 14.29 cm) for a whole 16:9 slide; bars vertical,
+  `"barh"` + `ax.barh` only when names overlap or asked; n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)`.
 - A size the user names wins, any size: `dm.figsize(width, second)`. width `"13cm"`, `"5in"`,
   `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number; second `standard` 4:3, `wide` 3:2,
   `slide` 16:9, `"16:9"`, a ratio or `"8cm"`. A width alone: a new figure is 4:3; an edit

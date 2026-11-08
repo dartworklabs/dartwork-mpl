@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.figsize_for("grouped", n_points=, n_series=)` for grouped bars.**
+  Grouped bars put `n_series` bars side by side in each of `n_points`
+  groups, and each bar needs its value label's room; `"default"` counts the
+  groups only, so on a slide 4 groups of 3 bars took 11.4 cm and
+  `dm.label_bars` hid 4 of the 12 values (`advanced/bar_grouped` in
+  `presentation`). `"grouped"` sizes like `"default"` and is never
+  narrower; it also takes the narrowest width that holds the
+  `n_points * n_series` labelled bars: report widths 9 / 12 / 14.5 cm hold
+  16 / 24 / 32 bars, slide widths 11.4 / 15.4 cm 10 / 15 (measured with
+  three-digit values at each preset's sizes), more take the widest. A
+  journal column (`scientific`) stays 9 cm, and `"default"` and every other
+  kind are unchanged.
 - **Experimental `dm.label_bars(ax)`: each bar's value on it.** No request,
   its defaults; a request, one keyword. The defaults: `dm.fs(-1)` at
   `dm.fw(1)` in the text colour, 3 pt beyond the bar end; the number printed
