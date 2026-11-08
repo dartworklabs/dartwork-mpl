@@ -157,6 +157,66 @@ def test_ink_counts_lines_markers_patches_fills_and_texts() -> None:
     assert ink.met(at(5, 6), 0) == set()
 
 
+def _corner_grid() -> tuple[np.ndarray, np.ndarray]:
+    return np.meshgrid(np.linspace(7.5, 9.5, 5), np.linspace(7.5, 9.5, 5))
+
+
+def _corner_quiver(ax) -> None:
+    x, y = _corner_grid()
+    ax.quiver(x, y, np.ones_like(x), np.ones_like(y), label="Flow")
+
+
+def _corner_offset_lines(ax) -> None:
+    """Short strokes in px, placed at data positions by their offsets."""
+    from matplotlib.collections import LineCollection
+    from matplotlib.transforms import IdentityTransform
+
+    x, y = _corner_grid()
+    ax.add_collection(
+        LineCollection(
+            [[(0, 0), (30, 15)]],
+            offsets=np.column_stack([x.ravel(), y.ravel()]),
+            offset_transform=ax.transData,
+            transform=IdentityTransform(),
+            linewidths=2,
+            label="Ticks",
+        )
+    )
+
+
+def _corner_scatter(ax) -> None:
+    x, y = _corner_grid()
+    ax.scatter(x.ravel(), y.ravel(), s=40, label="Points")
+
+
+@pytest.mark.parametrize(
+    "draw",
+    [_corner_quiver, _corner_offset_lines, _corner_scatter],
+    ids=["quiver", "offset_lines", "scatter"],
+)
+def test_offset_collections_are_measured_where_they_are_drawn(draw) -> None:
+    """Arrows, offset strokes and points fill the upper right corner: the
+    legend leaves it. The oracle is the pixels the collection draws under
+    the legend's box (Codex on #649: offsets left out put the ink at the
+    origin)."""
+    fig, ax = _report()
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    draw(ax)
+    collection = ax.collections[-1]
+    legend = place_legend(ax)
+    assert legend is not None
+    box = legend.get_window_extent(drawn_renderer(fig))
+    legend.set_visible(False)
+    fig.canvas.draw()
+    drawn = np.asarray(fig.canvas.buffer_rgba()).copy()
+    collection.set_visible(False)
+    fig.canvas.draw()
+    bare = np.asarray(fig.canvas.buffer_rgba())
+    rows = slice(int(drawn.shape[0] - box.y1), int(drawn.shape[0] - box.y0))
+    cols = slice(int(box.x0), int(box.x1))
+    assert not np.any(drawn[rows, cols] != bare[rows, cols])
+
+
 def test_a_legend_larger_than_the_axes_is_not_free_inside() -> None:
     dm.style.use("report")
     fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
