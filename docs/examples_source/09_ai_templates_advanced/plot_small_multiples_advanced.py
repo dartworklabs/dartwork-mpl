@@ -74,13 +74,12 @@ for i, (name, vals) in enumerate(lines.items()):
 # rather than hand-formatted into each title.
 dm.label_axes(axes_flat)
 
-# Shared axis labels.
-fig.supxlabel("Month after launch", fontsize=dm.fs(0), y=0.04)
-fig.supylabel("KPI (indexed to 50)", fontsize=dm.fs(0), x=0.04)
+# Shared axis labels. dm.simple_layout places them past the tick labels
+# and sets the margins and panel gaps for the preset's text size.
+fig.supxlabel("Month after launch", fontsize=dm.fs(0))
+fig.supylabel("KPI (indexed to 50)", fontsize=dm.fs(0))
 
-fig.subplots_adjust(
-    left=0.08, right=0.97, top=0.93, bottom=0.10, wspace=0.10, hspace=0.18
-)
+dm.simple_layout(fig)
 dm.validate_with_fixes(fig)
 
 issues = dm.check_figure_quality(fig)
