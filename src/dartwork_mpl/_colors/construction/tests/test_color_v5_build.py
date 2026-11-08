@@ -404,6 +404,7 @@ def test_write_mode_honors_injected_output_target(
     assert tuple(tmp_path.iterdir()) == (target,)
 
 
+@pytest.mark.approved_input
 def test_tracked_generated_check_is_fresh_and_non_writing(
     candidate_catalog: CatalogSnapshot, monkeypatch: pytest.MonkeyPatch
 ) -> None:

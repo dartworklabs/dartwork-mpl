@@ -249,6 +249,7 @@ addopts = [
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
     "color_pipeline: slow colour build/regeneration/byte-identity checks; interpreter-independent, so CI runs them on 3.12 only",
+    "approved_input: reads an exact docs/superpowers file listed in tests/support/approved_inputs.json; the approved-inputs CI job runs these with only those files checked out",
 ]
 
 [tool.ruff]

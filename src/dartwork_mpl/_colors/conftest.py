@@ -10,26 +10,29 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.support.approved_inputs import read_approved_text
+
 if TYPE_CHECKING:
     from dartwork_mpl._colors.construction._catalog import CatalogSnapshot
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_SSOT_PATH = (
-    _REPO_ROOT
-    / "docs/superpowers/specs/assets"
-    / "2026-07-03-color-system-v5/color_v5_ssot.json"
+_SSOT_INPUT = (
+    "docs/superpowers/specs/assets/"
+    "2026-07-03-color-system-v5/color_v5_ssot.json"
 )
 
 
 @pytest.fixture(scope="session")
 def v5_ssot() -> dict:
-    """설계 확정 SSOT (스펙 §7 — 구현이 이 값을 재생산해야 함)."""
-    return json.loads(_SSOT_PATH.read_text(encoding="utf-8"))
+    """설계 확정 SSOT (스펙 §7 — 구현이 이 값을 재생산해야 함).
+
+    Read through the approved-input reader, which checks the raw bytes
+    against the existing ``_ssot._PINNED_BASELINES["recipe"]`` pin first.
+    """
+    return json.loads(read_approved_text(_SSOT_INPUT))
 
 
 @pytest.fixture(scope="session")

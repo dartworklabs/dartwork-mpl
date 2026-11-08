@@ -2,6 +2,7 @@
 
 import ast
 import asyncio
+import functools
 from pathlib import Path
 
 import pytest
@@ -12,20 +13,28 @@ from dartwork_mpl.mcp.artifacts.transport import ENTRY_POLICIES  # noqa: E402
 from dartwork_mpl.mcp.server import mcp  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3] / "src" / "dartwork_mpl"
-# Existing exact routes have trusted-code/no-verified-identity gaps. The immutable
-# historical inventory names every gap; additional registrations cannot enter it.
-KNOWN_GAPS = frozenset(
-    value
-    for values in _catalog.load_v5_snapshot().mcp_discovery.values()
-    for value in values
-)
+
+
+@functools.cache
+def known_gaps():
+    """Existing exact routes have trusted-code/no-verified-identity gaps.
+
+    The immutable historical inventory names every gap; additional
+    registrations cannot enter it. It is read from the pinned v5 snapshot when
+    a test first needs it, not when this module is collected.
+    """
+    return frozenset(
+        value
+        for values in _catalog.load_v5_snapshot().mcp_discovery.values()
+        for value in values
+    )
 
 
 def assert_entry_policies(routes):
     """Each actual route has one declared local authority decision or named gap."""
     assert len(routes) == len(set(routes))
-    assert set(routes) == KNOWN_GAPS | ENTRY_POLICIES.keys()
-    assert KNOWN_GAPS.isdisjoint(ENTRY_POLICIES)
+    assert set(routes) == known_gaps() | ENTRY_POLICIES.keys()
+    assert known_gaps().isdisjoint(ENTRY_POLICIES)
     assert ENTRY_POLICIES["render_plot"] == "local_user_store_bounded_execution"
     assert (
         ENTRY_POLICIES["delete_plot_inputs"]
@@ -96,6 +105,7 @@ def assert_constructors(sources):
                 }, (name, target)
 
 
+@pytest.mark.approved_input
 def test_registered_entries_have_explicit_policy_or_named_identity_gap():
     """Discover actual tools/resources/templates/prompts against exact decisions."""
 
@@ -121,13 +131,14 @@ def test_registered_entries_have_explicit_policy_or_named_identity_gap():
     )
 
 
+@pytest.mark.approved_input
 @pytest.mark.parametrize(
     "route", ["undeclared_tool", "dartwork-mpl://undeclared/{id}"]
 )
 def test_undeclared_registration_is_rejected(route):
     """An injected unclassified tool or resource must fail the policy gate."""
     with pytest.raises(AssertionError):
-        assert_entry_policies([*KNOWN_GAPS, *ENTRY_POLICIES, route])
+        assert_entry_policies([*known_gaps(), *ENTRY_POLICIES, route])
 
 
 @pytest.mark.parametrize(

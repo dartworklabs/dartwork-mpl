@@ -1,12 +1,14 @@
 """Reference and immutability tests for the v5 color-quality oracle."""
 
 import ast
+import colorsys
 import hashlib
 import json
 import math
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
@@ -329,6 +331,7 @@ def test_ordered_quality_marks_one_zero_among_numeric_steps_degenerate() -> (
     assert math.isfinite(quality["step_cv"])
 
 
+@pytest.mark.approved_input
 def test_quality_validator_allows_numeric_cv_with_one_degenerate_step() -> None:
     """Represent one isolated zero step without conflating it with a zero row."""
     payload = _load_quality()
@@ -353,6 +356,7 @@ def test_quality_validator_allows_numeric_cv_with_one_degenerate_step() -> None:
     assert isinstance(validated_amber["step_cv"], float)
 
 
+@pytest.mark.approved_input
 def test_tangerine_records_local_round_to_even_y_quantization_margin() -> None:
     """Pin the worst full-LUT pair to its two local 8-bit sRGB cells."""
     compatibility = json.loads(COMPAT_PATH.read_text(encoding="utf-8"))
@@ -375,6 +379,7 @@ def test_tangerine_records_local_round_to_even_y_quantization_margin() -> None:
     }
 
 
+@pytest.mark.approved_input
 def test_diverging_and_cyclic_topology_preserve_full_baseline_contract() -> (
     None
 ):
@@ -410,6 +415,7 @@ def test_gate_decisions_use_raw_values_not_display_rounding() -> None:
     assert oracle.meets_minimum(9.999999, 10.0) is False
 
 
+@pytest.mark.approved_input
 def test_quality_policy_distinguishes_step_cv_by_sampling_and_taxonomy() -> (
     None
 ):
@@ -428,6 +434,7 @@ def test_quality_policy_distinguishes_step_cv_by_sampling_and_taxonomy() -> (
     assert "ordered_step_cv" not in gate_rules
 
 
+@pytest.mark.approved_input
 def test_quality_fixture_is_pinned_finite_and_validated() -> None:
     """Pin both immutable bytes and validate embedded source provenance."""
     assert hashlib.sha256(COMPAT_PATH.read_bytes()).hexdigest() == COMPAT_SHA256
@@ -446,6 +453,7 @@ def test_quality_fixture_is_pinned_finite_and_validated() -> None:
     assert validated["schema"] == "dartwork-mpl.color-quality/v2"
 
 
+@pytest.mark.approved_input
 def test_vendor_surface_provenance_does_not_change_quality_metric_values() -> (
     None
 ):
@@ -460,6 +468,7 @@ def test_vendor_surface_provenance_does_not_change_quality_metric_values() -> (
     )
 
 
+@pytest.mark.approved_input
 def test_quality_v2_preserves_every_legacy_metric_outside_declared_changes() -> (
     None
 ):
@@ -488,53 +497,171 @@ def test_quality_v2_preserves_every_legacy_metric_outside_declared_changes() -> 
     )
 
 
+def _hex(rgb: Sequence[float]) -> str:
+    """Encode one 0-1 RGB triple as ``#rrggbb``."""
+    return "#" + "".join(f"{round(channel * 255):02x}" for channel in rgb)
+
+
+def _ramp(start: Sequence[float], end: Sequence[float], n: int) -> list[str]:
+    """Interpolate ``n`` colours from ``start`` to ``end`` in RGB."""
+    return [
+        _hex(
+            [a + (b - a) * i / (n - 1) for a, b in zip(start, end, strict=True)]
+        )
+        for i in range(n)
+    ]
+
+
+def _hues(n: int, offset: float, value: float) -> list[str]:
+    """Return ``n`` evenly spaced hues at one saturation and value."""
+    return [
+        _hex(colorsys.hsv_to_rgb((offset + i / n) % 1.0, 0.6, value))
+        for i in range(n)
+    ]
+
+
+def _diverging_row(n: int) -> list[str]:
+    """Return a blue-white-red ramp of ``n`` colours."""
+    half = n // 2
+    return _ramp((0.12, 0.24, 0.78), (0.96, 0.96, 0.96), half) + _ramp(
+        (0.96, 0.96, 0.96), (0.78, 0.16, 0.12), n - half
+    )
+
+
+def _synthetic_quality_inputs() -> tuple[dict[str, object], dict[str, object]]:
+    """Return a synthetic catalog and 32-stop previews with the v5 shape.
+
+    The rows are generated, not frozen colours. Only the counts and the
+    names the validator requires (``corona``/``halo``/``hue`` cyclic maps,
+    ``octave``/``octave_print`` cycles) follow the contract.
+    """
+    cyclic = ("corona", "halo", "hue")
+    names = [f"diverging{i:02d}" for i in range(11)] + list(cyclic)
+    names += [f"sequential{i:02d}" for i in range(29)]
+    cmaps: dict[str, list[str]] = {}
+    previews: dict[str, list[str]] = {}
+    taxonomy: dict[str, str] = {}
+    for index, name in enumerate(names):
+        if name.startswith("diverging"):
+            rows = (_diverging_row(256), _diverging_row(32))
+            taxonomy[name] = "diverging"
+        elif name in cyclic:
+            rows = (_hues(256, 0.1 * index, 0.8), _hues(32, 0.1 * index, 0.8))
+            taxonomy[name] = "cyclic"
+        else:
+            start = (0.04 + index / 400, 0.08, 0.78 - index / 400)
+            end = (0.94, 0.9 - index / 400, 0.12 + index / 400)
+            rows = (_ramp(start, end, 256), _ramp(start, end, 32))
+            taxonomy[name] = "sequential"
+        cmaps[name], previews[name] = rows
+    catalog: dict[str, object] = {
+        "palette": {
+            f"family{i:02d}": _ramp(
+                (0.06 + i / 300, 0.08, 0.35 + i / 300),
+                (0.92, 0.94 - i / 300, 0.98),
+                10,
+            )
+            for i in range(20)
+        },
+        "cmaps256": cmaps,
+        "cycles": {
+            name: _hues(8, 0.05 * i, 0.75)
+            for i, name in enumerate(("octave", "octave_print"))
+        },
+        "curated_rows": {
+            f"curated{i:02d}": _hues(8, 0.02 * i, 0.7) for i in range(15)
+        },
+        "discrete_hex": {
+            f"discrete{i:02d}": {
+                "1": _hues(1, 0.01 * i, 0.6),
+                "3": _hues(3, 0.01 * i, 0.6),
+            }
+            for i in range(56)
+        },
+        "taxonomy": taxonomy,
+        "dark_cycle": _hues(7, 0.1, 0.9),
+    }
+    return catalog, dict(previews)
+
+
+@pytest.fixture(scope="module")
+def synthetic_quality_bytes() -> bytes:
+    """Serialize a valid quality payload the oracle builds from synthetic rows.
+
+    It carries the pinned provenance labels (baseline commit, compatibility
+    path and SHA-256, oracle path and source SHA-256) as the builder demands,
+    so every check passes on it. No approved input is read.
+    """
+    catalog, previews = _synthetic_quality_inputs()
+    payload = oracle.build_quality_payload(
+        catalog,
+        previews,
+        baseline_commit=BASELINE_COMMIT,
+        compatibility_path=oracle.ACCEPTED_COMPATIBILITY_PATH,
+        compatibility_sha256=oracle.ACCEPTED_COMPATIBILITY_SHA256,
+        oracle_path=oracle.ACCEPTED_ORACLE_PATH,
+        oracle_sha256=ORACLE_SHA256,
+    )
+    return json.dumps(payload, allow_nan=False).encode("utf-8")
+
+
 def test_quality_loader_rejects_source_and_payload_tampering(
-    tmp_path: Path,
+    tmp_path: Path, synthetic_quality_bytes: bytes
 ) -> None:
-    """Reject raw-byte drift before trusting decoded quality values."""
-    original = QUALITY_PATH.read_bytes()
+    """Reject raw-byte drift before trusting decoded quality values.
+
+    The untampered synthetic payload must load; each tamper must then fail
+    at its own check. The real fixture's raw pin and validation are pinned
+    separately by ``test_quality_fixture_is_pinned_finite_and_validated``.
+    """
     tampered = tmp_path / "quality.json"
-    tampered.write_bytes(original + b"\n")
-    with pytest.raises(oracle.OracleValidationError):
-        oracle.load_quality_payload(
+
+    def load(raw: bytes, expected_raw_sha256: str) -> dict[str, object]:
+        tampered.write_bytes(raw)
+        return oracle.load_quality_payload(
             tampered,
-            expected_raw_sha256=QUALITY_SHA256,
+            expected_raw_sha256=expected_raw_sha256,
             expected_oracle_sha256=ORACLE_SHA256,
         )
 
-    decoded = _load_quality()
-    oracle_info = _object_map(decoded["oracle"])
-    oracle_info["source_sha256"] = "0" * 64
-    payload = json.dumps(decoded, allow_nan=False).encode("utf-8")
-    tampered.write_bytes(payload)
-    with pytest.raises(oracle.OracleValidationError):
-        oracle.load_quality_payload(
-            tampered,
-            expected_raw_sha256=hashlib.sha256(payload).hexdigest(),
-            expected_oracle_sha256=ORACLE_SHA256,
-        )
+    original = synthetic_quality_bytes
+    original_sha256 = hashlib.sha256(original).hexdigest()
+    assert load(original, original_sha256) == json.loads(original)
 
-    for mutate in (
-        lambda value: value.__setitem__("schema", "unknown"),
-        lambda value: _object_map(value["compatibility"]).__setitem__(
-            "raw_sha256", "0" * 64
+    with pytest.raises(
+        oracle.OracleValidationError, match="raw SHA-256 mismatch"
+    ):
+        load(original + b"\n", original_sha256)
+
+    for mutate, message in (
+        (
+            lambda value: _object_map(value["oracle"]).__setitem__(
+                "source_sha256", "0" * 64
+            ),
+            "references another oracle",
+        ),
+        (
+            lambda value: value.__setitem__("schema", "unknown"),
+            "unsupported quality payload schema",
+        ),
+        (
+            lambda value: _object_map(value["compatibility"]).__setitem__(
+                "raw_sha256", "0" * 64
+            ),
+            "compatibility provenance differs from its pin",
         ),
     ):
-        malformed = _load_quality()
+        malformed = json.loads(original)
         mutate(malformed)
         payload = json.dumps(malformed, allow_nan=False).encode("utf-8")
-        tampered.write_bytes(payload)
-        with pytest.raises(oracle.OracleValidationError):
-            oracle.load_quality_payload(
-                tampered,
-                expected_raw_sha256=hashlib.sha256(payload).hexdigest(),
-                expected_oracle_sha256=ORACLE_SHA256,
-            )
+        with pytest.raises(oracle.OracleValidationError, match=message):
+            load(payload, hashlib.sha256(payload).hexdigest())
 
 
 @pytest.mark.parametrize(
     "mutation", ["empty_palette", "bad_summary", "bad_count", "empty_extrema"]
 )
+@pytest.mark.approved_input
 def test_quality_validator_rejects_malformed_metric_contracts(
     mutation: str,
 ) -> None:
@@ -559,6 +686,7 @@ def test_quality_validator_rejects_malformed_metric_contracts(
         )
 
 
+@pytest.mark.approved_input
 def test_quality_computation_rejects_singleton_ordered_luts_cleanly() -> None:
     """Reject empty ordered profiles with the oracle's domain exception."""
     compatibility = json.loads(COMPAT_PATH.read_text(encoding="utf-8"))
@@ -576,6 +704,7 @@ def test_quality_computation_rejects_singleton_ordered_luts_cleanly() -> None:
         oracle.compute_catalog_quality(compatibility, previews)
 
 
+@pytest.mark.approved_input
 def test_quality_sanity_values_match_the_immutable_v5_baseline() -> None:
     """Pin representative raw extrema used by the migration gates."""
     quality = _load_quality()
@@ -636,6 +765,7 @@ def test_quality_sanity_values_match_the_immutable_v5_baseline() -> None:
     assert dark["tritan_min_delta_e00"] == pytest.approx(11.010755633433755)
 
 
+@pytest.mark.approved_input
 def test_every_discrete_form_has_quality_and_singletons_use_null() -> None:
     """Measure every frozen discrete row without serializing NaN."""
     quality = _load_quality()
@@ -651,6 +781,10 @@ def test_every_discrete_form_has_quality_and_singletons_use_null() -> None:
         assert singleton["normal_delta_e_ok"] is None
 
 
+# Not ``approved_input``: the generator reads its listed baseline files
+# (``BASELINE_PREVIEW_INPUTS``) by exact path from the accepted commit, so it
+# needs full Git history and runs in the full-history ``test`` job only. Every
+# output, including the baseline files it extracts, stays below ``tmp_path``.
 @pytest.mark.color_pipeline
 def test_generator_is_byte_identical_and_uses_archived_baseline(
     tmp_path: Path,
@@ -658,6 +792,8 @@ def test_generator_is_byte_identical_and_uses_archived_baseline(
     """Regenerate from pinned literals twice without touching candidate code."""
     first = tmp_path / "first.json"
     second = tmp_path / "second.json"
+    owned_temporary = tmp_path / "generator-tmp"
+    owned_temporary.mkdir()
     command = [
         sys.executable,
         str(GENERATOR_PATH),
@@ -670,8 +806,8 @@ def test_generator_is_byte_identical_and_uses_archived_baseline(
         "raise RuntimeError('candidate package import is forbidden')\n",
         encoding="utf-8",
     )
-    environment = os.environ.copy()
-    environment["PYTHONPATH"] = str(import_trap.parent)
+    owned = {**os.environ, "TMPDIR": str(owned_temporary)}
+    environment = {**owned, "PYTHONPATH": str(import_trap.parent)}
     subprocess.run(
         [*command, "--output", str(first)],
         cwd=REPO_ROOT,
@@ -679,8 +815,14 @@ def test_generator_is_byte_identical_and_uses_archived_baseline(
         check=True,
     )
     subprocess.run(
-        [*command, "--output", str(second)], cwd=REPO_ROOT, check=True
+        [*command, "--output", str(second)],
+        cwd=REPO_ROOT,
+        env=owned,
+        check=True,
     )
+    # The extracted baseline inputs lived in a temporary directory below the
+    # owned TMPDIR and are gone once each run finishes.
+    assert list(owned_temporary.iterdir()) == []
     # The generator must be byte-identical to itself: same inputs, same run,
     # same bytes. That is exact.
     assert first.read_bytes() == second.read_bytes()
@@ -703,9 +845,11 @@ def test_generator_is_byte_identical_and_uses_archived_baseline(
             str(tmp_path / "bad.json"),
         ],
         cwd=REPO_ROOT,
+        env=owned,
         check=False,
         capture_output=True,
         text=True,
     )
     assert result.returncode == 2
     assert "baseline commit" in result.stderr.lower()
+    assert not (tmp_path / "bad.json").exists()
