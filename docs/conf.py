@@ -173,7 +173,11 @@ exclude_patterns = [
     "examples_source/_LAYOUT_RECIPES.md",
     # Internal design notes — plans, specs, and audits kept in-repo for
     # provenance but not part of the public documentation surface. They
-    # were emitting toctree / xref warnings on every build.
+    # were emitting toctree / xref warnings on every build. Sphinx prunes a
+    # directory from source discovery only when a pattern matches the
+    # directory itself, so the parent entry keeps the walk out of it; the
+    # glob still matches the document names below it.
+    "superpowers",
     "superpowers/**",
     # The structure refactor plan and its audits (ADR 0005), same reason.
     "development/structure-refactor/**",
