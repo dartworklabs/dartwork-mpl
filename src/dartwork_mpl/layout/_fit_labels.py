@@ -216,15 +216,22 @@ _GAPS: WeakKeyDictionary[GridSpec, dict[str, float]] = WeakKeyDictionary()
 Edges: TypeAlias = tuple[float | None, float | None, float | None, float | None]
 
 
+#: A locator's parameters (all but the axis it measures), comparable.
+Params: TypeAlias = tuple[tuple[str, object], ...]
+
+
 @dataclass(frozen=True)
 class _Kept:
-    """What a kept tick budget replaced.
+    """What a kept tick budget replaced, and how this module set it.
 
     ``auto`` is matplotlib's own locator, waiting off any axis (so neither
-    it nor this record holds an axis, nor through one a figure).
+    it nor this record holds an axis, nor through one a figure); ``params``
+    are the kept locator's parameters as set, so an edit since
+    (``ax.locator_params(...)``, ``set_params``) makes it yours.
     """
 
     auto: Locator
+    params: Params
 
 
 # kept locator -> what it replaced. Keyed by the locator its axis holds, a
@@ -334,10 +341,11 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
             kept = _KEPT.get(locator)
             if kept is not None and whole:
                 del _KEPT[locator]
-                owner = locator.axis
-                _put_back_auto(
-                    owner if isinstance(owner, Axis) else axis, kept.auto
-                )
+                if _locator_params(locator) == kept.params:
+                    owner = locator.axis
+                    _put_back_auto(
+                        owner if isinstance(owner, Axis) else axis, kept.auto
+                    )
             first = _TURNED_AXES.pop(axis, None)
             for tick in axis.get_major_ticks():
                 label = tick.label1
@@ -396,6 +404,15 @@ def _put_back_auto(axis: Axis, auto: Locator) -> None:
     (the axis it measured, the one the budget was set on)."""
     axis.set_major_locator(auto)
     axis.isDefault_majloc = True
+
+
+def _locator_params(locator: Locator) -> Params:
+    """The parameters of ``locator``, all but the axis it measures."""
+    return tuple(
+        (key, value.tolist() if isinstance(value, np.ndarray) else value)
+        for key, value in sorted(vars(locator).items())
+        if key != "axis"
+    )
 
 
 def _all_in(members: Iterable[Axes], ids: set[int]) -> bool:
@@ -1391,7 +1408,7 @@ def _set_budget(
     axis.set_major_locator(kept)
     # Off its axis while it waits: the record then holds no figure.
     budget.auto.set_axis(None)
-    _KEPT[kept] = _Kept(budget.auto)
+    _KEPT[kept] = _Kept(budget.auto, _locator_params(kept))
 
     def undo() -> None:
         _KEPT.pop(kept, None)

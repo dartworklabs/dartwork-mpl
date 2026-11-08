@@ -1389,3 +1389,23 @@ def test_closed_figures_are_collectible_after_any_fitting() -> None:
     del fig
     gc.collect()
     assert [ref() is None for ref in refs] == [True] * len(refs)
+
+
+@pytest.mark.parametrize("fit", [True, False])
+@pytest.mark.parametrize("edit", ["locator_params", "set_params"])
+def test_a_kept_locator_you_edit_in_place_stays(fit: bool, edit: str) -> None:
+    """Edited in place after a layout kept its ticks, the locator is yours:
+    the next layout, fitting or not, does not put matplotlib's back."""
+    fig, ax = _boxplot(None)
+    auto = ax.yaxis.get_major_locator()
+    dm.simple_layout(fig, margin=dm.inch(0.08))
+    kept = ax.yaxis.get_major_locator()
+    assert kept is not auto  # precondition: kept
+    if edit == "locator_params":
+        ax.locator_params(axis="y", nbins=1)
+    else:
+        kept.set_params(nbins=1)
+    dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+    assert ax.yaxis.get_major_locator() is kept
+    assert not ax.yaxis.isDefault_majloc
+    assert len(_visible_ticks(ax.yaxis)) <= 2
