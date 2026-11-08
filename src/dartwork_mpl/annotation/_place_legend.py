@@ -31,6 +31,7 @@ from ._legend_fit import (
     probe,
 )
 from ._legend_outside import (
+    Sizes,
     choose,
     draw_outside,
     outside_fallback,
@@ -216,8 +217,11 @@ def _place_outside_legend(
                 f"remove {key}= or pass a matplotlib loc instead"
             )
     _fig, renderer = _renderer_for_axes(ax)
-    plans = side_plans(ax, handles, labels, side, kw, renderer, named=True)
-    return draw_outside(ax, handles, labels, choose(plans), kw, renderer)
+    sizes: Sizes = {}
+    plans = side_plans(
+        ax, handles, labels, side, kw, renderer, named=True, sizes=sizes
+    )
+    return draw_outside(ax, handles, labels, choose(plans), kw, renderer, sizes)
 
 
 def _place_untouched(legend: Legend, loc: str, kw: dict[str, Any]) -> Legend:

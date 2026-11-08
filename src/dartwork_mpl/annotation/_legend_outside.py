@@ -7,8 +7,8 @@ so choosing a side, a column count or a wrapping costs no canvas draw.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from .._figure_geometry import (
     BBOX_ERRORS,
@@ -23,7 +23,9 @@ from ._legend_fit import (
     legend_em,
     legend_pad,
     legend_size,
+    points_px,
     probe,
+    text_width,
     wrap_label,
 )
 
@@ -98,11 +100,19 @@ class OutsidePlan:
         return 2 if self.loss <= GOOD_FIT_LOSS else 1
 
 
+#: Trial-legend measurements of one legend's entries and keywords, kept
+#: across plans: a legend's size does not depend on the Axes, so the layout
+#: plans again at a new size without building the same trials again.
+#: Keys hold the renderer's px per pt, so another dpi measures afresh.
+Sizes: TypeAlias = dict[tuple[Any, ...], Any]
+
+
 @dataclass(frozen=True)
 class OutsideSource:
     """What an outside legend was planned from, for ``settle_legends``.
 
-    ``size`` is the Axes' width and height in px when it was planned.
+    ``size`` is the Axes' width and height in px when it was planned;
+    ``sizes`` the trial measurements made so far (:data:`Sizes`).
     """
 
     handles: list[Any]
@@ -110,6 +120,66 @@ class OutsideSource:
     kw: dict[str, Any]
     plan: OutsidePlan
     size: tuple[float, float]
+    sizes: Sizes = field(default_factory=dict)
+
+
+def _scale(renderer: RendererBase) -> float:
+    return points_px(renderer, 1.0)
+
+
+def _trial_size(
+    ax: Axes,
+    handles: list[Any],
+    labels: tuple[str, ...],
+    ncols: int,
+    legend_kw: dict[str, Any],
+    renderer: RendererBase,
+    sizes: Sizes,
+) -> tuple[float, float]:
+    """Width and height of the legend with ``ncols`` columns, measured once.
+
+    An ``mode="expand"`` legend takes the width of its anchor box, which
+    the layout moves, so it is measured every time.
+    """
+    key = ("size", ncols, labels, _scale(renderer))
+    if key not in sizes or legend_kw.get("mode") == "expand":
+        trial = probe(ax, handles, labels, ncols=ncols, **legend_kw)
+        try:
+            sizes[key] = legend_size(trial, renderer)
+        except BBOX_ERRORS:
+            sizes[key] = (float("inf"), float("inf"))
+    found: tuple[float, float] = sizes[key]
+    return found
+
+
+def _plain_trial(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    legend_kw: dict[str, Any],
+    renderer: RendererBase,
+    sizes: Sizes,
+) -> Legend:
+    """The legend as asked, built once: its font, pad and handle metrics."""
+    key = ("trial", _scale(renderer))
+    if key not in sizes:
+        sizes[key] = probe(ax, handles, labels, **legend_kw)
+    trial: Legend = sizes[key]
+    return trial
+
+
+def trial_pad(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    legend_kw: dict[str, Any],
+    renderer: RendererBase,
+    sizes: Sizes,
+) -> float:
+    """The legend's ``borderaxespad`` in px (the gap a plan counts)."""
+    return legend_pad(
+        _plain_trial(ax, handles, labels, legend_kw, renderer, sizes), renderer
+    )
 
 
 def _column_steps(
@@ -135,32 +205,27 @@ def plan_side(
     renderer: RendererBase,
     axes_box: Bbox,
     pad: float,
+    sizes: Sizes | None = None,
 ) -> OutsidePlan:
     """Columns for ``labels`` on ``side`` and what that costs the plot.
 
     Above and below: the fewest rows whose legend is no wider than the Axes
     (one column when none is). Right and left: the fewest columns whose
     legend is no taller than the Axes. ``explicit`` columns win.
-    ``legend_kw`` holds no ``ncol`` / ``ncols``.
+    ``legend_kw`` holds no ``ncol`` / ``ncols``; ``sizes`` keeps the trial
+    sizes for the next plan of the same legend.
     """
+    if sizes is None:
+        sizes = {}
     along_width = side in ("above", "below")
     steps = _column_steps(max(len(labels), 1), along_width, explicit)
     width = height = float("inf")
     ncols = steps[-1]
     fits = False
     for ncols in steps:
-        trial = probe(
-            ax,
-            handles,
-            labels,
-            loc=OUTSIDE_LEGEND_LOCS[side],
-            ncols=ncols,
-            **legend_kw,
+        width, height = _trial_size(
+            ax, handles, tuple(labels), ncols, legend_kw, renderer, sizes
         )
-        try:
-            width, height = legend_size(trial, renderer)
-        except BBOX_ERRORS:
-            width = height = float("inf")
         limit = axes_box.width if along_width else axes_box.height
         fits = (width if along_width else height) <= limit + 0.5
         if fits:
@@ -180,6 +245,7 @@ def _wrapped_variants(
     legend_kw: dict[str, Any],
     explicit: int | None,
     renderer: RendererBase,
+    sizes: Sizes,
 ) -> list[tuple[str, ...]]:
     """Label sets with long names broken at spaces, for ``side`` (distinct only).
 
@@ -189,7 +255,7 @@ def _wrapped_variants(
     """
     if not labels:
         return []
-    trial = probe(ax, handles, labels, **legend_kw)
+    trial = _plain_trial(ax, handles, labels, legend_kw, renderer, sizes)
     overhead = handle_overhead(trial, renderer)
     em = legend_em(trial, renderer)
     spacing = float(trial.columnspacing) * em
@@ -200,13 +266,20 @@ def _wrapped_variants(
     else:
         canvas = float(renderer.get_canvas_width_height()[0])
         caps = [share * canvas - overhead for share in SIDE_WRAP_SHARES]
+    scale = _scale(renderer)
+
+    def measure(text: str) -> float:
+        key = ("text", text, scale)
+        if key not in sizes:
+            sizes[key] = text_width(text, trial.prop, renderer)
+        found: float = sizes[key]
+        return found
+
     out: list[tuple[str, ...]] = []
     for cap in caps:
         if cap < MIN_WRAP_EM * em:
             continue
-        wrapped = tuple(
-            wrap_label(label, cap, trial.prop, renderer) for label in labels
-        )
+        wrapped = tuple(wrap_label(label, cap, measure) for label in labels)
         if wrapped != tuple(labels) and wrapped not in out:
             out.append(wrapped)
     return out
@@ -238,6 +311,7 @@ def side_plans(
     renderer: RendererBase,
     *,
     named: bool,
+    sizes: Sizes | None = None,
 ) -> list[OutsidePlan]:
     """The plans for ``side``: names as given, then wrapped when allowed.
 
@@ -245,15 +319,27 @@ def side_plans(
     when it runs past the Axes along the side or takes more than
     :data:`GOOD_FIT_LOSS` of the plot, or, on a side the caller named
     right or left, is wider than :data:`WIDE_SHARE` of the Axes. A legend
-    that fits keeps its names on one line.
+    that fits keeps its names on one line. ``sizes`` keeps the trial
+    measurements for the next plan of the same legend.
     """
     from ..config import config
 
+    if sizes is None:
+        sizes = {}
     legend_kw, explicit = split_ncols(kw)
     axes_box = ax.get_window_extent(renderer)
-    pad = legend_pad(probe(ax, handles, labels, **legend_kw), renderer)
+    pad = trial_pad(ax, handles, labels, legend_kw, renderer, sizes)
     plain = plan_side(
-        ax, handles, labels, side, legend_kw, explicit, renderer, axes_box, pad
+        ax,
+        handles,
+        labels,
+        side,
+        legend_kw,
+        explicit,
+        renderer,
+        axes_box,
+        pad,
+        sizes,
     )
     plans = [plain]
     if not config.legend_wrap:
@@ -276,9 +362,10 @@ def side_plans(
             renderer,
             axes_box,
             pad,
+            sizes,
         )
         for wrapped in _wrapped_variants(
-            ax, handles, labels, side, legend_kw, explicit, renderer
+            ax, handles, labels, side, legend_kw, explicit, renderer, sizes
         )
     )
     return plans
@@ -291,11 +378,12 @@ def draw_outside(
     plan: OutsidePlan,
     kw: dict[str, Any],
     renderer: RendererBase,
+    sizes: Sizes | None = None,
 ) -> Legend:
     """Draw the legend of ``ax`` as ``plan`` says, past the labels of its side.
 
     Records ``_dm_wrapped`` (a name was broken) and ``_dm_outside_source``
-    (what ``settle_legends`` plans again from).
+    (what ``settle_legends`` plans again from, with the trial ``sizes``).
     """
     legend_kw, _explicit = split_ncols(kw)
     legend = ax.legend(
@@ -309,7 +397,12 @@ def draw_outside(
     legend._dm_wrapped = plan.labels != tuple(labels)  # type: ignore[attr-defined]
     box = ax.get_window_extent(renderer)
     legend._dm_outside_source = OutsideSource(  # type: ignore[attr-defined]
-        list(handles), list(labels), dict(kw), plan, (box.width, box.height)
+        list(handles),
+        list(labels),
+        dict(kw),
+        plan,
+        (box.width, box.height),
+        {} if sizes is None else sizes,
     )
     return legend
 
@@ -365,9 +458,10 @@ def outside_fallback(
     when no side may be used.
     """
     plans: list[OutsidePlan] = []
+    sizes: Sizes = {}
     for side in fallback_sides(ax):
         plans += side_plans(
-            ax, handles, labels, side, kw, renderer, named=False
+            ax, handles, labels, side, kw, renderer, named=False, sizes=sizes
         )
     if not plans:
         return None
@@ -376,7 +470,7 @@ def outside_fallback(
     agreeing = [p for p in plans if p.side in taken and p.level == best.level]
     if agreeing and best.side not in taken:
         best = choose(agreeing)
-    legend = draw_outside(ax, handles, labels, best, kw, renderer)
+    legend = draw_outside(ax, handles, labels, best, kw, renderer, sizes)
     legend._dm_collision_free = True  # type: ignore[attr-defined]
     legend._dm_collision_score = 0.0  # type: ignore[attr-defined]
     legend._dm_outside_fallback = True  # type: ignore[attr-defined]
@@ -390,6 +484,7 @@ __all__ = [
     "RELATIVE_GAIN",
     "OutsidePlan",
     "OutsideSource",
+    "Sizes",
     "choose",
     "draw_outside",
     "fallback_sides",
@@ -397,4 +492,5 @@ __all__ = [
     "plan_side",
     "side_plans",
     "split_ncols",
+    "trial_pad",
 ]

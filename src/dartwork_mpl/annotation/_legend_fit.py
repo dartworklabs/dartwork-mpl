@@ -13,6 +13,7 @@ the Axes' texts (value labels, annotations).
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, cast
 
@@ -219,9 +220,13 @@ def probe(
 ) -> Legend:
     """A legend built only to be measured: not attached, nothing drawn.
 
-    ``draggable`` is left out, so a trial connects no canvas events.
+    ``draggable`` is left out, so a trial connects no canvas events. With
+    no ``loc`` it sits at the upper right: its size does not depend on
+    where it sits, and matplotlib's ``"best"`` would search the data for a
+    spot each time it is measured.
     """
     kw.pop("draggable", None)
+    kw.setdefault("loc", "upper right")
     # matplotlib's stubs name Axes | Figure; SubFigure.legend builds the
     # same Legend on a SubFigure.
     owner = cast("Axes | Figure", parent)
@@ -346,20 +351,16 @@ def text_width(
     return float(max(widths)) if widths else 0.0
 
 
-def wrap_label(
-    text: str, max_px: float, prop: FontProperties, renderer: RendererBase
-) -> str:
+def wrap_label(text: str, max_px: float, width: Callable[[str], float]) -> str:
     """Wrap ``text`` at spaces so each line is at most ``max_px`` wide.
 
-    Greedy, word by word; a word wider than the limit keeps its own line. A
-    trailing unit in brackets (``(2019 = 100)``) stays one piece. Text that
-    already fits, or holds a line break or mathtext, is returned as is.
+    ``width`` measures one line in px (:func:`text_width` in the legend's
+    font). Greedy, word by word; a word wider than the limit keeps its own
+    line. A trailing unit in brackets (``(2019 = 100)``) stays one piece.
+    Text that already fits, or holds a line break or mathtext, is returned
+    as is.
     """
-    if (
-        "\n" in text
-        or "$" in text
-        or text_width(text, prop, renderer) <= max_px
-    ):
+    if "\n" in text or "$" in text or width(text) <= max_px:
         return text
     unit = ""
     body = text
@@ -376,7 +377,7 @@ def wrap_label(
     current = words[0]
     for word in words[1:]:
         trial = f"{current} {word}"
-        if text_width(trial, prop, renderer) <= max_px:
+        if width(trial) <= max_px:
             current = trial
         else:
             lines.append(current)

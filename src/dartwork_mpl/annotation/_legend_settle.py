@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ._legend_entries import _mark_placed, _placed_as_built
-from ._legend_fit import legend_pad, probe
 from ._legend_outside import (
     OutsidePlan,
     OutsideSource,
@@ -14,6 +13,7 @@ from ._legend_outside import (
     plan_side,
     side_plans,
     split_ncols,
+    trial_pad,
 )
 from ._place_legend import BestSource, draw_inside, first_free, inside_spots
 
@@ -89,11 +89,12 @@ def _replan(
                 source.kw,
                 renderer,
                 named=not getattr(legend, "_dm_outside_fallback", False),
+                sizes=source.sizes,
             )
         )
     legend_kw, explicit = split_ncols(source.kw)
-    pad = legend_pad(
-        probe(ax, source.handles, source.labels, **legend_kw), renderer
+    pad = trial_pad(
+        ax, source.handles, source.labels, legend_kw, renderer, source.sizes
     )
     return plan_side(
         ax,
@@ -105,6 +106,7 @@ def _replan(
         renderer,
         ax.get_window_extent(renderer),
         pad,
+        source.sizes,
     )
 
 
@@ -130,13 +132,20 @@ def _settle_outside(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
             source.kw,
             source.plan,
             (box.width, box.height),
+            source.sizes,
         )
         return False
     kept: dict[str, Any] = {
         name: getattr(legend, name) for name in _KEPT if hasattr(legend, name)
     }
     rebuilt = draw_outside(
-        ax, source.handles, source.labels, plan, source.kw, renderer
+        ax,
+        source.handles,
+        source.labels,
+        plan,
+        source.kw,
+        renderer,
+        source.sizes,
     )
     for name, value in kept.items():
         setattr(rebuilt, name, value)
