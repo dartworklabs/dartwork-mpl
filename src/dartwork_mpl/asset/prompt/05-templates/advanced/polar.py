@@ -57,13 +57,7 @@ ax.set_theta_direction(-1)  # clockwise
 ax.set_rlabel_position(135)
 ax.tick_params(axis="y", labelsize=dm.fs(-2))
 
-ax.legend(
-    loc="upper center",
-    bbox_to_anchor=(0.5, -0.06),
-    ncol=3,
-    fontsize=dm.fs(-1),
-    frameon=False,
-)
+dm.place_legend(ax, loc="below", fontsize=dm.fs(-1), frameon=False)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 dm.validate_with_fixes(fig)

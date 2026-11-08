@@ -39,6 +39,6 @@ ax.bar(x + bar_width, series_c, bar_width, label="Series C", color="dc.orange2")
 ax.set_xticks(x)
 ax.set_xticklabels(categories)
 ax.set_ylabel("Value")
-ax.legend()
+dm.place_legend(ax)
 
 dm.simple_layout(fig)

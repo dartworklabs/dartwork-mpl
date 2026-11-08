@@ -62,7 +62,7 @@ ax.set_ylabel("Generation (MWh)")
 ax.set_xlabel("Period")
 dm.format_axis_si(ax, axis="y")
 
-ax.legend(loc="upper left", fontsize=dm.fs(-1), frameon=False, ncol=3)
+dm.place_legend(ax, fontsize=dm.fs(-1), frameon=False)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)
