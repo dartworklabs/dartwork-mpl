@@ -99,10 +99,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   box (twin Axes and insets included, measured as `VALUE_LABEL_ON_DATA`
   measures data), a text inside an Axes where it is drawn (`ax.texts`:
   value labels, annotations without their arrow, line-end labels; one
-  clipped away or at alpha 0 does not count), another legend, or another
-  panel's plot box (an Axes legend reaching into its neighbour or an
-  inset). Contact up to half a point is a touch. A legend that draws
-  nothing (no visible frame and no visible entry) is left out. The detail
+  clipped away or drawn at alpha 0, the text's own alpha replacing its
+  colour's as matplotlib draws it, does not count), another legend, or
+  another panel's plot box (an Axes legend reaching into its neighbour or
+  an inset). Contact up to half a point is a touch. A legend that draws
+  nothing is left out: no frame, title, entry text or handle draws ink (a
+  handle is read by what it strokes, fills, marks or hatches in a colour
+  with alpha, every artist of an entry included). The detail
   names the legend (`legend_axes`, `None` for a figure legend,
   `legend_inset` for an inset's, and its first entries), the kinds
   covered, the first artists (`axes[0].insets[0]` for an inset) and the
