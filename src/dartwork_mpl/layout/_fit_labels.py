@@ -582,9 +582,8 @@ def fit_round(
     if "space" in steps and gs is not None:
         changes += _fit_panel_gaps(fig, renderer, gs, axes, state)
     if steps & {"wrap", "rotate"}:
-        for ax in axes:
-            if _cartesian(ax):
-                changes += _fit_x_ticks(ax, renderer, steps, state)
+        for group in _shared_x_groups(axes):
+            changes += _fit_x_ticks(group, renderer, steps, state)
     return changes
 
 
@@ -860,102 +859,191 @@ def _fit_panel_gaps(
 # ── wrap / rotate ────────────────────────────────────────────────────
 
 
-def _fit_x_ticks(
-    ax: Axes, renderer: RendererBase, steps: frozenset[str], state: FitState
-) -> list[_Change]:
-    """Wrap or turn the bottom tick labels of ``ax`` that collide."""
+def _shared_x_groups(axes: Sequence[Axes]) -> list[list[Axes]]:
+    """The fitted Axes grouped by shared x axis, in figure order.
+
+    Axes that share x (``sharex=True``, a twin) share the tick formatter,
+    so their labels wrap together; each still turns its own labels.
+    """
+    groups: list[list[Axes]] = []
+    seen: set[int] = set()
+    fitted = [ax for ax in axes if _cartesian(ax)]
+    for ax in fitted:
+        if id(ax) in seen:
+            continue
+        siblings = {id(a) for a in ax.get_shared_x_axes().get_siblings(ax)}
+        group = [a for a in fitted if id(a) in siblings]
+        seen.update(id(a) for a in group)
+        groups.append(group)
+    return groups
+
+
+@dataclass(frozen=True)
+class _Row:
+    """The bottom tick labels of one Axes as the ladder reads them.
+
+    ``texts`` (as the axis' own formatter writes them), ``widths`` (one
+    line, px) and ``gaps`` between neighbouring centres run left to right.
+    ``yours``: a rotation (not this call's), an alignment other than
+    centred, line breaks or mathtext set by hand.
+    """
+
+    ax: Axes
+    texts: list[str]
+    widths: list[float]
+    gaps: list[float]
+    clearance: float
+    line_height: float
+    yours: bool
+    width: Callable[[str], float]
+
+    @property
+    def collides(self) -> bool:
+        return any(
+            (self.widths[i] + self.widths[i + 1]) / 2 - gap > _TOUCH_PX
+            for i, gap in enumerate(self.gaps)
+        )
+
+
+def _read_row(
+    ax: Axes,
+    renderer: RendererBase,
+    wrapper: WrappedTickFormatter | None,
+    state: FitState,
+) -> _Row | None:
     axis = ax.xaxis
-    key = id(axis)
-    ticks = axis.get_major_ticks()
-    bottom = {id(t.label1) for t in ticks}
+    bottom = {id(t.label1) for t in axis.get_major_ticks()}
     labels = [
         t
         for t in drawn_tick_labels(ax, "x")
         if id(t) in bottom and t.get_text().strip()
     ]
-    if len(labels) < 2:
-        return []
-    fmt = axis.get_major_formatter()
-    wrapper = fmt if isinstance(fmt, WrappedTickFormatter) else None
+    fig = ax.get_figure(root=True)
+    if len(labels) < 2 or fig is None:
+        return None
     unwrap = {v: k for k, v in wrapper.lines.items()} if wrapper else {}
     texts = [unwrap.get(t.get_text(), t.get_text()) for t in labels]
-    angle_now = state.turned.get(key)
-    if angle_now is None and (
-        {float(t.get_rotation()) for t in labels} != {0.0}
-        or {t.get_horizontalalignment() for t in labels} != {"center"}
-    ):
-        return []  # your rotation or alignment
-    if any("\n" in t or "$" in t for t in texts):
-        return []  # your line breaks, or mathtext
     centres = [
         float(t.get_transform().transform(t.get_position())[0]) for t in labels
     ]
     order = sorted(range(len(labels)), key=centres.__getitem__)
-    texts = [texts[i] for i in order]
     gaps = [centres[b] - centres[a] for a, b in pairwise(order)]
     if min(gaps) <= 0:
-        return []
-    fig = ax.get_figure(root=True)
-    if fig is None:
-        return []
+        return None
+    yours = any("\n" in t or "$" in t for t in texts) or (
+        id(axis) not in state.turned
+        and (
+            {float(t.get_rotation()) for t in labels} != {0.0}
+            or {t.get_horizontalalignment() for t in labels} != {"center"}
+        )
+    )
+    texts = [texts[i] for i in order]
     font = labels[0].get_fontproperties()
     width = _width_of(renderer, font)
-    widths = [width(t) for t in texts]
-    clearance = _TARGET_EM * float(labels[0].get_fontsize()) * fig.dpi / 72.0
-    if angle_now is None:
-        collide = any(
-            (widths[i] + widths[i + 1]) / 2 - gap > _TOUCH_PX
-            for i, gap in enumerate(gaps)
-        )
-        if wrapper is None and not collide:
-            return []
-        if "wrap" in steps and state.allows(("wrap", key)):
-            lines = _wrap_lines(texts, widths, gaps, width, clearance)
-            if lines is not None:
-                return _set_wrap(axis, fmt, wrapper, lines, state)
-        if "rotate" not in steps:
-            return []
-    if not state.allows(("rotate", key)):
-        return []
-    _w, line_h, _d = renderer.get_text_width_height_descent(
+    _w, line_height, _d = renderer.get_text_width_height_descent(
         "Ag", font, ismath=False
     )
+    return _Row(
+        ax=ax,
+        texts=texts,
+        widths=[max(map(width, t.split("\n"))) for t in texts],
+        gaps=gaps,
+        clearance=_TARGET_EM * float(labels[0].get_fontsize()) * fig.dpi / 72.0,
+        line_height=float(line_height),
+        yours=yours,
+        width=width,
+    )
+
+
+def _fit_x_ticks(
+    group: Sequence[Axes],
+    renderer: RendererBase,
+    steps: frozenset[str],
+    state: FitState,
+) -> list[_Change]:
+    """Wrap (together) or turn (each) the bottom tick labels of Axes that
+    share x and collide."""
+    axis = group[0].xaxis  # the group's formatter is set through this axis
+    fmt = axis.get_major_formatter()
+    wrapper = fmt if isinstance(fmt, WrappedTickFormatter) else None
+    rows = [
+        row
+        for ax in group
+        if (row := _read_row(ax, renderer, wrapper, state)) is not None
+    ]
+    if not rows:
+        return []
+    turned = any(id(row.ax.xaxis) in state.turned for row in rows)
+    if (
+        not turned
+        and (wrapper is not None or any(r.collides for r in rows))
+        and "wrap" in steps
+        and state.allows(("wrap", id(axis)))
+        and not any(row.yours for row in rows)
+    ):
+        lines = _wrap_lines(rows)
+        if lines is not None:
+            return _set_wrap(axis, fmt, wrapper, lines, state)
+    if "rotate" not in steps:
+        return []
+    changes: list[_Change] = []
+    for row in rows:
+        angle = _turn_angle(row, state)
+        if angle is None:
+            continue
+        unwrapped: list[_Change] = []
+        if wrapper is not None:
+            # Turned labels are one line: the group's wraps come off with
+            # the first turn, and come back if that turn is taken back.
+            unwrapped = _set_wrap(axis, fmt, wrapper, {}, state)
+            wrapper = None
+        changes += _set_turn_on(row.ax, angle, state, unwrapped)
+    return changes
+
+
+def _turn_angle(row: _Row, state: FitState) -> float | None:
+    """The angle ``row``'s labels turn to now, or ``None`` (they stay)."""
+    key = id(row.ax.xaxis)
+    angle_now = state.turned.get(key)
+    if not state.allows(("rotate", key)):
+        return None
+    if angle_now is None and (row.yours or not row.collides):
+        return None
+    fig = row.ax.get_figure(root=True)
+    if fig is None:
+        return None
     angle = smallest_angle(
-        min(gaps), float(line_h), clearance, start=angle_now or 0.0
+        min(row.gaps), row.line_height, row.clearance, start=angle_now or 0.0
     )
     if angle is None:
         # No angle clears. Upright gives the most room, and is worth it only
         # when it leaves neighbours overlapping less than they do flat (long
         # names, not a pair of short numbers on a squeezed axis).
         flat = max(
-            (widths[i] + widths[i + 1]) / 2 - gap for i, gap in enumerate(gaps)
+            (row.widths[i] + row.widths[i + 1]) / 2 - gap
+            for i, gap in enumerate(row.gaps)
         )
-        if float(line_h) - min(gaps) >= flat:
-            return []
+        if row.line_height - min(row.gaps) >= flat:
+            return None
         angle = 90.0
     if angle_now is not None and angle <= angle_now:
-        return []
+        return None
     turn = math.radians(angle)
-    height = max(widths) * math.sin(turn) + float(line_h) * math.cos(turn)
+    height = max(row.widths) * math.sin(turn) + row.line_height * math.cos(turn)
     if height > _MAX_TEXT_SHARE * fig.bbox.height:
-        return []  # too long to turn: left for the author (TICK_OVERLAP)
-    return _set_turn_on(axis, ticks, angle, wrapper, state)
+        return None  # too long to turn: left for the author (TICK_OVERLAP)
+    return angle
 
 
 def _set_turn_on(
-    axis: Axis,
-    ticks: Sequence[Any],
-    angle: float,
-    wrapper: WrappedTickFormatter | None,
-    state: FitState,
+    ax: Axes, angle: float, state: FitState, unwrapped: list[_Change]
 ) -> list[_Change]:
-    """Turn the bottom labels of ``axis`` (only those: the top labels stay
-    as they are) and record each label's state before."""
+    """Turn the bottom labels of ``ax`` (only those: the top labels stay as
+    they are), recording each label's state before; ``unwrapped`` (the
+    group's wraps taken off for it) comes back with the turn."""
+    axis = ax.xaxis
     key = id(axis)
-    changes: list[_Change] = []
-    if wrapper is not None:
-        changes += _set_wrap(axis, wrapper, wrapper, {}, state)
-    labels = [tick.label1 for tick in ticks]
+    labels = [tick.label1 for tick in axis.get_major_ticks()]
     before = [(label, _turn_now(label), _TURNED.get(label)) for label in labels]
     axis_before = _TURNED_AXES.get(axis)
     angle_before = state.turned.get(key)
@@ -981,23 +1069,27 @@ def _set_turn_on(
             state.turned.pop(key, None)
         else:
             state.turned[key] = angle_before
+        _undo(unwrapped)
 
-    changes.append(_Change(("rotate", key), undo))
-    return changes
+    return [_Change(("rotate", key), undo)]
 
 
-def _wrap_lines(
-    texts: Sequence[str],
-    widths: Sequence[float],
-    gaps: Sequence[float],
-    width: Callable[[str], float],
-    clearance: float,
-) -> dict[str, str] | None:
-    """The wrapped text of each label that needs it; ``None`` when one cannot wrap."""
+def _wrap_lines(rows: Sequence[_Row]) -> dict[str, str] | None:
+    """The wrapped text of each label that needs it, for every Axes of a
+    shared axis at once; ``None`` when one cannot wrap.
+
+    A label wraps to the tightest limit any Axes sets it (each one's
+    neighbours and fair shares, :func:`wrap_limit`).
+    """
+    limits: dict[str, float] = {}
+    for row in rows:
+        for i, text in enumerate(row.texts):
+            limit = wrap_limit(i, row.widths, row.gaps, row.clearance)
+            limits[text] = min(limits.get(text, math.inf), limit)
+    width = rows[0].width
     lines: dict[str, str] = {}
-    for i, text in enumerate(texts):
-        limit = wrap_limit(i, widths, gaps, clearance)
-        if widths[i] <= limit:
+    for text, limit in limits.items():
+        if width(text) <= limit:
             continue
         if not any(ch.isalpha() for ch in text):
             return None  # a number turns rather than breaks
@@ -1015,7 +1107,7 @@ def _set_wrap(
     lines: dict[str, str],
     state: FitState,
 ) -> list[_Change]:
-    """Put ``lines`` on the axis (none: its own formatter)."""
+    """Put ``lines`` on the (shared) formatter of ``axis`` (none: its own)."""
     if lines == (wrapper.lines if wrapper is not None else {}):
         return []
     key = id(axis)

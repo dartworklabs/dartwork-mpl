@@ -803,3 +803,54 @@ def test_a_round_harms_when_a_plot_side_falls_below_the_share() -> None:
     assert not _harmed(before, after(400, 400, x=0))  # fewer overlaps
     assert _harmed(before, after(400, 400, y=1))  # a new one elsewhere
     assert _harmed(before, after(400, 400, x=4))  # more on its own axis
+
+
+def _shared_panels(width: str):
+    """Two panels sharing x (one formatter), the left one half as wide."""
+    dm.style.use("scientific")
+    fig, (narrow, wide) = plt.subplots(
+        1,
+        2,
+        figsize=dm.figsize(width, "standard"),
+        sharex=True,
+        gridspec_kw={"width_ratios": [1, 2]},
+    )
+    for ax in (narrow, wide):
+        ax.bar(range(6), np.arange(6) + 1.0)
+    wide.set_xticks(
+        range(6),
+        ["Low fee", "High fee", "No fee", "Mid fee", "Top fee", "Old fee"],
+    )
+    return fig, narrow, wide
+
+
+@pytest.mark.parametrize(
+    ("width", "rungs"), [("17cm", ["wrap"]), ("12cm", ["rotate"])]
+)
+def test_panels_sharing_x_wrap_together(width, rungs, monkeypatch) -> None:
+    """The narrow panel's labels set the shared wraps; the wide panel no
+    longer takes them off again round after round (review of #645)."""
+    import dartwork_mpl.layout._fit_labels as fit
+
+    real = fit.fit_round
+    fig, narrow, wide = _shared_panels(width)
+    dm.simple_layout(fig, fit_labels=False)
+    assert _overlaps(fig) == 1  # the narrow panel's labels collide
+    calls = []
+
+    def recorded(*args):
+        changes = real(*args)
+        calls.append([c.key[0] for c in changes])
+        return changes
+
+    monkeypatch.setattr(fit, "fit_round", recorded)
+    dm.simple_layout(fig)
+    assert _overlaps(fig) == 0
+    assert calls == [rungs, []]
+    texts = _texts(narrow)
+    if rungs == ["wrap"]:
+        assert texts[0] == "Low\nfee" and _texts(wide) == texts
+        assert _angles(narrow) == _angles(wide) == {0.0}
+    else:
+        assert texts[0] == "Low fee" and _angles(narrow) == {45.0}
+        assert _angles(wide) == {0.0}
