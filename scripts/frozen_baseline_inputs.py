@@ -46,12 +46,31 @@ class BaselineInputError(BaselineRefusal, RuntimeError):
     """A baseline input is unlisted, malformed, missing or off its pin."""
 
 
+class GitCommandError(RuntimeError):
+    """A Git read command exited non-zero.
+
+    The exit status and the decoded, stripped standard error are kept, so a
+    caller can tell an answer Git gives on purpose (``rev-parse --quiet
+    --verify`` exits 1, silently, for a revision that names no commit) from
+    Git failing to run at all (exit 128). This is not a ``BaselineRefusal``:
+    a generator's ``main`` lets it keep its traceback.
+    """
+
+    def __init__(self, command: str, returncode: int, stderr: str) -> None:
+        """Keep the command line, its exit status and its standard error."""
+        self.command = command
+        self.returncode = returncode
+        self.stderr = stderr
+        super().__init__(f"{command} failed (exit {returncode}): {stderr}")
+
+
 def run_git(command: str, *args: str, repo: Path) -> bytes:
     """Run one allowed Git read command in ``repo`` and return its output.
 
     Only commit resolution and single named-object reads are allowed; an
     archive or any other command is refused before Git runs. Pathspecs are
-    literal, so a path argument never acts as a pattern.
+    literal, so a path argument never acts as a pattern. A non-zero exit
+    raises ``GitCommandError`` with Git's exit status and standard error.
     """
     if command not in GIT_COMMANDS:
         raise RuntimeError(f"git {command} is not an allowed baseline read")
@@ -62,8 +81,11 @@ def run_git(command: str, *args: str, repo: Path) -> bytes:
         capture_output=True,
     )
     if process.returncode != 0:
-        stderr = process.stderr.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"git {command} {' '.join(args)} failed: {stderr}")
+        raise GitCommandError(
+            f"git {command} {' '.join(args)}",
+            process.returncode,
+            process.stderr.decode("utf-8", errors="replace").strip(),
+        )
     return process.stdout
 
 
@@ -72,16 +94,26 @@ def resolve_baseline(
 ) -> str:
     """Resolve ``revision`` and require it to be the ``accepted`` commit.
 
-    An unresolvable revision (``git rev-parse`` fails) and a different
-    commit both raise ``BaselineCommitError``.
+    ``git rev-parse --quiet --verify`` exits 1 with nothing on standard
+    error when the revision names no commit -- an unknown name, or a commit
+    this clone does not have (a shallow checkout). Only that, and a
+    different commit, raise ``BaselineCommitError``. Any other Git failure
+    (an unreadable repository or configuration, exit 128) is not a verdict
+    on the revision: its ``GitCommandError`` propagates.
     """
     try:
         output = git(
-            "rev-parse", "--verify", f"{revision}^{{commit}}", repo=repo
+            "rev-parse",
+            "--quiet",
+            "--verify",
+            f"{revision}^{{commit}}",
+            repo=repo,
         )
-    except RuntimeError as error:
+    except GitCommandError as error:
+        if error.returncode != 1 or error.stderr:
+            raise
         raise BaselineCommitError(
-            f"baseline commit {revision!r} does not resolve: {error}"
+            f"baseline commit {revision!r} does not resolve to a commit"
         ) from error
     resolved = output.decode("ascii").strip()
     if resolved != accepted:

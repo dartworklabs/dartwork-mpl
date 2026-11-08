@@ -474,7 +474,9 @@ def _run_git(command: str, *args: str, repo: Path = REPO_ROOT) -> bytes:
     Raises
     ------
     RuntimeError
-        If the command is not allowed or Git exits unsuccessfully.
+        If the command is not allowed, or as
+        ``frozen_baseline_inputs.GitCommandError`` (with Git's exit status
+        and standard error) if Git exits unsuccessfully.
     """
     return baseline_inputs.run_git(command, *args, repo=repo)
 
@@ -495,8 +497,10 @@ def _resolve_baseline(revision: str) -> str:
     Raises
     ------
     ValueError
-        If the revision does not resolve to the accepted v5 baseline
-        (``frozen_baseline_inputs.BaselineCommitError``).
+        If the revision names no commit or another commit than the accepted
+        v5 baseline (``frozen_baseline_inputs.BaselineCommitError``).
+    frozen_baseline_inputs.GitCommandError
+        If Git itself fails (for example exit 128); not caught by ``main``.
     """
     return baseline_inputs.resolve_baseline(
         revision, ACCEPTED_BASELINE_COMMIT, repo=REPO_ROOT, git=_run_git

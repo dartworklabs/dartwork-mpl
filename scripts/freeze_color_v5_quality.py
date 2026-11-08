@@ -206,8 +206,9 @@ def _run_git(command: str, *args: str, repo: Path = REPO_ROOT) -> bytes:
 def _resolve_baseline(revision: str) -> str:
     """Resolve and require the one accepted baseline commit.
 
-    An unresolvable revision and a different commit raise
-    ``BaselineCommitError``.
+    A revision that names no commit and a different commit raise
+    ``BaselineCommitError``; any other Git failure propagates as
+    ``GitCommandError``, which ``main`` does not catch.
     """
     return baseline_inputs.resolve_baseline(
         revision, ACCEPTED_BASELINE_COMMIT, repo=REPO_ROOT, git=_run_git

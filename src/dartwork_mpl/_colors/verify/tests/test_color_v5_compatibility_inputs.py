@@ -442,17 +442,124 @@ def _git_in(
     monkeypatch.setattr(generator, "_run_git", run)
 
 
+def _accept_synthetic(
+    generator: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    repo: Path,
+    commit: str,
+) -> None:
+    """Make ``commit`` of the synthetic ``repo`` the accepted baseline.
+
+    The generator's real ``_resolve_baseline`` (and the shared
+    ``resolve_baseline`` and ``run_git`` below it) then runs against it.
+    """
+    _git_in(generator, monkeypatch, repo)
+    monkeypatch.setattr(generator, "ACCEPTED_BASELINE_COMMIT", commit)
+
+
+def _git_failure(kind: str, tmp_path: Path) -> dict[str, str]:
+    """Return environment that makes every Git command fail (exit 128)."""
+    if kind == "invalid-config":
+        # A command-line config key with no section cannot be parsed.
+        return {
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "invalid",
+            "GIT_CONFIG_VALUE_0": "x",
+        }
+    return {"GIT_DIR": str(tmp_path / "not-a-repository")}
+
+
+GIT_FAILURES = ("invalid-config", "not-a-repository")
+
+
+@pytest.mark.parametrize("kind", GIT_FAILURES)
+def test_git_exit_codes_separate_a_missing_revision_from_a_failure(
+    generator: ModuleType,
+    synthetic_commit: tuple[Path, str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+) -> None:
+    """The Git behaviour ``resolve_baseline`` relies on, with real Git.
+
+    ``rev-parse --quiet --verify`` exits 1 with nothing on stderr for a
+    revision that names no commit (a name, or a commit absent from the
+    clone); a Git that cannot run exits 128 and says why. The adapter keeps
+    both, and only the first becomes a refusal.
+    """
+    shared = generator.baseline_inputs
+    repo, commit = synthetic_commit
+    accepted = generator.ACCEPTED_BASELINE_COMMIT
+    for revision in ("no-such-revision", accepted):
+        with pytest.raises(shared.GitCommandError) as missing:
+            shared.run_git(
+                "rev-parse",
+                "--quiet",
+                "--verify",
+                f"{revision}^{{commit}}",
+                repo=repo,
+            )
+        assert (missing.value.returncode, missing.value.stderr) == (1, "")
+        with pytest.raises(shared.BaselineCommitError) as refused:
+            shared.resolve_baseline(
+                revision, commit, repo=repo, git=shared.run_git
+            )
+        assert str(refused.value) == (
+            f"baseline commit {revision!r} does not resolve to a commit"
+        )
+    assert (
+        shared.resolve_baseline("HEAD", commit, repo=repo, git=shared.run_git)
+        == commit
+    )
+
+    for key, value in _git_failure(kind, tmp_path).items():
+        monkeypatch.setenv(key, value)
+    with pytest.raises(shared.GitCommandError) as failed:
+        shared.resolve_baseline("HEAD", commit, repo=repo, git=shared.run_git)
+
+    assert not isinstance(failed.value, shared.BaselineRefusal)
+    assert failed.value.returncode == 128
+    assert failed.value.stderr.startswith(("error: ", "fatal: "))
+
+
+@pytest.mark.parametrize(
+    ("returncode", "stderr"),
+    [(1, "error: synthetic object read failure"), (128, "fatal: x"), (129, "")],
+    ids=["exit-1-with-stderr", "exit-128", "exit-129-silent"],
+)
+def test_resolve_baseline_refuses_nothing_but_a_silent_exit_1(
+    generator: ModuleType, returncode: int, stderr: str
+) -> None:
+    """Any other Git failure is re-raised as is, never made a refusal."""
+    shared = generator.baseline_inputs
+    failure = shared.GitCommandError("git rev-parse", returncode, stderr)
+
+    def git(*args: str, **kwargs: object) -> bytes:
+        raise failure
+
+    with pytest.raises(shared.GitCommandError) as raised:
+        shared.resolve_baseline(
+            "HEAD", "accepted", repo=Path("unused"), git=git
+        )
+
+    assert raised.value is failure
+
+
 @pytest.mark.parametrize(
     ("revision", "expected"),
     [
         ("HEAD", "baseline commit must resolve to {accepted}; got {commit}\n"),
         (
             "no-such-revision",
-            "baseline commit 'no-such-revision' does not resolve: git "
-            "rev-parse --verify no-such-revision^{{commit}} failed: ",
+            "baseline commit 'no-such-revision' does not resolve to a commit\n",
+        ),
+        # The accepted commit absent from the clone, as in a shallow one.
+        (
+            "{accepted}",
+            "baseline commit '{accepted}' does not resolve to a commit\n",
         ),
     ],
-    ids=["other-commit", "unresolvable"],
+    ids=["other-commit", "unresolvable", "absent-commit"],
 )
 def test_main_reports_a_wrong_baseline_commit_with_status_2(
     generator: ModuleType,
@@ -466,6 +573,7 @@ def test_main_reports_a_wrong_baseline_commit_with_status_2(
 ) -> None:
     """A wrong commit is refused in one line, before any extraction."""
     repo, commit = synthetic_commit
+    accepted = generator.ACCEPTED_BASELINE_COMMIT
     _git_in(generator, monkeypatch, repo)
     for name in ("_extract_baseline_inputs", "_build_payload"):
         monkeypatch.setattr(generator, name, _refusing(name))
@@ -476,20 +584,57 @@ def test_main_reports_a_wrong_baseline_commit_with_status_2(
         generator,
         monkeypatch,
         "--baseline-commit",
-        revision,
+        revision.format(accepted=accepted),
         "--output",
         str(owned),
     )
 
-    error = capsys.readouterr().err
     assert status == 2
-    assert error.startswith(
-        PREFIX
-        + expected.format(
-            accepted=generator.ACCEPTED_BASELINE_COMMIT, commit=commit
-        )
+    # The whole report is this one line; nothing from Git is appended.
+    assert capsys.readouterr().err == PREFIX + expected.format(
+        accepted=accepted, commit=commit
     )
-    assert error.count("\n") == 1 and error.endswith("\n")  # one line
+    assert not owned.exists()
+
+
+@pytest.mark.parametrize("kind", GIT_FAILURES)
+def test_main_lets_a_git_failure_on_a_valid_revision_keep_its_traceback(
+    generator: ModuleType,
+    sentinel: Path,
+    synthetic_commit: tuple[Path, str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    kind: str,
+) -> None:
+    """Git failing to run (exit 128) is not a refusal of the revision."""
+    repo, commit = synthetic_commit
+    _accept_synthetic(generator, monkeypatch, repo, commit)
+    for name in ("_extract_baseline_inputs", "_build_payload"):
+        monkeypatch.setattr(generator, name, _refusing(name))
+    monkeypatch.setattr(generator, "_atomic_write_text", _refusing("write"))
+    monkeypatch.chdir(tmp_path)
+    owned = tmp_path / "owned.json"
+    # Positive control: the same revision resolves through the real path.
+    assert generator._resolve_baseline("HEAD") == commit
+    for key, value in _git_failure(kind, tmp_path).items():
+        monkeypatch.setenv(key, value)
+
+    with pytest.raises(RuntimeError) as raised:
+        _run_main(
+            generator,
+            monkeypatch,
+            "--baseline-commit",
+            "HEAD",
+            "--output",
+            str(owned),
+        )
+
+    shared = generator.baseline_inputs
+    assert not isinstance(raised.value, shared.BaselineRefusal)
+    assert isinstance(raised.value, shared.GitCommandError)
+    assert raised.value.returncode == 128
+    assert capsys.readouterr().err == ""  # nothing reported as a refusal
     assert not owned.exists()
 
 
@@ -544,14 +689,18 @@ def test_main_reports_an_unlisted_input_with_status_2(
 def test_main_does_not_catch_errors_other_than_input_refusals(
     generator: ModuleType,
     sentinel: Path,
+    synthetic_commit: tuple[Path, str],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     error: Exception,
 ) -> None:
-    """A probe failure or a defect keeps its traceback (no broad catch)."""
-    monkeypatch.setattr(generator, "_resolve_baseline", lambda revision: "c")
+    """After the real revision check, a probe failure or defect is uncaught."""
+    repo, commit = synthetic_commit
+    _accept_synthetic(generator, monkeypatch, repo, commit)
+    reached: list[str] = []
 
-    def build(commit: str) -> object:
+    def build(resolved: str) -> object:
+        reached.append(resolved)
         raise error
 
     monkeypatch.setattr(generator, "_build_payload", build)
@@ -568,3 +717,4 @@ def test_main_does_not_catch_errors_other_than_input_refusals(
         )
 
     assert raised.value is error
+    assert reached == [commit]  # the real revision check ran and passed
