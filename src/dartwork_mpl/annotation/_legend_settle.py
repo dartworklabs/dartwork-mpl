@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ._legend_entries import _mark_placed, _placed_as_built
+from ._legend_look import untouched
 from ._legend_outside import (
     OutsidePlan,
     OutsideSource,
@@ -18,6 +19,8 @@ from ._legend_outside import (
 from ._place_legend import BestSource, draw_inside, first_free, inside_spots
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
@@ -62,7 +65,9 @@ def _settle_inside(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
         return False
     if getattr(legend, "_dm_inside_spot", None) == (spot.loc, spot.ncol):
         return False
-    rebuilt = draw_inside(ax, source.handles, source.labels, spot, source.kw)
+    rebuilt = draw_inside(
+        ax, source.handles, source.labels, spot, source.kw, renderer
+    )
     rebuilt._dm_best_source = source  # type: ignore[attr-defined]
     rebuilt._dm_settled_size = size  # type: ignore[attr-defined]
     _mark_placed(rebuilt)
@@ -160,21 +165,29 @@ def _settle_outside(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
     return True
 
 
-def settle_legends(fig: Figure | SubFigure, renderer: RendererBase) -> bool:
+def settle_legends(
+    fig: Figure | SubFigure,
+    renderer: RendererBase,
+    axes: Sequence[Axes] | None = None,
+) -> bool:
     """Place ``place_legend``'s legends again at the size the Axes have now.
 
     ``dm.place_legend`` decides at the size the Axes has when it is called;
     ``dm.simple_layout`` then resizes the Axes and runs this before it
-    measures. A ``loc="best"`` legend takes the first inside spot free now
-    (inwards only); an outside legend keeps its side, with its rows (right
-    and left: its columns) chosen again. A legend whose entries were edited
-    since is the caller's and is left alone, and so is any legend
-    ``place_legend`` did not build. Returns whether a legend changed.
+    measures, on ``axes``: the Axes that layout measures (all of
+    ``fig.axes`` when ``None``). A ``loc="best"`` legend takes the first
+    inside spot free now (inwards only); an outside legend keeps its side,
+    with its rows (right and left: its columns) chosen again. A legend is
+    the caller's, and left alone, when ``place_legend`` did not build it,
+    when its entries were edited since, or when its look or place was
+    (:func:`untouched`). Returns whether a legend changed.
     """
     changed = False
-    for ax in list(fig.axes):
+    for ax in list(fig.axes if axes is None else axes):
         legend = ax.get_legend()
         if legend is None or not _placed_as_built(legend):
+            continue
+        if not untouched(ax, legend, renderer):
             continue
         if _settle_inside(ax, legend, renderer):
             changed = True

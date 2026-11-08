@@ -94,21 +94,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **`LEGEND_ON_DATA` check (WARNING): a legend drawn over what the reader
   reads.** `validate_figure` (and so `save_formats`, `dm.review` and the MCP
   render report; no MCP tool, schema or name changes) now reports, one
-  warning per legend, every Axes legend and figure legend whose box meets
-  the bars, lines or markers of any plot box (twin Axes included, measured
-  as `VALUE_LABEL_ON_DATA` measures data), a text inside an Axes
-  (`ax.texts`: value labels, annotations, line-end labels), another
-  legend, or another panel's plot box (an Axes legend reaching into its
-  neighbour). Contact up to half a point is a touch. The detail names the
-  legend (`legend_axes`, `None` for a figure legend, and its first
-  entries), the kinds covered, the first artists and the panels whose data
-  it covers. `LEGEND_OVERLAP` still reports titles, axis and tick labels.
+  warning per legend, every Axes legend (insets from `ax.inset_axes` too)
+  and figure legend whose box meets the bars, lines or markers of any plot
+  box (twin Axes and insets included, measured as `VALUE_LABEL_ON_DATA`
+  measures data), a text inside an Axes where it is drawn (`ax.texts`:
+  value labels, annotations without their arrow, line-end labels; one
+  clipped away or at alpha 0 does not count), another legend, or another
+  panel's plot box (an Axes legend reaching into its neighbour or an
+  inset). Contact up to half a point is a touch. A legend that draws
+  nothing (no visible frame and no visible entry) is left out. The detail
+  names the legend (`legend_axes`, `None` for a figure legend,
+  `legend_inset` for an inset's, and its first entries), the kinds
+  covered, the first artists (`axes[0].insets[0]` for an inset) and the
+  panels whose data it covers. `LEGEND_OVERLAP` still reports titles,
+  axis and tick labels.
   The fix suggestions are `dm.place_legend(ax)` and, for many lines,
   `dm.label_line_ends(ax)`. Over the 36 templates and 91 docs example
   scripts (128 figures) it reports four docs figures, all real legends on
   lines (`plot_preset_comparison`, `plot_pseudo_alpha`,
   `plot_helpers_color_selection`, `plot_gp_regression`), which are not
   changed here; no template.
+- **`TICK_OVERLAP` check (WARNING): neighbouring tick labels drawn on top
+  of each other.** `validate_figure` (and so `save_formats`, `dm.review` and
+  the MCP render report) reports, one warning per axis, how many pairs of
+  neighbouring tick labels overlap by more than half a pixel and by how
+  much. Each label counts as the rectangle its text fills, turned with it,
+  so 45° labels whose upright boxes cross while their text does not pass;
+  neighbours are taken along the axis on each side separately (bottom and
+  top, left and right), major and minor labels together. Rectilinear,
+  visible Axes only. The fixes never make text
+  smaller: drop a rotation you set, horizontal bars
+  (`dm.figsize_for("barh", n_points=n)`), a wider canvas; a taller one for
+  crowded rows. `TICK_CROWD` and `TICK_ROTATION` stay INFO. Over the 92
+  docs example figures it reports one, `plot_colormap_terrain` (four thin
+  colorbars whose tick labels overlap); over the 36 shipped templates in
+  three presets, `advanced/heatmap` and `advanced/boxplot` in
+  `presentation` (names turned 30° by the template, and `Variant A…D`).
 
 - **Experimental `dm.figure_legend(fig)`: one legend for every panel.** It
   collects every Axes' labelled artists once by name, in figure order, and
@@ -146,17 +167,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   less (many short entries go right), and a panel takes the side its
   neighbour's legend took when that fits as well. Above and below take
   the fewest rows that fit the Axes width, right and left the fewest
-  columns that fit its height (they were always one column), and names
-  are broken at spaces only when the legend would not fit otherwise, a
-  trailing bracketed unit such as `(2019 = 100)` kept whole. A bottom
+  columns that fit its height (they were always one column). Names are
+  broken at spaces only when the legend would otherwise run past the Axes
+  along its side or take more than 60 % of the plot (on a side named right
+  or left, also when it is wider than 40 % of the Axes), a trailing
+  bracketed unit such as `(2019 = 100)` kept whole; a way of breaking them
+  into more lines per name wins only when it leaves the plot at least 5 %
+  of the canvas more. A bottom
   panel's legend no longer goes above onto the panel over it. With a
   caller anchor (`bbox_to_anchor`), or `legend_fallback="inside"`, it stays
   in the spot that covers the fewest series and `LEGEND_ON_DATA` reports
   it. `dm.simple_layout` places these legends again at the size it gives
-  the Axes: an inside legend takes an earlier free spot and an outside one
-  comes in when a spot is free now (never the other way), and an outside
-  one keeps its side with its rows chosen again for the laid-out width, so
-  a 2×2 grid's legends are not left in one tall column. A named side
+  the Axes it lays out (with `gs=` and `use_all_axes=False`, only that
+  GridSpec's): an inside legend takes an earlier free spot and an outside
+  one comes in when a spot is free now (never the other way), and an
+  outside one keeps its side with its rows chosen again for the laid-out
+  width, so a 2×2 grid's legends are not left in one tall column. A
+  legend restyled or moved through the returned `Legend` since (its
+  texts, frame, `set_loc`, `set_bbox_to_anchor`) is the caller's and stays
+  as it is. A named side
   (`loc="above"` …) takes the same rows, columns and wrapping; a
   matplotlib `loc`, `ncol` / `ncols` and a hand-placed `ax.legend` are
   used as given. `dm.config.legend_fallback="above"` keeps the old side.
@@ -330,6 +359,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **The tick-label checks no longer read an Axes hidden with
+  `ax.set_visible(False)`.** Matplotlib draws nothing of a hidden Axes (the
+  usual way to blank an empty grid slot), but its tick labels stay visible
+  on the artist tree, so `OVERFLOW`, `CLIPPED_TEXT` and
+  `CROSS_AXES_OVERLAP` could report text that was never drawn. The shared
+  reader of drawn tick labels now skips a hidden Axes.
 - **`VALUE_LABEL_DECIMAL` no longer reads `0.00000000000001` as a whole
   number.** A log-axis label now keeps every digit of `1e-14`, but
   `dm.validate_figure` counted any plain-digit label within `1e-9` of zero

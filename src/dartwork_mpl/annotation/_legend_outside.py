@@ -28,6 +28,7 @@ from ._legend_fit import (
     text_width,
     wrap_label,
 )
+from ._legend_look import remember_look
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -53,6 +54,12 @@ GOOD_FIT_LOSS = 0.6
 #: does not move the legend off its usual side or break its names.
 RELATIVE_GAIN = 0.9
 ABSOLUTE_GAIN = 0.05
+
+#: Between plans of the same fit, the one whose names take more lines wins
+#: only when it also leaves the plot at least this share of the canvas more:
+#: a name broken into more lines is harder to read than a slightly shorter
+#: plot (2026-11-08 review of capture 10).
+LINES_GAIN = 0.05
 
 #: A legend on a side the caller named right or left wraps its names when it
 #: is wider than this share of the Axes.
@@ -81,7 +88,9 @@ class OutsidePlan:
 
     ``loss`` is the share of the Axes the legend takes on that side (its
     height above or below, its width right or left, each with the gap);
-    ``fits`` says it is no longer than the Axes along the side.
+    ``fits`` says it is no longer than the Axes along the side;
+    ``canvas_share`` is the plot area it takes (that height times the Axes
+    width, or that width times the Axes height) as a share of the canvas.
     """
 
     side: OutsideSide
@@ -91,6 +100,7 @@ class OutsidePlan:
     height: float
     loss: float
     fits: bool
+    canvas_share: float = 0.0
 
     @property
     def level(self) -> int:
@@ -98,6 +108,11 @@ class OutsidePlan:
         if not self.fits or self.loss >= 1.0:
             return 0
         return 2 if self.loss <= GOOD_FIT_LOSS else 1
+
+    @property
+    def lines(self) -> int:
+        """The most lines one entry name takes."""
+        return max((label.count("\n") + 1 for label in self.labels), default=1)
 
 
 #: Trial-legend measurements of one legend's entries and keywords, kept
@@ -241,9 +256,15 @@ def plan_side(
     if along_width:
         plot = axes_box.height if room is None else room - height
         loss = (height + pad) / max(plot, 1.0)
+        taken = (height + pad) * axes_box.width
     else:
         loss = (width + pad) / max(axes_box.width, 1.0)
-    return OutsidePlan(side, ncols, tuple(labels), width, height, loss, fits)
+        taken = (width + pad) * axes_box.height
+    canvas_w, canvas_h = renderer.get_canvas_width_height()
+    canvas_share = taken / max(float(canvas_w) * float(canvas_h), 1.0)
+    return OutsidePlan(
+        side, ncols, tuple(labels), width, height, loss, fits, canvas_share
+    )
 
 
 def _wrapped_variants(
@@ -294,19 +315,45 @@ def _wrapped_variants(
     return out
 
 
+def _clearly_cheaper(plan: OutsidePlan, than: OutsidePlan) -> bool:
+    """Under :data:`RELATIVE_GAIN` of ``than``'s loss and :data:`ABSOLUTE_GAIN` less."""
+    return (
+        plan.loss < than.loss * RELATIVE_GAIN
+        and than.loss - plan.loss >= ABSOLUTE_GAIN
+    )
+
+
+def _wins_with_more_lines(plan: OutsidePlan, than: OutsidePlan) -> bool:
+    """``plan`` breaks names into more lines than ``than``: clearly cheaper and
+    :data:`LINES_GAIN` of the canvas less plot taken, or it loses."""
+    return (
+        _clearly_cheaper(plan, than)
+        and than.canvas_share - plan.canvas_share >= LINES_GAIN
+    )
+
+
 def choose(plans: list[OutsidePlan]) -> OutsidePlan:
     """The best-fitting plan; among equals the first, unless one clearly costs less.
 
     Clearly: under :data:`RELATIVE_GAIN` of the earlier plan's loss and at
-    least :data:`ABSOLUTE_GAIN` of the plot less. ``plans`` is not empty.
+    least :data:`ABSOLUTE_GAIN` of the plot less. Between plans of the same
+    fit whose names take a different number of lines, the one with more
+    lines wins only when it is also clearly cheaper and leaves the plot at
+    least :data:`LINES_GAIN` of the canvas more; otherwise the one with
+    fewer lines does, wherever it is in the list. ``plans`` is not empty.
     """
     best = plans[0]
     for plan in plans[1:]:
-        if plan.level > best.level or (
-            plan.level == best.level
-            and plan.loss < best.loss * RELATIVE_GAIN
-            and best.loss - plan.loss >= ABSOLUTE_GAIN
-        ):
+        if plan.level != best.level:
+            if plan.level > best.level:
+                best = plan
+        elif plan.lines > best.lines:
+            if _wins_with_more_lines(plan, best):
+                best = plan
+        elif plan.lines < best.lines:
+            if not _wins_with_more_lines(best, plan):
+                best = plan
+        elif _clearly_cheaper(plan, best):
             best = plan
     return best
 
@@ -395,8 +442,9 @@ def draw_outside(
 ) -> Legend:
     """Draw the legend of ``ax`` as ``plan`` says, past the labels of its side.
 
-    Records ``_dm_wrapped`` (a name was broken) and ``_dm_outside_source``
-    (what ``settle_legends`` plans again from, with the trial ``sizes``).
+    Records ``_dm_wrapped`` (a name was broken), ``_dm_outside_source``
+    (what ``settle_legends`` plans again from, with the trial ``sizes``)
+    and the legend's look (:func:`~._legend_look.remember_look`).
     """
     legend_kw, _explicit = split_ncols(kw)
     legend = ax.legend(
@@ -417,6 +465,7 @@ def draw_outside(
         (box.width, box.height),
         {} if sizes is None else sizes,
     )
+    remember_look(legend, renderer, str(OUTSIDE_LEGEND_LOCS[plan.side]), kw)
     return legend
 
 
