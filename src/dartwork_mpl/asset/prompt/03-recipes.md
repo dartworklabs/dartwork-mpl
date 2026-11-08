@@ -444,12 +444,13 @@ local = panel.add_gridspec(
 What remains at those margins is not a margin problem. The 2×1 recipe's
 30 % row reports `TICK_CROWD` (four ticks in 0.57 in) and the 2×2 recipe's
 4.9 cm and 2.9 cm panels report `LEGEND_OVERLAP` for their inside legend at
-19.5 pt. `presentation` sizes text for one chart filling a slide: 19.5 pt is
+19.5 pt, and every panel's legend covers its lines (`LEGEND_ON_DATA`).
+`presentation` sizes text for one chart filling a slide: 19.5 pt is
 8.6 % of an 8 cm row against 3.5 % under `report`, and
 `dm.figsize_for(nrows=2, ncols=2)` under it returns 23.4 × 10.5 cm, not this
 page. `dm.place_legend(ax)` does not rescue it either — on this figure it
 lifts each legend above its Axes, onto all four titles and 55 px past the
-canvas edge (4 findings become 5).
+canvas edge (8 findings become 5).
 
 Two measured ways out of the 2×2 case, both of which leave
 `dm.validate_figure` with no findings at all:

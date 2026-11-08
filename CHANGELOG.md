@@ -91,6 +91,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   changed here. `dm.label_bars` keeps labels off bars, other labels and
   the legend but not off a twin's line, so a bar label under a twin's line
   is reported too.
+- **`LEGEND_ON_DATA` check (WARNING): a legend drawn over what the reader
+  reads.** `validate_figure` (and so `save_formats`, `dm.review` and the MCP
+  render report; no MCP tool, schema or name changes) now reports, one
+  warning per legend, every Axes legend (insets from `ax.inset_axes` too)
+  and figure legend whose box meets the bars, lines or markers of any plot
+  box (twin Axes and insets included, measured as `VALUE_LABEL_ON_DATA`
+  measures data), a text inside an Axes where it is drawn (`ax.texts`:
+  value labels, annotations without their arrow, line-end labels; one
+  clipped away or drawn at alpha 0, the text's own alpha replacing its
+  colour's as matplotlib draws it, does not count), another legend, or
+  another panel's plot box (an Axes legend reaching into its neighbour or
+  an inset). Contact up to half a point is a touch. A legend that draws
+  nothing is left out: no frame, title, entry text or handle draws ink (a
+  handle is read by what it strokes, fills, marks or hatches in a colour
+  with alpha, every artist of an entry included). The detail
+  names the legend (`legend_axes`, `None` for a figure legend,
+  `legend_inset` for an inset's, and its first entries), the kinds
+  covered, the first artists (`axes[0].insets[0]` for an inset) and the
+  panels whose data it covers. `LEGEND_OVERLAP` still reports titles,
+  axis and tick labels.
+  The fix suggestions are `dm.place_legend(ax)` and, for many lines,
+  `dm.label_line_ends(ax)`. Over the 36 templates and 91 docs example
+  scripts (128 figures) it reports four docs figures, all real legends on
+  lines (`plot_preset_comparison`, `plot_pseudo_alpha`,
+  `plot_helpers_color_selection`, `plot_gp_regression`), which are not
+  changed here; no template.
 - **`TICK_OVERLAP` check (WARNING): neighbouring tick labels drawn on top
   of each other.** `validate_figure` (and so `save_formats`, `dm.review` and
   the MCP render report) reports, one warning per axis, how many pairs of
@@ -111,6 +137,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **`LEGEND_OVERFLOW` also reports an outside legend larger than half its
+  plot.** A legend beside or above its Axes that stays on the canvas but
+  is more than 50 % of the plot's area (a figure legend: of the panels'
+  area, twins counted once) squeezes the plot when the layout makes room
+  for it; it is now a warning with `outside_ratio` and `threshold` in the
+  detail. The in-axes 30 % rule and the off-canvas rule are unchanged. The
+  first fix suggestion is now `dm.label_line_ends(ax)`.
 - **`dm.simple_layout` fits text that still collides (`fit_labels`, on by
   default).** Once the margins fit, text that overlaps by more than half a
   pixel climbs a ladder, easiest step first and only where it collides: an
