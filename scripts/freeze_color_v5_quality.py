@@ -204,18 +204,15 @@ def _run_git(command: str, *args: str, repo: Path = REPO_ROOT) -> bytes:
 
 
 def _resolve_baseline(revision: str) -> str:
-    """Resolve and require the one accepted baseline commit."""
-    resolved = (
-        _run_git("rev-parse", "--verify", f"{revision}^{{commit}}")
-        .decode("ascii")
-        .strip()
+    """Resolve and require the one accepted baseline commit.
+
+    A revision that names no commit and a different commit raise
+    ``BaselineCommitError``; any other Git failure propagates as
+    ``GitCommandError``, which ``main`` does not catch.
+    """
+    return baseline_inputs.resolve_baseline(
+        revision, ACCEPTED_BASELINE_COMMIT, repo=REPO_ROOT, git=_run_git
     )
-    if resolved != ACCEPTED_BASELINE_COMMIT:
-        raise ValueError(
-            "baseline commit must resolve to "
-            f"{ACCEPTED_BASELINE_COMMIT}; got {resolved}"
-        )
-    return resolved
 
 
 def _verify_baseline_sources(commit: str) -> None:
@@ -224,7 +221,7 @@ def _verify_baseline_sources(commit: str) -> None:
         raw = _run_git("show", f"{commit}:{path}")
         actual = hashlib.sha256(raw).hexdigest()
         if actual != expected:
-            raise RuntimeError(
+            raise baseline_inputs.BaselineInputError(
                 f"raw source hash mismatch for {path}: "
                 f"expected {expected}, got {actual}"
             )
@@ -232,23 +229,24 @@ def _verify_baseline_sources(commit: str) -> None:
 
 def _load_compatibility(commit: str) -> JsonMap:
     """Load only the raw-SHA-pinned Task 1 compatibility fixture."""
+    refusal = baseline_inputs.BaselineInputError
     raw = COMPATIBILITY_PATH.read_bytes()
     actual_hash = hashlib.sha256(raw).hexdigest()
     if actual_hash != COMPATIBILITY_SHA256:
-        raise RuntimeError(
+        raise refusal(
             "compatibility fixture raw SHA-256 mismatch: "
             f"expected {COMPATIBILITY_SHA256}, got {actual_hash}"
         )
     decoded = json.loads(raw)
     if not isinstance(decoded, dict):
-        raise RuntimeError("compatibility fixture must decode to an object")
+        raise refusal("compatibility fixture must decode to an object")
     payload = cast(JsonMap, decoded)
     if payload.get("schema") != "dartwork-mpl.color-compatibility/v1":
-        raise RuntimeError("compatibility fixture schema mismatch")
+        raise refusal("compatibility fixture schema mismatch")
     if payload.get("baseline_commit") != commit:
-        raise RuntimeError("compatibility fixture baseline commit mismatch")
+        raise refusal("compatibility fixture baseline commit mismatch")
     if payload.get("source_hashes") != SOURCE_HASHES:
-        raise RuntimeError("compatibility fixture source hashes drifted")
+        raise refusal("compatibility fixture source hashes drifted")
     return payload
 
 
@@ -465,7 +463,13 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    """Generate the pinned v5 quality fixture, returning process status."""
+    """Generate the pinned v5 quality fixture, returning process status.
+
+    An expected input refusal (``frozen_baseline_inputs.BaselineRefusal``:
+    a protected ``--output``, a wrong baseline commit, an unlisted or
+    off-pin input) or an oracle validation failure is reported in one line
+    with status 2. Anything else keeps its traceback.
+    """
     try:
         args = _parse_args()
         # Refuse a protected destination before Git, extraction or compute.
@@ -474,11 +478,7 @@ def main() -> int:
         payload = _build_payload(commit)
         _write_output(output, _serialize(payload))
     except (
-        json.JSONDecodeError,
-        OSError,
-        RuntimeError,
-        TypeError,
-        ValueError,
+        baseline_inputs.BaselineRefusal,
         oracle.OracleValidationError,
     ) as error:
         print(f"quality baseline error: {error}", file=sys.stderr)

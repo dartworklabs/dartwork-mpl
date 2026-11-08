@@ -45,9 +45,17 @@ and those that do harm are dropped for the rest of the call. At most
     ``"xtick"`` rotation mode, which puts each label's end at its tick.
     When no angle clears, 90 degrees, but only if the labels then overlap
     less than flat (long names, not two short numbers on a squeezed axis).
-    Not when the turned labels would take more than ``_MAX_TEXT_SHARE`` of
-    the figure height: names that long belong on a horizontal bar chart,
-    which is the author's choice.
+    However long the turned labels, the check after the round decides: a
+    turn that would leave a plot too little of the figure is taken back,
+    and the names that long stay for the author (a horizontal bar chart).
+
+An axis whose ticks matplotlib picks by its length (``AutoLocator``, no
+locator set by hand) and that a round made shorter keeps the intervals it
+had before the climb (:func:`_keep_tick_budgets`): ``0 2 4 ... 10`` does
+not become ``0.0 2.5 ... 10.0`` because a gap grew. That too is a change
+the check after the round judges, and it stays only while its labels keep
+``_TARGET_EM`` apart; an axis a round made longer takes the ticks of its
+new length.
 
 Nothing is shortened, hidden or made smaller. Text collides when it
 overlaps by more than ``_TOUCH_PX`` (half a display pixel); text that only
@@ -67,8 +75,13 @@ line breaks or mathtext, spacing you set. What this module set is recorded
 per artist, and each ``simple_layout`` call first undoes it where it is
 still as set (:func:`restore_fitted`), so a re-layout at another size fits
 from the figure as you left it and ``fit_labels=False`` gives that figure
-back; a formatter, label rotation, name or spacing changed since is yours
-and stays. Only the Axes the call lays out are fitted and restored
+back; a formatter, locator, label rotation, name or spacing changed since
+is yours and stays. The margins go back to where the last call started
+them while they are as it left them (:func:`remember_layout`), so a second
+call draws exactly as the first (but for a date axis whose ticks the first
+call thinned: its thinned locator stays, so it can move on the second call,
+and draws the same from then on). Only the Axes the call lays out are
+fitted and restored
 (``use_all_axes=False`` keeps to the GridSpec passed), and what they share
 with an Axes the call leaves out (the tick formatter of a shared x, the
 spacing of their grid) is neither changed nor restored: such Axes only turn
@@ -80,6 +93,7 @@ is the author's call).
 
 from __future__ import annotations
 
+import copy
 import math
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -88,9 +102,11 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 from weakref import WeakKeyDictionary
 
 import matplotlib as mpl
+import numpy as np
+from matplotlib.axis import Axis
 from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
-from matplotlib.ticker import Formatter
+from matplotlib.ticker import AutoLocator, Formatter, Locator
 
 from .._figure_geometry import (
     drawn_tick_labels,
@@ -102,7 +118,6 @@ from ._content_extent import _axes_content_extent_px
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
-    from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.font_manager import FontProperties
@@ -121,8 +136,6 @@ _MAX_NAME_LINES = 4
 # Largest wspace / hspace ``space`` sets (a fraction of the mean cell); a
 # collision that needs more is left as it is.
 _MAX_GAP_FRACTION = 1.5
-# Most of the figure height turned tick labels may take.
-_MAX_TEXT_SHARE = 0.35
 # Least of its width and of its height a plot keeps through one round.
 # Measured (I-O1 follow-up): the 169 rounds the stress corpus and the shipped
 # templates (native size, and squeezed to 9 cm) keep held at least 0.39 of
@@ -201,6 +214,54 @@ _NAMES: WeakKeyDictionary[Text, tuple[str, str]] = WeakKeyDictionary()
 # GridSpec -> {"wspace" / "hspace": the value this module set}
 _GAPS: WeakKeyDictionary[GridSpec, dict[str, float]] = WeakKeyDictionary()
 
+#: A root GridSpec's ``left``, ``right``, ``bottom`` and ``top``.
+Edges: TypeAlias = tuple[float | None, float | None, float | None, float | None]
+
+
+#: A locator's parameters (all but the axis it measures), comparable.
+Params: TypeAlias = tuple[tuple[str, object], ...]
+
+
+@dataclass(frozen=True)
+class _Kept:
+    """What a kept tick budget replaced, and how this module set it.
+
+    ``auto`` is matplotlib's own locator, waiting off any axis (so neither
+    it nor this record holds an axis, nor through one a figure); ``params``
+    are the kept locator's parameters as set, so an edit since
+    (``ax.locator_params(...)``, ``set_params``) makes it yours.
+    """
+
+    auto: Locator
+    params: Params
+
+
+# kept locator -> what it replaced. Keyed by the locator its axis holds, a
+# record lives as long as that axis keeps it: a locator you set instead, or
+# a figure closed and let go, takes the record with it.
+_KEPT: WeakKeyDictionary[Locator, _Kept] = WeakKeyDictionary()
+# root GridSpec -> (its edges before the last layout, the edges it left)
+_LAID: WeakKeyDictionary[GridSpec, tuple[Edges, Edges]] = WeakKeyDictionary()
+
+
+def grid_edges(gs: GridSpec) -> Edges:
+    """The edges of ``gs`` (``None``: the figure's subplot parameters)."""
+    return (gs.left, gs.right, gs.bottom, gs.top)
+
+
+def remember_layout(gs: GridSpec, start: Edges) -> None:
+    """Record that a layout fitted the margins of ``gs`` from ``start``.
+
+    While the edges stay as that layout left them, the next layout starts
+    from ``start`` again (:func:`restore_fitted`): the margin fit stops
+    within half a pixel of its fixed point, so where it starts decides the
+    last hundredths of a pixel, and a second call on the same figure draws
+    exactly as the first (a date axis whose ticks the first call thinned
+    excepted, see the module docstring). The record holds only numbers and
+    is keyed weakly by the grid: it lets the figure go.
+    """
+    _LAID[gs] = (start, grid_edges(gs))
+
 
 class WrappedTickFormatter(Formatter):
     """The axis' own formatter, with line breaks in some of its labels.
@@ -260,11 +321,13 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
     """Undo what earlier layouts fitted on ``axes`` (default: all of
     ``fig``'s), where it is still as set.
 
-    A formatter, tick label rotation, axis name or spacing changed since
-    (by you) is yours and stays; its record is dropped. What other Axes
-    share, a formatter (shared x or y) or a grid's spacing, comes back only
-    when every Axes sharing it is among ``axes``: a layout of one grid does
-    not undo what a layout of the whole figure set for the others.
+    A formatter, tick locator, tick label rotation, axis name or spacing
+    changed since (by you) is yours and stays; its record is dropped. What
+    other Axes share, a formatter or locator (shared x or y) or a grid's
+    spacing, comes back only when every Axes sharing it is among ``axes``:
+    a layout of one grid does not undo what a layout of the whole figure
+    set for the others. The margins of a grid the last layout left as they
+    are go back to where that layout started (:func:`remember_layout`).
     """
     chosen = list(fig.axes if axes is None else axes)
     ids = {id(ax) for ax in chosen}
@@ -273,11 +336,19 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
             (ax.xaxis, ax.get_shared_x_axes()),
             (ax.yaxis, ax.get_shared_y_axes()),
         ):
+            whole = _all_in(shared.get_siblings(ax), ids)
             fmt = axis.get_major_formatter()
-            if isinstance(fmt, WrappedTickFormatter) and _all_in(
-                shared.get_siblings(ax), ids
-            ):
+            if isinstance(fmt, WrappedTickFormatter) and whole:
                 _unwrap(axis, fmt)
+            locator = axis.get_major_locator()
+            kept = _KEPT.get(locator)
+            if kept is not None and whole:
+                del _KEPT[locator]
+                if _locator_params(locator) == kept.params:
+                    owner = locator.axis
+                    _put_back_auto(
+                        owner if isinstance(owner, Axis) else axis, kept.auto
+                    )
             first = _TURNED_AXES.pop(axis, None)
             for tick in axis.get_major_ticks():
                 label = tick.label1
@@ -292,11 +363,59 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
             if record is not None and label.get_text() == record[1]:
                 label.set_text(record[0])
     for gs in {g for ax in chosen if (g := _root_gridspec(ax)) is not None}:
-        if not _all_in(_on_grid(fig, gs), ids):
-            continue  # other Axes on this grid: their spacing too
-        for key, value in _GAPS.pop(gs, {}).items():
-            if getattr(gs, key) == value:
-                gs.update(**{key: None})
+        moved = False
+        laid = _LAID.pop(gs, None)
+        if laid is not None and grid_edges(gs) == laid[1]:
+            gs.update(**dict(zip(_EDGES, laid[0], strict=True)))
+            moved = True
+        if _all_in(_on_grid(fig, gs), ids):  # else: their spacing too
+            for key, value in _GAPS.pop(gs, {}).items():
+                if getattr(gs, key) == value:
+                    gs.update(**{key: None})
+                    moved = True
+        if moved:
+            _place(fig, gs)
+
+
+def put_back_edges(fig: Figure, gs: GridSpec, edges: Edges) -> None:
+    """Give ``gs`` the ``edges`` (from :func:`grid_edges`) and move its Axes
+    there, whichever figure holds them."""
+    gs.update(**dict(zip(_EDGES, edges, strict=True)))
+    _place(fig, gs)
+
+
+def _place(fig: Figure, gs: GridSpec) -> None:
+    """Put the Axes of ``gs`` where its edges and spacing say now.
+
+    ``GridSpec.update`` moves the Axes of pyplot's open figures only; the
+    Axes of any other figure follow their SubplotSpec here, as the margin
+    fit moves them.
+    """
+    for ax in _on_grid(fig, gs):
+        spec = ax.get_subplotspec()
+        if spec is None:
+            continue
+        # Matplotlib accepts the local SubFigure here, though its
+        # SubplotSpec stub only declares Figure.
+        position = spec.get_position(ax.get_figure(root=False))  # type: ignore[arg-type]
+        if ax.get_position(original=True).bounds != position.bounds:
+            ax.set_subplotspec(spec)
+
+
+def _put_back_auto(axis: Axis, auto: Locator) -> None:
+    """Matplotlib's auto locator a kept budget replaced, on ``axis`` again
+    (the axis it measured, the one the budget was set on)."""
+    axis.set_major_locator(auto)
+    axis.isDefault_majloc = True
+
+
+def _locator_params(locator: Locator) -> Params:
+    """The parameters of ``locator``, all but the axis it measures."""
+    return tuple(
+        (key, value.tolist() if isinstance(value, np.ndarray) else value)
+        for key, value in sorted(vars(locator).items())
+        if key != "axis"
+    )
 
 
 def _all_in(members: Iterable[Axes], ids: set[int]) -> bool:
@@ -467,10 +586,25 @@ Key: TypeAlias = tuple[str, int]
 
 @dataclass(frozen=True)
 class _Change:
-    """One change a rung made, and how to take it back."""
+    """One change a rung made, and how to take it back.
+
+    ``kept``: whether the change may stay once the margins are fitted
+    again, besides harming nothing (:func:`_harmed`); ``None``: it may.
+    """
 
     key: Key
     undo: Callable[[], None]
+    kept: Callable[[RendererBase], bool] | None = None
+
+
+@dataclass(frozen=True)
+class _Budget:
+    """An axis whose ticks matplotlib picks by its length (``AutoLocator``)
+    and the most intervals it had room for before the climb."""
+
+    axis: Axis
+    auto: AutoLocator
+    nbins: int
 
 
 @dataclass
@@ -481,6 +615,7 @@ class FitState:
     wrapped: set[int] = field(default_factory=set)  # id(axis)
     rejected: set[Key] = field(default_factory=set)  # changes that did harm
     only: frozenset[Key] | None = None  # while trying changes one at a time
+    budgets: list[_Budget] = field(default_factory=list)  # before the climb
 
     def allows(self, key: Key) -> bool:
         return key not in self.rejected and (
@@ -536,9 +671,9 @@ def climb(
     grid: GridSpec,
     axes: Sequence[Axes],
     refit: Callable[[], bool],
-) -> None:
+) -> bool:
     """Climb the ladder on ``axes`` of ``fig`` until nothing collides that it
-    can clear.
+    can clear; return whether it tried changes and took every one back.
 
     ``grid`` is the root GridSpec the margins are fitted on, whose
     ``wspace`` / ``hspace`` ``space`` may grow between the panels of
@@ -548,11 +683,17 @@ def climb(
     moved by less than the solver's tolerance, so a figure without a
     collision costs no extra draw. A round that harmed a plot or an axis
     (:func:`_harmed`) is taken back, with the grid's edges as they were
-    before it, and its changes are tried one at a time; a change that does
-    harm on its own is taken back the same way and not tried again in this
-    call.
+    before it, and its changes are tried one at a time (a round of one
+    change is not tried again alone); a change that does harm on its own
+    is taken back the same way and not tried again in this call.
+
+    Each take-back fits the margins again from the round's edges, and the
+    fit stops within its tolerance of a fixed point, a hair from where it
+    stood; when every change was taken back, the caller fits the margins
+    afresh from where it started, so the figure draws as without fitting.
     """
-    state = FitState()
+    state = FitState(budgets=_tick_budgets(axes))
+    tried = kept = False
 
     def changes_now(only: Key | None) -> list[_Change]:
         state.only = None if only is None else frozenset({only})
@@ -563,6 +704,7 @@ def climb(
 
     def attempt(only: Key | None) -> bool | None:
         """One round (or one change of it); ``None``: nothing was measurable."""
+        nonlocal tried, kept
         changes = changes_now(only)
         if not changes:
             return False
@@ -572,16 +714,22 @@ def climb(
         before = _health(axes, get_renderer(fig))
         changes = changes_now(only)
         edges = {side: getattr(grid, side) for side in _EDGES}
+        tried = True
         if not refit():
             return None
-        if not _harmed(before, _health(axes, get_renderer(fig))):
+        renderer = get_renderer(fig)
+        if not _harmed(before, _health(axes, renderer)) and all(
+            change.kept is None or change.kept(renderer) for change in changes
+        ):
+            kept = True
             return True
         _undo(changes)
         grid.update(**edges)
         if not refit():
             return None
-        if only is not None:
-            state.rejected.add(only)
+        if only is not None or len(changes) == 1:
+            # one change, alone already: the harm was its own
+            state.rejected.add(changes[0].key if only is None else only)
             return True
         for change in changes:
             if attempt(change.key) is None:
@@ -589,8 +737,12 @@ def climb(
         return True
 
     for _round in range(_FIT_ROUNDS):
-        if not attempt(None):
-            return
+        done = attempt(None)
+        if done is None:
+            return False  # nothing to measure: no fresh fit either
+        if not done:
+            break
+    return tried and not kept
 
 
 # The GridSpec edges the margin fit sets, restored with a round taken back.
@@ -614,6 +766,7 @@ def fit_round(
     if steps & {"wrap", "rotate"}:
         for group, whole in _shared_x_groups(axes):
             changes += _fit_x_ticks(group, whole, renderer, steps, state)
+    changes += _keep_tick_budgets(axes, state)
     return changes
 
 
@@ -1042,9 +1195,6 @@ def _turn_angle(row: _Row, state: FitState) -> float | None:
         return None
     if angle_now is None and (row.yours or not row.collides):
         return None
-    fig = row.ax.get_figure(root=True)
-    if fig is None:
-        return None
     angle = smallest_angle(
         min(row.gaps), row.line_height, row.clearance, start=angle_now or 0.0
     )
@@ -1061,10 +1211,8 @@ def _turn_angle(row: _Row, state: FitState) -> float | None:
         angle = 90.0
     if angle_now is not None and angle <= angle_now:
         return None
-    turn = math.radians(angle)
-    height = max(row.widths) * math.sin(turn) + row.line_height * math.cos(turn)
-    if height > _MAX_TEXT_SHARE * fig.bbox.height:
-        return None  # too long to turn: left for the author (TICK_OVERLAP)
+    # However long the turned labels, the check after the round decides:
+    # a turn that leaves a plot under _MIN_PLOT_SHARE is taken back.
     return angle
 
 
@@ -1166,3 +1314,137 @@ def _set_wrap(
             state.wrapped.discard(key)
 
     return [_Change(("wrap", key), undo)]
+
+
+# ── ticks: an axis the climb shortened keeps the ticks it had ────────
+
+
+def _ticks(locator: Locator, axis: Axis) -> np.ndarray:
+    vmin, vmax = axis.get_view_interval()
+    return np.asarray(locator.tick_values(vmin, vmax), dtype=float)
+
+
+def _with_budget(auto: AutoLocator, nbins: int) -> AutoLocator:
+    """``auto`` with room for ``nbins`` intervals, whatever the length."""
+    kept = copy.copy(auto)
+    kept.set_params(nbins=nbins)
+    return kept
+
+
+def _room(axis: Axis) -> int:
+    """The intervals ``AutoLocator`` gives ``axis`` at its length now."""
+    return int(np.clip(axis.get_tick_space(), 1, 9))
+
+
+def _tick_budgets(axes: Sequence[Axes]) -> list[_Budget]:
+    """The axes of ``axes`` whose ticks matplotlib picks by their length,
+    with the intervals they have room for now, before the climb."""
+    budgets: list[_Budget] = []
+    seen: set[int] = set()
+    for ax in axes:
+        if not _cartesian(ax):
+            continue
+        for axis in (ax.xaxis, ax.yaxis):
+            auto = axis.get_major_locator()
+            if (
+                id(auto) in seen
+                or not isinstance(auto, AutoLocator)
+                or not axis.isDefault_majloc
+                or not isinstance(owner := auto.axis, Axis)
+            ):
+                continue
+            seen.add(id(auto))
+            nbins = _room(owner)
+            if not np.array_equal(
+                _ticks(_with_budget(auto, nbins), owner), _ticks(auto, owner)
+            ):
+                continue  # not picked by length (classic mode): nothing to keep
+            budgets.append(_Budget(owner, auto, nbins))
+    return budgets
+
+
+def _keep_tick_budgets(axes: Sequence[Axes], state: FitState) -> list[_Change]:
+    """Give an axis the climb shortened the intervals it had before.
+
+    Matplotlib gives an axis as many intervals as fit its length, so a plot
+    a rung made smaller can lose ticks it had room for: ``0 2 4 ... 10``
+    becomes ``0.0 2.5 ... 10.0``, a value axis keeps two ticks. Such an
+    axis keeps the ticks it had, unless another Axes it shares them with
+    is not laid out. Like every change, it stays only if the check after
+    the round finds no harm, and only if its labels stay ``_TARGET_EM``
+    apart then (:func:`_labels_clear`). An axis the climb made longer (a
+    plot an axis name had crushed) takes the ticks of its new length.
+    """
+    ids = {id(ax) for ax in axes}
+    changes: list[_Change] = []
+    for budget in state.budgets:
+        axis = budget.axis
+        key = ("ticks", id(axis))
+        ax = axis.axes
+        if (
+            axis.get_major_locator() is not budget.auto
+            or not state.allows(key)
+            or _room(axis) >= budget.nbins
+        ):
+            continue
+        is_x = axis is ax.xaxis
+        shared = ax.get_shared_x_axes() if is_x else ax.get_shared_y_axes()
+        siblings = shared.get_siblings(ax)
+        if not _all_in(siblings, ids):
+            continue
+        kept = _with_budget(budget.auto, budget.nbins)
+        if np.array_equal(_ticks(kept, axis), _ticks(budget.auto, axis)):
+            continue  # the same ticks at this length
+        changes.append(
+            _set_budget(budget, kept, siblings, "x" if is_x else "y")
+        )
+    return changes
+
+
+def _set_budget(
+    budget: _Budget,
+    kept: Locator,
+    siblings: Sequence[Axes],
+    which: Literal["x", "y"],
+) -> _Change:
+    axis = budget.axis
+    axis.set_major_locator(kept)
+    # Off its axis while it waits: the record then holds no figure.
+    budget.auto.set_axis(None)
+    _KEPT[kept] = _Kept(budget.auto, _locator_params(kept))
+
+    def undo() -> None:
+        _KEPT.pop(kept, None)
+        _put_back_auto(axis, budget.auto)
+
+    def clear(renderer: RendererBase) -> bool:
+        return all(_labels_clear(ax, which, renderer) for ax in siblings)
+
+    return _Change(("ticks", id(axis)), undo, clear)
+
+
+def _labels_clear(
+    ax: Axes, which: Literal["x", "y"], renderer: RendererBase
+) -> bool:
+    """Whether neighbouring drawn major tick labels of one axis of ``ax``
+    stay ``_TARGET_EM`` apart on each side."""
+    axis = ax.xaxis if which == "x" else ax.yaxis
+    first = {id(tick.label1) for tick in axis.get_major_ticks()}
+    labels = [t for t in drawn_tick_labels(ax, which) if t.get_text().strip()]
+    fig = ax.get_figure(root=True)
+    if fig is None:
+        return True
+    for side in (True, False):
+        group = [t for t in labels if (id(t) in first) is side]
+        if len(group) < 2:
+            continue
+        boxes = sorted(
+            (t.get_window_extent(renderer) for t in group),
+            key=lambda box: box.x0 if which == "x" else box.y0,
+        )
+        need = _TARGET_EM * float(group[0].get_fontsize()) * fig.dpi / 72.0
+        for a, b in pairwise(boxes):
+            gap = b.x0 - a.x1 if which == "x" else b.y0 - a.y1
+            if gap < need:
+                return False
+    return True

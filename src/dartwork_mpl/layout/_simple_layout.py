@@ -17,7 +17,14 @@ from matplotlib.gridspec import (
 from .._figure_geometry import get_renderer
 from ..units import Length
 from ._content_extent import _axes_content_extent_px
-from ._fit_labels import climb, resolve_steps, restore_fitted
+from ._fit_labels import (
+    climb,
+    grid_edges,
+    put_back_edges,
+    remember_layout,
+    resolve_steps,
+    restore_fitted,
+)
 from ._margins import (
     _GridEdges,
     _LayoutStep,
@@ -157,12 +164,15 @@ def simple_layout(
         edge (``"axis_labels"``), widen the space between panels nobody
         spaced (``"space"``), wrap crowded bottom tick labels at their
         spaces (``"wrap"``) and, when they cannot wrap, turn them 30, 45 or
-        90 degrees (``"rotate"``) unless turned they would take over 35 %
-        of the figure height. After each round the margins are fitted again,
-        and a change that crushed a plot (left it under 30 % of its width or
-        height) or gave any axis more overlapping neighbouring tick labels
-        is taken back; the collision it tried to fix is left, and reported.
-        Nothing is
+        90 degrees (``"rotate"``). After each round the margins are fitted
+        again, and a change that crushed a plot (left it under 30 % of its
+        width or height) or gave any axis more overlapping neighbouring tick
+        labels is taken back; the collision it tried to fix is left, and
+        reported, and a figure whose every change was taken back draws
+        exactly as without fitting. An axis whose ticks matplotlib picks and
+        that a change made shorter keeps the ticks it had, while its labels
+        stay half an em apart. Margins that do not settle (a legend wider
+        than the canvas leaves) are not fitted further. Nothing is
         shortened, hidden or made smaller, and a figure without a collision
         draws exactly as without this. ``None`` (the default) reads
         :data:`dartwork_mpl.config.fit_labels` (itself ``True``: every
@@ -175,8 +185,12 @@ def simple_layout(
         lines (top labels included), axis names with line breaks or
         mathtext and spacing you set (``gridspec_kw``, ``add_gridspec``,
         ``fig.subplots_adjust``) are left alone, and each call first undoes
-        what an earlier call fitted where it is still as set. The rules are
-        in the docstring of ``dartwork_mpl.layout._fit_labels``.
+        what an earlier call fitted where it is still as set, and starts the
+        margins where that call started them while they are as it left
+        them: calling it again draws the same figure (a date axis whose
+        ticks the first call thinned can still move on the second; the same
+        from then on). The rules are in the docstring of
+        ``dartwork_mpl.layout._fit_labels``.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -310,8 +324,10 @@ def simple_layout(
     ]
 
     # Each call fits from the figure as the caller left it: what an earlier
-    # layout fitted (wraps, rotations, spacing it set) is undone first.
+    # layout fitted (wraps, rotations, spacing it set, the margins it left)
+    # is undone first.
     restore_fitted(fig, scope)
+    start = grid_edges(actual_gs)
 
     # Tick formats change label widths, so they go before fitting, but
     # after every check that can still refuse the call. Twin spines and
@@ -325,10 +341,11 @@ def simple_layout(
     _color_twins(fig)
 
     last: _GridEdges | None = None
+    settled = False
 
     def fit_margins() -> bool:
         """Fit the margins to the content now; ``False``: nothing to measure."""
-        nonlocal last
+        nonlocal last, settled
         step, last = _fit_margins(
             fig,
             actual_gs,
@@ -339,14 +356,28 @@ def simple_layout(
             format_ticks=format_ticks,
             verbose=verbose,
         )
+        settled = step is not None and step.delta_px < _CONVERGE_TOL_PX
         return step is not None
 
-    if fit_margins() and steps:
-        # Text that still collides at the fitted size climbs the ladder
-        # (``_fit_labels.climb``): every change is followed by a fresh
-        # margin fit and kept only if it crushed no plot and added no tick
-        # overlap.
-        climb(fig, steps, actual_gs, scope, fit_margins)
+    # Text that still collides at the fitted size climbs the ladder
+    # (``_fit_labels.climb``): every change is followed by a fresh margin
+    # fit and kept only if it crushed no plot and added no tick overlap.
+    # Margins that did not settle (a legend wider than the canvas leaves
+    # moves them on every fit) would move under each round, so no round
+    # could be judged: such a figure is not fitted. When every change was
+    # taken back, each after a margin fit that stopped a hair from where the
+    # last one had, the margins are fitted once more from where this call
+    # started, as without fitting.
+    if (
+        fit_margins()
+        and settled
+        and steps
+        and climb(fig, steps, actual_gs, scope, fit_margins)
+    ):
+        put_back_edges(fig, actual_gs, start)
+        last = None
+        fit_margins()
+    remember_layout(actual_gs, start)
     # The bar labels were settled in each step, so they are reported even
     # when nothing could be measured.
     _report_hidden_bar_labels(fig)
