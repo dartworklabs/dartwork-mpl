@@ -514,3 +514,25 @@ def test_one_draw_per_call(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(FigureCanvasAgg, "draw", counting)
     place_legend(ax)
     assert calls["n"] == 1
+
+
+def test_trial_legends_never_search_the_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A trial is measured where it sits; matplotlib's "best" search is not run."""
+    from matplotlib.legend import Legend
+
+    fig, ax = _report()
+    _dense(ax, 10, LONG)
+    searches = {"n": 0}
+    find = Legend._find_best_position
+
+    def counting(self, *a, **k):
+        searches["n"] += 1
+        return find(self, *a, **k)
+
+    monkeypatch.setattr(Legend, "_find_best_position", counting)
+    legend = place_legend(ax)
+    dm.simple_layout(fig)
+    assert legend is not None and legend._dm_outside_fallback is True
+    assert searches["n"] == 0
