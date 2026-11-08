@@ -523,10 +523,19 @@ dm.simple_layout(fig)
 
 ## "Waterfall (incremental change)"
 
+Each step's height is its signed change from the level before it, so the
+bar holds the change: values, when asked, are
+`dm.label_bars(ax, steps, sign="+")` (`+30`, a fall's `−15` below it) and
+`dm.label_bars(ax, totals)`.
+
 ```python
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
-ax.bar(labels, heights, bottom=baselines, color=colors,
-       edgecolor="white", linewidth=0.3)
+totals = ax.bar(x[is_total], level[is_total], color="dc.indigo3",
+                edgecolor="white", linewidth=0.3)
+steps = ax.bar(x[~is_total], delta[~is_total],
+               bottom=(level - delta)[~is_total], color=step_colors,
+               edgecolor="white", linewidth=0.3)
+ax.set_xticks(x, labels)
 ax.axhline(0, color="oc.gray7", linewidth=0.3)
 dm.simple_layout(fig)
 ```
@@ -603,7 +612,8 @@ Requests, one keyword each: `where="inside"` / `"center"` / `"outside"`;
 `total="only"` / `False` (stacks); `crowded="skip"` (every other label) /
 `"inside"`; `decimals=1`; `fmt="{} GWh"`, `"{:.2f}"` or a callable (a
 template wraps the signed number, `$−3.5B`; a callable for `−$3.5B`);
-`size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar.
+`size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar;
+`sign="+"` for `+30` on the rises (a waterfall's steps, changes).
 Stacks need matching bottoms (a waterfall is not one); pad split series with
 NaN, not 0. A label asked inside a bar too narrow or short for it sits
 beyond the end in the text colour. Grouped series whose labels meet take

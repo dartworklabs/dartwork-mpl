@@ -40,7 +40,6 @@ KNOWN = {
     "advanced/boxplot": "+0.75",  # mean labels over whiskers and points
     "advanced/small_multiples": "Δ -10",  # panel d's change under its line
     "advanced/twin_axis": "Target = $115",  # target note under the price
-    "advanced/waterfall": "595 MWh",  # subtotal labels on the connectors
 }
 
 
