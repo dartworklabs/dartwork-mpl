@@ -154,3 +154,70 @@ def test_a_left_panels_right_labels_running_into_the_next_panel():
     left.tick_params(axis="y", labelright=True)
     fig.subplots_adjust(wspace=0.05, left=0.2, right=0.95)
     assert "CROSS_AXES_OVERLAP" in _ids(fig, "CROSS_AXES_OVERLAP")
+
+
+# ── the tick labels of UNIT_DUP, TICK_DECIMAL, TICK_CROWD, LEGEND_OVERLAP
+# and TICK_ROTATION (``iter_view_ticks``) are the drawn ones too ─────────
+
+
+def _texts(labels) -> list[str]:
+    return [label.get_text() for label in labels]
+
+
+def _a_tick_just_above_the_limit():
+    """y ticks 0 ... 1.0 with the limit 0.001 below 1.0: about a third of a
+    pixel, so the label's centre-baseline box still reaches into the view,
+    but matplotlib does not draw it."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 0.99])
+    ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.set_ylim(0, 0.999)
+    fig.canvas.draw()
+    return fig, ax
+
+
+def test_a_tick_label_just_past_the_limit_is_not_counted():
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = _a_tick_just_above_the_limit()
+    counted = _texts(iter_view_ticks(ax, "y", get_renderer(fig)))
+    assert "1.0" not in counted
+    assert counted == _texts(drawn_tick_labels(ax, "y"))
+
+
+def test_a_legend_over_a_tick_label_nobody_sees_is_not_reported():
+    """A figure legend sitting on the undrawn 1.0 above the y labels (the
+    pixels there are blank) covers nothing (I-O2: two such reports)."""
+    fig, ax = _a_tick_just_above_the_limit()
+    # right edge on the plot's left edge, bottom on its top: over the y
+    # label column, just above the plot
+    fig.legend(
+        ["Signal"],
+        loc="lower right",
+        bbox_to_anchor=(0.0, 1.0),
+        bbox_transform=ax.transAxes,
+        borderaxespad=0,
+    )
+    assert _ids(fig, "LEGEND_OVERLAP") == []
+    # the same legend over a label that is drawn is reported
+    ax.set_ylim(0, 1.0)
+    assert _ids(fig, "LEGEND_OVERLAP") == ["LEGEND_OVERLAP"]
+
+
+def test_a_turned_label_at_the_view_edge_is_counted():
+    """The first label sits at the left limit, turned 45 degrees with its
+    end at the tick: its box lies left of the plot, yet matplotlib draws
+    it, so it counts."""
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    names = ["Thermoregulation", "Electrification", "Decarbonisation"]
+    ax.bar(range(3), [1, 2, 3])
+    ax.set_xticks(range(3), names, rotation=45, ha="right")
+    ax.set_xlim(0, 2)
+    fig.canvas.draw()
+    counted = _texts(iter_view_ticks(ax, "x", get_renderer(fig)))
+    assert counted == names
+    assert counted == _texts(drawn_tick_labels(ax, "x"))
