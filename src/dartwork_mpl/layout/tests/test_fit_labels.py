@@ -222,18 +222,22 @@ def test_labels_that_cannot_wrap_stay_when_turning_is_not_allowed() -> None:
     assert _overlaps(fig) == 1  # left for the author, and reported
 
 
-def test_labels_too_long_to_turn_stay_and_are_reported() -> None:
-    """Upright these names would clear and the plot keep 62 % of its height,
-    but they would take over 35 % of the figure: names that long are a
-    horizontal bar chart's, the author's call, so they stay, reported."""
+def test_labels_however_long_turn_when_the_plot_keeps_its_share() -> None:
+    """Upright these names clear and take 40 % of the figure height; the
+    plot keeps 62 % of its height, so the check after the round keeps the
+    turn (no share cap on the turned labels themselves)."""
     names = [f"Thermoregulation{i}" for i in range(6)]
-    dm.style.use("presentation")
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "tall"))
-    ax.bar(range(len(names)), np.ones(len(names)))
-    ax.set_xticks(range(len(names)), names)
-    dm.simple_layout(fig)
-    assert _angles(ax) == {0.0}
-    assert _overlaps(fig) == 1
+    heights = []
+    for fit in (False, True):
+        dm.style.use("presentation")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "tall"))
+        ax.bar(range(len(names)), np.ones(len(names)))
+        ax.set_xticks(range(len(names)), names)
+        dm.simple_layout(fig, fit_labels=fit)
+        heights.append(ax.get_window_extent().height)
+    assert _angles(ax) == {90.0}
+    assert _overlaps(fig) == 0
+    assert heights[1] / heights[0] == pytest.approx(0.62, abs=0.01)
 
 
 def test_a_second_layout_draws_the_same_figure() -> None:
@@ -264,13 +268,11 @@ def _label_state(ax) -> list[tuple]:
 
 
 def test_fit_labels_false_undoes_an_earlier_fit() -> None:
-    """Labels, formatter and spacing come back exactly; positions within
-    0.05 px of a fresh layout.
-
-    (A re-layout starts from the edges the previous one left, so the margin
-    solver can settle on a fixed point a few hundredths of a pixel from a
-    fresh layout's, ladder or not: 0.028 px for the turned labels here.)
-    """
+    """Labels, formatter and spacing come back, and the figure draws
+    exactly as a fresh layout without fitting: the re-layout starts from
+    the edges the first one started from, not from those it left (the
+    margin fit stops within half a pixel of its fixed point, so its start
+    decides the last hundredths: 0.028 px for the turned labels here)."""
     for labels in (_VARIANTS, _ONE_WORD):
         ref, ref_ax = _bars(labels, preset="scientific")
         dm.simple_layout(ref, fit_labels=False)
@@ -283,12 +285,46 @@ def test_fit_labels_false_undoes_an_earlier_fit() -> None:
         )
         assert ax.xaxis.isDefault_majfmt == ref_ax.xaxis.isDefault_majfmt
         assert _label_state(ax) == _label_state(ref_ax)
-        assert np.allclose(
-            ax.get_window_extent().bounds,
-            ref_ax.get_window_extent().bounds,
-            rtol=0,
-            atol=0.05,
-        )
+        assert _pixels(fig) == _pixels(ref)
+
+
+def test_a_second_layout_draws_the_same_figure_when_a_turn_was_taken_back() -> (
+    None
+):
+    """advanced/boxplot at 9 cm: the turn is tried and taken back, each try
+    fitting the margins again. Without fitting, and with it, a second and a
+    third call draw what the first did (the margins converge on the
+    plot's height slowly here: each fit moved them 0.02-0.2 px)."""
+    for fit in (False, True):
+        fig, ax = _template_figure("advanced/boxplot.py", "presentation", "9cm")
+        draws = []
+        for _call in range(3):
+            dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+            draws.append(_pixels(fig))
+        assert draws[1] == draws[0]
+        assert draws[2] == draws[0]
+
+
+def test_the_next_layout_starts_from_where_the_last_one_did() -> None:
+    fig, ax = _bars(_ONE_WORD)
+    gs = ax.get_gridspec()
+    start = (gs.left, gs.right, gs.bottom, gs.top)
+    dm.simple_layout(fig)
+    assert (gs.left, gs.right, gs.bottom, gs.top) != start
+    restore_fitted(fig)
+    assert (gs.left, gs.right, gs.bottom, gs.top) == start
+    # moved Axes follow (a figure pyplot does not manage as well)
+    assert ax.get_position().bounds == pytest.approx(
+        gs[0].get_position(fig).bounds
+    )
+
+    fig, ax = _bars(_ONE_WORD)
+    gs = ax.get_gridspec()
+    dm.simple_layout(fig)
+    gs.update(left=0.2)  # yours since: stays
+    restore_fitted(fig)
+    assert gs.left == 0.2
+    assert gs.bottom is not None
 
 
 def test_fit_labels_false_leaves_colliding_labels_as_they_are() -> None:
@@ -638,8 +674,9 @@ def test_a_name_whose_lines_would_crush_the_plot_stays() -> None:
 # ── a rung keeps a change only if it harmed nothing (review of #645) ──
 
 
-def _template_figure(name: str, preset: str, width: str):
-    """A shipped template drawn up to its layout, at another preset and size."""
+def _template_figure(name: str, preset: str, width: str | None):
+    """A shipped template drawn up to its layout, at another preset and
+    size (``None``: its own)."""
     from pathlib import Path
 
     source = (
@@ -652,7 +689,8 @@ def _template_figure(name: str, preset: str, width: str):
     namespace: dict = {}
     exec(compile(source, name, "exec"), namespace)
     fig = namespace["fig"]
-    fig.set_size_inches(dm.figsize(width, "standard"))
+    if width is not None:
+        fig.set_size_inches(dm.figsize(width, "standard"))
     return fig, namespace["ax"]
 
 
@@ -914,6 +952,22 @@ def test_a_name_that_collapsed_the_plot_wraps_however_wide_its_lines() -> None:
             assert height < 2  # collapsed
 
 
+def test_a_plot_the_ladder_made_taller_takes_the_ticks_of_its_height() -> None:
+    """The y axis of the plot the y name had crushed had room for one
+    interval; back at its height it takes matplotlib's ticks for that,
+    not the one interval it had before the ladder."""
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize("6cm", "tall"))
+    ax.plot(np.arange(10), np.arange(10) ** 1.5)
+    ax.set_ylabel(
+        "Cumulative delivered heat energy per connected building (MWh)"
+    )
+    auto = ax.yaxis.get_major_locator()
+    dm.simple_layout(fig)
+    assert ax.yaxis.get_major_locator() is auto
+    assert _visible_ticks(ax.yaxis) == ["0", "10", "20"]
+
+
 # ── what a scoped layout shares with Axes it leaves out (review N1) ──
 
 
@@ -1016,3 +1070,99 @@ def test_a_scoped_restore_keeps_the_spacing_of_a_grid_it_shares() -> None:
     assert grown is not None  # precondition: the panels collide
     dm.simple_layout(fig, gs=root, use_all_axes=False, fit_labels=False)
     assert root.wspace == grown
+
+
+# ── an axis a rung shortened keeps the ticks it had (O1 follow-up) ──
+
+
+def _visible_ticks(axis) -> list[str]:
+    axis.axes.get_figure().canvas.draw()
+    lo, hi = sorted(axis.get_view_interval())
+    return [
+        t.label1.get_text()
+        for t in axis.get_major_ticks()
+        if lo <= t.get_loc() <= hi
+    ]
+
+
+def _boxplot(fit: bool | None):
+    fig, ax = _template_figure("advanced/boxplot.py", "presentation", None)
+    if fit is not None:
+        dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+    return fig, ax
+
+
+def test_a_plot_a_turn_made_shorter_keeps_its_y_ticks() -> None:
+    """advanced/boxplot in presentation: the names turn 30 degrees and the
+    plot loses a sixth of its height. Matplotlib would then give the y axis
+    room for one interval fewer and draw only 0 and 5; it keeps the ticks
+    drawn without fitting, whose labels stay well apart."""
+    ticks = []
+    for fit in (False, True):
+        fig, ax = _boxplot(fit)
+        ticks.append(_visible_ticks(ax.yaxis))
+    assert _angles(ax) == {30.0}
+    assert ticks[1] == ticks[0]
+    assert len(ticks[0]) >= 5
+
+
+def _preset_grid():
+    """The docs' preset comparison: four presets' text on a 2 x 2 grid,
+    whose panels the ladder parts."""
+    fig, axes = plt.subplots(2, 2, figsize=dm.figsize("16cm", "standard"))
+    x = np.linspace(0, 10, 100)
+    presets = ["scientific", "report", "presentation", "minimal"]
+    for ax, preset in zip(axes.flat, presets, strict=True):
+        with dm.style.context(preset):
+            ax.plot(x, np.sin(x), label="Signal A")
+            ax.plot(x, np.cos(x) * 0.8, label="Signal B")
+            ax.set_xlabel("Time (s)")
+            ax.set_ylabel("Amplitude")
+            ax.legend(loc="upper right", fontsize=dm.fs(-2))
+            ax.text(
+                0.02,
+                0.97,
+                f"'{preset}'",
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=dm.fs(1),
+                fontweight="bold",
+            )
+    return fig, axes
+
+
+def test_panels_the_spacing_narrowed_keep_their_x_ticks() -> None:
+    """Parted, the panels are a few pixels narrower; matplotlib would pick
+    0.0 2.5 ... 10.0 for their x axes instead of the integers they had."""
+    ticks = []
+    for fit in (False, True):
+        fig, axes = _preset_grid()
+        dm.simple_layout(fig, fit_labels=fit)
+        ticks.append([_visible_ticks(ax.xaxis) for ax in axes.flat])
+    assert axes[0, 0].get_gridspec().wspace is not None  # parted
+    assert ticks[1] == ticks[0]
+    assert ticks[0][0] == ["0", "2", "4", "6", "8", "10"]
+
+
+def test_ticks_you_set_stay_through_the_ladder() -> None:
+    from matplotlib.ticker import AutoLocator, MaxNLocator
+
+    for locator in (MaxNLocator(3), AutoLocator()):
+        fig, ax = _boxplot(None)
+        ax.yaxis.set_major_locator(locator)
+        dm.simple_layout(fig, margin=dm.inch(0.08))
+        assert _angles(ax) == {30.0}
+        assert ax.yaxis.get_major_locator() is locator
+
+
+def test_fit_labels_false_gives_the_auto_locator_back() -> None:
+    fig, ax = _boxplot(None)
+    auto = ax.yaxis.get_major_locator()
+    dm.simple_layout(fig, margin=dm.inch(0.08))
+    assert ax.yaxis.get_major_locator() is not auto  # precondition: kept
+    dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=False)
+    assert ax.yaxis.get_major_locator() is auto
+    assert ax.yaxis.isDefault_majloc
+    ref, _ref_ax = _boxplot(False)
+    assert _pixels(fig) == _pixels(ref)

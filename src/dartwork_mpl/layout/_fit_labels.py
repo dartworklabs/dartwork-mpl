@@ -1274,6 +1274,11 @@ def _with_budget(auto: AutoLocator, nbins: int) -> AutoLocator:
     return kept
 
 
+def _room(axis: Axis) -> int:
+    """The intervals ``AutoLocator`` gives ``axis`` at its length now."""
+    return int(np.clip(axis.get_tick_space(), 1, 9))
+
+
 def _tick_budgets(axes: Sequence[Axes]) -> list[_Budget]:
     """The axes of ``axes`` whose ticks matplotlib picks by their length,
     with the intervals they have room for now, before the climb."""
@@ -1293,7 +1298,7 @@ def _tick_budgets(axes: Sequence[Axes]) -> list[_Budget]:
             ):
                 continue
             seen.add(id(auto))
-            nbins = int(np.clip(owner.get_tick_space(), 1, 9))
+            nbins = _room(owner)
             if not np.array_equal(
                 _ticks(_with_budget(auto, nbins), owner), _ticks(auto, owner)
             ):
@@ -1311,7 +1316,9 @@ def _keep_tick_budgets(axes: Sequence[Axes], state: FitState) -> list[_Change]:
     axis keeps the ticks it had, unless the climb fitted its own labels
     (they were what collided) or another Axes it shares them with is not
     laid out; the change stays only if its labels stay ``_TARGET_EM``
-    apart once the margins are fitted again (:func:`_labels_clear`).
+    apart once the margins are fitted again (:func:`_labels_clear`). An
+    axis the climb made longer (a plot an axis name had crushed) takes the
+    ticks of its new length.
     """
     ids = {id(ax) for ax in axes}
     changes: list[_Change] = []
@@ -1319,7 +1326,11 @@ def _keep_tick_budgets(axes: Sequence[Axes], state: FitState) -> list[_Change]:
         axis = budget.axis
         key = ("ticks", id(axis))
         ax = axis.axes
-        if axis.get_major_locator() is not budget.auto or not state.allows(key):
+        if (
+            axis.get_major_locator() is not budget.auto
+            or not state.allows(key)
+            or _room(axis) >= budget.nbins
+        ):
             continue
         is_x = axis is ax.xaxis
         shared = ax.get_shared_x_axes() if is_x else ax.get_shared_y_axes()
