@@ -93,7 +93,7 @@ def validate_figure(
         ``CROSS_AXES_OVERLAP``, ``LEGEND_OVERFLOW``, ``LEGEND_OVERLAP``,
         ``TICK_CROWD``,
         ``TICK_ROTATION``, ``TICK_DECIMAL``, ``VALUE_LABEL_DECIMAL``,
-        ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
+        ``VALUE_LABEL_ON_DATA``, ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
         ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``.
     exclude : tuple[str, ...], optional
         Check IDs not to run, applied after ``checks``. Unknown IDs raise
