@@ -7,10 +7,16 @@ This module is the reader for those files:
 
 * a path that is not exactly a manifest entry is refused before anything on
   disk is touched;
-* every path component is ``lstat``-ed from the root down, so a symlink on the
-  way -- the file itself or a parent directory -- is refused, never followed;
-* the file must be a regular file; it is opened with ``O_NOFOLLOW`` and the
-  opened inode must be the one that was checked;
+* the walk is bound to descriptors: it opens the trusted root as a directory,
+  then each directory below it relative to its parent's descriptor with
+  ``O_DIRECTORY | O_NOFOLLOW``, so a component that is (or is swapped into) a
+  symlink is refused, and a parent replaced after it was opened cannot
+  redirect the rest of the walk;
+* the file is checked, opened (``O_NOFOLLOW``), ``fstat``-ed and read through
+  its parent's descriptor; it must be a regular file and the opened inode the
+  checked one. Every descriptor is closed, on errors too;
+* a platform without descriptor-relative opens is refused rather than read
+  through the path-based walk this replaces;
 * a ``pinned-json`` entry's raw bytes must match the SHA-256 that the existing
   source pin records (``pin_source``/``pin_key``). The manifest names that pin
   and keeps no second copy of the value.
@@ -25,6 +31,7 @@ missing file -- for the tests that job runs.
 
 from __future__ import annotations
 
+import errno
 import functools
 import hashlib
 import io
@@ -32,6 +39,7 @@ import json
 import os
 import stat
 from collections.abc import Mapping
+from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
@@ -44,7 +52,10 @@ _SCHEMA = "dartwork-mpl.approved-test-inputs/v1"
 _PIN_SOURCE = "dartwork_mpl._colors._ssot._PINNED_BASELINES"
 _KINDS = ("pinned-json", "document")
 _PATTERN_CHARACTERS = frozenset("*?[]{}\\")
-_OPEN_FLAGS = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+_READ_CHUNK = 1 << 20
+# Optional flags: close-on-exec, and no blocking open of a FIFO swapped in.
+_CLOEXEC = getattr(os, "O_CLOEXEC", 0)
+_NONBLOCK = getattr(os, "O_NONBLOCK", 0)
 
 InputKind = Literal["pinned-json", "document"]
 
@@ -173,37 +184,88 @@ def _checked_entry(
     return entry
 
 
-def _checked_stat(relative: str, root: Path) -> tuple[Path, os.stat_result]:
-    """``lstat`` each component of ``relative`` below ``root``.
+def _missing_descriptor_support() -> tuple[str, ...]:
+    """Name what this platform lacks for a descriptor-bound walk."""
+    missing = [
+        name for name in ("O_DIRECTORY", "O_NOFOLLOW") if not hasattr(os, name)
+    ]
+    if os.open not in os.supports_dir_fd:
+        missing.append("os.open(dir_fd=...)")
+    if os.stat not in os.supports_dir_fd:
+        missing.append("os.stat(dir_fd=...)")
+    if os.stat not in os.supports_follow_symlinks:
+        missing.append("os.stat(follow_symlinks=False)")
+    return tuple(missing)
 
-    Raises ``UnapprovedInputError`` for a symlink on the way or a final entry
-    that is not a regular file; a missing component raises
-    ``FileNotFoundError``, as reading the path directly would.
+
+# Decided once, at import, from the real ``os`` functions.
+MISSING_DESCRIPTOR_SUPPORT = _missing_descriptor_support()
+
+
+def _require_descriptor_walk() -> None:
+    """Refuse a platform that cannot open relative to a directory descriptor.
+
+    The path-based walk this replaces cannot be made safe against a parent
+    swapped for a symlink, so there is no fallback.
     """
-    current = root
-    status: os.stat_result | None = None
-    for part in relative.split("/"):
-        current = current / part
-        status = os.lstat(current)
-        if stat.S_ISLNK(status.st_mode):
+    if MISSING_DESCRIPTOR_SUPPORT:
+        raise UnapprovedInputError(
+            "approved inputs need descriptor-relative opens; this platform "
+            f"lacks {', '.join(MISSING_DESCRIPTOR_SUPPORT)}"
+        )
+
+
+def _open_directory(
+    name: str, parent: int, relative: str, descriptors: ExitStack
+) -> int:
+    """Open one child directory of ``parent`` without following a symlink."""
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | _CLOEXEC
+    try:
+        descriptor = os.open(name, flags, dir_fd=parent)
+    except OSError as error:
+        # Linux reports a symlink under O_DIRECTORY | O_NOFOLLOW as ENOTDIR,
+        # other systems as ELOOP; a regular file is ENOTDIR everywhere.
+        if error.errno in {errno.ELOOP, errno.ENOTDIR}:
             raise UnapprovedInputError(
-                f"{relative}: {current} is a symlink; aliases are refused"
-            )
-    assert status is not None  # a manifest path has at least one part
-    if not stat.S_ISREG(status.st_mode):
+                f"{relative}: {name} is a symlink or not a directory; "
+                "aliases are refused"
+            ) from error
+        raise
+    descriptors.callback(os.close, descriptor)
+    return descriptor
+
+
+def _read_regular_file(
+    name: str, parent: int, relative: str, descriptors: ExitStack
+) -> bytes:
+    """Check, open, ``fstat`` and read one regular file of ``parent``."""
+    checked = os.stat(name, dir_fd=parent, follow_symlinks=False)
+    if stat.S_ISLNK(checked.st_mode):
+        raise UnapprovedInputError(
+            f"{relative}: {name} is a symlink; aliases are refused"
+        )
+    if not stat.S_ISREG(checked.st_mode):
         raise UnapprovedInputError(f"{relative} is not a regular file")
-    return current, status
-
-
-def approved_path(
-    relative: str,
-    *,
-    root: Path = REPO_ROOT,
-    manifest: Mapping[str, ApprovedInput] | None = None,
-) -> Path:
-    """Return the checked absolute path of one approved regular file."""
-    _checked_entry(relative, manifest)
-    return _checked_stat(relative, root)[0]
+    flags = os.O_RDONLY | os.O_NOFOLLOW | _NONBLOCK | _CLOEXEC
+    try:
+        descriptor = os.open(name, flags, dir_fd=parent)
+    except OSError as error:
+        if error.errno == errno.ELOOP:
+            raise UnapprovedInputError(
+                f"{relative}: {name} became a symlink; aliases are refused"
+            ) from error
+        raise
+    descriptors.callback(os.close, descriptor)
+    opened = os.fstat(descriptor)
+    if not stat.S_ISREG(opened.st_mode) or (opened.st_dev, opened.st_ino) != (
+        checked.st_dev,
+        checked.st_ino,
+    ):
+        raise UnapprovedInputError(f"{relative} changed while opening")
+    chunks: list[bytes] = []
+    while chunk := os.read(descriptor, _READ_CHUNK):
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 def read_approved_bytes(
@@ -214,17 +276,20 @@ def read_approved_bytes(
 ) -> bytes:
     """Return the raw bytes of one approved input after its checks.
 
-    A ``pinned-json`` input whose bytes differ from the existing source pin
-    raises ``ApprovedInputPinError``.
+    ``root`` is trusted and may itself be reached through symlinks; nothing
+    below it is. A missing component raises ``FileNotFoundError``, as
+    reading the path directly would. A ``pinned-json`` input whose bytes
+    differ from the existing source pin raises ``ApprovedInputPinError``.
     """
     entry = _checked_entry(relative, manifest)
-    path, checked = _checked_stat(relative, root)
-    descriptor = os.open(path, _OPEN_FLAGS)
-    with os.fdopen(descriptor, "rb") as handle:
-        opened = os.fstat(handle.fileno())
-        if (opened.st_dev, opened.st_ino) != (checked.st_dev, checked.st_ino):
-            raise UnapprovedInputError(f"{relative} changed while opening")
-        raw = handle.read()
+    _require_descriptor_walk()
+    *directories, name = relative.split("/")
+    with ExitStack() as descriptors:
+        current = os.open(root, os.O_RDONLY | os.O_DIRECTORY | _CLOEXEC)
+        descriptors.callback(os.close, current)
+        for part in directories:
+            current = _open_directory(part, current, relative, descriptors)
+        raw = _read_regular_file(name, current, relative, descriptors)
     expected = existing_pin(entry)
     if expected is not None:
         actual = hashlib.sha256(raw).hexdigest()

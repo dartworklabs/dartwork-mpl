@@ -4,38 +4,48 @@
 ``docs/superpowers``; its manifest lists the exact ten files the user approved
 on 2026-11-08. The synthetic checks here run on a private root under
 ``tmp_path`` that holds files at manifest paths with decoys next to them, so
-they need no approved input and prove only what the reader itself does.
-``watch_access`` adds in-process evidence that a refused decoy is never
-touched; it sees nothing in a child process (``tests.support.excluded_dirs``).
-Only the ``approved_input`` test reads the real files.
+they need no approved input and prove only what the reader itself does:
 
-None of this confines a test that bypasses the reader: product loaders and
-child processes open their own paths. The sparse ``approved-inputs`` CI job,
-which checks out only the listed files, is what surfaces such a read -- for
-the tests that job runs.
+* a refused path never reaches the filesystem (the ``os`` calls the reader
+  could make are replaced by stand-ins that fail if called);
+* a component swapped for a symlink at any point of a read -- after each of
+  its filesystem calls in turn, the same way every time -- never yields the
+  outside bytes;
+* every descriptor the reader opens is closed, on success and on refusal.
+
+Only the ``approved_input`` test reads the real files. None of this confines
+a test that bypasses the reader: product loaders and child processes open
+their own paths. The sparse ``approved-inputs`` CI job, which checks out only
+the listed files and then removes its promisor remote, is what surfaces such
+a read as a missing file -- for the tests that job runs.
 """
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
+import os
+import subprocess
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
+from typing import cast
 
 import pytest
 import yaml
 
+import tests.support.approved_inputs as reader
 from tests.support.approved_inputs import (
     REPO_ROOT,
     ApprovedInputPinError,
     UnapprovedInputError,
     approved_inputs,
-    approved_path,
     existing_pin,
     load_manifest,
     read_approved_bytes,
     read_approved_text,
 )
-from tests.support.excluded_dirs import watch_access
 
 # The exact list the user approved. Changing it is a new approval decision,
 # not a test update.
@@ -64,6 +74,10 @@ _SIBLING_DECOY = "docs/superpowers/plans/2026-07-21-decoy.md"
 _SPEC_DECOY = "docs/superpowers/specs/decoy-design.md"
 _SCHEMA = "dartwork-mpl.approved-test-inputs/v1"
 _WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+_APPROVED_BYTES = b"APPROVED SYNTHETIC\n"
+_OUTSIDE_BYTES = b"UNAPPROVED SYNTHETIC\n"
+# The filesystem calls a path-based or descriptor-bound reader can make.
+_FS_CALLS = ("open", "stat", "lstat", "fstat", "scandir", "listdir")
 
 
 def _synthetic_root(root: Path) -> Path:
@@ -90,6 +104,60 @@ def _write_manifest(path: Path, inputs: list[object]) -> Path:
         json.dumps({"schema": _SCHEMA, "inputs": inputs}), encoding="utf-8"
     )
     return path
+
+
+@contextmanager
+def _refusing_filesystem(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Fail on any filesystem call while the block runs."""
+    originals = {name: getattr(os, name) for name in _FS_CALLS}
+
+    def refuse(*args: object, **kwargs: object) -> object:
+        raise AssertionError(f"the filesystem was touched: {args!r}")
+
+    for name in _FS_CALLS:
+        monkeypatch.setattr(os, name, refuse)
+    try:
+        yield
+    finally:
+        for name, original in originals.items():
+            monkeypatch.setattr(os, name, original)
+
+
+@contextmanager
+def _after_each_call(
+    monkeypatch: pytest.MonkeyPatch, hook: Callable[[], None]
+) -> Iterator[list[int]]:
+    """Run ``hook`` after every filesystem call; yield the opened descriptors."""
+    opened: list[int] = []
+    originals = {name: getattr(os, name) for name in _FS_CALLS}
+
+    def wrap(name: str) -> Callable[..., object]:
+        original = originals[name]
+
+        def wrapped(*args: object, **kwargs: object) -> object:
+            result = original(*args, **kwargs)
+            if name == "open":
+                opened.append(cast(int, result))
+            hook()
+            return result
+
+        return wrapped
+
+    for name in _FS_CALLS:
+        monkeypatch.setattr(os, name, wrap(name))
+    try:
+        yield opened
+    finally:
+        for name, original in originals.items():
+            monkeypatch.setattr(os, name, original)
+
+
+def _assert_closed(descriptors: list[int]) -> None:
+    """Every descriptor in ``descriptors`` is closed now."""
+    for descriptor in descriptors:
+        with pytest.raises(OSError) as error:
+            os.fstat(descriptor)
+        assert error.value.errno == errno.EBADF, descriptor
 
 
 def test_manifest_lists_exactly_the_authorized_files() -> None:
@@ -133,7 +201,6 @@ def test_reader_returns_a_listed_document_as_read_text_would(
     _synthetic_root(tmp_path)
     (tmp_path / _DOCUMENT).write_bytes(b"one\r\ntwo\rthree\n")
 
-    assert approved_path(_DOCUMENT, root=tmp_path) == tmp_path / _DOCUMENT
     assert read_approved_text(_DOCUMENT, root=tmp_path) == (
         (tmp_path / _DOCUMENT).read_text(encoding="utf-8")
     )
@@ -154,32 +221,49 @@ def test_reader_returns_a_listed_document_as_read_text_would(
         f"./{_DOCUMENT}",
         _DOCUMENT.replace("/plans/", "//plans/"),
         _DOCUMENT.replace("/plans/", "/plans/../plans/"),
+        _DOCUMENT.upper(),
+        _DOCUMENT + "\0",
     ),
 )
 def test_reader_refuses_an_unlisted_path_before_touching_disk(
-    tmp_path: Path, relative: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, relative: str
 ) -> None:
     """Synthetic negative control: only exact manifest strings are read."""
     _synthetic_root(tmp_path)
 
-    with watch_access(tmp_path / "docs", tmp_path / "outside") as accesses:
+    with _refusing_filesystem(monkeypatch):
         with pytest.raises(UnapprovedInputError, match="not an approved"):
             read_approved_bytes(relative, root=tmp_path)
 
-    assert accesses == []
-
 
 def test_reader_refuses_an_absolute_path_to_a_listed_file(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """An absolute spelling of a listed file is not a manifest entry."""
     _synthetic_root(tmp_path)
 
-    with watch_access(tmp_path / "docs") as accesses:
+    with _refusing_filesystem(monkeypatch):
         with pytest.raises(UnapprovedInputError, match="not an approved"):
             read_approved_bytes(str(tmp_path / _DOCUMENT), root=tmp_path)
 
-    assert accesses == []
+
+def test_reader_refuses_a_platform_without_descriptor_relative_opens(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No fallback to a path-based walk where ``dir_fd`` is unavailable."""
+    _synthetic_root(tmp_path)
+    monkeypatch.setattr(
+        reader, "MISSING_DESCRIPTOR_SUPPORT", ("os.open(dir_fd=...)",)
+    )
+
+    with _refusing_filesystem(monkeypatch):
+        with pytest.raises(UnapprovedInputError, match="descriptor-relative"):
+            read_approved_bytes(_DOCUMENT, root=tmp_path)
+
+
+def test_this_platform_supports_the_descriptor_bound_walk() -> None:
+    """The platforms the suite runs on have every capability the walk needs."""
+    assert reader.MISSING_DESCRIPTOR_SUPPORT == ()
 
 
 def test_reader_refuses_a_symlinked_input_without_following_it(
@@ -191,28 +275,25 @@ def test_reader_refuses_a_symlinked_input_without_following_it(
     listed.unlink()
     listed.symlink_to(decoy)
 
-    with watch_access(decoy.parent) as accesses:
-        with pytest.raises(UnapprovedInputError, match="symlink"):
-            read_approved_bytes(_DOCUMENT, root=tmp_path)
-
-    assert accesses == []
+    with pytest.raises(UnapprovedInputError, match="symlink"):
+        read_approved_bytes(_DOCUMENT, root=tmp_path)
 
 
+@pytest.mark.parametrize(
+    "component", ["docs", "docs/superpowers", "docs/superpowers/plans"]
+)
 def test_reader_refuses_an_input_below_a_symlinked_directory(
-    tmp_path: Path,
+    tmp_path: Path, component: str
 ) -> None:
     """A symlinked parent directory is an alias too, so it is refused."""
     _synthetic_root(tmp_path)
-    plans = tmp_path / "docs" / "superpowers" / "plans"
-    elsewhere = tmp_path / "outside" / "plans"
-    plans.rename(elsewhere)
-    plans.symlink_to(elsewhere, target_is_directory=True)
+    directory = tmp_path / component
+    elsewhere = tmp_path / "outside" / "moved"
+    directory.rename(elsewhere)
+    directory.symlink_to(elsewhere, target_is_directory=True)
 
-    with watch_access(elsewhere) as accesses:
-        with pytest.raises(UnapprovedInputError, match="symlink"):
-            read_approved_bytes(_DOCUMENT, root=tmp_path)
-
-    assert accesses == []
+    with pytest.raises(UnapprovedInputError, match="symlink"):
+        read_approved_bytes(_DOCUMENT, root=tmp_path)
 
 
 def test_reader_refuses_a_listed_path_that_is_not_a_regular_file(
@@ -244,6 +325,174 @@ def test_reader_rejects_pinned_bytes_that_differ_from_the_existing_pin(
 
     with pytest.raises(ApprovedInputPinError, match="SHA-256 mismatch"):
         read_approved_bytes(_PINNED, root=tmp_path)
+
+
+def _replace_parent_with_file(root: Path) -> None:
+    """Put a regular file where the listed path needs a directory."""
+    plans = root / "docs/superpowers/plans"
+    for child in plans.iterdir():
+        child.unlink()
+    plans.rmdir()
+    plans.write_text("not a directory\n", encoding="utf-8")
+
+
+def _link_parent(root: Path) -> None:
+    """Replace the listed file's directory with a symlink to it."""
+    plans = root / "docs/superpowers/plans"
+    plans.rename(root / "outside" / "plans")
+    plans.symlink_to(root / "outside" / "plans", target_is_directory=True)
+
+
+def _link_file(root: Path) -> None:
+    """Replace the listed file with a symlink to the outside decoy."""
+    (root / _DOCUMENT).unlink()
+    (root / _DOCUMENT).symlink_to(root / "outside" / "decoy.md")
+
+
+def _directory_file(root: Path) -> None:
+    """Replace the listed file with a directory."""
+    (root / _DOCUMENT).unlink()
+    (root / _DOCUMENT).mkdir()
+
+
+@pytest.mark.parametrize(
+    ("relative", "arrange", "expected"),
+    [
+        (_DOCUMENT, lambda root: None, None),
+        (
+            _DOCUMENT,
+            lambda root: (root / _DOCUMENT).unlink(),
+            FileNotFoundError,
+        ),
+        (_DOCUMENT, _replace_parent_with_file, UnapprovedInputError),
+        (_DOCUMENT, _link_parent, UnapprovedInputError),
+        (_DOCUMENT, _link_file, UnapprovedInputError),
+        (_DOCUMENT, _directory_file, UnapprovedInputError),
+        (_PINNED, lambda root: None, ApprovedInputPinError),
+    ],
+    ids=[
+        "read",
+        "missing-file",
+        "parent-is-a-file",
+        "symlinked-parent",
+        "symlinked-file",
+        "directory-file",
+        "pin-mismatch",
+    ],
+)
+def test_reader_closes_every_descriptor_it_opens(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    relative: str,
+    arrange: Callable[[Path], None],
+    expected: type[Exception] | None,
+) -> None:
+    """Success and every refusal path leave no descriptor open."""
+    _synthetic_root(tmp_path)
+    arrange(tmp_path)
+
+    with _after_each_call(monkeypatch, lambda: None) as opened:
+        if expected is None:
+            read_approved_bytes(relative, root=tmp_path)
+        else:
+            with pytest.raises(expected):
+                read_approved_bytes(relative, root=tmp_path)
+
+    assert opened
+    _assert_closed(opened)
+
+
+def _race_tree(base: Path) -> tuple[Path, Path]:
+    """Create a root and an outside tree that both hold the listed path."""
+    root, outside = base / "root", base / "outside"
+    for tree, raw in ((root, _APPROVED_BYTES), (outside, _OUTSIDE_BYTES)):
+        listed = tree / _DOCUMENT
+        listed.parent.mkdir(parents=True)
+        listed.write_bytes(raw)
+    return root, outside
+
+
+def _swap(root: Path, outside: Path, component: str) -> None:
+    """Move ``component`` aside and put a symlink into ``outside`` there."""
+    target = root / component
+    is_directory = component != _DOCUMENT
+    target.rename(target.with_name(target.name + ".moved"))
+    target.symlink_to(outside / component, target_is_directory=is_directory)
+
+
+def _outcome(root: Path) -> str:
+    """Classify one read of the listed document below ``root``."""
+    try:
+        raw = read_approved_bytes(_DOCUMENT, root=root)
+    except UnapprovedInputError:
+        return "refused"
+    except FileNotFoundError:
+        return "missing"
+    if raw == _APPROVED_BYTES:
+        return "approved"
+    return "OUTSIDE" if raw == _OUTSIDE_BYTES else "other"
+
+
+def _race_sweep(
+    base: Path, component: str, monkeypatch: pytest.MonkeyPatch
+) -> list[str]:
+    """Swap ``component`` after the k-th filesystem call, for every k.
+
+    k = 0 swaps before the read; the largest k swaps after its last call.
+    Each read must close every descriptor it opened.
+    """
+    calls = 0
+
+    def count() -> None:
+        nonlocal calls
+        calls += 1
+
+    root, _ = _race_tree(base / "count")
+    with _after_each_call(monkeypatch, count):
+        assert _outcome(root) == "approved"
+    total = calls
+
+    outcomes: list[str] = []
+    for swap_after in range(total + 1):
+        root, outside = _race_tree(base / f"swap-after-{swap_after}")
+        seen = 0
+
+        def maybe_swap(
+            root: Path = root, outside: Path = outside, at: int = swap_after
+        ) -> None:
+            nonlocal seen
+            seen += 1
+            if seen == at:
+                _swap(root, outside, component)
+
+        if swap_after == 0:
+            _swap(root, outside, component)
+        with _after_each_call(monkeypatch, maybe_swap) as opened:
+            outcomes.append(_outcome(root))
+        _assert_closed(opened)
+    return outcomes
+
+
+@pytest.mark.parametrize(
+    "component",
+    ["docs", "docs/superpowers", "docs/superpowers/plans", _DOCUMENT],
+    ids=["docs", "superpowers", "plans", "file"],
+)
+def test_a_component_swapped_mid_read_never_yields_outside_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, component: str
+) -> None:
+    """Deterministic race: swap after each filesystem call of one read.
+
+    The swap point is fixed by call count, so two sweeps give the same
+    outcomes. No swap point may return the outside bytes; a swap before the
+    read is refused, and one after its last call leaves the read intact.
+    """
+    first = _race_sweep(tmp_path / "first", component, monkeypatch)
+    second = _race_sweep(tmp_path / "second", component, monkeypatch)
+
+    assert first == second
+    assert "OUTSIDE" not in first, first
+    assert (first[0], first[-1]) == ("refused", "approved"), first
 
 
 def test_existing_pin_refuses_a_pin_recorded_for_another_path(
@@ -315,28 +564,124 @@ def test_manifest_loader_rejects_a_duplicate_entry(tmp_path: Path) -> None:
 
 
 def test_ci_approved_input_route_checks_out_exactly_the_manifest() -> None:
-    """The sparse CI job checks out the manifest files and nothing else below.
+    """The sparse CI job checks out the manifest files, then drops its remote.
 
     The job runs the ``approved_input`` tests, so a test that reads any other
-    ``docs/superpowers`` file fails there with a missing file.
+    ``docs/superpowers`` file fails there with a missing file. Removing the
+    promisor remote right after checkout keeps a missing blob from being
+    fetched, whatever the Git version.
     """
     workflow = yaml.safe_load(_WORKFLOW.read_text(encoding="utf-8"))
     steps = workflow["jobs"]["approved-inputs"]["steps"]
-    checkout = next(
-        step
-        for step in steps
+    runs = [str(step.get("run", "")) for step in steps]
+    checkout_index = next(
+        index
+        for index, step in enumerate(steps)
         if str(step.get("uses", "")).startswith("actions/checkout@")
     )
-    options = checkout["with"]
+    options = steps[checkout_index]["with"]
+    removal_index = next(
+        index
+        for index, run in enumerate(runs)
+        if "git remote remove origin" in run
+    )
+    test_index = next(
+        index for index, run in enumerate(runs) if "-m approved_input" in run
+    )
 
     assert options["sparse-checkout-cone-mode"] is False
+    assert options["persist-credentials"] is False
     assert options["sparse-checkout"].split() == [
         "/*",
         "!/docs/superpowers/",
         *(f"/{path}" for path in approved_inputs()),
     ]
-    commands = "\n".join(str(step.get("run", "")) for step in steps)
-    assert "-m approved_input" in commands
+    assert removal_index == checkout_index + 1
+    assert 'test -z "$(git remote)"' in runs[removal_index]
+    assert removal_index < test_index
+
+
+def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+    """Run Git with no user or system config and no lazy-fetch switch."""
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key != "GIT_NO_LAZY_FETCH"
+    }
+    environment |= {
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_AUTHOR_NAME": "synthetic",
+        "GIT_AUTHOR_EMAIL": "synthetic@example.invalid",
+        "GIT_COMMITTER_NAME": "synthetic",
+        "GIT_COMMITTER_EMAIL": "synthetic@example.invalid",
+    }
+    return subprocess.run(
+        ["git", *args], cwd=cwd, env=environment, capture_output=True
+    )
+
+
+def _sparse_partial_clone(source: Path, clone: Path) -> None:
+    """Clone without blobs, then check out only ``kept.txt``."""
+    for args in (
+        (
+            "clone",
+            "-q",
+            "--no-checkout",
+            "--filter=blob:none",
+            f"file://{source}",
+            str(clone),
+        ),
+        ("-C", str(clone), "sparse-checkout", "set", "--no-cone", "/kept.txt"),
+        ("-C", str(clone), "checkout", "-q", "main"),
+    ):
+        assert _git(clone.parent, *args).returncode == 0, args
+
+
+def test_removing_the_promisor_remote_stops_lazy_fetch(tmp_path: Path) -> None:
+    """Synthetic control for the CI step, independent of the Git version.
+
+    In a blob-less sparse clone the excluded blob is missing. With the remote
+    kept, reading it fetches it (positive control); once the remote is
+    removed the same read fails and the blob stays missing. No lazy-fetch
+    environment switch is set.
+    """
+    source = tmp_path / "source"
+    (source / "excluded").mkdir(parents=True)
+    (source / "kept.txt").write_text("kept\n", encoding="utf-8")
+    (source / "excluded" / "decoy.txt").write_text("decoy\n", encoding="utf-8")
+    for args in (
+        ("init", "-q", "--initial-branch=main"),
+        ("add", "--", "kept.txt", "excluded/decoy.txt"),
+        ("commit", "-q", "--no-gpg-sign", "-m", "synthetic"),
+        ("config", "uploadpack.allowFilter", "true"),
+    ):
+        assert _git(source, *args).returncode == 0, args
+    decoy = _git(source, "rev-parse", "HEAD:excluded/decoy.txt")
+    decoy_id = decoy.stdout.decode("ascii").strip()
+
+    kept_remote = tmp_path / "kept-remote"
+    _sparse_partial_clone(source, kept_remote)
+    removed_remote = tmp_path / "removed-remote"
+    _sparse_partial_clone(source, removed_remote)
+    assert _git(removed_remote, "remote", "remove", "origin").returncode == 0
+    assert _git(removed_remote, "remote").stdout == b""
+
+    missing = _git(
+        removed_remote, "rev-list", "--objects", "--missing=print", "HEAD"
+    )
+    assert f"?{decoy_id}".encode() in missing.stdout.split()
+    assert (removed_remote / "kept.txt").read_text(encoding="utf-8") == "kept\n"
+
+    fetched = _git(kept_remote, "cat-file", "-p", decoy_id)
+    assert (fetched.returncode, fetched.stdout) == (0, b"decoy\n")
+
+    refused = _git(removed_remote, "cat-file", "-p", decoy_id)
+    assert refused.returncode != 0
+    still_missing = _git(
+        removed_remote, "rev-list", "--objects", "--missing=print", "HEAD"
+    )
+    assert f"?{decoy_id}".encode() in still_missing.stdout.split()
 
 
 @pytest.mark.approved_input

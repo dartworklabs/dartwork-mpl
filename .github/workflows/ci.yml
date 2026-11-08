@@ -290,12 +290,16 @@ jobs:
 
   # Approved-input route (tests/support/approved_inputs.json, user approval
   # 2026-11-08). The checkout leaves out docs/superpowers except the exact
-  # files the manifest lists; the sparse checkout fetches no other blob, and
-  # the test step turns off lazy fetching. The job then runs the manifest
-  # contract and every `approved_input` test, so one of those tests that reads
-  # any other docs/superpowers file fails here with a missing file. This is
-  # evidence for the tests this job runs: it is not a confinement proof for
-  # the rest of the suite, and the full `test` job still runs everything.
+  # files the manifest lists, and the blob-less sparse checkout fetches no
+  # other blob. The next step removes the promisor remote, so no later Git
+  # command can fetch a missing blob, whatever the Git version; a synthetic
+  # partial clone in tests/architecture/test_approved_inputs.py shows that
+  # removal is what stops the fetch. The job then runs the manifest contract
+  # and every `approved_input` test, so one of those tests that reads any
+  # other docs/superpowers file fails here with a missing file. This is
+  # evidence for the working-tree inputs of the tests this job runs: it does
+  # not show that the runner's object store holds no other blob, nor confine
+  # the rest of the suite; the full `test` job still runs everything.
   approved-inputs:
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     env:
@@ -324,6 +328,14 @@ jobs:
             /docs/superpowers/specs/2026-07-17-beginner-friendly-color-docs-design.md
             /docs/superpowers/specs/2026-07-21-color-rationale-accuracy-design.md
             /docs/superpowers/specs/assets/2026-07-17-beginner-friendly-color-docs/claim-inventory.md
+      # Right after checkout: drop the promisor remote so a missing blob can
+      # never be fetched lazily, independent of GIT_NO_LAZY_FETCH support.
+      - name: Remove the promisor remote
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote remove origin
+          test -z "$(git remote)"
       - name: Isolate matplotlib font discovery
         shell: bash
         run: |
@@ -338,12 +350,13 @@ jobs:
         run: uv python install 3.12
       - name: Install locked all-extras dependencies
         run: uv sync --frozen --all-extras --dev
-      # Each listed input must be checked out as a regular file; the sparse
-      # list itself is recorded as evidence.
+      # Each listed input must be checked out as a regular file, and no remote
+      # may remain; the sparse list itself is recorded as evidence.
       - name: Verify the sparse approved-input checkout
         shell: bash
         run: |
           set -euo pipefail
+          test -z "$(git remote)"
           git sparse-checkout list | tee "$RUNNER_TEMP/approved-sparse-checkout.txt"
           mapfile -t inputs < <(jq -r '.inputs[].path' tests/support/approved_inputs.json)
           for path in "${inputs[@]}"; do
@@ -353,6 +366,7 @@ jobs:
           done
       - name: Run the manifest contract and approved-input tests
         env:
+          # An extra guard only; the removed remote is what blocks a fetch.
           GIT_NO_LAZY_FETCH: "1"
         shell: bash
         run: |
