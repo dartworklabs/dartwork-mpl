@@ -18,7 +18,6 @@ import numpy as np
 from matplotlib.collections import Collection
 from matplotlib.colors import to_rgba, to_rgba_array
 from matplotlib.lines import Line2D
-from matplotlib.offsetbox import DrawingArea, OffsetBox
 from matplotlib.patches import Patch
 from matplotlib.transforms import Bbox
 
@@ -47,9 +46,9 @@ class Look:
     legend is otherwise anchored to its Axes). The other fields are read
     from the legend: its size in points, its frame, its texts' fonts and
     colours, its title's text (an entry's text is the entry check's,
-    :func:`~._legend_entries._placed_as_built`), and what each handle
-    artist draws (colour, line style and width, marker and its size, face,
-    edge and hatch).
+    :func:`~._legend_entries._placed_as_built`), and what each entry's
+    handle (``legend.legend_handles``) draws: colour, line style and
+    width, marker and its size, face, edge and hatch.
     """
 
     loc: str
@@ -125,28 +124,6 @@ def _handle(artist: Artist) -> tuple[Any, ...]:
     return seen
 
 
-def _drawn_handles(legend: Legend) -> list[Artist]:
-    """Every artist the legend's entries draw: each handle box's contents.
-
-    ``legend.legend_handles`` holds only each entry's first artist; an
-    errorbar or a tuple handle draws more. Read through the public
-    ``get_children`` of the legend's offset boxes.
-    """
-    found: list[Artist] = []
-
-    def walk(box: OffsetBox) -> None:
-        for child in box.get_children():
-            if isinstance(child, DrawingArea):
-                found.extend(child.get_children())
-            elif isinstance(child, OffsetBox):
-                walk(child)
-
-    for child in legend.get_children():
-        if isinstance(child, OffsetBox):
-            walk(child)
-    return found or [h for h in legend.legend_handles if h]
-
-
 def _text(text: Text) -> tuple[Any, ...]:
     return (
         *_artist(text),
@@ -184,7 +161,9 @@ def look(
             _text(t) for t in [legend.get_title(), *legend.get_texts()]
         ),
         title=legend.get_title().get_text(),
-        handles=tuple(_handle(a) for a in _drawn_handles(legend)),
+        # The handles a caller reaches: Legend.legend_handles (get_lines,
+        # get_patches), one per entry.
+        handles=tuple(_handle(h) for h in legend.legend_handles if h),
         state=(*_artist(legend), legend.get_draggable()),
     )
 

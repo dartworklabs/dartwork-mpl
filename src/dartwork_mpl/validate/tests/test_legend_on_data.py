@@ -374,6 +374,11 @@ _HANDLES = {
             ax, "errorbar", color="k", linestyle="None", marker="None"
         ),
     ),
+    # The entry's first artist (the bars) draws nothing; its line does.
+    "errorbar_line_only": (
+        True,
+        lambda ax: _away(ax, "errorbar", color="k", ecolor="none"),
+    ),
 }
 
 
