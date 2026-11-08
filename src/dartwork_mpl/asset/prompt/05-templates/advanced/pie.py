@@ -42,9 +42,10 @@ wedges, texts, autotexts = ax.pie(
     wedgeprops={"edgecolor": "white", "linewidth": 0.5, "width": 0.38},
     textprops={"fontsize": dm.fs(-1)},
 )
-for t in autotexts:
-    t.set_color("white")
-    t.set_fontweight("bold")
+# Each share in white or black, whichever reads on its wedge.
+for t, wedge in zip(autotexts, wedges, strict=True):
+    t.set_color(dm.readable_text_color(wedge.get_facecolor()))
+    t.set_fontweight(dm.fw(1))
 
 ax.set_aspect("equal")
 
@@ -57,7 +58,7 @@ ax.annotate(
     xy=(np.cos(theta) * 0.9, np.sin(theta) * 0.9),
     xytext=(x + 0.4, y + 0.2),
     fontsize=dm.fs(-1),
-    color=colors[0],
+    color=dm.ensure_contrast(colors[0], ax.get_facecolor()),  # 4.5:1 text
     arrowprops={"arrowstyle": "-", "color": colors[0], "lw": 0.5},
 )
 

@@ -395,17 +395,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   with Agg; margins can move by a few pixels (about 7 px at 200 dpi in one
   cairo case). Figures on a live canvas, of any backend, are measured with
   their own renderer as before.
-- **Eleven advanced templates draw their notes readable.** Reference-line
+- **Twelve advanced templates draw their notes readable.** Reference-line
   and callout labels in a light accent (`dc.amber5` on white, 1.92:1) now
   take that accent darkened only as far as text needs, 4.5:1 on what is
   behind them (`dm.ensure_contrast`, the rule `dm.label_line_ends` uses):
   bar, bar_horizontal, boxplot, histogram, line, scatter, small_multiples,
-  twin_axis and plot_3d (on its grey floor pane). Numbers on fills take
-  white or black, whichever reads on the fill as drawn
-  (`dm.readable_text_color`): the heatmap's cells and the contour labels
-  (`dm.pseudo_alpha` for the 0.85 fill). The boxplot's baseline label
-  moves below the line's right end, clear of the boxes. Other templates
-  and docs figures are byte-identical.
+  twin_axis, the pie's leader callout and plot_3d (on its grey floor pane).
+  Numbers on fills take white or black, whichever reads on the fill as
+  drawn (`dm.readable_text_color`): the heatmap's cells, the contour labels
+  (`dm.pseudo_alpha` for the 0.85 fill) and the pie's shares (white on the
+  light teal wedges read 1.24–2.16:1; black reads 9.7–16.9:1), which now
+  take the value-label weight `dm.fw(1)` instead of bold. The boxplot's
+  baseline label moves below the line's right end, clear of the boxes.
+  Over the 36 templates in three presets `TEXT_CONTRAST` reports nothing;
+  other templates and docs figures are byte-identical.
 
 ### Deprecated
 
