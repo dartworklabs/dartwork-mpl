@@ -824,3 +824,84 @@ def test_costs_less_than_half_a_draw_on_a_dense_figure():
     check = best(lambda: found.extend(check_value_label_on_data(fig, renderer)))
     assert found, "the dense figure's labels do cover its lines"
     assert check < 0.5 * draw, (check, draw)
+
+
+# ---------------------------------------- second review (R1-R3, PR #637)
+_ACROSS = np.array([400.0, 0.0])  # px either side of the label
+
+
+def _settled_unit_axes():
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    dm.simple_layout(fig)
+    return fig, ax
+
+
+def _found(fig):
+    return dm.validate_figure(fig, checks=("VALUE_LABEL_ON_DATA",), quiet=True)
+
+
+@pytest.mark.parametrize("label", ["∫ = 10", "10 ∑"])
+def test_a_line_through_a_math_symbols_tail_is_reported(label):
+    # Only the marks set around a number (commas, brackets, currency and
+    # percent signs) lose their tails; an integral or sum keeps its ink.
+    fig, ax = _settled_unit_axes()
+    try:
+        ax.text(0.5, 0.5, label, fontsize=28, ha="center", va="baseline")
+        centre = ax.transData.transform((0.5, 0.5)) - [0, 2.5 * fig.dpi / 72]
+        ends = ax.transData.inverted().transform(
+            [centre - _ACROSS, centre + _ACROSS]
+        )
+        ax.plot(ends[:, 0], ends[:, 1], linewidth=0.8)
+        assert _found(fig)
+    finally:
+        plt.close(fig)
+
+
+def test_a_label_a_curved_clip_hides_entirely_is_not_reported():
+    # The circle's bounding box meets the label; the circle does not.
+    from matplotlib.patches import Circle
+
+    fig, ax = _settled_unit_axes()
+    try:
+        ax.plot([0.2, 0.9], [0.69, 0.69], linewidth=2)
+        text = ax.text(
+            0.66,
+            0.66,
+            "50",
+            fontsize=20,
+            ha="left",
+            va="bottom",
+            clip_on=True,
+            path_effects=[patheffects.Normal()],
+        )
+        text.set_clip_path(Circle((0.5, 0.5), 0.2, transform=ax.transData))
+        warnings = _found(fig)
+        drawn = np.asarray(fig.canvas.buffer_rgba()).copy()
+        text.set_visible(False)
+        fig.canvas.draw()
+        # Control: the label really draws nothing.
+        assert np.array_equal(drawn, np.asarray(fig.canvas.buffer_rgba()))
+        assert warnings == []
+    finally:
+        plt.close(fig)
+
+
+@pytest.mark.parametrize("effect", [False, True])
+def test_measuring_the_data_leaves_the_figure_clean(effect):
+    # The copy drawn for a path-effect line must not dirty its parents.
+    from dartwork_mpl.validate._checks.value_label_on_data import _measure
+
+    fig, ax = _settled_unit_axes()
+    try:
+        ax.plot(
+            [0.1, 0.9],
+            [0.5, 0.5],
+            path_effects=[patheffects.Normal()] if effect else [],
+        )
+        fig.canvas.draw()
+        assert (fig.stale, ax.stale) == (False, False)
+        _measure([ax], ax.bbox, fig.canvas.get_renderer(), fig)
+        assert (fig.stale, ax.stale) == (False, False)
+    finally:
+        plt.close(fig)

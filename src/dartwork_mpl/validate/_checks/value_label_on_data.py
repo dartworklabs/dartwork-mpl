@@ -185,19 +185,27 @@ def _laid_out(text: Text) -> tuple[str, bool | Literal["TeX"]]:
     return string.replace(r"\$", "$"), False
 
 
-def _without_marks(string: str, ismath: bool | Literal["TeX"]) -> str:
-    """``string`` less its punctuation and symbols outside mathtext.
+_NUMBER_MARKS = frozenset(",.;:()[]{}%\u2030'\"\u2019\u201d")
+"""Marks set around a number whose tails may dip below the baseline."""
 
-    Commas, parentheses, currency and percent signs and the like dip below
-    the baseline as tails of the marks around a number; letters and digits
-    keep theirs (``g``, ``y``, ``p``). Mathtext is kept whole and TeX
-    untouched: their glyphs count as drawn.
+
+def _is_number_mark(ch: str) -> bool:
+    """A comma, bracket, quote or percent sign, or a currency sign (Sc)."""
+    return ch in _NUMBER_MARKS or unicodedata.category(ch) == "Sc"
+
+
+def _without_marks(string: str, ismath: bool | Literal["TeX"]) -> str:
+    """``string`` less the marks around a number, outside mathtext.
+
+    Commas, brackets, quotes, currency and percent signs dip below the
+    baseline as tails of the marks around a number; letters, digits and
+    other symbols keep theirs (``g``, ``y``, ``p``, ``\u222b``,
+    ``\u2211``). Mathtext is kept whole and TeX untouched: their glyphs
+    count as drawn.
     """
 
     def kept(part: str) -> str:
-        return "".join(
-            ch for ch in part if unicodedata.category(ch)[0] not in "PS"
-        )
+        return "".join(ch for ch in part if not _is_number_mark(ch))
 
     if ismath == "TeX":
         return string
@@ -497,12 +505,14 @@ def _without_effects(line: Line2D) -> Line2D:
     copy.set_markevery(line.get_markevery())
     copy.set_antialiased(line.get_antialiased())
     copy.set_snap(line.get_snap())
+    xdata, ydata = line.get_data(orig=True)
+    # Data first: once it joins the Axes, its changes reach the Axes and
+    # the Figure as stale calls (the original's parents stay as they were).
+    copy.set_data(xdata, ydata)
     figure = line.get_figure(root=False)
     if figure is not None:
         copy.set_figure(figure)
     copy.axes = line.axes
-    xdata, ydata = line.get_data(orig=True)
-    copy.set_data(xdata, ydata)
     return copy
 
 
@@ -851,8 +861,8 @@ def _clip_region(text: Text) -> Bbox:
 
     ``Text.draw`` clips to its clip box and clip path when ``clip_on`` (an
     ``ax.text`` is unclipped unless asked). A clip path counts by its
-    bounding box, which keeps the ink a curved clip cuts away: that can only
-    add hits.
+    bounding box here; the path itself then decides whether the ink it
+    lets through is any at all (:func:`_within_path`).
     """
     region = _UNCLIPPED
     if not text.get_clip_on():
@@ -871,6 +881,22 @@ class _Label(NamedTuple):
     text: Text
     box: Bbox  # its text box, display px
     region: Bbox  # what its clip lets through
+    clip_path: Path | None  # its clip path in display px, when clipped
+
+
+def _clip_path(text: Text) -> Path | None:
+    """The label's clip path in display px, when ``clip_on`` uses one."""
+    clip_path = text.get_clip_path()
+    if not text.get_clip_on() or not isinstance(clip_path, TransformedPath):
+        return None
+    return clip_path.get_fully_transformed_path()
+
+
+def _within_path(box: Bbox | None, clip_path: Path | None) -> Bbox | None:
+    """``box`` when its clip path (as filled) lets any of it through."""
+    if box is None or clip_path is None:
+        return box
+    return box if clip_path.intersects_bbox(box, filled=True) else None
 
 
 def _value_labels(ax: Axes, renderer: RendererBase) -> list[_Label]:
@@ -883,10 +909,13 @@ def _value_labels(ax: Axes, renderer: RendererBase) -> list[_Label]:
         try:
             box = _text_box(text, renderer)
             region = _clip_region(text)
+            path = _clip_path(text)
         except BBOX_ERRORS:
             continue
-        if box is not None and _clip(box, region) is not None:
-            found.append(_Label(text, box, region))
+        if box is None:
+            continue
+        if _within_path(_clip(box, region), path) is not None:
+            found.append(_Label(text, box, region, path))
     return found
 
 
@@ -908,7 +937,7 @@ def _label_hits(
     """
     box, text, region = label.box, label.text, label.region
     centre = ((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2)
-    seen = _clip(box, region)
+    seen = _within_path(_clip(box, region), label.clip_path)
     if seen is None:
         return []
     whole = _inset(seen.x0, seen.y0, seen.x1, seen.y1, touch)
@@ -916,7 +945,9 @@ def _label_hits(
         return []
 
     def covered(depth: float) -> list[_Hit]:
-        ink = _ink_box(text, box, glyphs, depth, touch, region)
+        ink = _within_path(
+            _ink_box(text, box, glyphs, depth, touch, region), label.clip_path
+        )
         return [] if ink is None else _hits(data, frame, ink, centre, touch)
 
     try:
