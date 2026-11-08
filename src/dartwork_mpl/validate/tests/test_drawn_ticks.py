@@ -221,3 +221,44 @@ def test_a_turned_label_at_the_view_edge_is_counted():
     counted = _texts(iter_view_ticks(ax, "x", get_renderer(fig)))
     assert counted == names
     assert counted == _texts(drawn_tick_labels(ax, "x"))
+
+
+def test_a_twins_hidden_x_axis_has_no_tick_labels():
+    """``twinx`` hides the second Axes' x axis: its labels sit on the
+    first's, never drawn, and were counted twice (UNIT_DUP, TICK_CROWD and
+    TICK_ROTATION on every twin of the stress set)."""
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.bar(range(4), [1, 2, 3, 4])
+    ax.set_xticks(range(4), ["A", "B", "C", "D"])
+    twin = ax.twinx()
+    twin.plot(range(4), [4, 3, 2, 1])
+    fig.canvas.draw()
+    renderer = get_renderer(fig)
+    assert _texts(iter_view_ticks(ax, "x", renderer)) == ["A", "B", "C", "D"]
+    assert list(iter_view_ticks(twin, "x", renderer)) == []
+
+
+@pytest.mark.parametrize("name", ["polar.py", "advanced/polar.py"])
+def test_a_polar_theta_ring_is_not_a_row_of_labels(name: str) -> None:
+    """TICK_CROWD and TICK_ROTATION share out a straight axis' width; the
+    theta labels around a polar plot have none. On the shipped polar
+    templates in presentation TICK_CROWD measured "8 ticks in 0.00in", and
+    counting every drawn theta label added TICK_ROTATION."""
+    from pathlib import Path
+
+    source = (
+        Path(dm.__file__).parent / "asset/prompt/05-templates" / name
+    ).read_text(encoding="utf-8")
+    ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
+    source = source[: min(i for e in ends if (i := source.find(e)) >= 0)]
+    source = source.replace(
+        'dm.style.use("scientific")', 'dm.style.use("presentation")'
+    )
+    namespace: dict = {}
+    exec(compile(source, name, "exec"), namespace)
+    fig = namespace["fig"]
+    assert fig.axes[0].name == "polar"  # precondition
+    assert _ids(fig, "TICK_CROWD", "TICK_ROTATION") == []

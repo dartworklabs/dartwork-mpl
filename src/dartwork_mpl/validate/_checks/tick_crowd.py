@@ -84,6 +84,10 @@ def check_tick_crowding(
     dpi = fig.get_dpi()
 
     for i, ax in enumerate(fig.axes):
+        # A row of labels along a straight axis: a polar theta ring or a 3D
+        # axis has no width or height to share out.
+        if getattr(ax, "name", None) != "rectilinear":
+            continue
         try:
             ax_ext = ax.get_window_extent(renderer)
         except BBOX_ERRORS:
