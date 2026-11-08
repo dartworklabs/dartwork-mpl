@@ -10,10 +10,14 @@ matplotlib.use("Agg")
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
+from matplotlib.collections import PathCollection, PolyCollection
+from matplotlib.path import Path
 
 import dartwork_mpl as dm
 from dartwork_mpl.validate import Severity, VisualWarning, validate_figure
+from dartwork_mpl.validate._checks.text_contrast import _drawn_in_place
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -286,6 +290,205 @@ class TestTextContrast:
         assert hits[0].detail["count"] == 4
         assert hits[0].detail["ratio"] == pytest.approx(ratio, abs=0.01)
         assert hits[0].severity == Severity.WARNING
+        plt.close(fig)
+
+
+_DARK = "#1f2a44"
+
+
+def _text_at_center(ax: Axes, ink: str, label: str = "label") -> None:
+    ax.text(
+        0.5,
+        0.5,
+        label,
+        color=ink,
+        ha="center",
+        va="center",
+        fontsize=dm.fs(0),
+        transform=ax.transAxes,
+    )
+
+
+class TestTextContrastBackground:
+    """The background is what is painted under the text's centre (T-C, 11-09).
+
+    The advanced pie's callout in the donut hole was read against the leader
+    wedge (1.00:1) because the wedge's box holds the hole; contour labels and
+    heatmap values were read against the bare Axes because filled
+    collections and images were not looked at.
+    """
+
+    def test_text_in_a_donut_hole_reads_the_hole(self) -> None:
+        fig, ax = _new_figure()
+        ax.pie(
+            [62, 38], colors=["#00c897", "#c0f1e1"], wedgeprops={"width": 0.38}
+        )
+        ax.text(0, 0, "hole", color="#00c897", ha="center", va="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [
+            (h.detail["sample"], h.detail["background_color"]) for h in hits
+        ] == [("hole", "#ffffff")]
+        assert hits[0].detail["ratio"] == pytest.approx(2.16, abs=0.01)
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        ("ink", "warns"), [("white", False), ("#222222", True)]
+    )
+    def test_a_filled_area_under_the_text_counts(
+        self, ink: str, warns: bool
+    ) -> None:
+        fig, ax = _new_figure()
+        ax.fill_between([0, 1], [0, 0], [1, 1], color=_DARK)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        _text_at_center(ax, ink)
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["background_color"] for h in hits] == (
+            [_DARK] if warns else []
+        )
+        plt.close(fig)
+
+    def test_contourf_reads_the_band_under_each_label(self) -> None:
+        fig, ax = _new_figure()
+        x = np.linspace(0, 1, 50)
+        xx, yy = np.meshgrid(x, x)
+        ax.contourf(xx, yy, xx, levels=[0, 0.5, 1], colors=["white", _DARK])
+        for x_pos, label in ((0.25, "on white"), (0.75, "on dark")):
+            ax.text(x_pos, 0.5, label, color="white", ha="center", va="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["samples"] for h in hits] == [["on white"]]
+        assert hits[0].detail["background_color"] == "#ffffff"
+        plt.close(fig)
+
+    @pytest.mark.parametrize("kind", ["imshow", "pcolormesh"])
+    def test_an_image_cell_under_the_text_counts(self, kind: str) -> None:
+        fig, ax = _new_figure()
+        data = np.ma.masked_array(
+            [[0.0, 1.0, 0.0]], mask=[[False, False, True]]
+        )
+        if kind == "imshow":
+            ax.imshow(data, cmap="gray", vmin=0, vmax=1, aspect="auto")
+            centres = [0.0, 1.0, 2.0]
+            row = 0.0
+        else:
+            ax.pcolormesh(
+                np.arange(4), [0, 1], data, cmap="gray", vmin=0, vmax=1
+            )
+            centres = [0.5, 1.5, 2.5]
+            row = 0.5
+        for x_pos, label in zip(
+            centres, ["black cell", "white cell", "masked"], strict=True
+        ):
+            ax.text(x_pos, row, label, color="white", ha="center", va="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [sorted(h.detail["samples"]) for h in hits] == [
+            ["masked", "white cell"]
+        ]
+        assert hits[0].detail["background_color"] == "#ffffff"
+        plt.close(fig)
+
+    def test_scatter_markers_are_not_a_background(self) -> None:
+        fig, ax = _new_figure()
+        ax.scatter([0.5], [0.5], s=4000, color=_DARK)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        _text_at_center(ax, "#222222")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_only_paths_drawn_where_they_are_count(self) -> None:
+        # A collection scaled per path (marker sizes) or shifted by offsets
+        # draws its paths elsewhere; only plain filled paths are read.
+        fig, ax = _new_figure()
+        filled = ax.fill_between([0, 1], [0, 0], [1, 1])
+        sized = PathCollection([Path.unit_circle()], sizes=[100])
+        shifted = PolyCollection([[(0, 0), (1, 0), (1, 1)]], offsets=[(5, 5)])
+
+        assert _drawn_in_place(filled)
+        assert not _drawn_in_place(sized)
+        assert not _drawn_in_place(shifted)
+        plt.close(fig)
+
+    def test_overlapping_paths_read_the_one_drawn_last(self) -> None:
+        fig, ax = _new_figure()
+        square = [(0, 0), (1, 0), (1, 1), (0, 1)]
+        ax.add_collection(
+            PolyCollection([square, square], facecolors=["white", _DARK])
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        _text_at_center(ax, "white")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_text_on_a_twin_reads_the_host_drawn_beneath(self) -> None:
+        fig, host = _new_figure()
+        host.bar([0], [1], width=2, color=_DARK)
+        host.set_xlim(-0.5, 0.5)
+        host.set_ylim(0, 1)
+        twin = host.twinx()
+        _text_at_center(twin, "white", "on host bar")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        _text_at_center(twin, "#222222", "dark on bar")
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+        assert [h.detail["background_color"] for h in hits] == [_DARK]
+        plt.close(fig)
+
+    def test_legend_text_reads_its_frame(self) -> None:
+        fig, ax = _new_figure()
+        ax.fill_between([0, 1], [0, 0], [1, 1], color=_DARK)
+        ax.plot([0, 1], [0.5, 0.5], color="white", label="series")
+        legend = ax.legend(loc="center", frameon=True, framealpha=1)
+        legend.get_frame().set_facecolor("white")
+        legend.get_texts()[0].set_color("#222222")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        legend.set_frame_on(False)  # framealpha would override a clear face
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+        assert [h.detail["background_color"] for h in hits] == [_DARK]
+        plt.close(fig)
+
+    def test_a_centre_on_the_polar_clip_seam_reads_what_is_painted(
+        self,
+    ) -> None:
+        # The polar Axes' round clip path has a zero-width seam along the
+        # horizontal through its centre; a centred label there is painted on
+        # the disc beneath it.
+        dm.style.use("scientific")
+        fig, ax = plt.subplots(
+            figsize=dm.figsize("9cm", "square"),
+            subplot_kw={"projection": "polar"},
+        )
+        ax.bar(0, 1, width=2 * np.pi, bottom=0, color=_DARK)
+        ax.set_ylim(0, 2)
+        for theta in (0.0, np.pi):
+            ax.text(theta, 0.5, "seam", color="white", ha="center", va="center")
+        ax.text(0, 0, "centre", color="white", ha="center", va="center")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_3d_axes_are_read_without_failing(self) -> None:
+        dm.style.use("scientific")
+        fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+        ax = fig.add_subplot(projection="3d")
+        ax.plot([0, 1], [0, 1], [0, 1])
+        ax.text(0.5, 0.5, 0.5, "faint", color="#eeeeee")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["sample"] for h in hits] == ["faint"]
         plt.close(fig)
 
 

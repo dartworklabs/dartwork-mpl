@@ -55,6 +55,20 @@ def test_hidden_patches_add_nothing() -> None:
     plt.close(fig)
 
 
+def test_a_3d_axes_patch_counts_without_a_frame_switch() -> None:
+    # Axes3D sets get_frame_on to None and always draws its patch.
+    fig = plt.figure(facecolor="#102030")
+    ax = fig.add_subplot(projection="3d", facecolor="#aabbcc")
+    layers = backdrop_layers([ax])
+    assert [[round(c * 255) for c in layer[:3]] for layer in layers] == [
+        [16, 32, 48],
+        [170, 187, 204],
+    ]
+    ax.patch.set_visible(False)
+    assert len(backdrop_layers([ax])) == 1
+    plt.close(fig)
+
+
 @pytest.mark.parametrize("alpha", [0.0, 0.4, 1.0])
 def test_folded_layers_match_the_rendered_pixel(alpha: float) -> None:
     # A 100 x 100 px canvas: 2 in at 50 dpi, so pixel (50, 50) is mid-Axes.
