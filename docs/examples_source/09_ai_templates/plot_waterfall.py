@@ -24,39 +24,47 @@ import dartwork_mpl as dm
 dm.style.use("scientific")
 
 labels = ["Start", "Gain A", "Loss B", "Gain C", "Loss D", "End"]
-deltas = [100, 30, -15, 25, -20, 0]
-is_total = [True, False, False, False, False, True]
+deltas = np.array([100, 30, -15, 25, -20, 0])
+is_total = np.array([True, False, False, False, False, True])
 
-# Compute baselines and bar heights for each step.
-baselines = np.zeros(len(deltas))
-heights = np.zeros(len(deltas))
+# The level after each bar: the first total opens it, a step moves it by
+# its signed delta, a later total shows it. A step is drawn from the level
+# before it with its signed delta as the height, so the bar holds its
+# delta and dm.label_bars prints -15 below a fall.
+level = np.zeros(len(deltas))
 running = 0.0
-for i, (delta, total) in enumerate(zip(deltas, is_total, strict=False)):
-    if total:
-        if i == 0:
-            running = delta
-        baselines[i] = 0
-        heights[i] = running
-    else:
-        baselines[i] = running + min(delta, 0)
-        heights[i] = abs(delta)
+for i, (delta, total) in enumerate(zip(deltas, is_total, strict=True)):
+    if not total or i == 0:
         running += delta
-
-colors = [
-    "dc.indigo3" if total else ("dc.green2" if d >= 0 else "dc.red2")
-    for d, total in zip(deltas, is_total, strict=False)
-]
+    level[i] = running
+x = np.arange(len(labels))
+step = ~is_total
 
 fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(labels), n_series=1))
-ax.bar(
-    labels,
-    heights,
-    bottom=baselines,
-    color=colors,
+totals = ax.bar(
+    x[is_total],
+    level[is_total],
+    color="dc.indigo3",
     edgecolor="white",
     linewidth=0.3,
 )
+steps = ax.bar(
+    x[step],
+    deltas[step],
+    bottom=(level - deltas)[step],
+    color=["dc.green2" if d >= 0 else "dc.red2" for d in deltas[step]],
+    edgecolor="white",
+    linewidth=0.3,
+)
+# A fall starts at its top, which matplotlib would pin to the axes edge;
+# clearing it keeps the usual margin above the highest level.
+for bar in steps:
+    bar.sticky_edges.y.clear()
+ax.set_xticks(x, labels)
 ax.axhline(0, color="dc.indigo3", linewidth=0.3)
 ax.set_ylabel("Value")
+# Values, when asked (before dm.simple_layout):
+# dm.label_bars(ax, steps, sign="+")  # +30, -15 below its bar, ...
+# dm.label_bars(ax, totals)  # 100, 120
 
 dm.simple_layout(fig)

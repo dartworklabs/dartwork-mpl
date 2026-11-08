@@ -291,7 +291,7 @@
       "use_case": "Distribution shape across 5 groups with median + IQR markers and gradient bodies"
     },
     "waterfall": {
-      "advanced_apis": "cumulative bottom calc, sign-color, dashed connector lines between bar tops, value labels, format_axis_si",
+      "advanced_apis": "signed step bars from the running level, sign-color, dashed connector lines, dm.label_bars(sign=\"+\", color=\"series\")",
       "basic_counterpart": "waterfall",
       "data_shape": "labels: list[str], values: list[float], is_total: list[bool]",
       "difficulty": "advanced",
