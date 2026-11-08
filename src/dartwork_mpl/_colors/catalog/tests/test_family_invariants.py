@@ -167,6 +167,7 @@ def test_family_kind_is_the_variant_label() -> None:
         assert name in EXPECTED[family.kind]
 
 
+@pytest.mark.approved_input
 def test_sequential_and_multi_hue_lut_keep_raw_y_oklab_topology() -> None:
     """Gate ordered LUT direction, Y/L minima, span, CVD, and step CV."""
     names = EXPECTED["sequential"] | EXPECTED["multi-hue"]
@@ -182,6 +183,7 @@ def test_sequential_and_multi_hue_lut_keep_raw_y_oklab_topology() -> None:
     _evaluate_subset("cmaps_full_256", expected, measured)
 
 
+@pytest.mark.approved_input
 def test_diverging_lut_keeps_raw_y_oklab_two_arm_topology() -> None:
     """Gate center, both arms, mirrors, and OKLab step balance raw."""
     topology = _mapping(_baseline_metrics()["topology"], "topology baseline")
@@ -201,6 +203,7 @@ def test_diverging_lut_keeps_raw_y_oklab_two_arm_topology() -> None:
     )
 
 
+@pytest.mark.approved_input
 def test_cyclic_lut_keeps_raw_oracle_seam_and_topology() -> None:
     """Gate unrounded seam distances, Y spread, and twilight arm topology."""
     topology = _mapping(_baseline_metrics()["topology"], "topology baseline")
@@ -220,6 +223,7 @@ def test_cyclic_lut_keeps_raw_oracle_seam_and_topology() -> None:
     )
 
 
+@pytest.mark.approved_input
 def test_qualitative_members_keep_raw_cvd_separation_floors() -> None:
     """Use independent CIEDE2000/CVD validation, not an L* authoring band."""
     metrics = _baseline_metrics()

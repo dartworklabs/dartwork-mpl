@@ -125,14 +125,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   so 45° labels whose upright boxes cross while their text does not pass;
   neighbours are taken along the axis on each side separately (bottom and
   top, left and right), major and minor labels together. Rectilinear,
-  visible Axes only. The fixes never make text
-  smaller: drop a rotation you set, horizontal bars
+  visible Axes only. It reports what `dm.simple_layout` could not clear
+  (below). The fixes never make text smaller: drop a rotation you set and
+  lay out again (the layout wraps, then turns), horizontal bars
   (`dm.figsize_for("barh", n_points=n)`), a wider canvas; a taller one for
   crowded rows. `TICK_CROWD` and `TICK_ROTATION` stay INFO. Over the 92
   docs example figures it reports one, `plot_colormap_terrain` (four thin
   colorbars whose tick labels overlap); over the 36 shipped templates in
-  three presets, `advanced/heatmap` and `advanced/boxplot` in
-  `presentation` (names turned 30° by the template, and `Variant A…D`).
+  three presets, `advanced/heatmap` in `presentation` (names the template
+  turns 30° itself).
 
 - `dm.config.legend_fallback` (`"auto"`, the default, `"above"`,
   `"right"`, `"below"` or `"inside"`) and `dm.config.legend_wrap` (`True`):
@@ -186,7 +187,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   for it; it is now a warning with `outside_ratio` and `threshold` in the
   detail. The in-axes 30 % rule and the off-canvas rule are unchanged. The
   first fix suggestion is now `dm.label_line_ends(ax)`.
-
+- **`dm.simple_layout` fits text that still collides (`fit_labels`, on by
+  default).** Once the margins fit, text that overlaps by more than half a
+  pixel climbs a ladder, easiest step first and only where it collides: an
+  axis name that runs into another panel's text or plot, or past the figure
+  edge, wraps at its spaces (up to four lines, a bracketed unit whole); the
+  `wspace` / `hspace` nobody set grow until neighbouring panels' text
+  clears, when 1.5 cells or less does it; crowded bottom tick labels wrap at
+  their spaces, only the ones that collide (up to three lines, using the
+  room short neighbours leave; panels that share x wrap together, to the
+  narrowest one's room); labels that cannot wrap turn 30, 45 or 90 degrees,
+  the smallest angle that clears, each label's end at its tick
+  (`"xtick"` rotation mode; 90 degrees without clearing only when that
+  leaves them overlapping less than flat), unless turned they would take
+  over 35 % of the figure height. Only the bottom labels turn. After each
+  round the margins are fitted again, and a change that left a plot under
+  30 % of its width or height, or gave any axis more pairs of overlapping
+  neighbouring tick labels, is taken back and not tried again; its
+  collision stays, reported.
+  Nothing is shortened, hidden or made smaller, and a figure without an
+  overlap draws exactly as before, at about the same cost. Labels you
+  rotate (top labels too), break or align off centre, axis names with line
+  breaks or mathtext and spacing you set (`gridspec_kw`, `add_gridspec`,
+  `fig.subplots_adjust`) stay; each call first undoes what an earlier call
+  fitted, label by label where it is still as fitted, so a re-layout at
+  another size fits again; `use_all_axes=False` fits and undoes only the
+  Axes of `gs`, and leaves what they share with other Axes (a shared x
+  formatter, their grid's spacing) as it is. `dm.simple_layout(fig, fit_labels=False)` or
+  `dm.config.fit_labels = False` gives the previous layout pixel for pixel;
+  a tuple of step names (`"axis_labels"`, `"space"`, `"wrap"`, `"rotate"`)
+  picks steps; an unknown name raises `ValueError`, a step that is not a
+  string `TypeError`. Over a 342-figure stress set, 120 of the 220 with
+  overlapping, intruding or clipped text clear and none gains one. Of the
+  shipped templates in three presets, `advanced/boxplot` in `presentation`
+  (`Variant A…D` turn 30°; its y axis, shorter, gets ticks `0` and `5`) and
+  `small_multiples` in `presentation` (its panels part) change; drawn at
+  9 cm, `advanced/boxplot` keeps its plot and reports its labels. Of the 92
+  docs example figures, `plot_preset_comparison` changes (its panels part;
+  at the narrower width matplotlib picks x ticks `0.0 2.5 … 10.0`). Tick
+  labels that still overlap are reported as `TICK_OVERLAP`.
 - **Three advanced templates keep their value labels off the data.** The
   labels `VALUE_LABEL_ON_DATA` reported now sit clear of it in every preset:
   `boxplot` prints its means in one row above the plot box instead of on
@@ -340,6 +379,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- Lint rule `multirow-subplots-no-gridspec-kw` (info). It asked for an
+  explicit `gridspec_kw={"hspace": ..., "wspace": ...}` on every
+  `plt.subplots` with two or more rows, because `dm.simple_layout` kept the
+  gaps between panels as they were. The layout now widens the spacing
+  nobody passed where neighbouring panels' text collides, and a spacing
+  passed by hand turns that off, so the rule's advice would undo the fix.
+  The skill, the layout guide and the review tables now say to leave tick
+  rotation and `hspace` / `wspace` to the layout (a spacing the user asks
+  for still wins), and list `TICK_OVERLAP`.
 - `dartwork_mpl.style.install_twinx_patch` and its root alias
   `dm.install_twinx_patch` (internal, never in `__all__`): the import-time
   `twinx` wrapper. See *Changed*.

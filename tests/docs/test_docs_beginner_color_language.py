@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.support.approved_inputs import read_approved_text
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -22,13 +24,25 @@ PUBLIC_COLOR_LANGUAGE_PATHS = (
     "docs/color_system/palettes.md",
     "docs/color_system/validation.md",
     "docs/adr/0001-oklab-centered-color-construction.md",
-    "docs/superpowers/specs/2026-07-14-oklab-centered-color-system-design.md",
-    "docs/superpowers/specs/2026-07-17-beginner-friendly-color-docs-design.md",
-    "docs/superpowers/specs/2026-07-21-color-rationale-accuracy-design.md",
     "src/dartwork_mpl/asset/prompt/00-index.md",
     "src/dartwork_mpl/asset/prompt/01-policy.md",
     "src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml",
 )
+
+# The approved design specs under the same claim check; they are read only
+# through the approved-input reader (tests/support/approved_inputs.json).
+APPROVED_COLOR_LANGUAGE_SPECS = (
+    "docs/superpowers/specs/2026-07-14-oklab-centered-color-system-design.md",
+    "docs/superpowers/specs/2026-07-17-beginner-friendly-color-docs-design.md",
+    "docs/superpowers/specs/2026-07-21-color-rationale-accuracy-design.md",
+)
+
+STALE_REPORT_AUTHORITY_CLAIMS = (
+    "CI는 JSON의 `passed`가 `true`인지 검사한다",
+    "JSON이 자동화 SSOT다",
+    "`report.json` as the machine authority",
+)
+CLAIM_INVENTORY_ROW = re.compile(r"\| [A-Z]\d{2} \|")
 
 
 RUNTIME_COLOR_LANGUAGE_PATHS = (
@@ -98,10 +112,36 @@ NEGATED_NEEDLE_PREFIX = re.compile(
 )
 
 
+def _normalized(text: str) -> str:
+    """Collapse every whitespace run to one space."""
+    return re.sub(r"\s+", " ", text)
+
+
 def _page(relpath: str) -> str:
     """Read one documentation surface with whitespace normalized."""
-    text = (ROOT / relpath).read_text(encoding="utf-8")
-    return re.sub(r"\s+", " ", text)
+    return _normalized((ROOT / relpath).read_text(encoding="utf-8"))
+
+
+def _approved_page(relpath: str) -> str:
+    """Read one approved input with whitespace normalized, as ``_page`` does."""
+    return _normalized(read_approved_text(relpath))
+
+
+def _bare_claim_destinations(inventory: str) -> tuple[int, list[str]]:
+    """Count claim rows and list those whose destination is a bare file."""
+    rows: list[str] = [
+        line
+        for line in inventory.splitlines()
+        if CLAIM_INVENTORY_ROW.match(line)
+    ]
+    bare_destinations: list[str] = []
+    for row in rows:
+        claim_id, source, _, destination, _ = (
+            cell.strip() for cell in row.strip("|").split("|")
+        )
+        if destination == source or re.fullmatch(r"\S+\.md", destination):
+            bare_destinations.append(f"{claim_id}: {destination}")
+    return len(rows), bare_destinations
 
 
 def _python_string_literals(relpath: str) -> str:
@@ -134,29 +174,52 @@ def _unqualified_language_claims(text: str) -> list[str]:
     return findings
 
 
+def test_claim_destination_check_flags_bare_files_on_synthetic_rows() -> None:
+    """Synthetic control: only described destinations pass the row check."""
+    inventory = "\n".join(
+        (
+            "| ID | Source | Claim | Destination | Status |",
+            "|---|---|---|---|---|",
+            "| A01 | page.md | claim | page.md § Gamut boundary | kept |",
+            "| A02 | page.md | claim | page.md | kept |",
+            "| B01 | page.md | claim | other.md | moved |",
+            "| b02 | page.md | claim | other.md | not a claim row |",
+        )
+    )
+
+    assert _bare_claim_destinations(inventory) == (
+        3,
+        ["A02: page.md", "B01: other.md"],
+    )
+
+
+@pytest.mark.approved_input
 def test_claim_inventory_uses_descriptive_destinations_for_all_rows() -> None:
     """Require a stable anchor or section description for every claim group."""
-    inventory = (
-        ROOT
-        / "docs/superpowers/specs/assets/2026-07-17-beginner-friendly-color-docs"
-        / "claim-inventory.md"
-    ).read_text(encoding="utf-8")
-    rows: list[str] = [
-        line
-        for line in inventory.splitlines()
-        if re.match(r"\| [A-Z]\d{2} \|", line)
-    ]
-    bare_destinations: list[str] = []
+    inventory = read_approved_text(
+        "docs/superpowers/specs/assets/2026-07-17-beginner-friendly-color-docs/"
+        "claim-inventory.md"
+    )
+    row_count, bare_destinations = _bare_claim_destinations(inventory)
 
-    assert len(rows) == 27
-    for row in rows:
-        claim_id, source, _, destination, _ = (
-            cell.strip() for cell in row.strip("|").split("|")
-        )
-        if destination == source or re.fullmatch(r"\S+\.md", destination):
-            bare_destinations.append(f"{claim_id}: {destination}")
-
+    assert row_count == 27
     assert not bare_destinations, bare_destinations
+
+
+def test_unqualified_claim_check_flags_positive_and_skips_negated_claims() -> (
+    None
+):
+    """Synthetic control: positive guarantees are found, negated ones are not."""
+    text = (
+        "Intro.\nThese ramps are print-safe.\n"
+        "Do not call any map print-safe.\n"
+        "Rows survive grayscale/print reliably."
+    )
+
+    assert _unqualified_language_claims(text) == [
+        "line 2: 'print-safe'",
+        "line 4: 'survive grayscale/print'",
+    ]
 
 
 def test_current_color_language_rejects_unqualified_output_claims() -> None:
@@ -164,6 +227,20 @@ def test_current_color_language_rejects_unqualified_output_claims() -> None:
     findings: list[str] = []
     for relpath in PUBLIC_COLOR_LANGUAGE_PATHS:
         text = (ROOT / relpath).read_text(encoding="utf-8")
+        findings.extend(
+            f"{relpath}:{finding}"
+            for finding in _unqualified_language_claims(text)
+        )
+
+    assert not findings, findings
+
+
+@pytest.mark.approved_input
+def test_approved_color_specs_reject_unqualified_output_claims() -> None:
+    """Apply the same claim check to the three approved design specs."""
+    findings: list[str] = []
+    for relpath in APPROVED_COLOR_LANGUAGE_SPECS:
+        text = read_approved_text(relpath)
         findings.extend(
             f"{relpath}:{finding}"
             for finding in _unqualified_language_claims(text)
@@ -205,6 +282,18 @@ def test_active_source_comments_bound_modeled_y_and_print_names() -> None:
     assert not findings, findings
 
 
+def test_stale_authority_check_sees_claims_wrapped_across_lines() -> None:
+    """Synthetic control: a claim split over lines is still found."""
+    text = _normalized(
+        "Before.\n`report.json` as the\n  machine authority, said the plan.\n"
+    )
+
+    assert [c for c in STALE_REPORT_AUTHORITY_CLAIMS if c in text] == [
+        "`report.json` as the machine authority"
+    ]
+
+
+@pytest.mark.approved_input
 @pytest.mark.parametrize(
     "relpath",
     (
@@ -218,13 +307,9 @@ def test_normative_docs_reject_stale_report_authority_claims(
     relpath: str,
 ) -> None:
     """Reject instructions that infer current success from an old report."""
-    text = _page(relpath)
+    text = _approved_page(relpath)
 
-    for stale_claim in (
-        "CI는 JSON의 `passed`가 `true`인지 검사한다",
-        "JSON이 자동화 SSOT다",
-        "`report.json` as the machine authority",
-    ):
+    for stale_claim in STALE_REPORT_AUTHORITY_CLAIMS:
         assert stale_claim not in text
 
 

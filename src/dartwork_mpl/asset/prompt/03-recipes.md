@@ -276,7 +276,9 @@ Installed Python users can read the same basic/advanced sources through
 The bounded margin/convergence correction tracked by #209 is a separate
 concern from template composition and figure-size arithmetic. The current
 `dm.simple_layout` measures content and iteratively updates root GridSpec outer
-margins, preserving native internal spacing. It does not solve nested local
+margins, keeping the internal spacing you pass (root `wspace` / `hspace` you
+leave unset grow where neighbouring panels' text collides; `fit_labels=False`
+keeps them as they are). It does not solve nested local
 spacing or guarantee that every label fits every requested canvas. Historical
 `auto_layout` is removed; do not call it as an extra correction pass.
 `simple_layout` returns `None`, not a convergence or validation report: inspect

@@ -1,7 +1,13 @@
-"""Model B designed discrete color forms."""
+"""Model B designed discrete color forms.
+
+The frozen v5 compatibility and quality inputs are read when a test that
+needs them runs, not when this module is collected, so the tests that do not
+read them still collect and run where those inputs are absent.
+"""
 
 from __future__ import annotations
 
+import functools
 import json
 from itertools import pairwise
 from pathlib import Path
@@ -26,80 +32,107 @@ from dartwork_mpl._colors.catalog._families import (
     SEQUENTIAL,
 )
 from dartwork_mpl._colors.verify._comparison import matches_recorded_quality
+from tests.support.approved_inputs import read_approved_text
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
-COMPATIBILITY_PATH = (
-    REPO_ROOT
-    / "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system"
-    / "color_v5_compatibility.json"
+COMPATIBILITY_INPUT = (
+    "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/"
+    "color_v5_compatibility.json"
 )
-QUALITY_PATH = COMPATIBILITY_PATH.with_name("color_v5_quality.json")
+QUALITY_INPUT = (
+    "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/"
+    "color_v5_quality.json"
+)
 V6_SSOT_PATH = REPO_ROOT / "src/dartwork_mpl/asset/color/color_v6_ssot.json"
+
+# The frozen inventory sizes. The raw-SHA pin on the compatibility input fixes
+# its bytes, so case ``i`` always names the same form: families sorted by
+# name, then sizes in ascending order.
+DISCRETE_FORM_COUNT = 547
+MULTI_HUE_FORM_COUNT = 72
 
 GENERATED_DIVERGING = tuple(
     name for name in DIVERGING if name not in _curated.CURATED_DIVERGING_ORDER
 )
 
+DiscreteCase = tuple[str, int, tuple[str, ...]]
+MultiHueCase = tuple[str, int, tuple[int, ...], tuple[str, ...]]
 
-def _load_json(path: Path) -> dict[str, object]:
-    """Load one checked-in JSON contract as a string-keyed object."""
-    decoded: object = json.loads(path.read_text(encoding="utf-8"))
+
+def _json_object(text: str, label: object) -> dict[str, object]:
+    """Decode one checked-in JSON contract as a string-keyed object."""
+    decoded: object = json.loads(text)
     if not isinstance(decoded, dict) or not all(
         isinstance(key, str) for key in decoded
     ):
-        raise TypeError(f"{path} must contain a JSON object")
+        raise TypeError(f"{label} must contain a JSON object")
     return cast(dict[str, object], decoded)
 
 
-COMPATIBILITY = _load_json(COMPATIBILITY_PATH)
-QUALITY = _load_json(QUALITY_PATH)
+def _load_json(path: Path) -> dict[str, object]:
+    """Load one checked-in JSON contract as a string-keyed object."""
+    return _json_object(path.read_text(encoding="utf-8"), path)
+
+
+@functools.cache
+def _compatibility() -> dict[str, object]:
+    """Load the pinned v5 compatibility input on first use."""
+    return _json_object(
+        read_approved_text(COMPATIBILITY_INPUT), COMPATIBILITY_INPUT
+    )
+
+
+@functools.cache
+def _quality() -> dict[str, object]:
+    """Load the pinned v5 quality input on first use."""
+    return _json_object(read_approved_text(QUALITY_INPUT), QUALITY_INPUT)
+
+
 V6_SSOT = _load_json(V6_SSOT_PATH)
 
 
-def _discrete_cases(field: str) -> tuple[object, ...]:
-    """Build stable pytest cases for every frozen discrete API form."""
-    families = cast(dict[str, dict[str, list[str]]], COMPATIBILITY[field])
+@functools.cache
+def _discrete_cases(field: str) -> tuple[DiscreteCase, ...]:
+    """List every frozen discrete API form in a stable order."""
+    families = cast(dict[str, dict[str, list[str]]], _compatibility()[field])
     return tuple(
-        pytest.param(name, int(size), tuple(colors), id=f"{name}-{size}")
+        (name, int(size), tuple(colors))
         for name, forms in sorted(families.items())
         for size, colors in sorted(forms.items(), key=lambda item: int(item[0]))
     )
 
 
-def _multi_hue_cases() -> tuple[object, ...]:
-    """Build all 72 frozen multi-hue index and shipped-hex cases."""
+@functools.cache
+def _multi_hue_cases() -> tuple[MultiHueCase, ...]:
+    """List all 72 frozen multi-hue index and shipped-hex cases."""
+    compatibility = _compatibility()
     indices = cast(
         dict[str, dict[str, list[int]]],
-        COMPATIBILITY["multi_hue_discrete_indices"],
+        compatibility["multi_hue_discrete_indices"],
     )
     colors = cast(
-        dict[str, dict[str, list[str]]], COMPATIBILITY["discrete_hex"]
+        dict[str, dict[str, list[str]]], compatibility["discrete_hex"]
     )
     return tuple(
-        pytest.param(
-            name,
-            int(size),
-            tuple(row),
-            tuple(colors[name][size]),
-            id=f"{name}-{size}",
-        )
+        (name, int(size), tuple(row), tuple(colors[name][size]))
         for name, forms in sorted(indices.items())
         for size, row in sorted(forms.items(), key=lambda item: int(item[0]))
     )
 
 
-FORWARD_DISCRETE_CASES = _discrete_cases("discrete_hex")
-REVERSE_DISCRETE_CASES = _discrete_cases("reverse_discrete_hex")
-MULTI_HUE_CASES = _multi_hue_cases()
+def _case_id(index: int) -> str:
+    """Name one inventory index; the test reports the family and size."""
+    return f"case{index:03d}"
 
 
+@pytest.mark.approved_input
 def test_frozen_discrete_case_inventory_is_complete() -> None:
     """Cover 547 forward/reverse forms and all 72 multi-hue rows."""
     assert (
-        len(FORWARD_DISCRETE_CASES),
-        len(REVERSE_DISCRETE_CASES),
-        len(MULTI_HUE_CASES),
-    ) == (547, 547, 72)
+        len(_discrete_cases("discrete_hex")),
+        len(_discrete_cases("reverse_discrete_hex")),
+        len(_multi_hue_cases()),
+    ) == (DISCRETE_FORM_COUNT, DISCRETE_FORM_COUNT, MULTI_HUE_FORM_COUNT)
 
 
 @pytest.mark.parametrize("name", SEQUENTIAL)
@@ -151,37 +184,29 @@ def test_generated_diverging_tokens_are_registered_in_low_high_order(
         assert named[f"dc.{name}{i}"] == hex_value
 
 
-@pytest.mark.parametrize(
-    ("name", "n", "expected_indices", "expected_hex"), MULTI_HUE_CASES
-)
+@pytest.mark.approved_input
+@pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_v6_multi_hue_manifest_matches_every_frozen_index_row(
-    name: str,
-    n: int,
-    expected_indices: tuple[int, ...],
-    expected_hex: tuple[str, ...],
+    index: int,
 ) -> None:
-    del expected_hex
+    name, n, expected_indices, _ = _multi_hue_cases()[index]
     manifest = cast(
         dict[str, dict[str, list[int]]], V6_SSOT["multi_hue_discrete_indices"]
     )
 
-    assert tuple(manifest[name][str(n)]) == expected_indices
+    assert tuple(manifest[name][str(n)]) == expected_indices, (name, n)
 
 
-@pytest.mark.parametrize(
-    ("name", "n", "expected_indices", "expected_hex"), MULTI_HUE_CASES
-)
+@pytest.mark.approved_input
+@pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_generated_module_exposes_every_frozen_multi_hue_index_row(
-    name: str,
-    n: int,
-    expected_indices: tuple[int, ...],
-    expected_hex: tuple[str, ...],
+    index: int,
 ) -> None:
-    del expected_hex
+    name, n, expected_indices, _ = _multi_hue_cases()[index]
     manifest = getattr(_generated, "MULTI_HUE_DISCRETE_INDICES", None)
 
     assert manifest is not None
-    assert tuple(manifest[name][n]) == expected_indices
+    assert tuple(manifest[name][n]) == expected_indices, (name, n)
 
 
 def test_generated_module_exposes_multi_hue_discrete_manifest() -> None:
@@ -189,50 +214,36 @@ def test_generated_module_exposes_multi_hue_discrete_manifest() -> None:
     assert hasattr(_generated, "MULTI_HUE_DISCRETE_INDICES")
 
 
-@pytest.mark.parametrize(
-    ("name", "n", "expected_indices", "expected_hex"), MULTI_HUE_CASES
-)
-def test_multi_hue_indices_select_the_exact_shipped_hex(
-    name: str,
-    n: int,
-    expected_indices: tuple[int, ...],
-    expected_hex: tuple[str, ...],
-) -> None:
-    del n
+@pytest.mark.approved_input
+@pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
+def test_multi_hue_indices_select_the_exact_shipped_hex(index: int) -> None:
+    name, n, expected_indices, expected_hex = _multi_hue_cases()[index]
     selected = tuple(
-        _generated.CMAPS_256[name][index] for index in expected_indices
+        _generated.CMAPS_256[name][position] for position in expected_indices
     )
 
-    assert selected == expected_hex
+    assert selected == expected_hex, (name, n)
 
 
-@pytest.mark.parametrize(
-    ("name", "n", "expected_indices", "expected_hex"), MULTI_HUE_CASES
-)
+@pytest.mark.approved_input
+@pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_multi_hue_index_rows_increase_and_select_unique_hex(
-    name: str,
-    n: int,
-    expected_indices: tuple[int, ...],
-    expected_hex: tuple[str, ...],
+    index: int,
 ) -> None:
-    del name
+    name, n, expected_indices, expected_hex = _multi_hue_cases()[index]
 
-    assert len(expected_indices) == len(expected_hex) == n
+    assert len(expected_indices) == len(expected_hex) == n, (name, n)
     assert all(left < right for left, right in pairwise(expected_indices))
     assert len(set(expected_hex)) == n
 
 
-@pytest.mark.parametrize(
-    ("name", "n", "expected_indices", "expected_hex"), MULTI_HUE_CASES
-)
+@pytest.mark.approved_input
+@pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_multi_hue_raw_quality_matches_the_independent_frozen_oracle(
-    name: str,
-    n: int,
-    expected_indices: tuple[int, ...],
-    expected_hex: tuple[str, ...],
+    index: int,
 ) -> None:
-    del expected_indices
-    metrics = cast(dict[str, object], QUALITY["metrics"])
+    name, n, _, expected_hex = _multi_hue_cases()[index]
+    metrics = cast(dict[str, object], _quality()["metrics"])
     discrete = cast(
         dict[str, dict[str, dict[str, object]]], metrics["discrete"]
     )
@@ -243,7 +254,7 @@ def test_multi_hue_raw_quality_matches_the_independent_frozen_oracle(
     # every non-numeric leaf are still matched exactly.
     assert matches_recorded_quality(
         oracle.categorical_quality(expected_hex), discrete[name][str(n)]
-    )
+    ), (name, n)
 
 
 @pytest.mark.parametrize("name", CYCLIC)
@@ -299,20 +310,24 @@ def test_reverse_returns_reversed_copy() -> None:
     )
 
 
-@pytest.mark.parametrize(("name", "n", "expected"), FORWARD_DISCRETE_CASES)
+@pytest.mark.approved_input
+@pytest.mark.parametrize("index", range(DISCRETE_FORM_COUNT), ids=_case_id)
 def test_every_forward_discrete_form_matches_the_frozen_public_contract(
-    name: str, n: int, expected: tuple[str, ...]
+    index: int,
 ) -> None:
     """Pin all 547 forward forms, including every family kind and maximum."""
-    assert tuple(discrete_colors(name, n)) == expected
+    name, n, expected = _discrete_cases("discrete_hex")[index]
+    assert tuple(discrete_colors(name, n)) == expected, (name, n)
 
 
-@pytest.mark.parametrize(("name", "n", "expected"), REVERSE_DISCRETE_CASES)
+@pytest.mark.approved_input
+@pytest.mark.parametrize("index", range(DISCRETE_FORM_COUNT), ids=_case_id)
 def test_every_reverse_discrete_form_matches_the_frozen_public_contract(
-    name: str, n: int, expected: tuple[str, ...]
+    index: int,
 ) -> None:
     """Pin all 547 reverse forms independently of implementation strategy."""
-    assert tuple(discrete_colors(name, n, reverse=True)) == expected
+    name, n, expected = _discrete_cases("reverse_discrete_hex")[index]
+    assert tuple(discrete_colors(name, n, reverse=True)) == expected, (name, n)
 
 
 @pytest.mark.parametrize(

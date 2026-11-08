@@ -230,9 +230,12 @@ def test_turned_labels_are_offered_the_layout_first() -> None:
     assert "dm.simple_layout(fig)" in first
 
 
-def test_upright_x_labels_get_horizontal_bars_or_a_wider_canvas() -> None:
+def test_upright_x_labels_get_the_layout_horizontal_bars_or_a_wider_canvas() -> (
+    None
+):
     fixes = _fixes({"axis": "x", "rotation": 0})
     assert not any("labelrotation" in f for f in fixes)
+    assert fixes[0].endswith("dm.simple_layout(fig)")
     assert any("ax.barh(" in f for f in fixes)
     assert any("figsize('17cm'" in f for f in fixes)
 
