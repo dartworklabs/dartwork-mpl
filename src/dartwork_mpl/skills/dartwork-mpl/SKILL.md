@@ -87,7 +87,7 @@ word for word, every word kept, in its order (`수출 증가율` → `Export gro
   largest tick's unit (`0.25억 … 1.75억`), `unit="whole"` (`2,500만 … 17,500만`);
   `decimals=` is exact. No meaningless decimals: `200`, `1k`, not `200.0`, `1.0k`.
 - Unit in the label, plain ticks: `dm.axis_unit(ax, "y", label="인구 ({unit}명)")`. Asked for four-digit years, concise date words or k/M in Korean: `with dm.config.override(tick_years=4)` / `(date_style="concise")` / `(number_ladder="si")` from figure creation to the last `dm.simple_layout`.
-- Numeric value labels you add: on bars `dm.label_bars(ax)` (no request, its defaults; a request, that keyword: `where=`, `decimals=`, `fmt=` …); on lines and points `dm.annotate_value(ax, x, y, text)` (`fs(-1)`, `fw(1)`, a free side); existing ones keep theirs (broad asks: Edits).
+- Numeric value labels you add: on bars `dm.label_bars(ax)` (no request, its defaults; a request, that keyword: `where=`, `decimals=`, `fmt=`, `sign=` …); on lines and points `dm.annotate_value(ax, x, y, text)` (`fs(-1)`, `fw(1)`, a free side); existing ones keep theirs (broad asks: Edits).
 
 ## Edits
 

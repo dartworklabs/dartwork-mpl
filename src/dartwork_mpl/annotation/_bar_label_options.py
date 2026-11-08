@@ -4,12 +4,13 @@
   frozen :class:`BarLabelOptions`: ``where``, ``total`` and ``crowded`` are
   strict, ``decimals`` is ``None`` or an integer >= 0, ``fmt`` a ``{}``
   template or a callable, ``color`` ``None``, ``"series"`` or a matplotlib
-  colour.
+  colour, ``sign`` ``"-"`` or ``"+"``.
 * **Text.** :func:`compose_text` writes one label's text from its value in
   the axis's tick unit: the number with the call's decimals and the ticks'
   prefix, suffix and zero rule, or the ``fmt`` template around the number
   (a field with a format spec formats the value itself), or what the
-  ``fmt`` callable returns.
+  ``fmt`` callable returns. Under ``sign="+"`` a positive number that does
+  not print as zero takes ``+`` where a negative one takes the minus.
 """
 
 from __future__ import annotations
@@ -34,6 +35,7 @@ __all__ = [
     "Kind",
     "Orientation",
     "Placement",
+    "Sign",
     "Total",
     "Where",
     "compose_text",
@@ -49,6 +51,9 @@ Total: TypeAlias = Literal["auto", "only", False]
 Crowded: TypeAlias = Literal["rotate", "skip", "inside"]
 Orientation: TypeAlias = Literal["vertical", "horizontal"]
 Fmt: TypeAlias = str | Callable[[float], object] | None
+# The sign field of Python's format spec: "-" signs negatives only, "+"
+# positives too.
+Sign: TypeAlias = Literal["-", "+"]
 # Why the layout hid a label where it would overlap: another series took
 # its bar index ("turn"), there was no room for it ("room"), a legend
 # covers it ("legend"), or, beyond the limit its bar runs past, it would
@@ -174,6 +179,14 @@ def _parse_fmt(fmt: object) -> Fmt:
     return fmt
 
 
+def _parse_sign(sign: object) -> Sign:
+    match sign:
+        case "-" | "+":
+            return sign
+        case _:
+            raise ValueError(f"sign must be '-' or '+' (got {sign!r})")
+
+
 def _parse_color(color: object) -> object:
     if color is None or is_series(color):
         return color
@@ -197,6 +210,7 @@ class BarLabelOptions:
     fmt: Fmt = None
     size: float | str | None = None
     color: object = None
+    sign: Sign = "-"
 
 
 def parse_options(
@@ -208,6 +222,7 @@ def parse_options(
     fmt: object,
     size: float | str | None,
     color: object,
+    sign: object = "-",
 ) -> BarLabelOptions:
     """The call's keywords, validated (``ValueError`` names the bad one)."""
     return BarLabelOptions(
@@ -218,6 +233,7 @@ def parse_options(
         fmt=_parse_fmt(fmt),
         size=size,
         color=_parse_color(color),
+        sign=_parse_sign(sign),
     )
 
 
@@ -229,17 +245,25 @@ def compose_text(
 
     ``decimals`` is fixed (a zero prints ``0.00``, not ``0``) when the call
     fixed it. A zero keeps the ticks' prefix and suffix when theirs does
-    (``$0``); a ``fmt`` template supplies its own.
+    (``$0``); a ``fmt`` template supplies its own. Under ``sign="+"`` a
+    positive value that does not print as zero starts with ``+`` (``+30``,
+    ``+$800``), and so does a template's ``{}``; a field with a format spec
+    and a callable write their own sign.
     """
     fmt = options.fmt
     fixed = options.decimals is not None
     if callable(fmt):
         return str(fmt(scaled))
+    plus = (
+        "+"
+        if options.sign == "+" and _prints_positive(scaled, decimals)
+        else ""
+    )
     if isinstance(fmt, str):
         return _render_template(
-            fmt, number_text(scaled, decimals, fixed=fixed), scaled
+            fmt, plus + number_text(scaled, decimals, fixed=fixed), scaled
         )
-    return number_text(
+    return plus + number_text(
         scaled,
         decimals,
         fixed=fixed,
@@ -247,3 +271,8 @@ def compose_text(
         suffix=scale.suffix,
         zero=scale.zero,
     )
+
+
+def _prints_positive(value: float, decimals: int) -> bool:
+    """Whether ``value`` is positive at ``decimals`` places (not ``0``)."""
+    return value > 0 and float(format(value, f".{decimals}f")) != 0

@@ -52,8 +52,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
   by hand (`ax.legend(h1 + h2, l1 + l2)`, or `lns = l1 + l2` then
   `ax.legend(lns, labs)`) points to `dm.place_legend(ax)`.
+- `dm.label_bars(..., sign="+")`: a positive value that does not print as
+  zero carries `+` where a negative one carries the minus (`+30`, `−15`,
+  `+$800`, `+1.2k`, `+33.0 GWh` through `fmt="{} GWh"`); zero prints `0`.
+  The default `sign="-"` labels as before; any other value raises
+  `ValueError`. A `fmt` field with a format spec and a callable write their
+  own sign.
 
 ### Changed
+
+- **The waterfall templates draw each step with its signed change.** A step
+  is a bar from the level before it with its signed delta as the height
+  (`ax.bar(x, delta, bottom=level_before)`), the totals a second `ax.bar`
+  call, so `dm.label_bars(ax, steps, sign="+")` prints `+30` and `−15`
+  (a fall's label below its bar). The basic template draws no values (its
+  comments give the two calls) and renders the same pixels as before. The
+  advanced template labels its steps and totals with `dm.label_bars`
+  instead of hand-placed text (`−280`, not `-280`; `1,200`, not
+  `1,200 MWh`), drops `dm.format_axis_si` so ticks and labels share one
+  unit (`1,200`, not `1.2k`), and draws its connectors level at each bar's
+  closing value. The docs recipe `plot_waterfall_bridge` follows (no
+  `fontweight="bold"`, no `dm.set_decimal`).
 
 - **Importing dartwork-mpl no longer rebinds any matplotlib class or
   function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
