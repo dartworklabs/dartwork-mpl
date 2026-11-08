@@ -23,8 +23,10 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-x = np.linspace(-3, 3, 100)
-y = np.linspace(-3, 3, 100)
+# One full period (±π). The axes end between ticks, so the first x and y
+# tick labels (-3) do not meet at the lower-left corner as they do on ±3.
+x = np.linspace(-np.pi, np.pi, 100)
+y = np.linspace(-np.pi, np.pi, 100)
 X, Y = np.meshgrid(x, y)
 Z = np.sin(X) * np.cos(Y)
 

@@ -18,9 +18,11 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-# Two-gaussian energy landscape on a grid.
-x = np.linspace(-3, 3, 200)
-y = np.linspace(-3, 3, 200)
+# Two-gaussian energy landscape on a grid. The grid ends between ticks
+# (±π), so the first x and y tick labels (-3) do not meet at the
+# lower-left corner as they do on a ±3 grid.
+x = np.linspace(-np.pi, np.pi, 200)
+y = np.linspace(-np.pi, np.pi, 200)
 X, Y = np.meshgrid(x, y)
 
 peaks = [(-1.0, -0.5, 1.0, 0.6), (1.2, 1.0, 0.7, 0.45)]  # cx, cy, amp, sigma
