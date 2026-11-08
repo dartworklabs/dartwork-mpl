@@ -17,7 +17,9 @@ A label covers data when its ink (the glyphs down to their descenders, not
 the text box with the font's ascent and descent; the tails of commas,
 parentheses and currency signs aside) meets one of them by more than half a
 point; a label resting on a bar end or beside a line only touches it. A
-label sitting on its own bar (inside it, centred across it) or with its
+clipped label (``clip_on`` with a clip box or path) counts by the part its
+clip draws, and not at all when it draws none. A label sitting on its own
+bar (inside it, centred across it) or with its
 centre inside a marker (a bubble label) is there on purpose: that artist
 does not count, any other still does. A label with a visible background box
 (a ``bbox=`` patch) is drawn over data on purpose and is skipped, as are
@@ -43,7 +45,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.container import BarContainer
 from matplotlib.contour import ContourSet
 from matplotlib.text import Annotation, Text
-from matplotlib.transforms import Bbox, IdentityTransform
+from matplotlib.transforms import Bbox, IdentityTransform, TransformedPath
 
 from ..._figure_geometry import same_position_axes
 from .._types import BBOX_ERRORS, Severity, VisualWarning
@@ -69,6 +71,8 @@ _NO_LINE = ("None", "none", "", " ")
 _NO_MARKER = (None, "None", "none", "", " ")
 _SCATTER = -1  # the marker key of a scatter: never an ``id`` of a line
 _DOLLAR = re.compile(r"(?<!\\)\$")  # an unescaped mathtext delimiter
+_UNCLIPPED = Bbox.from_extents(-np.inf, -np.inf, np.inf, np.inf)
+_NOWHERE = Bbox.from_extents(0.0, 0.0, 0.0, 0.0)  # meets nothing
 
 
 class ValueLabelOnDataDetail(TypedDict):
@@ -256,9 +260,10 @@ def _inset(x0: float, y0: float, x1: float, y1: float, by: float) -> Bbox:
 
 
 def _ink_box(
-    text: Text, box: Bbox, renderer: RendererBase, touch: float
-) -> Bbox:
-    """The label's glyphs within its text ``box``, less the ``touch`` margin."""
+    text: Text, box: Bbox, renderer: RendererBase, touch: float, region: Bbox
+) -> Bbox | None:
+    """The label's glyphs within its text ``box`` that its clip ``region``
+    lets through, less the ``touch`` margin; ``None`` when none does."""
     under, over = _glyph_shares(text, renderer)
     x0, y0, x1, y1 = box.x0, box.y0, box.x1, box.y1
     w, h = box.width, box.height
@@ -271,7 +276,10 @@ def _ink_box(
             x0, x1 = x0 + under * w, x1 - over * w
         case _:
             y0, y1 = y0 + under * h, y1 - over * h
-    return _inset(x0, y0, x1, y1, touch)
+    seen = _clip(Bbox.from_extents(x0, y0, x1, y1), region)
+    if seen is None:
+        return None
+    return _inset(seen.x0, seen.y0, seen.x1, seen.y1, touch)
 
 
 # ------------------------------------------------------------------ data
@@ -615,41 +623,75 @@ def _is_value_label(text: Text, contour: set[int]) -> bool:
     return _alpha(patch.get_facecolor()) <= 0
 
 
-def _value_labels(ax: Axes, renderer: RendererBase) -> list[tuple[Text, Bbox]]:
+def _clip_region(text: Text) -> Bbox:
+    """Where the label's clip lets its glyphs be drawn, in display px.
+
+    ``Text.draw`` clips to its clip box and clip path when ``clip_on`` (an
+    ``ax.text`` is unclipped unless asked). A clip path counts by its
+    bounding box, which keeps the ink a curved clip cuts away: that can only
+    add hits.
+    """
+    region = _UNCLIPPED
+    if not text.get_clip_on():
+        return region
+    clip_box = text.get_clip_box()
+    if clip_box is not None:
+        region = _clip(region, clip_box) or _NOWHERE
+    clip_path = text.get_clip_path()  # set_clip_path stores it transformed
+    if isinstance(clip_path, TransformedPath):
+        extent = clip_path.get_fully_transformed_path().get_extents()
+        region = _clip(region, extent) or _NOWHERE
+    return region
+
+
+class _Label(NamedTuple):
+    text: Text
+    box: Bbox  # its text box, display px
+    region: Bbox  # what its clip lets through
+
+
+def _value_labels(ax: Axes, renderer: RendererBase) -> list[_Label]:
+    """The value labels drawn in ``ax``; one clipped away is not drawn."""
     contour = _contour_labels(ax)
-    found: list[tuple[Text, Bbox]] = []
+    found: list[_Label] = []
     for text in ax.texts:
         if not _is_value_label(text, contour):
             continue
         try:
             box = _text_box(text, renderer)
+            region = _clip_region(text)
         except BBOX_ERRORS:
             continue
-        if box is not None:
-            found.append((text, box))
+        if box is not None and _clip(box, region) is not None:
+            found.append(_Label(text, box, region))
     return found
 
 
 def _label_hits(
-    text: Text,
-    box: Bbox,
+    label: _Label,
     data: _Data,
     frame: Bbox,
     renderer: RendererBase,
     touch: float,
 ) -> list[_Hit]:
-    """What the label's ink covers.
+    """What the label's ink covers, where its clip lets it be drawn.
 
     The ink lies inside the text box, so a box that meets nothing has ink
     that meets nothing: the glyphs are measured only for a box that does.
     """
+    box = label.box
     centre = ((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2)
-    whole = _inset(box.x0, box.y0, box.x1, box.y1, touch)
+    seen = _clip(box, label.region)
+    if seen is None:
+        return []
+    whole = _inset(seen.x0, seen.y0, seen.x1, seen.y1, touch)
     if not _hits(data, frame, whole, centre, touch):
         return []
     try:
-        ink = _ink_box(text, box, renderer, touch)
+        ink = _ink_box(label.text, box, renderer, touch, label.region)
     except BBOX_ERRORS:
+        return []
+    if ink is None:
         return []
     return _hits(data, frame, ink, centre, touch)
 
@@ -670,10 +712,10 @@ def check_value_label_on_data(
         frame = ax.get_window_extent(renderer)
         data = _measure(same_position_axes(ax), frame, renderer, fig)
         covering: list[tuple[Text, list[_Hit]]] = []
-        for text, box in labels:
-            hits = _label_hits(text, box, data, frame, renderer, touch)
+        for label in labels:
+            hits = _label_hits(label, data, frame, renderer, touch)
             if hits:
-                covering.append((text, hits))
+                covering.append((label.text, hits))
         if not covering:
             continue
         kinds: list[str] = sorted(

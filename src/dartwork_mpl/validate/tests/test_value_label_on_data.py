@@ -19,6 +19,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.transforms import Bbox
 
 import dartwork_mpl as dm
 from dartwork_mpl._figure_geometry import get_renderer
@@ -491,6 +492,50 @@ def test_clean_when_the_label_cannot_be_seen(hide):
     for text in texts:
         hide(text)
     assert _found(fig) == []
+
+
+def _clipped_on_line(text_kind, from_line_pt):
+    """A 2 pt line through a label clipped to the band above a height.
+
+    The clip keeps what lies ``from_line_pt`` points over the line's centre
+    and higher; ``None`` clips the label to a box far from it.
+    """
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.plot([0.2, 0.8], [0.5, 0.5], linewidth=2)
+    if text_kind == "annotation":
+        label = ax.annotate(
+            "50",
+            (0.5, 0.5),
+            xytext=(0, 0),
+            textcoords="offset points",
+            ha="center",
+            va="center",
+            fontsize=20,
+            arrowprops={"arrowstyle": "-", "shrinkA": 0, "shrinkB": 0},
+        )
+    else:
+        label = ax.text(0.5, 0.5, "50", ha="center", va="center", fontsize=20)
+    dm.simple_layout(fig)
+    label.set_clip_on(True)
+    if from_line_pt is None:
+        label.set_clip_box(Bbox.from_bounds(0, 0, 1, 1))
+    else:
+        line_y = ax.transData.transform((0.5, 0.5))[1]
+        bottom = line_y + from_line_pt * fig.dpi / 72
+        label.set_clip_box(Bbox.from_extents(0, bottom, *fig.bbox.size))
+    return fig
+
+
+@pytest.mark.parametrize("text_kind", ["text", "annotation"])
+def test_clean_when_the_label_is_clipped_off_the_line(text_kind):
+    # Clipped away whole, or down to its part 2 pt over the line's centre
+    # (1 pt clear of the 2 pt stroke), the label draws nothing on the line.
+    assert _checked(_clipped_on_line(text_kind, None)) == []
+    assert _checked(_clipped_on_line(text_kind, 2)) == []
+    # The part a clip from 2 pt under the centre leaves crosses the line.
+    found = _checked(_clipped_on_line(text_kind, -2))
+    assert [w.detail["covered"] for w in found] == [["line"]]
 
 
 def test_clean_over_invisible_spacer_bars():
