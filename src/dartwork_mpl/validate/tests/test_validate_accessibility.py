@@ -17,7 +17,6 @@ from matplotlib.path import Path
 
 import dartwork_mpl as dm
 from dartwork_mpl.validate import Severity, VisualWarning, validate_figure
-from dartwork_mpl.validate._checks.text_contrast import _drawn_in_place
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -408,6 +407,8 @@ class TestTextContrastBackground:
     def test_only_paths_drawn_where_they_are_count(self) -> None:
         # A collection scaled per path (marker sizes) or shifted by offsets
         # draws its paths elsewhere; only plain filled paths are read.
+        from dartwork_mpl.validate._checks.text_contrast import _drawn_in_place
+
         fig, ax = _new_figure()
         filled = ax.fill_between([0, 1], [0, 0], [1, 1])
         sized = PathCollection([Path.unit_circle()], sizes=[100])
@@ -427,6 +428,27 @@ class TestTextContrastBackground:
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         _text_at_center(ax, "white")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_a_callout_is_read_where_its_text_is_not_its_arrow(self) -> None:
+        # An annotation's extent holds its arrow; the centre of that union
+        # lay on the dark fill the arrow points into, not under the words.
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.add_patch(
+            mpatches.Rectangle((0.4, 0), 0.6, 1, facecolor=_DARK, lw=0)
+        )
+        ax.annotate(
+            "on white",
+            xy=(0.95, 0.5),
+            xytext=(0.02, 0.5),
+            va="center",
+            color="#222222",
+            arrowprops={"arrowstyle": "->", "color": "#222222"},
+        )
 
         assert not _warnings_for(fig, "TEXT_CONTRAST")
         plt.close(fig)

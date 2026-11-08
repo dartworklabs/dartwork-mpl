@@ -198,8 +198,13 @@ def _as_rgba(color: tuple[float, ...]) -> _RGBA:
 def _text_center(
     text: Text, renderer: RendererBase
 ) -> tuple[float, float] | None:
+    """The centre of the text's own box.
+
+    ``Text.get_window_extent`` rather than the artist's: an annotation's
+    extent also holds its arrow, whose far end can sit on another fill.
+    """
     try:
-        extent = text.get_window_extent(renderer)
+        extent = Text.get_window_extent(text, renderer)
     except BBOX_ERRORS:
         return None
     if extent.width <= 0 or extent.height <= 0:

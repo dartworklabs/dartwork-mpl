@@ -493,16 +493,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   drawn on white it is 2.16:1), and read every contour label and heatmap
   value against the bare Axes (white on white, 1.00:1). A shape now counts
   by its drawn path, clipped to where it is drawn (a polar Axes' round
-  clip too), sampled at the pixel holding the text's centre; filled
-  collections (`fill_between`, `contourf`, `pcolormesh`, 3D surfaces) and
-  images count in drawing order, the last path holding the point on top;
-  a `twinx` host drawn first shows through its partner; a legend's text
-  reads its frame. Scatter markers are not a background. Check id, order
-  and severities are unchanged; over the 36 templates and 91 docs
-  examples only the advanced contour, heatmap and pie report differently
-  (contour labels per band, the heatmap's white `+0.64` at 4.25:1 INFO,
-  the pie callout at 2.16:1). `backdrop_layers` (behind `dm.label_bars`'
-  ink) counts a 3D Axes' patch, which has no frame switch.
+  clip too), sampled at the pixel holding the centre of the text's own
+  box (an annotation's arrow no longer pulls that centre onto what it
+  points at); filled collections (`fill_between`, `contourf`,
+  `pcolormesh`, 3D surfaces) and images count in drawing order, the last
+  path holding the point on top; a `twinx` host drawn first shows through
+  its partner; a legend's text reads its frame. Scatter markers are not a
+  background. Check id, order and severities are unchanged; over the 36
+  templates and 91 docs examples only the advanced contour, heatmap and
+  pie report differently (contour labels per band, the heatmap's white
+  `+0.64` at 4.25:1 INFO, the pie callout at 2.16:1), and every text whose
+  reading moved now takes the severity its rendered pixels give.
+  `backdrop_layers` (behind `dm.label_bars`' ink) counts a 3D Axes' patch,
+  which has no frame switch.
 - **Labels fixed by `set_xticklabels` print the right years.**
   `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)` on annual data
   read `2007.5` at 2010 after `dm.simple_layout`: the whole-year locator
