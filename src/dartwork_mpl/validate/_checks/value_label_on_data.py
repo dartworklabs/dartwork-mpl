@@ -357,11 +357,12 @@ def _window(xs: np.ndarray, reach: float, x0: float, x1: float) -> slice:
     return slice(start, int(np.searchsorted(xs, x1 + reach, side="right")))
 
 
-def _in_frame(xy: np.ndarray, frame: Bbox) -> np.ndarray:
+def _meets_frame(xy: np.ndarray, r: np.ndarray, frame: Bbox) -> np.ndarray:
+    """Markers drawn into the plot box: a centre just outside reaches in."""
     x, y = xy[:, 0], xy[:, 1]
     ok = np.isfinite(x) & np.isfinite(y)
-    ok &= (frame.x0 <= x) & (x <= frame.x1)
-    ok &= (frame.y0 <= y) & (y <= frame.y1)
+    ok &= (frame.x0 <= x + r) & (x - r <= frame.x1)
+    ok &= (frame.y0 <= y + r) & (y - r <= frame.y1)
     return np.asarray(ok, dtype=np.bool_)
 
 
@@ -408,11 +409,14 @@ def _line_markers(
     )
     if xy is None:
         return None
-    xy = xy[_in_frame(xy, frame)]
-    if not len(xy):
+    r = np.full(
+        len(xy),
+        _px(line.get_markersize() / 2 + line.get_markeredgewidth() / 2, fig),
+    )
+    seen = _meets_frame(xy, r, frame)
+    if not seen.any():
         return None
-    r = _px(line.get_markersize() / 2 + line.get_markeredgewidth() / 2, fig)
-    return _sorted_markers(xy, np.full(len(xy), r), _name(line), key)
+    return _sorted_markers(xy[seen], r[seen], _name(line), key)
 
 
 def _scatter(
@@ -435,7 +439,8 @@ def _scatter(
     edge = np.resize(edges[:, 3], n) if len(edges) else np.zeros(n)
     width = np.resize(widths, n) if widths.size else np.zeros(n)
     radius = _px(1.0, fig) * (np.sqrt(np.resize(sizes, n)) + width) / 2
-    keep = _in_frame(xy, frame) & ((face > 0) | ((edge > 0) & (width > 0)))
+    keep = _meets_frame(xy, radius, frame)
+    keep &= (face > 0) | ((edge > 0) & (width > 0))
     keep &= radius > 0
     if not keep.any():
         return None

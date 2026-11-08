@@ -233,6 +233,34 @@ def test_reports_point_labels_on_small_scatter_markers():
     assert w.detail["artists"] == ["Sites"]
 
 
+@pytest.mark.parametrize("kind", ["scatter", "plot"])
+@pytest.mark.parametrize(("left_pt", "covers"), [(5, True), (30, False)])
+def test_reports_a_marker_reaching_in_from_outside_the_axes(
+    kind, left_pt, covers
+):
+    # A 20 pt marker centred 5 pt left of the axes is drawn 5 pt into it,
+    # under the label at the edge; centred 30 pt left it stays outside.
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.annotate(
+        "1,250",
+        (0, 0.5),
+        xytext=(1, 0),
+        textcoords="offset points",
+        ha="left",
+        va="center",
+    )
+    dm.simple_layout(fig)
+    edge = ax.transData.transform((0, 0.5))
+    x, y = ax.transData.inverted().transform(edge - [left_pt * fig.dpi / 72, 0])
+    if kind == "scatter":
+        ax.scatter([x], [y], s=20**2, linewidths=0)
+    else:
+        ax.plot([x], [y], marker="o", markersize=20, markeredgewidth=0)
+    found = [w.detail["covered"] for w in _checked(fig)]
+    assert found == ([["marker"]] if covers else [])
+
+
 def test_reports_a_bubble_label_spilling_onto_the_next_bubble():
     # Its own bubble does not count; the neighbour it reaches does.
     fig, ax = _fig()
