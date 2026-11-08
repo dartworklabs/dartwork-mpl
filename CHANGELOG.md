@@ -91,6 +91,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   changed here. `dm.label_bars` keeps labels off bars, other labels and
   the legend but not off a twin's line, so a bar label under a twin's line
   is reported too.
+- **`TICK_OVERLAP` check (WARNING): neighbouring tick labels drawn on top
+  of each other.** `validate_figure` (and so `save_formats`, `dm.review` and
+  the MCP render report) reports, one warning per axis, how many pairs of
+  neighbouring tick labels overlap by more than half a pixel and by how
+  much. Each label counts as the rectangle its text fills, turned with it,
+  so 45° labels whose upright boxes cross while their text does not pass;
+  neighbours are taken along the axis on each side separately (bottom and
+  top, left and right). Rectilinear Axes only. The fixes never make text
+  smaller: drop a rotation you set, horizontal bars
+  (`dm.figsize_for("barh", n_points=n)`), a wider canvas; a taller one for
+  crowded rows. `TICK_CROWD` and `TICK_ROTATION` stay INFO. Over the 92
+  docs example figures it reports one, `plot_colormap_terrain` (four thin
+  colorbars whose tick labels overlap); over the 36 shipped templates in
+  three presets, `advanced/heatmap` and `advanced/boxplot` in
+  `presentation` (names turned 30° by the template, and `Variant A…D`).
 
 ### Changed
 
