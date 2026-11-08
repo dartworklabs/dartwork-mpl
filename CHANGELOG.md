@@ -278,10 +278,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   now reads `Invalid color name: 'dc.bluee5'. Closest registered names:
   'dc.blue5', 'dc.blue_red5', 'dc.blue9'. dm.list_colors() lists the
   dartwork-mpl colour families and matplotlib.colors.get_named_colors_mapping()
-  every registered name.` A prefixed name is corrected inside its own
-  namespace, so `dc.` never suggests an `oc.` colour that would render
-  differently, and the candidates come from matplotlib's live registry rather
-  than a fixed list. The same message now covers `dm.mix_colors`,
+  every registered name.` A name whose namespace exists is corrected inside
+  that namespace and gets no suggestion when nothing there is close, so `dc.`
+  never suggests an `oc.` colour that would render differently; a namespace no
+  colour uses (`dz.blue5`) is read as part of the typo and still answers
+  `dc.blue5`. Candidates come from matplotlib's live registry rather than a
+  fixed list, and an unreasonably long name is neither matched nor quoted
+  whole. The same message now covers `dm.mix_colors`,
   `dm.pseudo_alpha`, `dm.readable_text_color` and `dm.ensure_contrast`, which
   passed a name straight to matplotlib. Names matplotlib accepts (including
   case variants such as `dc.Blue5`) resolve exactly as before, and a
