@@ -25,6 +25,27 @@ REGULAR_BLOB_MODES = frozenset({b"100644", b"100755"})
 RunGit = Callable[..., bytes]
 
 
+class BaselineRefusal(Exception):
+    """An expected refusal of a generator input.
+
+    A generator's ``main`` reports one of these as a one-line error and
+    exits with status 2. Anything else -- a failed probe, a Git failure, a
+    defect -- is not caught and keeps its traceback.
+    """
+
+
+class ProtectedOutputError(BaselineRefusal, ValueError):
+    """``--output`` names a file the generator reads or pins, or an alias."""
+
+
+class BaselineCommitError(BaselineRefusal, ValueError):
+    """``--baseline-commit`` does not resolve to the accepted commit."""
+
+
+class BaselineInputError(BaselineRefusal, RuntimeError):
+    """A baseline input is unlisted, malformed, missing or off its pin."""
+
+
 def run_git(command: str, *args: str, repo: Path) -> bytes:
     """Run one allowed Git read command in ``repo`` and return its output.
 
@@ -46,6 +67,30 @@ def run_git(command: str, *args: str, repo: Path) -> bytes:
     return process.stdout
 
 
+def resolve_baseline(
+    revision: str, accepted: str, *, repo: Path, git: RunGit
+) -> str:
+    """Resolve ``revision`` and require it to be the ``accepted`` commit.
+
+    An unresolvable revision (``git rev-parse`` fails) and a different
+    commit both raise ``BaselineCommitError``.
+    """
+    try:
+        output = git(
+            "rev-parse", "--verify", f"{revision}^{{commit}}", repo=repo
+        )
+    except RuntimeError as error:
+        raise BaselineCommitError(
+            f"baseline commit {revision!r} does not resolve: {error}"
+        ) from error
+    resolved = output.decode("ascii").strip()
+    if resolved != accepted:
+        raise BaselineCommitError(
+            f"baseline commit must resolve to {accepted}; got {resolved}"
+        )
+    return resolved
+
+
 def check_input_path(path: str) -> None:
     """Refuse a listed path that is not one plain file path in the package."""
     parts = path.split("/")
@@ -55,7 +100,7 @@ def check_input_path(path: str) -> None:
         or any(part in {"", ".", ".."} for part in parts)
         or PurePosixPath(path).as_posix() != path
     ):
-        raise RuntimeError(
+        raise BaselineInputError(
             f"baseline input {path!r} is not a package file path"
         )
 
@@ -71,20 +116,26 @@ def read_baseline_input(
     commands (``run_git`` or a generator's wrapper of it).
     """
     if path not in listed:
-        raise RuntimeError(f"baseline input {path!r} is not listed")
+        raise BaselineInputError(f"baseline input {path!r} is not listed")
     check_input_path(path)
     output = git("ls-tree", "-z", "--full-tree", commit, "--", path, repo=repo)
     entries = [entry for entry in output.split(b"\0") if entry]
     if not entries:
-        raise RuntimeError(f"baseline input {path} is missing from {commit}")
+        raise BaselineInputError(
+            f"baseline input {path} is missing from {commit}"
+        )
     if len(entries) != 1:
-        raise RuntimeError(f"baseline input {path} names more than one entry")
+        raise BaselineInputError(
+            f"baseline input {path} names more than one entry"
+        )
     header, _, name = entries[0].partition(b"\t")
     mode, kind, object_id = header.split(b" ")
     if name.decode("utf-8") != path:
-        raise RuntimeError(f"baseline input {path} resolved to another entry")
+        raise BaselineInputError(
+            f"baseline input {path} resolved to another entry"
+        )
     if kind != b"blob" or mode not in REGULAR_BLOB_MODES:
-        raise RuntimeError(
+        raise BaselineInputError(
             f"baseline input {path} is not a regular file "
             f"(mode {mode.decode('ascii')})"
         )
@@ -110,14 +161,14 @@ def extract_baseline_inputs(
     listed = tuple(inputs)
     allowed = frozenset(listed)
     if len(allowed) != len(listed):
-        raise RuntimeError("baseline input list repeats a path")
+        raise BaselineInputError("baseline input list repeats a path")
     for path in listed:
         raw = read_baseline_input(
             commit, path, listed=allowed, repo=repo, git=git
         )
         pinned = source_hashes.get(path)
         if pinned is not None and hashlib.sha256(raw).hexdigest() != pinned:
-            raise RuntimeError(f"raw source hash mismatch for {path}")
+            raise BaselineInputError(f"raw source hash mismatch for {path}")
         target = destination.joinpath(*path.split("/"))
         target.parent.mkdir(parents=True, exist_ok=True)
         flags = (
@@ -156,7 +207,7 @@ def refuse_protected_output(output: Path, protected: Iterable[Path]) -> Path:
             else:
                 same_file = (other.st_dev, other.st_ino) == identity
         if resolved == path.resolve() or same_file:
-            raise ValueError(
+            raise ProtectedOutputError(
                 f"--output {output} names a protected generator input: {path}"
             )
     return resolved

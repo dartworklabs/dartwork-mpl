@@ -282,10 +282,10 @@ def sentinel(
 
 def _run_main(
     generator: ModuleType, monkeypatch: pytest.MonkeyPatch, *args: str
-) -> None:
+) -> int:
     """Run the generator's ``main`` in-process with ``args``."""
     monkeypatch.setattr(sys, "argv", [str(GENERATOR_PATH), *args])
-    generator.main()
+    return int(generator.main())
 
 
 def test_missing_output_fails_before_git_extraction_or_writes(
@@ -343,22 +343,27 @@ def test_protected_destination_is_refused_before_git_and_left_unchanged(
     sentinel: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
     kind: str,
 ) -> None:
     """An explicit ``--output`` may not name a protected input or an alias."""
     monkeypatch.chdir(tmp_path)
     destination = _alias(kind, sentinel, tmp_path)
 
-    with pytest.raises(ValueError, match="names a protected generator input"):
-        _run_main(
-            generator,
-            monkeypatch,
-            "--baseline-commit",
-            "HEAD",
-            "--output",
-            destination,
-        )
+    status = _run_main(
+        generator,
+        monkeypatch,
+        "--baseline-commit",
+        "HEAD",
+        "--output",
+        destination,
+    )
 
+    assert status == 2
+    assert capsys.readouterr().err == (
+        f"compatibility baseline error: --output {Path(destination)} names "
+        f"a protected generator input: {sentinel}\n"
+    )
     assert sentinel.read_bytes() == SENTINEL_BYTES
 
 
@@ -411,3 +416,155 @@ def test_protected_inputs_name_the_fixtures_and_every_pinned_source(
             "2026-07-14-oklab-centered-color-system/color_v5_compatibility.json"
         )
     )
+
+
+PREFIX = "compatibility baseline error: "
+
+
+def _refusing(step: str) -> Callable[..., object]:
+    """Return a stand-in that fails the test if ``step`` is reached."""
+
+    def stand_in(*args: object, **kwargs: object) -> object:
+        raise AssertionError(f"{step} was reached: {args!r}")
+
+    return stand_in
+
+
+def _git_in(
+    generator: ModuleType, monkeypatch: pytest.MonkeyPatch, repo: Path
+) -> None:
+    """Send the generator's Git reads to the synthetic ``repo``."""
+    shared = generator.baseline_inputs
+
+    def run(command: str, *args: str, **_: object) -> bytes:
+        return bytes(shared.run_git(command, *args, repo=repo))
+
+    monkeypatch.setattr(generator, "_run_git", run)
+
+
+@pytest.mark.parametrize(
+    ("revision", "expected"),
+    [
+        ("HEAD", "baseline commit must resolve to {accepted}; got {commit}\n"),
+        (
+            "no-such-revision",
+            "baseline commit 'no-such-revision' does not resolve: git "
+            "rev-parse --verify no-such-revision^{{commit}} failed: ",
+        ),
+    ],
+    ids=["other-commit", "unresolvable"],
+)
+def test_main_reports_a_wrong_baseline_commit_with_status_2(
+    generator: ModuleType,
+    sentinel: Path,
+    synthetic_commit: tuple[Path, str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    revision: str,
+    expected: str,
+) -> None:
+    """A wrong commit is refused in one line, before any extraction."""
+    repo, commit = synthetic_commit
+    _git_in(generator, monkeypatch, repo)
+    for name in ("_extract_baseline_inputs", "_build_payload"):
+        monkeypatch.setattr(generator, name, _refusing(name))
+    monkeypatch.chdir(tmp_path)
+    owned = tmp_path / "owned.json"
+
+    status = _run_main(
+        generator,
+        monkeypatch,
+        "--baseline-commit",
+        revision,
+        "--output",
+        str(owned),
+    )
+
+    error = capsys.readouterr().err
+    assert status == 2
+    assert error.startswith(
+        PREFIX
+        + expected.format(
+            accepted=generator.ACCEPTED_BASELINE_COMMIT, commit=commit
+        )
+    )
+    assert error.count("\n") == 1 and error.endswith("\n")  # one line
+    assert not owned.exists()
+
+
+def test_main_reports_an_unlisted_input_with_status_2(
+    generator: ModuleType,
+    sentinel: Path,
+    synthetic_commit: tuple[Path, str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The real reader's refusal of an unlisted path reaches ``main``."""
+    repo, commit = synthetic_commit
+    monkeypatch.setattr(generator, "_resolve_baseline", lambda revision: commit)
+
+    def build(resolved: str) -> object:
+        generator._read_baseline_input(
+            resolved, UNLISTED, listed=frozenset({LISTED}), repo=repo
+        )
+        raise AssertionError("an unlisted input was read")
+
+    monkeypatch.setattr(generator, "_build_payload", build)
+    monkeypatch.setattr(generator, "_atomic_write_text", _refusing("write"))
+    monkeypatch.chdir(tmp_path)
+
+    status = _run_main(
+        generator,
+        monkeypatch,
+        "--baseline-commit",
+        "HEAD",
+        "--output",
+        str(tmp_path / "owned.json"),
+    )
+
+    assert status == 2
+    assert capsys.readouterr().err == (
+        f"{PREFIX}baseline input {UNLISTED!r} is not listed\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        TypeError("defect"),
+        KeyError("defect"),
+        ValueError("defect"),
+        RuntimeError("isolated baseline probe failed"),
+        OSError("disk"),
+    ],
+    ids=lambda error: type(error).__name__,
+)
+def test_main_does_not_catch_errors_other_than_input_refusals(
+    generator: ModuleType,
+    sentinel: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    error: Exception,
+) -> None:
+    """A probe failure or a defect keeps its traceback (no broad catch)."""
+    monkeypatch.setattr(generator, "_resolve_baseline", lambda revision: "c")
+
+    def build(commit: str) -> object:
+        raise error
+
+    monkeypatch.setattr(generator, "_build_payload", build)
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(type(error)) as raised:
+        _run_main(
+            generator,
+            monkeypatch,
+            "--baseline-commit",
+            "HEAD",
+            "--output",
+            str(tmp_path / "owned.json"),
+        )
+
+    assert raised.value is error
