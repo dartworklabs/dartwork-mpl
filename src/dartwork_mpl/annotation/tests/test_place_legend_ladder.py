@@ -578,8 +578,11 @@ def test_a_legend_wider_than_its_axes_moves_in_at_the_canvas_edge() -> None:
     legend = place_legend(ax, loc="above")
     assert legend is not None
     box, plot = _boxes(fig, legend, ax)
+    pad = (
+        legend.borderaxespad * legend.prop.get_size_in_points() * fig.dpi / 72.0
+    )
     assert box.width > plot.width
-    assert box.x0 >= fig.bbox.x0
+    assert box.x0 >= fig.bbox.x0 + pad - 0.5  # its pad from the edge
     assert (box.x0 + box.x1) / 2 > (plot.x0 + plot.x1) / 2 + 1.0  # moved in
 
 
