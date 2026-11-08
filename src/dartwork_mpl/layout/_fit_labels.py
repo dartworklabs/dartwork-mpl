@@ -78,7 +78,9 @@ from the figure as you left it and ``fit_labels=False`` gives that figure
 back; a formatter, locator, label rotation, name or spacing changed since
 is yours and stays. The margins go back to where the last call started
 them while they are as it left them (:func:`remember_layout`), so a second
-call draws exactly as the first. Only the Axes the call lays out are
+call draws exactly as the first (but for a date axis whose ticks the first
+call thinned: its thinned locator stays, so it can move on the second call,
+and draws the same from then on). Only the Axes the call lays out are
 fitted and restored
 (``use_all_axes=False`` keeps to the GridSpec passed), and what they share
 with an Axes the call leaves out (the tick formatter of a shared x, the
@@ -254,8 +256,9 @@ def remember_layout(gs: GridSpec, start: Edges) -> None:
     from ``start`` again (:func:`restore_fitted`): the margin fit stops
     within half a pixel of its fixed point, so where it starts decides the
     last hundredths of a pixel, and a second call on the same figure draws
-    exactly as the first. The record holds only numbers and is keyed
-    weakly by the grid: it lets the figure go.
+    exactly as the first (a date axis whose ticks the first call thinned
+    excepted, see the module docstring). The record holds only numbers and
+    is keyed weakly by the grid: it lets the figure go.
     """
     _LAID[gs] = (start, grid_edges(gs))
 

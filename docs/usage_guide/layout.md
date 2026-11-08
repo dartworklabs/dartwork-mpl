@@ -442,7 +442,9 @@ call starts from the figure as you left it (what an earlier call fitted is
 undone first, label by label, where it is still as fitted, and the margins
 go back to where the earlier call started them while they are as it left
 them), so re-laying out at another size fits again and calling it again
-draws the same figure. `simple_layout(fig, gs=gs,
+draws the same figure. One exception: a date axis whose crowded ticks the
+first call thinned keeps the thinned locator, so the second call can still
+move it a little; from then on each call draws the same. `simple_layout(fig, gs=gs,
 use_all_axes=False)` fits and undoes only the Axes of `gs`, and leaves
 alone what they share with Axes outside it: the tick formatter of an x they
 share (`sharex=True`), whose wraps stay as a layout of every Axes left them

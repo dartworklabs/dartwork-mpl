@@ -144,7 +144,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   another size fits again, and starts the margins where the earlier call
   started them while they are as it left them, so calling it again draws
   the same figure (with or without fitting; a second call used to move a
-  quarter to a third of the stress figures and templates by up to 12 px);
+  quarter to a third of the stress figures and templates by up to 12 px;
+  a date axis whose ticks the first call thinned can still move on the
+  second call, and draws the same from then on);
   `use_all_axes=False` fits and undoes only the
   Axes of `gs`, and leaves what they share with other Axes (a shared x
   formatter, their grid's spacing) as it is. `dm.simple_layout(fig, fit_labels=False)` or

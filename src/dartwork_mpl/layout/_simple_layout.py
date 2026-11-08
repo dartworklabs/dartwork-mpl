@@ -187,8 +187,10 @@ def simple_layout(
         ``fig.subplots_adjust``) are left alone, and each call first undoes
         what an earlier call fitted where it is still as set, and starts the
         margins where that call started them while they are as it left
-        them: calling it again draws the same figure. The rules are in the
-        docstring of ``dartwork_mpl.layout._fit_labels``.
+        them: calling it again draws the same figure (a date axis whose
+        ticks the first call thinned can still move on the second; the same
+        from then on). The rules are in the docstring of
+        ``dartwork_mpl.layout._fit_labels``.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
