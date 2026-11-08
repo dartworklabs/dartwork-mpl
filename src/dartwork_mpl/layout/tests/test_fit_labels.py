@@ -962,6 +962,17 @@ def test_scoped_restore_preserves_excluded_shared_labels() -> None:
     assert _texts(right) == ["Low fee"] * 6
 
 
+def test_a_scoped_layout_leaves_shared_wraps_a_whole_layout_set() -> None:
+    """Fitting one grid again neither takes off nor replaces the shared
+    wraps; its Axes' labels stay as the layout of every Axes left them."""
+    fig, a, left, right = _shared_grids("12cm", 6)
+    dm.simple_layout(fig)
+    before = (_tick_state(left), _tick_state(right))
+    assert all("\n" in text for text, _angle in before[1])  # precondition
+    dm.simple_layout(fig, gs=a, use_all_axes=False)
+    assert (_tick_state(left), _tick_state(right)) == before
+
+
 def _grid_with_a_nested_cell():
     """A root grid of three cells, the last holding a nested grid."""
     dm.style.use("scientific")
