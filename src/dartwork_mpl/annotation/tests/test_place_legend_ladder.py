@@ -673,6 +673,167 @@ def test_an_unedited_legend_is_placed_again() -> None:
     assert legend_ncols(ax.get_legend()) != legend_ncols(legend)
 
 
+@pytest.mark.parametrize(
+    "edit", ["color", "linestyle", "linewidth", "marker", "title"]
+)
+def test_native_edits_are_kept_after_layout(edit: str) -> None:
+    """Replanning must preserve native legend swatches and its title text.
+
+    Review 2 (649-R1), moved here as the reviewer wrote it.
+    """
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    try:
+        x = np.linspace(0, 11, 60)
+        for i in range(10):
+            ax.plot(
+                x,
+                50 + 42 * np.sin(2 * np.pi * x / 6 + 2 * np.pi * i / 10),
+                label=f"Region {i + 1}",
+            )
+        legend = dm.place_legend(
+            ax, loc="above", fontsize=9, frameon=True, title="Heading"
+        )
+        handle = legend.legend_handles[0]
+        if edit == "title":
+            legend.get_title().set_text("Changed")
+        else:
+            getattr(handle, "set_" + edit)(
+                {
+                    "color": "red",
+                    "linestyle": "--",
+                    "linewidth": 7,
+                    "marker": "s",
+                }[edit]
+            )
+
+        def state(leg):
+            h = leg.legend_handles[0]
+            return (
+                h.get_color(),
+                h.get_linestyle(),
+                h.get_linewidth(),
+                h.get_marker(),
+                leg.get_title().get_text(),
+            )
+
+        before = state(legend)
+        dm.simple_layout(fig)
+        assert state(ax.get_legend()) == before
+    finally:
+        plt.close(fig)
+
+
+def _above_ten_bars():
+    """Ten bars named as ``_dense``'s lines: an above legend the layout plans again."""
+    fig, ax = _report()
+    for i in range(10):
+        ax.bar([i], [40 + 5 * i], label=f"Region {i + 1}")
+    legend = place_legend(ax, loc="above", fontsize=9, frameon=True)
+    assert legend is not None
+    return fig, ax, legend
+
+
+def _marked_ten():
+    fig, ax = _report()
+    _dense(ax, 10)
+    for line in ax.lines:
+        line.set_marker("o")
+    legend = place_legend(ax, loc="above", fontsize=9, frameon=True)
+    assert legend is not None
+    return fig, ax, legend
+
+
+def _titled_ten():
+    return _above_ten(fontsize=9, frameon=True, title="Heading")
+
+
+# Neighbours of review 2's cases: the title's font, a handle's alpha, a
+# marker's size, a bar swatch's face and hatch. Each reads the edited value
+# back after the layout.
+_MORE_EDITS = {
+    "title_weight": (
+        _titled_ten,
+        lambda lg: lg.get_title().set_fontweight("bold"),
+        lambda lg: lg.get_title().get_fontweight(),
+    ),
+    "title_style": (
+        _titled_ten,
+        lambda lg: lg.get_title().set_fontstyle("italic"),
+        lambda lg: lg.get_title().get_fontstyle(),
+    ),
+    "handle_alpha": (
+        _titled_ten,
+        lambda lg: lg.legend_handles[0].set_alpha(0.3),
+        lambda lg: lg.legend_handles[0].get_alpha(),
+    ),
+    "marker_size": (
+        _marked_ten,
+        lambda lg: lg.legend_handles[0].set_markersize(2),
+        lambda lg: lg.legend_handles[0].get_markersize(),
+    ),
+    "bar_face": (
+        _above_ten_bars,
+        lambda lg: lg.legend_handles[0].set_facecolor("red"),
+        lambda lg: tuple(lg.legend_handles[0].get_facecolor()),
+    ),
+    "bar_hatch": (
+        _above_ten_bars,
+        lambda lg: lg.legend_handles[0].set_hatch("//"),
+        lambda lg: lg.legend_handles[0].get_hatch(),
+    ),
+}
+
+
+@pytest.mark.parametrize("case", list(_MORE_EDITS))
+def test_more_native_edits_are_kept_after_layout(case: str) -> None:
+    build, edit, read = _MORE_EDITS[case]
+    fig, ax, legend = build()
+    edit(legend)
+    before = read(legend)
+    dm.simple_layout(fig)
+    assert ax.get_legend() is legend
+    assert read(ax.get_legend()) == before
+
+
+# Setting a value the legend already has is no edit: the legend is placed
+# again, as an untouched one is.
+_SAME_VALUES = {
+    "color": (
+        _titled_ten,
+        lambda lg: lg.legend_handles[0].set_color(
+            lg.legend_handles[0].get_color()
+        ),
+    ),
+    "linestyle": (
+        _titled_ten,
+        lambda lg: lg.legend_handles[0].set_linestyle(
+            lg.legend_handles[0].get_linestyle()
+        ),
+    ),
+    "title": (
+        _titled_ten,
+        lambda lg: lg.get_title().set_text(lg.get_title().get_text()),
+    ),
+    "bar_face": (
+        _above_ten_bars,
+        lambda lg: lg.legend_handles[0].set_facecolor(
+            lg.legend_handles[0].get_facecolor()
+        ),
+    ),
+    "nothing_bars": (_above_ten_bars, lambda lg: None),
+}
+
+
+@pytest.mark.parametrize("case", list(_SAME_VALUES))
+def test_a_value_set_again_is_no_edit(case: str) -> None:
+    build, edit = _SAME_VALUES[case]
+    fig, ax, legend = build()
+    edit(legend)
+    dm.simple_layout(fig)
+    assert ax.get_legend() is not legend
+
+
 def test_an_inside_legend_anchored_elsewhere_is_the_callers() -> None:
     fig, ax = _report()
     _top_free_lines(ax)

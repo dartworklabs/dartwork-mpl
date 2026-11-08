@@ -159,9 +159,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   broken at spaces only when the legend would otherwise run past the Axes
   along its side or take more than 60 % of the plot (on a side named right
   or left, also when it is wider than 40 % of the Axes), a trailing
-  bracketed unit such as `(2019 = 100)` kept whole; a way of breaking them
-  into more lines per name wins only when it leaves the plot at least 5 %
-  of the canvas more. A bottom
+  bracketed unit such as `(2019 = 100)` kept whole. A better fit always
+  comes first; among ways that fit as well, one breaking the names into
+  more lines per name wins only when it leaves the plot at least 5 % of
+  the canvas more. A bottom
   panel's legend no longer goes above onto the panel over it. With a
   caller anchor (`bbox_to_anchor`), or `legend_fallback="inside"`, it stays
   in the spot that covers the fewest series and `LEGEND_ON_DATA` reports
@@ -172,8 +173,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   outside one keeps its side with its rows chosen again for the laid-out
   width, so a 2×2 grid's legends are not left in one tall column. A
   legend restyled or moved through the returned `Legend` since (its
-  texts, frame, `set_loc`, `set_bbox_to_anchor`) is the caller's and stays
-  as it is. A named side
+  texts and title, frame, a handle's colour, line style, width, marker,
+  face or hatch, `set_loc`, `set_bbox_to_anchor`) is the caller's and
+  stays as it is; setting a value it already has is no edit. A named side
   (`loc="above"` …) takes the same rows, columns and wrapping; a
   matplotlib `loc`, `ncol` / `ncols` and a hand-placed `ax.legend` are
   used as given. `dm.config.legend_fallback="above"` keeps the old side.

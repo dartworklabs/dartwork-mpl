@@ -2,10 +2,10 @@
 
 ``dm.simple_layout`` places ``place_legend``'s legends again at the size it
 settles on. A legend the caller restyled or moved through the returned
-``Legend`` (``Text.set_fontsize``, ``set_frame_on``, ``set_loc``,
-``set_bbox_to_anchor``, ``set_ncols``, a frame alpha …) is the caller's
-from then on: rebuilding it from the first call's keywords would undo the
-change. The look is read through matplotlib's public getters when the
+``Legend`` (``Text.set_fontsize``, a title's text, ``set_frame_on``,
+``set_loc``, ``set_bbox_to_anchor``, a frame alpha, a handle's colour,
+line style, width or marker …) is the caller's from then on: rebuilding
+it from the first call's keywords would undo the change. The look is read through matplotlib's public getters when the
 legend is built and compared before it is placed again.
 """
 
@@ -15,7 +15,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from matplotlib.colors import to_rgba
+from matplotlib.collections import Collection
+from matplotlib.colors import to_rgba, to_rgba_array
+from matplotlib.lines import Line2D
+from matplotlib.offsetbox import DrawingArea, OffsetBox
+from matplotlib.patches import Patch
 from matplotlib.transforms import Bbox
 
 from .._figure_geometry import BBOX_ERRORS
@@ -41,7 +45,11 @@ class Look:
     ``loc`` is the matplotlib ``loc`` the legend was built with;
     ``own_anchor`` says the caller passed a ``bbox_to_anchor`` (an inside
     legend is otherwise anchored to its Axes). The other fields are read
-    from the legend: its size in points, its frame, its texts and handles.
+    from the legend: its size in points, its frame, its texts' fonts and
+    colours, its title's text (an entry's text is the entry check's,
+    :func:`~._legend_entries._placed_as_built`), and what each handle
+    artist draws (colour, line style and width, marker and its size, face,
+    edge and hatch).
     """
 
     loc: str
@@ -49,6 +57,7 @@ class Look:
     size_pt: tuple[float, float]
     frame: tuple[Any, ...]
     texts: tuple[tuple[Any, ...], ...]
+    title: str
     handles: tuple[tuple[Any, ...], ...]
     state: tuple[Any, ...]
 
@@ -57,8 +66,85 @@ def _rgba(color: ColorType) -> tuple[float, ...]:
     return tuple(round(float(v), 4) for v in to_rgba(color))
 
 
+def _colours(colors: Any) -> tuple[float, ...]:
+    """One colour or an RGBA array, flattened and rounded."""
+    return tuple(round(float(v), 4) for v in to_rgba_array(colors).ravel())
+
+
+def _numbers(values: Any) -> tuple[float, ...]:
+    return tuple(
+        round(float(v), 4) for v in np.asarray(values, dtype=float).ravel()
+    )
+
+
 def _artist(artist: Artist) -> tuple[Any, ...]:
     return (artist.get_visible(), artist.get_alpha(), artist.get_zorder())
+
+
+def _handle(artist: Artist) -> tuple[Any, ...]:
+    """What one handle artist draws, read by its type's public getters.
+
+    Colours are compared as RGBA, so setting a value again is no edit.
+    """
+    seen = (type(artist).__name__, *_artist(artist))
+    if isinstance(artist, Line2D):
+        marker = artist.get_marker()
+        return (
+            *seen,
+            _rgba(artist.get_color()),
+            str(artist.get_linestyle()),
+            round(float(artist.get_linewidth()), 3),
+            marker if isinstance(marker, str) else repr(marker),
+            round(float(artist.get_markersize()), 3),
+            _rgba(artist.get_markerfacecolor()),
+            _rgba(artist.get_markeredgecolor()),
+            round(float(artist.get_markeredgewidth()), 3),
+            str(artist.get_fillstyle()),
+        )
+    if isinstance(artist, Patch):
+        return (
+            *seen,
+            _rgba(artist.get_facecolor()),
+            _rgba(artist.get_edgecolor()),
+            round(float(artist.get_linewidth()), 3),
+            str(artist.get_linestyle()),
+            artist.get_hatch(),
+            _colours(artist.get_hatchcolor()),
+            artist.get_fill(),
+        )
+    if isinstance(artist, Collection):
+        sizes = getattr(artist, "get_sizes", lambda: None)()
+        return (
+            *seen,
+            _colours(artist.get_facecolor()),
+            _colours(artist.get_edgecolor()),
+            _numbers(artist.get_linewidth()),
+            () if sizes is None else _numbers(sizes),
+            artist.get_hatch(),
+        )
+    return seen
+
+
+def _drawn_handles(legend: Legend) -> list[Artist]:
+    """Every artist the legend's entries draw: each handle box's contents.
+
+    ``legend.legend_handles`` holds only each entry's first artist; an
+    errorbar or a tuple handle draws more. Read through the public
+    ``get_children`` of the legend's offset boxes.
+    """
+    found: list[Artist] = []
+
+    def walk(box: OffsetBox) -> None:
+        for child in box.get_children():
+            if isinstance(child, DrawingArea):
+                found.extend(child.get_children())
+            elif isinstance(child, OffsetBox):
+                walk(child)
+
+    for child in legend.get_children():
+        if isinstance(child, OffsetBox):
+            walk(child)
+    return found or [h for h in legend.legend_handles if h]
 
 
 def _text(text: Text) -> tuple[Any, ...]:
@@ -97,7 +183,8 @@ def look(
         texts=tuple(
             _text(t) for t in [legend.get_title(), *legend.get_texts()]
         ),
-        handles=tuple(_artist(h) for h in legend.legend_handles if h),
+        title=legend.get_title().get_text(),
+        handles=tuple(_handle(a) for a in _drawn_handles(legend)),
         state=(*_artist(legend), legend.get_draggable()),
     )
 
