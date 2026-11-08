@@ -32,7 +32,9 @@ COMPATIBILITY_PATH = (
 COMPATIBILITY_SHA256 = (
     "bc0b9fa8a5d888b60808de48dbdadb1ff25690e435a7bcc44aa63d31ce742818"
 )
-DEFAULT_OUTPUT = COMPATIBILITY_PATH.with_name("color_v5_quality.json")
+# The accepted quality fixture. This generator never writes it: ``--output``
+# is required and may not name it, or any other input below.
+QUALITY_PATH = COMPATIBILITY_PATH.with_name("color_v5_quality.json")
 ORACLE_PATH = ORACLE_DIRECTORY / "_compatibility_metrics.py"
 SOURCE_HASHES = {
     "docs/superpowers/specs/assets/2026-07-03-color-system-v5/"
@@ -450,14 +452,65 @@ def _atomic_write_text(target: Path, text: str) -> None:
             temporary.unlink(missing_ok=True)
 
 
+def _protected_inputs() -> tuple[Path, ...]:
+    """Return the working-tree files this generator reads or pins.
+
+    The accepted quality and compatibility fixtures, the oracle source, and
+    every ``SOURCE_HASHES`` path (the recipe, the curated and generated
+    modules and the colour libraries). None of them may be an output.
+    """
+    return (
+        QUALITY_PATH,
+        COMPATIBILITY_PATH,
+        ORACLE_PATH,
+        *(REPO_ROOT / path for path in SOURCE_HASHES),
+    )
+
+
+def _refuse_protected_output(
+    output: Path, protected: Iterable[Path] | None = None
+) -> Path:
+    """Return ``output`` resolved, or refuse it if it names a protected input.
+
+    ``output`` names a protected file when, made absolute with symlinks and
+    ``..`` resolved, it is that file's path (relative, ``..`` and symlinked
+    spellings all resolve to it, even before the file exists), or when it is
+    the same existing file (device and inode, which also catches a hard
+    link). This guards these destinations only; it is not a general write
+    policy.
+    """
+    resolved = output.resolve()
+    try:
+        status = output.stat()
+    except FileNotFoundError:
+        identity = None
+    else:
+        identity = (status.st_dev, status.st_ino)
+    for path in _protected_inputs() if protected is None else protected:
+        same_file = False
+        if identity is not None:
+            try:
+                other = path.stat()
+            except FileNotFoundError:
+                pass
+            else:
+                same_file = (other.st_dev, other.st_ino) == identity
+        if resolved == path.resolve() or same_file:
+            raise ValueError(
+                f"--output {output} names a protected generator input: {path}"
+            )
+    return resolved
+
+
 def _write_output(output: Path, text: str) -> None:
-    """Write a quality fixture atomically."""
+    """Write a quality fixture atomically, never over a protected input."""
+    output = _refuse_protected_output(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_text(output, text)
 
 
 def _parse_args() -> argparse.Namespace:
-    """Parse required baseline and optional output arguments."""
+    """Parse the required baseline and output arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--baseline-commit",
@@ -467,8 +520,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=DEFAULT_OUTPUT,
-        help=f"Quality fixture destination (default: {DEFAULT_OUTPUT})",
+        required=True,
+        help=(
+            "Quality fixture destination; required, and never the accepted "
+            f"fixture ({QUALITY_PATH.relative_to(REPO_ROOT)}) or another "
+            "input this generator reads"
+        ),
     )
     return parser.parse_args()
 
@@ -477,9 +534,10 @@ def main() -> int:
     """Generate the pinned v5 quality fixture, returning process status."""
     try:
         args = _parse_args()
+        # Refuse a protected destination before Git, extraction or compute.
+        output = _refuse_protected_output(cast(Path, args.output))
         commit = _resolve_baseline(cast(str, args.baseline_commit))
         payload = _build_payload(commit)
-        output = cast(Path, args.output).resolve()
         _write_output(output, _serialize(payload))
     except (
         json.JSONDecodeError,

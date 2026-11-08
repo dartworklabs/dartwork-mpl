@@ -1,12 +1,18 @@
-"""The quality generator reads only its listed baseline files, by exact path.
+"""The quality generator reads only its listed inputs and never writes over one.
 
 ``scripts/freeze_color_v5_quality.py`` compiles the archived direct previews
 from a closed list of baseline files (``BASELINE_PREVIEW_INPUTS``). Every
-check here runs on a synthetic Git repository under ``tmp_path`` that holds a
-listed regular file, an unlisted decoy, a documentation decoy, a symlink, a
-symlinked directory and a plain directory. None reads the real accepted
-commit, and none produces an archive: a check that must refuse before Git
-runs replaces ``subprocess.run`` with a stand-in that fails if it is called.
+extraction check runs on a synthetic Git repository under ``tmp_path`` that
+holds a listed regular file, an unlisted decoy, a documentation decoy, a
+symlink, a symlinked directory and a plain directory. None reads the real
+accepted commit, and none produces an archive: a check that must refuse
+before Git runs replaces ``subprocess.run`` with a stand-in that fails if it
+is called.
+
+The output checks require ``--output`` and refuse a protected destination
+and its aliases. They point the generator only at a synthetic protected
+sentinel under ``tmp_path`` (``_protected_inputs`` is replaced), never at a
+real accepted file, and stand-ins stop Git, compute and writes.
 """
 
 from __future__ import annotations
@@ -14,7 +20,8 @@ from __future__ import annotations
 import importlib.util
 import os
 import subprocess
-from collections.abc import Iterator
+import sys
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from types import ModuleType
 
@@ -275,3 +282,201 @@ def test_baseline_input_list_is_a_closed_list_of_package_files(
         generator._check_input_path(path)
     assert package_sources <= set(inputs)
     assert not [path for path in inputs if "superpowers" in path]
+
+
+SENTINEL_BYTES = b"SYNTHETIC PROTECTED SENTINEL\n"
+
+
+@pytest.fixture
+def no_side_effects(
+    generator: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    """Fail the test if ``main`` reaches Git, extraction, compute or a write."""
+
+    def refuse(step: str) -> Callable[..., object]:
+        def stand_in(*args: object, **kwargs: object) -> object:
+            raise AssertionError(f"{step} was reached: {args!r}")
+
+        return stand_in
+
+    monkeypatch.setattr(generator.subprocess, "run", refuse("git"))
+    for name, step in (
+        ("_extract_baseline_inputs", "extraction"),
+        ("_build_payload", "compute"),
+        ("_atomic_write_text", "write"),
+    ):
+        monkeypatch.setattr(generator, name, refuse(step))
+    yield
+
+
+@pytest.fixture
+def sentinel(
+    generator: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    """Make a synthetic file the only protected generator input."""
+    path = tmp_path / "protected" / "sentinel.json"
+    path.parent.mkdir()
+    path.write_bytes(SENTINEL_BYTES)
+    monkeypatch.setattr(
+        generator, "_protected_inputs", lambda: (path,), raising=False
+    )
+    return path
+
+
+def _run_main(
+    generator: ModuleType, monkeypatch: pytest.MonkeyPatch, *args: str
+) -> int:
+    """Run the generator's ``main`` in-process with ``args``."""
+    monkeypatch.setattr(sys, "argv", [str(GENERATOR_PATH), *args])
+    return int(generator.main())
+
+
+def test_missing_output_fails_before_git_extraction_or_writes(
+    generator: ModuleType,
+    no_side_effects: None,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """There is no default destination: ``--output`` is required."""
+    with pytest.raises(SystemExit) as stopped:
+        _run_main(generator, monkeypatch, "--baseline-commit", "HEAD")
+
+    assert stopped.value.code == 2
+    error = capsys.readouterr().err
+    assert "--output" in error and "required" in error
+
+
+def _alias(kind: str, sentinel: Path, tmp_path: Path) -> str:
+    """Return one spelling or alias of ``sentinel`` as an ``--output``."""
+    if kind == "exact":
+        return str(sentinel)
+    if kind == "dot-dot":
+        return str(tmp_path / "protected" / ".." / "protected" / sentinel.name)
+    if kind == "relative":
+        return os.path.relpath(sentinel)
+    if kind == "symlink":
+        link = tmp_path / "link.json"
+        link.symlink_to(sentinel)
+        return str(link)
+    if kind == "symlinked-parent":
+        linked = tmp_path / "linked"
+        linked.symlink_to(sentinel.parent, target_is_directory=True)
+        return str(linked / sentinel.name)
+    if kind == "hard-link":
+        hard = tmp_path / "hard.json"
+        os.link(sentinel, hard)
+        return str(hard)
+    raise AssertionError(kind)
+
+
+ALIASES = (
+    "exact",
+    "dot-dot",
+    "relative",
+    "symlink",
+    "symlinked-parent",
+    "hard-link",
+)
+
+
+@pytest.mark.parametrize("kind", ALIASES)
+def test_protected_destination_is_refused_before_git_and_left_unchanged(
+    generator: ModuleType,
+    no_side_effects: None,
+    sentinel: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    kind: str,
+) -> None:
+    """An explicit ``--output`` may not name a protected input or an alias."""
+    monkeypatch.chdir(tmp_path)
+    destination = _alias(kind, sentinel, tmp_path)
+
+    status = _run_main(
+        generator,
+        monkeypatch,
+        "--baseline-commit",
+        "HEAD",
+        "--output",
+        destination,
+    )
+
+    assert status == 2
+    assert "names a protected generator input" in capsys.readouterr().err
+    assert sentinel.read_bytes() == SENTINEL_BYTES
+
+
+@pytest.mark.parametrize("kind", ALIASES)
+def test_writer_refuses_a_protected_alias_at_write_time(
+    generator: ModuleType,
+    sentinel: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+) -> None:
+    """The final write checks again, so a later alias is refused too."""
+    monkeypatch.chdir(tmp_path)
+    destination = Path(_alias(kind, sentinel, tmp_path))
+
+    with pytest.raises(ValueError, match="protected generator input"):
+        generator._write_output(destination, "{}\n")
+
+    assert sentinel.read_bytes() == SENTINEL_BYTES
+
+
+@pytest.mark.parametrize(
+    "kind", ["exact", "dot-dot", "relative", "symlink", "symlinked-parent"]
+)
+def test_protected_destination_is_refused_before_it_exists(
+    generator: ModuleType,
+    sentinel: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+) -> None:
+    """Path spellings are refused even when no file identity can be compared.
+
+    The sentinel is removed first, so only path resolution can match; a
+    dangling symlink and a symlinked parent still lead to it.
+    """
+    monkeypatch.chdir(tmp_path)
+    sentinel.unlink()
+    destination = Path(_alias(kind, sentinel, tmp_path))
+
+    with pytest.raises(ValueError, match="protected generator input"):
+        generator._refuse_protected_output(destination)
+
+    assert not sentinel.exists()
+
+
+def test_owned_destinations_are_accepted_and_written(
+    generator: ModuleType, sentinel: Path, tmp_path: Path
+) -> None:
+    """A new file, or an unrelated existing one, is an allowed output."""
+    fresh = tmp_path / "owned" / "quality.json"
+    existing = tmp_path / "existing.json"
+    existing.write_bytes(b"old\n")
+
+    for destination in (fresh, existing):
+        generator._write_output(destination, "{}\n")
+        assert destination.read_text(encoding="utf-8") == "{}\n"
+    assert sentinel.read_bytes() == SENTINEL_BYTES
+
+
+def test_protected_inputs_name_every_file_the_generator_reads_or_pins(
+    generator: ModuleType,
+) -> None:
+    """Compare paths only; no file is opened or written."""
+    expected = {
+        generator.QUALITY_PATH,
+        generator.COMPATIBILITY_PATH,
+        generator.ORACLE_PATH,
+        *(generator.REPO_ROOT / path for path in generator.SOURCE_HASHES),
+    }
+
+    assert set(generator._protected_inputs()) == expected
+    assert generator.QUALITY_PATH.relative_to(generator.REPO_ROOT) == Path(
+        "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system"
+        "/color_v5_quality.json"
+    )
