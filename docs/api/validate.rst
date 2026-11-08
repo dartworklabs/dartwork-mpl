@@ -40,6 +40,11 @@ Available Checks
    * - ``TICK_CROWD``
      - Tick labels consume more space than the axis can comfortably hold
      - INFO
+   * - ``TICK_OVERLAP``
+     - Neighbouring tick labels of one axis overlap (each label as the
+       rectangle its text fills, turned with it); after ``simple_layout``,
+       what its wrapping and turning could not clear
+     - WARNING
    * - ``TICK_ROTATION``
      - X tick labels are rotated needlessly or overlap when horizontal
      - INFO
