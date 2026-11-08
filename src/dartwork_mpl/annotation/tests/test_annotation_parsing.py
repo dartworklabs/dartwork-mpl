@@ -153,6 +153,30 @@ def test_a_large_share_needs_the_relative_gain_too() -> None:
     assert choose([above, right]) is right  # 11 % and 10 points less
 
 
+def _wrapped(lines: int, loss: float, canvas: float) -> OutsidePlan:
+    label = "\n".join(["word"] * lines)
+    return OutsidePlan("above", 1, (label,), 10.0, 10.0, loss, True, canvas)
+
+
+def test_more_lines_per_name_need_five_points_of_the_canvas() -> None:
+    """Capture 10: 2 % of the canvas does not pay for two more lines a name."""
+    two = _wrapped(2, 0.40, 0.20)
+    four = _wrapped(4, 0.30, 0.18)  # clearly cheaper, but 2 points
+    assert choose([two, four]) is two
+    assert choose([four, two]) is two  # wherever it is in the list
+    far = _wrapped(4, 0.20, 0.10)  # clearly cheaper and 10 points
+    assert choose([two, far]) is far
+    assert choose([far, two]) is far
+
+
+def test_fewer_lines_need_no_gain_but_a_better_fit_still_wins() -> None:
+    four = _wrapped(4, 0.30, 0.18)
+    two_tight = _wrapped(2, 0.55, 0.21)  # same fit, 3 points of canvas more
+    assert choose([four, two_tight]) is two_tight
+    two_poor = _wrapped(2, 0.65, 0.30)  # fits, but under 40 % left: level 1
+    assert choose([four, two_poor]) is four
+
+
 # ------------------------------------------------------------ wrapping
 def _chars(text: str) -> float:
     return float(len(text))

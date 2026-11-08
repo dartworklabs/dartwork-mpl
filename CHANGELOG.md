@@ -152,17 +152,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   less (many short entries go right), and a panel takes the side its
   neighbour's legend took when that fits as well. Above and below take
   the fewest rows that fit the Axes width, right and left the fewest
-  columns that fit its height (they were always one column), and names
-  are broken at spaces only when the legend would not fit otherwise, a
-  trailing bracketed unit such as `(2019 = 100)` kept whole. A bottom
+  columns that fit its height (they were always one column). Names are
+  broken at spaces only when the legend would otherwise run past the Axes
+  along its side or take more than 60 % of the plot (on a side named right
+  or left, also when it is wider than 40 % of the Axes), a trailing
+  bracketed unit such as `(2019 = 100)` kept whole; a way of breaking them
+  into more lines per name wins only when it leaves the plot at least 5 %
+  of the canvas more. A bottom
   panel's legend no longer goes above onto the panel over it. With a
   caller anchor (`bbox_to_anchor`), or `legend_fallback="inside"`, it stays
   in the spot that covers the fewest series and `LEGEND_ON_DATA` reports
   it. `dm.simple_layout` places these legends again at the size it gives
-  the Axes: an inside legend takes an earlier free spot and an outside one
-  comes in when a spot is free now (never the other way), and an outside
-  one keeps its side with its rows chosen again for the laid-out width, so
-  a 2×2 grid's legends are not left in one tall column. A named side
+  the Axes it lays out (with `gs=` and `use_all_axes=False`, only that
+  GridSpec's): an inside legend takes an earlier free spot and an outside
+  one comes in when a spot is free now (never the other way), and an
+  outside one keeps its side with its rows chosen again for the laid-out
+  width, so a 2×2 grid's legends are not left in one tall column. A
+  legend restyled or moved through the returned `Legend` since (its
+  texts, frame, `set_loc`, `set_bbox_to_anchor`) is the caller's and stays
+  as it is. A named side
   (`loc="above"` …) takes the same rows, columns and wrapping; a
   matplotlib `loc`, `ncol` / `ncols` and a hand-placed `ax.legend` are
   used as given. `dm.config.legend_fallback="above"` keeps the old side.

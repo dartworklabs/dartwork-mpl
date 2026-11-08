@@ -30,6 +30,7 @@ from ._legend_fit import (
     points_px,
     probe,
 )
+from ._legend_look import remember_look
 from ._legend_outside import (
     Sizes,
     choose,
@@ -146,8 +147,9 @@ def draw_inside(
     labels: list[str],
     spot: InsideSpot,
     kw: dict[str, Any],
+    renderer: RendererBase,
 ) -> Legend:
-    """Draw the legend of ``ax`` at a free inside ``spot``."""
+    """Draw the legend of ``ax`` at a free inside ``spot`` and record its look."""
     legend_kw, _explicit = split_ncols(kw)
     legend = _legend_for_loc(
         ax, handles, labels, spot.loc, {**legend_kw, "ncols": spot.ncol}
@@ -155,6 +157,7 @@ def draw_inside(
     legend._dm_collision_free = True  # type: ignore[attr-defined]
     legend._dm_collision_score = spot.tall  # type: ignore[attr-defined]
     legend._dm_inside_spot = (spot.loc, spot.ncol)  # type: ignore[attr-defined]
+    remember_look(legend, renderer, spot.loc, kw)
     return legend
 
 
@@ -182,7 +185,7 @@ def _climb(
     spots = inside_spots(ax, handles, labels, kw, renderer)
     spot = first_free(spots)
     if spot is not None:
-        return draw_inside(ax, handles, labels, spot, kw)
+        return draw_inside(ax, handles, labels, spot, kw, renderer)
     if _may_go_outside(kw):
         outside = outside_fallback(ax, handles, labels, kw, renderer)
         if outside is not None:
@@ -191,6 +194,7 @@ def _climb(
         legend = _legend_for_loc(ax, handles, labels, "upper right", kw)
         legend._dm_collision_free = False  # type: ignore[attr-defined]
         legend._dm_collision_score = float("inf")  # type: ignore[attr-defined]
+        remember_look(legend, renderer, "upper right", kw)
         return legend
     least = min(spots, key=InsideSpot.rank)
     legend_kw, _explicit = split_ncols(kw)
@@ -199,6 +203,7 @@ def _climb(
     )
     legend._dm_collision_free = False  # type: ignore[attr-defined]
     legend._dm_collision_score = float(least.met)  # type: ignore[attr-defined]
+    remember_look(legend, renderer, least.loc, kw)
     return legend
 
 

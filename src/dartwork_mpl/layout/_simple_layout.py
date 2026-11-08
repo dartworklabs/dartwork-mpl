@@ -29,8 +29,6 @@ from ._reservations import _figure_artist_reservations
 from ._settle import _settle_outside_legends
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
 
@@ -444,27 +442,29 @@ def _solve_layout_step(
     if adopt_orphan_tick_font:
         _adopt_axis_label_font_core(fig)
     renderer = get_renderer(fig)
-    if _settle_bar_labels(fig, renderer):
-        fig.canvas.draw()
-        renderer = get_renderer(fig)
-    for _round in range(_SETTLE_ROUNDS):
-        if not _settle_outside_legends(fig, renderer):
-            break
-        fig.canvas.draw()
-        renderer = get_renderer(fig)
-    _clear_bar_labels(fig, renderer)
-    fbox = fig.bbox
-    fw_px, fh_px = fbox.width, fbox.height
-
-    target_axes: Iterable[Axes]
+    # The Axes this layout measures (and so may resize): every Axes, or
+    # only the requested GridSpec's. place_legend's legends are placed
+    # again on these alone.
+    target_axes: list[Axes]
     if use_all_axes:
-        target_axes = fig.axes
+        target_axes = list(fig.axes)
     else:
         target_axes = [
             ax
             for ax in fig.axes
             if ax.get_gridspec() is not None and id(ax.get_gridspec()) == gs_id
         ]
+    if _settle_bar_labels(fig, renderer):
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
+    for _round in range(_SETTLE_ROUNDS):
+        if not _settle_outside_legends(fig, renderer, target_axes):
+            break
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
+    _clear_bar_labels(fig, renderer)
+    fbox = fig.bbox
+    fw_px, fh_px = fbox.width, fbox.height
 
     oh_l: list[float] = []
     oh_r: list[float] = []

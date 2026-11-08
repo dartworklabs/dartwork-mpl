@@ -303,9 +303,14 @@ def test_names_wider_than_the_axes_are_wrapped_to_fit() -> None:
     legend = place_legend(ax, loc="above")
     assert legend is not None
     texts = [t.get_text() for t in legend.get_texts()]
-    assert all("\n" in t for t in texts)
+    names = [f"Region {i + 1}{LONG}" for i in range(2)]
+    # Broken only at spaces: joining the lines gives the name back.
+    assert [t.replace("\n", " ") for t in texts] == names
+    assert all(len(t.split("\n")) >= 2 for t in texts)
+    # The unit is whole on one line.
     assert all(
-        t.endswith("\n(2019 = 100)") or "(2019 = 100)" in t for t in texts
+        sum("(2019 = 100)" in line for line in t.split("\n")) == 1
+        for t in texts
     )
     assert legend._dm_wrapped is True
     dm.simple_layout(fig)
@@ -528,6 +533,147 @@ def test_a_raw_legend_is_not_moved_by_the_layout() -> None:
     dm.simple_layout(fig)
     assert ax.get_legend() is legend
     assert [w.detail["covered"] for w in _covers(fig)] == [["line"]]
+
+
+def test_two_long_names_wrap_onto_fewer_lines_when_more_gain_little() -> None:
+    """Capture 10: one column of two lines, not two columns of four.
+
+    Two columns would leave the plot 2 % of the canvas more; a name
+    broken into more lines needs 5 % (LINES_GAIN).
+    """
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize("15.4cm", "10.5cm"))
+    x = np.arange(12)
+    rng = np.random.default_rng(9)
+    for i, city in enumerate(("Seoul", "Busan")):
+        y = 10 + 1.5 * i + (4 + 0.25 * i) * x + rng.normal(0, 0.6, x.size)
+        ax.plot(x, y, label=f"{city}{LONG}")
+    ax.set(xlabel="Month", ylabel="Index")
+    place_legend(ax)
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend is not None
+    assert legend_ncols(legend) == 1
+    assert [t.get_text().count("\n") + 1 for t in legend.get_texts()] == [2, 2]
+    assert settle_legends(fig, drawn_renderer(fig)) is False
+
+
+# ------------------------------------- the layout's scope and the caller's edits
+def _short_legend_panel(ax) -> None:
+    """Lines in the lower 60 % of a plot: the legend fits in once it is tall."""
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    x = np.linspace(0, 10, 40)
+    ax.plot(x, 3 + 3 * np.sin(x), label="North")
+    ax.plot(x, 3 + 3 * np.cos(x), label="South")
+
+
+def _scoped(case: str):
+    """A figure whose ``other`` panel is outside the GridSpec laid out.
+
+    ``other``'s legend went outside while the panel was flat; the panel is
+    then grown, so a layout that reached it would bring the legend in.
+    """
+    dm.style.use("report")
+    fig = plt.figure(figsize=dm.figsize("17cm", "12cm"))
+    gs = fig.add_gridspec(1, 1, left=0.1, right=0.45)
+    fig.add_subplot(gs[0]).plot([0, 1], [0, 1])
+    match case:
+        case "add_axes":
+            other = fig.add_axes((0.6, 0.45, 0.3, 0.05))
+        case "gridspec":
+            other = fig.add_subplot(fig.add_gridspec(1, 1, left=0.6)[0])
+            other.set_position((0.6, 0.45, 0.3, 0.05))
+        case _:  # nested in the laid-out GridSpec's neighbour cell
+            outer = fig.add_gridspec(1, 2, left=0.55)
+            other = fig.add_subplot(outer[0, 1].subgridspec(2, 1)[0])
+            other.set_position((0.6, 0.45, 0.3, 0.05))
+    _short_legend_panel(other)
+    legend = place_legend(other)
+    assert legend is not None and legend._dm_outside_fallback is True
+    other.set_position((0.6, 0.1, 0.3, 0.8))
+    return fig, gs, other, legend
+
+
+@pytest.mark.parametrize("case", ["add_axes", "gridspec", "nested"])
+def test_the_layout_places_again_only_the_legends_it_lays_out(
+    case: str,
+) -> None:
+    fig, gs, other, legend = _scoped(case)
+    dm.simple_layout(fig, gs=gs, use_all_axes=False)
+    assert other.get_legend() is legend
+    # The same figure laid out whole brings the legend in.
+    dm.simple_layout(fig)
+    assert other.get_legend() is not legend
+    assert not getattr(other.get_legend(), "_dm_outside_fallback", False)
+
+
+def _above_ten(**kw):
+    fig, ax = _report()
+    _dense(ax, 10)
+    legend = place_legend(ax, loc="above", **kw)
+    assert legend is not None
+    return fig, ax, legend
+
+
+def _font(legend) -> None:
+    for text in legend.get_texts():
+        text.set_fontsize(15)
+
+
+def _frame_off(legend) -> None:
+    legend.set_frame_on(False)
+
+
+def _frame_alpha(legend) -> None:
+    legend.get_frame().set_alpha(0.2)
+
+
+def _moved(legend) -> None:
+    legend.set_loc("lower left")
+
+
+# Legend.set_ncols on a built legend redraws nothing (matplotlib 3.11 only
+# stores the count), so it is not an edit a reader sees.
+@pytest.mark.parametrize("edit", [_font, _frame_off, _frame_alpha, _moved])
+def test_an_edited_legend_is_the_callers(edit) -> None:
+    """A legend restyled or moved through the returned Legend stays as edited."""
+    fig, ax, legend = _above_ten(fontsize=9, frameon=True)
+    edit(legend)
+    before = (
+        [t.get_fontsize() for t in legend.get_texts()],
+        legend.get_frame_on(),
+        legend.get_frame().get_alpha(),
+        legend_ncols(legend),
+    )
+    dm.simple_layout(fig)
+    assert ax.get_legend() is legend
+    after = (
+        [t.get_fontsize() for t in legend.get_texts()],
+        legend.get_frame_on(),
+        legend.get_frame().get_alpha(),
+        legend_ncols(legend),
+    )
+    assert after == before
+
+
+def test_an_unedited_legend_is_placed_again() -> None:
+    """The control for the edits above: the same legend left alone is rebuilt."""
+    fig, ax, legend = _above_ten(fontsize=9, frameon=True)
+    dm.simple_layout(fig)
+    assert ax.get_legend() is not legend
+    assert legend_ncols(ax.get_legend()) != legend_ncols(legend)
+
+
+def test_an_inside_legend_anchored_elsewhere_is_the_callers() -> None:
+    fig, ax = _report()
+    _top_free_lines(ax)
+    ax.set_position((0.1, 0.45, 0.8, 0.1))
+    legend = place_legend(ax)
+    assert legend is not None
+    legend.set_bbox_to_anchor((0.0, 0.0, 0.5, 1.0), transform=ax.transAxes)
+    ax.set_position((0.1, 0.1, 0.8, 0.8))
+    assert settle_legends(fig, drawn_renderer(fig)) is False
+    assert ax.get_legend() is legend
 
 
 # -------------------------------------------------- what the caller fixes
