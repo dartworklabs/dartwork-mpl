@@ -33,6 +33,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.support.excluded_dirs import walk_files, watch_access
+
 # Repository root (the directory that holds pyproject.toml).
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -54,7 +56,8 @@ _DOCS_ROOTS: tuple[Path, ...] = (_REPO_ROOT / "docs", _REPO_ROOT / "examples")
 # outputs (see _SKIP_DIR_PARTS below).
 _SCAN_SUFFIXES = {".py", ".md", ".rst", ".mplstyle"}
 
-# Directory names to skip, anywhere along a file's path. These catch:
+# Directory names pruned at any depth below a scan root, before they are
+# listed (so their contents are never listed, stat-ed or read). These catch:
 #   - __pycache__: bytecode
 #   - _build: Sphinx HTML build output (not tracked, but often present
 #     locally after sphinx-build runs)
@@ -102,16 +105,11 @@ def _iter_files(root: Path) -> list[Path]:
     """Return the files under ``root`` that the guardrail should scan."""
     if not root.exists():
         return []
-    files: list[Path] = []
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        if path.suffix not in _SCAN_SUFFIXES:
-            continue
-        if any(part in _SKIP_DIR_PARTS for part in path.parts):
-            continue
-        files.append(path)
-    return files
+    return [
+        path
+        for path in walk_files(root, lambda d: d.name in _SKIP_DIR_PARTS)
+        if path.suffix in _SCAN_SUFFIXES and path.is_file()
+    ]
 
 
 def _iter_shipped_files() -> list[Path]:
@@ -145,6 +143,24 @@ def _scan(path: Path) -> list[tuple[int, str, str]]:
         for match in _KR_PATTERN.finditer(line):
             hits.append((line_no, match.group(0), line.rstrip()))
     return hits
+
+
+def test_scan_prunes_skipped_directories_before_listing(tmp_path: Path) -> None:
+    """Never list, stat or read below a skipped directory at any depth."""
+    root = tmp_path / "docs"
+    kept = [root / "guide.md", root / "api" / "page.rst"]
+    skipped = [root / name for name in sorted(_SKIP_DIR_PARTS)]
+    skipped.append(root / "api" / "superpowers")
+    for path in [*kept, *(directory / "decoy.md" for directory in skipped)]:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("synthetic\n", encoding="utf-8")
+    (root / "notes.txt").write_text("synthetic\n", encoding="utf-8")
+
+    with watch_access(*skipped) as accesses:
+        files = _iter_files(root)
+
+    assert accesses == []
+    assert sorted(files) == sorted(kept)
 
 
 @pytest.mark.parametrize(

@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 from markdown_it import MarkdownIt
 
+from tests.support.excluded_dirs import walk_files, watch_access
+
 ROOT = Path(__file__).resolve().parents[2]
 STATIC = ROOT / "docs" / "_static"
 
@@ -686,6 +688,48 @@ def test_custom_css_interactive_surfaces_avoid_legacy_skin_tokens() -> None:
     assert "var(--dm-f-mono" in css
 
 
+# Where the legacy accent literals may stay: internal design records, the
+# comparison PoC images and the build output.
+_LEGACY_ACCENT_PREFIXES = frozenset(
+    {
+        Path("docs/superpowers"),
+        Path("docs/color_system/images"),
+        Path("docs/_build"),
+    }
+)
+
+
+def _tree_files(root: Path, skipped: frozenset[Path]) -> list[Path]:
+    """Repository-relative files under docs/ and scripts/ outside ``skipped``.
+
+    A skipped prefix is pruned before it is listed, so nothing below it is
+    listed, stat-ed or read.
+    """
+    return [
+        path.relative_to(root)
+        for base in (root / "docs", root / "scripts")
+        for path in walk_files(base, lambda d: d.relative_to(root) in skipped)
+        if path.is_file()
+    ]
+
+
+def test_tree_files_prune_skipped_prefixes_before_listing(
+    tmp_path: Path,
+) -> None:
+    """Never list, stat or read below a prefix the literal scan skips."""
+    kept = [Path("docs/page.css"), Path("scripts/tool.py")]
+    decoys = [prefix / "decoy.css" for prefix in _LEGACY_ACCENT_PREFIXES]
+    for rel in [*kept, *decoys]:
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text("synthetic\n", encoding="utf-8")
+    skipped = [tmp_path / prefix for prefix in _LEGACY_ACCENT_PREFIXES]
+
+    with watch_access(*skipped) as accesses:
+        files = _tree_files(tmp_path, _LEGACY_ACCENT_PREFIXES)
+
+    assert (accesses, sorted(files)) == ([], kept)
+
+
 def test_legacy_accent_literals_are_confined_to_docs_and_comparison_pocs() -> (
     None
 ):
@@ -700,30 +744,16 @@ def test_legacy_accent_literals_are_confined_to_docs_and_comparison_pocs() -> (
         Path("docs/_static/dartwork-design-system.md"),
         Path("docs/_static/dm-interactive-system.md"),
     }
-    allowed_prefixes = {
-        Path("docs/superpowers"),
-        Path("docs/color_system/images"),
-        Path("docs/_build"),
-    }
     scanned_suffixes = {".css", ".js", ".html", ".md", ".py"}
     offenders: list[str] = []
 
-    for base in (ROOT / "docs", ROOT / "scripts"):
-        for path in base.rglob("*"):
-            if not path.is_file() or path.suffix not in scanned_suffixes:
-                continue
-            rel = path.relative_to(ROOT)
-            if rel in allowed_files:
-                continue
-            if any(
-                rel == prefix or prefix in rel.parents
-                for prefix in allowed_prefixes
-            ):
-                continue
-            text = path.read_text(encoding="utf-8")
-            for literal in forbidden:
-                if literal in text:
-                    offenders.append(f"{rel}:{literal}")
+    for rel in _tree_files(ROOT, _LEGACY_ACCENT_PREFIXES):
+        if rel.suffix not in scanned_suffixes or rel in allowed_files:
+            continue
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        for literal in forbidden:
+            if literal in text:
+                offenders.append(f"{rel}:{literal}")
 
     assert offenders == []
 

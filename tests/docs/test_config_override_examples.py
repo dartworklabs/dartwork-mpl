@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.support.excluded_dirs import walk_files, watch_access
+
 _REPO = Path(__file__).resolve().parents[2]
 # Text that reaches users and agents: docs, the package (skills, prompt
 # corpus, docstrings), the top-level guides and llms files. Design records
@@ -28,23 +30,45 @@ _TOP = (
     "llms-full.txt",
 )
 _SUFFIXES = {".md", ".py", ".rst", ".txt", ".yaml", ".yml"}
+# Pruned before they are listed: their files are never listed, stat-ed or read.
 _SKIP = ("docs/superpowers/", "docs/adr/", "docs/_build/")
 _BARE = re.compile(r"(?<!with )dm\.config\.override\((?!\.\.\.\))")
 
 
 def _shipped() -> list[Path]:
     files = [_REPO / name for name in _TOP if (_REPO / name).is_file()]
+    skipped = {_REPO / prefix.rstrip("/") for prefix in _SKIP}
     for root in _ROOTS:
-        for path in sorted((_REPO / root).rglob("*")):
+        for path in walk_files(_REPO / root, lambda d: d in skipped):
             relative = path.relative_to(_REPO).as_posix()
             if (
                 path.suffix in _SUFFIXES
                 and path.is_file()
                 and "/tests/" not in f"/{relative}"
-                and not relative.startswith(_SKIP)
             ):
                 files.append(path)
     return files
+
+
+def test_scan_prunes_design_records_before_listing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Never list, stat or read below a skipped prefix such as docs/superpowers."""
+    kept = ["README.md", "docs/guide.md", "src/dartwork_mpl/config.py"]
+    skipped = [tmp_path / prefix.rstrip("/") for prefix in _SKIP]
+    for path in [
+        *(tmp_path / name for name in kept),
+        tmp_path / "src/dartwork_mpl/slice/tests/test_x.py",
+        *(directory / "decoy.md" for directory in skipped),
+    ]:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("synthetic\n", encoding="utf-8")
+    monkeypatch.setitem(globals(), "_REPO", tmp_path)
+
+    with watch_access(*skipped) as accesses:
+        files = _shipped()
+
+    assert (accesses, files) == ([], [tmp_path / name for name in kept])
 
 
 def test_the_scan_covers_the_known_examples() -> None:

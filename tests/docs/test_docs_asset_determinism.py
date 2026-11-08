@@ -17,9 +17,15 @@ the ``theory_figures`` set specifically.
 """
 
 import ast
+import os
 import re
 import subprocess
 from pathlib import Path
+from typing import Any
+
+import pytest
+
+from tests.support.excluded_dirs import watch_access
 
 _ROOT = Path(__file__).resolve().parents[2]
 _DOCS = Path(__file__).resolve().parents[2] / "docs"
@@ -55,8 +61,10 @@ def _tracked_docs_svgs() -> list[Path]:
 
 def _live_python_sources() -> tuple[Path, ...]:
     """Return executable repository Python sources, excluding history."""
+    # The exclude pathspec keeps git from listing internal design names at
+    # all; the ``parts`` check below stays as a second line.
     result = subprocess.run(
-        ["git", "ls-files", "--", "*.py"],
+        ["git", "ls-files", "--", "*.py", ":(exclude,glob)**/superpowers/**"],
         cwd=_ROOT,
         check=True,
         capture_output=True,
@@ -73,6 +81,41 @@ def _live_python_sources() -> tuple[Path, ...]:
             and (_ROOT / relative).exists()
         )
     )
+
+
+def test_live_python_sources_never_list_internal_design_names(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ask git for live sources only: no ``superpowers`` name is listed."""
+    for name in [name for name in os.environ if name.startswith("GIT_")]:
+        monkeypatch.delenv(name)
+    live = ["docs/page.py", "scripts/tool.py", "src/pkg/mod.py"]
+    internal = [tmp_path / "docs/superpowers", tmp_path / "src/pkg/superpowers"]
+    tracked = [*live, "evals/run.py", "docs/superpowers/decoy.py"]
+    tracked.append("src/pkg/superpowers/decoy.py")
+    for name in tracked:
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text("synthetic = 1\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", "--", *tracked], check=True
+    )
+    listed: list[str] = []
+    run = subprocess.run
+
+    def recording_run(*args: Any, **kwargs: Any) -> Any:
+        result = run(*args, **kwargs)
+        listed.extend(result.stdout.splitlines())
+        return result
+
+    monkeypatch.setattr(subprocess, "run", recording_run)
+    monkeypatch.setitem(globals(), "_ROOT", tmp_path)
+
+    with watch_access(*internal) as accesses:
+        sources = _live_python_sources()
+
+    assert (accesses, sorted(listed)) == ([], sorted([*live, "evals/run.py"]))
+    assert sources == tuple(tmp_path / name for name in live)
 
 
 def _imports_package(path: Path, package: str) -> bool:

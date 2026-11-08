@@ -19,12 +19,14 @@ import matplotlib.colors as mcolors
 import pytest
 
 import dartwork_mpl as dm
+from tests.support.excluded_dirs import walk_files, watch_access
 
 _REPO = Path(__file__).resolve().parents[2]
 _DOCS = _REPO / "docs"
 
 # Files that intentionally document *removed* APIs or internal design
-# history (development notes discuss hypothetical/removed names).
+# history (development notes discuss hypothetical/removed names). These
+# directories are pruned at any depth before they are listed.
 _EXCLUDE_PARTS = ("_build", "examples_gallery", "superpowers", "development")
 _EXCLUDE_NAMES = {"migration.md"}
 
@@ -32,12 +34,34 @@ _IGNORE_MARKER = "color-lint: ignore"
 
 
 def _scan_files() -> list[Path]:
-    return sorted(
+    return [
         f
-        for f in _DOCS.rglob("*.md")
-        if not any(part in f.parts for part in _EXCLUDE_PARTS)
-        and f.name not in _EXCLUDE_NAMES
-    )
+        for f in walk_files(_DOCS, lambda d: d.name in _EXCLUDE_PARTS)
+        if f.suffix == ".md" and f.name not in _EXCLUDE_NAMES
+    ]
+
+
+def test_scan_prunes_excluded_directories_before_listing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Never list, stat or read below an excluded docs directory."""
+    docs = tmp_path / "docs"
+    kept = docs / "guide" / "colors.md"
+    excluded = [docs / part for part in _EXCLUDE_PARTS]
+    excluded.append(docs / "guide" / "superpowers")
+    for path in [
+        kept,
+        docs / "migration.md",
+        *(directory / "decoy.md" for directory in excluded),
+    ]:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("synthetic\n", encoding="utf-8")
+    monkeypatch.setitem(globals(), "_DOCS", docs)
+
+    with watch_access(*excluded) as accesses:
+        files = _scan_files()
+
+    assert (accesses, files) == ([], [kept])
 
 
 def _registries() -> tuple[set[str], set[str], set[str]]:
