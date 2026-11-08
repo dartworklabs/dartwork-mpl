@@ -1044,10 +1044,19 @@ dm.simple_layout(fig)
 
 ## "Waterfall (incremental change)"
 
+Each step's height is its signed change from the level before it, so the
+bar holds the change: values, when asked, are
+`dm.label_bars(ax, steps, sign="+")` (`+30`, a fall's `−15` below it) and
+`dm.label_bars(ax, totals)`.
+
 ```python
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
-ax.bar(labels, heights, bottom=baselines, color=colors,
-       edgecolor="white", linewidth=0.3)
+totals = ax.bar(x[is_total], level[is_total], color="dc.indigo3",
+                edgecolor="white", linewidth=0.3)
+steps = ax.bar(x[~is_total], delta[~is_total],
+               bottom=(level - delta)[~is_total], color=step_colors,
+               edgecolor="white", linewidth=0.3)
+ax.set_xticks(x, labels)
 ax.axhline(0, color="oc.gray7", linewidth=0.3)
 dm.simple_layout(fig)
 ```
@@ -1124,7 +1133,8 @@ Requests, one keyword each: `where="inside"` / `"center"` / `"outside"`;
 `total="only"` / `False` (stacks); `crowded="skip"` (every other label) /
 `"inside"`; `decimals=1`; `fmt="{} GWh"`, `"{:.2f}"` or a callable (a
 template wraps the signed number, `$−3.5B`; a callable for `−$3.5B`);
-`size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar.
+`size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar;
+`sign="+"` for `+30` on the rises (a waterfall's steps, changes).
 Stacks need matching bottoms (a waterfall is not one); pad split series with
 NaN, not 0. A label asked inside a bar too narrow or short for it sits
 beyond the end in the text colour. Grouped series whose labels meet take
@@ -1598,7 +1608,8 @@ The MCP extra supports FastMCP >=2.14.7 and patched 3.x below 4, excluding
 vulnerable 3.0–3.4.9. FastMCP 2.13.3 pins MCP SDK <1.23, which cannot meet
 the patched SDK >=1.30 requirement. Upgrade 2.x installations to 2.14.7;
 exact 2.13.3 remains only in disposable legacy source/API compatibility
-coverage. The tested 3.x lock is 3.4.10.
+coverage. The development lock tests 3.4.11, and CI also checks the 2.14.7
+and 3.4.10 floors.
 
 ## At a glance
 
@@ -2080,12 +2091,14 @@ rules:
       after the layout is reported too, and a user rc that differs from
       matplotlib's defaults is not known. Requests with any non-default
       value (`style="plain"`, `scilimits=(0, 0)`, `useMathText=True`) are
-      recorded and work in either order; `**kwargs` and names are not read.
-      Only calls before the first `dm.simple_layout` in the source are
-      read, and none whose every target direction (`axis=`, `both` when
-      omitted) already took a `ScalarFormatter()` or `dm.format_axis_year`
-      earlier on the same Axes; the other direction of that Axes is still
-      read.
+      recorded and work in either order; `**kwargs` and requested values
+      given as names are not read. Only calls before the first
+      `dm.simple_layout` in the source are read, so a later figure's
+      request in the same source is not either. A call is quiet when every
+      direction it targets (a literal `axis=`, `both` when omitted) already
+      took a `ScalarFormatter()` or `dm.format_axis_year` earlier on the
+      same Axes; an `axis` given as a name, and `plt.ticklabel_format`,
+      are reported even then (the source cannot tie them to that Axes).
     fix_suggestion: 'ax.yaxis.set_major_formatter(ScalarFormatter()); ax.ticklabel_format(axis="y", style="sci")'
 
   - id: multirow-subplots-no-gridspec-kw

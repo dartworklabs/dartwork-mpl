@@ -128,12 +128,14 @@ rules:
       after the layout is reported too, and a user rc that differs from
       matplotlib's defaults is not known. Requests with any non-default
       value (`style="plain"`, `scilimits=(0, 0)`, `useMathText=True`) are
-      recorded and work in either order; `**kwargs` and names are not read.
-      Only calls before the first `dm.simple_layout` in the source are
-      read, and none whose every target direction (`axis=`, `both` when
-      omitted) already took a `ScalarFormatter()` or `dm.format_axis_year`
-      earlier on the same Axes; the other direction of that Axes is still
-      read.
+      recorded and work in either order; `**kwargs` and requested values
+      given as names are not read. Only calls before the first
+      `dm.simple_layout` in the source are read, so a later figure's
+      request in the same source is not either. A call is quiet when every
+      direction it targets (a literal `axis=`, `both` when omitted) already
+      took a `ScalarFormatter()` or `dm.format_axis_year` earlier on the
+      same Axes; an `axis` given as a name, and `plt.ticklabel_format`,
+      are reported even then (the source cannot tie them to that Axes).
     fix_suggestion: 'ax.yaxis.set_major_formatter(ScalarFormatter()); ax.ticklabel_format(axis="y", style="sci")'
 
   - id: multirow-subplots-no-gridspec-kw

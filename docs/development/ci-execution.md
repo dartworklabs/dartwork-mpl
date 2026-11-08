@@ -13,7 +13,7 @@ policy remains in `pyproject.toml`.
 | Full suite, Python 3.11–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto --dist worksteal -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
 | Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest -q -n 4 --dist worksteal -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
 | All-extras module execution | Both workflows, after successful full pytest (every CI full-suite job, 3.11–3.13): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
-| FastMCP legacy 2.13.3 / secure 2.14.7 / locked 3.4.10 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: secure cells install the project plus selected FastMCP, then `uv run --no-sync pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"` (legacy 2.13.3 uses the recorded Pydantic 2.14.1 overlay), then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
+| FastMCP legacy 2.13.3 / floor 2.14.7 / floor 3.4.10 artifact and data-repair wire contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: secure cells install the project plus selected FastMCP, then `uv run --no-sync pytest tests/mcp/artifacts tests/contracts/test_mcp_data_repair_contract.py -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"` (legacy 2.13.3 uses the recorded Pydantic 2.14.1 overlay), then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
 | Floor cell, Python 3.11 (`test-matplotlib (minimum)`) | `.github/workflows/ci.yml`: pins `matplotlib==3.11.2 numpy==1.26.0` (installed versions compared as exact strings), runs the pixel, colour-hash, font-invariant, gamma, font, IO and formatting tests, then a JUnit check that IPython is absent and `test_show_without_notebook_extra_names_the_install_command` ran (not skipped) | `matplotlib-minimum*.xml` artifact |
 | Src typing | `.github/workflows/ci.yml`: `uv run mypy` (paths and strictness live in `[tool.mypy]`) | Step log |
 | Isolated Ruff lint/format | `.github/workflows/pre-commit.yml`, `.pre-commit-config.yaml`: `SKIP=mypy pre-commit run --all-files` | Step log |
@@ -63,14 +63,14 @@ collection, without another full-suite run.
 | --- | --- |
 | Original integrations | `contracts.test_mcp`, `contracts.test_integration`, `contracts.test_cli`, `architecture.test_drift` |
 | Agent loop | `mcp.agent_loop.test_oracle`, `mcp.agent_loop.test_capture` |
-| Optional MCP consumers | `docs.test_docs_mcp_tools`, `docs.test_docstring_catalogs`, `contracts.test_mcp_asset_boundary`, `contracts.test_mcp_data_repair_contract`, `contracts.test_mcp_heavy_tools`, `contracts.test_mcp_render_smoke`, `contracts.test_mcp_tool_hardening`, `contracts.test_mcp_validation_contract`, `contracts.test_safe_fs_contracts` |
+| Optional MCP consumers | `docs.test_docs_mcp_tools`, `docs.test_docstring_catalogs`, `contracts.test_mcp_asset_boundary`, `contracts.test_mcp_data_repair_contract`, `contracts.test_mcp_heavy_tools`, `contracts.test_mcp_render_smoke`, `contracts.test_mcp_tool_hardening`, `contracts.test_mcp_validation_contract`, `contracts.test_removed_names_golden`, `contracts.test_safe_fs_contracts`, `contracts.test_patch_targets_mcp` |
 | Durable MCP artifacts | With prefix `tests.mcp.artifacts.`: `test_artifact_boundaries`, `test_artifact_discovery`, `test_artifact_entry_policies`, `test_artifact_execution`, `test_artifact_policy`, `test_artifact_protocol`, `test_artifact_store` |
 | Retained input contracts | With prefix `tests.mcp.artifacts.`: `test_input_access`, `test_input_commit_observer`, `test_input_delivery`, `test_input_io`, `test_input_lifecycle`, `test_input_policy`, `test_input_recovery`, `test_input_stdio`, `test_input_store` |
 | Plot-data validation and repair | With prefix `src.dartwork_mpl.mcp.plot_data.tests.`: `test_limits`, `test_properties`, `test_reports`, `test_validators` |
 | MCP slice-owned tests | No prefix: `src.dartwork_mpl.mcp._platform.tests.test_process`, `src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github`, `src.dartwork_mpl.mcp.recommend.tests.test_chart_type_transport` |
 | Optional UI consumers | With prefix `src.dartwork_mpl.ui.`: `tests.test_ui_boundary`, `saving.tests.test_ui_files`, `tests.test_ui_http_security`, `render.tests.test_ui_hardening`, `tests.test_ui_init`, `state.tests.test_ui_viewer_state`, `render.tests.test_ui_render`, `params.tests.test_ui_widget`, `tests.test_ui_wire_golden` |
 
-All 48 modules must contribute a passed executed case. Missing modules,
+All 49 modules must contribute a passed executed case. Missing modules,
 zero-test suites, and modules whose cases all skip fail. Any failure/error in
 a protected module also fails, even alongside a passed case. Class-based
 pytest names are accepted; similarly named sibling modules cannot count.
@@ -95,8 +95,20 @@ check installed dependency consistency and assert MCP SDK >=1.30. Only the
 explicit legacy 2.13.3 cell uses an overlay; its SDK <1.23 is vulnerable and
 that cell establishes source/API compatibility, never a secure install.
 No cell rewrites the repository lock. It prints/asserts Python and FastMCP versions, executes
-only artifact contracts and consumes that same run's JUnit; it never duplicates
-the whole-repository major matrix. Missing optional extras cannot become a
+only the artifact contracts and the data-repair wire contract, and consumes that same run's JUnit; it never duplicates
+the whole-repository major matrix.
+
+The cells are floors, not a list of recent releases. The locked FastMCP is not a
+cell, because every `test` job runs the whole suite on it. A cell exists for what
+the lock cannot cover: the legacy 2.13.3 overlay, and the lowest release of each
+major that the `pyproject.toml` range admits (2.14.7, which is also the last 2.x
+release, and 3.4.10, the first 3.x release outside GHSA-7xgj-8392-5q4r). When the
+lock moves, the cells stay; raising a floor means changing the range, the matrix
+and `tests/architecture/test_mcp_ci_matrix.py` together. The data-repair contract
+selects its golden by `fastmcp.__version__`, so each cell also needs an entry in
+`tests/mcp/data_repair/fixtures/legacy_calls.json`; running it in every cell is
+what keeps the 2.13.3, 2.14.7 and 3.4.10 entries from going stale unnoticed.
+Missing optional extras cannot become a
 passing focused gate. These are configured CI checks; local results alone do
 not establish a hosted run or required branch-protection status.
 

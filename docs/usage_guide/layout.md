@@ -664,6 +664,7 @@ bars vertical. Each alternative is one keyword:
 | crowded labels: every other one hidden, or inside the bars | `crowded="skip"`, `crowded="inside"` (default `"rotate"`) |
 | a fixed number of decimals | `decimals=1` |
 | a unit or another number format | `fmt="{} GWh"`, `fmt="{:.2f}"`, or a callable |
+| a plus on the rises (waterfall steps, changes) | `sign="+"`: `+30`, `−15`, `+$800` (default `"-"`: only negatives carry a sign) |
 | another size | `size=dm.fs(0)` |
 | another colour; the bar's colour for labels off their bar | `color="dc.gray7"`; `color="series"` (labels on a bar and totals keep theirs) |
 
@@ -700,7 +701,11 @@ use a callable.
 before it ended (`bottom=` / `left=`), are a stack: a segment's label shows
 while the segment is at least as long as the label, and the total is the
 net sum. Floating bars (a waterfall) are not a stack and get one label per
-bar. Pad a series split across containers with NaN, not 0: a zero can print
+bar: draw each step with its signed change as the height,
+`ax.bar(x, delta, bottom=level_before)`, so the bar holds the change and
+`dm.label_bars(ax, steps, sign="+")` prints `+30` above a rise and `−15`
+below a fall (the totals in their own `ax.bar` call and
+`dm.label_bars(ax, totals)` call). Pad a series split across containers with NaN, not 0: a zero can print
 a `0` label.
 
 ```python

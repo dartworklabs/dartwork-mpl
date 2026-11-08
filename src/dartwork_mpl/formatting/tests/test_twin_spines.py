@@ -51,7 +51,7 @@ from matplotlib.figure import Figure
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-import dartwork_mpl.layout as dm_layout
+import dartwork_mpl.layout._simple_layout as dm_layout
 
 GOLDEN = Path(__file__).with_name("twin_spines_07_golden.json")
 X = np.arange(6)

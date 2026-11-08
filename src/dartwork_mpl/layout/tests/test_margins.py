@@ -10,7 +10,7 @@ import math
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl.layout import (
+from dartwork_mpl.layout._margins import (
     _EDGE_EPSILON,
     _FractionMargin,
     _GridEdges,
