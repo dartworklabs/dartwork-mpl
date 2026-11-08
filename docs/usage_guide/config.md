@@ -12,13 +12,16 @@ adopt_orphan_tick_font=True)` overrides whatever you set on
 
 ## What's in there
 
-`dm.config` is a `@dataclass` with named fields. Today there are two;
-more land as audit findings ship.
+`dm.config` is a `@dataclass` with named fields; the table shows some of
+them, and the [API page](../api/config.rst) lists every field (`tick_years`,
+`date_style`, `number_ladder` and `twin_colors` too).
 
 | Field | Default | Affects |
 |---|---|---|
 | `adopt_orphan_tick_font` | `False` | `simple_layout`, `save_formats`, `save_and_show` — when enabled and an axis has tick labels but no axis label, dartwork copies the *axis label* font (size + weight + family) onto the ticks. Set `True` to opt in; otherwise tick fonts stay untouched. |
 | `warn_on_orphan_tick_adoption` | `False` | Same three call sites. When `True`, emits a one-time `UserWarning` every time the adoption mutates a figure. Useful when debugging surprise tick changes, or when running under matplotlib's `constrained_layout` where the font swap can trigger a re-layout. |
+| `legend_fallback` | `"auto"` | `place_legend(ax)` with no side named, when no inside spot is free of data: `"auto"` takes the side that costs the plot least among those no other panel sits beyond (above unless another is clearly cheaper); `"above"`, `"right"`, `"below"` fix the side; `"inside"` keeps the legend in the spot that covers the fewest series. |
+| `legend_wrap` | `True` | `place_legend` breaks long entry names at spaces only when the legend would not fit outside otherwise; `False` keeps every name on one line. |
 
 The full surface is in [`config.py`](https://github.com/dartworklabs/dartwork-mpl/blob/main/src/dartwork_mpl/config.py) — that's the SSOT, this page is the cookbook.
 

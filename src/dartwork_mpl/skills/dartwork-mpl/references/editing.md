@@ -77,7 +77,7 @@ weight, colour and spacing, so every agent draws the same element.
 |---|---|
 | a title | `ax.set_title("…")`; one title over several panels: `fig.suptitle("…")` |
 | gridlines | `ax.grid(True, axis="y")` (horizontal); `axis="x"` vertical; `"both"` |
-| a legend, no side named | `dm.place_legend(ax)`: inside where it covers no data, otherwise above the plot by itself; no `loc=` or `ncols=` of your own |
+| a legend, no side named | `dm.place_legend(ax)`: inside where it covers no data, otherwise outside by itself (above, or the side that takes clearly less of the plot; never onto another panel); no `loc=` or `ncols=` of your own |
 | a legend on a named side | `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
 | a source or note line | `dm.add_note(fig, "Source: …")`, then `dm.simple_layout(fig)` |
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
@@ -204,9 +204,9 @@ plt.close(fig)
      `fontsize=dm.fs(-1)` (only when larger) and, when the call writes no
      weight, `fontweight=dm.fw(1)` (the value-label look), named in the change
      list; the axis limits stay, also when a line crosses the labels;
-   - legend over data, or two legends on a twin pair: `dm.place_legend(ax)`
-     (one legend for both twins; above the plot by itself when nothing inside
-     is free);
+   - legend over data (`LEGEND_ON_DATA`), or two legends on a twin pair:
+     `dm.place_legend(ax)` (one legend for both twins; outside by itself when
+     nothing inside is free);
    - many competing colours: one accent, the rest `dc.gray4`;
    - axis labels stay as written, case and all, and none is added; a label
      that is clipped or overlaps is wrapped (`dm.wrap_axis_labels(fig)`), not

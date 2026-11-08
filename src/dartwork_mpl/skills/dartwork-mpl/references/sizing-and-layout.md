@@ -188,11 +188,16 @@ plt.close(fig)
 - Legend below everything: `fig.legend(loc="lower center", ncol=3,
   bbox_to_anchor=(0.5, 0))`, then `dm.simple_layout(fig)`.
 - Legend inside, away from the data: `dm.place_legend(ax)`; when every
-  inside spot covers data it goes above the plot by itself.
+  inside spot covers data it goes outside by itself: above, or right or
+  below when that takes clearly less of the plot, never onto another
+  panel. `dm.simple_layout(fig)` places it again at the laid-out size.
 - Legend outside one side ("legend above the plot"):
   `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
-  the clearance of tick labels, and `dm.simple_layout(fig)` keeps a title
-  above it.
+  the clearance of tick labels, breaks names that do not fit, and
+  `dm.simple_layout(fig)` keeps a title above it.
+- Eight or more lines: `dm.label_line_ends(ax)` names them at their ends;
+  `LEGEND_OVERFLOW` reports a legend outside that is more than half the
+  plot's size.
 - A twin pair: `dm.simple_layout` colours each side like its one series, so
   leave the axis colours to it (`with dm.config.override(twin_colors="neutral"):`
   when neutral axes are asked); one legend for both is `dm.place_legend(ax)`,

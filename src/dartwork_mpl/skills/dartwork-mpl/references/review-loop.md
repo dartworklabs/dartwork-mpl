@@ -14,7 +14,7 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.plot(x, np.sin(x), label="Measured")
 ax.plot(x, np.cos(x), label="Model")
 ax.set(xlabel="Time (s)", ylabel="Signal")
-ax.legend()
+dm.place_legend(ax)
 dm.simple_layout(fig)
 
 r = dm.review(fig, "output/figure-v1")  # PNG + PDF, every finding, a summary
@@ -87,7 +87,7 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.plot(x, np.sin(x), label="Measured")
 ax.plot(x, np.cos(x), label="Model")
 ax.set(xlabel="Time (s)", ylabel="Signal (V)")  # the asked change
-ax.legend()
+dm.place_legend(ax)
 dm.simple_layout(fig)
 r2 = dm.review(fig, "output/figure-v2", baseline="output/figure-v1",
                allow=["axes[0].ylabel.*"])

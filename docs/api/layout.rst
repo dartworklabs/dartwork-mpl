@@ -7,10 +7,10 @@ edges so axes content lands at the requested distance from the figure bounds;
 ``make_offset`` converts point offsets to a transform through the Figure DPI; ``label_axes`` adds
 standardized panel labels; ``annotate_value``, ``annotate_corner``, and
 ``label_hline`` create compact point-offset labels; ``label_bars`` writes each
-bar's value on it, printed like the axis ticks; ``place_legend`` chooses
-data/text-aware axes legend positions and can raise legend columns, or puts the
-legend outside one side (``loc="above"``, ``"below"``, ``"right"``,
-``"left"``), and merges a twin pair's legends into one; ``arrow_axis``
+bar's value on it, printed like the axis ticks; ``place_legend`` puts an axes
+legend inside where it covers no data, else outside on the side that costs the
+plot least, or outside the side named (``loc="above"``, ``"below"``,
+``"right"``, ``"left"``), and merges a twin pair's legends into one; ``arrow_axis``
 draws annotated bidirectional arrows; and ``wrap_axis_label`` /
 ``set_decimal``/``get_bounding_box`` provide quick helpers when formatting axes.
 

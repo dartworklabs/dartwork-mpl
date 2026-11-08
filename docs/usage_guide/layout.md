@@ -456,8 +456,8 @@ requested margin from each figure edge. This means:
 | `label_bars(ax)`              | Writes each bar's value on it, printed like the ticks; `simple_layout` settles crowding and headroom |
 | `annotate_corner(ax, s)`      | Adds spine-tight narrative notes in the least obstructed corner |
 | `label_hline(ax, y, s)`       | Attaches text tightly to a horizontal reference-line endpoint  |
-| `place_legend(ax)`            | Places legends around data/text obstacles and can raise ncol; one legend for a twin pair |
-| `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels; `simple_layout` keeps titles above it |
+| `place_legend(ax)`            | Puts the legend inside where it covers no data, else outside on the side that costs the plot least; one legend for a twin pair |
+| `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels, names wrapped only to fit; `simple_layout` keeps titles above it |
 | `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick label decimals with a dynamic formatter; locator and limits stay |
@@ -769,6 +769,47 @@ On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
 last, so the partner's line is never drawn over them. A later `Text.set_*`
 on a returned label wins over every redraw and layout, and calling
 `dm.label_bars` again on the same bars replaces their labels.
+
+### Legends (`place_legend`)
+
+`dm.place_legend(ax)` keeps a legend off the data. It tries eight spots inside
+the plot (the corners, upper and lower centre, then centre right and left) for
+one to three columns and takes the first one no line, marker, bar, filled area
+or text of the Axes (and its twin) comes within 2 pt of. When none is free it
+goes outside, on a side no other panel sits beyond: above by default, right or
+below when that takes at least 10 % and 5 % of the plot less (many short
+names go right), the side the neighbouring panel's legend took when that fits
+as well. Names are broken at spaces only when the legend would not fit
+otherwise, and a trailing unit in brackets stays whole. `dm.simple_layout`
+places the legend again at the size it gives the Axes: inward only, and with
+the rows of an outside legend chosen again for the final width.
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+
+dm.style.use("report")
+x = np.linspace(0, 11, 60)
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+for i in range(5):
+    ax.plot(x, 50 + 42 * np.sin(2 * np.pi * x / 6 + 2 * np.pi * i / 5),
+            label=f"Region {i + 1}")
+legend = dm.place_legend(ax)  # every corner holds a line: outside, above
+dm.simple_layout(fig)
+assert legend._dm_outside_fallback
+plt.close(fig)
+```
+
+What you fix stays fixed: a side you name (`loc="right"`), a matplotlib `loc`,
+`ncols=` and a `bbox_to_anchor` (the legend then stays in the spot that covers
+the fewest series). Two project-wide knobs turn rungs off:
+`dm.config.legend_fallback` (`"above"`, `"right"`, `"below"` fix the side;
+`"inside"` never goes outside) and `dm.config.legend_wrap = False` (names stay
+on one line). A legend that still covers data, text, another legend or
+another panel is reported as `LEGEND_ON_DATA`; one outside that is more than
+half its plot's size as `LEGEND_OVERFLOW`, and for many lines
+`dm.label_line_ends(ax)` names them at their ends instead.
 
 ### Bidirectional arrow axes (`arrow_axis`)
 
