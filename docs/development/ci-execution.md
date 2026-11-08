@@ -63,7 +63,7 @@ collection, without another full-suite run.
 | --- | --- |
 | Original integrations | `contracts.test_mcp`, `contracts.test_integration`, `contracts.test_cli`, `architecture.test_drift` |
 | Agent loop | `mcp.agent_loop.test_oracle`, `mcp.agent_loop.test_capture` |
-| Optional MCP consumers | `docs.test_docs_mcp_tools`, `docs.test_docstring_catalogs`, `contracts.test_mcp_asset_boundary`, `contracts.test_mcp_data_repair_contract`, `contracts.test_mcp_heavy_tools`, `contracts.test_mcp_render_smoke`, `contracts.test_mcp_tool_hardening`, `contracts.test_mcp_validation_contract`, `contracts.test_safe_fs_contracts`, `contracts.test_patch_targets_mcp` |
+| Optional MCP consumers | `docs.test_docs_mcp_tools`, `docs.test_docstring_catalogs`, `contracts.test_mcp_asset_boundary`, `contracts.test_mcp_data_repair_contract`, `contracts.test_mcp_heavy_tools`, `contracts.test_mcp_render_smoke`, `contracts.test_mcp_tool_hardening`, `contracts.test_mcp_validation_contract`, `contracts.test_removed_names_golden`, `contracts.test_safe_fs_contracts`, `contracts.test_patch_targets_mcp` |
 | Durable MCP artifacts | With prefix `tests.mcp.artifacts.`: `test_artifact_boundaries`, `test_artifact_discovery`, `test_artifact_entry_policies`, `test_artifact_execution`, `test_artifact_policy`, `test_artifact_protocol`, `test_artifact_store` |
 | Retained input contracts | With prefix `tests.mcp.artifacts.`: `test_input_access`, `test_input_commit_observer`, `test_input_delivery`, `test_input_io`, `test_input_lifecycle`, `test_input_policy`, `test_input_recovery`, `test_input_stdio`, `test_input_store` |
 | Plot-data validation and repair | With prefix `src.dartwork_mpl.mcp.plot_data.tests.`: `test_limits`, `test_properties`, `test_reports`, `test_validators` |
