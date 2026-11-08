@@ -10,6 +10,10 @@ import textwrap
 from collections import defaultdict
 from pathlib import Path
 
+import pytest
+
+from tests.support.excluded_dirs import walk_files, watch_access
+
 _ROOT = Path(__file__).resolve().parents[2]
 _DOCS = _ROOT / "docs"
 _RAW_FILE_RE = re.compile(
@@ -21,9 +25,11 @@ _SRC_RE = re.compile(r"""\bsrc=["']([^"']+)["']""")
 def _raw_includes() -> list[tuple[Path, Path]]:
     """Read raw HTML includes from the public Markdown source surface."""
     includes = []
-    for source in sorted(_DOCS.rglob("*.md")):
-        # Sphinx excludes these internal notes via ``superpowers/**``.
-        if source.relative_to(_DOCS).parts[0] == "superpowers":
+    # Sphinx excludes these internal notes via ``superpowers/**``; the walk
+    # prunes the folder before listing it.
+    internal = _DOCS / "superpowers"
+    for source in walk_files(_DOCS, lambda directory: directory == internal):
+        if source.suffix != ".md":
             continue
         text = source.read_text(encoding="utf-8")
         for target in _RAW_FILE_RE.findall(text):
@@ -130,6 +136,34 @@ def test_committed_html_relative_sources_exist() -> None:
         if asset.relative_to(_ROOT) not in ignored
     ]
     assert not broken, "missing relative HTML assets:\n" + "\n".join(broken)
+
+
+def test_raw_includes_prunes_internal_designs_before_listing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Never list, stat or read below the top-level internal design folder."""
+    docs = tmp_path / "docs"
+    internal = docs / "superpowers"
+    hidden = internal / "specs" / "decoy.md"
+    public = docs / "public.md"
+    nested = docs / "reference" / "superpowers" / "public.md"
+    for path, target in (
+        (hidden, "hidden.html"),
+        (public, "visible.html"),
+        (nested, "../../visible.html"),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"```{{raw}} html\n:file: {target}\n```\n")
+    monkeypatch.setitem(globals(), "_DOCS", docs)
+
+    with watch_access(internal) as accesses:
+        includes = _raw_includes()
+
+    assert accesses == []
+    assert includes == [
+        (public, docs / "visible.html"),
+        (nested, docs / "visible.html"),
+    ]
 
 
 def test_raw_includes_never_opens_excluded_design_sources(

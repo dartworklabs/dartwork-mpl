@@ -1,5 +1,6 @@
 """Build accepted ADR links without publishing excluded provenance documents."""
 
+import re
 import shutil
 import subprocess
 import sys
@@ -7,6 +8,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
+
+from tests.support.excluded_dirs import watch_access
 
 ROOT = Path(__file__).resolve().parents[2]
 DESIGN = "superpowers/specs/2026-10-18-mcp-artifact-delivery-design.md"
@@ -31,6 +34,19 @@ PREFLIGHT_PROVENANCE = (
         "current-invariants",
     ),
 )
+PROVENANCE_SOURCES = (
+    DESIGN,
+    SECURITY_PLAN,
+    *(path for path, _, _ in PREFLIGHT_PROVENANCE),
+)
+# A same-folder record linked from the public ADR index (never ``../``).
+_ADR_LINK = re.compile(r"\]\((\d{4}-[a-z0-9-]+\.md)(?:#[^)]*)?\)")
+
+
+def _adr_inputs():
+    """Name the public ADR index and the records it links, without listing."""
+    index = (ROOT / "docs/adr/index.md").read_text(encoding="utf-8")
+    return ("index.md", *sorted(set(_ADR_LINK.findall(index))))
 
 
 class _Links(HTMLParser):
@@ -61,18 +77,23 @@ class _Links(HTMLParser):
 
 @pytest.fixture
 def docs_project(tmp_path):
-    """Use frozen ADRs and only their approved excluded provenance inputs."""
+    """Use the frozen public ADRs and synthetic stand-ins for their sources.
+
+    The approved provenance documents are never read or copied: Sphinx
+    excludes ``superpowers/**`` and the resolver only requires that each
+    accepted source exists, so a one-line stand-in at the same path keeps the
+    build, its links and the missing-source negatives meaningful.
+    """
     source = tmp_path / "docs"
-    source.mkdir()
-    shutil.copytree(ROOT / "docs/adr", source / "adr")
-    for relative in (
-        DESIGN,
-        SECURITY_PLAN,
-        *(path for path, _, _ in PREFLIGHT_PROVENANCE),
-    ):
+    (source / "adr").mkdir(parents=True)
+    for name in _adr_inputs():
+        shutil.copyfile(ROOT / "docs/adr" / name, source / "adr" / name)
+    for relative in PROVENANCE_SOURCES:
         target = source / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / "docs" / relative, target)
+        target.write_text(
+            f"# Synthetic stand-in for {relative}\n", encoding="utf-8"
+        )
     (source / "index.md").write_text(
         "# Test documentation\n\n```{toctree}\nadr/index\n```\n",
         encoding="utf-8",
@@ -85,6 +106,37 @@ def docs_project(tmp_path):
         encoding="utf-8",
     )
     return source
+
+
+def test_docs_project_takes_only_public_adrs_from_the_root(
+    tmp_path, monkeypatch, request
+):
+    """Build the fixture from a root that holds no excluded provenance source."""
+    root = tmp_path / "repo"
+    adr = root / "docs/adr"
+    adr.mkdir(parents=True)
+    (adr / "index.md").write_text(
+        "[ADR 0001](0001-synthetic-record.md)\n\n"
+        "[design](../superpowers/specs/2026-10-18-mcp-artifact-delivery-design.md)\n",
+        encoding="utf-8",
+    )
+    (adr / "0001-synthetic-record.md").write_text(
+        "# Synthetic record\n", encoding="utf-8"
+    )
+    monkeypatch.setitem(globals(), "ROOT", root)
+
+    with watch_access(root / "docs/superpowers") as accesses:
+        project = request.getfixturevalue("docs_project")
+
+    assert accesses == []
+    assert sorted(path.name for path in (project / "adr").iterdir()) == [
+        "0001-synthetic-record.md",
+        "index.md",
+    ]
+    for relative in PROVENANCE_SOURCES:
+        assert (project / relative).read_text(encoding="utf-8") == (
+            f"# Synthetic stand-in for {relative}\n"
+        )
 
 
 def _build(source, *, fresh=True):
