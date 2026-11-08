@@ -1,8 +1,8 @@
 """Walk test inputs without listing excluded directories, and watch for leaks.
 
-``walk_files`` is the structural tool: it decides on every directory before
-listing it, so a pruned tree such as ``docs/superpowers`` is never listed,
-stat-ed or read by the walk.
+``walk_files`` is the structural tool: it decides on every entry by its path
+alone, before any type check or listing, so a pruned tree such as
+``docs/superpowers`` is never listed, stat-ed or read by the walk itself.
 
 ``watch_access`` is auxiliary evidence for regression tests that run on a
 private synthetic tree. While active it records -- and refuses with
@@ -42,15 +42,26 @@ _hook = {"installed": False}
 def walk_files(root: Path, prune: Callable[[Path], bool]) -> list[Path]:
     """Return every non-directory entry below ``root``, sorted.
 
-    ``prune(directory)`` runs before ``directory`` is listed; ``True`` skips
-    it and everything below it. Symlinked directories are not followed, as
-    with ``Path.rglob``.
+    ``prune(path)`` runs on each entry's path straight from the directory
+    listing, before any type check: ``True`` skips the entry and, for a
+    directory, everything below it, so a pruned entry is never stat-ed.
+    (``os.walk`` decides directory or file with ``DirEntry.is_dir()`` first,
+    which stats a symlinked entry before a caller can prune it.) Symlinked
+    directories are neither followed nor collected, as with ``os.walk``.
     """
     found: list[Path] = []
-    for current, dirs, files in os.walk(root):
-        base = Path(current)
-        dirs[:] = sorted(name for name in dirs if not prune(base / name))
-        found.extend(base / name for name in files)
+    pending = [root]
+    while pending:
+        with os.scandir(pending.pop()) as entries:
+            for entry in entries:
+                path = Path(entry.path)
+                if prune(path):
+                    continue
+                if entry.is_dir():
+                    if not entry.is_symlink():
+                        pending.append(path)
+                    continue
+                found.append(path)
     return sorted(found)
 
 

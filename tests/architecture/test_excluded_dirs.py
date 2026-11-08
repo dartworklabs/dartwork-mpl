@@ -91,6 +91,79 @@ def test_watch_leaves_paths_outside_the_roots_alone(tmp_path: Path) -> None:
     assert (text, files, accesses) == ("kept\n", [tmp_path / "kept.md"], [])
 
 
+class _NoTouchEntry:
+    """A ``DirEntry`` stand-in that refuses every metadata call when blocked."""
+
+    def __init__(self, entry: os.DirEntry[str], blocked: str) -> None:
+        self._entry = entry
+        self._blocked = blocked
+        self.name = entry.name
+        self.path = entry.path
+
+    def _touch(self) -> None:
+        if self.name == self._blocked:
+            raise AssertionError(f"metadata of pruned {self.path!r} read")
+
+    def is_dir(self, *, follow_symlinks: bool = True) -> bool:
+        self._touch()
+        return self._entry.is_dir(follow_symlinks=follow_symlinks)
+
+    def is_file(self, *, follow_symlinks: bool = True) -> bool:
+        self._touch()
+        return self._entry.is_file(follow_symlinks=follow_symlinks)
+
+    def is_symlink(self) -> bool:
+        self._touch()
+        return self._entry.is_symlink()
+
+    def stat(self, *, follow_symlinks: bool = True) -> os.stat_result:
+        self._touch()
+        return self._entry.stat(follow_symlinks=follow_symlinks)
+
+
+def test_walk_files_prunes_an_entry_before_any_type_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A symlinked directory is the case os.walk stats before a caller can
+    # prune it (DirEntry.is_dir follows the link). The watch cannot see
+    # that call, so the entries themselves refuse it here.
+    target = tmp_path / "elsewhere"
+    target.mkdir()
+    (target / "decoy.md").write_text("decoy\n", encoding="utf-8")
+    scan = tmp_path / "scan"
+    scan.mkdir()
+    (scan / "kept.md").write_text("kept\n", encoding="utf-8")
+    (scan / "blocked").symlink_to(target, target_is_directory=True)
+    real_scandir = os.scandir
+
+    class _Listing:
+        def __init__(self, path: str | os.PathLike[str]) -> None:
+            self._listing = real_scandir(path)
+
+        def __enter__(self) -> list[_NoTouchEntry]:
+            return [_NoTouchEntry(e, "blocked") for e in self._listing]
+
+        def __exit__(self, *exc: object) -> None:
+            self._listing.close()
+
+    monkeypatch.setattr(os, "scandir", _Listing)
+    files = walk_files(scan, lambda path: path.name == "blocked")
+    assert files == [scan / "kept.md"]
+
+
+def test_walk_files_neither_follows_nor_collects_a_linked_directory(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "elsewhere"
+    target.mkdir()
+    (target / "decoy.md").write_text("decoy\n", encoding="utf-8")
+    scan = tmp_path / "scan"
+    scan.mkdir()
+    (scan / "kept.md").write_text("kept\n", encoding="utf-8")
+    (scan / "linked").symlink_to(target, target_is_directory=True)
+    assert walk_files(scan, lambda path: False) == [scan / "kept.md"]
+
+
 def test_walk_files_lists_every_entry_without_a_prune(tmp_path: Path) -> None:
     excluded = _synthetic_tree(tmp_path)
     assert walk_files(tmp_path, lambda directory: False) == [
