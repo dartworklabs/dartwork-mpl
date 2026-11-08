@@ -114,35 +114,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **`dm.simple_layout` fits text that still collides (`fit_labels`, on by
   default).** Once the margins fit, text that overlaps by more than half a
   pixel climbs a ladder, easiest step first and only where it collides: an
-  axis name that would run into a neighbouring panel or past the figure
-  wraps at its spaces (up to four lines, a bracketed unit whole) unless its
-  lines would take over 35 % of the figure across them; the `wspace` /
-  `hspace` you did not pass grow until neighbouring panels' text clears,
-  when 1.5 cells or less does it; crowded bottom tick labels wrap at their
-  spaces, only the ones that collide (up to three lines, using the room
-  short neighbours leave); labels that cannot wrap turn 30, 45 or 90
-  degrees, the smallest angle that clears, each label's end at its tick
-  (`labelrotation_mode="xtick"`; 90 degrees without clearing only when
-  that leaves them overlapping less than flat), unless turned they would
-  take over 35 % of the figure height. Every change is followed by a fresh
-  margin fit; a rung that cannot clear its collision within those limits
-  leaves the figure as it is.
+  axis name that runs into another panel's text or plot, or past the figure
+  edge, wraps at its spaces (up to four lines, a bracketed unit whole); the
+  `wspace` / `hspace` nobody set grow until neighbouring panels' text
+  clears, when 1.5 cells or less does it; crowded bottom tick labels wrap at
+  their spaces, only the ones that collide (up to three lines, using the
+  room short neighbours leave; panels that share x wrap together, to the
+  narrowest one's room); labels that cannot wrap turn 30, 45 or 90 degrees,
+  the smallest angle that clears, each label's end at its tick
+  (`"xtick"` rotation mode; 90 degrees without clearing only when that
+  leaves them overlapping less than flat), unless turned they would take
+  over 35 % of the figure height. Only the bottom labels turn. After each
+  round the margins are fitted again, and a change that left a plot under
+  30 % of its width or height, or gave any axis more overlapping tick
+  labels, is taken back and not tried again; its collision stays, reported.
   Nothing is shortened, hidden or made smaller, and a figure without an
   overlap draws exactly as before, at about the same cost. Labels you
-  rotate, break or align off centre, axis names with line breaks or
-  mathtext and spacing you pass stay; each call first undoes what an
-  earlier call fitted, so a re-layout at another size fits again.
-  `dm.simple_layout(fig, fit_labels=False)` or `dm.config.fit_labels =
-  False` gives the previous layout pixel for pixel; a tuple of step names
-  (`"axis_labels"`, `"space"`, `"wrap"`, `"rotate"`) picks steps; an
-  unknown name raises `ValueError`. Over a 342-figure stress set, 119 of
-  the 220 with overlapping, intruding or clipped text clear and none gains
-  one. Of the shipped templates in three presets, `advanced/boxplot` in
-  `presentation` (`Variant A…D` turn 30°; its y axis, shorter, gets ticks
-  `0` and `5`) and `small_multiples` in `presentation` (its panels part)
-  change; of the 92 docs example figures, `plot_preset_comparison` (its
-  panels part; at the narrower width matplotlib picks x ticks
-  `0.0 2.5 … 10.0`). What is left is reported as `TICK_OVERLAP`.
+  rotate (top labels too), break or align off centre, axis names with line
+  breaks or mathtext and spacing you set (`gridspec_kw`, `add_gridspec`,
+  `fig.subplots_adjust`) stay; each call first undoes what an earlier call
+  fitted, label by label where it is still as fitted, so a re-layout at
+  another size fits again; `use_all_axes=False` fits and undoes only the
+  Axes of `gs`. `dm.simple_layout(fig, fit_labels=False)` or
+  `dm.config.fit_labels = False` gives the previous layout pixel for pixel;
+  a tuple of step names (`"axis_labels"`, `"space"`, `"wrap"`, `"rotate"`)
+  picks steps; an unknown name raises `ValueError`, a step that is not a
+  string `TypeError`. Over a 342-figure stress set, 120 of the 220 with
+  overlapping, intruding or clipped text clear and none gains one. Of the
+  shipped templates in three presets, `advanced/boxplot` in `presentation`
+  (`Variant A…D` turn 30°; its y axis, shorter, gets ticks `0` and `5`) and
+  `small_multiples` in `presentation` (its panels part) change; drawn at
+  9 cm, `advanced/boxplot` keeps its plot and reports its labels. Of the 92
+  docs example figures, `plot_preset_comparison` changes (its panels part;
+  at the narrower width matplotlib picks x ticks `0.0 2.5 … 10.0`). Tick
+  labels that still overlap are reported as `TICK_OVERLAP`.
 - **Three advanced templates keep their value labels off the data.** The
   labels `VALUE_LABEL_ON_DATA` reported now sit clear of it in every preset:
   `boxplot` prints its means in one row above the plot box instead of on

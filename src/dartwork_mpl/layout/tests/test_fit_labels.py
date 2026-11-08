@@ -570,7 +570,12 @@ def test_a_settled_figure_ends_in_one_confirming_round(monkeypatch) -> None:
     fig, ax = _bars(_ONE_WORD)
     dm.simple_layout(fig)
     assert _angles(ax) == {30.0}
-    assert [[c.key[0] for c in r] for r in rounds] == [["rotate"], []]
+    # found, then made again after the figure is measured; then nothing left
+    assert [[c.key[0] for c in r] for r in rounds] == [
+        ["rotate"],
+        ["rotate"],
+        [],
+    ]
 
 
 def test_a_name_or_spacing_you_change_after_a_layout_stays() -> None:
@@ -687,7 +692,9 @@ def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
         assert _angles(ax) == {0.0}
     assert heights[1] == pytest.approx(heights[0], abs=0.5)
     assert warned == [{"x"}, {"x"}]
-    assert rounds == [["rotate"], ["rotate"], []]
+    # its round (found, made again after measuring), then alone (the same),
+    # then nothing left to try
+    assert rounds == [["rotate"]] * 4 + [[]]
 
 
 def test_a_name_in_nobodys_way_draws_as_without_the_ladder() -> None:
@@ -865,7 +872,7 @@ def test_panels_sharing_x_wrap_together(width, rungs, monkeypatch) -> None:
     monkeypatch.setattr(fit, "fit_round", recorded)
     dm.simple_layout(fig)
     assert _overlaps(fig) == 0
-    assert calls == [rungs, []]
+    assert calls == [rungs, rungs, []]  # found, made after measuring, done
     texts = _texts(narrow)
     if rungs == ["wrap"]:
         assert texts[0] == "Low\nfee" and _texts(wide) == texts

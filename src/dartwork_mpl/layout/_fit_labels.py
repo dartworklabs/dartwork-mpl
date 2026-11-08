@@ -527,19 +527,24 @@ def climb(
     """
     state = FitState()
 
-    def attempt(only: Key | None) -> bool | None:
-        """One round (or one change of it); ``None``: nothing was measurable."""
-        before = _health(axes, get_renderer(fig))
-        edges = {side: getattr(grid, side) for side in _EDGES}
+    def changes_now(only: Key | None) -> list[_Change]:
         state.only = None if only is None else frozenset({only})
         try:
-            changes = fit_round(
-                fig, get_renderer(fig), steps, grid, axes, state
-            )
+            return fit_round(fig, get_renderer(fig), steps, grid, axes, state)
         finally:
             state.only = None
+
+    def attempt(only: Key | None) -> bool | None:
+        """One round (or one change of it); ``None``: nothing was measurable."""
+        changes = changes_now(only)
         if not changes:
             return False
+        # Something to change: measure the figure as it was (a figure with
+        # no collision never pays for this), then make the changes again.
+        _undo(changes)
+        before = _health(axes, get_renderer(fig))
+        changes = changes_now(only)
+        edges = {side: getattr(grid, side) for side in _EDGES}
         if not refit():
             return None
         if not _harmed(before, _health(axes, get_renderer(fig))):
