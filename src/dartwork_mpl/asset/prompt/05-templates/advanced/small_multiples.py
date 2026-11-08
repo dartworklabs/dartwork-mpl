@@ -59,7 +59,7 @@ for i, (name, vals) in enumerate(lines.items()):
         loc="upper left",
         fontsize=dm.fs(-1),
         fontweight=dm.fw(1),
-        color=colors[i],
+        color=dm.ensure_contrast(colors[i], ax.get_facecolor()),  # 4.5:1 text
     )
 
 # Panel IDs (a)-(f) via the dartwork helper (as the template advertises)

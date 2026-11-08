@@ -60,6 +60,7 @@ dm.label_bars(ax)
 ax.axhline(
     eu_2030_target, linestyle="--", linewidth=0.5, color="dc.amber4", zorder=1
 )
+# Its label in the line's colour, darkened just enough to read (4.5:1).
 ax.text(
     len(countries) - 0.5,
     eu_2030_target + 1.5,
@@ -67,7 +68,7 @@ ax.text(
     ha="right",
     va="bottom",
     fontsize=dm.fs(-1),
-    color="dc.amber4",
+    color=dm.ensure_contrast("dc.amber4", ax.get_facecolor()),
     fontstyle="italic",
 )
 

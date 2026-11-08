@@ -395,6 +395,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   with Agg; margins can move by a few pixels (about 7 px at 200 dpi in one
   cairo case). Figures on a live canvas, of any backend, are measured with
   their own renderer as before.
+- **Eleven advanced templates draw their notes readable.** Reference-line
+  and callout labels in a light accent (`dc.amber5` on white, 1.92:1) now
+  take that accent darkened only as far as text needs, 4.5:1 on what is
+  behind them (`dm.ensure_contrast`, the rule `dm.label_line_ends` uses):
+  bar, bar_horizontal, boxplot, histogram, line, scatter, small_multiples,
+  twin_axis and plot_3d (on its grey floor pane). Numbers on fills take
+  white or black, whichever reads on the fill as drawn
+  (`dm.readable_text_color`): the heatmap's cells and the contour labels
+  (`dm.pseudo_alpha` for the 0.85 fill). The boxplot's baseline label
+  moves below the line's right end, clear of the boxes; the contour's
+  peak callouts sit on a knockout in the plot's lowest band, which shows
+  only where a callout crosses a ring. Other templates and docs figures
+  are byte-identical.
 
 ### Deprecated
 
@@ -477,6 +490,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   reported a contrast fault that was not drawn (black on `#1f4e79`,
   2.42:1). A shape that clips now counts only inside its clip box; real
   faults on a bar, or white text off it, are still found.
+- **`TEXT_CONTRAST` reads what is painted under the text.** It read a
+  callout in a donut's hole against the wedge whose box held it (1.00:1;
+  drawn on white it is 2.16:1), and read every contour label and heatmap
+  value against the bare Axes (white on white, 1.00:1). A shape now counts
+  by its drawn path, clipped to where it is drawn (a polar Axes' round
+  clip too), sampled at the pixel holding the text's centre; filled
+  collections (`fill_between`, `contourf`, `pcolormesh`, 3D surfaces) and
+  images count in drawing order, the last path holding the point on top;
+  a `twinx` host drawn first shows through its partner; a legend's text
+  reads its frame. Scatter markers are not a background. Check id, order
+  and severities are unchanged; over the 36 templates and 91 docs
+  examples only the advanced contour, heatmap and pie report differently
+  (contour labels per band, the heatmap's white `+0.64` at 4.25:1 INFO,
+  the pie callout at 2.16:1). `backdrop_layers` (behind `dm.label_bars`'
+  ink) counts a 3D Axes' patch, which has no frame switch.
 - **Labels fixed by `set_xticklabels` print the right years.**
   `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)` on annual data
   read `2007.5` at 2010 after `dm.simple_layout`: the whole-year locator

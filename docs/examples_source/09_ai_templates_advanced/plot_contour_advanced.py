@@ -42,9 +42,20 @@ fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
 # Round the top level up to a 0.1 step so levels, contour labels and
 # colorbar ticks read 0.2, 0.4 … instead of 0.3999.
 levels = np.linspace(0, np.ceil(Z.max() * 10) / 10, 11)
-cf = ax.contourf(X, Y, Z, levels=levels, cmap="viridis", alpha=0.85)
+fill_alpha = 0.85
+cf = ax.contourf(X, Y, Z, levels=levels, cmap="viridis", alpha=fill_alpha)
 cs = ax.contour(X, Y, Z, levels=levels[::2], colors="white", linewidths=0.3)
-ax.clabel(cs, inline=True, fontsize=dm.fs(-2), fmt="%.1f", colors="white")
+# Each level's label in white or black, whichever reads on its band as drawn.
+inks = []
+for z in cs.levels:
+    band = dm.pseudo_alpha(cf.to_rgba(z)[:3], fill_alpha, ax.get_facecolor())
+    inks.append(dm.readable_text_color(band))
+ax.clabel(cs, inline=True, fontsize=dm.fs(-2), fmt="%.1f", colors=inks)
+# The lowest band as drawn is the field the callouts sit on; a knockout in
+# it keeps them readable where they cross a ring.
+field = dm.pseudo_alpha(
+    cf.to_rgba((levels[0] + levels[1]) / 2)[:3], fill_alpha, ax.get_facecolor()
+)
 
 # Peak markers + callouts.
 for i, (cx, cy, amp, _) in enumerate(peaks):
@@ -63,7 +74,8 @@ for i, (cx, cy, amp, _) in enumerate(peaks):
         xy=(cx, cy),
         xytext=(cx + 0.4, cy + 0.6),
         fontsize=dm.fs(-1),
-        color="dc.amber5",
+        color=dm.ensure_contrast("dc.amber5", field),  # 4.5:1 on the field
+        bbox={"facecolor": field, "edgecolor": "none", "pad": 1},
         arrowprops={"arrowstyle": "->", "color": "dc.amber5", "lw": 0.5},
     )
 
