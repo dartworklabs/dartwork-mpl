@@ -7,3 +7,7 @@ remote = "git@github.com:dartworklabs/skills-architecting.git"
 [[repo]]
 name = "coding"
 remote = "git@github.com:dartworklabs/skills-coding.git"
+
+[[repo]]
+name = "design-tokens"
+remote = "git@github.com:bet-lab/skills-design-tokens.git"

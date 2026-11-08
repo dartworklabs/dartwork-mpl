@@ -91,6 +91,26 @@ The visual style is also held: fonts, weights, spines, grids, preset looks
 and colour values do not change outside a bug fix whose before/after the
 user has seen.
 
+## Skills and limits for agent work
+
+- **One skill path for product code.** Work on this repository follows the
+  skills `.agents/skills.toml` selects: `arch-*` for specs, plans and review
+  against them, `code-*` for implementation, tests and CI. Another skill set
+  on the same machine (a `coding:*` plugin, say) is not added on top as a
+  second list of duties; name it explicitly only when a task needs it.
+- **Repairs inside a live approval are finished, not re-asked.** A fix that
+  stays within a decision still in force reuses that decision's invariants
+  and checks and is carried through to the verification it needs. Only a new
+  look, a new public contract or a policy change goes back to its decision.
+- **`design-tokens` is for looking tokens up.** Selecting it approves no
+  vendoring, lock, source replacement, promotion to the central source or
+  minor release. The colour freeze, the held visual style, the MCP and
+  evaluation freezes and the user's release hold come first.
+- **A file-access limit covers every way of reading.** A path an agent may
+  not open is also off limits to test fixtures, subprocesses, archives and
+  copies, not only to searches. A check that did not actually run is
+  reported as NOTRUN, never as passed.
+
 ## Where to read more
 
 | If you want… | Open |
