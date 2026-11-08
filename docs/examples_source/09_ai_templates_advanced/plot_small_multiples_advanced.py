@@ -61,16 +61,13 @@ for i, (name, vals) in enumerate(lines.items()):
     )
     # Per-panel takeaway: total growth.
     delta = vals[-1] - vals[0]
-    ax.text(
-        0.96,
-        0.06,
+    dm.annotate_corner(
+        ax,
         f"Δ {delta:+.0f}",
-        transform=ax.transAxes,
-        ha="right",
-        va="bottom",
+        loc="upper left",
         fontsize=dm.fs(-1),
-        color=colors[i],
         fontweight=dm.fw(1),
+        color=colors[i],
     )
 
 # Panel IDs (a)-(f) via the dartwork helper (as the template advertises)
