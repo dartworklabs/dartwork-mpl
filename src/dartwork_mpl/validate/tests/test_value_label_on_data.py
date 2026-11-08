@@ -483,6 +483,58 @@ def test_clean_when_the_covered_line_cannot_be_seen(hide):
     assert _found(fig) == []
 
 
+def _on_dashed_line(at_pt, offset_pt=0, **line_kw):
+    """A label ``at_pt`` points along a 2 pt on / 40 pt off dashed line."""
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.plot(
+        [0.1, 0.9],
+        [0.5, 0.5],
+        linewidth=1,  # lines.scale_dashes: the pattern is in points
+        linestyle=(offset_pt, (2, 40)),
+        **line_kw,
+    )
+    ax.annotate(
+        "50",
+        (0.1, 0.5),
+        xytext=(at_pt, 0),
+        textcoords="offset points",
+        ha="center",
+        va="center",
+    )
+    return fig
+
+
+@pytest.mark.parametrize(
+    ("at_pt", "offset_pt", "covers"),
+    [
+        pytest.param(22, 0, False, id="gap-middle"),
+        pytest.param(43, 0, True, id="on-the-second-dash"),
+        pytest.param(23, 20, True, id="dash-shifted-by-the-offset"),
+        pytest.param(43, 20, False, id="gap-shifted-by-the-offset"),
+    ],
+)
+def test_reports_only_where_a_dashed_line_is_drawn(at_pt, offset_pt, covers):
+    # Dashes at 0-2, 42-44, ... points (minus the offset): a label in a
+    # 40 pt gap is over no ink, one on a dash is.
+    found = [
+        w.detail["covered"] for w in _found(_on_dashed_line(at_pt, offset_pt))
+    ]
+    assert found == ([["line"]] if covers else [])
+
+
+def test_reports_a_label_in_the_gap_a_gapcolor_fills():
+    found = _found(_on_dashed_line(22, gapcolor="0.7"))
+    assert [w.detail["covered"] for w in found] == [["line"]]
+
+
+def test_reports_labels_on_a_dotted_line():
+    # A dotted line's gaps are narrower than a label: it still covers it.
+    fig, _ax, _line, _texts = _line_with_centred_labels(linestyle=":")
+    (w,) = _found(fig)
+    assert (w.detail["count"], w.detail["covered"]) == (6, ["line"])
+
+
 @pytest.mark.parametrize(
     "hide",
     [

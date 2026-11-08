@@ -9,9 +9,11 @@ ink:
 
 * bars of ``ax.bar`` / ``ax.barh`` (the patches of a ``BarContainer``);
 * ``Line2D`` drawn in data coordinates on both axes: the line at its width
-  and the markers ``markevery`` keeps, read back from ``Line2D.draw``
-  (``axhline`` / ``axvline`` / ``axline`` references are not data; a line
-  with path effects counts whole, with every point marked);
+  where its dash pattern inks it (a dashed line's gaps are not data, unless
+  a ``gapcolor`` fills them) and the markers ``markevery`` keeps, both read
+  back from ``Line2D.draw`` (``axhline`` / ``axvline`` / ``axline``
+  references are not data; a line with path effects or a sketch counts
+  solid, the former with every point marked);
 * ``scatter`` markers at their size.
 
 A label covers data when its ink (the glyphs down to their descenders, not
@@ -76,6 +78,10 @@ _NO_MARKER = (None, "None", "none", "", " ")
 _SCATTER = -1  # the marker key of a scatter: never an ``id`` of a line
 _DOLLAR = re.compile(r"(?<!\\)\$")  # an unescaped mathtext delimiter
 _UNCLIPPED = Bbox.from_extents(-np.inf, -np.inf, np.inf, np.inf)
+# A dash is widened by this at both ends: where a rasteriser snaps and
+# smooths the dash ends (measured within 0.6 px of Agg's).
+_DASH_SLACK_PX = 1.0
+_MAX_DASH_CUTS = 1_000_000  # more pattern edges than this: count it solid
 _NOWHERE = Bbox.from_extents(0.0, 0.0, 0.0, 0.0)  # meets nothing
 
 
@@ -336,6 +342,8 @@ class _Stroke(NamedTuple):
 
     path: Path  # display px; NaN gaps and the canvas cut out, MOVETO per run
     half: float  # half its width, px
+    # The dash offset and on/off lengths (px) it is stroked with; None: solid.
+    dashes: tuple[float, np.ndarray] | None = None
 
 
 class _Recorder(RendererBase):
@@ -381,7 +389,40 @@ class _Recorder(RendererBase):
             snap=gc.get_snap(),
             stroke_width=width,
         )
-        self.strokes.append(_Stroke(drawn, width / 2))
+        self.strokes.append(_Stroke(drawn, width / 2, self._dashes(gc)))
+
+    def _dashes(
+        self, gc: GraphicsContextBase
+    ) -> tuple[float, np.ndarray] | None:
+        """The stroke's dash offset and on/off lengths in px; None: solid.
+
+        ``Line2D.draw`` hands the renderer its pattern already scaled to
+        the width, in points. An odd list repeats (as SVG and PDF dash).
+        A sketched stroke wanders off its path, so its dashes cannot be
+        placed: it counts as solid, which can only add hits.
+        """
+        offset, lengths = gc.get_dashes()
+        if lengths is None or gc.get_sketch_params() is not None:
+            return None
+        try:
+            on_off = np.asarray(
+                self.points_to_pixels(np.asarray(lengths, dtype=np.float64)),
+                dtype=np.float64,
+            ).ravel()
+            shift = float(np.asarray(self.points_to_pixels(float(offset))))
+        except (TypeError, ValueError):
+            return None
+        if (
+            not on_off.size
+            or not np.isfinite(on_off).all()
+            or (on_off < 0).any()
+            or on_off.sum() <= 0
+            or not np.isfinite(shift)
+        ):
+            return None
+        if on_off.size % 2:
+            on_off = np.concatenate([on_off, on_off])
+        return shift, on_off
 
     def draw_markers(
         self,
@@ -450,13 +491,87 @@ def _joined(path: Path) -> tuple[np.ndarray, np.ndarray]:
     return vertices, np.asarray(codes[1:] == Path.LINETO, dtype=bool)
 
 
+def _near(a: np.ndarray, b: np.ndarray, frame: Bbox, by: float) -> np.ndarray:
+    """Segments whose box, grown by ``by``, reaches the plot box."""
+    lo, hi = np.minimum(a, b), np.maximum(a, b)
+    near = (lo[:, 0] <= frame.x1 + by) & (hi[:, 0] >= frame.x0 - by)
+    near &= (lo[:, 1] <= frame.y1 + by) & (hi[:, 1] >= frame.y0 - by)
+    return np.asarray(near, dtype=np.bool_)
+
+
+def _dashed(
+    vertices: np.ndarray,
+    joined: np.ndarray,
+    dashes: tuple[float, np.ndarray],
+    frame: Bbox,
+    by: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """The pieces of the joined segments a dash pattern inks, display px.
+
+    The pattern runs along each run of the path from ``offset`` into it and
+    starts over after a MOVETO (a NaN gap, a re-entry into the canvas), as
+    the canvas strokes it. Every dash is widened by ``_DASH_SLACK_PX`` at
+    both ends for a rasteriser's snapping; a pattern whose widened dashes
+    close its gaps, or one too fine to cut up, counts as solid.
+    """
+    offset, lengths = dashes
+    a, b = vertices[:-1][joined], vertices[1:][joined]
+    period = float(lengths.sum())
+    starts = np.concatenate([[0.0], np.cumsum(lengths)[:-1]])
+    on_start = starts[0::2] - _DASH_SLACK_PX
+    on_length = lengths[0::2] + 2 * _DASH_SLACK_PX
+    if not len(a) or np.any(on_length >= period):
+        return a, b
+    # The distance along its run at which each segment starts.
+    seg = np.hypot(*(b - a).T)
+    index = np.flatnonzero(joined)
+    new_run = np.concatenate([[True], index[1:] != index[:-1] + 1])
+    before = np.concatenate([[0.0], np.cumsum(seg)[:-1]])
+    u0 = before - before[new_run][np.cumsum(new_run) - 1]
+    keep = (seg > 0) & _near(a, b, frame, by)
+    a, b, seg, u0 = a[keep], b[keep], seg[keep], u0[keep]
+    # Where the pattern turns ink on or off: phase (u + offset) mod period.
+    # Edge k falls in a segment at u = edge_k - offset + m * period for the
+    # whole m from ``first`` to ``last``.
+    edges = np.mod(np.concatenate([on_start, on_start + on_length]), period)
+    first = np.ceil((u0[:, None] + offset - edges) / period)
+    last = np.floor(((u0 + seg)[:, None] + offset - edges) / period)
+    count = np.clip(last - first + 1, 0, None).astype(np.int64).ravel()
+    if count.sum() > _MAX_DASH_CUTS:
+        return a, b
+    of_seg = np.repeat(np.repeat(np.arange(len(a)), len(edges)), count)
+    of_edge = np.repeat(np.tile(np.arange(len(edges)), len(a)), count)
+    step = np.arange(count.sum()) - np.repeat(np.cumsum(count) - count, count)
+    m = np.repeat(first.ravel(), count) + step
+    cut = edges[of_edge] - offset + m * period
+    # Cut each segment at its pattern edges and keep the pieces in ink.
+    at = np.concatenate(
+        [np.zeros(len(a)), np.ones(len(a)), (cut - u0[of_seg]) / seg[of_seg]]
+    )
+    owner = np.concatenate([np.arange(len(a)), np.arange(len(a)), of_seg])
+    order = np.lexsort((at, owner))
+    at, owner = np.clip(at[order], 0.0, 1.0), owner[order]
+    piece = (owner[1:] == owner[:-1]) & (at[1:] > at[:-1])
+    t0, t1, i = at[:-1][piece], at[1:][piece], owner[:-1][piece]
+    phase = np.mod(u0[i] + (t0 + t1) / 2 * seg[i] + offset, period)
+    ink = np.zeros(len(i), dtype=bool)
+    for start, length in zip(on_start, on_length, strict=True):
+        ink |= np.mod(phase - start, period) <= length
+    i, t0, t1 = i[ink], t0[ink, None], t1[ink, None]
+    d = b[i] - a[i]
+    return a[i] + t0 * d, a[i] + t1 * d
+
+
 def _polyline(
     stroke: _Stroke, frame: Bbox, name: str, key: int
 ) -> _Polyline | None:
     vertices, joined = _joined(stroke.path)
-    a, b = vertices[:-1][joined], vertices[1:][joined]
-    lo, hi = np.minimum(a, b), np.maximum(a, b)
     half = stroke.half
+    if stroke.dashes is None:
+        a, b = vertices[:-1][joined], vertices[1:][joined]
+    else:
+        a, b = _dashed(vertices, joined, stroke.dashes, frame, half)
+    lo, hi = np.minimum(a, b), np.maximum(a, b)
     # Finite segments that reach the plot box; a MOVETO breaks the line.
     keep = np.isfinite(a).all(axis=1) & np.isfinite(b).all(axis=1)
     keep &= (lo[:, 0] <= frame.x1 + half) & (hi[:, 0] >= frame.x0 - half)
