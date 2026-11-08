@@ -441,21 +441,53 @@ def _callee_name(func: ast.expr) -> str:
     return ""
 
 
-def _prepared_axes(syntax: _Syntax) -> dict[str, int]:
-    """Axes given an order-independent formatter, by source text, at the
-    earliest offset.
+def _literal_axis(call: ast.Call, position: int, default: str) -> str | None:
+    """The ``axis`` a call targets (``"x"``, ``"y"`` or ``"both"``), from its
+    keyword or its ``position``-th argument; ``None`` when the source cannot
+    tell."""
+    node: ast.expr | None = None
+    for keyword in call.keywords:
+        if keyword.arg == "axis":
+            node = keyword.value
+        elif keyword.arg is None:
+            return None
+    if node is None and len(call.args) > position:
+        node = call.args[position]
+    if node is None:
+        return default
+    try:
+        value = ast.literal_eval(node)
+    except (ValueError, TypeError, SyntaxError):
+        return None
+    return value if value in ("x", "y", "both") else None
 
-    ``ax.xaxis.set_major_formatter(ScalarFormatter(...))`` (either axis) and
-    ``dm.format_axis_year(ax, ...)`` make a later default
-    ``ticklabel_format`` request on ``ax`` hold through the layout, so the
-    advisory must not repeat its own cure.
+
+def _directions(axis: str) -> tuple[str, ...]:
+    return ("x", "y") if axis == "both" else (axis,)
+
+
+def _prepared_axes(syntax: _Syntax) -> dict[tuple[str, str], int]:
+    """Axis directions given an order-independent formatter, keyed by the
+    Axes' source text and ``"x"``/``"y"``, at the earliest offset.
+
+    ``ax.yaxis.set_major_formatter(ScalarFormatter(...))`` prepares ``y``;
+    ``dm.format_axis_year(ax, axis=...)`` prepares its axis (``"x"`` by
+    default). A later default ``ticklabel_format`` request on a prepared
+    direction holds through the layout, so the advisory must not repeat
+    its own cure; another direction of the same Axes is not covered.
     """
-    prepared: dict[str, int] = {}
+    prepared: dict[tuple[str, str], int] = {}
+
+    def mark(receiver: ast.expr, directions: tuple[str, ...], at: int) -> None:
+        for direction in directions:
+            key = (ast.unparse(receiver), direction)
+            prepared[key] = min(at, prepared.get(key, at))
+
     for node in ast.walk(syntax.tree):
         if not isinstance(node, ast.Call):
             continue
-        receiver: ast.expr | None = None
         func = node.func
+        at = syntax.span(node)[0]
         if (
             isinstance(func, ast.Attribute)
             and func.attr == "set_major_formatter"
@@ -465,21 +497,23 @@ def _prepared_axes(syntax: _Syntax) -> dict[str, int]:
             and isinstance(node.args[0], ast.Call)
             and _callee_name(node.args[0].func) == "ScalarFormatter"
         ):
-            receiver = func.value.value
+            mark(func.value.value, (func.value.attr[0],), at)
         elif _callee_name(func) == "format_axis_year" and node.args:
-            receiver = node.args[0]
-        if receiver is not None:
-            key = ast.unparse(receiver)
-            start = syntax.span(node)[0]
-            prepared[key] = min(start, prepared.get(key, start))
+            axis = _literal_axis(node, 1, "x")
+            if axis is not None:
+                mark(node.args[0], _directions(axis), at)
     return prepared
 
 
 def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
-    """``ax.ticklabel_format(style="sci")`` asking only for defaults, in the
-    source before the last ``dm.simple_layout`` (source order, not run
-    order), on an axes not already given an explicit ``ScalarFormatter``
-    or ``dm.format_axis_year`` earlier in the source."""
+    """``ax.ticklabel_format(style="sci")`` asking only for defaults before
+    any ``dm.simple_layout`` in the source (source order, not run order).
+
+    Quiet when every direction the request targets was given an explicit
+    ``ScalarFormatter`` or ``dm.format_axis_year`` earlier on the same Axes,
+    and for a request made after a layout (matplotlib applies it; running
+    the layout again, as the guide says, keeps its multiplier on the
+    canvas)."""
     sites = list(_call_sites(syntax))
     layouts = [
         site.start
@@ -488,7 +522,7 @@ def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
     ]
     if not layouts:
         return
-    last = max(layouts)
+    first = min(layouts)
     prepared = _prepared_axes(syntax)
     for site in sites:
         if (
@@ -496,12 +530,16 @@ def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
             and site.kind in {"axes", "pyplot"}
             and site.method == "ticklabel_format"
             and isinstance(site.node.func, ast.Attribute)
-            and site.start < last
+            and site.start < first
             and _asks_only_defaults(site.node)
         ):
             if site.kind == "axes":
-                key = ast.unparse(site.node.func.value)
-                if prepared.get(key, site.start) < site.start:
+                axis = _literal_axis(site.node, len(site.node.args), "both")
+                receiver = ast.unparse(site.node.func.value)
+                if axis is not None and all(
+                    prepared.get((receiver, d), site.start) < site.start
+                    for d in _directions(axis)
+                ):
                     continue
             yield _method_offset(syntax, site.node.func)
 

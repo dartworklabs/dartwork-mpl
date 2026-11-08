@@ -1725,6 +1725,23 @@ class TestTicklabelFormatDefaultBeforeLayout:
             + "dm.format_axis_year(ax)\n"
             + 'ax.ticklabel_format(axis="x", style="sci")\n'
             + _LAYOUT,
+            _SCI_HEAD
+            + 'dm.format_axis_year(ax, axis="y")\n'
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT,
+            # Both directions prepared: a request for both holds.
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + "ax.xaxis.set_major_formatter(ScalarFormatter())\n"
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + 'ax.ticklabel_format(style="sci")\n'
+            + _LAYOUT,
+            # Layout, request, layout again: the guide's path for a late
+            # request (applied, its multiplier back on the canvas).
+            _SCI_HEAD
+            + _LAYOUT
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT,
         ],
     )
     def test_recorded_or_unread_requests_are_quiet(self, code: str) -> None:
@@ -1737,6 +1754,10 @@ class TestTicklabelFormatDefaultBeforeLayout:
             "ax2 = ax.twinx()\nax2.yaxis.set_major_formatter(ScalarFormatter())\n",
             # A formatter other than ScalarFormatter is no cure.
             "ax.yaxis.set_major_formatter(FuncFormatter(str))\n",
+            # The other direction of the same Axes is not covered: a year
+            # x axis beside a millions y axis keeps losing the y request.
+            "ax.xaxis.set_major_formatter(ScalarFormatter())\n",
+            "dm.format_axis_year(ax)\n",
         ],
     )
     def test_a_cure_elsewhere_still_reports(self, prep: str) -> None:
@@ -1745,6 +1766,16 @@ class TestTicklabelFormatDefaultBeforeLayout:
             + _SCI_HEAD
             + prep
             + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT
+        )
+        assert len(_sci_hits(code)) == 1
+
+    def test_a_request_for_both_needs_both_directions_prepared(self) -> None:
+        code = (
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + 'ax.ticklabel_format(style="sci")\n'
             + _LAYOUT
         )
         assert len(_sci_hits(code)) == 1

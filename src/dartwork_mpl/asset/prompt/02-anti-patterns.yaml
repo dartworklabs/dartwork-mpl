@@ -129,6 +129,11 @@ rules:
       matplotlib's defaults is not known. Requests with any non-default
       value (`style="plain"`, `scilimits=(0, 0)`, `useMathText=True`) are
       recorded and work in either order; `**kwargs` and names are not read.
+      Only calls before the first `dm.simple_layout` in the source are
+      read, and none whose every target direction (`axis=`, `both` when
+      omitted) already took a `ScalarFormatter()` or `dm.format_axis_year`
+      earlier on the same Axes; the other direction of that Axes is still
+      read.
     fix_suggestion: 'ax.yaxis.set_major_formatter(ScalarFormatter()); ax.ticklabel_format(axis="y", style="sci")'
 
   - id: multirow-subplots-no-gridspec-kw
