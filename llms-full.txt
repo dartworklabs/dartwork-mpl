@@ -1598,7 +1598,8 @@ The MCP extra supports FastMCP >=2.14.7 and patched 3.x below 4, excluding
 vulnerable 3.0–3.4.9. FastMCP 2.13.3 pins MCP SDK <1.23, which cannot meet
 the patched SDK >=1.30 requirement. Upgrade 2.x installations to 2.14.7;
 exact 2.13.3 remains only in disposable legacy source/API compatibility
-coverage. The tested 3.x lock is 3.4.10.
+coverage. The development lock tests 3.4.11, and CI also checks the 2.14.7
+and 3.4.10 floors.
 
 ## At a glance
 
