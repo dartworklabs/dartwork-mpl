@@ -9,8 +9,9 @@ ink:
 
 * bars of ``ax.bar`` / ``ax.barh`` (the patches of a ``BarContainer``);
 * ``Line2D`` drawn in data coordinates on both axes: the line at its width
-  and its markers (``axhline`` / ``axvline`` / ``axline`` references are
-  not data);
+  and the markers ``markevery`` keeps, read back from ``Line2D.draw``
+  (``axhline`` / ``axvline`` / ``axline`` references are not data; a line
+  with path effects counts whole, with every point marked);
 * ``scatter`` markers at their size.
 
 A label covers data when its ink (the glyphs down to their descenders, not
@@ -35,15 +36,16 @@ from __future__ import annotations
 import contextlib
 import re
 import unicodedata
-from numbers import Integral, Real
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, TypedDict
 
 import numpy as np
 from matplotlib import cbook
+from matplotlib.backend_bases import RendererBase
 from matplotlib.collections import PathCollection
 from matplotlib.colors import to_rgba
 from matplotlib.container import BarContainer
 from matplotlib.contour import ContourSet
+from matplotlib.path import Path
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import Bbox, IdentityTransform, TransformedPath
 
@@ -55,10 +57,12 @@ from .value_label_decimal import _value_label
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
-    from matplotlib.backend_bases import RendererBase
+    from matplotlib.backend_bases import GraphicsContextBase
     from matplotlib.figure import Figure
     from matplotlib.lines import Line2D
+    from matplotlib.transforms import Transform
     from matplotlib.typing import ColorType
+    from numpy.typing import ArrayLike
 
 __all__ = ["check_value_label_on_data"]
 
@@ -327,20 +331,133 @@ def _is_data_line(line: Line2D, owner: Axes) -> bool:
     return bool(in_x and in_y)
 
 
+class _Stroke(NamedTuple):
+    """One stroke of a line as the canvas gets it."""
+
+    path: Path  # display px; NaN gaps and the canvas cut out, MOVETO per run
+    half: float  # half its width, px
+
+
+class _Recorder(RendererBase):
+    """A renderer that takes down what a ``Line2D`` draws, drawing nothing.
+
+    ``Line2D.draw`` makes its drawing decisions itself: which markers
+    ``markevery`` keeps (by index, or along the drawn path's length for a
+    float), the strokes and their dash patterns. Drawing a line into this
+    renderer reads those decisions back through the public renderer
+    interface, so they are matplotlib's own, not a copy of its rules.
+    """
+
+    def __init__(self, renderer: RendererBase) -> None:
+        super().__init__()
+        self._renderer = renderer
+        self.strokes: list[_Stroke] = []
+        self.marks: list[np.ndarray] = []
+
+    def points_to_pixels(self, points: ArrayLike) -> ArrayLike:
+        return self._renderer.points_to_pixels(points)
+
+    def get_canvas_width_height(self) -> tuple[float, float]:
+        return self._renderer.get_canvas_width_height()
+
+    def draw_path(
+        self,
+        gc: GraphicsContextBase,
+        path: Path,
+        transform: Transform,
+        rgbFace: ColorType | None = None,
+    ) -> None:
+        width = float(np.asarray(self.points_to_pixels(gc.get_linewidth())))
+        if width <= 0 or gc.get_rgb()[3] <= 0:
+            return
+        # The vertices the canvas strokes: NaN removed, cut to the canvas,
+        # simplified and snapped as the backends prepare a path.
+        w, h = self.get_canvas_width_height()
+        drawn = path.cleaned(
+            transform=transform,
+            remove_nans=True,
+            clip=(0.0, 0.0, w, h),
+            simplify=path.should_simplify,
+            snap=gc.get_snap(),
+            stroke_width=width,
+        )
+        self.strokes.append(_Stroke(drawn, width / 2))
+
+    def draw_markers(
+        self,
+        gc: GraphicsContextBase,
+        marker_path: Path,
+        marker_trans: Transform,
+        path: Path,
+        trans: Transform,
+        rgbFace: ColorType | None = None,
+    ) -> None:
+        face = 0.0 if rgbFace is None else _alpha(rgbFace)
+        edge = gc.get_rgb()[3] if gc.get_linewidth() > 0 else 0.0
+        if face <= 0 and edge <= 0:
+            return
+        xy = trans.transform(np.asarray(path.vertices, dtype=np.float64))
+        self.marks.append(xy[np.isfinite(xy).all(axis=1)])
+
+    def take(self, line: Line2D) -> tuple[list[_Stroke], np.ndarray]:
+        """The strokes and the marker centres (display px) ``line`` draws."""
+        self.strokes, self.marks = [], []
+        line.draw(self)
+        marks = np.concatenate(self.marks) if self.marks else np.empty((0, 2))
+        return self.strokes, marks
+
+
+def _as_set(line: Line2D, fig: Figure) -> tuple[list[_Stroke], np.ndarray]:
+    """A line drawn through path effects, read from its properties.
+
+    A path effect redraws the stroke its own way (a halo, a shadow) and its
+    markers as paths, so the drawing cannot be read back: the whole line
+    counts as one solid stroke and every point as marked, which can only
+    add hits.
+    """
+    strokes: list[_Stroke] = []
+    transform = line.get_transform()
+    if (
+        line.get_linestyle() not in _NO_LINE
+        and line.get_linewidth() > 0
+        and _alpha(line.get_color(), line.get_alpha()) > 0
+    ):
+        path = transform.transform_path(line.get_path())
+        strokes.append(
+            _Stroke(
+                path.cleaned(remove_nans=True),
+                _px(line.get_linewidth(), fig) / 2,
+            )
+        )
+    face = _alpha(line.get_markerfacecolor(), line.get_alpha())
+    edge = _alpha(line.get_markeredgecolor(), line.get_alpha())
+    if (
+        line.get_marker() in _NO_MARKER
+        or line.get_markersize() <= 0
+        or (face <= 0 and (edge <= 0 or line.get_markeredgewidth() <= 0))
+    ):
+        return strokes, np.empty((0, 2))
+    xy = transform.transform(np.asarray(line.get_xydata(), dtype=np.float64))
+    return strokes, xy[np.isfinite(xy).all(axis=1)]
+
+
+def _joined(path: Path) -> tuple[np.ndarray, np.ndarray]:
+    """A path's vertices and which of them a LINETO joins to the next."""
+    vertices = np.asarray(path.vertices, dtype=np.float64)
+    if path.codes is None:
+        return vertices, np.ones(max(len(vertices) - 1, 0), dtype=bool)
+    codes = np.asarray(path.codes)
+    return vertices, np.asarray(codes[1:] == Path.LINETO, dtype=bool)
+
+
 def _polyline(
-    line: Line2D, frame: Bbox, fig: Figure, key: int
+    stroke: _Stroke, frame: Bbox, name: str, key: int
 ) -> _Polyline | None:
-    if line.get_linestyle() in _NO_LINE or line.get_linewidth() <= 0:
-        return None
-    if _alpha(line.get_color(), line.get_alpha()) <= 0:
-        return None
-    points = line.get_transform().transform(
-        np.asarray(line.get_path().vertices, dtype=np.float64)
-    )
-    a, b = points[:-1], points[1:]
+    vertices, joined = _joined(stroke.path)
+    a, b = vertices[:-1][joined], vertices[1:][joined]
     lo, hi = np.minimum(a, b), np.maximum(a, b)
-    half = _px(line.get_linewidth(), fig) / 2
-    # Finite segments that reach the plot box; NaN breaks the line.
+    half = stroke.half
+    # Finite segments that reach the plot box; a MOVETO breaks the line.
     keep = np.isfinite(a).all(axis=1) & np.isfinite(b).all(axis=1)
     keep &= (lo[:, 0] <= frame.x1 + half) & (hi[:, 0] >= frame.x0 - half)
     keep &= (lo[:, 1] <= frame.y1 + half) & (hi[:, 1] >= frame.y0 - half)
@@ -349,7 +466,7 @@ def _polyline(
     order = np.argsort(lo[keep][:, 0], kind="stable")
     a, b, lo, hi = (v[keep][order] for v in (a, b, lo, hi))
     reach = float(np.max(hi[:, 0] - lo[:, 0]))
-    return _Polyline(a, b, lo, hi, reach, half, _name(line), key)
+    return _Polyline(a, b, lo, hi, reach, half, name, key)
 
 
 def _sorted_markers(
@@ -374,57 +491,24 @@ def _meets_frame(xy: np.ndarray, r: np.ndarray, frame: Bbox) -> np.ndarray:
     return np.asarray(ok, dtype=np.bool_)
 
 
-def _marked(xy: np.ndarray, every: object) -> np.ndarray | None:
-    """The points ``markevery`` puts a marker on, picked as matplotlib does.
-
-    ``None`` for a spacing in Axes fractions (a float), which follows the
-    drawn path's length: those markers are left out, the line still counts.
-    """
-    if every is None:
-        return xy
-    if isinstance(every, Integral):
-        every = (0, every)
-    if isinstance(every, tuple):
-        start, step = every if len(every) == 2 else (None, None)
-        if isinstance(start, Integral) and isinstance(step, Integral):
-            return xy[int(start) :: int(step)]
-        return None
-    if isinstance(every, Real):
-        return None
-    if isinstance(every, slice):
-        return xy[every]
-    try:  # fancy indexing: indices or a boolean mask
-        picked: np.ndarray = xy[np.asarray(every)]
-    except (ValueError, IndexError):
-        return None
-    return picked
-
-
-def _line_markers(
-    line: Line2D, frame: Bbox, fig: Figure, key: int
-) -> _Markers | None:
-    if line.get_marker() in _NO_MARKER or line.get_markersize() <= 0:
-        return None
-    face = _alpha(line.get_markerfacecolor(), line.get_alpha())
-    edge = _alpha(line.get_markeredgecolor(), line.get_alpha())
-    if face <= 0 and (edge <= 0 or line.get_markeredgewidth() <= 0):
-        return None
-    xy = _marked(
-        line.get_transform().transform(
-            np.asarray(line.get_xydata(), dtype=np.float64)
-        ),
-        line.get_markevery(),
+def _line(
+    line: Line2D, frame: Bbox, fig: Figure, recorder: _Recorder
+) -> tuple[list[_Polyline], _Markers | None]:
+    """A data line's drawn strokes and markers in the plot box."""
+    strokes, xy = (
+        _as_set(line, fig) if line.get_path_effects() else recorder.take(line)
     )
-    if xy is None:
-        return None
+    name, key = _name(line), id(line)
+    drawn = [_polyline(stroke, frame, name, key) for stroke in strokes]
+    lines = [polyline for polyline in drawn if polyline is not None]
     r = np.full(
         len(xy),
         _px(line.get_markersize() / 2 + line.get_markeredgewidth() / 2, fig),
     )
     seen = _meets_frame(xy, r, frame)
     if not seen.any():
-        return None
-    return _sorted_markers(xy[seen], r[seen], _name(line), key)
+        return lines, None
+    return lines, _sorted_markers(xy[seen], r[seen], name, key)
 
 
 def _scatter(
@@ -460,16 +544,16 @@ def _measure(
 ) -> _Data:
     lines: list[_Polyline] = []
     markers: list[_Markers] = []
+    recorder = _Recorder(renderer)
     for owner in owners:
         for line in owner.get_lines():
             if not line.get_visible() or not _is_data_line(line, owner):
                 continue
             try:
-                drawn = _polyline(line, frame, fig, id(line))
-                marks = _line_markers(line, frame, fig, id(line))
+                drawn, marks = _line(line, frame, fig, recorder)
             except BBOX_ERRORS:
                 continue
-            lines.extend([drawn] if drawn is not None else [])
+            lines.extend(drawn)
             markers.extend([marks] if marks is not None else [])
         for coll in owner.collections:
             if not isinstance(coll, PathCollection) or not coll.get_visible():

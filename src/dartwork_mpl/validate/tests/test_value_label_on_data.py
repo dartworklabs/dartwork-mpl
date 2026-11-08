@@ -10,6 +10,8 @@ artists the reader cannot see.
 
 from __future__ import annotations
 
+import io
+import re
 import time
 
 import matplotlib
@@ -19,6 +21,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib import patheffects
 from matplotlib.transforms import Bbox
 
 import dartwork_mpl as dm
@@ -615,6 +618,107 @@ def test_reports_only_the_markers_markevery_draws():
         )
     (w,) = _found(fig)
     assert (w.detail["count"], w.detail["example"]) == (1, "43")
+
+
+def test_reports_the_first_marker_of_a_float_markevery():
+    # A float markevery spaces markers along the drawn path; the first one
+    # is at the first point, under the label.
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.plot(
+        [0.3, 0.7],
+        [0.5, 0.5],
+        linestyle="none",
+        marker="o",
+        markersize=10,
+        markevery=0.2,
+    )
+    ax.text(0.3, 0.5, "50", ha="left", va="center", fontsize=20)
+    assert [w.detail["covered"] for w in _found(fig)] == [["marker"]]
+
+
+def _svg_marked(fig, line):
+    """Indices of ``line``'s points the SVG backend puts a marker on.
+
+    The oracle is matplotlib's own vector output: the ``<use>`` marks in
+    the line's group, matched to its points in points from the figure's
+    lower left (the SVG's units, its y axis down).
+    """
+    buffer = io.StringIO()
+    fig.savefig(buffer, format="svg")
+    svg = buffer.getvalue()
+    group = svg[svg.index(f'<g id="{line.get_gid()}"') :]
+    group = group[: group.index("</g>")]
+    marks = np.array(
+        [
+            (float(x), float(y))
+            for x, y in re.findall(r'<use [^>]*x="([^"]+)" y="([^"]+)"', group)
+        ]
+    ).reshape(-1, 2)
+    pt = line.get_transform().transform(line.get_xydata()) * 72 / fig.dpi
+    pt[:, 1] = fig.bbox.height * 72 / fig.dpi - pt[:, 1]
+    gap = np.hypot(*(pt[:, None, :] - marks[None, :, :]).transpose(2, 0, 1))
+    return sorted(set(np.flatnonzero(gap.min(axis=1) < 0.05).tolist()))
+
+
+@pytest.mark.parametrize("every", [0.25, (0.1, 0.3)])
+def test_reports_only_the_markers_float_markevery_draws(every):
+    # The check reads the markers Line2D.draw keeps: a label beside a bare
+    # point is clean, one beside a drawn marker is not.
+    fig, ax = _fig()
+    (line,) = ax.plot(
+        range(10),
+        [5] * 10,
+        linestyle="none",
+        marker="o",
+        markersize=6,
+        markevery=every,
+        gid="probe",
+    )
+    ax.set(xlim=(-0.5, 9.5), ylim=(0, 10))
+    dm.simple_layout(fig)
+    drawn = _svg_marked(fig, line)
+    bare = [i for i in range(10) if i not in drawn]
+    assert drawn and bare, (drawn, bare)
+    for x, text in ((bare[0], "41"), (drawn[0], "43")):
+        ax.annotate(
+            text,
+            (x, 5),
+            xytext=(1.5, 0),
+            textcoords="offset points",
+            ha="left",
+            va="center",
+        )
+    (w,) = _checked(fig)
+    assert (w.detail["count"], w.detail["example"]) == (1, "43")
+
+
+def test_path_effect_lines_count_whole_and_marked_everywhere():
+    # A path effect redraws the line and its markers its own way, which
+    # cannot be read back: the check takes every point as marked, so the
+    # label beside the bare point 1 is reported too (more, never fewer).
+    fig, ax = _fig()
+    ax.plot(
+        range(10),
+        [5] * 10,
+        linestyle="none",
+        marker="o",
+        markersize=6,
+        markevery=3,
+        path_effects=[patheffects.withStroke(linewidth=3, foreground="w")],
+    )
+    ax.set_ylim(0, 10)
+    for x, text in ((1, "41"), (3, "43")):
+        ax.annotate(
+            text,
+            (x, 5),
+            xytext=(1.5, 0),
+            textcoords="offset points",
+            ha="left",
+            va="center",
+        )
+    (w,) = _found(fig)
+    assert w.detail["count"] == 2
 
 
 # ------------------------------------------------------------------ cost
