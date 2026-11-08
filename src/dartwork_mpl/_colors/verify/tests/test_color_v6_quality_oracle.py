@@ -329,6 +329,7 @@ def test_ordered_quality_marks_one_zero_among_numeric_steps_degenerate() -> (
     assert math.isfinite(quality["step_cv"])
 
 
+@pytest.mark.approved_input
 def test_quality_validator_allows_numeric_cv_with_one_degenerate_step() -> None:
     """Represent one isolated zero step without conflating it with a zero row."""
     payload = _load_quality()
@@ -353,6 +354,7 @@ def test_quality_validator_allows_numeric_cv_with_one_degenerate_step() -> None:
     assert isinstance(validated_amber["step_cv"], float)
 
 
+@pytest.mark.approved_input
 def test_tangerine_records_local_round_to_even_y_quantization_margin() -> None:
     """Pin the worst full-LUT pair to its two local 8-bit sRGB cells."""
     compatibility = json.loads(COMPAT_PATH.read_text(encoding="utf-8"))
@@ -375,6 +377,7 @@ def test_tangerine_records_local_round_to_even_y_quantization_margin() -> None:
     }
 
 
+@pytest.mark.approved_input
 def test_diverging_and_cyclic_topology_preserve_full_baseline_contract() -> (
     None
 ):
@@ -410,6 +413,7 @@ def test_gate_decisions_use_raw_values_not_display_rounding() -> None:
     assert oracle.meets_minimum(9.999999, 10.0) is False
 
 
+@pytest.mark.approved_input
 def test_quality_policy_distinguishes_step_cv_by_sampling_and_taxonomy() -> (
     None
 ):
@@ -428,6 +432,7 @@ def test_quality_policy_distinguishes_step_cv_by_sampling_and_taxonomy() -> (
     assert "ordered_step_cv" not in gate_rules
 
 
+@pytest.mark.approved_input
 def test_quality_fixture_is_pinned_finite_and_validated() -> None:
     """Pin both immutable bytes and validate embedded source provenance."""
     assert hashlib.sha256(COMPAT_PATH.read_bytes()).hexdigest() == COMPAT_SHA256
@@ -446,6 +451,7 @@ def test_quality_fixture_is_pinned_finite_and_validated() -> None:
     assert validated["schema"] == "dartwork-mpl.color-quality/v2"
 
 
+@pytest.mark.approved_input
 def test_vendor_surface_provenance_does_not_change_quality_metric_values() -> (
     None
 ):
@@ -460,6 +466,7 @@ def test_vendor_surface_provenance_does_not_change_quality_metric_values() -> (
     )
 
 
+@pytest.mark.approved_input
 def test_quality_v2_preserves_every_legacy_metric_outside_declared_changes() -> (
     None
 ):
@@ -488,6 +495,7 @@ def test_quality_v2_preserves_every_legacy_metric_outside_declared_changes() -> 
     )
 
 
+@pytest.mark.approved_input
 def test_quality_loader_rejects_source_and_payload_tampering(
     tmp_path: Path,
 ) -> None:
@@ -535,6 +543,7 @@ def test_quality_loader_rejects_source_and_payload_tampering(
 @pytest.mark.parametrize(
     "mutation", ["empty_palette", "bad_summary", "bad_count", "empty_extrema"]
 )
+@pytest.mark.approved_input
 def test_quality_validator_rejects_malformed_metric_contracts(
     mutation: str,
 ) -> None:
@@ -559,6 +568,7 @@ def test_quality_validator_rejects_malformed_metric_contracts(
         )
 
 
+@pytest.mark.approved_input
 def test_quality_computation_rejects_singleton_ordered_luts_cleanly() -> None:
     """Reject empty ordered profiles with the oracle's domain exception."""
     compatibility = json.loads(COMPAT_PATH.read_text(encoding="utf-8"))
@@ -576,6 +586,7 @@ def test_quality_computation_rejects_singleton_ordered_luts_cleanly() -> None:
         oracle.compute_catalog_quality(compatibility, previews)
 
 
+@pytest.mark.approved_input
 def test_quality_sanity_values_match_the_immutable_v5_baseline() -> None:
     """Pin representative raw extrema used by the migration gates."""
     quality = _load_quality()
@@ -636,6 +647,7 @@ def test_quality_sanity_values_match_the_immutable_v5_baseline() -> None:
     assert dark["tritan_min_delta_e00"] == pytest.approx(11.010755633433755)
 
 
+@pytest.mark.approved_input
 def test_every_discrete_form_has_quality_and_singletons_use_null() -> None:
     """Measure every frozen discrete row without serializing NaN."""
     quality = _load_quality()
@@ -651,6 +663,10 @@ def test_every_discrete_form_has_quality_and_singletons_use_null() -> None:
         assert singleton["normal_delta_e_ok"] is None
 
 
+# Deliberately not ``approved_input``: the generator extracts the whole
+# baseline commit with ``git archive``, which reaches beyond the exact files in
+# tests/support/approved_inputs.json and needs full history. It runs in the
+# full-history ``test`` job only, not in the sparse approved-inputs job.
 @pytest.mark.color_pipeline
 def test_generator_is_byte_identical_and_uses_archived_baseline(
     tmp_path: Path,

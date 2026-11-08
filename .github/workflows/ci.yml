@@ -288,6 +288,93 @@ jobs:
           print('OK: base install imports + renders cleanly')
           "
 
+  # Approved-input route (tests/support/approved_inputs.json, user approval
+  # 2026-11-08). The checkout leaves out docs/superpowers except the exact
+  # files the manifest lists; the sparse checkout fetches no other blob, and
+  # the test step turns off lazy fetching. The job then runs the manifest
+  # contract and every `approved_input` test, so one of those tests that reads
+  # any other docs/superpowers file fails here with a missing file. This is
+  # evidence for the tests this job runs: it is not a confinement proof for
+  # the rest of the suite, and the full `test` job still runs everything.
+  approved-inputs:
+    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    env:
+      UV_PYTHON: "3.12"
+      MPLBACKEND: Agg
+      # Same bound as the test job on shared ml-main; hosted PRs auto-detect.
+      PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          # tests/architecture/test_approved_inputs.py pins this list to the
+          # manifest: the two lines that exclude docs/superpowers, then one
+          # exact file per manifest entry, in manifest order.
+          sparse-checkout: |
+            /*
+            !/docs/superpowers/
+            /docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/color_v5_compatibility.json
+            /docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/color_v5_quality.json
+            /docs/superpowers/specs/assets/2026-07-03-color-system-v5/color_v5_ssot.json
+            /docs/superpowers/plans/2026-07-21-color-rationale-accuracy.md
+            /docs/superpowers/plans/2026-07-17-beginner-friendly-color-docs.md
+            /docs/superpowers/plans/2026-07-14-oklab-centered-color-system.md
+            /docs/superpowers/specs/2026-07-14-oklab-centered-color-system-design.md
+            /docs/superpowers/specs/2026-07-17-beginner-friendly-color-docs-design.md
+            /docs/superpowers/specs/2026-07-21-color-rationale-accuracy-design.md
+            /docs/superpowers/specs/assets/2026-07-17-beginner-friendly-color-docs/claim-inventory.md
+      - name: Isolate matplotlib font discovery
+        shell: bash
+        run: |
+          printf 'MPLCONFIGDIR=%s/matplotlib-approved-inputs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install locked all-extras dependencies
+        run: uv sync --frozen --all-extras --dev
+      # Each listed input must be checked out as a regular file; the sparse
+      # list itself is recorded as evidence.
+      - name: Verify the sparse approved-input checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git sparse-checkout list | tee "$RUNNER_TEMP/approved-sparse-checkout.txt"
+          mapfile -t inputs < <(jq -r '.inputs[].path' tests/support/approved_inputs.json)
+          for path in "${inputs[@]}"; do
+            test "$(git ls-files -t -- "$path")" = "H $path"
+            test -f "$path"
+            test ! -L "$path"
+          done
+      - name: Run the manifest contract and approved-input tests
+        env:
+          GIT_NO_LAZY_FETCH: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run pytest tests/architecture/test_approved_inputs.py -q --no-cov \
+            --junitxml="$RUNNER_TEMP/pytest-approved-manifest.xml" 2>&1 | tee "$RUNNER_TEMP/approved-manifest-summary.txt"
+          uv run pytest -m approved_input -n auto --dist worksteal -q --no-cov --durations=20 \
+            --junitxml="$RUNNER_TEMP/pytest-approved-inputs.xml" 2>&1 | tee "$RUNNER_TEMP/approved-inputs-summary.txt"
+      - name: Preserve approved-input evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: approved-inputs
+          path: |
+            ${{ runner.temp }}/approved-sparse-checkout.txt
+            ${{ runner.temp }}/pytest-approved-manifest.xml
+            ${{ runner.temp }}/approved-manifest-summary.txt
+            ${{ runner.temp }}/pytest-approved-inputs.xml
+            ${{ runner.temp }}/approved-inputs-summary.txt
+          if-no-files-found: warn
+          retention-days: 7
+
   test-matplotlib:
     # A lock-only job cannot prove the published dependency range. Resolve
     # the actual project with the oldest supported Python and the declared

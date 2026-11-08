@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from markdown_it import MarkdownIt
 
+from tests.support.approved_inputs import read_approved_text
 from tests.support.excluded_dirs import walk_files, watch_access
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -103,11 +104,77 @@ def _assert_historical_plan_is_visibly_inactive(
     assert visible.index(scope) < visible.index(_HISTORICAL_DIRECTIVE)
 
 
+_SYNTHETIC_PLAN_BODY = (
+    "> **For agentic workers: REQUIRED SUB-SKILL:** synthetic directive.\n"
+    "\n"
+    "- [ ] Step 1: a synthetic historical step.\n"
+)
+
+
+def _hidden_preface_variants(plan: str, scope: str) -> dict[str, str]:
+    """Return the three ways a plan can hide its preface from readers."""
+    preface_start = plan.index("> **Status:")
+    directive_start = plan.index("> **For agentic workers:")
+    scope_start = plan.index("> **Everything below")
+    return {
+        "comment-wrapped": (
+            plan[:preface_start]
+            + "<!--\n"
+            + plan[preface_start:directive_start]
+            + "-->\n"
+            + plan[directive_start:]
+        ),
+        "inline-comment": (
+            plan[:scope_start]
+            + f"> <!-- {scope} -->\n\n"
+            + plan[directive_start:]
+        ),
+        "hidden-span": (
+            plan[:scope_start]
+            + f"> <span hidden>{scope}</span>\n\n"
+            + plan[directive_start:]
+        ),
+    }
+
+
+@pytest.mark.parametrize(
+    ("preface", "status", "scope"),
+    (
+        (_HISTORICAL_PREFACE, _HISTORICAL_STATUS, _HISTORICAL_SCOPE),
+        (_BEGINNER_PLAN_PREFACE, _BEGINNER_PLAN_STATUS, _BEGINNER_PLAN_SCOPE),
+    ),
+    ids=("accuracy-preface", "beginner-preface"),
+)
+def test_historical_plan_check_accepts_visible_preface_and_rejects_hidden(
+    preface: str, status: str, scope: str
+) -> None:
+    """Synthetic control: the helper passes a visible preface, fails hidden ones.
+
+    Runs on a synthetic plan, so it guards the helper wherever the approved
+    plan inputs are absent; the two plan tests below check the real files.
+    """
+    kwargs = {"preface": preface, "status": status, "scope": scope}
+    plan = preface + _SYNTHETIC_PLAN_BODY
+    _assert_historical_plan_is_visibly_inactive(plan, **kwargs)
+
+    variants = _hidden_preface_variants(plan, scope)
+    assert scope not in _visible_markdown_text(variants["inline-comment"])
+    assert scope not in _visible_markdown_text(variants["hidden-span"])
+    for hidden in variants.values():
+        with pytest.raises(AssertionError):
+            _assert_historical_plan_is_visibly_inactive(hidden, **kwargs)
+    with pytest.raises(AssertionError):
+        _assert_historical_plan_is_visibly_inactive(
+            _SYNTHETIC_PLAN_BODY + preface, **kwargs
+        )
+
+
+@pytest.mark.approved_input
 def test_recovered_accuracy_plan_is_marked_as_historical() -> None:
     """Do not present one damaged-worktree recovery plan as current steps."""
-    plan = (
-        ROOT / "docs/superpowers/plans/2026-07-21-color-rationale-accuracy.md"
-    ).read_text(encoding="utf-8")
+    plan = read_approved_text(
+        "docs/superpowers/plans/2026-07-21-color-rationale-accuracy.md"
+    )
     _assert_historical_plan_is_visibly_inactive(plan)
 
     preface_start = plan.index("> **Status:")
@@ -141,12 +208,12 @@ def test_recovered_accuracy_plan_is_marked_as_historical() -> None:
         _assert_historical_plan_is_visibly_inactive(html_hidden)
 
 
+@pytest.mark.approved_input
 def test_recovered_beginner_plan_is_marked_as_historical() -> None:
     """Seal the recovered plan without making stale commands executable."""
-    plan = (
-        ROOT
-        / "docs/superpowers/plans/2026-07-17-beginner-friendly-color-docs.md"
-    ).read_text(encoding="utf-8")
+    plan = read_approved_text(
+        "docs/superpowers/plans/2026-07-17-beginner-friendly-color-docs.md"
+    )
     kwargs = {
         "preface": _BEGINNER_PLAN_PREFACE,
         "status": _BEGINNER_PLAN_STATUS,

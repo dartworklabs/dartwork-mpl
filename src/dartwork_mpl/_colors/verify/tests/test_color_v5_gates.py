@@ -430,6 +430,7 @@ def test_evaluate_catalog_fails_closed_on_baseline_metric_corruption(
         _gates.evaluate_catalog(candidate_catalog, corrupted)
 
 
+@pytest.mark.approved_input
 def test_check_all_adapts_the_shared_asset_baseline_policy(
     candidate_catalog: CatalogSnapshot,
 ) -> None:
@@ -445,6 +446,7 @@ def test_check_all_adapts_the_shared_asset_baseline_policy(
     assert any("/metrics/palette/amber/step_cv" in item for item in failures)
 
 
+@pytest.mark.approved_input
 def test_check_all_does_not_compare_direct_rows_to_full_lut_topology(
     candidate_catalog: CatalogSnapshot,
 ) -> None:
