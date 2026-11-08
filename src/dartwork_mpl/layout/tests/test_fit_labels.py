@@ -1170,30 +1170,63 @@ def test_fit_labels_false_gives_the_auto_locator_back() -> None:
 
 
 @pytest.mark.filterwarnings("ignore:dm.label_bars:UserWarning")
-def test_margins_that_do_not_settle_are_not_fitted() -> None:
-    """advanced/bar_grouped in presentation, with longer phase names: its
-    legend is wider than the canvas leaves the plot, so every margin fit
-    moves the plot (33 px a step). Turned upright, its names would be
-    judged on a plot still moving, and each fit after a round would move
-    it on until it was a pixel wide; the figure is not fitted and draws as
-    without the ladder."""
+def _unsettled_bars():
+    """Grouped bars on a presentation slide under a hand-placed three-column
+    legend, as advanced/bar_grouped drew them before it took
+    ``dm.place_legend``: the legend is wider than the canvas leaves the
+    plot, so every margin fit moves the plot (33 px a step)."""
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=4, n_series=3))
+    x = np.arange(4)
+    for i, (name, values) in enumerate(
+        (
+            ("Plant", [120, 135, 152, 178]),
+            ("Lab", [88, 92, 101, 109]),
+            ("Field", [54, 48, 52, 55]),
+        )
+    ):
+        ax.bar(x + (i - 1) * 0.26, values, 0.26, label=name)
+    ax.set_xticks(
+        x, ["Phase 1 design", "Phase 2 build", "Phase 3 test", "Phase 4 launch"]
+    )
+    ax.set_ylabel("Throughput (units)")
+    ax.set_xlabel("Period")
+    ax.legend(loc="upper left", fontsize=dm.fs(-1), frameon=False, ncol=3)
+    return fig, ax
+
+
+def test_margins_that_do_not_settle_are_not_fitted(monkeypatch) -> None:
+    """Turned upright, the names would be judged on a plot still moving,
+    and each fit after a round would move it on until it was a pixel wide;
+    the figure is not fitted and draws as without the ladder."""
+    import dartwork_mpl.layout._simple_layout as simple
+
+    first_steps: list[float] = []
+    climbs: list[bool] = []
+    fit_margins, climb = simple._fit_margins, simple.climb
+
+    def fitted(*args, **kwargs):
+        step, last = fit_margins(*args, **kwargs)
+        first_steps.append(step.delta_px)
+        return step, last
+
+    def climbed(*args, **kwargs):
+        climbs.append(True)
+        return climb(*args, **kwargs)
+
+    monkeypatch.setattr(simple, "_fit_margins", fitted)
+    monkeypatch.setattr(simple, "climb", climbed)
     draws = []
     for fit in (False, True):
-        fig, ax = _template_figure(
-            "advanced/bar_grouped.py", "presentation", None
-        )
-        ax.set_xticks(
-            ax.get_xticks(),
-            [
-                "Phase 1 design",
-                "Phase 2 build",
-                "Phase 3 test",
-                "Phase 4 launch",
-            ],
-        )
+        first_steps.clear()
+        fig, ax = _unsettled_bars()
         dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+        # Precondition: the first fit does not settle (else this figure
+        # no longer tests the rule).
+        assert first_steps[0] >= simple._CONVERGE_TOL_PX
         draws.append(_pixels(fig))
         assert ax.get_window_extent().width > 0.3 * fig.bbox.width
+    assert climbs == []
     assert _angles(ax) == {0.0}
     assert draws[1] == draws[0]
 

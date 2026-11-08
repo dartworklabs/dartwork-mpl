@@ -76,7 +76,7 @@ ax.set_xticklabels(labels, rotation=20, ha="right")
 ax.set_ylabel("CSAT score (0-100)")
 ax.set_xlabel("Region")
 ax.set_ylim(40, 105)
-ax.legend(loc="lower right", fontsize=dm.fs(-1), frameon=False)
+dm.place_legend(ax, fontsize=dm.fs(-1), frameon=False)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 dm.validate_with_fixes(fig)
