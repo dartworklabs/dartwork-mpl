@@ -112,7 +112,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   warning per legend, every Axes legend (insets from `ax.inset_axes` too)
   and figure legend whose box meets the bars, lines or markers of any plot
   box (twin Axes and insets included, measured as `VALUE_LABEL_ON_DATA`
-  measures data), a text inside an Axes where it is drawn (`ax.texts`:
+  measures data), the outline of a filled area there (`fill_between`
+  bands, `stackplot` layers, violin bodies, `broken_barh`: the legend
+  crosses its edge, down to a violin's thinnest tail, or holds it whole;
+  inside a region's plain interior, such as one of a phase diagram's
+  regions, it does not count; only polygons that draw ink, each by its
+  own colours and alpha, where its clip lets it draw; reported as
+  `"area"`), a text inside an Axes where it is drawn (`ax.texts`:
   value labels, annotations without their arrow, line-end labels; one
   clipped away or drawn at alpha 0, the text's own alpha replacing its
   colour's as matplotlib draws it, does not count), another legend, or
@@ -179,7 +185,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   three columns and takes the first whose box no data ink comes within
   2 pt of: lines at their width, markers and scatter points at their size,
   bars and other patches, filled areas and the Axes' texts, twins
-  included. The spots are measured where matplotlib anchors them, so a
+  included; on a polar Axes (any non-rectilinear one) also its frame (the
+  circle, at its width) and the tick labels it draws inside its box (the
+  angles round the circle, the radii inside it), so a radar's legend no
+  longer takes the bottom of the circle over two angle labels on a slide:
+  it keeps a free corner beyond the circle, else goes outside (above on
+  the bundled radar in `presentation`). The spots are measured where
+  matplotlib anchors them, so a
   call draws the figure once (it drew it for every trial, up to 19 times). When no spot is free it goes outside:
   above, right or below, among the sides no other panel sits beyond,
   whichever takes the smaller share of the plot. Above stays the default;

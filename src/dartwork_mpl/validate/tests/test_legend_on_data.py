@@ -16,8 +16,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.collections import PolyCollection
 from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
+from matplotlib.patches import Patch, Rectangle
+from matplotlib.transforms import Bbox
 
 import dartwork_mpl as dm
 from dartwork_mpl.validate import Severity
@@ -148,6 +150,251 @@ def test_a_figure_legend_over_the_panels_is_reported() -> None:
     assert w.detail["panels"]  # the panel(s) whose lines it covers
 
 
+# ------------------------------------------- filled areas: violins, bands
+def _violin_with_a_long_tail(ax):
+    """One violin at the right edge whose thin lower tail runs into the
+    lower-right corner, as advanced/violin's last region did, and a
+    ``Median`` marker for the legend."""
+    rng = np.random.default_rng(7)
+    data = np.concatenate([rng.normal(72, 5, 400), [41.0, 43.0]])
+    (body,) = ax.violinplot([data], positions=[3], showextrema=False)["bodies"]
+    ax.scatter(
+        [3], [np.median(data)], color="white", edgecolor="k", label="Median"
+    )
+    ax.set(xlim=(0.5, 3.4), ylim=(40, 100))
+    return body
+
+
+def _meets_path(fig, legend, area) -> bool:
+    renderer = drawn_renderer(fig)
+    box = legend.get_window_extent(renderer)
+    return any(
+        area.get_transform()
+        .transform_path(path)
+        .intersects_bbox(box, filled=True)
+        for path in area.get_paths()
+    )
+
+
+def test_a_legend_on_a_violins_thin_tail_is_reported() -> None:
+    fig, ax = _fig()
+    body = _violin_with_a_long_tail(ax)
+    legend = ax.legend(loc="lower right", frameon=False)
+    assert _meets_path(
+        fig, legend, body
+    )  # precondition: the tail runs under it
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+    assert found[0].message.startswith("Legend of axes[0] covers areas")
+
+
+def test_a_legend_across_a_bands_edges_is_reported() -> None:
+    """A band thinner than the legend: the legend hides where it starts and ends."""
+    fig, ax = _fig()
+    ax.fill_between([0, 10], 4.8, 5.2, color="oc.gray2", label="Range")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+    assert found[0].detail["artists"] == ["Range"]
+
+
+def test_a_legend_holding_a_whole_area_is_reported() -> None:
+    fig, ax = _fig()
+    ax.fill_between([4.8, 5.2], 4.9, 5.1, color="oc.gray6", label="Spot")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+
+
+def test_a_legend_beside_a_filled_band_is_clean() -> None:
+    fig, ax = _fig()
+    ax.fill_between([0, 10], 0, 4, color="oc.gray2", label="Range")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.legend(loc="upper right")
+    assert _found(fig) == []
+
+
+def test_a_legend_inside_a_region_that_fills_the_plot_is_clean() -> None:
+    """Regions tiling the plot (a phase diagram): inside one region's plain
+    interior the legend hides none of the regions' shapes."""
+    fig, ax = _fig()
+    x = np.linspace(0, 10, 50)
+    low, high = 2 + 0.3 * x, 5 + 0.3 * x
+    ax.fill_between(x, 0, low, color="oc.teal1", label="Solid")
+    ax.fill_between(x, low, high, color="oc.violet1", label="Liquid")
+    ax.fill_between(x, high, 14, color="oc.orange1", label="Gas")
+    ax.set(xlim=(0, 10), ylim=(0, 14))
+    ax.legend(loc="upper left")
+    assert _found(fig) == []
+
+
+@pytest.mark.parametrize(
+    ("face", "edge"),
+    [("none", "none"), ("none", "k")],
+    ids=["no_ink", "outline"],
+)
+def test_an_area_counts_by_the_ink_it_draws_under_the_legend(
+    face: str, edge: str
+) -> None:
+    """No face and no edge draws nothing; an outline draws only its edge,
+    which runs well clear of a legend in its middle."""
+    fig, ax = _fig()
+    ax.fill_between(
+        [0, 10], 0.5, 9.5, facecolor=face, edgecolor=edge, label="Box"
+    )
+    ax.set(xlim=(-1, 11), ylim=(-1, 11))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    assert _found(fig) == []
+
+
+def test_an_outline_counts_where_its_edge_runs_under_the_legend() -> None:
+    fig, ax = _fig()
+    ax.fill_between(
+        [0, 10], 0.5, 5, facecolor="none", edgecolor="k", label="Box"
+    )
+    ax.set(xlim=(-1, 11), ylim=(-1, 11))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")  # straddles the outline's top edge at y = 5
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+
+
+def test_meshes_and_contours_are_still_not_data() -> None:
+    fig, ax = _fig()
+    x, y = np.meshgrid(np.linspace(0, 1, 20), np.linspace(0, 1, 20))
+    ax.contourf(x, y, x + y)
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    assert _found(fig) == []
+
+
+def _area_in_the_legend(mode: str):
+    """A polygon inside a centred legend that ``mode`` keeps from drawing:
+    clipped away by its clip box or clip path, or transparent beside an
+    opaque polygon of the same collection (review of #660)."""
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    legend = ax.legend(
+        handles=[Patch(facecolor="dc.blue5", label="Area")], loc="center"
+    )
+    fig.canvas.draw()
+    to_data = ax.transData.inverted()
+    x0, y0, x1, y1 = to_data.transform_bbox(legend.get_window_extent()).extents
+    hidden = [
+        (x0 + 0.01, y0 + 0.01),
+        (x1 - 0.01, y0 + 0.01),
+        (x1 - 0.01, y1 - 0.01),
+        (x0 + 0.01, y1 - 0.01),
+    ]
+    visible = [(0.1, 0.1), (0.2, 0.1), (0.2, 0.2), (0.1, 0.2)]
+    if mode == "mixed_alpha":
+        coll = PolyCollection(
+            [hidden, visible],
+            facecolors=[(0, 0, 1, 0), (0, 0, 1, 1)],
+            edgecolors="none",
+        )
+    else:
+        coll = PolyCollection(
+            [hidden], facecolors=["dc.blue5"], edgecolors="none"
+        )
+    ax.add_collection(coll)
+    if mode == "clip_box":
+        coll.set_clip_box(Bbox.from_bounds(0, 0, 1, 1))
+    if mode == "clip_path":
+        coll.set_clip_path(
+            Rectangle((0.05, 0.05), 0.1, 0.1, transform=ax.transData)
+        )
+    return fig, coll, visible
+
+
+@pytest.mark.parametrize("mode", ["clip_box", "clip_path", "mixed_alpha"])
+def test_an_area_that_draws_nothing_under_the_legend_does_not_count(
+    mode: str,
+) -> None:
+    """The oracle: removing the polygon under the legend changes no pixel."""
+    fig, coll, visible = _area_in_the_legend(mode)
+    fig.canvas.draw()
+    before = np.asarray(fig.canvas.buffer_rgba()).copy()
+    found = _found(fig)
+    if mode == "mixed_alpha":
+        coll.set_verts([visible])
+        coll.set_facecolors([(0, 0, 1, 1)])
+    else:
+        coll.set_visible(False)
+    fig.canvas.draw()
+    assert np.array_equal(before, np.asarray(fig.canvas.buffer_rgba()))
+    assert _kinds(found) == []
+
+
+def _kinds(found) -> list[tuple[str, object]]:
+    """Each finding's check and what it covers (``None`` for a failed check)."""
+    return [(w.check_id, (w.detail or {}).get("covered")) for w in found]
+
+
+_BAND = [(0, 4.95), (10, 4.95), (10, 5.05), (0, 5.05)]  # thinner than it
+_FAR = [(0.5, 0.5), (1.5, 0.5), (1.5, 1.5), (0.5, 1.5)]
+
+
+def _two_polygons(alphas, *, polygons=(_BAND, _FAR), hatch_only=False):
+    """One collection, a band through a centred legend and a square far
+    from it, with one artist alpha per polygon; ``hatch_only`` draws them
+    by a hatch alone (no face, no edge)."""
+    fig, ax = _fig()
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    style = (
+        {"facecolors": "none", "edgecolors": "none", "hatch": "//"}
+        if hatch_only
+        else {"facecolors": "oc.gray6", "edgecolors": "none"}
+    )
+    ax.add_collection(PolyCollection(list(polygons), alpha=alphas, **style))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    return fig
+
+
+def test_an_area_with_one_alpha_per_polygon_is_measured() -> None:
+    """``alpha=[0.4, 0.8]`` is an array: read per polygon, the band under
+    the legend draws and is reported (the check does not fail)."""
+    assert _kinds(_found(_two_polygons([0.4, 0.8]))) == [(ID, ["area"])]
+
+
+def test_a_polygon_at_alpha_zero_in_an_alpha_array_does_not_count() -> None:
+    assert _kinds(_found(_two_polygons([0.0, 1.0]))) == []
+
+
+def test_a_legend_handle_with_one_alpha_per_point_is_read() -> None:
+    """A scatter's alpha array reaches its legend handle; with the entry
+    text drawing nothing the handle decides whether the legend inks, and
+    the check reads it instead of failing (Codex on #660)."""
+    fig, ax = _fig()
+    ax.plot([0, 10], [5, 5], label="_flat")
+    ax.scatter([20, 21], [20, 21], alpha=[0.3, 0.6], label="Points")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.legend(loc="center", frameon=False, labelcolor="none")
+    assert _kinds(_found(fig)) == [(ID, ["line"])]
+
+
+def test_a_hatch_at_alpha_zero_in_an_alpha_array_does_not_count() -> None:
+    """The oracle: the hatched band at alpha 0 draws no pixel (the figure
+    equals one with the far square alone)."""
+
+    def pixels(fig) -> np.ndarray:
+        fig.canvas.draw()
+        return np.asarray(fig.canvas.buffer_rgba()).copy()
+
+    fig = _two_polygons([0.0, 1.0], hatch_only=True)
+    alone = _two_polygons([1.0], polygons=(_FAR,), hatch_only=True)
+    assert np.array_equal(pixels(fig), pixels(alone))
+    assert _kinds(_found(fig)) == []
+    lit = _two_polygons([1.0, 1.0], hatch_only=True)
+    assert _kinds(_found(lit)) == [(ID, ["area"])]  # drawn, it counts
+
+
 # ----------------------------------------------------------- must not report
 def test_a_legend_in_a_free_corner_is_clean() -> None:
     fig, ax = _fig()
@@ -183,6 +430,45 @@ def test_more_than_half_a_point_is_a_cover() -> None:
     (w,) = _found(_line_near_the_legend_bottom(1.0))
     assert w.detail["covered"] == ["line"]
     assert w.detail["artists"] == [""]  # the line has no legend label
+
+
+def _band_under_the_legend(overlap_pt: float, edge_pt: float):
+    """A band from the bottom whose top outline, stroked ``edge_pt`` wide
+    (0: no edge), reaches ``overlap_pt`` into the legend's bottom."""
+    fig, ax = _fig()
+    ax.plot([], [], label="Mean")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    legend = ax.legend(loc="upper left")
+    renderer = drawn_renderer(fig)
+    box = legend.get_window_extent(renderer)
+    half = edge_pt / 2 * fig.dpi / 72.0
+    y_px = box.y0 - half + overlap_pt * fig.dpi / 72.0
+    ((_x, y),) = ax.transData.inverted().transform([(box.x0, y_px)])
+    ax.fill_between(
+        [0, 10],
+        0,
+        y,
+        facecolor="oc.gray2",
+        edgecolor="oc.gray6",
+        linewidth=edge_pt,
+        label="Band",
+    )
+    return fig
+
+
+@pytest.mark.parametrize("edge_pt", [0.0, 2.0], ids=["no_edge", "edge_2pt"])
+def test_an_area_outline_within_half_a_point_is_a_touch(edge_pt: float) -> None:
+    assert _found(_band_under_the_legend(0.25, edge_pt)) == []
+
+
+@pytest.mark.parametrize("edge_pt", [0.0, 2.0], ids=["no_edge", "edge_2pt"])
+def test_an_area_outline_more_than_half_a_point_in_is_a_cover(
+    edge_pt: float,
+) -> None:
+    """The edge's stroke counts: 2 pt wide, its path stays 0 pt below the
+    legend while the stroke reaches 1 pt into it."""
+    found = _found(_band_under_the_legend(1.0, edge_pt))
+    assert [w.detail["covered"] for w in found] == [["area"]]
 
 
 def test_a_legend_above_the_axes_is_clean() -> None:

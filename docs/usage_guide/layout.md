@@ -860,9 +860,10 @@ on a returned label wins over every redraw and layout, and calling
 `dm.place_legend(ax)` keeps a legend off the data. It tries eight spots inside
 the plot (the corners, upper and lower centre, then centre right and left) for
 one to three columns and takes the first one no line, marker, bar, filled area
-or text of the Axes (and its twin) comes within 2 pt of. When none is free it
-goes outside, on a side no other panel sits beyond: above by default, right or
-below when that takes at least 10 % and 5 % of the plot less (many short
+or text of the Axes (and its twin) comes within 2 pt of; on a polar Axes also
+its circle and the angle and radius labels it draws inside its box. When none
+is free it goes outside, on a side no other panel sits beyond: above by
+default, right or below when that takes at least 10 % and 5 % of the plot less (many short
 names go right), the side the neighbouring panel's legend took when that fits
 as well. Outside, a legend fits when, centred on its Axes and moved in where
 it would cross the canvas edge, it stays on the canvas (its pad from the

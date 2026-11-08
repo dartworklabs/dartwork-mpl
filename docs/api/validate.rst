@@ -40,8 +40,9 @@ Available Checks
      - WARNING
    * - ``LEGEND_ON_DATA``
      - A legend (Axes or figure) is drawn over bars, lines or markers of any
-       plot box, over a text inside an Axes, over another legend, or into
-       another panel
+       plot box, across the outline of a filled area (``fill_between``,
+       ``stackplot``, violin bodies), over a text inside an Axes, over
+       another legend, or into another panel
      - WARNING
    * - ``TICK_CROWD``
      - Tick labels consume more space than the axis can comfortably hold
