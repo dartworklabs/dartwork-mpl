@@ -16,6 +16,7 @@ from typing import Any, TypeAlias
 
 import matplotlib.colors as mcolors
 
+from ..model import to_rgb_or_explain
 from ._luminance import _contrast_ratio
 
 RGB: TypeAlias = tuple[float, float, float]
@@ -46,7 +47,10 @@ def composite_layers(
 
 
 def _rgb(color: Any) -> tuple[float, float, float]:
-    raw = mcolors.to_rgb(color)
+    # Callers reach here with an ink or background name they chose, so a miss
+    # goes out with the model's suggesting message rather than matplotlib's
+    # bare ``Invalid RGBA argument`` (#483).
+    raw = to_rgb_or_explain(color)
     return (float(raw[0]), float(raw[1]), float(raw[2]))
 
 

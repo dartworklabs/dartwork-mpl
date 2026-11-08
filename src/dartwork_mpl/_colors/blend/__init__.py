@@ -9,9 +9,7 @@ from __future__ import annotations
 
 import math
 
-import matplotlib.colors as mcolors
-
-from ..model import Color
+from ..model import Color, to_rgb_or_explain
 
 __all__ = ["mix_colors", "pseudo_alpha"]
 
@@ -45,6 +43,9 @@ def mix_colors(
     Raises
     ------
     ValueError
+        If either colour is a name matplotlib does not know; the message
+        names the closest registered colours.
+    ValueError
         If ``alpha`` is not a finite number in ``[0, 1]``. Values outside
         the closed interval extrapolate and gamut-clamp to a
         plausible-looking but wrong colour (e.g. ``alpha=2`` yields
@@ -62,8 +63,8 @@ def mix_colors(
         raise ValueError(
             f"alpha must be a finite number in [0, 1], got {alpha!r}"
         )
-    r1, g1, b1 = mcolors.to_rgb(color1)
-    r2, g2, b2 = mcolors.to_rgb(color2)
+    r1, g1, b1 = to_rgb_or_explain(color1)
+    r2, g2, b2 = to_rgb_or_explain(color2)
     c1 = Color.from_rgb(r1, g1, b1)
     c2 = Color.from_rgb(r2, g2, b2)
     L1, a1, b1_ok = c1.to_oklab()

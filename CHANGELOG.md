@@ -272,6 +272,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **A colour name that does not exist now names the closest ones that do.**
+  `dm.color("dc.bluee5")` raised `Invalid color name: dc.bluee5. Invalid RGBA
+  argument: 'dc.bluee5'` — the value twice and no route to a working call. It
+  now reads `Invalid color name: 'dc.bluee5'. Closest registered names:
+  'dc.blue5', 'dc.blue_red5', 'dc.blue9'. dm.list_colors() lists the
+  dartwork-mpl colour families and matplotlib.colors.get_named_colors_mapping()
+  every registered name.` A prefixed name is corrected inside its own
+  namespace, so `dc.` never suggests an `oc.` colour that would render
+  differently, and the candidates come from matplotlib's live registry rather
+  than a fixed list. The same message now covers `dm.mix_colors`,
+  `dm.pseudo_alpha`, `dm.readable_text_color` and `dm.ensure_contrast`, which
+  passed a name straight to matplotlib. Names matplotlib accepts (including
+  case variants such as `dc.Blue5`) resolve exactly as before, and a
+  malformed tuple or `None` keeps matplotlib's own message, which describes
+  the shapes it accepts.
 - **The tick-label checks no longer read an Axes hidden with
   `ax.set_visible(False)`.** Matplotlib draws nothing of a hidden Axes (the
   usual way to blank an empty grid slot), but its tick labels stay visible

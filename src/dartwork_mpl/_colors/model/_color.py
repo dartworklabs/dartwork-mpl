@@ -7,8 +7,18 @@ interpolation function, and convenient constructor functions.
 
 from __future__ import annotations
 
-__all__ = ["Color", "color", "cspace", "hex", "oklab", "oklch", "rgb"]
+__all__ = [
+    "Color",
+    "color",
+    "cspace",
+    "hex",
+    "oklab",
+    "oklch",
+    "rgb",
+    "to_rgb_or_explain",
+]
 
+import difflib
 import math
 import re
 from typing import Any
@@ -25,6 +35,83 @@ from ._conversion import (
     _srgb_to_linear,
 )
 from ._views import OklabView, OklchView, RgbView
+
+#: How many near misses a rejected colour name is allowed to suggest, and how
+#: close a registered name has to be to count. Three keeps the sentence
+#: readable; 0.7 is tight enough that ``'notacolor'`` suggests nothing rather
+#: than an unrelated name, and loose enough to catch a doubled or dropped
+#: letter (``'dc.bluee5'`` → ``'dc.blue5'``).
+_SUGGESTION_COUNT = 3
+_SUGGESTION_CUTOFF = 0.7
+
+# ============================================================================
+# Colour-name failures
+# ============================================================================
+
+
+def _near_misses(value: str) -> list[str]:
+    """Registered colour names close to a rejected one, nearest first.
+
+    Read from matplotlib's live registry rather than a hard-coded list, so a
+    name this package registers later — or one the caller registers — is
+    suggestible without this module knowing about it.
+
+    A prefixed name is matched inside its own namespace first: someone who
+    typed ``dc.`` wants a ``dc.`` name, and ``'oc.blue5'`` would be a
+    different palette rather than a correction.
+    """
+    registry = sorted(mcolors.get_named_colors_mapping())
+    namespace, separator, _ = value.partition(".")
+    if separator:
+        prefix = f"{namespace}{separator}"
+        same_namespace = [name for name in registry if name.startswith(prefix)]
+        close = difflib.get_close_matches(
+            value,
+            same_namespace,
+            n=_SUGGESTION_COUNT,
+            cutoff=_SUGGESTION_CUTOFF,
+        )
+        if close:
+            return close
+    return difflib.get_close_matches(
+        value, registry, n=_SUGGESTION_COUNT, cutoff=_SUGGESTION_CUTOFF
+    )
+
+
+def _unknown_color_name_message(value: str) -> str:
+    """Explain a rejected colour name and where a valid one can be found.
+
+    Keeps the historical ``Invalid color name:`` opening and replaces
+    matplotlib's ``Invalid RGBA argument`` tail, which repeated the value and
+    named no way back to a working call (#483).
+    """
+    suggestions = _near_misses(value)
+    if suggestions:
+        named = ", ".join(repr(name) for name in suggestions)
+        found = f"Closest registered names: {named}."
+    else:
+        found = "No registered name is close to it."
+    return (
+        f"Invalid color name: {value!r}. {found} "
+        "dm.list_colors() lists the dartwork-mpl colour families and "
+        "matplotlib.colors.get_named_colors_mapping() every registered name."
+    )
+
+
+def to_rgb_or_explain(value: Any) -> tuple[float, float, float]:
+    """``matplotlib.colors.to_rgb`` whose name misses say how to recover.
+
+    Only a rejected *string* is rewritten: every other input (a malformed
+    tuple, ``None``) keeps matplotlib's own message, which already describes
+    the shapes it accepts and is not a name lookup at all.
+    """
+    try:
+        return mcolors.to_rgb(value)
+    except ValueError as exc:
+        if not isinstance(value, str):
+            raise
+        raise ValueError(_unknown_color_name_message(value)) from exc
+
 
 # ============================================================================
 # Color Class
@@ -373,17 +460,15 @@ class Color:
         Raises
         ------
         ValueError
-            If the color name is not recognized by matplotlib.
+            If the color name is not recognized by matplotlib. The message
+            names the closest registered colours and where the full list
+            lives, so a typo does not have to be guessed at.
         """
-        try:
-            # Use matplotlib's to_rgb to convert color name to RGB
-            r: float
-            g: float
-            b: float
-            r, g, b = mcolors.to_rgb(name)
-            return cls.from_rgb(r, g, b)
-        except ValueError as e:
-            raise ValueError(f"Invalid color name: {name}. {e!s}") from e
+        r: float
+        g: float
+        b: float
+        r, g, b = to_rgb_or_explain(name)
+        return cls.from_rgb(r, g, b)
 
     _FUNCTIONAL_RE = re.compile(
         r"^(?P<func>rgb|oklch|oklab)\s*\(\s*(?P<args>.+?)\s*\)$", re.IGNORECASE
