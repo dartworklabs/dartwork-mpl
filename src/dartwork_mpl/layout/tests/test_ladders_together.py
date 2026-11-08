@@ -282,6 +282,21 @@ def test_every_call_draws_the_same_figure_and_keeps_the_legends(
     assert not _overlaps(fig)
 
 
+def test_a_widened_legend_is_planned_again_once_and_then_kept() -> None:
+    """Planned in five columns at 9 cm, the legend takes all ten across
+    the 17 cm plot on the first call; later calls start where the first
+    did and keep that legend."""
+    fig = _widened()
+    ax = fig.axes[0]
+    assert ax.get_legend()._ncols == 5
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend._ncols == 10
+    dm.simple_layout(fig)
+    dm.simple_layout(fig)
+    assert ax.get_legend() is legend
+
+
 @pytest.mark.parametrize(
     ("width", "top"), [("14.5cm", 63.0), ("17cm", 13.0)]
 )
