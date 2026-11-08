@@ -140,6 +140,59 @@ def test_reports_digits_set_on_a_thick_line_centre():
     ] == [["line"]]
 
 
+def _checked(fig):
+    """Validate as laid out: the line below was placed in display units."""
+    return list(dm.validate_figure(fig, checks=(ID,), quiet=True))
+
+
+def _line_under_baseline(label, rotation, offset_pt):
+    """``label`` on a baseline through (.5, .5), a 0.8 pt line beside it.
+
+    The line runs along the baseline, ``offset_pt`` points off it on the
+    glyphs' top side (negative: towards their feet), turned with the text.
+    """
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.text(
+        0.5,
+        0.5,
+        label,
+        fontsize=28,
+        ha="center",
+        va="baseline",
+        rotation=rotation,
+        rotation_mode="anchor",
+    )
+    dm.simple_layout(fig)
+    phi = np.radians(rotation)
+    along = np.array([np.cos(phi), np.sin(phi)])
+    normal = np.array([-np.sin(phi), np.cos(phi)])
+    centre = ax.transData.transform((0.5, 0.5))
+    centre = centre + normal * offset_pt * fig.dpi / 72
+    ends = ax.transData.inverted().transform(
+        [centre - along * 100, centre + along * 100]
+    )
+    ax.plot(ends[:, 0], ends[:, 1], linewidth=0.8)
+    return fig
+
+
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+@pytest.mark.parametrize("label", ["10 g", "10 y", "10 p", "10 $p$"])
+def test_reports_a_line_through_the_descenders(label, rotation):
+    # 2.5 pt under the baseline the line cuts the tails of g, y and p
+    # (about 6 pt deep at 28 pt): drawn ink, not the box's empty descent.
+    found = _checked(_line_under_baseline(label, rotation, -2.5))
+    assert [w.detail["covered"] for w in found] == [["line"]]
+
+
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+def test_clean_when_a_line_runs_under_bare_digits(rotation):
+    # Digits have no tail: 0.6 pt under the baseline the line only touches
+    # their feet, and 2.5 pt under it the box's descent is empty.
+    assert _checked(_line_under_baseline("10", rotation, -0.6)) == []
+    assert _checked(_line_under_baseline("10", rotation, -2.5)) == []
+
+
 def test_reports_a_hand_label_centred_on_the_bar_end():
     fig, ax = _fig()
     values = [20, 35, 30]
@@ -256,6 +309,20 @@ def test_clean_when_baseline_labels_sit_on_the_bar_ends():
     ax.set_yscale("log")
     for i, v in enumerate(values):
         ax.text(i, v, f"{v:,}", ha="center")
+    assert _found(fig) == []
+
+
+def test_clean_when_punctuated_baseline_labels_sit_on_the_bar_ends():
+    # The tails of the marks around a number ($, comma, parentheses) dip
+    # into the bar; the number itself stands on its end.
+    fig, ax = _fig()
+    labels = ["$1,250", "(12)", "€20", "20%", "-3"]
+    ax.bar(range(5), [1250, 12, 20, 20, 3])
+    ax.set_yscale("log")
+    for i, (text, v) in enumerate(
+        zip(labels, [1250, 12, 20, 20, 3], strict=True)
+    ):
+        ax.text(i, v, text, ha="center", fontsize=12)
     assert _found(fig) == []
 
 

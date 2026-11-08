@@ -13,9 +13,10 @@ ink:
   not data);
 * ``scatter`` markers at their size.
 
-A label covers data when its ink (the glyphs, not the text box with the
-font's ascent and descent) meets one of them by more than half a point; a
-label resting on a bar end or beside a line only touches it. A
+A label covers data when its ink (the glyphs down to their descenders, not
+the text box with the font's ascent and descent; the tails of commas,
+parentheses and currency signs aside) meets one of them by more than half a
+point; a label resting on a bar end or beside a line only touches it. A
 label sitting on its own bar (inside it, centred across it) or with its
 centre inside a marker (a bubble label) is there on purpose: that artist
 does not count, any other still does. A label with a visible background box
@@ -29,6 +30,9 @@ than ``scatter`` are not data here.
 
 from __future__ import annotations
 
+import contextlib
+import re
+import unicodedata
 from numbers import Integral, Real
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, TypedDict
 
@@ -64,6 +68,7 @@ _TOUCH_PT = 0.5
 _NO_LINE = ("None", "none", "", " ")
 _NO_MARKER = (None, "None", "none", "", " ")
 _SCATTER = -1  # the marker key of a scatter: never an ``id`` of a line
+_DOLLAR = re.compile(r"(?<!\\)\$")  # an unescaped mathtext delimiter
 
 
 class ValueLabelOnDataDetail(TypedDict):
@@ -151,26 +156,67 @@ def _clip(box: Bbox, frame: Bbox) -> Bbox | None:
     return Bbox.from_extents(x0, y0, x1, y1)
 
 
-def _glyph_shares(text: Text, renderer: RendererBase) -> tuple[float, float]:
-    """The shares of the text box under the baseline and over the glyphs.
+def _laid_out(text: Text) -> tuple[str, bool | Literal["TeX"]]:
+    """The string matplotlib measures for ``text`` and how it parses it.
 
-    The box spans the font's descent and ascent about the baseline; a value
-    label's ink sits on the baseline and rises to its glyphs' top. A comma's
-    or a parenthesis' tail below the baseline does not hide data, so a label
-    resting on a bar end is a touch however it is punctuated. The baseline's
-    place in the box comes from laying the same string out unrotated on a
-    baseline at the origin: matplotlib's own layout, without touching the
-    label.
+    ``Text`` hands the renderer its string unchanged under ``usetex`` or
+    when it is mathtext, and with ``\\$`` unescaped otherwise.
+    """
+    string = text.get_text()
+    if text.get_usetex():
+        return string, "TeX"
+    if not text.get_parse_math():
+        return string, False
+    if cbook.is_math_text(string):
+        return string, True
+    return string.replace(r"\$", "$"), False
+
+
+def _without_marks(string: str, ismath: bool | Literal["TeX"]) -> str:
+    """``string`` less its punctuation and symbols outside mathtext.
+
+    Commas, parentheses, currency and percent signs and the like dip below
+    the baseline as tails of the marks around a number; letters and digits
+    keep theirs (``g``, ``y``, ``p``). Mathtext is kept whole and TeX
+    untouched: their glyphs count as drawn.
+    """
+
+    def kept(part: str) -> str:
+        return "".join(
+            ch for ch in part if unicodedata.category(ch)[0] not in "PS"
+        )
+
+    if ismath == "TeX":
+        return string
+    if not ismath:
+        return kept(string)
+    parts = _DOLLAR.split(string)  # text, math, text, ...
+    return "$".join(
+        part if i % 2 else kept(part) for i, part in enumerate(parts)
+    )
+
+
+def _glyph_shares(text: Text, renderer: RendererBase) -> tuple[float, float]:
+    """The shares of the text box under the glyphs and over them.
+
+    The box spans the font's descent and ascent about the baseline; the ink
+    rises to the glyphs' top and drops to their descent: a ``g``'s or a
+    ``p``'s tail is drawn, the room under digits is not. The tail of a
+    mark around the number (a comma, a parenthesis, a ``$``) does not hide
+    data, so a label resting on a bar end is a touch however it is
+    punctuated: the descent is measured without those marks. The
+    baseline's place in the box comes from laying the same string out
+    unrotated on a baseline at the origin: matplotlib's own layout, without
+    touching the label.
     """
     figure = text.get_figure(root=True)
     if figure is None:
         return 0.0, 0.0
-    string = text.get_text()
     prop = text.get_fontproperties()
     probe = Text(
         0,
         0,
-        string,
+        text.get_text(),
         fontproperties=prop,
         linespacing=text.get_linespacing(),
         usetex=text.get_usetex(),
@@ -179,18 +225,23 @@ def _glyph_shares(text: Text, renderer: RendererBase) -> tuple[float, float]:
     )
     probe.set_figure(figure)
     line = probe.get_window_extent(renderer)  # [-descent, ascent], baseline 0
-    ismath: bool | Literal["TeX"] = (
-        "TeX"
-        if text.get_usetex()
-        else bool(text.get_parse_math()) and cbook.is_math_text(string)
-    )
+    if line.height <= 0:
+        return 0.0, 0.0
+    string, ismath = _laid_out(text)
     _w, height, descent = renderer.get_text_width_height_descent(
         string, prop, ismath=ismath
     )
-    if line.height <= 0:
-        return 0.0, 0.0
-    under = max(0.0, -line.y0) / line.height
-    over = max(0.0, line.y1 - (height - descent)) / line.height
+    top = height - descent  # the glyphs' top over the baseline
+    core = _without_marks(string, ismath)
+    if core != string and not core.strip(" $"):
+        descent = 0.0
+    elif core != string:
+        with contextlib.suppress(ValueError):  # mathtext that fails: keep all
+            _w, _h, descent = renderer.get_text_width_height_descent(
+                core, prop, ismath
+            )
+    under = max(0.0, -line.y0 - max(0.0, descent)) / line.height
+    over = max(0.0, line.y1 - top) / line.height
     return under, over
 
 
