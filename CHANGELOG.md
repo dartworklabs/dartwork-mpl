@@ -116,8 +116,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   bands, `stackplot` layers, violin bodies, `broken_barh`: the legend
   crosses its edge, down to a violin's thinnest tail, or holds it whole;
   inside a region's plain interior, such as one of a phase diagram's
-  regions, it does not count; reported as `"area"`), a text inside an
-  Axes where it is drawn (`ax.texts`:
+  regions, it does not count; only polygons that draw ink, each by its
+  own colours and alpha, where its clip lets it draw; reported as
+  `"area"`), a text inside an Axes where it is drawn (`ax.texts`:
   value labels, annotations without their arrow, line-end labels; one
   clipped away or drawn at alpha 0, the text's own alpha replacing its
   colour's as matplotlib draws it, does not count), another legend, or

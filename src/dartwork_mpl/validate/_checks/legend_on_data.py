@@ -16,7 +16,9 @@ reports, per legend, what its box meets:
   reader reads from an area is its shape, so a legend crossing an area's
   edge, down to a violin's thinnest tail, or holding a whole area counts,
   and one lying inside a region's plain interior (a phase region, a band
-  wider than the legend) does not;
+  wider than the legend) does not. Only what is drawn: each polygon by
+  its own face, edge and hatch ink (an alpha per polygon included), where
+  the collection's clip box and clip path let it draw;
 * the texts inside any Axes (``ax.texts``: value labels, annotations,
   line-end labels) where they are drawn: the text itself, not an
   annotation's arrow, cut to its clip box and clip path; a text clipped
