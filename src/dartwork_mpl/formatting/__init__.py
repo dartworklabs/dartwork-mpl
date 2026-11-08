@@ -34,7 +34,7 @@ from ._defaults import (
 )
 from ._label_unit import axis_unit, axis_unit_of
 from ._twin_colors import apply_twin_colors
-from ._twin_spines import show_twin_spines
+from ._twin_spines import drawn_like_twin, settled_twin_spines, show_twin_spines
 from ._years import WholeYearLocator, YearTickFormatter, requested_params
 
 __all__ = [
@@ -44,6 +44,7 @@ __all__ = [
     "avoid_tick_overlap",
     "axis_unit",
     "axis_unit_of",
+    "drawn_like_twin",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_dates",
@@ -55,6 +56,7 @@ __all__ = [
     "recommend_tick_decimals",
     "rotate_tick_labels",
     "set_decimal",
+    "settled_twin_spines",
     "show_twin_spines",
     "thin_crowded_date_ticks",
     "tick_scale_of",
