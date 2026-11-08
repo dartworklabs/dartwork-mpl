@@ -475,11 +475,12 @@ def _drawn_outlines(
 ) -> list[_Outline]:
     """The polygons ``coll`` draws ink with, each by its own style.
 
-    Item ``i`` takes its face, edge and line width as the renderer cycles
-    them (each list repeating); its alpha is its colour's times the
-    collection's alpha for it (one value, or one per polygon). An item
-    whose face, hatch and edge all draw nothing is left out, and an edge
-    counts at its own width, not the widest of the collection.
+    Item ``i`` takes its face, edge, hatch colour and line width as the
+    renderer cycles them (each list repeating); its alpha is its colour's
+    times the collection's alpha for it (one value, or one per polygon;
+    matplotlib also writes that alpha into the colours). An item whose
+    face, hatch and edge all draw nothing is left out, and an edge counts
+    at its own width, not the widest of the collection.
     """
     faces = np.asarray(coll.get_facecolor(), dtype=float).reshape(-1, 4)
     edges = np.asarray(coll.get_edgecolor(), dtype=float).reshape(-1, 4)
@@ -488,20 +489,21 @@ def _drawn_outlines(
     alphas = np.asarray(1.0 if alpha is None else alpha, dtype=float).reshape(
         -1
     )
-    hatched = bool(
-        coll.get_hatch()
-        and coll.get_hatch_linewidth() > 0
-        and _any_alpha(coll.get_hatchcolor())
+    hatches = (
+        np.asarray(coll.get_hatchcolor(), dtype=float).reshape(-1, 4)
+        if coll.get_hatch() and coll.get_hatch_linewidth() > 0
+        else np.zeros((0, 4))
     )
     found: list[_Outline] = []
     for i, path in _drawn_paths(coll):
         a = float(alphas[i % len(alphas)]) if len(alphas) else 1.0
         face = bool(len(faces)) and faces[i % len(faces), 3] * a > 0
+        hatch = bool(len(hatches)) and hatches[i % len(hatches), 3] * a > 0
         width = float(widths[i % len(widths)]) if len(widths) else 0.0
         edge = (
             bool(len(edges)) and width > 0 and edges[i % len(edges), 3] * a > 0
         )
-        if not (face or edge or (hatched and a > 0)):
+        if not (face or edge or hatch):
             continue
         half = (
             float(np.asarray(renderer.points_to_pixels(width))) / 2

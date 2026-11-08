@@ -336,17 +336,22 @@ def _kinds(found) -> list[tuple[str, object]]:
     return [(w.check_id, (w.detail or {}).get("covered")) for w in found]
 
 
-def _two_polygons(alphas):
+_BAND = [(0, 4.95), (10, 4.95), (10, 5.05), (0, 5.05)]  # thinner than it
+_FAR = [(0.5, 0.5), (1.5, 0.5), (1.5, 1.5), (0.5, 1.5)]
+
+
+def _two_polygons(alphas, *, polygons=(_BAND, _FAR), hatch_only=False):
     """One collection, a band through a centred legend and a square far
-    from it, with one artist alpha per polygon."""
+    from it, with one artist alpha per polygon; ``hatch_only`` draws them
+    by a hatch alone (no face, no edge)."""
     fig, ax = _fig()
     ax.set(xlim=(0, 10), ylim=(0, 10))
-    band = [(0, 4.95), (10, 4.95), (10, 5.05), (0, 5.05)]  # thinner than it
-    far = [(0.5, 0.5), (1.5, 0.5), (1.5, 1.5), (0.5, 1.5)]
-    coll = PolyCollection(
-        [band, far], facecolors="oc.gray6", edgecolors="none", alpha=alphas
+    style = (
+        {"facecolors": "none", "edgecolors": "none", "hatch": "//"}
+        if hatch_only
+        else {"facecolors": "oc.gray6", "edgecolors": "none"}
     )
-    ax.add_collection(coll)
+    ax.add_collection(PolyCollection(list(polygons), alpha=alphas, **style))
     ax.plot([], [], label="Mean")
     ax.legend(loc="center")
     return fig
@@ -360,6 +365,22 @@ def test_an_area_with_one_alpha_per_polygon_is_measured() -> None:
 
 def test_a_polygon_at_alpha_zero_in_an_alpha_array_does_not_count() -> None:
     assert _kinds(_found(_two_polygons([0.0, 1.0]))) == []
+
+
+def test_a_hatch_at_alpha_zero_in_an_alpha_array_does_not_count() -> None:
+    """The oracle: the hatched band at alpha 0 draws no pixel (the figure
+    equals one with the far square alone)."""
+
+    def pixels(fig) -> np.ndarray:
+        fig.canvas.draw()
+        return np.asarray(fig.canvas.buffer_rgba()).copy()
+
+    fig = _two_polygons([0.0, 1.0], hatch_only=True)
+    alone = _two_polygons([1.0], polygons=(_FAR,), hatch_only=True)
+    assert np.array_equal(pixels(fig), pixels(alone))
+    assert _kinds(_found(fig)) == []
+    lit = _two_polygons([1.0, 1.0], hatch_only=True)
+    assert _kinds(_found(lit)) == [(ID, ["area"])]  # drawn, it counts
 
 
 # ----------------------------------------------------------- must not report
