@@ -144,6 +144,23 @@ def test_a_scoped_layout_leaves_the_other_grids_legend_and_labels(
     assert (_legend_state(right), _ticks(right)) != before
 
 
+def test_a_scoped_layout_fits_its_margins_to_its_own_axes() -> None:
+    """The other grid's panel hangs off the bottom of the figure; the
+    margins of the grid laid out do not make room for it."""
+
+    def left_box(hanging: bool) -> tuple[float, ...]:
+        fig, a, right = _two_grids(share=False)
+        if not hanging:
+            right.set_xticks([])
+        right.set_position((0.55, 0.02, 0.4, 0.9))
+        dm.simple_layout(fig, gs=a, use_all_axes=False)
+        box = tuple(round(v, 6) for v in fig.axes[0].get_position().bounds)
+        plt.close(fig)
+        return box
+
+    assert left_box(hanging=True) == left_box(hanging=False)
+
+
 def test_a_scoped_layout_keeps_a_nested_panels_legend_and_the_root_spacing() -> (
     None
 ):
