@@ -2,7 +2,7 @@
 orphan: true
 ---
 
-# Twin right spine at the layout, not at import (D7)
+# Twin scale line at the layout, not at import (D7)
 
 Status: implemented on `t3/twinx-explicit-20261106`, first shipped in 0.8.
 Decision: root API decision D7 (2026-11-06). Not a release blocker.
@@ -12,7 +12,8 @@ independent review: inset twins, the tick condition, the twin's line first,
 an independent 0.7 oracle and the full import contract. 2026-11-07 사용자
 결정 14: 대안 (the counterexample pair below: twins keep 0.7's line, an
 overlay drawn like a twin gains one). Re-review the same day: the twin's
-line first no longer depends on the spine's place (n11).
+line first no longer depends on the spine's place (n11). 2026-11-08 사용자
+승인 1-A: a `twiny` member's top spine follows the same rule (I3).
 
 ## What import used to do
 
@@ -38,8 +39,8 @@ and after the default tick formats, with the twin colours (their order does
 not change the figure: the colours paint a spine whether it shows or not).
 `format_ticks=False` does not skip it. A refused call changes nothing.
 
-**What.** `spines["right"].set_visible(True)`; width, colour, position and
-bounds stay.
+**What.** `spines["right"].set_visible(True)`, or `spines["top"]` (item 5);
+width, colour, position and bounds stay.
 
 **Which Axes.** One that draws its own y scale on the right of a shared plot
 area, read from public state only:
@@ -63,10 +64,15 @@ area, read from public state only:
    right spine in a box, no Axes whose x axis shows draws one there,
    wherever its spine sits (a parent moved right, even to `("outward", 30)`,
    keeps the preset's look). Twins of one parent all keep theirs.
+5. *The top (1-A)*: items 1 to 4 with x and y swapped, for an Axes drawing
+   its own x scale on the top: it shares y and not x, its x axis is visible,
+   its x ticks and label are on the top (one of them when its y axis is
+   hidden, as `twiny()` hides the twin's), and a member with a hidden y
+   axis draws its line first. The two sides are read apart.
 
-**Once.** An Axes whose line the layout showed (or found showing) is
+**Once.** An Axes side whose line the layout showed (or found showing) is
 recorded and not touched again, so a spine hidden after a layout stays
-hidden.
+hidden. Right and top have separate records.
 
 ## Controls and differences (laid out, scientific)
 
@@ -79,7 +85,6 @@ hidden.
 | `twinx()`; with its tick marks off | twin | twin |
 | `twinx()` with the parent's label moved right (x01) | twin | twin |
 | `twinx()` with the parent moved right too (x22), also to `("outward", 30)` (n11) | twin (twin's line first) | twin |
-| `twiny()` | no | no |
 | three y axes, offset third spine | both twins | both twins |
 | inset `twinx()` (x23) | twin | twin |
 | x02 / x03 twin with only its ticks / only its label moved left | twin | twin |
@@ -89,9 +94,11 @@ hidden.
 | 11-5 twin with its y axis hidden (x14) | no | twin |
 | 14 `sharex` overlay drawn like a twin (x axis and background hidden), only its ticks or only its label on the right | overlay | no |
 | m02 twin's label moved left and its right ticks turned off (decided by delegation, see below) | none | twin |
+| 1-A `twiny()`, also beside a `twinx()` of the same parent; its ticks or label moved down | twin's top spine | no |
+| 1-A mirrors of x22, 11-3, 11-4 (swap), 11-5, 14 and of the `twiny` with both moved down | as on the right | no |
 
-The first twelve rows match 0.7 pixel for pixel; 11-3 to 11-5 and 14 are
-approved. m02 was decided later the same day by delegation: on its rendered
+The first eleven rows match 0.7 pixel for pixel; 11-3 to 11-5, 14 and 1-A
+are approved. m02 was decided later the same day by delegation: on its rendered
 PoC the user said such a layout is not drawn in practice, then handed the
 remaining decision to the implementing session ("너가 해줘"), which kept the
 current rule (no line). A y axis with neither ticks nor a label on the right
@@ -118,17 +125,18 @@ line, so the overlay gains one.
 
 `tight_layout`, constrained layout, `fig.add_axes` figures (refused by
 `simple_layout`), `simple_layout(subfig)` (refused before any change) and
-bare `savefig` keep the preset's hidden right spine on a twin: ticks and
-labels stay, the axis line does not. That already held for the twin colours,
-tick formats and bar label settling. Without the layout:
-`ax2.spines["right"].set_visible(True)`.
+bare `savefig` keep the preset's hidden right (top) spine on a twin: ticks
+and labels stay, the axis line does not. That already held for the twin
+colours, tick formats and bar label settling. Without the layout:
+`ax2.spines["right"].set_visible(True)` (`"top"` for a `twiny`).
 
 ## PRESET_OVERRIDE
 
 The check is unchanged and still skips native twins. A line the layout shows
 on an Axes that is not a native twin is reported as INFO: the overlay in
-11-3 and in decision 14 (`axes 1, spines.right`) and the parent in 11-4
-(`axes 0, spines.right`). It is the layout's line, not an override to undo.
+11-3 and in decision 14 (`axes 1, spines.right`), the parent in 11-4
+(`axes 0, spines.right`) and their 1-A mirrors (`spines.top`). It is the
+layout's line, not an override to undo.
 
 ## Verification (mechanical, in this repository)
 
@@ -142,7 +150,11 @@ on an Axes that is not a native twin is reported as INFO: the overlay in
   neutral and `format_ticks=False`, three presets, five edits) must equal
   `twin_spines_07_golden.json`, recorded from origin/main (no D7 code) with
   0.7's wrapper, and the pixels of a live 0.7 re-enactment with the new step
-  off. 11-1 to 11-5 and 14 are pinned against the live 0.7 run.
+  off. 11-1 to 11-5 and 14 are pinned against the live 0.7 run. The three
+  `twiny` cases differ in the twin's top spine alone, and every pixel that
+  changed lies within that spine's extent (1-A); the file is not re-recorded.
+  The 1-A mirrors and the per-side record are pinned, and so is a scale
+  moved onto a shared axis (no line), which killed the last 1-A mutant.
 - Mutants that survived the review (width overwrite, no box condition, no
   "not y" condition, no "x shared" condition, step inside `format_ticks`,
   inherited rebinding on `Artist` and `FigureBase`) now fail, as do mutants
@@ -154,32 +166,13 @@ on an Axes that is not a native twin is reported as INFO: the overlay in
 
 ## Shipping (0.8) and wording
 
-CHANGELOG, *Changed*:
-
-> **Importing dartwork-mpl no longer rebinds any matplotlib class or
-> function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
-> import); import still registers the bundled colours, colormaps and fonts.
-> `dm.simple_layout` shows the right spine, which the presets hide, of an
-> Axes drawing its own y scale on the right of a shared plot area: y ticks
-> and y label on the right, or one of them when its x axis is hidden as a
-> twin's is (the Axes `twinx()` returns, of an inset too). Figures laid out
-> with `dm.simple_layout` look as in 0.7, except: a `sharex` overlay whose
-> y ticks and label you moved to the right gets that line, and so does an
-> overlay you made like a twin (x axis hidden, y ticks or label on the
-> right); when a twin and its parent swap sides, the line moves to the
-> parent; a twin whose y axis is hidden, or whose y ticks and label you both
-> moved to the left, gets none.
-> Without the layout a twin keeps the hidden spine; show it with
-> `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
-> first `dm.simple_layout` now shows; hide it after the layout, or give it
-> `linewidth=0`. `dm.validate_figure` reports the line on such an overlay
-> or a swapped parent as `PRESET_OVERRIDE` (INFO); it is the layout's.
-
-CHANGELOG, *Removed*: `dartwork_mpl.style.install_twinx_patch` and its root
-alias (internal, never in `__all__`).
+The user-facing wording is the CHANGELOG *Changed* entry "Importing
+dartwork-mpl no longer rebinds any matplotlib class or function" (kept
+there, not copied here, so the two cannot drift). *Removed*:
+`dartwork_mpl.style.install_twinx_patch` and its root alias (internal,
+never in `__all__`).
 
 ## Open points (not decided here)
 
-- `twiny` top spine: still hidden, as in 0.7; showing it needs its own PoC.
 - `PRESET_OVERRIDE` still uses `_twinned_axes`; aligning it with the public
   rule would change root's pinned shared-axes contract test.

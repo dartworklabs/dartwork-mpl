@@ -1,12 +1,14 @@
-"""The right spine of a ``twinx`` member: the rule.
+"""The twin scale line: a ``twinx`` member's right spine, a ``twiny``'s top.
 
 This docstring is the one statement of the rule; :func:`show_twin_spines`
 and ``dm.simple_layout`` refer here. Design:
 docs/development/twin-spine-at-layout.md (D7).
 
-The presets hide the right spine, so the second y scale of a ``twinx`` pair
-would have tick marks and labels but no axis line. ``dm.simple_layout``
-shows that line:
+The presets hide the right and the top spine, so the second y scale of a
+``twinx`` pair (the second x scale of a ``twiny`` pair) would have tick
+marks and labels but no axis line. ``dm.simple_layout`` shows that line.
+The rule is written for the right spine; the top spine follows it with x
+and y swapped (see "The top"):
 
 * **Which Axes.** One that draws its own y scale on the right of a shared
   plot area: it is drawn in the same box as another visible rectilinear
@@ -34,23 +36,35 @@ shows that line:
   its twin keeps the preset's look, also with
   ``spines["right"].set_position(("outward", 30))``, while twins of one
   parent all keep theirs.
-* **What.** ``spines["right"].set_visible(True)``. The line width, colour,
-  position and bounds stay as they are; a spine is made with the preset's
-  ``axes.linewidth`` already. Nothing else changes: ``twiny`` top spines,
+* **The top.** The same two rules with x and y swapped: an Axes drawing its
+  own x scale on the top of a shared plot area (same box, it shares y with
+  a member and not x, its x axis is visible, its x ticks and x label are
+  on the top, or one of them when its y axis is hidden as
+  ``ax.twiny()`` hides the twin's) gets its top spine, and when an Axes
+  with a hidden y axis draws its top spine in a box, no Axes whose y axis
+  shows draws one there. The two sides are read apart: a parent with a
+  ``twinx`` and a ``twiny`` gives the right line to the one and the top
+  line to the other.
+* **What.** ``spines["right"].set_visible(True)``, or ``spines["top"]``.
+  The line width, colour, position and bounds stay as they are; a spine is
+  made with the preset's ``axes.linewidth`` already. Nothing else changes:
   partners' spines and single Axes stay with the preset.
-* **Once.** The layout settles an Axes' right spine the first time it shows
-  the line for it, shown or already showing, and never again. A spine
-  hidden after that layout stays hidden. A spine hidden before the first
-  layout cannot be told from the preset's hidden spine and shows; hide it
-  after ``dm.simple_layout``, or give it ``linewidth=0``.
-* **Only at the layout.** ``ax.twinx()`` itself is matplotlib's: a figure
-  that is not laid out by ``dm.simple_layout`` (or whose call is refused,
-  such as a figure without a GridSpec) keeps the preset's hidden spine.
+* **Once.** The layout settles each side of an Axes apart, the first time
+  it shows that side's line for it, shown or already showing, and never
+  again. A spine hidden after that layout stays hidden. A spine hidden
+  before the first layout cannot be told from the preset's hidden spine
+  and shows; hide it after ``dm.simple_layout``, or give it
+  ``linewidth=0``.
+* **Only at the layout.** ``ax.twinx()`` and ``ax.twiny()`` themselves are
+  matplotlib's: a figure that is not laid out by ``dm.simple_layout`` (or
+  whose call is refused, such as a figure without a GridSpec) keeps the
+  preset's hidden spine.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Literal, NamedTuple, TypeAlias
 
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
@@ -61,8 +75,27 @@ from ._twin_colors import _own_sides, _rectilinear
 
 __all__ = ["show_twin_spines"]
 
-# Set on an Axes once the layout settled its right spine (see "Once").
-_SETTLED = "_dm_twin_spine_settled"
+TwinSide: TypeAlias = Literal["right", "top"]
+"""A side whose spine the layout shows for a twin scale."""
+
+
+class _SideRule(NamedTuple):
+    """How the rule reads one side."""
+
+    scale: Literal["x", "y"]  # the axis whose scale sits on this side
+    other: Literal["x", "y"]  # the axis a twin hides
+    near: Literal["left", "bottom"]  # the opposite side
+    record: str  # set on an Axes once its spine here is settled ("Once")
+
+
+_RULES: dict[TwinSide, _SideRule] = {
+    "right": _SideRule("y", "x", "left", "_dm_twin_spine_right_settled"),
+    "top": _SideRule("x", "y", "bottom", "_dm_twin_spine_top_settled"),
+}
+
+
+def _axis(ax: Axes, name: Literal["x", "y"]) -> Axis:
+    return ax.xaxis if name == "x" else ax.yaxis
 
 
 def _boxes(fig: Figure) -> list[list[Axes]]:
@@ -85,59 +118,72 @@ def _boxes(fig: Figure) -> list[list[Axes]]:
     return groups
 
 
-def _ticks_on_right(axis: Axis) -> bool:
-    """Whether the y ticks show on the right and not on the left.
+def _ticks_on_far_side(axis: Axis) -> bool:
+    """Whether the ticks show on the right / top and not the left / bottom.
 
     The tick labels decide (``tick_params(right=False)`` leaves a scale of
     labels without marks); an axis showing no tick labels is read by its
-    tick marks.
+    tick marks. ``label1`` and ``tick1line`` are the left / bottom ones.
     """
     tick = (axis.get_major_ticks() or axis.get_major_ticks(1))[0]
     labels = (tick.label1.get_visible(), tick.label2.get_visible())
     marks = (tick.tick1line.get_visible(), tick.tick2line.get_visible())
-    left, right = labels if any(labels) else marks
-    return right and not left
+    near, far = labels if any(labels) else marks
+    return far and not near
 
 
-def _draws_scale_on_right(ax: Axes, group: Sequence[Axes]) -> bool:
-    """Whether ``ax`` draws its own y scale on the right of the box.
+def _draws_scale_on(ax: Axes, group: Sequence[Axes], side: TwinSide) -> bool:
+    """Whether ``ax`` draws its own scale on ``side`` of the box.
 
-    ``_own_sides`` gives a y side when the y axis shows, x is shared with a
-    member and y is not. Then the ticks and the label must both be on the
-    right, or one of them when the x axis is hidden.
+    ``_own_sides`` gives a side of the scale's axis when that axis shows,
+    the other axis is shared with a member and this one is not. Then the
+    ticks and the label must both be on ``side``, or one of them when the
+    other axis is hidden.
     """
-    if not any(side in ("left", "right") for side in _own_sides(ax, group)):
+    rule = _RULES[side]
+    if not any(own in (side, rule.near) for own in _own_sides(ax, group)):
         return False
-    ticks = _ticks_on_right(ax.yaxis)
-    label = str(ax.yaxis.get_label_position()) == "right"
-    if ax.xaxis.get_visible():
+    scale = _axis(ax, rule.scale)
+    ticks = _ticks_on_far_side(scale)
+    # matplotlib types every axis's label position as top/bottom.
+    label = str(scale.get_label_position()) == side
+    if _axis(ax, rule.other).get_visible():
         return ticks and label
     return ticks or label
 
 
-def show_twin_spines(fig: Figure) -> int:
-    """Show the right spine of each Axes drawing a twin y scale on the right.
+def _selected(group: Sequence[Axes], side: TwinSide) -> list[Axes]:
+    """The members of one box whose ``side`` spine the layout shows.
 
-    The rule (which Axes, the twin's line first, what changes, once per Axes)
-    is stated in the docstring of the module
+    The twin's line first: when a member whose other axis is hidden draws
+    its scale there, no member whose other axis shows does.
+    """
+    other = _RULES[side].other
+    drawing = [ax for ax in group if _draws_scale_on(ax, group, side)]
+    twins = [ax for ax in drawing if not _axis(ax, other).get_visible()]
+    return twins or drawing
+
+
+def show_twin_spines(fig: Figure) -> int:
+    """Show the right / top spine of each Axes drawing a twin scale there.
+
+    The rule (which Axes, the twin's line first, the top, what changes,
+    once per side) is stated in the docstring of the module
     ``dartwork_mpl.formatting._twin_spines``. ``dm.simple_layout`` calls
     this with the twin colours.
 
-    Returns the number of spines this call showed. Safe to call again: an
-    Axes it settled is not touched.
+    Returns the number of spines this call showed. Safe to call again: a
+    side it settled is not touched.
     """
     shown = 0
     for group in _boxes(fig):
-        drawing = [ax for ax in group if _draws_scale_on_right(ax, group)]
-        twin_draws = any(not ax.xaxis.get_visible() for ax in drawing)
-        for ax in drawing:
-            if getattr(ax, _SETTLED, False) or (
-                twin_draws and ax.xaxis.get_visible()
-            ):
-                continue
-            spine = ax.spines["right"]
-            if not spine.get_visible():
-                spine.set_visible(True)
-                shown += 1
-            setattr(ax, _SETTLED, True)
+        for side, rule in _RULES.items():
+            for ax in _selected(group, side):
+                if getattr(ax, rule.record, False):
+                    continue
+                spine = ax.spines[side]
+                if not spine.get_visible():
+                    spine.set_visible(True)
+                    shown += 1
+                setattr(ax, rule.record, True)
     return shown

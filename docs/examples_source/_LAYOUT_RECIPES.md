@@ -293,7 +293,8 @@ The presets hide the right spine; `dm.simple_layout(fig)` shows it on the
 Axes `ax.twinx()` returned, at the preset's line width, so the second scale
 gets its axis line. `ax.twinx()` itself is matplotlib's own: a figure not
 laid out with `dm.simple_layout` keeps the spine hidden unless you call
-`ax2.spines["right"].set_visible(True)`.
+`ax2.spines["right"].set_visible(True)`. The Axes `ax.twiny()` returns gets
+its top spine the same way.
 
 ```python
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))

@@ -67,12 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   overlay you made like a twin (x axis hidden, y ticks or label on the
   right); when a twin and its parent swap sides, the line moves to the
   parent; a twin whose y axis is hidden, or whose y ticks and label you both
-  moved to the left, gets none.
+  moved to the left, gets none. The top spine follows the same rule with x
+  and y swapped, so the Axes `twiny()` returns now gets the axis line of its
+  x scale on the top, which 0.7 left hidden.
   Without the layout a twin keeps the hidden spine; show it with
-  `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
-  first `dm.simple_layout` now shows; hide it after the layout, or give it
-  `linewidth=0`. `dm.validate_figure` reports the line on such an overlay
-  or a swapped parent as `PRESET_OVERRIDE` (INFO); it is the layout's. The
+  `ax2.spines["right"].set_visible(True)` (`"top"` for a `twiny`). A right
+  or top spine you hide before the first `dm.simple_layout` now shows; hide
+  it after the layout, or give it `linewidth=0`. `dm.validate_figure`
+  reports the line on such an overlay or a swapped parent, right or top, as
+  `PRESET_OVERRIDE` (INFO); it is the layout's. The
   rule: [docs/development/twin-spine-at-layout.md](docs/development/twin-spine-at-layout.md).
 - **Colour catalogue labels pick their ink by WCAG contrast.** The swatch
   labels in `dm.diagnostics.render_color_catalog` and the docs colour
