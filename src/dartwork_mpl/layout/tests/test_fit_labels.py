@@ -27,6 +27,7 @@ from dartwork_mpl.layout._fit_labels import (
     balanced_lines,
     gap_fraction,
     resolve_steps,
+    restore_fitted,
     smallest_angle,
     tokens,
     wrap_limit,
@@ -210,7 +211,7 @@ def test_two_word_labels_turn_when_wrapping_is_not_allowed() -> None:
     fig, ax = _bars(_VARIANTS, preset="scientific")
     dm.simple_layout(fig, fit_labels=("rotate",))
     assert not isinstance(ax.xaxis.get_major_formatter(), WrappedTickFormatter)
-    assert _angles(ax) - {0.0}
+    assert _angles(ax) == {30.0}
     assert _overlaps(fig) == 0
 
 
@@ -232,21 +233,14 @@ def test_labels_too_long_to_turn_stay_and_are_reported() -> None:
     assert _overlaps(fig) == 1
 
 
-def test_a_second_layout_fits_the_same_way() -> None:
-    """Same wraps, angles and spacing; positions within the solver's 0.5 px.
-
-    (``simple_layout`` itself moves a re-laid-out figure by less than its
-    0.5 px convergence tolerance, without the ladder too, so pixels are not
-    compared.)
-    """
+def test_a_second_layout_draws_the_same_figure() -> None:
+    """Undone and fitted again, a wrapped or turned figure draws the same."""
     for preset, labels in (("scientific", _VARIANTS), ("report", _ONE_WORD)):
         fig, ax = _bars(labels, width="9cm", preset=preset)
         dm.simple_layout(fig)
-        first = (_texts(ax), _angles(ax))
-        box = ax.get_window_extent()
+        first = (_texts(ax), _angles(ax), _pixels(fig))
         dm.simple_layout(fig)
-        assert (_texts(ax), _angles(ax)) == first
-        assert np.allclose(ax.get_window_extent().bounds, box.bounds, atol=0.5)
+        assert (_texts(ax), _angles(ax), _pixels(fig)) == first
 
 
 def test_a_wider_canvas_refits_from_the_unfitted_labels() -> None:
@@ -267,10 +261,12 @@ def _label_state(ax) -> list[tuple]:
 
 
 def test_fit_labels_false_undoes_an_earlier_fit() -> None:
-    """Labels, formatter and spacing come back; positions within 0.5 px.
+    """Labels, formatter and spacing come back exactly; positions within
+    0.05 px of a fresh layout.
 
-    (A re-layout starts from the edges the previous one left, so it settles
-    within the solver's tolerance of a fresh layout, not on its pixels.)
+    (A re-layout starts from the edges the previous one left, so the margin
+    solver can settle on a fixed point a few hundredths of a pixel from a
+    fresh layout's, ladder or not: 0.028 px for the turned labels here.)
     """
     for labels in (_VARIANTS, _ONE_WORD):
         ref, ref_ax = _bars(labels, preset="scientific")
@@ -287,7 +283,8 @@ def test_fit_labels_false_undoes_an_earlier_fit() -> None:
         assert np.allclose(
             ax.get_window_extent().bounds,
             ref_ax.get_window_extent().bounds,
-            atol=0.5,
+            rtol=0,
+            atol=0.05,
         )
 
 
@@ -418,7 +415,7 @@ def test_config_default_is_read_per_call() -> None:
     assert not isinstance(ax.xaxis.get_major_formatter(), WrappedTickFormatter)
     with dm.config.override(fit_labels=("rotate",)):
         dm.simple_layout(fig)
-    assert _angles(ax) - {0.0}
+    assert _angles(ax) == {30.0}
     dm.simple_layout(fig)
     assert _angles(ax) == {0.0}
     assert isinstance(ax.xaxis.get_major_formatter(), WrappedTickFormatter)
@@ -526,7 +523,7 @@ def test_spaced_numbers_turn_rather_than_break() -> None:
     assert _overlaps(fig) == 1
     dm.simple_layout(fig)
     assert not any("\n" in t for t in _texts(ax))
-    assert _angles(ax) - {0.0}
+    assert _angles(ax) == {30.0}
 
 
 def test_names_that_fit_or_that_you_broke_stay() -> None:
@@ -552,20 +549,25 @@ def test_names_that_fit_or_that_you_broke_stay() -> None:
 
 
 def test_a_settled_figure_ends_in_one_confirming_round(monkeypatch) -> None:
-    import dartwork_mpl.layout._simple_layout as simple
+    """Cost guard: once the labels clear, one more round finds nothing.
 
-    calls = []
-    real = simple.fit_round
+    (A rung that re-applied the angle it already set would spend every
+    remaining round on a fresh margin fit without changing the figure.)
+    """
+    import dartwork_mpl.layout._fit_labels as fit
+
+    rounds = []
+    real = fit.fit_round
 
     def counted(*args):
-        calls.append(real(*args))
-        return calls[-1]
+        rounds.append(real(*args))
+        return rounds[-1]
 
-    monkeypatch.setattr(simple, "fit_round", counted)
+    monkeypatch.setattr(fit, "fit_round", counted)
     fig, ax = _bars(_ONE_WORD)
     dm.simple_layout(fig)
     assert _angles(ax) == {30.0}
-    assert calls == [True, False]
+    assert [[c.key[0] for c in r] for r in rounds] == [["rotate"], []]
 
 
 def test_a_name_or_spacing_you_change_after_a_layout_stays() -> None:
@@ -623,3 +625,181 @@ def test_a_name_whose_lines_would_crush_the_plot_stays() -> None:
     dm.simple_layout(fig)
     assert ax.get_xlabel() == name
     assert ax.get_window_extent().height > 0.5 * fig.bbox.height
+
+
+# ── a rung keeps a change only if it harmed nothing (review of #645) ──
+
+
+def _template_figure(name: str, preset: str, width: str):
+    """A shipped template drawn up to its layout, at another preset and size."""
+    from pathlib import Path
+
+    source = (
+        Path(dm.__file__).parent / "asset/prompt/05-templates" / name
+    ).read_text(encoding="utf-8")
+    source = source[: source.index("dm.simple_layout(fig")]
+    source = source.replace(
+        'dm.style.use("scientific")', f'dm.style.use("{preset}")'
+    )
+    namespace: dict = {}
+    exec(compile(source, name, "exec"), namespace)
+    fig = namespace["fig"]
+    fig.set_size_inches(dm.figsize(width, "standard"))
+    return fig, namespace["ax"]
+
+
+def _warned_axes(fig) -> set[str]:
+    fig.canvas.draw()
+    return {
+        w.detail["axis"] for w in check_tick_overlap(fig, get_renderer(fig))
+    }
+
+
+def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
+    """advanced/boxplot in presentation at 9 cm: turned 45 degrees, the
+    names, the y name and the means above the box left the data area 5 px
+    tall and its y ticks overlapping. The turn is taken back: the plot keeps
+    its height and the x labels stay as they were, reported."""
+    heights, warned = [], []
+    for fit in (False, True):
+        fig, ax = _template_figure("advanced/boxplot.py", "presentation", "9cm")
+        dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+        heights.append(ax.get_window_extent().height)
+        warned.append(_warned_axes(fig))
+        assert _angles(ax) == {0.0}
+    assert heights[1] == pytest.approx(heights[0], abs=0.5)
+    assert warned == [{"x"}, {"x"}]
+
+
+def test_a_name_in_nobodys_way_draws_as_without_the_ladder() -> None:
+    """Longer than its plot, beside a panel, but clear of it and of the
+    figure edge: nothing to fit."""
+
+    def render(fit: bool) -> bytes:
+        dm.style.use("scientific")
+        fig, axs = plt.subplots(
+            1,
+            2,
+            figsize=dm.figsize("17cm", "standard"),
+            gridspec_kw={"wspace": 1.4},
+        )
+        for ax in axs:
+            ax.plot([0, 1], [0, 1])
+            ax.set_xticks([0, 1])
+            ax.set_yticks([0, 1])
+        axs[0].set_xlabel("Cumulative delivered heat per building (MWh)")
+        dm.simple_layout(fig, fit_labels=fit)
+        return _pixels(fig)
+
+    assert render(True) == render(False)
+
+
+def test_top_labels_you_turned_stay_through_the_ladder_and_its_undo() -> None:
+    fig, ax = _bars(_ONE_WORD)
+    ax.tick_params(top=True, labeltop=True)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label2.set_rotation(60)
+    dm.simple_layout(fig)
+    ticks = ax.xaxis.get_major_ticks()
+    assert {t.label2.get_rotation() for t in ticks} == {60.0}
+    assert {t.label1.get_rotation() for t in ticks} == {30.0}
+
+    fig, ax = _bars(_ONE_WORD)
+    dm.simple_layout(fig)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label2.set_rotation(60)
+    restore_fitted(fig)
+    ticks = ax.xaxis.get_major_ticks()
+    assert {t.label2.get_rotation() for t in ticks} == {60.0}
+    assert {t.label1.get_rotation() for t in ticks} == {0.0}
+
+
+def test_the_undo_keeps_one_bottom_label_you_turned_after_a_layout() -> None:
+    fig, ax = _bars(_ONE_WORD)
+    dm.simple_layout(fig)
+    first, *rest = ax.xaxis.get_major_ticks()
+    first.label1.set_rotation(60)
+    restore_fitted(fig)
+    assert first.label1.get_rotation() == 60.0
+    assert {t.label1.get_rotation() for t in rest} == {0.0}
+    assert {t.label1.get_rotation_mode() for t in rest} == {"default"}
+
+
+def test_spacing_you_set_on_the_figure_stays() -> None:
+    dm.style.use("scientific")
+    fig, axs = plt.subplots(2, 1, figsize=dm.figsize("9cm", "tall"))
+    for ax in axs:
+        ax.plot([0, 1], [0, 1])
+        ax.set_title("Panel")
+        ax.set_xlabel("Time (h)")
+    fig.subplots_adjust(hspace=0.05)
+    dm.simple_layout(fig)
+    gs = axs[0].get_gridspec()
+    assert gs.hspace is None
+    assert gs.get_subplot_params(fig).hspace == 0.05
+
+
+def _two_grids():
+    dm.style.use("scientific")
+    fig = plt.figure(figsize=dm.figsize("17cm", "standard"))
+    a = fig.add_gridspec(1, 1, left=0.05, right=0.4)
+    b = fig.add_gridspec(1, 1, left=0.6, right=0.95)
+    left, right = fig.add_subplot(a[0]), fig.add_subplot(b[0])
+    left.plot([0, 1], [0, 1])
+    right.bar(range(8), np.arange(8) + 1.0)
+    right.set_xticks(range(8), _ONE_WORD)
+    return fig, a, right
+
+
+def test_a_layout_of_one_grid_fits_and_restores_only_that_grid() -> None:
+    fig, a, right = _two_grids()
+    before = _label_state(right)
+    dm.simple_layout(fig, gs=a, use_all_axes=False)
+    assert _label_state(right) == before
+
+    fig, a, right = _two_grids()
+    dm.simple_layout(fig)  # every Axes: the right one turns
+    turned = _label_state(right)
+    assert {state[1] for state in turned} == {45.0}
+    dm.simple_layout(fig, gs=a, use_all_axes=False, fit_labels=False)
+    assert _label_state(right) == turned
+
+
+@pytest.mark.parametrize("value", [("wrap", 1), b"wrap", 3, ("wrap", None)])
+def test_steps_that_are_not_strings_raise_type_error(value) -> None:
+    with pytest.raises(TypeError, match="fit_labels"):
+        resolve_steps(value)
+    fig, ax = _bars(_VARIANTS)
+    before = _pixels(fig)
+    with pytest.raises(TypeError, match="fit_labels"):
+        dm.simple_layout(fig, fit_labels=value)
+    with dm.config.override(fit_labels=value):
+        with pytest.raises(TypeError, match="fit_labels"):
+            dm.simple_layout(fig)
+    assert _pixels(fig) == before
+
+
+def test_an_unknown_step_name_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="unknown step"):
+        resolve_steps(("wrap", "shrink"))
+    with pytest.raises(ValueError, match="unknown step"):
+        resolve_steps("shrink")
+
+
+def test_a_round_harms_when_a_plot_side_falls_below_the_share() -> None:
+    """The verdict on a round: a plot side kept below ``_MIN_PLOT_SHARE``
+    (0.3; kept rounds measured 0.39 or more, the crushing one 0.01-0.22) or
+    an axis with more overlapping tick labels than before."""
+    from dartwork_mpl.layout._fit_labels import _harmed, _Health
+
+    before = _Health({1: (400.0, 400.0)}, {(1, "x"): 3, (1, "y"): 0})
+
+    def after(w: float, h: float, x: int = 3, y: int = 0) -> _Health:
+        return _Health({1: (w, h)}, {(1, "x"): x, (1, "y"): y})
+
+    assert not _harmed(before, after(400, 160))  # kept 0.4
+    assert _harmed(before, after(400, 100))  # kept 0.25
+    assert _harmed(before, after(100, 400))
+    assert not _harmed(before, after(400, 400, x=0))  # fewer overlaps
+    assert _harmed(before, after(400, 400, y=1))  # a new one elsewhere
+    assert _harmed(before, after(400, 400, x=4))  # more on its own axis
