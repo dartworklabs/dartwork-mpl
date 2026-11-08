@@ -258,7 +258,12 @@ target-version = "py311"
 # Deterministic build artifact: rows are one hex tuple per line (256 hex
 # per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
 # and break `test_rebuild_is_byte_identical`. Never hand-edited.
-extend-exclude = ["src/dartwork_mpl/_colors/_generated.py"]
+# The capture script is the exact file whose sha256 `legacy_calls.json` records
+# (docs/development/mcp-wire-recapture.md); reformatting it would orphan them.
+extend-exclude = [
+    "src/dartwork_mpl/_colors/_generated.py",
+    "tests/mcp/data_repair/capture/capture_legacy_runtime.py",
+]
 # Apply the excludes above and in [tool.ruff.format] to paths a hook or an
 # editor passes explicitly, not only to files found by directory discovery.
 force-exclude = true
