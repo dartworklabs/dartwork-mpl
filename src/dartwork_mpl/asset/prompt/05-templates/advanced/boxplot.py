@@ -67,14 +67,16 @@ for i, (color, vals) in enumerate(zip(colors, data, strict=False)):
 ax.axhline(
     market_baseline, color="dc.amber4", linewidth=0.5, linestyle="--", zorder=2
 )
-ax.text(
-    len(labels) + 0.3,
+# Its label below the line's right end, clear of the boxes, in the line's
+# colour darkened just enough to read (4.5:1).
+dm.label_hline(
+    ax,
     market_baseline,
     f"Market baseline = {market_baseline:.2f}%",
+    x="right",
+    side="below",
     fontsize=dm.fs(-1),
-    color="dc.amber5",
-    ha="right",
-    va="bottom",
+    color=dm.ensure_contrast("dc.amber5", ax.get_facecolor()),
     fontstyle="italic",
 )
 

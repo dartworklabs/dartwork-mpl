@@ -10,10 +10,14 @@ matplotlib.use("Agg")
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
+from matplotlib.collections import PolyCollection
+from matplotlib.text import Text
 
 import dartwork_mpl as dm
 from dartwork_mpl.validate import Severity, VisualWarning, validate_figure
+from dartwork_mpl.validate._checks.text_contrast import check_text_contrast
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -286,6 +290,427 @@ class TestTextContrast:
         assert hits[0].detail["count"] == 4
         assert hits[0].detail["ratio"] == pytest.approx(ratio, abs=0.01)
         assert hits[0].severity == Severity.WARNING
+        plt.close(fig)
+
+
+_DARK = "#1f2a44"
+
+
+def _text_at_center(ax: Axes, ink: str, label: str = "label") -> None:
+    ax.text(
+        0.5,
+        0.5,
+        label,
+        color=ink,
+        ha="center",
+        va="center",
+        fontsize=dm.fs(0),
+        transform=ax.transAxes,
+    )
+
+
+class TestTextContrastBackground:
+    """The background is the figure as painted with the texts' ink hidden.
+
+    The advanced pie's callout in the donut hole was read against the leader
+    wedge (1.00:1) because the wedge's box holds the hole; contour labels and
+    heatmap values were read against the bare Axes because filled
+    collections and images were not looked at (T-C, 11-09). Rebuilding
+    matplotlib's compositing in the check then missed image alpha arrays,
+    interpolation, Axes drawing order and overlapping faces (#659 review),
+    so the check now reads the rendered pixels.
+    """
+
+    def test_text_in_a_donut_hole_reads_the_hole(self) -> None:
+        fig, ax = _new_figure()
+        ax.pie(
+            [62, 38], colors=["#00c897", "#c0f1e1"], wedgeprops={"width": 0.38}
+        )
+        ax.text(0, 0, "hole", color="#00c897", ha="center", va="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [
+            (h.detail["sample"], h.detail["background_color"]) for h in hits
+        ] == [("hole", "#ffffff")]
+        assert hits[0].detail["ratio"] == pytest.approx(2.16, abs=0.01)
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        ("ink", "warns"), [("white", False), ("#222222", True)]
+    )
+    def test_a_filled_area_under_the_text_counts(
+        self, ink: str, warns: bool
+    ) -> None:
+        fig, ax = _new_figure()
+        ax.fill_between([0, 1], [0, 0], [1, 1], color=_DARK)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        _text_at_center(ax, ink)
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["background_color"] for h in hits] == (
+            [_DARK] if warns else []
+        )
+        plt.close(fig)
+
+    def test_contourf_reads_the_band_under_each_label(self) -> None:
+        fig, ax = _new_figure()
+        x = np.linspace(0, 1, 50)
+        xx, yy = np.meshgrid(x, x)
+        ax.contourf(xx, yy, xx, levels=[0, 0.5, 1], colors=["white", _DARK])
+        for x_pos, label in ((0.25, "on white"), (0.75, "on dark")):
+            ax.text(x_pos, 0.5, label, color="white", ha="center", va="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["samples"] for h in hits] == [["on white"]]
+        assert hits[0].detail["background_color"] == "#ffffff"
+        plt.close(fig)
+
+    @pytest.mark.parametrize("kind", ["imshow", "pcolormesh"])
+    def test_an_image_cell_under_the_text_counts(self, kind: str) -> None:
+        fig, ax = _new_figure()
+        data = np.ma.masked_array(
+            [[0.0, 1.0, 0.0]], mask=[[False, False, True]]
+        )
+        if kind == "imshow":
+            ax.imshow(data, cmap="gray", vmin=0, vmax=1, aspect="auto")
+            centres = [0.0, 1.0, 2.0]
+            row = 0.0
+        else:
+            ax.pcolormesh(
+                np.arange(4), [0, 1], data, cmap="gray", vmin=0, vmax=1
+            )
+            centres = [0.5, 1.5, 2.5]
+            row = 0.5
+        for x_pos, label in zip(
+            centres, ["black cell", "white cell", "masked"], strict=True
+        ):
+            ax.text(x_pos, row, label, color="white", ha="center", va="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [sorted(h.detail["samples"]) for h in hits] == [
+            ["masked", "white cell"]
+        ]
+        assert hits[0].detail["background_color"] == "#ffffff"
+        plt.close(fig)
+
+    def test_a_marker_under_the_text_counts(self) -> None:
+        fig, ax = _new_figure()
+        ax.scatter([0.5], [0.5], s=4000, color=_DARK)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        _text_at_center(ax, "#222222")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["background_color"] for h in hits] == [_DARK]
+        plt.close(fig)
+
+    @pytest.mark.parametrize(("alpha", "ratio"), [(0.0, 1.0), (0.5, 3.9)])
+    def test_an_image_alpha_array_shows_what_is_beneath(
+        self, alpha: float, ratio: float
+    ) -> None:
+        # #659 review 1 / Codex: a 2D alpha was dropped, so a clear black
+        # image read as opaque black behind white text.
+        fig, ax = _new_figure()
+        ax.imshow(
+            np.zeros((2, 2)),
+            cmap="gray",
+            vmin=0,
+            vmax=1,
+            extent=(0, 1, 0, 1),
+            alpha=np.full((2, 2), alpha),
+        )
+        _text_at_center(ax, "white", "Raster sample")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["sample"] for h in hits] == ["Raster sample"]
+        assert hits[0].detail["ratio"] == pytest.approx(ratio, abs=0.1)
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        ("interpolation", "warns"), [("nearest", False), ("bilinear", True)]
+    )
+    def test_an_image_is_read_as_interpolated(
+        self, interpolation: str, warns: bool
+    ) -> None:
+        # #659 review 2: the cell under the centre was read before
+        # interpolation (black), not the grey bilinear draws there. Grey
+        # #888888 reads on black (5.9:1), not on that grey (about 2.4:1).
+        fig, ax = _new_figure()
+        ax.imshow(
+            [[0.0, 1.0], [0.0, 1.0]],
+            cmap="gray",
+            vmin=0,
+            vmax=1,
+            extent=(0, 1, 0, 1),
+            interpolation=interpolation,
+        )
+        ax.text(0.4, 0.5, "Raster", color="#888888", ha="center", va="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["sample"] for h in hits] == (
+            ["Raster"] if warns else []
+        )
+        plt.close(fig)
+
+    def test_an_opaque_twin_hides_the_host_beneath(self) -> None:
+        # #659 review 3 / Codex: every Axes patch was laid down before every
+        # fill, so the host's black bar came back over the twin's white face.
+        fig, host = _new_figure()
+        host.bar(0.5, 1, width=1, color="black")
+        host.set_xlim(0, 1)
+        host.set_ylim(0, 1)
+        twin = host.twinx()
+        twin.patch.set_visible(True)
+        twin.patch.set_facecolor("white")
+        _text_at_center(twin, "white", "Raster sample")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [
+            (h.detail["sample"], h.detail["background_color"]) for h in hits
+        ] == [("Raster sample", "#ffffff")]
+        plt.close(fig)
+
+    def test_overlapping_faces_are_composited(self) -> None:
+        # Codex: two black faces (alpha 1.0, then 0.5) paint opaque black;
+        # the last face alone read as grey and #757575 text failed at 1.16:1.
+        fig, ax = _new_figure()
+        square = [(0, 0), (1, 0), (1, 1), (0, 1)]
+        ax.add_collection(
+            PolyCollection(
+                [square, square],
+                facecolors=[(0, 0, 0, 1.0), (0, 0, 0, 0.5)],
+                linewidths=0,
+            )
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        _text_at_center(ax, "#757575")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_a_text_at_a_missing_coordinate_is_skipped(self) -> None:
+        # Codex: a nan position has no finite box; flooring it raised and
+        # the whole check became CHECK_FAILED, losing every other finding.
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.text(float("nan"), 0.5, "missing")
+        ax.text(0.5, 0.5, "faint", color="#eeeeee")
+
+        found = validate_figure(fig, checks=("TEXT_CONTRAST",), quiet=True)
+
+        assert [(w.check_id, w.detail.get("sample")) for w in found] == [
+            ("TEXT_CONTRAST", "faint")
+        ]
+        plt.close(fig)
+
+    def test_the_hidden_draw_puts_every_text_back(self) -> None:
+        # The ink is hidden for one draw to a renderer of the check's own:
+        # colours, alphas and visibility return, and the canvas's buffer is
+        # not touched.
+        fig, ax = _new_figure()
+        ax.plot([0, 1], [0, 1])
+        ax.set_title("Title", color="#333333")
+        ax.text(0.2, 0.8, "faded", color="black", alpha=0.6)
+        hidden = ax.text(0.5, 0.5, "hidden", visible=False)
+        texts = fig.findobj(Text)
+        before = [
+            (t.get_color(), t.get_alpha(), t.get_visible()) for t in texts
+        ]
+        fig.canvas.draw()
+        buffer = bytes(fig.canvas.buffer_rgba())
+
+        check_text_contrast(fig, fig.canvas.get_renderer())
+
+        after = [(t.get_color(), t.get_alpha(), t.get_visible()) for t in texts]
+        assert after == before
+        assert not hidden.get_visible()
+        assert bytes(fig.canvas.buffer_rgba()) == buffer
+        plt.close(fig)
+
+    def test_a_failed_draw_still_puts_every_text_back(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fig, ax = _new_figure()
+        ax.set_title("Title", color="#333333")
+        texts = fig.findobj(Text)
+        before = [(t.get_color(), t.get_alpha()) for t in texts]
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+
+        def broken(_renderer: object) -> None:
+            raise RuntimeError("draw failed")
+
+        monkeypatch.setattr(fig, "draw", broken)
+        with pytest.raises(RuntimeError, match="draw failed"):
+            check_text_contrast(fig, renderer)
+
+        assert [(t.get_color(), t.get_alpha()) for t in texts] == before
+        plt.close(fig)
+
+    def test_overlapping_paths_read_the_one_drawn_last(self) -> None:
+        fig, ax = _new_figure()
+        square = [(0, 0), (1, 0), (1, 1), (0, 1)]
+        ax.add_collection(
+            PolyCollection([square, square], facecolors=["white", _DARK])
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        _text_at_center(ax, "white")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_a_callout_is_read_where_its_text_is_not_its_arrow(self) -> None:
+        # An annotation's extent holds its arrow; the centre of that union
+        # lay on the dark fill the arrow points into, not under the words.
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.add_patch(
+            mpatches.Rectangle((0.4, 0), 0.6, 1, facecolor=_DARK, lw=0)
+        )
+        ax.annotate(
+            "on white",
+            xy=(0.95, 0.5),
+            xytext=(0.02, 0.5),
+            va="center",
+            color="#222222",
+            arrowprops={"arrowstyle": "->", "color": "#222222"},
+        )
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_text_on_a_twin_reads_the_host_drawn_beneath(self) -> None:
+        fig, host = _new_figure()
+        host.bar([0], [1], width=2, color=_DARK)
+        host.set_xlim(-0.5, 0.5)
+        host.set_ylim(0, 1)
+        twin = host.twinx()
+        _text_at_center(twin, "white", "on host bar")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        _text_at_center(twin, "#222222", "dark on bar")
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+        assert [h.detail["background_color"] for h in hits] == [_DARK]
+        plt.close(fig)
+
+    def test_legend_text_reads_its_frame(self) -> None:
+        fig, ax = _new_figure()
+        ax.fill_between([0, 1], [0, 0], [1, 1], color=_DARK)
+        ax.plot([0, 1], [0.5, 0.5], color="white", label="series")
+        legend = ax.legend(loc="center", frameon=True, framealpha=1)
+        legend.get_frame().set_facecolor("white")
+        legend.get_texts()[0].set_color("#222222")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        legend.set_frame_on(False)  # framealpha would override a clear face
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+        assert [h.detail["background_color"] for h in hits] == [_DARK]
+        plt.close(fig)
+
+    def test_a_centre_on_the_polar_clip_seam_reads_what_is_painted(
+        self,
+    ) -> None:
+        # The polar Axes' round clip path has a zero-width seam along the
+        # horizontal through its centre; a centred label there is painted on
+        # the disc beneath it.
+        dm.style.use("scientific")
+        fig, ax = plt.subplots(
+            figsize=dm.figsize("9cm", "square"),
+            subplot_kw={"projection": "polar"},
+        )
+        ax.bar(0, 1, width=2 * np.pi, bottom=0, color=_DARK)
+        ax.set_ylim(0, 2)
+        ax.set_yticks([])  # the radial tick labels sit on the dark disc
+        for theta in (0.0, np.pi):
+            ax.text(theta, 0.5, "seam", color="white", ha="center", va="center")
+        ax.text(0, 0, "centre", color="white", ha="center", va="center")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_3d_axes_are_read_without_failing(self) -> None:
+        dm.style.use("scientific")
+        fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+        ax = fig.add_subplot(projection="3d")
+        ax.plot([0, 1], [0, 1], [0, 1])
+        ax.text(0.5, 0.5, 0.5, "faint", color="#eeeeee")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [h.detail["sample"] for h in hits] == ["faint"]
+        plt.close(fig)
+
+    def test_3d_text_is_read_where_it_is_projected(self) -> None:
+        # A Text3D's own extent reads its (x, y) unprojected, off the
+        # surface it sits on; text_window_extent places it as drawn.
+        dm.style.use("scientific")
+        fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+        ax = fig.add_subplot(projection="3d")
+        xx, yy = np.meshgrid(np.linspace(-1, 1, 5), np.linspace(-1, 1, 5))
+        ax.plot_surface(xx, yy, np.zeros_like(xx), color=_DARK, shade=False)
+        ax.set_axis_off()  # its tick labels would sit on the dark surface
+        # Off the centre: unprojected, (0.6, -0.6) lies far off the canvas,
+        # where nothing is read; as drawn, dark text sits on the dark surface.
+        ax.text(0.6, -0.6, 0, "on surface", color="#222222", ha="center")
+
+        hits = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert [
+            (h.detail["sample"], h.detail["background_color"]) for h in hits
+        ] == [("on surface", _DARK)]
+        plt.close(fig)
+
+    def test_the_text_ink_is_not_its_own_background(self) -> None:
+        # Full blocks cover their box; read with the ink, white on the dark
+        # patch would be "white on white".
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.add_patch(mpatches.Rectangle((0, 0), 1, 1, facecolor=_DARK, lw=0))
+        ax.text(
+            0.5,
+            0.5,
+            "███",
+            color="white",
+            fontfamily="DejaVu Sans",
+            ha="center",
+            va="center",
+        )
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_a_line_through_a_label_is_not_its_background(self) -> None:
+        # The median of the box, not the one pixel at its centre.
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axhline(0.5, color="black", lw=1)
+        _text_at_center(ax, "#222222")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
+    def test_a_transparent_figure_is_read_on_white_paper(self) -> None:
+        fig, ax = _new_figure()
+        fig.patch.set_alpha(0.0)
+        ax.patch.set_alpha(0.0)
+        _text_at_center(ax, "#222222")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
         plt.close(fig)
 
 

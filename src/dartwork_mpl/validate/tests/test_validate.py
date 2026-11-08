@@ -611,6 +611,24 @@ class TestCheckPieLabelOffset:
         assert len(pie_w) == 0
         plt.close(fig)
 
+    def test_names_with_shares_outside_the_ring_are_not_ring_labels(
+        self,
+    ) -> None:
+        """A wedge's name and share set past the ring ("B 30%") is an
+        outside label; only shares inside the ring are held to its middle.
+        """
+        fig, ax = plt.subplots(figsize=(4, 4))
+        ax.pie(
+            [40, 30, 20, 10],
+            labels=["A 40%", "B 30%", "C 20%", "D 10%"],
+            wedgeprops={"width": 0.4},
+        )
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        assert [w.check_id for w in warnings] == []
+        plt.close(fig)
+
     def test_regular_pie_ignored(self) -> None:
         """Regular pie (not donut) should be skipped entirely."""
         fig, ax = plt.subplots(figsize=(4, 4))

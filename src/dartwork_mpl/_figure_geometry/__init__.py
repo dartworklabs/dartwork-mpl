@@ -655,9 +655,18 @@ def backdrop_layers(
     layers.extend(
         to_rgba(member.get_facecolor())
         for member in sorted(axes, key=lambda m: m.get_zorder())
-        if member.get_frame_on() and member.patch.get_visible()
+        if _frame_on(member) and member.patch.get_visible()
     )
     return layers
+
+
+def _frame_on(ax: Axes) -> bool:
+    """Whether ``ax`` draws its patch; a 3D Axes has no frame switch.
+
+    ``Axes3D`` sets ``get_frame_on`` to ``None`` and always draws its patch.
+    """
+    frame_on = getattr(ax, "get_frame_on", None)
+    return bool(frame_on()) if callable(frame_on) else True
 
 
 def axes_decoration_extents(ax: Axes, renderer: RendererBase) -> list[Bbox]:

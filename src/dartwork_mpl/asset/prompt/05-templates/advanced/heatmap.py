@@ -62,8 +62,8 @@ for i in range(n):
         if i == j:
             continue
         val = corr[i, j]
-        # Pick contrasting text color: light on saturated cells, dark on pale.
-        text_color = "white" if abs(val) > 0.45 else "oc.gray8"
+        # White or black, whichever reads better on the cell as drawn.
+        text_color = dm.readable_text_color(im.to_rgba(val))
         label = ax.text(
             j,
             i,

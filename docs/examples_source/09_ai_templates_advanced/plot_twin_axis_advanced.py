@@ -75,7 +75,7 @@ dm.label_hline(
     f"Target = ${target:.0f}",
     x="left",
     fontsize=dm.fs(-1),
-    color="dc.amber5",
+    color=dm.ensure_contrast("dc.amber5", ax_price.get_facecolor()),  # 4.5:1
     fontstyle="italic",
 )
 
