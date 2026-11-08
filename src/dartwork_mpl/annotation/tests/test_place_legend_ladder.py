@@ -427,12 +427,13 @@ CITIES = (
 def test_a_wrapped_legend_above_settles_in_the_layout() -> None:
     """The layout ends where placing the legend again changes nothing.
 
-    Ten long names above a 12 cm plot fit only wrapped while the plot is
+    Ten long names above a 9 x 7 cm plot fit only wrapped while the plot is
     short; judged against the plot height of the moment, the wrapped
     legend gave the plot room, unwrapped there, took it back and wrapped
     again until the layout's step limit.
     """
-    fig, ax = _report()
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "7cm"))
     x = np.arange(12)
     rng = np.random.default_rng(17)
     for i, city in enumerate(CITIES):
@@ -570,6 +571,30 @@ def test_a_neighbouring_panel_ends_the_span(
     assert (legend_ncols(alone) > beside) is wider_alone
 
 
+def test_a_legend_is_planned_again_when_its_span_narrows() -> None:
+    """The neighbour's label grows into the gap; the panel keeps its size,
+    the legend's span shrinks, and three columns no longer fit beside it."""
+    dm.style.use("report")
+    fig, (ax, other) = plt.subplots(
+        1, 2, figsize=dm.figsize("20cm", "standard")
+    )
+    other.plot([0, 1], [0, 1])
+    _dense(ax, 6, " metropolitan region")
+    legend = place_legend(ax, loc="above")
+    assert legend is not None and legend_ncols(legend) == 3
+    size = ax.get_window_extent(drawn_renderer(fig)).size.copy()
+    other.set_ylabel(
+        "Output of the second\nmetropolitan region\n(index, 2019 = 100)"
+    )
+    renderer = drawn_renderer(fig)
+    assert (ax.get_window_extent(renderer).size == size).all()
+    assert settle_legends(fig, renderer) is True
+    again = ax.get_legend()
+    assert again is not None and legend_ncols(again) == 2
+    box = again.get_window_extent(drawn_renderer(fig))
+    assert box.x1 <= other.get_tightbbox(drawn_renderer(fig)).x0
+
+
 def test_a_legend_wider_than_its_axes_moves_in_at_the_canvas_edge() -> None:
     dm.style.use("report")
     fig = plt.figure(figsize=dm.figsize("12cm", "standard"))
@@ -593,6 +618,7 @@ def test_a_legend_over_the_tick_labels_beside_the_plot_clears_the_top_one() -> (
     one sticks out above the plot by half its height and is cleared."""
     fig, ax = _report("9cm")
     _dense(ax, 10, " metropolitan region, seasonally adjusted (2019 = 100)")
+    ax.set_ylim(0, 100)  # the top tick at the top of the plot
     place_legend(ax)
     dm.simple_layout(fig)
     legend = ax.get_legend()
@@ -613,7 +639,8 @@ def test_a_right_legend_may_be_taller_than_its_axes_but_not_reach_a_panel_row(
         low.set_title("Lower panel")
     else:
         fig, ax = plt.subplots(figsize=dm.figsize("12cm", "4.5cm"))
-    _dense(ax, 14)
+    # Below: one column of sixteen would reach the lower panel's title.
+    _dense(ax, 16 if below else 14)
     place_legend(ax, loc="right")
     dm.simple_layout(fig)
     legend = ax.get_legend()
@@ -622,7 +649,8 @@ def test_a_right_legend_may_be_taller_than_its_axes_but_not_reach_a_panel_row(
     assert box.x0 >= plot.x1  # right
     assert fig.bbox.y0 <= box.y0 and box.y1 <= fig.bbox.y1
     if below:
-        assert box.y0 >= low.get_tightbbox(drawn_renderer(fig)).y1
+        title = low.title.get_window_extent(drawn_renderer(fig))
+        assert box.y0 >= title.y1
     else:  # one column, taller than the Axes
         assert legend_ncols(legend) == 1 and box.height > plot.height
 
@@ -985,6 +1013,28 @@ _MORE_EDITS = {
         _marked_ten,
         lambda lg: lg.legend_handles[0].set_markersize(2),
         lambda lg: lg.legend_handles[0].get_markersize(),
+    ),
+    # Review 2's edits on a legend the layout plans again (its own figure,
+    # moved here unchanged, keeps the legend's rows either way).
+    "title_text": (
+        _titled_ten,
+        lambda lg: lg.get_title().set_text("Changed"),
+        lambda lg: lg.get_title().get_text(),
+    ),
+    "line_style": (
+        _titled_ten,
+        lambda lg: lg.legend_handles[0].set_linestyle("--"),
+        lambda lg: lg.legend_handles[0].get_linestyle(),
+    ),
+    "line_width": (
+        _titled_ten,
+        lambda lg: lg.legend_handles[0].set_linewidth(7),
+        lambda lg: lg.legend_handles[0].get_linewidth(),
+    ),
+    "marker": (
+        _titled_ten,
+        lambda lg: lg.legend_handles[0].set_marker("s"),
+        lambda lg: lg.legend_handles[0].get_marker(),
     ),
     # Markers in colours of their own: only the line's colour moves.
     "line_colour_fixed_markers": (
