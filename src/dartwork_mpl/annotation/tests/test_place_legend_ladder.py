@@ -785,11 +785,11 @@ def _above_ten_bars():
     return fig, ax, legend
 
 
-def _marked_ten():
+def _marked_ten(**marker_kw):
     fig, ax = _report()
     _dense(ax, 10)
     for line in ax.lines:
-        line.set_marker("o")
+        line.set(marker="o", **marker_kw)
     legend = place_legend(ax, loc="above", fontsize=9, frameon=True)
     assert legend is not None
     return fig, ax, legend
@@ -822,6 +822,12 @@ _MORE_EDITS = {
         _marked_ten,
         lambda lg: lg.legend_handles[0].set_markersize(2),
         lambda lg: lg.legend_handles[0].get_markersize(),
+    ),
+    # Markers in colours of their own: only the line's colour moves.
+    "line_colour_fixed_markers": (
+        lambda: _marked_ten(markerfacecolor="white", markeredgecolor="k"),
+        lambda lg: lg.legend_handles[0].set_color("red"),
+        lambda lg: lg.legend_handles[0].get_color(),
     ),
     "bar_face": (
         _above_ten_bars,
