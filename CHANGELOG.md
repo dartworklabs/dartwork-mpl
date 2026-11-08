@@ -303,6 +303,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- Lint rule `multirow-subplots-no-gridspec-kw` (info). It asked for an
+  explicit `gridspec_kw={"hspace": ..., "wspace": ...}` on every
+  `plt.subplots` with two or more rows, because `dm.simple_layout` kept the
+  gaps between panels as they were. The layout now widens the spacing
+  nobody passed where neighbouring panels' text collides, and a spacing
+  passed by hand turns that off, so the rule's advice would undo the fix.
+  The skill, the layout guide and the review tables now say to leave tick
+  rotation and `hspace` / `wspace` to the layout (a spacing the user asks
+  for still wins), and list `TICK_OVERLAP`.
 - `dartwork_mpl.style.install_twinx_patch` and its root alias
   `dm.install_twinx_patch` (internal, never in `__all__`): the import-time
   `twinx` wrapper. See *Changed*.
