@@ -1,51 +1,43 @@
 """TEXT_CONTRAST: WCAG text/background contrast advisory check.
 
-The background of a text is what is painted at its centre (the pixel there):
-the figure and Axes patches, then, in drawing order (zorder, then the order
-they were added), every filled patch, filled collection (``fill_between``,
-``contourf``, ``pcolormesh``, a 3D surface) and image whose drawn area holds
-that point, and the text's own box or legend frame on top. A patch counts
-by its drawn path (a donut's hole and the corners of a wedge's box are not
-the wedge), clipped to where it is drawn. The Axes drawn before the text's
-own in the same place (a ``twinx`` host) count beneath it. Markers placed by
-offsets (``scatter``) are not a background. One point stands for the whole
-text: a label across two fills is read on the one under its centre. A 3D
-Axes' text is read at its projected place; the 3D panes are not modelled.
+The background of a text is read from the figure as matplotlib paints it:
+the root figure is drawn once more, to a renderer of its own at the
+figure's DPI, with the ink of every text made fully transparent, and the
+background is the per-channel median of the pixels inside the text's own
+box (an annotation's words, not its arrow; a 3D Axes' text where it is
+projected). Interpolated and alpha-blended images, collections, overlapping
+faces, Axes drawing order, clip paths and markers all count as they are
+drawn; a text's own box (``bbox=``), a legend's frame and a stroke drawn
+around a text by a path effect stay in the picture, other texts do not.
+The draw does not touch the caller's canvas, and the colours are put back
+even when drawing fails. A text with no finite box on the canvas is not
+read.
 """
 
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, TypedDict
 
 import matplotlib.colors as mcolors
 import numpy as np
-from matplotlib.axes import Axes
-from matplotlib.backend_bases import MouseEvent
-from matplotlib.collections import Collection, QuadMesh
-from matplotlib.legend import Legend
-from matplotlib.patches import Patch
+from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.text import Annotation, Text
-from matplotlib.transforms import IdentityTransform, TransformedPath
 
 from ..._colors.contrast import contrast_ratio as _contrast_ratio
-from ..._figure_geometry import (
-    backdrop_layers,
-    same_position_axes,
-    text_window_extent,
-)
+from ..._figure_geometry import text_window_extent
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Iterator
 
-    from matplotlib.artist import Artist
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
-    from matplotlib.image import AxesImage
+    from matplotlib.transforms import Bbox
 
 __all__ = ["check_text_contrast"]
 
@@ -61,6 +53,8 @@ _BOLD_WEIGHTS = frozenset(
 )
 
 _RGBA = tuple[float, float, float, float]
+_RGB = tuple[float, float, float]
+_PixelBox = tuple[int, int, int, int]  # rows top..bottom, columns left..right
 
 
 class TextContrastDetail(TypedDict):
@@ -113,34 +107,8 @@ def _rgba(color: Any) -> _RGBA | None:
     return (float(raw[0]), float(raw[1]), float(raw[2]), float(raw[3]))
 
 
-def _hex(rgba: _RGBA) -> str:
-    return mcolors.to_hex(rgba, keep_alpha=False)
-
-
-def _composite(foreground: _RGBA, background: _RGBA) -> _RGBA:
-    alpha = foreground[3]
-    background_alpha = background[3]
-    out_alpha = alpha + background_alpha * (1.0 - alpha)
-    if out_alpha <= 0:
-        return (0.0, 0.0, 0.0, 0.0)
-    return (
-        (
-            foreground[0] * alpha
-            + background[0] * background_alpha * (1.0 - alpha)
-        )
-        / out_alpha,
-        (
-            foreground[1] * alpha
-            + background[1] * background_alpha * (1.0 - alpha)
-        )
-        / out_alpha,
-        (
-            foreground[2] * alpha
-            + background[2] * background_alpha * (1.0 - alpha)
-        )
-        / out_alpha,
-        out_alpha,
-    )
+def _hex(rgb: _RGB | _RGBA) -> str:
+    return mcolors.to_hex(rgb[:3], keep_alpha=False)
 
 
 def _sample(value: str) -> str:
@@ -161,53 +129,13 @@ def _visible_texts(fig: Figure) -> Iterator[Text]:
         yield artist
 
 
-def _axes_beneath(axes: Axes) -> list[Axes]:
-    """``axes`` and the Axes in its place drawn before it, in drawing order.
-
-    The figure draws its Axes by zorder, ties in the order they were added;
-    a ``twinx`` host drawn first shows through its transparent partner.
-    """
-    group = same_position_axes(axes)
-    parent = axes.get_figure(root=False)
-    order = (
-        {id(member): index for index, member in enumerate(parent.axes)}
-        if parent is not None
-        else {}
-    )
-    drawn = sorted(
-        group,
-        key=lambda member: (member.get_zorder(), order.get(id(member), 0)),
-    )
-    return drawn[: drawn.index(axes) + 1]
-
-
-def _base_layers(text: Text, beneath: list[Axes]) -> list[_RGBA]:
-    """The figure, subfigure and Axes patches behind ``text``, lowest first."""
-    if beneath:
-        return [_as_rgba(layer) for layer in backdrop_layers(beneath)]
-    root = text.get_figure(root=True)
-    parent = text.get_figure(root=False)
-    containers = (root, parent if parent is not root else None)
-    return [
-        _as_rgba(mcolors.to_rgba(container.get_facecolor()))
-        for container in containers
-        if container is not None and container.patch.get_visible()
-    ]
-
-
-def _as_rgba(color: tuple[float, ...]) -> _RGBA:
-    return (float(color[0]), float(color[1]), float(color[2]), float(color[3]))
-
-
-def _text_center(
-    text: Text, renderer: RendererBase
-) -> tuple[float, float] | None:
-    """The centre of the text's own box, where it draws.
+def _text_box(text: Text, renderer: RendererBase) -> Bbox | None:
+    """The text's own box where it draws, or ``None`` when it has none.
 
     An annotation's extent also holds its arrow, whose far end can sit on
-    another fill, so its words are measured alone (``Text.get_window_extent``).
-    A 3D Axes' text is measured at its projected place
-    (:func:`text_window_extent`).
+    another fill, so its words are measured alone. A 3D Axes' text is
+    measured at its projected place (:func:`text_window_extent`). A text at
+    a missing coordinate (``nan``) has no finite box and is not read.
     """
     try:
         extent = (
@@ -217,237 +145,81 @@ def _text_center(
         )
     except BBOX_ERRORS:
         return None
+    bounds = (extent.x0, extent.y0, extent.x1, extent.y1)
+    if not all(math.isfinite(value) for value in bounds):
+        return None
     if extent.width <= 0 or extent.height <= 0:
         return None
-    return ((extent.x0 + extent.x1) / 2.0, (extent.y0 + extent.y1) / 2.0)
+    return extent
 
 
-def _patch_facecolor(patch: Any) -> _RGBA | None:
-    if not patch.get_visible():
+def _pixel_box(box: Bbox, height: int, width: int) -> _PixelBox | None:
+    """Rows and columns of the buffer the box covers, clipped to the canvas."""
+    left = max(0, math.floor(box.x0))
+    right = min(width, math.ceil(box.x1))
+    top = max(0, math.floor(height - box.y1))
+    bottom = min(height, math.ceil(height - box.y0))
+    if right <= left or bottom <= top:
         return None
-    facecolor = _rgba(patch.get_facecolor())
-    if facecolor is None or facecolor[3] <= 0:
-        return None
-    return facecolor
+    return (top, bottom, left, right)
 
 
-def _clipped_away(artist: Artist, point: tuple[float, float]) -> bool:
-    """Whether ``artist``'s clip box or clip path keeps it off ``point``.
+def _hide_ink(text: Text) -> Callable[[], None]:
+    """Make the text's glyphs fully transparent; return the undo.
 
-    A bar past the axes limit is drawn up to the axes edge only, so text
-    beyond the limit does not lie on it.
+    Only the colour (and an alpha the text sets, which overrides it) moves:
+    the text keeps its visibility, size and place, so a layout engine that
+    runs in the draw measures it as before, and its box, arrow and
+    path-effect strokes are still drawn.
     """
-    if not artist.get_clip_on():
-        return False
-    clip_box = artist.get_clip_box()
-    if clip_box is not None and not clip_box.contains(*point):
-        return True
-    clip_path = artist.get_clip_path()  # stored as a TransformedPath, or None
-    if not isinstance(clip_path, TransformedPath):
-        return False
-    return not clip_path.get_fully_transformed_path().contains_point(point)
+    color = text.get_color()
+    alpha = text.get_alpha()
+    rgba = mcolors.to_rgba(color)
+    text.set_color((rgba[0], rgba[1], rgba[2], 0.0))
+    if alpha is not None:
+        text.set_alpha(0.0)
+
+    def undo() -> None:
+        text.set_color(color)
+        text.set_alpha(alpha)
+
+    return undo
 
 
-def _patch_contains_point(
-    patch: Patch, renderer: RendererBase, point: tuple[float, float]
-) -> bool:
-    """Whether ``patch``'s fill is drawn at display ``point``.
+def _painted_without_text(fig: Figure) -> np.ndarray:
+    """The root figure drawn with every text's ink hidden, as RGB over white.
 
-    Inside its drawn path, not merely its extent: the box around a wedge
-    holds the donut's hole and the space beside the ring.
+    A renderer of its own at the figure's DPI, so the caller's canvas and
+    its buffer are untouched; every colour is put back even when the draw
+    fails. A transparent figure shows on white paper.
     """
+    root = fig.get_figure(root=True) or fig
+    width, height = root.bbox.size
+    renderer = RendererAgg(width, height, root.dpi)  # type: ignore[no-untyped-call]
+    undo: list[Callable[[], None]] = []
     try:
-        extent = patch.get_window_extent(renderer)
-    except BBOX_ERRORS:
-        return False
-    if extent.width <= 0 or extent.height <= 0:
-        return False
-    if not extent.contains(*point):
-        return False
-    if not patch.contains_point(point, radius=0):
-        return False
-    return not _clipped_away(patch, point)
+        # One by one, so a failure part-way still undoes those already hidden.
+        undo.extend(_hide_ink(text) for text in root.findobj(Text))
+        root.draw(renderer)
+    finally:
+        for step in reversed(undo):
+            step()
+    raw: np.ndarray = np.asarray(renderer.buffer_rgba())  # type: ignore[no-untyped-call]
+    rgba = raw.astype(float) / 255.0
+    alpha = rgba[..., 3:4]
+    rgb: np.ndarray = rgba[..., :3] * alpha + (1.0 - alpha)
+    return rgb
 
 
-def _drawn_in_place(collection: Collection) -> bool:
-    """Whether ``collection`` draws its paths where they are, not as markers.
+def _background_at(pixels: np.ndarray, box: _PixelBox) -> _RGB:
+    """The per-channel median of the pixels inside ``box``.
 
-    ``fill_between``, ``contourf`` and 3D surfaces are; ``scatter`` repeats
-    one marker path at each offset, and is not a background.
+    Many pixels rather than the one at the centre: a gridline or a contour
+    line through the middle of a label is not its background.
     """
-    if len(collection.get_transforms()):
-        return False
-    if not isinstance(collection.get_offset_transform(), IdentityTransform):
-        return False
-    return not np.any(collection.get_offsets())
-
-
-def _collection_rgba_at(
-    collection: Collection,
-    point: tuple[float, float],
-    event: Callable[[], MouseEvent],
-) -> _RGBA | None:
-    """The face of ``collection`` drawn at ``point`` (the last path holding it)."""
-    if not collection.get_visible() or _clipped_away(collection, point):
-        return None
-    faces = np.asarray(collection.get_facecolor(), dtype=float).reshape(-1, 4)
-    if not len(faces) or not np.any(faces[:, 3] > 0):
-        return None
-    if isinstance(collection, QuadMesh):
-        hit, info = collection.contains(event())
-        indices = [int(i) for i in info.get("ind", ())] if hit else []
-    elif _drawn_in_place(collection):
-        transform = collection.get_transform()
-        indices = [
-            index
-            for index, path in enumerate(collection.get_paths())
-            if path.contains_point(point, transform)
-        ]
-    else:
-        return None
-    if not indices:
-        return None
-    face = faces[indices[-1] % len(faces)]
-    return _as_rgba(tuple(face)) if face[3] > 0 else None
-
-
-def _image_rgba_at(
-    image: AxesImage,
-    point: tuple[float, float],
-    event: Callable[[], MouseEvent],
-) -> _RGBA | None:
-    """The colour of ``image``'s cell drawn at ``point``."""
-    if not image.get_visible() or _clipped_away(image, point):
-        return None
-    data = image.get_array()
-    if data is None:
-        return None
-    value = image.get_cursor_data(event())
-    if value is None:
-        return None
-    if np.ndim(data) == 3:
-        cell = np.asarray(value).reshape(1, 1, -1)
-        rgba = np.asarray(image.to_rgba(cell), dtype=float)[0, 0]
-    else:
-        shown = (
-            np.ma.masked_array([0.0], mask=[True])
-            if np.ma.is_masked(value)
-            else np.ma.asarray([value], dtype=float)
-        )
-        rgba = np.asarray(image.to_rgba(shown), dtype=float)[0]
-    alpha = image.get_alpha()
-    if isinstance(alpha, (int, float)):
-        rgba[3] *= float(alpha)
-    return _as_rgba(tuple(rgba)) if rgba[3] > 0 else None
-
-
-def _layer_at(
-    artist: Artist,
-    renderer: RendererBase,
-    point: tuple[float, float],
-    event: Callable[[], MouseEvent],
-) -> _RGBA | None:
-    if isinstance(artist, Patch):
-        face = _patch_facecolor(artist)
-        if face is None or not _patch_contains_point(artist, renderer, point):
-            return None
-        return face
-    if isinstance(artist, Collection):
-        return _collection_rgba_at(artist, point, event)
-    return _image_rgba_at(artist, point, event)  # type: ignore[arg-type]
-
-
-def _filled_layers(
-    axes: Axes,
-    renderer: RendererBase,
-    point: tuple[float, float],
-    event: Callable[[], MouseEvent],
-) -> list[_RGBA]:
-    """What ``axes`` paints at ``point``, in drawing order, lowest first."""
-    members = {
-        id(artist)
-        for artist in (*axes.patches, *axes.collections, *axes.images)
-    }
-    drawn = sorted(
-        (child for child in axes.get_children() if id(child) in members),
-        key=lambda child: child.get_zorder(),
-    )
-    layers: list[_RGBA] = []
-    for artist in drawn:
-        layer = _layer_at(artist, renderer, point, event)
-        if layer is not None:
-            layers.append(layer)
-    return layers
-
-
-def _owning_legend(text: Text) -> Legend | None:
-    parent = text.get_figure(root=False)
-    if parent is None:
-        return None
-    holders = [ax.get_legend() for ax in parent.axes]
-    holders.extend(parent.legends)
-    for legend in holders:
-        if not isinstance(legend, Legend):
-            continue
-        if text is legend.get_title() or any(
-            text is entry for entry in legend.get_texts()
-        ):
-            return legend
-    return None
-
-
-def _background_under_text(
-    text: Text, fig: Figure, renderer: RendererBase
-) -> _RGBA:
-    del fig  # the text's own figure, subfigure and Axes are read from it
-    axes = text.axes
-    beneath = _axes_beneath(axes) if isinstance(axes, Axes) else []
-    layers = _base_layers(text, beneath)
-    center = _text_center(text, renderer) if beneath else None
-    root = text.get_figure(root=True)
-    if center is not None and root is not None:
-        # The centre of the pixel holding the text's centre, where the
-        # renderer samples: a centre exactly on an edge (the seam of a
-        # polar Axes' round clip path) is read as the pixel is painted.
-        point = (math.floor(center[0]) + 0.5, math.floor(center[1]) + 0.5)
-        canvas = root.canvas
-        cached: list[MouseEvent] = []
-
-        def event() -> MouseEvent:
-            # Images and meshes answer where a mouse event lies.
-            # matplotlib types x and y as int; display points are floats.
-            if not cached:
-                cached.append(
-                    MouseEvent("motion_notify_event", canvas, *point)  # type: ignore[arg-type]
-                )
-            return cached[0]
-
-        for member in beneath:
-            layers.extend(_filled_layers(member, renderer, point, event))
-
-    background: _RGBA = (1.0, 1.0, 1.0, 1.0)
-    for layer in layers:
-        if layer[3] > 0:
-            background = _composite(layer, background)
-    return background
-
-
-def _background_rgba(text: Text, fig: Figure, renderer: RendererBase) -> _RGBA:
-    background = _background_under_text(text, fig, renderer)
-
-    legend = _owning_legend(text)
-    if legend is not None and legend.get_frame_on():
-        frame = _patch_facecolor(legend.get_frame())
-        if frame is not None:
-            background = _composite(frame, background)
-
-    bbox_patch = text.get_bbox_patch()
-    if bbox_patch is None:
-        return background
-    facecolor = _patch_facecolor(bbox_patch)
-    if facecolor is None:
-        return background
-    return _composite(facecolor, background)
+    top, bottom, left, right = box
+    median = np.median(pixels[top:bottom, left:right].reshape(-1, 3), axis=0)
+    return (float(median[0]), float(median[1]), float(median[2]))
 
 
 def _is_bold(weight: object) -> bool:
@@ -473,6 +245,22 @@ def _is_large_text(text: Text) -> bool:
     )
 
 
+def _readable(
+    fig: Figure, renderer: RendererBase
+) -> list[tuple[Text, _RGBA, Bbox]]:
+    """The texts to read: visible, inked, with a finite box."""
+    found = []
+    for text in _visible_texts(fig):
+        text_color = _rgba(text.get_color())
+        if text_color is None or text_color[3] <= 0:
+            continue
+        box = _text_box(text, renderer)
+        if box is None:
+            continue
+        found.append((text, text_color, box))
+    return found
+
+
 @register_check("TEXT_CONTRAST", order=80)
 def check_text_contrast(
     fig: Figure, _renderer: RendererBase
@@ -480,13 +268,18 @@ def check_text_contrast(
     """Detect text whose color contrast is below WCAG AA guidance."""
     groups: dict[tuple[Severity, str, str, float], _ContrastGroup] = {}
 
-    for text in _visible_texts(fig):
-        text_color = _rgba(text.get_color())
-        if text_color is None or text_color[3] <= 0:
-            continue
+    readable = _readable(fig, _renderer)
+    if not readable:
+        return []
+    pixels = _painted_without_text(fig)
 
-        background = _background_rgba(text, fig, _renderer)
-        ratio = _contrast_ratio(text_color[:3], background[:3])
+    for text, text_color, box in readable:
+        cells = _pixel_box(box, pixels.shape[0], pixels.shape[1])
+        if cells is None:
+            continue  # wholly off the canvas: nothing is drawn to read
+
+        background = _background_at(pixels, cells)
+        ratio = _contrast_ratio(text_color[:3], background)
         large_text = _is_large_text(text)
         threshold = _LARGE_AA_THRESHOLD if large_text else _NORMAL_AA_THRESHOLD
 

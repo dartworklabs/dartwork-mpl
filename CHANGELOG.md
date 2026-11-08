@@ -495,23 +495,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   reported a contrast fault that was not drawn (black on `#1f4e79`,
   2.42:1). A shape that clips now counts only inside its clip box; real
   faults on a bar, or white text off it, are still found.
-- **`TEXT_CONTRAST` reads what is painted under the text.** It read a
-  callout in a donut's hole against the wedge whose box held it (1.00:1;
-  drawn on white it is 2.16:1), and read every contour label and heatmap
-  value against the bare Axes (white on white, 1.00:1). A shape now counts
-  by its drawn path, clipped to where it is drawn (a polar Axes' round
-  clip too), sampled at the pixel holding the centre of the text's own
-  box (an annotation's arrow no longer pulls that centre onto what it
-  points at; a 3D Axes' text is read where it is projected); filled
-  collections (`fill_between`, `contourf`,
-  `pcolormesh`, 3D surfaces) and images count in drawing order, the last
-  path holding the point on top; a `twinx` host drawn first shows through
-  its partner; a legend's text reads its frame. Scatter markers are not a
-  background. Check id, order and severities are unchanged; over the 36
-  templates and 91 docs examples only the advanced contour, heatmap and
-  pie report differently (contour labels per band, the heatmap's white
-  `+0.64` at 4.25:1 INFO, the pie callout at 2.16:1), and every text whose
-  reading moved now takes the severity its rendered pixels give.
+- **`TEXT_CONTRAST` reads the background matplotlib paints.** It modelled
+  the background from the Axes' patches by their boxes, so a callout in a
+  donut's hole was read against the wedge whose box held it (1.00:1; drawn
+  on white it is 2.16:1), and every contour label and heatmap value
+  against the bare Axes (white on white, 1.00:1). The check now draws the
+  root figure once more, to an Agg renderer of its own at the figure's
+  DPI, with every text's ink made transparent, and takes the per-channel
+  median of the pixels inside each text's own box (an annotation's words,
+  not its arrow; a 3D Axes' text where it is projected; a transparent
+  figure on white paper). Interpolated and alpha-blended images,
+  overlapping faces, Axes drawing order, clip paths, 3D panes, markers and
+  a text's own box, legend frame or path-effect stroke count as drawn;
+  other texts do not. The caller's canvas is untouched and the colours are
+  restored even when the draw fails; a text with no finite box (a `nan`
+  position) is skipped instead of failing the check. Check id, order,
+  severities and message are unchanged. Over the 36 templates, every text
+  takes the severity its rendered pixels give; over the 91 docs examples
+  and templates the readings that moved (130 texts, chiefly titles on the
+  dark creative examples) all agree with the pixels. The extra draw costs
+  about 60 ms on a template figure (half of `dm.validate_figure`); on
+  figures with thousands of texts or 3D surfaces it is faster than before.
   `backdrop_layers` (behind `dm.label_bars`' ink) counts a 3D Axes' patch,
   which has no frame switch.
 - **`PIE_LABEL_OFFSET` leaves labels outside the ring alone.** It held
