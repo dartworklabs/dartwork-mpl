@@ -7,8 +7,18 @@ interpolation function, and convenient constructor functions.
 
 from __future__ import annotations
 
-__all__ = ["Color", "color", "cspace", "hex", "oklab", "oklch", "rgb"]
+__all__ = [
+    "Color",
+    "color",
+    "cspace",
+    "hex",
+    "oklab",
+    "oklch",
+    "rgb",
+    "to_rgb_or_explain",
+]
 
+import difflib
 import math
 import re
 from typing import Any
@@ -25,6 +35,124 @@ from ._conversion import (
     _srgb_to_linear,
 )
 from ._views import OklabView, OklchView, RgbView
+
+#: How many near misses a rejected colour name is allowed to suggest, and how
+#: close a registered name has to be to count. Three keeps the sentence
+#: readable; 0.7 is tight enough that ``'notacolor'`` suggests nothing rather
+#: than an unrelated name, and loose enough to catch a doubled or dropped
+#: letter (``'dc.bluee5'`` → ``'dc.blue5'``).
+_SUGGESTION_COUNT = 3
+_SUGGESTION_CUTOFF = 0.7
+
+#: How much of a rejected value the message quotes. Longer than every
+#: registered name, so a plausible typo is always shown whole, and short
+#: enough that a pathological value cannot carry a megabyte into a log.
+_DISPLAY_LIMIT = 64
+
+# ============================================================================
+# Colour-name failures
+# ============================================================================
+
+
+def _registered_names() -> list[str]:
+    """The registry's string keys, sorted.
+
+    ``get_named_colors_mapping()`` is live and mutable, so a caller (or a
+    careless extension) can leave a non-string key in it. Sorting or
+    ``startswith``-ing that mapping raises ``TypeError`` from inside the error
+    handler, which would replace the ``ValueError`` the caller is promised
+    with an unrelated failure. Non-string keys are not colour names, so they
+    are dropped rather than guarded against later.
+    """
+    return sorted(
+        name
+        for name in mcolors.get_named_colors_mapping()
+        if isinstance(name, str)
+    )
+
+
+def _near_misses(value: str) -> list[str]:
+    """Registered colour names close to a rejected one, nearest first.
+
+    Read from matplotlib's live registry rather than a hard-coded list, so a
+    name this package registers later — or one the caller registers — is
+    suggestible without this module knowing about it.
+
+    A name whose namespace exists is corrected **inside** that namespace, and
+    gets no suggestion when nothing there is close: someone who typed ``dc.``
+    wants a ``dc.`` name, and ``'oc.blue5'`` would be a different palette
+    whose swatch renders differently, not a correction. A namespace no
+    registered name uses (``'dz.blue5'``) is itself part of the typo, so the
+    whole registry is searched and ``'dc.blue5'`` can come back.
+    """
+    registry = _registered_names()
+    if not registry:
+        return []
+    # difflib's ratio is 2·matches/(len(a)+len(b)), and matches cannot exceed
+    # the longest registered name, so past this length nothing can clear the
+    # cutoff. Deriving the bound from the registry keeps a pathological value
+    # out of the quadratic matcher without excluding any real candidate.
+    longest = max(len(name) for name in registry)
+    if len(value) > 2 * longest / _SUGGESTION_CUTOFF:
+        return []
+    namespace, separator, _ = value.partition(".")
+    if separator:
+        prefix = f"{namespace}{separator}"
+        same_namespace = [name for name in registry if name.startswith(prefix)]
+        if same_namespace:
+            return difflib.get_close_matches(
+                value,
+                same_namespace,
+                n=_SUGGESTION_COUNT,
+                cutoff=_SUGGESTION_CUTOFF,
+            )
+    return difflib.get_close_matches(
+        value, registry, n=_SUGGESTION_COUNT, cutoff=_SUGGESTION_CUTOFF
+    )
+
+
+def _quoted(value: str) -> str:
+    """The rejected value, escaped, and cut short if it is unreasonably long."""
+    if len(value) <= _DISPLAY_LIMIT:
+        return repr(value)
+    head = value[:_DISPLAY_LIMIT]
+    return f"{head!r} (truncated, {len(value)} characters)"
+
+
+def _unknown_color_name_message(value: str) -> str:
+    """Explain a rejected colour name and where a valid one can be found.
+
+    Keeps the historical ``Invalid color name:`` opening and replaces
+    matplotlib's ``Invalid RGBA argument`` tail, which repeated the value and
+    named no way back to a working call (#483).
+    """
+    suggestions = _near_misses(value)
+    if suggestions:
+        named = ", ".join(repr(name) for name in suggestions)
+        found = f"Closest registered names: {named}."
+    else:
+        found = "No registered name is close to it."
+    return (
+        f"Invalid color name: {_quoted(value)}. {found} "
+        "dm.list_colors() lists the dartwork-mpl colour families and "
+        "matplotlib.colors.get_named_colors_mapping() every registered name."
+    )
+
+
+def to_rgb_or_explain(value: Any) -> tuple[float, float, float]:
+    """``matplotlib.colors.to_rgb`` whose name misses say how to recover.
+
+    Only a rejected *string* is rewritten: every other input (a malformed
+    tuple, ``None``) keeps matplotlib's own message, which already describes
+    the shapes it accepts and is not a name lookup at all.
+    """
+    try:
+        return mcolors.to_rgb(value)
+    except ValueError as exc:
+        if not isinstance(value, str):
+            raise
+        raise ValueError(_unknown_color_name_message(value)) from exc
+
 
 # ============================================================================
 # Color Class
@@ -373,17 +501,15 @@ class Color:
         Raises
         ------
         ValueError
-            If the color name is not recognized by matplotlib.
+            If the color name is not recognized by matplotlib. The message
+            names the closest registered colours and where the full list
+            lives, so a typo does not have to be guessed at.
         """
-        try:
-            # Use matplotlib's to_rgb to convert color name to RGB
-            r: float
-            g: float
-            b: float
-            r, g, b = mcolors.to_rgb(name)
-            return cls.from_rgb(r, g, b)
-        except ValueError as e:
-            raise ValueError(f"Invalid color name: {name}. {e!s}") from e
+        r: float
+        g: float
+        b: float
+        r, g, b = to_rgb_or_explain(name)
+        return cls.from_rgb(r, g, b)
 
     _FUNCTIONAL_RE = re.compile(
         r"^(?P<func>rgb|oklch|oklab)\s*\(\s*(?P<args>.+?)\s*\)$", re.IGNORECASE
