@@ -702,6 +702,7 @@ def test_color_and_discovery_contract_counts_are_exact() -> None:
     }
 
 
+@pytest.mark.approved_input
 def test_public_color_list_order_values_and_signatures_remain_frozen() -> None:
     """Task-9 prose/comment edits must not alter the public Model-B surface."""
     import dartwork_mpl as dm

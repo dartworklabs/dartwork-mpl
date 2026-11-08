@@ -237,32 +237,6 @@ def _dpi_arg(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
             yield site.start
 
 
-def _multirow_subplots(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
-    """``plt.subplots`` with a literal 2+ rows and no gridspec/share keywords."""
-    for site in _call_sites(syntax):
-        if not (site.kind == "pyplot" and site.path == ["subplots"]):
-            continue
-        node = site.node
-        rows = next(
-            (
-                keyword.value
-                for keyword in node.keywords
-                if keyword.arg == "nrows"
-            ),
-            node.args[0] if node.args else None,
-        )
-        if (
-            isinstance(rows, ast.Constant)
-            and type(rows.value) is int
-            and rows.value >= 2
-            and not any(
-                keyword.arg in {"gridspec_kw", "sharex", "sharey", None}
-                for keyword in node.keywords
-            )
-        ):
-            yield site.start
-
-
 def _figsize_tuples(syntax: _Syntax) -> Iterator[ast.keyword]:
     """``figsize=(...)`` tuple keywords on Figure constructors."""
     for site in _call_sites(syntax):
@@ -551,7 +525,6 @@ _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
         "figsize-direct": _figsize_direct,
         "tight-layout": _tight_layout,
         "twin-legend-hand-merge": _twin_legend_hand_merge,
-        "multirow-subplots-no-gridspec-kw": _multirow_subplots,
         "ticklabel-format-default-before-layout": _ticklabel_format_default,
         "plt-style-use": _plt_style_use,
         "plt-show-only": _plt_show_only,

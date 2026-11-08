@@ -101,14 +101,29 @@ os.environ["PYTHONPATH"] = os.pathsep.join(_PYTHONPATH_PARTS)
 # explicitly.
 _COLOR_PIPELINE_FIXTURES = frozenset({"candidate_catalog", "comparison_report"})
 
+# Fixtures whose value is read from an exact input in
+# tests/support/approved_inputs.json. A test that requests one reads that
+# input, so it is marked ``approved_input`` here; a test that calls a reader
+# itself carries the marker explicitly.
+_APPROVED_INPUT_FIXTURES = frozenset(
+    {
+        "baseline_catalog",
+        "comparison_report",
+        "compatibility_snapshot",
+        "quality_baseline",
+        "v5_ssot",
+    }
+)
+
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Mark every test that depends on a colour-pipeline compile fixture."""
+    """Mark tests by the compile and approved-input fixtures they request."""
     for item in items:
-        if _COLOR_PIPELINE_FIXTURES.intersection(
-            getattr(item, "fixturenames", ())
-        ):
+        fixtures = getattr(item, "fixturenames", ())
+        if _COLOR_PIPELINE_FIXTURES.intersection(fixtures):
             item.add_marker(pytest.mark.color_pipeline)
+        if _APPROVED_INPUT_FIXTURES.intersection(fixtures):
+            item.add_marker(pytest.mark.approved_input)
 
 
 @pytest.fixture

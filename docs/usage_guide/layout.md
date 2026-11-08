@@ -41,7 +41,9 @@ for ax in axes:
 dm.label_axes(axes)                    # adds (a), (b), (c), (d) panel labels
 dm.set_decimal(axes[0], xn=2, yn=1)    # format tick labels to fixed decimals
 
-# Pass gs so simple_layout respects your GridSpec spacing
+# Pass gs so simple_layout fits this GridSpec's margins; the hspace /
+# wspace passed above stay (leave them out and the layout parts panels
+# whose text collides)
 dm.simple_layout(fig, gs=gs)
 ```
 
@@ -94,7 +96,9 @@ Installed Python users can read the same basic/advanced sources through
 The bounded margin/convergence correction tracked by #209 is a separate
 concern from template composition and figure-size arithmetic. The current
 `dm.simple_layout` measures content and iteratively updates root GridSpec outer
-margins, preserving native internal spacing. It does not solve nested local
+margins, keeping the internal spacing you pass (root `wspace` / `hspace` you
+leave unset grow where neighbouring panels' text collides, see
+[When text collides](#when-text-collides)). It does not solve nested local
 spacing or guarantee that every label fits every requested canvas. Historical
 `auto_layout` is removed; do not call it as an extra correction pass.
 `simple_layout` returns `None`, not a convergence or validation report: inspect
@@ -380,9 +384,77 @@ Useful for:
 | Per-side asymmetric margins | `dm.simple_layout(fig, ml=dm.cm(1), mr="3%", ...)` |
 | Multi-panel via GridSpec | `dm.simple_layout(fig, gs=gs)` |
 | Debugging layout convergence | `dm.simple_layout(fig, verbose=True)` |
+| Labels and spacing left exactly as set | `dm.simple_layout(fig, fit_labels=False)` |
 
 The historical `dm.auto_layout(fig)` was removed in 0.5.4 and now
 raises a migration-hint `AttributeError`. Use `simple_layout` directly.
+
+### When text collides
+
+Long category names, many categories, a large preset on a small canvas or a
+long axis name can leave text overlapping once the margins fit. Then
+`simple_layout` climbs a ladder, each rung only where text overlaps by more
+than half a pixel, easiest first:
+
+1. **Axis names** that run into another panel's text or plot, or past the
+   figure edge (a name longer than the figure), wrap at their spaces (at
+   most four lines; a bracketed unit stays whole). A name in nobody's way
+   stays on one line, even when it hangs past its own plot.
+2. **Panel spacing**: root `wspace` / `hspace` nobody set grow until
+   neighbouring panels' text clears by half an em, when 1.5 cells or less
+   does it; narrower panels would not clear a deeper collision, so it stays.
+3. **Tick labels** under the plot wrap at their spaces, only the ones that
+   collide, into at most three lines; a long label beside short ones uses
+   the room they leave. Panels that share x (`sharex=True`) share their
+   tick formatter, so they wrap together, to the narrowest panel's room.
+4. **Rotation**, when a label cannot wrap (one word, a number, more than
+   three lines): each panel's bottom labels turn 30, 45 or 90 degrees, the
+   smallest angle that clears, each label's end at its tick; when none
+   clears, upright if that leaves them overlapping less than flat. Not when
+   turned they would take over 35 % of the figure height: names that long
+   belong on a horizontal bar chart, which is the author's call.
+
+After each round the margins are fitted again and the figure is checked:
+a change that left a plot under 30 % of its width or height, or gave any
+axis more pairs of overlapping neighbouring tick labels than before, is
+taken back and not tried again, and the collision it tried to fix stays,
+reported. (The check counts neighbouring pairs only: on an axis whose
+neighbours all overlap already, labels further apart may come to overlap
+too.) (Turned 45
+degrees, `advanced/boxplot` at 9 cm in `presentation` would have squeezed
+its plot to 5 px and crowded its y ticks; it keeps its plot and reports its
+x labels instead.)
+
+Nothing is shortened, hidden or made smaller, and a figure without an
+overlap draws exactly as it would without the ladder. What you set stays:
+tick labels you rotate (top labels too), break into lines or align off
+centre, axis names with line breaks or mathtext, and spacing you set
+(`gridspec_kw`, `fig.add_gridspec(...)`, `fig.subplots_adjust(...)`). Every
+call starts from the figure as you left it (what an earlier call fitted is
+undone first, label by label, where it is still as fitted), so re-laying
+out at another size fits again. `simple_layout(fig, gs=gs,
+use_all_axes=False)` fits and undoes only the Axes of `gs`, and leaves
+alone what they share with Axes outside it: the tick formatter of an x they
+share (`sharex=True`), whose wraps stay as a layout of every Axes left them
+(those Axes only turn their own labels), and the spacing of a grid other
+Axes sit on.
+
+```python
+dm.simple_layout(fig)                                # every rung (default)
+dm.simple_layout(fig, fit_labels=False)              # none
+dm.simple_layout(fig, fit_labels=("space", "wrap"))  # only these
+with dm.config.override(fit_labels=False):           # a block
+    dm.simple_layout(fig)
+```
+
+What the ladder cannot clear, such as more categories than the axis holds
+even turned upright, or names too long to turn, is left for you.
+`dm.validate_figure` reports tick labels that still overlap as
+`TICK_OVERLAP` (WARNING), with the choices that are the author's: a
+horizontal bar chart (`dm.figsize_for("barh", n_points=n)`) or a wider
+canvas. Text over another panel's text is `CROSS_AXES_OVERLAP`; text that
+reaches into another panel's plot area, and an x label's corner touching a
+y label, are not reported yet.
 
 ### `simple_layout` vs `tight_layout`
 
@@ -437,8 +509,8 @@ requested margin from each figure edge. This means:
 - **Content-complete** — sees titles, axis labels, view-limited tick
   labels, ScalarFormatter offset text, legends — everything that
   appears on the canvas
-- **GridSpec-native** — pass `gs=gs` and it respects your
-  `hspace`/`wspace` while only adjusting outer margins
+- **GridSpec-native** — pass `gs=gs` and it keeps the `hspace`/`wspace`
+  you pass; spacing you leave unset grows only where panels' text collides
 - **Unit-flexible** — `margin` accepts `Length`, unit strings (`"5mm"`),
   percentages (`"5%"`), or figure-fractions
 
@@ -578,7 +650,9 @@ ticks they were made for: the layout pins those ticks, since matplotlib
 gives fixed texts to ticks by order. Pinned ticks stay: a later
 `ax.set_xlim` zoom shows no new ones (0–5,000 zoomed to 1,000–2,500 keeps
 two). To rotate labels without fixing their
-text, `ax.tick_params(axis="x", rotation=45)` keeps the library's ticks.
+text, `ax.tick_params(axis="x", rotation=45)` keeps the library's ticks; a
+rotation you set also keeps the layout from wrapping or turning those labels
+itself ([When text collides](#when-text-collides)).
 A tick count asked
 of the axis, `ax.locator_params(axis="x", nbins=3)`, is kept on whole years
 (`00, 10, 20`); that is the way to ask for fewer ticks. Under a locator you

@@ -198,8 +198,12 @@ plt.close(fig)
    - clipped or overlapping text: dates read as dates and the library's tick
      numbers and dates (`dm.simple_layout(fig)`; no formatter or locator of
      your own; dates under bars or other categories:
-     `dm.format_axis_dates(ax, dates)`), `dm.wrap_axis_labels(fig)`,
-     `dm.rotate_tick_labels(ax)` only when none of these fits;
+     `dm.format_axis_dates(ax, dates)`); the same layout wraps colliding axis
+     names and tick labels and turns tick labels that cannot wrap, so a
+     rotation the script sets by hand comes out (the layout picks the angle);
+     tick labels still overlapping after it (`TICK_OVERLAP`) need a
+     horizontal bar chart or a wider canvas, which is the user's call: report
+     them;
    - value labels touching each other or their neighbours: those labels to
      `fontsize=dm.fs(-1)` (only when larger) and, when the call writes no
      weight, `fontweight=dm.fw(1)` (the value-label look), named in the change
@@ -209,9 +213,12 @@ plt.close(fig)
      nothing inside is free);
    - many competing colours: one accent, the rest `dc.gray4`;
    - axis labels stay as written, case and all, and none is added; a label
-     that is clipped or overlaps is wrapped (`dm.wrap_axis_labels(fig)`), not
-     reworded;
-   - cramped panels: `hspace` / `wspace`.
+     that is clipped or overlaps is wrapped, not reworded (the layout wraps
+     one that runs into a neighbouring panel or past the figure;
+     `dm.wrap_axis_labels(fig)` any other);
+   - cramped panels: `dm.simple_layout(fig)` widens the `hspace` / `wspace`
+     the script does not set; one it sets (`gridspec_kw`, `subplots_adjust`)
+     stays, raised only when the image shows the panels' text colliding.
 3. Keep the preset's fonts, spines and grid, the data, the chart type and
    its axes (no new twin axis or panel), the axis limits, the canvas size,
    text sizes (but for the value labels above) and what the figure already

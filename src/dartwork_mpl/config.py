@@ -132,6 +132,16 @@ class Config:
         among ways that fit as well, more lines per name are taken only for
         at least 5 % of the canvas more plot. ``False`` keeps every name on
         one line.
+    fit_labels : bool | tuple[str, ...], default ``True``
+        What ``dm.simple_layout`` may do when text still collides once the
+        margins fit: ``True`` every step (``"axis_labels"``, ``"space"``,
+        ``"wrap"``, ``"rotate"``), ``False`` none, a tuple of step names
+        only those (``with dm.config.override(fit_labels=False):``, or
+        assign it). A ``fit_labels=`` argument wins per call. A figure laid
+        out before gets what it fitted undone on its next
+        ``dm.simple_layout``. Unknown step names raise ``ValueError`` where
+        it is read, steps that are not strings ``TypeError``. The rules are
+        in the docstring of ``dartwork_mpl.layout._fit_labels``.
     """
 
     adopt_orphan_tick_font: bool = False
@@ -144,6 +154,7 @@ class Config:
         "auto"
     )
     legend_wrap: bool = True
+    fit_labels: bool | tuple[str, ...] = True
 
     @contextmanager
     def override(self, **overrides: object) -> Iterator[None]:
