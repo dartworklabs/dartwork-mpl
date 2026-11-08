@@ -8,7 +8,7 @@
 # data_shape: labels: list[str], values: list[float], is_total: list[bool]
 # tags: waterfall, bridge, cumulative, annotated, narrative
 # narrative: Energy bridge from generation to net delivery; positives green, negatives red, totals gray
-# advanced_apis: cumulative bottom calc, sign-color, dashed connector lines between bar tops, value labels, format_axis_si
+# advanced_apis: signed step bars from the running level, sign-color, dashed connector lines, dm.label_bars(sign="+", color="series")
 # ai-template-meta-end
 
 import matplotlib.patches as mpatches
@@ -32,111 +32,64 @@ items = [
     ("Delivered", 440, True),
 ]
 labels = [i[0] for i in items]
-deltas = np.array([i[1] for i in items], dtype=float)
-is_total = [i[2] for i in items]
+values = np.array([i[1] for i in items], dtype=float)
+is_total = np.array([i[2] for i in items])
 
-# Compute bottoms / tops for the bars.
-running = 0
-bottoms = []
-tops = []
-heights = []
-for d, total in zip(deltas, is_total, strict=False):
-    if total:
-        bottoms.append(0)
-        heights.append(d)
-        running = d
-        tops.append(d)
-    else:
-        if d >= 0:
-            bottoms.append(running)
-            heights.append(d)
-            tops.append(running + d)
-            running += d
-        else:
-            bottoms.append(running + d)
-            heights.append(-d)
-            tops.append(running)
-            running += d
+# The level after each bar: a total resets it; a step moves it by its
+# signed delta. A step is drawn from the level before it with its signed
+# delta as the height, so each bar holds its delta and dm.label_bars
+# prints it, a fall below its bar.
+level = np.zeros(len(items))
+running = 0.0
+for i, (value, total) in enumerate(zip(values, is_total, strict=True)):
+    running = value if total else running + value
+    level[i] = running
+xs = np.arange(len(items))
+step = ~is_total
 
 pos_color = dm.color("dc.green5").to_hex()
 neg_color = dm.color("dc.amber5").to_hex()
 tot_color = dm.color("oc.gray6").to_hex()
-colors = []
-for d, total in zip(deltas, is_total, strict=False):
-    if total:
-        colors.append(tot_color)
-    elif d >= 0:
-        colors.append(pos_color)
-    else:
-        colors.append(neg_color)
 
 fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(items), n_series=1))
 
-xs = np.arange(len(items))
-ax.bar(
-    xs,
-    heights,
-    bottom=bottoms,
-    color=colors,
+totals = ax.bar(
+    xs[is_total],
+    level[is_total],
+    color=tot_color,
+    edgecolor="white",
+    linewidth=0.3,
+    width=0.7,
+)
+steps = ax.bar(
+    xs[step],
+    values[step],
+    bottom=(level - values)[step],
+    color=[pos_color if v >= 0 else neg_color for v in values[step]],
     edgecolor="white",
     linewidth=0.3,
     width=0.7,
 )
 
-# Dashed connector lines from prev top to next bar.
+# Dashed connector at each bar's closing level to the next bar.
 for i in range(len(items) - 1):
-    next_total = is_total[i + 1]
-    prev_top = tops[i] if not is_total[i] else heights[i]
-    if next_total:
-        next_y = heights[i + 1]
-    else:
-        next_y = (
-            bottoms[i + 1]
-            if deltas[i + 1] >= 0
-            else bottoms[i + 1] + heights[i + 1]
-        )
     ax.plot(
         [xs[i] + 0.35, xs[i + 1] - 0.35],
-        [prev_top, next_y],
+        [level[i], level[i]],
         color="oc.gray5",
         linewidth=0.5,
         linestyle="--",
         zorder=1,
     )
 
-# Per-bar value labels.
-for i, (d, b, h, total) in enumerate(
-    zip(deltas, bottoms, heights, is_total, strict=False)
-):
-    y = b + h + 18
-    if total:
-        ax.text(
-            xs[i],
-            y,
-            f"{d:,.0f} MWh",
-            ha="center",
-            va="bottom",
-            fontsize=dm.fs(-1),
-            fontweight=dm.fw(1),
-            color="oc.gray9",
-        )
-    else:
-        ax.text(
-            xs[i],
-            y,
-            f"{d:+,.0f}",
-            ha="center",
-            va="bottom",
-            fontsize=dm.fs(-1),
-            fontweight=dm.fw(1),
-            color=colors[i],
-        )
+# Value labels: steps signed in their bar's colour, totals plain.
+dm.label_bars(ax, steps, sign="+", color="series")
+dm.label_bars(ax, totals)
 
 ax.set_xticks(xs)
 ax.set_xticklabels(labels, rotation=30, ha="right")
 ax.set_ylabel("Energy (MWh)")
-ax.set_ylim(0, max(tops) * 1.15)
-dm.format_axis_si(ax, axis="y")
+ax.set_ylim(0, max(level) * 1.15)
 
 # Legend via proxy patches.
 handles = [
