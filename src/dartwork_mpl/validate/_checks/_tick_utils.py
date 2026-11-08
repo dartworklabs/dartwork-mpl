@@ -42,12 +42,18 @@ def iter_view_ticks(
     positioned, but never draws them; a box test would count a y label
     just above the limit (its centre-baseline box reaches into the view)
     and miss a turned first label whose box leaves the plot. Labels come in
-    ``get_xticklabels`` order: bottom / left ones, then top / right.
+    ``get_xticklabels`` order, bottom / left ones then top / right, but
+    without calling it: it re-runs matplotlib's 2D tick update, which moves
+    a 3D Axes' labels off the places its draw gave them (thousands of
+    pixels), and the checks after it would read those.
     """
-    labels = ax.get_xticklabels() if axis == "x" else ax.get_yticklabels()
-    drawn = {id(label) for label in drawn_tick_labels(ax, axis)}
+    drawn = drawn_tick_labels(ax, axis)
+    target = ax.xaxis if axis == "x" else ax.yaxis
+    first = {id(tick.label1) for tick in target.get_major_ticks()}
+    labels = [t for t in drawn if id(t) in first]
+    labels += [t for t in drawn if id(t) not in first]
     for tick in labels:
-        if id(tick) not in drawn or not tick.get_text().strip():
+        if not tick.get_text().strip():
             continue
         try:
             ext = tick.get_window_extent(renderer)

@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 from ..._figure_geometry import (
-    axes_text_artists,
     axes_with_secondaries,
+    drawn_axes_texts,
     drawn_tick_labels,
     iter_figure_level_extents,
     text_window_extent,
@@ -49,7 +49,7 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
 
     for ax in axes_with_secondaries(fig):
         # --- text objects (titles, labels, annotations) ---
-        for txt in axes_text_artists(ax):
+        for txt in drawn_axes_texts(ax):
             if (
                 txt is None
                 or not txt.get_visible()

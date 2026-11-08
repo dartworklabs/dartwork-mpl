@@ -32,6 +32,7 @@ __all__ = [
     "axes_with_secondaries",
     "backdrop_layers",
     "canvas_renderer",
+    "drawn_axes_texts",
     "drawn_tick_labels",
     "get_renderer",
     "iter_figure_level_extents",
@@ -264,6 +265,23 @@ def axes_text_artists(ax: Axes) -> list[Text]:
     """
     titles = axes_titles(ax).values()
     return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
+
+
+def drawn_axes_texts(ax: Axes) -> list[Text]:
+    """:func:`axes_text_artists` less the axis labels matplotlib leaves out.
+
+    An axis label draws with its axis (:func:`_axes_draws_its_axes`): not
+    on a 2D Axes after ``ax.axis("off")`` or with that axis hidden, nor on a
+    3D Axes after ``set_axis_off``; there it stays where it was never drawn,
+    often past the canvas. The checks read these texts; the layout still
+    measures every label (:func:`axes_text_artists`).
+    """
+    labels = [
+        axis.label
+        for axis in (ax.xaxis, ax.yaxis)
+        if _axes_draws_its_axes(ax, axis)
+    ]
+    return [*ax.texts, *axes_titles(ax).values(), *labels]
 
 
 def text_window_extent(text: Text, renderer: RendererBase) -> Bbox:
