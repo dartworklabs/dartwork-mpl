@@ -44,9 +44,31 @@ from ._views import OklabView, OklchView, RgbView
 _SUGGESTION_COUNT = 3
 _SUGGESTION_CUTOFF = 0.7
 
+#: How much of a rejected value the message quotes. Longer than every
+#: registered name, so a plausible typo is always shown whole, and short
+#: enough that a pathological value cannot carry a megabyte into a log.
+_DISPLAY_LIMIT = 64
+
 # ============================================================================
 # Colour-name failures
 # ============================================================================
+
+
+def _registered_names() -> list[str]:
+    """The registry's string keys, sorted.
+
+    ``get_named_colors_mapping()`` is live and mutable, so a caller (or a
+    careless extension) can leave a non-string key in it. Sorting or
+    ``startswith``-ing that mapping raises ``TypeError`` from inside the error
+    handler, which would replace the ``ValueError`` the caller is promised
+    with an unrelated failure. Non-string keys are not colour names, so they
+    are dropped rather than guarded against later.
+    """
+    return sorted(
+        name
+        for name in mcolors.get_named_colors_mapping()
+        if isinstance(name, str)
+    )
 
 
 def _near_misses(value: str) -> list[str]:
@@ -56,26 +78,45 @@ def _near_misses(value: str) -> list[str]:
     name this package registers later — or one the caller registers — is
     suggestible without this module knowing about it.
 
-    A prefixed name is matched inside its own namespace first: someone who
-    typed ``dc.`` wants a ``dc.`` name, and ``'oc.blue5'`` would be a
-    different palette rather than a correction.
+    A name whose namespace exists is corrected **inside** that namespace, and
+    gets no suggestion when nothing there is close: someone who typed ``dc.``
+    wants a ``dc.`` name, and ``'oc.blue5'`` would be a different palette
+    whose swatch renders differently, not a correction. A namespace no
+    registered name uses (``'dz.blue5'``) is itself part of the typo, so the
+    whole registry is searched and ``'dc.blue5'`` can come back.
     """
-    registry = sorted(mcolors.get_named_colors_mapping())
+    registry = _registered_names()
+    if not registry:
+        return []
+    # difflib's ratio is 2·matches/(len(a)+len(b)), and matches cannot exceed
+    # the longest registered name, so past this length nothing can clear the
+    # cutoff. Deriving the bound from the registry keeps a pathological value
+    # out of the quadratic matcher without excluding any real candidate.
+    longest = max(len(name) for name in registry)
+    if len(value) > 2 * longest / _SUGGESTION_CUTOFF:
+        return []
     namespace, separator, _ = value.partition(".")
     if separator:
         prefix = f"{namespace}{separator}"
         same_namespace = [name for name in registry if name.startswith(prefix)]
-        close = difflib.get_close_matches(
-            value,
-            same_namespace,
-            n=_SUGGESTION_COUNT,
-            cutoff=_SUGGESTION_CUTOFF,
-        )
-        if close:
-            return close
+        if same_namespace:
+            return difflib.get_close_matches(
+                value,
+                same_namespace,
+                n=_SUGGESTION_COUNT,
+                cutoff=_SUGGESTION_CUTOFF,
+            )
     return difflib.get_close_matches(
         value, registry, n=_SUGGESTION_COUNT, cutoff=_SUGGESTION_CUTOFF
     )
+
+
+def _quoted(value: str) -> str:
+    """The rejected value, escaped, and cut short if it is unreasonably long."""
+    if len(value) <= _DISPLAY_LIMIT:
+        return repr(value)
+    head = value[:_DISPLAY_LIMIT]
+    return f"{head!r} (truncated, {len(value)} characters)"
 
 
 def _unknown_color_name_message(value: str) -> str:
@@ -92,7 +133,7 @@ def _unknown_color_name_message(value: str) -> str:
     else:
         found = "No registered name is close to it."
     return (
-        f"Invalid color name: {value!r}. {found} "
+        f"Invalid color name: {_quoted(value)}. {found} "
         "dm.list_colors() lists the dartwork-mpl colour families and "
         "matplotlib.colors.get_named_colors_mapping() every registered name."
     )
