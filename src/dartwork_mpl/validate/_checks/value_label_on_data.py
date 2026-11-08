@@ -12,8 +12,8 @@ ink:
   where its dash pattern inks it (a dashed line's gaps are not data, unless
   a ``gapcolor`` fills them) and the markers ``markevery`` keeps, both read
   back from ``Line2D.draw`` (``axhline`` / ``axvline`` / ``axline``
-  references are not data; a line with path effects or a sketch counts
-  solid, the former with every point marked);
+  references are not data; a line with path effects counts as drawn
+  without them, a sketched one as solid);
 * ``scatter`` markers at their size.
 
 A label covers data when its ink (the glyphs down to their descenders, not
@@ -46,6 +46,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.colors import to_rgba
 from matplotlib.container import BarContainer
 from matplotlib.contour import ContourSet
+from matplotlib.lines import Line2D
 from matplotlib.path import Path
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import Bbox, IdentityTransform, TransformedPath
@@ -60,7 +61,6 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import GraphicsContextBase
     from matplotlib.figure import Figure
-    from matplotlib.lines import Line2D
     from matplotlib.transforms import Transform
     from matplotlib.typing import ColorType
     from numpy.typing import ArrayLike
@@ -481,38 +481,29 @@ class _Recorder(RendererBase):
         return self.strokes, marks
 
 
-def _as_set(line: Line2D, fig: Figure) -> tuple[list[_Stroke], np.ndarray]:
-    """A line drawn through path effects, read from its properties.
+def _without_effects(line: Line2D) -> Line2D:
+    """A copy of ``line`` that draws without its path effects.
 
-    A path effect redraws the stroke its own way (a halo, a shadow) and its
-    markers as paths, so the drawing cannot be read back: the whole line
-    counts as one solid stroke and every point as marked, which can only
-    add hits.
+    A path effect draws the line through its own renderer (a halo, a
+    shadow; the markers as single paths), which a recording renderer
+    cannot take apart. The copy draws the line itself: its strokes, dashes
+    and the markers ``markevery`` keeps, at the line's own width.
+    ``Line2D.update_from`` copies the look; the data, ``markevery`` and the
+    Axes it is measured in are set as a plot sets them.
     """
-    strokes: list[_Stroke] = []
-    transform = line.get_transform()
-    if (
-        line.get_linestyle() not in _NO_LINE
-        and line.get_linewidth() > 0
-        and _alpha(line.get_color(), line.get_alpha()) > 0
-    ):
-        path = transform.transform_path(line.get_path())
-        strokes.append(
-            _Stroke(
-                path.cleaned(remove_nans=True),
-                _px(line.get_linewidth(), fig) / 2,
-            )
-        )
-    face = _alpha(line.get_markerfacecolor(), line.get_alpha())
-    edge = _alpha(line.get_markeredgecolor(), line.get_alpha())
-    if (
-        line.get_marker() in _NO_MARKER
-        or line.get_markersize() <= 0
-        or (face <= 0 and (edge <= 0 or line.get_markeredgewidth() <= 0))
-    ):
-        return strokes, np.empty((0, 2))
-    xy = transform.transform(np.asarray(line.get_xydata(), dtype=np.float64))
-    return strokes, xy[np.isfinite(xy).all(axis=1)]
+    copy = Line2D([], [])
+    copy.update_from(line)
+    copy.set_path_effects([])
+    copy.set_markevery(line.get_markevery())
+    copy.set_antialiased(line.get_antialiased())
+    copy.set_snap(line.get_snap())
+    figure = line.get_figure(root=False)
+    if figure is not None:
+        copy.set_figure(figure)
+    copy.axes = line.axes
+    xdata, ydata = line.get_data(orig=True)
+    copy.set_data(xdata, ydata)
+    return copy
 
 
 def _joined(path: Path) -> tuple[np.ndarray, np.ndarray]:
@@ -643,8 +634,8 @@ def _line(
     line: Line2D, frame: Bbox, fig: Figure, recorder: _Recorder
 ) -> tuple[list[_Polyline], _Markers | None]:
     """A data line's drawn strokes and markers in the plot box."""
-    strokes, xy = (
-        _as_set(line, fig) if line.get_path_effects() else recorder.take(line)
+    strokes, xy = recorder.take(
+        _without_effects(line) if line.get_path_effects() else line
     )
     name, key = _name(line), id(line)
     drawn = [_polyline(stroke, frame, name, key) for stroke in strokes]

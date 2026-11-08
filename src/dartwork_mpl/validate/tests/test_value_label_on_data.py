@@ -749,21 +749,27 @@ def test_reports_only_the_markers_float_markevery_draws(every):
     assert (w.detail["count"], w.detail["example"]) == (1, "43")
 
 
-def test_path_effect_lines_count_whole_and_marked_everywhere():
-    # A path effect redraws the line and its markers its own way, which
-    # cannot be read back: the check takes every point as marked, so the
-    # label beside the bare point 1 is reported too (more, never fewer).
+_HALO = [patheffects.withStroke(linewidth=3, foreground="w")]
+
+
+@pytest.mark.parametrize("every", [3, 0.25])
+def test_path_effect_lines_keep_the_markers_markevery_draws(every):
+    # A path effect draws the line through its own renderer; the check
+    # reads the line drawn without it: the same markers (at 0, 3, 6, 9 and,
+    # as the SVG of the plain line shows above, at 0, 3, 6), so the label
+    # beside the bare point 1 is clean and the one beside 3 is not.
     fig, ax = _fig()
-    ax.plot(
+    (line,) = ax.plot(
         range(10),
         [5] * 10,
         linestyle="none",
         marker="o",
         markersize=6,
-        markevery=3,
-        path_effects=[patheffects.withStroke(linewidth=3, foreground="w")],
+        markevery=every,
+        path_effects=_HALO,
     )
-    ax.set_ylim(0, 10)
+    ax.set(xlim=(-0.5, 9.5), ylim=(0, 10))
+    dm.simple_layout(fig)
     for x, text in ((1, "41"), (3, "43")):
         ax.annotate(
             text,
@@ -773,8 +779,15 @@ def test_path_effect_lines_count_whole_and_marked_everywhere():
             ha="left",
             va="center",
         )
-    (w,) = _found(fig)
-    assert w.detail["count"] == 2
+    (w,) = _checked(fig)
+    assert (w.detail["count"], w.detail["example"]) == (1, "43")
+    assert line.get_path_effects() == _HALO  # the line itself is untouched
+
+
+def test_path_effect_dashed_lines_keep_their_gaps():
+    assert _found(_on_dashed_line(22, path_effects=_HALO)) == []
+    found = _found(_on_dashed_line(43, path_effects=_HALO))
+    assert [w.detail["covered"] for w in found] == [["line"]]
 
 
 # ------------------------------------------------------------------ cost
