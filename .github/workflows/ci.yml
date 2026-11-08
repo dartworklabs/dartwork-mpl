@@ -57,10 +57,13 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       # Full history: src/dartwork_mpl/_colors/verify/tests/test_color_v6_quality_oracle.py runs
-      # scripts/freeze_color_v5_quality.py, which resolves the frozen colour
-      # baseline with `git rev-parse <sha>^{commit}`. A shallow checkout has
-      # only the merge commit, so that lookup fails with "Needed a single
-      # revision" and the generator exits 2.
+      # scripts/freeze_color_v5_quality.py, and
+      # src/dartwork_mpl/_colors/verify/tests/test_color_v5_compatibility_generator.py runs
+      # scripts/freeze_color_v5_compatibility.py. Both resolve the frozen
+      # colour baseline with `git rev-parse --quiet --verify <sha>^{commit}`
+      # and read its listed files from that commit. A shallow checkout has
+      # only the merge commit, so that lookup finds no such commit and the
+      # generator exits 2 ("does not resolve to a commit").
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
