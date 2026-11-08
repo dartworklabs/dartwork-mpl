@@ -131,6 +131,21 @@ def test_a_hidden_label_shifts_nothing():
     ]
 
 
+def test_a_hidden_axes_draws_no_tick_labels():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 1])
+    ax.minorticks_on()
+    ax.tick_params(which="minor", labelbottom=True)
+    fig.canvas.draw()
+    assert drawn_tick_labels(ax, "x"), "precondition: shown, labels drawn"
+    ax.set_visible(False)  # the idiom for an empty grid slot
+    assert [
+        drawn_tick_labels(ax, which, minor=minor)
+        for which in ("x", "y")
+        for minor in (False, True)
+    ] == [[], [], [], []]
+
+
 def test_a_left_panels_right_labels_running_into_the_next_panel():
     fig, (left, right) = plt.subplots(1, 2, figsize=dm.figsize("12cm", "6cm"))
     left.plot([0, 1], [0, 123456.789])
