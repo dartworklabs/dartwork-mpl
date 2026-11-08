@@ -44,14 +44,3 @@ def test_text_artists_cover_texts_titles_and_axis_labels() -> None:
     assert ax.xaxis.label in artists and ax.yaxis.label in artists
     assert any(t.get_text() == "Left headline" for t in artists)
     plt.close(fig)
-
-
-def test_text3d_is_left_out_and_2d_text_on_a_3d_axes_kept() -> None:
-    fig = plt.figure()
-    ax = fig.add_subplot(projection="3d")
-    in_space = ax.text(0.5, 0.5, 0.5, "in space")
-    flat = ax.text2D(0.1, 0.9, "flat", transform=ax.transAxes)
-    artists = axes_text_artists(ax)
-    assert in_space not in artists
-    assert flat in artists
-    plt.close(fig)

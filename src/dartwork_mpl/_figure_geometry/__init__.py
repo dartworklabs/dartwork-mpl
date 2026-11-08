@@ -19,7 +19,7 @@ import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
-from matplotlib.transforms import ScaledTranslation
+from matplotlib.transforms import Bbox, ScaledTranslation
 
 __all__ = [
     "BBOX_ERRORS",
@@ -43,6 +43,7 @@ __all__ = [
     "secondary_axes",
     "shared_axes",
     "spread_line_end_labels",
+    "text_window_extent",
     "tick_label_overlaps",
     "with_insets",
 ]
@@ -53,7 +54,6 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
-    from matplotlib.transforms import Bbox
 
 OutsideSide: TypeAlias = Literal["above", "below", "right", "left"]
 """A side of an Axes that an artist can be anchored outside of."""
@@ -258,18 +258,73 @@ def axes_titles(ax: Axes) -> dict[str, Text]:
 def axes_text_artists(ax: Axes) -> list[Text]:
     """Return ``ax.texts``, the three titles and the x/y axis labels.
 
-    On a 3D axes, ``ax.text(x, y, z, ...)`` (a ``Text3D``) is left out: it
-    is placed by projection only while it draws, so its window extent reads
-    the unprojected ``(x, y)`` far off the canvas. Matplotlib's layout skips
-    it for that reason (``Text3D.get_tightbbox`` returns ``None``), as does
-    the 3D content extent of ``simple_layout``. ``ax.text2D`` text stays.
+    A 3D axes' ``ax.text(x, y, z, ...)`` is among them; measure it with
+    :func:`text_window_extent`, not ``get_window_extent``.
     """
-    texts: list[Text] = list(ax.texts)
-    if getattr(ax, "name", None) == "3d":
-        # ``get_position_3d`` is the Text3D API; mplot3d ships no type stubs.
-        texts = [t for t in texts if not hasattr(t, "get_position_3d")]
     titles = axes_titles(ax).values()
-    return [*texts, *titles, ax.xaxis.label, ax.yaxis.label]
+    return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
+
+
+def text_window_extent(text: Text, renderer: RendererBase) -> Bbox:
+    """The window extent of ``text`` where it draws.
+
+    A 3D axes' ``ax.text(x, y, z, ...)`` (a ``Text3D``) is placed by
+    projection only while it draws; outside a draw ``get_window_extent``
+    reads the unprojected ``(x, y)`` through the axes' 2D transform,
+    thousands of pixels off. Its extent here is a copy of it measured at the
+    point and angle ``Text3D.draw`` gives it: the position and the position
+    plus the text's direction (``zdir``) through the axis scales and the
+    projection ``M`` of the axes' last draw, the angle of that direction on
+    screen normalised to (-90, 90]. A text that draw would hide (a position
+    its scale cannot take, or outside the limits with ``axlim_clip``) has
+    an empty extent, as has one on an axes not drawn yet. Every other text:
+    its ``get_window_extent``.
+    """
+    get_position_3d = getattr(text, "get_position_3d", None)
+    if get_position_3d is None or getattr(text.axes, "name", None) != "3d":
+        return text.get_window_extent(renderer)
+    axes: Any = text.axes  # an Axes3D: get_zlim, M
+    figure = text.get_figure(root=False)
+    empty = Bbox.from_bounds(0, 0, 0, 0)
+    projection = getattr(axes, "M", None)
+    if projection is None or figure is None:
+        return empty
+    from mpl_toolkits.mplot3d.proj3d import proj_transform
+
+    position = np.asarray(get_position_3d(), dtype=float)
+    # matplotlib keeps the direction and the clip flag only privately
+    # (Text3D.set_3d_properties); without them: no direction (level text,
+    # the ``ax.text`` default) and no clip (the default).
+    direction = np.asarray(getattr(text, "_dir_vec", (0, 0, 0)), dtype=float)
+    if getattr(text, "_axlim_clip", False):
+        limits = (axes.get_xlim(), axes.get_ylim(), axes.get_zlim())
+        if any(
+            not min(lim) <= value <= max(lim)
+            for value, lim in zip(position, limits, strict=True)
+        ):
+            return empty
+    ends = np.stack([position, position + direction])
+    with np.errstate(all="ignore"):
+        scaled = [
+            axis.get_transform().transform(ends[:, i])
+            for i, axis in enumerate((axes.xaxis, axes.yaxis, axes.zaxis))
+        ]
+        xs, ys, _zs = proj_transform(*scaled, projection)
+    if not (np.isfinite(xs[0]) and np.isfinite(ys[0])):
+        return empty
+    angle = float(np.degrees(np.arctan2(ys[1] - ys[0], xs[1] - xs[0])))
+    angle = (angle + 180) % 180
+    if angle > 90:
+        angle -= 180
+    probe = Text(float(xs[0]), float(ys[0]), text.get_text())
+    probe.update_from(text)
+    probe.set_rotation(angle)
+    probe.set_rotation_mode(text.get_rotation_mode())
+    probe.set_wrap(text.get_wrap())
+    probe.set_parse_math(text.get_parse_math())
+    probe.set_transform(text.get_transform())
+    probe.set_figure(figure)
+    return probe.get_window_extent(renderer)
 
 
 # Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import axes_text_artists
+from ..._figure_geometry import axes_text_artists, text_window_extent
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -39,7 +39,7 @@ def check_overlap(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
             ):
                 continue
             try:
-                ext = txt.get_window_extent(renderer)
+                ext = text_window_extent(txt, renderer)
                 if ext.width > 0 and ext.height > 0:
                     texts.append((txt.get_text()[:30], ext))
             except BBOX_ERRORS:

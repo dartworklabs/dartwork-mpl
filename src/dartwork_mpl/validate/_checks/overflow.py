@@ -9,6 +9,7 @@ from ..._figure_geometry import (
     axes_with_secondaries,
     drawn_tick_labels,
     iter_figure_level_extents,
+    text_window_extent,
 )
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import SIDES, Side, choice, number, wire
@@ -56,7 +57,7 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
             ):
                 continue
             try:
-                ext = txt.get_window_extent(renderer)
+                ext = text_window_extent(txt, renderer)
             except BBOX_ERRORS:
                 continue
             # Skip zero-area extents — they appear when matplotlib
