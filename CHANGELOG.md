@@ -446,6 +446,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **The tick checks count the tick labels matplotlib draws.** `UNIT_DUP`,
+  `TICK_DECIMAL`, `TICK_CROWD`, `TICK_ROTATION` and `LEGEND_OVERLAP` read
+  ticks through the same reader as the layout checks: a tick just past the
+  limit and a twin's hidden x axis are no longer counted, and a turned label
+  at the view edge whose box lies outside the plot is. `TICK_CROWD` and
+  `TICK_ROTATION` share out a straight axis' width, so they skip polar and
+  3D Axes (a polar theta ring read "8 ticks in 0.00in"). A 3D Axes' labels
+  count while its axes are on (`set_axis_off` turns them off; `axison` is
+  off on every 3D Axes) and, under `axes3d.automargin`, past the sliver
+  matplotlib leaves out at each end, so `UNIT_DUP` still reports "kg" on
+  both a 3D axis' ticks and its label.
 - **A colour name that does not exist now names the closest ones that do.**
   `dm.color("dc.bluee5")` raised `Invalid color name: dc.bluee5. Invalid RGBA
   argument: 'dc.bluee5'` — the value twice and no route to a working call. It
