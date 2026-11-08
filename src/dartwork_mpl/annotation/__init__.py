@@ -6,7 +6,8 @@ in-axes labels, ``label_bars`` for value labels on bars, ``place_legend`` for
 axes legends, and ``arrow_axis`` for drawing bidirectional Low-High arrow
 axes. ``settle_bar_labels`` is the layout's pass over the bar labels
 (crowding, headroom); ``dm.simple_layout`` runs it, then
-``warn_hidden_bar_labels`` once its fit is done.
+``warn_hidden_bar_labels`` once its fit is done. ``settle_legends`` is the
+layout's pass over ``place_legend``'s legends at the size it settles on.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ __all__ = [
     "optimize_legend",
     "place_legend",
     "settle_bar_labels",
+    "settle_legends",
     "warn_hidden_bar_labels",
     "wrap_axis_label",
     "wrap_axis_labels",
@@ -40,6 +42,7 @@ from ._bar_label_settle import (
 )
 from ._bar_labels import label_bars
 from ._figure_text import add_note, make_offset
+from ._legend_settle import settle_legends
 from ._line_end_labels import label_line_ends
 from ._optimize_legend import optimize_legend
 from ._panel_labels import label_axes

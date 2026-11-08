@@ -238,6 +238,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
         "legend edge colours require registered shipped colours"
     ),
+    ("dartwork_mpl.annotation", "dartwork_mpl.config"): (
+        "place_legend reads the project-wide legend fallback and wrap defaults"
+    ),
     ("dartwork_mpl.annotation", "dartwork_mpl.formatting"): (
         "bar value labels print in their axis's tick unit, like the ticks"
     ),

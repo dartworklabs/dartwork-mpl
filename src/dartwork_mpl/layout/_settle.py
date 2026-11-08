@@ -110,10 +110,14 @@ def _settle_outside_legends(fig: Figure, renderer: RendererBase) -> bool:
     Runs on every Axes of ``fig`` before the layout measures it, so a
     legend placed before its axis labels existed moves past them (and past
     the ``dm.label_bars`` values beyond that limit it would cover) and a
-    title never sits on a legend above its Axes. Returns whether anything
-    moved (the caller redraws before measuring).
+    title never sits on a legend above its Axes. ``dm.place_legend``'s own
+    legends are first placed again at the size the Axes have now
+    (:func:`dartwork_mpl.annotation.settle_legends`). Returns whether
+    anything moved (the caller redraws before measuring).
     """
-    moved = False
+    from ..annotation import settle_legends
+
+    moved = settle_legends(fig, renderer)
     for ax in fig.axes:
         legend = ax.get_legend()
         if legend is not None and outside_side(legend) is not None:

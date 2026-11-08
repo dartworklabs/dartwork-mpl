@@ -1,23 +1,21 @@
-"""Annotation entry points parse their string options once, and legend trials rank as documented.
+"""Annotation entry points parse their string options once, and legend placements rank as documented.
 
 The public parameters stay ``str``; these tests pin that each accepted string
 maps to itself, each rejected one raises the unchanged public message, and
-that ``place_legend``'s choice among trial placements (and the attributes it
-reports) follows the scoring rules.
+that ``place_legend``'s choice among inside spots and outside plans follows
+the ladder's ordering rules.
 """
 
-import math
-
-import matplotlib.pyplot as plt
 import pytest
 
 from dartwork_mpl.annotation._axis_labels import _parse_axis
-from dartwork_mpl.annotation._place_legend import (
-    _best_trial,
-    _mark_placement,
-    _MeasuredLegend,
-    _UnmeasuredLegend,
+from dartwork_mpl.annotation._legend_fit import InsideSpot
+from dartwork_mpl.annotation._legend_outside import (
+    OutsidePlan,
+    choose,
+    split_ncols,
 )
+from dartwork_mpl.annotation._place_legend import first_free
 from dartwork_mpl.annotation._point_labels import (
     _parse_corner,
     _parse_hline_side,
@@ -77,44 +75,77 @@ def test_axis_rejects_both_with_the_callers_message() -> None:
         _parse_axis("both", "custom")
 
 
-def test_best_trial_picks_lowest_score_and_earliest_on_tie() -> None:
-    """The lowest penalty wins; equal penalties keep the earlier candidate."""
-    first = _MeasuredLegend("upper right", 1, score=0.5, collision_free=False)
-    tied = _MeasuredLegend("upper left", 1, score=0.5, collision_free=False)
-    worse = _MeasuredLegend("lower left", 1, score=0.9, collision_free=False)
-
-    assert _best_trial([worse, first, tied]) is first
+# ------------------------------------------------------------ inside spots
+def _spot(loc: str, ncol: int = 1, met: int = 0, over: float = 0.0, tall=0.0):
+    return InsideSpot(loc, ncol, met=met, overflow=over, tall=tall)
 
 
-def test_unmeasured_trial_ranks_after_any_measured_one() -> None:
-    """An unmeasurable placement is chosen only when nothing was measured."""
-    unmeasured = _UnmeasuredLegend("upper right", 1)
-    measured = _MeasuredLegend(
-        "lower center", 3, score=1e9, collision_free=False
-    )
-
-    assert _best_trial([unmeasured, measured]) is measured
-    assert (
-        _best_trial([unmeasured, _UnmeasuredLegend("upper left", 2)])
-        is unmeasured
-    )
+def test_a_spot_is_free_only_clear_of_ink_and_inside_the_axes() -> None:
+    assert _spot("upper right").free
+    assert not _spot("upper right", met=1).free
+    assert not _spot("upper right", over=0.01).free
 
 
-def test_mark_placement_reports_score_and_collision_state() -> None:
-    """The legend carries the documented attributes; unmeasured reads False and inf."""
-    fig, ax = plt.subplots()
-    ax.plot([0, 1], label="a")
-    legend = ax.legend()
-    try:
-        _mark_placement(
-            legend,
-            _MeasuredLegend("upper left", 2, score=0.25, collision_free=True),
-        )
-        assert legend._dm_collision_free is True
-        assert legend._dm_collision_score == 0.25
+def test_the_first_free_spot_wins_in_ladder_order() -> None:
+    """Fewest columns first, then the spot order; taken spots are skipped."""
+    spots = [
+        _spot("upper right", met=2),
+        _spot("upper left"),
+        _spot("upper right", ncol=2),
+    ]
+    assert first_free(spots) is spots[1]
+    assert first_free([_spot("upper right", met=1)]) is None
 
-        _mark_placement(legend, _UnmeasuredLegend("upper left", 2))
-        assert legend._dm_collision_free is False
-        assert math.isinf(legend._dm_collision_score)
-    finally:
-        plt.close(fig)
+
+def test_a_tall_one_column_legend_goes_last() -> None:
+    tall = _spot("upper right", tall=0.2)
+    wide = _spot("upper right", ncol=2)
+    assert first_free([tall, wide]) is wide
+    assert first_free([tall]) is tall
+
+
+def test_the_least_covering_spot_ranks_by_artists_then_overflow() -> None:
+    spots = [
+        _spot("upper right", met=2),
+        _spot("upper left", met=1, over=0.3),
+        _spot("lower left", met=1, over=0.1),
+    ]
+    assert min(spots, key=InsideSpot.rank) is spots[2]
+
+
+# ------------------------------------------------------------ outside plans
+def _plan(side, loss: float, fits: bool = True, ncols: int = 1) -> OutsidePlan:
+    return OutsidePlan(side, ncols, ("a",), 10.0, 10.0, loss, fits)
+
+
+@pytest.mark.parametrize(
+    ("loss", "fits", "level"),
+    [(0.6, True, 2), (0.61, True, 1), (1.0, True, 0), (0.1, False, 0)],
+)
+def test_a_plan_level_is_its_fit(loss: float, fits: bool, level: int) -> None:
+    assert _plan("above", loss, fits).level == level
+
+
+def test_above_stays_unless_another_side_clearly_costs_less() -> None:
+    """A later side needs 10 % less loss and 5 % of the plot less."""
+    above = _plan("above", 0.30)
+    assert choose([above, _plan("right", 0.26)]) is above  # 13 % less, 4 pts
+    assert choose([above, _plan("right", 0.28)]) is above  # 2 pts
+    right = _plan("right", 0.24)
+    assert choose([above, right]) is right  # 20 % less, 6 pts
+    small = _plan("above", 0.04)
+    assert choose([small, _plan("right", 0.0)]) is small  # 4 pts only
+
+
+def test_a_better_fit_wins_whatever_it_costs() -> None:
+    above = _plan("above", 0.7)  # fits, but takes 70 %
+    right = _plan("right", 0.65)
+    assert choose([above, right]) is above  # same level, 7 % less
+    overflowing = _plan("above", 0.2, fits=False)
+    assert choose([overflowing, _plan("right", 0.9)]).side == "right"
+
+
+def test_split_ncols_reads_either_spelling() -> None:
+    assert split_ncols({"ncol": 2, "frameon": False}) == ({"frameon": False}, 2)
+    assert split_ncols({"ncols": "3"}) == ({}, 3)
+    assert split_ncols({}) == ({}, None)
