@@ -95,6 +95,7 @@ class TickDecimalPrecisionDetail(TypedDict):
 @dataclass(frozen=True)
 class _TickRow:
     text: str
+    number: str
     suffix: str
     rendered: float
     axis_value: float
@@ -116,9 +117,23 @@ def _decimal_places(number_str: str) -> int:
     return len(mantissa.split(".", 1)[1])
 
 
-def _is_integer(value: float) -> bool:
+def _is_integer(value: float, number_str: str) -> bool:
+    """True when the printed number is a whole number plus float noise.
+
+    ``number_str`` is the number as printed. Noise around a non-zero whole
+    number (``45.00000000000001``) and matplotlib's exponent noise around
+    zero (``5.6e-17``) read as that whole number. A plain-digit label that
+    sits within tolerance of zero but is not zero (``0.00000000000001``) is
+    a real tiny value: the digit it prints is information, not a trailing
+    zero.
+    """
     nearest = round(value)
-    return abs(value - nearest) <= _INTEGER_REL_TOL * max(1.0, abs(value))
+    if abs(value - nearest) > _INTEGER_REL_TOL * max(1.0, abs(value)):
+        return False
+    tiny_plain_digits = (
+        nearest == 0 and value != 0 and "e" not in number_str.lower()
+    )
+    return not tiny_plain_digits
 
 
 def _tick_rows(
@@ -138,6 +153,7 @@ def _tick_rows(
         rows.append(
             _TickRow(
                 text=tick.get_text().strip(),
+                number=number_str,
                 suffix=suffix.strip(),
                 rendered=rendered_value,
                 axis_value=axis_value,
@@ -216,7 +232,9 @@ def _axis_warnings(
 
     for group in groups:
         decimals = max(row.decimals for row in group)
-        if decimals >= 1 and all(_is_integer(row.rendered) for row in group):
+        if decimals >= 1 and all(
+            _is_integer(row.rendered, row.number) for row in group
+        ):
             return VisualWarning(
                 severity=Severity.WARNING,
                 check_id="TICK_DECIMAL",

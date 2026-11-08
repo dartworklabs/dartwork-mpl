@@ -264,3 +264,93 @@ class TestValueLabelDecimal:
             ax.text(0.2 * i, 0.5, label).set_visible(False)
         assert _hits(fig, "VALUE_LABEL_DECIMAL") == []
         plt.close(fig)
+
+
+def _log_bar_fig(values: list[float]) -> Figure:
+    """Log-y bars with ``dm.label_bars`` and ``dm.simple_layout`` applied."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "4:3"))
+    ax.bar(range(len(values)), values)
+    ax.set_yscale("log")
+    dm.label_bars(ax)
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    return fig
+
+
+class TestValueLabelDecimalTinyValues:
+    """A very small value printed in full is not a whole number.
+
+    Since #634 a log-axis label keeps every digit of ``1e-14``
+    (``0.00000000000001``). That label has no meaningless trailing zero, so
+    VALUE_LABEL_DECIMAL stays silent; a real ``45.0`` still warns.
+    """
+
+    @pytest.mark.parametrize(
+        "values", [[1e-14, 1e-13, 1e-12, 45], [1e-14, 1e-13, 1e-12]]
+    )
+    def test_label_bars_on_a_log_axis_with_tiny_values_is_clean(
+        self, values: list[float]
+    ) -> None:
+        fig = _log_bar_fig(values)
+        labels = [t.get_text() for t in fig.axes[0].texts]
+        hits = _hits(fig, "VALUE_LABEL_DECIMAL")
+        plt.close(fig)
+        assert "0.00000000000001" in labels  # the tiny value is printed
+        assert hits == []
+
+    @pytest.mark.parametrize(
+        "labels",
+        [
+            ["0.00000000000001", "0.0000000000001", "0.000000000001"],
+            ["0.00000000000001", "0.0000000000001", "45"],
+            # A real fraction in the set keeps the other decimals, as in
+            # ["88.9%", "90.0%"].
+            ["0.00000000000001", "0.0000000000001", "45.0"],
+        ],
+    )
+    def test_tiny_nonzero_decimals_are_not_trailing_zeros(
+        self, labels: list[str]
+    ) -> None:
+        fig = _bar_fig(labels)
+        hits = _hits(fig, "VALUE_LABEL_DECIMAL")
+        plt.close(fig)
+        assert hits == []
+
+    @pytest.mark.parametrize(
+        "labels", [["0.0", "0.0", "45.0"], ["120.0", "135.0", "152.0"]]
+    )
+    def test_real_trailing_zeros_still_warn(self, labels: list[str]) -> None:
+        fig = _bar_fig(labels)
+        hits = _hits(fig, "VALUE_LABEL_DECIMAL")
+        plt.close(fig)
+        assert len(hits) == 1
+        assert hits[0].detail["with_decimals"] >= 1
+
+    def test_whole_number_log_labels_stay_clean(self) -> None:
+        fig = _log_bar_fig([10, 100, 45])
+        hits = _hits(fig, "VALUE_LABEL_DECIMAL")
+        plt.close(fig)
+        assert hits == []
+
+
+class TestTickDecimalFloatNoise:
+    """Float noise on a whole-number tick still reads as zero."""
+
+    def test_exponent_noise_beside_whole_ticks_is_still_a_trailing_zero(
+        self,
+    ) -> None:
+        # "5.6e-17" is matplotlib printing 0 from a float rounding error:
+        # the group is whole numbers, so ".0" is a meaningless trailing zero.
+        fig = _tick_fig([-1, 0, 1, 2], ["-1.0", "5.6e-17", "1.0", "2.0"])
+        hits = _hits(fig, "TICK_DECIMAL")
+        plt.close(fig)
+        assert [h.detail["reason"] for h in hits] == ["trailing_zero"]
+
+    def test_tiny_plain_decimal_tick_is_not_a_whole_number(self) -> None:
+        fig = _tick_fig(
+            [0, 1e-14, 2e-14, 3e-14],
+            ["0", "0.00000000000001", "0.00000000000002", "0.00000000000003"],
+        )
+        hits = _hits(fig, "TICK_DECIMAL")
+        plt.close(fig)
+        assert all(h.detail["reason"] != "trailing_zero" for h in hits)

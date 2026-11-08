@@ -41,8 +41,8 @@ class ValueLabelDecimalDetail(TypedDict):
     example: str
 
 
-def _value_label(text: str) -> tuple[float, int] | None:
-    """``(value, decimal places)`` when ``text`` is a short numeric label."""
+def _value_label(text: str) -> tuple[str, float, int] | None:
+    """``(number, value, decimal places)`` of a short numeric label."""
     stripped = text.strip()
     if not stripped or "\n" in stripped:
         return None
@@ -59,7 +59,7 @@ def _value_label(text: str) -> tuple[float, int] | None:
         return None
     if "e" in number_str.lower():
         return None
-    return float(number_str), _decimal_places(number_str)
+    return number_str, float(number_str), _decimal_places(number_str)
 
 
 @register_check("VALUE_LABEL_DECIMAL", order=56)
@@ -69,7 +69,7 @@ def check_value_label_decimal(
     """Flag axes whose whole-number value labels print trailing zeros."""
     warnings: list[VisualWarning] = []
     for axes_index, ax in enumerate(fig.axes):
-        labels: list[tuple[str, float, int]] = []
+        labels: list[tuple[str, str, float, int]] = []
         for artist in ax.texts:
             if not artist.get_visible():
                 continue
@@ -79,9 +79,14 @@ def check_value_label_decimal(
                 labels.append((text.strip(), *parsed))
         if len(labels) < 2:
             continue
-        if not all(_is_integer(value) for _text, value, _places in labels):
+        if not all(
+            _is_integer(value, number_str)
+            for _text, number_str, value, _places in labels
+        ):
             continue
-        with_decimals = [text for text, _value, places in labels if places]
+        with_decimals = [
+            text for text, _number, _value, places in labels if places
+        ]
         if not with_decimals:
             continue
         warnings.append(
