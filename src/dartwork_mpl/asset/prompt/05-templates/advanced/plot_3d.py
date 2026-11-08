@@ -30,8 +30,19 @@ for cx, cy, amp, sigma in peaks:
 fig = plt.figure(figsize=dm.figsize_for("matrix"))
 ax = fig.add_subplot(111, projection="3d")
 
+# Round the colour range out to a 0.1 step so the colorbar ticks read
+# -1.0 … 0.0 like the z axis, not -0.75, -0.50 … crowded on a slide.
 surf = ax.plot_surface(
-    X, Y, Z, cmap="viridis", edgecolor="none", alpha=0.95, rstride=2, cstride=2
+    X,
+    Y,
+    Z,
+    cmap="viridis",
+    vmin=np.floor(Z.min() * 10) / 10,
+    vmax=np.ceil(Z.max() * 10) / 10,
+    edgecolor="none",
+    alpha=0.95,
+    rstride=2,
+    cstride=2,
 )
 # Light wireframe overlay for depth cues.
 ax.plot_wireframe(
@@ -67,15 +78,18 @@ for i, (cx, cy, _, _) in enumerate(peaks):
         ha="center",
     )
 
-cbar = fig.colorbar(surf, ax=ax, fraction=0.04, pad=0.08, shrink=0.7)
+# Colorbar on top, in the space the cube leaves above it: the z axis's
+# ticks and name reach past the axes on the right, where a side colorbar
+# would cover them at any preset's text size.
+cbar = fig.colorbar(
+    surf, ax=ax, location="top", fraction=0.04, pad=0.02, shrink=0.7
+)
 cbar.set_label("z", fontsize=dm.fs(-1))
 cbar.ax.tick_params(labelsize=dm.fs(-1))
 cbar.outline.set_linewidth(0.3)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
-# Skip validate_with_fixes for 3D — it reports many false-positive
-# OVERFLOW/CLIPPED warnings on the projected axis labels and panel
-# wireframe. The visual still renders cleanly.
+dm.validate_with_fixes(fig)
 
 issues = dm.check_figure_quality(fig)
 # 3D axes report many "Missing/No data" false positives.
