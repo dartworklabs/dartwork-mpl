@@ -148,6 +148,104 @@ def test_a_figure_legend_over_the_panels_is_reported() -> None:
     assert w.detail["panels"]  # the panel(s) whose lines it covers
 
 
+# ------------------------------------------- filled areas: violins, bands
+def _violin_with_a_long_tail(ax):
+    """One violin at the right edge whose thin lower tail runs into the
+    lower-right corner, as advanced/violin's last region did, and a
+    ``Median`` marker for the legend."""
+    rng = np.random.default_rng(7)
+    data = np.concatenate([rng.normal(72, 5, 400), [41.0, 43.0]])
+    (body,) = ax.violinplot([data], positions=[3], showextrema=False)["bodies"]
+    ax.scatter(
+        [3], [np.median(data)], color="white", edgecolor="k", label="Median"
+    )
+    ax.set(xlim=(0.5, 3.4), ylim=(40, 100))
+    return body
+
+
+def _meets_path(fig, legend, area) -> bool:
+    renderer = drawn_renderer(fig)
+    box = legend.get_window_extent(renderer)
+    return any(
+        area.get_transform()
+        .transform_path(path)
+        .intersects_bbox(box, filled=True)
+        for path in area.get_paths()
+    )
+
+
+def test_a_legend_on_a_violins_thin_tail_is_reported() -> None:
+    fig, ax = _fig()
+    body = _violin_with_a_long_tail(ax)
+    legend = ax.legend(loc="lower right", frameon=False)
+    assert _meets_path(
+        fig, legend, body
+    )  # precondition: the tail runs under it
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+    assert found[0].message.startswith("Legend of axes[0] covers areas")
+
+
+def test_a_legend_on_a_filled_band_is_reported() -> None:
+    fig, ax = _fig()
+    ax.fill_between([0, 10], 2, 9, color="oc.gray2", label="Range")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+    assert found[0].detail["artists"] == ["Range"]
+
+
+def test_a_legend_beside_a_filled_band_is_clean() -> None:
+    fig, ax = _fig()
+    ax.fill_between([0, 10], 0, 4, color="oc.gray2", label="Range")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.legend(loc="upper right")
+    assert _found(fig) == []
+
+
+@pytest.mark.parametrize(
+    ("face", "edge"),
+    [("none", "none"), ("none", "k")],
+    ids=["no_ink", "outline"],
+)
+def test_an_area_counts_by_the_ink_it_draws_under_the_legend(
+    face: str, edge: str
+) -> None:
+    """No face and no edge draws nothing; an outline draws only its edge,
+    which runs well clear of a legend in its middle."""
+    fig, ax = _fig()
+    ax.fill_between(
+        [0, 10], 0.5, 9.5, facecolor=face, edgecolor=edge, label="Box"
+    )
+    ax.set(xlim=(-1, 11), ylim=(-1, 11))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    assert _found(fig) == []
+
+
+def test_an_outline_counts_where_its_edge_runs_under_the_legend() -> None:
+    fig, ax = _fig()
+    ax.fill_between(
+        [0, 10], 0.5, 5, facecolor="none", edgecolor="k", label="Box"
+    )
+    ax.set(xlim=(-1, 11), ylim=(-1, 11))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")  # straddles the outline's top edge at y = 5
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+
+
+def test_meshes_and_contours_are_still_not_data() -> None:
+    fig, ax = _fig()
+    x, y = np.meshgrid(np.linspace(0, 1, 20), np.linspace(0, 1, 20))
+    ax.contourf(x, y, x + y)
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    assert _found(fig) == []
+
+
 # ----------------------------------------------------------- must not report
 def test_a_legend_in_a_free_corner_is_clean() -> None:
     fig, ax = _fig()

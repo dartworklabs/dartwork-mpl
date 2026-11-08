@@ -10,6 +10,11 @@ reports, per legend, what its box meets:
   insets too), measured as VALUE_LABEL_ON_DATA measures it: bars, drawn
   line segments at their width, markers and scatter points at their size,
   clipped to the plot box. A legend over another panel's data counts too;
+* filled areas in any plot box (``PolyCollection``: ``fill_between``
+  bands, ``stackplot`` layers, violin bodies, ``broken_barh``) where they
+  are drawn: a face or hatch with ink by its whole drawn path, down to a
+  violin's thinnest tail, an area that draws only its edge by that edge at
+  its width (as ``dm.place_legend`` keeps clear of them);
 * the texts inside any Axes (``ax.texts``: value labels, annotations,
   line-end labels) where they are drawn: the text itself, not an
   annotation's arrow, cut to its clip box and clip path; a text clipped
@@ -27,7 +32,7 @@ whose frame, title, entry texts and handles all draw no ink is left out
 with no stroke, fill, marker or hatch in a colour with alpha; every
 artist an entry draws is read, an errorbar's bars too); one with entries
 but no frame is compared by its box. Images, meshes,
-contours, filled areas and polar plots are not data here.
+contours and polar plots are not data here.
 """
 
 from __future__ import annotations
@@ -36,13 +41,15 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, TypedDict
 
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.collections import Collection
+from matplotlib.collections import Collection, PolyCollection
 from matplotlib.colors import to_rgba_array
 from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 from matplotlib.offsetbox import DrawingArea, OffsetBox
 from matplotlib.patches import Patch
+from matplotlib.path import Path
 from matplotlib.text import Text
+from matplotlib.transforms import Affine2D
 
 from ..._figure_geometry import same_position_axes
 from .._types import BBOX_ERRORS, Severity, VisualWarning
@@ -54,6 +61,7 @@ from .value_label_on_data import (
     _clip_path,
     _clip_region,
     _measure,
+    _name,
     _segments_hit,
     _text_box,
     _window,
@@ -71,9 +79,12 @@ if TYPE_CHECKING:
 
 __all__ = ["check_legend_on_data"]
 
-Covered: TypeAlias = Literal["bar", "line", "marker", "text", "legend", "panel"]
+Covered: TypeAlias = Literal[
+    "area", "bar", "line", "marker", "text", "legend", "panel"
+]
 
 _TOUCH_PT = 0.5
+_UNNAMED_AREA = "filled area"
 _NAME_CHARS = 30  # names in the message and detail are cut to this length
 _MAX_NAMES = 3
 _MAX_LABELS = 5
@@ -397,6 +408,104 @@ def _data_hits(box: Bbox, data: _Data, frame: Bbox, touch: float) -> list[_Hit]:
     return found
 
 
+class _Area(NamedTuple):
+    """A filled collection where it is drawn: its paths in display px, read
+    as filled when its face or hatch draws ink, else by its edge, ``half`` px
+    either side."""
+
+    name: str
+    paths: list[Path]
+    filled: bool
+    half: float
+
+
+def _drawn_paths(coll: PolyCollection) -> list[Path]:
+    """Each path in display px, placed as ``Collection.draw`` places it:
+    its own transform (``get_transforms``), the collection's transform, then
+    its offset in display px; the lists repeat to the longest."""
+    paths = list(coll.get_paths())
+    if not paths:
+        return []
+    transform = coll.get_transform()
+    items = np.asarray(coll.get_transforms(), dtype=float).reshape(-1, 3, 3)
+    offsets = np.asarray(coll.get_offsets(), dtype=float).reshape(-1, 2)
+    shifts = (
+        coll.get_offset_transform().transform(offsets)
+        if len(offsets)
+        else np.zeros((0, 2))
+    )
+    drawn: list[Path] = []
+    for i in range(max(len(paths), len(shifts))):
+        path = paths[i % len(paths)]
+        if len(items):
+            path = Affine2D(items[i % len(items)]).transform_path(path)
+        path = transform.transform_path(path)
+        if len(shifts):
+            dx, dy = shifts[i % len(shifts)]
+            if not (np.isfinite(dx) and np.isfinite(dy)):
+                continue
+            path = Affine2D().translate(dx, dy).transform_path(path)
+        drawn.append(path)
+    return drawn
+
+
+def _face_inks(coll: Collection) -> bool:
+    """A face with alpha, or a hatch drawn in a colour with alpha."""
+    return _any_alpha(coll.get_facecolor()) or bool(
+        coll.get_hatch()
+        and coll.get_hatch_linewidth() > 0
+        and _any_alpha(coll.get_hatchcolor())
+    )
+
+
+def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
+    """The filled areas of one plot box that draw ink."""
+    found: list[_Area] = []
+    for owner in owners:
+        for coll in owner.collections:
+            if not isinstance(coll, PolyCollection) or not _collection_inks(
+                coll
+            ):
+                continue
+            try:
+                paths = _drawn_paths(coll)
+            except BBOX_ERRORS:
+                continue
+            widths = np.asarray(coll.get_linewidth(), dtype=float)
+            width = float(widths.max()) if len(widths) else 0.0
+            found.append(
+                _Area(
+                    _name(coll) or _UNNAMED_AREA,
+                    paths,
+                    _face_inks(coll),
+                    renderer.points_to_pixels(width) / 2,
+                )
+            )
+    return found
+
+
+def _area_hits(
+    box: Bbox, areas: list[_Area], frame: Bbox, touch: float
+) -> list[_Hit]:
+    """Filled areas ``box`` covers by more than ``touch``, inside the plot box."""
+    clipped = _clip(box, frame)
+    if clipped is None:
+        return []
+    found: list[_Hit] = []
+    for area in areas:
+        # A face counts from inside the legend's edge by ``touch``; an
+        # edge reaches ``half`` past its path.
+        reach = clipped.padded((0.0 if area.filled else area.half) - touch)
+        if reach.width <= 0 or reach.height <= 0:
+            continue
+        if any(
+            path.intersects_bbox(reach, filled=area.filled)
+            for path in area.paths
+        ):
+            found.append(_Hit("area", area.name))
+    return found
+
+
 def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
     """Where ``text`` is drawn: its own box (not an arrow), clipped; ``None`` if nowhere.
 
@@ -434,6 +543,7 @@ class _Measured:
         self._fig = fig
         self._renderer = renderer
         self._data: dict[str, _Data] = {}
+        self._areas: dict[str, list[_Area]] = {}
 
     def of(self, plot: _PlotBox) -> _Data:
         key = plot.owner.name
@@ -442,6 +552,12 @@ class _Measured:
                 plot.owners, plot.frame, self._renderer, self._fig
             )
         return self._data[key]
+
+    def areas(self, plot: _PlotBox) -> list[_Area]:
+        key = plot.owner.name
+        if key not in self._areas:
+            self._areas[key] = _areas(plot.owners, self._renderer)
+        return self._areas[key]
 
 
 def _hits(
@@ -480,6 +596,7 @@ def _hits(
         if placed.owner is not None and not mine:
             hits.append(_Hit("panel", plot.owner.name))
         found = _data_hits(box, measured.of(plot), plot.frame, touch)
+        found += _area_hits(box, measured.areas(plot), plot.frame, touch)
         if found:
             hits += found
             panels.append(plot.owner.top)
