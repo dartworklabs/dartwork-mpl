@@ -248,6 +248,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **`VALUE_LABEL_DECIMAL` no longer reads `0.00000000000001` as a whole
+  number.** A log-axis label now keeps every digit of `1e-14`, but
+  `dm.validate_figure` counted any plain-digit label within `1e-9` of zero
+  as the whole number 0 and warned of "trailing zeros" that were not
+  printed. A non-zero plain-digit label is now a real value; a printed `45.0`
+  still warns, and exponent noise (`5.6e-17`) beside whole ticks still reads
+  as zero. `TICK_DECIMAL` shares the rule: tiny plain-digit ticks no longer
+  get a false trailing-zero warning (they fall to the excess-precision note).
 - **The layout guide no longer loses the `1e6` multiplier.**
   `docs/usage_guide/layout.md` advised calling `ax.ticklabel_format(...)`
   after the layout; that applies the request, but its offset text (`1e6`)
