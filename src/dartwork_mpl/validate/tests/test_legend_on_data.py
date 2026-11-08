@@ -16,6 +16,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 import dartwork_mpl as dm
 from dartwork_mpl.validate import Severity
@@ -248,6 +250,182 @@ def test_a_frameless_legend_with_entries_is_still_reported() -> None:
     assert w.detail["covered"] == ["line"]
 
 
+@pytest.mark.parametrize(
+    "kind", ["line_color_none", "line_no_stroke", "patch_none"]
+)
+def test_a_legend_with_no_rendered_ink_does_not_cover_data(kind: str) -> None:
+    """A legend identical to removing it cannot obscure the line.
+
+    Review 2 (648-R1), moved here as the reviewer wrote it.
+    """
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "9cm"))
+    try:
+        ax.set(xlim=(0, 1), ylim=(0, 1))
+        ax.plot([0, 1], [0.5, 0.5])
+        handle = (
+            Patch(facecolor="none", edgecolor="none")
+            if kind == "patch_none"
+            else Line2D([], [], color="none")
+        )
+        if kind == "line_no_stroke":
+            handle.set(color="black", linestyle="None", marker="None")
+        legend = ax.legend(
+            handles=[handle], labels=["Invisible"], loc="center", frameon=False
+        )
+        for text in legend.get_texts():
+            text.set_color("none")
+        fig.canvas.draw()
+        before = np.asarray(fig.canvas.buffer_rgba()).copy()
+        found = dm.validate_figure(fig, checks=["LEGEND_ON_DATA"], quiet=True)
+        legend.remove()
+        fig.canvas.draw()
+        assert np.array_equal(before, np.asarray(fig.canvas.buffer_rgba()))
+        assert found == []
+    finally:
+        plt.close(fig)
+
+
+def _draws(fig, artist) -> bool:
+    """The oracle: whether removing ``artist`` changes the drawn pixels."""
+    fig.canvas.draw()
+    before = np.asarray(fig.canvas.buffer_rgba()).copy()
+    artist.remove()
+    fig.canvas.draw()
+    return not np.array_equal(before, np.asarray(fig.canvas.buffer_rgba()))
+
+
+def _away(ax, method: str, **kw):
+    """A data artist drawn outside the view, to serve as a handle."""
+    if method == "fill_between":
+        return ax.fill_between([5, 6], [5, 5], [6, 6], **kw)
+    if method == "scatter":
+        return ax.scatter([5], [5], **kw)
+    return ax.errorbar([5], [5], yerr=[0.2], **kw)
+
+
+# Each handle type drawing ink, or none, by what it strokes, fills, marks or
+# hatches; data artists become legend Rectangles, PathCollections and
+# errorbar lines (whose first artist may draw nothing while the bars do).
+_HANDLES = {
+    "line_colour_alpha0_alpha1": (
+        True,
+        lambda ax: Line2D([], [], color=(0, 0, 0, 0), alpha=1),
+    ),
+    "line_width0": (False, lambda ax: Line2D([], [], color="k", linewidth=0)),
+    "marker_hollow_no_edge": (
+        False,
+        lambda ax: Line2D(
+            [],
+            [],
+            linestyle="None",
+            marker="o",
+            markerfacecolor="none",
+            markeredgewidth=0,
+        ),
+    ),
+    "marker_only": (
+        True,
+        lambda ax: Line2D([], [], linestyle="None", marker="o", color="k"),
+    ),
+    "patch_hatch_only": (
+        True,
+        lambda ax: Patch(facecolor="none", edgecolor="none", hatch="//"),
+    ),
+    "patch_hatch_colour_none": (
+        False,
+        lambda ax: Patch(
+            facecolor="none", edgecolor="none", hatch="//", hatchcolor="none"
+        ),
+    ),
+    "patch_edge_width0": (
+        False,
+        lambda ax: Patch(facecolor="none", edgecolor="k", linewidth=0),
+    ),
+    "poly_none": (
+        False,
+        lambda ax: _away(
+            ax, "fill_between", facecolor="none", edgecolor="none"
+        ),
+    ),
+    "poly_face": (
+        True,
+        lambda ax: _away(ax, "fill_between", facecolor="k", edgecolor="none"),
+    ),
+    "poly_hatch_only": (
+        True,
+        lambda ax: _away(
+            ax, "fill_between", facecolor="none", edgecolor="none", hatch="//"
+        ),
+    ),
+    "scatter_none": (
+        False,
+        lambda ax: _away(ax, "scatter", facecolors="none", edgecolors="none"),
+    ),
+    "scatter_size0": (False, lambda ax: _away(ax, "scatter", s=0, color="k")),
+    "scatter_drawn": (True, lambda ax: _away(ax, "scatter", color="k")),
+    "errorbar_none": (
+        False,
+        lambda ax: _away(ax, "errorbar", color="none", ecolor="none"),
+    ),
+    "errorbar_bars_only": (
+        True,
+        lambda ax: _away(
+            ax, "errorbar", color="k", linestyle="None", marker="None"
+        ),
+    ),
+}
+
+
+@pytest.mark.parametrize("case", list(_HANDLES))
+def test_a_legend_counts_when_its_handle_draws_ink(case: str) -> None:
+    ink, make = _HANDLES[case]
+    fig, ax = _fig()
+    _flat_line_under_centre(ax)
+    legend = ax.legend(
+        handles=[make(ax)], labels=["Entry"], loc="center", frameon=False
+    )
+    for text in legend.get_texts():
+        text.set_color("none")
+    found = _found(fig)
+    assert _draws(fig, legend) is ink
+    assert bool(found) is ink
+
+
+@pytest.mark.parametrize(
+    ("part", "colour", "alpha", "ink"),
+    [
+        ("entry", (1, 0, 0, 0), 1, True),
+        ("entry", "red", 0, False),
+        ("entry", (1, 0, 0, 0), None, False),
+        ("title", (1, 0, 0, 0), 1, True),
+        ("title", "red", 0, False),
+        ("title", "none", None, False),
+    ],
+)
+def test_a_legend_text_draws_by_its_own_alpha_over_its_colour(
+    part: str, colour, alpha, ink: bool
+) -> None:
+    fig, ax = _fig()
+    _flat_line_under_centre(ax)
+    legend = ax.legend(
+        handles=[Line2D([], [], color="none")],
+        labels=["Entry"],
+        loc="center",
+        frameon=False,
+        title="Heading",
+    )
+    legend.get_title().set_color("none")
+    for text in legend.get_texts():
+        text.set_color("none")
+    shown = legend.get_title() if part == "title" else legend.get_texts()[0]
+    shown.set_color(colour)
+    shown.set_alpha(alpha)
+    found = _found(fig)
+    assert _draws(fig, legend) is ink
+    assert bool(found) is ink
+
+
 def _text_under_legend(**text_kw):
     fig, ax = _fig()
     ax.set(xlim=(0, 1), ylim=(0, 1))
@@ -268,6 +446,52 @@ def test_a_text_is_compared_where_it_is_drawn() -> None:
     assert _found(fig) == []
     fig, _text = _text_under_legend(alpha=0)
     assert _found(fig) == []
+
+
+def test_text_alpha_overrides_color_alpha_in_legend_obstacles() -> None:
+    """The same visible text must be seen by both validation checks.
+
+    Review 2 (648-R2), moved here as the reviewer wrote it.
+    """
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "9cm"))
+    try:
+        ax.set(xlim=(0, 1), ylim=(0, 1))
+        ax.plot([0, 1], [0.05, 0.05], label="Series")
+        ax.text(
+            0.5,
+            0.5,
+            "123",
+            ha="center",
+            va="center",
+            color=(1, 0, 0, 0),
+            alpha=1,
+            fontsize=22,
+        )
+        legend = ax.legend(loc="center")
+        found = dm.validate_figure(fig, checks=["LEGEND_ON_DATA"], quiet=True)
+        legend.remove()
+        ax.lines[0].set_ydata([0.5, 0.5])
+        assert dm.validate_figure(
+            fig, checks=["VALUE_LABEL_ON_DATA"], quiet=True
+        )
+        assert any("text" in w.detail["covered"] for w in found)
+    finally:
+        plt.close(fig)
+
+
+@pytest.mark.parametrize(
+    ("alpha", "ink"), [(None, False), (0, False), (0.5, True), (1, True)]
+)
+def test_a_text_under_a_legend_counts_by_its_own_alpha_over_its_colour(
+    alpha, ink: bool
+) -> None:
+    """A colour at alpha 0 draws once the text's own alpha replaces it."""
+    fig, text = _text_under_legend(color=(1, 0, 0, 0), alpha=alpha)
+    covered = [w.detail["covered"] for w in _found(fig)]
+    assert covered == ([["text"]] if ink else [])
+    text.axes.get_legend().remove()
+    assert _draws(fig, text) is ink
 
 
 def test_an_annotation_counts_by_its_text_not_its_arrow() -> None:

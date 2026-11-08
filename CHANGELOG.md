@@ -99,10 +99,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   box (twin Axes and insets included, measured as `VALUE_LABEL_ON_DATA`
   measures data), a text inside an Axes where it is drawn (`ax.texts`:
   value labels, annotations without their arrow, line-end labels; one
-  clipped away or at alpha 0 does not count), another legend, or another
-  panel's plot box (an Axes legend reaching into its neighbour or an
-  inset). Contact up to half a point is a touch. A legend that draws
-  nothing (no visible frame and no visible entry) is left out. The detail
+  clipped away or drawn at alpha 0, the text's own alpha replacing its
+  colour's as matplotlib draws it, does not count), another legend, or
+  another panel's plot box (an Axes legend reaching into its neighbour or
+  an inset). Contact up to half a point is a touch. A legend that draws
+  nothing is left out: no frame, title, entry text or handle draws ink (a
+  handle is read by what it strokes, fills, marks or hatches in a colour
+  with alpha, every artist of an entry included). The detail
   names the legend (`legend_axes`, `None` for a figure legend,
   `legend_inset` for an inset's, and its first entries), the kinds
   covered, the first artists (`axes[0].insets[0]` for an inset) and the
@@ -172,9 +175,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   broken at spaces only when the legend would otherwise run past the Axes
   along its side or take more than 60 % of the plot (on a side named right
   or left, also when it is wider than 40 % of the Axes), a trailing
-  bracketed unit such as `(2019 = 100)` kept whole; a way of breaking them
-  into more lines per name wins only when it leaves the plot at least 5 %
-  of the canvas more. A bottom
+  bracketed unit such as `(2019 = 100)` kept whole. A better fit always
+  comes first; among ways that fit as well, one breaking the names into
+  more lines per name wins only when it leaves the plot at least 5 % of
+  the canvas more. A bottom
   panel's legend no longer goes above onto the panel over it. With a
   caller anchor (`bbox_to_anchor`), or `legend_fallback="inside"`, it stays
   in the spot that covers the fewest series and `LEGEND_ON_DATA` reports
@@ -185,8 +189,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   outside one keeps its side with its rows chosen again for the laid-out
   width, so a 2×2 grid's legends are not left in one tall column. A
   legend restyled or moved through the returned `Legend` since (its
-  texts, frame, `set_loc`, `set_bbox_to_anchor`) is the caller's and stays
-  as it is. A named side
+  texts and title, frame, a handle's colour, line style, width, marker,
+  face or hatch, `set_loc`, `set_bbox_to_anchor`) is the caller's and
+  stays as it is; setting a value it already has is no edit. A named side
   (`loc="above"` …) takes the same rows, columns and wrapping; a
   matplotlib `loc`, `ncol` / `ncols` and a hand-placed `ax.legend` are
   used as given. `dm.config.legend_fallback="above"` keeps the old side.

@@ -13,7 +13,8 @@ reports, per legend, what its box meets:
 * the texts inside any Axes (``ax.texts``: value labels, annotations,
   line-end labels) where they are drawn: the text itself, not an
   annotation's arrow, cut to its clip box and clip path; a text clipped
-  away or drawn without ink does not count;
+  away or drawn without ink (its colour's alpha, replaced by the text's
+  own alpha when that is set) does not count;
 * another legend's box;
 * another panel's plot box, even where that panel draws no data: an Axes
   legend reaching into a neighbouring Axes is drawn over or under it.
@@ -21,18 +22,27 @@ reports, per legend, what its box meets:
 Contact up to half a point is a touch, not a cover. A legend inside its own
 Axes is drawn over the panels that Axes sits on (an inset, or an Axes added
 on top of another with ``fig.add_axes``), so those do not count. A legend
-with no visible frame and no visible entry (``ax.legend([], [],
-frameon=False)``, or everything at alpha 0) draws nothing and is left out;
-one with entries but no frame is compared by its box. Images, meshes,
+whose frame, title, entry texts and handles all draw no ink is left out
+(``ax.legend([], [], frameon=False)``, everything at alpha 0, or handles
+with no stroke, fill, marker or hatch in a colour with alpha; every
+artist an entry draws is read, an errorbar's bars too); one with entries
+but no frame is compared by its box. Images, meshes,
 contours, filled areas and polar plots are not data here.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, TypedDict
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.collections import Collection
+from matplotlib.colors import to_rgba_array
+from matplotlib.lines import Line2D
+from matplotlib.markers import MarkerStyle
+from matplotlib.offsetbox import DrawingArea, OffsetBox
+from matplotlib.patches import Patch
+from matplotlib.text import Text
 
 from ..._figure_geometry import same_position_axes
 from .._types import BBOX_ERRORS, Severity, VisualWarning
@@ -55,9 +65,7 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend
-    from matplotlib.text import Text
     from matplotlib.transforms import Bbox
-    from matplotlib.typing import ColorType
 
     from .value_label_on_data import _Data
 
@@ -151,28 +159,152 @@ def _owners(fig: Figure) -> list[_Owner]:
     return found
 
 
-def _inked(artist: Artist, *colors: ColorType) -> bool:
-    """Whether ``artist`` is visible and any of its ``colors`` has alpha."""
-    if not artist.get_visible():
-        return False
+_NO_STROKE = ("None", "none", "", " ")
+
+
+def _shown(artist: Artist) -> bool:
+    """Visible and not at an artist alpha of 0."""
     alpha = artist.get_alpha()
-    if alpha is not None and alpha <= 0:
+    return bool(artist.get_visible() and (alpha is None or alpha > 0))
+
+
+def _text_inks(text: Text) -> bool:
+    """Whether ``text`` draws: a non-blank string in a colour with alpha.
+
+    The text's own alpha, when set, replaces its colour's alpha, as
+    matplotlib draws it (and as VALUE_LABEL_ON_DATA reads a label).
+    """
+    return bool(
+        text.get_visible()
+        and text.get_text().strip()
+        and _alpha(text.get_color(), text.get_alpha()) > 0
+    )
+
+
+def _line_inks(line: Line2D) -> bool:
+    """A stroke (a line style, a width, a colour) or a marker with a face or an edge."""
+    if not _shown(line):
         return False
-    return any(_alpha(color) > 0 for color in colors) if colors else True
+    alpha = line.get_alpha()
+    if (
+        line.get_linestyle() not in _NO_STROKE
+        and line.get_linewidth() > 0
+        and _alpha(line.get_color(), alpha) > 0
+    ):
+        return True
+    marker = line.get_marker()
+    if marker is None or marker in _NO_STROKE or line.get_markersize() <= 0:
+        return False
+    try:
+        filled = MarkerStyle(marker, line.get_fillstyle()).is_filled()
+    except (TypeError, ValueError):
+        filled = True
+    face = filled and _alpha(line.get_markerfacecolor(), alpha) > 0
+    edge = (
+        line.get_markeredgewidth() > 0
+        and _alpha(line.get_markeredgecolor(), alpha) > 0
+    )
+    return face or edge
+
+
+def _patch_inks(patch: Patch) -> bool:
+    """A face, an edge (a width, a line style, a colour) or a hatch with a colour.
+
+    A patch's colours already carry its alpha.
+    """
+    if not _shown(patch):
+        return False
+    if patch.get_fill() and _alpha(patch.get_facecolor()) > 0:
+        return True
+    if (
+        patch.get_linewidth() > 0
+        and patch.get_linestyle() not in _NO_STROKE
+        and _alpha(patch.get_edgecolor()) > 0
+    ):
+        return True
+    return bool(
+        patch.get_hatch()
+        and patch.get_hatch_linewidth() > 0
+        and _alpha(patch.get_hatchcolor()) > 0
+    )
+
+
+def _any_alpha(colors: Any) -> bool:
+    """Whether any of ``colors`` (one colour, or an RGBA array) has alpha."""
+    return bool(np.any(to_rgba_array(colors)[:, 3] > 0))
+
+
+def _collection_inks(collection: Collection) -> bool:
+    """Any face or edge with alpha, or a hatch; scatter points at size 0 draw nothing."""
+    if not _shown(collection):
+        return False
+    sizes = getattr(collection, "get_sizes", None)
+    if sizes is not None:
+        drawn = sizes()
+        if (
+            drawn is not None
+            and len(drawn)
+            and not np.any(np.asarray(drawn) > 0)
+        ):
+            return False
+    if _any_alpha(collection.get_facecolor()):
+        return True
+    widths = np.asarray(collection.get_linewidth(), dtype=float)
+    if np.any(widths > 0) and _any_alpha(collection.get_edgecolor()):
+        return True
+    return bool(
+        collection.get_hatch()
+        and collection.get_hatch_linewidth() > 0
+        and _any_alpha(collection.get_hatchcolor())
+    )
+
+
+def _inks(artist: Artist) -> bool:
+    """Whether ``artist`` draws anything, read by what its type draws.
+
+    An artist of another type counts when it is shown at all.
+    """
+    if isinstance(artist, Line2D):
+        return _line_inks(artist)
+    if isinstance(artist, Patch):
+        return _patch_inks(artist)
+    if isinstance(artist, Collection):
+        return _collection_inks(artist)
+    if isinstance(artist, Text):
+        return _text_inks(artist)
+    return _shown(artist)
+
+
+def _handle_artists(legend: Legend) -> list[Artist]:
+    """Every artist the legend's entries draw: each handle box's contents.
+
+    ``legend.legend_handles`` holds only each entry's first artist; an
+    errorbar or a tuple handle draws more. Read through the public
+    ``get_children`` of the legend's offset boxes.
+    """
+    found: list[Artist] = []
+
+    def walk(box: OffsetBox) -> None:
+        for child in box.get_children():
+            if isinstance(child, DrawingArea):
+                found.extend(child.get_children())
+            elif isinstance(child, OffsetBox):
+                walk(child)
+
+    for child in legend.get_children():
+        if isinstance(child, OffsetBox):
+            walk(child)
+    return found or [h for h in legend.legend_handles if h]
 
 
 def _draws_ink(legend: Legend) -> bool:
     """Whether ``legend`` draws a frame, a title or an entry the reader sees."""
-    frame = legend.get_frame()
-    if legend.get_frame_on() and (
-        _inked(frame, frame.get_facecolor())
-        or (frame.get_linewidth() > 0 and _inked(frame, frame.get_edgecolor()))
-    ):
+    if legend.get_frame_on() and _patch_inks(legend.get_frame()):
         return True
     texts = [legend.get_title(), *legend.get_texts()]
-    if any(t.get_text().strip() and _inked(t, t.get_color()) for t in texts):
+    if any(_text_inks(text) for text in texts):
         return True
-    return any(_inked(handle) for handle in legend.legend_handles if handle)
+    return any(_inks(artist) for artist in _handle_artists(legend))
 
 
 def _legends(fig: Figure, renderer: RendererBase) -> list[_Placed]:
@@ -272,7 +404,7 @@ def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
     the clip box and to the clip path's extent when ``clip_on``; a clip path
     that lets none of it through, or a text drawn at alpha 0, draws nothing.
     """
-    if not text.get_text().strip() or not _inked(text, text.get_color()):
+    if not _text_inks(text):
         return None
     try:
         box = _text_box(text, renderer)
