@@ -77,6 +77,10 @@ def check_pie_label_offset(
                 continue
             x, y = txt.get_position()
             actual_r = (x**2 + y**2) ** 0.5
+            if actual_r > outer_r:
+                # Set past the ring ("AMD 17%" beside its wedge): an
+                # outside label, not a share meant to sit in the ring.
+                continue
             if (
                 ideal_r > 0
                 and abs(actual_r - ideal_r) / ideal_r > _TOLERANCE_RATIO

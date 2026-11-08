@@ -82,7 +82,7 @@ ax.text(
     ax.get_ylim()[1] * 0.9 if False else 320,
     f"{breach_rate:.1f}% breach SLA",
     fontsize=dm.fs(-1),
-    color="dc.amber5",
+    color=dm.ensure_contrast("dc.amber5", ax.get_facecolor()),  # 4.5:1 text
     fontstyle="italic",
 )
 

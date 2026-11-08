@@ -82,7 +82,8 @@ for i, (cx, cy, _, _) in enumerate(peaks):
         zmin - 0.15,
         f"Min {i + 1}",
         fontsize=dm.fs(-1),
-        color="dc.amber5",
+        # Amber darkened to read (4.5:1) on the grey floor pane behind it.
+        color=dm.ensure_contrast("dc.amber5", ax.zaxis.pane.get_facecolor()),
         ha="center",
     )
 

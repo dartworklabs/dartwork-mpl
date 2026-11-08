@@ -42,20 +42,28 @@ fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
 # Round the top level up to a 0.1 step so levels, contour labels and
 # colorbar ticks read 0.2, 0.4 … instead of 0.3999.
 levels = np.linspace(0, np.ceil(Z.max() * 10) / 10, 11)
-cf = ax.contourf(X, Y, Z, levels=levels, cmap="viridis", alpha=0.85)
+fill_alpha = 0.85
+cf = ax.contourf(X, Y, Z, levels=levels, cmap="viridis", alpha=fill_alpha)
 cs = ax.contour(X, Y, Z, levels=levels[::2], colors="white", linewidths=0.3)
 # Label every other line (0.2, 0.6), each on the side of its hill away
 # from the hill's callout so no arrow runs through a number. matplotlib
 # puts a label on the line nearest each point; with other data, move the
 # points (or drop ``manual=`` for matplotlib's own placement).
+label_levels = levels[2::4]
+# Each label in white or black, whichever reads on its band (the 0.85
+# fill over the Axes, flattened with dm.pseudo_alpha).
+inks = []
+for z in label_levels:
+    band = dm.pseudo_alpha(cf.to_rgba(z)[:3], fill_alpha, ax.get_facecolor())
+    inks.append(dm.readable_text_color(band))
 ax.clabel(
     cs,
-    levels=levels[2::4],
+    levels=label_levels,
     manual=[(-1.5, 0.4), (-1.4, -0.9), (1.9, 1.0)],
     inline=True,
     fontsize=dm.fs(-2),
     fmt="%.1f",
-    colors="white",
+    colors=inks,
 )
 
 # Peak markers + callouts. Each callout sits in empty space past its
