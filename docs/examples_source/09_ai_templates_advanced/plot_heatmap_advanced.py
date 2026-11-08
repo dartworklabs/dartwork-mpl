@@ -64,6 +64,7 @@ im = ax.imshow(
 )
 
 # In-cell value labels — only off-diagonal.
+cell_labels = []
 for i in range(n):
     for j in range(n):
         if i == j:
@@ -71,7 +72,7 @@ for i in range(n):
         val = corr[i, j]
         # White or black, whichever reads better on the cell as drawn.
         text_color = dm.readable_text_color(im.to_rgba(val))
-        ax.text(
+        label = ax.text(
             j,
             i,
             f"{val:+.2f}",
@@ -80,11 +81,13 @@ for i in range(n):
             fontsize=dm.fs(-1),
             color=text_color,
         )
+        cell_labels.append(label)
 
-# Tick labels.
+# Tick labels. No rotation: dm.simple_layout turns them only when they
+# collide (on a slide's 10.5 cm square).
 ax.set_xticks(np.arange(n))
 ax.set_yticks(np.arange(n))
-ax.set_xticklabels(assets, rotation=30, ha="right", fontsize=dm.fs(-1))
+ax.set_xticklabels(assets, fontsize=dm.fs(-1))
 ax.set_yticklabels(assets, fontsize=dm.fs(-1))
 ax.tick_params(axis="both", length=0)
 
@@ -97,7 +100,17 @@ cbar.ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:+.1f}"))
 cbar.ax.tick_params(labelsize=dm.fs(-1))
 cbar.outline.set_linewidth(0.3)
 
-dm.simple_layout(fig, margin=dm.inch(0.45))
+dm.simple_layout(fig)
+
+# Cell labels keep dm.fs(-1) while it fits a cell. A slide's 10.5 cm
+# square leaves cells narrower than its large text, so there they take
+# the size that leaves a fifth of the cell between neighbours.
+cell_px = ax.get_window_extent().width / n
+widest = max(label.get_window_extent().width for label in cell_labels)
+if widest > 0.8 * cell_px:
+    for label in cell_labels:
+        label.set_fontsize(label.get_fontsize() * 0.8 * cell_px / widest)
+
 dm.validate_with_fixes(fig)
 
 issues = dm.check_figure_quality(fig)
