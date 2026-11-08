@@ -126,8 +126,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   leaves them overlapping less than flat), unless turned they would take
   over 35 % of the figure height. Only the bottom labels turn. After each
   round the margins are fitted again, and a change that left a plot under
-  30 % of its width or height, or gave any axis more overlapping tick
-  labels, is taken back and not tried again; its collision stays, reported.
+  30 % of its width or height, or gave any axis more pairs of overlapping
+  neighbouring tick labels, is taken back and not tried again; its
+  collision stays, reported.
   Nothing is shortened, hidden or made smaller, and a figure without an
   overlap draws exactly as before, at about the same cost. Labels you
   rotate (top labels too), break or align off centre, axis names with line
@@ -135,7 +136,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `fig.subplots_adjust`) stay; each call first undoes what an earlier call
   fitted, label by label where it is still as fitted, so a re-layout at
   another size fits again; `use_all_axes=False` fits and undoes only the
-  Axes of `gs`. `dm.simple_layout(fig, fit_labels=False)` or
+  Axes of `gs`, and leaves what they share with other Axes (a shared x
+  formatter, their grid's spacing) as it is. `dm.simple_layout(fig, fit_labels=False)` or
   `dm.config.fit_labels = False` gives the previous layout pixel for pixel;
   a tuple of step names (`"axis_labels"`, `"space"`, `"wrap"`, `"rotate"`)
   picks steps; an unknown name raises `ValueError`, a step that is not a

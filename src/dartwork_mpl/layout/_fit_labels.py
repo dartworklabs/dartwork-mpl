@@ -4,10 +4,13 @@ After the margins converge, ``simple_layout`` looks for text that collides
 and takes the steps below, each only where text collides and only on what
 nobody set by hand. A round's changes are kept only if, once the margins
 are fitted again, no plot lost more than ``1 - _MIN_PLOT_SHARE`` of its
-width or height and no axis has more overlapping tick labels than before
-(:func:`climb`); otherwise the round is taken back, its changes are tried
-one at a time, and those that do harm are dropped for the rest of the call.
-At most ``_FIT_ROUNDS`` rounds:
+width or height and no axis has more pairs of overlapping neighbouring tick
+labels on a side than before (:func:`climb`; the count of
+``tick_label_overlaps``, so labels beyond a neighbour that come to overlap
+on an axis whose neighbours all overlap already are not counted);
+otherwise the round is taken back, its changes are tried one at a time,
+and those that do harm are dropped for the rest of the call. At most
+``_FIT_ROUNDS`` rounds:
 
 ``axis_labels``
     An axis name longer than its side of the plot that overlaps (by more
@@ -66,7 +69,10 @@ still as set (:func:`restore_fitted`), so a re-layout at another size fits
 from the figure as you left it and ``fit_labels=False`` gives that figure
 back; a formatter, label rotation, name or spacing changed since is yours
 and stays. Only the Axes the call lays out are fitted and restored
-(``use_all_axes=False`` keeps to the GridSpec passed). Polar, 3D and other
+(``use_all_axes=False`` keeps to the GridSpec passed), and what they share
+with an Axes the call leaves out (the tick formatter of a shared x, the
+spacing of their grid) is neither changed nor restored: such Axes only turn
+their own labels. Polar, 3D and other
 non-rectilinear Axes are not fitted, and nor are the labels of a vertical
 axis (crowded rows of a horizontal bar chart need a taller canvas, which
 is the author's call).
@@ -255,13 +261,22 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
     ``fig``'s), where it is still as set.
 
     A formatter, tick label rotation, axis name or spacing changed since
-    (by you) is yours and stays; its record is dropped.
+    (by you) is yours and stays; its record is dropped. What other Axes
+    share, a formatter (shared x or y) or a grid's spacing, comes back only
+    when every Axes sharing it is among ``axes``: a layout of one grid does
+    not undo what a layout of the whole figure set for the others.
     """
     chosen = list(fig.axes if axes is None else axes)
+    ids = {id(ax) for ax in chosen}
     for ax in chosen:
-        for axis in (ax.xaxis, ax.yaxis):
+        for axis, shared in (
+            (ax.xaxis, ax.get_shared_x_axes()),
+            (ax.yaxis, ax.get_shared_y_axes()),
+        ):
             fmt = axis.get_major_formatter()
-            if isinstance(fmt, WrappedTickFormatter):
+            if isinstance(fmt, WrappedTickFormatter) and _all_in(
+                shared.get_siblings(ax), ids
+            ):
                 _unwrap(axis, fmt)
             first = _TURNED_AXES.pop(axis, None)
             for tick in axis.get_major_ticks():
@@ -277,9 +292,21 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
             if record is not None and label.get_text() == record[1]:
                 label.set_text(record[0])
     for gs in {g for ax in chosen if (g := _root_gridspec(ax)) is not None}:
+        if not _all_in(_on_grid(fig, gs), ids):
+            continue  # other Axes on this grid: their spacing too
         for key, value in _GAPS.pop(gs, {}).items():
             if getattr(gs, key) == value:
                 gs.update(**{key: None})
+
+
+def _all_in(members: Iterable[Axes], ids: set[int]) -> bool:
+    """Whether every one of ``members`` is among the Axes ``ids``."""
+    return all(id(member) in ids for member in members)
+
+
+def _on_grid(fig: Figure, gs: GridSpec) -> list[Axes]:
+    """Every Axes of ``fig`` placed on the root GridSpec ``gs``."""
+    return [ax for ax in fig.axes if _root_gridspec(ax) is gs]
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -486,7 +513,8 @@ def _health(axes: Sequence[Axes], renderer: RendererBase) -> _Health:
 
 
 def _harmed(before: _Health, after: _Health) -> bool:
-    """Whether a plot was crushed or an axis gained overlapping tick labels."""
+    """Whether a plot was crushed or an axis gained pairs of overlapping
+    neighbouring tick labels (on either side)."""
     for key, (w, h) in before.plots.items():
         w_now, h_now = after.plots.get(key, (w, h))
         if w_now < _MIN_PLOT_SHARE * w or h_now < _MIN_PLOT_SHARE * h:
@@ -514,8 +542,7 @@ def climb(
 
     ``grid`` is the root GridSpec the margins are fitted on, whose
     ``wspace`` / ``hspace`` ``space`` may grow between the panels of
-    ``axes`` (only Axes in different cells of it face each other, so a
-    layout of one nested grid never parts anything). ``refit`` fits the margins
+    ``axes`` when every Axes on it is among them. ``refit`` fits the margins
     again and returns ``False`` when nothing can be measured. Each round
     measures on the draw of the last layout step, which the converged edges
     moved by less than the solver's tolerance, so a figure without a
@@ -585,8 +612,8 @@ def fit_round(
     if "space" in steps:
         changes += _fit_panel_gaps(fig, renderer, gs, axes, state)
     if steps & {"wrap", "rotate"}:
-        for group in _shared_x_groups(axes):
-            changes += _fit_x_ticks(group, renderer, steps, state)
+        for group, whole in _shared_x_groups(axes):
+            changes += _fit_x_ticks(group, whole, renderer, steps, state)
     return changes
 
 
@@ -759,7 +786,13 @@ def _fit_panel_gaps(
     axes: Sequence[Axes],
     state: FitState,
 ) -> list[_Change]:
-    """Grow the ``wspace`` / ``hspace`` of ``gs`` where panel content meets."""
+    """Grow the ``wspace`` / ``hspace`` of ``gs`` where panel content meets.
+
+    Only when every Axes on ``gs`` is laid out by this call: the spacing
+    moves them all.
+    """
+    if not _all_in(_on_grid(fig, gs), {id(ax) for ax in axes}):
+        return []
     nrows, ncols = gs.get_geometry()
     free = {
         key: n > 1
@@ -845,22 +878,26 @@ def _fit_panel_gaps(
 # ── wrap / rotate ────────────────────────────────────────────────────
 
 
-def _shared_x_groups(axes: Sequence[Axes]) -> list[list[Axes]]:
+def _shared_x_groups(axes: Sequence[Axes]) -> list[tuple[list[Axes], bool]]:
     """The fitted Axes grouped by shared x axis, in figure order.
 
     Axes that share x (``sharex=True``, a twin) share the tick formatter,
-    so their labels wrap together; each still turns its own labels.
+    so their labels wrap together; each still turns its own labels. With
+    each group, whether every Axes sharing that x is among ``axes``: only
+    then may the shared formatter change.
     """
-    groups: list[list[Axes]] = []
+    groups: list[tuple[list[Axes], bool]] = []
     seen: set[int] = set()
+    ids = {id(ax) for ax in axes}
     fitted = [ax for ax in axes if _cartesian(ax)]
     for ax in fitted:
         if id(ax) in seen:
             continue
-        siblings = {id(a) for a in ax.get_shared_x_axes().get_siblings(ax)}
-        group = [a for a in fitted if id(a) in siblings]
+        siblings = ax.get_shared_x_axes().get_siblings(ax)
+        sibling_ids = {id(a) for a in siblings}
+        group = [a for a in fitted if id(a) in sibling_ids]
         seen.update(id(a) for a in group)
-        groups.append(group)
+        groups.append((group, _all_in(siblings, ids)))
     return groups
 
 
@@ -943,15 +980,24 @@ def _read_row(
 
 def _fit_x_ticks(
     group: Sequence[Axes],
+    whole: bool,
     renderer: RendererBase,
     steps: frozenset[str],
     state: FitState,
 ) -> list[_Change]:
     """Wrap (together) or turn (each) the bottom tick labels of Axes that
-    share x and collide."""
+    share x and collide.
+
+    ``whole``: every Axes sharing this x is laid out by this call. When one
+    is not, the shared formatter is not this call's: no wrap goes on or
+    comes off (labels wrapped by a layout of every Axes stay as they are),
+    and each Axes of the call may only turn its own labels.
+    """
     axis = group[0].xaxis  # the group's formatter is set through this axis
     fmt = axis.get_major_formatter()
     wrapper = fmt if isinstance(fmt, WrappedTickFormatter) else None
+    if wrapper is not None and not whole:
+        return []
     rows = [
         row
         for ax in group
@@ -961,7 +1007,8 @@ def _fit_x_ticks(
         return []
     turned = any(id(row.ax.xaxis) in state.turned for row in rows)
     if (
-        not turned
+        whole
+        and not turned
         and (wrapper is not None or any(r.collides for r in rows))
         and "wrap" in steps
         and state.allows(("wrap", id(axis)))

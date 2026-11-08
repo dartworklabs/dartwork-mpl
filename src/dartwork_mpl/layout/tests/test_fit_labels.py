@@ -912,3 +912,86 @@ def test_a_name_that_collapsed_the_plot_wraps_however_wide_its_lines() -> None:
             assert height > 0.5 * fig.bbox.height
         else:
             assert height < 2  # collapsed
+
+
+# ── what a scoped layout shares with Axes it leaves out (review N1) ──
+
+
+def _shared_grids(width: str, n: int):
+    """Two independent grids; the right Axes shares x (one formatter) with
+    the left one."""
+    dm.style.use("scientific")
+    fig = plt.figure(figsize=dm.figsize(width, "standard"))
+    a = fig.add_gridspec(1, 1, left=0.05, right=0.45)
+    b = fig.add_gridspec(1, 1, left=0.6, right=0.95)
+    left = fig.add_subplot(a[0])
+    right = fig.add_subplot(b[0], sharex=left)
+    for ax in (left, right):
+        ax.bar(range(n), range(n))
+    left.set_xticks(range(n), ["Low fee"] * n)
+    return fig, a, left, right
+
+
+def _tick_state(ax) -> list[tuple[str, float]]:
+    ax.get_figure().canvas.draw()
+    return [(t.get_text(), t.get_rotation()) for t in ax.get_xticklabels()]
+
+
+def test_scoped_wrap_preserves_excluded_shared_labels() -> None:
+    """A layout of the left grid cannot wrap through the formatter the left
+    Axes shares with the right one, which it leaves out; the left Axes turns
+    its own labels instead."""
+    fig, a, left, right = _shared_grids("9cm", 10)
+    before = _tick_state(right)
+    dm.simple_layout(fig, gs=a, use_all_axes=False)
+    assert _tick_state(right) == before
+    assert _texts(left) == ["Low fee"] * 10
+    assert _angles(left) == {30.0}
+
+
+def test_scoped_restore_preserves_excluded_shared_labels() -> None:
+    """Wraps a layout of every Axes put on the shared formatter stay when one
+    grid alone is laid out again with ``fit_labels=False``."""
+    fig, a, left, right = _shared_grids("12cm", 6)
+    dm.simple_layout(fig)
+    before = _tick_state(right)
+    assert all("\n" in text for text, _angle in before)  # precondition
+    dm.simple_layout(fig, gs=a, use_all_axes=False, fit_labels=False)
+    assert _tick_state(right) == before
+    dm.simple_layout(fig, fit_labels=False)  # every Axes: the wraps come off
+    assert _texts(right) == ["Low fee"] * 6
+
+
+def _grid_with_a_nested_cell():
+    """A root grid of three cells, the last holding a nested grid."""
+    dm.style.use("scientific")
+    fig = plt.figure(figsize=dm.figsize("17cm", "standard"))
+    root = fig.add_gridspec(1, 3)
+    first, second = fig.add_subplot(root[0]), fig.add_subplot(root[1])
+    inner = root[2].subgridspec(2, 1)
+    nested = [fig.add_subplot(inner[0]), fig.add_subplot(inner[1])]
+    for ax in (first, second, *nested):
+        ax.plot([0, 1], [0, 1])
+    second.barh([f"Category name {i}" for i in range(4)], [1, 2, 3, 4])
+    return fig, root
+
+
+def test_a_scoped_layout_does_not_grow_the_spacing_of_a_grid_it_shares() -> (
+    None
+):
+    """The root grid's spacing also moves the nested Axes that a layout of
+    the root grid alone leaves out, so that layout does not grow it."""
+    fig, root = _grid_with_a_nested_cell()
+    dm.simple_layout(fig, gs=root, use_all_axes=False)
+    assert root.wspace is None
+    dm.simple_layout(fig)  # every Axes: the colliding panels part
+    assert root.wspace is not None
+
+
+def test_a_scoped_restore_keeps_the_spacing_of_a_grid_it_shares() -> None:
+    fig, root = _grid_with_a_nested_cell()
+    dm.simple_layout(fig)
+    grown = root.wspace
+    assert grown is not None  # precondition: the panels collide
+    dm.simple_layout(fig, gs=root, use_all_axes=False, fit_labels=False)
+    assert root.wspace == grown

@@ -160,15 +160,18 @@ def simple_layout(
         90 degrees (``"rotate"``) unless turned they would take over 35 %
         of the figure height. After each round the margins are fitted again,
         and a change that crushed a plot (left it under 30 % of its width or
-        height) or added overlapping tick labels anywhere is taken back; the
-        collision it tried to fix is left, and reported. Nothing is
+        height) or gave any axis more overlapping neighbouring tick labels
+        is taken back; the collision it tried to fix is left, and reported.
+        Nothing is
         shortened, hidden or made smaller, and a figure without a collision
         draws exactly as without this. ``None`` (the default) reads
         :data:`dartwork_mpl.config.fit_labels` (itself ``True``: every
         step); ``False`` turns them off; step names (strings) allow only
         those. Only the Axes this call lays out are fitted
-        (``use_all_axes=False`` keeps to ``gs``; panel spacing then only
-        when ``gs`` is the root grid). Tick labels you rotated or broke into
+        (``use_all_axes=False`` keeps to ``gs``), and what they share with
+        an Axes left out (a shared x formatter, their grid's spacing) is
+        neither changed nor undone: they only turn their own labels. Tick
+        labels you rotated or broke into
         lines (top labels included), axis names with line breaks or
         mathtext and spacing you set (``gridspec_kw``, ``add_gridspec``,
         ``fig.subplots_adjust``) are left alone, and each call first undoes
