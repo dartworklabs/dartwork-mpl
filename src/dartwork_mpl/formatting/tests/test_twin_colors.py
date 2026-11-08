@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.axes import Axes
+from matplotlib.ticker import AutoMinorLocator
 
 matplotlib.use("Agg")
 
@@ -377,6 +378,63 @@ def test_partly_explicit_side_is_the_users(explicit, right):
         dm.simple_layout(fig)
         assert _side(ax, "left") == _neutral()
         assert _side(ax2, "right") == right
+
+
+GRAY7 = "#62666c"  # dc.gray7
+
+
+@pytest.mark.parametrize(
+    ("explicit", "minor_marks"),
+    [
+        pytest.param(
+            {"which": "minor", "colors": GRAY7}, GRAY7, id="minor_colors"
+        ),
+        pytest.param(
+            {"which": "minor", "labelcolor": GRAY7},
+            BLACK,
+            id="minor_labelcolor",
+        ),
+        pytest.param(None, BLACK, id="offset_text_only"),
+    ],
+)
+def test_a_colour_on_minor_ticks_only_makes_the_side_the_users(
+    explicit, minor_marks
+):
+    """M7 of the B3 review, kept as it is (M7-A, approved on 2026-11-08).
+
+    A colour given only to a side's minor ticks is set by hand even with no
+    minor tick in view. matplotlib also gives a ``which="minor"``
+    ``labelcolor`` to the offset text, which counts among the tick labels,
+    so that alone is a colour set by hand as well (the last case sets the
+    offset text by itself). The whole side stays the user's: its drawn
+    parts keep matplotlib's colours, the colours given stay (on minor ticks
+    a locator adds after the layout too), and the other side keeps its
+    series colour.
+    """
+    fig, ax, ax2 = _bar_line_twin()
+    assert ax2.yaxis.get_minor_ticks() == []  # none in view under report
+    if explicit is None:
+        ax2.yaxis.get_offset_text().set_color(GRAY7)
+    else:
+        ax2.tick_params(axis="y", **explicit)
+    assert _hex(ax2.yaxis.get_offset_text().get_color()) == GRAY7
+    dm.simple_layout(fig)
+
+    assert _side(ax2, "right") == _neutral()
+    assert _hex(ax2.yaxis.get_offset_text().get_color()) == GRAY7
+    assert _side(ax, "left")["spine"] == BAR_LINE
+    assert apply_twin_colors(fig) == 1  # the left side only
+
+    ax2.yaxis.set_minor_locator(AutoMinorLocator())
+    for _ in range(2):  # drawn as it is, then laid out again: the same
+        fig.canvas.draw()
+        minor = ax2.yaxis.get_minor_ticks()
+        assert minor
+        assert {_hex(t.tick2line.get_markeredgecolor()) for t in minor} == {
+            minor_marks
+        }
+        assert _side(ax2, "right") == _neutral()
+        dm.simple_layout(fig)
 
 
 def test_the_spine_seen_on_a_side_counts_as_its_part():

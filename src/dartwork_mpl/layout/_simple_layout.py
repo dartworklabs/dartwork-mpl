@@ -180,10 +180,11 @@ def simple_layout(
     An Axes drawing its own y scale on the right of a shared plot area (y
     ticks and y label on the right, or one of them when its x axis is hidden
     as a twin's is: the Axes ``ax.twinx()`` returns, of an inset too) gets
-    its right spine shown, which the presets hide;
-    its line width and colour stay, and a spine you hide after a layout
-    stays hidden. The rule is in the docstring of
-    ``dartwork_mpl.formatting._twin_spines``.
+    its right spine shown, which the presets hide; an Axes drawing its own
+    x scale on the top (the same with x and y swapped: the Axes
+    ``ax.twiny()`` returns) gets its top spine. Line width and colour stay,
+    and a spine you hide after a layout stays hidden. The rule is in the
+    docstring of ``dartwork_mpl.formatting._twin_spines``.
 
     On a ``twinx`` / ``twiny`` pair, a side whose series all draw one
     colour that no series on the other scale shares gets that colour on its
@@ -358,7 +359,7 @@ def _format_ticks(fig: Figure) -> None:
 
 
 def _show_twin_spines(fig: Figure) -> None:
-    """The right spine of each twin y scale drawn on the right."""
+    """The right / top spine of each twin scale drawn there."""
     from ..formatting import show_twin_spines
 
     show_twin_spines(fig)

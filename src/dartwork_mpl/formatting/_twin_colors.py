@@ -49,8 +49,11 @@ pair like the one series read on it:
   drawn over the parent's, so a colour set on ``ax2.spines["left"]`` makes
   the parent's side the user's; a spine drawn under another member's (the
   parent's right spine under the twin's) is not seen and does not count.
-  The other side decides on its own. A colour set
-  after a layout is the user's, whatever it is, and for good. A colour set
+  Minor ticks count even with none in view, and so does the offset text
+  among the tick labels, which also takes the ``labelcolor`` of
+  ``tick_params(which="minor")``. The other side decides on its own. A
+  colour set after a layout is the user's, whatever it is, and for good.
+  A colour set
   before the first layout, or after ``ax.cla()``, that equals the default
   (``"black"`` under the light presets) cannot be told from the default and
   is painted with the rest of the side; use ``dm.config.twin_colors =
