@@ -10,7 +10,7 @@ import keyword
 import math
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from types import MappingProxyType
@@ -35,9 +35,16 @@ class InvalidRequest:
 
 @dataclass(frozen=True)
 class ConfigurationError:
-    """The configured root cannot safely authorize artifact storage."""
+    """The configured root cannot safely authorize artifact storage.
+
+    ``reason`` is one operator-facing sentence for server stderr and may name
+    the configured path. It never reaches the wire, where the error table maps
+    the type to a fixed message, and it stays out of ``repr`` and equality so a
+    logged or compared refusal still carries no path.
+    """
 
     message: str = "Artifact storage configuration is invalid."
+    reason: str = field(default="", repr=False, compare=False)
 
 
 @dataclass(frozen=True)

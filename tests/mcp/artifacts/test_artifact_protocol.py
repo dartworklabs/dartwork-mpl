@@ -5,7 +5,10 @@ import base64
 import hashlib
 import io
 import json
+import os
 import random
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -248,6 +251,114 @@ def test_invalid_configuration_missing_corrupt_expired_and_malformed(tmp_path):
                 await client.read_resource(value["files"][0]["uri"])
 
     asyncio.run(workflow())
+
+
+CONFIGURATION_WIRE = {
+    "schema_version": 1,
+    "delivery_status": "error",
+    "error_code": "configuration_error",
+    "message": "Artifact storage configuration is invalid.",
+}
+
+
+def test_configuration_reason_never_changes_the_wire(tmp_path):
+    """A refusal's operator reason leaves the frozen code and message intact.
+
+    The reason may name the configured path for the operator's stderr; the
+    tool and resource responses stay the exact pre-reason bytes.
+    """
+    from dartwork_mpl.mcp.artifacts.transport import _failure_metadata
+
+    relative = configure_store("relative/path")
+    linked = tmp_path / "linked"
+    linked.symlink_to(tmp_path, target_is_directory=True)
+    symlinked = configure_store(str(linked))
+    refusals = [relative, symlinked, ConfigurationError(reason=str(tmp_path))]
+    for refusal in refusals:
+        assert isinstance(refusal, ConfigurationError), refusal
+        assert refusal.reason
+        assert _failure_metadata(refusal) == CONFIGURATION_WIRE
+        assert _failure_metadata(refusal) == _failure_metadata(
+            ConfigurationError()
+        )
+
+    async def workflow(refusal):
+        """Read the refusal through a genuine client's tool and resource."""
+        bad = fastmcp.FastMCP("reasoned-refusal")
+        register_artifacts(bad, refusal)
+        async with fastmcp.Client(bad) as client:
+            for name, arguments in [
+                ("render_plot", {"code": SOURCE}),
+                ("get_plot_artifact", {"artifact_id": uuid4().hex}),
+            ]:
+                result = await client.call_tool(
+                    name, arguments, raise_on_error=False
+                )
+                assert (
+                    metadata(result, "configuration_error")
+                    == CONFIGURATION_WIRE
+                )
+                assert result.content[-1].text == json.dumps(
+                    CONFIGURATION_WIRE, ensure_ascii=False
+                )
+            with pytest.raises(Exception) as raised:
+                await client.read_resource(
+                    f"dartwork-mpl://artifacts/{uuid4().hex}/plot.png"
+                )
+            assert str(raised.value) == (
+                "configuration_error: Artifact storage configuration is invalid."
+            )
+
+    for refusal in refusals:
+        asyncio.run(workflow(refusal))
+
+
+SERVER_LINE = "dartwork-mpl: artifact storage disabled: "
+
+
+def start_server(artifact_dir, *args):
+    """Start the real server module in a fresh process with one root setting.
+
+    With no arguments the module is only imported; ``-m`` runs the stdio
+    server, which exits at once on the empty stdin.
+    """
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"DARTWORK_MPL_ARTIFACT_DIR", "DARTWORK_MPL_INPUT_POLICY"}
+    }
+    env["DARTWORK_MPL_ARTIFACT_DIR"] = artifact_dir
+    return subprocess.run(
+        [sys.executable, *(args or ("-c", "import dartwork_mpl.mcp.server"))],
+        input="",
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=120,
+    )
+
+
+@pytest.mark.parametrize(
+    "args", [(), ("-m", "dartwork_mpl.mcp.server")], ids=["import", "main"]
+)
+def test_server_reports_a_refused_root_once_on_stderr(tmp_path, args):
+    """Startup names the operator fix once on stderr and still starts."""
+    refused = start_server("relative/path", *args)
+    assert refused.returncode == 0, refused.stderr
+    assert refused.stdout == ""
+    assert [
+        line
+        for line in refused.stderr.splitlines()
+        if line.startswith(SERVER_LINE)
+    ] == [
+        SERVER_LINE + "DARTWORK_MPL_ARTIFACT_DIR must be an absolute path; "
+        "got the relative path 'relative/path'."
+    ]
+    accepted = start_server(str(tmp_path / "artifacts"), *args)
+    assert accepted.returncode == 0, accepted.stderr
+    assert accepted.stdout == ""
+    assert SERVER_LINE not in accepted.stderr
+    assert not (tmp_path / "artifacts").exists()
 
 
 def test_incomplete_ready_repeats_concurrent_and_publication_clock(tmp_path):

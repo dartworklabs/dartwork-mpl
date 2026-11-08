@@ -1,5 +1,6 @@
 """Real disk contracts for private, atomic and restart-readable artifact bundles."""
 
+import errno
 import hashlib
 import json
 import os
@@ -185,6 +186,145 @@ def test_invalid_root_does_not_create_or_leak_paths(tmp_path: Path) -> None:
         assert root not in repr(result) if root else True
     assert file.read_text() == "sentinel"
     assert not (folder / "nested").exists()
+
+
+def refusal_reason(root: Any) -> str:
+    """Return one refusal's operator reason; its value stays the generic one."""
+    result = configure_store(root)
+    assert isinstance(result, ConfigurationError), (root, result)
+    assert result == ConfigurationError()
+    assert result.message == "Artifact storage configuration is invalid."
+    assert result.reason and "\n" not in result.reason
+    return result.reason
+
+
+def test_refused_root_reason_names_the_fix(tmp_path: Path) -> None:
+    """Each configure_store refusal tells the operator what to change."""
+    file = tmp_path / "private-file"
+    file.write_text("sentinel")
+    folder = tmp_path / "private-folder"
+    folder.mkdir(mode=0o700)
+    link = tmp_path / "linked"
+    link.symlink_to(folder, target_is_directory=True)
+    public = tmp_path / "public"
+    public.mkdir(mode=0o755)
+    public.chmod(0o755)
+    uid = os.geteuid()
+    expected = {
+        "": "DARTWORK_MPL_ARTIFACT_DIR is set but empty; set it to an "
+        "absolute directory path, or unset it to use "
+        "~/.cache/dartwork-mpl/artifacts.",
+        "relative/path": "DARTWORK_MPL_ARTIFACT_DIR must be an absolute "
+        "path; got the relative path 'relative/path'.",
+        str(file): f"Artifact root {str(file)!r} exists but is not a "
+        "directory; set DARTWORK_MPL_ARTIFACT_DIR to a directory path.",
+        str(file / "nested"): f"Component {str(file)!r} of artifact root "
+        f"{str(file / 'nested')!r} exists but is not a directory; set "
+        "DARTWORK_MPL_ARTIFACT_DIR to a directory path.",
+        str(link): f"Artifact root {str(link)!r} is a symbolic link; "
+        "symlinks are refused, so set DARTWORK_MPL_ARTIFACT_DIR to the "
+        "resolved real path instead.",
+        str(link / "nested"): f"Component {str(link)!r} of artifact root "
+        f"{str(link / 'nested')!r} is a symbolic link; symlinks are refused, "
+        "so set DARTWORK_MPL_ARTIFACT_DIR to the resolved real path instead.",
+        str(public): f"Existing artifact root {str(public)!r} is not "
+        f"private: it has owner uid {uid} and mode 0755, but must be owned "
+        f"by the server user (uid {uid}) with mode 0700; run 'chmod 700' on "
+        "it, or set DARTWORK_MPL_ARTIFACT_DIR elsewhere.",
+        "/a/../b": "DARTWORK_MPL_ARTIFACT_DIR must not contain '..' "
+        "components; got '/a/../b'. Write the path without parent "
+        "references.",
+        "/a\x00b": "DARTWORK_MPL_ARTIFACT_DIR must not contain a NUL byte; "
+        "got '/a\\x00b'.",
+    }
+    for root, reason in expected.items():
+        assert refusal_reason(root) == reason, root
+    assert refusal_reason(3) == (
+        "The artifact root must be a str path or None; got 'int'."
+    )
+    assert file.read_text() == "sentinel"
+    assert not (folder / "nested").exists()
+    assert stat.S_IMODE(public.stat().st_mode) == 0o755
+
+
+def test_refused_root_reason_covers_owner_host_and_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Foreign owners, unsupported hosts and a relative HOME say what to set."""
+    folder = tmp_path / "private-folder"
+    folder.mkdir(mode=0o700)
+    owner = os.geteuid()
+    with monkeypatch.context() as patch:
+        patch.setattr(disk.os, "geteuid", lambda: owner + 1)
+        assert refusal_reason(str(folder)) == (
+            f"Existing artifact root {str(folder)!r} is not private: it has "
+            f"owner uid {owner} and mode 0700, but must be owned by the "
+            f"server user (uid {owner + 1}) with mode 0700; chown it to uid "
+            f"{owner + 1} and run 'chmod 700', or set "
+            "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+        )
+    with monkeypatch.context() as patch:
+        patch.delattr(disk.os, "O_NOFOLLOW")
+        assert refusal_reason(str(folder)).startswith(
+            "This Python/OS lacks the no-follow directory-descriptor "
+            "operations artifact storage needs"
+        )
+    with monkeypatch.context() as patch:
+        patch.setenv("HOME", "relative-home")
+        assert refusal_reason(None) == (
+            "The default artifact root "
+            "'relative-home/.cache/dartwork-mpl/artifacts' is relative "
+            "because HOME is; set HOME or DARTWORK_MPL_ARTIFACT_DIR to an "
+            "absolute path."
+        )
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory modes")
+def test_refused_root_reason_points_at_unreadable_ancestors(
+    tmp_path: Path,
+) -> None:
+    """Unsearchable or unreadable ancestors name the permission to grant."""
+    unsearchable = tmp_path / "unsearchable"
+    unsearchable.mkdir(mode=0o700)
+    unreadable = tmp_path / "unreadable"
+    unreadable.mkdir(mode=0o700)
+    unsearchable.chmod(0o000)
+    # Search but no read: lstat finds nothing wrong, the no-follow open fails.
+    unreadable.chmod(0o300)
+    try:
+        assert refusal_reason(str(unsearchable / "artifacts")) == (
+            f"Cannot inspect {str(unsearchable / 'artifacts')!r} inside "
+            f"{str(unsearchable)!r} (Permission denied); the server user "
+            "needs read and search permission on every existing directory "
+            f"of {str(unsearchable / 'artifacts')!r}, or set "
+            "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+        )
+        root = unreadable / "artifacts"
+        assert refusal_reason(str(root)) == (
+            f"Artifact root {str(root)!r} could not be opened "
+            f"(\"[Errno {errno.EACCES}] Permission denied: 'unreadable'\"); "
+            "the server user needs read and search permission on every "
+            "existing directory of it, or set DARTWORK_MPL_ARTIFACT_DIR "
+            "elsewhere."
+        )
+    finally:
+        unsearchable.chmod(0o700)
+        unreadable.chmod(0o700)
+    assert not (unreadable / "artifacts").exists()
+
+
+def test_accepted_roots_still_return_a_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Private, absent and default roots configure exactly as before."""
+    existing = tmp_path / "existing"
+    existing.mkdir(mode=0o700)
+    for root in [str(existing), str(tmp_path / "absent" / "nested"), None]:
+        if root is None:
+            monkeypatch.setenv("HOME", str(tmp_path / "home"))
+        assert isinstance(configure_store(root), ArtifactStore), root
+    assert not (tmp_path / "absent").exists()
+    assert not (tmp_path / "home").exists()
 
 
 def test_partial_publication_never_becomes_readable(
