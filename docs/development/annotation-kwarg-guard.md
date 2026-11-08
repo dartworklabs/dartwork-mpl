@@ -136,8 +136,9 @@ instead.
 - When the helper's measuring step cannot get an extent (`BBOX_ERRORS`) it
   returns early and a caller's `ha`/`va` would have survived in auto mode;
   the guard rejects them anyway.
-- `add_note(..., s=...)` raised a `TypeError` from `fig.text`; it now raises
-  the guard's `AttributeError` naming `text` as the route.
+- `add_note(..., s=...)`: `s` is `Figure.text`'s own name for the string the
+  helper supplies, so it is owned rather than unsupported — the `TypeError`
+  `fig.text` raised is kept, with `text` named as the route.
 
 ## Evidence
 
