@@ -9,10 +9,14 @@ labels of an x axis, left and right of a y axis). Two labels collide when
 they overlap by more than ``_TOUCH_PX`` across the thinner direction of
 their overlap (a separating-axis test); labels that only touch pass.
 
-The fixes never make text smaller. What is left for the author is a
-horizontal bar chart (many or long category names), a wider or taller
-canvas, or fewer categories; labels the author turned get the layout's
-choice first (drop the rotation, lay out again).
+``dm.simple_layout`` wraps and then turns crowded bottom tick labels it
+may change (``layout/_fit_labels.py``); what this check reports after a
+layout is what is left: labels you rotated, wrapped or aligned yourself,
+labels on a vertical axis, and labels too many or too long to clear even
+turned. The fixes never make text smaller. Labels you turned get the
+layout's choice first (drop the rotation, lay out again); unturned ones
+the layout; then the author's choices: a horizontal bar chart (many or
+long category names), a wider canvas, a taller one for crowded rows.
 """
 
 from __future__ import annotations
@@ -196,13 +200,17 @@ def _fix_tick_overlap(warning: VisualWarning) -> list[str]:
             "# More rows than the axis holds: a taller canvas, same width\n"
             "fig.set_size_inches(dm.figsize(width, 'tall'))"
         ]
-    out = []
     if rotation:
-        out.append(
+        out = [
             "# Let the layout choose: drop your rotation, then lay out again\n"
             "ax.tick_params(axis='x', labelrotation=0)\n"
             "dm.simple_layout(fig)"
-        )
+        ]
+    else:
+        out = [
+            "# Not laid out yet: the layout wraps, then turns, crowded labels\n"
+            "dm.simple_layout(fig)"
+        ]
     out += [
         "# Many or long category names: horizontal bars\n"
         "fig, ax = plt.subplots(figsize=dm.figsize_for('barh', n_points=n))\n"
