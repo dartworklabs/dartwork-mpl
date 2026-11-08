@@ -402,13 +402,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   bar, bar_horizontal, boxplot, histogram, line, scatter, small_multiples,
   twin_axis, the pie's leader callout and plot_3d (on its grey floor pane).
   Numbers on fills take white or black, whichever reads on the fill as
-  drawn (`dm.readable_text_color`): the heatmap's cells, the contour labels
-  (`dm.pseudo_alpha` for the 0.85 fill) and the pie's shares (white on the
-  light teal wedges read 1.24–2.16:1; black reads 9.7–16.9:1), which now
-  take the value-label weight `dm.fw(1)` instead of bold. The boxplot's
-  baseline label moves below the line's right end, clear of the boxes.
-  Over the 36 templates in three presets `TEXT_CONTRAST` reports nothing;
-  other templates and docs figures are byte-identical.
+  drawn (`dm.readable_text_color`): the heatmap's cells and the contour
+  labels (`dm.pseudo_alpha` for the 0.85 fill). The boxplot's baseline
+  label moves below the line's right end, clear of the boxes. The advanced
+  pie is laid out again: on a slide its white shares spilled out of the
+  small wedges (1.24–2.16:1), "Apple" and "Others" touched and "62%" ran
+  into the hole. The leader is now named only by the callout centred in
+  the hole; every other wedge is labelled "name share" at the value-label
+  weight `dm.fw(1)` outside the ring, the pie turned so those labels stack
+  at 3 o'clock (texts 0.56 em or more apart in every preset). Over the 36
+  templates in three presets `TEXT_CONTRAST` reports nothing; other
+  templates and docs figures are byte-identical.
 
 ### Deprecated
 
@@ -510,6 +514,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   reading moved now takes the severity its rendered pixels give.
   `backdrop_layers` (behind `dm.label_bars`' ink) counts a 3D Axes' patch,
   which has no frame switch.
+- **`PIE_LABEL_OFFSET` leaves labels outside the ring alone.** It held
+  every text ending in `%` on a donut to the middle of the ring, so a
+  wedge's name and share set beside it ("AMD 17%") was reported as an
+  off-centre share. A text past the ring's outer radius is now an outside
+  label; shares inside the ring are checked as before.
 - **Labels fixed by `set_xticklabels` print the right years.**
   `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)` on annual data
   read `2007.5` at 2010 after `dm.simple_layout`: the whole-year locator
