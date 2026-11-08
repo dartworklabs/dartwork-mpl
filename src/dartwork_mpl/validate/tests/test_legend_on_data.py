@@ -367,6 +367,18 @@ def test_a_polygon_at_alpha_zero_in_an_alpha_array_does_not_count() -> None:
     assert _kinds(_found(_two_polygons([0.0, 1.0]))) == []
 
 
+def test_a_legend_handle_with_one_alpha_per_point_is_read() -> None:
+    """A scatter's alpha array reaches its legend handle; with the entry
+    text drawing nothing the handle decides whether the legend inks, and
+    the check reads it instead of failing (Codex on #660)."""
+    fig, ax = _fig()
+    ax.plot([0, 10], [5, 5], label="_flat")
+    ax.scatter([20, 21], [20, 21], alpha=[0.3, 0.6], label="Points")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.legend(loc="center", frameon=False, labelcolor="none")
+    assert _kinds(_found(fig)) == [(ID, ["line"])]
+
+
 def test_a_hatch_at_alpha_zero_in_an_alpha_array_does_not_count() -> None:
     """The oracle: the hatched band at alpha 0 draws no pixel (the figure
     equals one with the far square alone)."""
