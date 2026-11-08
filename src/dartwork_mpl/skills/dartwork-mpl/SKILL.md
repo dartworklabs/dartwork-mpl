@@ -48,8 +48,8 @@ takes `-kr` (`report-kr`); edits keep its language and preset.
   `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number; second `standard` 4:3, `wide` 3:2,
   `slide` 16:9, `"16:9"`, a ratio or `"8cm"`. A width alone: a new figure is 4:3; an edit
   keeps the old height in cm.
-- `dm.simple_layout(fig)` after everything is drawn sets outer margins (`margin="2mm"`), tick
-  numbers and thins crowded date labels; `dm.save_formats` keeps the canvas.
+- `dm.simple_layout(fig)` after everything is drawn sets outer margins (`margin=0` by default;
+  `"2mm"` adds a buffer), tick numbers and thins crowded date labels; `dm.save_formats` keeps the canvas.
 - Never `figsize=(w, h)`, `plt.tight_layout()`, `plt.style.use()`, bare
   `fig.savefig()`, `dpi=` on `plt.subplots`, `dm.subplots`/`dm.figure` (removed).
 
