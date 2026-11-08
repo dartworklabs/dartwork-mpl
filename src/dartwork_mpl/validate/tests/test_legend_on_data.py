@@ -186,9 +186,10 @@ def test_a_legend_on_a_violins_thin_tail_is_reported() -> None:
     assert found[0].message.startswith("Legend of axes[0] covers areas")
 
 
-def test_a_legend_on_a_filled_band_is_reported() -> None:
+def test_a_legend_across_a_bands_edges_is_reported() -> None:
+    """A band thinner than the legend: the legend hides where it starts and ends."""
     fig, ax = _fig()
-    ax.fill_between([0, 10], 2, 9, color="oc.gray2", label="Range")
+    ax.fill_between([0, 10], 4.8, 5.2, color="oc.gray2", label="Range")
     ax.set(xlim=(0, 10), ylim=(0, 10))
     ax.plot([], [], label="Mean")
     ax.legend(loc="center")
@@ -197,11 +198,35 @@ def test_a_legend_on_a_filled_band_is_reported() -> None:
     assert found[0].detail["artists"] == ["Range"]
 
 
+def test_a_legend_holding_a_whole_area_is_reported() -> None:
+    fig, ax = _fig()
+    ax.fill_between([4.8, 5.2], 4.9, 5.1, color="oc.gray6", label="Spot")
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.plot([], [], label="Mean")
+    ax.legend(loc="center")
+    found = _found(fig)
+    assert [w.detail["covered"] for w in found] == [["area"]]
+
+
 def test_a_legend_beside_a_filled_band_is_clean() -> None:
     fig, ax = _fig()
     ax.fill_between([0, 10], 0, 4, color="oc.gray2", label="Range")
     ax.set(xlim=(0, 10), ylim=(0, 10))
     ax.legend(loc="upper right")
+    assert _found(fig) == []
+
+
+def test_a_legend_inside_a_region_that_fills_the_plot_is_clean() -> None:
+    """Regions tiling the plot (a phase diagram): inside one region's plain
+    interior the legend hides none of the regions' shapes."""
+    fig, ax = _fig()
+    x = np.linspace(0, 10, 50)
+    low, high = 2 + 0.3 * x, 5 + 0.3 * x
+    ax.fill_between(x, 0, low, color="oc.teal1", label="Solid")
+    ax.fill_between(x, low, high, color="oc.violet1", label="Liquid")
+    ax.fill_between(x, high, 14, color="oc.orange1", label="Gas")
+    ax.set(xlim=(0, 10), ylim=(0, 14))
+    ax.legend(loc="upper left")
     assert _found(fig) == []
 
 

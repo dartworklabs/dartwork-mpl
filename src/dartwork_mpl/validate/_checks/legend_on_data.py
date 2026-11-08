@@ -11,10 +11,12 @@ reports, per legend, what its box meets:
   line segments at their width, markers and scatter points at their size,
   clipped to the plot box. A legend over another panel's data counts too;
 * filled areas in any plot box (``PolyCollection``: ``fill_between``
-  bands, ``stackplot`` layers, violin bodies, ``broken_barh``) where they
-  are drawn: a face or hatch with ink by its whole drawn path, down to a
-  violin's thinnest tail, an area that draws only its edge by that edge at
-  its width (as ``dm.place_legend`` keeps clear of them);
+  bands, ``stackplot`` layers, violin bodies, ``broken_barh``) that draw
+  ink, by their outline where it is drawn (at the edge's width): what a
+  reader reads from an area is its shape, so a legend crossing an area's
+  edge, down to a violin's thinnest tail, or holding a whole area counts,
+  and one lying inside a region's plain interior (a phase region, a band
+  wider than the legend) does not;
 * the texts inside any Axes (``ax.texts``: value labels, annotations,
   line-end labels) where they are drawn: the text itself, not an
   annotation's arrow, cut to its clip box and clip path; a text clipped
@@ -409,13 +411,11 @@ def _data_hits(box: Bbox, data: _Data, frame: Bbox, touch: float) -> list[_Hit]:
 
 
 class _Area(NamedTuple):
-    """A filled collection where it is drawn: its paths in display px, read
-    as filled when its face or hatch draws ink, else by its edge, ``half`` px
-    either side."""
+    """A filled collection where it is drawn: its outlines in display px and
+    the half width its edge is stroked at (0 when it draws no edge)."""
 
     name: str
     paths: list[Path]
-    filled: bool
     half: float
 
 
@@ -449,13 +449,14 @@ def _drawn_paths(coll: PolyCollection) -> list[Path]:
     return drawn
 
 
-def _face_inks(coll: Collection) -> bool:
-    """A face with alpha, or a hatch drawn in a colour with alpha."""
-    return _any_alpha(coll.get_facecolor()) or bool(
-        coll.get_hatch()
-        and coll.get_hatch_linewidth() > 0
-        and _any_alpha(coll.get_hatchcolor())
-    )
+def _edge_half(coll: Collection, renderer: RendererBase) -> float:
+    """Half the width the edge is stroked at, in px; 0 when no edge inks."""
+    widths = np.asarray(coll.get_linewidth(), dtype=float)
+    if not len(widths) or not np.any(widths > 0):
+        return 0.0
+    if not _any_alpha(coll.get_edgecolor()):
+        return 0.0
+    return float(np.asarray(renderer.points_to_pixels(widths.max()))) / 2
 
 
 def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
@@ -471,14 +472,11 @@ def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
                 paths = _drawn_paths(coll)
             except BBOX_ERRORS:
                 continue
-            widths = np.asarray(coll.get_linewidth(), dtype=float)
-            width = float(widths.max()) if len(widths) else 0.0
             found.append(
                 _Area(
                     _name(coll) or _UNNAMED_AREA,
                     paths,
-                    _face_inks(coll),
-                    renderer.points_to_pixels(width) / 2,
+                    _edge_half(coll, renderer),
                 )
             )
     return found
@@ -487,20 +485,22 @@ def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
 def _area_hits(
     box: Bbox, areas: list[_Area], frame: Bbox, touch: float
 ) -> list[_Hit]:
-    """Filled areas ``box`` covers by more than ``touch``, inside the plot box."""
+    """Areas whose outline ``box`` crosses, or holds whole, inside the plot box.
+
+    The outline reaches ``half`` past its path (the edge's stroke); contact
+    within ``touch`` of the legend's edge is a touch. A box inside an
+    area's interior meets no outline (``filled=False``).
+    """
     clipped = _clip(box, frame)
     if clipped is None:
         return []
     found: list[_Hit] = []
     for area in areas:
-        # A face counts from inside the legend's edge by ``touch``; an
-        # edge reaches ``half`` past its path.
-        reach = clipped.padded((0.0 if area.filled else area.half) - touch)
+        reach = clipped.padded(area.half - touch)
         if reach.width <= 0 or reach.height <= 0:
             continue
         if any(
-            path.intersects_bbox(reach, filled=area.filled)
-            for path in area.paths
+            path.intersects_bbox(reach, filled=False) for path in area.paths
         ):
             found.append(_Hit("area", area.name))
     return found
