@@ -412,20 +412,27 @@ than half a pixel, easiest first:
 4. **Rotation**, when a label cannot wrap (one word, a number, more than
    three lines): each panel's bottom labels turn 30, 45 or 90 degrees, the
    smallest angle that clears, each label's end at its tick; when none
-   clears, upright if that leaves them overlapping less than flat. Not when
-   turned they would take over 35 % of the figure height: names that long
-   belong on a horizontal bar chart, which is the author's call.
+   clears, upright if that leaves them overlapping less than flat. However
+   long the names, the check below decides whether the turn stays.
 
 After each round the margins are fitted again and the figure is checked:
 a change that left a plot under 30 % of its width or height, or gave any
 axis more pairs of overlapping neighbouring tick labels than before, is
 taken back and not tried again, and the collision it tried to fix stays,
-reported. (The check counts neighbouring pairs only: on an axis whose
+reported; a figure whose every change was taken back draws exactly as
+without the ladder. (The check counts neighbouring pairs only: on an axis whose
 neighbours all overlap already, labels further apart may come to overlap
 too.) (Turned 45
 degrees, `advanced/boxplot` at 9 cm in `presentation` would have squeezed
 its plot to 5 px and crowded its y ticks; it keeps its plot and reports its
 x labels instead.)
+
+A plot a rung makes smaller keeps its ticks. Matplotlib gives an axis as
+many ticks as fit its length, so a narrower or shorter plot would lose
+some (`0 2 4 … 10` becoming `0.0 2.5 … 10.0`, a value axis left with `0`
+and `5`); an axis whose ticks matplotlib picks (you set no locator) keeps
+the ones it had before the ladder, as long as its labels stay half an em
+apart. Where they would not, matplotlib picks for the new length.
 
 Nothing is shortened, hidden or made smaller, and a figure without an
 overlap draws exactly as it would without the ladder. What you set stays:
@@ -433,8 +440,12 @@ tick labels you rotate (top labels too), break into lines or align off
 centre, axis names with line breaks or mathtext, and spacing you set
 (`gridspec_kw`, `fig.add_gridspec(...)`, `fig.subplots_adjust(...)`). Every
 call starts from the figure as you left it (what an earlier call fitted is
-undone first, label by label, where it is still as fitted), so re-laying
-out at another size fits again. `simple_layout(fig, gs=gs,
+undone first, label by label, where it is still as fitted, and the margins
+go back to where the earlier call started them while they are as it left
+them), so re-laying out at another size fits again and calling it again
+draws the same figure. One exception: a date axis whose crowded ticks the
+first call thinned keeps the thinned locator, so the second call can still
+move it a little; from then on each call draws the same. `simple_layout(fig, gs=gs,
 use_all_axes=False)` fits and undoes only the Axes of `gs`, and leaves
 alone what they share with Axes outside it: the tick formatter of an x they
 share (`sharex=True`), whose wraps stay as a layout of every Axes left them
@@ -450,7 +461,8 @@ with dm.config.override(fit_labels=False):           # a block
 ```
 
 What the ladder cannot clear, such as more categories than the axis holds
-even turned upright, or names too long to turn, is left for you.
+even turned upright, or names so long that turned they would crush the
+plot, is left for you.
 `dm.validate_figure` reports tick labels that still overlap as
 `TICK_OVERLAP` (WARNING), with the choices that are the author's: a
 horizontal bar chart (`dm.figsize_for("barh", n_points=n)`) or a wider
