@@ -30,9 +30,17 @@ def _close():
     plt.close("all")
 
 
-def _radar(preset: str, *, angles: bool = True, circle: bool = True):
+def _radar(
+    preset: str,
+    *,
+    angles: bool = True,
+    circle: bool = True,
+    hide: str | None = None,
+):
     """The bundled polar template's radar, its legend left to ``place_legend``;
-    ``angles`` / ``circle`` False leave out the angle labels / the circle."""
+    ``angles`` / ``circle`` False leave out the angle labels / the circle;
+    ``hide`` ``"frame"`` / ``"axis"`` turns the frame / the whole axis off
+    (``set_frame_on(False)`` / ``set_axis_off()``) before the legend."""
     dm.style.use(preset)
     categories = ["Speed", "Cost", "Quality", "Reach", "Trust", "Service"]
     plan_a = [4.0, 3.2, 4.5, 2.8, 4.1, 3.5]
@@ -49,6 +57,10 @@ def _radar(preset: str, *, angles: bool = True, circle: bool = True):
     ax.set_xticklabels(categories if angles else [])
     ax.spines["polar"].set_visible(circle)
     ax.set_ylim(0, 5)
+    if hide == "frame":
+        ax.set_frame_on(False)
+    elif hide == "axis":
+        ax.set_axis_off()
     legend = dm.place_legend(ax)
     assert legend is not None
     dm.simple_layout(fig)
@@ -96,6 +108,35 @@ def test_without_the_circle_the_angle_labels_alone_keep_the_legend_off() -> (
     None
 ):
     fig, ax = _radar("presentation", circle=False)
+    assert _crossings(fig, ax) == []
+
+
+def _where(fig, ax) -> str:
+    """``"inside"`` the Axes box, else ``"outside"``."""
+    renderer = drawn_renderer(fig)
+    box = ax.get_legend().get_window_extent(renderer)
+    frame = ax.get_window_extent(renderer)
+    inside = (
+        frame.x0 <= box.x0
+        and box.x1 <= frame.x1
+        and frame.y0 <= box.y0
+        and box.y1 <= frame.y1
+    )
+    return "inside" if inside else "outside"
+
+
+@pytest.mark.parametrize("hide", ["frame", "axis"])
+def test_a_circle_the_axes_does_not_draw_is_no_obstacle(hide: str) -> None:
+    """``set_frame_on(False)`` and ``set_axis_off()`` leave the spines'
+    own flags on but draw no circle; with no angle labels drawn either,
+    the bottom of the radar is free and the legend stays inside."""
+    fig, ax = _radar("presentation", angles=False, hide=hide)
+    assert _where(fig, ax) == "inside"
+
+
+def test_with_the_frame_off_the_drawn_angle_labels_still_count() -> None:
+    """Turning only the frame off still draws the tick labels."""
+    fig, ax = _radar("presentation", hide="frame")
     assert _crossings(fig, ax) == []
 
 

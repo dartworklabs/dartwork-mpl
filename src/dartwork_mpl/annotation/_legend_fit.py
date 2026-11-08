@@ -226,10 +226,16 @@ def _measure_frame(ink: Ink, ax: Axes, renderer: RendererBase) -> None:
     the circle, and its tick labels, the angles round the circle and the
     radii inside it, within the box a legend's inside spots are tried in;
     a rectilinear Axes keeps them on its edges and outside. The spines
-    count at their width, each drawn tick label by its box.
+    count at their width, each drawn tick label by its box, and only what
+    is drawn: matplotlib draws the spines only while the Axes draws its
+    frame and its axis (``set_frame_on(False)`` and ``set_axis_off()``
+    keep each spine's own flag on), and the tick labels by
+    :func:`~dartwork_mpl._figure_geometry.drawn_tick_labels` (turning the
+    frame off alone keeps them).
     """
+    frame_drawn = bool(getattr(ax, "axison", True) and ax.get_frame_on())
     for spine in ax.spines.values():
-        if not spine.get_visible():
+        if not frame_drawn or not spine.get_visible():
             continue
         try:
             path = spine.get_transform().transform_path(spine.get_path())
