@@ -37,6 +37,20 @@ updates:
     # these names. A parent dependency that requires a newer pydantic can still
     # hold the resolution of the other group. Security updates are not grouped
     # (the default), so they still arrive as separate PRs.
+    #
+    # FastMCP 4 and MCP SDK 2 are held back: under them the 19 tool titles
+    # turn from null into generated names and an unknown resource answers
+    # -32602 instead of -32002, which breaks the frozen MCP surface. The
+    # pyproject ranges (`fastmcp<4`, `mcp<2`) already refuse them; this keeps
+    # Dependabot from reopening the major PR. Lift both together once the
+    # titles and error codes can be kept.
+    ignore:
+      - dependency-name: "fastmcp"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "fastmcp-slim"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mcp"
+        update-types: ["version-update:semver-major"]
     groups:
       mcp-wire:
         patterns: ["fastmcp", "fastmcp-slim", "mcp", "pydantic", "pydantic-core"]
