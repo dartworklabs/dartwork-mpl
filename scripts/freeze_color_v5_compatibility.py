@@ -1,10 +1,12 @@
 """Freeze the immutable v5 color-system compatibility manifest.
 
 Static generated and curated values are parsed from a pinned Git object.
-Computed v5 behavior is evaluated only inside a disposable directory that
-holds the listed baseline files of that same commit
-(``BASELINE_RUNTIME_INPUTS``), keeping the baseline independent from the
-candidate worktree.
+Computed v5 behavior is evaluated inside a disposable directory that holds
+only the listed baseline files of that same commit
+(``BASELINE_RUNTIME_INPUTS``), in a separate ``python -I`` process. The
+probe then checks that every file-backed ``dartwork_mpl`` module it loaded
+has its path inside that directory; that is a path check, not a proof of
+which listed files were used, nor isolation from a hostile interpreter.
 """
 
 import argparse
@@ -402,6 +404,8 @@ registrations = sorted(
 if registrations != colormap_names:
     raise RuntimeError("registered colormaps differ from the typing literal")
 
+# Path check only: each file-backed dartwork_mpl module loaded so far must
+# have its __file__ inside baseline_root.
 escaped = sorted(
     name
     for name, module in list(sys.modules.items())
@@ -470,7 +474,9 @@ def _run_git(command: str, *args: str, repo: Path = REPO_ROOT) -> bytes:
     Raises
     ------
     RuntimeError
-        If the command is not allowed or Git exits unsuccessfully.
+        If the command is not allowed, or as
+        ``frozen_baseline_inputs.GitCommandError`` (with Git's exit status
+        and standard error) if Git exits unsuccessfully.
     """
     return baseline_inputs.run_git(command, *args, repo=repo)
 
@@ -491,19 +497,14 @@ def _resolve_baseline(revision: str) -> str:
     Raises
     ------
     ValueError
-        If the revision does not resolve to the accepted v5 baseline.
+        If the revision names no commit or another commit than the accepted
+        v5 baseline (``frozen_baseline_inputs.BaselineCommitError``).
+    frozen_baseline_inputs.GitCommandError
+        If Git itself fails (for example exit 128); not caught by ``main``.
     """
-    resolved = (
-        _run_git("rev-parse", "--verify", f"{revision}^{{commit}}")
-        .decode("ascii")
-        .strip()
+    return baseline_inputs.resolve_baseline(
+        revision, ACCEPTED_BASELINE_COMMIT, repo=REPO_ROOT, git=_run_git
     )
-    if resolved != ACCEPTED_BASELINE_COMMIT:
-        raise ValueError(
-            "baseline commit must resolve to "
-            f"{ACCEPTED_BASELINE_COMMIT}; got {resolved}"
-        )
-    return resolved
 
 
 def _read_verified_sources(commit: str) -> dict[str, bytes]:
@@ -529,7 +530,7 @@ def _read_verified_sources(commit: str) -> dict[str, bytes]:
         raw = _run_git("show", f"{commit}:{path}")
         digest = hashlib.sha256(raw).hexdigest()
         if digest != accepted_hash:
-            raise RuntimeError(
+            raise baseline_inputs.BaselineInputError(
                 f"raw source hash mismatch for {path}: "
                 f"expected {accepted_hash}, got {digest}"
             )
@@ -921,16 +922,27 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    """Generate the v5 compatibility manifest from the accepted baseline."""
-    args = _parse_args()
-    # Refuse a protected destination before Git, extraction or compute.
-    output = _refuse_protected_output(cast(Path, args.output))
-    commit = _resolve_baseline(cast(str, args.baseline_commit))
-    payload = _build_payload(commit)
-    _write_output(output, _serialize(payload))
+def main() -> int:
+    """Generate the v5 compatibility manifest, returning process status.
+
+    An expected input refusal (``frozen_baseline_inputs.BaselineRefusal``:
+    a protected ``--output``, a wrong baseline commit, an unlisted or
+    off-pin input) is reported in one line with status 2. Anything else --
+    a failed probe, a Git failure, a defect -- keeps its traceback.
+    """
+    try:
+        args = _parse_args()
+        # Refuse a protected destination before Git, extraction or compute.
+        output = _refuse_protected_output(cast(Path, args.output))
+        commit = _resolve_baseline(cast(str, args.baseline_commit))
+        payload = _build_payload(commit)
+        _write_output(output, _serialize(payload))
+    except baseline_inputs.BaselineRefusal as error:
+        print(f"compatibility baseline error: {error}", file=sys.stderr)
+        return 2
     print(f"wrote {output}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
