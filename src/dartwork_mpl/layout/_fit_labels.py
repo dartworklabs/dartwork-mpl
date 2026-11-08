@@ -218,15 +218,19 @@ Edges: TypeAlias = tuple[float | None, float | None, float | None, float | None]
 
 @dataclass(frozen=True)
 class _Kept:
-    """An axis whose ticks this module kept at their budget before the
-    climb: the locator it set and the auto locator it replaced."""
+    """What a kept tick budget replaced.
 
-    kept: Locator
+    ``auto`` is matplotlib's own locator, waiting off any axis (so neither
+    it nor this record holds an axis, nor through one a figure).
+    """
+
     auto: Locator
 
 
-# axis -> the tick budget this module kept on it
-_KEPT: WeakKeyDictionary[Axis, _Kept] = WeakKeyDictionary()
+# kept locator -> what it replaced. Keyed by the locator its axis holds, a
+# record lives as long as that axis keeps it: a locator you set instead, or
+# a figure closed and let go, takes the record with it.
+_KEPT: WeakKeyDictionary[Locator, _Kept] = WeakKeyDictionary()
 # root GridSpec -> (its edges before the last layout, the edges it left)
 _LAID: WeakKeyDictionary[GridSpec, tuple[Edges, Edges]] = WeakKeyDictionary()
 
@@ -243,7 +247,8 @@ def remember_layout(gs: GridSpec, start: Edges) -> None:
     from ``start`` again (:func:`restore_fitted`): the margin fit stops
     within half a pixel of its fixed point, so where it starts decides the
     last hundredths of a pixel, and a second call on the same figure draws
-    exactly as the first.
+    exactly as the first. The record holds only numbers and is keyed
+    weakly by the grid: it lets the figure go.
     """
     _LAID[gs] = (start, grid_edges(gs))
 
@@ -325,13 +330,14 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
             fmt = axis.get_major_formatter()
             if isinstance(fmt, WrappedTickFormatter) and whole:
                 _unwrap(axis, fmt)
-            kept = _KEPT.get(axis)
-            if kept is not None and (
-                axis.get_major_locator() is not kept.kept or whole
-            ):
-                del _KEPT[axis]
-                if axis.get_major_locator() is kept.kept:
-                    _put_back_auto(axis, kept)
+            locator = axis.get_major_locator()
+            kept = _KEPT.get(locator)
+            if kept is not None and whole:
+                del _KEPT[locator]
+                owner = locator.axis
+                _put_back_auto(
+                    owner if isinstance(owner, Axis) else axis, kept.auto
+                )
             first = _TURNED_AXES.pop(axis, None)
             for tick in axis.get_major_ticks():
                 label = tick.label1
@@ -385,9 +391,10 @@ def _place(fig: Figure, gs: GridSpec) -> None:
             ax.set_subplotspec(spec)
 
 
-def _put_back_auto(axis: Axis, kept: _Kept) -> None:
-    """The auto locator ``kept`` replaced, as matplotlib's own again."""
-    axis.set_major_locator(kept.auto)
+def _put_back_auto(axis: Axis, auto: Locator) -> None:
+    """Matplotlib's auto locator a kept budget replaced, on ``axis`` again
+    (the axis it measured, the one the budget was set on)."""
+    axis.set_major_locator(auto)
     axis.isDefault_majloc = True
 
 
@@ -1381,13 +1388,14 @@ def _set_budget(
     which: Literal["x", "y"],
 ) -> _Change:
     axis = budget.axis
-    record = _Kept(kept, budget.auto)
     axis.set_major_locator(kept)
-    _KEPT[axis] = record
+    # Off its axis while it waits: the record then holds no figure.
+    budget.auto.set_axis(None)
+    _KEPT[kept] = _Kept(budget.auto)
 
     def undo() -> None:
-        _KEPT.pop(axis, None)
-        _put_back_auto(axis, record)
+        _KEPT.pop(kept, None)
+        _put_back_auto(axis, budget.auto)
 
     def clear(renderer: RendererBase) -> bool:
         return all(_labels_clear(ax, which, renderer) for ax in siblings)

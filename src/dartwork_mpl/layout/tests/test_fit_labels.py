@@ -1334,3 +1334,58 @@ def test_an_auto_locator_not_picking_by_length_is_left_alone() -> None:
     dm.simple_layout(fig, margin=dm.inch(0.08))
     assert _angles(ax) == {30.0}
     assert ax.yaxis.get_major_locator() is auto
+
+
+# ── what a layout records lets the figure go (review of #655) ──────
+
+
+def test_a_closed_figure_is_collectible_after_its_ticks_were_kept() -> None:
+    """The record of a kept tick budget must not hold the figure: closed
+    and let go, it is collected (the record held it through the locators'
+    axis, so every such figure stayed for the life of the process)."""
+    import gc
+    import weakref
+
+    fig, ax = _boxplot(None)
+    auto = ax.yaxis.get_major_locator()
+    dm.simple_layout(fig, margin=dm.inch(0.08))
+    assert ax.yaxis.get_major_locator() is not auto  # precondition: kept
+    ref = weakref.ref(fig)
+    plt.close(fig)
+    del fig, ax, auto
+    gc.collect()
+    assert ref() is None
+
+
+def _fitted_figures():
+    """One figure for each thing a layout records: wrapped and turned
+    labels, a wrapped axis name, grown spacing, kept ticks, the edges it
+    started from."""
+    wrapped, _ = _bars(_VARIANTS, preset="scientific")
+    turned, _ = _bars(_ONE_WORD)
+    dm.style.use("presentation")
+    named, ax = plt.subplots(figsize=dm.figsize("6cm", "tall"))
+    ax.plot(np.arange(10), np.arange(10) ** 1.5)
+    ax.set_ylabel(
+        "Cumulative delivered heat energy per connected building (MWh)"
+    )
+    spaced, _axes = _preset_grid()
+    kept, _ax = _boxplot(None)
+    return [wrapped, turned, named, spaced, kept]
+
+
+def test_closed_figures_are_collectible_after_any_fitting() -> None:
+    """Every record a layout keeps (turns, wraps, names, spacing, kept
+    ticks, starting edges) lets a closed figure go."""
+    import gc
+    import weakref
+
+    refs = []
+    for fig in _fitted_figures():
+        dm.simple_layout(fig)
+        dm.simple_layout(fig)  # the second call reads every record
+        refs.append(weakref.ref(fig))
+        plt.close(fig)
+    del fig
+    gc.collect()
+    assert [ref() is None for ref in refs] == [True] * len(refs)
