@@ -141,7 +141,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   than the figure, right and left the fewest columns no taller than the
   panels; `ncols` wins. The panel legends that hold only those entries
   (also one `dm.place_legend` wrapped) and the legend of an earlier call
-  are removed; `dm.simple_layout` keeps the panels clear of it with the
+  are removed once the new legend is drawn (a call that raises leaves
+  them); `dm.simple_layout` keeps the panels clear of it with the
   preset's `legend.borderaxespad`. `LEGEND_ON_DATA` names it among its
   fixes. It is a new name: `dm.place_legend`'s signature stays
   `place_legend(ax, *, loc="best", **kw)`, and no MCP tool, resource or
