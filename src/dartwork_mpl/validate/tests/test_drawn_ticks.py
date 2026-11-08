@@ -262,3 +262,89 @@ def test_a_polar_theta_ring_is_not_a_row_of_labels(name: str) -> None:
     fig = namespace["fig"]
     assert fig.axes[0].name == "polar"  # precondition
     assert _ids(fig, "TICK_CROWD", "TICK_ROTATION") == []
+
+
+# ── 3D: the axes are drawn while ``_axis3don`` is set, not ``axison`` ────────
+
+
+def _a_3d_plot_with_units_on_the_ticks():
+    """The review's figure (PR #658, P2): a 3D line with "kg" on the y tick
+    labels and in the y label."""
+    dm.style.use("report")
+    fig = plt.figure(figsize=dm.figsize("12cm", "standard"))
+    ax = fig.add_subplot(projection="3d")
+    ax.plot([0, 1, 2], [0, 1, 2], [0, 1, 2])
+    ax.set_yticks([0, 1, 2], ["0 kg", "1 kg", "2 kg"])
+    ax.set_ylabel("Mass (kg)")
+    fig.canvas.draw()
+    return fig, ax
+
+
+def test_a_3d_plot_draws_its_tick_labels_and_they_are_checked():
+    """Axes3D keeps ``axison`` off and draws its three axes anyway, so its
+    "kg" ticks under "Mass (kg)" write the unit twice, as main reports."""
+    fig, ax = _a_3d_plot_with_units_on_the_ticks()
+    assert not ax.axison  # precondition: the 2D switch reads off
+    assert _texts(drawn_tick_labels(ax, "y")) == ["0 kg", "1 kg", "2 kg"]
+    assert _ids(fig, "UNIT_DUP") == ["UNIT_DUP"]
+
+
+def test_a_3d_plot_with_its_axes_off_has_nothing_to_check():
+    """``set_axis_off`` stops Axes3D drawing its axes. Matplotlib keeps that
+    in the private ``_axis3don`` (no public getter); a rename fails here."""
+    fig, ax = _a_3d_plot_with_units_on_the_ticks()
+    assert hasattr(ax, "_axis3don"), "matplotlib renamed Axes3D._axis3don"
+    assert _ids(fig, "UNIT_DUP") == ["UNIT_DUP"]  # axes on: reported
+    ax.set_axis_off()
+    fig.canvas.draw()
+    assert drawn_tick_labels(ax, "x") == []
+    assert drawn_tick_labels(ax, "y") == []
+    assert dm.validate_figure(fig, quiet=True) == []
+
+
+@pytest.mark.parametrize("hide_y", [False, True], ids=["shown", "y_hidden"])
+@pytest.mark.parametrize("automargin", [False, True], ids=["full", "margin"])
+def test_3d_tick_labels_are_the_ones_matplotlib_draws(
+    monkeypatch, automargin: bool, hide_y: bool
+) -> None:
+    """Against matplotlib's own drawing: with ``axes3d.automargin`` the
+    sliver it leaves out at each end of the view draws no tick, and Axes3D
+    draws an axis whose ``set_visible(False)`` a 2D Axes would honour."""
+    from matplotlib.text import Text
+
+    drawn: set[int] = set()
+    real_draw = Text.draw
+
+    def spy(self, renderer):
+        if self.get_visible() and self.get_text().strip():
+            drawn.add(id(self))
+        return real_draw(self, renderer)
+
+    monkeypatch.setattr(Text, "draw", spy)
+    matplotlib.rcParams["axes3d.automargin"] = automargin
+    fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+    ax = fig.add_subplot(projection="3d")
+    ax.plot([0, 1, 2], [0, 1, 2], [0, 1, 2])
+    low, high = ax.get_xlim()
+    sliver = (high - low) * 0.019965277777777776  # Axis._update_ticks
+    # one tick just inside the left sliver, one just past it (still inside
+    # matplotlib 3.8's 1/48), one mid-view
+    ax.set_xticks([low + sliver * 0.95, low + sliver * 1.03, 1.0])
+    if hide_y:
+        ax.yaxis.set_visible(False)
+    fig.canvas.draw()
+    for which, axis in (("x", ax.xaxis), ("y", ax.yaxis)):
+        ticks = axis.get_major_ticks()
+        really = [
+            label
+            for tick in ticks
+            for label in (tick.label1, tick.label2)
+            if id(label) in drawn
+        ]
+        named = [
+            label
+            for label in drawn_tick_labels(ax, which)
+            if label.get_text().strip()
+        ]
+        assert really  # precondition: matplotlib draws this axis
+        assert sorted(_texts(named)) == sorted(_texts(really)), which

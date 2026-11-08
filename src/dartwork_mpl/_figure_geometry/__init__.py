@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
+import matplotlib as mpl
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.colors import to_rgba
@@ -329,6 +330,26 @@ def text_window_extent(text: Text, renderer: RendererBase) -> Bbox:
 
 # Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
 _EDGE_RTOL = 1e-10
+# The share of a 3D view Axis._update_ticks leaves out at each end when
+# ``axes3d.automargin`` is on (1/48 * 23/24, matplotlib's own constant).
+_AUTOMARGIN_3D = 0.019965277777777776
+
+
+def _axes_draws_its_axes(ax: Axes, axis: Any) -> bool:
+    """Whether ``ax`` draws ``axis`` at all, as matplotlib decides.
+
+    A 2D Axes draws an axis when it is visible, its axes are on
+    (``ax.axis("off")`` turns them off) and the axis itself is visible. A
+    3D Axes keeps ``axison`` off and draws its three axes while its private
+    ``_axis3don`` is set (``set_axis_off`` clears it), whatever each axis'
+    own visibility (``Axes3D.draw``, ``axis3d.Axis.draw``); no public getter
+    exists, so it is read as is, and a test fails if matplotlib renames it.
+    """
+    if not ax.get_visible():
+        return False
+    if getattr(ax, "name", None) == "3d":
+        return bool(getattr(ax, "_axis3don", True))
+    return bool(getattr(ax, "axison", True)) and bool(axis.get_visible())
 
 
 def drawn_tick_labels(
@@ -336,31 +357,36 @@ def drawn_tick_labels(
 ) -> list[Text]:
     """The major (or ``minor``) tick labels matplotlib draws on an axis.
 
-    Matplotlib draws a tick only when the Axes itself is visible
-    (``ax.set_visible(False)`` hides all of it, the idiom for an empty grid
-    slot), its axis is on (``ax.axis("off")`` turns it off) and the axis is
-    visible, and when its location lies in the view interval, compared
-    after the axis transform with a 1e-10 relative slack. Each drawn tick
-    draws its visible ``label1`` (left / bottom) and ``label2`` (right /
-    top, with ``labelright`` / ``labeltop``). Every other label stays on the
-    artist tree, visible and positioned, but is never drawn: a colorbar
-    tick a hair past its limit, the ticks of a title-only panel, the labels
-    of a hidden axis or a hidden Axes.
+    Matplotlib draws a tick only when the Axes draws the axis
+    (:func:`_axes_draws_its_axes`: ``ax.set_visible(False)`` hides all of
+    it, the idiom for an empty grid slot; ``ax.axis("off")`` turns a 2D
+    Axes' axes off, ``set_axis_off`` a 3D one's), and when its location lies
+    in the view interval, compared after the axis' scale transform with a
+    1e-10 relative slack (a 3D view less ``_AUTOMARGIN_3D`` at each end
+    under ``axes3d.automargin``), as ``Axis._update_ticks`` picks them. Each
+    drawn tick draws its visible ``label1`` (left / bottom) and ``label2``
+    (right / top, with ``labelright`` / ``labeltop``). Every other label
+    stays on the artist tree, visible and positioned, but is never drawn: a
+    colorbar tick a hair past its limit, the ticks of a title-only panel,
+    the labels of a hidden axis or a hidden Axes.
     """
     axis = ax.xaxis if which == "x" else ax.yaxis
-    if (
-        not ax.get_visible()
-        or not getattr(ax, "axison", True)
-        or not axis.get_visible()
-    ):
+    if not _axes_draws_its_axes(ax, axis):
         return []
     transform = axis.get_transform()
     raw = axis.get_minorticklocs() if minor else axis.get_majorticklocs()
     locs = np.asarray(raw, dtype=float)
     if not locs.size:
         return []
+    view_low, view_high = sorted(float(v) for v in axis.get_view_interval())
+    if getattr(ax, "name", None) == "3d" and mpl.rcParams["axes3d.automargin"]:
+        delta = view_high - view_low
+        view_low, view_high = (
+            view_low + delta * _AUTOMARGIN_3D,
+            view_high - delta * _AUTOMARGIN_3D,
+        )
     with np.errstate(all="ignore"):
-        view = transform.transform(np.asarray(axis.get_view_interval(), float))
+        view = transform.transform(np.asarray([view_low, view_high], float))
         placed = np.ravel(transform.transform(locs))
     low, high = sorted(float(v) for v in np.ravel(view))
     slack = _EDGE_RTOL * (high - low)
