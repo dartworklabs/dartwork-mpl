@@ -10,6 +10,45 @@ from matplotlib.text import Text
 from matplotlib.transforms import ScaledTranslation
 
 from ..scale import fs
+from ._kwarg_guard import FIGURE_TEXT_PARAMETERS, KwargGuard
+
+_NOTE_PLACE = (
+    "The note starts at the figure's lower-left corner (0, 0); move it with "
+    "position=(x, y) in figure fraction."
+)
+_NOTE_ALIGNMENT = (
+    "The helper passes ha= and va=, which win over the long spelling; pass "
+    "ha= / va= instead."
+)
+
+# add_note calls fig.text(0.0, 0.0, text, ha=, va=, fontsize=, **kw).
+_ADD_NOTE_GUARD = KwargGuard(
+    helper="add_note",
+    artist=Text,
+    parameters=FIGURE_TEXT_PARAMETERS,
+    owned={
+        "x": _NOTE_PLACE,
+        "y": _NOTE_PLACE,
+        # ``s`` is ``Figure.text``'s own name for the string add_note already
+        # supplies, so matplotlib used to raise TypeError ("multiple values for
+        # argument 's'"). Owning it keeps that kind rather than turning a
+        # duplicate argument into an AttributeError.
+        "s": "Pass the note as the text argument.",
+        "size": "Set the size with fontsize=.",
+        "horizontalalignment": _NOTE_ALIGNMENT,
+        "verticalalignment": _NOTE_ALIGNMENT,
+    },
+    takes=(
+        "text and any matplotlib Text property (color=, fontsize=, "
+        "fontstyle=, position=, ...)"
+    ),
+    escape="For anything else, write the line yourself with fig.text(x, y, text).",
+    hints={
+        "fmt": "There is no format string: pass the finished text. ",
+        "loc": "Move the note with position=(x, y) in figure fraction. ",
+        "xy": "Move the note with position=(x, y) in figure fraction. ",
+    },
+)
 
 
 def add_note(fig: Figure, text: str, **kw: Any) -> Text:
@@ -27,7 +66,7 @@ def add_note(fig: Figure, text: str, **kw: Any) -> Text:
 
     Returns the :class:`~matplotlib.text.Text`.
     """
-
+    _ADD_NOTE_GUARD.check(kw)
     style: dict[str, Any] = {"ha": "left", "va": "bottom", "fontsize": fs(-1)}
     style.update(kw)
     note = fig.text(0.0, 0.0, text, **style)
