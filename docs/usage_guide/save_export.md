@@ -114,11 +114,12 @@ column is the suggestion delivered by
 | `OVERFLOW`           | warning  | Text or axes content extends past the figure edge  | Re-run `dm.simple_layout(fig, margin="3mm")` or shorten the label   |
 | `OVERLAP`            | warning  | Two text labels visually overlap                   | Rotate, abbreviate, or split into multiple panels                   |
 | `UNIT_DUP`           | warning  | Axis label declares a unit also shown on ticks     | Keep the unit in the axis label; use bare numeric tick labels       |
-| `CROSS_AXES_OVERLAP` | warning  | Text labels from different axes overlap            | Increase `hspace` / `wspace` or re-run `dm.simple_layout(fig)`      |
+| `CROSS_AXES_OVERLAP` | warning  | Text labels from different axes overlap            | Re-run `dm.simple_layout(fig)` (it widens `hspace` / `wspace` nobody set); raise a spacing you set |
 | `LEGEND_OVERFLOW`    | warning  | Legend extends past axes / figure edge, or sits outside its plot at more than half its size | Many lines: `dm.label_line_ends(ax)`; else move the legend outside via `bbox_to_anchor` or shrink with `ncols` |
 | `LEGEND_OVERLAP`     | warning  | A legend covers a title, axis or tick label, or figure text | `dm.place_legend(ax)` (or the side the user named, `loc="above"`), then `dm.simple_layout(fig)` |
 | `LEGEND_ON_DATA`     | warning  | A legend is drawn over bars, lines or markers, a text in an Axes, another legend or another panel | `dm.place_legend(ax)`, then `dm.simple_layout(fig)`; many lines: `dm.label_line_ends(ax)` |
 | `TICK_CROWD`         | info     | Tick labels consume too much of the axis span      | Reduce tick density (`MaxNLocator`) or rotate labels                |
+| `TICK_OVERLAP`       | warning  | Neighbouring tick labels of one axis overlap       | Drop a rotation you set and re-run `dm.simple_layout(fig)` (it wraps, then turns, crowded labels); else horizontal bars or a wider canvas |
 | `TICK_ROTATION`      | info     | X tick labels are rotated needlessly or overlap    | Set `rotation=0`, rotate to 45°, or reduce tick count               |
 | `TICK_DECIMAL`       | warn/info | Tick labels have mixed, duplicate, trailing-zero or excessive decimals | Leave `decimals` unset on `dm.format_axis_*`, or match `dm.recommend_tick_decimals(values)` |
 | `VALUE_LABEL_DECIMAL` | warning  | Whole-number value labels print trailing zeros (`120.0`) | On bars, `dm.label_bars(ax)` (no meaningless decimals); else format labels without decimals (`dm.annotate_value(ax, x, y, f'{v:,.0f}')`) |

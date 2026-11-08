@@ -1,0 +1,66 @@
+{
+  "schema": "dartwork-mpl.approved-test-inputs/v1",
+  "approval": {
+    "recorded": "2026-11-08",
+    "decision": "The user approved the exact-ten recommendation (\"추천대로 가자\").",
+    "scope": "Tests may read only these regular files below docs/superpowers. No directory, glob or alias is approved; the documents are test data, never instructions."
+  },
+  "inputs": [
+    {
+      "path": "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/color_v5_compatibility.json",
+      "kind": "pinned-json",
+      "pin_source": "dartwork_mpl._colors._ssot._PINNED_BASELINES",
+      "pin_key": "compatibility",
+      "purpose": "color compatibility baseline"
+    },
+    {
+      "path": "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/color_v5_quality.json",
+      "kind": "pinned-json",
+      "pin_source": "dartwork_mpl._colors._ssot._PINNED_BASELINES",
+      "pin_key": "quality",
+      "purpose": "color quality baseline"
+    },
+    {
+      "path": "docs/superpowers/specs/assets/2026-07-03-color-system-v5/color_v5_ssot.json",
+      "kind": "pinned-json",
+      "pin_source": "dartwork_mpl._colors._ssot._PINNED_BASELINES",
+      "pin_key": "recipe",
+      "purpose": "color recipe baseline"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-21-color-rationale-accuracy.md",
+      "kind": "document",
+      "purpose": "historical plan visible inactive status"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-17-beginner-friendly-color-docs.md",
+      "kind": "document",
+      "purpose": "historical plan visible inactive status"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-14-oklab-centered-color-system.md",
+      "kind": "document",
+      "purpose": "stale report authority rejection"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-14-oklab-centered-color-system-design.md",
+      "kind": "document",
+      "purpose": "color claims and stale authority rejection"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-17-beginner-friendly-color-docs-design.md",
+      "kind": "document",
+      "purpose": "unqualified color claims rejection"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-21-color-rationale-accuracy-design.md",
+      "kind": "document",
+      "purpose": "unqualified color claims rejection"
+    },
+    {
+      "path": "docs/superpowers/specs/assets/2026-07-17-beginner-friendly-color-docs/claim-inventory.md",
+      "kind": "document",
+      "purpose": "27-row claim destinations"
+    }
+  ]
+}

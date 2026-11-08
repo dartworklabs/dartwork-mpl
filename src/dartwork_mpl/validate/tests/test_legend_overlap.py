@@ -91,7 +91,12 @@ class TestOverlapIsReported:
         fig, (left, right) = _chart(ncols=2)
         left.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
         right.set_ylabel("A long right-panel label")
-        dm.simple_layout(fig)
+        # This test needs the covering legend to stay where it is. The
+        # layout's ``space`` step counts an outside legend as its panel's
+        # content and would widen ``wspace`` until the legend clears the
+        # right panel, leaving nothing to detect; the legend's own placement
+        # is the legend ladder's call, not this check's.
+        dm.simple_layout(fig, fit_labels=False)
         hits = [f for f in _findings(fig) if f.detail["artist_axes"] == 1]
         assert hits, "the left panel's outside legend covers the right panel"
         plt.close(fig)

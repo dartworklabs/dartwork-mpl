@@ -5,22 +5,24 @@ import shutil
 import subprocess
 import sys
 import textwrap
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Literal
 
 import pytest
 
 from dartwork_mpl._build_entry import is_color_build_invocation
+from tests.support.approved_inputs import read_approved_bytes
 
 _REPO_ROOT = Path(__file__).resolve().parents[5]
 _PACKAGE_SOURCE = _REPO_ROOT / "src" / "dartwork_mpl"
-_BASELINE_ASSETS = (
-    _REPO_ROOT
-    / "docs"
-    / "superpowers"
-    / "specs"
-    / "assets"
-    / "2026-07-14-oklab-centered-color-system"
+# The two frozen baselines the real build reads (``_build.py``): nothing else
+# from their folder is copied.
+_BASELINE_INPUTS = (
+    "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/"
+    "color_v5_compatibility.json",
+    "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/"
+    "color_v5_quality.json",
 )
 _GENERATED_RELATIVE = Path("src/dartwork_mpl/_colors/_generated.py")
 _BROKEN_SOURCE = "def syntax_broken(:\n"
@@ -37,7 +39,12 @@ def _link_or_copy(source: str, target: str) -> str:
 
 
 def _isolated_checkout(tmp_path: Path) -> Path:
-    """Copy only the source and frozen baselines needed by the real build."""
+    """Copy only the source and the two frozen baselines the real build reads.
+
+    Each baseline is written from bytes the approved-input reader returned
+    after its existing pin check, so the copy is a file this test owns, never
+    a hard link back to the checked-in input.
+    """
     checkout = tmp_path / "checkout"
     shutil.copytree(
         _PACKAGE_SOURCE,
@@ -45,17 +52,26 @@ def _isolated_checkout(tmp_path: Path) -> Path:
         copy_function=_link_or_copy,
         ignore=shutil.ignore_patterns("__pycache__"),
     )
-    shutil.copytree(
-        _BASELINE_ASSETS,
-        checkout
-        / "docs"
-        / "superpowers"
-        / "specs"
-        / "assets"
-        / _BASELINE_ASSETS.name,
-        copy_function=_link_or_copy,
-    )
+    for relative in _BASELINE_INPUTS:
+        target = checkout / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(read_approved_bytes(relative))
     return checkout
+
+
+@pytest.fixture
+def checkout(tmp_path: Path) -> Iterator[Path]:
+    """Yield an isolated checkout and delete its copied baselines afterwards.
+
+    The copies are removed even when the copy or the test fails; pytest's own
+    temporary-directory retention would otherwise keep them.
+    """
+    copied = tmp_path / "checkout" / "docs"
+    try:
+        yield _isolated_checkout(tmp_path)
+    finally:
+        if copied.exists():
+            shutil.rmtree(copied)
 
 
 def _set_generated_state(
@@ -102,13 +118,31 @@ def _run_build(
     )
 
 
+@pytest.mark.approved_input
+def test_isolated_checkout_holds_owned_copies_of_only_the_two_baselines(
+    checkout: Path,
+) -> None:
+    """Copy exactly the build's two baselines, byte for byte, never linked."""
+    copied = sorted(
+        path.relative_to(checkout).as_posix()
+        for path in (checkout / "docs").rglob("*")
+        if path.is_file()
+    )
+
+    assert copied == sorted(_BASELINE_INPUTS)
+    for relative in _BASELINE_INPUTS:
+        copy = checkout / relative
+        assert copy.read_bytes() == read_approved_bytes(relative)
+        assert copy.stat().st_ino != (_REPO_ROOT / relative).stat().st_ino
+
+
 @pytest.mark.parametrize("state", ["missing", "syntax-broken"])
 @pytest.mark.color_pipeline
+@pytest.mark.approved_input
 def test_module_build_check_reaches_coordinator_without_repairing_default(
-    state: _BuildArtifactState, tmp_path: Path, mpl_cache: Path
+    state: _BuildArtifactState, checkout: Path, mpl_cache: Path
 ) -> None:
     """Report valid drift as 2 without importing or changing bad output."""
-    checkout = _isolated_checkout(tmp_path)
     generated = checkout / _GENERATED_RELATIVE
     before = _set_generated_state(generated, state)
     before_siblings = tuple(sorted(generated.parent.iterdir()))
@@ -123,11 +157,11 @@ def test_module_build_check_reaches_coordinator_without_repairing_default(
 
 @pytest.mark.parametrize("state", ["missing", "syntax-broken"])
 @pytest.mark.color_pipeline
+@pytest.mark.approved_input
 def test_module_build_regenerates_default_before_normal_eager_import(
-    state: _BuildArtifactState, tmp_path: Path, mpl_cache: Path
+    state: _BuildArtifactState, checkout: Path, mpl_cache: Path
 ) -> None:
     """Repair either bootstrap state and restore the eager public API."""
-    checkout = _isolated_checkout(tmp_path)
     generated = checkout / _GENERATED_RELATIVE
     before = _set_generated_state(generated, state)
 
@@ -158,11 +192,11 @@ def test_module_build_regenerates_default_before_normal_eager_import(
 
 
 @pytest.mark.color_pipeline
+@pytest.mark.approved_input
 def test_module_build_honors_custom_output_while_default_is_missing(
-    tmp_path: Path, mpl_cache: Path
+    checkout: Path, mpl_cache: Path
 ) -> None:
     """Forward CLI arguments without importing or repairing default output."""
-    checkout = _isolated_checkout(tmp_path)
     generated = checkout / _GENERATED_RELATIVE
     _set_generated_state(generated, "missing")
     custom_output = checkout / "build" / "custom_generated.py"
@@ -202,11 +236,11 @@ def test_build_guard_accepts_only_exact_module_mode() -> None:
     )
 
 
+@pytest.mark.approved_input
 def test_ordinary_import_preserves_eager_inventory_and_reload(
-    tmp_path: Path, mpl_cache: Path
+    checkout: Path, mpl_cache: Path
 ) -> None:
     """Keep the bootstrap guard transparent outside the exact build command."""
-    checkout = _isolated_checkout(tmp_path)
     program = textwrap.dedent(
         """
         import importlib

@@ -26,6 +26,7 @@ import dartwork_mpl._colors.construction._catalog as _catalog
 import dartwork_mpl._colors.verify._comparison as _comparison
 import dartwork_mpl._colors.verify._gates as _gates
 from dartwork_mpl._colors.construction import _cmaps, _generate
+from tests.support.approved_inputs import read_approved_text
 
 EXACT_FIELDS = (
     "palette",
@@ -61,14 +62,9 @@ EXPECTED_HASHES = {
         "6dc6053c4f8c66adb9d7deb746c3e7eee0295c27cc107b37c872b46f83f79a72"
     ),
 }
-QUALITY_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "docs"
-    / "superpowers"
-    / "specs"
-    / "assets"
-    / "2026-07-14-oklab-centered-color-system"
-    / "color_v5_quality.json"
+QUALITY_INPUT = (
+    "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/"
+    "color_v5_quality.json"
 )
 CLI_PATH = (
     Path(__file__).resolve().parents[2] / "scripts" / "compare_color_systems.py"
@@ -584,8 +580,12 @@ def test_mcp_source_scanner_rejects_dynamic_public_name(tmp_path: Path) -> None:
 
 
 def _quality_payload() -> dict[str, object]:
-    """Load the immutable quality fixture for comparison assertions."""
-    decoded = json.loads(QUALITY_PATH.read_text(encoding="utf-8"))
+    """Load the immutable quality fixture for comparison assertions.
+
+    The approved-input reader checks the raw bytes against the existing
+    ``_ssot._PINNED_BASELINES["quality"]`` pin before decoding.
+    """
+    decoded = json.loads(read_approved_text(QUALITY_INPUT))
     assert isinstance(decoded, dict)
     return cast(dict[str, object], decoded)
 
@@ -1973,6 +1973,7 @@ def test_comparison_import_closure_excludes_runtime_registries() -> None:
 
 
 @pytest.mark.color_pipeline
+@pytest.mark.approved_input
 def test_real_cli_subprocess_uses_isolated_source_audit_namespace(
     tmp_path: Path,
 ) -> None:

@@ -4,7 +4,6 @@ import hashlib
 import inspect
 import json
 from collections.abc import Callable, Mapping
-from pathlib import Path
 from typing import cast
 
 import numpy as np
@@ -13,6 +12,7 @@ import pytest
 from dartwork_mpl._colors.construction import _cmaps
 from dartwork_mpl._colors.construction._catalog import CatalogSnapshot
 from dartwork_mpl._colors.model import _conversion
+from tests.support.approved_inputs import read_approved_text
 
 DIRECT_32_SHA256 = (
     "90f393cc14afc230438078f014a422886cf09122491637aec11abe010be187d2"
@@ -68,13 +68,17 @@ def _compile_cmaps(
 
 @pytest.fixture(scope="module")
 def compatibility_snapshot() -> dict[str, object]:
-    """Load the immutable full-LUT fixture once for exact comparison."""
-    path = (
-        Path(__file__).resolve().parents[5]
-        / "docs/superpowers/specs/assets/2026-07-14-oklab-centered-"
-        "color-system/color_v5_compatibility.json"
+    """Load the immutable full-LUT fixture once for exact comparison.
+
+    The approved-input reader checks the raw bytes against the existing
+    ``_ssot._PINNED_BASELINES["compatibility"]`` pin before decoding.
+    """
+    decoded = json.loads(
+        read_approved_text(
+            "docs/superpowers/specs/assets/2026-07-14-oklab-centered-"
+            "color-system/color_v5_compatibility.json"
+        )
     )
-    decoded = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(decoded, dict)
     return cast(dict[str, object], decoded)
 

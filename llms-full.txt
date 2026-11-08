@@ -797,7 +797,9 @@ Installed Python users can read the same basic/advanced sources through
 The bounded margin/convergence correction tracked by #209 is a separate
 concern from template composition and figure-size arithmetic. The current
 `dm.simple_layout` measures content and iteratively updates root GridSpec outer
-margins, preserving native internal spacing. It does not solve nested local
+margins, keeping the internal spacing you pass (root `wspace` / `hspace` you
+leave unset grow where neighbouring panels' text collides; `fit_labels=False`
+keeps them as they are). It does not solve nested local
 spacing or guarantee that every label fits every requested canvas. Historical
 `auto_layout` is removed; do not call it as an extra correction pass.
 `simple_layout` returns `None`, not a convergence or validation report: inspect
@@ -2102,34 +2104,6 @@ rules:
       same Axes; an `axis` given as a name, and `plt.ticklabel_format`,
       are reported even then (the source cannot tie them to that Axes).
     fix_suggestion: 'ax.yaxis.set_major_formatter(ScalarFormatter()); ax.ticklabel_format(axis="y", style="sci")'
-
-  - id: multirow-subplots-no-gridspec-kw
-    severity: info
-    detector:
-      kind: regex
-      pattern: '\bplt\.subplots\(\s*[2-9]\b(?![\s\S]{0,200}?(?:gridspec_kw|sharex|sharey))'
-    message: |
-      Vertically stacked `plt.subplots(>=2, ...)` was created without
-      `gridspec_kw={"hspace": ..., "wspace": ...}`. The matplotlib
-      default `hspace` (0.2) frequently causes the upper subplot's
-      xlabel / xtick labels to overlap the lower subplot's title once
-      `dm.simple_layout(fig)` snaps the outer margins flush. Pass an
-      explicit `gridspec_kw` (e.g. `hspace=0.55`, `wspace=0.3`) when
-      every subplot has both a title and an xlabel, then verify with
-      `dm.validate_figure(fig)` — the `CROSS_AXES_OVERLAP` check will
-      flag any residual collisions.
-    why: |
-      `dm.simple_layout` only adjusts the figure's outer margins; it
-      intentionally preserves the GridSpec's `hspace` / `wspace` so
-      authors can keep their own intent. That makes the default
-      `hspace=0.2` the hidden source of title↔xlabel collisions in
-      multi-panel gallery and report figures. The detector scans the
-      200 characters following `plt.subplots(<n>` for `gridspec_kw` /
-      `sharex` / `sharey` so it catches line-wrapped calls (where the
-      kwargs sit on a later line), not just single-line ones. This is
-      a best-effort static hint — the authoritative collision check is
-      the runtime `CROSS_AXES_OVERLAP` validator.
-    fix_suggestion: 'gridspec_kw={"hspace": 0.55, "wspace": 0.3}'
 
   - id: zero-resize-mention
     severity: warning

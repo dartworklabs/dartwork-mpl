@@ -93,7 +93,20 @@ convert: 1920 × 1080 px at 200 DPI is
 
 It measures tick labels, axis labels, titles, legends and colorbars, then
 sets the outer margins so content meets the canvas edge. Call it once, after
-drawing. It never changes the gaps between panels.
+drawing. Where text still collides it fits the labels: an axis name that
+runs into another panel or past the figure edge wraps at its spaces,
+`wspace` / `hspace` nobody set grow until neighbouring panels' text clears
+(up to 1.5 cells), and crowded bottom tick labels wrap at their spaces
+(panels sharing x together) or, when they cannot, turn 30, 45 or 90
+degrees; a change that would crush a plot or add overlapping neighbouring
+tick labels on any axis is taken back. Nothing is shortened or made
+smaller. What you set stays: spacing
+you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also when it is too
+small, and labels you rotate or break yourself are left as they are, so
+leave both out unless the user asks. `fit_labels=False` (or
+`dm.config.fit_labels`) turns the fitting off; tick labels that still
+overlap are reported as `TICK_OVERLAP`, text over another panel's text as
+`CROSS_AXES_OVERLAP`.
 
 - `margin="2mm"` (or `"2%"`, `dm.mm(2)`) adds a uniform buffer.
 - `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.
@@ -103,21 +116,20 @@ drawing. It never changes the gaps between panels.
 ## Equal grid with panel labels
 
 ```python
-fig, axes = plt.subplots(
-    2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True,
-    gridspec_kw={"hspace": 0.35, "wspace": 0.3},
-)
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True)
 for i, ax in enumerate(axes.flat):
     ax.plot(x, np.sin(x + i))
     ax.set_ylabel("Response")
 for ax in axes[-1]:
     ax.set_xlabel("Time (s)")
 dm.label_axes(axes)              # a, b, c, d; labels=["(a)", ...] for others
-dm.simple_layout(fig)
+dm.simple_layout(fig)            # widens hspace / wspace where panels' text meets
 plt.close(fig)
 ```
 
-Panels with both a title and an x label need `hspace` about 0.5 or more.
+Panels with both a title and an x label need no `hspace` of your own: the
+layout parts them. A spacing the user asks for goes in
+`gridspec_kw={"hspace": 0.5}` and then wins.
 
 ## Ratios, mosaics and nesting
 

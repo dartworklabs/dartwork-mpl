@@ -148,6 +148,7 @@ def assert_all_valid_discrete_forms_are_frozen(
             assert _object_list(hex_forms[n_text]) == expected_hex
 
 
+@pytest.mark.approved_input
 def test_v5_manifest_is_complete(v5_compat: dict[str, object]) -> None:
     """Pin all public v5 color surfaces before the v6 compiler migration."""
     assert COMPAT_PATH.is_file(), f"missing compatibility asset: {COMPAT_PATH}"
@@ -246,6 +247,7 @@ def test_v5_manifest_is_complete(v5_compat: dict[str, object]) -> None:
     assert_all_valid_discrete_forms_are_frozen(v5_compat)
 
 
+@pytest.mark.approved_input
 def test_additive_vendor_surface_preserves_v1_and_legacy_exact_payload(
     v5_compat: dict[str, object],
 ) -> None:
