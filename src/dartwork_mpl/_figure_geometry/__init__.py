@@ -256,9 +256,20 @@ def axes_titles(ax: Axes) -> dict[str, Text]:
 
 
 def axes_text_artists(ax: Axes) -> list[Text]:
-    """Return ``ax.texts``, the three titles and the x/y axis labels."""
+    """Return ``ax.texts``, the three titles and the x/y axis labels.
+
+    On a 3D axes, ``ax.text(x, y, z, ...)`` (a ``Text3D``) is left out: it
+    is placed by projection only while it draws, so its window extent reads
+    the unprojected ``(x, y)`` far off the canvas. Matplotlib's layout skips
+    it for that reason (``Text3D.get_tightbbox`` returns ``None``), as does
+    the 3D content extent of ``simple_layout``. ``ax.text2D`` text stays.
+    """
+    texts: list[Text] = list(ax.texts)
+    if getattr(ax, "name", None) == "3d":
+        # ``get_position_3d`` is the Text3D API; mplot3d ships no type stubs.
+        texts = [t for t in texts if not hasattr(t, "get_position_3d")]
     titles = axes_titles(ax).values()
-    return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
+    return [*texts, *titles, ax.xaxis.label, ax.yaxis.label]
 
 
 # Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
