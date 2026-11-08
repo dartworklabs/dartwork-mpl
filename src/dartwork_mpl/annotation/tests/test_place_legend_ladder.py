@@ -514,13 +514,22 @@ def test_an_inside_legend_is_never_sent_out_by_the_layout() -> None:
     assert ax.get_legend() is legend
 
 
-def test_the_layout_leaves_a_legend_edited_since_alone() -> None:
+@pytest.mark.parametrize(
+    "names",
+    # "swapped" keeps the legend's size and look: only its entries tell.
+    [("Renamed", "South"), ("South", "North")],
+    ids=["renamed", "swapped"],
+)
+def test_the_layout_leaves_a_legend_edited_since_alone(
+    names: tuple[str, str],
+) -> None:
     fig, ax = _report()
     _top_free_lines(ax)
     ax.set_position((0.1, 0.45, 0.8, 0.1))
     legend = place_legend(ax)
     assert legend is not None
-    legend.get_texts()[0].set_text("Renamed")
+    for text, name in zip(legend.get_texts(), names, strict=True):
+        text.set_text(name)
     ax.set_position((0.1, 0.1, 0.8, 0.8))
     assert settle_legends(fig, drawn_renderer(fig)) is False
     assert ax.get_legend() is legend
