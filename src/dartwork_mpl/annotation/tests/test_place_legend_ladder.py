@@ -724,6 +724,57 @@ def test_native_edits_are_kept_after_layout(edit: str) -> None:
         plt.close(fig)
 
 
+def test_layout_does_not_rebuild_legend_outside_selected_gridspec() -> None:
+    """An explicitly excluded add_axes panel retains its own legend.
+
+    Review 1 (R1), moved here as the reviewer wrote it.
+    """
+    dm.style.use("report")
+    fig = plt.figure(figsize=dm.figsize("17cm", "12cm"))
+    gs = fig.add_gridspec(1, 1, left=0.1, right=0.45)
+    ax = fig.add_subplot(gs[0])
+    ax.plot([0, 1], [0, 1])
+    other = fig.add_axes((0.6, 0.45, 0.3, 0.05))
+    other.set(xlim=(0, 10), ylim=(0, 10))
+    x = np.linspace(0, 10, 40)
+    other.plot(x, 3 + 3 * np.sin(x), label="North")
+    other.plot(x, 3 + 3 * np.cos(x), label="South")
+    legend = dm.place_legend(other)
+    other.set_position((0.6, 0.1, 0.3, 0.8))
+    dm.simple_layout(fig, gs=gs, use_all_axes=False)
+    try:
+        assert other.get_legend() is legend
+    finally:
+        plt.close(fig)
+
+
+def test_layout_preserves_native_legend_font_and_frame_edits() -> None:
+    """Changing the native Legend after placement remains effective after layout.
+
+    Review 1 (R2), moved here as the reviewer wrote it.
+    """
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    x = np.linspace(0, 11, 60)
+    for i in range(10):
+        ax.plot(
+            x,
+            50 + 42 * np.sin(2 * np.pi * x / 6 + 2 * np.pi * i / 10),
+            label=f"Region {i + 1}",
+        )
+    legend = dm.place_legend(ax, loc="above", fontsize=9, frameon=True)
+    for text in legend.get_texts():
+        text.set_fontsize(15)
+    legend.set_frame_on(False)
+    dm.simple_layout(fig)
+    try:
+        actual = ax.get_legend()
+        assert [t.get_fontsize() for t in actual.get_texts()] == [15] * 10
+        assert actual.get_frame_on() is False
+    finally:
+        plt.close(fig)
+
+
 def _above_ten_bars():
     """Ten bars named as ``_dense``'s lines: an above legend the layout plans again."""
     fig, ax = _report()
