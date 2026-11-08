@@ -418,7 +418,8 @@ After each round the margins are fitted again and the figure is checked:
 a change that left a plot under 30 % of its width or height, or gave any
 axis more pairs of overlapping neighbouring tick labels than before, is
 taken back and not tried again, and the collision it tried to fix stays,
-reported. (The check counts neighbouring pairs only: on an axis whose
+reported; a figure whose every change was taken back draws exactly as
+without the ladder. (The check counts neighbouring pairs only: on an axis whose
 neighbours all overlap already, labels further apart may come to overlap
 too.) (Turned 45
 degrees, `advanced/boxplot` at 9 cm in `presentation` would have squeezed

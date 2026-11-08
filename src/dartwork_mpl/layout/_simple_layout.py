@@ -168,10 +168,11 @@ def simple_layout(
         again, and a change that crushed a plot (left it under 30 % of its
         width or height) or gave any axis more overlapping neighbouring tick
         labels is taken back; the collision it tried to fix is left, and
-        reported. An axis whose ticks matplotlib picks and that a change
-        made shorter keeps the ticks it had, while its labels stay half an
-        em apart. Margins that do not settle (a legend wider than the
-        canvas leaves) are not fitted further. Nothing is
+        reported, and a figure whose every change was taken back draws
+        exactly as without fitting. An axis whose ticks matplotlib picks and
+        that a change made shorter keeps the ticks it had, while its labels
+        stay half an em apart. Margins that do not settle (a legend wider
+        than the canvas leaves) are not fitted further. Nothing is
         shortened, hidden or made smaller, and a figure without a collision
         draws exactly as without this. ``None`` (the default) reads
         :data:`dartwork_mpl.config.fit_labels` (itself ``True``: every
