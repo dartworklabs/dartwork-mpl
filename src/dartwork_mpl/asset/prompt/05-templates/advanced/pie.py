@@ -53,7 +53,7 @@ leader = wedges[0]
 theta = np.deg2rad((leader.theta1 + leader.theta2) / 2)
 x, y = np.cos(theta) * 1.1, np.sin(theta) * 1.1
 ax.annotate(
-    f"{labels[0]}\nholds {sizes[0]:.0f}% — 3.6x #2",
+    f"{labels[0]}\nholds {sizes[0]:.0f}%\n3.6x #2",
     xy=(np.cos(theta) * 0.9, np.sin(theta) * 0.9),
     xytext=(x + 0.4, y + 0.2),
     fontsize=dm.fs(-1),
