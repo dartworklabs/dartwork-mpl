@@ -156,7 +156,8 @@ that keyword. The defaults are that look in the text colour, 3 pt beyond the
 bar end; the number printed like the axis ticks (plain under
 `dm.axis_unit`, with the ticks' `k` under `dm.format_axis_si`), three
 significant digits on the largest value and no meaningless decimals
-(`21.4, 18.0, 21.5`; `120, 135`); stacked bars' segments centred with a
+(`21.4, 18.0, 21.5`; `120, 135`; a tiny value reads `<0.1M`, not `0`; on a
+log axis each label its own count: `0.01M`, `45M`); stacked bars' segments centred with a
 total; crowded labels on vertical bars turned vertical by
 `dm.simple_layout`; grouped series whose labels meet take turns by bar index
 (two alternate) where that keeps as many labels as the plain rule; a bar

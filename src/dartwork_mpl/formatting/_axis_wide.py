@@ -17,7 +17,8 @@ the axis actually shows:
   fractional steps keep the same count on every tick (``0.5M, 1.0M``).
 - Zero prints as ``0``; numbers of 1000 and more carry thousands separators.
 - Negative ticks use matplotlib's minus sign (U+2212 unless
-  ``axes.unicode_minus`` is off), like the axis's other text.
+  ``axes.unicode_minus`` is off), like the axis's other text; the
+  per-value paths below too.
 
 On log and other non-linear scales the ticks span decades, which cannot
 share one unit (``0.000001k`` beside ``1,000k``), so there each tick takes
@@ -175,8 +176,9 @@ class TickText:
 
     The value takes the formatter's fixed unit, else the largest rung at or
     below its magnitude (the smallest rung under the ladder), and
-    ``decimals`` places, after the hyphen-minus ``-`` and the currency
-    (``-1.5k``, ``-$1,500``).
+    ``decimals`` places, after matplotlib's minus (U+2212 unless
+    ``axes.unicode_minus`` is off, as every other tick) and the currency
+    (``-1.5k``, ``-$1,500`` with that minus).
 
     ``separators``: thousands separators (``1,000.0k``) or none
     (``1000.0k``). ``zero``: a value that prints as zero reads ``0.0``
@@ -416,7 +418,9 @@ class AxisUnitFormatter(ticker.Formatter):
         number = format(magnitude / unit.factor, f"{separator}.{decimals}f")
         if rules.compact and decimals:
             number = number.rstrip("0").rstrip(".")
-        sign = "-" if value < 0 else ""
+        # The same minus as the axis-wide ticks and the value labels.
+        minus = "\N{MINUS SIGN}" if mpl.rcParams["axes.unicode_minus"] else "-"
+        sign = minus if value < 0 else ""
         if rules.zero != "exact" and float(number.replace(",", "")) == 0:
             if rules.zero == "bare":
                 return f"{0:.{decimals}f}"

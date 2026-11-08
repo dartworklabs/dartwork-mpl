@@ -72,6 +72,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **One minus sign per figure: the per-value ticks use U+2212 too.**
+  `format_axis_currency` and `decimals=n` of `format_axis_millions` /
+  `_billions` / `_si` / `_myriad` wrote a hyphen-minus (`-$1,500`) while the
+  library's other ticks and `dm.label_bars` wrote matplotlib's minus
+  (`−$800`); they now write matplotlib's minus as well (`−$1,500`, the
+  hyphen when `axes.unicode_minus` is off). Tick text is otherwise
+  unchanged; a negative tick is a little wider (Roboto's minus is as wide
+  as `+` and the digits). Code that parses tick text should accept U+2212
+  or turn `axes.unicode_minus` off.
+- **`dm.label_bars`: a tiny value no longer reads `0`, and log axes drop
+  the `.0`.** A non-zero value that the call's one decimal count rounds to
+  zero prints the bound it lies within, in the tick unit: `<0.1M` beside
+  `12.5M`, `>−0.1M` for a small negative, `<$0.1`, `<1M` with no decimals.
+  An exact zero still reads `0` (`$0`), and one unit per axis and one count
+  per call stay. On a log value axis each label takes its own count, as
+  the log ticks do: `0.01M 0.2M 3.4M 45M` instead of `0 0.2M 3.4M 45.0M`.
+  `decimals=`, a `fmt` format spec and a `fmt` callable still print the
+  number as asked.
+
 - **The waterfall templates draw each step with its signed change.** A step
   is a bar from the level before it with its signed delta as the height
   (`ax.bar(x, delta, bottom=level_before)`), the totals a second `ax.bar`
