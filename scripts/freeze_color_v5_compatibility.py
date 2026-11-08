@@ -1,26 +1,33 @@
 """Freeze the immutable v5 color-system compatibility manifest.
 
 Static generated and curated values are parsed from a pinned Git object.
-Computed v5 behavior is evaluated only inside a disposable archive of that
-same commit, keeping the baseline independent from the candidate worktree.
+Computed v5 behavior is evaluated only inside a disposable directory that
+holds the listed baseline files of that same commit
+(``BASELINE_RUNTIME_INPUTS``), keeping the baseline independent from the
+candidate worktree.
 """
 
 import argparse
 import ast
 import hashlib
-import io
 import json
 import os
 import stat
 import subprocess
 import sys
-import tarfile
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 from typing import cast
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import frozen_baseline_inputs as baseline_inputs
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = (
+# The accepted compatibility fixture and its sibling quality fixture. This
+# generator never writes them: ``--output`` is required and may not name
+# either, or any input below.
+COMPATIBILITY_PATH = (
     REPO_ROOT
     / "docs"
     / "superpowers"
@@ -29,6 +36,7 @@ DEFAULT_OUTPUT = (
     / "2026-07-14-oklab-centered-color-system"
     / "color_v5_compatibility.json"
 )
+QUALITY_PATH = COMPATIBILITY_PATH.with_name("color_v5_quality.json")
 ACCEPTED_BASELINE_COMMIT = "12d16bac22dee790bd0696ca92a814a797dc728b"
 SOURCE_HASHES = {
     "docs/superpowers/specs/assets/2026-07-03-color-system-v5/"
@@ -99,6 +107,104 @@ EXPECTED_DISCOVERY_COUNTS = {
 
 JsonMap = dict[str, object]
 
+# The only baseline files the isolated runtime probe gets, each read by exact
+# path from the accepted commit (never an archive, a directory or a tree
+# listing). The probe imports ``dartwork_mpl`` (its initializer imports most
+# of the package eagerly) and ``_colors`` modules, then reads four files as
+# text. The list is the static in-package import closure of the probe's
+# imports (``dartwork_mpl`` and ``dartwork_mpl._colors`` ``_curated``,
+# ``_generated``, ``_semantic``, ``_discrete``, ``_families`` and
+# ``_typing``) at that commit; the asset files that closure reads while
+# importing (the six colour libraries ``_colors/_loader.py`` names, the
+# semantic tokens of ``tokens.py`` and the style presets of ``style.py``);
+# and the four files the probe reads itself (``theme-dark.mplstyle`` and
+# the MCP ``resources``, ``tools`` and ``prompts`` sources). No
+# documentation is listed. The bundled fonts are left out on purpose: the
+# initializer's font scan then finds none and warns, and no probe output
+# depends on a font.
+BASELINE_RUNTIME_INPUTS: tuple[str, ...] = (
+    "src/dartwork_mpl/__init__.py",
+    "src/dartwork_mpl/_colors/__init__.py",
+    "src/dartwork_mpl/_colors/_api.py",
+    "src/dartwork_mpl/_colors/_color.py",
+    "src/dartwork_mpl/_colors/_contrast.py",
+    "src/dartwork_mpl/_colors/_conversion.py",
+    "src/dartwork_mpl/_colors/_curated.py",
+    "src/dartwork_mpl/_colors/_discrete.py",
+    "src/dartwork_mpl/_colors/_families.py",
+    "src/dartwork_mpl/_colors/_generated.py",
+    "src/dartwork_mpl/_colors/_loader.py",
+    "src/dartwork_mpl/_colors/_metrics.py",
+    "src/dartwork_mpl/_colors/_register.py",
+    "src/dartwork_mpl/_colors/_semantic.py",
+    "src/dartwork_mpl/_colors/_typing.py",
+    "src/dartwork_mpl/_colors/_views.py",
+    "src/dartwork_mpl/_helpers.py",
+    "src/dartwork_mpl/_luminance.py",
+    "src/dartwork_mpl/agent.py",
+    "src/dartwork_mpl/annotation.py",
+    "src/dartwork_mpl/config.py",
+    "src/dartwork_mpl/diagnostics/__init__.py",
+    "src/dartwork_mpl/diagnostics/_colormaps.py",
+    "src/dartwork_mpl/diagnostics/_colors.py",
+    "src/dartwork_mpl/diagnostics/_fonts.py",
+    "src/dartwork_mpl/font.py",
+    "src/dartwork_mpl/formatting.py",
+    "src/dartwork_mpl/helpers/__init__.py",
+    "src/dartwork_mpl/helpers/colors.py",
+    "src/dartwork_mpl/helpers/data.py",
+    "src/dartwork_mpl/helpers/labels.py",
+    "src/dartwork_mpl/helpers/quality.py",
+    "src/dartwork_mpl/icon.py",
+    "src/dartwork_mpl/io.py",
+    "src/dartwork_mpl/layout.py",
+    "src/dartwork_mpl/lint.py",
+    "src/dartwork_mpl/prompt.py",
+    "src/dartwork_mpl/scale.py",
+    "src/dartwork_mpl/style.py",
+    "src/dartwork_mpl/templates/__init__.py",
+    "src/dartwork_mpl/templates/diverging_bar.py",
+    "src/dartwork_mpl/tokens.py",
+    "src/dartwork_mpl/units.py",
+    "src/dartwork_mpl/util.py",
+    "src/dartwork_mpl/validate/__init__.py",
+    "src/dartwork_mpl/validate/_checks/__init__.py",
+    "src/dartwork_mpl/validate/_checks/_luminance.py",
+    "src/dartwork_mpl/validate/_checks/_registry.py",
+    "src/dartwork_mpl/validate/_checks/_tick_utils.py",
+    "src/dartwork_mpl/validate/_checks/clipped_text.py",
+    "src/dartwork_mpl/validate/_checks/cross_axes.py",
+    "src/dartwork_mpl/validate/_checks/empty_axes.py",
+    "src/dartwork_mpl/validate/_checks/grayscale_safety.py",
+    "src/dartwork_mpl/validate/_checks/legend.py",
+    "src/dartwork_mpl/validate/_checks/margin.py",
+    "src/dartwork_mpl/validate/_checks/min_font_size.py",
+    "src/dartwork_mpl/validate/_checks/overflow.py",
+    "src/dartwork_mpl/validate/_checks/overlap.py",
+    "src/dartwork_mpl/validate/_checks/pie_label.py",
+    "src/dartwork_mpl/validate/_checks/text_contrast.py",
+    "src/dartwork_mpl/validate/_checks/tick_crowd.py",
+    "src/dartwork_mpl/validate/_checks/tick_decimal.py",
+    "src/dartwork_mpl/validate/_checks/tick_rotation.py",
+    "src/dartwork_mpl/validate/_checks/unit_dup.py",
+    "src/dartwork_mpl/validate/_orchestrator.py",
+    "src/dartwork_mpl/validate/_types.py",
+    "src/dartwork_mpl/validate_fixes.py",
+    "src/dartwork_mpl/asset/color/ant_colors.json",
+    "src/dartwork_mpl/asset/color/chakra_colors.json",
+    "src/dartwork_mpl/asset/color/material_colors.json",
+    "src/dartwork_mpl/asset/color/opencolor.txt",
+    "src/dartwork_mpl/asset/color/primer_colors.json",
+    "src/dartwork_mpl/asset/color/tailwind_colors.json",
+    "src/dartwork_mpl/asset/mplstyle/presets.json",
+    "src/dartwork_mpl/asset/tokens/semantic_tokens.json",
+    "src/dartwork_mpl/asset/mplstyle/theme-dark.mplstyle",
+    "src/dartwork_mpl/mcp/prompts.py",
+    "src/dartwork_mpl/mcp/resources.py",
+    "src/dartwork_mpl/mcp/tools.py",
+)
+BASELINE_INPUT_PREFIX = baseline_inputs.PACKAGE_PREFIX
+
 
 RUNTIME_PROBE = r"""import json
 import re
@@ -106,8 +212,8 @@ import sys
 from pathlib import Path
 from typing import get_args
 
-archive_root = Path(sys.argv[1]).resolve()
-sys.path.insert(0, str(archive_root / "src"))
+baseline_root = Path(sys.argv[1]).resolve()
+sys.path.insert(0, str(baseline_root / "src"))
 
 import matplotlib as mpl
 import dartwork_mpl
@@ -121,9 +227,9 @@ from dartwork_mpl._colors._families import FAMILIES
 from dartwork_mpl._colors._typing import DartworkColor, DartworkColormap
 
 package_path = Path(dartwork_mpl.__file__).resolve()
-if not package_path.is_relative_to(archive_root):
+if not package_path.is_relative_to(baseline_root):
     raise RuntimeError(
-        f"baseline import escaped archive: {package_path}"
+        f"baseline import escaped its inputs: {package_path}"
     )
 
 
@@ -216,7 +322,7 @@ semantic_coordinates = {
 }
 
 dark_style = (
-    archive_root
+    baseline_root
     / "src"
     / "dartwork_mpl"
     / "asset"
@@ -242,13 +348,13 @@ for token in dark_tokens:
     dark_cycle.append(_generated.PALETTE[family][index])
 
 resources_source = (
-    archive_root / "src" / "dartwork_mpl" / "mcp" / "resources.py"
+    baseline_root / "src" / "dartwork_mpl" / "mcp" / "resources.py"
 ).read_text(encoding="utf-8")
 tools_source = (
-    archive_root / "src" / "dartwork_mpl" / "mcp" / "tools.py"
+    baseline_root / "src" / "dartwork_mpl" / "mcp" / "tools.py"
 ).read_text(encoding="utf-8")
 prompts_source = (
-    archive_root / "src" / "dartwork_mpl" / "mcp" / "prompts.py"
+    baseline_root / "src" / "dartwork_mpl" / "mcp" / "prompts.py"
 ).read_text(encoding="utf-8")
 tool_names = re.findall(
     r"@mcp\.tool\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(",
@@ -296,6 +402,16 @@ registrations = sorted(
 if registrations != colormap_names:
     raise RuntimeError("registered colormaps differ from the typing literal")
 
+escaped = sorted(
+    name
+    for name, module in list(sys.modules.items())
+    if name.split(".")[0] == "dartwork_mpl"
+    and getattr(module, "__file__", None)
+    and not Path(module.__file__).resolve().is_relative_to(baseline_root)
+)
+if escaped:
+    raise RuntimeError(f"baseline modules escaped their inputs: {escaped}")
+
 payload = {
     "dark_cycle": dark_cycle,
     "dark_cycle_coordinates": dark_cycle_coordinates,
@@ -333,13 +449,18 @@ print(json.dumps(payload, ensure_ascii=False, allow_nan=False, sort_keys=True))
 """
 
 
-def _run_git(*args: str) -> bytes:
-    """Run Git in the repository and return its raw standard output.
+def _run_git(command: str, *args: str, repo: Path = REPO_ROOT) -> bytes:
+    """Run one allowed Git read command (``frozen_baseline_inputs.run_git``).
 
     Parameters
     ----------
+    command : str
+        One of ``rev-parse``, ``show``, ``ls-tree`` and ``cat-file``; an
+        archive or any other command is refused before Git runs.
     *args : str
-        Arguments following the ``git`` executable.
+        Arguments following the command.
+    repo : pathlib.Path
+        Repository to run in.
 
     Returns
     -------
@@ -349,15 +470,9 @@ def _run_git(*args: str) -> bytes:
     Raises
     ------
     RuntimeError
-        If Git exits unsuccessfully.
+        If the command is not allowed or Git exits unsuccessfully.
     """
-    process = subprocess.run(
-        ["git", *args], cwd=REPO_ROOT, check=False, capture_output=True
-    )
-    if process.returncode != 0:
-        stderr = process.stderr.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"git {' '.join(args)} failed: {stderr}")
-    return process.stdout
+    return baseline_inputs.run_git(command, *args, repo=repo)
 
 
 def _resolve_baseline(revision: str) -> str:
@@ -462,8 +577,48 @@ def _literal_assignment(source: bytes, name: str) -> object:
     raise ValueError(f"literal assignment {name!r} not found")
 
 
-def _archive_runtime_payload(commit: str) -> JsonMap:
-    """Evaluate computed v5 behavior inside a disposable Git archive.
+def _check_input_path(path: str) -> None:
+    """Refuse a listed path that is not one plain file path in the package."""
+    baseline_inputs.check_input_path(path)
+
+
+def _read_baseline_input(
+    commit: str, path: str, *, listed: frozenset[str], repo: Path = REPO_ROOT
+) -> bytes:
+    """Return one listed regular file of ``commit``, read by exact path.
+
+    The path must be in ``listed`` and be a plain package path; a symlink,
+    directory, submodule or missing entry is refused.
+    """
+    return baseline_inputs.read_baseline_input(
+        commit, path, listed=listed, repo=repo, git=_run_git
+    )
+
+
+def _extract_baseline_inputs(
+    commit: str,
+    destination: Path,
+    *,
+    inputs: Iterable[str] = BASELINE_RUNTIME_INPUTS,
+    repo: Path = REPO_ROOT,
+) -> None:
+    """Write exactly the listed baseline files below a fresh ``destination``.
+
+    Files under ``SOURCE_HASHES`` must keep their pinned raw SHA-256. Nothing
+    outside the list, and nothing outside ``destination``, is written.
+    """
+    baseline_inputs.extract_baseline_inputs(
+        commit,
+        destination,
+        inputs=inputs,
+        source_hashes=SOURCE_HASHES,
+        repo=repo,
+        git=_run_git,
+    )
+
+
+def _baseline_runtime_payload(commit: str) -> JsonMap:
+    """Evaluate computed v5 behavior from the listed baseline files only.
 
     Parameters
     ----------
@@ -478,22 +633,20 @@ def _archive_runtime_payload(commit: str) -> JsonMap:
     Raises
     ------
     RuntimeError
-        If archive extraction or the isolated probe fails.
+        If reading a listed input or the isolated probe fails.
     """
-    archive_bytes = _run_git("archive", "--format=tar", commit)
     with tempfile.TemporaryDirectory(
-        prefix="dartwork-mpl-v5-compat-"
+        prefix="dartwork-mpl-v5-compat-inputs-"
     ) as temp_dir:
-        archive_root = Path(temp_dir)
-        with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:") as tar:
-            tar.extractall(archive_root)
+        baseline_root = Path(temp_dir)
+        _extract_baseline_inputs(commit, baseline_root)
         environment = os.environ.copy()
         environment["MPLBACKEND"] = "Agg"
-        environment["MPLCONFIGDIR"] = str(archive_root / ".mplconfig")
+        environment["MPLCONFIGDIR"] = str(baseline_root / ".mplconfig")
         environment["PYTHONNOUSERSITE"] = "1"
         process = subprocess.run(
-            [sys.executable, "-I", "-c", RUNTIME_PROBE, str(archive_root)],
-            cwd=archive_root,
+            [sys.executable, "-I", "-c", RUNTIME_PROBE, str(baseline_root)],
+            cwd=baseline_root,
             env=environment,
             check=False,
             capture_output=True,
@@ -587,7 +740,7 @@ def _build_payload(commit: str) -> JsonMap:
     cycles = _literal_assignment(sources[generated_path], "CYCLES")
     cmaps256 = _literal_assignment(sources[generated_path], "CMAPS_256")
     curated_rows = _literal_assignment(sources[curated_path], "CURATED")
-    runtime = _archive_runtime_payload(commit)
+    runtime = _baseline_runtime_payload(commit)
     runtime_inventory = runtime.pop("inventory_runtime")
     if not isinstance(runtime_inventory, dict):
         raise RuntimeError("baseline runtime inventory is not an object")
@@ -694,8 +847,40 @@ def _atomic_write_text(target: Path, text: str) -> None:
             temporary.unlink(missing_ok=True)
 
 
+def _protected_inputs() -> tuple[Path, ...]:
+    """Return the working-tree files this generator must never write.
+
+    The accepted compatibility fixture and its sibling quality fixture, and
+    every ``SOURCE_HASHES`` path (the recipe, the curated and generated
+    modules and the colour libraries).
+    """
+    return (
+        COMPATIBILITY_PATH,
+        QUALITY_PATH,
+        *(REPO_ROOT / path for path in SOURCE_HASHES),
+    )
+
+
+def _refuse_protected_output(
+    output: Path, protected: Iterable[Path] | None = None
+) -> Path:
+    """Return ``output`` resolved, or refuse it if it names a protected input.
+
+    See ``frozen_baseline_inputs.refuse_protected_output``: the known inputs
+    and their aliases (relative, ``..``, symlinked, hard-linked) are refused
+    at the moment of the check.
+    """
+    return baseline_inputs.refuse_protected_output(
+        output, _protected_inputs() if protected is None else protected
+    )
+
+
 def _write_output(output: Path, text: str) -> None:
-    """Write the manifest atomically at the requested path.
+    """Write the manifest atomically after refusing a protected input.
+
+    The check, just before writing, refuses the known inputs and their
+    aliases; it does not stop a parent path from being swapped concurrently
+    after it.
 
     Parameters
     ----------
@@ -704,12 +889,13 @@ def _write_output(output: Path, text: str) -> None:
     text : str
         Deterministic serialized manifest.
     """
+    output = _refuse_protected_output(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_text(output, text)
 
 
 def _parse_args() -> argparse.Namespace:
-    """Parse the explicit baseline and optional output arguments.
+    """Parse the required baseline and output arguments.
 
     Returns
     -------
@@ -725,8 +911,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=DEFAULT_OUTPUT,
-        help=f"Manifest destination (default: {DEFAULT_OUTPUT})",
+        required=True,
+        help=(
+            "Manifest destination; required, and never the accepted "
+            f"fixture ({COMPATIBILITY_PATH.relative_to(REPO_ROOT)}) or "
+            "another input this generator reads"
+        ),
     )
     return parser.parse_args()
 
@@ -734,8 +924,9 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     """Generate the v5 compatibility manifest from the accepted baseline."""
     args = _parse_args()
+    # Refuse a protected destination before Git, extraction or compute.
+    output = _refuse_protected_output(cast(Path, args.output))
     commit = _resolve_baseline(cast(str, args.baseline_commit))
-    output = cast(Path, args.output).resolve()
     payload = _build_payload(commit)
     _write_output(output, _serialize(payload))
     print(f"wrote {output}")

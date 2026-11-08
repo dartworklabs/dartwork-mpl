@@ -187,6 +187,201 @@ def test_invalid_root_does_not_create_or_leak_paths(tmp_path: Path) -> None:
     assert not (folder / "nested").exists()
 
 
+def refusal_reason(root: Any) -> str:
+    """Return one refusal's operator reason; its value stays the generic one."""
+    result = configure_store(root)
+    assert isinstance(result, ConfigurationError), (root, result)
+    assert result == ConfigurationError()
+    assert result.message == "Artifact storage configuration is invalid."
+    assert result.reason and "\n" not in result.reason
+    return result.reason
+
+
+def test_refused_root_reason_names_the_fix(tmp_path: Path) -> None:
+    """Each configure_store refusal tells the operator what to change."""
+    file = tmp_path / "private-file"
+    file.write_text("sentinel")
+    folder = tmp_path / "private-folder"
+    folder.mkdir(mode=0o700)
+    link = tmp_path / "linked"
+    link.symlink_to(folder, target_is_directory=True)
+    public = tmp_path / "public"
+    public.mkdir(mode=0o755)
+    public.chmod(0o755)
+    uid = os.geteuid()
+    expected = {
+        "": "DARTWORK_MPL_ARTIFACT_DIR is set but empty; set it to an "
+        "absolute directory path, or unset it to use "
+        "~/.cache/dartwork-mpl/artifacts.",
+        "relative/path": "DARTWORK_MPL_ARTIFACT_DIR must be an absolute "
+        "path; got the relative path 'relative/path'.",
+        str(file): f"Artifact root {str(file)!r} exists but is not a "
+        "directory; set DARTWORK_MPL_ARTIFACT_DIR to a directory path.",
+        str(file / "nested"): f"Component {str(file)!r} of artifact root "
+        f"{str(file / 'nested')!r} exists but is not a directory; set "
+        "DARTWORK_MPL_ARTIFACT_DIR to a directory path.",
+        str(link): f"Artifact root {str(link)!r} is a symbolic link; "
+        "symlinks are refused, so set DARTWORK_MPL_ARTIFACT_DIR to the "
+        "resolved real path instead.",
+        str(link / "nested"): f"Component {str(link)!r} of artifact root "
+        f"{str(link / 'nested')!r} is a symbolic link; symlinks are refused, "
+        "so set DARTWORK_MPL_ARTIFACT_DIR to the resolved real path instead.",
+        str(public): f"Existing artifact root {str(public)!r} is not "
+        f"private: it has owner uid {uid} and mode 0755, but must be owned "
+        f"by the server user (uid {uid}) with mode 0700; run 'chmod 700' on "
+        "it, or set DARTWORK_MPL_ARTIFACT_DIR elsewhere.",
+        "/a/../b": "DARTWORK_MPL_ARTIFACT_DIR must not contain '..' "
+        "components; got '/a/../b'. Write the path without parent "
+        "references.",
+        "/a\x00b": "DARTWORK_MPL_ARTIFACT_DIR must not contain a NUL byte; "
+        "got '/a\\x00b'.",
+    }
+    for root, reason in expected.items():
+        assert refusal_reason(root) == reason, root
+    assert refusal_reason(3) == (
+        "The artifact root must be a str path or None; got 'int'."
+    )
+    assert file.read_text() == "sentinel"
+    assert not (folder / "nested").exists()
+    assert stat.S_IMODE(public.stat().st_mode) == 0o755
+
+
+def test_refused_root_reason_covers_owner_host_and_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Foreign owners, unsupported hosts and a relative HOME say what to set."""
+    folder = tmp_path / "private-folder"
+    folder.mkdir(mode=0o700)
+    owner = os.geteuid()
+    with monkeypatch.context() as patch:
+        patch.setattr(disk.os, "geteuid", lambda: owner + 1)
+        assert refusal_reason(str(folder)) == (
+            f"Existing artifact root {str(folder)!r} is not private: it has "
+            f"owner uid {owner} and mode 0700, but must be owned by the "
+            f"server user (uid {owner + 1}) with mode 0700; chown it to uid "
+            f"{owner + 1} and run 'chmod 700', or set "
+            "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+        )
+    with monkeypatch.context() as patch:
+        patch.delattr(disk.os, "O_NOFOLLOW")
+        assert refusal_reason(str(folder)).startswith(
+            "This Python/OS lacks the no-follow directory-descriptor "
+            "operations artifact storage needs"
+        )
+    with monkeypatch.context() as patch:
+        patch.setenv("HOME", "relative-home")
+        assert refusal_reason(None) == (
+            "The default artifact root "
+            "'relative-home/.cache/dartwork-mpl/artifacts' is relative "
+            "because HOME is; set HOME or DARTWORK_MPL_ARTIFACT_DIR to an "
+            "absolute path."
+        )
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory modes")
+def test_refused_root_reason_points_at_unreadable_ancestors(
+    tmp_path: Path,
+) -> None:
+    """An ancestor the walk cannot enter is named, with the permission to grant.
+
+    Neither mode lets the descriptor walk open the ancestor, so the sentence
+    names **that directory** — the one whose mode has to change — rather than
+    the child it could not reach or the raw errno of the failed open.
+    """
+    unsearchable = tmp_path / "unsearchable"
+    unsearchable.mkdir(mode=0o700)
+    unreadable = tmp_path / "unreadable"
+    unreadable.mkdir(mode=0o700)
+    # No access at all, and search without read: a directory handle needs
+    # both, so the artifact walk fails either way.
+    unsearchable.chmod(0o000)
+    unreadable.chmod(0o300)
+    try:
+        for ancestor in (unsearchable, unreadable):
+            assert refusal_reason(str(ancestor / "artifacts")) == (
+                f"Cannot inspect {str(ancestor)!r} inside "
+                f"{str(tmp_path)!r} (Permission denied); the server user "
+                "needs read and search permission on every existing "
+                f"directory of {str(ancestor / 'artifacts')!r}, or set "
+                "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+            ), ancestor
+    finally:
+        unsearchable.chmod(0o700)
+        unreadable.chmod(0o700)
+    assert not (unreadable / "artifacts").exists()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory modes")
+def test_diagnosis_never_reads_through_a_replaced_ancestor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An ancestor swapped mid-diagnosis stops it; it does not redirect it.
+
+    The first version inspected each prefix with a plain ``os.lstat(prefix)``,
+    which does not follow the last component but does follow every ancestor.
+    Replacing one between two of those calls made the sentence describe an
+    object outside the configured ancestry — here a regular file in another
+    directory — and put its path in the operator's log.
+    """
+    ancestry = tmp_path / "ancestor"
+    ancestry.mkdir(mode=0o700)
+    (ancestry / "artifacts").mkdir(mode=0o755)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir(mode=0o700)
+    (elsewhere / "artifacts").write_text("a regular file, not a directory")
+    root = ancestry / "artifacts"
+
+    swapped: list[bool] = []
+
+    def swap_after(inspect: Any) -> Any:
+        """Wrap one inspector so the ancestor is replaced once it is read.
+
+        The name is matched both as the bare component a descriptor-relative
+        call passes and as the whole prefix a path-based call passes — as a
+        string either way, since a path-based call passes a ``Path`` — so this
+        hook fires whichever way the diagnosis walks.
+        """
+
+        def inspected(path: Any, *args: Any, **keywords: Any) -> Any:
+            info = inspect(path, *args, **keywords)
+            if str(path) in ("ancestor", str(ancestry)) and not swapped:
+                swapped.append(True)
+                ancestry.rename(tmp_path / "moved")
+                (tmp_path / "ancestor").symlink_to(
+                    elsewhere, target_is_directory=True
+                )
+            return info
+
+        return inspected
+
+    # Replacing os.stat takes it out of os.supports_dir_fd, which is how the
+    # host check reads support; that check is not what this test is about.
+    monkeypatch.setattr(disk, "_descriptor_operations_available", lambda: True)
+    monkeypatch.setattr(disk.os, "stat", swap_after(disk.os.stat))
+    monkeypatch.setattr(disk.os, "lstat", swap_after(disk.os.lstat))
+    reason = refusal_reason(str(root))
+    assert swapped, "the ancestor was never inspected, so nothing was proven"
+    assert "Cannot inspect" in reason
+    # The swapped-in tree is a file where the root should be; reporting that
+    # would mean the diagnosis had read through the replacement.
+    assert "is not a directory" not in reason
+    assert str(elsewhere) not in reason
+
+
+def test_accepted_roots_still_return_a_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Private, absent and default roots configure exactly as before."""
+    existing = tmp_path / "existing"
+    existing.mkdir(mode=0o700)
+    for root in [str(existing), str(tmp_path / "absent" / "nested"), None]:
+        if root is None:
+            monkeypatch.setenv("HOME", str(tmp_path / "home"))
+        assert isinstance(configure_store(root), ArtifactStore), root
+    assert not (tmp_path / "absent").exists()
+    assert not (tmp_path / "home").exists()
+
+
 def test_partial_publication_never_becomes_readable(
     tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
 ) -> None:

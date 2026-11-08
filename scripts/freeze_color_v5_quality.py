@@ -9,13 +9,15 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Iterable
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import cast
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ORACLE_DIRECTORY = REPO_ROOT / "src/dartwork_mpl/_colors"
 sys.path.insert(0, str(ORACLE_DIRECTORY))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _compatibility_metrics as oracle  # noqa: E402
+import frozen_baseline_inputs as baseline_inputs  # noqa: E402
 
 JsonMap = dict[str, object]
 
@@ -158,10 +160,7 @@ BASELINE_PREVIEW_INPUTS: tuple[str, ...] = (
     "src/dartwork_mpl/asset/mplstyle/presets.json",
     "src/dartwork_mpl/asset/tokens/semantic_tokens.json",
 )
-BASELINE_INPUT_PREFIX = "src/dartwork_mpl/"
-# Git is used only to resolve the commit and read single named objects.
-_GIT_COMMANDS = frozenset({"cat-file", "ls-tree", "rev-parse", "show"})
-_REGULAR_BLOB_MODES = frozenset({b"100644", b"100755"})
+BASELINE_INPUT_PREFIX = baseline_inputs.PACKAGE_PREFIX
 
 DIRECT_PREVIEW_PROBE = r"""import json
 import sys
@@ -196,24 +195,12 @@ print(json.dumps(previews, allow_nan=False, separators=(",", ":"), sort_keys=Tru
 
 
 def _run_git(command: str, *args: str, repo: Path = REPO_ROOT) -> bytes:
-    """Run one allowed Git read command in ``repo`` and return its output.
+    """Run one allowed Git read command (``frozen_baseline_inputs.run_git``).
 
     Only commit resolution and single named-object reads are allowed; an
-    archive or any other command is refused before Git runs. Pathspecs are
-    literal, so a path argument never acts as a pattern.
+    archive or any other command is refused before Git runs.
     """
-    if command not in _GIT_COMMANDS:
-        raise RuntimeError(f"git {command} is not an allowed baseline read")
-    process = subprocess.run(
-        ["git", "--literal-pathspecs", command, *args],
-        cwd=repo,
-        check=False,
-        capture_output=True,
-    )
-    if process.returncode != 0:
-        stderr = process.stderr.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"git {command} {' '.join(args)} failed: {stderr}")
-    return process.stdout
+    return baseline_inputs.run_git(command, *args, repo=repo)
 
 
 def _resolve_baseline(revision: str) -> str:
@@ -267,16 +254,7 @@ def _load_compatibility(commit: str) -> JsonMap:
 
 def _check_input_path(path: str) -> None:
     """Refuse a listed path that is not one plain file path in the package."""
-    parts = path.split("/")
-    if (
-        not path.startswith(BASELINE_INPUT_PREFIX)
-        or any(character in path for character in "\\*?[]{}\0")
-        or any(part in {"", ".", ".."} for part in parts)
-        or PurePosixPath(path).as_posix() != path
-    ):
-        raise RuntimeError(
-            f"baseline input {path!r} is not a package file path"
-        )
+    baseline_inputs.check_input_path(path)
 
 
 def _read_baseline_input(
@@ -288,27 +266,9 @@ def _read_baseline_input(
     must exist and be a regular blob: a symlink, a directory or a submodule at
     that path is refused, never followed or expanded.
     """
-    if path not in listed:
-        raise RuntimeError(f"baseline input {path!r} is not listed")
-    _check_input_path(path)
-    output = _run_git(
-        "ls-tree", "-z", "--full-tree", commit, "--", path, repo=repo
+    return baseline_inputs.read_baseline_input(
+        commit, path, listed=listed, repo=repo, git=_run_git
     )
-    entries = [entry for entry in output.split(b"\0") if entry]
-    if not entries:
-        raise RuntimeError(f"baseline input {path} is missing from {commit}")
-    if len(entries) != 1:
-        raise RuntimeError(f"baseline input {path} names more than one entry")
-    header, _, name = entries[0].partition(b"\t")
-    mode, kind, object_id = header.split(b" ")
-    if name.decode("utf-8") != path:
-        raise RuntimeError(f"baseline input {path} resolved to another entry")
-    if kind != b"blob" or mode not in _REGULAR_BLOB_MODES:
-        raise RuntimeError(
-            f"baseline input {path} is not a regular file "
-            f"(mode {mode.decode('ascii')})"
-        )
-    return _run_git("cat-file", "blob", object_id.decode("ascii"), repo=repo)
 
 
 def _extract_baseline_inputs(
@@ -320,27 +280,17 @@ def _extract_baseline_inputs(
 ) -> None:
     """Write exactly the listed baseline files below a fresh ``destination``.
 
-    Files under ``SOURCE_HASHES`` must keep their pinned raw SHA-256. Each
-    file is created new (``O_EXCL``) inside directories this function makes,
-    so nothing outside the list, and nothing outside ``destination``, is
-    written.
+    Files under ``SOURCE_HASHES`` must keep their pinned raw SHA-256. Nothing
+    outside the list, and nothing outside ``destination``, is written.
     """
-    listed = tuple(inputs)
-    allowed = frozenset(listed)
-    if len(allowed) != len(listed):
-        raise RuntimeError("baseline input list repeats a path")
-    for path in listed:
-        raw = _read_baseline_input(commit, path, listed=allowed, repo=repo)
-        pinned = SOURCE_HASHES.get(path)
-        if pinned is not None and hashlib.sha256(raw).hexdigest() != pinned:
-            raise RuntimeError(f"raw source hash mismatch for {path}")
-        target = destination.joinpath(*path.split("/"))
-        target.parent.mkdir(parents=True, exist_ok=True)
-        flags = (
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-        )
-        with os.fdopen(os.open(target, flags, 0o644), "wb") as stream:
-            stream.write(raw)
+    baseline_inputs.extract_baseline_inputs(
+        commit,
+        destination,
+        inputs=inputs,
+        source_hashes=SOURCE_HASHES,
+        repo=repo,
+        git=_run_git,
+    )
 
 
 def _baseline_direct_previews(commit: str) -> JsonMap:
@@ -472,38 +422,22 @@ def _refuse_protected_output(
 ) -> Path:
     """Return ``output`` resolved, or refuse it if it names a protected input.
 
-    ``output`` names a protected file when, made absolute with symlinks and
-    ``..`` resolved, it is that file's path (relative, ``..`` and symlinked
-    spellings all resolve to it, even before the file exists), or when it is
-    the same existing file (device and inode, which also catches a hard
-    link). This guards these destinations only; it is not a general write
-    policy.
+    See ``frozen_baseline_inputs.refuse_protected_output``: the known inputs
+    and their aliases (relative, ``..``, symlinked, hard-linked) are refused
+    at the moment of the check.
     """
-    resolved = output.resolve()
-    try:
-        status = output.stat()
-    except FileNotFoundError:
-        identity = None
-    else:
-        identity = (status.st_dev, status.st_ino)
-    for path in _protected_inputs() if protected is None else protected:
-        same_file = False
-        if identity is not None:
-            try:
-                other = path.stat()
-            except FileNotFoundError:
-                pass
-            else:
-                same_file = (other.st_dev, other.st_ino) == identity
-        if resolved == path.resolve() or same_file:
-            raise ValueError(
-                f"--output {output} names a protected generator input: {path}"
-            )
-    return resolved
+    return baseline_inputs.refuse_protected_output(
+        output, _protected_inputs() if protected is None else protected
+    )
 
 
 def _write_output(output: Path, text: str) -> None:
-    """Write a quality fixture atomically, never over a protected input."""
+    """Write a quality fixture atomically after refusing a protected input.
+
+    The check, just before writing, refuses the known inputs and their
+    aliases; it does not stop a parent path from being swapped concurrently
+    after it.
+    """
     output = _refuse_protected_output(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_text(output, text)
