@@ -190,6 +190,30 @@ def test_a_side_sets_the_anchor_itself(key: str) -> None:
         dm.figure_legend(fig, **{key: value})
 
 
+def test_a_failed_call_keeps_the_panel_legends() -> None:
+    fig, axs = _grid(1, 2, ("17cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 2)
+    olds = [ax.legend() for ax in axs]
+    with pytest.raises(ValueError, match="bbox_to_anchor"):
+        dm.figure_legend(fig, bbox_to_anchor=(0.5, 1.0))
+    assert [ax.get_legend() for ax in axs] == olds
+    assert fig.legends == []
+
+
+def test_a_failed_call_keeps_the_earlier_figure_legend() -> None:
+    fig, axs = _grid(1, 2, ("17cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 2)
+    old = dm.figure_legend(fig)
+    with pytest.raises(ValueError, match="bbox_to_anchor"):
+        dm.figure_legend(fig, loc="below", bbox_to_anchor=(0.5, 0.0))
+    assert fig.legends == [old]
+    with pytest.raises(TypeError):  # matplotlib refuses the keyword
+        dm.figure_legend(fig, loc="upper left", not_a_legend_keyword=1)
+    assert fig.legends == [old]
+
+
 def test_the_layout_keeps_the_legend_gap_from_the_panels() -> None:
     """Between the legend and the panels' titles: the preset's border pad."""
     fig, axs = _grid(1, 2, ("17cm", "8cm"))

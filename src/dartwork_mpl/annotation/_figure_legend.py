@@ -123,15 +123,29 @@ def _below_suptitle(fig: Figure | SubFigure, renderer: RendererBase) -> float:
     return 1.0
 
 
-def _clear_panel_legends(fig: Figure | SubFigure, names: set[str]) -> None:
-    """Remove the Axes legends holding only ``names`` and this function's figure legend."""
+def _replaced(fig: Figure | SubFigure, names: set[str]) -> list[Legend]:
+    """The legends a new figure legend of ``names`` replaces.
+
+    The Axes legends holding only ``names`` and the figure legend an earlier
+    call drew. Taken before the new legend exists, removed only once it
+    does, so a call that fails leaves every legend as it was.
+    """
+    found: list[Legend] = []
     for ax in fig.axes:
         legend = ax.get_legend()
         if legend is not None and _entry_names(legend) <= names:
-            legend.remove()
-    for legend in list(fig.legends):
-        if getattr(legend, "_dm_figure_legend", False):
-            legend.remove()
+            found.append(legend)
+    found.extend(
+        legend
+        for legend in fig.legends
+        if getattr(legend, "_dm_figure_legend", False)
+    )
+    return found
+
+
+def _remove(legends: list[Legend]) -> None:
+    for legend in legends:
+        legend.remove()
 
 
 def figure_legend(
@@ -142,7 +156,9 @@ def figure_legend(
     The entries are every Axes' labelled artists, each label once, in
     figure order. The Axes legends that hold only those entries (one per
     panel, a twin pair's, ``dm.place_legend``'s) and a legend an earlier
-    call drew are removed; any other legend stays.
+    call drew are removed once the new legend is drawn; any other legend
+    stays, and a call that raises (``bbox_to_anchor`` with a side, say)
+    leaves every legend as it was.
 
     ``loc="best"`` puts the legend above the panels, or right of them when
     that takes clearly less of the panels (at least 10 % and 5 % of their
@@ -162,8 +178,9 @@ def figure_legend(
     still change.
     """
     handles, labels = _figure_entries(fig)
-    _clear_panel_legends(fig, set(labels))
+    replaced = _replaced(fig, set(labels))
     if not handles:
+        _remove(replaced)
         return None
     side = _SIDES.get(loc)
     if side is None and loc != "best":
@@ -171,6 +188,7 @@ def figure_legend(
             handles, labels, loc=cast("LegendLocType", loc), **kw
         )
         legend._dm_figure_legend = True  # type: ignore[attr-defined]
+        _remove(replaced)
         return legend
     legend_kw, explicit = split_ncols(kw)
     for key in ("bbox_to_anchor", "bbox_transform"):
@@ -213,6 +231,7 @@ def figure_legend(
     )
     legend._dm_figure_legend = True  # type: ignore[attr-defined]
     legend._dm_figure_side = plan.side  # type: ignore[attr-defined]
+    _remove(replaced)
     return legend
 
 

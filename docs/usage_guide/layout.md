@@ -778,10 +778,16 @@ or text of the Axes (and its twin) comes within 2 pt of. When none is free it
 goes outside, on a side no other panel sits beyond: above by default, right or
 below when that takes at least 10 % and 5 % of the plot less (many short
 names go right), the side the neighbouring panel's legend took when that fits
-as well. Names are broken at spaces only when the legend would not fit
-otherwise, and a trailing unit in brackets stays whole. `dm.simple_layout`
-places the legend again at the size it gives the Axes: inward only, and with
-the rows of an outside legend chosen again for the final width.
+as well. Names are broken at spaces only when the legend would otherwise run
+past the Axes along its side or take more than 60 % of the plot, or, on a
+side you name right or left, when it is wider than 40 % of the Axes; a
+trailing unit in brackets stays whole, and a way of breaking them into more
+lines per name is taken only when it leaves the plot at least 5 % of the
+canvas more. `dm.simple_layout` places the legend again at the size it gives
+the Axes it lays out: inward only, and with the rows of an outside legend
+chosen again for the final width. A legend you restyle or move through the
+returned `Legend` (its texts, frame, `set_loc`, `set_bbox_to_anchor`) stays
+as you left it.
 
 ```python
 import matplotlib.pyplot as plt
