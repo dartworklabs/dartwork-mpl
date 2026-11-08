@@ -104,7 +104,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   entries), the kinds covered, the first artists and the panels whose data
   it covers. `LEGEND_OVERLAP` still reports titles, axis and tick labels.
   The fix suggestions are `dm.place_legend(ax)` and, for many lines,
-  `dm.label_line_ends(ax)`.
+  `dm.label_line_ends(ax)`. Over the 36 templates and 91 docs example
+  scripts (128 figures) it reports four docs figures, all real legends on
+  lines (`plot_preset_comparison`, `plot_pseudo_alpha`,
+  `plot_helpers_color_selection`, `plot_gp_regression`), which are not
+  changed here; no template.
 
 ### Changed
 
