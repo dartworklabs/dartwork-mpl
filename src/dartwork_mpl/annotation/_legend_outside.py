@@ -15,6 +15,7 @@ from .._figure_geometry import (
     OutsideSide,
     anchor_outside,
     outside_side,
+    outside_span_px,
 )
 from ._legend_fit import (
     ceil_div,
@@ -88,8 +89,8 @@ class OutsidePlan:
 
     ``loss`` is the share of the Axes the legend takes on that side (its
     height above or below, its width right or left, each with the gap);
-    ``fits`` says it is no longer than the Axes along the side;
-    ``canvas_share`` is the plot area it takes (that height times the Axes
+    ``fits`` says it fits across the side (:func:`plan_side`): on the
+    canvas and off the neighbouring panels; ``canvas_share`` is the plot area it takes (that height times the Axes
     width, or that width times the Axes height) as a share of the canvas.
     """
 
@@ -104,7 +105,7 @@ class OutsidePlan:
 
     @property
     def level(self) -> int:
-        """2: fits and leaves 40 % of the plot; 1: fits; 0: runs past the Axes."""
+        """2: fits and leaves 40 % of the plot; 1: fits; 0: does not fit."""
         if not self.fits or self.loss >= 1.0:
             return 0
         return 2 if self.loss <= GOOD_FIT_LOSS else 1
@@ -126,8 +127,10 @@ Sizes: TypeAlias = dict[tuple[Any, ...], Any]
 class OutsideSource:
     """What an outside legend was planned from, for ``settle_legends``.
 
-    ``size`` is the Axes' width and height in px when it was planned;
-    ``sizes`` the trial measurements made so far (:data:`Sizes`).
+    ``size`` is the Axes' width and height in px when it was planned and
+    ``span`` the length the legend could take along its side then
+    (:func:`span_length`); ``sizes`` the trial measurements made so far
+    (:data:`Sizes`).
     """
 
     handles: list[Any]
@@ -136,6 +139,22 @@ class OutsideSource:
     plan: OutsidePlan
     size: tuple[float, float]
     sizes: Sizes = field(default_factory=dict)
+    span: float | None = None
+
+
+def span_length(
+    ax: Axes, side: OutsideSide, legend: Legend, renderer: RendererBase
+) -> float:
+    """How long ``legend`` may be along ``side`` of ``ax`` now, px.
+
+    :func:`~dartwork_mpl._figure_geometry.outside_span_px` with the
+    legend's pad as the margin: it changes when the canvas or a
+    neighbouring panel does, not only when ``ax`` is resized.
+    """
+    low, high = outside_span_px(
+        ax, side, renderer, legend_pad(legend, renderer)
+    )
+    return float(high - low)
 
 
 def _scale(renderer: RendererBase) -> float:
@@ -225,11 +244,15 @@ def plan_side(
 ) -> OutsidePlan:
     """Columns for ``labels`` on ``side`` and what that costs the plot.
 
-    Above and below: the fewest rows whose legend is no wider than the Axes
-    (one column when none is). Right and left: the fewest columns whose
-    legend is no taller than the Axes. ``explicit`` columns win.
-    ``legend_kw`` holds no ``ncol`` / ``ncols``; ``sizes`` keeps the trial
-    sizes for the next plan of the same legend.
+    Above and below: the fewest rows whose legend fits across the side (one
+    column when none does). Right and left: the fewest columns whose legend
+    fits along it. A legend fits when it is no longer than
+    :func:`~dartwork_mpl._figure_geometry.outside_span_px` with its pad as
+    the margin: centred on the Axes and moved in where it would cross the
+    canvas, it stays on the canvas and off the neighbouring panels' columns
+    (rows, right and left), however much longer than the Axes it is.
+    ``explicit`` columns win. ``legend_kw`` holds no ``ncol`` / ``ncols``;
+    ``sizes`` keeps the trial sizes for the next plan of the same legend.
 
     ``room`` (above and below, once laid out) is the height the Axes and
     the legend now share: the layout gives the Axes what a shorter legend
@@ -245,11 +268,12 @@ def plan_side(
     width = height = float("inf")
     ncols = steps[-1]
     fits = False
+    low, high = outside_span_px(ax, side, renderer, pad)
+    limit = high - low
     for ncols in steps:
         width, height = _trial_size(
             ax, handles, tuple(labels), ncols, legend_kw, renderer, sizes
         )
-        limit = axes_box.width if along_width else axes_box.height
         fits = (width if along_width else height) <= limit + 0.5
         if fits:
             break
@@ -280,8 +304,10 @@ def _wrapped_variants(
     """Label sets with long names broken at spaces, for ``side`` (distinct only).
 
     Above and below, each name is limited to the width of one of one to
-    three columns across the Axes (the asked column count only, when one
-    was asked); right and left, to :data:`SIDE_WRAP_SHARES` of the canvas.
+    three columns across the span the legend may take
+    (:func:`~dartwork_mpl._figure_geometry.outside_span_px`; the asked
+    column count only, when one was asked); right and left, to
+    :data:`SIDE_WRAP_SHARES` of the canvas.
     """
     if not labels:
         return []
@@ -290,7 +316,10 @@ def _wrapped_variants(
     em = legend_em(trial, renderer)
     spacing = float(trial.columnspacing) * em
     if side in ("above", "below"):
-        width = ax.get_window_extent(renderer).width
+        low, high = outside_span_px(
+            ax, side, renderer, legend_pad(trial, renderer)
+        )
+        width = high - low
         columns = [explicit] if explicit is not None else [1, 2, 3]
         caps = [(width - (k - 1) * spacing) / k - overhead for k in columns]
     else:
@@ -373,7 +402,7 @@ def side_plans(
     """The plans for ``side``: names as given, then wrapped when allowed.
 
     Names wrap (``dm.config.legend_wrap``) only to make the legend fit:
-    when it runs past the Axes along the side or takes more than
+    when it does not fit across the side (:func:`plan_side`) or takes more than
     :data:`GOOD_FIT_LOSS` of the plot, or, on a side the caller named
     right or left, is wider than :data:`WIDE_SHARE` of the Axes. A legend
     that fits keeps its names on one line. ``sizes`` keeps the trial
@@ -464,6 +493,7 @@ def draw_outside(
         plan,
         (box.width, box.height),
         {} if sizes is None else sizes,
+        span_length(ax, plan.side, legend, renderer),
     )
     remember_look(legend, renderer, str(OUTSIDE_LEGEND_LOCS[plan.side]), kw)
     return legend
@@ -553,6 +583,7 @@ __all__ = [
     "outside_fallback",
     "plan_side",
     "side_plans",
+    "span_length",
     "split_ncols",
     "trial_pad",
 ]

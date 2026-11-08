@@ -155,10 +155,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   another side wins only when it takes at least 10 % and 5 % of the plot
   less (many short entries go right), and a panel takes the side its
   neighbour's legend took when that fits as well. Above and below take
-  the fewest rows that fit the Axes width, right and left the fewest
-  columns that fit its height (they were always one column). Names are
-  broken at spaces only when the legend would otherwise run past the Axes
-  along its side or take more than 60 % of the plot (on a side named right
+  the fewest rows that fit, right and left the fewest columns (they were
+  always one column). A legend fits when, centred on its Axes and moved
+  in where it would cross the canvas edge, it stays on the canvas (its
+  pad from the edge) and off the panels of the other columns (right and
+  left: rows), their labels and titles: it may be wider (taller) than
+  its Axes, and then it also clears the tick labels it spans beside the
+  plot. The layout does not widen the figure's margins for that reach.
+  Names are
+  broken at spaces only when the legend would otherwise not fit
+  or take more than 60 % of the plot (on a side named right
   or left, also when it is wider than 40 % of the Axes), a trailing
   bracketed unit such as `(2019 = 100)` kept whole. A better fit always
   comes first; among ways that fit as well, one breaking the names into

@@ -13,6 +13,7 @@ from ._legend_outside import (
     draw_outside,
     plan_side,
     side_plans,
+    span_length,
     split_ncols,
     trial_pad,
 )
@@ -123,17 +124,23 @@ def _replan(
 
 
 def _settle_outside(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
-    """Choose an outside legend's rows (or columns) again at the Axes size now.
+    """Choose an outside legend's rows (or columns) again at the size now.
 
-    The side never changes. Returns whether the legend was rebuilt.
+    Again when the Axes was resized or the span the legend may take along
+    its side changed (the canvas, or a neighbouring panel that moved;
+    :func:`~._legend_outside.span_length`). The side never changes.
+    Returns whether the legend was rebuilt.
     """
     source = getattr(legend, "_dm_outside_source", None)
     if not isinstance(source, OutsideSource):
         return False
     box = ax.get_window_extent(renderer)
+    span = span_length(ax, source.plan.side, legend, renderer)
     if (
         abs(box.width - source.size[0]) <= 0.5
         and abs(box.height - source.size[1]) <= 0.5
+        and source.span is not None
+        and abs(span - source.span) <= 0.5
     ):
         return False
     plan = _replan(ax, legend, source, renderer)
@@ -145,6 +152,7 @@ def _settle_outside(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
             source.plan,
             (box.width, box.height),
             source.sizes,
+            span,
         )
         return False
     kept: dict[str, Any] = {
