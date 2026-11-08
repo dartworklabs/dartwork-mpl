@@ -55,6 +55,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **One minus sign per figure: the per-value ticks use U+2212 too.**
+  `format_axis_currency` and `decimals=n` of `format_axis_millions` /
+  `_billions` / `_si` / `_myriad` wrote a hyphen-minus (`-$1,500`) while the
+  library's other ticks and `dm.label_bars` wrote matplotlib's minus
+  (`−$800`); they now write matplotlib's minus as well (`−$1,500`, the
+  hyphen when `axes.unicode_minus` is off). Tick text is otherwise
+  unchanged; a negative tick is a little wider (Roboto's minus is as wide
+  as `+` and the digits). Code that parses tick text should accept U+2212
+  or turn `axes.unicode_minus` off.
 - **`dm.label_bars`: a tiny value no longer reads `0`, and log axes drop
   the `.0`.** A non-zero value that the call's one decimal count rounds to
   zero prints the bound it lies within, in the tick unit: `<0.1M` beside

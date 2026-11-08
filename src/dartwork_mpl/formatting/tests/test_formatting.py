@@ -11,6 +11,8 @@ matplotlib.use("Agg")
 
 import dartwork_mpl as dm
 
+_MINUS = "\N{MINUS SIGN}"
+
 
 def _axes():
     fig, ax = plt.subplots()
@@ -169,7 +171,8 @@ class TestFormatAxisSiBoundaries:
     The formatter is expected to:
     - Switch SI prefix at exactly 1e3, 1e6, 1e9, 1e12.
     - Honour ``decimals`` for both magnitude and the zero-tick label.
-    - Carry the sign for negative values.
+    - Carry the sign for negative values: matplotlib's minus (U+2212
+      unless ``axes.unicode_minus`` is off), as every other tick.
     """
 
     @pytest.mark.parametrize(
@@ -181,8 +184,8 @@ class TestFormatAxisSiBoundaries:
             (1_000_000, 1, "1.0M"),
             (1_000_000_000, 1, "1.0G"),
             (1_000_000_000_000, 1, "1.0T"),
-            (-1_500_000_000, 1, "-1.5G"),
-            (-1500, 0, "-2k"),
+            (-1_500_000_000, 1, f"{_MINUS}1.5G"),
+            (-1500, 0, f"{_MINUS}2k"),
         ],
     )
     def test_magnitude_and_sign(
@@ -253,7 +256,7 @@ class TestFormatAxisMillionsZeroDecimals:
             (1_000_000, 1, "M", "1.0M"),
             (1_500_000, 1, "M", "1.5M"),
             (1_500_000, 0, "M", "2M"),
-            (-1_500_000, 1, "M", "-1.5M"),
+            (-1_500_000, 1, "M", f"{_MINUS}1.5M"),
             (1_000_000, 2, " mn", "1.00 mn"),
         ],
     )
@@ -293,7 +296,7 @@ class TestFormatAxisBillionsZeroDecimals:
             (1_000_000_000, 1, "B", "1.0B"),
             (1_500_000_000, 1, "B", "1.5B"),
             (1_500_000_000, 0, "B", "2B"),
-            (-1_500_000_000, 1, "B", "-1.5B"),
+            (-1_500_000_000, 1, "B", f"{_MINUS}1.5B"),
             (1_000_000_000, 2, " bn", "1.00 bn"),
         ],
     )
@@ -321,7 +324,8 @@ class TestFormatAxisBillionsZeroDecimals:
 class TestFormatAxisCurrencyNegativeSign:
     """Negative-value sign placement for ``format_axis_currency``.
 
-    Convention: the minus sign sits OUTSIDE the currency symbol
+    Convention: the minus sign (matplotlib's, U+2212 unless
+    ``axes.unicode_minus`` is off) sits OUTSIDE the currency symbol
     (``-$1,000``, ``-€1,000``), not INSIDE (``$-1,000``). The pre-fix
     implementation did ``f"{symbol}{formatted}"`` which placed the
     minus sign between the symbol and the magnitude when
@@ -331,9 +335,9 @@ class TestFormatAxisCurrencyNegativeSign:
     @pytest.mark.parametrize(
         "value,position,symbol,expected",
         [
-            (-1000, "prefix", "$", "-$1,000"),
-            (-1500, "prefix", "₩", "-₩1,500"),
-            (-1000, "suffix", "€", "-1,000€"),
+            (-1000, "prefix", "$", f"{_MINUS}$1,000"),
+            (-1500, "prefix", "₩", f"{_MINUS}₩1,500"),
+            (-1000, "suffix", "€", f"{_MINUS}1,000€"),
             (1000, "prefix", "$", "$1,000"),
             (0, "prefix", "$", "$0"),
         ],
@@ -345,6 +349,15 @@ class TestFormatAxisCurrencyNegativeSign:
         dm.format_axis_currency(ax, axis="y", symbol=symbol, position=position)
         formatter = ax.yaxis.get_major_formatter()
         assert formatter(value, 0) == expected
+        plt.close(fig)
+
+    def test_ascii_minus_when_unicode_minus_is_off(self) -> None:
+        fig, ax = _axes()
+        dm.format_axis_currency(ax, axis="y")
+        formatter = ax.yaxis.get_major_formatter()
+        with plt.rc_context({"axes.unicode_minus": False}):
+            assert formatter(-1000, 0) == "-$1,000"
+        assert formatter(-1000, 0) == f"{_MINUS}$1,000"
         plt.close(fig)
 
     def test_negative_zero_decimals_does_not_show_minus(self) -> None:

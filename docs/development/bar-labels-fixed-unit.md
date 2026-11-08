@@ -60,9 +60,11 @@ Values: millions −1.25e6, −4e4, 0, 1.25e6, 1.36e9; billions −0.45e9,
 Read off the table: the sign goes before the currency (`-$800`, never
 `$-800`); the symbol sits where `position` puts it; millions and billions
 drop sign and unit on zero (`bare`: `0.0`), currency keeps the symbol and
-drops the sign (`affixed`: `$0`, `0.00€`); the minus is the hyphen-minus
-and millions/billions print no thousands separators (both kept from the
-pre-engine `FuncFormatter` output for parity).
+drops the sign (`affixed`: `$0`, `0.00€`); millions/billions print no
+thousands separators (kept from the pre-engine `FuncFormatter` output for
+parity). The minus in this table is the hyphen-minus of `b9e028ab`; since
+the user's D2 decision (2026-11-08) these ticks write matplotlib's minus
+(U+2212 unless `axes.unicode_minus` is off): `−1.2M`, `−$800`.
 
 ## Rules
 
@@ -86,8 +88,8 @@ Labels keep their own rules where the ticks only keep legacy parity:
 
 5. **Minus glyph.** Matplotlib's minus (U+2212 unless `axes.unicode_minus`
    is off), as every other label, the axis-wide ticks and the label-bars
-   design. The per-value ticks keep their hyphen-minus (D4: tick output
-   unchanged).
+   design. Since D2 (2026-11-08) the per-value ticks write the same minus,
+   so a label and its tick share one glyph (`−$800` beside `−$1,500`).
 6. **Separators.** Always (`1,360M`), as every other label.
 7. **Text the caller writes.** `fmt="{} mn"` gets the number in the tick
    unit and adds no suffix or currency; a `fmt` callable gets the scaled
