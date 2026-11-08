@@ -123,33 +123,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   narrowest one's room); labels that cannot wrap turn 30, 45 or 90 degrees,
   the smallest angle that clears, each label's end at its tick
   (`"xtick"` rotation mode; 90 degrees without clearing only when that
-  leaves them overlapping less than flat), unless turned they would take
-  over 35 % of the figure height. Only the bottom labels turn. After each
-  round the margins are fitted again, and a change that left a plot under
-  30 % of its width or height, or gave any axis more pairs of overlapping
-  neighbouring tick labels, is taken back and not tried again; its
-  collision stays, reported.
+  leaves them overlapping less than flat). Only the bottom labels turn.
+  After each round the margins are fitted again, and a change that left a
+  plot under 30 % of its width or height, or gave any axis more pairs of
+  overlapping neighbouring tick labels, is taken back and not tried again;
+  its collision stays, reported, and a figure whose every change was taken
+  back draws exactly as without fitting. That check alone decides how far
+  labels turn (no cap on how tall turned labels may be). An axis whose
+  ticks matplotlib picks and that a change made shorter keeps the ticks it
+  had while its labels stay half an em apart, so a parted grid keeps
+  `0 2 4 … 10` rather than `0.0 2.5 … 10.0`. A figure whose margins do not
+  settle (a legend wider than the canvas leaves moves them on every fit) is
+  not fitted.
   Nothing is shortened, hidden or made smaller, and a figure without an
   overlap draws exactly as before, at about the same cost. Labels you
   rotate (top labels too), break or align off centre, axis names with line
   breaks or mathtext and spacing you set (`gridspec_kw`, `add_gridspec`,
   `fig.subplots_adjust`) stay; each call first undoes what an earlier call
   fitted, label by label where it is still as fitted, so a re-layout at
-  another size fits again; `use_all_axes=False` fits and undoes only the
+  another size fits again, and starts the margins where the earlier call
+  started them while they are as it left them, so calling it again draws
+  the same figure (with or without fitting; a second call used to move a
+  quarter to a third of the stress figures and templates by up to 12 px);
+  `use_all_axes=False` fits and undoes only the
   Axes of `gs`, and leaves what they share with other Axes (a shared x
   formatter, their grid's spacing) as it is. `dm.simple_layout(fig, fit_labels=False)` or
   `dm.config.fit_labels = False` gives the previous layout pixel for pixel;
   a tuple of step names (`"axis_labels"`, `"space"`, `"wrap"`, `"rotate"`)
   picks steps; an unknown name raises `ValueError`, a step that is not a
-  string `TypeError`. Over a 342-figure stress set, 120 of the 220 with
+  string `TypeError`. Over a 342-figure stress set, 137 of the 220 with
   overlapping, intruding or clipped text clear and none gains one. Of the
   shipped templates in three presets, `advanced/boxplot` in `presentation`
-  (`Variant A…D` turn 30°; its y axis, shorter, gets ticks `0` and `5`) and
+  (`Variant A…D` turn 30°; its shorter y axis keeps its ticks) and
   `small_multiples` in `presentation` (its panels part) change; drawn at
-  9 cm, `advanced/boxplot` keeps its plot and reports its labels. Of the 92
-  docs example figures, `plot_preset_comparison` changes (its panels part;
-  at the narrower width matplotlib picks x ticks `0.0 2.5 … 10.0`). Tick
-  labels that still overlap are reported as `TICK_OVERLAP`.
+  9 cm, `advanced/boxplot` draws as before and reports its labels. Of the
+  92 docs example figures, `plot_preset_comparison` changes (its panels
+  part and keep their x ticks). Tick labels that still overlap are
+  reported as `TICK_OVERLAP`.
 - **Three advanced templates keep their value labels off the data.** The
   labels `VALUE_LABEL_ON_DATA` reported now sit clear of it in every preset:
   `boxplot` prints its means in one row above the plot box instead of on
