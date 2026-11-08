@@ -335,6 +335,36 @@ def test_above_sits_under_a_suptitle() -> None:
     assert dm.validate_figure(fig, checks=LEGEND_CHECKS, quiet=True) == []
 
 
+def test_a_second_layout_draws_the_same_and_a_closed_figure_goes() -> None:
+    """The layout starts its margins where the call before did and
+    reserves the legend's side each time: a second call draws the same.
+    The legend's side is kept on the legend, not in a module record, so a
+    closed figure is collected."""
+    import gc
+    import weakref
+
+    def pixels(fig) -> bytes:
+        fig.canvas.draw()
+        return bytes(fig.canvas.buffer_rgba())
+
+    fig, axs = _grid(1, 2, ("17cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 4)
+        dm.place_legend(ax)
+    legend = dm.figure_legend(fig)
+    assert legend is not None
+    dm.simple_layout(fig)
+    first = pixels(fig)
+    dm.simple_layout(fig)
+    assert fig.legends == [legend]
+    assert pixels(fig) == first
+    ref = weakref.ref(fig)
+    plt.close(fig)
+    del fig, axs, ax, legend
+    gc.collect()
+    assert ref() is None
+
+
 def test_a_subfigure_gets_its_own_legend() -> None:
     fig = plt.figure(figsize=dm.figsize("17cm", "12cm"))
     top, bottom = fig.subfigures(2, 1)
