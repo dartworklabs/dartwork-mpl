@@ -55,6 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **The colour catalogue's swatch hex text is opaque.**
+  `dm.diagnostics.render_color_catalog` drew the hex code on each swatch at
+  alpha 0.85, which left eight swatches (`tw.orange600`, `oc.blue6`,
+  `dc.ember6` among them) under 3:1 as seen; the text is now drawn at full
+  opacity, and every swatch reads at 3.56:1 or more. Colour values are
+  unchanged.
 - **Importing dartwork-mpl no longer rebinds any matplotlib class or
   function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
   import); import still registers the bundled colours, colormaps and fonts.
