@@ -781,12 +781,14 @@ names go right), the side the neighbouring panel's legend took when that fits
 as well. Names are broken at spaces only when the legend would otherwise run
 past the Axes along its side or take more than 60 % of the plot, or, on a
 side you name right or left, when it is wider than 40 % of the Axes; a
-trailing unit in brackets stays whole, and a way of breaking them into more
-lines per name is taken only when it leaves the plot at least 5 % of the
-canvas more. `dm.simple_layout` places the legend again at the size it gives
-the Axes it lays out: inward only, and with the rows of an outside legend
+trailing unit in brackets stays whole. A way that fits better always comes
+first; among ways that fit as well, one breaking the names into more lines
+per name is taken only when it leaves the plot at least 5 % of the canvas
+more. `dm.simple_layout` places the legend again at the size it gives the
+Axes it lays out: inward only, and with the rows of an outside legend
 chosen again for the final width. A legend you restyle or move through the
-returned `Legend` (its texts, frame, `set_loc`, `set_bbox_to_anchor`) stays
+returned `Legend` (its texts and title, frame, a handle's colour, line
+style, width, marker, face or hatch, `set_loc`, `set_bbox_to_anchor`) stays
 as you left it.
 
 ```python

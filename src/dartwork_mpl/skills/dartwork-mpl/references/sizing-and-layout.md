@@ -197,7 +197,8 @@ plt.close(fig)
   `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
   the clearance of tick labels, breaks names that run past the Axes, take
   more than 60 % of the plot or (right, left) are wider than 40 % of the
-  Axes, never into more lines than a 5 % canvas gain is worth, and
+  Axes, a better fit first and, among equal fits, never into more lines
+  than a 5 % canvas gain is worth, and
   `dm.simple_layout(fig)` keeps a title above it. A legend you then restyle
   or move through the returned `Legend` stays as you left it.
 - Eight or more lines: `dm.label_line_ends(ax)` names them at their ends;

@@ -128,9 +128,9 @@ class Config:
         spaces when the legend outside its Axes would otherwise run past the
         Axes along its side or take more than 60 % of the plot (on a side
         named right or left, also when it is wider than 40 % of the Axes); a
-        trailing bracketed unit stays whole, and more lines per name are
-        taken only for at least 5 % of the canvas more plot. ``False`` keeps
-        every name on
+        trailing bracketed unit stays whole. A better fit comes first;
+        among ways that fit as well, more lines per name are taken only for
+        at least 5 % of the canvas more plot. ``False`` keeps every name on
         one line.
     """
 
