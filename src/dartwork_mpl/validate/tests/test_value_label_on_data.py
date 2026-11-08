@@ -837,7 +837,7 @@ def _settled_unit_axes():
     return fig, ax
 
 
-def _found(fig):
+def _second_review_warnings(fig):
     return dm.validate_figure(fig, checks=("VALUE_LABEL_ON_DATA",), quiet=True)
 
 
@@ -853,7 +853,7 @@ def test_a_line_through_a_math_symbols_tail_is_reported(label):
             [centre - _ACROSS, centre + _ACROSS]
         )
         ax.plot(ends[:, 0], ends[:, 1], linewidth=0.8)
-        assert _found(fig)
+        assert _second_review_warnings(fig)
     finally:
         plt.close(fig)
 
@@ -876,7 +876,7 @@ def test_a_label_a_curved_clip_hides_entirely_is_not_reported():
             path_effects=[patheffects.Normal()],
         )
         text.set_clip_path(Circle((0.5, 0.5), 0.2, transform=ax.transData))
-        warnings = _found(fig)
+        warnings = _second_review_warnings(fig)
         drawn = np.asarray(fig.canvas.buffer_rgba()).copy()
         text.set_visible(False)
         fig.canvas.draw()
