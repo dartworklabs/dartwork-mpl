@@ -29,17 +29,17 @@ PATCH_TARGETS = [
         "_rebuildable",
     ),
     (
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._reservations",
         "_reservation_edge",
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._reservations",
         "_figure_artist_reservations",
     ),
     (
         # formatting/tests/test_twin_spines.py turns the spine step off to
         # re-enact 0.7 (install_07); simple_layout must still read it here.
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._simple_layout",
         "_show_twin_spines",
-        "dartwork_mpl.layout",
+        "dartwork_mpl.layout._simple_layout",
         "simple_layout",
     ),
     # The artifact tests (test_artifact_store.py, test_input_commit_observer.py,

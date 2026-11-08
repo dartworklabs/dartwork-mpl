@@ -158,6 +158,16 @@ jobs:
   # Exercise secure FastMCP 2.x/3.x plus legacy 2.13.3 source/API coverage.
   # The legacy overlay uses its old vulnerable SDK and is not a secure install.
   # The existing full-suite Python 3.12 guard remains the primary repo gate.
+  #
+  # What each cell guards (tests/architecture/test_mcp_ci_matrix.py pins it):
+  #   2.13.3  legacy source/API overlay, below the supported range
+  #   2.14.7  lowest admitted 2.x, and the last 2.x release
+  #   3.4.10  lowest admitted 3.x: the first release outside GHSA-7xgj-8392-5q4r
+  # The locked FastMCP is no cell: every `test` job runs the whole suite on it.
+  # Do not move a cell to the lock version when the lock moves; that would
+  # drop the floor the pyproject range still admits. Each cell also runs the
+  # data-repair wire contract, which reads its golden by fastmcp.__version__,
+  # so a cell version needs an entry in legacy_calls.json.
   test-mcp-artifacts:
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     env:
@@ -204,7 +214,8 @@ jobs:
             "${runtime[@]}" python -c 'from importlib.metadata import version; from packaging.version import Version; assert Version(version("mcp")) >= Version("1.30.0")'
           fi
           "${runtime[@]}" python -c 'import json, sys; from importlib.metadata import version; assert sys.version_info[:2] == (3, 12); assert version("fastmcp") == "${{ matrix.fastmcp }}"; print(json.dumps({"python": sys.version, "fastmcp": version("fastmcp"), "mcp": version("mcp")}))' | tee "$RUNNER_TEMP/artifact-runtime.json"
-          "${runtime[@]}" pytest tests/mcp/artifacts -q --no-cov \
+          "${runtime[@]}" pytest tests/mcp/artifacts \
+            tests/contracts/test_mcp_data_repair_contract.py -q --no-cov \
             --junitxml="$RUNNER_TEMP/pytest-artifacts.xml" 2>&1 | tee "$RUNNER_TEMP/artifact-summary.txt"
           uv run --no-sync python scripts/check_integration_junit.py \
             "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts
