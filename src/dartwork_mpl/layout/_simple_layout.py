@@ -330,10 +330,11 @@ def simple_layout(
     _color_twins(fig)
 
     last: _GridEdges | None = None
+    settled = False
 
     def fit_margins() -> bool:
         """Fit the margins to the content now; ``False``: nothing to measure."""
-        nonlocal last
+        nonlocal last, settled
         step, last = _fit_margins(
             fig,
             actual_gs,
@@ -345,13 +346,16 @@ def simple_layout(
             format_ticks=format_ticks,
             verbose=verbose,
         )
+        settled = step is not None and step.delta_px < _CONVERGE_TOL_PX
         return step is not None
 
-    if fit_margins() and steps:
+    if fit_margins() and settled and steps:
         # Text that still collides at the fitted size climbs the ladder
         # (``_fit_labels.climb``): every change is followed by a fresh
         # margin fit and kept only if it crushed no plot and added no tick
-        # overlap.
+        # overlap. Margins that did not settle (a legend wider than the
+        # canvas leaves moves them on every fit) would move under each
+        # round, so no round could be judged: such a figure is not fitted.
         climb(fig, steps, actual_gs, scope, fit_margins)
     remember_layout(actual_gs, start)
     # The bar labels were settled in each step, so they are reported even

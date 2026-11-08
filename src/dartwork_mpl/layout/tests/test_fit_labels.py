@@ -1166,3 +1166,110 @@ def test_fit_labels_false_gives_the_auto_locator_back() -> None:
     assert ax.yaxis.isDefault_majloc
     ref, _ref_ax = _boxplot(False)
     assert _pixels(fig) == _pixels(ref)
+
+
+@pytest.mark.filterwarnings("ignore:dm.label_bars:UserWarning")
+def test_margins_that_do_not_settle_are_not_fitted() -> None:
+    """advanced/bar_grouped in presentation, with longer phase names: its
+    legend is wider than the canvas leaves the plot, so every margin fit
+    moves the plot (33 px a step). Turned upright, its names would be
+    judged on a plot still moving, and each fit after a round would move
+    it on until it was a pixel wide; the figure is not fitted and draws as
+    without the ladder."""
+    draws = []
+    for fit in (False, True):
+        fig, ax = _template_figure(
+            "advanced/bar_grouped.py", "presentation", None
+        )
+        ax.set_xticks(
+            ax.get_xticks(),
+            [
+                "Phase 1 design",
+                "Phase 2 build",
+                "Phase 3 test",
+                "Phase 4 launch",
+            ],
+        )
+        dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+        draws.append(_pixels(fig))
+        assert ax.get_window_extent().width > 0.3 * fig.bbox.width
+    assert _angles(ax) == {0.0}
+    assert draws[1] == draws[0]
+
+
+def _bars_sharing_y(n: int):
+    """Bars with long one-word names in a nested grid, a line beside them
+    sharing their y axis (one locator)."""
+    dm.style.use("presentation")
+    fig = plt.figure(figsize=dm.figsize("14.5cm", "standard"))
+    root = fig.add_gridspec(1, 2)
+    inner = root[0].subgridspec(1, 1)
+    bars = fig.add_subplot(inner[0])
+    line = fig.add_subplot(root[1], sharey=bars)
+    bars.bar(range(n), np.linspace(1, 9, n))
+    bars.set_xticks(range(n), _ONE_WORD[:n])
+    line.plot([0, 1], [0, 9])
+    return fig, inner, bars, line
+
+
+def test_a_shared_locator_keeps_its_budget_only_with_every_sharer() -> None:
+    """Turned upright, the names make the bars' plot shorter. A layout of
+    every Axes keeps the shared y ticks; a layout of the bars' grid alone
+    does not change the locator the line, left out, shares."""
+    fig, _inner, bars, line = _bars_sharing_y(4)
+    dm.simple_layout(fig, fit_labels=False)
+    unfitted = _visible_ticks(bars.yaxis)
+
+    fig, _inner, bars, line = _bars_sharing_y(4)
+    auto = bars.yaxis.get_major_locator()
+    dm.simple_layout(fig)
+    assert _angles(bars) == {90.0}
+    assert bars.yaxis.get_major_locator() is not auto
+    assert _visible_ticks(bars.yaxis) == unfitted == ["0", "2", "4", "6", "8"]
+
+    fig, inner, bars, line = _bars_sharing_y(4)
+    auto = bars.yaxis.get_major_locator()
+    dm.simple_layout(fig, gs=inner, use_all_axes=False)
+    assert _angles(bars) == {90.0}
+    assert bars.yaxis.get_major_locator() is auto
+    assert line.yaxis.get_major_locator() is auto
+    assert _visible_ticks(bars.yaxis) != unfitted  # what was not kept
+
+
+def test_ticks_that_would_crowd_the_shorter_axis_are_matplotlibs() -> None:
+    """Turned upright, eight names leave the plot 37 % of its height: the
+    five ticks it had would sit 11 px apart (half an em is 38 px), so the
+    axis takes matplotlib's ticks for its new length."""
+    ticks = []
+    for fit in (False, True):
+        fig, ax = _bars(_ONE_WORD, width="12cm", preset="presentation")
+        auto = ax.yaxis.get_major_locator()
+        dm.simple_layout(fig, fit_labels=fit)
+        ticks.append(_visible_ticks(ax.yaxis))
+    assert _angles(ax) == {90.0}
+    assert ax.yaxis.get_major_locator() is auto
+    assert ticks == [["0", "2", "4", "6", "8"], ["0", "5"]]
+
+
+def test_a_locator_you_set_after_a_layout_stays() -> None:
+    from matplotlib.ticker import MaxNLocator
+
+    fig, ax = _boxplot(None)
+    dm.simple_layout(fig, margin=dm.inch(0.08))
+    mine = MaxNLocator(4)
+    ax.yaxis.set_major_locator(mine)
+    restore_fitted(fig)
+    assert ax.yaxis.get_major_locator() is mine
+
+
+def test_a_figure_pyplot_does_not_manage_starts_where_it_did() -> None:
+    """``GridSpec.update`` moves only the Axes of pyplot's open figures;
+    the undo moves the others itself."""
+    fig, ax = _bars(_ONE_WORD)
+    gs = ax.get_gridspec()
+    dm.simple_layout(fig)
+    plt.close(fig)
+    restore_fitted(fig)
+    assert ax.get_position().bounds == pytest.approx(
+        gs[0].get_position(fig).bounds
+    )

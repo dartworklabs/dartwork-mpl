@@ -212,7 +212,6 @@ class _Kept:
 
     kept: Locator
     auto: Locator
-    owner: Axis | None  # the axis the auto locator measured its length on
 
 
 # axis -> the tick budget this module kept on it
@@ -369,10 +368,9 @@ def _place(fig: Figure, gs: GridSpec) -> None:
 
 
 def _put_back_auto(axis: Axis, kept: _Kept) -> None:
-    """The auto locator ``kept`` replaced, measuring the axis it did."""
+    """The auto locator ``kept`` replaced, as matplotlib's own again."""
     axis.set_major_locator(kept.auto)
     axis.isDefault_majloc = True
-    kept.auto.set_axis(kept.owner)
 
 
 def _all_in(members: Iterable[Axes], ids: set[int]) -> bool:
@@ -1292,7 +1290,6 @@ def _tick_budgets(axes: Sequence[Axes]) -> list[_Budget]:
             if (
                 id(auto) in seen
                 or not isinstance(auto, AutoLocator)
-                or type(auto) is not AutoLocator
                 or not axis.isDefault_majloc
                 or not isinstance(owner := auto.axis, Axis)
             ):
@@ -1313,12 +1310,11 @@ def _keep_tick_budgets(axes: Sequence[Axes], state: FitState) -> list[_Change]:
     Matplotlib gives an axis as many intervals as fit its length, so a plot
     a rung made smaller can lose ticks it had room for: ``0 2 4 ... 10``
     becomes ``0.0 2.5 ... 10.0``, a value axis keeps two ticks. Such an
-    axis keeps the ticks it had, unless the climb fitted its own labels
-    (they were what collided) or another Axes it shares them with is not
-    laid out; the change stays only if its labels stay ``_TARGET_EM``
-    apart once the margins are fitted again (:func:`_labels_clear`). An
-    axis the climb made longer (a plot an axis name had crushed) takes the
-    ticks of its new length.
+    axis keeps the ticks it had, unless another Axes it shares them with
+    is not laid out. Like every change, it stays only if the check after
+    the round finds no harm, and only if its labels stay ``_TARGET_EM``
+    apart then (:func:`_labels_clear`). An axis the climb made longer (a
+    plot an axis name had crushed) takes the ticks of its new length.
     """
     ids = {id(ax) for ax in axes}
     changes: list[_Change] = []
@@ -1337,9 +1333,6 @@ def _keep_tick_budgets(axes: Sequence[Axes], state: FitState) -> list[_Change]:
         siblings = shared.get_siblings(ax)
         if not _all_in(siblings, ids):
             continue
-        fitted = state.wrapped | set(state.turned)
-        if is_x and any(id(sibling.xaxis) in fitted for sibling in siblings):
-            continue
         kept = _with_budget(budget.auto, budget.nbins)
         if np.array_equal(_ticks(kept, axis), _ticks(budget.auto, axis)):
             continue  # the same ticks at this length
@@ -1356,7 +1349,7 @@ def _set_budget(
     which: Literal["x", "y"],
 ) -> _Change:
     axis = budget.axis
-    record = _Kept(kept, budget.auto, axis)
+    record = _Kept(kept, budget.auto)
     axis.set_major_locator(kept)
     _KEPT[axis] = record
 
