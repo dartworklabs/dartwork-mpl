@@ -39,7 +39,15 @@ contours and polar plots are not data here.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, TypedDict
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    TypeAlias,
+    TypedDict,
+    cast,
+)
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -176,9 +184,12 @@ _NO_STROKE = ("None", "none", "", " ")
 
 
 def _shown(artist: Artist) -> bool:
-    """Visible and not at an artist alpha of 0."""
+    """Visible and not at an artist alpha of 0 (one per item: any above 0)."""
     alpha = artist.get_alpha()
-    return bool(artist.get_visible() and (alpha is None or alpha > 0))
+    return bool(
+        artist.get_visible()
+        and (alpha is None or np.any(np.asarray(alpha, dtype=float) > 0))
+    )
 
 
 def _text_inks(text: Text) -> bool:
@@ -410,19 +421,29 @@ def _data_hits(box: Bbox, data: _Data, frame: Bbox, touch: float) -> list[_Hit]:
     return found
 
 
-class _Area(NamedTuple):
-    """A filled collection where it is drawn: its outlines in display px and
-    the half width its edge is stroked at (0 when it draws no edge)."""
+class _Outline(NamedTuple):
+    """One polygon an area draws: its path in display px and the half width
+    its own edge is stroked at (0 when it draws no edge)."""
 
-    name: str
-    paths: list[Path]
+    path: Path
     half: float
 
 
-def _drawn_paths(coll: PolyCollection) -> list[Path]:
-    """Each path in display px, placed as ``Collection.draw`` places it:
-    its own transform (``get_transforms``), the collection's transform, then
-    its offset in display px; the lists repeat to the longest."""
+class _Area(NamedTuple):
+    """A filled collection where it is drawn: the polygons that draw ink, and
+    where its clip lets them be drawn (a region and a clip path, in px)."""
+
+    name: str
+    outlines: list[_Outline]
+    region: Bbox
+    clip_path: Path | None
+
+
+def _drawn_paths(coll: PolyCollection) -> list[tuple[int, Path]]:
+    """Each item's path in display px, placed as ``Collection.draw`` places
+    it: its own transform (``get_transforms``), the collection's transform,
+    then its offset in display px; the lists repeat to the longest. Each
+    comes with its item index, which picks its colours and width."""
     paths = list(coll.get_paths())
     if not paths:
         return []
@@ -434,7 +455,7 @@ def _drawn_paths(coll: PolyCollection) -> list[Path]:
         if len(offsets)
         else np.zeros((0, 2))
     )
-    drawn: list[Path] = []
+    drawn: list[tuple[int, Path]] = []
     for i in range(max(len(paths), len(shifts))):
         path = paths[i % len(paths)]
         if len(items):
@@ -445,64 +466,109 @@ def _drawn_paths(coll: PolyCollection) -> list[Path]:
             if not (np.isfinite(dx) and np.isfinite(dy)):
                 continue
             path = Affine2D().translate(dx, dy).transform_path(path)
-        drawn.append(path)
+        drawn.append((i, path))
     return drawn
 
 
-def _edge_half(coll: Collection, renderer: RendererBase) -> float:
-    """Half the width the edge is stroked at, in px; 0 when no edge inks."""
-    widths = np.asarray(coll.get_linewidth(), dtype=float)
-    if not len(widths) or not np.any(widths > 0):
-        return 0.0
-    if not _any_alpha(coll.get_edgecolor()):
-        return 0.0
-    return float(np.asarray(renderer.points_to_pixels(widths.max()))) / 2
+def _drawn_outlines(
+    coll: PolyCollection, renderer: RendererBase
+) -> list[_Outline]:
+    """The polygons ``coll`` draws ink with, each by its own style.
+
+    Item ``i`` takes its face, edge and line width as the renderer cycles
+    them (each list repeating); its alpha is its colour's times the
+    collection's alpha for it (one value, or one per polygon). An item
+    whose face, hatch and edge all draw nothing is left out, and an edge
+    counts at its own width, not the widest of the collection.
+    """
+    faces = np.asarray(coll.get_facecolor(), dtype=float).reshape(-1, 4)
+    edges = np.asarray(coll.get_edgecolor(), dtype=float).reshape(-1, 4)
+    widths = np.asarray(coll.get_linewidth(), dtype=float).reshape(-1)
+    alpha = coll.get_alpha()
+    alphas = np.asarray(1.0 if alpha is None else alpha, dtype=float).reshape(
+        -1
+    )
+    hatched = bool(
+        coll.get_hatch()
+        and coll.get_hatch_linewidth() > 0
+        and _any_alpha(coll.get_hatchcolor())
+    )
+    found: list[_Outline] = []
+    for i, path in _drawn_paths(coll):
+        a = float(alphas[i % len(alphas)]) if len(alphas) else 1.0
+        face = bool(len(faces)) and faces[i % len(faces), 3] * a > 0
+        width = float(widths[i % len(widths)]) if len(widths) else 0.0
+        edge = (
+            bool(len(edges)) and width > 0 and edges[i % len(edges), 3] * a > 0
+        )
+        if not (face or edge or (hatched and a > 0)):
+            continue
+        half = (
+            float(np.asarray(renderer.points_to_pixels(width))) / 2
+            if edge
+            else 0.0
+        )
+        found.append(_Outline(path, half))
+    return found
 
 
 def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
-    """The filled areas of one plot box that draw ink."""
+    """The filled areas of one plot box that draw ink, and their clip.
+
+    The clip is read as a label's is (:func:`_clip_region`,
+    :func:`_clip_path`: its clip box and the extent of its clip path, when
+    ``clip_on``); those read only the Artist clip API.
+    """
     found: list[_Area] = []
     for owner in owners:
         for coll in owner.collections:
-            if not isinstance(coll, PolyCollection) or not _collection_inks(
-                coll
-            ):
+            if not isinstance(coll, PolyCollection) or not coll.get_visible():
                 continue
             try:
-                paths = _drawn_paths(coll)
+                outlines = _drawn_outlines(coll, renderer)
+                region = _clip_region(cast("Text", coll))
+                clip_path = _clip_path(cast("Text", coll))
             except BBOX_ERRORS:
                 continue
-            found.append(
-                _Area(
-                    _name(coll) or _UNNAMED_AREA,
-                    paths,
-                    _edge_half(coll, renderer),
+            if outlines:
+                found.append(
+                    _Area(
+                        _name(coll) or _UNNAMED_AREA,
+                        outlines,
+                        region,
+                        clip_path,
+                    )
                 )
-            )
     return found
 
 
 def _area_hits(
     box: Bbox, areas: list[_Area], frame: Bbox, touch: float
 ) -> list[_Hit]:
-    """Areas whose outline ``box`` crosses, or holds whole, inside the plot box.
+    """Areas whose drawn outline ``box`` crosses, or holds whole.
 
-    The outline reaches ``half`` past its path (the edge's stroke); contact
-    within ``touch`` of the legend's edge is a touch. A box inside an
-    area's interior meets no outline (``filled=False``).
+    The legend's box is cut to the plot box and to where the area's clip
+    lets it draw, as a label's box is (a clip path that lets none of it
+    through draws none of it there). Each polygon's outline reaches its
+    ``half`` past its path (its edge's stroke); contact within ``touch``
+    of the legend's edge is a touch. A box inside an area's interior meets
+    no outline (``filled=False``).
     """
     clipped = _clip(box, frame)
     if clipped is None:
         return []
     found: list[_Hit] = []
     for area in areas:
-        reach = clipped.padded(area.half - touch)
-        if reach.width <= 0 or reach.height <= 0:
-            continue
-        if any(
-            path.intersects_bbox(reach, filled=False) for path in area.paths
-        ):
-            found.append(_Hit("area", area.name))
+        for outline in area.outlines:
+            reach = clipped.padded(outline.half - touch)
+            if reach.width <= 0 or reach.height <= 0:
+                continue
+            cut = _within_path(_clip(reach, area.region), area.clip_path)
+            if cut is not None and outline.path.intersects_bbox(
+                cut, filled=False
+            ):
+                found.append(_Hit("area", area.name))
+                break
     return found
 
 
