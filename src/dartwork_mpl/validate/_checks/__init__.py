@@ -35,6 +35,7 @@ from . import (  # noqa: F401  (imported to register their checks and fixes)
     text_contrast,
     tick_crowd,
     tick_decimal,
+    tick_overlap,
     tick_rotation,
     unit_dup,
     value_label_decimal,
