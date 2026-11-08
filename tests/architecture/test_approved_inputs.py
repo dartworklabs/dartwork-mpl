@@ -120,35 +120,55 @@ def _under(path: object, root: Path) -> bool:
     return text == base or text.startswith(base + os.sep)
 
 
+def _is_relative(path: object) -> bool:
+    """Whether ``path`` is a relative path (resolved against the cwd)."""
+    if isinstance(path, int) or not isinstance(path, str | bytes | os.PathLike):
+        return False
+    return not os.path.isabs(os.fsdecode(os.fspath(path)))
+
+
+# The real excluded folder. A guarded call never reaches it: the check is
+# lexical (``os.path.abspath``) and the call is refused before it runs.
+_PROTECTED_DOCS = REPO_ROOT / "docs" / "superpowers"
+
+
 def _touches(
     args: tuple[object, ...],
     kwargs: dict[str, object],
     root: Path,
     descriptors: list[int],
 ) -> bool:
-    """Whether one ``os`` call reaches the synthetic ``root``.
+    """Whether one ``os`` call could reach a test input or the excluded docs.
 
-    It does when its path is ``root`` or below it, when it is relative to a
-    directory descriptor (``dir_fd``), or when it acts on one of
-    ``descriptors``. Anything else -- the interpreter, site-packages, a
-    coverage tracer canonicalising a code file -- is not this test's input.
+    It does when it is relative to a directory descriptor (``dir_fd``),
+    when it acts on one of ``descriptors``, when its path is relative (so
+    it resolves against the cwd, which may be the repository), or when its
+    path is ``root``, ``docs/superpowers`` of this repository, or below
+    either. Anything else -- the interpreter, site-packages, a coverage
+    tracer canonicalising a code file by absolute path -- is not this
+    test's input.
     """
     path = args[0] if args else kwargs.get("path", ".")
     if kwargs.get("dir_fd") is not None:
         return True
     if isinstance(path, int) and not isinstance(path, bool):
         return path in descriptors
-    return _under(path, root)
+    if _is_relative(path):
+        return True
+    return _under(path, root) or _under(path, _PROTECTED_DOCS)
 
 
 @contextmanager
 def _refusing_filesystem(
     monkeypatch: pytest.MonkeyPatch, root: Path
 ) -> Iterator[None]:
-    """Fail on any filesystem call that reaches ``root`` while the block runs.
+    """Fail on any filesystem call that ``_touches`` while the block runs.
 
-    Other calls go to the real functions, so a tracer or the test runner
-    that stats its own files cannot fail the check.
+    That is a call reaching ``root`` or this repository's
+    ``docs/superpowers``, a relative path, a ``dir_fd`` call or a call on a
+    descriptor. Other calls go to the real functions, so a tracer or the
+    test runner that stats its own files by absolute path cannot fail the
+    check.
     """
     originals = {name: getattr(os, name) for name in _FS_CALLS}
 
@@ -247,6 +267,66 @@ def test_refusing_guard_blocks_the_synthetic_root_and_nothing_else(
                 os.open(tmp_path, os.O_RDONLY)
     finally:
         os.close(descriptor)
+
+
+def test_refusing_guard_blocks_relative_and_excluded_docs_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Relative paths and this repository's docs/superpowers are refused.
+
+    These paths must never reach the disk, so the guard here wraps a
+    backstop in place of the real functions: the backstop records any such
+    path that gets past the guard and returns without touching the disk,
+    and the cwd is a synthetic folder. The assertions are that the guard
+    raised and the backstop saw nothing.
+    """
+    work = tmp_path / "cwd"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    real = {name: getattr(os, name) for name in _FS_CALLS}
+    protected = os.path.abspath(_PROTECTED_DOCS)
+    leaked: list[tuple[str, object]] = []
+
+    def backstop(name: str) -> Callable[..., object]:
+        def call(*args: object, **kwargs: object) -> object:
+            path = args[0] if args else kwargs.get("path", ".")
+            if isinstance(path, str | bytes | os.PathLike):
+                text = os.fsdecode(os.fspath(path))
+                absolute = os.path.abspath(text)
+                if (
+                    not os.path.isabs(text)
+                    or absolute == protected
+                    or absolute.startswith(protected + os.sep)
+                ):
+                    leaked.append((name, path))
+                    return None
+            return real[name](*args, **kwargs)
+
+        return call
+
+    for name in _FS_CALLS:
+        monkeypatch.setattr(os, name, backstop(name))
+    forbidden: tuple[str | bytes | Path, ...] = (
+        "docs/superpowers/specs/decoy-design.md",
+        b"docs/superpowers/specs/decoy-design.md",
+        Path("docs/superpowers/specs/decoy-design.md"),
+        "outside/decoy.md",
+        _PROTECTED_DOCS,
+        _PROTECTED_DOCS / "specs" / "decoy-design.md",
+        str(_PROTECTED_DOCS / "plans" / ".." / "specs" / "decoy-design.md"),
+        os.fsencode(_PROTECTED_DOCS / "specs"),
+    )
+
+    with _refusing_filesystem(monkeypatch, tmp_path / "root"):
+        for path in forbidden:
+            for function in (os.stat, os.lstat):
+                with pytest.raises(AssertionError, match="was touched"):
+                    function(path)
+        with pytest.raises(AssertionError, match="was touched"):
+            os.listdir()
+        os.lstat(REPO_ROOT / "docs")  # the parent folder is outside both
+
+    assert leaked == []
 
 
 def test_manifest_lists_exactly_the_authorized_files() -> None:
