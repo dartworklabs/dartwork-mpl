@@ -983,6 +983,31 @@ def test_small_value_asked_precision_wins(keywords, expected):
     assert _texts(texts) == expected
 
 
+@pytest.mark.parametrize(
+    ("values", "unit", "expected"),
+    [
+        # Past twelve decimals: each decade keeps its own digits, no bound.
+        (
+            [1e-14, 1e-13, 1e-12, 45.0],
+            False,
+            ["0.00000000000001", "0.0000000000001", "0.000000000001", "45"],
+        ),
+        # A carry in the rounding drops the digits it made meaningless.
+        ([9.999e6, 0.9999e6], True, ["10M", "1M"]),
+    ],
+)
+def test_log_labels_keep_three_significant_digits_without_cap_or_padding(
+    values, unit, expected
+):
+    fig, ax, _ = _plain(values)
+    ax.set_yscale("log")
+    if unit:
+        dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+
+
 def test_labels_follow_a_switch_to_a_log_value_axis():
     # Labelled first, the axis made log afterwards and given the same
     # millions ticks again (set_yscale resets the formatter): the tick scale

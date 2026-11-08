@@ -385,6 +385,30 @@ class BarLabel(Annotation):
         super().update_positions(renderer)
 
 
+def _own_decimals(value: float, digits: int = 3) -> int:
+    """One label's decimals on a log (non-linear) value axis.
+
+    ``digits`` significant digits of the value as it rounds (``9.999`` is
+    ``10``, not ``10.00``), cut to the fewest that print it exactly
+    (``45``, not ``45.0``). No upper cap: ``1e-14`` keeps its digits instead
+    of collapsing into a bound, so labels a decade apart never print alike.
+    """
+    if not math.isfinite(value) or value == 0:
+        return 0
+
+    def significant(v: float) -> int:
+        return max(0, digits - 1 - math.floor(math.log10(abs(v))))
+
+    decimals = significant(value)
+    rounded = round(value, decimals)
+    if rounded != 0:
+        decimals = significant(rounded)
+        rounded = round(value, decimals)
+    while decimals > 0 and round(rounded, decimals - 1) == rounded:
+        decimals -= 1
+    return decimals
+
+
 @dataclass(eq=False)
 class BarLabelFamily:
     """One :func:`label_bars` call: its labels, the bars and the options.
@@ -433,7 +457,7 @@ class BarLabelFamily:
             [v for v, flat in zip(scaled, on_linear, strict=True) if flat]
         )
         return [
-            shared if flat else value_label_decimals([v])
+            shared if flat else _own_decimals(v)
             for v, flat in zip(scaled, on_linear, strict=True)
         ]
 
