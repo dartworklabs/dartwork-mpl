@@ -9,7 +9,7 @@ the ladder's ordering rules.
 import pytest
 
 from dartwork_mpl.annotation._axis_labels import _parse_axis
-from dartwork_mpl.annotation._legend_fit import InsideSpot
+from dartwork_mpl.annotation._legend_fit import InsideSpot, wrap_label
 from dartwork_mpl.annotation._legend_outside import (
     OutsidePlan,
     choose,
@@ -143,6 +143,34 @@ def test_a_better_fit_wins_whatever_it_costs() -> None:
     assert choose([above, right]) is above  # same level, 7 % less
     overflowing = _plan("above", 0.2, fits=False)
     assert choose([overflowing, _plan("right", 0.9)]).side == "right"
+
+
+def test_a_large_share_needs_the_relative_gain_too() -> None:
+    """6 points less of the plot is not enough when it is under 10 % less."""
+    above = _plan("above", 0.9)
+    assert choose([above, _plan("right", 0.84)]) is above  # 6.7 % less
+    right = _plan("right", 0.8)
+    assert choose([above, right]) is right  # 11 % and 10 points less
+
+
+# ------------------------------------------------------------ wrapping
+def _chars(text: str) -> float:
+    return float(len(text))
+
+
+def test_a_bracketed_unit_is_one_word() -> None:
+    """``(2019 = 100)`` moves to the next line whole, never split at a space."""
+    text = "Seoul region index (2019 = 100)"
+    assert wrap_label(text, 24, _chars) == "Seoul region index\n(2019 = 100)"
+    assert wrap_label(text, 12, _chars) == "Seoul region\nindex\n(2019 = 100)"
+
+
+def test_wrapping_is_greedy_and_leaves_what_it_cannot_break() -> None:
+    assert wrap_label("one two three four", 9, _chars) == "one two\nthree\nfour"
+    assert wrap_label("short", 3, _chars) == "short"  # one word
+    assert wrap_label("fits as is", 10, _chars) == "fits as is"
+    assert wrap_label("two\nlines given", 4, _chars) == "two\nlines given"
+    assert wrap_label(r"$\alpha$ is math", 4, _chars) == r"$\alpha$ is math"
 
 
 def test_split_ncols_reads_either_spelling() -> None:

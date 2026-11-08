@@ -28,6 +28,10 @@ from dartwork_mpl.annotation._legend_fit import (
     free_sides,
     measure_ink,
 )
+from dartwork_mpl.annotation._legend_outside import (
+    _wrapped_variants,
+    side_plans,
+)
 from dartwork_mpl.annotation._place_legend import inside_spots
 from tests.support.mpl_observe import drawn_renderer, legend_ncols
 
@@ -235,11 +239,21 @@ def test_twins_and_hidden_panels_do_not_block_a_side() -> None:
 
 
 def test_panels_of_one_figure_agree_on_the_side() -> None:
-    """The second panel takes the side the first panel's legend took."""
+    """The second panel takes the side the first panel's legend took.
+
+    Alone, the right panel's ten short names would go right (clearly
+    cheaper on this 30 cm slide); its neighbour, which has no right side,
+    went above, and above fits as well.
+    """
     dm.style.use("presentation")
-    fig, axs = plt.subplots(1, 2, figsize=dm.figsize("23cm", "10.5cm"))
+    fig, axs = plt.subplots(1, 2, figsize=dm.figsize("30cm", "10.5cm"))
     for ax in axs:
         _dense(ax, 10)
+    alone = place_legend(axs[1])
+    assert alone is not None
+    leg, box = _boxes(fig, alone, axs[1])
+    assert leg.x0 >= box.x1  # by itself: right
+    alone.remove()
     first = place_legend(axs[0])
     second = place_legend(axs[1])
     assert first is not None and second is not None
@@ -326,13 +340,52 @@ def test_names_that_fit_stay_on_one_line() -> None:
     assert legend._dm_wrapped is False
 
 
-def test_a_wide_right_legend_wraps_its_names() -> None:
-    """A side named right or left wraps names past 40 % of the Axes width."""
+def test_a_fitting_legend_is_planned_with_its_names_as_given() -> None:
+    """Wrapped names are not even tried for a legend that fits above.
+
+    The long name would break at the width of two or three columns, and a
+    wrapped plan would be a little shorter; the legend fits, so it stays.
+    """
     fig, ax = _report()
-    _dense(ax, 2, LONG)
+    for name in (
+        "Seoul metropolitan region, seasonally adjusted and smoothed",
+        "Busan",
+        "Incheon",
+        "Daegu",
+    ):
+        ax.plot([0, 1], [0, 1], label=name)
+    renderer = drawn_renderer(fig)
+    handles, labels = ax.get_legend_handles_labels()
+    assert _wrapped_variants(
+        ax, handles, labels, "above", {}, None, renderer, {}
+    )
+    plans = side_plans(ax, handles, labels, "above", {}, renderer, named=True)
+    assert [plan.labels for plan in plans] == [tuple(labels)]
+    assert plans[0].level == 2
+
+
+@pytest.mark.parametrize(
+    ("tail", "wrapped"),
+    [
+        (" metropolitan region, seasonally adjusted", True),  # 52 % wide
+        (" metropolitan region index", False),  # 38 % wide
+    ],
+)
+def test_a_right_legend_wraps_past_40_percent_of_the_axes(
+    tail: str, wrapped: bool
+) -> None:
+    """A side named right or left wraps names wider than 40 % of the Axes.
+
+    Both legends fit beside the plot (taller than none, under 60 % of it),
+    so only the width rule decides.
+    """
+    fig, ax = _report()
+    for city in ("Seoul", "Busan"):
+        ax.plot([0, 1], [0, 1], label=city + tail)
     legend = place_legend(ax, loc="right")
     assert legend is not None
-    assert all("\n" in t.get_text() for t in legend.get_texts())
+    assert legend._dm_wrapped is wrapped
+    assert all(("\n" in t.get_text()) is wrapped for t in legend.get_texts())
 
 
 def test_wrap_off_keeps_one_line() -> None:
