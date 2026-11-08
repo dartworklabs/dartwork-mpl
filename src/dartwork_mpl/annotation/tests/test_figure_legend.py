@@ -190,6 +190,22 @@ def test_a_side_sets_the_anchor_itself(key: str) -> None:
         dm.figure_legend(fig, **{key: value})
 
 
+def test_the_layout_keeps_the_legend_gap_from_the_panels() -> None:
+    """Between the legend and the panels' titles: the preset's border pad."""
+    fig, axs = _grid(1, 2, ("17cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 2)
+        ax.set_title("Panel")
+    legend = dm.figure_legend(fig)
+    assert legend is not None
+    dm.simple_layout(fig)
+    renderer = drawn_renderer(fig)
+    content_top = max(ax.get_tightbbox(renderer).y1 for ax in axs)
+    gap_pt = legend.borderaxespad * legend.prop.get_size_in_points()
+    gap = legend.get_window_extent(renderer).y0 - content_top
+    assert gap == pytest.approx(gap_pt * fig.dpi / 72, abs=1.0)
+
+
 def test_above_sits_under_a_suptitle() -> None:
     fig, axs = _grid(1, 2, ("17cm", "8cm"))
     for ax in axs:
