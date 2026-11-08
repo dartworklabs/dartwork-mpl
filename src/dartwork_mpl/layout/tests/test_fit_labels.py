@@ -917,13 +917,13 @@ def test_a_name_that_collapsed_the_plot_wraps_however_wide_its_lines() -> None:
 # ── what a scoped layout shares with Axes it leaves out (review N1) ──
 
 
-def _shared_grids(width: str, n: int):
+def _shared_grids(width: str, n: int, split: float = 0.45, gap: float = 0.15):
     """Two independent grids; the right Axes shares x (one formatter) with
     the left one."""
     dm.style.use("scientific")
     fig = plt.figure(figsize=dm.figsize(width, "standard"))
-    a = fig.add_gridspec(1, 1, left=0.05, right=0.45)
-    b = fig.add_gridspec(1, 1, left=0.6, right=0.95)
+    a = fig.add_gridspec(1, 1, left=0.05, right=split)
+    b = fig.add_gridspec(1, 1, left=split + gap, right=0.95)
     left = fig.add_subplot(a[0])
     right = fig.add_subplot(b[0], sharex=left)
     for ax in (left, right):
@@ -963,14 +963,24 @@ def test_scoped_restore_preserves_excluded_shared_labels() -> None:
 
 
 def test_a_scoped_layout_leaves_shared_wraps_a_whole_layout_set() -> None:
-    """Fitting one grid again neither takes off nor replaces the shared
-    wraps; its Axes' labels stay as the layout of every Axes left them."""
-    fig, a, left, right = _shared_grids("12cm", 6)
+    """A narrow panel in a nested grid shares x with a wide panel beside it.
+    Laid out alone, it would turn its labels and take the shared wraps off
+    the wide panel, which the layout of every Axes set and the call leaves
+    out; so it leaves them, and its own labels stay wrapped too."""
+    dm.style.use("scientific")
+    fig = plt.figure(figsize=dm.figsize("12cm", "standard"))
+    root = fig.add_gridspec(1, 2, width_ratios=[1, 3])
+    inner = root[0].subgridspec(1, 1)
+    narrow = fig.add_subplot(inner[0])
+    wide = fig.add_subplot(root[1], sharex=narrow)
+    for ax in (narrow, wide):
+        ax.bar(range(4), range(4))
+    narrow.set_xticks(range(4), ["Low fee"] * 4)
     dm.simple_layout(fig)
-    before = (_tick_state(left), _tick_state(right))
+    before = (_tick_state(narrow), _tick_state(wide))
     assert all("\n" in text for text, _angle in before[1])  # precondition
-    dm.simple_layout(fig, gs=a, use_all_axes=False)
-    assert (_tick_state(left), _tick_state(right)) == before
+    dm.simple_layout(fig, gs=inner, use_all_axes=False)
+    assert (_tick_state(narrow), _tick_state(wide)) == before
 
 
 def _grid_with_a_nested_cell():
