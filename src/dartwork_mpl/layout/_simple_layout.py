@@ -17,7 +17,13 @@ from matplotlib.gridspec import (
 from .._figure_geometry import get_renderer
 from ..units import Length
 from ._content_extent import _axes_content_extent_px
-from ._fit_labels import climb, resolve_steps, restore_fitted
+from ._fit_labels import (
+    climb,
+    grid_edges,
+    remember_layout,
+    resolve_steps,
+    restore_fitted,
+)
 from ._margins import (
     _GridEdges,
     _LayoutStep,
@@ -307,8 +313,10 @@ def simple_layout(
     ]
 
     # Each call fits from the figure as the caller left it: what an earlier
-    # layout fitted (wraps, rotations, spacing it set) is undone first.
+    # layout fitted (wraps, rotations, spacing it set, the margins it left)
+    # is undone first.
     restore_fitted(fig, scope)
+    start = grid_edges(actual_gs)
 
     # Tick formats change label widths, so they go before fitting, but
     # after every check that can still refuse the call. Twin spines and
@@ -345,6 +353,7 @@ def simple_layout(
         # margin fit and kept only if it crushed no plot and added no tick
         # overlap.
         climb(fig, steps, actual_gs, scope, fit_margins)
+    remember_layout(actual_gs, start)
     # The bar labels were settled in each step, so they are reported even
     # when nothing could be measured.
     _report_hidden_bar_labels(fig)
