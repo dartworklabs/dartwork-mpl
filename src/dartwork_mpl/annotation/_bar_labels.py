@@ -211,6 +211,9 @@ class BarLabel(Annotation):
         self.text_ink = mcolors.to_rgba(mpl.rcParams["text.color"])
         # The tick scale the text was last written in (None: not yet).
         self.tick_scale: TickScale | None = None
+        # Whether its value axis drew linearly then: a log axis gives each
+        # label its own decimals (refresh), with the same tick scale.
+        self.drawn_linearly: bool | None = None
         # What this module last wrote to each property it owns.
         self._written: dict[str, object] = {}
         # True while get_visible measures the text (which asks it again).
@@ -413,6 +416,7 @@ class BarLabelFamily:
             self.texts, scales, scaled, self._decimals(scaled), strict=True
         ):
             label.tick_scale = scale
+            label.drawn_linearly = draws_linearly(label.value_axis)
             text = compose_text(value, scale, count, self.options)
             label.own("text", label.get_text(), text, label.set_text)
 
@@ -436,12 +440,19 @@ class BarLabelFamily:
     def follow(self, label: BarLabel) -> None:
         """Re-read the tick scale for ``label``; rewrite the call when it moved.
 
+        A switch between a linear and a log value axis rewrites it too: the
+        decimals depend on it (:meth:`_decimals`) even where the tick scale
+        stays (``format_axis_millions`` before ``set_yscale("log")``).
+
         Then decide whether a label meant for its bar fits on it both ways
         (``off_bar``), place it, and give it the ink for where it now sits
         when that changed: on its bar, or off it (the text colour, or the
         series colour under ``color="series"``).
         """
-        if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
+        if (
+            tick_scale_of(label.value_axis, label.value) != label.tick_scale
+            or draws_linearly(label.value_axis) != label.drawn_linearly
+        ):
             self.refresh()
         label.off_bar = False
         if label.wants_bar:

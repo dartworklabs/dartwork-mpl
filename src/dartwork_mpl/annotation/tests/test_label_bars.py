@@ -983,6 +983,29 @@ def test_small_value_asked_precision_wins(keywords, expected):
     assert _texts(texts) == expected
 
 
+def test_labels_follow_a_switch_to_a_log_value_axis():
+    # Labelled first, the axis made log afterwards and given the same
+    # millions ticks again (set_yscale resets the formatter): the tick scale
+    # is unchanged, but the decimals follow the log scale as when log came
+    # first.
+    values = [1e4, 2e5, 3.4e6, 4.5e7]
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax, decimals=1)
+    texts = dm.label_bars(ax)
+    fig.canvas.draw()
+    assert _texts(texts) == ["<0.1M", "0.2M", "3.4M", "45.0M"]
+    ax.set_yscale("log")
+    dm.format_axis_millions(ax, decimals=1)
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["0.01M", "0.2M", "3.4M", "45M"]
+
+    # And back to linear with the same ticks: one shared count again.
+    ax.set_yscale("linear")
+    dm.format_axis_millions(ax, decimals=1)
+    fig.canvas.draw()
+    assert _texts(texts) == ["<0.1M", "0.2M", "3.4M", "45.0M"]
+
+
 def test_log_value_axis_labels_take_their_own_decimals():
     # Each label: three significant digits cut to the fewest exact, as the
     # log ticks; no meaningless .0 (45M, not 45.0M) and no zero.
