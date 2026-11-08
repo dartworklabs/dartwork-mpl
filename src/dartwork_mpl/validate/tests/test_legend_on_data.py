@@ -363,6 +363,18 @@ _HANDLES = {
         lambda ax: _away(ax, "scatter", facecolors="none", edgecolors="none"),
     ),
     "scatter_size0": (False, lambda ax: _away(ax, "scatter", s=0, color="k")),
+    "scatter_edge_width0": (
+        False,
+        lambda ax: _away(
+            ax, "scatter", facecolors="none", edgecolors="k", linewidths=0
+        ),
+    ),
+    "scatter_edge_only": (
+        True,
+        lambda ax: _away(
+            ax, "scatter", facecolors="none", edgecolors="k", linewidths=1
+        ),
+    ),
     "scatter_drawn": (True, lambda ax: _away(ax, "scatter", color="k")),
     "errorbar_none": (
         False,
