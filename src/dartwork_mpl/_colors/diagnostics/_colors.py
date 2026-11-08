@@ -424,7 +424,6 @@ def _plot_single_library(
                     horizontalalignment="center",
                     verticalalignment="center",
                     color=text_color,
-                    alpha=0.85,
                 )
             except (ValueError, TypeError):
                 pass

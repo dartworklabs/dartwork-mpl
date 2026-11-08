@@ -6,6 +6,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import pytest
 
+from dartwork_mpl._colors.contrast import composite_over, contrast_ratio
 from dartwork_mpl._colors.diagnostics import _colors
 
 _INKS = ("white", "#333333")
@@ -85,3 +86,34 @@ def test_catalogue_overlay_uses_the_picked_ink() -> None:
         for fig in figs:
             plt.close(fig)
     assert overlays == {"#3B82F6": "white", "#EC4899": "#333333"}
+
+
+def test_catalogue_hex_overlays_are_opaque_and_read_at_three_to_one() -> None:
+    """Every swatch's hex text is drawn opaque (D3, 2026-11-08: alpha 0.85
+    left eight swatches below 3:1); what is seen, the ink composited at the
+    text's alpha over the swatch, reads at 3:1 or more on every swatch."""
+    figs = _colors.render_color_catalog()
+    try:
+        overlays = [
+            t
+            for fig in figs
+            for t in fig.axes[0].texts
+            if t.get_fontsize() == 6.5
+        ]
+        assert len(overlays) > 1000
+        weakest = 21.0
+        for t in overlays:
+            assert t.get_alpha() in (None, 1.0), t.get_text()
+            swatch = mcolors.to_rgb(t.get_text())
+            alpha = 1.0 if t.get_alpha() is None else t.get_alpha()
+            seen = composite_over(
+                (*mcolors.to_rgb(t.get_color()), alpha), swatch
+            )
+            ratio = contrast_ratio(seen, swatch)
+            assert ratio >= 3.0, (t.get_text(), ratio)
+            weakest = min(weakest, ratio)
+    finally:
+        for fig in figs:
+            plt.close(fig)
+    # White and #333333 meet at 3.56:1 on the swatch where they tie.
+    assert weakest == pytest.approx(3.556, abs=0.001)
