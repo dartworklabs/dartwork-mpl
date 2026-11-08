@@ -17,7 +17,7 @@ import pytest
 
 pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp.artifacts import configure_store
+from dartwork_mpl.mcp.artifacts import _store_fs, configure_store
 from dartwork_mpl.mcp.artifacts import store as disk
 from dartwork_mpl.mcp.artifacts.policy import (
     ArtifactBytes,
@@ -989,3 +989,201 @@ def test_cleanup_restore_collision_keeps_both_replacements(
     published(store, plots, now=NOW + timedelta(days=8))
     assert preserved.read_bytes() == b"first replacement"
     assert png.read_bytes() == b"second replacement"
+
+
+def test_exclusive_write_refuses_a_late_same_name_file(tmp_path: Path) -> None:
+    """The write primitive never opens, truncates or rewrites an existing name."""
+    folder = tmp_path / "stage"
+    folder.mkdir(mode=0o700)
+    planted = folder / "report.json"
+    planted.write_bytes(b"planted before the exclusive open")
+    planted.chmod(0o600)
+    directory_fd = os.open(folder, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(FileExistsError):
+            _store_fs._write_file(directory_fd, "report.json", b"new")
+    finally:
+        os.close(directory_fd)
+    assert planted.read_bytes() == b"planted before the exclusive open"
+    assert stat.S_IMODE(planted.stat().st_mode) == 0o600
+
+
+def test_publication_refuses_a_late_same_name_member(
+    tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A member created just before its write is refused and no marker appears.
+
+    The planted bytes are observed at the refused open. The refusal path then
+    removes the operation-owned stage's known regular members, the planted name
+    included; that cleanup is a separate contract, not asserted here.
+    """
+    store = configured(tmp_path / "artifacts")
+    original = disk._write_file
+    planted = b"Z" * 64
+    observed: list[bytes] = []
+    with store.staging() as stage:
+        export_files(stage, plots)
+        folder = stage.output_stem.parent
+        identity = parse_artifact_id(folder.name)
+        assert isinstance(identity, ArtifactId)
+
+        def plant_then_write(fd: int, name: str, data: bytes) -> None:
+            """Create the same name between the caller's decision and its open."""
+            if name != "report.json":
+                original(fd, name, data)
+                return
+            (folder / name).write_bytes(planted)
+            (folder / name).chmod(0o600)
+            try:
+                original(fd, name, data)
+            finally:
+                observed.append((folder / name).read_bytes())
+
+        monkeypatch.setattr(disk, "_write_file", plant_then_write)
+        result = store.publish(stage, SOURCE.encode(), REPORT, NOW)
+        assert isinstance(result, PublicationError), result
+        assert observed == [planted]
+        assert not (folder / "manifest.json").exists()
+        assert not (folder / ".manifest.pending").exists()
+        assert isinstance(store.load(identity, NOW), NotFound)
+
+
+def test_publication_refuses_an_export_changed_while_read(
+    tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A same-inode, same-size rewrite during the read refuses the publication.
+
+    The first read of the PNG rewrites it in place and sets its mtime one second
+    later, so the before/after signatures differ without sleeping. A rewrite
+    whose mtime and ctime both stay inside one timestamp tick is not detectable
+    by this signature and is deliberately not covered here.
+    """
+    store = configured(tmp_path / "artifacts")
+    real_read = os.read
+    signatures: list[tuple[int, int]] = []
+    with store.staging() as stage:
+        export_files(stage, plots)
+        png = stage.output_stem.with_suffix(".png")
+        folder = png.parent
+        identity = parse_artifact_id(folder.name)
+        assert isinstance(identity, ArtifactId)
+        inode = png.stat().st_ino
+
+        def rewrite_after_first_read(fd: int, length: int) -> bytes:
+            """Change the opened export exactly once, after its first chunk."""
+            data = real_read(fd, length)
+            before = os.fstat(fd)
+            if before.st_ino == inode and not signatures:
+                with png.open("r+b") as handle:
+                    handle.write(bytes(255 - byte for byte in plots[0]))
+                os.utime(
+                    png,
+                    ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000),
+                )
+                after = png.stat()
+                assert (after.st_ino, after.st_size) == (inode, before.st_size)
+                signatures.append((before.st_mtime_ns, after.st_mtime_ns))
+            return data
+
+        monkeypatch.setattr(disk.os, "read", rewrite_after_first_read)
+        result = store.publish(stage, SOURCE.encode(), REPORT, NOW)
+        monkeypatch.undo()
+        assert len(signatures) == 1 and signatures[0][0] != signatures[0][1]
+        assert isinstance(result, PublicationError), result
+        assert not (folder / "manifest.json").exists()
+        assert isinstance(store.load(identity, NOW), NotFound)
+
+
+def _replace_stage_png(png: Path, saved: Path) -> None:
+    """Keep the old inode elsewhere and install an independent same-name file."""
+    png.rename(saved)
+    png.write_bytes(b"replacement")
+    png.chmod(0o600)
+
+
+def test_stage_cleanup_preserves_a_member_replaced_before_its_stat(
+    tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A member swapped after its verified open, before the name stat, is kept."""
+    store = configured(tmp_path / "artifacts")
+    real_stat = os.stat
+    swapped: list[str] = []
+    with store.staging() as stage:
+        export_files(stage, plots)
+        png = stage.output_stem.with_suffix(".png")
+        folder = png.parent
+
+        def replace_before_stat(path: Any, *args: Any, **kwargs: Any) -> Any:
+            """Install the replacement between fstat of the open and this stat."""
+            if (
+                path == "plot.png"
+                and kwargs.get("dir_fd") is not None
+                and not swapped
+            ):
+                _replace_stage_png(png, tmp_path / "original-png")
+                swapped.append(path)
+            return real_stat(path, *args, **kwargs)
+
+        monkeypatch.setattr(disk.os, "stat", replace_before_stat)
+    monkeypatch.undo()
+    assert swapped == ["plot.png"]
+    assert png.read_bytes() == b"replacement"
+    assert (tmp_path / "original-png").read_bytes() == plots[0]
+    assert sorted(path.name for path in folder.iterdir()) == ["plot.png"]
+
+
+def test_stage_cleanup_still_deletes_a_member_replaced_after_its_stat(
+    tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Record a known pre-existing race: stat then unlink by name.
+
+    Stage cleanup checks a member's identity by name with ``stat`` and then
+    unlinks it by name, so a member replaced between the two calls is
+    deleted. Fixing it needs isolate-then-verify cleanup, outside these
+    follow-up tests. This pins today's behaviour as a plain test, not an
+    xfail: the artifact CI gate rejects every skipped case (an xfail is one
+    in JUnit). When the race is fixed the replacement survives, the last
+    read no longer raises and this test fails on purpose; then turn it into
+    a preservation test like the one before it.
+    """
+    store = configured(tmp_path / "artifacts")
+    real_unlink = os.unlink
+    swapped: list[str] = []
+    with store.staging() as stage:
+        export_files(stage, plots)
+        png = stage.output_stem.with_suffix(".png")
+
+        def replace_before_unlink(path: Any, *args: Any, **kwargs: Any) -> None:
+            """Install the replacement after the identity stat, at the unlink."""
+            if (
+                path == "plot.png"
+                and kwargs.get("dir_fd") is not None
+                and not swapped
+            ):
+                _replace_stage_png(png, tmp_path / "original-png")
+                swapped.append(path)
+            real_unlink(path, *args, **kwargs)
+
+        monkeypatch.setattr(disk.os, "unlink", replace_before_unlink)
+    monkeypatch.undo()
+    assert swapped == ["plot.png"]
+    # The defect today: the replacement installed after the stat is gone.
+    with pytest.raises(FileNotFoundError):
+        png.read_bytes()
+
+
+def test_stage_cleanup_follows_the_pinned_directory_not_its_name(
+    tmp_path: Path, plots: tuple[bytes, bytes]
+) -> None:
+    """A moved stage keeps its members and a directory at the old name survives."""
+    root = tmp_path / "artifacts"
+    store = configured(root)
+    with store.staging() as stage:
+        export_files(stage, plots)
+        folder = stage.output_stem.parent
+        moved = root / "moved-stage"
+        folder.rename(moved)
+        folder.mkdir(mode=0o700)
+    assert (moved / "plot.png").read_bytes() == plots[0]
+    assert (moved / "plot.pdf").read_bytes() == plots[1]
+    assert folder.is_dir() and not any(folder.iterdir())
