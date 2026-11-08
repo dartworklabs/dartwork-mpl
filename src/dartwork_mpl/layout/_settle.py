@@ -18,6 +18,8 @@ from .._figure_geometry import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
 
@@ -104,16 +106,23 @@ def _lift_titles_over_legends(ax: Axes, renderer: RendererBase) -> bool:
     return True
 
 
-def _settle_outside_legends(fig: Figure, renderer: RendererBase) -> bool:
+def _settle_outside_legends(
+    fig: Figure, renderer: RendererBase, axes: Sequence[Axes] | None = None
+) -> bool:
     """Re-anchor outside legends, re-space line-end labels, lift titles over legends.
 
     Runs on every Axes of ``fig`` before the layout measures it, so a
     legend placed before its axis labels existed moves past them (and past
     the ``dm.label_bars`` values beyond that limit it would cover) and a
-    title never sits on a legend above its Axes. Returns whether anything
-    moved (the caller redraws before measuring).
+    title never sits on a legend above its Axes. ``dm.place_legend``'s own
+    legends on ``axes`` (the Axes this layout measures; all of them when
+    ``None``) are first placed again at the size those Axes have now
+    (:func:`dartwork_mpl.annotation.settle_legends`). Returns whether
+    anything moved (the caller redraws before measuring).
     """
-    moved = False
+    from ..annotation import settle_legends
+
+    moved = settle_legends(fig, renderer, axes)
     for ax in fig.axes:
         legend = ax.get_legend()
         if legend is not None and outside_side(legend) is not None:

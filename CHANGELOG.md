@@ -135,8 +135,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   three presets, `advanced/heatmap` in `presentation` (names the template
   turns 30° itself).
 
+- `dm.config.legend_fallback` (`"auto"`, the default, `"above"`,
+  `"right"`, `"below"` or `"inside"`) and `dm.config.legend_wrap` (`True`):
+  where `dm.place_legend(ax)` puts a legend no inside spot holds, and
+  whether it may break long names to make it fit (below).
+
 ### Changed
 
+- **`dm.place_legend(ax)` climbs a ladder and keeps the legend off the
+  data.** `loc="best"` (no side named) now tries eight inside spots (the
+  corners, upper and lower centre, then centre right and left) for one to
+  three columns and takes the first whose box no data ink comes within
+  2 pt of: lines at their width, markers and scatter points at their size,
+  bars and other patches, filled areas and the Axes' texts, twins
+  included. The spots are measured where matplotlib anchors them, so a
+  call draws the figure once (it drew it for every trial, up to 19 times). When no spot is free it goes outside:
+  above, right or below, among the sides no other panel sits beyond,
+  whichever takes the smaller share of the plot. Above stays the default;
+  another side wins only when it takes at least 10 % and 5 % of the plot
+  less (many short entries go right), and a panel takes the side its
+  neighbour's legend took when that fits as well. Above and below take
+  the fewest rows that fit, right and left the fewest columns (they were
+  always one column). A legend fits when, centred on its Axes and moved
+  in where it would cross the canvas edge, it stays on the canvas (its
+  pad from the edge) and off the panels of the other columns (right and
+  left: rows), their labels and titles: it may be wider (taller) than
+  its Axes, and then it also clears the tick labels it spans beside the
+  plot. The layout does not widen the figure's margins for that reach.
+  Names are
+  broken at spaces only when the legend would otherwise not fit
+  or take more than 60 % of the plot (on a side named right
+  or left, also when it is wider than 40 % of the Axes), a trailing
+  bracketed unit such as `(2019 = 100)` kept whole. A better fit always
+  comes first; among ways that fit as well, one breaking the names into
+  more lines per name wins only when it leaves the plot at least 5 % of
+  the canvas more. A bottom
+  panel's legend no longer goes above onto the panel over it. With a
+  caller anchor (`bbox_to_anchor`), or `legend_fallback="inside"`, it stays
+  in the spot that covers the fewest series and `LEGEND_ON_DATA` reports
+  it. `dm.simple_layout` places these legends again at the size it gives
+  the Axes it lays out (with `gs=` and `use_all_axes=False`, only that
+  GridSpec's): an inside legend takes an earlier free spot and an outside
+  one comes in when a spot is free now (never the other way), and an
+  outside one keeps its side with its rows chosen again for the laid-out
+  width, so a 2×2 grid's legends are not left in one tall column. A
+  legend restyled or moved through the returned `Legend` since (its
+  texts and title, frame, a handle's colour, line style, width, marker,
+  face or hatch, `set_loc`, `set_bbox_to_anchor`) is the caller's and
+  stays as it is; setting a value it already has is no edit. A named side
+  (`loc="above"` …) takes the same rows, columns and wrapping; a
+  matplotlib `loc`, `ncol` / `ncols` and a hand-placed `ax.legend` are
+  used as given. `dm.config.legend_fallback="above"` keeps the old side.
 - **`LEGEND_OVERFLOW` also reports an outside legend larger than half its
   plot.** A legend beside or above its Axes that stays on the canvas but
   is more than 50 % of the plot's area (a figure legend: of the panels'

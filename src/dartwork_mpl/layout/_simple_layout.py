@@ -37,7 +37,7 @@ from ._reservations import _figure_artist_reservations
 from ._settle import _settle_outside_legends
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
@@ -312,7 +312,10 @@ def simple_layout(
     else:
         requested_gs = fig.axes[0].get_gridspec()
     gs_id = id(requested_gs)
-    # The label ladder fits and restores the same Axes the margins measure.
+    # The Axes this call lays out, computed once: the margins measure them,
+    # place_legend's legends are placed again on them, and the label ladder
+    # fits and restores them. ``actual_gs`` (the root) is what the margins
+    # are written into; for a nested ``gs`` that is not this set's GridSpec.
     scope = [
         ax
         for ax in fig.axes
@@ -347,8 +350,7 @@ def simple_layout(
             fig,
             actual_gs,
             margins=margins,
-            use_all_axes=use_all_axes,
-            gs_id=gs_id,
+            scope=scope,
             last_edges=last,
             adopt_orphan_tick_font=adopt_orphan_tick_font,
             format_ticks=format_ticks,
@@ -386,8 +388,7 @@ def _fit_margins(
     actual_gs: GridSpec,
     *,
     margins: _Sides,
-    use_all_axes: bool,
-    gs_id: int,
+    scope: Sequence[Axes],
     last_edges: _GridEdges | None,
     adopt_orphan_tick_font: bool,
     format_ticks: bool,
@@ -395,8 +396,9 @@ def _fit_margins(
 ) -> tuple[_LayoutStep | None, _GridEdges | None]:
     """Iterate layout steps until the GridSpec edges settle.
 
-    Returns the last step (``None`` when the figure has no measurable Axes)
-    and the edges written into ``actual_gs``.
+    ``scope`` is the Axes the call lays out (:func:`simple_layout`). Returns
+    the last step (``None`` when the figure has no measurable Axes) and the
+    edges written into ``actual_gs``.
     """
     last = last_edges
     step: _LayoutStep | None = None
@@ -405,8 +407,7 @@ def _fit_margins(
             step = _solve_layout_step(
                 fig,
                 margins=margins,
-                use_all_axes=use_all_axes,
-                gs_id=gs_id,
+                scope=scope,
                 last_edges=last,
                 adopt_orphan_tick_font=adopt_orphan_tick_font,
             )
@@ -526,15 +527,16 @@ def _solve_layout_step(
     fig: Figure,
     *,
     margins: _Sides,
-    use_all_axes: bool,
-    gs_id: int,
+    scope: Sequence[Axes],
     last_edges: _GridEdges | None,
     adopt_orphan_tick_font: bool,
 ) -> _LayoutStep | None:
     """Measure the figure once and solve one iteration of ``simple_layout``.
 
-    Returns the step, or ``None`` if the figure has no measurable axes (in
-    which case the caller should bail out).
+    ``scope`` is the Axes the call lays out (every Axes, or only the
+    requested GridSpec's; :func:`simple_layout`). Returns the step, or
+    ``None`` if the figure has no measurable axes (in which case the caller
+    should bail out).
 
     Each step:
 
@@ -546,13 +548,15 @@ def _solve_layout_step(
        :func:`_settle_bar_labels`), redrawing when a limit moved. Each
        step starts again from matplotlib's autoscaled limits, so the
        headroom follows the final size without compounding.
-    4. Re-anchors outside legends (past the bar values beyond that limit
-       they would cover too) and lifts titles over legends above their
-       axes (:func:`_settle_outside_legends`), redrawing after a move.
+    4. Places ``dm.place_legend``'s legends on ``scope`` again at the size
+       they have now, re-anchors outside legends (past the bar values
+       beyond that limit they would cover too) and lifts titles over
+       legends above their axes (:func:`_settle_outside_legends`),
+       redrawing after a move.
     5. Hides the bar labels a legend or other text covers where those are
        drawn now (:func:`_clear_bar_labels`).
-    6. Measures the content overhang of every target axes and the room
-       figure-level artists reserve.
+    6. Measures the content overhang of every Axes in ``scope`` and the
+       room figure-level artists reserve.
     7. Hands those measurements to the pure :func:`_solve_edges`.
 
     The caller writes the returned edges into the GridSpec and decides
@@ -569,7 +573,7 @@ def _solve_layout_step(
         fig.canvas.draw()
         renderer = get_renderer(fig)
     for _round in range(_SETTLE_ROUNDS):
-        if not _settle_outside_legends(fig, renderer):
+        if not _settle_outside_legends(fig, renderer, scope):
             break
         fig.canvas.draw()
         renderer = get_renderer(fig)
@@ -577,21 +581,11 @@ def _solve_layout_step(
     fbox = fig.bbox
     fw_px, fh_px = fbox.width, fbox.height
 
-    target_axes: Iterable[Axes]
-    if use_all_axes:
-        target_axes = fig.axes
-    else:
-        target_axes = [
-            ax
-            for ax in fig.axes
-            if ax.get_gridspec() is not None and id(ax.get_gridspec()) == gs_id
-        ]
-
     oh_l: list[float] = []
     oh_r: list[float] = []
     oh_b: list[float] = []
     oh_t: list[float] = []
-    for ax in target_axes:
+    for ax in scope:
         ext = _axes_content_extent_px(ax, renderer, fig)
         if ext is None:
             continue

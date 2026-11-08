@@ -113,6 +113,21 @@ class Config:
         ``with dm.config.override(twin_colors="neutral"):``); a figure laid
         out before gets them back on its next ``dm.simple_layout``. Any other
         value raises ``ValueError`` where it is read.
+    legend_fallback : {"auto", "above", "right", "below", "inside"}, default ``"auto"``
+        Where :func:`dartwork_mpl.place_legend` puts a legend with no side
+        named when no inside spot is free of data. ``"auto"`` takes, among
+        the sides no other panel sits beyond, the one that leaves the larger
+        plot (above unless another side takes at least 10 % and 5 % of the
+        plot less); ``"above"`` / ``"right"`` / ``"below"`` always that
+        side; ``"inside"`` keeps the legend in the spot that covers the
+        fewest series (``dm.validate_figure`` then reports
+        ``LEGEND_ON_DATA``). Any other value raises ``ValueError`` where it
+        is read.
+    legend_wrap : bool, default ``True``
+        Let :func:`dartwork_mpl.place_legend` break long entry names at
+        spaces when the legend would otherwise not fit outside its Axes (a
+        trailing bracketed unit stays whole). ``False`` keeps every name on
+        one line.
     fit_labels : bool | tuple[str, ...], default ``True``
         What ``dm.simple_layout`` may do when text still collides once the
         margins fit: ``True`` every step (``"axis_labels"``, ``"space"``,
@@ -131,6 +146,10 @@ class Config:
     date_style: Literal["period", "concise"] = "period"
     number_ladder: Literal["auto", "si", "myriad"] = "auto"
     twin_colors: Literal["series", "neutral"] = "series"
+    legend_fallback: Literal["auto", "above", "right", "below", "inside"] = (
+        "auto"
+    )
+    legend_wrap: bool = True
     fit_labels: bool | tuple[str, ...] = True
 
     @contextmanager

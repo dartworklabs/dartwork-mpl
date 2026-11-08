@@ -1,4 +1,4 @@
-"""Measurement shared by the placement helpers: the renderer, bbox areas and the data occupancy of an Axes."""
+"""Measurement shared by the placement helpers: the renderer, bbox areas and the obstacles of an Axes."""
 
 from __future__ import annotations
 
@@ -127,12 +127,4 @@ def _text_bboxes(texts: list[Text], renderer: Any) -> list[Bbox]:
             continue
         if bbox.width > 0 and bbox.height > 0:
             bboxes.append(bbox)
-    return bboxes
-
-
-def _data_occupancy_bboxes(ax: Axes, renderer: Any | None = None) -> list[Bbox]:
-    bboxes = [*_line_segment_bboxes(ax), *_patch_bboxes(ax)]
-    bboxes.extend(_collection_bboxes(ax))
-    if renderer is not None:
-        bboxes.extend(_text_bboxes(list(ax.texts), renderer))
     return bboxes
