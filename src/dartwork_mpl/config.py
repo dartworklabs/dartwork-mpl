@@ -125,8 +125,14 @@ class Config:
         is read.
     legend_wrap : bool, default ``True``
         Let :func:`dartwork_mpl.place_legend` break long entry names at
-        spaces when the legend would otherwise not fit outside its Axes (a
-        trailing bracketed unit stays whole). ``False`` keeps every name on
+        spaces when the legend outside its Axes would otherwise not fit
+        (centred on the Axes and moved in at the canvas edge, it must stay
+        on the canvas and off the other columns' panels; it may be wider
+        than the Axes) or take more than 60 % of the plot (on a side
+        named right or left, also when it is wider than 40 % of the Axes); a
+        trailing bracketed unit stays whole. A better fit comes first;
+        among ways that fit as well, more lines per name are taken only for
+        at least 5 % of the canvas more plot. ``False`` keeps every name on
         one line.
     fit_labels : bool | tuple[str, ...], default ``True``
         What ``dm.simple_layout`` may do when text still collides once the

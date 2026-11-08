@@ -66,6 +66,7 @@ from .annotation import (
     annotate_corner,
     annotate_value,
     arrow_axis,
+    figure_legend,
     label_axes,
     label_bars,
     label_hline,
@@ -169,13 +170,15 @@ from .units import (
 # ``review`` (save, findings, summary, baseline diff) its summary fields;
 # ``axis_unit`` / ``axis_unit_of`` (the axis unit in its label) their ladders,
 # label template rules and unit rules; ``label_bars`` (value labels on bars)
-# its placement, crowding and stacked-total rules.
+# its placement, crowding and stacked-total rules; ``figure_legend`` (one
+# legend for every panel) its side rule and which panel legends it removes.
 EXPERIMENTAL: frozenset[str] = frozenset(
     {
         "add_note",
         "axis_unit",
         "axis_unit_of",
         "figsize_for",
+        "figure_legend",
         "grid_shape",
         "label_bars",
         "label_line_ends",
@@ -304,6 +307,7 @@ __all__ = [  # noqa: RUF022
     "label_hline",
     "label_line_ends",
     "place_legend",
+    "figure_legend",
     "wrap_axis_label",
     "wrap_axis_labels",
     "arrow_axis",

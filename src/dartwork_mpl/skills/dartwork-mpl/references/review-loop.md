@@ -14,7 +14,7 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.plot(x, np.sin(x), label="Measured")
 ax.plot(x, np.cos(x), label="Model")
 ax.set(xlabel="Time (s)", ylabel="Signal")
-ax.legend()
+dm.place_legend(ax)
 dm.simple_layout(fig)
 
 r = dm.review(fig, "output/figure-v1")  # PNG + PDF, every finding, a summary
@@ -62,7 +62,7 @@ WARNING findings are defects to fix or explain; INFO findings are hints.
 | `TICK_OVERLAP` | neighbouring tick labels overlap after the layout | a rotation you set: remove it and lay out again; else a horizontal bar chart or a wider canvas (the user's call: report it) |
 | `LEGEND_OVERFLOW` | legend too large, off the canvas, or outside at over half the plot's size | many lines: `dm.label_line_ends(ax)`; else fewer columns, shorter names |
 | `LEGEND_OVERLAP` | legend covers a title, axis or tick label | `dm.place_legend(ax)` (the side the user named, if any), then `simple_layout` |
-| `LEGEND_ON_DATA` | legend covers data, a text, another legend or panel | `dm.place_legend(ax)`, then `simple_layout`; many lines: `dm.label_line_ends(ax)` |
+| `LEGEND_ON_DATA` | legend covers data, a text, another legend or panel | `dm.place_legend(ax)`, then `simple_layout`; panels sharing series: `dm.figure_legend(fig)`; many lines: `dm.label_line_ends(ax)` |
 | `TICK_CROWD`, `TICK_ROTATION` (INFO) | crowded or rotated tick labels | numbers: `MaxNLocator(nbins=5)`; category names: leave wrapping and turning to `dm.simple_layout` |
 | `TICK_DECIMAL`, `UNIT_DUP` | odd precision, unit repeated | `dm.set_decimal(ax, yn=1)`, unit in the axis label only |
 | `VALUE_LABEL_ON_DATA` | a value label sits on a bar, line or marker | bars: `dm.label_bars(ax)`; points: `dm.annotate_value(ax, x, y, text)` |
@@ -88,7 +88,7 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.plot(x, np.sin(x), label="Measured")
 ax.plot(x, np.cos(x), label="Model")
 ax.set(xlabel="Time (s)", ylabel="Signal (V)")  # the asked change
-ax.legend()
+dm.place_legend(ax)
 dm.simple_layout(fig)
 r2 = dm.review(fig, "output/figure-v2", baseline="output/figure-v1",
                allow=["axes[0].ylabel.*"])

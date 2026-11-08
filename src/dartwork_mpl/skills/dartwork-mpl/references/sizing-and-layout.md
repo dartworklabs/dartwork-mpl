@@ -197,14 +197,27 @@ dm.simple_layout(fig)
 plt.close(fig)
 ```
 
-- Legend below everything: `fig.legend(loc="lower center", ncol=3,
-  bbox_to_anchor=(0.5, 0))`, then `dm.simple_layout(fig)`.
+- One legend for panels that share their series: `dm.figure_legend(fig)`
+  (above the panels, right when clearly cheaper; `loc="below"` under
+  everything), then `dm.simple_layout(fig)`; it removes the panel legends
+  it replaces.
 - Legend inside, away from the data: `dm.place_legend(ax)`; when every
-  inside spot covers data it goes above the plot by itself.
+  inside spot covers data it goes outside by itself: above, or right or
+  below when that takes clearly less of the plot, never onto another
+  panel. `dm.simple_layout(fig)` places it again at the laid-out size.
 - Legend outside one side ("legend above the plot"):
   `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
-  the clearance of tick labels, and `dm.simple_layout(fig)` keeps a title
-  above it.
+  the clearance of tick labels; the legend may be wider than its Axes as
+  long as it stays on the canvas and off the other columns' panels. It
+  breaks names that would not fit so, take
+  more than 60 % of the plot or (right, left) are wider than 40 % of the
+  Axes, a better fit first and, among equal fits, never into more lines
+  than a 5 % canvas gain is worth, and
+  `dm.simple_layout(fig)` keeps a title above it. A legend you then restyle
+  or move through the returned `Legend` stays as you left it.
+- Eight or more lines: `dm.label_line_ends(ax)` names them at their ends;
+  `LEGEND_OVERFLOW` reports a legend outside that is more than half the
+  plot's size.
 - A twin pair: `dm.simple_layout` colours each side like its one series, so
   leave the axis colours to it (`with dm.config.override(twin_colors="neutral"):`
   when neutral axes are asked); one legend for both is `dm.place_legend(ax)`,
