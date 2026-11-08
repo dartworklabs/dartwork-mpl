@@ -137,13 +137,24 @@ def test_walk_files_prunes_an_entry_before_any_type_check(
     real_scandir = os.scandir
 
     class _Listing:
+        """A scandir iterator that hands out refusing entries (any walker)."""
+
         def __init__(self, path: str | os.PathLike[str]) -> None:
             self._listing = real_scandir(path)
 
-        def __enter__(self) -> list[_NoTouchEntry]:
-            return [_NoTouchEntry(e, "blocked") for e in self._listing]
+        def __enter__(self) -> _Listing:
+            return self
 
         def __exit__(self, *exc: object) -> None:
+            self._listing.close()
+
+        def __iter__(self) -> _Listing:
+            return self
+
+        def __next__(self) -> _NoTouchEntry:
+            return _NoTouchEntry(next(self._listing), "blocked")
+
+        def close(self) -> None:
             self._listing.close()
 
     monkeypatch.setattr(os, "scandir", _Listing)
