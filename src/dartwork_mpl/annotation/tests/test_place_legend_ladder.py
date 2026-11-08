@@ -360,6 +360,38 @@ def test_mathtext_and_broken_names_are_not_rewrapped() -> None:
 
 
 # -------------------------------------------- rung 4: the layout's second look
+CITIES = (
+    "Seoul", "Busan", "Incheon", "Daegu", "Daejeon",
+    "Gwangju", "Ulsan", "Suwon", "Sejong", "Jeju",
+)  # fmt: skip
+
+
+def test_a_wrapped_legend_above_settles_in_the_layout() -> None:
+    """The layout ends where placing the legend again changes nothing.
+
+    Ten long names above a 12 cm plot fit only wrapped while the plot is
+    short; judged against the plot height of the moment, the wrapped
+    legend gave the plot room, unwrapped there, took it back and wrapped
+    again until the layout's step limit.
+    """
+    fig, ax = _report()
+    x = np.arange(12)
+    rng = np.random.default_rng(17)
+    for i, city in enumerate(CITIES):
+        ax.plot(
+            x,
+            50
+            + 42 * np.sin(2 * np.pi * x / 6 + 2 * np.pi * i / 10)
+            + rng.normal(0, 2, x.size),
+            label=f"{city} metropolitan region, seasonally adjusted (2019 = 100)",
+        )
+    ax.set(xlabel="Month", ylabel="Index")
+    legend = place_legend(ax)
+    assert legend is not None and legend._dm_outside_fallback is True
+    dm.simple_layout(fig)
+    assert settle_legends(fig, drawn_renderer(fig)) is False
+
+
 def test_layout_replans_rows_for_the_fitted_width() -> None:
     """Rows are chosen again once simple_layout has widened the Axes."""
     dm.style.use("report")

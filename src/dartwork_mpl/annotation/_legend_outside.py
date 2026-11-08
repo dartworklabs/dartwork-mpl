@@ -206,6 +206,7 @@ def plan_side(
     axes_box: Bbox,
     pad: float,
     sizes: Sizes | None = None,
+    room: float | None = None,
 ) -> OutsidePlan:
     """Columns for ``labels`` on ``side`` and what that costs the plot.
 
@@ -214,6 +215,13 @@ def plan_side(
     legend is no taller than the Axes. ``explicit`` columns win.
     ``legend_kw`` holds no ``ncol`` / ``ncols``; ``sizes`` keeps the trial
     sizes for the next plan of the same legend.
+
+    ``room`` (above and below, once laid out) is the height the Axes and
+    the legend now share: the layout gives the Axes what a shorter legend
+    frees and takes what a taller one needs, so the loss is measured
+    against the Axes height this plan would leave, ``room`` less the
+    legend. Measured against the height now instead, a legend that wraps
+    to fit a short plot would unwrap once the plot grew, and back.
     """
     if sizes is None:
         sizes = {}
@@ -231,7 +239,8 @@ def plan_side(
         if fits:
             break
     if along_width:
-        loss = (height + pad) / max(axes_box.height, 1.0)
+        plot = axes_box.height if room is None else room - height
+        loss = (height + pad) / max(plot, 1.0)
     else:
         loss = (width + pad) / max(axes_box.width, 1.0)
     return OutsidePlan(side, ncols, tuple(labels), width, height, loss, fits)
@@ -312,6 +321,7 @@ def side_plans(
     *,
     named: bool,
     sizes: Sizes | None = None,
+    room: float | None = None,
 ) -> list[OutsidePlan]:
     """The plans for ``side``: names as given, then wrapped when allowed.
 
@@ -320,7 +330,8 @@ def side_plans(
     :data:`GOOD_FIT_LOSS` of the plot, or, on a side the caller named
     right or left, is wider than :data:`WIDE_SHARE` of the Axes. A legend
     that fits keeps its names on one line. ``sizes`` keeps the trial
-    measurements for the next plan of the same legend.
+    measurements for the next plan of the same legend; ``room`` is
+    :func:`plan_side`'s.
     """
     from ..config import config
 
@@ -340,6 +351,7 @@ def side_plans(
         axes_box,
         pad,
         sizes,
+        room,
     )
     plans = [plain]
     if not config.legend_wrap:
@@ -363,6 +375,7 @@ def side_plans(
             axes_box,
             pad,
             sizes,
+            room,
         )
         for wrapped in _wrapped_variants(
             ax, handles, labels, side, legend_kw, explicit, renderer, sizes

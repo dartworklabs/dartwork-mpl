@@ -74,12 +74,18 @@ def _replan(
 ) -> OutsidePlan:
     """The plan for the legend's side at the Axes size now.
 
-    Above and below: rows and wrapping chosen again (the width does not
-    depend on such a legend, so this settles). Right and left: only the
-    column count for the height now, with the names kept as they are.
+    Above and below: rows and wrapping chosen again for the width now (the
+    width does not depend on such a legend) and the height the Axes and
+    the legend share now (the layout trades one for the other, so this
+    stays put; :func:`~._legend_outside.plan_side`). Right and left: only
+    the column count for the height now, with the names kept as they are.
     """
     side = source.plan.side
     if side in ("above", "below"):
+        room = (
+            ax.get_window_extent(renderer).height
+            + legend.get_window_extent(renderer).height
+        )
         return choose(
             side_plans(
                 ax,
@@ -90,6 +96,7 @@ def _replan(
                 renderer,
                 named=not getattr(legend, "_dm_outside_fallback", False),
                 sizes=source.sizes,
+                room=room,
             )
         )
     legend_kw, explicit = split_ncols(source.kw)
