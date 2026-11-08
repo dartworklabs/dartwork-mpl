@@ -1,4 +1,4 @@
-"""A twin's own right spine shows at ``dm.simple_layout``, not at import (D7).
+"""A twin's own scale line shows at ``dm.simple_layout``, not at import (D7).
 
 Up to 0.7, ``import dartwork_mpl`` replaced ``matplotlib.axes.Axes.twinx``
 with a wrapper that ran two lines on the Axes it returned::
@@ -30,7 +30,10 @@ offset spine and an inset's ``twinx``; with scales moved to the right where
 the label moved left, x02 and x03 of the D7 review, and ``b.twinx()`` of a
 twin, x04) keep 0.7's line too. The rest pins where 0.8 differs from 0.7 on
 purpose: 11-1 to 11-5 and decision 14, all approved by the user on
-2026-11-07.
+2026-11-07, and the top spine of a ``twiny`` member (1-A, approved on
+2026-11-08). 0.7 left that spine hidden, so the three ``twiny`` parity
+cases differ from the golden file in that one spine and nowhere else; the
+file is not re-recorded for it.
 """
 
 from __future__ import annotations
@@ -409,16 +412,40 @@ def test_golden_names_every_parity_case() -> None:
     assert sorted(recorded["cases"]) == sorted(CASES)
 
 
+# 1-A (2026-11-08): the parity cases whose twiny member (this Axes index)
+# now shows its top spine, which 0.7 left hidden.
+TOP_SHOWN = {"twiny": 1, "twiny/neutral": 1, "twiny/format_ticks_off": 1}
+
+
 @pytest.mark.parametrize("name", sorted(CASES))
 def test_case_draws_what_07_drew(
     name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     golden = json.loads(GOLDEN.read_text())["cases"][name]
-    pixels, drawn, _ = _run(name)
-    assert drawn == golden
+    pixels, drawn, fig = _run(name)
     old_pixels, old_drawn = _run_07(name, monkeypatch)
     assert old_drawn == golden  # the live re-enactment is 0.7 too
-    assert np.array_equal(pixels, old_pixels)
+    if name not in TOP_SHOWN:
+        assert drawn == golden
+        assert np.array_equal(pixels, old_pixels)
+        return
+    # The one difference: the twiny's top spine shows. Everything else in
+    # the drawn state is 0.7's, and every changed pixel lies on that spine.
+    index = TOP_SHOWN[name]
+    top = drawn[index]["spines"]["top"]
+    assert top[0] is True
+    assert golden[index]["spines"]["top"][0] is False
+    top[0] = False
+    assert drawn == golden
+    rows, columns = np.nonzero(np.any(pixels != old_pixels, axis=-1))
+    assert rows.size > 0
+    box = fig.axes[index].spines["top"].get_window_extent()
+    height = pixels.shape[0]
+    # buffer rows count from the top; 1 px of antialiasing either way
+    assert rows.min() >= height - box.y1 - 1
+    assert rows.max() <= height - box.y0 + 1
+    assert columns.min() >= box.x0 - 1
+    assert columns.max() <= box.x1 + 1
 
 
 def test_hand_set_width_and_colour_stay() -> None:
@@ -608,17 +635,178 @@ def test_spine_hidden_after_a_layout_stays_hidden_on_relayout() -> None:
     assert not b.spines["right"].get_visible()
 
 
-def test_twiny_top_spine_is_left_to_the_preset() -> None:
-    fig, a, b = _twiny_pair()
-    dm.simple_layout(fig)
-    assert not b.spines["top"].get_visible()
-    assert not a.spines["top"].get_visible()
-
-
 def test_refused_layout_changes_nothing() -> None:
     fig = _figure()
     a = fig.add_axes((0.15, 0.15, 0.7, 0.7))
     b = a.twinx()
+    c = a.twiny()
     with pytest.warns(UserWarning, match="no GridSpec"):
         dm.simple_layout(fig)
     assert not b.spines["right"].get_visible()
+    assert not c.spines["top"].get_visible()
+
+
+# --------------------------------------------- 1-A: the top of a twiny
+def _top_shown(fig: Figure) -> list[bool]:
+    return [ax.spines["top"].get_visible() for ax in fig.axes]
+
+
+def _to_top(ax: Axes) -> None:
+    ax.xaxis.tick_top()
+    ax.xaxis.set_label_position("top")
+
+
+@pytest.mark.parametrize(
+    "preset", ["scientific", "report", "presentation", "minimal"]
+)
+def test_twiny_top_spine_shows_at_the_layout(preset: str) -> None:
+    dm.style.use(preset)
+    fig, a, b = _twiny_pair()
+    assert _top_shown(fig) == [False, False]  # matplotlib's twiny, preset
+    dm.simple_layout(fig)
+    assert _top_shown(fig) == [False, True]
+    assert [ax.spines["right"].get_visible() for ax in fig.axes] == [
+        False,
+        False,
+    ]
+
+
+def test_twinx_and_twiny_on_one_parent_each_get_their_side() -> None:
+    fig, a, b = _twinx_pair()
+    c = a.twiny()
+    c.plot(X, X, color="dc.green6")
+    dm.simple_layout(fig)
+    assert [ax.spines["right"].get_visible() for ax in fig.axes] == [
+        False,
+        True,
+        False,
+    ]
+    assert _top_shown(fig) == [False, False, True]
+
+
+@pytest.mark.parametrize(
+    ("move", "shown"),
+    [
+        pytest.param(lambda b: b.xaxis.tick_bottom(), True, id="ticks"),
+        pytest.param(
+            lambda b: b.xaxis.set_label_position("bottom"), True, id="label"
+        ),
+        pytest.param(
+            lambda b: (
+                b.xaxis.tick_bottom(),
+                b.xaxis.set_label_position("bottom"),
+            ),
+            False,
+            id="both",
+        ),
+        pytest.param(
+            lambda b: b.xaxis.set_visible(False), False, id="x_axis_hidden"
+        ),
+    ],
+)
+def test_twiny_with_its_top_scale_moved(
+    move: Callable[[Axes], object], shown: bool
+) -> None:
+    """Its y axis is hidden, so its ticks or its label on top is enough
+    (the x02 / x03 mirror); with neither, or no x axis, it draws no scale
+    there (the 11-4 twin and 11-5 mirrors)."""
+    fig, a, b = _twiny_pair()
+    move(b)
+    dm.simple_layout(fig)
+    assert _top_shown(fig) == [False, shown]
+
+
+def test_twiny_parent_moved_to_the_top_too_keeps_the_twins_line() -> None:
+    """The twin's line first, on the top (the x22 mirror)."""
+    fig, a, b = _twiny_pair()
+    _to_top(a)
+    dm.simple_layout(fig)
+    assert _top_shown(fig) == [False, True]
+
+
+def test_twiny_swapped_top_scales_move_the_line_to_the_parent() -> None:
+    """The 11-4 mirror: the parent's y axis shows, so it needs both."""
+    fig, a, b = _twiny_pair()
+    _to_top(a)
+    b.xaxis.tick_bottom()
+    b.xaxis.set_label_position("bottom")
+    dm.simple_layout(fig)
+    assert _top_shown(fig) == [True, False]
+
+
+@pytest.mark.parametrize(
+    ("move", "shown"),
+    [(_to_top, True), (lambda b: b.xaxis.tick_top(), False)],
+    ids=["ticks_and_label", "ticks_only"],
+)
+def test_sharey_overlay_moved_to_the_top(
+    move: Callable[[Axes], object], shown: bool
+) -> None:
+    """The 11-3 mirror: its y axis shows, so ticks and label both on top."""
+    fig, a, b = _one_box(sharey=True)
+    move(b)
+    dm.simple_layout(fig)
+    assert _top_shown(fig) == [False, shown]
+
+
+@pytest.mark.parametrize(
+    ("sharing", "move", "side"),
+    [
+        ({"sharey": True}, _to_right, "right"),
+        ({"sharex": True}, _to_top, "top"),
+    ],
+    ids=["sharey_moved_right", "sharex_moved_top"],
+)
+def test_a_scale_moved_onto_a_shared_axis_draws_no_line(
+    sharing: dict[str, bool], move: Callable[[Axes], None], side: str
+) -> None:
+    """The scale it moved is one it shares, so it is its partner's own."""
+    fig, a, b = _one_box(**sharing)
+    move(b)
+    dm.simple_layout(fig)
+    assert [ax.spines[side].get_visible() for ax in fig.axes] == [False, False]
+
+
+def test_sharey_overlay_drawn_like_a_twiny_shows() -> None:
+    """The decision 14 mirror: y axis hidden, only its ticks on top."""
+    fig, a, b = _one_box(sharey=True)
+    b.yaxis.set_visible(False)
+    b.xaxis.tick_top()
+    dm.simple_layout(fig)
+    assert _top_shown(fig) == [False, True]
+
+
+def test_top_spine_hidden_after_a_layout_stays_hidden_on_relayout() -> None:
+    fig, _, b = _twiny_pair()
+    dm.simple_layout(fig)
+    b.spines["top"].set_visible(False)
+    dm.simple_layout(fig)
+    dm.simple_layout(fig)
+    assert not b.spines["top"].get_visible()
+
+
+def test_each_side_is_settled_apart() -> None:
+    """One Axes reading two scales: x shared with ``a``, y with ``b``.
+
+    Its right side is settled at the first layout; a top scale moved there
+    later still gets its line, and the right spine hidden in between stays
+    hidden.
+    """
+    fig = _figure()
+    gs = fig.add_gridspec(1, 1)
+    a = fig.add_subplot(gs[0])
+    b = fig.add_subplot(gs[0])
+    c = fig.add_subplot(gs[0], sharex=a, sharey=b)
+    for ax in (b, c):
+        ax.patch.set_visible(False)
+    _draw_pair(a, b)
+    c.plot(X, X, color="dc.green6")
+    _to_right(c)
+    dm.simple_layout(fig)
+    assert c.spines["right"].get_visible()
+    assert _top_shown(fig) == [False, False, False]
+    c.spines["right"].set_visible(False)
+    _to_top(c)
+    dm.simple_layout(fig)
+    assert not c.spines["right"].get_visible()
+    assert _top_shown(fig) == [False, False, True]
