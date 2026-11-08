@@ -63,6 +63,17 @@ def test_the_guide_example_keeps_the_multiplier_inside_the_figure() -> None:
         plt.close(fig)
 
 
+def test_the_guide_example_draws_no_advisory_of_its_own() -> None:
+    """The lint rule that points to this cure must not flag the cure itself."""
+    code = "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+    hits = [
+        issue
+        for issue in dm.lint_code(code + _guide_fence())
+        if issue.rule_id == "ticklabel-format-default-before-layout"
+    ]
+    assert hits == []
+
+
 @pytest.mark.parametrize(("relayout", "inside"), [(False, False), (True, True)])
 def test_a_request_after_the_layout_needs_the_layout_again(
     relayout: bool, inside: bool

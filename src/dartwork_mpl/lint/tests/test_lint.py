@@ -1709,7 +1709,52 @@ class TestTicklabelFormatDefaultBeforeLayout:
             + _LAYOUT,
             # Only the axis: nothing is asked.
             _SCI_HEAD + 'ax.ticklabel_format(axis="y")\n' + _LAYOUT,
+            # The cures themselves, made first on the same axes (the
+            # layout guide's example): the request holds, nothing to say.
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT,
+            "import matplotlib.ticker as mticker\n"
+            + _SCI_HEAD
+            + "ax.xaxis.set_major_formatter(mticker.ScalarFormatter())\n"
+            + 'ax.ticklabel_format(axis="x", useOffset=True)\n'
+            + _LAYOUT,
+            _SCI_HEAD
+            + "dm.format_axis_year(ax)\n"
+            + 'ax.ticklabel_format(axis="x", style="sci")\n'
+            + _LAYOUT,
         ],
     )
     def test_recorded_or_unread_requests_are_quiet(self, code: str) -> None:
         assert _sci_hits(code) == []
+
+    @pytest.mark.parametrize(
+        "prep",
+        [
+            # The cure on another axes does not cover this one.
+            "ax2 = ax.twinx()\nax2.yaxis.set_major_formatter(ScalarFormatter())\n",
+            # A formatter other than ScalarFormatter is no cure.
+            "ax.yaxis.set_major_formatter(FuncFormatter(str))\n",
+        ],
+    )
+    def test_a_cure_elsewhere_still_reports(self, prep: str) -> None:
+        code = (
+            "from matplotlib.ticker import FuncFormatter, ScalarFormatter\n"
+            + _SCI_HEAD
+            + prep
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT
+        )
+        assert len(_sci_hits(code)) == 1
+
+    def test_a_cure_after_the_request_still_reports(self) -> None:
+        code = (
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + _LAYOUT
+        )
+        assert len(_sci_hits(code)) == 1

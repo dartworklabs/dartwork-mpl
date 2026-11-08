@@ -432,10 +432,54 @@ def _asks_only_defaults(call: ast.Call) -> bool:
     return asked and not call.args
 
 
+def _callee_name(func: ast.expr) -> str:
+    """The called name: ``f`` for ``f(...)``, ``attr`` for ``x.attr(...)``."""
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return ""
+
+
+def _prepared_axes(syntax: _Syntax) -> dict[str, int]:
+    """Axes given an order-independent formatter, by source text, at the
+    earliest offset.
+
+    ``ax.xaxis.set_major_formatter(ScalarFormatter(...))`` (either axis) and
+    ``dm.format_axis_year(ax, ...)`` make a later default
+    ``ticklabel_format`` request on ``ax`` hold through the layout, so the
+    advisory must not repeat its own cure.
+    """
+    prepared: dict[str, int] = {}
+    for node in ast.walk(syntax.tree):
+        if not isinstance(node, ast.Call):
+            continue
+        receiver: ast.expr | None = None
+        func = node.func
+        if (
+            isinstance(func, ast.Attribute)
+            and func.attr == "set_major_formatter"
+            and isinstance(func.value, ast.Attribute)
+            and func.value.attr in {"xaxis", "yaxis"}
+            and node.args
+            and isinstance(node.args[0], ast.Call)
+            and _callee_name(node.args[0].func) == "ScalarFormatter"
+        ):
+            receiver = func.value.value
+        elif _callee_name(func) == "format_axis_year" and node.args:
+            receiver = node.args[0]
+        if receiver is not None:
+            key = ast.unparse(receiver)
+            start = syntax.span(node)[0]
+            prepared[key] = min(start, prepared.get(key, start))
+    return prepared
+
+
 def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
     """``ax.ticklabel_format(style="sci")`` asking only for defaults, in the
     source before the last ``dm.simple_layout`` (source order, not run
-    order)."""
+    order), on an axes not already given an explicit ``ScalarFormatter``
+    or ``dm.format_axis_year`` earlier in the source."""
     sites = list(_call_sites(syntax))
     layouts = [
         site.start
@@ -445,6 +489,7 @@ def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
     if not layouts:
         return
     last = max(layouts)
+    prepared = _prepared_axes(syntax)
     for site in sites:
         if (
             site.native
@@ -454,6 +499,10 @@ def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
             and site.start < last
             and _asks_only_defaults(site.node)
         ):
+            if site.kind == "axes":
+                key = ast.unparse(site.node.func.value)
+                if prepared.get(key, site.start) < site.start:
+                    continue
             yield _method_offset(syntax, site.node.func)
 
 
