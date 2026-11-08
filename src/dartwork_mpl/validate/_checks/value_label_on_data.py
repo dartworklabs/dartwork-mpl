@@ -35,7 +35,6 @@ than ``scatter`` are not data here.
 
 from __future__ import annotations
 
-import contextlib
 import re
 import unicodedata
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, TypedDict
@@ -210,22 +209,49 @@ def _without_marks(string: str, ismath: bool | Literal["TeX"]) -> str:
     )
 
 
-def _glyph_shares(text: Text, renderer: RendererBase) -> tuple[float, float]:
-    """The shares of the text box under the glyphs and over them.
+class _Glyphs(NamedTuple):
+    """Where a label's glyphs lie in its unrotated text box (px).
 
     The box spans the font's descent and ascent about the baseline; the ink
     rises to the glyphs' top and drops to their descent: a ``g``'s or a
     ``p``'s tail is drawn, the room under digits is not. The tail of a
     mark around the number (a comma, a parenthesis, a ``$``) does not hide
     data, so a label resting on a bar end is a touch however it is
-    punctuated: the descent is measured without those marks. The
-    baseline's place in the box comes from laying the same string out
+    punctuated: ``depth`` measures the string without those marks.
+    """
+
+    below: float  # the box's depth under the baseline
+    above: float  # the box's height over the baseline
+    top: float  # the glyphs' top over the baseline
+    tails: float  # the deepest glyph under the baseline, marks included
+    core: str | None  # the string less its marks; None when it has none
+    ismath: bool | Literal["TeX"]
+
+    def depth(self, text: Text, renderer: RendererBase) -> float:
+        """How far the glyphs other than the marks drop under the baseline."""
+        if self.core is None:
+            return self.tails
+        if not self.core.strip(" $"):
+            return 0.0
+        try:
+            _w, _h, descent = renderer.get_text_width_height_descent(
+                self.core, text.get_fontproperties(), self.ismath
+            )
+        except ValueError:  # mathtext that no longer parses: keep it all
+            return self.tails
+        return max(0.0, min(float(descent), self.tails))
+
+
+def _glyphs(text: Text, renderer: RendererBase) -> _Glyphs | None:
+    """Measure the label's glyphs; ``None`` when it has no figure or box.
+
+    The baseline's place in the box comes from laying the same string out
     unrotated on a baseline at the origin: matplotlib's own layout, without
     touching the label.
     """
     figure = text.get_figure(root=True)
     if figure is None:
-        return 0.0, 0.0
+        return None
     prop = text.get_fontproperties()
     probe = Text(
         0,
@@ -240,23 +266,20 @@ def _glyph_shares(text: Text, renderer: RendererBase) -> tuple[float, float]:
     probe.set_figure(figure)
     line = probe.get_window_extent(renderer)  # [-descent, ascent], baseline 0
     if line.height <= 0:
-        return 0.0, 0.0
+        return None
     string, ismath = _laid_out(text)
     _w, height, descent = renderer.get_text_width_height_descent(
         string, prop, ismath=ismath
     )
-    top = height - descent  # the glyphs' top over the baseline
     core = _without_marks(string, ismath)
-    if core != string and not core.strip(" $"):
-        descent = 0.0
-    elif core != string:
-        with contextlib.suppress(ValueError):  # mathtext that fails: keep all
-            _w, _h, descent = renderer.get_text_width_height_descent(
-                core, prop, ismath
-            )
-    under = max(0.0, -line.y0 - max(0.0, descent)) / line.height
-    over = max(0.0, line.y1 - top) / line.height
-    return under, over
+    return _Glyphs(
+        below=max(0.0, -line.y0),
+        above=max(0.0, line.y1),
+        top=float(height - descent),
+        tails=max(0.0, float(descent)),
+        core=None if core == string else core,
+        ismath=ismath,
+    )
 
 
 def _inset(x0: float, y0: float, x1: float, y1: float, by: float) -> Bbox:
@@ -270,11 +293,21 @@ def _inset(x0: float, y0: float, x1: float, y1: float, by: float) -> Bbox:
 
 
 def _ink_box(
-    text: Text, box: Bbox, renderer: RendererBase, touch: float, region: Bbox
+    text: Text,
+    box: Bbox,
+    glyphs: _Glyphs | None,
+    depth: float,
+    touch: float,
+    region: Bbox,
 ) -> Bbox | None:
-    """The label's glyphs within its text ``box`` that its clip ``region``
-    lets through, less the ``touch`` margin; ``None`` when none does."""
-    under, over = _glyph_shares(text, renderer)
+    """The label's glyphs down to ``depth`` under the baseline within its
+    text ``box``, where its clip ``region`` lets them through, less the
+    ``touch`` margin; ``None`` when nothing is let through."""
+    under = over = 0.0
+    if glyphs is not None:
+        height = glyphs.below + glyphs.above
+        under = max(0.0, glyphs.below - depth) / height
+        over = max(0.0, glyphs.above - glyphs.top) / height
     x0, y0, x1, y1 = box.x0, box.y0, box.x1, box.y1
     w, h = box.width, box.height
     match round(float(text.get_rotation())) % 360:
@@ -875,24 +908,38 @@ def _label_hits(
 ) -> list[_Hit]:
     """What the label's ink covers, where its clip lets it be drawn.
 
-    The ink lies inside the text box, so a box that meets nothing has ink
-    that meets nothing: the glyphs are measured only for a box that does.
+    A bigger ink box covers no less (it meets more, and is less often a
+    label on its own bar or inside its bubble), so the measuring stops as
+    soon as the answer is settled: a text box that meets nothing has ink
+    that meets nothing, and when the glyphs down to every tail meet what
+    they meet standing on the baseline, the depth without the marks
+    between the two is not measured.
     """
-    box = label.box
+    box, text, region = label.box, label.text, label.region
     centre = ((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2)
-    seen = _clip(box, label.region)
+    seen = _clip(box, region)
     if seen is None:
         return []
     whole = _inset(seen.x0, seen.y0, seen.x1, seen.y1, touch)
     if not _hits(data, frame, whole, centre, touch):
         return []
+
+    def covered(depth: float) -> list[_Hit]:
+        ink = _ink_box(text, box, glyphs, depth, touch, region)
+        return [] if ink is None else _hits(data, frame, ink, centre, touch)
+
     try:
-        ink = _ink_box(label.text, box, renderer, touch, label.region)
+        glyphs = _glyphs(text, renderer)
+        if glyphs is None:
+            return covered(0.0)
+        deepest = covered(glyphs.tails)
+        if not deepest or glyphs.core is None or glyphs.tails <= 0:
+            return deepest
+        if covered(0.0) == deepest:
+            return deepest
+        return covered(glyphs.depth(text, renderer))
     except BBOX_ERRORS:
         return []
-    if ink is None:
-        return []
-    return _hits(data, frame, ink, centre, touch)
 
 
 @register_check("VALUE_LABEL_ON_DATA", order=57)

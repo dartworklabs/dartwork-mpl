@@ -181,20 +181,24 @@ def _line_under_baseline(label, rotation, offset_pt):
 
 
 @pytest.mark.parametrize("rotation", [0, 90, 180, 270])
-@pytest.mark.parametrize("label", ["10 g", "10 y", "10 p", "10 $p$"])
+@pytest.mark.parametrize(
+    "label", ["10 g", "10 y", "10 p", "10 $p$", "(1,250 kg)"]
+)
 def test_reports_a_line_through_the_descenders(label, rotation):
     # 2.5 pt under the baseline the line cuts the tails of g, y and p
-    # (about 6 pt deep at 28 pt): drawn ink, not the box's empty descent.
+    # (about 6 pt deep at 28 pt): drawn ink, not the box's empty descent,
+    # and still ink beside a comma's and parentheses' tails.
     found = _checked(_line_under_baseline(label, rotation, -2.5))
     assert [w.detail["covered"] for w in found] == [["line"]]
 
 
 @pytest.mark.parametrize("rotation", [0, 90, 180, 270])
-def test_clean_when_a_line_runs_under_bare_digits(rotation):
+@pytest.mark.parametrize("label", ["10", "(10)", "$1,250"])
+def test_clean_when_a_line_runs_under_bare_digits(label, rotation):
     # Digits have no tail: 0.6 pt under the baseline the line only touches
-    # their feet, and 2.5 pt under it the box's descent is empty.
-    assert _checked(_line_under_baseline("10", rotation, -0.6)) == []
-    assert _checked(_line_under_baseline("10", rotation, -2.5)) == []
+    # their feet, and 2.5 pt under it only the marks' tails reach it.
+    assert _checked(_line_under_baseline(label, rotation, -0.6)) == []
+    assert _checked(_line_under_baseline(label, rotation, -2.5)) == []
 
 
 def test_reports_a_hand_label_centred_on_the_bar_end():
