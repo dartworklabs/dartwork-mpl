@@ -8,11 +8,12 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from matplotlib.text import Text
+from matplotlib.text import Annotation, Text
 from matplotlib.transforms import Bbox
 
 from .._figure_geometry import BBOX_ERRORS
 from ..scale import fs, fw
+from ._kwarg_guard import AXES_ANNOTATE_PARAMETERS, KwargGuard
 from ._placement_geometry import (
     _collection_bboxes,
     _collision_area,
@@ -93,6 +94,135 @@ def _parse_hline_x(x: str | float) -> _HlineAnchor | Literal["auto"] | float:
             )
 
 
+# --- keywords these helpers cannot honour (#483) -----------------------------
+# Every helper here builds its label with ``ax.annotate(text, xy=, xycoords=,
+# xytext=, textcoords=, ha=, va=, fontsize=, ...)``; see each call below.
+
+_TEXT_PROPERTIES = (
+    "any matplotlib Text property (color=, rotation=, fontstyle=, ...) or "
+    "ax.annotate argument (arrowprops=, annotation_clip=)"
+)
+
+_ANNOTATE_ESCAPE = (
+    "For a different placement API, write the label yourself with "
+    "ax.annotate(text, xy, xytext=..., xycoords=..., textcoords=...)."
+)
+
+_FONTSIZE = "Set the size with fontsize=."
+_SHORT_ALIGNMENT = (
+    "The helper passes ha= and va=, which win over the long spelling; pass "
+    "ha= / va= instead."
+)
+
+
+def _point_owned(point: str, offset: str) -> dict[str, str]:
+    """Owned spellings shared by the three point helpers, with their fixes."""
+    return {
+        "xy": point,
+        "xycoords": point,
+        "xytext": offset,
+        "textcoords": offset,
+        # ax.annotate replaces any transform (IdentityTransform); placement
+        # goes through xycoords / textcoords, which the helper sets.
+        "transform": offset,
+        "size": _FONTSIZE,
+        "horizontalalignment": _SHORT_ALIGNMENT,
+        "verticalalignment": _SHORT_ALIGNMENT,
+    }
+
+
+_NO_FMT = (
+    "There is no format string: pass the finished text, for example "
+    "f'{value:.1f}'. "
+)
+_NO_FONTDICT = (
+    "ax.annotate takes no fontdict: pass the properties directly "
+    "(color=, fontsize=). "
+)
+
+_ANNOTATE_VALUE_SIDE = "Place the label with side= and offset_pt= (points)."
+_ANNOTATE_VALUE_AUTO_ALIGNMENT = (
+    "side='auto' sets the alignment for the side it picks; pass side= "
+    "('above', 'below', 'left' or 'right') to keep your own."
+)
+_ANNOTATE_VALUE_GUARD = KwargGuard(
+    helper="annotate_value",
+    artist=Annotation,
+    parameters=AXES_ANNOTATE_PARAMETERS,
+    owned=_point_owned(
+        "The point is x= and y=, in data coordinates.", _ANNOTATE_VALUE_SIDE
+    ),
+    takes=f"x=, y=, text, side=, offset_pt=, fontsize= and {_TEXT_PROPERTIES}",
+    escape=_ANNOTATE_ESCAPE,
+    hints={
+        "fmt": _NO_FMT,
+        "loc": "Choose the side with side=. ",
+        "offset": "Use offset_pt= (points). ",
+        "fontdict": _NO_FONTDICT,
+    },
+)
+
+_ANNOTATE_CORNER_INSET = (
+    "Choose the corner with loc= and the inset with inset_pt=."
+)
+_ANNOTATE_CORNER_AUTO_ALIGNMENT = (
+    "avoid_overlap=True sets the alignment for the corner it picks; pass "
+    "avoid_overlap=False to keep your own."
+)
+_ANNOTATE_CORNER_GUARD = KwargGuard(
+    helper="annotate_corner",
+    artist=Annotation,
+    parameters=AXES_ANNOTATE_PARAMETERS,
+    owned={
+        **_point_owned(_ANNOTATE_CORNER_INSET, _ANNOTATE_CORNER_INSET),
+        "x": _ANNOTATE_CORNER_INSET,
+        "y": _ANNOTATE_CORNER_INSET,
+    },
+    takes=(
+        "text, loc=, inset_pt=, avoid_overlap=, fontsize= and "
+        f"{_TEXT_PROPERTIES}"
+    ),
+    escape=_ANNOTATE_ESCAPE,
+    hints={
+        "fmt": _NO_FMT,
+        "corner": "Choose the corner with loc=. ",
+        "inset": "Use inset_pt= (points). ",
+        "fontdict": _NO_FONTDICT,
+    },
+)
+
+_LABEL_HLINE_PLACE = (
+    "Place the label with x= (an end, the centre or an axes fraction), "
+    "side= and gap_pt= (points)."
+)
+_LABEL_HLINE_AUTO_ALIGNMENT = (
+    "x='auto' sets the horizontal alignment for the end it picks; pass "
+    "x='left', 'right' or 'center' to keep your own."
+)
+_LABEL_HLINE_GUARD = KwargGuard(
+    helper="label_hline",
+    artist=Annotation,
+    parameters=AXES_ANNOTATE_PARAMETERS,
+    owned=_point_owned(
+        "The line is y=, in data coordinates; the end is x=.",
+        _LABEL_HLINE_PLACE,
+    ),
+    takes=f"y=, text, x=, side=, gap_pt=, fontsize= and {_TEXT_PROPERTIES}",
+    escape=_ANNOTATE_ESCAPE,
+    hints={
+        "fmt": _NO_FMT,
+        "loc": "Choose the end with x= and the side with side=. ",
+        "gap": "Use gap_pt= (points). ",
+        "offset": "Use gap_pt= (points). ",
+        "fontdict": _NO_FONTDICT,
+    },
+)
+
+
+def _alignment_owned(names: tuple[str, ...], sentence: str) -> dict[str, str]:
+    return dict.fromkeys(names, sentence)
+
+
 def _set_annotation_offset(text: Text, offset: tuple[float, float]) -> None:
     text.set_position(offset)
     if hasattr(text, "xyann"):
@@ -165,6 +295,15 @@ def annotate_value(
     if fontsize is None:
         fontsize = fs(-1)
     requested = _parse_value_side(side)
+    _ANNOTATE_VALUE_GUARD.check(
+        kw,
+        _alignment_owned(
+            ("ha", "va", "horizontalalignment", "verticalalignment"),
+            _ANNOTATE_VALUE_AUTO_ALIGNMENT,
+        )
+        if requested == "auto"
+        else None,
+    )
     if "fontweight" not in kw and "weight" not in kw:
         kw["fontweight"] = fw(1)
 
@@ -297,6 +436,15 @@ def annotate_corner(
     if fontsize is None:
         fontsize = fs(-2)
     corner = _parse_corner(loc)
+    _ANNOTATE_CORNER_GUARD.check(
+        kw,
+        _alignment_owned(
+            ("ha", "va", "horizontalalignment", "verticalalignment"),
+            _ANNOTATE_CORNER_AUTO_ALIGNMENT,
+        )
+        if avoid_overlap
+        else None,
+    )
 
     existing_texts = list(ax.texts)
     anchor, offset_direction, ha, va = _CORNER_SPECS[corner]
@@ -451,6 +599,14 @@ def label_hline(
         fontsize = fs(-2)
     line_side = _parse_hline_side(side)
     anchor = _parse_hline_x(x)
+    _LABEL_HLINE_GUARD.check(
+        kw,
+        _alignment_owned(
+            ("ha", "horizontalalignment"), _LABEL_HLINE_AUTO_ALIGNMENT
+        )
+        if anchor == "auto"
+        else None,
+    )
 
     va = "bottom" if line_side == "above" else "top"
     offset = (0.0, float(gap_pt) if line_side == "above" else -float(gap_pt))

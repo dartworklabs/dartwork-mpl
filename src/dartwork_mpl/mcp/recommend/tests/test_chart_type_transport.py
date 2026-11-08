@@ -74,24 +74,20 @@ CASES = [
             "rationale": "x=continuous, y=None, n_points=50, n_series=1 → recommended: 'histogram'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
         },
     ),
-    (
-        {"x_type": "weird", "y_type": "continuous"},
-        {
-            "recommended": "scatter",
-            "basic_template_uri": "dartwork-mpl://templates/scatter",
-            "advanced_template_uri": "dartwork-mpl://templates/advanced/scatter",
-            "rationale": "x=weird, y=continuous, n_points=50, n_series=1 → recommended: 'scatter'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
-        },
-    ),
-    (
-        {"x_type": "weird"},
-        {
-            "recommended": "line",
-            "basic_template_uri": "dartwork-mpl://templates/line",
-            "advanced_template_uri": "dartwork-mpl://templates/advanced/line",
-            "rationale": "x=weird, y=None, n_points=50, n_series=1 → recommended: 'line'. Tier-1 templates show the minimal API call; tier-2 (advanced) templates add realistic data, reference lines and value labels. Neither tier draws a title, subtitle or source note: add one only when the user asks (dm.add_note for a source line).",
-        },
-    ),
+]
+
+#: Values outside the tool docstring's documented sets. The schema types both
+#: arguments as plain strings, so these reach the recommender rather than being
+#: refused by the schema. Two of these used to be pinned above as golden
+#: replies — ``{"x_type": "weird"}`` came back as a ``line`` recommendation
+#: with a template URI (#501 task 8).
+REJECTED = [
+    ({"x_type": "weird", "y_type": "continuous"}, "x_type"),
+    ({"x_type": "weird"}, "x_type"),
+    ({"x_type": "catagorical", "y_type": "continuous"}, "x_type"),
+    ({"x_type": "CONTINUOUS"}, "x_type"),
+    ({"x_type": "continuous", "y_type": "counts"}, "y_type"),
+    ({"x_type": "continuous", "y_type": ""}, "y_type"),
 ]
 
 
@@ -111,6 +107,30 @@ def test_client_normalizes_semantics_and_reads_resources(arguments, expected):
                 if expected[key] is not None:
                     resources = await client.read_resource(expected[key])
                     assert resources and all(item.text for item in resources)
+
+    asyncio.run(probe())
+
+
+@pytest.mark.parametrize(("arguments", "argument"), REJECTED)
+def test_client_rejects_undocumented_selection(arguments, argument):
+    """An undocumented selection comes back as an error, not a recommendation.
+
+    The reply must name the offending argument and the permitted values, and
+    must not carry a template URI: the old behaviour answered a different
+    question than the caller asked.
+    """
+
+    async def probe():
+        """Call the real tool and read the stable error status and text."""
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "suggest_chart_type", arguments, raise_on_error=False
+            )
+            assert result.is_error
+            text = " ".join(item.text for item in result.content)
+            assert argument in text
+            assert "must be one of" in text
+            assert "dartwork-mpl://templates/" not in text
 
     asyncio.run(probe())
 

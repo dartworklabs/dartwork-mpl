@@ -7,10 +7,64 @@ from typing import Any
 import matplotlib as mpl
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.text import Text
+from matplotlib.text import Annotation, Text
 
 from .._figure_geometry import spread_line_end_labels
+from ._kwarg_guard import AXES_ANNOTATE_PARAMETERS, KwargGuard
 from ._placement_geometry import _renderer_for_axes
+
+_LINE_END_PLACE = (
+    "Each label sits gap_pt= points right of its line's last point; set the "
+    "gap with gap_pt=."
+)
+_LINE_END_ALIGNMENT = (
+    "The helper passes ha= and va=, which win over the long spelling; pass "
+    "ha= / va= instead."
+)
+_LINE_END_LABEL_TEXT = (
+    "Each label is its line's label: set it with ax.plot(..., label=...) or "
+    "line.set_label(...). "
+)
+
+# label_line_ends builds every label with ax.annotate(xy=, xycoords=, xytext=,
+# textcoords=, **style) where style holds color, ha, va and annotation_clip.
+_LABEL_LINE_ENDS_GUARD = KwargGuard(
+    helper="label_line_ends",
+    artist=Annotation,
+    parameters=AXES_ANNOTATE_PARAMETERS,
+    owned={
+        "xy": _LINE_END_PLACE,
+        "xycoords": _LINE_END_PLACE,
+        "xytext": _LINE_END_PLACE,
+        "textcoords": _LINE_END_PLACE,
+        # ax.annotate replaces any transform (IdentityTransform).
+        "transform": _LINE_END_PLACE,
+        "x": _LINE_END_PLACE,
+        "y": _LINE_END_PLACE,
+        "horizontalalignment": _LINE_END_ALIGNMENT,
+        "verticalalignment": _LINE_END_ALIGNMENT,
+    },
+    takes=(
+        "lines=, gap_pt= and any matplotlib Text property (color=, "
+        "fontsize=, fontweight=, ...) or ax.annotate argument "
+        "(annotation_clip=)"
+    ),
+    escape=(
+        "For a different placement API, write the labels yourself with "
+        "ax.annotate(text, xy, xytext=..., textcoords='offset points')."
+    ),
+    hints={
+        "fmt": _LINE_END_LABEL_TEXT,
+        "labels": _LINE_END_LABEL_TEXT,
+        "loc": "Labels sit at each line's last point; there is no loc. ",
+        "gap": "Use gap_pt= (points). ",
+        "offset": "Use gap_pt= (points). ",
+        "fontdict": (
+            "ax.annotate takes no fontdict: pass the properties directly "
+            "(color=, fontsize=). "
+        ),
+    },
+)
 
 
 def _last_point(line: Any) -> tuple[float, float] | None:
@@ -56,6 +110,7 @@ def label_line_ends(
 
     from .._colors.contrast import ensure_contrast
 
+    _LABEL_LINE_ENDS_GUARD.check(kw)
     if lines is None:
         lines = [
             ln

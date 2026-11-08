@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import inspect
 import string
 from typing import Any
 
 import numpy as np
-from matplotlib import cbook
 from matplotlib.axes import Axes
 from matplotlib.text import Text
 
 from .._figure_geometry import BBOX_ERRORS, axes_titles
 from ..scale import fs
+from ._kwarg_guard import AXES_TEXT_PARAMETERS, reject_unusable_kwargs
 from ._placement_geometry import _renderer_for_axes
 
 
@@ -110,45 +109,34 @@ _LABEL_AXES_NATIVE_ESCAPE = (
 )
 
 
-#: ``Axes.text`` arguments of its own, which are not ``Text`` setters and so
-#: would be misread as unsupported. Taken from the signature rather than listed,
-#: so the check cannot drift from the matplotlib in use. Today: ``fontdict``.
-_AXES_TEXT_OWN_PARAMETERS = frozenset(
-    name
-    for name, parameter in inspect.signature(Axes.text).parameters.items()
-    if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
-    and name not in {"self", "x", "y", "s"}
-)
+def _owned_label_kwarg(name: str) -> str:
+    return (
+        f"label_axes() sets {name!r} on the panel labels itself, so "
+        f"passing {name!r} cannot take effect. Position the labels with "
+        f"x= and y= (both Axes-relative). {_LABEL_AXES_NATIVE_ESCAPE}"
+    )
 
 
-def _label_kwarg_is_accepted(name: str) -> bool:
-    """Report whether the label call takes ``name``, resolving matplotlib aliases."""
-    if name in _AXES_TEXT_OWN_PARAMETERS:
-        return True
-    try:
-        canonical = next(iter(cbook.normalize_kwargs({name: None}, Text)))
-    except TypeError:
-        return False
-    return callable(getattr(Text, f"set_{canonical}", None))
+def _unsupported_label_kwarg(name: str) -> str:
+    return (
+        f"label_axes() does not support {name!r}. It takes labels=, x=, "
+        f"y=, fontsize=, fontweight= and any matplotlib Text property "
+        f"(color=, rotation=, fontstyle=, ...). "
+        f"{_LABEL_AXES_KWARG_HINTS.get(name, '')}"
+        f"{_LABEL_AXES_NATIVE_ESCAPE}"
+    )
 
 
 def _reject_unusable_label_kwargs(kwargs: dict[str, Any]) -> None:
     """Fail named, before any label exists, for kwargs that cannot be honoured."""
-    for name in kwargs:
-        if name in _LABEL_AXES_OWNED_KWARGS:
-            raise TypeError(
-                f"label_axes() sets {name!r} on the panel labels itself, so "
-                f"passing {name!r} cannot take effect. Position the labels with "
-                f"x= and y= (both Axes-relative). {_LABEL_AXES_NATIVE_ESCAPE}"
-            )
-        if not _label_kwarg_is_accepted(name):
-            raise AttributeError(
-                f"label_axes() does not support {name!r}. It takes labels=, x=, "
-                f"y=, fontsize=, fontweight= and any matplotlib Text property "
-                f"(color=, rotation=, fontstyle=, ...). "
-                f"{_LABEL_AXES_KWARG_HINTS.get(name, '')}"
-                f"{_LABEL_AXES_NATIVE_ESCAPE}"
-            )
+    reject_unusable_kwargs(
+        kwargs,
+        owned=_LABEL_AXES_OWNED_KWARGS,
+        artist=Text,
+        parameters=AXES_TEXT_PARAMETERS,
+        owned_error=_owned_label_kwarg,
+        unsupported_error=_unsupported_label_kwarg,
+    )
 
 
 def label_axes(
