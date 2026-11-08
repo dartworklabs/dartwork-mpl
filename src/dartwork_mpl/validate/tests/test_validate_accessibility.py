@@ -513,6 +513,20 @@ class TestTextContrastBackground:
         assert [h.detail["sample"] for h in hits] == ["faint"]
         plt.close(fig)
 
+    def test_3d_text_is_read_where_it_is_projected(self) -> None:
+        # A Text3D's own extent reads its (x, y) unprojected, off the
+        # surface it sits on; text_window_extent places it as drawn.
+        dm.style.use("scientific")
+        fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+        ax = fig.add_subplot(projection="3d")
+        xx, yy = np.meshgrid(np.linspace(-1, 1, 5), np.linspace(-1, 1, 5))
+        ax.plot_surface(xx, yy, np.zeros_like(xx), color=_DARK, shade=False)
+        # Off the centre: unprojected, (0.6, -0.6) lies far off the canvas.
+        ax.text(0.6, -0.6, 0, "on surface", color="white", ha="center")
+
+        assert not _warnings_for(fig, "TEXT_CONTRAST")
+        plt.close(fig)
+
 
 class TestMinFontSize:
     """Text below the minimum readable size is reported."""

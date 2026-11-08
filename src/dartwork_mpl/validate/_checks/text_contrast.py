@@ -9,8 +9,8 @@ by its drawn path (a donut's hole and the corners of a wedge's box are not
 the wedge), clipped to where it is drawn. The Axes drawn before the text's
 own in the same place (a ``twinx`` host) count beneath it. Markers placed by
 offsets (``scatter``) are not a background. One point stands for the whole
-text: a label across two fills is read on the one under its centre, and a
-``Text3D`` is placed where matplotlib reports it (before projection).
+text: a label across two fills is read on the one under its centre. A 3D
+Axes' text is read at its projected place; the 3D panes are not modelled.
 """
 
 from __future__ import annotations
@@ -26,11 +26,15 @@ from matplotlib.backend_bases import MouseEvent
 from matplotlib.collections import Collection, QuadMesh
 from matplotlib.legend import Legend
 from matplotlib.patches import Patch
-from matplotlib.text import Text
+from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform, TransformedPath
 
 from ..._colors.contrast import contrast_ratio as _contrast_ratio
-from ..._figure_geometry import backdrop_layers, same_position_axes
+from ..._figure_geometry import (
+    backdrop_layers,
+    same_position_axes,
+    text_window_extent,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
@@ -198,13 +202,19 @@ def _as_rgba(color: tuple[float, ...]) -> _RGBA:
 def _text_center(
     text: Text, renderer: RendererBase
 ) -> tuple[float, float] | None:
-    """The centre of the text's own box.
+    """The centre of the text's own box, where it draws.
 
-    ``Text.get_window_extent`` rather than the artist's: an annotation's
-    extent also holds its arrow, whose far end can sit on another fill.
+    An annotation's extent also holds its arrow, whose far end can sit on
+    another fill, so its words are measured alone (``Text.get_window_extent``).
+    A 3D Axes' text is measured at its projected place
+    (:func:`text_window_extent`).
     """
     try:
-        extent = Text.get_window_extent(text, renderer)
+        extent = (
+            Text.get_window_extent(text, renderer)
+            if isinstance(text, Annotation)
+            else text_window_extent(text, renderer)
+        )
     except BBOX_ERRORS:
         return None
     if extent.width <= 0 or extent.height <= 0:

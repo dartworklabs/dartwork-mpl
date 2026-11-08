@@ -495,7 +495,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   by its drawn path, clipped to where it is drawn (a polar Axes' round
   clip too), sampled at the pixel holding the centre of the text's own
   box (an annotation's arrow no longer pulls that centre onto what it
-  points at); filled collections (`fill_between`, `contourf`,
+  points at; a 3D Axes' text is read where it is projected); filled
+  collections (`fill_between`, `contourf`,
   `pcolormesh`, 3D surfaces) and images count in drawing order, the last
   path holding the point on top; a `twinx` host drawn first shows through
   its partner; a legend's text reads its frame. Scatter markers are not a
