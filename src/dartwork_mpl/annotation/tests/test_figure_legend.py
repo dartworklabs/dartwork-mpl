@@ -158,6 +158,24 @@ def test_a_right_figure_legend_may_be_taller_than_the_panels() -> None:
     assert fig.bbox.y0 <= box.y0 and box.y1 <= fig.bbox.y1
 
 
+def test_an_above_figure_legend_keeps_its_pad_from_the_figure_edges() -> None:
+    """A figure as wide as the one-row legend and one pad: the row would
+    come closer to an edge than its pad, so the legend takes two rows."""
+    fig, axs = _grid(1, 2, ("30cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 6)
+    wide = dm.figure_legend(fig, loc="above")
+    assert wide is not None and legend_ncols(wide) == 6
+    width = wide.get_window_extent(drawn_renderer(fig)).width
+    pad = wide.borderaxespad * wide.prop.get_size_in_points() * fig.dpi / 72.0
+    fig.set_size_inches((width + pad) / fig.dpi, fig.get_size_inches()[1])
+    legend = dm.figure_legend(fig, loc="above")
+    assert legend is not None and legend_ncols(legend) < 6
+    box = legend.get_window_extent(drawn_renderer(fig))
+    assert box.x0 >= fig.bbox.x0 + pad - 0.5
+    assert box.x1 <= fig.bbox.x1 - pad + 0.5
+
+
 def test_a_matplotlib_loc_goes_to_fig_legend_unchanged() -> None:
     fig, axs = _grid(1, 2, ("17cm", "8cm"))
     for ax in axs:
