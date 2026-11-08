@@ -94,15 +94,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **`LEGEND_ON_DATA` check (WARNING): a legend drawn over what the reader
   reads.** `validate_figure` (and so `save_formats`, `dm.review` and the MCP
   render report; no MCP tool, schema or name changes) now reports, one
-  warning per legend, every Axes legend and figure legend whose box meets
-  the bars, lines or markers of any plot box (twin Axes included, measured
-  as `VALUE_LABEL_ON_DATA` measures data), a text inside an Axes
-  (`ax.texts`: value labels, annotations, line-end labels), another
-  legend, or another panel's plot box (an Axes legend reaching into its
-  neighbour). Contact up to half a point is a touch. The detail names the
-  legend (`legend_axes`, `None` for a figure legend, and its first
-  entries), the kinds covered, the first artists and the panels whose data
-  it covers. `LEGEND_OVERLAP` still reports titles, axis and tick labels.
+  warning per legend, every Axes legend (insets from `ax.inset_axes` too)
+  and figure legend whose box meets the bars, lines or markers of any plot
+  box (twin Axes and insets included, measured as `VALUE_LABEL_ON_DATA`
+  measures data), a text inside an Axes where it is drawn (`ax.texts`:
+  value labels, annotations without their arrow, line-end labels; one
+  clipped away or at alpha 0 does not count), another legend, or another
+  panel's plot box (an Axes legend reaching into its neighbour or an
+  inset). Contact up to half a point is a touch. A legend that draws
+  nothing (no visible frame and no visible entry) is left out. The detail
+  names the legend (`legend_axes`, `None` for a figure legend,
+  `legend_inset` for an inset's, and its first entries), the kinds
+  covered, the first artists (`axes[0].insets[0]` for an inset) and the
+  panels whose data it covers. `LEGEND_OVERLAP` still reports titles,
+  axis and tick labels.
   The fix suggestions are `dm.place_legend(ax)` and, for many lines,
   `dm.label_line_ends(ax)`. Over the 36 templates and 91 docs example
   scripts (128 figures) it reports four docs figures, all real legends on

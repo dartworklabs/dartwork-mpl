@@ -217,6 +217,101 @@ def test_a_legend_inside_an_overlay_axes_is_drawn_over_the_panel_below() -> (
     assert _found(fig) == []
 
 
+def _flat_line_under_centre(ax) -> None:
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.plot([0, 1], [0.5, 0.5], label="Series")
+
+
+def test_a_legend_that_draws_nothing_is_not_reported() -> None:
+    """No frame and no entry, or every part at alpha 0: nothing covers the line."""
+    fig, ax = _fig()
+    _flat_line_under_centre(ax)
+    ax.legend([], [], loc="center", frameon=False)
+    assert _found(fig) == []
+
+    fig, ax = _fig()
+    _flat_line_under_centre(ax)
+    legend = ax.legend(loc="center")
+    legend.get_frame().set_alpha(0)
+    for text in legend.get_texts():
+        text.set_alpha(0)
+    for handle in legend.legend_handles:
+        handle.set_alpha(0)
+    assert _found(fig) == []
+
+
+def test_a_frameless_legend_with_entries_is_still_reported() -> None:
+    fig, ax = _fig()
+    _flat_line_under_centre(ax)
+    ax.legend(loc="center", frameon=False)
+    (w,) = _found(fig)
+    assert w.detail["covered"] == ["line"]
+
+
+def _text_under_legend(**text_kw):
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.plot([0, 1], [0.05, 0.05], label="Low")
+    text = ax.text(0.5, 0.5, "Centre note", ha="center", va="center", **text_kw)
+    ax.legend(loc="center")
+    return fig, text
+
+
+def test_a_text_is_compared_where_it_is_drawn() -> None:
+    """A text clipped away or drawn at alpha 0 is not under the legend."""
+    from matplotlib.transforms import Bbox
+
+    fig, _text = _text_under_legend()
+    assert [w.detail["covered"] for w in _found(fig)] == [["text"]]
+    fig, text = _text_under_legend(clip_on=True)
+    text.set_clip_box(Bbox.from_bounds(0, 0, 1, 1))  # display px: nowhere
+    assert _found(fig) == []
+    fig, _text = _text_under_legend(alpha=0)
+    assert _found(fig) == []
+
+
+def test_an_annotation_counts_by_its_text_not_its_arrow() -> None:
+    """The arrow points at the data on purpose; the empty corner it spans is free."""
+    fig, ax = _fig()
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    ax.plot([0, 1], [0, 0.5], label="Low")
+    ax.annotate(
+        "Note", (9.5, 9.5), xytext=(1, 1), arrowprops={"arrowstyle": "->"}
+    )
+    ax.legend(loc="center")
+    assert _found(fig) == []
+    ax.texts[0].set_position((5, 5))  # the text itself under the legend
+    assert [w.detail["covered"] for w in _found(fig)] == [["text"]]
+
+
+def test_an_inset_legend_and_inset_data_are_measured() -> None:
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.plot([0, 1], [0, 0.05], label="Main")
+    inset = ax.inset_axes((0.5, 0.5, 0.45, 0.45))
+    _dense(inset, 3)
+    inset.legend(loc="upper right")
+    (w,) = _found(fig)
+    assert w.detail["legend_axes"] == 0
+    assert w.detail["legend_inset"] == [0]
+    assert w.detail["covered"] == ["line"]  # the inset's lines, not a panel
+    assert w.message.startswith("Legend of axes[0].insets[0] covers lines")
+
+
+def test_a_legend_on_an_inset_is_reported_as_a_panel() -> None:
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.plot([0, 1], [0, 0.05], label="Main")
+    inset = ax.inset_axes((0.5, 0.5, 0.5, 0.5))  # reaches the corner
+    inset.plot([0, 1], [0, 1])
+    ax.legend(loc="upper right")
+    (w,) = _found(fig)
+    assert w.detail["legend_inset"] == []
+    assert "panel" in w.detail["covered"] and "line" in w.detail["covered"]
+    assert "axes[0].insets[0]" in w.detail["artists"]
+    assert w.detail["panels"] == [0]
+
+
 # ----------------------------------------------------------- fixes
 def test_the_fixes_name_the_placements_that_keep_a_legend_off_the_data() -> (
     None
