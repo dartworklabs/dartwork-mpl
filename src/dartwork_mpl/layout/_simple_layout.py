@@ -20,6 +20,7 @@ from ._content_extent import _axes_content_extent_px
 from ._fit_labels import (
     climb,
     grid_edges,
+    put_back_edges,
     remember_layout,
     resolve_steps,
     restore_fitted,
@@ -353,14 +354,24 @@ def simple_layout(
         settled = step is not None and step.delta_px < _CONVERGE_TOL_PX
         return step is not None
 
-    if fit_margins() and settled and steps:
-        # Text that still collides at the fitted size climbs the ladder
-        # (``_fit_labels.climb``): every change is followed by a fresh
-        # margin fit and kept only if it crushed no plot and added no tick
-        # overlap. Margins that did not settle (a legend wider than the
-        # canvas leaves moves them on every fit) would move under each
-        # round, so no round could be judged: such a figure is not fitted.
-        climb(fig, steps, actual_gs, scope, fit_margins)
+    # Text that still collides at the fitted size climbs the ladder
+    # (``_fit_labels.climb``): every change is followed by a fresh margin
+    # fit and kept only if it crushed no plot and added no tick overlap.
+    # Margins that did not settle (a legend wider than the canvas leaves
+    # moves them on every fit) would move under each round, so no round
+    # could be judged: such a figure is not fitted. When every change was
+    # taken back, each after a margin fit that stopped a hair from where the
+    # last one had, the margins are fitted once more from where this call
+    # started, as without fitting.
+    if (
+        fit_margins()
+        and settled
+        and steps
+        and climb(fig, steps, actual_gs, scope, fit_margins)
+    ):
+        put_back_edges(fig, actual_gs, start)
+        last = None
+        fit_margins()
     remember_layout(actual_gs, start)
     # The bar labels were settled in each step, so they are reported even
     # when nothing could be measured.

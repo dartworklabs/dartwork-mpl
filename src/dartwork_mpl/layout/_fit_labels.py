@@ -360,6 +360,13 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
             _place(fig, gs)
 
 
+def put_back_edges(fig: Figure, gs: GridSpec, edges: Edges) -> None:
+    """Give ``gs`` the ``edges`` (from :func:`grid_edges`) and move its Axes
+    there, whichever figure holds them."""
+    gs.update(**dict(zip(_EDGES, edges, strict=True)))
+    _place(fig, gs)
+
+
 def _place(fig: Figure, gs: GridSpec) -> None:
     """Put the Axes of ``gs`` where its edges and spacing say now.
 
@@ -637,9 +644,9 @@ def climb(
     grid: GridSpec,
     axes: Sequence[Axes],
     refit: Callable[[], bool],
-) -> None:
+) -> bool:
     """Climb the ladder on ``axes`` of ``fig`` until nothing collides that it
-    can clear.
+    can clear; return whether it tried changes and took every one back.
 
     ``grid`` is the root GridSpec the margins are fitted on, whose
     ``wspace`` / ``hspace`` ``space`` may grow between the panels of
@@ -652,8 +659,14 @@ def climb(
     before it, and its changes are tried one at a time; a change that does
     harm on its own is taken back the same way and not tried again in this
     call.
+
+    Each take-back fits the margins again from the round's edges, and the
+    fit stops within its tolerance of a fixed point, a hair from where it
+    stood; when every change was taken back, the caller fits the margins
+    afresh from where it started, so the figure draws as without fitting.
     """
     state = FitState(budgets=_tick_budgets(axes))
+    tried = kept = False
 
     def changes_now(only: Key | None) -> list[_Change]:
         state.only = None if only is None else frozenset({only})
@@ -664,6 +677,7 @@ def climb(
 
     def attempt(only: Key | None) -> bool | None:
         """One round (or one change of it); ``None``: nothing was measurable."""
+        nonlocal tried, kept
         changes = changes_now(only)
         if not changes:
             return False
@@ -673,12 +687,14 @@ def climb(
         before = _health(axes, get_renderer(fig))
         changes = changes_now(only)
         edges = {side: getattr(grid, side) for side in _EDGES}
+        tried = True
         if not refit():
             return None
         renderer = get_renderer(fig)
         if not _harmed(before, _health(axes, renderer)) and all(
             change.kept is None or change.kept(renderer) for change in changes
         ):
+            kept = True
             return True
         _undo(changes)
         grid.update(**edges)
@@ -693,8 +709,12 @@ def climb(
         return True
 
     for _round in range(_FIT_ROUNDS):
-        if not attempt(None):
-            return
+        done = attempt(None)
+        if done is None:
+            return False  # nothing to measure: no fresh fit either
+        if not done:
+            break
+    return tried and not kept
 
 
 # The GridSpec edges the margin fit sets, restored with a round taken back.

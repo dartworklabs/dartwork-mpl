@@ -704,9 +704,11 @@ def _warned_axes(fig) -> set[str]:
 def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
     """advanced/boxplot in presentation at 9 cm: turned 45 degrees, the
     names, the y name and the means above the box left the data area 5 px
-    tall and its y ticks overlapping. The turn is taken back: the plot keeps
-    its height and the x labels stay as they were, reported. The harmful
-    turn is tried twice (in its round, then alone) and not again."""
+    tall and its y ticks overlapping. The turn is taken back and the figure
+    draws exactly as without fitting (the margins are fitted afresh: each
+    take-back's fit stopped 0.02-0.3 px from where the last one had), its x
+    labels reported. The harmful turn is tried twice (in its round, then
+    alone) and not again."""
     import dartwork_mpl.layout._fit_labels as fit_module
 
     real = fit_module.fit_round
@@ -717,7 +719,7 @@ def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
         rounds.append([c.key[0] for c in changes])
         return changes
 
-    heights, warned = [], []
+    draws, warned = [], []
     for fit in (False, True):
         fig, ax = _template_figure("advanced/boxplot.py", "presentation", "9cm")
         fit_module.fit_round = recorded
@@ -725,10 +727,10 @@ def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
             dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
         finally:
             fit_module.fit_round = real
-        heights.append(ax.get_window_extent().height)
+        draws.append(_pixels(fig))
         warned.append(_warned_axes(fig))
         assert _angles(ax) == {0.0}
-    assert heights[1] == pytest.approx(heights[0], abs=0.5)
+    assert draws[1] == draws[0]
     assert warned == [{"x"}, {"x"}]
     # its round (found, made again after measuring), then alone (the same),
     # then nothing left to try
@@ -1284,3 +1286,52 @@ def test_a_scoped_restore_keeps_a_shared_budget_a_whole_layout_set() -> None:
     dm.simple_layout(fig, fit_labels=False)  # every Axes: it comes off
     assert line.yaxis.get_major_locator() is not kept
     assert line.yaxis.isDefault_majloc
+
+
+def test_no_tick_budget_round_where_the_ticks_stay_the_same() -> None:
+    """Turned, the names leave the value axis room for fewer intervals,
+    but matplotlib picks the same ticks for 0-100 either way: nothing to
+    keep, so no round for it."""
+    import dartwork_mpl.layout._fit_labels as fit_module
+
+    real = fit_module.fit_round
+    rounds: list[list[str]] = []
+
+    def recorded(*args):
+        changes = real(*args)
+        rounds.append([c.key[0] for c in changes])
+        return changes
+
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
+    ax.bar(range(8), np.linspace(10, 95, 8))
+    ax.set_xticks(range(8), _ONE_WORD)
+    auto = ax.yaxis.get_major_locator()
+    fit_module.fit_round = recorded
+    try:
+        dm.simple_layout(fig)
+    finally:
+        fit_module.fit_round = real
+    assert _angles(ax) != {0.0}
+    assert all("ticks" not in keys for keys in rounds)
+    assert ax.yaxis.get_major_locator() is auto
+
+
+def test_a_log_axis_is_left_to_its_own_locator() -> None:
+    fig, ax = _bars(_ONE_WORD)
+    ax.set_yscale("log")
+    locator = ax.yaxis.get_major_locator()
+    dm.simple_layout(fig)
+    assert _angles(ax) == {30.0}
+    assert ax.yaxis.get_major_locator() is locator
+
+
+def test_an_auto_locator_not_picking_by_length_is_left_alone() -> None:
+    """In matplotlib's classic mode ``AutoLocator`` takes nine intervals
+    whatever the length; there is no budget to keep."""
+    matplotlib.rcParams["_internal.classic_mode"] = True
+    fig, ax = _boxplot(None)
+    auto = ax.yaxis.get_major_locator()
+    dm.simple_layout(fig, margin=dm.inch(0.08))
+    assert _angles(ax) == {30.0}
+    assert ax.yaxis.get_major_locator() is auto
