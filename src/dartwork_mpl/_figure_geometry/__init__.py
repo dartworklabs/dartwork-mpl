@@ -36,6 +36,7 @@ __all__ = [
     "drawn_tick_labels",
     "get_renderer",
     "iter_figure_level_extents",
+    "label_clearance_px",
     "outside_clearance_px",
     "outside_side",
     "outside_span_px",
@@ -474,6 +475,29 @@ def _label_corners(label: Text, renderer: RendererBase) -> np.ndarray:
             centre - along + across,
         ]
     )
+
+
+def label_clearance_px(
+    label: Text, renderer: RendererBase, which: Literal["x", "y"]
+) -> float:
+    """How far along the x or y axis a copy of ``label`` must move to clear it.
+
+    The rectangle the label's text fills (:func:`_label_corners`, turned
+    with it) and a copy shifted along the axis are apart once the shift
+    covers the rectangle's width over the cosine of its slant against the
+    axis, or its height over the sine, whichever is shorter (the
+    separating-axis test of :func:`_overlap_px`). An upright label needs its
+    width along x and its height along y; one turned 45 degrees needs its
+    height times the square root of two, however long its text.
+    """
+    corners = _label_corners(label, renderer)
+    direction = np.array([1.0, 0.0] if which == "x" else [0.0, 1.0])
+    reach = math.inf
+    for edge in (corners[1] - corners[0], corners[3] - corners[0]):
+        along = abs(float(edge @ direction))
+        if along > 1e-9:
+            reach = min(reach, float(edge @ edge) / along)
+    return reach
 
 
 def _overlap_px(p: np.ndarray, q: np.ndarray) -> float:

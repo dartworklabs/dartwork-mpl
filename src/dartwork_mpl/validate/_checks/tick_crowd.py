@@ -1,14 +1,16 @@
 """TICK_CROWD: too many tick labels for the axis length to comfortably hold.
 
-Measures each visible label's real rendered extent (so it scales with
-font size, weight, rotation and text length) instead of a fixed
-ticks-per-inch density.
+Measures the room each visible label needs along its axis as rendered (so
+it scales with font size, weight, rotation and text length) instead of a
+fixed ticks-per-inch density. A turned label needs the spacing at which a
+neighbour turned with it clears it, not its whole axis-aligned extent.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, TypedDict
 
+from ..._figure_geometry import label_clearance_px
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix
@@ -54,6 +56,10 @@ def _tick_crowd_for_axis(
     tick labels plus the required minimum gap. ``occupancy > 1`` means the
     labels (at their *actual* rendered size — font, weight, rotation and
     text length all baked in) cannot fit without touching, i.e. crowded.
+    Each label counts the room it needs along the axis
+    (:func:`~dartwork_mpl._figure_geometry.label_clearance_px`): its width
+    along x and height along y when upright, less than its axis-aligned
+    extent when turned.
 
     Falls back to a fixed ticks-per-inch density only when a label extent
     cannot be measured, so the common path stays font-aware.
@@ -63,11 +69,13 @@ def _tick_crowd_for_axis(
     sizes: list[float] = []
     for label in labels:
         try:
-            bb = label.get_window_extent(renderer)
+            room = label_clearance_px(
+                label, renderer, "x" if horizontal else "y"
+            )
         except BBOX_ERRORS:
             sizes = []
             break
-        sizes.append(bb.width if horizontal else bb.height)
+        sizes.append(room)
     if sizes:
         footprint = sum(sizes) * (1.0 + _TICK_CROWD_MIN_GAP_FRAC)
         return footprint / axis_span_px, True
