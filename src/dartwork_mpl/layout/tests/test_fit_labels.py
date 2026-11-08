@@ -223,9 +223,12 @@ def test_labels_that_cannot_wrap_stay_when_turning_is_not_allowed() -> None:
 
 
 def test_labels_too_long_to_turn_stay_and_are_reported() -> None:
-    names = [f"Supercalifragilisticexpialidocious{i}" for i in range(12)]
+    """Upright these names would clear and the plot keep 62 % of its height,
+    but they would take over 35 % of the figure: names that long are a
+    horizontal bar chart's, the author's call, so they stay, reported."""
+    names = [f"Thermoregulation{i}" for i in range(6)]
     dm.style.use("presentation")
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "wide"))
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "tall"))
     ax.bar(range(len(names)), np.ones(len(names)))
     ax.set_xticks(range(len(names)), names)
     dm.simple_layout(fig)
@@ -659,16 +662,32 @@ def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:
     """advanced/boxplot in presentation at 9 cm: turned 45 degrees, the
     names, the y name and the means above the box left the data area 5 px
     tall and its y ticks overlapping. The turn is taken back: the plot keeps
-    its height and the x labels stay as they were, reported."""
+    its height and the x labels stay as they were, reported. The harmful
+    turn is tried twice (in its round, then alone) and not again."""
+    import dartwork_mpl.layout._fit_labels as fit_module
+
+    real = fit_module.fit_round
+    rounds: list[list[str]] = []
+
+    def recorded(*args):
+        changes = real(*args)
+        rounds.append([c.key[0] for c in changes])
+        return changes
+
     heights, warned = [], []
     for fit in (False, True):
         fig, ax = _template_figure("advanced/boxplot.py", "presentation", "9cm")
-        dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+        fit_module.fit_round = recorded
+        try:
+            dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
+        finally:
+            fit_module.fit_round = real
         heights.append(ax.get_window_extent().height)
         warned.append(_warned_axes(fig))
         assert _angles(ax) == {0.0}
     assert heights[1] == pytest.approx(heights[0], abs=0.5)
     assert warned == [{"x"}, {"x"}]
+    assert rounds == [["rotate"], ["rotate"], []]
 
 
 def test_a_name_in_nobodys_way_draws_as_without_the_ladder() -> None:
@@ -854,3 +873,35 @@ def test_panels_sharing_x_wrap_together(width, rungs, monkeypatch) -> None:
     else:
         assert texts[0] == "Low fee" and _angles(narrow) == {45.0}
         assert _angles(wide) == {0.0}
+
+
+def test_a_shared_axis_with_labels_you_turned_does_not_wrap() -> None:
+    """Wrapping is the shared formatter's, so it would rewrite the labels you
+    turned on the wide panel: the narrow one turns its own instead."""
+    fig, narrow, wide = _shared_panels("17cm")
+    for label in wide.get_xticklabels():
+        label.set_rotation(20)
+    dm.simple_layout(fig)
+    assert not any("\n" in t for t in _texts(narrow) + _texts(wide))
+    assert _angles(wide) == {20.0}
+    assert _angles(narrow) == {30.0}
+
+
+def test_a_name_that_collapsed_the_plot_wraps_however_wide_its_lines() -> None:
+    """Longer than a 6 cm presentation figure is tall, the y name squeezed
+    the plot to a pixel. Its four lines take most of the figure's width,
+    yet the plot comes back, so they are kept."""
+    for fit in (False, True):
+        dm.style.use("presentation")
+        fig, ax = plt.subplots(figsize=dm.figsize("6cm", "tall"))
+        ax.plot(np.arange(10), np.arange(10) ** 1.5)
+        ax.set_ylabel(
+            "Cumulative delivered heat energy per connected building (MWh)"
+        )
+        dm.simple_layout(fig, fit_labels=fit)
+        height = ax.get_window_extent().height
+        if fit:
+            assert ax.get_ylabel().count("\n") == 3
+            assert height > 0.5 * fig.bbox.height
+        else:
+            assert height < 2  # collapsed

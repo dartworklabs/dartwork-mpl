@@ -15,9 +15,8 @@ At most ``_FIT_ROUNDS`` rounds:
     the figure edge (a name longer than the figure, which pushes the
     margins until the plot collapses), wraps at its spaces into as few
     lines as fit (at most ``_MAX_NAME_LINES``). A name in nobody's way
-    stays. So does one whose lines would take more than
-    ``_MAX_TEXT_SHARE`` of the figure across them (an x name's height, a y
-    name's width). A bracketed unit stays whole, the lines are as even as
+    stays, and lines that would crush the plot are taken back by the check
+    after the round. A bracketed unit stays whole, the lines are as even as
     the words allow, and nothing but an existing space becomes a break.
 ``space``
     The root GridSpec's ``wspace`` / ``hspace`` grow where the content of
@@ -116,8 +115,7 @@ _MAX_NAME_LINES = 4
 # Largest wspace / hspace ``space`` sets (a fraction of the mean cell); a
 # collision that needs more is left as it is.
 _MAX_GAP_FRACTION = 1.5
-# Most of the figure, across the text, that turned tick labels or a wrapped
-# axis name may take.
+# Most of the figure height turned tick labels may take.
 _MAX_TEXT_SHARE = 0.35
 # Least of its width and of its height a plot keeps through one round.
 # Measured (I-O1 follow-up): the 169 rounds the stress corpus and the shipped
@@ -508,15 +506,16 @@ def climb(
     fig: Figure,
     steps: frozenset[str],
     grid: GridSpec,
-    space: bool,
     axes: Sequence[Axes],
     refit: Callable[[], bool],
 ) -> None:
     """Climb the ladder on ``axes`` of ``fig`` until nothing collides that it
     can clear.
 
-    ``grid`` is the root GridSpec the margins are fitted on; ``space``
-    whether its ``wspace`` / ``hspace`` may grow. ``refit`` fits the margins
+    ``grid`` is the root GridSpec the margins are fitted on, whose
+    ``wspace`` / ``hspace`` ``space`` may grow between the panels of
+    ``axes`` (only Axes in different cells of it face each other, so a
+    layout of one nested grid never parts anything). ``refit`` fits the margins
     again and returns ``False`` when nothing can be measured. Each round
     measures on the draw of the last layout step, which the converged edges
     moved by less than the solver's tolerance, so a figure without a
@@ -527,7 +526,6 @@ def climb(
     call.
     """
     state = FitState()
-    space_gs = grid if space else None
 
     def attempt(only: Key | None) -> bool | None:
         """One round (or one change of it); ``None``: nothing was measurable."""
@@ -536,7 +534,7 @@ def climb(
         state.only = None if only is None else frozenset({only})
         try:
             changes = fit_round(
-                fig, get_renderer(fig), steps, space_gs, axes, state
+                fig, get_renderer(fig), steps, grid, axes, state
             )
         finally:
             state.only = None
@@ -571,7 +569,7 @@ def fit_round(
     fig: Figure,
     renderer: RendererBase,
     steps: frozenset[str],
-    gs: GridSpec | None,
+    gs: GridSpec,
     axes: Sequence[Axes],
     state: FitState,
 ) -> list[_Change]:
@@ -579,7 +577,7 @@ def fit_round(
     changes: list[_Change] = []
     if "axis_labels" in steps:
         changes += _fit_axis_names(fig, renderer, axes, state)
-    if "space" in steps and gs is not None:
+    if "space" in steps:
         changes += _fit_panel_gaps(fig, renderer, gs, axes, state)
     if steps & {"wrap", "rotate"}:
         for group in _shared_x_groups(axes):
@@ -627,11 +625,7 @@ def _fit_axis_names(
         if not _cartesian(ax):
             continue
         frame = ax.get_window_extent(renderer)
-        # across: the figure's extent across the name's lines
-        for axis, span, across in (
-            (ax.xaxis, frame.width, fig.bbox.height),
-            (ax.yaxis, frame.height, fig.bbox.width),
-        ):
+        for axis, span in ((ax.xaxis, frame.width), (ax.yaxis, frame.height)):
             label = axis.label
             text = label.get_text()
             key: Key = ("axis_labels", id(label))
@@ -657,8 +651,6 @@ def _fit_axis_names(
                 wrapped = "\n".join(
                     balanced_lines(words, _MAX_NAME_LINES, width)[0]
                 )
-            if _depth(label, wrapped, renderer, fig) > _MAX_TEXT_SHARE * across:
-                continue  # the lines would crush the plot: left as it is
             _NAMES[label] = (text, wrapped)
             label.set_text(wrapped)
 
@@ -696,17 +688,6 @@ def _in_the_way(
         if extent is not None and box_overlap_px(name, extent) > _TOUCH_PX:
             return True
     return False
-
-
-def _depth(
-    label: Text, text: str, renderer: RendererBase, fig: Figure
-) -> float:
-    """How far ``text`` set like ``label`` reaches across its lines (px)."""
-    probe = Text(0, 0, text)
-    probe.update_from(label)
-    probe.set_rotation(0)
-    probe.set_figure(fig)
-    return float(probe.get_window_extent(renderer).height)
 
 
 # ── space ────────────────────────────────────────────────────────────

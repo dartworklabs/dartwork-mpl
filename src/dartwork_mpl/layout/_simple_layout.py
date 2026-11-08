@@ -340,10 +340,8 @@ def simple_layout(
         # Text that still collides at the fitted size climbs the ladder
         # (``_fit_labels.climb``): every change is followed by a fresh
         # margin fit and kept only if it crushed no plot and added no tick
-        # overlap. Panel spacing is the root grid's, so only a layout of
-        # every Axes, or of that grid itself, may grow it.
-        whole_grid = use_all_axes or requested_gs is actual_gs
-        climb(fig, steps, actual_gs, whole_grid, scope, fit_margins)
+        # overlap.
+        climb(fig, steps, actual_gs, scope, fit_margins)
     # The bar labels were settled in each step, so they are reported even
     # when nothing could be measured.
     _report_hidden_bar_labels(fig)
