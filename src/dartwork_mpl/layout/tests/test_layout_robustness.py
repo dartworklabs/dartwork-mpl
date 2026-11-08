@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl import layout
+from dartwork_mpl.layout import _reservations
 
 PRESETS = ("scientific", "report", "presentation")
 TOL_PX = 0.5
@@ -185,7 +185,7 @@ class TestFigureTextEdges:
         positions = []
         for rule in (None, _nearest_edge):
             if rule is not None:
-                monkeypatch.setattr(layout, "_reservation_edge", rule)
+                monkeypatch.setattr(_reservations, "_reservation_edge", rule)
             fig, ax = self._report()
             fig.text(**place)
             dm.simple_layout(fig)
@@ -227,7 +227,7 @@ class TestFigureTextEdges:
         note = fig.text(0.01, y, "A meaningful subtitle goes here", va="center")
         dm.simple_layout(fig)
         ext, canvas = _extent(fig, note), fig.bbox
-        got = layout._reservation_edge(
+        got = _reservations._reservation_edge(
             fig,
             note,
             ext.x0 / canvas.width,
