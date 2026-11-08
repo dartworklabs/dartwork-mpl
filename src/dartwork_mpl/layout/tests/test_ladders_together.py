@@ -267,9 +267,7 @@ def _overlaps(fig) -> set[str]:
     [_grid_of_legends, _widened, lambda: _grouped("17cm", 13.0)[0]],
     ids=["grid", "widened", "turned_bars"],
 )
-def test_every_call_draws_the_same_figure_and_keeps_the_legends(
-    build,
-) -> None:
+def test_every_call_draws_the_same_figure_and_keeps_the_legends(build) -> None:
     fig = build()
     shots, legends = [], []
     for _call in range(3):
@@ -297,9 +295,7 @@ def test_a_widened_legend_is_planned_again_once_and_then_kept() -> None:
     assert ax.get_legend() is legend
 
 
-@pytest.mark.parametrize(
-    ("width", "top"), [("14.5cm", 63.0), ("17cm", 13.0)]
-)
+@pytest.mark.parametrize(("width", "top"), [("14.5cm", 63.0), ("17cm", 13.0)])
 def test_a_kept_tick_budget_and_an_outside_legend_end_together(
     width: str, top: float, monkeypatch: pytest.MonkeyPatch
 ) -> None:
