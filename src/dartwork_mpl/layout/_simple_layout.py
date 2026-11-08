@@ -163,12 +163,14 @@ def simple_layout(
         edge (``"axis_labels"``), widen the space between panels nobody
         spaced (``"space"``), wrap crowded bottom tick labels at their
         spaces (``"wrap"``) and, when they cannot wrap, turn them 30, 45 or
-        90 degrees (``"rotate"``) unless turned they would take over 35 %
-        of the figure height. After each round the margins are fitted again,
-        and a change that crushed a plot (left it under 30 % of its width or
-        height) or gave any axis more overlapping neighbouring tick labels
-        is taken back; the collision it tried to fix is left, and reported.
-        Nothing is
+        90 degrees (``"rotate"``). After each round the margins are fitted
+        again, and a change that crushed a plot (left it under 30 % of its
+        width or height) or gave any axis more overlapping neighbouring tick
+        labels is taken back; the collision it tried to fix is left, and
+        reported. An axis whose ticks matplotlib picks and that a change
+        made shorter keeps the ticks it had, while its labels stay half an
+        em apart. Margins that do not settle (a legend wider than the
+        canvas leaves) are not fitted further. Nothing is
         shortened, hidden or made smaller, and a figure without a collision
         draws exactly as without this. ``None`` (the default) reads
         :data:`dartwork_mpl.config.fit_labels` (itself ``True``: every
@@ -181,8 +183,10 @@ def simple_layout(
         lines (top labels included), axis names with line breaks or
         mathtext and spacing you set (``gridspec_kw``, ``add_gridspec``,
         ``fig.subplots_adjust``) are left alone, and each call first undoes
-        what an earlier call fitted where it is still as set. The rules are
-        in the docstring of ``dartwork_mpl.layout._fit_labels``.
+        what an earlier call fitted where it is still as set, and starts the
+        margins where that call started them while they are as it left
+        them: calling it again draws the same figure. The rules are in the
+        docstring of ``dartwork_mpl.layout._fit_labels``.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.

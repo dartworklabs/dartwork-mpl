@@ -49,6 +49,14 @@ and those that do harm are dropped for the rest of the call. At most
     turn that would leave a plot too little of the figure is taken back,
     and the names that long stay for the author (a horizontal bar chart).
 
+An axis whose ticks matplotlib picks by its length (``AutoLocator``, no
+locator set by hand) and that a round made shorter keeps the intervals it
+had before the climb (:func:`_keep_tick_budgets`): ``0 2 4 ... 10`` does
+not become ``0.0 2.5 ... 10.0`` because a gap grew. That too is a change
+the check after the round judges, and it stays only while its labels keep
+``_TARGET_EM`` apart; an axis a round made longer takes the ticks of its
+new length.
+
 Nothing is shortened, hidden or made smaller. Text collides when it
 overlaps by more than ``_TOUCH_PX`` (half a display pixel); text that only
 comes close stays, so a figure without a collision draws exactly as it
@@ -67,8 +75,11 @@ line breaks or mathtext, spacing you set. What this module set is recorded
 per artist, and each ``simple_layout`` call first undoes it where it is
 still as set (:func:`restore_fitted`), so a re-layout at another size fits
 from the figure as you left it and ``fit_labels=False`` gives that figure
-back; a formatter, label rotation, name or spacing changed since is yours
-and stays. Only the Axes the call lays out are fitted and restored
+back; a formatter, locator, label rotation, name or spacing changed since
+is yours and stays. The margins go back to where the last call started
+them while they are as it left them (:func:`remember_layout`), so a second
+call draws exactly as the first. Only the Axes the call lays out are
+fitted and restored
 (``use_all_axes=False`` keeps to the GridSpec passed), and what they share
 with an Axes the call leaves out (the tick formatter of a shared x, the
 spacing of their grid) is neither changed nor restored: such Axes only turn
