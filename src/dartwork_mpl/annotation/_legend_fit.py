@@ -23,7 +23,11 @@ from matplotlib.contour import ContourSet
 from matplotlib.legend import Legend
 from matplotlib.transforms import Affine2D, Bbox
 
-from .._figure_geometry import BBOX_ERRORS, same_position_axes
+from .._figure_geometry import (
+    BBOX_ERRORS,
+    drawn_tick_labels,
+    same_position_axes,
+)
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
@@ -215,13 +219,46 @@ def _measure_box(ink: Ink, artist: Artist, bb: Bbox) -> None:
         ink.boxes.append((id(artist), bb))
 
 
+def _measure_frame(ink: Ink, ax: Axes, renderer: RendererBase) -> None:
+    """What a non-rectilinear Axes draws in its own box besides data.
+
+    A polar Axes (any projection but the rectilinear one) draws its frame,
+    the circle, and its tick labels, the angles round the circle and the
+    radii inside it, within the box a legend's inside spots are tried in;
+    a rectilinear Axes keeps them on its edges and outside. The spines
+    count at their width, each drawn tick label by its box.
+    """
+    for spine in ax.spines.values():
+        if not spine.get_visible():
+            continue
+        try:
+            path = spine.get_transform().transform_path(spine.get_path())
+        except BBOX_ERRORS:
+            continue
+        half = points_px(renderer, spine.get_linewidth()) / 2
+        ink.lines.append((id(spine), path, half))
+    axes: tuple[Literal["x", "y"], ...] = ("x", "y")
+    for which in axes:
+        for label in drawn_tick_labels(ax, which):
+            if not label.get_text().strip():
+                continue
+            try:
+                _measure_box(ink, label, label.get_window_extent(renderer))
+            except BBOX_ERRORS:
+                continue
+
+
 def measure_ink(ax: Axes, renderer: RendererBase) -> Ink:
     """The ink of ``ax`` and every twin drawn in its box.
 
     Lines (with their markers), patches, collections other than meshes and
-    the Axes' texts; artists that are not visible draw no ink.
+    the Axes' texts; artists that are not visible draw no ink. A
+    non-rectilinear Axes (polar) adds its frame and tick labels, which it
+    draws inside its box (:func:`_measure_frame`).
     """
     ink = Ink()
+    if ax.name != "rectilinear":
+        _measure_frame(ink, ax, renderer)
     for owner in same_position_axes(ax):
         for line in owner.get_lines():
             if line.get_visible():
