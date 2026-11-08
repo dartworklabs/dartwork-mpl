@@ -29,6 +29,11 @@ _ADD_NOTE_GUARD = KwargGuard(
     owned={
         "x": _NOTE_PLACE,
         "y": _NOTE_PLACE,
+        # ``s`` is ``Figure.text``'s own name for the string add_note already
+        # supplies, so matplotlib used to raise TypeError ("multiple values for
+        # argument 's'"). Owning it keeps that kind rather than turning a
+        # duplicate argument into an AttributeError.
+        "s": "Pass the note as the text argument.",
         "size": "Set the size with fontsize=.",
         "horizontalalignment": _NOTE_ALIGNMENT,
         "verticalalignment": _NOTE_ALIGNMENT,
@@ -40,7 +45,6 @@ _ADD_NOTE_GUARD = KwargGuard(
     escape="For anything else, write the line yourself with fig.text(x, y, text).",
     hints={
         "fmt": "There is no format string: pass the finished text. ",
-        "s": "Pass the note as the text argument. ",
         "loc": "Move the note with position=(x, y) in figure fraction. ",
         "xy": "Move the note with position=(x, y) in figure fraction. ",
     },
