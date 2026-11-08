@@ -69,6 +69,10 @@ def check_tick_rotation(
     warnings: list[VisualWarning] = []
 
     for axes_index, ax in enumerate(fig.axes):
+        # A row of x labels under a straight axis: not a polar theta ring
+        # or a 3D axis.
+        if getattr(ax, "name", None) != "rectilinear":
+            continue
         ticks = list(iter_view_ticks(ax, "x", renderer))
         if len(ticks) <= 2:
             continue

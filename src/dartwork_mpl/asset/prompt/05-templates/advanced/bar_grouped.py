@@ -32,7 +32,9 @@ x = np.arange(len(categories))
 bar_width = 0.26
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize_for(n_points=len(categories), n_series=len(series_names))
+    figsize=dm.figsize_for(
+        "grouped", n_points=len(categories), n_series=len(series_names)
+    )
 )
 
 for i, name in enumerate(series_names):

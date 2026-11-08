@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.figsize_for("grouped", n_points=, n_series=)` for grouped bars.**
+  Grouped bars put `n_series` bars side by side in each of `n_points`
+  groups, and each bar needs its value label's room; `"default"` counts the
+  groups only, so on a slide 4 groups of 3 bars took 11.4 cm and
+  `dm.label_bars` hid 4 of the 12 values (`advanced/bar_grouped` in
+  `presentation`). `"grouped"` sizes like `"default"` and is never
+  narrower; it also takes the narrowest width that holds the
+  `n_points * n_series` labelled bars: report widths 9 / 12 / 14.5 cm hold
+  16 / 24 / 32 bars, slide widths 11.4 / 15.4 cm 10 / 15 (measured with
+  three-digit values at each preset's sizes), more take the widest. A
+  journal column (`scientific`) stays 9 cm, and `"default"` and every other
+  kind are unchanged. The `bar_grouped` and `advanced/bar_grouped`
+  templates (and their docs examples) take it: in `presentation` they are
+  15.4 cm wide instead of 11.4 cm and every value of `advanced/bar_grouped`
+  is shown (4 were hidden); in the other presets they draw as before.
 - **Experimental `dm.label_bars(ax)`: each bar's value on it.** No request,
   its defaults; a request, one keyword. The defaults: `dm.fs(-1)` at
   `dm.fw(1)` in the text colour, 3 pt beyond the bar end; the number printed
@@ -449,6 +464,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **The tick checks count the tick labels matplotlib draws.** `UNIT_DUP`,
+  `TICK_DECIMAL`, `TICK_CROWD`, `TICK_ROTATION` and `LEGEND_OVERLAP` read
+  ticks through the same reader as the layout checks: a tick just past the
+  limit and a twin's hidden x axis are no longer counted, and a turned label
+  at the view edge whose box lies outside the plot is. `TICK_CROWD` and
+  `TICK_ROTATION` share out a straight axis' width, so they skip polar and
+  3D Axes (a polar theta ring read "8 ticks in 0.00in"). A 3D Axes' labels
+  count while its axes are on (`set_axis_off` turns them off; `axison` is
+  off on every 3D Axes) and, under `axes3d.automargin`, past the sliver
+  matplotlib leaves out at each end, so `UNIT_DUP` still reports "kg" on
+  both a 3D axis' ticks and its label. `OVERFLOW`, `CLIPPED_TEXT` and
+  `OVERLAP` likewise skip an axis label matplotlib does not draw (after
+  `ax.axis("off")`, on a hidden axis, on a 3D Axes after `set_axis_off`):
+  it stays where it was never drawn, often past the canvas.
 - **A colour name that does not exist now names the closest ones that do.**
   `dm.color("dc.bluee5")` raised `Invalid color name: dc.bluee5. Invalid RGBA
   argument: 'dc.bluee5'` — the value twice and no route to a working call. It

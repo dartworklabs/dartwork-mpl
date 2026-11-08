@@ -7,6 +7,7 @@ from collections.abc import Iterator, Sequence
 from itertools import pairwise
 from typing import TYPE_CHECKING, Literal
 
+from ..._figure_geometry import drawn_tick_labels
 from .._types import BBOX_ERRORS
 
 if TYPE_CHECKING:
@@ -29,45 +30,36 @@ _THOUSANDS_COMMA_RE = re.compile(r"(?<=\d),(?=\d{3}(?:\D|$))")
 _SPACES_RE = re.compile(r"\s+")
 
 
-def _tick_in_view(
-    tick: Text, ax_ext: Bbox, *, horizontal: bool, renderer: RendererBase
-) -> bool:
-    """True when the tick label's anchor lies inside the axes view.
-
-    Matplotlib keeps out-of-range ticks on the artist tree (visible but
-    clipped from the render). Their phantom extents inflate geometry-based
-    tick checks, so exclude them.
-    """
-    try:
-        ext = tick.get_window_extent(renderer)
-    except BBOX_ERRORS:
-        return False
-    if ext.width <= 0 or ext.height <= 0:
-        return False
-    if horizontal:
-        anchor = (ext.x0 + ext.x1) / 2
-        return bool(ax_ext.x0 - 0.5 <= anchor <= ax_ext.x1 + 0.5)
-    anchor = (ext.y0 + ext.y1) / 2
-    return bool(ax_ext.y0 - 0.5 <= anchor <= ax_ext.y1 + 0.5)
-
-
 def iter_view_ticks(
     ax: Axes, axis: Literal["x", "y"], renderer: RendererBase
 ) -> Iterator[Text]:
-    """Yield visible, non-empty tick labels whose anchors are in view."""
-    try:
-        ax_ext = ax.get_window_extent(renderer)
-    except BBOX_ERRORS:
-        return
+    """Yield the major tick labels with text that matplotlib draws.
 
-    horizontal = axis == "x"
-    labels = ax.get_xticklabels() if horizontal else ax.get_yticklabels()
+    A label counts when :func:`~dartwork_mpl._figure_geometry.drawn_tick_labels`
+    says matplotlib draws it: its tick lies in the view interval (with
+    matplotlib's 1e-10 relative slack) on a visible Axes whose axis is on.
+    Matplotlib keeps the other labels on the artist tree, visible and
+    positioned, but never draws them; a box test would count a y label
+    just above the limit (its centre-baseline box reaches into the view)
+    and miss a turned first label whose box leaves the plot. Labels come in
+    ``get_xticklabels`` order, bottom / left ones then top / right, but
+    without calling it: it re-runs matplotlib's 2D tick update, which moves
+    a 3D Axes' labels off the places its draw gave them (thousands of
+    pixels), and the checks after it would read those.
+    """
+    drawn = drawn_tick_labels(ax, axis)
+    target = ax.xaxis if axis == "x" else ax.yaxis
+    first = {id(tick.label1) for tick in target.get_major_ticks()}
+    labels = [t for t in drawn if id(t) in first]
+    labels += [t for t in drawn if id(t) not in first]
     for tick in labels:
-        if not tick.get_visible() or not tick.get_text().strip():
+        if not tick.get_text().strip():
             continue
-        if _tick_in_view(
-            tick, ax_ext, horizontal=horizontal, renderer=renderer
-        ):
+        try:
+            ext = tick.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        if ext.width > 0 and ext.height > 0:
             yield tick
 
 

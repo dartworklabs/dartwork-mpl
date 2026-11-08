@@ -29,7 +29,7 @@ series_b = [25, 32, 34, 20]
 series_c = [15, 18, 22, 28]
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize_for(n_points=len(categories), n_series=3)
+    figsize=dm.figsize_for("grouped", n_points=len(categories), n_series=3)
 )
 x = np.arange(len(categories))
 bar_width = 0.27

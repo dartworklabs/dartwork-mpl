@@ -187,6 +187,82 @@ class TestPresets:
         assert _cm(dm.figsize_for(n_points=20, n_series=1))[0] == 14.5
 
 
+class TestGrouped:
+    """Grouped bars also count their bars: each needs its value label's
+    room (advanced/bar_grouped on slides: 12 bars at 11.4 cm hid 4 labels)."""
+
+    @pytest.mark.parametrize(
+        ("preset", "groups", "series", "width"),
+        [
+            ("presentation", 4, 3, 15.4),  # the template: 12 bars
+            ("presentation", 3, 3, 11.4),  # 9 bars fit half the body
+            ("presentation", 5, 3, 15.4),  # 15 bars, as wide as 5 groups
+            ("presentation", 6, 3, 23.4),  # 18 bars need the full body
+            ("report", 4, 3, 12.0),
+            ("report", 9, 3, 14.5),  # 27 bars
+            ("report", 8, 5, 17.0),  # 40 bars: the widest tier
+            ("scientific", 8, 5, 9.0),  # a journal column whatever it holds
+            ("poster", 9, 3, 22.0),  # report tiers x 1.5
+        ],
+    )
+    def test_width_holds_the_bars(
+        self, preset: str, groups: int, series: int, width: float
+    ) -> None:
+        dm.style.use(preset)
+        size = dm.figsize_for("grouped", n_points=groups, n_series=series)
+        assert _cm(size)[0] == width
+
+    @pytest.mark.parametrize(
+        "preset", ["report", "presentation", "scientific", "poster"]
+    )
+    def test_never_narrower_than_default(self, preset: str) -> None:
+        dm.style.use(preset)
+        for groups in range(1, 15):
+            for series in range(1, 7):
+                hints = {"n_points": groups, "n_series": series}
+                grouped = dm.figsize_for("grouped", **hints)
+                default = dm.figsize_for(**hints)
+                assert grouped[0] >= default[0]
+                if preset == "presentation":  # 10.5 cm tall on any slide
+                    assert grouped[1] == default[1]
+                else:  # the kind's 4:3
+                    assert grouped[1] / grouped[0] == pytest.approx(
+                        default[1] / default[0]
+                    )
+
+    def test_without_counts_it_is_default(self) -> None:
+        for preset in ("report", "presentation"):
+            dm.style.use(preset)
+            assert dm.figsize_for("grouped") == dm.figsize_for()
+            assert dm.figsize_for("grouped", n_points=4) == dm.figsize_for(
+                n_points=4
+            )
+
+    def test_every_value_label_shows_on_the_slide(self) -> None:
+        """advanced/bar_grouped's 4 groups of 3 three-digit bars, on a
+        slide: none of the labels is hidden at the grouped width."""
+        import warnings
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        dm.style.use("presentation")
+        fig, ax = plt.subplots(
+            figsize=dm.figsize_for("grouped", n_points=4, n_series=3)
+        )
+        values = [[120, 135, 152, 178], [88, 92, 101, 109], [54, 48, 52, 55]]
+        x = np.arange(4)
+        for i, vals in enumerate(values):
+            ax.bar(x + (i - 1) * 0.26, vals, 0.26, label=f"Series {i + 1}")
+        ax.set_xticks(x, ["P1", "P2", "P3", "P4"])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            dm.label_bars(ax)
+            dm.place_legend(ax)
+            dm.simple_layout(fig)
+        plt.close(fig)
+
+
 class TestGridShape:
     """One row up to three panels, then a near-square grid, wider than tall."""
 

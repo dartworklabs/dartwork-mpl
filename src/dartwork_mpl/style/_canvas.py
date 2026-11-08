@@ -10,6 +10,12 @@ chosen from the chart kind and two density hints:
 - otherwise the kind's width. ``"matrix"``, ``"dense"``, ``"strip"``,
   ``"slide"``, ``"full_slide"`` and panel grids ignore the hints.
 
+``"grouped"`` (``n_series`` bars side by side in each of ``n_points``
+groups) also counts the bars, ``n_points * n_series``: each takes a value
+label's room, so the width is at least the narrowest that holds that many
+labelled bars (:data:`_GROUPED_BARS`), and never narrower than the
+``"default"`` width for the same hints.
+
 Every kind but ``matrix``, ``dense``, ``strip``, ``slide`` and
 ``full_slide`` is 4:3, the
 :func:`~dartwork_mpl.figsize` default, so a request that names only a width
@@ -62,6 +68,12 @@ _SLIDE_TWO_THIRDS_CM = 15.4
 # slide's 18.2 pt ticks (six company names fit 15.4 cm with 9 pt to spare).
 _SLIDE_HALF_MAX_POINTS = 4
 _SLIDE_TWO_THIRDS_MAX_POINTS = 6
+# Most grouped bars a width holds with every ``dm.label_bars`` value shown
+# (three-digit values at the preset's own sizes; measured over 2-8 groups of
+# 2-5 bars, I-O1 round 6): (width cm, bars). Wider than the last, the widest
+# width; the report tiers scale with the font on posters.
+_GROUPED_BARS_SLIDE = ((_SLIDE_HALF_CM, 10), (_SLIDE_TWO_THIRDS_CM, 15))
+_GROUPED_BARS = ((9.0, 16), (12.0, 24), (14.5, 32))
 
 #: How much larger every point size is on slides than in a journal column:
 #: the slide body's width over the column's, 23.4 / 9. The presentation
@@ -83,6 +95,8 @@ class _Kind:
 CANVAS_KINDS: dict[str, _Kind] = {
     # Lines, bars, areas, scatter, distributions: everything not below.
     "default": _Kind(12.0, "standard"),
+    # Grouped bars: n_series bars side by side in each of n_points groups.
+    "grouped": _Kind(12.0, "standard"),
     # Horizontal bars: room for long category labels.
     "barh": _Kind(14.5, "standard"),
     # Insets and half-width panels.
@@ -141,6 +155,24 @@ def _tier_cm(
     return kind.width_cm
 
 
+def _grouped_cm(
+    table: Sequence[tuple[float, int]],
+    n_points: int | None,
+    n_series: int | None,
+    widest: float,
+) -> float:
+    """The narrowest width of ``table`` that holds ``n_points * n_series``
+    value-labelled bars (``widest`` past its last); 0 when a count is
+    unknown."""
+    if n_points is None or n_series is None:
+        return 0.0
+    bars = n_points * max(n_series, 1)
+    for width, most in table:
+        if bars <= most:
+            return width
+    return widest
+
+
 def _family(names: Sequence[str]) -> tuple[str, float]:
     """``("paper" | "slides" | "poster" | "report", scale)`` for the preset."""
     from . import load_style_dict
@@ -175,22 +207,29 @@ def _slide_canvas(
     need at slide text size: up to 4 positions half the body (11.4 cm), up
     to 6 two thirds (15.4 cm). More positions, unknown positions (point
     clouds), 4 or more series or a second y axis take the full 23.4 cm, as
-    does every other kind.
+    does every other kind. ``"grouped"`` is as wide as the wider of that
+    and what its bars' value labels need: up to 10 bars 11.4 cm, up to 15
+    15.4 cm, more the full body.
     """
     width, height = _SLIDE_BODY_CM
     if kind == "compact":
         return _SLIDE_HALF_CM, height
     if kind == "matrix":
         return height, height
-    if kind != "default" or n_points is None or dual_axis:
+    if kind not in ("default", "grouped") or n_points is None or dual_axis:
         return width, height
     if n_series is not None and n_series >= 4:
         return width, height
     if n_points <= _SLIDE_HALF_MAX_POINTS:
-        return _SLIDE_HALF_CM, height
-    if n_points <= _SLIDE_TWO_THIRDS_MAX_POINTS:
-        return _SLIDE_TWO_THIRDS_CM, height
-    return width, height
+        chosen = _SLIDE_HALF_CM
+    elif n_points <= _SLIDE_TWO_THIRDS_MAX_POINTS:
+        chosen = _SLIDE_TWO_THIRDS_CM
+    else:
+        chosen = width
+    if kind == "grouped":
+        bars = _grouped_cm(_GROUPED_BARS_SLIDE, n_points, n_series, width)
+        chosen = max(chosen, bars)
+    return chosen, height
 
 
 def figsize_for(
@@ -221,7 +260,10 @@ def figsize_for(
     ----------
     kind : str, optional
         A key of :data:`CANVAS_KINDS`: ``"default"`` (lines, bars, areas,
-        scatter, distributions), ``"barh"`` (long category labels),
+        scatter, distributions), ``"grouped"`` (grouped bars: ``n_series``
+        bars side by side in each of ``n_points`` groups; the width also
+        holds the ``n_points * n_series`` bars' value labels, at least as
+        wide as ``"default"``), ``"barh"`` (long category labels),
         ``"compact"`` (insets, half-width panels), ``"matrix"`` (heatmaps),
         ``"dense"`` (long dense timelines), ``"strip"`` (a full-width
         strip), ``"slide"`` (a chart filling a 16:9 slide under its
@@ -230,11 +272,13 @@ def figsize_for(
         preset: "a full-slide chart").
     n_points : int, optional
         Positions along the category or time axis (bars per group count
-        once). Leave out for scatter, histograms and other point clouds.
-        Under ``presentation`` presets it picks a 11.4, 15.4 or 23.4 cm
-        wide slide chart (up to 4, up to 6, more positions).
+        once; ``"grouped"`` counts them through ``n_series``). Leave out for
+        scatter, histograms and other point clouds. Under ``presentation``
+        presets it picks a 11.4, 15.4 or 23.4 cm wide slide chart (up to 4,
+        up to 6, more positions).
     n_series : int, optional
-        Plotted series: lines, bar colours, stacked layers.
+        Plotted series: lines, bar colours, stacked layers; for
+        ``"grouped"``, the bars in each group.
     dual_axis : bool, optional
         True when a second y axis (``twinx``) is drawn.
     nrows, ncols : int, optional
@@ -279,6 +323,9 @@ def figsize_for(
     width = (
         _MAX_TIER_CM if grid else _tier_cm(spec, n_points, n_series, dual_axis)
     )
+    if kind == "grouped" and not grid:
+        bars = _grouped_cm(_GROUPED_BARS, n_points, n_series, _MAX_TIER_CM)
+        width = max(width, bars)
     if family == "paper":
         # A journal sets one panel in one column, however dense it is.
         full = grid or (spec.fixed and spec.width_cm > 12.0)
