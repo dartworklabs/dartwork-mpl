@@ -52,6 +52,8 @@ ax_vol.set_ylim(0, volume.max() * 2.0)  # squeeze bars into the bottom third
 # Price — drawn on top.
 ax_price.plot(days, price, color=price_color, linewidth=dm.lw(0), zorder=3)
 ax_price.set_ylabel("Price ($)")
+# Limits before the target label: dm.label_hline reads the line ends.
+ax_price.set_xlim(0, n - 1)
 ax_price.set_zorder(ax_vol.get_zorder() + 1)
 ax_price.patch.set_visible(False)  # transparent so volume bars show
 
@@ -59,19 +61,17 @@ ax_price.patch.set_visible(False)  # transparent so volume bars show
 ax_price.axhline(
     target, color="dc.amber5", linewidth=0.5, linestyle="--", zorder=2
 )
-ax_price.text(
-    n - 1,
-    target + 0.6,
+dm.label_hline(
+    ax_price,
+    target,
     f"Target = ${target:.0f}",
-    ha="right",
-    va="bottom",
+    x="left",
     fontsize=dm.fs(-1),
     color="dc.amber5",
     fontstyle="italic",
 )
 
 ax_price.set_xlabel("Trading day")
-ax_price.set_xlim(0, n - 1)
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 dm.validate_with_fixes(fig)

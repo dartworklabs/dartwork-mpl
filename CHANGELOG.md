@@ -94,6 +94,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Three advanced templates keep their value labels off the data.** The
+  labels `VALUE_LABEL_ON_DATA` reported now sit clear of it in every preset:
+  `boxplot` prints its means in one row above the plot box instead of on
+  each box, `small_multiples` puts each panel's change in a free corner with
+  `dm.annotate_corner(loc="upper left")`, and `twin_axis` labels its target
+  line with `dm.label_hline(x="left")`, at the line, where the price runs
+  low. The template contract test lists no known defect any more.
+
 - **One minus sign per figure: the per-value ticks use U+2212 too.**
   `format_axis_currency` and `decimals=n` of `format_axis_millions` /
   `_billions` / `_si` / `_myriad` wrote a hyphen-minus (`-$1,500`) while the

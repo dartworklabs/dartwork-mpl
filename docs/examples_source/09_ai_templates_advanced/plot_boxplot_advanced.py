@@ -86,17 +86,20 @@ ax.text(
     fontstyle="italic",
 )
 
-# Median callouts above each box.
+# Median callouts in one row above the plot box, off the data.
 for i, m in enumerate(medians):
-    ax.text(
-        i + 1,
-        m + 0.3,
+    ax.annotate(
         f"{m:+.2f}",
+        xy=(i + 1, 1),
+        xycoords=("data", "axes fraction"),
+        xytext=(0, 3),
+        textcoords="offset points",
         ha="center",
         va="bottom",
         fontsize=dm.fs(-1),
         fontweight=dm.fw(1),
         color="oc.gray8",
+        annotation_clip=False,
     )
 
 ax.set_xticklabels(labels)

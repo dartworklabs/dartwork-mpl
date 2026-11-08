@@ -2,12 +2,13 @@
 
 ``save_formats`` validates every figure it saves, so a check that fires on
 correct figures prints noise on every save. Run on each template as shipped
-(its own preset), the check stays quiet except on the known defects below,
-which are real: a value label with a line or markers drawn through it.
+(its own preset), the check stays quiet except on the known defects in
+``KNOWN``, each a real value label with a line or markers drawn through it.
 
-The user decided on 2026-11-08 to add the check first and fix these
-templates afterwards, each with its own before/after PoC. A template fixed
-then fails here as "no longer reports": remove its entry in the same change.
+The user decided on 2026-11-08 to add the check first and fix the three
+templates it found afterwards, each with its own before/after PoC; they are
+fixed and ``KNOWN`` is empty. A template fixed later fails here as "no
+longer reports": remove its entry in the same change.
 """
 
 from __future__ import annotations
@@ -35,12 +36,10 @@ _ALL = sorted(_TEMPLATES.glob("*.py")) + sorted(
     (_TEMPLATES / "advanced").glob("*.py")
 )
 
-# template -> the first covering label the check names, and what covers it
-KNOWN = {
-    "advanced/boxplot": "+0.75",  # mean labels over whiskers and points
-    "advanced/small_multiples": "Δ -10",  # panel d's change under its line
-    "advanced/twin_axis": "Target = $115",  # target note under the price
-}
+# template -> the first covering label the check names, and what covers it.
+# Empty since the 2026-11-08 PoC moved the three known labels off the data
+# (advanced boxplot, small_multiples and twin_axis); an entry needs a decision.
+KNOWN: dict[str, str] = {}
 
 
 def _name(path: Path) -> str:
