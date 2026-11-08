@@ -266,18 +266,23 @@ def drawn_tick_labels(
 ) -> list[Text]:
     """The major (or ``minor``) tick labels matplotlib draws on an axis.
 
-    Matplotlib draws a tick only when the axes' axis is on
-    (``ax.axis("off")`` turns it off) and the axis is visible, and when its
-    location lies in the view interval, compared after the axis transform
-    with a 1e-10 relative slack. Each drawn tick draws its visible
-    ``label1`` (left / bottom) and ``label2`` (right / top, with
-    ``labelright`` / ``labeltop``). Every other label stays on the artist
-    tree, visible and positioned, but is never drawn: a colorbar tick a
-    hair past its limit, the ticks of a title-only panel, the labels of a
-    hidden axis.
+    Matplotlib draws a tick only when the Axes itself is visible
+    (``ax.set_visible(False)`` hides all of it, the idiom for an empty grid
+    slot), its axis is on (``ax.axis("off")`` turns it off) and the axis is
+    visible, and when its location lies in the view interval, compared
+    after the axis transform with a 1e-10 relative slack. Each drawn tick
+    draws its visible ``label1`` (left / bottom) and ``label2`` (right /
+    top, with ``labelright`` / ``labeltop``). Every other label stays on the
+    artist tree, visible and positioned, but is never drawn: a colorbar
+    tick a hair past its limit, the ticks of a title-only panel, the labels
+    of a hidden axis or a hidden Axes.
     """
     axis = ax.xaxis if which == "x" else ax.yaxis
-    if not getattr(ax, "axison", True) or not axis.get_visible():
+    if (
+        not ax.get_visible()
+        or not getattr(ax, "axison", True)
+        or not axis.get_visible()
+    ):
         return []
     transform = axis.get_transform()
     raw = axis.get_minorticklocs() if minor else axis.get_majorticklocs()

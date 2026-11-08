@@ -13,6 +13,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.ticker import FixedFormatter, FixedLocator
 
 matplotlib.use("Agg")
 
@@ -129,6 +130,75 @@ def test_a_polar_axes_is_not_read() -> None:
         "precondition: neighbouring theta labels cross"
     )
     assert _findings(fig) == []
+
+
+def test_a_hidden_axes_is_not_reported() -> None:
+    # The idiom for an empty grid slot: nothing of the Axes is drawn.
+    fig, ax = _bars([f"Variant {c}" for c in "ABCDEFGH"])
+    assert _findings(fig), "precondition: shown, the labels overlap"
+    ax.set_visible(False)
+    assert _findings(fig) == []
+
+
+_LONG = "A long tick label, the same width twice"
+
+
+def _minor_labels(places: list[float], *, major: tuple[float, ...] = ()):
+    """Labelled minor ticks at ``places`` (and major ones at ``major``)."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.set_xlim(0, 1)
+    ax.set_xticks(list(major), [_LONG] * len(major))
+    ax.xaxis.set_minor_locator(FixedLocator(places))
+    ax.xaxis.set_minor_formatter(FixedFormatter([_LONG] * len(places)))
+    ax.tick_params(axis="x", which="minor", labelbottom=True)
+    return fig, ax
+
+
+def _two_label_overlap(ax) -> float:
+    """Overlap (px) of the two drawn x labels, major or minor, from extents.
+
+    Upright rectangles: the depth is the thinner of the overlaps along x
+    and along y.
+    """
+    fig = ax.get_figure()
+    fig.canvas.draw()
+    renderer = get_renderer(fig)
+    labels = [
+        *drawn_tick_labels(ax, "x"),
+        *drawn_tick_labels(ax, "x", minor=True),
+    ]
+    [a, b] = sorted(
+        (t.get_window_extent(renderer) for t in labels), key=lambda e: e.x0
+    )
+    return min(a.x1 - b.x0, min(a.y1, b.y1) - max(a.y0, b.y0))
+
+
+def test_minor_labels_that_overlap_are_reported() -> None:
+    fig, ax = _minor_labels([0.3, 0.7])
+    depth = _two_label_overlap(ax)
+    assert depth > 0.5, "precondition: the minor labels overlap"
+    [warning] = _findings(fig)
+    assert (warning.detail["pairs"], warning.detail["labels"]) == (1, 2)
+    assert warning.detail["px"] == pytest.approx(depth, abs=0.1)
+
+
+def test_a_minor_label_running_into_a_major_one_is_reported() -> None:
+    fig, ax = _minor_labels([0.7], major=(0.3,))
+    depth = _two_label_overlap(ax)
+    assert depth > 0.5, "precondition: the major and minor labels overlap"
+    [warning] = _findings(fig)
+    assert (warning.detail["pairs"], warning.detail["labels"]) == (1, 2)
+
+
+def test_minor_labels_are_neighbours_only_on_their_side() -> None:
+    fig, ax = _minor_labels([0.3, 0.7])
+    [bottom] = _findings(fig)
+    ax.tick_params(axis="x", which="minor", labeltop=True)
+    [both] = _findings(fig)
+    assert (both.detail["pairs"], both.detail["labels"]) == (
+        2 * bottom.detail["pairs"],
+        4,
+    )
 
 
 def _fixes(detail: dict) -> list[str]:

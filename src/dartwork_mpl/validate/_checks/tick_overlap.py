@@ -1,7 +1,8 @@
 """TICK_OVERLAP: neighbouring tick labels of one axis drawn on top of each other.
 
 Rectilinear Axes only (a polar or 3D axis has no line to take neighbours
-along). Every drawn, non-empty tick label is the rectangle its own text
+along). Every drawn, non-empty tick label, major or minor, of a visible
+Axes is the rectangle its own text
 occupies, turned with the label, so two 45 degree labels whose upright
 boxes cross while their text does not are not reported. Neighbours are
 taken in order along the axis, on each side separately (bottom and top
@@ -116,12 +117,17 @@ def _axis_overlaps(
 ) -> tuple[int, int, float, float]:
     """``(pairs, labels, deepest px, its rotation)`` for one axis of ``ax``."""
     axis = ax.xaxis if which == "x" else ax.yaxis
-    first_side = {id(tick.label1) for tick in axis.get_major_ticks()}
-    labels = [
-        label
-        for label in drawn_tick_labels(ax, which)
-        if label.get_text().strip()
+    # Major and minor labels share the line: a minor label can run into a
+    # major one as easily as into another minor one.
+    drawn = [
+        *drawn_tick_labels(ax, which),
+        *drawn_tick_labels(ax, which, minor=True),
     ]
+    first_side = {
+        id(tick.label1)
+        for tick in (*axis.get_major_ticks(), *axis.get_minor_ticks())
+    }
+    labels = [label for label in drawn if label.get_text().strip()]
     coordinate = 0 if which == "x" else 1
     pairs, deepest, rotation = 0, 0.0, 0.0
     for side in (True, False):
