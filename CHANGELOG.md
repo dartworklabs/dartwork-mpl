@@ -456,7 +456,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   count while its axes are on (`set_axis_off` turns them off; `axison` is
   off on every 3D Axes) and, under `axes3d.automargin`, past the sliver
   matplotlib leaves out at each end, so `UNIT_DUP` still reports "kg" on
-  both a 3D axis' ticks and its label.
+  both a 3D axis' ticks and its label. `OVERFLOW`, `CLIPPED_TEXT` and
+  `OVERLAP` likewise skip an axis label matplotlib does not draw (after
+  `ax.axis("off")`, on a hidden axis, on a 3D Axes after `set_axis_off`):
+  it stays where it was never drawn, often past the canvas.
 - **A colour name that does not exist now names the closest ones that do.**
   `dm.color("dc.bluee5")` raised `Invalid color name: dc.bluee5. Invalid RGBA
   argument: 'dc.bluee5'` — the value twice and no route to a working call. It
