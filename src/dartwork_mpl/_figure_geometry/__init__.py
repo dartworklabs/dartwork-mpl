@@ -36,6 +36,7 @@ __all__ = [
     "iter_figure_level_extents",
     "outside_clearance_px",
     "outside_side",
+    "outside_span_px",
     "reanchor_outside",
     "respread_line_end_labels",
     "same_position_axes",
@@ -670,10 +671,167 @@ _OUTSIDE_ATTR = "_dm_outside_anchor"
 
 @dataclass(frozen=True)
 class _OutsideAnchor:
-    """An artist anchored outside ``side`` of an Axes, ``clearance_pt`` past it."""
+    """An artist anchored outside ``side`` of an Axes, ``clearance_pt`` past it.
+
+    ``shift_pt`` is how far it was moved along the side, off the middle of
+    the Axes, to stay in :func:`outside_span_px`.
+    """
 
     side: OutsideSide
     clearance_pt: float
+    shift_pt: float = 0.0
+
+
+def outside_span_px(
+    ax: Axes, side: OutsideSide, renderer: RendererBase, margin_px: float = 0.0
+) -> tuple[float, float]:
+    """Where an artist outside ``side`` of ``ax`` may lie along that side, display px.
+
+    Above and below an x range, right and left a y range: the canvas less
+    ``margin_px`` at each edge, ended by the panels beside ``ax`` across
+    that side. Above and below, a panel whose box lies wholly left or right
+    of ``ax`` (in any row: a column of its own) ends the range at its frame,
+    axis decorations and titles, ``margin_px`` short of them; right and
+    left, a panel wholly above or below does. ``ax``'s twins, hidden Axes
+    and Axes out of the layout do not count.
+    """
+    root = ax.get_figure(root=True)
+    fig = ax.get_figure(root=False)
+    if root is None or fig is None:
+        return (-math.inf, math.inf)
+    along_x = side in ("above", "below")
+    canvas = root.bbox
+    low = (canvas.x0 if along_x else canvas.y0) + margin_px
+    high = (canvas.x1 if along_x else canvas.y1) - margin_px
+    try:
+        me = ax.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return (low, high)
+    own = {id(a) for a in same_position_axes(ax)}
+    for other in fig.axes:
+        if (
+            id(other) in own
+            or not other.get_visible()
+            or not other.get_in_layout()
+        ):
+            continue
+        try:
+            frame = other.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        extents = [
+            frame,
+            *axes_decoration_extents(other, renderer),
+            *_title_extents(other, renderer),
+        ]
+        if along_x:
+            if frame.x1 <= me.x0 + 0.5:
+                low = max(low, max(e.x1 for e in extents) + margin_px)
+            elif frame.x0 >= me.x1 - 0.5:
+                high = min(high, min(e.x0 for e in extents) - margin_px)
+        elif frame.y1 <= me.y0 + 0.5:
+            low = max(low, max(e.y1 for e in extents) + margin_px)
+        elif frame.y0 >= me.y1 - 0.5:
+            high = min(high, min(e.y0 for e in extents) - margin_px)
+    return (float(low), float(high))
+
+
+def _title_extents(ax: Axes, renderer: RendererBase) -> list[Bbox]:
+    """The window extents of ``ax``'s visible, non-blank titles."""
+    found: list[Bbox] = []
+    for title in axes_titles(ax).values():
+        if not title.get_visible() or not title.get_text().strip():
+            continue
+        try:
+            found.append(title.get_window_extent(renderer))
+        except BBOX_ERRORS:
+            continue
+    return found
+
+
+def _artist_margin_px(artist: Any, renderer: RendererBase) -> float:
+    """A legend's ``borderaxespad`` in display px (0 for other artists)."""
+    pad = getattr(artist, "borderaxespad", None)
+    prop = getattr(artist, "prop", None)
+    if pad is None or prop is None:
+        return 0.0
+    px_per_pt = float(np.asarray(renderer.points_to_pixels(1.0)))
+    return float(pad) * float(prop.get_size_in_points()) * px_per_pt
+
+
+def _along_shift_px(
+    artist: Any, ax: Axes, side: OutsideSide, renderer: RendererBase
+) -> float:
+    """How far to move ``artist``, centred on ``side`` of ``ax``, to stay in its span.
+
+    The artist is centred on the middle of the Axes along the side; one
+    that would cross an end of :func:`outside_span_px` (with its own
+    ``borderaxespad`` as the margin) is moved back in, and one longer than
+    the span is centred in it.
+    """
+    try:
+        box = ax.get_window_extent(renderer)
+        own = artist.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return 0.0
+    along_x = side in ("above", "below")
+    length = own.width if along_x else own.height
+    middle = (box.x0 + box.x1) / 2 if along_x else (box.y0 + box.y1) / 2
+    low, high = outside_span_px(
+        ax, side, renderer, _artist_margin_px(artist, renderer)
+    )
+    start, end = middle - length / 2, middle + length / 2
+    if length > high - low:
+        return float((low + high) / 2 - middle)
+    if start < low:
+        return float(low - start)
+    if end > high:
+        return float(high - end)
+    return 0.0
+
+
+def _overhang_reach_px(
+    artist: Any,
+    ax: Axes,
+    side: OutsideSide,
+    renderer: RendererBase,
+    shift_px: float,
+) -> float:
+    """How far past ``side`` the decorations under the artist's span reach, px.
+
+    An artist longer than the Axes along the side (moved by ``shift_px``)
+    spans the decorations beside it too: the y tick label at the top of the
+    plot sticks out above it by half its height. Each decoration of ``ax``
+    and its twins that overlaps the artist's span along the side counts by
+    how far it reaches past that side, its centre beyond it or not.
+    """
+    try:
+        box = ax.get_window_extent(renderer)
+        own = artist.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return 0.0
+    along_x = side in ("above", "below")
+    length = own.width if along_x else own.height
+    middle = (box.x0 + box.x1) / 2 if along_x else (box.y0 + box.y1) / 2
+    start = middle + shift_px - length / 2
+    end = start + length
+    reach = 0.0
+    for owner in same_position_axes(ax):
+        for ext in axes_decoration_extents(owner, renderer):
+            low, high = (ext.x0, ext.x1) if along_x else (ext.y0, ext.y1)
+            if min(high, end) - max(low, start) <= 0.5:
+                continue
+            match side:
+                case "above":
+                    past = ext.y1 - box.y1
+                case "below":
+                    past = box.y0 - ext.y0
+                case "right":
+                    past = ext.x1 - box.x1
+                case "left":
+                    past = box.x0 - ext.x0
+            reach = max(reach, float(past))
+    return reach
 
 
 def anchor_outside(
@@ -686,38 +844,50 @@ def anchor_outside(
     """Anchor ``artist`` at the middle of ``side`` of ``ax``, past its decorations.
 
     ``artist`` is anything with ``set_bbox_to_anchor`` (a ``Legend``, an
-    ``AnchoredOffsetbox``); its ``loc`` decides which of its own edges
-    touches the anchor. The anchor is the middle of that side in axes
-    fraction, moved outward by :func:`outside_clearance_px` as a physical
-    offset, so the artist keeps its distance when the Axes is resized.
-    ``obstacles`` are further display boxes beyond that side the artist
-    must clear where it would meet them (bar values past a limit, say): the
-    anchor also moves past the ones the artist overlaps along the side. The
-    side is recorded on the artist for :func:`reanchor_outside`. Returns
-    whether the anchor moved by more than 0.01 pt.
+    ``AnchoredOffsetbox``); its ``loc`` (the centre of the edge facing the
+    Axes) decides which of its own edges touches the anchor. The anchor is
+    the middle of that side in axes fraction, moved outward by
+    :func:`outside_clearance_px` as a physical offset, so the artist keeps
+    its distance when the Axes is resized. ``obstacles`` are further
+    display boxes beyond that side the artist must clear where it would
+    meet them (bar values past a limit, say): the anchor also moves past
+    the ones the artist overlaps along the side. Along the side the artist
+    stays centred on the Axes unless that would take it past the canvas or
+    over a neighbouring panel (:func:`outside_span_px`); then it moves back
+    in. Wider than the Axes, it also clears the decorations it spans beside
+    the Axes (the top y tick label above the plot, say). The side is
+    recorded on the artist for :func:`reanchor_outside`.
+    Returns whether the anchor moved by more than 0.01 pt.
     """
     root = ax.get_figure(root=True)
     if root is None:
         return False
+    shift_px = _along_shift_px(artist, ax, side, renderer)
     clearance_px = max(
         outside_clearance_px(ax, side, renderer),
         _obstacle_reach_px(artist, ax, side, renderer, obstacles),
+        _overhang_reach_px(artist, ax, side, renderer, shift_px),
     )
     clearance_pt = clearance_px * 72.0 / root.dpi
+    shift_pt = shift_px * 72.0 / root.dpi
     previous = getattr(artist, _OUTSIDE_ATTR, None)
     if (
         isinstance(previous, _OutsideAnchor)
         and previous.side == side
         and abs(previous.clearance_pt - clearance_pt) <= 0.01
+        and abs(previous.shift_pt - shift_pt) <= 0.01
     ):
         return False
     (anchor_x, anchor_y), (dx, dy) = _OUTSIDE_ANCHORS[side]
-    shift_in = clearance_pt / 72.0
+    out_in, along_in = clearance_pt / 72.0, shift_pt / 72.0
+    # Outward by the clearance; along the side (dy, dx swapped) by the shift.
     offset = ScaledTranslation(
-        dx * shift_in, dy * shift_in, root.dpi_scale_trans
+        dx * out_in + abs(dy) * along_in,
+        dy * out_in + abs(dx) * along_in,
+        root.dpi_scale_trans,
     )
     artist.set_bbox_to_anchor((anchor_x, anchor_y), ax.transAxes + offset)
-    setattr(artist, _OUTSIDE_ATTR, _OutsideAnchor(side, clearance_pt))
+    setattr(artist, _OUTSIDE_ATTR, _OutsideAnchor(side, clearance_pt, shift_pt))
     return True
 
 

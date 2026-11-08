@@ -6,14 +6,25 @@ catalogue, registry or build.
 
 Surface: the public ``Color`` constructors and views re-exported by
 ``dartwork_mpl._colors``; ``relative_y_srgb_d65`` and ``srgb_to_oklab`` for
-validation checks; and the ``conversion`` and ``gamut`` kernel modules, which
+validation checks; ``to_rgb_or_explain`` for the sub-slices that take a colour
+name from the caller and owe them a usable message when it is not one; and the
+``conversion`` and ``gamut`` kernel modules, which
 the colour build and catalogue call by attribute (so tests can observe the
 delegation). Narrowing those two namespaces to named functions is phase-3 work.
 """
 
 from . import _conversion as conversion
 from . import _gamut as gamut
-from ._color import Color, color, cspace, hex, oklab, oklch, rgb
+from ._color import (
+    Color,
+    color,
+    cspace,
+    hex,
+    oklab,
+    oklch,
+    rgb,
+    to_rgb_or_explain,
+)
 from ._conversion import _srgb_to_oklab as srgb_to_oklab
 from ._conversion import relative_y_srgb_d65
 from ._views import (
@@ -43,4 +54,5 @@ __all__ = [
     "relative_y_srgb_d65",
     "rgb",
     "srgb_to_oklab",
+    "to_rgb_or_explain",
 ]

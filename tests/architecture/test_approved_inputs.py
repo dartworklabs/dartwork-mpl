@@ -165,10 +165,12 @@ def _refusing_filesystem(
     """Fail on any filesystem call that ``_touches`` while the block runs.
 
     That is a call reaching ``root`` or this repository's
-    ``docs/superpowers``, a relative path, a ``dir_fd`` call or a call on a
-    descriptor. Other calls go to the real functions, so a tracer or the
-    test runner that stats its own files by absolute path cannot fail the
-    check.
+    ``docs/superpowers``, a relative path, or a ``dir_fd`` call. A call on a
+    bare descriptor (``os.fstat(fd)``) goes through: this guard tracks no
+    reader descriptors, and the only way the reader gets one under ``root``
+    is an ``open`` the guard already refuses. Other calls go to the real
+    functions, so a tracer or the test runner that stats its own files by
+    absolute path cannot fail the check.
     """
     originals = {name: getattr(os, name) for name in _FS_CALLS}
 

@@ -171,10 +171,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   another side wins only when it takes at least 10 % and 5 % of the plot
   less (many short entries go right), and a panel takes the side its
   neighbour's legend took when that fits as well. Above and below take
-  the fewest rows that fit the Axes width, right and left the fewest
-  columns that fit its height (they were always one column). Names are
-  broken at spaces only when the legend would otherwise run past the Axes
-  along its side or take more than 60 % of the plot (on a side named right
+  the fewest rows that fit, right and left the fewest columns (they were
+  always one column). A legend fits when, centred on its Axes and moved
+  in where it would cross the canvas edge, it stays on the canvas (its
+  pad from the edge) and off the panels of the other columns (right and
+  left: rows), their labels and titles: it may be wider (taller) than
+  its Axes, and then it also clears the tick labels it spans beside the
+  plot. The layout does not widen the figure's margins for that reach.
+  Names are
+  broken at spaces only when the legend would otherwise not fit
+  or take more than 60 % of the plot (on a side named right
   or left, also when it is wider than 40 % of the Axes), a trailing
   bracketed unit such as `(2019 = 100)` kept whole. A better fit always
   comes first; among ways that fit as well, one breaking the names into
@@ -413,6 +419,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **A colour name that does not exist now names the closest ones that do.**
+  `dm.color("dc.bluee5")` raised `Invalid color name: dc.bluee5. Invalid RGBA
+  argument: 'dc.bluee5'` — the value twice and no route to a working call. It
+  now reads `Invalid color name: 'dc.bluee5'. Closest registered names:
+  'dc.blue5', 'dc.blue_red5', 'dc.blue9'. dm.list_colors() lists the
+  dartwork-mpl colour families and matplotlib.colors.get_named_colors_mapping()
+  every registered name.` A name whose namespace exists is corrected inside
+  that namespace and gets no suggestion when nothing there is close, so `dc.`
+  never suggests an `oc.` colour that would render differently; a namespace no
+  colour uses (`dz.blue5`) is read as part of the typo and still answers
+  `dc.blue5`. Candidates come from matplotlib's live registry rather than a
+  fixed list, and an unreasonably long name is neither matched nor quoted
+  whole. The same message now covers `dm.mix_colors`,
+  `dm.pseudo_alpha`, `dm.readable_text_color` and `dm.ensure_contrast`, which
+  passed a name straight to matplotlib. Names matplotlib accepts (including
+  case variants such as `dc.Blue5`) resolve exactly as before, and a
+  malformed tuple or `None` keeps matplotlib's own message, which describes
+  the shapes it accepts.
 - **The tick-label checks no longer read an Axes hidden with
   `ax.set_visible(False)`.** Matplotlib draws nothing of a hidden Axes (the
   usual way to blank an empty grid slot), but its tick labels stay visible

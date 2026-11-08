@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from matplotlib.figure import Figure
 from matplotlib.transforms import Bbox
@@ -13,7 +13,12 @@ from matplotlib.transforms import Bbox
 # — one source for the bbox-measurement exception set (the two modules
 # used to carry identical private copies).
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
-from .._figure_geometry import axes_text_artists, axes_titles, secondary_axes
+from .._figure_geometry import (
+    axes_text_artists,
+    axes_titles,
+    outside_side,
+    secondary_axes,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -133,12 +138,19 @@ def _axes_content_extent_px(
                     pts.append((ext.x0, ext.y0))
                     pts.append((ext.x1, ext.y1))
 
-    # Legend.
+    # Legend. One anchored outside a side (``place_legend``) is moved back
+    # onto the canvas along that side by its anchor, so its reach along the
+    # side past the plot asks no margin: counted, it would widen the margin
+    # of the figure's far edge for a legend that reaches into the gap
+    # between panels, narrow every panel, and move the span the legend was
+    # planned for. What lies off the canvas still counts.
     legend = ax.get_legend()
     if legend is not None and legend.get_visible():
         with contextlib.suppress(*_BBOX_ERRORS):
             ext = legend.get_window_extent(renderer)
             if ext.width > 0 and ext.height > 0:
+                if apos is not None:
+                    ext = _within_canvas_along(ext, apos, legend, fig)
                 pts.append((ext.x0, ext.y0))
                 pts.append((ext.x1, ext.y1))
 
@@ -147,6 +159,28 @@ def _axes_content_extent_px(
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     return min(xs), max(xs), min(ys), max(ys)
+
+
+def _within_canvas_along(
+    ext: Bbox, plot: Bbox, legend: Any, fig: Figure
+) -> Bbox:
+    """``ext`` of a legend outside a side, its reach along that side cut to the plot.
+
+    Along the side, only what lies off the canvas is kept; a legend not
+    anchored outside (inside, or placed by hand) is returned as it is.
+    """
+    side = outside_side(legend)
+    if side is None:
+        return ext
+    canvas = fig.bbox
+    x0, y0, x1, y1 = ext.x0, ext.y0, ext.x1, ext.y1
+    if side in ("above", "below"):
+        x0 = x0 if x0 < canvas.x0 else max(x0, plot.x0)
+        x1 = x1 if x1 > canvas.x1 else min(x1, plot.x1)
+    else:
+        y0 = y0 if y0 < canvas.y0 else max(y0, plot.y0)
+        y1 = y1 if y1 > canvas.y1 else min(y1, plot.y1)
+    return Bbox.from_extents(x0, y0, x1, y1)
 
 
 def _measurable(ext: Bbox) -> bool:

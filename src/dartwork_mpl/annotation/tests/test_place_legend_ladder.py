@@ -241,14 +241,14 @@ def test_twins_and_hidden_panels_do_not_block_a_side() -> None:
 def test_panels_of_one_figure_agree_on_the_side() -> None:
     """The second panel takes the side the first panel's legend took.
 
-    Alone, the right panel's ten short names would go right (clearly
-    cheaper on this 30 cm slide); its neighbour, which has no right side,
-    went above, and above fits as well.
+    Alone, the right panel's sixteen short names would go right (clearly
+    cheaper on this wide, low 40 x 5 cm figure); its neighbour, which has
+    no right side, went above, and above fits as well.
     """
-    dm.style.use("presentation")
-    fig, axs = plt.subplots(1, 2, figsize=dm.figsize("30cm", "10.5cm"))
+    dm.style.use("report")
+    fig, axs = plt.subplots(1, 2, figsize=dm.figsize("40cm", "5cm"))
     for ax in axs:
-        _dense(ax, 10)
+        _dense(ax, 16)
     alone = place_legend(axs[1])
     assert alone is not None
     leg, box = _boxes(fig, alone, axs[1])
@@ -450,31 +450,178 @@ def test_a_wrapped_legend_above_settles_in_the_layout() -> None:
     assert settle_legends(fig, drawn_renderer(fig)) is False
 
 
-def test_layout_replans_rows_for_the_fitted_width() -> None:
-    """Rows are chosen again once simple_layout has widened the Axes."""
+def test_layout_replans_rows_for_the_canvas_it_settles_on() -> None:
+    """Placed on a 9 cm figure drawn at 17 cm, the legend takes fewer rows."""
+    fig, ax, legend = _above_ten()
+    before = legend_ncols(legend)
+    dm.simple_layout(fig)
+    after = ax.get_legend()
+    assert after is not None and after is not legend
+    assert legend_ncols(after) > before
+    assert not any("\n" in t.get_text() for t in after.get_texts())
+
+
+def test_a_grids_legends_stay_on_the_canvas_and_in_their_column() -> None:
+    """Above and below, a legend may be wider than its Axes, but not reach
+    past the canvas or over the other column's panels."""
     dm.style.use("report")
     fig, axs = plt.subplots(2, 2, figsize=dm.figsize("17cm", "12cm"))
     for ax in axs.flat:
         _dense(ax, 6, " metropolitan region")
         place_legend(ax)
-    before = [legend_ncols(ax.get_legend()) for ax in axs.flat]
     dm.simple_layout(fig)
     renderer = drawn_renderer(fig)
-    after = []
-    for ax in axs.flat:
+    canvas = fig.bbox
+    for k, ax in enumerate(axs.flat):
         legend = ax.get_legend()
         assert legend is not None
         assert not any("\n" in t.get_text() for t in legend.get_texts())
-        width = legend.get_window_extent(renderer).width
-        assert width <= ax.get_window_extent(renderer).width + 0.5
-        after.append(legend_ncols(legend))
-    assert after != before  # more columns fit the laid-out width
+        box = legend.get_window_extent(renderer)
+        assert canvas.x0 <= box.x0 and box.x1 <= canvas.x1
+        other = axs.flat[k ^ 1].get_tightbbox(renderer)  # the other column
+        assert box.x1 <= other.x0 or box.x0 >= other.x1
     assert (
         dm.validate_figure(
             fig, checks=("LEGEND_ON_DATA", "LEGEND_OVERLAP"), quiet=True
         )
         == []
     )
+
+
+# ------------------------------------------ outside: the span along a side
+_ONE_WORD = [
+    "Thermoregulation",
+    "Electrification",
+    "Decarbonisation",
+    "Interconnection",
+] * 2
+
+
+def _flat_crowded_ticks(ax, n: int = 6) -> None:
+    """Capture 12's panel: ``n`` lines over eight one-word ticks that
+    overlap flat and narrow the Axes."""
+    x = np.arange(len(_ONE_WORD))
+    for i in range(n):
+        ax.plot(x, 5 + 4 * np.sin(x / 1.3 + i), label=f"Scenario {i + 1}")
+    ax.set_xticks(x, _ONE_WORD)
+
+
+def _legend_findings(fig) -> list[str]:
+    return [
+        w.check_id
+        for w in dm.validate_figure(fig, quiet=True)
+        if w.check_id.startswith("LEGEND")
+    ]
+
+
+def test_a_legend_wider_than_its_axes_stays_above_on_the_canvas() -> None:
+    """Capture 12: two columns are a little wider than the narrowed Axes and
+    fit the canvas, so they stay, centred on the Axes (one column of six
+    rows left the plot a quarter of the canvas and overflowed)."""
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    _flat_crowded_ticks(ax)
+    place_legend(ax)
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend is not None
+    assert legend_ncols(legend) == 2
+    box, plot = _boxes(fig, legend, ax)
+    assert box.y0 >= plot.y1 and box.width > plot.width
+    assert fig.bbox.x0 <= box.x0 and box.x1 <= fig.bbox.x1
+    assert abs((box.x0 + box.x1) / 2 - (plot.x0 + plot.x1) / 2) <= 1.0
+    assert _legend_findings(fig) == []
+
+
+@pytest.mark.parametrize(
+    ("width", "wider_alone"), [("20cm", True), ("24cm", False)]
+)
+def test_a_neighbouring_panel_ends_the_span(
+    width: str, wider_alone: bool
+) -> None:
+    """Beside another panel the legend may pass its own Axes but not reach
+    the neighbour's labels. With the neighbour hidden it spreads wider at
+    20 cm; at 24 cm its three columns already fit beside it."""
+
+    def build(hide: bool):
+        dm.style.use("presentation")
+        fig, (ax, other) = plt.subplots(
+            1, 2, figsize=dm.figsize(width, "standard")
+        )
+        other.plot([0, 1], [0, 1])
+        other.set_ylabel("Output")
+        other.set_visible(not hide)
+        _flat_crowded_ticks(ax)
+        place_legend(ax)
+        dm.simple_layout(fig)
+        return fig, ax, other
+
+    fig, ax, other = build(hide=False)
+    legend = ax.get_legend()
+    assert legend is not None
+    box, _plot = _boxes(fig, legend, ax)
+    assert fig.bbox.x0 <= box.x0
+    assert box.x1 <= other.get_tightbbox(drawn_renderer(fig)).x0
+    assert _legend_findings(fig) == []
+    beside = legend_ncols(legend)
+    fig, ax, _other = build(hide=True)
+    alone = ax.get_legend()
+    assert alone is not None
+    assert (legend_ncols(alone) > beside) is wider_alone
+
+
+def test_a_legend_wider_than_its_axes_moves_in_at_the_canvas_edge() -> None:
+    dm.style.use("report")
+    fig = plt.figure(figsize=dm.figsize("12cm", "standard"))
+    ax = fig.add_axes((0.02, 0.1, 0.3, 0.6))
+    _dense(ax, 4, " metropolitan region")
+    legend = place_legend(ax, loc="above")
+    assert legend is not None
+    box, plot = _boxes(fig, legend, ax)
+    assert box.width > plot.width
+    assert box.x0 >= fig.bbox.x0
+    assert (box.x0 + box.x1) / 2 > (plot.x0 + plot.x1) / 2 + 1.0  # moved in
+
+
+def test_a_legend_over_the_tick_labels_beside_the_plot_clears_the_top_one() -> (
+    None
+):
+    """Wider than its Axes, an above legend spans the y tick labels; the top
+    one sticks out above the plot by half its height and is cleared."""
+    fig, ax = _report("9cm")
+    _dense(ax, 10, " metropolitan region, seasonally adjusted (2019 = 100)")
+    place_legend(ax)
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend is not None
+    box, plot = _boxes(fig, legend, ax)
+    assert box.x0 < plot.x0  # over the y tick labels
+    assert "LEGEND_OVERLAP" not in _legend_findings(fig)
+
+
+@pytest.mark.parametrize("below", [False, True], ids=["alone", "panel_below"])
+def test_a_right_legend_may_be_taller_than_its_axes_but_not_reach_a_panel_row(
+    below: bool,
+) -> None:
+    dm.style.use("report")
+    if below:
+        fig, (ax, low) = plt.subplots(2, 1, figsize=dm.figsize("12cm", "9cm"))
+        low.plot([0, 1], [0, 1])
+        low.set_title("Lower panel")
+    else:
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "4.5cm"))
+    _dense(ax, 14)
+    place_legend(ax, loc="right")
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend is not None
+    box, plot = _boxes(fig, legend, ax)
+    assert box.x0 >= plot.x1  # right
+    assert fig.bbox.y0 <= box.y0 and box.y1 <= fig.bbox.y1
+    if below:
+        assert box.y0 >= low.get_tightbbox(drawn_renderer(fig)).y1
+    else:  # one column, taller than the Axes
+        assert legend_ncols(legend) == 1 and box.height > plot.height
 
 
 def _top_free_lines(ax) -> None:
@@ -544,11 +691,15 @@ def test_a_raw_legend_is_not_moved_by_the_layout() -> None:
     assert [w.detail["covered"] for w in _covers(fig)] == [["line"]]
 
 
-def test_two_long_names_wrap_onto_fewer_lines_when_more_gain_little() -> None:
-    """Capture 10: one column of two lines, not two columns of four.
+def test_two_long_names_take_more_lines_only_for_five_points_of_the_canvas() -> (
+    None
+):
+    """Capture 10: two columns of three lines, not one column of two.
 
-    Two columns would leave the plot 2 % of the canvas more; a name
-    broken into more lines needs 5 % (LINES_GAIN).
+    A legend may be wider than the Axes as long as it stays on the canvas,
+    so two columns fit; their names break into three lines, which leaves
+    the plot 6.9 % of the canvas more than one column of two lines. A name
+    broken into more lines needs 5 % (LINES_GAIN), so here it gets them.
     """
     dm.style.use("presentation")
     fig, ax = plt.subplots(figsize=dm.figsize("15.4cm", "10.5cm"))
@@ -562,8 +713,8 @@ def test_two_long_names_wrap_onto_fewer_lines_when_more_gain_little() -> None:
     dm.simple_layout(fig)
     legend = ax.get_legend()
     assert legend is not None
-    assert legend_ncols(legend) == 1
-    assert [t.get_text().count("\n") + 1 for t in legend.get_texts()] == [2, 2]
+    assert legend_ncols(legend) == 2
+    assert [t.get_text().count("\n") + 1 for t in legend.get_texts()] == [3, 3]
     assert settle_legends(fig, drawn_renderer(fig)) is False
 
 
@@ -616,11 +767,18 @@ def test_the_layout_places_again_only_the_legends_it_lays_out(
     assert not getattr(other.get_legend(), "_dm_outside_fallback", False)
 
 
+def _widened(fig) -> None:
+    """The figure the legend was placed on, drawn wider: the layout plans
+    the legend's rows again for the canvas it now has."""
+    fig.set_size_inches(*dm.figsize("17cm", "standard"))
+
+
 def _above_ten(**kw):
-    fig, ax = _report()
+    fig, ax = _report("9cm")
     _dense(ax, 10)
     legend = place_legend(ax, loc="above", **kw)
     assert legend is not None
+    _widened(fig)
     return fig, ax, legend
 
 
@@ -777,21 +935,23 @@ def test_layout_preserves_native_legend_font_and_frame_edits() -> None:
 
 def _above_ten_bars():
     """Ten bars named as ``_dense``'s lines: an above legend the layout plans again."""
-    fig, ax = _report()
+    fig, ax = _report("9cm")
     for i in range(10):
         ax.bar([i], [40 + 5 * i], label=f"Region {i + 1}")
     legend = place_legend(ax, loc="above", fontsize=9, frameon=True)
     assert legend is not None
+    _widened(fig)
     return fig, ax, legend
 
 
 def _marked_ten(**marker_kw):
-    fig, ax = _report()
+    fig, ax = _report("9cm")
     _dense(ax, 10)
     for line in ax.lines:
         line.set(marker="o", **marker_kw)
     legend = place_legend(ax, loc="above", fontsize=9, frameon=True)
     assert legend is not None
+    _widened(fig)
     return fig, ax, legend
 
 
