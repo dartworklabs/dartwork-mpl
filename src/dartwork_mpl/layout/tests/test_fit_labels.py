@@ -1391,6 +1391,29 @@ def test_closed_figures_are_collectible_after_any_fitting() -> None:
     assert [ref() is None for ref in refs] == [True] * len(refs)
 
 
+def test_a_shared_budget_comes_back_on_the_axis_it_measured() -> None:
+    """The line is the first Axes but shares the bars' y axis, whose
+    locator measures the bars' length. Undone, matplotlib's locator goes
+    back onto the bars' axis, as it was, not the first Axes met."""
+    dm.style.use("presentation")
+    fig = plt.figure(figsize=dm.figsize("14.5cm", "standard"))
+    root = fig.add_gridspec(1, 2)
+    line = fig.add_subplot(root[1])
+    bars = fig.add_subplot(root[0])
+    line.sharey(bars)
+    bars.bar(range(4), np.linspace(1, 9, 4))
+    bars.set_xticks(range(4), _ONE_WORD[:4])
+    line.plot([0, 1], [0, 9])
+    auto = bars.yaxis.get_major_locator()
+    assert auto.axis is bars.yaxis
+    dm.simple_layout(fig)
+    assert bars.yaxis.get_major_locator() is not auto  # precondition: kept
+    dm.simple_layout(fig, fit_labels=False)
+    assert bars.yaxis.get_major_locator() is auto
+    assert auto.axis is bars.yaxis
+    assert bars.yaxis.isDefault_majloc and line.yaxis.isDefault_majloc
+
+
 @pytest.mark.parametrize("fit", [True, False])
 @pytest.mark.parametrize("edit", ["locator_params", "set_params"])
 def test_a_kept_locator_you_edit_in_place_stays(fit: bool, edit: str) -> None:
