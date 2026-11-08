@@ -326,6 +326,8 @@ def _fix_legend_on_data(_warning: VisualWarning) -> list[str]:
     return [
         "# Inside where it covers nothing, else outside its Axes\n"
         "dm.place_legend(ax)\ndm.simple_layout(fig)",
+        "# Panels sharing one set of series: one legend for the figure\n"
+        "dm.figure_legend(fig)\ndm.simple_layout(fig)",
         "# Many lines: name them at their ends instead of a legend\n"
         "dm.label_line_ends(ax)\ndm.simple_layout(fig)",
     ]

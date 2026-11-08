@@ -61,7 +61,7 @@ WARNING findings are defects to fix or explain; INFO findings are hints.
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text collides | more `hspace`/`wspace`, fewer or rotated ticks |
 | `LEGEND_OVERFLOW` | legend too large, off the canvas, or outside at over half the plot's size | many lines: `dm.label_line_ends(ax)`; else fewer columns, shorter names |
 | `LEGEND_OVERLAP` | legend covers a title, axis or tick label | `dm.place_legend(ax)` (the side the user named, if any), then `simple_layout` |
-| `LEGEND_ON_DATA` | legend covers data, a text, another legend or panel | `dm.place_legend(ax)`, then `simple_layout`; many lines: `dm.label_line_ends(ax)` |
+| `LEGEND_ON_DATA` | legend covers data, a text, another legend or panel | `dm.place_legend(ax)`, then `simple_layout`; panels sharing series: `dm.figure_legend(fig)`; many lines: `dm.label_line_ends(ax)` |
 | `TICK_CROWD`, `TICK_ROTATION` | crowded or rotated tick labels | `MaxNLocator(nbins=5)`, `dm.avoid_tick_overlap(ax)` |
 | `TICK_DECIMAL`, `UNIT_DUP` | odd precision, unit repeated | `dm.set_decimal(ax, yn=1)`, unit in the axis label only |
 | `VALUE_LABEL_ON_DATA` | a value label sits on a bar, line or marker | bars: `dm.label_bars(ax)`; points: `dm.annotate_value(ax, x, y, text)` |

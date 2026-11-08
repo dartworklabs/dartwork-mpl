@@ -185,8 +185,10 @@ dm.simple_layout(fig)
 plt.close(fig)
 ```
 
-- Legend below everything: `fig.legend(loc="lower center", ncol=3,
-  bbox_to_anchor=(0.5, 0))`, then `dm.simple_layout(fig)`.
+- One legend for panels that share their series: `dm.figure_legend(fig)`
+  (above the panels, right when clearly cheaper; `loc="below"` under
+  everything), then `dm.simple_layout(fig)`; it removes the panel legends
+  it replaces.
 - Legend inside, away from the data: `dm.place_legend(ax)`; when every
   inside spot covers data it goes outside by itself: above, or right or
   below when that takes clearly less of the plot, never onto another

@@ -277,17 +277,15 @@ Two measured ways out of the 2×2 case, both of which leave
   Nothing else changes.
 - **keep `presentation`** — replace the four panel legends with one shared
   figure legend, since they carry the same two series, and give it room
-  below. Both edits are needed: adding the figure legend while the panel
+  below. Both edits are needed: `dm.figure_legend` removes the panel
+  legends it replaces, but a `fig.legend` added by hand while the panel
   legends stay leaves five legends and every `LEGEND_OVERLAP` back.
 
 <!-- snippet: no-run -->
 ```python
-# In the shared block above, delete the per-panel
-# `ax.legend(loc="upper right", ncol=2)` line and set
-# bottom=3.40 / height_cm in the local gridspec, then after the loop:
-handles, labels = next(iter(axes.values())).get_legend_handles_labels()
-fig.legend(handles, labels, loc="lower center", ncol=2,
-           bbox_to_anchor=(0.5, 0.0), frameon=False)
+# In the shared block above, set bottom=3.40 / height_cm in the local
+# gridspec, then after the loop (the four panel legends go):
+dm.figure_legend(fig, loc="below", frameon=False)
 ```
 
 Do not shrink the preset's fonts to force the per-panel legends to fit.
@@ -458,6 +456,7 @@ requested margin from each figure edge. This means:
 | `label_hline(ax, y, s)`       | Attaches text tightly to a horizontal reference-line endpoint  |
 | `place_legend(ax)`            | Puts the legend inside where it covers no data, else outside on the side that costs the plot least; one legend for a twin pair |
 | `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels, names wrapped only to fit; `simple_layout` keeps titles above it |
+| `figure_legend(fig)`          | One legend for every panel, outside the panels (above, or right when clearly cheaper); removes the panel legends it replaces |
 | `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick label decimals with a dynamic formatter; locator and limits stay |
@@ -770,7 +769,7 @@ last, so the partner's line is never drawn over them. A later `Text.set_*`
 on a returned label wins over every redraw and layout, and calling
 `dm.label_bars` again on the same bars replaces their labels.
 
-### Legends (`place_legend`)
+### Legends (`place_legend`, `figure_legend`)
 
 `dm.place_legend(ax)` keeps a legend off the data. It tries eight spots inside
 the plot (the corners, upper and lower centre, then centre right and left) for
@@ -810,6 +809,31 @@ on one line). A legend that still covers data, text, another legend or
 another panel is reported as `LEGEND_ON_DATA`; one outside that is more than
 half its plot's size as `LEGEND_OVERFLOW`, and for many lines
 `dm.label_line_ends(ax)` names them at their ends instead.
+
+Panels that share their series need one legend, not one per panel (a bottom
+panel's legend has nowhere to go but onto the panel above, or below it).
+`dm.figure_legend(fig)` (experimental) collects every Axes' entries once by
+name and puts them in one figure legend, above the panels or right of them
+when that is clearly cheaper, or on the side you name (`loc="below"`). It
+removes the panel legends that hold only those entries, and
+`dm.simple_layout` keeps the panels clear of it:
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+
+dm.style.use("report")
+x = np.linspace(0, 11, 60)
+fig, axs = plt.subplots(2, 2, figsize=dm.figsize("17cm", "12cm"))
+for k, ax in enumerate(axs.flat):
+    for i in range(3):
+        ax.plot(x, np.sin(x + i + k), label=f"Region {i + 1}")
+legend = dm.figure_legend(fig)
+dm.simple_layout(fig)
+assert fig.legends == [legend] and axs[0, 0].get_legend() is None
+plt.close(fig)
+```
 
 ### Bidirectional arrow axes (`arrow_axis`)
 

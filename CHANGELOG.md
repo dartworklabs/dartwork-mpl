@@ -110,6 +110,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `plot_helpers_color_selection`, `plot_gp_regression`), which are not
   changed here; no template.
 
+- **Experimental `dm.figure_legend(fig)`: one legend for every panel.** It
+  collects every Axes' labelled artists once by name, in figure order, and
+  puts them in one figure legend outside the panels: above (under a
+  `fig.suptitle`), or right of them when that takes clearly less of the
+  panels (the `dm.place_legend` rule), or the side named with
+  `loc="above"` / `"below"` / `"right"` / `"left"`; any other `loc` goes
+  to `fig.legend` unchanged. Above and below take the fewest rows no wider
+  than the figure, right and left the fewest columns no taller than the
+  panels; `ncols` wins. The panel legends that hold only those entries
+  (also one `dm.place_legend` wrapped) and the legend of an earlier call
+  are removed; `dm.simple_layout` keeps the panels clear of it with the
+  preset's `legend.borderaxespad`. `LEGEND_ON_DATA` names it among its
+  fixes. It is a new name: `dm.place_legend`'s signature stays
+  `place_legend(ax, *, loc="best", **kw)`, and no MCP tool, resource or
+  prompt lists it.
 - `dm.config.legend_fallback` (`"auto"`, the default, `"above"`,
   `"right"`, `"below"` or `"inside"`) and `dm.config.legend_wrap` (`True`):
   where `dm.place_legend(ax)` puts a legend no inside spot holds, and

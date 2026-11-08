@@ -458,17 +458,15 @@ Two measured ways out of the 2×2 case, both of which leave
   Nothing else changes.
 - **keep `presentation`** — replace the four panel legends with one shared
   figure legend, since they carry the same two series, and give it room
-  below. Both edits are needed: adding the figure legend while the panel
+  below. Both edits are needed: `dm.figure_legend` removes the panel
+  legends it replaces, but a `fig.legend` added by hand while the panel
   legends stay leaves five legends and every `LEGEND_OVERLAP` back.
 
 <!-- snippet: no-run -->
 ```python
-# In the shared block above, delete the per-panel
-# `ax.legend(loc="upper right", ncol=2)` line and set
-# bottom=3.40 / height_cm in the local gridspec, then after the loop:
-handles, labels = next(iter(axes.values())).get_legend_handles_labels()
-fig.legend(handles, labels, loc="lower center", ncol=2,
-           bbox_to_anchor=(0.5, 0.0), frameon=False)
+# In the shared block above, set bottom=3.40 / height_cm in the local
+# gridspec, then after the loop (the four panel legends go):
+dm.figure_legend(fig, loc="below", frameon=False)
 ```
 
 Do not shrink the preset's fonts to force the per-panel legends to fit.

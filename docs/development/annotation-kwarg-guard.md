@@ -120,8 +120,8 @@ instead.
 
 ## Not applied
 
-- `place_legend`, `optimize_legend`: their keywords go to `Legend`, not a
-  `Text`; the probe does not fit.
+- `place_legend`, `figure_legend`, `optimize_legend`: their keywords go to
+  `Legend`, not a `Text`; the probe does not fit.
 - `label_bars`: takes no `**kwargs` (every option is a named parameter, `fmt`
   among them), so nothing reaches a `Text` unchecked.
 - `arrow_axis`, `wrap_axis_label`, `wrap_axis_labels`: no `**kwargs`
