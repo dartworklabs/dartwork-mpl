@@ -417,8 +417,11 @@ than half a pixel, easiest first:
 
 After each round the margins are fitted again and the figure is checked:
 a change that left a plot under 30 % of its width or height, or gave any
-axis more overlapping tick labels than before, is taken back and not tried
-again, and the collision it tried to fix stays, reported. (Turned 45
+axis more pairs of overlapping neighbouring tick labels than before, is
+taken back and not tried again, and the collision it tried to fix stays,
+reported. (The check counts neighbouring pairs only: on an axis whose
+neighbours all overlap already, labels further apart may come to overlap
+too.) (Turned 45
 degrees, `advanced/boxplot` at 9 cm in `presentation` would have squeezed
 its plot to 5 px and crowded its y ticks; it keeps its plot and reports its
 x labels instead.)
@@ -431,7 +434,11 @@ centre, axis names with line breaks or mathtext, and spacing you set
 call starts from the figure as you left it (what an earlier call fitted is
 undone first, label by label, where it is still as fitted), so re-laying
 out at another size fits again. `simple_layout(fig, gs=gs,
-use_all_axes=False)` fits and undoes only the Axes of `gs`.
+use_all_axes=False)` fits and undoes only the Axes of `gs`, and leaves
+alone what they share with Axes outside it: the tick formatter of an x they
+share (`sharex=True`), whose wraps stay as a layout of every Axes left them
+(those Axes only turn their own labels), and the spacing of a grid other
+Axes sit on.
 
 ```python
 dm.simple_layout(fig)                                # every rung (default)

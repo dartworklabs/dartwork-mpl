@@ -98,8 +98,9 @@ runs into another panel or past the figure edge wraps at its spaces,
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
 (up to 1.5 cells), and crowded bottom tick labels wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
-degrees; a change that would crush a plot or crowd another axis is taken
-back. Nothing is shortened or made smaller. What you set stays: spacing
+degrees; a change that would crush a plot or add overlapping neighbouring
+tick labels on any axis is taken back. Nothing is shortened or made
+smaller. What you set stays: spacing
 you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also when it is too
 small, and labels you rotate or break yourself are left as they are, so
 leave both out unless the user asks. `fit_labels=False` (or
