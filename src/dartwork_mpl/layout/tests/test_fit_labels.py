@@ -1273,3 +1273,14 @@ def test_a_figure_pyplot_does_not_manage_starts_where_it_did() -> None:
     assert ax.get_position().bounds == pytest.approx(
         gs[0].get_position(fig).bounds
     )
+
+
+def test_a_scoped_restore_keeps_a_shared_budget_a_whole_layout_set() -> None:
+    fig, inner, bars, line = _bars_sharing_y(4)
+    dm.simple_layout(fig)
+    kept = bars.yaxis.get_major_locator()
+    dm.simple_layout(fig, gs=inner, use_all_axes=False, fit_labels=False)
+    assert line.yaxis.get_major_locator() is kept
+    dm.simple_layout(fig, fit_labels=False)  # every Axes: it comes off
+    assert line.yaxis.get_major_locator() is not kept
+    assert line.yaxis.isDefault_majloc
