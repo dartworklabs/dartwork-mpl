@@ -48,8 +48,11 @@ in [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
 The server exposes 19 tools (lint + auto-fix + figure validation + render + color lookup + info
 + chart-type recommender + layered-plot composer + advanced-tier render + durable artifact delivery + retained-input deletion), 10 resources +
 9 resource templates (the prompt corpus + 18 basic + 18 tier-2 advanced plot templates + five artifact members), and 2 prompts.
-New MCP features are frozen (#523); bug and security fixes continue, and
-tool names, order, schemas and docstrings do not change.
+New MCP features are frozen ([#623](https://github.com/dartworklabs/dartwork-mpl/issues/623),
+which quotes the decision because #523 is not retrievable from every account);
+bug and security fixes continue, and tool names, order, schemas and docstrings
+do not change. The freeze covers the MCP surface — a native Python contract
+outside it is not frozen by this clause.
 
 Inputs are kept in the operator-selected private `storage_dir` on the server
 host. Unset policy denies Copy/Retained/delete. Historical report receipts do
@@ -101,4 +104,4 @@ user has seen.
 | Upgrading from v4 | [`docs/migration.md`](docs/migration.md) |
 | Why this design exists | [`docs/philosophy/ai_native.md`](docs/philosophy/ai_native.md) |
 | AI integration overview | [`docs/ai/index.md`](docs/ai/index.md) |
-| Agent-workflow plan and its phases | [#523](https://github.com/dartworklabs/dartwork-mpl/issues/523) |
+| Agent-workflow plan and its phases | [the masterplan](docs/superpowers/specs/2026-10-22-agentic-workflow-masterplan.md) · tracker [#623](https://github.com/dartworklabs/dartwork-mpl/issues/623) (mirrors #523) |
