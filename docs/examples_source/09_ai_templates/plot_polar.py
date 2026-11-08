@@ -50,6 +50,6 @@ ax.fill(theta_closed, b_closed, color="dc.red1", alpha=0.3)
 ax.set_xticks(theta)
 ax.set_xticklabels(categories)
 ax.set_ylim(0, 5)
-ax.legend(loc="upper right", bbox_to_anchor=(1.25, 1.1))
+dm.place_legend(ax, loc="below")
 
 dm.simple_layout(fig)

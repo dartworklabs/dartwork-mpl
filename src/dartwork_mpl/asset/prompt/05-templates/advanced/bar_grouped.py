@@ -52,30 +52,32 @@ for i, name in enumerate(series_names):
 # totals below stay hand-placed.
 dm.label_bars(ax)
 
-# Per-category total above the cluster.
+# Per-category total at its own height on the value axis: a total is
+# at least its tallest bar plus the others, so it sits clear of the bar
+# labels (turned upright on a narrow slide too). Two short lines keep
+# neighbouring totals apart; the axis leaves room above the largest.
 totals = [
     sum(series[n][q] for n in series_names) for q in range(len(categories))
 ]
 for q, total in enumerate(totals):
     ax.text(
         x[q],
-        max(series[n][q] for n in series_names) + 22,
-        f"Total: {total}",
+        total,
+        f"Total\n{total}",
         ha="center",
         va="bottom",
         fontsize=dm.fs(-1),
         fontweight=dm.fw(1),
-        color="dc.teal5",
     )
 
 ax.set_xticks(x)
 ax.set_xticklabels(categories)
 ax.set_ylabel("Throughput (units)")
 ax.set_xlabel("Period")
-ax.set_ylim(0, max(totals) * 1.0 + 30)
+ax.set_ylim(0, max(totals) * 1.2)
 dm.format_axis_si(ax, axis="y")
 
-ax.legend(loc="upper left", fontsize=dm.fs(-1), frameon=False, ncol=3)
+dm.place_legend(ax, fontsize=dm.fs(-1), frameon=False)
 
 dm.simple_layout(fig, margin=dm.inch(0.08))
 dm.validate_with_fixes(fig)
