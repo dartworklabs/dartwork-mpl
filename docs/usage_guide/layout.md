@@ -537,10 +537,26 @@ notation or an offset gets matplotlib's own formatter. One limit: before
 `dm.simple_layout`, a request equal to matplotlib's own defaults
 (`style="sci"` alone, `useOffset=True`, `scilimits=` equal to the rc
 `axes.formatter.limits`) changes nothing matplotlib records, so it cannot
-be told from no request and the library's ticks stay. Call it after the
-layout, or set `ax.xaxis.set_major_formatter(ScalarFormatter())` first. A
-prompt
-can ask for three other formats, one `dm.config` field each:
+be told from no request and the library's ticks stay (`0.5M`; on a year
+axis `14 … 24`). Three paths work in either order: give the axis a
+`ScalarFormatter()` first, call `dm.format_axis_year(ax)` first on a year
+axis, or pass a value that differs from the default (`scilimits=(0, 0)`,
+`useMathText=True`). A request made only after the layout is applied, but
+its `1e6` multiplier has no room and is drawn outside the figure: run
+`dm.simple_layout(fig)` again. `dm.lint_code` reports the default request
+made before the layout (`ticklabel-format-default-before-layout`).
+
+```python
+from matplotlib.ticker import ScalarFormatter
+
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+ax.plot(range(5), [0, 0.8e6, 1.5e6, 2.2e6, 3.0e6])
+ax.yaxis.set_major_formatter(ScalarFormatter())  # first: the request holds
+ax.ticklabel_format(axis="y", style="sci")
+dm.simple_layout(fig)  # 0.0 … 3.0 with the 1e6 multiplier inside the figure
+```
+
+A prompt can ask for three other formats, one `dm.config` field each:
 `tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
 (matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
 `tick_years=4`) and `number_ladder="si"` (`k/M/G/T` in Korean figures too).
@@ -673,6 +689,9 @@ leaves them as plain values (`12,000`); pass `fmt=` for its look. The
 decimals are three significant digits on the largest value, then the
 fewest decimals that print every value exactly, one count for the whole
 call: `21.4, 18.0, 21.5`; `120, 135`; never a meaningless `.0`. A
+non-zero value that this count rounds to zero prints the bound it lies
+within (`<0.1M` beside `12.5M`, `>−0.1M`), never `0`; on a log value axis
+each label takes its own count, as the log ticks do (`0.01M`, `45M`). A
 formatter's `decimals=n` sizes its ticks, not the labels (`1.25M` beside
 `1.0M`; `decimals=2` on the labels for cents). `fmt` takes a `{}` template
 around that number (`"{} GWh"`), a format-spec field that formats the value
@@ -826,14 +845,17 @@ that equals the preset's default (`"black"` under the light presets) cannot
 be told from the default and is painted with the rest of the side; for
 black or neutral twin axes use `dm.config.twin_colors = "neutral"`.
 
-The presets hide the right spine, so `dm.simple_layout(fig)` also shows it on
-an Axes drawing its own y scale on the right: its y ticks and y label there,
-or one of them when its x axis is hidden as a twin's is (the one
-`ax.twinx()` returns, of an inset too), in either mode.
-`ax.twinx()` itself is matplotlib's own: without the layout the twin keeps the
-hidden spine. A right spine you hide after `dm.simple_layout` stays hidden;
-one hidden before the first layout cannot be told from the preset's and
-shows, so hide it after the layout or give it `linewidth=0`.
+The presets hide the right and top spines, so `dm.simple_layout(fig)` also
+shows the right one on an Axes drawing its own y scale on the right: its y
+ticks and y label there, or one of them when its x axis is hidden as a
+twin's is (the one `ax.twinx()` returns, of an inset too), in either mode.
+The top spine follows the same rule with x and y swapped, so the Axes
+`ax.twiny()` returns gets the line of its x scale on the top.
+`ax.twinx()` and `ax.twiny()` themselves are matplotlib's own: without the
+layout the twin keeps the hidden spine. A spine you hide after
+`dm.simple_layout` stays hidden; one hidden before the first layout cannot
+be told from the preset's and shows, so hide it after the layout or give it
+`linewidth=0`.
 
 `dm.place_legend(ax)` on either twin merges the pair's entries into one
 legend on the top twin, the one drawn last (by zorder, then figure order,

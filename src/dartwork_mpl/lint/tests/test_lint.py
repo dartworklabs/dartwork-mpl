@@ -1626,3 +1626,166 @@ class TestTwinLegendBoundConcatenation:
         assert not [
             i for i in lint(code) if i.rule_id == "twin-legend-hand-merge"
         ]
+
+
+# --------------------------------------------------- ticklabel_format (I4b)
+_SCI_HEAD = (
+    "import matplotlib.pyplot as plt\n"
+    "import dartwork_mpl as dm\n"
+    'fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))\n'
+    "ax.plot(range(5), [0, 8e5, 1.5e6, 2.2e6, 3e6])\n"
+)
+_LAYOUT = "dm.simple_layout(fig)\n"
+_SCI_RULE = "ticklabel-format-default-before-layout"
+
+
+def _sci_hits(code: str) -> list[Issue]:
+    return [i for i in lint(code) if i.rule_id == _SCI_RULE]
+
+
+class TestTicklabelFormatDefaultBeforeLayout:
+    """A ``ticklabel_format`` request equal to matplotlib's defaults, made
+    before ``dm.simple_layout``, leaves no trace the layout can read, so
+    the library's ticks stay (``0.5M`` instead of ``1e6``). The rule points
+    to the order-independent paths (W8 spec year-axis-sci-intent, D9)."""
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            'ax.ticklabel_format(axis="y", style="sci")',
+            'ax.ticklabel_format(axis="x", useOffset=True)',
+            'plt.ticklabel_format(style="sci", axis="y")',
+            'ax.ticklabel_format(style="scientific")',
+            'ax.ticklabel_format(axis="y", style="sci", scilimits=(-5, 6))',
+            'ax.ticklabel_format(axis="y", scilimits=[-5, 6])',
+            'ax.ticklabel_format(style="sci", useMathText=False)',
+        ],
+    )
+    def test_default_request_before_the_layout_is_reported(
+        self, call: str
+    ) -> None:
+        (issue,) = _sci_hits(_SCI_HEAD + call + "\n" + _LAYOUT)
+        assert issue.severity == "info"
+        assert issue.line == 5
+        assert "ScalarFormatter()" in (issue.fix_suggestion or "")
+        rule = next(r for r in load_rules() if r.id == _SCI_RULE)
+        # Both order-independent cures, never "after the layout" alone.
+        assert "ScalarFormatter()" in rule.message
+        assert "format_axis_year" in rule.message
+        assert "again" in rule.message
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            # After the layout (matplotlib applies it; the docs' cure).
+            _SCI_HEAD
+            + _LAYOUT
+            + 'ax.ticklabel_format(axis="y", style="sci")\n',
+            # A non-default value is recorded and works in either order.
+            _SCI_HEAD
+            + 'ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))\n'
+            + _LAYOUT,
+            _SCI_HEAD
+            + 'ax.ticklabel_format(axis="y", style="plain")\n'
+            + _LAYOUT,
+            _SCI_HEAD
+            + 'ax.ticklabel_format(axis="y", style="sci", useMathText=True)\n'
+            + _LAYOUT,
+            _SCI_HEAD
+            + 'ax.ticklabel_format(axis="y", useOffset=False)\n'
+            + _LAYOUT,
+            # No layout at all: matplotlib's own formatter shows the request.
+            "import matplotlib.pyplot as plt\nfig, ax = plt.subplots()\n"
+            'ax.ticklabel_format(axis="y", style="sci")\n',
+            # Comments and strings are not calls.
+            _SCI_HEAD
+            + '# ax.ticklabel_format(style="sci")\n'
+            + "note = \"ticklabel_format(style='sci')\"\n"
+            + _LAYOUT,
+            # Values the source cannot settle: **kwargs and names.
+            _SCI_HEAD + "ax.ticklabel_format(**opts)\n" + _LAYOUT,
+            _SCI_HEAD
+            + 'ax.ticklabel_format(axis="y", style=style)\n'
+            + _LAYOUT,
+            # Only the axis: nothing is asked.
+            _SCI_HEAD + 'ax.ticklabel_format(axis="y")\n' + _LAYOUT,
+            # The cures themselves, made first on the same axes (the
+            # layout guide's example): the request holds, nothing to say.
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT,
+            "import matplotlib.ticker as mticker\n"
+            + _SCI_HEAD
+            + "ax.xaxis.set_major_formatter(mticker.ScalarFormatter())\n"
+            + 'ax.ticklabel_format(axis="x", useOffset=True)\n'
+            + _LAYOUT,
+            _SCI_HEAD
+            + "dm.format_axis_year(ax)\n"
+            + 'ax.ticklabel_format(axis="x", style="sci")\n'
+            + _LAYOUT,
+            _SCI_HEAD
+            + 'dm.format_axis_year(ax, axis="y")\n'
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT,
+            # Both directions prepared: a request for both holds.
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + "ax.xaxis.set_major_formatter(ScalarFormatter())\n"
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + 'ax.ticklabel_format(style="sci")\n'
+            + _LAYOUT,
+            # Layout, request, layout again: the guide's path for a late
+            # request (applied, its multiplier back on the canvas).
+            _SCI_HEAD
+            + _LAYOUT
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT,
+        ],
+    )
+    def test_recorded_or_unread_requests_are_quiet(self, code: str) -> None:
+        assert _sci_hits(code) == []
+
+    @pytest.mark.parametrize(
+        "prep",
+        [
+            # The cure on another axes does not cover this one.
+            "ax2 = ax.twinx()\nax2.yaxis.set_major_formatter(ScalarFormatter())\n",
+            # A formatter other than ScalarFormatter is no cure.
+            "ax.yaxis.set_major_formatter(FuncFormatter(str))\n",
+            # The other direction of the same Axes is not covered: a year
+            # x axis beside a millions y axis keeps losing the y request.
+            "ax.xaxis.set_major_formatter(ScalarFormatter())\n",
+            "dm.format_axis_year(ax)\n",
+        ],
+    )
+    def test_a_cure_elsewhere_still_reports(self, prep: str) -> None:
+        code = (
+            "from matplotlib.ticker import FuncFormatter, ScalarFormatter\n"
+            + _SCI_HEAD
+            + prep
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + _LAYOUT
+        )
+        assert len(_sci_hits(code)) == 1
+
+    def test_a_request_for_both_needs_both_directions_prepared(self) -> None:
+        code = (
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + 'ax.ticklabel_format(style="sci")\n'
+            + _LAYOUT
+        )
+        assert len(_sci_hits(code)) == 1
+
+    def test_a_cure_after_the_request_still_reports(self) -> None:
+        code = (
+            "from matplotlib.ticker import ScalarFormatter\n"
+            + _SCI_HEAD
+            + 'ax.ticklabel_format(axis="y", style="sci")\n'
+            + "ax.yaxis.set_major_formatter(ScalarFormatter())\n"
+            + _LAYOUT
+        )
+        assert len(_sci_hits(code)) == 1

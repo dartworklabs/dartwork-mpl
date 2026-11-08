@@ -52,6 +52,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
   by hand (`ax.legend(h1 + h2, l1 + l2)`, or `lns = l1 + l2` then
   `ax.legend(lns, labs)`) points to `dm.place_legend(ax)`.
+- Lint rule `ticklabel-format-default-before-layout` (info): an
+  `ax.ticklabel_format(...)` / `plt.ticklabel_format(...)` call that asks
+  only for matplotlib's defaults (`style="sci"`, `useOffset=True`,
+  `scilimits=(-5, 6)`) in the source before `dm.simple_layout`. matplotlib
+  records nothing for such a request, so the library's ticks stay
+  (`0.5M`; a year axis under a narrowed rc keeps `14 … 24`). The message
+  names the paths that work in either order (`ScalarFormatter()` first,
+  `dm.format_axis_year(ax)` first, a non-default value such as
+  `scilimits=(0, 0)`) and asks for the layout again after a late request.
+  Source order only, up to the first `dm.simple_layout` in the source;
+  `**kwargs` and requested values given as names are not read.
 - `dm.label_bars(..., sign="+")`: a positive value that does not print as
   zero carries `+` where a negative one carries the minus (`+30`, `−15`,
   `+$800`, `+1.2k`, `+33.0 GWh` through `fmt="{} GWh"`); zero prints `0`.
@@ -83,6 +94,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **One minus sign per figure: the per-value ticks use U+2212 too.**
+  `format_axis_currency` and `decimals=n` of `format_axis_millions` /
+  `_billions` / `_si` / `_myriad` wrote a hyphen-minus (`-$1,500`) while the
+  library's other ticks and `dm.label_bars` wrote matplotlib's minus
+  (`−$800`); they now write matplotlib's minus as well (`−$1,500`, the
+  hyphen when `axes.unicode_minus` is off). Tick text is otherwise
+  unchanged; a negative tick is a little wider (Roboto's minus is as wide
+  as `+` and the digits). Code that parses tick text should accept U+2212
+  or turn `axes.unicode_minus` off.
+- **`dm.label_bars`: a tiny value no longer reads `0`, and log axes drop
+  the `.0`.** A non-zero value that the call's one decimal count rounds to
+  zero prints the bound it lies within, in the tick unit: `<0.1M` beside
+  `12.5M`, `>−0.1M` for a small negative, `<$0.1`, `<1M` with no decimals.
+  An exact zero still reads `0` (`$0`), and one unit per axis and one count
+  per call stay. On a log value axis each label takes its own count, as
+  the log ticks do: `0.01M 0.2M 3.4M 45M` instead of `0 0.2M 3.4M 45.0M`.
+  `decimals=`, a `fmt` format spec and a `fmt` callable still print the
+  number as asked.
+
 - **The waterfall templates draw each step with its signed change.** A step
   is a bar from the level before it with its signed delta as the height
   (`ax.bar(x, delta, bottom=level_before)`), the totals a second `ax.bar`
@@ -96,6 +126,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   closing value. The docs recipe `plot_waterfall_bridge` follows (no
   `fontweight="bold"`, no `dm.set_decimal`).
 
+- **The colour catalogue's swatch hex text is opaque.**
+  `dm.diagnostics.render_color_catalog` drew the hex code on each swatch at
+  alpha 0.85, which left eight swatches (`tw.orange600`, `oc.blue6`,
+  `dc.ember6` among them) under 3:1 as seen; the text is now drawn at full
+  opacity, and every swatch reads at 3.56:1 or more. Colour values are
+  unchanged.
+
 - **Importing dartwork-mpl no longer rebinds any matplotlib class or
   function.** `ax.twinx()` is matplotlib's own again (0.7 replaced it at
   import); import still registers the bundled colours, colormaps and fonts.
@@ -108,13 +145,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   overlay you made like a twin (x axis hidden, y ticks or label on the
   right); when a twin and its parent swap sides, the line moves to the
   parent; a twin whose y axis is hidden, or whose y ticks and label you both
-  moved to the left, gets none.
+  moved to the left, gets none. The top spine follows the same rule with x
+  and y swapped, so the Axes `twiny()` returns now gets the axis line of its
+  x scale on the top, which 0.7 left hidden.
   Without the layout a twin keeps the hidden spine; show it with
-  `ax2.spines["right"].set_visible(True)`. A right spine you hide before the
-  first `dm.simple_layout` now shows; hide it after the layout, or give it
-  `linewidth=0`. `dm.validate_figure` reports the line on such an overlay
-  or a swapped parent as `PRESET_OVERRIDE` (INFO); it is the layout's. The
+  `ax2.spines["right"].set_visible(True)` (`"top"` for a `twiny`). A right
+  or top spine you hide before the first `dm.simple_layout` now shows; hide
+  it after the layout, or give it `linewidth=0`. The
   rule: [docs/development/twin-spine-at-layout.md](docs/development/twin-spine-at-layout.md).
+- **`PRESET_OVERRIDE` reads twins from what the figure draws.** It skips an
+  Axes drawn as a twin is (an earlier Axes in its box shares one axis with
+  it and draws that axis), not the Axes matplotlib's `twinx` / `twiny`
+  made, and skips it whole, grid and background included. So a `sharex`
+  overlay with its x axis hidden, and an inset's twin, are now skipped,
+  while a twin whose x axis you show again is now inspected. A right or top
+  spine `dm.simple_layout` showed as a twin's line is not reported while it
+  shows (on a `sharex` overlay or a swapped parent too); hidden after the
+  layout or with the frame off, it is compared with the preset like any
+  spine.
 - **Colour catalogue labels pick their ink by WCAG contrast.** The swatch
   labels in `dm.diagnostics.render_color_catalog` and the docs colour
   tables choose white or
@@ -200,6 +248,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **The layout guide no longer loses the `1e6` multiplier.**
+  `docs/usage_guide/layout.md` advised calling `ax.ticklabel_format(...)`
+  after the layout; that applies the request, but its offset text (`1e6`)
+  has no room and is drawn above the figure, so `0.0 … 3.0` reads without
+  its multiplier. The guide now gives the paths that work in either order
+  (`ScalarFormatter()` first, `dm.format_axis_year(ax)` first, a
+  non-default value) and, for a late request, `dm.simple_layout(fig)`
+  again, with an example whose multiplier stays on the canvas.
 - **`TEXT_CONTRAST` reads a shape only where it is drawn.** A bar past the
   axes limit is drawn up to the axes edge, but `dm.validate_figure` read
   text beyond the limit (a bar's value there) against the whole bar and

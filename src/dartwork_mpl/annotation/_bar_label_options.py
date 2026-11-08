@@ -6,15 +6,19 @@
   template or a callable, ``color`` ``None``, ``"series"`` or a matplotlib
   colour, ``sign`` ``"-"`` or ``"+"``.
 * **Text.** :func:`compose_text` writes one label's text from its value in
-  the axis's tick unit: the number with the call's decimals and the ticks'
+  the axis's tick unit: the number with the label's decimals and the ticks'
   prefix, suffix and zero rule, or the ``fmt`` template around the number
   (a field with a format spec formats the value itself), or what the
-  ``fmt`` callable returns. Under ``sign="+"`` a positive number that does
-  not print as zero takes ``+`` where a negative one takes the minus.
+  ``fmt`` callable returns. A non-zero value that the label rule's decimals
+  round to zero prints the bound it lies within (``<0.1M``, ``>-0.1M`` with
+  matplotlib's minus), unless the call fixed the precision. Under
+  ``sign="+"`` a positive number that does not print as zero takes ``+``
+  where a negative one takes the minus.
 """
 
 from __future__ import annotations
 
+import math
 import numbers
 import string
 from collections.abc import Callable
@@ -238,6 +242,54 @@ def parse_options(
 
 
 # ------------------------------------------------------------ the text
+def _caller_writes_precision(options: BarLabelOptions) -> bool:
+    """Whether the call fixed how the number prints.
+
+    ``decimals=``, a ``fmt`` callable, or a ``fmt`` template whose field
+    carries a format spec or conversion (``"{:.3f} mn"``). A plain ``{}``
+    template takes the number the label rule wrote.
+    """
+    fmt = options.fmt
+    if options.decimals is not None or callable(fmt):
+        return True
+    if isinstance(fmt, str):
+        return any(
+            spec or conversion
+            for _, name, spec, conversion in _template_fields(fmt)
+            if name is not None
+        )
+    return False
+
+
+def _rounds_to_zero(value: float, decimals: int) -> bool:
+    """A finite non-zero ``value`` that prints as zero at ``decimals``."""
+    if value == 0 or not math.isfinite(value):
+        return False
+    return float(format(abs(value), f".{decimals}f")) == 0
+
+
+def _bound_text(
+    scaled: float, scale: TickScale, decimals: int, options: BarLabelOptions
+) -> str:
+    """The bound a value rounding to zero lies within: one last place.
+
+    ``<0.1M`` for 0.03M at one decimal, ``>-0.1M`` for -0.04M (matplotlib's
+    minus: U+2212 unless ``axes.unicode_minus`` is off), ``<1M`` at none;
+    the ticks' prefix and suffix as for any other value (``<$0.1``,
+    ``<0.1€``), or the ``fmt`` template around the signed bound
+    (``"${}B"``: ``>$-0.1B``).
+    """
+    step = 10.0**-decimals
+    bound = step if scaled > 0 else -step
+    relation = "<" if scaled > 0 else ">"
+    if isinstance(options.fmt, str):
+        number = number_text(bound, decimals)
+        return relation + _render_template(options.fmt, number, bound)
+    return relation + number_text(
+        bound, decimals, prefix=scale.prefix, suffix=scale.suffix
+    )
+
+
 def compose_text(
     scaled: float, scale: TickScale, decimals: int, options: BarLabelOptions
 ) -> str:
@@ -245,15 +297,23 @@ def compose_text(
 
     ``decimals`` is fixed (a zero prints ``0.00``, not ``0``) when the call
     fixed it. A zero keeps the ticks' prefix and suffix when theirs does
-    (``$0``); a ``fmt`` template supplies its own. Under ``sign="+"`` a
-    positive value that does not print as zero starts with ``+`` (``+30``,
-    ``+$800``), and so does a template's ``{}``; a field with a format spec
-    and a callable write their own sign.
+    (``$0``); a ``fmt`` template supplies its own. A non-zero value that
+    rounds to zero under the label rule prints the bound it lies within
+    (``<0.1M``, ``>-0.1M``), never ``0``, and takes no ``+`` (the bound
+    already says which side); a precision the call fixed
+    (:func:`_caller_writes_precision`) prints as asked. Under ``sign="+"``
+    a positive value that does not print as zero starts with ``+``
+    (``+30``, ``+$800``), and so does a template's ``{}``; a field with a
+    format spec and a callable write their own sign.
     """
     fmt = options.fmt
     fixed = options.decimals is not None
     if callable(fmt):
         return str(fmt(scaled))
+    if not _caller_writes_precision(options) and _rounds_to_zero(
+        scaled, decimals
+    ):
+        return _bound_text(scaled, scale, decimals, options)
     plus = (
         "+"
         if options.sign == "+" and _prints_positive(scaled, decimals)

@@ -667,8 +667,9 @@ BOUNDARY = {
 }
 # Nothing asked: the label rule in the tick unit (three significant digits
 # on the largest value), so a small value shows while the largest leaves
-# room for it (0.03M beside 3.4M) and reads 0 when it does not (beside
-# 12.5M, or €0.03 beside €34).
+# room for it (0.03M beside 3.4M) and reads as the bound it lies within when
+# it does not (beside 12.5M: <0.1M and >-0.1M, or <0.1€ beside €34); only an
+# exact zero reads 0.
 BOUNDARY_DEFAULT = {
     "millions-1-small": [
         "1.25M",
@@ -678,8 +679,22 @@ BOUNDARY_DEFAULT = {
         f"{MINUS}0.80M",
         "3.40M",
     ],
-    "millions-1-wide": ["12.5M", "0", "0", "0", f"{MINUS}2.6M", "8.1M"],
-    "billions-bn-1": ["12.4bn", "0", "0", "0", f"{MINUS}3.5bn", "8.0bn"],
+    "millions-1-wide": [
+        "12.5M",
+        "<0.1M",
+        f">{MINUS}0.1M",
+        "0",
+        f"{MINUS}2.6M",
+        "8.1M",
+    ],
+    "billions-bn-1": [
+        "12.4bn",
+        "<0.1bn",
+        f">{MINUS}0.1bn",
+        "0",
+        f"{MINUS}3.5bn",
+        "8.0bn",
+    ],
     "millions-baekman-1": [
         "2.40백만",
         "0.03백만",
@@ -704,7 +719,14 @@ BOUNDARY_DEFAULT = {
         f"{MINUS}$1.50",
         "$6.10",
     ],
-    "currency-suffix-2": ["12.5€", "0€", "0€", "0€", f"{MINUS}8.0€", "34.0€"],
+    "currency-suffix-2": [
+        "12.5€",
+        "<0.1€",
+        f">{MINUS}0.1€",
+        "0€",
+        f"{MINUS}8.0€",
+        "34.0€",
+    ],
 }
 # label_bars(decimals=2): the asked count wins over the ticks'.
 BOUNDARY_ASKED = {
@@ -823,13 +845,13 @@ SHAPED = {
         ["1.25M", f"{MINUS}0.80M", "0"],
         ["1.25M", f"{MINUS}0.80M", "0.00"],
     ),
-    # One count per call on a log axis: 1e4 reads 0 beside 4.5e7 (the
-    # spec's round-to-zero rule; a log-axis rule is a follow-up).
+    # A log value axis: each label its own count, three significant digits
+    # cut to the fewest exact, as the log ticks (0.01M, not 0 beside 45M).
     "log-millions-1": (
         [1e4, 2e5, 3.4e6, 4.5e7],
         _millions_1,
         "log",
-        ["0", "0.2M", "3.4M", "45.0M"],
+        ["0.01M", "0.2M", "3.4M", "45M"],
         ["0.01M", "0.20M", "3.40M", "45.00M"],
     ),
     "log-currency": (
@@ -887,6 +909,148 @@ def test_fixed_unit_labels_on_other_bar_shapes(name):
         texts = dm.label_bars(ax, **keywords)
         dm.simple_layout(fig)
         assert _texts(texts) == expected, keywords
+
+
+# A non-zero value the label rule rounds to zero prints the bound it lies
+# within, one last place (D1, 2026-11-08): the ticks' unit and currency, the
+# sign's side for a negative; an exact zero keeps the ticks' zero.
+SMALL_BOUND = {
+    # name: (values, install, labels)
+    "millions-no-decimals": (
+        [125e6, 0.3e6, -0.4e6, 0.0, 80e6],
+        dm.format_axis_millions,
+        ["125M", "<1M", f">{MINUS}1M", "0", "80M"],
+    ),
+    "currency-prefix": (
+        [12.5, 0.03, -0.04, 0.0, 8.1],
+        dm.format_axis_currency,
+        ["$12.5", "<$0.1", f">{MINUS}$0.1", "$0", "$8.1"],
+    ),
+    "currency-suffix": (
+        [12.5, 0.03, -0.04, 0.0, 8.1],
+        _euro_suffix_2,
+        ["12.5€", "<0.1€", f">{MINUS}0.1€", "0€", "8.1€"],
+    ),
+    "library-numbers": (
+        [125.0, 0.3, -0.4, 0.0, 80.0],
+        lambda ax: None,
+        ["125", "<1", f">{MINUS}1", "0", "80"],
+    ),
+}
+
+
+@pytest.mark.parametrize("name", list(SMALL_BOUND))
+def test_small_value_prints_its_bound(name):
+    values, install, expected = SMALL_BOUND[name]
+    fig, ax, _ = _plain(values)
+    install(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+
+
+def test_small_value_bound_follows_unicode_minus():
+    with matplotlib.rc_context({"axes.unicode_minus": False}):
+        fig, ax, _ = _plain([12.5e6, 0.03e6, -0.04e6])
+        _millions_1(ax)
+        texts = dm.label_bars(ax)
+        dm.simple_layout(fig)
+    assert _texts(texts) == ["12.5M", "<0.1M", ">-0.1M"]
+
+
+@pytest.mark.parametrize(
+    ("keywords", "expected"),
+    [
+        # The asked precision writes the number: no bound.
+        ({"decimals": 0}, ["12M", "0", "0", "0"]),
+        ({"decimals": 2}, ["12.40M", "0.03M", f"{MINUS}0.04M", "0.00"]),
+        (
+            {"fmt": "{:.3f} mn"},
+            ["12.400 mn", "0.030 mn", f"{MINUS}0.040 mn", "0.000 mn"],
+        ),
+        ({"fmt": lambda v: f"{v:.1f}"}, ["12.4", "0.0", "-0.0", "0.0"]),
+        # A plain template takes the rule's number, the bound included; it
+        # wraps the signed bound as it wraps any signed number.
+        ({"fmt": "{} mn"}, ["12.4 mn", "<0.1 mn", f">{MINUS}0.1 mn", "0 mn"]),
+        ({"fmt": "${}B"}, ["$12.4B", "<$0.1B", f">${MINUS}0.1B", "$0B"]),
+    ],
+)
+def test_small_value_asked_precision_wins(keywords, expected):
+    fig, ax, _ = _plain([12.4e6, 0.03e6, -0.04e6, 0.0])
+    _millions_1(ax)
+    texts = dm.label_bars(ax, **keywords)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+
+
+@pytest.mark.parametrize(
+    ("values", "unit", "expected"),
+    [
+        # Past twelve decimals: each decade keeps its own digits, no bound.
+        (
+            [1e-14, 1e-13, 1e-12, 45.0],
+            False,
+            ["0.00000000000001", "0.0000000000001", "0.000000000001", "45"],
+        ),
+        # A carry in the rounding drops the digits it made meaningless.
+        ([9.999e6, 0.9999e6], True, ["10M", "1M"]),
+    ],
+)
+def test_log_labels_keep_three_significant_digits_without_cap_or_padding(
+    values, unit, expected
+):
+    fig, ax, _ = _plain(values)
+    ax.set_yscale("log")
+    if unit:
+        dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == expected
+
+
+def test_labels_follow_a_switch_to_a_log_value_axis():
+    # Labelled first, the axis made log afterwards and given the same
+    # millions ticks again (set_yscale resets the formatter): the tick scale
+    # is unchanged, but the decimals follow the log scale as when log came
+    # first.
+    values = [1e4, 2e5, 3.4e6, 4.5e7]
+    fig, ax, _ = _plain(values)
+    dm.format_axis_millions(ax, decimals=1)
+    texts = dm.label_bars(ax)
+    fig.canvas.draw()
+    assert _texts(texts) == ["<0.1M", "0.2M", "3.4M", "45.0M"]
+    ax.set_yscale("log")
+    dm.format_axis_millions(ax, decimals=1)
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["0.01M", "0.2M", "3.4M", "45M"]
+
+    # And back to linear with the same ticks: one shared count again.
+    ax.set_yscale("linear")
+    dm.format_axis_millions(ax, decimals=1)
+    fig.canvas.draw()
+    assert _texts(texts) == ["<0.1M", "0.2M", "3.4M", "45.0M"]
+
+
+def test_log_value_axis_labels_take_their_own_decimals():
+    # Each label: three significant digits cut to the fewest exact, as the
+    # log ticks; no meaningless .0 (45M, not 45.0M) and no zero.
+    fig, ax, _ = _plain([1.234e4, 2e5, 3.4e6, 4.5e7, 1.25e8])
+    ax.set_yscale("log")
+    dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["0.0123M", "0.2M", "3.4M", "45M", "125M"]
+
+    # One call over a linear Axes and its log twin: the linear labels keep
+    # one count among themselves, the log labels each their own.
+    fig, ax = _fig()
+    twin = ax.twinx()
+    linear = ax.bar([0, 1], [12.5, 3.0], width=0.3)
+    logged = twin.bar([0.4, 1.4], [0.012, 45.0], width=0.3)
+    twin.set_yscale("log")
+    texts = dm.label_bars(ax, bars=[linear, logged])
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["12.5", "3.0", "0.012", "45"]
 
 
 def test_fmt_string_and_callable():
@@ -986,6 +1150,16 @@ def test_sign_plus_leaves_zero_and_the_callers_formats():
     # The default prints no plus.
     assert _texts(dm.label_bars(ax)) == ["2", f"{MINUS}1"]
     assert _texts(dm.label_bars(ax, sign="-")) == ["2", f"{MINUS}1"]
+
+
+def test_sign_plus_leaves_a_bound_unsigned():
+    # A tiny value prints its bound under sign="+" too, with no plus: the
+    # bound already says which side of zero it lies on.
+    fig, ax, _ = _plain([12.5e6, 0.03e6, -0.04e6])
+    dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax, sign="+")
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["+12.5M", "<0.1M", f">{MINUS}0.1M"]
 
 
 def test_decimals_rule():

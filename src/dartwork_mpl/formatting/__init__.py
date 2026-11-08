@@ -21,6 +21,7 @@ from ._axis_wide import (
     TickScale,
     TickText,
     Unit,
+    draws_linearly,
     number_text,
     tick_scale_of,
 )
@@ -34,7 +35,7 @@ from ._defaults import (
 )
 from ._label_unit import axis_unit, axis_unit_of
 from ._twin_colors import apply_twin_colors
-from ._twin_spines import show_twin_spines
+from ._twin_spines import drawn_like_twin, settled_twin_spines, show_twin_spines
 from ._years import WholeYearLocator, YearTickFormatter, requested_params
 
 __all__ = [
@@ -44,6 +45,8 @@ __all__ = [
     "avoid_tick_overlap",
     "axis_unit",
     "axis_unit_of",
+    "drawn_like_twin",
+    "draws_linearly",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_dates",
@@ -55,6 +58,7 @@ __all__ = [
     "recommend_tick_decimals",
     "rotate_tick_labels",
     "set_decimal",
+    "settled_twin_spines",
     "show_twin_spines",
     "thin_crowded_date_ticks",
     "tick_scale_of",
@@ -70,7 +74,8 @@ _SI_LADDER = SI_LADDER
 # What the fixed-decimal paths print, each value alone (``per_tick``):
 # ``decimals=n`` of millions / billions / si (``1000.0k``, ``-1.5M``, ``0.0``),
 # ``format_axis_currency`` (``-$1,500``, ``$0``) and ``decimals=n`` of myriad
-# (``1.5억``, ``7,500``, ``-$0``).
+# (``1.5억``, ``7,500``, ``-$0``); the minus is matplotlib's (U+2212 unless
+# ``axes.unicode_minus`` is off), as on every other tick.
 _FIXED_TEXT = TickText(separators=False)
 _CURRENCY_TEXT = TickText(zero="affixed")
 _MYRIAD_TEXT = TickText(zero="exact", compact=True)
@@ -89,9 +94,9 @@ def _set_formatter(
 def _one_unit(unit: Unit, decimals: int | None) -> AxisUnitFormatter:
     """``unit`` on every tick: decimals per axis, or ``decimals`` per value.
 
-    An integer keeps the fixed-decimal output: no thousands separators, the
-    hyphen-minus, and a value that rounds to zero as a bare ``0.0`` (never
-    ``-0.0M``).
+    An integer keeps the fixed-decimal output: no thousands separators and
+    a value that rounds to zero as a bare ``0.0`` (never ``-0.0M``); the
+    minus is matplotlib's, as on every other tick.
     """
     if decimals is None:
         return AxisUnitFormatter([unit], unit.label)
@@ -391,7 +396,8 @@ def format_axis_currency(
     >>> format_axis_currency(ax)  # Format as $1,000
     >>> format_axis_currency(ax, symbol="€", position="suffix")  # Format as 1,000€
     """
-    # The sign goes outside the symbol (``-$1,000``, not ``$-1,000``) and
+    # The sign (matplotlib's minus, U+2212 unless ``axes.unicode_minus`` is
+    # off) goes outside the symbol (``-$1,000``, not ``$-1,000``) and
     # drops when the value rounds to zero (``$0``, never ``-$0``). Any
     # position other than "prefix" writes the symbol after the number.
     prefix = position == "prefix"

@@ -1111,7 +1111,8 @@ default `decimals=None` or a
 `PercentFormatter`, plain values under a formatter it cannot read, such as
 a `FuncFormatter`: pass `fmt=`); three significant digits on the largest
 value, then the fewest exact decimals, one count per call, no meaningless
-`.0`; stacked bars' segments centred and a total beyond the stack; crowded
+`.0` (a tiny value that count rounds to zero reads `<0.1M`, not `0`; on a
+log axis each label takes its own count: `0.01M`, `45M`); stacked bars' segments centred and a total beyond the stack; crowded
 labels on vertical bars turned vertical by `dm.simple_layout`, which also
 grows autoscaled limits just enough for the labels (limits you set stay; a
 bar past them shows its true value at the limit: on the bar when the bar
@@ -2066,6 +2067,40 @@ rules:
       legend, is the caller's layout. It also matches
       `lns = l1 + l2; ax.legend(lns, labs)`.
     fix_suggestion: 'dm.place_legend(ax)'
+
+  - id: ticklabel-format-default-before-layout
+    severity: info
+    detector:
+      kind: regex
+      pattern: '\bticklabel_format\s*\('
+    message: |
+      This `ticklabel_format(...)` call asks only for matplotlib's own
+      defaults (`style="sci"`, `useOffset=True`, `scilimits=(-5, 6)`) and
+      comes before `dm.simple_layout`. Such a request leaves no trace on
+      the formatter, so the layout cannot tell it from no request and the
+      library's ticks stay (`0.5M`, not `0.5` with `1e6`). Paths that work
+      in either order: give the axis a `ScalarFormatter()` first; on a
+      year axis, call `dm.format_axis_year(ax)` first; or pass a value
+      that differs from the default (`scilimits=(0, 0)`,
+      `useMathText=True`). Called after `dm.simple_layout(fig)`, run the
+      layout again, or the `1e6` multiplier is drawn outside the figure.
+    why: |
+      Advisory: matplotlib records nothing for a request equal to a fresh
+      formatter's state (`set_scientific(True)` on a new `ScalarFormatter`
+      changes no attribute), so no runtime check can see it. The rule
+      reads source order only: a call inside a function or loop that runs
+      after the layout is reported too, and a user rc that differs from
+      matplotlib's defaults is not known. Requests with any non-default
+      value (`style="plain"`, `scilimits=(0, 0)`, `useMathText=True`) are
+      recorded and work in either order; `**kwargs` and requested values
+      given as names are not read. Only calls before the first
+      `dm.simple_layout` in the source are read, so a later figure's
+      request in the same source is not either. A call is quiet when every
+      direction it targets (a literal `axis=`, `both` when omitted) already
+      took a `ScalarFormatter()` or `dm.format_axis_year` earlier on the
+      same Axes; an `axis` given as a name, and `plt.ticklabel_format`,
+      are reported even then (the source cannot tie them to that Axes).
+    fix_suggestion: 'ax.yaxis.set_major_formatter(ScalarFormatter()); ax.ticklabel_format(axis="y", style="sci")'
 
   - id: multirow-subplots-no-gridspec-kw
     severity: info

@@ -18,6 +18,8 @@ from dartwork_mpl.validate import Severity, VisualWarning, validate_figure
 from dartwork_mpl.validate_fixes import get_fix_suggestions
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 
@@ -308,3 +310,252 @@ class TestSaveLeavesItToReview:
         with pytest.raises(ValueError, match="Unknown check IDs"):
             validate_figure(fig, exclude=("PRESET_OVERRID",), quiet=True)
         plt.close(fig)
+
+
+# ------------------------------------------------------- twins (D7, 2-CB)
+# The builders draw under the active preset (``TestTwinLines`` sets it).
+def _overlay(**sharing: bool) -> tuple[Figure, Axes, Axes]:
+    """Two Axes made separately in one GridSpec cell, ``b`` sharing ``a``."""
+    fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+    gs = fig.add_gridspec(1, 1)
+    a = fig.add_subplot(gs[0])
+    b = fig.add_subplot(
+        gs[0],
+        sharex=a if sharing.get("sharex") else None,
+        sharey=a if sharing.get("sharey") else None,
+    )
+    b.patch.set_visible(False)
+    a.plot([0, 1, 2], [1, 3, 2])
+    b.plot([0, 1, 2], [30, 10, 20], color="dc.orange6")
+    return fig, a, b
+
+
+def _twin(kind: str) -> tuple[Figure, Axes, Axes]:
+    fig, a = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    b = getattr(a, kind)()
+    a.plot([0, 1, 2], [1, 3, 2])
+    b.plot([0, 1, 2], [30, 10, 20], color="dc.orange6")
+    return fig, a, b
+
+
+def _to_right(ax: Axes) -> None:
+    ax.yaxis.tick_right()
+    ax.yaxis.set_label_position("right")
+
+
+def _to_top(ax: Axes) -> None:
+    ax.xaxis.tick_top()
+    ax.xaxis.set_label_position("top")
+
+
+def _sharex_overlay_moved_right() -> tuple[Figure, Axes, Axes]:
+    """11-3: inspected; the layout shows its right spine."""
+    fig, a, b = _overlay(sharex=True)
+    _to_right(b)
+    return fig, a, b
+
+
+def _swapped_twinx() -> tuple[Figure, Axes, Axes]:
+    """11-4: the parent's scale right, the twin's left."""
+    fig, a, b = _twin("twinx")
+    _to_right(a)
+    b.yaxis.tick_left()
+    b.yaxis.set_label_position("left")
+    return fig, a, b
+
+
+def _sharex_overlay_drawn_like_a_twin() -> tuple[Figure, Axes, Axes]:
+    """Decision 14: x axis hidden, only its label on the right."""
+    fig, a, b = _overlay(sharex=True)
+    b.xaxis.set_visible(False)
+    b.yaxis.set_label_position("right")
+    return fig, a, b
+
+
+def _inset_twinx() -> tuple[Figure, Axes, Axes]:
+    fig, host = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    host.plot([0, 1, 2], [1, 3, 2])
+    a = host.inset_axes((0.55, 0.15, 0.35, 0.35))
+    b = a.twinx()
+    a.plot([0, 1, 2], [1, 3, 2])
+    b.plot([0, 1, 2], [30, 10, 20], color="dc.orange6")
+    return fig, a, b
+
+
+def _twin_with_its_x_axis_shown() -> tuple[Figure, Axes, Axes]:
+    fig, a, b = _twin("twinx")
+    b.xaxis.set_visible(True)
+    return fig, a, b
+
+
+def _sharey_overlay_moved_top() -> tuple[Figure, Axes, Axes]:
+    fig, a, b = _overlay(sharey=True)
+    _to_top(b)
+    return fig, a, b
+
+
+def _swapped_twiny() -> tuple[Figure, Axes, Axes]:
+    fig, a, b = _twin("twiny")
+    _to_top(a)
+    b.xaxis.tick_bottom()
+    b.xaxis.set_label_position("bottom")
+    return fig, a, b
+
+
+def _sharey_overlay_drawn_like_a_twiny() -> tuple[Figure, Axes, Axes]:
+    fig, a, b = _overlay(sharey=True)
+    b.yaxis.set_visible(False)
+    b.xaxis.tick_top()
+    return fig, a, b
+
+
+class TestTwinLines:
+    """The twin role is public state; the layout's twin line is expected.
+
+    Before 2-CB the check skipped only matplotlib's native twins and
+    reported every line the layout drew on any other Axes.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _scientific(self) -> None:
+        dm.style.use("scientific")
+
+    @pytest.mark.parametrize(
+        ("build", "owner", "side"),
+        [
+            pytest.param(_sharex_overlay_moved_right, "b", "right", id="11-3"),
+            pytest.param(_swapped_twinx, "a", "right", id="11-4"),
+            pytest.param(
+                _sharex_overlay_drawn_like_a_twin, "b", "right", id="14"
+            ),
+            pytest.param(_inset_twinx, "b", "right", id="inset_twinx"),
+            pytest.param(
+                _twin_with_its_x_axis_shown, "b", "right", id="twin_x_shown"
+            ),
+            pytest.param(_sharey_overlay_moved_top, "b", "top", id="1-A/11-3"),
+            pytest.param(_swapped_twiny, "a", "top", id="1-A/11-4"),
+            pytest.param(
+                _sharey_overlay_drawn_like_a_twiny, "b", "top", id="1-A/14"
+            ),
+        ],
+    )
+    def test_the_layouts_twin_line_is_not_reported(
+        self,
+        build: Callable[[], tuple[Figure, Axes, Axes]],
+        owner: str,
+        side: str,
+    ) -> None:
+        fig, a, b = build()
+        dm.simple_layout(fig)
+        assert (a if owner == "a" else b).spines[side].get_visible()
+        assert _findings(fig) == []
+
+    @pytest.mark.parametrize("preset_shows", [False, True])
+    def test_a_twin_line_hidden_after_the_layout_meets_the_real_preset(
+        self, preset_shows: bool
+    ) -> None:
+        """The record does not ask for the line back: hidden, it is
+        compared with the preset, and the detail and fix say the preset's
+        value."""
+        if preset_shows:
+            dm.style.use("scientific", **{"axes.spines.right": True})
+        fig, a, b = _sharex_overlay_moved_right()
+        dm.simple_layout(fig)
+        assert b.spines["right"].get_visible()
+        b.spines["right"].set_visible(False)
+        findings = _findings(fig)
+        if not preset_shows:
+            assert findings == []  # scientific hides the right spine
+            return
+        (finding,) = findings
+        assert finding.detail == {
+            "axes_index": 1,
+            "property": "spines.right",
+            "preset": True,
+            "figure": False,
+        }
+        assert finding.message == (
+            "Axes 1: the right spine is hidden but the preset shows it; hide "
+            "it only if the user asked."
+        )
+        assert get_fix_suggestions(finding)[1].endswith(
+            "ax.spines['right'].set_visible(True)"
+        )
+
+    def test_frame_off_after_the_layout_meets_the_real_preset(self) -> None:
+        """The undrawn twin line is not asked back; the preset's own left
+        and bottom spines are, as on any Axes with its frame off."""
+        fig, a, b = _sharex_overlay_moved_right()
+        dm.simple_layout(fig)
+        b.set_frame_on(False)
+        findings = _findings(fig)
+        assert [w.detail for w in findings] == [
+            {
+                "axes_index": 1,
+                "property": f"spines.{side}",
+                "preset": True,
+                "figure": False,
+            }
+            for side in ("left", "bottom")
+        ]
+        assert [
+            get_fix_suggestions(w)[1].splitlines()[-1] for w in findings
+        ] == [
+            "ax.spines['left'].set_visible(True)",
+            "ax.spines['bottom'].set_visible(True)",
+        ]
+
+    @pytest.mark.parametrize(
+        ("lay_out", "owner", "side", "index"),
+        [
+            pytest.param(False, "b", "right", 1, id="not_laid_out"),
+            pytest.param(True, "b", "top", 1, id="side_not_settled"),
+            pytest.param(True, "a", "right", 0, id="axes_not_selected"),
+        ],
+    )
+    def test_a_line_the_layout_did_not_settle_is_reported(
+        self, lay_out: bool, owner: str, side: str, index: int
+    ) -> None:
+        fig, a, b = _sharex_overlay_moved_right()
+        if lay_out:
+            dm.simple_layout(fig)
+        (a if owner == "a" else b).spines[side].set_visible(True)
+        (finding,) = _findings(fig)
+        assert finding.detail == {
+            "axes_index": index,
+            "property": f"spines.{side}",
+            "preset": False,
+            "figure": True,
+        }
+        assert finding.message == (
+            f"Axes {index}: the {side} spine is shown but the preset hides "
+            "it; show it only if the user asked."
+        )
+        assert get_fix_suggestions(finding)[1].endswith(
+            f"ax.spines[{side!r}].set_visible(False)"
+        )
+
+    def test_an_axes_in_the_twin_role_is_skipped_whole(self) -> None:
+        """Its grid and background are not compared either (decision 14's
+        overlay, which matplotlib does not call a twin); the parent's are."""
+        fig, a, b = _sharex_overlay_drawn_like_a_twin()
+        dm.simple_layout(fig)
+        b.grid(True, axis="y")
+        b.patch.set_visible(True)
+        b.set_facecolor("#eeeeee")
+        assert _findings(fig) == []
+        a.grid(True, axis="y")
+        assert [
+            (w.detail["axes_index"], w.detail["property"])
+            for w in _findings(fig)
+        ] == [(0, "grid.y")]
+
+    def test_a_twin_out_of_the_role_is_inspected(self) -> None:
+        """A twin whose x axis shows again is compared like any Axes."""
+        fig, a, b = _twin_with_its_x_axis_shown()
+        dm.simple_layout(fig)
+        b.grid(True, axis="y")
+        assert [
+            (w.detail["axes_index"], w.detail["property"])
+            for w in _findings(fig)
+        ] == [(1, "grid.y")]

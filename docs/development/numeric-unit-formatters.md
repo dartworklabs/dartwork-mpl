@@ -85,7 +85,7 @@ Returns: `C: test_return_label_locator_and_limits`.
 | precision, `None` | fewest exact, one count per axis: `0, 0.25M … 1.25M` (G: `millions\|y\|` 0..1.25e+06) | n/a (`decimals=0` default) | same: `−3.0M … 3.0M` (G: `si\|y\|`) | same: `0.5亿` (G: `myriad\|y\|locale='zh'`) | same, no suffix: `0, 0.25 … 1.25` under `(M)` (G: `axis_unit\|y\|ladder='si'`) |
 | precision, `n` | `n` places per value; can repeat: `1.0M ×6` (G: `millions\|y\|decimals=1` 999000..) | `n` places | `unit="max"`: `n` places, own prefix: `800.0`, `1.0k` (G: `si\|y\|decimals=1`); other unit: `n` on every tick (G: `unit='M'`) | `unit="max"`: `n` places, zeros trimmed: `1.2만` (G: `myriad\|y\|decimals=1`) | `n` on every tick: `0.0, 0.7 … 3.4` (G: finance case) |
 | zero | `None`: `0`; `n`: `0.0` bare, never `-0.0M` | `$0`, `0.00€`, never `-$0` (G: `currency\|y\|` -1..1) | `None`: `0`; `n`: `0.0` | `None`: `0`; `n`: exact zero `0`, else sign and currency kept: `-0`, `-$0` | `0` |
-| negative | `None`: U+2212 (`-` when `axes.unicode_minus` is off); `n`: always `-` (G: `ascii minus`) | `-$1,500`, sign before symbol, always `-` | as millions | `None`: `−$300万`; `n`: `-125만` | U+2212 / rc |
+| negative | U+2212 (`-` when `axes.unicode_minus` is off), `decimals=n` too (G: `ascii minus`) | `−$1,500`, sign before symbol, U+2212 / rc | as millions | `None`: `−$300万`; `n`: `−125만` | U+2212 / rc |
 | unit on tick | `suffix`, any text (`bn`, `백만`, `""`) | none | k/M/G/T by `unit` rule | 만/억/조/경; zh 万/亿/兆/京; ja 万/億/兆/京 | none (in label) |
 | currency | none | `symbol` prefix or suffix (any `position` but `"prefix"` is suffix) | none | `currency=` after the sign | none (label template only) |
 | separators | `None`: yes; `n`: no (`1360.0M`) | yes | `None`: yes; `n`: no (`1000.0k`) | yes | yes |
@@ -132,7 +132,8 @@ a dated deprecation would change for callers.
    must be a symbol of a built-in ladder.
 4. **zh / ja myriad ladders.** `ladder="myriad"` is Korean only.
 5. **Per-value text.** `decimals=n` with `unit="max"` (si, myriad): a unit
-   per tick; no separators and hyphen-minus (millions, billions, si);
+   per tick; no separators (millions, billions, si), matplotlib's minus
+   as everywhere (until 2026-11-08 the hyphen-minus; see below);
    myriad's trimmed zeros, whole values under 만 and exact-zero rule. There
    is no per-value mode in `axis_unit`.
 6. **`axis="both"`.** `axis_unit` takes one axis per call.
@@ -151,3 +152,18 @@ merge (`python src/dartwork_mpl/formatting/tests/test_number_formatters_grid.py`
 Regenerate it only for an intended output change, decided by a person and
 named in `CHANGELOG.md`; never to make a failing test pass. The same holds for
 `myriad_decimals_golden.tsv` and the contract test.
+
+### 2026-11-08: the per-value minus (user decision D2, 2-A)
+
+The one intended change so far. The user released D4's "per-value tick text
+unchanged" lock for the minus glyph alone, on the W4 before/after PoC: the
+per-value paths (`decimals=n` of millions, billions, si and myriad, and
+`format_axis_currency` always) now write matplotlib's minus (U+2212 unless
+`axes.unicode_minus` is off), as the axis-wide ticks, the library's numbers
+and `dm.label_bars` already did, so one figure no longer mixes `-$1,500`
+ticks with `−$800` labels. Both golden files were regenerated: 57 lines
+(33 + 24) and 790 characters changed (454 + 336), every one of them U+002D
+to U+2212, two of them a per-value `-inf` with no unit; the `ascii minus`
+entries (`axes.unicode_minus` off) are unchanged. Every other character of
+the per-value output stays as D4 fixed it. The axis-wide paths still print
+a non-finite value as Python's `str` (`-inf`), as before.
