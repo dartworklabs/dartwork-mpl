@@ -489,6 +489,35 @@ def test_clean_beside_transparent_markers():
     assert _found(fig) == []
 
 
+def _second_masked(values):
+    return np.ma.array(values, mask=[False, True])
+
+
+@pytest.mark.parametrize(
+    "masked",
+    [
+        pytest.param({"x": _second_masked([0.1, 0.5])}, id="x"),
+        pytest.param({"y": _second_masked([0.9, 0.5])}, id="y"),
+        pytest.param({"s": _second_masked([200.0, 200.0])}, id="size"),
+        pytest.param(
+            {"c": _second_masked([1.0, 2.0]), "cmap": "viridis"}, id="colour"
+        ),
+        pytest.param({}, id="none"),
+    ],
+)
+def test_masked_scatter_points_are_not_drawn(masked):
+    # scatter draws no marker where x, y, s or c is masked; unmasked, the
+    # marker at (0.5, 0.5) is under the label (the one at (0.1, 0.9) is
+    # far from it).
+    fig, ax = _fig()
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    kw = {"x": [0.1, 0.5], "y": [0.9, 0.5], "s": 200, **masked}
+    ax.scatter(kw.pop("x"), kw.pop("y"), **kw)
+    ax.text(0.5, 0.5, "50", ha="left", va="center", fontsize=20)
+    found = [w.detail["covered"] for w in _found(fig)]
+    assert found == ([] if masked else [["marker"]])
+
+
 def test_reports_only_the_markers_markevery_draws():
     # markevery=3 draws markers at 0, 3, 6, 9: the label beside the bare
     # point 1 is clean, the one beside the marker at 3 is not.

@@ -418,7 +418,11 @@ def _line_markers(
 def _scatter(
     coll: PathCollection, frame: Bbox, fig: Figure, key: int
 ) -> _Markers | None:
-    offsets = np.asarray(coll.get_offsets(), dtype=np.float64).reshape(-1, 2)
+    # A masked x or y (``scatter`` masks both where x, y, s or c is masked)
+    # is not drawn: NaN keeps it out of the plot box below.
+    offsets = np.ma.filled(
+        np.ma.asarray(coll.get_offsets(), dtype=np.float64), np.nan
+    ).reshape(-1, 2)
     sizes = np.asarray(coll.get_sizes(), dtype=np.float64)
     if not len(offsets) or not sizes.size:
         return None
