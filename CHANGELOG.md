@@ -65,15 +65,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   twin Axes included; the detail names the kinds covered, the first artists
   and an example label. The label's glyphs count, not its text box, so a
   label standing on a bar end (whatever its `va`) or beside a line only
-  touches it. Labels inside their own bar (`dm.label_bars(where="inside")`,
-  stack segments) or bubble, labels with a background box, slanted labels,
-  contour labels and an annotation's arrow are left alone, and so are
-  reference lines (`axhline`, `axvline`, `axline`), areas, images and
-  artists drawn without ink. The fix suggestions are `dm.label_bars(ax)`,
+  touches it; a `g`'s or a `p`'s tail counts, a comma's or a parenthesis'
+  does not, and a clipped label counts by what its clip draws. A line
+  counts where it is drawn (not in a dashed line's gaps) and with the
+  markers its `markevery` draws; masked scatter points do not count. Labels
+  inside their own bar (`dm.label_bars(where="inside")`, stack segments) or
+  bubble, labels with a background box, slanted labels, contour labels and
+  an annotation's arrow are left alone, and so are reference lines
+  (`axhline`, `axvline`, `axline`), areas, images and artists drawn without
+  ink. The fix suggestions are `dm.label_bars(ax)`,
   `dm.annotate_value(ax, x, y, text)` and an offset in points. Over the 91
-  docs example scripts it reports four figures, all real: the tier-2
-  boxplot, small multiples, twin axis and waterfall templates, which are
-  not changed here. `dm.label_bars` keeps labels off bars, other labels and
+  docs example scripts (92 figures) it reports three figures, all real: the
+  tier-2 boxplot, small multiples and twin axis templates, which are not
+  changed here. `dm.label_bars` keeps labels off bars, other labels and
   the legend but not off a twin's line, so a bar label under a twin's line
   is reported too.
 
