@@ -23,6 +23,7 @@ from typing import Any, TypeAlias
 from uuid import uuid4
 
 from ._store_fs import (
+    _DIRECTORY_FLAGS,
     _FILE_FLAGS,
     _check_file,
     _descriptor_operations_available,
@@ -797,64 +798,111 @@ class ArtifactStore:
         return result
 
 
-def _unusable_root_reason(root: Path, error: Exception) -> str:
-    """Name what the operator must fix in a root the opened-object walk refused.
-
-    Diagnosis only: the refusal is already decided, and this no-follow ``lstat``
-    pass merely words it, naming the first symlink, non-directory or nonprivate
-    final component. A concurrent change can make the sentence stale, never
-    admit a root. Paths are ``repr``-quoted so the reason stays one line.
-    """
-    final = len(root.parts) - 1
-    for index in range(len(root.parts)):
-        prefix = Path(*root.parts[: index + 1])
-        # The root itself, or the component of it that must be fixed.
-        where = (
-            f"Artifact root {str(root)!r}"
-            if index == final
-            else f"Component {str(prefix)!r} of artifact root {str(root)!r}"
-        )
-        try:
-            info = os.lstat(prefix)
-        except FileNotFoundError:
-            break
-        except OSError as failure:
-            return (
-                f"Cannot inspect {str(prefix)!r} inside {str(prefix.parent)!r} "
-                f"({failure.strerror}); the server user needs read and search "
-                f"permission on every existing directory of {str(root)!r}, or "
-                "set DARTWORK_MPL_ARTIFACT_DIR elsewhere."
-            )
-        if stat.S_ISLNK(info.st_mode):
-            return (
-                f"{where} is a symbolic link; symlinks are refused, so set "
-                "DARTWORK_MPL_ARTIFACT_DIR to the resolved real path instead."
-            )
-        if not stat.S_ISDIR(info.st_mode):
-            return (
-                f"{where} exists but is not a directory; set "
-                "DARTWORK_MPL_ARTIFACT_DIR to a directory path."
-            )
-        if index == final and (
-            info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != 0o700
-        ):
-            fix = (
-                "run 'chmod 700' on it"
-                if info.st_uid == os.geteuid()
-                else f"chown it to uid {os.geteuid()} and run 'chmod 700'"
-            )
-            return (
-                f"Existing artifact root {str(root)!r} is not private: it has "
-                f"owner uid {info.st_uid} and mode "
-                f"{stat.S_IMODE(info.st_mode):04o}, but must be owned by the "
-                f"server user (uid {os.geteuid()}) with mode 0700; {fix}, or "
-                "set DARTWORK_MPL_ARTIFACT_DIR elsewhere."
-            )
+def _unopenable_root_reason(root: Path, error: Exception) -> str:
+    """The fallback sentence when diagnosis cannot name one component."""
     return (
         f"Artifact root {str(root)!r} could not be opened ({str(error)!r}); "
         "the server user needs read and search permission on every existing "
         "directory of it, or set DARTWORK_MPL_ARTIFACT_DIR elsewhere."
     )
+
+
+def _component_reason(
+    root: Path, prefix: Path, info: os.stat_result, *, final: bool
+) -> str | None:
+    """Word what is wrong with one already-inspected component, if anything."""
+    # The root itself, or the component of it that must be fixed.
+    where = (
+        f"Artifact root {str(root)!r}"
+        if final
+        else f"Component {str(prefix)!r} of artifact root {str(root)!r}"
+    )
+    if stat.S_ISLNK(info.st_mode):
+        return (
+            f"{where} is a symbolic link; symlinks are refused, so set "
+            "DARTWORK_MPL_ARTIFACT_DIR to the resolved real path instead."
+        )
+    if not stat.S_ISDIR(info.st_mode):
+        return (
+            f"{where} exists but is not a directory; set "
+            "DARTWORK_MPL_ARTIFACT_DIR to a directory path."
+        )
+    if final and (
+        info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != 0o700
+    ):
+        fix = (
+            "run 'chmod 700' on it"
+            if info.st_uid == os.geteuid()
+            else f"chown it to uid {os.geteuid()} and run 'chmod 700'"
+        )
+        return (
+            f"Existing artifact root {str(root)!r} is not private: it has "
+            f"owner uid {info.st_uid} and mode "
+            f"{stat.S_IMODE(info.st_mode):04o}, but must be owned by the "
+            f"server user (uid {os.geteuid()}) with mode 0700; {fix}, or "
+            "set DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+        )
+    return None
+
+
+def _unusable_root_reason(root: Path, error: Exception) -> str:
+    """Name what the operator must fix in a root the opened-object walk refused.
+
+    Diagnosis only: the refusal is already decided, and this pass merely words
+    it, naming the first symlink, non-directory or nonprivate final component.
+    A concurrent change can make the sentence stale, never admit a root.
+
+    It descends the same way the walk does — each component resolved against a
+    descriptor already held for its parent, and opened ``O_NOFOLLOW`` — so no
+    ancestor can be swapped for a symlink under it. A plain
+    ``os.lstat(prefix)`` per prefix was the first version and read metadata
+    through a replaced ancestor, which named a path outside the configured
+    ancestry in the operator's log.
+    """
+    try:
+        fd = os.open(root.anchor, _DIRECTORY_FLAGS)
+    except OSError:
+        return _unopenable_root_reason(root, error)
+    try:
+        components = root.parts[1:]
+        if not components:
+            reason = _component_reason(root, root, os.fstat(fd), final=True)
+            return reason or _unopenable_root_reason(root, error)
+        for index, component in enumerate(components):
+            final = index == len(components) - 1
+            prefix = Path(root.anchor, *components[: index + 1])
+            try:
+                info = os.stat(component, dir_fd=fd, follow_symlinks=False)
+            except FileNotFoundError:
+                break
+            except OSError as failure:
+                return (
+                    f"Cannot inspect {str(prefix)!r} inside "
+                    f"{str(prefix.parent)!r} ({failure.strerror}); the server "
+                    "user needs read and search permission on every existing "
+                    f"directory of {str(root)!r}, or set "
+                    "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+                )
+            reason = _component_reason(root, prefix, info, final=final)
+            if reason is not None:
+                return reason
+            if final:
+                break
+            try:
+                child = os.open(component, _DIRECTORY_FLAGS, dir_fd=fd)
+            except OSError as failure:
+                return (
+                    f"Cannot inspect {str(prefix)!r} inside "
+                    f"{str(prefix.parent)!r} ({failure.strerror}); the server "
+                    "user needs read and search permission on every existing "
+                    f"directory of {str(root)!r}, or set "
+                    "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+                )
+            os.close(fd)
+            fd = child
+    finally:
+        os.close(fd)
+    return _unopenable_root_reason(root, error)
 
 
 def configure_store(

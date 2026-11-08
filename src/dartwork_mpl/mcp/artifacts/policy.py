@@ -40,7 +40,10 @@ class ConfigurationError:
     ``reason`` is one operator-facing sentence for server stderr and may name
     the configured path. It never reaches the wire, where the error table maps
     the type to a fixed message, and it stays out of ``repr`` and equality so a
-    logged or compared refusal still carries no path.
+    logged or compared refusal still carries no path. Those two flags are not
+    serialization exclusions: ``dataclasses.asdict``, ``astuple`` and
+    ``fields`` still carry ``reason``, so a future client-facing serializer
+    must take the fixed message from the error table rather than this value.
     """
 
     message: str = "Artifact storage configuration is invalid."

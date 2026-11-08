@@ -1,6 +1,5 @@
 """Real disk contracts for private, atomic and restart-readable artifact bundles."""
 
-import errno
 import hashlib
 import json
 import os
@@ -283,34 +282,90 @@ def test_refused_root_reason_covers_owner_host_and_home(
 def test_refused_root_reason_points_at_unreadable_ancestors(
     tmp_path: Path,
 ) -> None:
-    """Unsearchable or unreadable ancestors name the permission to grant."""
+    """An ancestor the walk cannot enter is named, with the permission to grant.
+
+    Neither mode lets the descriptor walk open the ancestor, so the sentence
+    names **that directory** — the one whose mode has to change — rather than
+    the child it could not reach or the raw errno of the failed open.
+    """
     unsearchable = tmp_path / "unsearchable"
     unsearchable.mkdir(mode=0o700)
     unreadable = tmp_path / "unreadable"
     unreadable.mkdir(mode=0o700)
+    # No access at all, and search without read: a directory handle needs
+    # both, so the artifact walk fails either way.
     unsearchable.chmod(0o000)
-    # Search but no read: lstat finds nothing wrong, the no-follow open fails.
     unreadable.chmod(0o300)
     try:
-        assert refusal_reason(str(unsearchable / "artifacts")) == (
-            f"Cannot inspect {str(unsearchable / 'artifacts')!r} inside "
-            f"{str(unsearchable)!r} (Permission denied); the server user "
-            "needs read and search permission on every existing directory "
-            f"of {str(unsearchable / 'artifacts')!r}, or set "
-            "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
-        )
-        root = unreadable / "artifacts"
-        assert refusal_reason(str(root)) == (
-            f"Artifact root {str(root)!r} could not be opened "
-            f"(\"[Errno {errno.EACCES}] Permission denied: 'unreadable'\"); "
-            "the server user needs read and search permission on every "
-            "existing directory of it, or set DARTWORK_MPL_ARTIFACT_DIR "
-            "elsewhere."
-        )
+        for ancestor in (unsearchable, unreadable):
+            assert refusal_reason(str(ancestor / "artifacts")) == (
+                f"Cannot inspect {str(ancestor)!r} inside "
+                f"{str(tmp_path)!r} (Permission denied); the server user "
+                "needs read and search permission on every existing "
+                f"directory of {str(ancestor / 'artifacts')!r}, or set "
+                "DARTWORK_MPL_ARTIFACT_DIR elsewhere."
+            ), ancestor
     finally:
         unsearchable.chmod(0o700)
         unreadable.chmod(0o700)
     assert not (unreadable / "artifacts").exists()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory modes")
+def test_diagnosis_never_reads_through_a_replaced_ancestor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An ancestor swapped mid-diagnosis stops it; it does not redirect it.
+
+    The first version inspected each prefix with a plain ``os.lstat(prefix)``,
+    which does not follow the last component but does follow every ancestor.
+    Replacing one between two of those calls made the sentence describe an
+    object outside the configured ancestry — here a regular file in another
+    directory — and put its path in the operator's log.
+    """
+    ancestry = tmp_path / "ancestor"
+    ancestry.mkdir(mode=0o700)
+    (ancestry / "artifacts").mkdir(mode=0o755)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir(mode=0o700)
+    (elsewhere / "artifacts").write_text("a regular file, not a directory")
+    root = ancestry / "artifacts"
+
+    swapped: list[bool] = []
+
+    def swap_after(inspect: Any) -> Any:
+        """Wrap one inspector so the ancestor is replaced once it is read.
+
+        The name is matched both as the bare component a descriptor-relative
+        call passes and as the whole prefix a path-based call passes — as a
+        string either way, since a path-based call passes a ``Path`` — so this
+        hook fires whichever way the diagnosis walks.
+        """
+
+        def inspected(path: Any, *args: Any, **keywords: Any) -> Any:
+            info = inspect(path, *args, **keywords)
+            if str(path) in ("ancestor", str(ancestry)) and not swapped:
+                swapped.append(True)
+                ancestry.rename(tmp_path / "moved")
+                (tmp_path / "ancestor").symlink_to(
+                    elsewhere, target_is_directory=True
+                )
+            return info
+
+        return inspected
+
+    # Replacing os.stat takes it out of os.supports_dir_fd, which is how the
+    # host check reads support; that check is not what this test is about.
+    monkeypatch.setattr(disk, "_descriptor_operations_available", lambda: True)
+    monkeypatch.setattr(disk.os, "stat", swap_after(disk.os.stat))
+    monkeypatch.setattr(disk.os, "lstat", swap_after(disk.os.lstat))
+    reason = refusal_reason(str(root))
+    assert swapped, "the ancestor was never inspected, so nothing was proven"
+    assert "Cannot inspect" in reason
+    # The swapped-in tree is a file where the root should be; reporting that
+    # would mean the diagnosis had read through the replacement.
+    assert "is not a directory" not in reason
+    assert str(elsewhere) not in reason
 
 
 def test_accepted_roots_still_return_a_store(
