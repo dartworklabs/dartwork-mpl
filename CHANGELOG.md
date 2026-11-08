@@ -73,10 +73,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Without the layout a twin keeps the hidden spine; show it with
   `ax2.spines["right"].set_visible(True)` (`"top"` for a `twiny`). A right
   or top spine you hide before the first `dm.simple_layout` now shows; hide
-  it after the layout, or give it `linewidth=0`. `dm.validate_figure`
-  reports the line on such an overlay or a swapped parent, right or top, as
-  `PRESET_OVERRIDE` (INFO); it is the layout's. The
+  it after the layout, or give it `linewidth=0`. The
   rule: [docs/development/twin-spine-at-layout.md](docs/development/twin-spine-at-layout.md).
+- **`PRESET_OVERRIDE` reads twins from what the figure draws.** It skips an
+  Axes drawn as a twin is (an earlier Axes in its box shares one axis with
+  it and draws that axis), not the Axes matplotlib's `twinx` / `twiny`
+  made, and skips it whole, grid and background included. So a `sharex`
+  overlay with its x axis hidden, and an inset's twin, are now skipped,
+  while a twin whose x axis you show again is now inspected. A right or top
+  spine `dm.simple_layout` showed as a twin's line is not reported while it
+  shows (on a `sharex` overlay or a swapped parent too); hidden after the
+  layout or with the frame off, it is compared with the preset like any
+  spine.
 - **Colour catalogue labels pick their ink by WCAG contrast.** The swatch
   labels in `dm.diagnostics.render_color_catalog` and the docs colour
   tables choose white or

@@ -8,11 +8,25 @@ finding is INFO: keep the change only if the user asked for it.
 Axes whose look legitimately departs from the preset are not inspected:
 hidden Axes and Axes with the axis turned off, non-rectilinear projections
 (polar, 3-D), colorbar Axes, pie and donut Axes (``Axes.pie`` turns the frame
-off itself) and the second and later members of a twin group (``twinx`` /
-``twiny``: the twin draws its own spine and no background). Child Axes from
-``ax.inset_axes`` or ``secondary_xaxis`` are not in ``fig.axes`` and are never
-inspected. A background that is not drawn (invisible patch or frame off) is
-not compared.
+off itself) and an Axes drawn as a twin is (``twinx`` / ``twiny``: the twin
+draws its own spines and no background). Child Axes from ``ax.inset_axes``
+or ``secondary_xaxis`` are not in ``fig.axes`` and are never inspected. A
+background that is not drawn (invisible patch or frame off) is not compared.
+
+The twin is the twin role of :func:`dartwork_mpl.formatting.drawn_like_twin`,
+read from public state: an earlier Axes in the same box shares one axis with
+it and draws that axis. It is not how the Axes was made (matplotlib's private
+twin grouper is not read), so a ``sharex`` overlay with its x axis hidden is
+skipped and a twin whose x axis was shown again is inspected. A skipped Axes
+is skipped whole: its grid and background are not compared either, not only
+its spines.
+
+On an inspected Axes, a right or top spine that ``dm.simple_layout`` settled
+as a twin's scale line (:func:`dartwork_mpl.formatting.settled_twin_spines`)
+and that still shows is the library's line and is not reported. That is the
+record's only use. A spine hidden since, or not drawn because the frame is
+off, is compared with the preset like any other spine, and a spine shown
+without such a layout is reported.
 """
 
 from __future__ import annotations
@@ -24,6 +38,7 @@ import matplotlib as mpl
 import matplotlib.colors as mcolors
 from matplotlib.patches import Wedge
 
+from ...formatting import drawn_like_twin, settled_twin_spines
 from ...style import active_preset_rcparams
 from .._types import Severity, VisualWarning
 from ._detail import AXES, SIDES, Axis, Side, choice, wire
@@ -97,21 +112,7 @@ def _preset_value(preset: Mapping[str, object], key: str) -> object:
     )
 
 
-def _is_twin(ax: Axes, fig_axes: list[Axes]) -> bool:
-    """Whether an earlier Axes of this figure is twinned with ``ax``.
-
-    ``twinx`` / ``twiny`` join the pair in Matplotlib's class-level
-    ``_twinned_axes`` grouper; ``sharex`` / ``sharey`` panels are not joined.
-    """
-    twinned = getattr(ax, "_twinned_axes", None)
-    if twinned is None or ax not in twinned:
-        return False
-    siblings = twinned.get_siblings(ax)
-    index = fig_axes.index(ax)
-    return any(other in siblings for other in fig_axes[:index])
-
-
-def _is_inspected(ax: Axes, fig_axes: list[Axes]) -> bool:
+def _is_inspected(ax: Axes) -> bool:
     """Whether ``ax`` is an ordinary data Axes whose look the preset owns."""
     return (
         ax.get_visible()
@@ -120,7 +121,7 @@ def _is_inspected(ax: Axes, fig_axes: list[Axes]) -> bool:
         and getattr(ax, "_colorbar", None) is None
         and not hasattr(ax, "_colorbar_info")
         and not any(isinstance(patch, Wedge) for patch in ax.patches)
-        and not _is_twin(ax, fig_axes)
+        and not drawn_like_twin(ax)
     )
 
 
@@ -202,15 +203,20 @@ def _grid_findings(
 def _spine_findings(
     ax: Axes, axes_index: int, preset: Mapping[str, object]
 ) -> list[VisualWarning]:
-    """Spines shown or hidden against ``axes.spines.<side>``."""
+    """Spines shown or hidden against ``axes.spines.<side>``.
+
+    A twin scale line the layout settled is not reported while it shows;
+    hidden, it is compared with the preset like any other spine.
+    """
     findings: list[VisualWarning] = []
+    settled = settled_twin_spines(ax)
     for side in SIDES:
         if side not in ax.spines:
             continue
         # Axes.draw skips every spine when the frame is off.
         shown = ax.get_frame_on() and ax.spines[side].get_visible()
         expected = bool(_preset_value(preset, f"axes.spines.{side}"))
-        if shown == expected:
+        if shown == expected or (shown and side in settled):
             continue
         message = (
             f"the {side} spine is shown but the preset hides it; "
@@ -297,9 +303,8 @@ def check_preset_override(
         return []
 
     warnings: list[VisualWarning] = []
-    fig_axes = list(fig.axes)
-    for axes_index, ax in enumerate(fig_axes):
-        if not _is_inspected(ax, fig_axes):
+    for axes_index, ax in enumerate(fig.axes):
+        if not _is_inspected(ax):
             continue
         warnings.extend(_grid_findings(ax, axes_index, preset))
         warnings.extend(_spine_findings(ax, axes_index, preset))

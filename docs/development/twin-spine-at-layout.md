@@ -13,7 +13,8 @@ an independent 0.7 oracle and the full import contract. 2026-11-07 사용자
 결정 14: 대안 (the counterexample pair below: twins keep 0.7's line, an
 overlay drawn like a twin gains one). Re-review the same day: the twin's
 line first no longer depends on the spine's place (n11). 2026-11-08 사용자
-승인 1-A: a `twiny` member's top spine follows the same rule (I3).
+승인 1-A: a `twiny` member's top spine follows the same rule (I3); root
+accepted 2-CB the same day on conditions (see PRESET_OVERRIDE).
 
 ## What import used to do
 
@@ -25,8 +26,8 @@ right spine, so the second scale had no axis line) and
 that width). `twiny`, the parent, colours and backgrounds were not touched.
 Twin colours, bar label host, `place_legend` and outside anchors group Axes
 by position and shared axes, not by this patch; the layout does not measure
-spines. `PRESET_OVERRIDE` skips native twins via the private `_twinned_axes`,
-as before D7.
+spines. `PRESET_OVERRIDE` skipped native twins via the private
+`_twinned_axes` (until 2-CB, below).
 
 ## Decision
 
@@ -130,13 +131,23 @@ and labels stay, the axis line does not. That already held for the twin
 colours, tick formats and bar label settling. Without the layout:
 `ax2.spines["right"].set_visible(True)` (`"top"` for a `twiny`).
 
-## PRESET_OVERRIDE
+## PRESET_OVERRIDE (2-CB, 2026-11-08)
 
-The check is unchanged and still skips native twins. A line the layout shows
-on an Axes that is not a native twin is reported as INFO: the overlay in
-11-3 and in decision 14 (`axes 1, spines.right`), the parent in 11-4
-(`axes 0, spines.right`) and their 1-A mirrors (`spines.top`). It is the
-layout's line, not an override to undo.
+Four contracts stay apart (`_figure_geometry/tests/test_shared_axes_contract.py`):
+shared axes, same position, the native twin (matplotlib's private
+`_twinned_axes`, read only by that test as a control) and the twin role
+(`formatting.drawn_like_twin`: an earlier Axes in the same box, insets
+walked, shares exactly one axis with it and draws that axis). The check
+skips the twin role instead of the native twin, and skips such an Axes
+whole, its grid and background included. The two differ on decision 14's
+overlay (now skipped) and on a twin whose x axis shows again (now
+inspected); an inset's twin is now skipped too. On an inspected Axes a
+right / top spine the layout settled (`settled_twin_spines`) is not reported
+while it shows: the 11-3 overlay, the 11-4 parent and their 1-A mirrors.
+That is the record's only use. Hidden after the layout or with the frame
+off, the spine meets the real preset; a spine shown without the layout, on
+an unsettled side or on an Axes the rule did not select is reported as
+before.
 
 ## Verification (mechanical, in this repository)
 
@@ -155,6 +166,11 @@ layout's line, not an override to undo.
   changed lies within that spine's extent (1-A); the file is not re-recorded.
   The 1-A mirrors and the per-side record are pinned, and so is a scale
   moved onto a shared axis (no line), which killed the last 1-A mutant.
+- `validate/tests/test_preset_override.py` (`TestTwinLines`): the layout's
+  lines give no finding; hidden after the layout, frame off, not laid out,
+  an unsettled side and an unselected Axes give the real preset's detail
+  and restore value; the twin role skips grid and background too. The 12
+  mutants of the check and of `drawn_like_twin` tried in I3 fail.
 - Mutants that survived the review (width overwrite, no box condition, no
   "not y" condition, no "x shared" condition, step inside `format_ticks`,
   inherited rebinding on `Artist` and `FigureBase`) now fail, as do mutants
@@ -174,5 +190,6 @@ never in `__all__`).
 
 ## Open points (not decided here)
 
-- `PRESET_OVERRIDE` still uses `_twinned_axes`; aligning it with the public
-  rule would change root's pinned shared-axes contract test.
+None. The twiny top spine (1-A) and the public twin role in
+`PRESET_OVERRIDE` (2-CB, accepted by root with its conditions) were the two
+open points; both are above.

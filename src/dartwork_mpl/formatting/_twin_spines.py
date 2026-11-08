@@ -54,11 +54,24 @@ and y swapped (see "The top"):
   again. A spine hidden after that layout stays hidden. A spine hidden
   before the first layout cannot be told from the preset's hidden spine
   and shows; hide it after ``dm.simple_layout``, or give it
-  ``linewidth=0``.
+  ``linewidth=0``. :func:`settled_twin_spines` reads the record back.
 * **Only at the layout.** ``ax.twinx()`` and ``ax.twiny()`` themselves are
   matplotlib's: a figure that is not laid out by ``dm.simple_layout`` (or
   whose call is refused, such as a figure without a GridSpec) keeps the
   preset's hidden spine.
+
+Four questions about Axes in one figure are kept apart, and each has its
+own answer:
+
+* **Shared axes** (``_figure_geometry.shared_axes``): which Axes read one
+  scale, from ``sharex`` / ``sharey`` or a twin.
+* **Same position** (``_figure_geometry.same_position_axes``): which Axes are
+  drawn in one box, whatever they share.
+* **Native twin**: which Axes matplotlib made with ``twinx`` / ``twiny``.
+  Only its private ``_twinned_axes`` grouper knows; no library code reads
+  it, and tests read it only as an independent control.
+* **Twin role** (:func:`drawn_like_twin`): which Axes is drawn as a twin is,
+  read from public state. ``PRESET_OVERRIDE`` skips such an Axes.
 """
 
 from __future__ import annotations
@@ -70,10 +83,10 @@ from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 
-from .._figure_geometry import same_position_axes, with_insets
+from .._figure_geometry import same_position_axes, shared_axes, with_insets
 from ._twin_colors import _own_sides, _rectilinear
 
-__all__ = ["show_twin_spines"]
+__all__ = ["drawn_like_twin", "settled_twin_spines", "show_twin_spines"]
 
 TwinSide: TypeAlias = Literal["right", "top"]
 """A side whose spine the layout shows for a twin scale."""
@@ -187,3 +200,52 @@ def show_twin_spines(fig: Figure) -> int:
                     shown += 1
                 setattr(ax, rule.record, True)
     return shown
+
+
+def settled_twin_spines(ax: Axes) -> frozenset[TwinSide]:
+    """The sides of ``ax`` whose spine ``dm.simple_layout`` settled.
+
+    A side is settled when a layout selected ``ax`` for it and showed the
+    spine or found it showing ("Once" in the module docstring). The record
+    says nothing about the spine now: it may have been hidden since, and a
+    later layout leaves it hidden.
+    """
+    return frozenset(
+        side for side, rule in _RULES.items() if getattr(ax, rule.record, False)
+    )
+
+
+def drawn_like_twin(ax: Axes) -> bool:
+    """Whether ``ax`` is drawn as a twin is: the twin role, public state.
+
+    An earlier Axes drawn in the same box (visible and rectilinear; figure
+    order with each Axes followed by its insets, so an inset comes before
+    its ``twinx``) shares exactly one axis with ``ax``, x and not y or y
+    and not x, and ``ax`` does not show that shared axis: the earlier Axes
+    draws it. ``ax.twinx()`` hides the twin's x axis, ``ax.twiny()`` its y
+    axis. An Axes with no such Axes before it in its box, a parent say,
+    does not play the role.
+
+    It is not the native twin (see the module docstring) and differs from
+    it in two ways: a ``sharex`` overlay with its x axis hidden plays the
+    role though ``twinx`` did not make it (decision 14 of the D7 review),
+    and a twin whose x axis was shown again does not play it though
+    ``twinx`` made it.
+    """
+    fig = ax.get_figure(root=True)
+    if fig is None or not _rectilinear(ax):
+        return False
+    order = with_insets(fig.axes)
+    if ax not in order:
+        return False
+    earlier = [
+        m
+        for m in order[: order.index(ax)]
+        if _rectilinear(m) and ax in same_position_axes(m)
+    ]
+    shared_x, shared_y = shared_axes(ax, "x"), shared_axes(ax, "y")
+    return any(
+        (m in shared_x and m not in shared_y and not ax.xaxis.get_visible())
+        or (m in shared_y and m not in shared_x and not ax.yaxis.get_visible())
+        for m in earlier
+    )
