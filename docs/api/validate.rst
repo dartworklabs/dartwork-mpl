@@ -31,11 +31,17 @@ Available Checks
      - Labels from different axes overlap in multi-panel figures
      - WARNING
    * - ``LEGEND_OVERFLOW``
-     - Legends dominate the axes or spill past the figure
+     - Legends dominate the axes, spill past the figure, or sit outside
+       their plot at more than half its size (a figure legend: of the panels)
      - WARNING
    * - ``LEGEND_OVERLAP``
      - A legend covers a title, axis label, tick label or figure-level text
        (suptitle, ``fig.text``)
+     - WARNING
+   * - ``LEGEND_ON_DATA``
+     - A legend (Axes or figure) is drawn over bars, lines or markers of any
+       plot box, over a text inside an Axes, over another legend, or into
+       another panel
      - WARNING
    * - ``TICK_CROWD``
      - Tick labels consume more space than the axis can comfortably hold

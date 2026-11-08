@@ -91,8 +91,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   changed here. `dm.label_bars` keeps labels off bars, other labels and
   the legend but not off a twin's line, so a bar label under a twin's line
   is reported too.
+- **`LEGEND_ON_DATA` check (WARNING): a legend drawn over what the reader
+  reads.** `validate_figure` (and so `save_formats`, `dm.review` and the MCP
+  render report; no MCP tool, schema or name changes) now reports, one
+  warning per legend, every Axes legend and figure legend whose box meets
+  the bars, lines or markers of any plot box (twin Axes included, measured
+  as `VALUE_LABEL_ON_DATA` measures data), a text inside an Axes
+  (`ax.texts`: value labels, annotations, line-end labels), another
+  legend, or another panel's plot box (an Axes legend reaching into its
+  neighbour). Contact up to half a point is a touch. The detail names the
+  legend (`legend_axes`, `None` for a figure legend, and its first
+  entries), the kinds covered, the first artists and the panels whose data
+  it covers. `LEGEND_OVERLAP` still reports titles, axis and tick labels.
+  The fix suggestions are `dm.place_legend(ax)` and, for many lines,
+  `dm.label_line_ends(ax)`.
 
 ### Changed
+
+- **`LEGEND_OVERFLOW` also reports an outside legend larger than half its
+  plot.** A legend beside or above its Axes that stays on the canvas but
+  is more than 50 % of the plot's area (a figure legend: of the panels'
+  area, twins counted once) squeezes the plot when the layout makes room
+  for it; it is now a warning with `outside_ratio` and `threshold` in the
+  detail. The in-axes 30 % rule and the off-canvas rule are unchanged. The
+  first fix suggestion is now `dm.label_line_ends(ax)`.
 
 - **Three advanced templates keep their value labels off the data.** The
   labels `VALUE_LABEL_ON_DATA` reported now sit clear of it in every preset:

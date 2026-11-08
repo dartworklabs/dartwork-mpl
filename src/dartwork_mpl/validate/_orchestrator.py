@@ -91,7 +91,7 @@ def validate_figure(
         Check IDs to run. If None, all registered checks are executed.
         Supported IDs: ``OVERFLOW``, ``OVERLAP``, ``UNIT_DUP``,
         ``CROSS_AXES_OVERLAP``, ``LEGEND_OVERFLOW``, ``LEGEND_OVERLAP``,
-        ``TICK_CROWD``,
+        ``LEGEND_ON_DATA``, ``TICK_CROWD``,
         ``TICK_ROTATION``, ``TICK_DECIMAL``, ``VALUE_LABEL_DECIMAL``,
         ``VALUE_LABEL_ON_DATA``, ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
         ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``.

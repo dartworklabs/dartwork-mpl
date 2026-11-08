@@ -24,6 +24,7 @@ from . import (  # noqa: F401  (imported to register their checks and fixes)
     empty_axes,
     grayscale_safety,
     legend,
+    legend_on_data,
     legend_overlap,
     margin,
     min_font_size,

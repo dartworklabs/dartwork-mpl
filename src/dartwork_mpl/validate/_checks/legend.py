@@ -1,9 +1,10 @@
-"""LEGEND_OVERFLOW: legend that occupies too much of its axes area."""
+"""LEGEND_OVERFLOW: a legend too large for its plot, or one off the canvas."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from ..._figure_geometry import same_position_axes
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -37,7 +38,21 @@ class FigureLegendSpillDetail(TypedDict):
     overflow_px: float
 
 
+class LegendSizeDetail(TypedDict):
+    """A legend outside its plot is ``ratio`` of that plot's area, above ``threshold``.
+
+    ``axes_index`` is ``None`` for a figure legend, measured against the
+    plot boxes of the figure's visible Axes (twins counted once).
+    """
+
+    axes_index: int | None
+    outside_ratio: float
+    threshold: float
+
+
 _THRESHOLD = 0.30  # 30% of axes area
+_OUTSIDE_THRESHOLD = 0.50  # an outside legend half the size of its plot
+_SPILL_PX = 2.0
 
 
 @register_check("LEGEND_OVERFLOW", order=40)
@@ -46,11 +61,14 @@ def check_legend_overflow(
 ) -> list[VisualWarning]:
     """Detect legends that dominate their axes or spill past the figure.
 
-    Two failure modes: (1) an in-axes legend covering too large a
+    Three failure modes: (1) an in-axes legend covering too large a
     fraction of the axes; (2) a legend anchored outside the axes
     (``bbox_to_anchor``) or a figure-level ``fig.legend`` that runs off
     the canvas — the area ratio can't see the latter (its overlap with
-    the axes is ~0), so it is caught by a separate figure-bounds test.
+    the axes is ~0), so it is caught by a separate figure-bounds test;
+    (3) a legend outside the axes that stays on the canvas but is more
+    than half the size of its plot (a figure legend: of the panels), so
+    the layout that makes room for it squeezes the plot.
     """
     warnings: list[VisualWarning] = []
     fig_bbox = fig.bbox
@@ -105,28 +123,52 @@ def check_legend_overflow(
                     ),
                 )
             )
-        else:
-            spill = _overflows_figure(leg_ext)
-            if spill > 2.0:
-                warnings.append(
-                    VisualWarning(
-                        severity=Severity.WARNING,
-                        check_id="LEGEND_OVERFLOW",
-                        message=(
-                            f"Legend on axes[{i}] extends {spill:.0f}px "
-                            f"past the figure edge (anchored outside "
-                            f"the axes)"
-                        ),
-                        detail=wire(
-                            LegendSpillDetail(
-                                axes_index=i, overflow_px=round(spill, 1)
-                            )
-                        ),
-                    )
+            continue
+        spill = _overflows_figure(leg_ext)
+        legend_area = leg_ext.width * leg_ext.height
+        if spill <= _SPILL_PX and legend_area > _OUTSIDE_THRESHOLD * ax_area:
+            outside_ratio = legend_area / ax_area
+            warnings.append(
+                VisualWarning(
+                    severity=Severity.WARNING,
+                    check_id="LEGEND_OVERFLOW",
+                    message=(
+                        f"Legend of axes[{i}] is {outside_ratio:.0%} the size "
+                        f"of its plot (threshold: {_OUTSIDE_THRESHOLD:.0%}); "
+                        "name the lines at their ends, shorten the names or "
+                        "use a larger canvas"
+                    ),
+                    detail=wire(
+                        LegendSizeDetail(
+                            axes_index=i,
+                            outside_ratio=round(float(outside_ratio), 3),
+                            threshold=_OUTSIDE_THRESHOLD,
+                        )
+                    ),
                 )
+            )
+        elif spill > _SPILL_PX:
+            warnings.append(
+                VisualWarning(
+                    severity=Severity.WARNING,
+                    check_id="LEGEND_OVERFLOW",
+                    message=(
+                        f"Legend on axes[{i}] extends {spill:.0f}px "
+                        f"past the figure edge (anchored outside "
+                        f"the axes)"
+                    ),
+                    detail=wire(
+                        LegendSpillDetail(
+                            axes_index=i, overflow_px=round(spill, 1)
+                        )
+                    ),
+                )
+            )
 
     # Figure-level legends (``fig.legend``) never appear via
-    # ``ax.get_legend()``; flag them when they run off the canvas.
+    # ``ax.get_legend()``; flag them when they run off the canvas, or when
+    # they are more than half the size of the panels they serve.
+    panel_area = _panel_area(fig, renderer)
     for legend in fig.legends:
         if not legend.get_visible():
             continue
@@ -135,7 +177,33 @@ def check_legend_overflow(
         except BBOX_ERRORS:
             continue
         spill = _overflows_figure(leg_ext)
-        if spill > 2.0:
+        legend_area = leg_ext.width * leg_ext.height
+        if (
+            spill <= _SPILL_PX
+            and panel_area > 0
+            and legend_area > _OUTSIDE_THRESHOLD * panel_area
+        ):
+            ratio = legend_area / panel_area
+            warnings.append(
+                VisualWarning(
+                    severity=Severity.WARNING,
+                    check_id="LEGEND_OVERFLOW",
+                    message=(
+                        f"Figure legend is {ratio:.0%} the size of the "
+                        f"panels (threshold: {_OUTSIDE_THRESHOLD:.0%}); "
+                        "name the lines at their ends, shorten the names or "
+                        "use a larger canvas"
+                    ),
+                    detail=wire(
+                        LegendSizeDetail(
+                            axes_index=None,
+                            outside_ratio=round(float(ratio), 3),
+                            threshold=_OUTSIDE_THRESHOLD,
+                        )
+                    ),
+                )
+            )
+        if spill > _SPILL_PX:
             warnings.append(
                 VisualWarning(
                     severity=Severity.WARNING,
@@ -155,9 +223,27 @@ def check_legend_overflow(
     return warnings
 
 
+def _panel_area(fig: Figure, renderer: RendererBase) -> float:
+    """Summed plot-box area of the visible Axes, each twin group once."""
+    seen: set[int] = set()
+    area = 0.0
+    for ax in fig.axes:
+        if not ax.get_visible() or id(ax) in seen:
+            continue
+        seen.update(id(owner) for owner in same_position_axes(ax))
+        try:
+            box = ax.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        area += box.width * box.height
+    return area
+
+
 @register_fix("LEGEND_OVERFLOW")
 def _fix_legend_overflow(_warning: VisualWarning) -> list[str]:
     return [
+        "# Many lines: name them at their ends instead of a legend\n"
+        "dm.label_line_ends(ax)\ndm.simple_layout(fig)",
         "# Move legend outside\nax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')",
         "# Reduce legend columns\nax.legend(ncol=1)",
         "# Reduce legend font\nax.legend(fontsize=dm.fs(-2))",
