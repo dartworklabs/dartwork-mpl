@@ -114,7 +114,7 @@ column is the suggestion delivered by
 | `OVERFLOW`           | warning  | Text or axes content extends past the figure edge  | Re-run `dm.simple_layout(fig, margin="3mm")` or shorten the label   |
 | `OVERLAP`            | warning  | Two text labels visually overlap                   | Rotate, abbreviate, or split into multiple panels                   |
 | `UNIT_DUP`           | warning  | Axis label declares a unit also shown on ticks     | Keep the unit in the axis label; use bare numeric tick labels       |
-| `CROSS_AXES_OVERLAP` | warning  | Text labels from different axes overlap            | Re-run `dm.simple_layout(fig)` (it widens `hspace` / `wspace` you did not pass); raise a spacing you passed |
+| `CROSS_AXES_OVERLAP` | warning  | Text labels from different axes overlap            | Re-run `dm.simple_layout(fig)` (it widens `hspace` / `wspace` nobody set); raise a spacing you set |
 | `LEGEND_OVERFLOW`    | warning  | Legend extends past axes / figure edge             | Move legend outside via `bbox_to_anchor` or shrink with `ncols`     |
 | `LEGEND_OVERLAP`     | warning  | A legend covers a title, axis or tick label, or figure text | `dm.place_legend(ax)` (or the side the user named, `loc="above"`), then `dm.simple_layout(fig)` |
 | `TICK_CROWD`         | info     | Tick labels consume too much of the axis span      | Reduce tick density (`MaxNLocator`) or rotate labels                |

@@ -58,7 +58,7 @@ WARNING findings are defects to fix or explain; INFO findings are hints.
 | check_id | Means | Usual fix |
 |---|---|---|
 | `OVERFLOW`, `CLIPPED_TEXT` | text outside the canvas or axes | `dm.simple_layout(fig)` after the last artist; `margin=` |
-| `OVERLAP`, `CROSS_AXES_OVERLAP` | text collides | `dm.simple_layout(fig)` (it widens `hspace`/`wspace` you did not pass); a spacing you passed: raise it |
+| `OVERLAP`, `CROSS_AXES_OVERLAP` | text collides | `dm.simple_layout(fig)` (it widens `hspace`/`wspace` nobody set); a spacing you set: raise it |
 | `TICK_OVERLAP` | neighbouring tick labels overlap after the layout | a rotation you set: remove it and lay out again; else a horizontal bar chart or a wider canvas (the user's call: report it) |
 | `LEGEND_OVERFLOW` | legend too large or off the canvas | fewer columns, outside legend, direct labels |
 | `LEGEND_OVERLAP` | legend covers a title, axis or tick label | `dm.place_legend(ax)` (the side the user named, if any), then `simple_layout` |

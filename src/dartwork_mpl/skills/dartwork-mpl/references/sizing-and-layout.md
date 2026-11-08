@@ -94,14 +94,17 @@ convert: 1920 × 1080 px at 200 DPI is
 It measures tick labels, axis labels, titles, legends and colorbars, then
 sets the outer margins so content meets the canvas edge. Call it once, after
 drawing. Where text still collides it fits the labels: an axis name that
-would run into a neighbouring panel or past the figure wraps at its spaces,
-`wspace` / `hspace` you did not pass grow until neighbouring panels' text
-clears (up to 1.5 cells), and crowded bottom tick labels wrap at their spaces or, when they
-cannot, turn 30, 45 or 90 degrees. Nothing is shortened or made smaller.
-What you set stays: a spacing you pass wins (also when it is too small), and
-labels you rotate or break yourself are left as they are, so leave both out
-unless the user asks. `fit_labels=False` (or `dm.config.fit_labels`) turns
-the fitting off; what still overlaps is reported as `TICK_OVERLAP` or
+runs into another panel or past the figure edge wraps at its spaces,
+`wspace` / `hspace` nobody set grow until neighbouring panels' text clears
+(up to 1.5 cells), and crowded bottom tick labels wrap at their spaces
+(panels sharing x together) or, when they cannot, turn 30, 45 or 90
+degrees; a change that would crush a plot or crowd another axis is taken
+back. Nothing is shortened or made smaller. What you set stays: spacing
+you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also when it is too
+small, and labels you rotate or break yourself are left as they are, so
+leave both out unless the user asks. `fit_labels=False` (or
+`dm.config.fit_labels`) turns the fitting off; tick labels that still
+overlap are reported as `TICK_OVERLAP`, text over another panel's text as
 `CROSS_AXES_OVERLAP`.
 
 - `margin="2mm"` (or `"2%"`, `dm.mm(2)`) adds a uniform buffer.

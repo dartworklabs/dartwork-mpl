@@ -217,8 +217,8 @@ plt.close(fig)
      one that runs into a neighbouring panel or past the figure;
      `dm.wrap_axis_labels(fig)` any other);
    - cramped panels: `dm.simple_layout(fig)` widens the `hspace` / `wspace`
-     the script does not pass; one it passes stays, raised only when the
-     image shows the panels' text colliding.
+     the script does not set; one it sets (`gridspec_kw`, `subplots_adjust`)
+     stays, raised only when the image shows the panels' text colliding.
 3. Keep the preset's fonts, spines and grid, the data, the chart type and
    its axes (no new twin axis or panel), the axis limits, the canvas size,
    text sizes (but for the value labels above) and what the figure already

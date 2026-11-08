@@ -49,7 +49,7 @@ takes `-kr` (`report-kr`); edits keep its language and preset.
   `slide` 16:9, `"16:9"`, a ratio or `"8cm"`. A width alone: a new figure is 4:3; an edit
   keeps the old height in cm.
 - `dm.simple_layout(fig)` after everything is drawn sets outer margins (`margin=0` by default;
-  `"2mm"` adds a buffer), tick numbers and thins crowded date labels; where text collides it wraps axis names and tick labels, widens panel gaps you did not pass and turns tick labels that cannot wrap, so leave rotation and `hspace`/`wspace` to it; `dm.save_formats` keeps the canvas.
+  `"2mm"` adds a buffer), tick numbers and thins crowded date labels; where text collides it wraps axis names and tick labels, widens panel gaps nobody set and turns tick labels that cannot wrap, so leave rotation and `hspace`/`wspace` to it; `dm.save_formats` keeps the canvas.
 - Never `figsize=(w, h)`, `plt.tight_layout()`, `plt.style.use()`, bare
   `fig.savefig()`, `dpi=` on `plt.subplots`, `dm.subplots`/`dm.figure` (removed).
 

@@ -397,29 +397,41 @@ long axis name can leave text overlapping once the margins fit. Then
 `simple_layout` climbs a ladder, each rung only where text overlaps by more
 than half a pixel, easiest first:
 
-1. **Axis names** that would run into a neighbouring panel, or are longer
-   than the figure, wrap at their spaces (at most four lines; a bracketed
-   unit stays whole). A name that only hangs past its own plot stays, and
-   so does one whose lines would take over 35 % of the figure across them
-   (they would crush the plot).
-2. **Panel spacing**: root `wspace` / `hspace` you did not pass grow until
+1. **Axis names** that run into another panel's text or plot, or past the
+   figure edge (a name longer than the figure), wrap at their spaces (at
+   most four lines; a bracketed unit stays whole). A name in nobody's way
+   stays on one line, even when it hangs past its own plot.
+2. **Panel spacing**: root `wspace` / `hspace` nobody set grow until
    neighbouring panels' text clears by half an em, when 1.5 cells or less
    does it; narrower panels would not clear a deeper collision, so it stays.
 3. **Tick labels** under the plot wrap at their spaces, only the ones that
    collide, into at most three lines; a long label beside short ones uses
-   the room they leave.
+   the room they leave. Panels that share x (`sharex=True`) share their
+   tick formatter, so they wrap together, to the narrowest panel's room.
 4. **Rotation**, when a label cannot wrap (one word, a number, more than
-   three lines): the labels turn 30, 45 or 90 degrees, the smallest angle
-   that clears, each label's end at its tick; when none clears, upright if
-   that leaves them overlapping less than flat. Not when turned they would
-   take over 35 % of the figure height.
+   three lines): each panel's bottom labels turn 30, 45 or 90 degrees, the
+   smallest angle that clears, each label's end at its tick; when none
+   clears, upright if that leaves them overlapping less than flat. Not when
+   turned they would take over 35 % of the figure height: names that long
+   belong on a horizontal bar chart, which is the author's call.
+
+After each round the margins are fitted again and the figure is checked:
+a change that left a plot under 30 % of its width or height, or gave any
+axis more overlapping tick labels than before, is taken back and not tried
+again, and the collision it tried to fix stays, reported. (Turned 45
+degrees, `advanced/boxplot` at 9 cm in `presentation` would have squeezed
+its plot to 5 px and crowded its y ticks; it keeps its plot and reports its
+x labels instead.)
 
 Nothing is shortened, hidden or made smaller, and a figure without an
 overlap draws exactly as it would without the ladder. What you set stays:
-tick labels you rotate, break into lines or align off centre, axis names
-with line breaks or mathtext, and spacing you pass. Every call starts from
-the figure as you left it (what an earlier call fitted is undone first), so
-re-laying out at another size fits again.
+tick labels you rotate (top labels too), break into lines or align off
+centre, axis names with line breaks or mathtext, and spacing you set
+(`gridspec_kw`, `fig.add_gridspec(...)`, `fig.subplots_adjust(...)`). Every
+call starts from the figure as you left it (what an earlier call fitted is
+undone first, label by label, where it is still as fitted), so re-laying
+out at another size fits again. `simple_layout(fig, gs=gs,
+use_all_axes=False)` fits and undoes only the Axes of `gs`.
 
 ```python
 dm.simple_layout(fig)                                # every rung (default)
@@ -430,10 +442,13 @@ with dm.config.override(fit_labels=False):           # a block
 ```
 
 What the ladder cannot clear, such as more categories than the axis holds
-even turned upright, or names too long to turn, is left for you:
-`dm.validate_figure` reports it as `TICK_OVERLAP` (WARNING) with the
-choices that are the author's, a horizontal bar chart
-(`dm.figsize_for("barh", n_points=n)`) or a wider canvas.
+even turned upright, or names too long to turn, is left for you.
+`dm.validate_figure` reports tick labels that still overlap as
+`TICK_OVERLAP` (WARNING), with the choices that are the author's: a
+horizontal bar chart (`dm.figsize_for("barh", n_points=n)`) or a wider
+canvas. Text over another panel's text is `CROSS_AXES_OVERLAP`; text that
+reaches into another panel's plot area, and an x label's corner touching a
+y label, are not reported yet.
 
 ### `simple_layout` vs `tight_layout`
 
