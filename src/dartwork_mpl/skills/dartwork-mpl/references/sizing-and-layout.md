@@ -21,6 +21,14 @@ on one axis gives 9 cm; `dual_axis=True`, 4+ series or 13+ points gives
 the kind's aspect. `dm.grid_shape(n)` lays out `n` panels: one row up to
 three, then a near-square grid, wider than tall.
 
+Grouped bars (`n_series` bars side by side in each of `n_points` groups)
+take `"grouped"`: it sizes like `"default"` and also counts the bars, each
+needing its value label's room, so 4 groups of 3 bars get 15.4 cm on a
+slide instead of 11.4 cm, where `dm.label_bars` hid 4 of the 12 values.
+Report widths hold up to 16 / 24 / 32 bars, slides 10 / 15; more take the
+widest, where crowded labels are still hidden and reported. A journal
+column (`scientific`) stays 9 cm.
+
 Slides: a 16:9 slide is 25.4 × 14.29 cm; under a 28 pt title with 1 cm
 margins a chart has 23.4 × 10.5 cm. `presentation` is `scientific` with every
 point size × 2.6 (23.4 / 9 cm: text 19.5 pt, ticks 18.2 pt, lines 2.6 pt), so
@@ -47,6 +55,7 @@ dm.style.use("report")
 quarters, series = ["Q1", "Q2", "Q3", "Q4"], 3
 dm.figsize_for(n_points=len(quarters), n_series=series)  # 12 x 9 cm
 dm.figsize_for("barh", n_points=10, n_series=1)  # 14.5 cm, long labels
+dm.figsize_for("grouped", n_points=9, n_series=3)  # 14.5 cm, 27 bars
 dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
 dm.figsize_for("slide")  # 23.4 x 10.5 cm, under a slide title
 dm.figsize_for("full_slide")  # 25.4 x 14.29 cm, the whole 16:9 slide

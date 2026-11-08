@@ -56,7 +56,7 @@ ax.text(
     -0.4,
     f"Median = {median:.0f}",
     fontsize=dm.fs(-1),
-    color="oc.gray6",
+    color=dm.ensure_contrast("oc.gray6", ax.get_facecolor()),  # 4.5:1 text
     fontstyle="italic",
     ha="left",
     va="bottom",

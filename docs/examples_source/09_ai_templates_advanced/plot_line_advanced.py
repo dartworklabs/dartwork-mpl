@@ -42,7 +42,12 @@ compare_color = dm.color("oc.gray6").to_hex()
 fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(months), n_series=2))
 
 # Event window — the launch quarter as a context band.
-ax.axvspan(launch_idx, launch_idx + 2, alpha=0.12, color="dc.amber4", zorder=0)
+band_color, band_alpha = "dc.amber4", 0.12
+ax.axvspan(
+    launch_idx, launch_idx + 2, alpha=band_alpha, color=band_color, zorder=0
+)
+# Its label reads on the band as drawn: amber darkened to 4.5:1 there.
+band_shown = dm.pseudo_alpha(band_color, band_alpha, ax.get_facecolor())
 ax.text(
     launch_idx + 1,
     max(y_primary.max(), y_compare.max()),
@@ -50,7 +55,7 @@ ax.text(
     ha="center",
     va="top",
     fontsize=dm.fs(-1),
-    color="dc.amber5",
+    color=dm.ensure_contrast("dc.amber5", band_shown),
     fontstyle="italic",
 )
 
@@ -80,7 +85,7 @@ ax.annotate(
     fontsize=dm.fs(-1),
     fontweight=dm.fw(1),
     ha="left",
-    color=primary_color,
+    color=dm.ensure_contrast(primary_color, ax.get_facecolor()),  # 4.5:1 text
     arrowprops={"arrowstyle": "->", "color": primary_color, "lw": 0.5},
 )
 

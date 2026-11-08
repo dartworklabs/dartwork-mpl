@@ -101,7 +101,7 @@ ax.annotate(
     xy=(price[outlier_idx], demand[outlier_idx]),
     xytext=(price[outlier_idx] + 5, demand[outlier_idx] + 25),
     fontsize=dm.fs(-1),
-    color="dc.amber5",
+    color=dm.ensure_contrast("dc.amber5", ax.get_facecolor()),  # 4.5:1 text
     arrowprops={"arrowstyle": "->", "color": "dc.amber5", "lw": 0.5},
 )
 

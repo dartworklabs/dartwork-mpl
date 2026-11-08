@@ -117,6 +117,27 @@ def test_labels_on_the_right_and_top_are_drawn_and_checked():
     assert over and over <= seconds_text, found  # the right / top labels
 
 
+def test_tick_labels_are_counted_bottom_and_left_ones_first():
+    """The checks read labels in ``get_xticklabels`` order, the bottom /
+    left row and then the top / right one: TICK_ROTATION pairs neighbours,
+    and a bottom label next to its own top copy never overlaps."""
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 1])
+    ax.tick_params(axis="x", labeltop=True)
+    ax.tick_params(axis="y", labelright=True)
+    fig.canvas.draw()
+    renderer = get_renderer(fig)
+    for which in ("x", "y"):
+        counted = list(iter_view_ticks(ax, which, renderer))
+        # matplotlib's own order (on a 2D Axes the call moves nothing)
+        own = ax.get_xticklabels() if which == "x" else ax.get_yticklabels()
+        assert len(counted) > 2, which  # precondition: both rows counted
+        assert counted == [label for label in own if label in counted], which
+
+
 def test_a_hidden_label_shifts_nothing():
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     ax.plot([0, 1], [0, 1])
@@ -154,3 +175,256 @@ def test_a_left_panels_right_labels_running_into_the_next_panel():
     left.tick_params(axis="y", labelright=True)
     fig.subplots_adjust(wspace=0.05, left=0.2, right=0.95)
     assert "CROSS_AXES_OVERLAP" in _ids(fig, "CROSS_AXES_OVERLAP")
+
+
+# ── the tick labels of UNIT_DUP, TICK_DECIMAL, TICK_CROWD, LEGEND_OVERLAP
+# and TICK_ROTATION (``iter_view_ticks``) are the drawn ones too ─────────
+
+
+def _texts(labels) -> list[str]:
+    return [label.get_text() for label in labels]
+
+
+def _a_tick_just_above_the_limit():
+    """y ticks 0 ... 1.0 with the limit 0.001 below 1.0: about a third of a
+    pixel, so the label's centre-baseline box still reaches into the view,
+    but matplotlib does not draw it."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 0.99])
+    ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.set_ylim(0, 0.999)
+    fig.canvas.draw()
+    return fig, ax
+
+
+def test_a_tick_label_just_past_the_limit_is_not_counted():
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = _a_tick_just_above_the_limit()
+    counted = _texts(iter_view_ticks(ax, "y", get_renderer(fig)))
+    assert "1.0" not in counted
+    assert counted == _texts(drawn_tick_labels(ax, "y"))
+
+
+def test_a_legend_over_a_tick_label_nobody_sees_is_not_reported():
+    """A figure legend sitting on the undrawn 1.0 above the y labels (the
+    pixels there are blank) covers nothing (I-O2: two such reports)."""
+    fig, ax = _a_tick_just_above_the_limit()
+    # right edge on the plot's left edge, bottom on its top: over the y
+    # label column, just above the plot
+    fig.legend(
+        ["Signal"],
+        loc="lower right",
+        bbox_to_anchor=(0.0, 1.0),
+        bbox_transform=ax.transAxes,
+        borderaxespad=0,
+    )
+    assert _ids(fig, "LEGEND_OVERLAP") == []
+    # the same legend over a label that is drawn is reported
+    ax.set_ylim(0, 1.0)
+    assert _ids(fig, "LEGEND_OVERLAP") == ["LEGEND_OVERLAP"]
+
+
+def test_a_turned_label_at_the_view_edge_is_counted():
+    """The first label sits at the left limit, turned 45 degrees with its
+    end at the tick: its box lies left of the plot, yet matplotlib draws
+    it, so it counts."""
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    names = ["Thermoregulation", "Electrification", "Decarbonisation"]
+    ax.bar(range(3), [1, 2, 3])
+    ax.set_xticks(range(3), names, rotation=45, ha="right")
+    ax.set_xlim(0, 2)
+    fig.canvas.draw()
+    counted = _texts(iter_view_ticks(ax, "x", get_renderer(fig)))
+    assert counted == names
+    assert counted == _texts(drawn_tick_labels(ax, "x"))
+
+
+def test_a_twins_hidden_x_axis_has_no_tick_labels():
+    """``twinx`` hides the second Axes' x axis: its labels sit on the
+    first's, never drawn, and were counted twice (UNIT_DUP, TICK_CROWD and
+    TICK_ROTATION on every twin of the stress set)."""
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.bar(range(4), [1, 2, 3, 4])
+    ax.set_xticks(range(4), ["A", "B", "C", "D"])
+    twin = ax.twinx()
+    twin.plot(range(4), [4, 3, 2, 1])
+    fig.canvas.draw()
+    renderer = get_renderer(fig)
+    assert _texts(iter_view_ticks(ax, "x", renderer)) == ["A", "B", "C", "D"]
+    assert list(iter_view_ticks(twin, "x", renderer)) == []
+
+
+@pytest.mark.parametrize("name", ["polar.py", "advanced/polar.py"])
+def test_a_polar_theta_ring_is_not_a_row_of_labels(name: str) -> None:
+    """TICK_CROWD and TICK_ROTATION share out a straight axis' width; the
+    theta labels around a polar plot have none. On the shipped polar
+    templates in presentation TICK_CROWD measured "8 ticks in 0.00in", and
+    counting every drawn theta label added TICK_ROTATION."""
+    from pathlib import Path
+
+    source = (
+        Path(dm.__file__).parent / "asset/prompt/05-templates" / name
+    ).read_text(encoding="utf-8")
+    ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
+    source = source[: min(i for e in ends if (i := source.find(e)) >= 0)]
+    source = source.replace(
+        'dm.style.use("scientific")', 'dm.style.use("presentation")'
+    )
+    namespace: dict = {}
+    exec(compile(source, name, "exec"), namespace)
+    fig = namespace["fig"]
+    assert fig.axes[0].name == "polar"  # precondition
+    assert _ids(fig, "TICK_CROWD", "TICK_ROTATION") == []
+
+
+# ── 3D: the axes are drawn while ``_axis3don`` is set, not ``axison`` ────────
+
+
+def _a_3d_plot_with_units_on_the_ticks(*, axes_on: bool = True):
+    """The review's figure (PR #658, P2): a 3D line with "kg" on the y tick
+    labels and in the y label."""
+    dm.style.use("report")
+    fig = plt.figure(figsize=dm.figsize("12cm", "standard"))
+    ax = fig.add_subplot(projection="3d")
+    ax.plot([0, 1, 2], [0, 1, 2], [0, 1, 2])
+    ax.set_yticks([0, 1, 2], ["0 kg", "1 kg", "2 kg"])
+    ax.set_ylabel("Mass (kg)")
+    if not axes_on:
+        ax.set_axis_off()
+    fig.canvas.draw()
+    return fig, ax
+
+
+def test_a_3d_plot_draws_its_tick_labels_and_they_are_checked():
+    """Axes3D keeps ``axison`` off and draws its three axes anyway, so its
+    "kg" ticks under "Mass (kg)" write the unit twice, as main reports."""
+    fig, ax = _a_3d_plot_with_units_on_the_ticks()
+    assert not ax.axison  # precondition: the 2D switch reads off
+    assert _texts(drawn_tick_labels(ax, "y")) == ["0 kg", "1 kg", "2 kg"]
+    assert _ids(fig, "UNIT_DUP") == ["UNIT_DUP"]
+
+
+@pytest.mark.parametrize("when", ["before_draw", "after_draw"])
+def test_a_3d_plot_with_its_axes_off_has_nothing_to_check(when: str) -> None:
+    """``set_axis_off`` stops Axes3D drawing its axes, labels and all.
+    Matplotlib keeps that in the private ``_axis3don`` (no public getter);
+    a rename fails here. Turned off before the first draw, the y label never
+    gets a place and sat 34 px below the canvas (OVERFLOW and CLIPPED_TEXT,
+    as on main)."""
+    on, ax = _a_3d_plot_with_units_on_the_ticks()
+    assert _ids(on, "UNIT_DUP") == ["UNIT_DUP"]  # axes on: reported
+    if when == "before_draw":
+        fig, ax = _a_3d_plot_with_units_on_the_ticks(axes_on=False)
+    else:
+        fig = on
+        ax.set_axis_off()
+        fig.canvas.draw()
+    assert hasattr(ax, "_axis3don"), "matplotlib renamed Axes3D._axis3don"
+    assert drawn_tick_labels(ax, "x") == []
+    assert drawn_tick_labels(ax, "y") == []
+    assert dm.validate_figure(fig, quiet=True) == []
+
+
+def test_reading_3d_tick_labels_leaves_them_where_they_are_drawn():
+    """``get_yticklabels`` re-runs matplotlib's 2D tick update, which moves
+    a 3D label off the place its draw gave it ("1 kg" from 981 to 5132 px on
+    a 1417 px canvas). With the y axis hidden (Axes3D draws it anyway) the
+    checks after UNIT_DUP read those places: CLIPPED_TEXT put "1 kg" and
+    "2 kg" thousands of pixels past the canvas."""
+    from dartwork_mpl._figure_geometry import get_renderer
+    from dartwork_mpl.validate._checks._tick_utils import iter_view_ticks
+
+    fig, ax = _a_3d_plot_with_units_on_the_ticks()
+    renderer = get_renderer(fig)
+
+    def places() -> list[tuple[float, ...]]:
+        return [
+            tuple(label.get_window_extent(renderer).bounds)
+            for label in drawn_tick_labels(ax, "y")
+        ]
+
+    drawn = places()
+    counted = _texts(iter_view_ticks(ax, "y", renderer))
+    assert counted == ["0 kg", "1 kg", "2 kg"]
+    assert places() == drawn
+    ax.yaxis.set_visible(False)
+    found = dm.validate_figure(fig, quiet=True)
+    assert [w.check_id for w in found] == ["UNIT_DUP"]
+
+
+def test_an_axis_label_matplotlib_does_not_draw_is_not_checked():
+    """An axis label draws with its axis: after ``ax.axis("off")`` or with
+    the axis hidden it is never drawn, wherever it stands (here three plot
+    widths left of the canvas)."""
+
+    def figure(hide):
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.plot([0, 1], [0, 1])
+        ax.set_ylabel("Signal")
+        ax.yaxis.set_label_coords(-3, 0.5)
+        hide(ax)
+        fig.canvas.draw()
+        return fig
+
+    checks = ("OVERFLOW", "CLIPPED_TEXT")
+    shown = figure(lambda ax: None)
+    assert sorted(_ids(shown, *checks)) == ["CLIPPED_TEXT", "OVERFLOW"]
+    assert _ids(figure(lambda ax: ax.axis("off")), *checks) == []
+    hidden = figure(lambda ax: ax.yaxis.set_visible(False))
+    assert _ids(hidden, *checks) == []
+
+
+@pytest.mark.parametrize("hide_y", [False, True], ids=["shown", "y_hidden"])
+@pytest.mark.parametrize("automargin", [False, True], ids=["full", "margin"])
+def test_3d_tick_labels_are_the_ones_matplotlib_draws(
+    monkeypatch, automargin: bool, hide_y: bool
+) -> None:
+    """Against matplotlib's own drawing: with ``axes3d.automargin`` the
+    sliver it leaves out at each end of the view draws no tick, and Axes3D
+    draws an axis whose ``set_visible(False)`` a 2D Axes would honour."""
+    from matplotlib.text import Text
+
+    drawn: set[int] = set()
+    real_draw = Text.draw
+
+    def spy(self, renderer):
+        if self.get_visible() and self.get_text().strip():
+            drawn.add(id(self))
+        return real_draw(self, renderer)
+
+    monkeypatch.setattr(Text, "draw", spy)
+    matplotlib.rcParams["axes3d.automargin"] = automargin
+    fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+    ax = fig.add_subplot(projection="3d")
+    ax.plot([0, 1, 2], [0, 1, 2], [0, 1, 2])
+    low, high = ax.get_xlim()
+    sliver = (high - low) * 0.019965277777777776  # Axis._update_ticks
+    # one tick just inside the left sliver, one just past it (still inside
+    # matplotlib 3.8's 1/48), one mid-view
+    ax.set_xticks([low + sliver * 0.95, low + sliver * 1.03, 1.0])
+    if hide_y:
+        ax.yaxis.set_visible(False)
+    fig.canvas.draw()
+    for which, axis in (("x", ax.xaxis), ("y", ax.yaxis)):
+        ticks = axis.get_major_ticks()
+        really = [
+            label
+            for tick in ticks
+            for label in (tick.label1, tick.label2)
+            if id(label) in drawn
+        ]
+        named = [
+            label
+            for label in drawn_tick_labels(ax, which)
+            if label.get_text().strip()
+        ]
+        assert really  # precondition: matplotlib draws this axis
+        assert sorted(_texts(named)) == sorted(_texts(really)), which

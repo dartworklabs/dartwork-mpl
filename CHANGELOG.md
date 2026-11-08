@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.figsize_for("grouped", n_points=, n_series=)` for grouped bars.**
+  Grouped bars put `n_series` bars side by side in each of `n_points`
+  groups, and each bar needs its value label's room; `"default"` counts the
+  groups only, so on a slide 4 groups of 3 bars took 11.4 cm and
+  `dm.label_bars` hid 4 of the 12 values (`advanced/bar_grouped` in
+  `presentation`). `"grouped"` sizes like `"default"` and is never
+  narrower; it also takes the narrowest width that holds the
+  `n_points * n_series` labelled bars: report widths 9 / 12 / 14.5 cm hold
+  16 / 24 / 32 bars, slide widths 11.4 / 15.4 cm 10 / 15 (measured with
+  three-digit values at each preset's sizes), more take the widest. A
+  journal column (`scientific`) stays 9 cm, and `"default"` and every other
+  kind are unchanged. The `bar_grouped` and `advanced/bar_grouped`
+  templates (and their docs examples) take it: in `presentation` they are
+  15.4 cm wide instead of 11.4 cm and every value of `advanced/bar_grouped`
+  is shown (4 were hidden); in the other presets they draw as before.
 - **Experimental `dm.label_bars(ax)`: each bar's value on it.** No request,
   its defaults; a request, one keyword. The defaults: `dm.fs(-1)` at
   `dm.fw(1)` in the text colour, 3 pt beyond the bar end; the number printed
@@ -395,6 +410,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   with Agg; margins can move by a few pixels (about 7 px at 200 dpi in one
   cairo case). Figures on a live canvas, of any backend, are measured with
   their own renderer as before.
+- **Twelve advanced templates draw their notes readable.** Reference-line
+  and callout labels in a light accent (`dc.amber5` on white, 1.92:1) now
+  take that accent darkened only as far as text needs, 4.5:1 on what is
+  behind them (`dm.ensure_contrast`, the rule `dm.label_line_ends` uses):
+  bar, bar_horizontal, boxplot, histogram, line, scatter, small_multiples,
+  twin_axis, the pie's leader callout and plot_3d (on its grey floor pane).
+  Numbers on fills take white or black, whichever reads on the fill as
+  drawn (`dm.readable_text_color`): the heatmap's cells and the contour
+  labels (`dm.pseudo_alpha` for the 0.85 fill). The boxplot's baseline
+  label moves below the line's right end, clear of the boxes. The advanced
+  pie is laid out again: on a slide its white shares spilled out of the
+  small wedges (1.24–2.16:1), "Apple" and "Others" touched and "62%" ran
+  into the hole. The leader is now named only by the callout centred in
+  the hole; every other wedge is labelled "name share" at the value-label
+  weight `dm.fw(1)` outside the ring, the pie turned so those labels stack
+  at 3 o'clock (texts 0.56 em or more apart in every preset). Over the 36
+  templates in three presets `TEXT_CONTRAST` reports nothing; other
+  templates and docs figures are byte-identical.
 
 ### Deprecated
 
@@ -431,6 +464,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **The tick checks count the tick labels matplotlib draws.** `UNIT_DUP`,
+  `TICK_DECIMAL`, `TICK_CROWD`, `TICK_ROTATION` and `LEGEND_OVERLAP` read
+  ticks through the same reader as the layout checks: a tick just past the
+  limit and a twin's hidden x axis are no longer counted, and a turned label
+  at the view edge whose box lies outside the plot is. `TICK_CROWD` and
+  `TICK_ROTATION` share out a straight axis' width, so they skip polar and
+  3D Axes (a polar theta ring read "8 ticks in 0.00in"). A 3D Axes' labels
+  count while its axes are on (`set_axis_off` turns them off; `axison` is
+  off on every 3D Axes) and, under `axes3d.automargin`, past the sliver
+  matplotlib leaves out at each end, so `UNIT_DUP` still reports "kg" on
+  both a 3D axis' ticks and its label. `OVERFLOW`, `CLIPPED_TEXT` and
+  `OVERLAP` likewise skip an axis label matplotlib does not draw (after
+  `ax.axis("off")`, on a hidden axis, on a 3D Axes after `set_axis_off`):
+  it stays where it was never drawn, often past the canvas.
 - **A colour name that does not exist now names the closest ones that do.**
   `dm.color("dc.bluee5")` raised `Invalid color name: dc.bluee5. Invalid RGBA
   argument: 'dc.bluee5'` — the value twice and no route to a working call. It
@@ -477,6 +524,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   reported a contrast fault that was not drawn (black on `#1f4e79`,
   2.42:1). A shape that clips now counts only inside its clip box; real
   faults on a bar, or white text off it, are still found.
+- **`TEXT_CONTRAST` reads the background matplotlib paints.** It modelled
+  the background from the Axes' patches by their boxes, so a callout in a
+  donut's hole was read against the wedge whose box held it (1.00:1; drawn
+  on white it is 2.16:1), and every contour label and heatmap value
+  against the bare Axes (white on white, 1.00:1). The check now draws the
+  root figure once more, to an Agg renderer of its own at the figure's
+  DPI, with every text's ink made transparent, and takes the per-channel
+  median of the pixels inside each text's own box (an annotation's words,
+  not its arrow; a 3D Axes' text where it is projected; a transparent
+  figure on white paper). Interpolated and alpha-blended images,
+  overlapping faces, Axes drawing order, clip paths, 3D panes, markers and
+  a text's own box, legend frame or path-effect stroke count as drawn;
+  other texts do not. The caller's canvas is untouched and the colours are
+  restored even when the draw fails; a text with no finite box (a `nan`
+  position) is skipped instead of failing the check. Check id, order,
+  severities and message are unchanged. Over the 36 templates, every text
+  takes the severity its rendered pixels give; over the 91 docs examples
+  and templates the readings that moved (130 texts, chiefly titles on the
+  dark creative examples) all agree with the pixels. The extra draw costs
+  about 60 ms on a template figure (half of `dm.validate_figure`); on
+  figures with thousands of texts or 3D surfaces it is faster than before.
+  `backdrop_layers` (behind `dm.label_bars`' ink) counts a 3D Axes' patch,
+  which has no frame switch.
+- **`PIE_LABEL_OFFSET` leaves labels outside the ring alone.** It held
+  every text ending in `%` on a donut to the middle of the ring, so a
+  wedge's name and share set beside it ("AMD 17%") was reported as an
+  off-centre share. A text past the ring's outer radius is now an outside
+  label; shares inside the ring are checked as before.
 - **Labels fixed by `set_xticklabels` print the right years.**
   `ax.set_xticklabels(ax.get_xticklabels(), rotation=45)` on annual data
   read `2007.5` at 2010 after `dm.simple_layout`: the whole-year locator
