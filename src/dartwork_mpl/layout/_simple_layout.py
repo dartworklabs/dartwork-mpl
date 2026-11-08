@@ -17,7 +17,7 @@ from matplotlib.gridspec import (
 from .._figure_geometry import get_renderer
 from ..units import Length
 from ._content_extent import _axes_content_extent_px
-from ._fit_labels import FitState, fit_round, resolve_steps, restore_fitted
+from ._fit_labels import climb, resolve_steps, restore_fitted
 from ._margins import (
     _GridEdges,
     _LayoutStep,
@@ -45,11 +45,6 @@ _CONVERGE_TOL_PX: float = 0.5
 # corner cases (AutoLocator fixed-points on log scales, subfigures)
 # need up to ~8.
 _MAX_ITER: int = 10
-
-# Most rounds of the label-fitting ladder (``_fit_labels``) per call, each
-# followed by a fresh margin fit: an axis name wraps, the panels part, the
-# tick labels wrap, then turn; one more round finds nothing left to do.
-_FIT_ROUNDS: int = 5
 
 
 def _resolve_gridspec(
@@ -158,20 +153,27 @@ def simple_layout(
     fit_labels : bool | Iterable[str] | None, optional
         What the layout may do when text still collides once the margins
         fit, each step only where text overlaps by more than half a pixel:
-        wrap an axis name that would run into a neighbouring panel or past
-        the figure (``"axis_labels"``), widen the space between panels you
-        did not space yourself (``"space"``), wrap crowded bottom tick
-        labels at their spaces (``"wrap"``) and, when they cannot wrap,
-        turn them 30, 45 or 90 degrees (``"rotate"``) unless turned they
-        would take over 35 % of the figure height. Nothing is shortened,
-        hidden or made smaller, and a figure without a collision draws
-        exactly as without this. ``None`` (the default) reads
+        wrap an axis name that runs into another panel or past the figure
+        edge (``"axis_labels"``), widen the space between panels nobody
+        spaced (``"space"``), wrap crowded bottom tick labels at their
+        spaces (``"wrap"``) and, when they cannot wrap, turn them 30, 45 or
+        90 degrees (``"rotate"``) unless turned they would take over 35 %
+        of the figure height. After each round the margins are fitted again,
+        and a change that crushed a plot (left it under 30 % of its width or
+        height) or added overlapping tick labels anywhere is taken back; the
+        collision it tried to fix is left, and reported. Nothing is
+        shortened, hidden or made smaller, and a figure without a collision
+        draws exactly as without this. ``None`` (the default) reads
         :data:`dartwork_mpl.config.fit_labels` (itself ``True``: every
-        step); ``False`` turns them off; step names allow only those. Tick
-        labels you rotated or broke into lines, axis names with line
-        breaks or mathtext and spacing you passed are left alone, and each
-        call first undoes what an earlier call fitted. The rules are in
-        the docstring of ``dartwork_mpl.layout._fit_labels``.
+        step); ``False`` turns them off; step names (strings) allow only
+        those. Only the Axes this call lays out are fitted
+        (``use_all_axes=False`` keeps to ``gs``; panel spacing then only
+        when ``gs`` is the root grid). Tick labels you rotated or broke into
+        lines (top labels included), axis names with line breaks or
+        mathtext and spacing you set (``gridspec_kw``, ``add_gridspec``,
+        ``fig.subplots_adjust``) are left alone, and each call first undoes
+        what an earlier call fitted where it is still as set. The rules are
+        in the docstring of ``dartwork_mpl.layout._fit_labels``.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -186,7 +188,8 @@ def simple_layout(
         ``fit_labels`` (or ``dm.config.fit_labels``) names an unknown
         step, before the figure is touched.
     TypeError
-        If ``fit_labels`` is neither a bool, ``None`` nor step names.
+        If ``fit_labels`` is neither a bool, ``None`` nor step names, or
+        names a step that is not a string (``bytes`` included).
 
     Notes
     -----
@@ -278,22 +281,6 @@ def simple_layout(
     ):
         raise ValueError("margin must resolve to finite figure fractions")
 
-    # Each call fits from the figure as the caller left it: what an earlier
-    # layout fitted (wraps, rotations, spacing it set) is undone first.
-    restore_fitted(fig)
-
-    # Tick formats change label widths, so they go before fitting, but
-    # after every check that can still refuse the call. Twin spines and
-    # colours follow the tick formats (the order bar labels rely on); they
-    # are not number formats, so ``format_ticks=False`` keeps them. Their
-    # order between themselves does not change the figure: the colours paint
-    # a spine whether it shows or not.
-    if format_ticks:
-        _format_ticks(fig)
-    _show_twin_spines(fig)
-    _color_twins(fig)
-
-    last: _GridEdges | None = None
     # Filter target axes by the gridspec the caller actually pointed at
     # (the *immediate* one), not the root that ``_resolve_gridspec``
     # walks to for ``.update()``. ``ax.get_gridspec()`` returns the
@@ -308,6 +295,30 @@ def simple_layout(
     else:
         requested_gs = fig.axes[0].get_gridspec()
     gs_id = id(requested_gs)
+    # The label ladder fits and restores the same Axes the margins measure.
+    scope = [
+        ax
+        for ax in fig.axes
+        if use_all_axes
+        or (ax.get_gridspec() is not None and id(ax.get_gridspec()) == gs_id)
+    ]
+
+    # Each call fits from the figure as the caller left it: what an earlier
+    # layout fitted (wraps, rotations, spacing it set) is undone first.
+    restore_fitted(fig, scope)
+
+    # Tick formats change label widths, so they go before fitting, but
+    # after every check that can still refuse the call. Twin spines and
+    # colours follow the tick formats (the order bar labels rely on); they
+    # are not number formats, so ``format_ticks=False`` keeps them. Their
+    # order between themselves does not change the figure: the colours paint
+    # a spine whether it shows or not.
+    if format_ticks:
+        _format_ticks(fig)
+    _show_twin_spines(fig)
+    _color_twins(fig)
+
+    last: _GridEdges | None = None
 
     def fit_margins() -> bool:
         """Fit the margins to the content now; ``False``: nothing to measure."""
@@ -327,18 +338,10 @@ def simple_layout(
 
     if fit_margins() and steps:
         # Text that still collides at the fitted size climbs the ladder
-        # (``_fit_labels``), and every change is followed by a fresh margin
-        # fit. A round measures on the draw of the last layout step, which
-        # the converged edges moved by less than ``_CONVERGE_TOL_PX``: a
-        # figure without a collision costs no extra draw.
-        fit_state = FitState()
-        for _round in range(_FIT_ROUNDS):
-            if not fit_round(
-                fig, get_renderer(fig), steps, actual_gs, fit_state
-            ):
-                break
-            if not fit_margins():
-                break
+        # (``_fit_labels.climb``): every change is followed by a fresh
+        # margin fit and kept only if it crushed no plot and added no tick
+        # overlap.
+        climb(fig, steps, actual_gs, scope, fit_margins)
     # The bar labels were settled in each step, so they are reported even
     # when nothing could be measured.
     _report_hidden_bar_labels(fig)

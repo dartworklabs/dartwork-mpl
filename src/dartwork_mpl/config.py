@@ -121,8 +121,8 @@ class Config:
         assign it). A ``fit_labels=`` argument wins per call. A figure laid
         out before gets what it fitted undone on its next
         ``dm.simple_layout``. Unknown step names raise ``ValueError`` where
-        it is read. The rules are in the docstring of
-        ``dartwork_mpl.layout._fit_labels``.
+        it is read, steps that are not strings ``TypeError``. The rules are
+        in the docstring of ``dartwork_mpl.layout._fit_labels``.
     """
 
     adopt_orphan_tick_font: bool = False

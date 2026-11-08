@@ -2,31 +2,32 @@
 
 After the margins converge, ``simple_layout`` looks for text that collides
 and takes the steps below, each only where text collides and only on what
-nobody set by hand; whatever a round changed, the margins are fitted again
-and the next round looks again (at most ``_FIT_ROUNDS`` rounds):
+nobody set by hand. A round's changes are kept only if, once the margins
+are fitted again, no plot lost more than ``1 - _MIN_PLOT_SHARE`` of its
+width or height and no axis has more overlapping tick labels than before
+(:func:`climb`); otherwise the round is taken back, its changes are tried
+one at a time, and those that do harm are dropped for the rest of the call.
+At most ``_FIT_ROUNDS`` rounds:
 
 ``axis_labels``
-    An axis name longer than its side of the plot wraps at its spaces into
-    as few lines as fit (at most ``_MAX_NAME_LINES``) when it would run
-    into a neighbour (a panel beside an x name, above or below a y name)
-    or past the figure (longer than the figure is wide / tall, where it
-    pushes the margins until the plot collapses). A name that only hangs
-    past its own plot, inside the figure, stays: wrapping a y name costs
-    a line of width. So does a name whose lines would take more than
-    ``_MAX_TEXT_SHARE`` of the figure across them (an x name's height, a y
-    name's width): they would crush the plot. A bracketed unit stays whole,
-    the lines are as even as the words allow, and nothing but an existing
-    space becomes a break.
+    An axis name longer than its side of the plot that overlaps (by more
+    than ``_TOUCH_PX``) a neighbouring panel's text or plot, or runs past
+    the figure edge (a name longer than the figure, which pushes the
+    margins until the plot collapses), wraps at its spaces into as few
+    lines as fit (at most ``_MAX_NAME_LINES``). A name in nobody's way
+    stays, and lines that would crush the plot are taken back by the check
+    after the round. A bracketed unit stays whole, the lines are as even as
+    the words allow, and nothing but an existing space becomes a break.
 ``space``
     The root GridSpec's ``wspace`` / ``hspace`` grow where the content of
     neighbouring panels (tick labels, axis names, titles, colorbars,
     outside legends) reaches into the other panel's: to the deepest reach
     plus ``_TARGET_EM`` (of the rc font size), never smaller than they are.
     A collision that would need more than ``_MAX_GAP_FRACTION`` of a cell is
-    left as it is (narrower panels would not clear it) and reported as
-    ``CROSS_AXES_OVERLAP``. Only spacing nobody passed:
-    ``gridspec_kw={"hspace": ...}`` and ``fig.add_gridspec(hspace=...)``
-    stay.
+    left as it is (narrower panels would not clear it). Only spacing nobody
+    set: ``gridspec_kw={"hspace": ...}``, ``fig.add_gridspec(hspace=...)``
+    and ``fig.subplots_adjust(hspace=...)`` (any figure spacing other than
+    the rc default) stay.
 ``wrap``
     Bottom tick labels that collide with a neighbour wrap at their spaces,
     each into the fewest lines (at most ``_MAX_TICK_LINES``) that keep it
@@ -35,16 +36,15 @@ and the next round looks again (at most ``_FIT_ROUNDS`` rounds):
     need it wrap.
 ``rotate``
     When a label cannot wrap narrow enough (no space to break at, a number,
-    too long for three lines), the labels turn 30, 45 or 90 degrees in
-    their original one-line form: the smallest angle at which neighbours
-    clear (:func:`smallest_angle`), with matplotlib's ``"xtick"`` rotation
-    mode, which puts each label's end at its tick. When no angle clears,
-    90 degrees, but only if the labels then overlap less than flat (long
-    names, not two short numbers on a squeezed axis). Not when the turned
-    labels would take more than ``_MAX_TEXT_SHARE`` of the figure height:
-    names that long belong on a horizontal bar chart, which is the
-    author's choice, so they stay as they are and ``dm.validate_figure``
-    reports ``TICK_OVERLAP``.
+    too long for three lines), the bottom labels turn 30, 45 or 90 degrees
+    in their original one-line form: the smallest angle at which
+    neighbours clear (:func:`smallest_angle`), with matplotlib's
+    ``"xtick"`` rotation mode, which puts each label's end at its tick.
+    When no angle clears, 90 degrees, but only if the labels then overlap
+    less than flat (long names, not two short numbers on a squeezed axis).
+    Not when the turned labels would take more than ``_MAX_TEXT_SHARE`` of
+    the figure height: names that long belong on a horizontal bar chart,
+    which is the author's choice.
 
 Nothing is shortened, hidden or made smaller. Text collides when it
 overlaps by more than ``_TOUCH_PX`` (half a display pixel); text that only
@@ -52,16 +52,24 @@ comes close stays, so a figure without a collision draws exactly as it
 would without this module. Within one call the ladder only climbs: a
 rotation never turns back into a wrap and an angle never shrinks.
 
+What is left is the author's. Tick labels that still overlap are reported
+by ``TICK_OVERLAP`` and text over another panel's text by
+``CROSS_AXES_OVERLAP``; text reaching into another panel's plot area, or
+an x label's corner touching a y label, is not reported yet.
+
 What you set wins and is left alone: tick labels you rotated, wrote with
-line breaks or aligned other than centred, mathtext labels, axis names
-with line breaks or mathtext, ``wspace`` / ``hspace`` you passed. What
-this module set is recorded, and each ``simple_layout`` call first undoes
-it where it is still as set (:func:`restore_fitted`), so a re-layout at
-another size fits from the figure as you left it and ``fit_labels=False``
-gives that figure back; a formatter, rotation, name or spacing changed
-since is yours and stays. Polar, 3D and other non-rectilinear Axes are
-not fitted, and nor are the labels of a vertical axis (crowded rows of a
-horizontal bar chart need a taller canvas, which is the author's call).
+line breaks or aligned other than centred (bottom and top labels alike,
+since only the bottom ones are turned), mathtext labels, axis names with
+line breaks or mathtext, spacing you set. What this module set is recorded
+per artist, and each ``simple_layout`` call first undoes it where it is
+still as set (:func:`restore_fitted`), so a re-layout at another size fits
+from the figure as you left it and ``fit_labels=False`` gives that figure
+back; a formatter, label rotation, name or spacing changed since is yours
+and stays. Only the Axes the call lays out are fitted and restored
+(``use_all_axes=False`` keeps to the GridSpec passed). Polar, 3D and other
+non-rectilinear Axes are not fitted, and nor are the labels of a vertical
+axis (crowded rows of a horizontal bar chart need a taller canvas, which
+is the author's call).
 """
 
 from __future__ import annotations
@@ -70,7 +78,7 @@ import math
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 from weakref import WeakKeyDictionary
 
 import matplotlib as mpl
@@ -78,7 +86,12 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 from matplotlib.ticker import Formatter
 
-from .._figure_geometry import drawn_tick_labels
+from .._figure_geometry import (
+    drawn_tick_labels,
+    get_renderer,
+    same_position_axes,
+    tick_label_overlaps,
+)
 from ._content_extent import _axes_content_extent_px
 
 if TYPE_CHECKING:
@@ -102,9 +115,16 @@ _MAX_NAME_LINES = 4
 # Largest wspace / hspace ``space`` sets (a fraction of the mean cell); a
 # collision that needs more is left as it is.
 _MAX_GAP_FRACTION = 1.5
-# Most of the figure, across the text, that turned tick labels or a wrapped
-# axis name may take.
+# Most of the figure height turned tick labels may take.
 _MAX_TEXT_SHARE = 0.35
+# Least of its width and of its height a plot keeps through one round.
+# Measured (I-O1 follow-up): the 169 rounds the stress corpus and the shipped
+# templates (native size, and squeezed to 9 cm) keep held at least 0.39 of
+# each plot side; the one that crushed a plot (advanced/boxplot turned 45
+# degrees at 9 cm in presentation) kept 0.01-0.22, by the margin asked.
+_MIN_PLOT_SHARE = 0.3
+# Most fitting rounds per call, each followed by a fresh margin fit.
+_FIT_ROUNDS = 5
 
 
 def resolve_steps(fit_labels: bool | Iterable[str] | None) -> frozenset[str]:
@@ -112,8 +132,9 @@ def resolve_steps(fit_labels: bool | Iterable[str] | None) -> frozenset[str]:
 
     ``None`` reads :data:`dartwork_mpl.config.fit_labels`; ``True`` is every
     step, ``False`` none, a string or an iterable of strings names the
-    steps. Unknown names raise ``ValueError``, any other value
-    ``TypeError``.
+    steps. A value that is neither, or a step that is not a string
+    (``bytes`` included), raises ``TypeError``; an unknown step name
+    ``ValueError``.
     """
     if fit_labels is None:
         from ..config import config
@@ -125,18 +146,26 @@ def resolve_steps(fit_labels: bool | Iterable[str] | None) -> frozenset[str]:
         return frozenset()
     if isinstance(fit_labels, str):
         fit_labels = (fit_labels,)
-    if not isinstance(fit_labels, Iterable):
+    if isinstance(fit_labels, (bytes, bytearray)) or not isinstance(
+        fit_labels, Iterable
+    ):
         raise TypeError(
             "fit_labels must be True, False or step names; got "
             f"{type(fit_labels).__name__}"
         )
-    chosen = frozenset(fit_labels)
-    unknown = sorted(map(str, chosen - set(STEPS)))
+    chosen = tuple(fit_labels)
+    for step in chosen:
+        if not isinstance(step, str):
+            raise TypeError(
+                "fit_labels step names must be str; got "
+                f"{type(step).__name__} {step!r}"
+            )
+    unknown = sorted(set(chosen) - set(STEPS))
     if unknown:
         raise ValueError(
             f"fit_labels: unknown step(s) {unknown}; known: {list(STEPS)}"
         )
-    return chosen
+    return frozenset(chosen)
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -144,16 +173,23 @@ def resolve_steps(fit_labels: bool | Iterable[str] | None) -> frozenset[str]:
 # ─────────────────────────────────────────────────────────────────────
 
 
+_RotationMode: TypeAlias = Literal["default", "anchor", "xtick", "ytick"]
+
+
 @dataclass(frozen=True)
-class _Turn:
-    """A rotation this module set on an axis' tick labels."""
+class _Turned:
+    """A tick label this module turned: the angle it set, its state before."""
 
     angle: float
-    mode_before: str
+    rotation: float
+    mode: _RotationMode
 
 
-# axis -> the rotation this module set on its tick labels
-_TURNED: WeakKeyDictionary[Axis, _Turn] = WeakKeyDictionary()
+# tick label Text -> the turn this module set on it
+_TURNED: WeakKeyDictionary[Text, _Turned] = WeakKeyDictionary()
+# axis -> the turn of its first label (for ticks matplotlib adds later,
+# which copy the first tick's angle)
+_TURNED_AXES: WeakKeyDictionary[Axis, _Turned] = WeakKeyDictionary()
 # axis label Text -> (text before wrapping, wrapped text)
 _NAMES: WeakKeyDictionary[Text, tuple[str, str]] = WeakKeyDictionary()
 # GridSpec -> {"wspace" / "hspace": the value this module set}
@@ -205,30 +241,42 @@ def _unwrap(axis: Axis, wrapper: WrappedTickFormatter) -> None:
     axis.isDefault_majfmt = wrapper.base_default
 
 
-def restore_fitted(fig: Figure) -> None:
-    """Undo what earlier layouts of ``fig`` fitted, where it is still as set.
+def _set_turn(label: Text, rotation: float, mode: _RotationMode) -> None:
+    label.set_rotation(rotation)
+    label.set_rotation_mode(mode)
 
-    A formatter, rotation, axis name or spacing changed since (by you) is
-    yours and stays; its record is dropped.
+
+def _turn_now(label: Text) -> tuple[float, _RotationMode]:
+    return float(label.get_rotation()), label.get_rotation_mode()
+
+
+def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
+    """Undo what earlier layouts fitted on ``axes`` (default: all of
+    ``fig``'s), where it is still as set.
+
+    A formatter, tick label rotation, axis name or spacing changed since
+    (by you) is yours and stays; its record is dropped.
     """
-    for ax in fig.axes:
+    chosen = list(fig.axes if axes is None else axes)
+    for ax in chosen:
         for axis in (ax.xaxis, ax.yaxis):
             fmt = axis.get_major_formatter()
             if isinstance(fmt, WrappedTickFormatter):
                 _unwrap(axis, fmt)
-            turn = _TURNED.pop(axis, None)
-            if turn is not None and {
-                (float(t.label1.get_rotation()), t.label1.get_rotation_mode())
-                for t in axis.get_major_ticks()
-            } == {(turn.angle, "xtick")}:
-                axis.set_tick_params(
-                    labelrotation=0, labelrotation_mode=turn.mode_before
-                )
+            first = _TURNED_AXES.pop(axis, None)
+            for tick in axis.get_major_ticks():
+                label = tick.label1
+                turn = _TURNED.pop(label, None) or first
+                if turn is not None and _turn_now(label) == (
+                    turn.angle,
+                    "xtick",
+                ):
+                    _set_turn(label, turn.rotation, turn.mode)
         for label in (ax.xaxis.label, ax.yaxis.label):
             record = _NAMES.pop(label, None)
             if record is not None and label.get_text() == record[1]:
                 label.set_text(record[0])
-    for gs in {g for ax in fig.axes if (g := _root_gridspec(ax)) is not None}:
+    for gs in {g for ax in chosen if (g := _root_gridspec(ax)) is not None}:
         for key, value in _GAPS.pop(gs, {}).items():
             if getattr(gs, key) == value:
                 gs.update(**{key: None})
@@ -373,10 +421,29 @@ def gap_fraction(need_px: float, total_px: float, n: int) -> float | None:
     return need_px * n / room
 
 
+def box_overlap_px(
+    a: tuple[float, float, float, float], b: tuple[float, float, float, float]
+) -> float:
+    """How deep two ``(x0, x1, y0, y1)`` boxes cross (<= 0: apart)."""
+    return min(
+        min(a[1], b[1]) - max(a[0], b[0]), min(a[3], b[3]) - max(a[2], b[2])
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────
-# One fitting round (measures on the last draw; the caller re-fits the
-# margins after any change)
+# The climb: rounds of changes, each kept only if it harmed nothing
 # ─────────────────────────────────────────────────────────────────────
+
+#: What a change touched: ``(rung, id of the artist or grid it changed)``.
+Key: TypeAlias = tuple[str, int]
+
+
+@dataclass(frozen=True)
+class _Change:
+    """One change a rung made, and how to take it back."""
+
+    key: Key
+    undo: Callable[[], None]
 
 
 @dataclass
@@ -385,6 +452,117 @@ class FitState:
 
     turned: dict[int, float] = field(default_factory=dict)  # id(axis) -> angle
     wrapped: set[int] = field(default_factory=set)  # id(axis)
+    rejected: set[Key] = field(default_factory=set)  # changes that did harm
+    only: frozenset[Key] | None = None  # while trying changes one at a time
+
+    def allows(self, key: Key) -> bool:
+        return key not in self.rejected and (
+            self.only is None or key in self.only
+        )
+
+
+@dataclass(frozen=True)
+class _Health:
+    """What a round may not make worse: plot sizes, overlapping tick labels."""
+
+    plots: dict[int, tuple[float, float]]  # id(ax) -> (width, height) px
+    overlaps: dict[tuple[int, str], int]  # (id(ax), "x" / "y") -> pairs
+
+
+def _health(axes: Sequence[Axes], renderer: RendererBase) -> _Health:
+    plots: dict[int, tuple[float, float]] = {}
+    overlaps: dict[tuple[int, str], int] = {}
+    for ax in axes:
+        if not ax.get_visible():
+            continue
+        box = ax.get_window_extent(renderer)
+        plots[id(ax)] = (float(box.width), float(box.height))
+        if _cartesian(ax):
+            for which in ("x", "y"):
+                overlaps[(id(ax), which)] = tick_label_overlaps(
+                    ax, which, renderer
+                ).pairs
+    return _Health(plots, overlaps)
+
+
+def _harmed(before: _Health, after: _Health) -> bool:
+    """Whether a plot was crushed or an axis gained overlapping tick labels."""
+    for key, (w, h) in before.plots.items():
+        w_now, h_now = after.plots.get(key, (w, h))
+        if w_now < _MIN_PLOT_SHARE * w or h_now < _MIN_PLOT_SHARE * h:
+            return True
+    return any(
+        pairs > before.overlaps.get(key, 0)
+        for key, pairs in after.overlaps.items()
+    )
+
+
+def _undo(changes: Sequence[_Change]) -> None:
+    for change in reversed(changes):
+        change.undo()
+
+
+def climb(
+    fig: Figure,
+    steps: frozenset[str],
+    grid: GridSpec,
+    axes: Sequence[Axes],
+    refit: Callable[[], bool],
+) -> None:
+    """Climb the ladder on ``axes`` of ``fig`` until nothing collides that it
+    can clear.
+
+    ``grid`` is the root GridSpec the margins are fitted on, whose
+    ``wspace`` / ``hspace`` ``space`` may grow between the panels of
+    ``axes`` (only Axes in different cells of it face each other, so a
+    layout of one nested grid never parts anything). ``refit`` fits the margins
+    again and returns ``False`` when nothing can be measured. Each round
+    measures on the draw of the last layout step, which the converged edges
+    moved by less than the solver's tolerance, so a figure without a
+    collision costs no extra draw. A round that harmed a plot or an axis
+    (:func:`_harmed`) is taken back, with the grid's edges as they were
+    before it, and its changes are tried one at a time; a change that does
+    harm on its own is taken back the same way and not tried again in this
+    call.
+    """
+    state = FitState()
+
+    def attempt(only: Key | None) -> bool | None:
+        """One round (or one change of it); ``None``: nothing was measurable."""
+        before = _health(axes, get_renderer(fig))
+        edges = {side: getattr(grid, side) for side in _EDGES}
+        state.only = None if only is None else frozenset({only})
+        try:
+            changes = fit_round(
+                fig, get_renderer(fig), steps, grid, axes, state
+            )
+        finally:
+            state.only = None
+        if not changes:
+            return False
+        if not refit():
+            return None
+        if not _harmed(before, _health(axes, get_renderer(fig))):
+            return True
+        _undo(changes)
+        grid.update(**edges)
+        if not refit():
+            return None
+        if only is not None:
+            state.rejected.add(only)
+            return True
+        for change in changes:
+            if attempt(change.key) is None:
+                return None
+        return True
+
+    for _round in range(_FIT_ROUNDS):
+        if not attempt(None):
+            return
+
+
+# The GridSpec edges the margin fit sets, restored with a round taken back.
+_EDGES = ("left", "right", "bottom", "top")
 
 
 def fit_round(
@@ -392,19 +570,19 @@ def fit_round(
     renderer: RendererBase,
     steps: frozenset[str],
     gs: GridSpec,
+    axes: Sequence[Axes],
     state: FitState,
-) -> bool:
-    """Take every step that has a collision to fix now; return whether any did."""
-    changed = False
+) -> list[_Change]:
+    """Take every step that has a collision to fix now; return the changes."""
+    changes: list[_Change] = []
     if "axis_labels" in steps:
-        changed |= _fit_axis_names(fig, renderer)
+        changes += _fit_axis_names(fig, renderer, axes, state)
     if "space" in steps:
-        changed |= _fit_panel_gaps(fig, renderer, gs)
+        changes += _fit_panel_gaps(fig, renderer, gs, axes, state)
     if steps & {"wrap", "rotate"}:
-        for ax in fig.axes:
-            if _cartesian(ax):
-                changed |= _fit_x_ticks(ax, renderer, steps, state)
-    return changed
+        for group in _shared_x_groups(axes):
+            changes += _fit_x_ticks(group, renderer, steps, state)
+    return changes
 
 
 def _width_of(
@@ -439,21 +617,21 @@ def _root_gridspec(ax: Axes) -> GridSpec | None:
 # ── axis_labels ──────────────────────────────────────────────────────
 
 
-def _fit_axis_names(fig: Figure, renderer: RendererBase) -> bool:
-    changed = False
-    for ax in fig.axes:
+def _fit_axis_names(
+    fig: Figure, renderer: RendererBase, axes: Sequence[Axes], state: FitState
+) -> list[_Change]:
+    changes: list[_Change] = []
+    for ax in axes:
         if not _cartesian(ax):
             continue
         frame = ax.get_window_extent(renderer)
-        # along: the figure side the name runs along; across: the other
-        for axis, span, beside, along, across in (
-            (ax.xaxis, frame.width, "row", fig.bbox.width, fig.bbox.height),
-            (ax.yaxis, frame.height, "col", fig.bbox.height, fig.bbox.width),
-        ):
+        for axis, span in ((ax.xaxis, frame.width), (ax.yaxis, frame.height)):
             label = axis.label
             text = label.get_text()
+            key: Key = ("axis_labels", id(label))
             if (
                 span <= 0
+                or not state.allows(key)
                 or not axis.get_visible()
                 or not label.get_visible()
                 or not text.strip()
@@ -463,11 +641,8 @@ def _fit_axis_names(fig: Figure, renderer: RendererBase) -> bool:
             ):
                 continue
             width = _width_of(renderer, label.get_fontproperties())
-            length = width(text)
-            if length <= span:
+            if width(text) <= span or not _in_the_way(label, ax, fig, renderer):
                 continue
-            if length <= along and not _has_neighbour(ax, fig, beside):
-                continue  # hangs past its plot, but nothing is in its way
             wrapped = wrap_to(text, span, width, _MAX_NAME_LINES)
             if wrapped is None:
                 words = tokens(text)
@@ -476,43 +651,41 @@ def _fit_axis_names(fig: Figure, renderer: RendererBase) -> bool:
                 wrapped = "\n".join(
                     balanced_lines(words, _MAX_NAME_LINES, width)[0]
                 )
-            if _depth(label, wrapped, renderer, fig) > _MAX_TEXT_SHARE * across:
-                continue  # the lines would crush the plot: left (reported)
             _NAMES[label] = (text, wrapped)
             label.set_text(wrapped)
-            changed = True
-    return changed
+
+            def undo(label: Text = label, text: str = text) -> None:
+                label.set_text(text)
+                _NAMES.pop(label, None)
+
+            changes.append(_Change(key, undo))
+    return changes
 
 
-def _depth(
-    label: Text, text: str, renderer: RendererBase, fig: Figure
-) -> float:
-    """How far ``text`` set like ``label`` reaches across its lines (px)."""
-    probe = Text(0, 0, text)
-    probe.update_from(label)
-    probe.set_rotation(0)
-    probe.set_figure(fig)
-    return float(probe.get_window_extent(renderer).height)
+def _in_the_way(
+    label: Text, ax: Axes, fig: Figure, renderer: RendererBase
+) -> bool:
+    """Whether an axis name runs past the figure or into another panel.
 
-
-def _has_neighbour(ax: Axes, fig: Figure, along: str) -> bool:
-    """Whether another panel of ``ax``'s grid shares its row (``"row"``:
-    one sits left or right of it) or its column (``"col"``: above or below)."""
-    gs = _root_gridspec(ax)
-    if gs is None:
-        return False
-    mine = ax.get_subplotspec().get_topmost_subplotspec()  # type: ignore[union-attr]
+    Another panel is the content of any other visible Axes (its text and
+    plot, :func:`_axes_content_extent_px`), not one drawn in the same place
+    (a twin); both by more than ``_TOUCH_PX``.
+    """
+    box = label.get_window_extent(renderer)
+    name = (box.x0, box.x1, box.y0, box.y1)
+    if (
+        -name[0] > _TOUCH_PX
+        or name[1] - fig.bbox.width > _TOUCH_PX
+        or -name[2] > _TOUCH_PX
+        or name[3] - fig.bbox.height > _TOUCH_PX
+    ):
+        return True
+    here = {id(a) for a in same_position_axes(ax)} | {id(ax)}
     for other in fig.axes:
-        if (
-            other is ax
-            or not other.get_visible()
-            or _root_gridspec(other) is not gs
-        ):
+        if id(other) in here or not other.get_visible():
             continue
-        spec = other.get_subplotspec().get_topmost_subplotspec()  # type: ignore[union-attr]
-        rows = set(spec.rowspan) & set(mine.rowspan)
-        cols = set(spec.colspan) & set(mine.colspan)
-        if (rows and not cols) if along == "row" else (cols and not rows):
+        extent = _axes_content_extent_px(other, renderer, fig)
+        if extent is not None and box_overlap_px(name, extent) > _TOUCH_PX:
             return True
     return False
 
@@ -556,22 +729,46 @@ def _deepest_reach(reaches: Sequence[_Reach], seps: Sequence[float]) -> float:
     return need
 
 
-def _fit_panel_gaps(fig: Figure, renderer: RendererBase, gs: GridSpec) -> bool:
+def _spacing_is_free(fig: Figure, gs: GridSpec, key: str) -> bool:
+    """Whether nobody set ``gs``'s ``wspace`` / ``hspace`` but this module.
+
+    The grid's own value (``gridspec_kw``, ``add_gridspec``) is set unless
+    this module set it; when it is unset the figure's applies, which is
+    set when it differs from the rc default (``fig.subplots_adjust``).
+    """
+    value = getattr(gs, key)
+    if value is not None:
+        return bool(_GAPS.get(gs, {}).get(key) == value)
+    default = (
+        mpl.rcParams["figure.subplot.wspace"]
+        if key == "wspace"
+        else mpl.rcParams["figure.subplot.hspace"]
+    )
+    return bool(getattr(fig.subplotpars, key) == default)
+
+
+def _fit_panel_gaps(
+    fig: Figure,
+    renderer: RendererBase,
+    gs: GridSpec,
+    axes: Sequence[Axes],
+    state: FitState,
+) -> list[_Change]:
     """Grow the ``wspace`` / ``hspace`` of ``gs`` where panel content meets."""
     nrows, ncols = gs.get_geometry()
-    ours = _GAPS.get(gs, {})
     free = {
         key: n > 1
-        and (getattr(gs, key) is None or ours.get(key) == getattr(gs, key))
+        and state.allows(("space_" + key, id(gs)))
+        and _spacing_is_free(fig, gs, key)
         for key, n in (("wspace", ncols), ("hspace", nrows))
     }
     if not any(free.values()):
-        return False
+        return []
     bottoms, tops, lefts, rights = gs.get_grid_positions(fig)
     fw, fh = fig.bbox.width, fig.bbox.height
     across_cols: list[_Reach] = []
     across_rows: list[_Reach] = []
-    for ax in fig.axes:
+    for ax in axes:
         if _root_gridspec(ax) is not gs:
             continue
         extent = _axes_content_extent_px(ax, renderer, fig)
@@ -598,7 +795,7 @@ def _fit_panel_gaps(fig: Figure, renderer: RendererBase, gs: GridSpec) -> bool:
         )
     em = float(mpl.rcParams["font.size"]) * fig.dpi / 72.0
     params = gs.get_subplot_params(fig)
-    changed = False
+    changes: list[_Change] = []
     for key, n, reaches, seps, total in (
         (
             "wspace",
@@ -622,118 +819,258 @@ def _fit_panel_gaps(fig: Figure, renderer: RendererBase, gs: GridSpec) -> bool:
             continue
         gap = gap_fraction(need + _TARGET_EM * em, total, n)
         if gap is None or gap > _MAX_GAP_FRACTION:
-            continue  # parting them would take more: left as is, and reported
-        if gap > getattr(params, key) + 1e-6:
-            gs.update(**{key: gap})
-            _GAPS.setdefault(gs, {})[key] = gap
-            changed = True
-    return changed
+            continue  # parting them would take more: left as it is
+        if gap <= getattr(params, key) + 1e-6:
+            continue
+        before = getattr(gs, key)
+        gs.update(**{key: gap})
+        _GAPS.setdefault(gs, {})[key] = gap
+
+        def undo(key: str = key, before: float | None = before) -> None:
+            gs.update(**{key: before})
+            if before is None:
+                _GAPS.get(gs, {}).pop(key, None)
+            else:
+                _GAPS.setdefault(gs, {})[key] = before
+
+        changes.append(_Change(("space_" + key, id(gs)), undo))
+    return changes
 
 
 # ── wrap / rotate ────────────────────────────────────────────────────
 
 
-def _fit_x_ticks(
-    ax: Axes, renderer: RendererBase, steps: frozenset[str], state: FitState
-) -> bool:
-    """Wrap or turn the bottom tick labels of ``ax`` that collide."""
+def _shared_x_groups(axes: Sequence[Axes]) -> list[list[Axes]]:
+    """The fitted Axes grouped by shared x axis, in figure order.
+
+    Axes that share x (``sharex=True``, a twin) share the tick formatter,
+    so their labels wrap together; each still turns its own labels.
+    """
+    groups: list[list[Axes]] = []
+    seen: set[int] = set()
+    fitted = [ax for ax in axes if _cartesian(ax)]
+    for ax in fitted:
+        if id(ax) in seen:
+            continue
+        siblings = {id(a) for a in ax.get_shared_x_axes().get_siblings(ax)}
+        group = [a for a in fitted if id(a) in siblings]
+        seen.update(id(a) for a in group)
+        groups.append(group)
+    return groups
+
+
+@dataclass(frozen=True)
+class _Row:
+    """The bottom tick labels of one Axes as the ladder reads them.
+
+    ``texts`` (as the axis' own formatter writes them), ``widths`` (one
+    line, px) and ``gaps`` between neighbouring centres run left to right.
+    ``yours``: a rotation (not this call's), an alignment other than
+    centred, line breaks or mathtext set by hand.
+    """
+
+    ax: Axes
+    texts: list[str]
+    widths: list[float]
+    gaps: list[float]
+    clearance: float
+    line_height: float
+    yours: bool
+    width: Callable[[str], float]
+
+    @property
+    def collides(self) -> bool:
+        return any(
+            (self.widths[i] + self.widths[i + 1]) / 2 - gap > _TOUCH_PX
+            for i, gap in enumerate(self.gaps)
+        )
+
+
+def _read_row(
+    ax: Axes,
+    renderer: RendererBase,
+    wrapper: WrappedTickFormatter | None,
+    state: FitState,
+) -> _Row | None:
     axis = ax.xaxis
-    key = id(axis)
     bottom = {id(t.label1) for t in axis.get_major_ticks()}
     labels = [
         t
         for t in drawn_tick_labels(ax, "x")
         if id(t) in bottom and t.get_text().strip()
     ]
-    if len(labels) < 2:
-        return False
-    fmt = axis.get_major_formatter()
-    wrapper = fmt if isinstance(fmt, WrappedTickFormatter) else None
+    fig = ax.get_figure(root=True)
+    if len(labels) < 2 or fig is None:
+        return None
     unwrap = {v: k for k, v in wrapper.lines.items()} if wrapper else {}
     texts = [unwrap.get(t.get_text(), t.get_text()) for t in labels]
-    angle_now = state.turned.get(key)
-    if angle_now is None and (
-        {float(t.get_rotation()) for t in labels} != {0.0}
-        or {t.get_horizontalalignment() for t in labels} != {"center"}
-    ):
-        return False  # your rotation or alignment
-    if any("\n" in t or "$" in t for t in texts):
-        return False  # your line breaks, or mathtext
     centres = [
         float(t.get_transform().transform(t.get_position())[0]) for t in labels
     ]
     order = sorted(range(len(labels)), key=centres.__getitem__)
-    texts = [texts[i] for i in order]
     gaps = [centres[b] - centres[a] for a, b in pairwise(order)]
     if min(gaps) <= 0:
-        return False
-    fig = ax.get_figure(root=True)
-    if fig is None:
-        return False
+        return None
+    yours = any("\n" in t or "$" in t for t in texts) or (
+        id(axis) not in state.turned
+        and (
+            {float(t.get_rotation()) for t in labels} != {0.0}
+            or {t.get_horizontalalignment() for t in labels} != {"center"}
+        )
+    )
+    texts = [texts[i] for i in order]
     font = labels[0].get_fontproperties()
     width = _width_of(renderer, font)
-    widths = [width(t) for t in texts]
-    clearance = _TARGET_EM * float(labels[0].get_fontsize()) * fig.dpi / 72.0
-    if angle_now is None:
-        collide = any(
-            (widths[i] + widths[i + 1]) / 2 - gap > _TOUCH_PX
-            for i, gap in enumerate(gaps)
-        )
-        if wrapper is None and not collide:
-            return False
-        if "wrap" in steps:
-            lines = _wrap_lines(texts, widths, gaps, width, clearance)
-            if lines is not None:
-                return _set_wrap(axis, fmt, wrapper, lines, state)
-        if "rotate" not in steps:
-            return False
-    _w, line_h, _d = renderer.get_text_width_height_descent(
+    _w, line_height, _d = renderer.get_text_width_height_descent(
         "Ag", font, ismath=False
     )
+    return _Row(
+        ax=ax,
+        texts=texts,
+        widths=[max(map(width, t.split("\n"))) for t in texts],
+        gaps=gaps,
+        clearance=_TARGET_EM * float(labels[0].get_fontsize()) * fig.dpi / 72.0,
+        line_height=float(line_height),
+        yours=yours,
+        width=width,
+    )
+
+
+def _fit_x_ticks(
+    group: Sequence[Axes],
+    renderer: RendererBase,
+    steps: frozenset[str],
+    state: FitState,
+) -> list[_Change]:
+    """Wrap (together) or turn (each) the bottom tick labels of Axes that
+    share x and collide."""
+    axis = group[0].xaxis  # the group's formatter is set through this axis
+    fmt = axis.get_major_formatter()
+    wrapper = fmt if isinstance(fmt, WrappedTickFormatter) else None
+    rows = [
+        row
+        for ax in group
+        if (row := _read_row(ax, renderer, wrapper, state)) is not None
+    ]
+    if not rows:
+        return []
+    turned = any(id(row.ax.xaxis) in state.turned for row in rows)
+    if (
+        not turned
+        and (wrapper is not None or any(r.collides for r in rows))
+        and "wrap" in steps
+        and state.allows(("wrap", id(axis)))
+        and not any(row.yours for row in rows)
+    ):
+        lines = _wrap_lines(rows)
+        if lines is not None:
+            return _set_wrap(axis, fmt, wrapper, lines, state)
+    if "rotate" not in steps:
+        return []
+    changes: list[_Change] = []
+    for row in rows:
+        angle = _turn_angle(row, state)
+        if angle is None:
+            continue
+        unwrapped: list[_Change] = []
+        if wrapper is not None:
+            # Turned labels are one line: the group's wraps come off with
+            # the first turn, and come back if that turn is taken back.
+            unwrapped = _set_wrap(axis, fmt, wrapper, {}, state)
+            wrapper = None
+        changes += _set_turn_on(row.ax, angle, state, unwrapped)
+    return changes
+
+
+def _turn_angle(row: _Row, state: FitState) -> float | None:
+    """The angle ``row``'s labels turn to now, or ``None`` (they stay)."""
+    key = id(row.ax.xaxis)
+    angle_now = state.turned.get(key)
+    if not state.allows(("rotate", key)):
+        return None
+    if angle_now is None and (row.yours or not row.collides):
+        return None
+    fig = row.ax.get_figure(root=True)
+    if fig is None:
+        return None
     angle = smallest_angle(
-        min(gaps), float(line_h), clearance, start=angle_now or 0.0
+        min(row.gaps), row.line_height, row.clearance, start=angle_now or 0.0
     )
     if angle is None:
         # No angle clears. Upright gives the most room, and is worth it only
         # when it leaves neighbours overlapping less than they do flat (long
         # names, not a pair of short numbers on a squeezed axis).
         flat = max(
-            (widths[i] + widths[i + 1]) / 2 - gap for i, gap in enumerate(gaps)
+            (row.widths[i] + row.widths[i + 1]) / 2 - gap
+            for i, gap in enumerate(row.gaps)
         )
-        if float(line_h) - min(gaps) >= flat:
-            return False
+        if row.line_height - min(row.gaps) >= flat:
+            return None
         angle = 90.0
     if angle_now is not None and angle <= angle_now:
-        return False
+        return None
     turn = math.radians(angle)
-    height = max(widths) * math.sin(turn) + float(line_h) * math.cos(turn)
+    height = max(row.widths) * math.sin(turn) + row.line_height * math.cos(turn)
     if height > _MAX_TEXT_SHARE * fig.bbox.height:
-        return False  # too long to turn: left for the author (TICK_OVERLAP)
-    if wrapper is not None:
-        _unwrap(axis, wrapper)
-        state.wrapped.discard(key)
-    if axis not in _TURNED:
-        mode = labels[0].get_rotation_mode()
-        _TURNED[axis] = _Turn(angle, mode)
-    else:
-        _TURNED[axis] = _Turn(angle, _TURNED[axis].mode_before)
-    ax.tick_params(axis="x", labelrotation=angle, labelrotation_mode="xtick")
+        return None  # too long to turn: left for the author (TICK_OVERLAP)
+    return angle
+
+
+def _set_turn_on(
+    ax: Axes, angle: float, state: FitState, unwrapped: list[_Change]
+) -> list[_Change]:
+    """Turn the bottom labels of ``ax`` (only those: the top labels stay as
+    they are), recording each label's state before; ``unwrapped`` (the
+    group's wraps taken off for it) comes back with the turn."""
+    axis = ax.xaxis
+    key = id(axis)
+    labels = [tick.label1 for tick in axis.get_major_ticks()]
+    before = [(label, _turn_now(label), _TURNED.get(label)) for label in labels]
+    axis_before = _TURNED_AXES.get(axis)
+    angle_before = state.turned.get(key)
+    for label, (rotation, mode), record in before:
+        first = record or _Turned(angle, rotation, mode)
+        _TURNED[label] = _Turned(angle, first.rotation, first.mode)
+        _set_turn(label, angle, "xtick")
+    _TURNED_AXES[axis] = _TURNED[labels[0]]
     state.turned[key] = angle
-    return True
+
+    def undo() -> None:
+        for label, (rotation, mode), record in before:
+            _set_turn(label, rotation, mode)
+            if record is None:
+                _TURNED.pop(label, None)
+            else:
+                _TURNED[label] = record
+        if axis_before is None:
+            _TURNED_AXES.pop(axis, None)
+        else:
+            _TURNED_AXES[axis] = axis_before
+        if angle_before is None:
+            state.turned.pop(key, None)
+        else:
+            state.turned[key] = angle_before
+        _undo(unwrapped)
+
+    return [_Change(("rotate", key), undo)]
 
 
-def _wrap_lines(
-    texts: Sequence[str],
-    widths: Sequence[float],
-    gaps: Sequence[float],
-    width: Callable[[str], float],
-    clearance: float,
-) -> dict[str, str] | None:
-    """The wrapped text of each label that needs it; ``None`` when one cannot wrap."""
+def _wrap_lines(rows: Sequence[_Row]) -> dict[str, str] | None:
+    """The wrapped text of each label that needs it, for every Axes of a
+    shared axis at once; ``None`` when one cannot wrap.
+
+    A label wraps to the tightest limit any Axes sets it (each one's
+    neighbours and fair shares, :func:`wrap_limit`).
+    """
+    limits: dict[str, float] = {}
+    for row in rows:
+        for i, text in enumerate(row.texts):
+            limit = wrap_limit(i, row.widths, row.gaps, row.clearance)
+            limits[text] = min(limits.get(text, math.inf), limit)
+    width = rows[0].width
     lines: dict[str, str] = {}
-    for i, text in enumerate(texts):
-        limit = wrap_limit(i, widths, gaps, clearance)
-        if widths[i] <= limit:
+    for text, limit in limits.items():
+        if width(text) <= limit:
             continue
         if not any(ch.isalpha() for ch in text):
             return None  # a number turns rather than breaks
@@ -750,10 +1087,12 @@ def _set_wrap(
     wrapper: WrappedTickFormatter | None,
     lines: dict[str, str],
     state: FitState,
-) -> bool:
-    """Put ``lines`` on the axis (none: its own formatter); whether that changed it."""
+) -> list[_Change]:
+    """Put ``lines`` on the (shared) formatter of ``axis`` (none: its own)."""
     if lines == (wrapper.lines if wrapper is not None else {}):
-        return False
+        return []
+    key = id(axis)
+    before = (fmt, axis.isDefault_majfmt, key in state.wrapped)
     if wrapper is not None:
         _unwrap(axis, wrapper)
         fmt = wrapper.base
@@ -761,7 +1100,17 @@ def _set_wrap(
         axis.set_major_formatter(
             WrappedTickFormatter(fmt, lines, axis.isDefault_majfmt)
         )
-        state.wrapped.add(id(axis))
+        state.wrapped.add(key)
     else:
-        state.wrapped.discard(id(axis))
-    return True
+        state.wrapped.discard(key)
+
+    def undo() -> None:
+        formatter, default, wrapped = before
+        axis.set_major_formatter(formatter)
+        axis.isDefault_majfmt = default
+        if wrapped:
+            state.wrapped.add(key)
+        else:
+            state.wrapped.discard(key)
+
+    return [_Change(("wrap", key), undo)]
