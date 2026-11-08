@@ -52,6 +52,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Lint rule `twin-legend-hand-merge` (info): a twin pair's legends merged
   by hand (`ax.legend(h1 + h2, l1 + l2)`, or `lns = l1 + l2` then
   `ax.legend(lns, labs)`) points to `dm.place_legend(ax)`.
+- Lint rule `ticklabel-format-default-before-layout` (info): an
+  `ax.ticklabel_format(...)` / `plt.ticklabel_format(...)` call that asks
+  only for matplotlib's defaults (`style="sci"`, `useOffset=True`,
+  `scilimits=(-5, 6)`) in the source before `dm.simple_layout`. matplotlib
+  records nothing for such a request, so the library's ticks stay
+  (`0.5M`; a year axis under a narrowed rc keeps `14 … 24`). The message
+  names the paths that work in either order (`ScalarFormatter()` first,
+  `dm.format_axis_year(ax)` first, a non-default value such as
+  `scilimits=(0, 0)`) and asks for the layout again after a late request.
+  Source order only, up to the first `dm.simple_layout` in the source;
+  `**kwargs` and requested values given as names are not read.
 - `dm.label_bars(..., sign="+")`: a positive value that does not print as
   zero carries `+` where a negative one carries the minus (`+30`, `−15`,
   `+$800`, `+1.2k`, `+33.0 GWh` through `fmt="{} GWh"`); zero prints `0`.
@@ -196,6 +207,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **The layout guide no longer loses the `1e6` multiplier.**
+  `docs/usage_guide/layout.md` advised calling `ax.ticklabel_format(...)`
+  after the layout; that applies the request, but its offset text (`1e6`)
+  has no room and is drawn above the figure, so `0.0 … 3.0` reads without
+  its multiplier. The guide now gives the paths that work in either order
+  (`ScalarFormatter()` first, `dm.format_axis_year(ax)` first, a
+  non-default value) and, for a late request, `dm.simple_layout(fig)`
+  again, with an example whose multiplier stays on the canvas.
 - **`TEXT_CONTRAST` reads a shape only where it is drawn.** A bar past the
   axes limit is drawn up to the axes edge, but `dm.validate_figure` read
   text beyond the limit (a bar's value there) against the whole bar and

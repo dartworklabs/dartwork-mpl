@@ -399,6 +399,151 @@ def _literal_names(syntax: _Syntax, rule: Rule) -> Iterator[int]:
         yield from _literal_name_offsets(syntax, detector.check)
 
 
+_MPL_DEFAULT_REQUEST: Mapping[str, tuple[object, ...]] = MappingProxyType(
+    {
+        "style": ("sci", "scientific"),
+        "useOffset": (True,),
+        "scilimits": ((-5, 6),),
+        "useMathText": (False,),
+        "useLocale": (False,),
+    }
+)
+"""``ticklabel_format`` values a fresh ``ScalarFormatter`` already holds
+(matplotlib's rc defaults): asking for them changes no attribute."""
+
+
+def _asks_only_defaults(call: ast.Call) -> bool:
+    """Every keyword but ``axis`` a literal default, and at least one."""
+    asked = False
+    for keyword in call.keywords:
+        if keyword.arg is None:  # **kwargs: the source cannot tell
+            return False
+        if keyword.arg == "axis":
+            continue
+        try:
+            value = ast.literal_eval(keyword.value)
+        except (ValueError, TypeError, SyntaxError):
+            return False
+        if isinstance(value, list):
+            value = tuple(value)
+        if value not in _MPL_DEFAULT_REQUEST.get(keyword.arg, ()):
+            return False
+        asked = True
+    return asked and not call.args
+
+
+def _callee_name(func: ast.expr) -> str:
+    """The called name: ``f`` for ``f(...)``, ``attr`` for ``x.attr(...)``."""
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return ""
+
+
+def _literal_axis(call: ast.Call, position: int, default: str) -> str | None:
+    """The ``axis`` a call targets (``"x"``, ``"y"`` or ``"both"``), from its
+    keyword or its ``position``-th argument; ``None`` when the source cannot
+    tell."""
+    node: ast.expr | None = None
+    for keyword in call.keywords:
+        if keyword.arg == "axis":
+            node = keyword.value
+        elif keyword.arg is None:
+            return None
+    if node is None and len(call.args) > position:
+        node = call.args[position]
+    if node is None:
+        return default
+    try:
+        value = ast.literal_eval(node)
+    except (ValueError, TypeError, SyntaxError):
+        return None
+    return value if value in ("x", "y", "both") else None
+
+
+def _directions(axis: str) -> tuple[str, ...]:
+    return ("x", "y") if axis == "both" else (axis,)
+
+
+def _prepared_axes(syntax: _Syntax) -> dict[tuple[str, str], int]:
+    """Axis directions given an order-independent formatter, keyed by the
+    Axes' source text and ``"x"``/``"y"``, at the earliest offset.
+
+    ``ax.yaxis.set_major_formatter(ScalarFormatter(...))`` prepares ``y``;
+    ``dm.format_axis_year(ax, axis=...)`` prepares its axis (``"x"`` by
+    default). A later default ``ticklabel_format`` request on a prepared
+    direction holds through the layout, so the advisory must not repeat
+    its own cure; another direction of the same Axes is not covered.
+    """
+    prepared: dict[tuple[str, str], int] = {}
+
+    def mark(receiver: ast.expr, directions: tuple[str, ...], at: int) -> None:
+        for direction in directions:
+            key = (ast.unparse(receiver), direction)
+            prepared[key] = min(at, prepared.get(key, at))
+
+    for node in ast.walk(syntax.tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        at = syntax.span(node)[0]
+        if (
+            isinstance(func, ast.Attribute)
+            and func.attr == "set_major_formatter"
+            and isinstance(func.value, ast.Attribute)
+            and func.value.attr in {"xaxis", "yaxis"}
+            and node.args
+            and isinstance(node.args[0], ast.Call)
+            and _callee_name(node.args[0].func) == "ScalarFormatter"
+        ):
+            mark(func.value.value, (func.value.attr[0],), at)
+        elif _callee_name(func) == "format_axis_year" and node.args:
+            axis = _literal_axis(node, 1, "x")
+            if axis is not None:
+                mark(node.args[0], _directions(axis), at)
+    return prepared
+
+
+def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
+    """``ax.ticklabel_format(style="sci")`` asking only for defaults before
+    any ``dm.simple_layout`` in the source (source order, not run order).
+
+    Quiet when every direction the request targets was given an explicit
+    ``ScalarFormatter`` or ``dm.format_axis_year`` earlier on the same Axes,
+    and for a request made after a layout (matplotlib applies it; running
+    the layout again, as the guide says, keeps its multiplier on the
+    canvas)."""
+    sites = list(_call_sites(syntax))
+    layouts = [
+        site.start
+        for site in sites
+        if site.kind == "dm" and site.method == "simple_layout"
+    ]
+    if not layouts:
+        return
+    first = min(layouts)
+    prepared = _prepared_axes(syntax)
+    for site in sites:
+        if (
+            site.native
+            and site.kind in {"axes", "pyplot"}
+            and site.method == "ticklabel_format"
+            and isinstance(site.node.func, ast.Attribute)
+            and site.start < first
+            and _asks_only_defaults(site.node)
+        ):
+            if site.kind == "axes":
+                axis = _literal_axis(site.node, len(site.node.args), "both")
+                receiver = ast.unparse(site.node.func.value)
+                if axis is not None and all(
+                    prepared.get((receiver, d), site.start) < site.start
+                    for d in _directions(axis)
+                ):
+                    continue
+            yield _method_offset(syntax, site.node.func)
+
+
 _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
     {
         "invalid-colormap-name": _literal_names,
@@ -407,6 +552,7 @@ _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
         "tight-layout": _tight_layout,
         "twin-legend-hand-merge": _twin_legend_hand_merge,
         "multirow-subplots-no-gridspec-kw": _multirow_subplots,
+        "ticklabel-format-default-before-layout": _ticklabel_format_default,
         "plt-style-use": _plt_style_use,
         "plt-show-only": _plt_show_only,
         **{rule.id: _removed_name_detector(rule) for rule in _LINT_RULES},
