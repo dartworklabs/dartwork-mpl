@@ -175,6 +175,7 @@ figure taller (wider for vertical bars); move a fixed legend with
 | crowded: every other label, or inside the bars | `crowded="skip"`, `crowded="inside"` |
 | a fixed decimal count | `decimals=1` |
 | a unit or another format on the labels | `fmt="{} GWh"`, `fmt="{:.2f}"`, a callable |
+| a plus on the rises (waterfall steps, changes) | `sign="+"`: `+30`, `−15` |
 | bigger, another colour, the bar's colour | `size=dm.fs(0)`, `color="dc.gray7"`, `color="series"` (labels off their bar) |
 
 ```python

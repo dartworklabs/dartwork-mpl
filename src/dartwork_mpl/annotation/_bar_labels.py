@@ -116,6 +116,7 @@ from ._bar_label_options import (
     Kind,
     Orientation,
     Placement,
+    Sign,
     Total,
     Where,
     compose_text,
@@ -606,6 +607,7 @@ def label_bars(
     fmt: str | Callable[[float], object] | None = None,
     size: float | str | None = None,
     color: Any = None,
+    sign: Sign = "-",
 ) -> list[Text]:
     """Label each bar with its value, printed like the axis's ticks.
 
@@ -741,6 +743,14 @@ def label_bars(
         background (``dm.ensure_contrast``), while a label on its bar keeps
         the readable ink and a total (of no single series) the text colour;
         any matplotlib colour, for every label.
+    sign : {"-", "+"}
+        The sign field of a Python format spec. ``"-"`` (default): only
+        negative values carry a sign (the minus). ``"+"``: a positive value
+        that does not print as zero carries ``+`` where the minus would go
+        (``+30``, ``+$800``, ``+1.2k``, and ``+33.0 GWh`` through
+        ``fmt="{} GWh"``), as a waterfall's or a change chart's steps read;
+        zero prints ``0``. A ``fmt`` field with a format spec and a
+        callable write their own sign (``fmt="{:+.1f}"``).
 
     Returns
     -------
@@ -755,8 +765,9 @@ def label_bars(
     ValueError
         For an unknown ``where`` / ``total`` / ``crowded``, a negative
         ``decimals``, a ``fmt`` template without ``{}``, an invalid
-        ``color``, ``bars=None`` on an Axes without bars, or bars drawn on
-        an Axes other than ``ax`` and its twins.
+        ``color``, a ``sign`` other than ``"-"`` / ``"+"``, ``bars=None``
+        on an Axes without bars, or bars drawn on an Axes other than ``ax``
+        and its twins.
     TypeError
         If ``bars`` is not a ``BarContainer`` or a list of them.
     """  # noqa: RUF002 - the labels' real minus (U+2212)
@@ -768,6 +779,7 @@ def label_bars(
         fmt=fmt,
         size=size,
         color=color,
+        sign=sign,
     )
     containers = _containers(ax, bars)
     _check_plot_area(ax, containers)

@@ -1088,6 +1088,80 @@ def test_fmt_string_and_callable():
     assert _texts(texts) == ["21.40", "38.50", "30.90"]
 
 
+# --------------------------------------------------------- sign="+" (I4b)
+def test_sign_plus_marks_rises_where_the_minus_goes():
+    """``sign="+"``: a positive value that does not print as zero carries
+    ``+`` where a negative one carries the minus (U+2212); zero prints
+    ``0``; decimals, tick unit and placement are those of the default."""
+    # A waterfall's steps: floating bars from the running level.
+    fig, ax = _fig()
+    steps = ax.bar(
+        np.arange(4), [10.0, -3.0, 5.0, -2.0], bottom=[0.0, 10.0, 7.0, 12.0]
+    )
+    texts = dm.label_bars(ax, sign="+")
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["+10", f"{MINUS}3", "+5", f"{MINUS}2"]
+    _assert_outside(fig, texts, steps.patches)  # a fall's label below it
+
+    # The ticks' currency and zero rule: the sign before the symbol.
+    fig, ax, _ = _plain([800.0, -800.0, 0.0, 1250.0])
+    dm.format_axis_currency(ax)
+    texts = dm.label_bars(ax, sign="+")
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["+$800", f"{MINUS}$800", "$0", "+$1,250"]
+
+    # The ticks' unit under dm.axis_unit, and a template's {} alike.
+    fig, ax, _ = _quarterly(np.array([33.0, -4.5]) * 1e9, unit=False)
+    dm.axis_unit(ax, "y", label="Energy ({unit}Wh)")
+    texts = dm.label_bars(ax, sign="+")
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["+33.0", f"{MINUS}4.5"]
+    texts = dm.label_bars(ax, sign="+", fmt="{} GWh")
+    assert _texts(texts) == ["+33.0 GWh", f"{MINUS}4.5 GWh"]
+
+    # The ticks' SI suffix.
+    fig, ax, _ = _plain([1200.0, -300.0])
+    dm.format_axis_si(ax, axis="y")
+    texts = dm.label_bars(ax, sign="+")
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["+1.2k", f"{MINUS}0.3k"]
+
+
+def test_sign_plus_leaves_zero_and_the_callers_formats():
+    # A positive value that rounds to zero prints 0, as a negative one does.
+    fig, ax, _ = _plain([0.4, 12.0, -0.4])
+    texts = dm.label_bars(ax, sign="+", decimals=0)
+    assert _texts(texts) == ["0", "+12", "0"]
+    # A field with a format spec, and a callable, write the whole number:
+    # the sign is theirs ("{:+.1f}" for a plus).
+    fig, ax, _ = _plain([2.0, -1.0])
+    assert _texts(dm.label_bars(ax, sign="+", fmt="{:.1f}")) == [
+        "2.0",
+        f"{MINUS}1.0",
+    ]
+    assert _texts(dm.label_bars(ax, sign="+", fmt="{:+.1f}")) == [
+        "+2.0",
+        f"{MINUS}1.0",
+    ]
+    assert _texts(dm.label_bars(ax, sign="+", fmt=lambda v: f"{v:g}")) == [
+        "2",
+        "-1",
+    ]
+    # The default prints no plus.
+    assert _texts(dm.label_bars(ax)) == ["2", f"{MINUS}1"]
+    assert _texts(dm.label_bars(ax, sign="-")) == ["2", f"{MINUS}1"]
+
+
+def test_sign_plus_leaves_a_bound_unsigned():
+    # A tiny value prints its bound under sign="+" too, with no plus: the
+    # bound already says which side of zero it lies on.
+    fig, ax, _ = _plain([12.5e6, 0.03e6, -0.04e6])
+    dm.format_axis_millions(ax)
+    texts = dm.label_bars(ax, sign="+")
+    dm.simple_layout(fig)
+    assert _texts(texts) == ["+12.5M", "<0.1M", f">{MINUS}0.1M"]
+
+
 def test_decimals_rule():
     def labels(values, **kw):
         fig, ax, _ = _plain(values)
@@ -2892,6 +2966,9 @@ def test_invalid_arguments_raise():
         dm.label_bars(ax, decimals=-1)
     with pytest.raises(ValueError, match="fmt"):
         dm.label_bars(ax, fmt="no placeholder")
+    for bad in ("plus", "", None, 1):
+        with pytest.raises(ValueError, match="sign must be '-' or '\\+'"):
+            dm.label_bars(ax, sign=bad)
     with pytest.raises(TypeError, match="bars"):
         dm.label_bars(ax, ax.plot([0, 1], [1, 2]))
     assert dm.label_bars(ax, []) == []  # explicitly nothing to label
