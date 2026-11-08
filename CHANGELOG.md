@@ -404,10 +404,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   white or black, whichever reads on the fill as drawn
   (`dm.readable_text_color`): the heatmap's cells and the contour labels
   (`dm.pseudo_alpha` for the 0.85 fill). The boxplot's baseline label
-  moves below the line's right end, clear of the boxes; the contour's
-  peak callouts sit on a knockout in the plot's lowest band, which shows
-  only where a callout crosses a ring. Other templates and docs figures
-  are byte-identical.
+  moves below the line's right end, clear of the boxes. Other templates
+  and docs figures are byte-identical.
 
 ### Deprecated
 
