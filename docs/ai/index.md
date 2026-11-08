@@ -267,7 +267,7 @@ templates remain standalone Python examples.
 | **18 plot templates** | Drop-in patterns for bar / line / scatter / heatmap / dashboards | [AI Plot Templates gallery](../examples_gallery/09_ai_templates/index.rst) |
 | **Consumer entry** | One-screen onboarding for any LLM; points to the skill | `dm.get_agent_doc("AGENTS")` |
 | **`llms.txt`** | Lightweight index (≈ 4 KB) — fits in any system prompt | Repo root, `dm.get_agent_doc("llms")` |
-| **`llms-full.txt`** | Concatenated full reference (≈ 76 KB) — for tools that read whole files | Repo root, `dm.get_agent_doc("llms-full")` |
+| **`llms-full.txt`** | Concatenated full reference (≈ 109 KB) — for tools that read whole files | Repo root, `dm.get_agent_doc("llms-full")` |
 
 ---
 

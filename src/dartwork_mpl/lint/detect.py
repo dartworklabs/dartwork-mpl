@@ -399,6 +399,64 @@ def _literal_names(syntax: _Syntax, rule: Rule) -> Iterator[int]:
         yield from _literal_name_offsets(syntax, detector.check)
 
 
+_MPL_DEFAULT_REQUEST: Mapping[str, tuple[object, ...]] = MappingProxyType(
+    {
+        "style": ("sci", "scientific"),
+        "useOffset": (True,),
+        "scilimits": ((-5, 6),),
+        "useMathText": (False,),
+        "useLocale": (False,),
+    }
+)
+"""``ticklabel_format`` values a fresh ``ScalarFormatter`` already holds
+(matplotlib's rc defaults): asking for them changes no attribute."""
+
+
+def _asks_only_defaults(call: ast.Call) -> bool:
+    """Every keyword but ``axis`` a literal default, and at least one."""
+    asked = False
+    for keyword in call.keywords:
+        if keyword.arg is None:  # **kwargs: the source cannot tell
+            return False
+        if keyword.arg == "axis":
+            continue
+        try:
+            value = ast.literal_eval(keyword.value)
+        except (ValueError, TypeError, SyntaxError):
+            return False
+        if isinstance(value, list):
+            value = tuple(value)
+        if value not in _MPL_DEFAULT_REQUEST.get(keyword.arg, ()):
+            return False
+        asked = True
+    return asked and not call.args
+
+
+def _ticklabel_format_default(syntax: _Syntax, _rule: Rule) -> Iterator[int]:
+    """``ax.ticklabel_format(style="sci")`` asking only for defaults, in the
+    source before the last ``dm.simple_layout`` (source order, not run
+    order)."""
+    sites = list(_call_sites(syntax))
+    layouts = [
+        site.start
+        for site in sites
+        if site.kind == "dm" and site.method == "simple_layout"
+    ]
+    if not layouts:
+        return
+    last = max(layouts)
+    for site in sites:
+        if (
+            site.native
+            and site.kind in {"axes", "pyplot"}
+            and site.method == "ticklabel_format"
+            and isinstance(site.node.func, ast.Attribute)
+            and site.start < last
+            and _asks_only_defaults(site.node)
+        ):
+            yield _method_offset(syntax, site.node.func)
+
+
 _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
     {
         "invalid-colormap-name": _literal_names,
@@ -407,6 +465,7 @@ _BUILTIN_DETECTORS: Mapping[str, _Detect] = MappingProxyType(
         "tight-layout": _tight_layout,
         "twin-legend-hand-merge": _twin_legend_hand_merge,
         "multirow-subplots-no-gridspec-kw": _multirow_subplots,
+        "ticklabel-format-default-before-layout": _ticklabel_format_default,
         "plt-style-use": _plt_style_use,
         "plt-show-only": _plt_show_only,
         **{rule.id: _removed_name_detector(rule) for rule in _LINT_RULES},

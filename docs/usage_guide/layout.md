@@ -537,10 +537,26 @@ notation or an offset gets matplotlib's own formatter. One limit: before
 `dm.simple_layout`, a request equal to matplotlib's own defaults
 (`style="sci"` alone, `useOffset=True`, `scilimits=` equal to the rc
 `axes.formatter.limits`) changes nothing matplotlib records, so it cannot
-be told from no request and the library's ticks stay. Call it after the
-layout, or set `ax.xaxis.set_major_formatter(ScalarFormatter())` first. A
-prompt
-can ask for three other formats, one `dm.config` field each:
+be told from no request and the library's ticks stay (`0.5M`; on a year
+axis `14 … 24`). Three paths work in either order: give the axis a
+`ScalarFormatter()` first, call `dm.format_axis_year(ax)` first on a year
+axis, or pass a value that differs from the default (`scilimits=(0, 0)`,
+`useMathText=True`). A request made only after the layout is applied, but
+its `1e6` multiplier has no room and is drawn outside the figure: run
+`dm.simple_layout(fig)` again. `dm.lint_code` reports the default request
+made before the layout (`ticklabel-format-default-before-layout`).
+
+```python
+from matplotlib.ticker import ScalarFormatter
+
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+ax.plot(range(5), [0, 0.8e6, 1.5e6, 2.2e6, 3.0e6])
+ax.yaxis.set_major_formatter(ScalarFormatter())  # first: the request holds
+ax.ticklabel_format(axis="y", style="sci")
+dm.simple_layout(fig)  # 0.0 … 3.0 with the 1e6 multiplier inside the figure
+```
+
+A prompt can ask for three other formats, one `dm.config` field each:
 `tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
 (matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
 `tick_years=4`) and `number_ladder="si"` (`k/M/G/T` in Korean figures too).
