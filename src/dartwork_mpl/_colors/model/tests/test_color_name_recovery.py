@@ -209,6 +209,16 @@ def test_a_non_name_keeps_matplotlib_s_own_message(value: object) -> None:
     assert "Invalid color name" not in str(caught.value)
 
 
+#: How far a blend may sit from the value measured before this change. Exact
+#: equality was the first formulation and it was wrong: the same source gives
+#: the same bits on one machine but drifts by one or two ULPs across libm and
+#: NumPy builds, so CI's Python 3.11 runner read
+#: ``0.7237702208034282`` where this machine reads ``…91``. 1e-12 is a
+#: thousand times that drift and still ~2.5e-10 of one 8-bit colour level, so
+#: it cannot hide a change anybody could see — a reordered or rewritten blend
+#: moves these numbers in the third or fourth digit.
+BLEND_TOLERANCE = 1e-12
+
 #: Blend results measured on ``cad7034f``, before this change. The package
 #: holds its visual style, so a drifting blend would move shipped figures;
 #: these pin that routing the name lookup through a new helper did not touch
@@ -242,18 +252,21 @@ BLENDS_AT_CAD7034F = [
 
 
 @pytest.mark.parametrize(("arguments", "expected"), BLENDS_AT_CAD7034F)
-def test_blends_are_bit_identical_to_before_the_change(
+def test_blends_still_match_the_values_measured_before_the_change(
     arguments: tuple[str, str, float], expected: tuple[float, float, float]
 ) -> None:
     color1, color2, alpha = arguments
-    assert dm.mix_colors(color1, color2, alpha=alpha) == expected
+    assert dm.mix_colors(color1, color2, alpha=alpha) == pytest.approx(
+        expected, abs=BLEND_TOLERANCE
+    )
 
 
-def test_pseudo_alpha_is_bit_identical_to_before_the_change() -> None:
-    assert dm.pseudo_alpha("dc.red5", 0.3) == (
-        0.9999999999999999,
-        0.8561922305369954,
-        0.848520311623812,
+def test_pseudo_alpha_still_matches_the_value_measured_before_the_change() -> (
+    None
+):
+    assert dm.pseudo_alpha("dc.red5", 0.3) == pytest.approx(
+        (0.9999999999999999, 0.8561922305369954, 0.848520311623812),
+        abs=BLEND_TOLERANCE,
     )
 
 
