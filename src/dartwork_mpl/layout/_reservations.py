@@ -58,6 +58,14 @@ _EDGE_BAND_TOL = 1e-9
 
 _Edge: TypeAlias = Literal["left", "right", "bottom", "top"]
 
+#: The figure edge each side of a ``dm.figure_legend`` legend reserves.
+_SIDE_EDGES: dict[str, _Edge] = {
+    "above": "top",
+    "below": "bottom",
+    "left": "left",
+    "right": "right",
+}
+
 
 def _reservation_edge(
     fig: Figure, art: Any, x0f: float, x1f: float, y0f: float, y1f: float
@@ -70,9 +78,14 @@ def _reservation_edge(
     the bottom/left, each while it sits on that half of the canvas. Other
     text in an outer ``_EDGE_BAND`` reserves along its reading direction:
     horizontal text (a subtitle, a source note) the top or bottom band,
-    vertical text the left or right band. Everything else, legends
-    included, keeps the nearest edge.
+    vertical text the left or right band. A ``dm.figure_legend`` legend
+    reserves the edge it was placed on (``_dm_figure_side``): one almost as
+    wide as the figure is nearer its left or right edge than its top.
+    Everything else, other legends included, keeps the nearest edge.
     """
+    side = getattr(art, "_dm_figure_side", None)
+    if isinstance(side, str) and side in _SIDE_EDGES:
+        return _SIDE_EDGES[side]
     xc, yc = (x0f + x1f) / 2, (y0f + y1f) / 2
     roles: tuple[tuple[str, _Edge, bool], ...] = (
         ("_suptitle", "top", yc >= 0.5),

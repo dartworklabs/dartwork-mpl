@@ -176,6 +176,62 @@ def test_an_above_figure_legend_keeps_its_pad_from_the_figure_edges() -> None:
     assert box.x1 <= fig.bbox.x1 - pad + 0.5
 
 
+def test_a_legend_almost_as_wide_as_the_figure_reserves_the_top() -> None:
+    """At 98 % of the figure's width the legend's ends are nearer the left
+    and right edges than its top is to the top edge; the layout still keeps
+    the top for it, not the whole width (Codex on #650)."""
+    fig, axs = _grid(1, 2, ("30cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 8)
+    wide = dm.figure_legend(fig, loc="above")
+    assert wide is not None and legend_ncols(wide) == 8
+    width = wide.get_window_extent(drawn_renderer(fig)).width
+    fig.set_size_inches(width / 0.98 / fig.dpi, fig.get_size_inches()[1])
+    legend = dm.figure_legend(fig, loc="above")
+    assert legend is not None and legend_ncols(legend) == 8
+    dm.simple_layout(fig)
+    box = legend.get_window_extent(drawn_renderer(fig))
+    panels = _panels(fig, axs)
+    assert box.y0 >= panels.y1
+    assert panels.width > 0.9 * fig.bbox.width
+
+
+@pytest.mark.parametrize(
+    ("side", "label"), [("below", "supxlabel"), ("left", "supylabel")]
+)
+def test_a_figure_legend_clears_the_figure_label_on_its_side(
+    side: str, label: str
+) -> None:
+    fig, axs = _grid(1, 2, ("17cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 3)
+    text = getattr(fig, label)("Shared label of the panels")
+    legend = dm.figure_legend(fig, loc=side)
+    assert legend is not None
+    dm.simple_layout(fig)
+    renderer = drawn_renderer(fig)
+    box = legend.get_window_extent(renderer)
+    ext = text.get_window_extent(renderer)
+    apart_x = min(box.x1, ext.x1) - max(box.x0, ext.x0) <= 0
+    apart_y = min(box.y1, ext.y1) - max(box.y0, ext.y0) <= 0
+    assert apart_x or apart_y
+    assert dm.validate_figure(fig, checks=LEGEND_CHECKS, quiet=True) == []
+
+
+def test_a_panel_legend_whose_entry_was_renamed_stays() -> None:
+    """Its names are the texts it shows now, not the ones it was built from;
+    "Renamed by hand" is not in the figure legend, so the panel's legend is
+    not one it replaces (Codex on #650)."""
+    fig, axs = _grid(1, 2, ("17cm", "8cm"))
+    for ax in axs:
+        _lines(ax, 3)
+    kept = dm.place_legend(axs[1])
+    assert kept is not None
+    kept.get_texts()[0].set_text("Renamed by hand")
+    dm.figure_legend(fig)
+    assert axs[1].get_legend() is kept
+
+
 def test_a_matplotlib_loc_goes_to_fig_legend_unchanged() -> None:
     fig, axs = _grid(1, 2, ("17cm", "8cm"))
     for ax in axs:

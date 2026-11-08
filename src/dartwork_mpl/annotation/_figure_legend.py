@@ -12,6 +12,7 @@ from .._figure_geometry import (
     get_renderer,
     iter_figure_level_extents,
 )
+from ._legend_entries import _placed_as_built
 from ._legend_fit import ceil_div, legend_pad, legend_size, probe
 from ._legend_outside import OutsidePlan, choose, split_ncols
 
@@ -38,12 +39,18 @@ _SIDES: dict[str, OutsideSide] = {
 
 
 def _entry_names(legend: Legend) -> set[str]:
-    """The entry names a legend shows, as given before any wrapping."""
-    for name in ("_dm_outside_source", "_dm_best_source"):
-        source = getattr(legend, name, None)
-        labels = getattr(source, "labels", None)
-        if isinstance(labels, list):
-            return {str(label) for label in labels}
+    """The entry names a legend shows, as given before any wrapping.
+
+    A ``place_legend`` legend whose entries read as built keeps the names
+    it was built from (a wrapped name is one name); once the caller has
+    changed an entry's text, the texts it shows now are its names.
+    """
+    if _placed_as_built(legend):
+        for name in ("_dm_outside_source", "_dm_best_source"):
+            source = getattr(legend, name, None)
+            labels = getattr(source, "labels", None)
+            if isinstance(labels, list):
+                return {str(label) for label in labels}
     return {text.get_text() for text in legend.get_texts()}
 
 
@@ -116,17 +123,42 @@ def _figure_plan(
     return OutsidePlan(side, ncols, tuple(labels), width, height, loss, fits)
 
 
-def _below_suptitle(fig: Figure | SubFigure, renderer: RendererBase) -> float:
-    """The (sub)figure fraction just under a suptitle, else 1.0 (the top)."""
-    suptitle = getattr(fig, "_suptitle", None)
-    if suptitle is None:
-        return 1.0
+#: The figure's own label on each side a figure legend would share.
+_SHARED_LABELS: dict[OutsideSide, str] = {
+    "above": "_suptitle",
+    "below": "_supxlabel",
+    "left": "_supylabel",
+}
+
+
+def _past_shared_label(
+    fig: Figure | SubFigure, side: OutsideSide, renderer: RendererBase
+) -> tuple[float, float]:
+    """The legend's anchor on ``side``, moved past the figure's label there.
+
+    Under a ``fig.suptitle`` above, over a ``fig.supxlabel`` below, right
+    of a ``fig.supylabel`` on the left, in (sub)figure fraction; the edge
+    of the (sub)figure when there is none.
+    """
+    anchor = _FIGURE_LOCS[side][1]
+    attr = _SHARED_LABELS.get(side)
+    label = getattr(fig, attr, None) if attr is not None else None
+    if label is None:
+        return anchor
+    box = fig.bbox
     for art, ext in iter_figure_level_extents(
         cast("Figure", fig), renderer, legends=False
     ):
-        if art is suptitle:
-            return float((ext.y0 - fig.bbox.y0) / fig.bbox.height)
-    return 1.0
+        if art is not label:
+            continue
+        match side:
+            case "above":
+                return (anchor[0], float((ext.y0 - box.y0) / box.height))
+            case "below":
+                return (anchor[0], float((ext.y1 - box.y0) / box.height))
+            case _:
+                return (float((ext.x1 - box.x0) / box.width), anchor[1])
+    return anchor
 
 
 def _replaced(fig: Figure | SubFigure, names: set[str]) -> list[Legend]:
@@ -174,8 +206,9 @@ def figure_legend(
     (it may be longer than the panels); ``ncol`` / ``ncols`` in
     ``kw`` overrides the count. ``loc="above"``, ``"below"``, ``"right"``
     or ``"left"`` is that side; any other ``loc`` (with ``kw``) goes to
-    ``fig.legend`` unchanged. Above, the legend sits under a
-    ``fig.suptitle``. Names are not wrapped.
+    ``fig.legend`` unchanged. The legend clears the figure's own label on
+    its side: under a ``fig.suptitle`` above, over a ``fig.supxlabel``
+    below, right of a ``fig.supylabel`` on the left. Names are not wrapped.
 
     :func:`dartwork_mpl.simple_layout` keeps the panels clear of the legend,
     with the preset's ``legend.borderaxespad`` between them. Returns the
@@ -220,9 +253,8 @@ def figure_legend(
             for s in sides
         ]
     )
-    where, anchor = _FIGURE_LOCS[plan.side]
-    if plan.side == "above":
-        anchor = (anchor[0], _below_suptitle(fig, renderer))
+    where = _FIGURE_LOCS[plan.side][0]
+    anchor = _past_shared_label(fig, plan.side, renderer)
     legend = fig.legend(
         handles,
         labels,
