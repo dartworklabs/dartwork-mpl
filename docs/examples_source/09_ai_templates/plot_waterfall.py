@@ -40,7 +40,10 @@ for i, (delta, total) in enumerate(zip(deltas, is_total, strict=True)):
 x = np.arange(len(labels))
 step = ~is_total
 
-fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(labels), n_series=1))
+# The names decide how wide the canvas is for them to stand flat.
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(labels), n_series=1, labels=labels)
+)
 totals = ax.bar(
     x[is_total],
     level[is_total],

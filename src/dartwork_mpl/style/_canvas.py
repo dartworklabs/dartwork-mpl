@@ -39,8 +39,13 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import pairwise
+from typing import TYPE_CHECKING
 
 from ..units import ASPECT_TOKENS, figsize
+
+if TYPE_CHECKING:
+    from matplotlib.backend_bases import RendererBase
 
 __all__ = ["CANVAS_KINDS", "SLIDE_SCALE", "figsize_for", "grid_shape"]
 
@@ -74,6 +79,23 @@ _SLIDE_TWO_THIRDS_MAX_POINTS = 6
 # width; the report tiers scale with the font on posters.
 _GROUPED_BARS_SLIDE = ((_SLIDE_HALF_CM, 10), (_SLIDE_TWO_THIRDS_CM, 15))
 _GROUPED_BARS = ((9.0, 16), (12.0, 24), (14.5, 32))
+# The widths ``labels`` may pick from: the report tiers (scaled on posters)
+# and the slide widths. No other width is ever made.
+_REPORT_TIERS_CM = (9.0, 12.0, 14.5, _MAX_TIER_CM)
+_SLIDE_TIERS_CM = (_SLIDE_HALF_CM, _SLIDE_TWO_THIRDS_CM, _SLIDE_BODY_CM[0])
+# Room flat neighbouring names need, in ems of the tick label font: the
+# layout's own target (``layout._fit_labels._TARGET_EM``), which wraps or
+# turns names that come closer.
+_LABEL_CLEARANCE_EM = 0.5
+# The canvas a plot does not get (y tick labels, the y name, pads, margins),
+# in ems of the tick label font, and the share of plot width over names that
+# one position gets (bar margins). Measured (I-O1 follow-up 8, PR 3) on the
+# shipped templates and the stress corpus' category charts laid out flat:
+# with 4.5 em and 0.96 the estimate tells whether names stand half an em
+# apart exactly as the drawn charts do, in all 240 (median error 0.01 em);
+# where it errs, the layout's wrap and turn still take over.
+_CANVAS_OVERHEAD_EM = 4.5
+_SPACING_SHARE = 0.96
 
 #: How much larger every point size is on slides than in a journal column:
 #: the slide body's width over the column's, 23.4 / 9. The presentation
@@ -173,6 +195,72 @@ def _grouped_cm(
     return widest
 
 
+def _names(labels: Sequence[object] | None) -> list[str]:
+    """``labels`` as strings; one string is not a sequence of names."""
+    if labels is None:
+        return []
+    if isinstance(labels, (str, bytes)):
+        raise TypeError(
+            "labels must be the category names (a list), not one string; "
+            f"got {labels!r}"
+        )
+    return [str(label) for label in labels]
+
+
+def _name_widths_pt(names: Sequence[str]) -> tuple[list[float], float]:
+    """Each name's width (pt; its widest line) as the active preset draws x
+    tick labels, and that font's size (pt).
+
+    Measured by Agg at the preset's figure dpi, the renderer that lays the
+    labels out, so the width is the drawn one (a font's own fallback
+    included); it needs no figure and gives the same width every time.
+    """
+    import matplotlib as mpl
+    from matplotlib import cbook
+    from matplotlib.backends.backend_agg import RendererAgg
+    from matplotlib.font_manager import FontProperties
+
+    prop = FontProperties(size=mpl.rcParams["xtick.labelsize"])
+    dpi = float(mpl.rcParams["figure.dpi"])
+    # backend_agg ships no type stubs: the renderer is a RendererBase
+    renderer: RendererBase = RendererAgg(1, 1, dpi)  # type: ignore[no-untyped-call]
+    widths = []
+    for name in names:
+        line_widths = [
+            renderer.get_text_width_height_descent(
+                line, prop, ismath=cbook.is_math_text(line)
+            )[0]
+            for line in name.split("\n")
+        ]
+        widths.append(max(line_widths) * 72.0 / dpi)
+    return widths, float(prop.get_size_in_points())
+
+
+def _names_cm(
+    names: Sequence[str], tiers: Sequence[float], width: float
+) -> float:
+    """The narrowest of ``tiers`` (cm) at least ``width`` at which ``names``
+    stand flat, neighbours half an em apart; the widest past them all.
+
+    The plot gets the canvas less ``_CANVAS_OVERHEAD_EM`` and each name
+    ``_SPACING_SHARE`` of an equal share of it: neighbours ``i``, ``i + 1``
+    fit when that share is at least half their widths plus half an em.
+    ``width`` itself when there are fewer than two names.
+    """
+    if len(names) < 2:
+        return width
+    widths, size = _name_widths_pt(names)
+    need = max((a + b) / 2 for a, b in pairwise(widths))
+    need += _LABEL_CLEARANCE_EM * size
+    for tier in tiers:
+        if tier < width - 1e-9:
+            continue
+        plot = tier / 2.54 * 72.0 - _CANVAS_OVERHEAD_EM * size
+        if _SPACING_SHARE * plot / len(names) >= need:
+            return tier
+    return max(width, tiers[-1])
+
+
 def _family(names: Sequence[str]) -> tuple[str, float]:
     """``("paper" | "slides" | "poster" | "report", scale)`` for the preset."""
     from . import load_style_dict
@@ -237,6 +325,7 @@ def figsize_for(
     *,
     n_points: int | None = None,
     n_series: int | None = None,
+    labels: Sequence[object] | None = None,
     dual_axis: bool = False,
     nrows: int = 1,
     ncols: int = 1,
@@ -279,6 +368,16 @@ def figsize_for(
     n_series : int, optional
         Plotted series: lines, bar colours, stacked layers; for
         ``"grouped"``, the bars in each group.
+    labels : sequence, optional
+        The category names under the x axis, one per position, when you
+        know them (``labels=countries``). ``"default"`` and ``"grouped"``
+        then take the narrowest width of the preset's own table at least
+        as wide as without them (report 9 / 12 / 14.5 / 17 cm, slides
+        11.4 / 15.4 / 23.4 cm) at which the names, measured at the preset's
+        tick label font, stand flat half an em apart; past the widest, the
+        widest, and the layout wraps or turns them. No names, or names that
+        fit, give the same canvas as before. A ``scientific`` panel keeps
+        its journal column, and the other kinds their width.
     dual_axis : bool, optional
         True when a second y axis (``twinx``) is drawn.
     nrows, ncols : int, optional
@@ -306,6 +405,7 @@ def figsize_for(
     _check_count("n_series", n_series, 0)
     _check_count("nrows", nrows, 1)
     _check_count("ncols", ncols, 1)
+    names = _names(labels)
     spec = CANVAS_KINDS[kind]
 
     from . import _active_preset
@@ -314,11 +414,15 @@ def figsize_for(
         return figsize(f"{spec.width_cm:g}cm", spec.aspect)
     family, scale = _family(_active_preset)
     grid = nrows * ncols > 1
+    # the kinds whose width follows the x positions
+    by_names = bool(names) and kind in ("default", "grouped") and not grid
     if family == "slides":
         if grid:
             width, height = _SLIDE_BODY_CM
         else:
             width, height = _slide_canvas(kind, n_points, n_series, dual_axis)
+        if by_names:
+            width = _names_cm(names, _SLIDE_TIERS_CM, width)
         return figsize(f"{width:g}cm", f"{height:g}cm")
     width = (
         _MAX_TIER_CM if grid else _tier_cm(spec, n_points, n_series, dual_axis)
@@ -332,6 +436,9 @@ def figsize_for(
         width = _COLUMNS_CM[1] if full else _COLUMNS_CM[0]
     else:
         width = _half_cm(width * scale)
+        if by_names:
+            tiers = [_half_cm(tier * scale) for tier in _REPORT_TIERS_CM]
+            width = _names_cm(names, tiers, width)
 
     if not grid:
         return figsize(f"{width:g}cm", spec.aspect)

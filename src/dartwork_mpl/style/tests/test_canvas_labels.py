@@ -1,0 +1,218 @@
+"""``dm.figsize_for(..., labels=names)``: a canvas the category names fit flat.
+
+Without the names the canvas follows the counts only, so on a slide five
+country names (``advanced/bar``) stood 0.38 em apart and the layout turned
+them 30 degrees, costing the plot a quarter of its height. Given the names,
+``figsize_for`` measures them at the preset's tick label font and takes the
+smallest width of the preset's own table (report 9 / 12 / 14.5 / 17 cm,
+slides 11.4 / 15.4 / 23.4 cm) at which neighbours stand half an em apart
+flat; past the widest it keeps the widest and the layout's wrap and turn
+take over. A call without names gets the canvas it got before.
+"""
+
+from __future__ import annotations
+
+import inspect
+from itertools import pairwise
+from pathlib import Path
+
+import matplotlib
+import matplotlib.pyplot as plt
+import pytest
+
+matplotlib.use("Agg")
+
+import dartwork_mpl as dm
+from dartwork_mpl._figure_geometry import drawn_tick_labels, get_renderer
+
+CM = 2.54
+COUNTRIES = ["Norway", "Iceland", "Sweden", "China", "Germany"]
+
+
+@pytest.fixture(autouse=True)
+def _own_rc():
+    with matplotlib.rc_context():
+        yield
+    plt.close("all")
+
+
+def _cm(size) -> tuple[float, float]:
+    return (round(size[0] * CM, 2), round(size[1] * CM, 2))
+
+
+def _template(name: str, preset: str):
+    """A shipped template as written, in ``preset``, laid out by itself."""
+    source = (
+        Path(dm.__file__).parent / "asset/prompt/05-templates" / name
+    ).read_text(encoding="utf-8")
+    ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
+    cut = [i for e in ends if (i := source.find(e)) >= 0]
+    source = source[: min(cut)] if cut else source
+    source = source.replace(
+        'dm.style.use("scientific")', f'dm.style.use("{preset}")'
+    )
+    namespace: dict = {}
+    exec(compile(source, name, "exec"), namespace)
+    fig = namespace["fig"]
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    return fig
+
+
+def _row(fig) -> tuple[set[float], bool, float]:
+    """Turns, whether any label wrapped, and the smallest flat gap (em)
+    between neighbouring bottom labels of the first Axes."""
+    ax = fig.axes[0]
+    renderer = get_renderer(fig)
+    labels = [t for t in drawn_tick_labels(ax, "x") if t.get_text().strip()]
+    boxes = sorted(
+        (t.get_window_extent(renderer) for t in labels), key=lambda b: b.x0
+    )
+    em = labels[0].get_fontsize() * fig.dpi / 72
+    gap = min(b.x0 - a.x1 for a, b in pairwise(boxes)) / em
+    turns = {round(float(t.get_rotation()), 1) for t in labels}
+    return turns, any("\n" in t.get_text() for t in labels), gap
+
+
+def test_figsize_for_takes_the_names() -> None:
+    assert "labels" in inspect.signature(dm.figsize_for).parameters
+
+
+@pytest.mark.parametrize(
+    "name", ["advanced/bar.py", "waterfall.py", "advanced/boxplot.py"]
+)
+def test_templates_pass_their_names_and_draw_them_flat(name: str) -> None:
+    """On a slide their names were turned or wrapped (0.38, 0.25 and -0.78
+    em apart flat); given the names, the canvas holds them flat, half an
+    em apart."""
+    turns, wrapped, gap = _row(_template(name, "presentation"))
+    assert turns == {0.0}
+    assert not wrapped
+    assert gap >= 0.5
+
+
+@pytest.mark.parametrize("preset", ["scientific", "report", "presentation"])
+@pytest.mark.parametrize(
+    ("kind", "n_points", "n_series", "expected"),
+    [
+        (
+            "default",
+            5,
+            1,
+            {"scientific": 9.0, "report": 9.0, "presentation": 15.4},
+        ),
+        (
+            "default",
+            3,
+            1,
+            {"scientific": 9.0, "report": 9.0, "presentation": 11.4},
+        ),
+        (
+            "default",
+            8,
+            2,
+            {"scientific": 9.0, "report": 12.0, "presentation": 23.4},
+        ),
+        (
+            "grouped",
+            4,
+            3,
+            {"scientific": 9.0, "report": 12.0, "presentation": 15.4},
+        ),
+        (
+            "barh",
+            5,
+            1,
+            {"scientific": 9.0, "report": 9.0, "presentation": 23.4},
+        ),
+    ],
+)
+def test_without_names_the_canvas_is_as_before(
+    preset: str, kind: str, n_points: int, n_series: int, expected: dict
+) -> None:
+    dm.style.use(preset)
+    size = dm.figsize_for(kind, n_points=n_points, n_series=n_series)
+    assert _cm(size)[0] == expected[preset]
+
+
+def _width(preset: str, names, kind: str = "default", **counts) -> float:
+    dm.style.use(preset)
+    counts.setdefault("n_points", len(names))
+    counts.setdefault("n_series", 1)
+    return _cm(dm.figsize_for(kind, labels=names, **counts))[0]
+
+
+def test_names_that_fit_change_nothing() -> None:
+    """Five short codes fit every preset's own width: the same canvas."""
+    names = ["A", "B", "C", "D", "E"]
+    for preset in ("scientific", "report", "presentation"):
+        dm.style.use(preset)
+        plain = dm.figsize_for(n_points=5, n_series=1)
+        assert dm.figsize_for(n_points=5, n_series=1, labels=names) == plain
+
+
+def test_long_names_take_the_next_width_of_the_table() -> None:
+    assert _width("presentation", COUNTRIES) == 23.4
+    assert _width("report", [f"{c} region" for c in COUNTRIES * 2]) in (
+        14.5,
+        17.0,
+    )
+
+
+def test_past_the_widest_width_the_widest_stays() -> None:
+    names = [f"Very long category name number {i}" for i in range(12)]
+    assert _width("presentation", names) == 23.4
+    assert _width("report", names) == 17.0
+
+
+def test_a_journal_column_stays_a_column() -> None:
+    """``scientific`` sets one panel in one column, names or not."""
+    names = [f"Very long category name number {i}" for i in range(12)]
+    assert _width("scientific", names) == 9.0
+
+
+@pytest.mark.parametrize("kind", ["barh", "compact", "matrix", "dense"])
+def test_kinds_whose_width_is_not_the_x_positions_ignore_names(
+    kind: str,
+) -> None:
+    names = [f"Very long category name number {i}" for i in range(12)]
+    for preset in ("report", "presentation"):
+        dm.style.use(preset)
+        plain = dm.figsize_for(kind, n_points=12, n_series=1)
+        assert (
+            dm.figsize_for(kind, n_points=12, n_series=1, labels=names) == plain
+        )
+
+
+def test_the_same_names_give_the_same_canvas() -> None:
+    first = _width("presentation", COUNTRIES)
+    _width("report", COUNTRIES)  # another preset in between
+    assert _width("presentation", COUNTRIES) == first
+
+
+@pytest.mark.parametrize("preset", ["report", "presentation"])
+def test_longer_or_more_names_never_narrow_the_canvas(preset: str) -> None:
+    """No back and forth between widths as names grow, one letter at a
+    time, or as names are added: the width only climbs."""
+    widths = [
+        _width(preset, [f"Name {'x' * k}{i}" for i in range(5)])
+        for k in range(24)
+    ]
+    assert widths == sorted(widths)
+    counts = [
+        _width(preset, [f"Region {i}" for i in range(n)]) for n in range(2, 16)
+    ]
+    assert counts == sorted(counts)
+
+
+def test_names_are_strings_or_turn_into_them() -> None:
+    dm.style.use("presentation")
+    numbers = dm.figsize_for(
+        n_points=5, n_series=1, labels=[2019, 2020, 2021, 2022, 2023]
+    )
+    words = dm.figsize_for(
+        n_points=5, n_series=1, labels=["2019", "2020", "2021", "2022", "2023"]
+    )
+    assert numbers == words
+    with pytest.raises(TypeError, match="labels"):
+        dm.figsize_for(n_points=5, labels="Norway")  # one string is not names

@@ -38,9 +38,12 @@ eu_2030_target = 55.0  # EU CO2 fleet target implies ~55% BEV share by 2030
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(countries))
 bar_colors = [c.to_hex() for c in gradient]
 
-# 4. Figure — the preset's canvas for this many bars in one series.
+# 4. Figure — the preset's canvas for these bars; the names decide how
+#    wide it is for them to stand flat.
 fig, ax = plt.subplots(
-    figsize=dm.figsize_for(n_points=len(countries), n_series=1)
+    figsize=dm.figsize_for(
+        n_points=len(countries), n_series=1, labels=countries
+    )
 )
 
 # 5. Bars + per-bar value labels (annotation density carries the story).
