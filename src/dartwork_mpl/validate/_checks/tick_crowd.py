@@ -5,6 +5,14 @@ it scales with font size, weight, rotation and text length) instead of a
 fixed ticks-per-inch density. Turned labels need the spacing at which each
 neighbour pair, each label at its own angle, clears, not their whole
 axis-aligned extents.
+
+A row that fills the axis is crowded only where some neighbouring pair
+stands closer than half an em (``_NEIGHBOUR_CLEARANCE_EM``), the target
+``dm.simple_layout`` wraps and turns bottom labels to. Labels at least that
+far apart leave an agent nothing to act on however much of the axis they
+fill: long names flat 0.52 em apart on the widest slide canvas, or two y
+labels over an em apart in a short panel, were reported as filling 105 %
+and 102 % of it.
 """
 
 from __future__ import annotations
@@ -16,6 +24,7 @@ from ..._figure_geometry import (
     drawn_axes,
     label_clearance_px,
     pair_clearance_px,
+    pair_gap_px,
 )
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import AXES, Axis, choice, number, wire
@@ -38,6 +47,12 @@ _TICK_CROWD_MIN_GAP_FRAC = 0.15
 # measured (e.g. a renderer that refuses get_window_extent). The measured
 # path is font- and label-length-aware and is preferred.
 _TICK_CROWD_FALLBACK_DENSITY = 4.0
+
+# Room (ems of the pair's larger font) neighbouring labels need for a row
+# that fills its axis still to read as separate labels: the layout's own
+# target (``layout._fit_labels._TARGET_EM``), which wraps and turns bottom
+# labels closer than this.
+_NEIGHBOUR_CLEARANCE_EM = 0.5
 
 
 class TickCrowdDetail(TypedDict):
@@ -75,6 +90,32 @@ def _row_need_px(
     for a, b in pairwise(ordered):
         need += pair_clearance_px(a, b, renderer, which)
     return need
+
+
+def _closest_gap_em(
+    rows: list[list[Text]],
+    renderer: RendererBase,
+    which: Literal["x", "y"],
+    dpi: float,
+) -> float | None:
+    """The least room between neighbouring labels of any row (ems of the
+    pair's larger font): each row in order along the axis, each pair the
+    gap :func:`~dartwork_mpl._figure_geometry.pair_gap_px` finds between
+    the rectangles they fill, never more than the true one. ``None`` when
+    no row has two labels."""
+
+    def centre(label: Text) -> float:
+        box = label.get_window_extent(renderer)
+        return float((box.x0 + box.x1) if which == "x" else (box.y0 + box.y1))
+
+    least: float | None = None
+    for row in rows:
+        for a, b in pairwise(sorted(row, key=centre)):
+            size = max(float(a.get_fontsize()), float(b.get_fontsize()))
+            em = size * dpi / 72.0
+            gap = pair_gap_px(a, b, renderer) / em
+            least = gap if least is None else min(least, gap)
+    return least
 
 
 def _tick_crowd_for_axis(
@@ -148,9 +189,20 @@ def check_tick_crowding(
             crowded = False
             occupancy: float | None = None
             measured = False
+            closest: float | None = None
             if result is not None:
                 occupancy, measured = result
                 crowded = occupancy is not None and occupancy > 1.0
+            if crowded:
+                # Filling the axis is crowding only where neighbours stand
+                # closer than half an em. A row with no pair, or one that
+                # cannot be measured, keeps the occupancy's verdict.
+                try:
+                    closest = _closest_gap_em(rows, renderer, axis_name, dpi)
+                except BBOX_ERRORS:
+                    closest = None
+                if closest is not None and closest >= _NEIGHBOUR_CLEARANCE_EM:
+                    crowded = False
             if not measured and len(ticks) > 1:
                 # Density fallback (extents unmeasurable).
                 span_in = span_px / dpi
@@ -164,6 +216,11 @@ def check_tick_crowding(
             span_in = span_px / dpi
             if measured and occupancy is not None:
                 detail_extra = f"labels fill {occupancy:.0%} of the axis"
+                if closest is not None:
+                    detail_extra += (
+                        f"; closest neighbours {closest:.2f} em apart, "
+                        f"under {_NEIGHBOUR_CLEARANCE_EM:g} em"
+                    )
             else:
                 detail_extra = (
                     f"density {len(ticks) / span_in:.1f} ticks/in "
