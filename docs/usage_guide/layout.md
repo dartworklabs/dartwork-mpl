@@ -394,7 +394,8 @@ raises a migration-hint `AttributeError`. Use `simple_layout` directly.
 Long category names, many categories, a large preset on a small canvas or a
 long axis name can leave text overlapping once the margins fit. Then
 `simple_layout` climbs a ladder, each rung only where text overlaps by more
-than half a pixel, easiest first:
+than half a pixel (bottom tick labels: where neighbours sit closer than
+half an em, as two names that close read as one), easiest first:
 
 1. **Axis names** that run into another panel's text or plot, or past the
    figure edge (a name longer than the figure), wrap at their spaces (at
@@ -404,7 +405,8 @@ than half a pixel, easiest first:
    neighbouring panels' text clears by half an em, when 1.5 cells or less
    does it; narrower panels would not clear a deeper collision, so it stays.
 3. **Tick labels** under the plot wrap at their spaces, only the ones that
-   collide, into at most three lines; a long label beside short ones uses
+   collide or sit closer than half an em to a neighbour, into at most three
+   lines that keep them half an em apart; a long label beside short ones uses
    the room they leave. Panels that share x (`sharex=True`) share their
    tick formatter, so they wrap together, to the narrowest panel's room.
 4. **Rotation**, when a label cannot wrap (one word, a number, more than
@@ -442,7 +444,8 @@ the ones it had before the ladder, as long as its labels stay half an em
 apart. Where they would not, matplotlib picks for the new length.
 
 Nothing is shortened, hidden or made smaller, and a figure without an
-overlap draws exactly as it would without the ladder. What you set stays:
+overlap, whose bottom tick labels sit half an em apart or more, draws
+exactly as it would without the ladder. What you set stays:
 tick labels you rotate (top labels too), break into lines or align off
 centre, axis names with line breaks or mathtext, spacing you set
 (`gridspec_kw`, `fig.add_gridspec(...)`, `fig.subplots_adjust(...)`) and

@@ -198,6 +198,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Bottom tick labels closer than half an em wrap or turn.** The layout's
+  wrap and turn keep neighbouring labels half an em apart, but only labels
+  that overlapped started them: `advanced/bar` on a slide drew "Iceland"
+  and "Sweden" 0.38 em apart (the gap of a word space: two names read as
+  one) and `waterfall` "Gain C" and "Loss D" 0.25 em apart. `dm.simple_layout`
+  now starts those steps from under half an em: names with spaces wrap
+  (`waterfall`, flat, 1.1 em apart), one-word names turn to the smallest
+  angle that clears (`advanced/bar`, 30 degrees). A row that cannot wrap
+  and that no angle clears stays flat. Labels half an em apart or more,
+  labels you rotated or broke yourself, your canvas size and
+  `fit_labels=False` draw as before; nothing gets smaller.
 - **`dm.place_legend(ax)` climbs a ladder and keeps the legend off the
   data.** `loc="best"` (no side named) now tries eight inside spots (the
   corners, upper and lower centre, then centre right and left) for one to
