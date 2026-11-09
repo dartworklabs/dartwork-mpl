@@ -109,6 +109,7 @@ from .._figure_geometry import (
     drawn_in_tree,
     drawn_tick_labels,
     figure_legends,
+    figure_tree,
     get_renderer,
     outside_side,
     same_position_axes,
@@ -223,8 +224,8 @@ def _text_boxes_drawn(fig: Figure, renderer: RendererBase) -> list[Bbox]:
     other than bar labels; where its axis is drawn (the Axes' axis on, the
     axis visible), the tick labels matplotlib draws there
     (:func:`drawn_tick_labels`, major and minor), its offset text and its
-    label; and the figure's own texts (``suptitle`` included); visible and
-    not empty. A hidden axis keeps its labels visible as artists but never
+    label; and every (Sub)Figure's own texts (``suptitle`` included);
+    drawn (a hidden SubFigure's are not) and not empty. A hidden axis keeps its labels visible as artists but never
     draws them, so they are left out. A text that clips counts only inside
     its clip box and clip path, and one clipped wholly away prints nothing,
     so it is left out too.
@@ -246,12 +247,14 @@ def _text_boxes_drawn(fig: Figure, renderer: RendererBase) -> list[Bbox]:
             found += drawn_tick_labels(ax, which)
             found += drawn_tick_labels(ax, which, minor=True)
             found += [axis.get_offset_text(), axis.label]
-    found += fig.texts
+    # Every (Sub)Figure's own texts (suptitle and sup labels among them):
+    # a SubFigure keeps its own, not on ``fig.texts``.
+    found += [text for holder in figure_tree(fig) for text in holder.texts]
     boxes: list[Bbox] = []
     for text in found:
         if (
             isinstance(text, BarLabel)
-            or not text.get_visible()
+            or not drawn_in_tree(text)  # a hidden SubFigure hides its text
             or not text.get_text()
         ):
             continue

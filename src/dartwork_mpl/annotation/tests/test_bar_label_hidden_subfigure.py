@@ -11,7 +11,7 @@ control); hidden, the values show as with no text at all.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import matplotlib
 
@@ -71,6 +71,83 @@ def test_a_hidden_subfigures_text_hides_no_bar_label() -> None:
     assert all(clear)
     assert not all(_shown_labels("shown"))  # the control: the text covers them
     assert _shown_labels("hidden") == clear
+
+
+def _last_value(owner: str) -> tuple[bool, bool]:
+    """Whether the past-limit value shows, and whether it shows under the
+    wide text written by ``owner``: "axes" (an Axes of the other SubFigure,
+    the control), "subfigure" (that SubFigure's own ``text``),
+    "self_hidden" (that SubFigure hidden) or "ancestor_hidden" (the
+    SubFigure above the writer hidden)."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    cell = fig.add_gridspec(1, 1)[0]
+    bars_fig, other = fig.add_subfigure(cell), fig.add_subfigure(cell)
+    ax = bars_fig.subplots()
+    labels = dm.label_bars(
+        ax, ax.bar(range(6), [1, 2, 3, 2, 1, 1234567], width=0.2)
+    )
+    ax.set_ylim(0, 4)
+    if owner == "axes":
+        writer: Any = other.subplots()
+        writer.axis("off")
+    else:
+        writer = {
+            "subfigure": other,
+            "self_hidden": other,
+            "ancestor_hidden": other.subfigures(1, 1),
+        }[owner]
+    text = writer.text(
+        0.5,
+        0.97,
+        "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+        ha="center",
+        va="center",
+        fontsize=30,
+        transform=fig.transFigure,
+    )
+    if owner in ("self_hidden", "ancestor_hidden"):
+        other.set_visible(False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        dm.simple_layout(fig)
+    fig.canvas.draw()
+    value = labels[-1]
+    shows = bool(value.get_visible())
+    under = shows and value.get_window_extent().overlaps(
+        text.get_window_extent()
+    )
+    return shows, bool(under)
+
+
+@pytest.mark.parametrize("owner", ["axes", "subfigure"])
+def test_no_value_shows_under_a_drawn_text(owner: str) -> None:
+    """Only the figure's own texts were figure-level obstacles: a value past
+    the limit showed under a shown SubFigure's text (review of #670). The
+    same text written by an Axes is the control."""
+    _shows, under = _last_value(owner)
+    assert not under
+
+
+def test_the_figures_own_text_is_still_an_obstacle() -> None:
+    """Without SubFigures, the figure's own texts are obstacles, as before."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.plot([0, 1], [0, 1])
+    note = fig.text(0.5, 0.5, "A note on the figure")
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    box = note.get_window_extent(renderer)
+    assert any(
+        b.bounds == pytest.approx(box.bounds)
+        for b in _text_boxes_drawn(fig, renderer)
+    )
+
+
+@pytest.mark.parametrize("owner", ["self_hidden", "ancestor_hidden"])
+def test_a_hidden_subfigures_figure_level_text_hides_no_value(
+    owner: str,
+) -> None:
+    shows, _under = _last_value(owner)
+    assert shows
 
 
 def test_a_hidden_subfigures_text_is_no_obstacle() -> None:

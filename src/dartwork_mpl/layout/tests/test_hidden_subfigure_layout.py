@@ -79,17 +79,76 @@ def test_an_axis_name_finds_no_hidden_subfigures_panel_in_its_way() -> None:
 
 
 def _cropped(hidden_content: bool) -> tuple[float, float]:
+    """The cropped size of a root grid's panel beside a hidden SubFigure
+    (with content, or empty): every SubFigure hidden, the root's panels are
+    cropped as on a figure without SubFigures."""
     fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
-    left, right = fig.subfigures(1, 2)
-    _small(left.subplots())
+    grid = fig.add_gridspec(1, 2)
+    _small(fig.add_subplot(grid[0, 0]))
+    sub = fig.add_subfigure(grid[0, 1])
     if hidden_content:
-        _big(right.subplots())
-        right.set_visible(False)
+        _big(sub.subplots())
+    sub.set_visible(False)
     return dm.tight_crop(fig)
 
 
 def test_tight_crop_keeps_no_room_for_a_hidden_subfigure() -> None:
     assert _cropped(True) == pytest.approx(_cropped(False), abs=1e-6)
+
+
+def _past_canvas(fig: Figure) -> float:
+    """How far any drawn artist runs past the canvas after a draw (px)."""
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    w, h = fig.bbox.width, fig.bbox.height
+    boxes = [
+        ax.get_tightbbox(renderer)
+        for ax in fig.axes
+        if ax.get_figure(root=False).get_visible()  # type: ignore[union-attr]
+    ]
+    for holder in (
+        fig,
+        *fig.subfigs,
+        *[s for f in fig.subfigs for s in f.subfigs],
+    ):
+        if not holder.get_visible():
+            continue
+        for art in (*holder.texts, *holder.legends):
+            boxes.append(art.get_window_extent(renderer))
+    return max(
+        [0.0] + [max(0.0, -b.x0, b.x1 - w, -b.y0, b.y1 - h) for b in boxes if b]
+    )
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize("artist", ["suptitle", "supxlabel", "legend"])
+@pytest.mark.parametrize("right", ["empty", "hidden", "shown"])
+def test_tight_crop_cuts_no_visible_subfigure_artist(
+    nested: bool, artist: str, right: str
+) -> None:
+    """A SubFigure is placed as a fraction of the figure, which a crop
+    cannot move: its title, label or legend ran 135 px past the cropped
+    canvas (review of #670). A figure with a shown SubFigure keeps its
+    size, and every drawn artist stays on the canvas."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    left, other = fig.subfigures(1, 2)
+    owner = left.subfigures(1, 1) if nested else left
+    ax = owner.subplots()
+    long = "Visible SubFigure title with a longer description"
+    ax.plot([0, 1], [0, 1], label=long if artist == "legend" else "Series")
+    ax.set(xlabel="Time", ylabel="Response")
+    owner.suptitle(long if artist == "suptitle" else "Visible title")
+    owner.supxlabel(long if artist == "supxlabel" else "Horizontal label")
+    owner.legend(loc="upper center")
+    if right != "empty":
+        _big(other.subplots())
+    if right == "hidden":
+        other.set_visible(False)
+    dm.simple_layout(fig)
+    size = tuple(fig.get_size_inches())
+    with pytest.warns(UserWarning, match="SubFigure"):
+        assert dm.tight_crop(fig) == pytest.approx(size)
+    assert _past_canvas(fig) <= 0.5
 
 
 def _root_panel(hidden_content: bool) -> tuple[float, ...]:

@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from matplotlib.figure import Figure
+import warnings
+
+from matplotlib.figure import Figure, SubFigure
 from matplotlib.transforms import Bbox
 
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
 from .._figure_geometry import (
+    drawn_in_tree,
+    figure_tree,
     get_renderer,
     holders_shown,
     iter_figure_level_extents,
@@ -80,8 +84,28 @@ def tight_crop(
     -------
     tuple[float, float]
         New figure size in inches ``(width, height)``.
+
+    A figure with a shown SubFigure is not cropped (a ``UserWarning`` says
+    so; its size is returned as it is): matplotlib places a SubFigure, its
+    titles and its legends as fractions of the figure and offers no public
+    way to move them, so a crop would cut them. ``dm.simple_layout`` fits
+    each SubFigure's content to the canvas already.
     """
     if not fig.axes:
+        w, h = fig.get_size_inches()
+        return float(w), float(h)
+    if any(
+        isinstance(sub, SubFigure) and drawn_in_tree(sub)
+        for sub in figure_tree(fig)
+    ):
+        warnings.warn(
+            "tight_crop: a figure with SubFigures is not cropped; matplotlib "
+            "places a SubFigure as a fraction of the figure and offers no "
+            "public way to move it, so a crop would cut its titles and "
+            "legends. The size is kept; dm.simple_layout fits each "
+            "SubFigure's content to the canvas.",
+            stacklevel=2,
+        )
         w, h = fig.get_size_inches()
         return float(w), float(h)
 
