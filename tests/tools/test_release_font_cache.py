@@ -84,6 +84,14 @@ def test_release_mathtext_uses_own_cache_when_shared_inventory_is_incomplete(
         "MPLBACKEND": "Agg",
     }
     environment.pop("MPLCONFIGDIR", None)
+    # The truncated inventory has to land in a cache this test owns, and only
+    # ``MPLCONFIGDIR`` redirects ``matplotlib.get_cachedir()`` on every
+    # platform. macOS ignores ``XDG_CACHE_HOME`` there, so without this the
+    # seeding interpreter wrote the STIX-less list into the developer's own
+    # ``~/.matplotlib``, where it outlived the test and made the real mathtext
+    # gates fail with no code change.
+    shared_config = tmp_path / "shared-mplconfig"
+    shared_config.mkdir()
     seeded = _python(
         """
         import json
@@ -102,13 +110,29 @@ def test_release_mathtext_uses_own_cache_when_shared_inventory_is_incomplete(
             entry.name.startswith("STIX") for entry in manager.ttflist
         )}))
         """,
-        environment,
+        {**environment, "MPLCONFIGDIR": str(shared_config)},
     )
     assert seeded.returncode == 0, seeded.stderr
     inventory = json.loads(seeded.stdout)
     assert inventory["stix"] == 0
     shared_cache = Path(inventory["cache"])
+    assert shared_cache.is_relative_to(tmp_path.resolve()), shared_cache
     original_cache = shared_cache.read_bytes()
+
+    # Reading that inventory has to break a gate, or what follows would only
+    # show the release setup avoiding a cache that is harmless anyway.
+    poisoned = _python(
+        """
+        import runpy
+
+        gates = runpy.run_path("tests/docs/test_font_invariants.py")
+        gates["test_mathtext_kr_stays_latin_without_dejavu"]()
+        """,
+        {**environment, "MPLCONFIGDIR": str(shared_config)},
+    )
+    assert poisoned.returncode != 0, poisoned.stdout
+    assert "leaked DejaVu" in poisoned.stderr, poisoned.stderr
+    assert shared_cache.read_bytes() == original_cache
 
     configured = _release_environment(environment)
     rendered = _python(
