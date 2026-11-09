@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+import numpy as np
 from matplotlib.transforms import Bbox, BboxBase
 
 from .._figure_geometry import (
@@ -16,6 +17,7 @@ from .._figure_geometry import (
 )
 from ._legend_entries import _placed_as_built
 from ._legend_fit import ceil_div, legend_pad, legend_size, probe
+from ._legend_look import SPOT_TOLERANCE_PX, sits_at
 from ._legend_outside import OutsidePlan, choose, split_ncols
 
 if TYPE_CHECKING:
@@ -237,9 +239,11 @@ def settle_figure_legends(fig: Figure, holder: Figure | SubFigure) -> bool:
     suptitle over a SubFigure without a title of its own): on one edge, the
     title, then the legend, then the panels, on the root figure (``holder``
     is ``fig``) and in each SubFigure alike. Only a legend ``figure_legend``
-    placed on a side moves; one the caller placed or anchored stays, and
-    LEGEND_OVERLAP reports what it covers. Returns whether a legend moved
-    (the caller redraws).
+    placed on a side moves, and only while it sits as the library last
+    placed it (:func:`_as_placed`): one the caller moved since
+    (``set_bbox_to_anchor``, ``set_loc``), like one the caller placed or
+    anchored, stays, and LEGEND_OVERLAP reports what it covers. Returns
+    whether a legend moved (the caller redraws).
     """
     moved = False
     box = holder.bbox
@@ -252,6 +256,8 @@ def settle_figure_legends(fig: Figure, holder: Figure | SubFigure) -> bool:
         ):
             continue
         renderer = get_renderer(fig)
+        if not _as_placed(legend, holder, renderer):
+            continue  # the caller's from now on
         anchor = _past_shared_label(holder, side, renderer)
         for _ in range(_SETTLE_TRIES):
             if _place(legend, holder, anchor):
@@ -271,6 +277,38 @@ def settle_figure_legends(fig: Figure, holder: Figure | SubFigure) -> bool:
                 else (past, anchor[1])
             )
     return moved
+
+
+def _as_placed(
+    legend: Legend, holder: Figure | SubFigure, renderer: RendererBase
+) -> bool:
+    """Whether ``legend`` sits as the library last placed it.
+
+    The rule ``place_legend``'s legends follow, read through the public
+    ``get_bbox_to_anchor`` and ``get_window_extent``: its anchor is still
+    the point the library set (compared in display px through
+    ``holder.transSubfigure``, so the same numbers in another transform are
+    a move) and its box sits where the library's ``loc`` puts it against
+    that point (:func:`~._legend_look.sits_at`; a ``set_loc`` since moves
+    it off). The record changes only when the library moves the legend.
+    """
+    anchor = getattr(legend, "_dm_figure_anchor", None)
+    loc = getattr(legend, "_dm_figure_loc", None)
+    if anchor is None or not isinstance(loc, str):
+        return False
+    try:
+        now = np.asarray(legend.get_bbox_to_anchor().get_points(), dtype=float)
+        want = np.asarray(
+            holder.transSubfigure.transform([anchor, anchor]), dtype=float
+        )
+    except BBOX_ERRORS:
+        return False
+    if (
+        now.shape != want.shape
+        or np.max(np.abs(now - want)) > SPOT_TOLERANCE_PX
+    ):
+        return False
+    return sits_at(legend, renderer, loc)
 
 
 def _place(
@@ -399,6 +437,9 @@ def figure_legend(
     )
     legend._dm_figure_legend = True  # type: ignore[attr-defined]
     legend._dm_figure_side = plan.side  # type: ignore[attr-defined]
+    # Where the library put it: the loc and the anchor point (fraction of
+    # ``fig``), so the layout tells a legend the caller moved since.
+    legend._dm_figure_loc = where  # type: ignore[attr-defined]
     legend._dm_figure_anchor = anchor  # type: ignore[attr-defined]
     _remove(replaced)
     return legend
