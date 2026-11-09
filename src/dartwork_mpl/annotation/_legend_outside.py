@@ -519,8 +519,9 @@ def fallback_sides(ax: Axes) -> list[OutsideSide]:
 
 
 def _sibling_sides(ax: Axes) -> set[OutsideSide]:
-    """Sides the fallback legends of the figure's other panels took."""
-    fig = ax.get_figure(root=False)
+    """Sides the fallback legends of the figure's other panels took (those
+    in its SubFigures too)."""
+    fig = ax.get_figure(root=True)
     if fig is None:
         return set()
     sides: set[OutsideSide] = set()

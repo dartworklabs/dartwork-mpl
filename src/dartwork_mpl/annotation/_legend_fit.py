@@ -31,6 +31,7 @@ from .._figure_geometry import (
     drawn_collection_outlines,
     drawn_ink_meets,
     drawn_tick_labels,
+    root_position,
     same_position_axes,
 )
 
@@ -368,19 +369,20 @@ def free_sides(ax: Axes) -> list[OutsideChoice]:
     """The sides of ``ax`` no other panel sits beyond (twins and insets aside).
 
     A legend outside a side another panel occupies lands on that panel: the
-    layout fits the outer margins only. Panels are compared by
-    ``get_position``; Axes out of the layout (``set_in_layout(False)``) and
-    hidden ones do not count.
+    layout fits the outer margins only. The panels are every Axes of the
+    figure, those of its SubFigures too, compared by ``get_position`` as a
+    fraction of the root figure (:func:`root_position`); Axes out of the
+    layout (``set_in_layout(False)``) and hidden ones do not count.
     """
-    fig = ax.get_figure(root=False)
-    if fig is None:
+    root = ax.get_figure(root=True)
+    if root is None:
         return list(_SIDE_ORDER)
     own = {id(a) for a in same_position_axes(ax)}
-    me = ax.get_position()
+    me = root_position(ax)
     eps = 1e-6
     others = [
-        other.get_position()
-        for other in fig.axes
+        root_position(other)
+        for other in root.axes
         if id(other) not in own
         and other.get_visible()
         and other.get_in_layout()
