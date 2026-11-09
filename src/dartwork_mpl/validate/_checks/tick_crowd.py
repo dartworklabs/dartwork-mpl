@@ -65,11 +65,11 @@ _LABEL_KINDS: tuple[LabelKind, ...] = ("names", "numbers")
 class TickCrowdDetail(TypedDict):
     """``count`` tick labels crowd one axis; ``occupancy`` when measured.
 
-    ``label_kind`` is ``"names"`` when the labels are fixed strings, one per
-    position (``set_xticks(positions, labels)``, ``set_xticklabels``,
-    categories as from ``ax.bar(names, ...)``), which a locator would drop
-    or misplace; ``"numbers"`` when a formatter writes them from the
-    ticks a locator places.
+    ``label_kind`` is ``"names"`` when the labels belong to their positions
+    (``set_xticks(positions, labels=...)``, ``set_xticklabels``, categories
+    as from ``ax.bar(names, ...)``, a ``FixedFormatter``), which a locator
+    would drop or misplace; ``"numbers"`` when a formatter writes them from
+    the ticks a locator places (see :func:`_label_kind`).
     """
 
     axis: Axis
@@ -108,12 +108,28 @@ def _row_need_px(
 
 
 def _label_kind(axis: XAxis | YAxis) -> LabelKind:
-    """``"names"`` for fixed strings, one per position, else ``"numbers"``."""
+    """``"names"`` where the labels belong to their positions, else
+    ``"numbers"``.
+
+    Names are categories (``StrCategoryFormatter``), a list of strings
+    (``FixedFormatter``), or a function formatter on fixed positions
+    (``FixedLocator``): ``set_xticks(positions, labels=...)`` and
+    ``set_xticklabels`` install a ``FuncFormatter`` that maps each position
+    to its string, so a locator from a fix would leave every new position
+    unnamed. A function formatter on fixed positions that writes numbers
+    reads as names too: no locator is offered, which keeps what it writes.
+    A function formatter under a locator that places ticks itself writes
+    numbers.
+    """
     from matplotlib.category import StrCategoryFormatter
-    from matplotlib.ticker import FixedFormatter
+    from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
 
     formatter = axis.get_major_formatter()
     if isinstance(formatter, (FixedFormatter, StrCategoryFormatter)):
+        return "names"
+    if isinstance(formatter, FuncFormatter) and isinstance(
+        axis.get_major_locator(), FixedLocator
+    ):
         return "names"
     return "numbers"
 
@@ -308,30 +324,55 @@ def check_tick_crowding(
     return warnings
 
 
+_FEWER_CATEGORIES = (
+    "# Or fewer categories: group the smallest into 'Other', or split them\n"
+    "# across panels, before plotting"
+)
 _NAME_FIXES_X = [
     "# Let the layout choose: drop a rotation you set, then lay out again\n"
     "# (it wraps, then turns, names closer than half an em)\n"
     "ax.tick_params(axis='x', labelrotation=0)\n"
     "dm.simple_layout(fig)",
-    "# A canvas of the preset's own widths at which the names stand flat\n"
+    "# A canvas of the preset's own widths at which the names stand flat,\n"
+    "# never narrower or shorter than this one\n"
     "names = [t.get_text() for t in ax.get_xticklabels()]\n"
-    "fig.set_size_inches(dm.figsize_for(n_points=len(names), labels=names))\n"
+    "w, h = dm.figsize_for(n_points=len(names), labels=names)\n"
+    "fig.set_size_inches(max(w, fig.get_figwidth()), max(h, fig.get_figheight()))\n"
     "dm.simple_layout(fig)",
-    "# Or horizontal bars: the names read along y (values: your bar values)\n"
+    "# Or horizontal bars, each on its own row, the names read along y\n"
+    "# (values: your bar values, in the order of the names)\n"
     "names = [t.get_text() for t in ax.get_xticklabels()]\n"
+    "rows = range(len(names))\n"
     "fig, ax = plt.subplots(figsize=dm.figsize_for('barh', n_points=len(names)))\n"
-    "ax.barh(names, values)\n"
+    "ax.barh(rows, values)\n"
+    "ax.set_yticks(rows, labels=names)\n"
     "dm.simple_layout(fig)",
-    "# Or fewer categories: group the smallest into 'Other', or split them\n"
-    "# across panels, before plotting",
+    _FEWER_CATEGORIES,
 ]
-_NAME_FIXES_Y = [
-    "# More names than the axis holds: a taller canvas, same width\n"
-    "fig.set_size_inches(dm.figsize(f'{fig.get_figwidth()}in', 'tall'))\n"
-    "dm.simple_layout(fig)",
-    "# Or fewer categories: group the smallest into 'Other', or split them\n"
-    "# across panels, before plotting",
-]
+
+# How many times its height a crowded y axis of names grows, per unit of
+# occupancy: with the 15 % budget, 1.35 gives each label a row of
+# 1.55 label heights, about half an em clear of the next (a label line is
+# about 1.15 em). Unmeasured (the density fallback): one and a half times.
+_HEIGHT_PER_OCCUPANCY = 1.35
+_HEIGHT_UNMEASURED = 1.5
+
+
+def _taller_fix(occupancy: float) -> str:
+    """The canvas grown by what the names lack, the same width; it only
+    ever grows (the ``'tall'`` aspect cut a 20 cm canvas to 13.5)."""
+    grow = (
+        _HEIGHT_PER_OCCUPANCY * occupancy
+        if occupancy > 1.0
+        else _HEIGHT_UNMEASURED
+    )
+    return (
+        "# More names than the axis holds: the same width, the axis grown\n"
+        f"# {grow:.2f} times its height; the canvas only grows\n"
+        "w, h = fig.get_size_inches()\n"
+        f"fig.set_size_inches(w, h + {grow - 1:.2f} * ax.get_position().height * h)\n"
+        "dm.simple_layout(fig)"
+    )
 
 
 @register_fix("TICK_CROWD")
@@ -344,7 +385,10 @@ def _fix_tick_crowd(warning: VisualWarning) -> list[str]:
     axis = choice(warning.detail, "axis", AXES)
     count = number(warning.detail, "count", 0)
     if choice(warning.detail, "label_kind", _LABEL_KINDS) == "names":
-        return list(_NAME_FIXES_Y if axis == "y" else _NAME_FIXES_X)
+        if axis == "y":
+            occupancy = float(number(warning.detail, "occupancy", 0.0))
+            return [_taller_fix(occupancy), _FEWER_CATEGORIES]
+        return list(_NAME_FIXES_X)
     if axis == "x":
         suggestions.append(
             f"# Reduce x-ticks\nax.xaxis.set_major_locator(plt.MaxNLocator(nbins={count // 2}))"

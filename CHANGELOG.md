@@ -226,12 +226,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   on x, `tick_params(rotation=45)`. Under names (fixed strings, one per
   position) the locator dropped or misplaced them (five country names kept
   two), and a hand turn overrode the layout, after which `TICK_OVERLAP`
-  said to drop it. The detail gains `label_kind` (`"names"` or
-  `"numbers"`, from the axis formatter); names now get the layout (a
-  rotation you set dropped), a canvas from `dm.figsize_for(...,
-  labels=names)`, horizontal bars, then fewer categories, and on y a
-  taller canvas. Numbers, and a warning without `label_kind`, keep fewer
-  ticks as before.
+  said to drop it. The detail gains `label_kind`: `"names"` for
+  categories, a `FixedFormatter`, or a function formatter on fixed
+  positions (what `set_xticks(positions, labels=...)` and
+  `set_xticklabels` install), else `"numbers"`. Names now get the layout
+  (a rotation you set dropped), a canvas from `dm.figsize_for(...,
+  labels=names)` that never narrows the one you have, horizontal bars
+  placed by row and named by ticks (two bars named alike stay two), then
+  fewer categories; on y the canvas grows by what the names lack and never
+  shrinks. Numbers, and a warning without `label_kind`, keep fewer ticks
+  as before.
 - **Bottom tick labels closer than half an em wrap or turn.** The layout's
   wrap and turn keep neighbouring labels half an em apart, but only labels
   that overlapped started them: `advanced/bar` on a slide drew "Iceland"
