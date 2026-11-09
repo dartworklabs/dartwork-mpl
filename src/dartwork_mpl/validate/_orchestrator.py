@@ -92,7 +92,8 @@ def validate_figure(
         Supported IDs: ``OVERFLOW``, ``OVERLAP``, ``UNIT_DUP``,
         ``CROSS_AXES_OVERLAP``, ``LEGEND_OVERFLOW``, ``LEGEND_OVERLAP``,
         ``LEGEND_ON_DATA``, ``TICK_CROWD``, ``TICK_OVERLAP``,
-        ``TICK_ROTATION``, ``TICK_DECIMAL``, ``VALUE_LABEL_DECIMAL``,
+        ``TICK_ROTATION``, ``TICK_CORNER_OVERLAP``, ``TICK_DECIMAL``,
+        ``VALUE_LABEL_DECIMAL``,
         ``VALUE_LABEL_ON_DATA``, ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
         ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``.
     exclude : tuple[str, ...], optional

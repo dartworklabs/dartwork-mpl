@@ -137,7 +137,7 @@ class Config:
     fit_labels : bool | tuple[str, ...], default ``True``
         What ``dm.simple_layout`` may do when text still collides once the
         margins fit: ``True`` every step (``"axis_labels"``, ``"space"``,
-        ``"wrap"``, ``"rotate"``), ``False`` none, a tuple of step names
+        ``"wrap"``, ``"rotate"``, ``"pad"``), ``False`` none, a tuple of step names
         only those (``with dm.config.override(fit_labels=False):``, or
         assign it). A ``fit_labels=`` argument wins per call. A figure laid
         out before gets what it fitted undone on its next

@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **x and y tick labels that meet at a corner part.** When both axes end on
+  a tick, the first bottom label and the lowest left one overlap at the
+  corner (the `−3` and `−3` of a −3..3 square: 1.6–4.2 px in the old
+  contour template and in eight docs examples); a first category name wide
+  enough reaches under the y labels the same way. Nothing reported it and
+  the layout left it. `dm.simple_layout` now takes a fifth step, `"pad"`:
+  once the other steps have nothing left to change, the tick pad of the
+  axis whose labels move less grows by the overlap plus a tenth of an em,
+  so the row keeps its line and each label its tick; the axis limits,
+  alignment and text size stay, and a pad you set
+  (`ax.tick_params(pad=...)`) stays too. What is left (both pads set by
+  hand) is the new `TICK_CORNER_OVERLAP` check (WARNING), whose fix names
+  the pad that clears it. `fit_labels=False` draws as before; existing
+  check IDs, their order and severities are unchanged.
+
 - **`dm.figsize_for("grouped", n_points=, n_series=)` for grouped bars.**
   Grouped bars put `n_series` bars side by side in each of `n_points`
   groups, and each bar needs its value label's room; `"default"` counts the
