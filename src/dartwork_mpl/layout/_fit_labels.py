@@ -32,7 +32,9 @@ and those that do harm are dropped for the rest of the call. At most
     and ``fig.subplots_adjust(hspace=...)`` (any figure spacing other than
     the rc default) stay.
 ``wrap``
-    Bottom tick labels that collide with a neighbour wrap at their spaces,
+    Bottom tick labels that collide with a neighbour, or sit closer to it
+    than ``_TARGET_EM`` (closer, two names read as one: "Iceland Sweden"
+    0.38 em apart in ``advanced/bar`` on a slide), wrap at their spaces,
     each into the fewest lines (at most ``_MAX_TICK_LINES``) that keep it
     ``_TARGET_EM`` clear of both neighbours; a label beside short ones may
     use the room they leave (:func:`wrap_limit`). Only the labels that
@@ -73,9 +75,12 @@ new length.
 
 Nothing is shortened, hidden or made smaller. Text collides when it
 overlaps by more than ``_TOUCH_PX`` (half a display pixel); text that only
-comes close stays, so a figure without a collision draws exactly as it
-would without this module. Within one call the ladder only climbs: a
-rotation never turns back into a wrap and an angle never shrinks.
+comes close stays, but for neighbouring bottom tick labels, which climb
+``wrap`` and ``rotate`` from under ``_TARGET_EM`` apart (a row that cannot
+wrap and that no angle clears stays flat). So a figure without a collision
+and with its bottom tick labels half an em apart draws exactly as it would
+without this module. Within one call the ladder only climbs: a rotation
+never turns back into a wrap and an angle never shrinks.
 
 What is left is the author's. Tick labels that still overlap are reported
 by ``TICK_OVERLAP``, an x label on a y label at a corner by
@@ -1120,6 +1125,18 @@ class _Row:
             for i, gap in enumerate(self.gaps)
         )
 
+    @property
+    def crowded(self) -> bool:
+        """Neighbours closer than ``clearance`` (half an em), overlapping or
+        not: what starts ``wrap`` and ``rotate``, whose targets are the same
+        clearance. Half a pixel of slack keeps a row that is exactly half an
+        em apart as it is."""
+        return any(
+            gap - (self.widths[i] + self.widths[i + 1]) / 2
+            < self.clearance - _TOUCH_PX
+            for i, gap in enumerate(self.gaps)
+        )
+
 
 def _read_row(
     ax: Axes,
@@ -1179,7 +1196,7 @@ def _fit_x_ticks(
     state: FitState,
 ) -> list[_Change]:
     """Wrap (together) or turn (each) the bottom tick labels of Axes that
-    share x and collide.
+    share x and collide or crowd (:attr:`_Row.crowded`).
 
     ``whole``: every Axes sharing this x is laid out by this call. When one
     is not, the shared formatter is not this call's: no wrap goes on or
@@ -1202,7 +1219,7 @@ def _fit_x_ticks(
     if (
         whole
         and not turned
-        and (wrapper is not None or any(r.collides for r in rows))
+        and (wrapper is not None or any(r.crowded for r in rows))
         and "wrap" in steps
         and state.allows(("wrap", id(axis)))
         and not any(row.yours for row in rows)
@@ -1233,7 +1250,7 @@ def _turn_angle(row: _Row, state: FitState) -> float | None:
     angle_now = state.turned.get(key)
     if not state.allows(("rotate", key)):
         return None
-    if angle_now is None and (row.yours or not row.collides):
+    if angle_now is None and (row.yours or not row.crowded):
         return None
     angle = smallest_angle(
         min(row.gaps), row.line_height, row.clearance, start=angle_now or 0.0

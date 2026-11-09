@@ -481,14 +481,17 @@ def _clearance_px(ax) -> float:
     return min(b[0] - a[1] for a, b in pairwise(spans))
 
 
-def test_tick_labels_that_only_come_close_stay() -> None:
+def test_tick_labels_half_an_em_apart_stay() -> None:
+    """Neighbours half an em apart or more stay as they are (9.8 cm: 0.56
+    em); closer ones wrap or turn like overlapping ones
+    (``test_label_clearance.py``)."""
     dm.style.use("scientific")
-    fig, ax = plt.subplots(figsize=dm.figsize("9.2cm", "standard"))
+    fig, ax = plt.subplots(figsize=dm.figsize("9.8cm", "standard"))
     ax.bar(range(8), np.arange(8) + 1.0)
     ax.set_xticks(range(8), _VARIANTS)
     dm.simple_layout(fig, fit_labels=False)
     em = ax.get_xticklabels()[0].get_fontsize() * fig.dpi / 72
-    assert 0 < _clearance_px(ax) < 0.5 * em, "precondition: close, apart"
+    assert 0.5 * em <= _clearance_px(ax) < em, "precondition: apart, close"
     before = _pixels(fig)
     dm.simple_layout(fig)
     assert _texts(ax) == _VARIANTS
