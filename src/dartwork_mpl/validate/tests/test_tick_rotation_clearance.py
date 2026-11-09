@@ -5,9 +5,11 @@ It compared the widest label plus 4 px with the axis width over the label
 count, which is wider than the ticks' real spacing on a bar axis (its
 margins) and, at 4 px, about a seventh of an em at 300 dpi. So it called
 "unneeded" the turn the layout makes for labels 0.19 em apart flat, which
-read as one name. Now it asks for half an em between the closest two
-ticks less the widest unturned label: no pair leaves less, so where the
-check calls a turn unneeded, the layout keeps the row flat too.
+read as one name. Now it asks for half an em between every pair of flat
+neighbours, the gaps the layout itself measures, so where the check calls
+a turn unneeded the layout keeps the row flat too; and for each label,
+with half an em, to fit the axis width over the label count, as the
+warning's detail says.
 """
 
 from __future__ import annotations
@@ -72,6 +74,35 @@ def test_a_turn_with_half_an_em_to_spare_is_unneeded() -> None:
     assert _unneeded(fig)
 
 
+def test_a_turn_of_uneven_ticks_with_room_flat_is_unneeded() -> None:
+    """Ticks at 0, 1 and 10: the long name stands alone at 10, every flat
+    pair is more than half an em apart and every label fits its share of
+    the axis. The closest two ticks less the widest label ran negative
+    and kept the check quiet about a turn nothing needs."""
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
+    ax.plot([0, 1, 10], [1, 2, 3])
+    ax.set_xticks([0, 1, 10], ["A", "B", "A long region name"])
+    dm.simple_layout(fig, fit_labels=False)
+    assert _flat_gap_em(fig, ax) > 0.5  # precondition
+    ax.tick_params(axis="x", labelrotation=30)
+    assert _unneeded(fig)
+
+
+def test_a_close_pair_among_uneven_ticks_keeps_its_turn() -> None:
+    """Ticks at 0, 0.45 and 10: every label fits its share of the axis
+    many times over, but 'Alpha' and 'Beta' would stand 0.19 em apart
+    flat, apart yet under the half an em the layout turns for."""
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
+    ax.plot([0, 0.45, 10], [1, 2, 3])
+    ax.set_xticks([0, 0.45, 10], ["Alpha", "Beta", "Gamma"])
+    dm.simple_layout(fig, fit_labels=False)
+    assert 0 < _flat_gap_em(fig, ax) < 0.5  # precondition
+    ax.tick_params(axis="x", labelrotation=30)
+    assert not _unneeded(fig)
+
+
 def test_the_layouts_turn_of_close_codes_is_not_called_unneeded() -> None:
     """The stress corpus' 16 codes at 9 cm in ``scientific``, 0.16 em apart
     flat: the layout turns them, and the check agrees."""
@@ -85,10 +116,10 @@ def test_the_layouts_turn_of_close_codes_is_not_called_unneeded() -> None:
 
 @pytest.mark.parametrize("preset", ["scientific", "report", "presentation"])
 def test_a_long_name_between_short_ones_keeps_its_turn(preset: str) -> None:
-    """``advanced/violin`` turns its region names; the longest would not
-    clear half an em flat, though its short neighbours leave its pairs
-    more room. The check measures the widest label against the closest
-    ticks and keeps quiet, as on main."""
+    """``advanced/violin`` turns its region names. Flat, its short
+    neighbours would leave 'North America' room in ``scientific`` and
+    ``report``, but the name overruns its share of the axis (0.3 to
+    2.6 em past it): the check keeps quiet, as on main."""
     from pathlib import Path
 
     source = (
