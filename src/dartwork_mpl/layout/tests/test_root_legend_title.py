@@ -147,6 +147,22 @@ def test_a_legend_the_caller_placed_stays_and_is_reported() -> None:
     assert _kinds(fig) == ["LEGEND_OVERLAP"]
 
 
+def test_a_root_legend_over_subfigures_comes_after_a_title_set_later() -> None:
+    """The same order when the root holds SubFigures (the SubFigure path)."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    x = np.linspace(0, 10, 40)
+    for sub in fig.subfigures(1, 2):
+        ax = sub.subplots()
+        for i in range(3):
+            ax.plot(x, np.sin(x / 2 + i) + i, label=f"Series {chr(65 + i)}")
+    legend = dm.figure_legend(fig, loc="above")
+    label = _label(fig, "above")
+    _layout(fig)
+    gap = _gap(fig, "above", legend, label)
+    assert gap == pytest.approx(_pad(fig, legend), abs=1.0)
+    assert _kinds(fig) == []
+
+
 @pytest.mark.parametrize("edit", ["anchor", "loc"])
 def test_a_figure_legend_the_caller_moved_stays_where_they_put_it(
     edit: str,
