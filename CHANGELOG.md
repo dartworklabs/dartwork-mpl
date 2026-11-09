@@ -221,6 +221,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   labels that close are reported as before, and the message names how
   close (`closest neighbours 0.30 em apart` or `neighbours overlap by
   0.36 em`). The check ID, order, severity and detail keys are unchanged.
+- **`TICK_CROWD`'s fixes for category names leave the turn to the layout.**
+  For every crowded axis it suggested `MaxNLocator(nbins=count // 2)` and,
+  on x, `tick_params(rotation=45)`. Under names (fixed strings, one per
+  position) the locator dropped or misplaced them (five country names kept
+  two), and a hand turn overrode the layout, after which `TICK_OVERLAP`
+  said to drop it. The detail gains `label_kind` (`"names"` or
+  `"numbers"`, from the axis formatter); names now get the layout (a
+  rotation you set dropped), a canvas from `dm.figsize_for(...,
+  labels=names)`, horizontal bars, then fewer categories, and on y a
+  taller canvas. Numbers, and a warning without `label_kind`, keep fewer
+  ticks as before.
 - **Bottom tick labels closer than half an em wrap or turn.** The layout's
   wrap and turn keep neighbouring labels half an em apart, but only labels
   that overlapped started them: `advanced/bar` on a slide drew "Iceland"

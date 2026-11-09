@@ -32,6 +32,7 @@ from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks
 
 if TYPE_CHECKING:
+    from matplotlib.axis import XAxis, YAxis
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.text import Text
@@ -55,13 +56,25 @@ _TICK_CROWD_FALLBACK_DENSITY = 4.0
 _NEIGHBOUR_CLEARANCE_EM = 0.5
 
 
+LabelKind = Literal["names", "numbers"]
+_LABEL_KINDS: tuple[LabelKind, ...] = ("names", "numbers")
+
+
 class TickCrowdDetail(TypedDict):
-    """``count`` tick labels crowd one axis; ``occupancy`` when measured."""
+    """``count`` tick labels crowd one axis; ``occupancy`` when measured.
+
+    ``label_kind`` is ``"names"`` when the labels are fixed strings, one per
+    position (``set_xticks(positions, labels)``, ``set_xticklabels``,
+    categories as from ``ax.bar(names, ...)``), which a locator would drop
+    or misplace; ``"numbers"`` when a formatter writes them from the
+    ticks a locator places.
+    """
 
     axis: Axis
     axes_index: int
     count: int
     occupancy: float | None
+    label_kind: LabelKind
 
 
 def _row_need_px(
@@ -90,6 +103,17 @@ def _row_need_px(
     for a, b in pairwise(ordered):
         need += pair_clearance_px(a, b, renderer, which)
     return need
+
+
+def _label_kind(axis: XAxis | YAxis) -> LabelKind:
+    """``"names"`` for fixed strings, one per position, else ``"numbers"``."""
+    from matplotlib.category import StrCategoryFormatter
+    from matplotlib.ticker import FixedFormatter
+
+    formatter = axis.get_major_formatter()
+    if isinstance(formatter, (FixedFormatter, StrCategoryFormatter)):
+        return "names"
+    return "numbers"
 
 
 def _closest_gap_em(
@@ -246,6 +270,7 @@ def check_tick_crowding(
                                 if measured and occupancy is not None
                                 else None
                             ),
+                            label_kind=_label_kind(target),
                         )
                     ),
                 )
@@ -254,11 +279,43 @@ def check_tick_crowding(
     return warnings
 
 
+_NAME_FIXES_X = [
+    "# Let the layout choose: drop a rotation you set, then lay out again\n"
+    "# (it wraps, then turns, names closer than half an em)\n"
+    "ax.tick_params(axis='x', labelrotation=0)\n"
+    "dm.simple_layout(fig)",
+    "# A canvas of the preset's own widths at which the names stand flat\n"
+    "names = [t.get_text() for t in ax.get_xticklabels()]\n"
+    "fig.set_size_inches(dm.figsize_for(n_points=len(names), labels=names))\n"
+    "dm.simple_layout(fig)",
+    "# Or horizontal bars: the names read along y (values: your bar values)\n"
+    "names = [t.get_text() for t in ax.get_xticklabels()]\n"
+    "fig, ax = plt.subplots(figsize=dm.figsize_for('barh', n_points=len(names)))\n"
+    "ax.barh(names, values)\n"
+    "dm.simple_layout(fig)",
+    "# Or fewer categories: group the smallest into 'Other', or split them\n"
+    "# across panels, before plotting",
+]
+_NAME_FIXES_Y = [
+    "# More names than the axis holds: a taller canvas, same width\n"
+    "fig.set_size_inches(dm.figsize(f'{fig.get_figwidth()}in', 'tall'))\n"
+    "dm.simple_layout(fig)",
+    "# Or fewer categories: group the smallest into 'Other', or split them\n"
+    "# across panels, before plotting",
+]
+
+
 @register_fix("TICK_CROWD")
 def _fix_tick_crowd(warning: VisualWarning) -> list[str]:
+    """Names: the layout, a canvas sized for them, horizontal bars, fewer
+    categories; never a locator (it drops or misplaces fixed names) nor a
+    turn (the layout turns only what would not clear). Numbers: fewer
+    ticks, as before; a warning without ``label_kind`` reads as numbers."""
     suggestions: list[str] = []
     axis = choice(warning.detail, "axis", AXES)
     count = number(warning.detail, "count", 0)
+    if choice(warning.detail, "label_kind", _LABEL_KINDS) == "names":
+        return list(_NAME_FIXES_Y if axis == "y" else _NAME_FIXES_X)
     if axis == "x":
         suggestions.append(
             f"# Reduce x-ticks\nax.xaxis.set_major_locator(plt.MaxNLocator(nbins={count // 2}))"
