@@ -995,8 +995,12 @@ def _fit_panel_gaps(
     }
     if not any(free.values()):
         return []
-    bottoms, tops, lefts, rights = gs.get_grid_positions(fig)
-    fw, fh = fig.bbox.width, fig.bbox.height
+    # The grid's positions are fractions of the (Sub)Figure it is on; the
+    # canvas starts at 0, a SubFigure's box where it sits on the canvas.
+    frame = getattr(gs, "figure", None) or fig
+    bottoms, tops, lefts, rights = gs.get_grid_positions(frame)
+    fw, fh = frame.bbox.width, frame.bbox.height
+    ox, oy = frame.bbox.x0, frame.bbox.y0
     across_cols: list[_Reach] = []
     across_rows: list[_Reach] = []
     for ax in axes:
@@ -1012,20 +1016,20 @@ def _fit_panel_gaps(
             _Reach(
                 cols,
                 rows,
-                back=lefts[cols.start] * fw - x0,
-                ahead=x1 - rights[cols.stop - 1] * fw,
+                back=ox + lefts[cols.start] * fw - x0,
+                ahead=x1 - (ox + rights[cols.stop - 1] * fw),
             )
         )
         across_rows.append(
             _Reach(
                 rows,
                 cols,
-                back=y1 - tops[rows.start] * fh,
-                ahead=bottoms[rows.stop - 1] * fh - y0,
+                back=y1 - (oy + tops[rows.start] * fh),
+                ahead=oy + bottoms[rows.stop - 1] * fh - y0,
             )
         )
     em = float(mpl.rcParams["font.size"]) * fig.dpi / 72.0
-    params = gs.get_subplot_params(fig)
+    params = gs.get_subplot_params(frame)
     changes: list[_Change] = []
     for key, n, reaches, seps, total in (
         (

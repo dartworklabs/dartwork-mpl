@@ -18,6 +18,7 @@ from .._figure_geometry import get_renderer
 from ..units import Length
 from ._content_extent import _axes_content_extent_px
 from ._fit_labels import (
+    _root_gridspec,
     climb,
     grid_edges,
     put_back_edges,
@@ -35,12 +36,18 @@ from ._margins import (
 from ._orphan_tick_font import _adopt_axis_label_font_core
 from ._reservations import _figure_artist_reservations
 from ._settle import _settle_outside_legends
+from ._subfigure_frames import held_grids, place_subfigure_title
+from ._subfigure_frames import holder_margins as _holder_margins
+from ._subfigure_frames import holder_of as _holder_of
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.figure import SubFigure
+
+    from ._fit_labels import Edges
 
 
 # Tolerance for the per-iteration GridSpec edge change (display px). A
@@ -298,6 +305,23 @@ def simple_layout(
     ):
         raise ValueError("margin must resolve to finite figure fractions")
 
+    if gs is None and fig.subfigs:
+        # Each grid is fitted in the box of the SubFigure that holds it.
+        _fit_holders(
+            fig,
+            margins=margins,
+            steps=steps,
+            use_all_axes=use_all_axes,
+            adopt_orphan_tick_font=adopt_orphan_tick_font,
+            format_ticks=format_ticks,
+            verbose=verbose,
+        )
+        return
+    # A grid named by ``gs`` in a SubFigure is fitted in that SubFigure's box.
+    holder = _holder_of(fig, actual_gs)
+    if holder is not None:
+        margins = _holder_margins(fig, holder, margins)
+
     # Filter target axes by the gridspec the caller actually pointed at
     # (the *immediate* one), not the root that ``_resolve_gridspec``
     # walks to for ``.update()``. ``ax.get_gridspec()`` returns the
@@ -340,6 +364,117 @@ def simple_layout(
     _show_twin_spines(fig)
     _color_twins(fig)
 
+    _fit_grid(
+        fig,
+        actual_gs,
+        scope=scope,
+        margins=margins,
+        steps=steps,
+        start=start,
+        adopt_orphan_tick_font=adopt_orphan_tick_font,
+        format_ticks=format_ticks,
+        verbose=verbose,
+        holder=holder,
+    )
+    # The bar labels were settled in each step, so they are reported even
+    # when nothing could be measured.
+    _report_hidden_bar_labels(fig)
+
+
+def _fit_holders(
+    fig: Figure,
+    *,
+    margins: _Sides,
+    steps: frozenset[str],
+    use_all_axes: bool,
+    adopt_orphan_tick_font: bool,
+    format_ticks: bool,
+    verbose: bool,
+) -> None:
+    """Fit every grid of a figure with SubFigures in its holder's box.
+
+    Each grid is fitted as :func:`simple_layout` fits a lone grid on the
+    canvas (the margin fit, then the label ladder), in the box of the
+    (Sub)Figure that holds it, parents first: a SubFigure title the library
+    places goes under the figure-level text above it, and that text and the
+    SubFigure's own reserve the box's edges. The scope of a grid is the
+    Axes its holder holds (``use_all_axes``) or those on the grid.
+    """
+    grids = held_grids(fig)
+    scopes = [
+        [
+            ax
+            for ax in fig.axes
+            if ax.get_figure(root=False) is holder
+            and (use_all_axes or _root_gridspec(ax) is grid)
+        ]
+        for holder, grid in grids
+    ]
+    restore_fitted(fig, [ax for scope in scopes for ax in scope])
+    starts = [grid_edges(grid) for _holder, grid in grids]
+    if format_ticks:
+        _format_ticks(fig)
+    _show_twin_spines(fig)
+    _color_twins(fig)
+    for (holder, grid), scope, start in zip(grids, scopes, starts, strict=True):
+        sub = _holder_of(fig, grid)
+        place_subfigure_title(fig, holder)
+        _fit_grid(
+            fig,
+            grid,
+            scope=scope,
+            margins=margins
+            if sub is None
+            else _holder_margins(fig, sub, margins),
+            steps=steps,
+            start=start,
+            adopt_orphan_tick_font=adopt_orphan_tick_font,
+            format_ticks=format_ticks,
+            verbose=verbose,
+            holder=sub,
+        )
+    _report_hidden_bar_labels(fig)
+
+
+def _same_edges(a: _GridEdges, b: _GridEdges) -> bool:
+    return all(
+        abs(x - y) < 1e-9
+        for x, y in zip(
+            (a.left, a.right, a.bottom, a.top),
+            (b.left, b.right, b.bottom, b.top),
+            strict=True,
+        )
+    )
+
+
+def _inner_edges(a: _GridEdges, b: _GridEdges) -> _GridEdges:
+    """The smaller of two grid boxes, edge by edge."""
+    return _GridEdges(
+        max(a.left, b.left),
+        min(a.right, b.right),
+        max(a.bottom, b.bottom),
+        min(a.top, b.top),
+    )
+
+
+def _fit_grid(
+    fig: Figure,
+    actual_gs: GridSpec,
+    *,
+    scope: Sequence[Axes],
+    margins: _Sides,
+    steps: frozenset[str],
+    start: Edges,
+    adopt_orphan_tick_font: bool,
+    format_ticks: bool,
+    verbose: bool,
+    holder: SubFigure | None = None,
+) -> None:
+    """Fit one grid's margins, then climb the label ladder on ``scope``.
+
+    ``margins`` are fractions of the box the grid is fitted in: the canvas,
+    or the SubFigure ``holder`` that holds the grid (:func:`_fit_holders`).
+    """
     last: _GridEdges | None = None
     settled = False
 
@@ -355,6 +490,7 @@ def simple_layout(
             adopt_orphan_tick_font=adopt_orphan_tick_font,
             format_ticks=format_ticks,
             verbose=verbose,
+            holder=holder,
         )
         settled = step is not None and step.delta_px < _CONVERGE_TOL_PX
         return step is not None
@@ -378,9 +514,6 @@ def simple_layout(
         last = None
         fit_margins()
     remember_layout(actual_gs, start)
-    # The bar labels were settled in each step, so they are reported even
-    # when nothing could be measured.
-    _report_hidden_bar_labels(fig)
 
 
 def _fit_margins(
@@ -393,14 +526,17 @@ def _fit_margins(
     adopt_orphan_tick_font: bool,
     format_ticks: bool,
     verbose: bool,
+    holder: SubFigure | None = None,
 ) -> tuple[_LayoutStep | None, _GridEdges | None]:
     """Iterate layout steps until the GridSpec edges settle.
 
     ``scope`` is the Axes the call lays out (:func:`simple_layout`). Returns
     the last step (``None`` when the figure has no measurable Axes) and the
-    edges written into ``actual_gs``.
+    edges written into ``actual_gs``, fractions of ``holder``'s box when the
+    grid is a SubFigure's.
     """
     last = last_edges
+    before_last: _GridEdges | None = None
     step: _LayoutStep | None = None
     for _ in range(2):
         for it in range(_MAX_ITER):
@@ -410,10 +546,23 @@ def _fit_margins(
                 scope=scope,
                 last_edges=last,
                 adopt_orphan_tick_font=adopt_orphan_tick_font,
+                holder=holder,
             )
             if step is None:
                 break  # no measurable Axes: nothing to place
             new_edges = step.edges
+            if (
+                last is not None
+                and before_last is not None
+                and step.delta_px >= _CONVERGE_TOL_PX
+                and _same_edges(new_edges, before_last)
+            ):
+                # The edges alternate between two fits: a tick locator
+                # picks wider labels at one width than at the other, which
+                # then fit (AutoLocator's 0.25 and 0.2 steps). Keep the
+                # inner of the two, where the content fits, and stop.
+                new_edges = _inner_edges(new_edges, last)
+                step = _LayoutStep(new_edges, 0.0)
 
             if verbose:
                 print(
@@ -446,7 +595,7 @@ def _fit_margins(
                     position = spec.get_position(ax.get_figure(root=False))  # type: ignore[arg-type]
                     if ax.get_position(original=True).bounds != position.bounds:
                         ax.set_subplotspec(spec)
-            last = new_edges
+            before_last, last = last, new_edges
 
             if step.delta_px < _CONVERGE_TOL_PX:
                 break
@@ -530,9 +679,12 @@ def _solve_layout_step(
     scope: Sequence[Axes],
     last_edges: _GridEdges | None,
     adopt_orphan_tick_font: bool,
+    holder: SubFigure | None = None,
 ) -> _LayoutStep | None:
     """Measure the figure once and solve one iteration of ``simple_layout``.
 
+    The grid is solved in the canvas, or in the box of the SubFigure
+    ``holder`` that holds it: an Axes' position is a fraction of that box.
     ``scope`` is the Axes the call lays out (every Axes, or only the
     requested GridSpec's; :func:`simple_layout`). Returns the step, or
     ``None`` if the figure has no measurable axes (in which case the caller
@@ -578,8 +730,10 @@ def _solve_layout_step(
         fig.canvas.draw()
         renderer = get_renderer(fig)
     _clear_bar_labels(fig, renderer)
-    fbox = fig.bbox
+    fbox = fig.bbox if holder is None else holder.bbox
     fw_px, fh_px = fbox.width, fbox.height
+    # The canvas starts at 0; a SubFigure's box where it sits on it.
+    ox, oy = (0.0, 0.0) if holder is None else (fbox.x0, fbox.y0)
 
     oh_l: list[float] = []
     oh_r: list[float] = []
@@ -591,17 +745,17 @@ def _solve_layout_step(
             continue
         x0, x1, y0, y1 = ext
         pos = ax.get_position()
-        oh_l.append(pos.x0 - x0 / fw_px)
-        oh_r.append(x1 / fw_px - pos.x1)
-        oh_b.append(pos.y0 - y0 / fh_px)
-        oh_t.append(y1 / fh_px - pos.y1)
+        oh_l.append(pos.x0 - (x0 - ox) / fw_px)
+        oh_r.append((x1 - ox) / fw_px - pos.x1)
+        oh_b.append(pos.y0 - (y0 - oy) / fh_px)
+        oh_t.append((y1 - oy) / fh_px - pos.y1)
 
     if not oh_l:  # no measurable axes
         return None
 
     # Reserve room for figure-level artists (suptitle / fig.legend /
     # fig.text) so the gridspec doesn't push axes content on top of them.
-    reserved = _figure_artist_reservations(fig, renderer, fw_px, fh_px)
+    reserved = _figure_artist_reservations(fig, renderer, fw_px, fh_px, holder)
     overhang = _Sides(
         left=max(oh_l), right=max(oh_r), bottom=max(oh_b), top=max(oh_t)
     )

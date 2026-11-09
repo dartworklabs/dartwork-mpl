@@ -190,7 +190,7 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
 
 
 def iter_figure_level_extents(
-    fig: Figure,
+    fig: Figure | SubFigure,
     renderer: RendererBase,
     *,
     legends: bool = True,
