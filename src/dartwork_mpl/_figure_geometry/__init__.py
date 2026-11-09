@@ -31,6 +31,7 @@ from ._drawn import (
     clip_region,
     drawn_collection_outlines,
     drawn_collection_paths,
+    drawn_ink_meets,
     within_clip_path,
 )
 
@@ -53,6 +54,7 @@ __all__ = [
     "drawn_axes_texts",
     "drawn_collection_outlines",
     "drawn_collection_paths",
+    "drawn_ink_meets",
     "drawn_tick_labels",
     "get_renderer",
     "iter_figure_level_extents",

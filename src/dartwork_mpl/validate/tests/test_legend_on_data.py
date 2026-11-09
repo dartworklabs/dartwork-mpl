@@ -264,6 +264,43 @@ def test_an_outline_counts_where_its_edge_runs_under_the_legend() -> None:
     assert [w.detail["covered"] for w in found] == [["area"]]
 
 
+@pytest.mark.parametrize(("width", "covered"), [(35, True), (3, False)])
+def test_an_outline_past_its_clip_counts_where_its_stroke_reaches_in(
+    width: float, covered: bool
+) -> None:
+    """The clip cuts the outline's stroke, not its path (review of #662).
+
+    The polygon lies wholly above the Axes; a 35 pt edge along its bottom
+    still draws under a legend in the upper-right corner, a 3 pt one does
+    not. The oracle is the pixels under the legend with the polygon hidden.
+    """
+    fig, ax = _fig()
+    ax.set(xlim=(0, 10), ylim=(0, 10))
+    coll = PolyCollection(
+        [[(6.5, 10.1), (10, 10.1), (10, 12), (6.5, 12)]],
+        facecolors="none",
+        edgecolors="oc.gray5",
+        linewidths=width,
+    )
+    ax.add_collection(coll)
+    ax.plot([], [], label="Mean")
+    legend = ax.legend(loc="upper right")
+    fig.canvas.draw()
+    shown = np.asarray(fig.canvas.buffer_rgba()).copy()
+    found = _found(fig)
+    coll.set_visible(False)
+    fig.canvas.draw()
+    hidden = np.asarray(fig.canvas.buffer_rgba())
+    box = legend.get_window_extent(drawn_renderer(fig))
+    h = shown.shape[0]
+    rows = slice(h - int(box.y1), h - int(box.y0))
+    cols = slice(int(box.x0), int(box.x1))
+    assert (
+        not np.array_equal(shown[rows, cols], hidden[rows, cols])
+    ) is covered
+    assert _kinds(found) == ([(ID, ["area"])] if covered else [])
+
+
 def test_meshes_and_contours_are_still_not_data() -> None:
     fig, ax = _fig()
     x, y = np.meshgrid(np.linspace(0, 1, 20), np.linspace(0, 1, 20))

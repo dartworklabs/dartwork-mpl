@@ -29,9 +29,9 @@ from .._figure_geometry import (
     clip_path_px,
     clip_region,
     drawn_collection_outlines,
+    drawn_ink_meets,
     drawn_tick_labels,
     same_position_axes,
-    within_clip_path,
 )
 
 if TYPE_CHECKING:
@@ -97,20 +97,13 @@ class Ink:
     #: wherever its ink lies.
     clips: dict[int, tuple[Bbox, Path | None]] = field(default_factory=dict)
 
-    def _drawn_part(self, key: int, box: Bbox) -> Bbox | None:
-        """The part of ``box`` where artist ``key``'s clip lets it draw."""
-        clip = self.clips.get(key)
-        if clip is None:
-            return box
-        region, clip_path = clip
-        x0, y0 = max(box.x0, region.x0), max(box.y0, region.y0)
-        x1, y1 = min(box.x1, region.x1), min(box.y1, region.y1)
-        if x1 <= x0 or y1 <= y0:
-            return None
-        return within_clip_path(Bbox.from_extents(x0, y0, x1, y1), clip_path)
-
     def met(self, box: Bbox, clearance: float) -> set[int]:
-        """The artists whose ink comes within ``clearance`` px of ``box``."""
+        """The artists whose ink comes within ``clearance`` px of ``box``.
+
+        A clipped collection's ink counts where its clip lets it draw; the
+        clip cuts its stroke, not its centre line
+        (:func:`~dartwork_mpl._figure_geometry.drawn_ink_meets`).
+        """
         found: set[int] = set()
         grown = box.padded(clearance)
         for key, bb in self.boxes:
@@ -119,14 +112,16 @@ class Ink:
         for key, path, half in self.lines:
             if key in found:
                 continue
-            reach = self._drawn_part(key, grown.padded(half))
-            if reach is not None and path.intersects_bbox(reach, filled=False):
+            region, clip_path = self.clips.get(key, (UNCLIPPED, None))
+            if drawn_ink_meets(path, half, grown, region, clip_path):
                 found.add(key)
         for key, path in self.filled:
             if key in found:
                 continue
-            reach = self._drawn_part(key, grown)
-            if reach is not None and path.intersects_bbox(reach, filled=True):
+            region, clip_path = self.clips.get(key, (UNCLIPPED, None))
+            if drawn_ink_meets(
+                path, 0.0, grown, region, clip_path, filled=True
+            ):
                 found.add(key)
         for key, xy, r in self.points:
             if key in found or not len(xy):

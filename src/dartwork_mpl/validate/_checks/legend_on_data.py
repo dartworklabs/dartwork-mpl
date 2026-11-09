@@ -59,6 +59,7 @@ from ..._figure_geometry import (
     clip_path_px,
     clip_region,
     drawn_collection_outlines,
+    drawn_ink_meets,
     same_position_axes,
     within_clip_path,
 )
@@ -457,29 +458,28 @@ def _area_hits(
 ) -> list[_Hit]:
     """Areas whose drawn outline ``box`` crosses, or holds whole.
 
-    The legend's box is cut to the plot box and to where the area's clip
-    lets it draw, as a label's box is (a clip path that lets none of it
-    through draws none of it there). Each polygon's outline reaches its
-    ``half`` past its path (its edge's stroke); contact within ``touch``
-    of the legend's edge is a touch. A box inside an area's interior meets
-    no outline (``filled=False``).
+    The legend's box is cut to the plot box; contact within ``touch`` of its
+    edge is a touch. Each polygon's outline is stroked its ``half`` past its
+    path, and the area's clip cuts that stroke where it lets it draw, as
+    ``dm.place_legend`` reads it
+    (:func:`~dartwork_mpl._figure_geometry.drawn_ink_meets`; a clip path
+    that lets none of the box through draws none of it there). A box inside
+    an area's interior meets no outline (``filled=False``).
     """
     clipped = _clip(box, frame)
     if clipped is None:
         return []
-    found: list[_Hit] = []
-    for area in areas:
-        for outline in area.outlines:
-            reach = clipped.padded(outline.half - touch)
-            if reach.width <= 0 or reach.height <= 0:
-                continue
-            cut = within_clip_path(_clip(reach, area.region), area.clip_path)
-            if cut is not None and outline.path.intersects_bbox(
-                cut, filled=False
-            ):
-                found.append(_Hit("area", area.name))
-                break
-    return found
+    inner = clipped.padded(-touch)
+    return [
+        _Hit("area", area.name)
+        for area in areas
+        if any(
+            drawn_ink_meets(
+                outline.path, outline.half, inner, area.region, area.clip_path
+            )
+            for outline in area.outlines
+        )
+    ]
 
 
 def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:

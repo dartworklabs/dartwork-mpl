@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.patches import Circle, Rectangle
+from matplotlib.path import Path
 from matplotlib.transforms import Bbox
 
 import dartwork_mpl as dm
@@ -46,7 +47,7 @@ def _close():
         ),
         (_legend_fit, "clip_region", fg.clip_region),
         (_legend_fit, "clip_path_px", fg.clip_path_px),
-        (_legend_fit, "within_clip_path", fg.within_clip_path),
+        (_legend_fit, "drawn_ink_meets", fg.drawn_ink_meets),
         (
             legend_on_data,
             "drawn_collection_outlines",
@@ -56,6 +57,7 @@ def _close():
         (legend_on_data, "clip_region", fg.clip_region),
         (legend_on_data, "clip_path_px", fg.clip_path_px),
         (legend_on_data, "within_clip_path", fg.within_clip_path),
+        (legend_on_data, "drawn_ink_meets", fg.drawn_ink_meets),
         (value_label_on_data, "_clip_region", fg.clip_region),
         (value_label_on_data, "_clip_path", fg.clip_path_px),
         (value_label_on_data, "_within_path", fg.within_clip_path),
@@ -229,3 +231,54 @@ def test_a_clip_path_away_from_a_box_lets_none_of_it_through() -> None:
     assert fg.within_clip_path(far, path) is None
     region = fg.clip_region(coll)
     assert region.bounds == pytest.approx(path.get_extents().bounds)
+
+
+# ------------------------------------------- the clip cuts the stroke (#662)
+#: A horizontal centre line at y = 110 px, and a clip region below it.
+_LINE = Path([(0.0, 110.0), (200.0, 110.0)])
+_BELOW = Bbox.from_extents(0, 0, 200, 100)
+_NEAR_TOP = Bbox.from_extents(50, 80, 150, 98)
+
+
+@pytest.mark.parametrize(
+    ("half", "region", "meets"),
+    [
+        (15.0, _BELOW, True),  # its stroke reaches 95 px: inside the clip
+        (5.0, _BELOW, False),  # its stroke stops at 105 px: all clipped away
+        (15.0, fg.UNCLIPPED, True),
+        (5.0, fg.UNCLIPPED, False),  # 12 px from the box: not reached
+    ],
+    ids=["straddles", "wholly_past", "unclipped", "short"],
+)
+def test_a_clip_cuts_the_stroke_not_the_centre_line(
+    half: float, region: Bbox, meets: bool
+) -> None:
+    assert fg.drawn_ink_meets(_LINE, half, _NEAR_TOP, region) is meets
+
+
+def test_a_clip_path_cuts_the_stroke_not_the_centre_line() -> None:
+    """A circle of radius 20 px at (100, 90): a line 5 px past its top,
+    stroked 10 px either side, draws into it, so a box there meets it; at
+    4 px either side it draws nothing there."""
+    circle = Path.circle((100.0, 90.0), 20.0)
+    region = circle.get_extents()
+    line = Path([(0.0, 115.0), (200.0, 115.0)])
+    near = Bbox.from_extents(90, 100, 110, 112)
+    far = Bbox.from_extents(0, 0, 10, 10)
+    assert fg.drawn_ink_meets(line, 10.0, near, region, circle)
+    assert not fg.drawn_ink_meets(line, 4.0, near, region, circle)
+    assert not fg.drawn_ink_meets(line, 10.0, far, region, circle)
+    # A corner of the circle's extent lies outside the circle: a line across
+    # it draws there only outside the clip, so nothing.
+    corner = Bbox.from_extents(81, 71, 85, 75)
+    across = Path([(0.0, 72.0), (200.0, 72.0)])
+    assert fg.drawn_ink_meets(across, 1.0, corner)
+    assert not fg.drawn_ink_meets(across, 1.0, corner, region, circle)
+
+
+def test_a_filled_path_meets_a_box_inside_it() -> None:
+    square = Path([(0, 0), (100, 0), (100, 100), (0, 100), (0, 0)], closed=True)
+    inside = Bbox.from_extents(40, 40, 60, 60)
+    assert fg.drawn_ink_meets(square, 0.0, inside, filled=True)
+    assert not fg.drawn_ink_meets(square, 0.0, inside, filled=False)
+    assert not fg.drawn_ink_meets(square, 0.0, inside, fg.NOWHERE, filled=True)

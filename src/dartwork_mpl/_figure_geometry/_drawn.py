@@ -14,7 +14,10 @@ or a check count what the placer ignored.
 - :func:`artist_shown`: visible and not at an artist alpha of 0 (one alpha
   per item: any above 0);
 - :func:`clip_region`, :func:`clip_path_px`, :func:`within_clip_path`:
-  where an artist's clip box and clip path let it draw.
+  where an artist's clip box and clip path let it draw;
+- :func:`drawn_ink_meets`: whether a path's ink (stroked, or filled) lies in
+  a box where its clip lets it draw, the clip cutting the stroke, not the
+  centre line.
 
 Everything is in display px for the figure as last drawn.
 """
@@ -179,3 +182,31 @@ def within_clip_path(box: Bbox | None, clip_path: Path | None) -> Bbox | None:
     if box is None or clip_path is None:
         return box
     return box if clip_path.intersects_bbox(box, filled=True) else None
+
+
+def drawn_ink_meets(
+    path: Path,
+    half: float,
+    box: Bbox,
+    region: Bbox = UNCLIPPED,
+    clip_path: Path | None = None,
+    *,
+    filled: bool = False,
+) -> bool:
+    """Whether ``path``'s ink lies in ``box`` where its clip lets it draw.
+
+    The ink is the path stroked ``half`` px either side (and its inside
+    when ``filled``). The clip cuts the ink, not the path: a thick line
+    whose centre runs just past its clip still draws the part of its
+    stroke inside it. So ``box`` is first cut to where the clip lets ink be
+    drawn (``region``, then ``clip_path`` by :func:`within_clip_path`),
+    and the path then meets that cut box widened by ``half``.
+    """
+    cut = _intersect(box, region)
+    cut = within_clip_path(cut, clip_path)
+    if cut is None:
+        return False
+    reach = cut.padded(half)
+    if reach.width <= 0 or reach.height <= 0:
+        return False
+    return bool(path.intersects_bbox(reach, filled=filled))
