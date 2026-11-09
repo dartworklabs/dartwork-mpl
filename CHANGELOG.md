@@ -501,6 +501,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **`dm.simple_layout` lays out every SubFigure in its own box.** It used to
+  fit the first Axes' grid alone, with edges measured on the canvas written
+  into that SubFigure's grid: tick labels ran off the canvas, a neighbour's
+  axis name lay on a plot and SubFigure titles sat under the panels. Each
+  grid is now fitted as a lone grid is on the canvas (margins, then the
+  label ladder), inside the box of the SubFigure that holds it: canvas sides
+  keep `margin`, sides between SubFigures keep the panel gap unless
+  `wspace`/`hspace` parted them, and figure titles above reserve the box's
+  top. A SubFigure title the library placed moves under the figure title; a
+  `y` you gave stays. SubFigure boxes and `width_ratios` are not moved, and
+  figures without SubFigures are laid out as before. The margin fit also
+  stops when the edges alternate between two fits (a tick locator picking
+  wider labels at one width), keeping the one where the content fits.
 - **SubFigures are neighbours, and their legends and titles are measured.**
   `dm.place_legend` counts a panel in another SubFigure (nested ones too)
   as the neighbour it is: the middle of three stacked panels no longer

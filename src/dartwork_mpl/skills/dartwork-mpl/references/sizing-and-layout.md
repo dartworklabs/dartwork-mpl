@@ -122,7 +122,10 @@ text as `CROSS_AXES_OVERLAP`.
 - `margin="2mm"` (or `"2%"`, `dm.mm(2)`) adds a uniform buffer.
 - `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.
 - With one main GridSpec pass it: `dm.simple_layout(fig, gs=gs)`.
-- A `SubFigure` is not accepted; pass the parent `Figure`.
+- A `SubFigure` is not accepted; pass the parent `Figure`. With SubFigures,
+  each SubFigure's grid is fitted inside its own box: canvas sides keep
+  `margin`, sides between SubFigures keep the panel gap, and the boxes,
+  `width_ratios`/`wspace` and a `y` you gave a SubFigure title stay.
 
 ## Equal grid with panel labels
 

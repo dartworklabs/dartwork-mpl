@@ -412,8 +412,10 @@ dm.save_formats(fig, "output/layout-v1", formats=("png", "pdf"),
 `dm.simple_layout` needs a parent `Figure`; passing a `SubFigure` raises
 `AttributeError` for missing `get_size_inches`. Passing a nested GridSpec with a
 parent Figure walks to its root GridSpec and adjusts root outer margins; it
-does not solve each nested region independently. Calling it on the root Figure
-of a SubFigure tree is not a local-margin solution either. Do not insert fake
+does not solve each nested region independently. Called on the root Figure of
+a SubFigure tree, it fits each SubFigure's grid inside that SubFigure's box:
+canvas sides keep `margin`, sides between SubFigures keep the panel gap, and
+the SubFigure boxes and ratios are not moved. Do not insert fake
 helper calls or silently change requested allocations to make validation pass.
 Read the full report (including `CHECK_FAILED`), inspect the actual PNG and PDF,
 and retain heuristic/advisory warnings with any explanation. Save a revision to
