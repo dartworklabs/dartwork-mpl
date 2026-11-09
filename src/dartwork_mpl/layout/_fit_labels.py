@@ -1544,19 +1544,9 @@ def _fit_corners(
 ) -> list[_Change]:
     """Move the labels of one axis out where x and y labels of a plot box
     overlap: the x labels or the y labels, whichever move less."""
-    ids = {id(ax) for ax in axes}
-    done: set[int] = set()
     changes: list[_Change] = []
-    for ax in axes:
-        if id(ax) in done or not _cartesian(ax):
-            continue
-        group = [
-            member
-            for member in same_position_axes(ax)
-            if id(member) in ids and _cartesian(member)
-        ]
-        done.update(id(member) for member in group)
-        key: Key = ("pad", id(ax))
+    for group in _plot_boxes(axes):
+        key: Key = ("pad", id(group[0]))
         if not state.allows(key):
             continue
         pairs = corner_tick_overlaps(group, renderer)
@@ -1572,6 +1562,22 @@ def _fit_corners(
         moves = min(options, key=lambda option: max(option.values()))
         changes.append(_grow_pads(moves, group, key))
     return changes
+
+
+def _plot_boxes(axes: Sequence[Axes]) -> list[list[Axes]]:
+    """The fitted ``axes`` grouped by the box they are drawn in (an Axes and
+    its twins), from where they were placed: the active position applies
+    the aspect of a fixed-aspect Axes (``imshow``, ``set_aspect``) and would
+    move it mid-layout, so a figure without a corner pair would not draw
+    as before."""
+    groups: dict[tuple[int, tuple[float, ...]], list[Axes]] = {}
+    for ax in axes:
+        if not _cartesian(ax):
+            continue
+        box = tuple(round(v, 9) for v in ax.get_position(original=True).bounds)
+        parent = ax.get_figure(root=False)
+        groups.setdefault((id(parent), box), []).append(ax)
+    return list(groups.values())
 
 
 def _grow_pads(

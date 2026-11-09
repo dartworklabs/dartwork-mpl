@@ -208,3 +208,29 @@ def test_a_second_layout_draws_the_same_and_false_gives_it_back() -> None:
     fig.canvas.draw()
     assert _pads(ax) == pads
     assert bytes(fig.canvas.buffer_rgba()) == unfitted
+
+
+def test_a_figure_without_a_corner_pair_draws_as_without_the_step() -> None:
+    """Looking for pairs moves nothing. A fixed-aspect plot (the docs' DNA
+    helix, -2..2 by -0.5..13 with ``set_aspect("equal")``) whose labels
+    clear draws the same with the step and without it: reading the Axes'
+    active position mid-layout would apply its aspect and move it."""
+
+    def drawn(fit_labels) -> bytes:
+        with matplotlib.rc_context():
+            dm.style.use("report")
+            fig, ax = plt.subplots(figsize=dm.figsize("12cm", 1.667))
+            t = np.linspace(0, 4 * np.pi, 100)
+            ax.plot(np.sin(t), t)
+            ax.set_xlim(-2, 2)
+            ax.set_ylim(-0.5, 4 * np.pi + 0.5)
+            ax.set_aspect("equal")
+            ax.set_xlabel("Width")
+            dm.simple_layout(fig, fit_labels=fit_labels)
+            fig.canvas.draw()
+            out = bytes(fig.canvas.buffer_rgba())
+            plt.close(fig)
+            return out
+
+    others = ("axis_labels", "space", "wrap", "rotate")
+    assert drawn(True) == drawn(others)
