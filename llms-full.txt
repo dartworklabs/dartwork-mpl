@@ -936,7 +936,8 @@ parent Figure walks to its root GridSpec and adjusts root outer margins; it
 does not solve each nested region independently. Called on the root Figure of
 a SubFigure tree, it fits each SubFigure's grid inside that SubFigure's box:
 canvas sides keep `margin`, sides between SubFigures keep the panel gap, and
-the SubFigure boxes and ratios are not moved. Do not insert fake
+the SubFigure boxes and ratios are not moved. An explicit `wspace=0` looks
+the same as the default to it, so those sides keep the gap too. Do not insert fake
 helper calls or silently change requested allocations to make validation pass.
 Read the full report (including `CHECK_FAILED`), inspect the actual PNG and PDF,
 and retain heuristic/advisory warnings with any explanation. Save a revision to
