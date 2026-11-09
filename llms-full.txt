@@ -938,8 +938,9 @@ a SubFigure tree, it fits each SubFigure's grid inside that SubFigure's box:
 canvas sides keep `margin`, sides between SubFigures keep the panel gap, and
 the SubFigure boxes and ratios are not moved. An explicit `wspace=0` looks
 the same as the default to it, so those sides keep the gap too. On one edge of
-a SubFigure the title comes first, then a legend `dm.figure_legend(subfig)`
-placed there, then the panels, as on the root Figure; a legend you place with
+the Figure or of a SubFigure the label comes first (a suptitle, supxlabel or
+supylabel, set before or after the legend), then a legend `dm.figure_legend`
+placed there, then the panels; a legend you place with `fig.legend` or
 `subfig.legend` stays, and `LEGEND_OVERLAP` reports a title it covers. Two
 SubFigures given the same grid cell lie on top of each other, plots included;
 the layout does not keep their axis names apart (`CROSS_AXES_OVERLAP` reports

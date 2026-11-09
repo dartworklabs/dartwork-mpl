@@ -204,11 +204,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (also one `dm.place_legend` wrapped) and the legend of an earlier call
   are removed once the new legend is drawn (a call that raises leaves
   them); `dm.simple_layout` keeps the panels clear of it with the
-  preset's `legend.borderaxespad`. On a SubFigure, `dm.simple_layout`
-  places the SubFigure's title first, then the legend past it and past the
-  figure-level text above (a root suptitle), then the panels: a title set
-  after the call, or moved under a root suptitle, no longer lies under the
-  legend. `LEGEND_ON_DATA` names it among its fixes. It is a new name: `dm.place_legend`'s signature stays
+  preset's `legend.borderaxespad`. `dm.simple_layout` places the figure's
+  label on that side first (a suptitle, supxlabel or supylabel, set before
+  or after the call), then the legend past it, then the panels; on a
+  SubFigure the SubFigure's title, then the legend past it and past the
+  figure-level text above (a root suptitle): a label set after the call,
+  or a SubFigure title moved under a root suptitle, no longer lies under
+  the legend. `LEGEND_ON_DATA` names it among its fixes. It is a new name: `dm.place_legend`'s signature stays
   `place_legend(ax, *, loc="best", **kw)`, and no MCP tool, resource or
   prompt lists it.
 - `dm.config.legend_fallback` (`"auto"`, the default, `"above"`,
