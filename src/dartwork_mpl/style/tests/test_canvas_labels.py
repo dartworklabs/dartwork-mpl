@@ -270,3 +270,126 @@ def test_names_are_strings_or_turn_into_them() -> None:
     assert numbers == words
     with pytest.raises(TypeError, match="labels"):
         dm.figsize_for(n_points=5, labels="Norway")  # one string is not names
+
+
+# ------------------------------------------------ what the names are given as
+@pytest.mark.parametrize(
+    "labels",
+    [{"A", "B"}, {"A": 1, "B": 2}, {"A": 1, "B": 2}.keys(), 3, None.__class__],
+    ids=["set", "dict", "dict-keys", "int", "type"],
+)
+def test_names_without_an_axis_order_are_refused_by_name(labels) -> None:
+    """A set or a mapping has no axis order, so its neighbours are no
+    neighbours; a number is no names at all. Each says ``labels``."""
+    dm.style.use("report")
+    with pytest.raises(TypeError, match="labels"):
+        dm.figsize_for(n_points=2, n_series=1, labels=labels)
+
+
+def test_ordered_names_are_taken_in_any_sequence() -> None:
+    import numpy as np
+
+    dm.style.use("presentation")
+    names = ["Norway", "Iceland", "Sweden", "China", "Germany"]
+    expected = dm.figsize_for(n_points=5, n_series=1, labels=names)
+    given = [tuple(names), np.array(names), iter(names)]
+    pandas = pytest.importorskip("pandas")
+    given.append(pandas.Index(names))
+    for labels in given:
+        assert dm.figsize_for(n_points=5, n_series=1, labels=labels) == expected
+
+
+# ------------------------------------- the names measure as the drawn labels
+def _drawn_width_pt(name: str) -> float:
+    """``name``'s width (pt) drawn as an x tick label under the active rc."""
+    fig, ax = plt.subplots()
+    ax.set_xticks([0], [name])
+    fig.canvas.draw()
+    box = ax.get_xticklabels()[0].get_window_extent(get_renderer(fig))
+    return box.width * 72.0 / fig.dpi
+
+
+def _measured_pt(name: str) -> float:
+    from dartwork_mpl.style._canvas import _name_widths_pt
+
+    measured = _name_widths_pt([name])
+    assert measured is not None
+    return measured[0][0]
+
+
+@pytest.mark.parametrize(
+    ("name", "rc"),
+    [
+        (r"Price \$100", {}),
+        ("Price $100", {}),
+        (r"Rate $x^2$ net", {}),
+        ("Line one\nand a longer two", {}),
+        (r"Rate $x^2$ net", {"text.parse_math": False}),
+    ],
+    ids=["escaped-dollar", "plain-dollar", "mathtext", "lines", "parse-off"],
+)
+@pytest.mark.parametrize("preset", ["report", "presentation"])
+def test_a_name_measures_as_its_tick_label_draws(
+    preset: str, name: str, rc: dict
+) -> None:
+    """The text a tick label draws: '\\$' is a dollar, '$...$' math unless
+    ``text.parse_math`` is off, the widest of several lines."""
+    dm.style.use(preset)
+    with matplotlib.rc_context(rc):
+        assert _measured_pt(name) == pytest.approx(
+            _drawn_width_pt(name), abs=0.01
+        )
+
+
+def test_a_dollar_spelt_either_way_takes_the_same_canvas() -> None:
+    """``'Price $100'`` and ``r'Price \\$100'`` draw alike, so they size
+    alike (the escaped one took 12 cm, not 9)."""
+    dm.style.use("report")
+    plain = ["Price $100"] * 5
+    escaped = [r"Price \$100"] * 5
+    assert dm.figsize_for(
+        n_points=5, n_series=1, labels=escaped
+    ) == dm.figsize_for(n_points=5, n_series=1, labels=plain)
+
+
+def _have_tex() -> bool:
+    import shutil
+
+    return all(shutil.which(tool) for tool in ("latex", "dvipng"))
+
+
+TEX_NAMES = [rf"$\displaystyle x_{{{i}}}$ share" for i in range(5)]
+
+
+def _sized(names: list[str]) -> tuple[float, float]:
+    """``figsize_for`` for five positions named ``names``; failing to size
+    them is a failure of the test, not an error in it."""
+    try:
+        return dm.figsize_for(n_points=5, n_series=1, labels=names)
+    except ValueError as error:
+        pytest.fail(f"figsize_for could not size {names[0]!r}: {error}")
+
+
+@pytest.mark.skipif(not _have_tex(), reason="needs latex and dvipng")
+def test_with_usetex_a_name_measures_as_tex_draws_it() -> None:
+    """``text.usetex``: TeX lays the label out, so TeX measures it;
+    ``\\displaystyle`` is TeX's alone and mathtext cannot read it."""
+    dm.style.use("report")
+    with matplotlib.rc_context({"text.usetex": True}):
+        assert _sized(TEX_NAMES)
+        assert _measured_pt(TEX_NAMES[0]) == pytest.approx(
+            _drawn_width_pt(TEX_NAMES[0]), abs=0.01
+        )
+
+
+def test_names_nothing_can_measure_leave_the_canvas_as_without_them(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``text.usetex`` with no TeX to run: matplotlib cannot draw the labels
+    either. ``figsize_for`` does not guess with another engine; it gives
+    the canvas it gives without names."""
+    dm.style.use("presentation")
+    monkeypatch.setenv("PATH", "")
+    names = [rf"$\displaystyle y_{{{i}}}$ unmeasured share" for i in range(5)]
+    with matplotlib.rc_context({"text.usetex": True}):
+        assert _sized(names) == dm.figsize_for(n_points=5, n_series=1)

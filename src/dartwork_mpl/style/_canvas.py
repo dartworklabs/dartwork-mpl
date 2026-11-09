@@ -37,7 +37,8 @@ uses the report tiers.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import TYPE_CHECKING
@@ -195,45 +196,72 @@ def _grouped_cm(
     return widest
 
 
-def _names(labels: Sequence[object] | None) -> list[str]:
-    """``labels`` as strings; one string is not a sequence of names."""
+_ORDERED = "in axis order (a list, tuple, array or index)"
+
+
+def _names(labels: Iterable[object] | None) -> list[str]:
+    """``labels`` as strings, in their axis order.
+
+    One string is not names, a set or a mapping has no axis order (its
+    neighbours are no neighbours), and a number is not a sequence: each is a
+    ``TypeError`` that names ``labels``.
+    """
     if labels is None:
         return []
     if isinstance(labels, (str, bytes)):
         raise TypeError(
-            "labels must be the category names (a list), not one string; "
+            f"labels must be the category names {_ORDERED}, not one string; "
             f"got {labels!r}"
+        )
+    if isinstance(labels, (AbstractSet, Mapping)):
+        raise TypeError(
+            f"labels must be the category names {_ORDERED}; a "
+            f"{type(labels).__name__} has none, so pass list(...) of the "
+            "names in the order they are plotted"
+        )
+    if not isinstance(labels, Iterable):
+        raise TypeError(
+            f"labels must be the category names {_ORDERED}; got "
+            f"{type(labels).__name__} {labels!r}"
         )
     return [str(label) for label in labels]
 
 
-def _name_widths_pt(names: Sequence[str]) -> tuple[list[float], float]:
-    """Each name's width (pt; its widest line) as the active preset draws x
-    tick labels, and that font's size (pt).
+def _name_widths_pt(names: Sequence[str]) -> tuple[list[float], float] | None:
+    """Each name's width (pt) as the active rc draws it as an x tick label,
+    and that label's font size (pt); ``None`` when a name cannot be laid out.
 
-    Measured by Agg at the preset's figure dpi, the renderer that lays the
-    labels out, so the width is the drawn one (a font's own fallback
-    included); it needs no figure and gives the same width every time.
+    Each name is laid out as the tick label itself is: a ``Text`` at
+    ``xtick.labelsize`` in the rc font, whose extent Agg measures at the
+    preset's figure dpi. So the text it reads is
+    the drawn one: ``'\\$'`` a dollar, ``'$...$'`` math unless
+    ``text.parse_math`` is off, TeX under ``text.usetex``, the widest of
+    several lines, a font's fallback glyphs. A fixed renderer and dpi give
+    the same widths every time. ``None`` where matplotlib could not draw
+    the label either: ``text.usetex`` with no TeX to run, or math the active
+    engine cannot parse.
     """
     import matplotlib as mpl
-    from matplotlib import cbook
     from matplotlib.backends.backend_agg import RendererAgg
-    from matplotlib.font_manager import FontProperties
+    from matplotlib.figure import Figure
+    from matplotlib.text import Text
 
-    prop = FontProperties(size=mpl.rcParams["xtick.labelsize"])
     dpi = float(mpl.rcParams["figure.dpi"])
+    figure = Figure(dpi=dpi)
     # backend_agg ships no type stubs: the renderer is a RendererBase
     renderer: RendererBase = RendererAgg(1, 1, dpi)  # type: ignore[no-untyped-call]
+    size = 0.0
     widths = []
     for name in names:
-        line_widths = [
-            renderer.get_text_width_height_descent(
-                line, prop, ismath=cbook.is_math_text(line)
-            )[0]
-            for line in name.split("\n")
-        ]
-        widths.append(max(line_widths) * 72.0 / dpi)
-    return widths, float(prop.get_size_in_points())
+        label = Text(0, 0, name, fontsize=mpl.rcParams["xtick.labelsize"])
+        label.set_figure(figure)
+        try:
+            box = label.get_window_extent(renderer)
+        except (RuntimeError, ValueError, OSError):
+            return None
+        widths.append(float(box.width) * 72.0 / dpi)
+        size = float(label.get_fontsize())
+    return widths, size
 
 
 def _names_cm(
@@ -245,11 +273,15 @@ def _names_cm(
     The plot gets the canvas less ``_CANVAS_OVERHEAD_EM`` and each name
     ``_SPACING_SHARE`` of an equal share of it: neighbours ``i``, ``i + 1``
     fit when that share is at least half their widths plus half an em.
-    ``width`` itself when there are fewer than two names.
+    ``width`` itself when there are fewer than two names, or when they
+    cannot be laid out (matplotlib could not draw them either).
     """
     if len(names) < 2:
         return width
-    widths, size = _name_widths_pt(names)
+    measured = _name_widths_pt(names)
+    if measured is None:
+        return width
+    widths, size = measured
     need = max((a + b) / 2 for a, b in pairwise(widths))
     need += _LABEL_CLEARANCE_EM * size
     for tier in tiers:
@@ -325,7 +357,7 @@ def figsize_for(
     *,
     n_points: int | None = None,
     n_series: int | None = None,
-    labels: Sequence[object] | None = None,
+    labels: Iterable[object] | None = None,
     dual_axis: bool = False,
     nrows: int = 1,
     ncols: int = 1,
@@ -370,14 +402,20 @@ def figsize_for(
         ``"grouped"``, the bars in each group.
     labels : sequence, optional
         The category names under the x axis, one per position, when you
-        know them (``labels=countries``). ``"default"`` and ``"grouped"``
-        then take the narrowest width of the preset's own table at least
-        as wide as without them (report 9 / 12 / 14.5 / 17 cm, slides
-        11.4 / 15.4 / 23.4 cm) at which the names, measured at the preset's
-        tick label font, stand flat half an em apart; past the widest, the
-        widest, and the layout wraps or turns them. No names, or names that
-        fit, give the same canvas as before. A ``scientific`` panel keeps
-        its journal column, and the other kinds their width.
+        know them (``labels=countries``), in axis order: a list, tuple,
+        array, index or other ordered iterable; each name is ``str()`` of
+        its item. A single string, a set or a mapping (no axis order; pass
+        ``list(...)``) and a non-iterable raise ``TypeError``.
+        ``"default"`` and ``"grouped"`` then take the narrowest width of
+        the preset's own table at least as wide as without them (report 9 /
+        12 / 14.5 / 17 cm, slides 11.4 / 15.4 / 23.4 cm) at which the names,
+        laid out as the tick labels draw them (escaped dollars, math,
+        ``text.parse_math``, ``text.usetex``), stand flat half an em apart;
+        past the widest, the widest, and the layout wraps or turns them. No
+        names, names that fit, or names matplotlib could not draw either
+        (``text.usetex`` with no TeX) give the same canvas as without them.
+        A ``scientific`` panel keeps its journal column, and the other kinds
+        their width.
     dual_axis : bool, optional
         True when a second y axis (``twinx``) is drawn.
     nrows, ncols : int, optional
