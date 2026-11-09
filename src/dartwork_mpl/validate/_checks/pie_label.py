@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
+from ..._figure_geometry import drawn_axes
 from .._types import Severity, VisualWarning
 from ._detail import number, wire
 from ._registry import register_check, register_fix
@@ -38,7 +39,7 @@ def check_pie_label_offset(
     """
     warnings: list[VisualWarning] = []
 
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         # Identify pie wedges via theta1/theta2 attributes.
         wedges = [
             p

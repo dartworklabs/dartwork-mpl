@@ -27,7 +27,7 @@ from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.text import Annotation, Text
 
 from ..._colors.contrast import contrast_ratio as _contrast_ratio
-from ..._figure_geometry import text_window_extent
+from ..._figure_geometry import holders_shown, text_window_extent
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
@@ -120,8 +120,8 @@ def _sample(value: str) -> str:
 
 def _visible_texts(fig: Figure) -> Iterator[Text]:
     for artist in fig.findobj(Text):
-        if not isinstance(artist, Text):
-            continue
+        if not isinstance(artist, Text) or not holders_shown(artist):
+            continue  # a hidden SubFigure hides its text
         if not artist.get_visible():
             continue
         if not artist.get_text().strip():

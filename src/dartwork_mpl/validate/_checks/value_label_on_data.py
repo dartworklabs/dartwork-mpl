@@ -53,7 +53,7 @@ from matplotlib.transforms import Bbox, IdentityTransform
 
 from ..._figure_geometry import clip_path_px as _clip_path
 from ..._figure_geometry import clip_region as _clip_region
-from ..._figure_geometry import same_position_axes
+from ..._figure_geometry import drawn_axes, same_position_axes
 from ..._figure_geometry import within_clip_path as _within_path
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
@@ -936,7 +936,7 @@ def check_value_label_on_data(
     """Flag Axes whose value labels are drawn over bars, lines or markers."""
     warnings: list[VisualWarning] = []
     touch = _px(_TOUCH_PT, fig)
-    for axes_index, ax in enumerate(fig.axes):
+    for axes_index, ax in drawn_axes(fig):
         if not ax.get_visible() or ax.name != "rectilinear":
             continue
         labels = _value_labels(ax, renderer)

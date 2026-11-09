@@ -501,6 +501,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **No check reports what a hidden SubFigure holds.** `SubFigure.set_visible(False)`
+  hides its Axes and texts while their own flags stay on; `OVERLAP`,
+  `CROSS_AXES_OVERLAP`, `TICK_OVERLAP`, `TICK_CROWD`, `TICK_ROTATION`,
+  `TICK_DECIMAL`, `EMPTY_AXES`, `TEXT_CONTRAST`, `MIN_FONT_SIZE`,
+  `GRAYSCALE_SAFETY` and `CLIPPED_TEXT` reported them, as did the other
+  checks that walk every Axes. `axes_index` stays the `fig.axes` index;
+  figures without SubFigures get the same findings.
 - **SubFigures are neighbours, and their legends and titles are measured.**
   `dm.place_legend` counts a panel in another SubFigure (nested ones too)
   as the neighbour it is: the middle of three stacked panels no longer
