@@ -26,6 +26,7 @@ from ..._figure_geometry import (
     CORNER_GAP_EM,
     CornerOverlap,
     corner_tick_overlaps,
+    drawn_axes,
     same_position_axes,
     tick_pad,
 )
@@ -87,7 +88,7 @@ def check_tick_corner_overlap(
     """Report x tick labels that overlap a y tick label of the same plot box."""
     warnings: list[VisualWarning] = []
     seen: set[int] = set()
-    for index, ax in enumerate(fig.axes):
+    for index, ax in drawn_axes(fig):
         if id(ax) in seen or not _rectilinear(ax):
             continue
         group = [m for m in same_position_axes(ax) if _rectilinear(m)]

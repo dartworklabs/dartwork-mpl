@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from itertools import pairwise
 from typing import TYPE_CHECKING, Literal, TypeAlias, TypedDict
 
+from ..._figure_geometry import drawn_axes
 from ...formatting import recommend_tick_decimals
 from .._types import Severity, VisualWarning
 from ._detail import AXES, Axis, choice, number, wire
@@ -284,7 +285,7 @@ def check_tick_decimal(
 ) -> list[VisualWarning]:
     """Detect tick labels with misleading decimal precision."""
     warnings: list[VisualWarning] = []
-    for axes_index, ax in enumerate(fig.axes):
+    for axes_index, ax in drawn_axes(fig):
         for axis_name in AXES:
             rows = _tick_rows(ax, axis_name, renderer)
             if len(rows) < 3:

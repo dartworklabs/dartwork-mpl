@@ -11,6 +11,7 @@ from __future__ import annotations
 import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 
+from .._figure_geometry import drawn_axes
 from ._orchestrator import validate_figure
 from ._quality import MIN_RECOMMENDED_DPI
 from ._types import Severity
@@ -76,7 +77,7 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
 
     # Check for axis labels
     has_labels = True
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         if not ax.get_visible():
             continue
         # Axes with no meaningful x/y-label vocabulary are exempt:
@@ -99,7 +100,7 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
 
     # Check for data
     has_data = False
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         if (
             len(ax.lines) > 0
             or len(ax.patches) > 0
@@ -133,7 +134,7 @@ def _style_applied(fig: Figure) -> bool:
     matplotlib build — a conservative default for an advisory score.
     """
     texts = list(fig.texts)
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         texts.append(ax.xaxis.label)
         texts.append(ax.yaxis.label)
         texts.extend(ax.get_xticklabels())
@@ -168,7 +169,7 @@ def _uses_basic_default_colors(fig: Figure) -> bool:
     skipped, so ``ax.scatter(..., color="red")`` passed the
     ``proper_colors`` requirement it exists to catch.
     """
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         for line in ax.lines:
             if _is_default_color_string(line.get_color()):
                 return True

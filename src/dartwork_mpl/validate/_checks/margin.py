@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Literal, TypedDict
 
+from ..._figure_geometry import drawn_axes
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import SIDES, choice, wire
 from ._registry import register_check, register_fix
@@ -50,7 +51,7 @@ def check_margin_asymmetry(
 
     # Collect tight bounding boxes of all visual content.
     all_extents = []
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         try:
             tb = ax.get_tightbbox(renderer)
             if tb is not None:

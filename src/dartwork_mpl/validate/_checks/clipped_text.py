@@ -8,6 +8,7 @@ from ..._figure_geometry import (
     axes_with_secondaries,
     drawn_axes_texts,
     drawn_tick_labels,
+    holders_shown,
     text_window_extent,
 )
 from .._types import BBOX_ERRORS, Severity, VisualWarning
@@ -54,6 +55,8 @@ def check_clipped_text(
     seen: set[tuple[str, str]] = set()
 
     for ax in axes_with_secondaries(fig):
+        if not holders_shown(ax):
+            continue  # a hidden SubFigure hides its Axes
         # Only the axis and tick labels matplotlib draws (the axis on, the
         # tick in view); the others stay on the artist tree but never reach
         # the PNG.

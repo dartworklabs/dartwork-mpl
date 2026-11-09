@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
+from ..._figure_geometry import drawn_axes
 from .._types import Severity, VisualWarning
 from ._detail import number, wire
 from ._registry import register_check, register_fix
@@ -68,7 +69,7 @@ def check_value_label_decimal(
 ) -> list[VisualWarning]:
     """Flag axes whose whole-number value labels print trailing zeros."""
     warnings: list[VisualWarning] = []
-    for axes_index, ax in enumerate(fig.axes):
+    for axes_index, ax in drawn_axes(fig):
         labels: list[tuple[str, str, float, int]] = []
         for artist in ax.texts:
             if not artist.get_visible():

@@ -22,6 +22,7 @@ from __future__ import annotations
 from itertools import pairwise
 from typing import TYPE_CHECKING, Literal, TypedDict
 
+from ..._figure_geometry import drawn_axes
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import number, wire
 from ._registry import register_check, register_fix
@@ -120,7 +121,7 @@ def check_tick_rotation(
     """Detect x-axis tick labels that are tilted unnecessarily or missing tilt."""
     warnings: list[VisualWarning] = []
 
-    for axes_index, ax in enumerate(fig.axes):
+    for axes_index, ax in drawn_axes(fig):
         # A row of x labels under a straight axis: not a polar theta ring
         # or a 3D axis.
         if getattr(ax, "name", None) != "rectilinear":

@@ -11,6 +11,9 @@ hidden, in the SubFigure itself or in one above it.
 
 from __future__ import annotations
 
+import functools
+import warnings
+from collections import Counter
 from typing import TYPE_CHECKING
 
 import matplotlib
@@ -18,9 +21,11 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 import dartwork_mpl as dm
+from dartwork_mpl._figure_geometry import drawn_axes
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -107,3 +112,90 @@ def test_a_subfigure_suptitle_under_a_legend(state: str) -> None:
     found = dm.validate_figure(fig, checks=("LEGEND_OVERLAP",), quiet=True)
     roles = [w.detail["role"] for w in found if w.detail]
     assert ("suptitle" in roles) is (state == "shown")
+
+
+# --------------------------------- every check that walks the figure's Axes
+#: The checks that counted the Axes of a hidden SubFigure (diagnosis in the
+#: follow-up after #664): each fires on the trouble panels when they show.
+WALKING = [
+    "OVERLAP",
+    "CROSS_AXES_OVERLAP",
+    "TICK_CROWD",
+    "TICK_OVERLAP",
+    "TICK_ROTATION",
+    "TICK_DECIMAL",
+    "EMPTY_AXES",
+    "TEXT_CONTRAST",
+    "MIN_FONT_SIZE",
+    "GRAYSCALE_SAFETY",
+    "CLIPPED_TEXT",
+]
+
+
+def _trouble(holder: SubFigure) -> None:
+    """Nine panels, each with something a check reports."""
+    axs = iter(holder.subplots(3, 3).flat)
+    a = next(axs)  # crowded long tick labels
+    a.bar(range(24), np.arange(24))
+    a.set_xticks(range(24), [f"Category number {i}" for i in range(24)])
+    a = next(axs)  # uneven tick decimals
+    a.plot([0, 1], [0, 1])
+    a.set_xticks([0, 0.5, 1], ["0", "0.5", "1.00"])
+    a = next(axs)  # overlapping, tiny, faint and clipped texts
+    a.plot([0, 1], [0, 1])
+    a.text(0.5, 0.5, "Overlap one", transform=a.transAxes)
+    a.text(0.52, 0.5, "Overlap two", transform=a.transAxes)
+    a.text(0.1, 0.9, "tiny", fontsize=3, transform=a.transAxes)
+    a.text(0.1, 0.2, "faint", color="#fdfdfd", transform=a.transAxes)
+    a.text(1.3, 0.5, "clipped away", transform=a.transAxes, clip_on=True)
+    next(axs)  # an empty panel
+    a = next(axs)  # lines a grayscale print cannot tell apart
+    for color in ("#d62728", "#2ca02c", "#1f77b4"):
+        a.plot([0, 1], [0.2, 0.8], color=color)
+    for a in axs:
+        a.plot([0, 1e6], [0, 1e6])
+
+
+@functools.cache
+def _found(state: str, where: str) -> Counter[str]:
+    """Findings by check: the trouble panels shown, hidden, or never drawn
+    (``empty``: the same pixels as ``hidden``)."""
+    dm.style.use("report")
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    left, right = fig.subfigures(1, 2)
+    left.subplots().plot([0, 1, 2], [3, 1, 2])
+    holder = right.subfigures(1, 1) if where == "ancestor" else right
+    if state != "empty":
+        _trouble(holder)
+    if state == "hidden":
+        right.set_visible(False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        found = dm.validate_figure(fig, quiet=True)
+    plt.close(fig)
+    return Counter(w.check_id for w in found)
+
+
+@pytest.mark.parametrize("where", ["holder", "ancestor"])
+@pytest.mark.parametrize("check", WALKING)
+def test_a_check_counts_nothing_a_hidden_subfigure_holds(
+    check: str, where: str
+) -> None:
+    """Hidden, the panels draw what an empty SubFigure draws, and the check
+    finds what it finds there; shown (the control), it reports them."""
+    assert _found("shown", where)[check] > 0
+    assert _found("hidden", where)[check] == _found("empty", where)[check]
+
+
+def test_drawn_axes_keeps_the_figure_axes_index() -> None:
+    """The index is into ``fig.axes``, not into the drawn list, and an Axes'
+    own flag is the check's to read, as before."""
+    fig = plt.figure()
+    left, right = fig.subfigures(1, 2)
+    a = left.add_subplot()
+    b = right.add_subplot()
+    c = left.add_subplot(2, 1, 2)
+    c.set_visible(False)
+    right.set_visible(False)
+    assert drawn_axes(fig) == [(0, a), (2, c)]
+    assert b in fig.axes

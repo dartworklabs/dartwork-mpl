@@ -15,7 +15,10 @@ so a SubFigure's are seen wherever they sit:
 - :func:`root_position`: an Axes' position as a fraction of the root Figure;
 - :func:`drawn_in_tree`: whether an artist is shown, every SubFigure above
   it shown too (hiding a SubFigure hides what it holds, though matplotlib
-  leaves each child's own ``get_visible()`` True).
+  leaves each child's own ``get_visible()`` True); :func:`holders_shown`
+  the second half alone;
+- :func:`drawn_axes`: ``enumerate(fig.axes)`` less the Axes a hidden
+  SubFigure hides, for the checks that walk every Axes.
 
 The lists are structural: they name what a hidden SubFigure holds too. A
 caller that wants what is drawn picks with :func:`drawn_in_tree`.
@@ -77,8 +80,14 @@ def drawn_in_tree(artist: Artist) -> bool:
     without changing their own flags. The root Figure's own flag is not
     read: a hidden root Figure keeps the answers it had.
     """
-    if not artist.get_visible():
-        return False
+    return bool(artist.get_visible() and holders_shown(artist))
+
+
+def holders_shown(artist: Artist) -> bool:
+    """Whether every SubFigure above ``artist`` is shown (its own flag aside).
+
+    The root Figure's flag is not read. Without SubFigures: always.
+    """
     root = artist.get_figure(root=True)
     holder = artist.get_figure(root=False)
     seen: list[Figure | SubFigure] = []
@@ -88,6 +97,16 @@ def drawn_in_tree(artist: Artist) -> bool:
         seen.append(holder)
         holder = holder.get_figure(root=False)
     return True
+
+
+def drawn_axes(fig: Figure) -> list[tuple[int, Axes]]:
+    """Each Axes of ``fig.axes`` no hidden SubFigure hides, with its index.
+
+    The index is into ``fig.axes`` (the ``axes_index`` the checks report),
+    not into this list. Each Axes' own visibility is left to the caller, as
+    it was: without SubFigures this is ``enumerate(fig.axes)``.
+    """
+    return [(i, ax) for i, ax in enumerate(fig.axes) if holders_shown(ax)]
 
 
 def root_position(ax: Axes) -> Bbox:
