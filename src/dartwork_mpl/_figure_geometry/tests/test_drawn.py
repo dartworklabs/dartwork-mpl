@@ -39,7 +39,14 @@ def _close():
 @pytest.mark.parametrize(
     ("module", "name", "shared"),
     [
-        (_legend_fit, "drawn_collection_paths", fg.drawn_collection_paths),
+        (
+            _legend_fit,
+            "drawn_collection_outlines",
+            fg.drawn_collection_outlines,
+        ),
+        (_legend_fit, "clip_region", fg.clip_region),
+        (_legend_fit, "clip_path_px", fg.clip_path_px),
+        (_legend_fit, "within_clip_path", fg.within_clip_path),
         (
             legend_on_data,
             "drawn_collection_outlines",

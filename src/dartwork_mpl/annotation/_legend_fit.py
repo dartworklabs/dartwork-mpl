@@ -25,9 +25,13 @@ from matplotlib.transforms import Bbox
 
 from .._figure_geometry import (
     BBOX_ERRORS,
-    drawn_collection_paths,
+    UNCLIPPED,
+    clip_path_px,
+    clip_region,
+    drawn_collection_outlines,
     drawn_tick_labels,
     same_position_axes,
+    within_clip_path,
 )
 
 if TYPE_CHECKING:
@@ -88,6 +92,22 @@ class Ink:
         default_factory=list
     )
     boxes: list[tuple[int, Bbox]] = field(default_factory=list)
+    #: Where a collection's clip lets it draw (its clip region and clip
+    #: path), by the ``id`` of the collection; an artist not here is drawn
+    #: wherever its ink lies.
+    clips: dict[int, tuple[Bbox, Path | None]] = field(default_factory=dict)
+
+    def _drawn_part(self, key: int, box: Bbox) -> Bbox | None:
+        """The part of ``box`` where artist ``key``'s clip lets it draw."""
+        clip = self.clips.get(key)
+        if clip is None:
+            return box
+        region, clip_path = clip
+        x0, y0 = max(box.x0, region.x0), max(box.y0, region.y0)
+        x1, y1 = min(box.x1, region.x1), min(box.y1, region.y1)
+        if x1 <= x0 or y1 <= y0:
+            return None
+        return within_clip_path(Bbox.from_extents(x0, y0, x1, y1), clip_path)
 
     def met(self, box: Bbox, clearance: float) -> set[int]:
         """The artists whose ink comes within ``clearance`` px of ``box``."""
@@ -97,12 +117,16 @@ class Ink:
             if _overlaps(grown, bb):
                 found.add(key)
         for key, path, half in self.lines:
-            if key not in found and path.intersects_bbox(
-                grown.padded(half), filled=False
-            ):
+            if key in found:
+                continue
+            reach = self._drawn_part(key, grown.padded(half))
+            if reach is not None and path.intersects_bbox(reach, filled=False):
                 found.add(key)
         for key, path in self.filled:
-            if key not in found and path.intersects_bbox(grown, filled=True):
+            if key in found:
+                continue
+            reach = self._drawn_part(key, grown)
+            if reach is not None and path.intersects_bbox(reach, filled=True):
                 found.add(key)
         for key, xy, r in self.points:
             if key in found or not len(xy):
@@ -164,21 +188,25 @@ def _measure_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
         )
         return
     try:
-        # Where Collection.draw puts each item (offsets included), the one
-        # rule LEGEND_ON_DATA reads collections by too.
-        paths = [path for _i, path in drawn_collection_paths(coll)]
+        # Only the items that draw ink, each where Collection.draw puts it
+        # (offsets included) and by its own colours, alpha and width, and
+        # only where its clip lets it draw: the rule LEGEND_ON_DATA reads
+        # collections by too.
+        outlines = drawn_collection_outlines(coll, renderer)
+        region, clip_path = clip_region(coll), clip_path_px(coll)
     except BBOX_ERRORS:
         return
+    if not outlines:
+        return
+    if region is not UNCLIPPED or clip_path is not None:
+        ink.clips[key] = (region, clip_path)
     stroked = isinstance(coll, LineCollection) or (
         isinstance(coll, ContourSet) and not coll.filled
     )
     if stroked:
-        widths = np.atleast_1d(coll.get_linewidth())
-        width = float(widths.max()) if len(widths) else 1.0
-        half = points_px(renderer, width) / 2
-        ink.lines.extend((key, p, half) for p in paths)
+        ink.lines.extend((key, o.path, o.half) for o in outlines)
     else:
-        ink.filled.extend((key, p) for p in paths)
+        ink.filled.extend((key, o.path) for o in outlines)
 
 
 def _measure_box(ink: Ink, artist: Artist, bb: Bbox) -> None:
