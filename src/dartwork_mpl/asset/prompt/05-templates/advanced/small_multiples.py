@@ -48,9 +48,9 @@ for i, (name, vals) in enumerate(lines.items()):
     ax = axes_flat[i]
     ax.plot(months, vals, color=colors[i], linewidth=dm.lw(0))
     ax.fill_between(months, vals, vals.min(), color=colors[i], alpha=0.08)
-    ax.set_title(
-        name, loc="left", fontsize=dm.fs(0), fontweight=dm.fw(1), pad=4
-    )
+    # The preset's title pad (6 pt, 15.6 pt on slides) keeps the title line,
+    # and the panel letter dm.label_axes puts on it, above the top y tick.
+    ax.set_title(name, loc="left", fontsize=dm.fs(0), fontweight=dm.fw(1))
     # Per-panel takeaway: total growth.
     delta = vals[-1] - vals[0]
     dm.annotate_corner(

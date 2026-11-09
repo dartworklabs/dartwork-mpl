@@ -31,7 +31,7 @@ n = 90
 days = np.arange(n)
 price = 100 + np.cumsum(rng.normal(0.18, 0.9, size=n))
 volume = (
-    rng.lognormal(mean=6.0, sigma=0.35, size=n) * (1 + 0.2 * np.sin(days / 8))
+    rng.lognormal(mean=9.0, sigma=0.35, size=n) * (1 + 0.2 * np.sin(days / 8))
 ).astype(int)
 target = 115.0
 
@@ -53,8 +53,9 @@ ax_vol.bar(
     alpha=0.55,
     zorder=1,
 )
-ax_vol.set_ylabel("Volume (shares)")
-dm.format_axis_si(ax_vol, axis="y")
+# One unit for the axis, in its name: "Volume (k shares)" over plain ticks
+# (0, 5, 10 …), not "Volume (shares)" over 5k, 10k.
+dm.axis_unit(ax_vol, "y", label="Volume ({unit} shares)")
 ax_vol.set_ylim(0, volume.max() * 2.0)  # squeeze bars into the bottom third
 
 # Price — drawn on top.

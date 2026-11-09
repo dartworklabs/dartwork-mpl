@@ -36,9 +36,11 @@ __all__ = [
     "drawn_tick_labels",
     "get_renderer",
     "iter_figure_level_extents",
+    "label_clearance_px",
     "outside_clearance_px",
     "outside_side",
     "outside_span_px",
+    "pair_clearance_px",
     "reanchor_outside",
     "respread_line_end_labels",
     "same_position_axes",
@@ -474,6 +476,59 @@ def _label_corners(label: Text, renderer: RendererBase) -> np.ndarray:
             centre - along + across,
         ]
     )
+
+
+def _half_reach(corners: np.ndarray, normal: np.ndarray) -> float:
+    """Half the extent of a rectangle (its 4 corners) along a unit ``normal``."""
+    return 0.5 * (
+        abs(float((corners[1] - corners[0]) @ normal))
+        + abs(float((corners[3] - corners[0]) @ normal))
+    )
+
+
+def pair_clearance_px(
+    a: Text, b: Text, renderer: RendererBase, which: Literal["x", "y"]
+) -> float:
+    """How far apart along the x or y axis the centres of ``a`` and ``b`` must be.
+
+    Each label fills its own rectangle (:func:`_label_corners`, turned with
+    it, at its own angle). Moved along the axis, the two are apart once,
+    along one edge direction of either rectangle, the distance covers both
+    half-extents (the separating-axis test of :func:`_overlap_px`): the
+    least, over the four edge directions, of the two half-extents over the
+    axis' share of that direction. Upright neighbours need half their two
+    widths along x (heights along y); two labels turned alike need their
+    heights over the sine of the slant; two turned opposite ways, crossing
+    where they meet, need far more.
+    """
+    rect_a, rect_b = _label_corners(a, renderer), _label_corners(b, renderer)
+    direction = np.array([1.0, 0.0] if which == "x" else [0.0, 1.0])
+    reach = math.inf
+    for rect in (rect_a, rect_b):
+        for edge in (rect[1] - rect[0], rect[3] - rect[0]):
+            length = float(np.hypot(*edge))
+            if length == 0.0:
+                continue
+            normal = edge / length
+            along = abs(float(direction @ normal))
+            if along > 1e-9:
+                need = _half_reach(rect_a, normal) + _half_reach(rect_b, normal)
+                reach = min(reach, need / along)
+    return reach
+
+
+def label_clearance_px(
+    label: Text, renderer: RendererBase, which: Literal["x", "y"]
+) -> float:
+    """How far along the x or y axis a copy of ``label`` must move to clear it.
+
+    :func:`pair_clearance_px` of the label with itself: its width over the
+    cosine of its slant against the axis, or its height over the sine,
+    whichever is shorter. An upright label needs its width along x and its
+    height along y; one turned 45 degrees its height times the square root
+    of two, however long its text.
+    """
+    return pair_clearance_px(label, label, renderer, which)
 
 
 def _overlap_px(p: np.ndarray, q: np.ndarray) -> float:

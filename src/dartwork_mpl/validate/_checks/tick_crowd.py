@@ -1,14 +1,18 @@
 """TICK_CROWD: too many tick labels for the axis length to comfortably hold.
 
-Measures each visible label's real rendered extent (so it scales with
-font size, weight, rotation and text length) instead of a fixed
-ticks-per-inch density.
+Measures the room the visible labels need along their axis as rendered (so
+it scales with font size, weight, rotation and text length) instead of a
+fixed ticks-per-inch density. Turned labels need the spacing at which each
+neighbour pair, each label at its own angle, clears, not their whole
+axis-aligned extents.
 """
 
 from __future__ import annotations
 
+from itertools import pairwise
 from typing import TYPE_CHECKING, Literal, TypedDict
 
+from ..._figure_geometry import label_clearance_px, pair_clearance_px
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix
@@ -41,8 +45,36 @@ class TickCrowdDetail(TypedDict):
     occupancy: float | None
 
 
+def _row_need_px(
+    row: list[Text], renderer: RendererBase, which: Literal["x", "y"]
+) -> float:
+    """The length one row of labels needs along its axis.
+
+    The row in order along the axis: every neighbour pair's centre distance
+    at which the two clear (each at its own angle,
+    :func:`~dartwork_mpl._figure_geometry.pair_clearance_px`), plus half of
+    each end label's own room. Upright labels sum to their widths along x
+    and heights along y.
+    """
+    if not row:
+        return 0.0
+
+    def centre(label: Text) -> float:
+        box = label.get_window_extent(renderer)
+        return float((box.x0 + box.x1) if which == "x" else (box.y0 + box.y1))
+
+    ordered = sorted(row, key=centre)
+    need = 0.5 * (
+        label_clearance_px(ordered[0], renderer, which)
+        + label_clearance_px(ordered[-1], renderer, which)
+    )
+    for a, b in pairwise(ordered):
+        need += pair_clearance_px(a, b, renderer, which)
+    return need
+
+
 def _tick_crowd_for_axis(
-    labels: list[Text],
+    rows: list[list[Text]],
     axis_span_px: float,
     *,
     horizontal: bool,
@@ -54,25 +86,25 @@ def _tick_crowd_for_axis(
     tick labels plus the required minimum gap. ``occupancy > 1`` means the
     labels (at their *actual* rendered size — font, weight, rotation and
     text length all baked in) cannot fit without touching, i.e. crowded.
+    ``rows`` are the labels on each side of the axis (bottom / top or left
+    / right); each row counts the length it needs (:func:`_row_need_px`):
+    its labels' widths along x and heights along y when upright, less than
+    their axis-aligned extents when turned alike, more when neighbours turn
+    opposite ways and cross.
 
     Falls back to a fixed ticks-per-inch density only when a label extent
     cannot be measured, so the common path stays font-aware.
     """
-    if axis_span_px <= 0 or len(labels) < 2:
+    if axis_span_px <= 0 or sum(len(row) for row in rows) < 2:
         return None
-    sizes: list[float] = []
-    for label in labels:
-        try:
-            bb = label.get_window_extent(renderer)
-        except BBOX_ERRORS:
-            sizes = []
-            break
-        sizes.append(bb.width if horizontal else bb.height)
-    if sizes:
-        footprint = sum(sizes) * (1.0 + _TICK_CROWD_MIN_GAP_FRAC)
-        return footprint / axis_span_px, True
-    # Unmeasurable → density fallback (dpi folded into axis_span_px by caller)
-    return None, False
+    which: Literal["x", "y"] = "x" if horizontal else "y"
+    try:
+        need = sum(_row_need_px(row, renderer, which) for row in rows)
+    except BBOX_ERRORS:
+        # Unmeasurable → density fallback (dpi folded into axis_span_px by caller)
+        return None, False
+    footprint = need * (1.0 + _TICK_CROWD_MIN_GAP_FRAC)
+    return footprint / axis_span_px, True
 
 
 @register_check("TICK_CROWD", order=50)
@@ -99,8 +131,15 @@ def check_tick_crowding(
         )
         for axis_name, span_px, horizontal in axis_specs:
             ticks = list(iter_view_ticks(ax, axis_name, renderer))
+            # Bottom / left labels and top / right ones are separate rows.
+            target = ax.xaxis if axis_name == "x" else ax.yaxis
+            first = {id(tick.label1) for tick in target.get_major_ticks()}
+            rows = [
+                [t for t in ticks if id(t) in first],
+                [t for t in ticks if id(t) not in first],
+            ]
             result = _tick_crowd_for_axis(
-                ticks, span_px, horizontal=horizontal, renderer=renderer
+                rows, span_px, horizontal=horizontal, renderer=renderer
             )
             crowded = False
             occupancy: float | None = None

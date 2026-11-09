@@ -73,10 +73,10 @@ ax.set_xlabel("Market")
 # No title, subtitle or source note: the caption or slide carries them.
 # Add one only when the user asks for it.
 
-# 8. Layout — simple_layout is flush (margin=0); a small inch margin
-#    gives the value labels and x-label room to breathe.
-#    Pair with validate_with_fixes to catch anything left.
-dm.simple_layout(fig, margin=dm.inch(0.08))
+# 8. Layout — simple_layout is flush (margin=0): the width an outer
+#    margin would take goes to the plot, where the five names need it on
+#    a slide. Pair with validate_with_fixes to catch anything left.
+dm.simple_layout(fig)
 dm.validate_with_fixes(fig)
 
 # 9. Self-check — surfaces remaining clipping / overlap / contrast
