@@ -81,6 +81,7 @@ __all__ = [
     "outside_side",
     "outside_span_px",
     "pair_clearance_px",
+    "pair_gap_px",
     "reanchor_outside",
     "respread_line_end_labels",
     "root_position",
@@ -583,6 +584,22 @@ def label_clearance_px(
     of two, however long its text.
     """
     return pair_clearance_px(label, label, renderer, which)
+
+
+def pair_gap_px(a: Text, b: Text, renderer: RendererBase) -> float:
+    """The room (display px) between the rectangles ``a`` and ``b`` fill.
+
+    Each at its own angle (:func:`_label_corners`): the widest gap their
+    projections leave on an edge normal of either (the separating-axis
+    test of :func:`_overlap_px`); negative, how deep they cross. Upright
+    neighbours on one baseline get the gap between their edges, two turned
+    alike the gap across their slant. It is never more than the distance
+    between them, so two labels it puts ``d`` apart are at least ``d``
+    apart.
+    """
+    return -_overlap_px(
+        _label_corners(a, renderer), _label_corners(b, renderer)
+    )
 
 
 def _overlap_px(p: np.ndarray, q: np.ndarray) -> float:

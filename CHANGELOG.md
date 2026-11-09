@@ -211,6 +211,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **`TICK_CROWD` speaks only where neighbouring labels stand closer than
+  half an em.** It reported a row whenever its labels plus 15 % of their
+  footprint were longer than the axis: long names flat 0.52 em apart on the
+  widest slide canvas "filled 105 %", two y labels 1.24 em apart in a short
+  panel "filled 102 %", and nothing was left to act on. A row that fills
+  its axis is now crowded only where some neighbouring pair, each label at
+  its own angle, stands closer than half an em, the layout's own target;
+  labels that close are reported as before, and the message names how
+  close (`closest neighbours 0.30 em apart` or `neighbours overlap by
+  0.36 em`). The check ID, order, severity and detail keys are unchanged.
 - **Bottom tick labels closer than half an em wrap or turn.** The layout's
   wrap and turn keep neighbouring labels half an em apart, but only labels
   that overlapped started them: `advanced/bar` on a slide drew "Iceland"

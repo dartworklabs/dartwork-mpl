@@ -45,7 +45,8 @@ Available Checks
        another legend, or into another panel
      - WARNING
    * - ``TICK_CROWD``
-     - Tick labels consume more space than the axis can comfortably hold
+     - Tick labels fill more of the axis than it can hold and some
+       neighbours stand closer than half an em
      - INFO
    * - ``TICK_OVERLAP``
      - Neighbouring tick labels of one axis overlap (each label as the
