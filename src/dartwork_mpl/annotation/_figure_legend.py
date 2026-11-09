@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from matplotlib.transforms import Bbox
+import numpy as np
+from matplotlib.transforms import Bbox, BboxBase
 
 from .._figure_geometry import (
     BBOX_ERRORS,
@@ -16,6 +17,7 @@ from .._figure_geometry import (
 )
 from ._legend_entries import _placed_as_built
 from ._legend_fit import ceil_div, legend_pad, legend_size, probe
+from ._legend_look import SPOT_TOLERANCE_PX, sits_at
 from ._legend_outside import OutsidePlan, choose, split_ncols
 
 if TYPE_CHECKING:
@@ -167,6 +169,157 @@ def _past_shared_label(
     return anchor
 
 
+#: How often a SubFigure's figure legend moves past the text it meets, at most.
+_SETTLE_TRIES = 8
+#: Anchors closer than this (figure fraction) are the same place.
+_SAME_ANCHOR = 1e-9
+
+
+def _texts_above(holder: SubFigure, renderer: RendererBase) -> list[Bbox]:
+    """The figure-level texts and legends of the (Sub)Figures above ``holder``.
+
+    Those its legend has to clear, as :func:`dartwork_mpl.layout` puts a
+    SubFigure title under them: a root suptitle over a SubFigure, a parent
+    SubFigure's title or legend.
+    """
+    found: list[Bbox] = []
+    owner: Figure | SubFigure | None = holder.get_figure(root=False)
+    while owner is not None:
+        found += [
+            ext
+            for _art, ext in iter_figure_level_extents(
+                cast("Figure", owner), renderer, subfigures=False
+            )
+        ]
+        parent = owner.get_figure(root=False)
+        owner = None if parent is owner else parent
+    return found
+
+
+def _past(
+    side: OutsideSide, own: Bbox, met: list[Bbox], box: BboxBase
+) -> float | None:
+    """Where the legend's anchor goes on its side, past the boxes it meets.
+
+    In ``box`` fraction, the coordinate across the side (y above and below,
+    x right and left); ``None`` when ``own`` meets none of ``met``.
+    """
+    hit = [
+        b
+        for b in met
+        if b.x0 < own.x1 and b.x1 > own.x0 and b.y0 < own.y1 and b.y1 > own.y0
+    ]
+    if not hit:
+        return None
+    match side:
+        case "above":
+            return float((min(b.y0 for b in hit) - box.y0) / box.height)
+        case "below":
+            return float((max(b.y1 for b in hit) - box.y0) / box.height)
+        case "left":
+            return float((max(b.x1 for b in hit) - box.x0) / box.width)
+        case _:
+            return float((min(b.x0 for b in hit) - box.x0) / box.width)
+
+
+def settle_figure_legends(fig: Figure, holder: SubFigure) -> bool:
+    """Anchor ``holder``'s figure legends past what is now drawn on their side.
+
+    ``figure_legend`` anchors a legend on a side of a SubFigure past the
+    SubFigure's own label there (its suptitle above, supxlabel below,
+    supylabel on the left) as it stands when called. The layout runs this
+    once ``holder``'s title is placed (a SubFigure title the library places
+    moves under the figure-level text above it), so the legend sits past
+    the label as it ends up, a label added after the call too, and past the
+    figure-level texts and legends of the (Sub)Figures above that it meets
+    (a root suptitle over a SubFigure without a title of its own): on one
+    edge, the title, then the legend, then the panels, as on the root
+    figure. Only a legend ``figure_legend`` placed on a side moves, and only
+    while it sits as the library last placed it (:func:`_as_placed`): one
+    the caller moved since (``set_bbox_to_anchor``, ``set_loc``), like one
+    the caller placed or anchored, stays, and LEGEND_OVERLAP reports what it
+    covers. Returns whether a legend moved (the caller redraws).
+    """
+    moved = False
+    box = holder.bbox
+    for legend in holder.legends:
+        side = getattr(legend, "_dm_figure_side", None)
+        if (
+            not getattr(legend, "_dm_figure_legend", False)
+            or side not in _FIGURE_LOCS
+            or not legend.get_visible()
+        ):
+            continue
+        renderer = get_renderer(fig)
+        if not _as_placed(legend, holder, renderer):
+            continue  # the caller's from now on
+        anchor = _past_shared_label(holder, side, renderer)
+        for _ in range(_SETTLE_TRIES):
+            if _place(legend, holder, anchor):
+                moved = True
+                fig.canvas.draw()
+                renderer = get_renderer(fig)
+            try:
+                own = legend.get_window_extent(renderer)
+            except BBOX_ERRORS:
+                break
+            past = _past(side, own, _texts_above(holder, renderer), box)
+            if past is None:
+                break
+            anchor = (
+                (anchor[0], past)
+                if side in ("above", "below")
+                else (past, anchor[1])
+            )
+    return moved
+
+
+def _as_placed(
+    legend: Legend, holder: SubFigure, renderer: RendererBase
+) -> bool:
+    """Whether ``legend`` sits as the library last placed it.
+
+    The rule ``place_legend``'s legends follow, read through the public
+    ``get_bbox_to_anchor`` and ``get_window_extent``: its anchor is still
+    the point the library set (compared in display px through
+    ``holder.transSubfigure``, so the same numbers in another transform are
+    a move) and its box sits where the library's ``loc`` puts it against
+    that point (:func:`~._legend_look.sits_at`; a ``set_loc`` since moves
+    it off). The record changes only when the library moves the legend.
+    """
+    anchor = getattr(legend, "_dm_figure_anchor", None)
+    loc = getattr(legend, "_dm_figure_loc", None)
+    if anchor is None or not isinstance(loc, str):
+        return False
+    try:
+        now = np.asarray(legend.get_bbox_to_anchor().get_points(), dtype=float)
+        want = np.asarray(
+            holder.transSubfigure.transform([anchor, anchor]), dtype=float
+        )
+    except BBOX_ERRORS:
+        return False
+    if (
+        now.shape != want.shape
+        or np.max(np.abs(now - want)) > SPOT_TOLERANCE_PX
+    ):
+        return False
+    return sits_at(legend, renderer, loc)
+
+
+def _place(
+    legend: Legend, holder: SubFigure, anchor: tuple[float, float]
+) -> bool:
+    """Anchor ``legend`` at ``anchor`` (``holder`` fraction) unless it is there."""
+    was = getattr(legend, "_dm_figure_anchor", None)
+    if was is not None and all(
+        abs(a - b) <= _SAME_ANCHOR for a, b in zip(was, anchor, strict=True)
+    ):
+        return False
+    legend.set_bbox_to_anchor(anchor, transform=holder.transSubfigure)
+    legend._dm_figure_anchor = anchor  # type: ignore[attr-defined]
+    return True
+
+
 def _replaced(fig: Figure | SubFigure, names: set[str]) -> list[Legend]:
     """The legends a new figure legend of ``names`` replaces.
 
@@ -279,8 +432,12 @@ def figure_legend(
     )
     legend._dm_figure_legend = True  # type: ignore[attr-defined]
     legend._dm_figure_side = plan.side  # type: ignore[attr-defined]
+    # Where the library put it: the loc and the anchor point (fraction of
+    # ``fig``), so the layout tells a legend the caller moved since.
+    legend._dm_figure_loc = where  # type: ignore[attr-defined]
+    legend._dm_figure_anchor = anchor  # type: ignore[attr-defined]
     _remove(replaced)
     return legend
 
 
-__all__ = ["figure_legend"]
+__all__ = ["figure_legend", "settle_figure_legends"]

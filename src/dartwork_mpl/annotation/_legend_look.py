@@ -188,7 +188,6 @@ def _at_its_spot(
     """
     try:
         anchor = Bbox(legend.get_bbox_to_anchor().get_points())
-        actual = legend.get_window_extent(renderer)
         axes_box = ax.get_window_extent(renderer)
     except BBOX_ERRORS:
         return False
@@ -199,11 +198,24 @@ def _at_its_spot(
         and _apart(anchor, axes_box) > SPOT_TOLERANCE_PX
     ):
         return False
+    return sits_at(legend, renderer, built.loc)
+
+
+def sits_at(legend: Legend, renderer: RendererBase, loc: str) -> bool:
+    """Whether ``legend`` sits where ``loc`` puts a box of its size against its anchor.
+
+    Read through the public ``get_bbox_to_anchor`` and
+    ``get_window_extent``: a ``set_loc`` since moves the legend off that
+    spot by more than :data:`SPOT_TOLERANCE_PX`. ``place_legend``'s legends
+    and ``figure_legend``'s share this rule.
+    """
+    try:
+        anchor = Bbox(legend.get_bbox_to_anchor().get_points())
+        actual = legend.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return False
     expected = anchored_box(
-        built.loc,
-        (actual.width, actual.height),
-        anchor,
-        legend_pad(legend, renderer),
+        loc, (actual.width, actual.height), anchor, legend_pad(legend, renderer)
     )
     return _apart(expected, actual) <= SPOT_TOLERANCE_PX
 
@@ -227,4 +239,4 @@ def untouched(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
     return _at_its_spot(ax, legend, renderer, built)
 
 
-__all__ = ["Look", "look", "remember_look", "untouched"]
+__all__ = ["Look", "look", "remember_look", "sits_at", "untouched"]

@@ -237,7 +237,13 @@ does not solve each nested region independently. Called on the root Figure of
 a SubFigure tree, it fits each SubFigure's grid inside that SubFigure's box:
 canvas sides keep `margin`, sides between SubFigures keep the panel gap, and
 the SubFigure boxes and ratios are not moved. An explicit `wspace=0` looks
-the same as the default to it, so those sides keep the gap too. Do not insert fake
+the same as the default to it, so those sides keep the gap too. On one edge of
+a SubFigure the title comes first, then a legend `dm.figure_legend(subfig)`
+placed there, then the panels, as on the root Figure; a legend you place with
+`subfig.legend` stays, and `LEGEND_OVERLAP` reports a title it covers. Two
+SubFigures given the same grid cell lie on top of each other, plots included;
+the layout does not keep their axis names apart (`CROSS_AXES_OVERLAP` reports
+them). Do not insert fake
 helper calls or silently change requested allocations to make validation pass.
 Read the full report (including `CHECK_FAILED`), inspect the actual PNG and PDF,
 and retain heuristic/advisory warnings with any explanation. Save a revision to

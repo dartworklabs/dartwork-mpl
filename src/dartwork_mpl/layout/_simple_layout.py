@@ -378,9 +378,10 @@ def simple_layout(
     _show_twin_spines(fig)
     _color_twins(fig)
     if holder is not None:
-        # The titles the library places above this grid, parents first.
+        # The titles the library places above this grid, parents first,
+        # each SubFigure's figure legend past its title.
         for above in titles_above(holder):
-            place_subfigure_title(fig, above)
+            _place_title_and_legends(fig, above)
 
     _fit_grid(
         fig,
@@ -397,6 +398,19 @@ def simple_layout(
     # The bar labels were settled in each step, so they are reported even
     # when nothing could be measured.
     _report_hidden_bar_labels(fig)
+
+
+def _place_title_and_legends(fig: Figure, holder: SubFigure) -> None:
+    """``holder``'s title under the text above it, then its figure legends past it.
+
+    On one edge the title comes first, then the legend ``dm.figure_legend``
+    placed there (:func:`dartwork_mpl.annotation.settle_figure_legends`),
+    then the panels, which the reservations keep clear of both.
+    """
+    from ..annotation import settle_figure_legends
+
+    place_subfigure_title(fig, holder)
+    settle_figure_legends(fig, holder)
 
 
 def _fit_holders(
@@ -435,9 +449,10 @@ def _fit_holders(
     _show_twin_spines(fig)
     _color_twins(fig)
     # Every shown SubFigure's title first, parents before children, one that
-    # holds only nested SubFigures too; then the grids.
+    # holds only nested SubFigures too, each with its figure legends past
+    # it; then the grids.
     for titled in shown_subfigures(fig):
-        place_subfigure_title(fig, titled)
+        _place_title_and_legends(fig, titled)
     for (_holder, grid), scope, start in zip(
         grids, scopes, starts, strict=True
     ):
