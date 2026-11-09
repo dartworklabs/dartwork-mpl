@@ -35,10 +35,12 @@ from ._drawn import (
     within_clip_path,
 )
 from ._subfigures import (
+    drawn_axes,
     drawn_in_tree,
     figure_axes,
     figure_legends,
     figure_tree,
+    holders_shown,
     root_position,
 )
 
@@ -61,6 +63,7 @@ __all__ = [
     "clip_path_px",
     "clip_region",
     "corner_tick_overlaps",
+    "drawn_axes",
     "drawn_axes_texts",
     "drawn_collection_outlines",
     "drawn_collection_paths",
@@ -71,6 +74,7 @@ __all__ = [
     "figure_legends",
     "figure_tree",
     "get_renderer",
+    "holders_shown",
     "iter_figure_level_extents",
     "label_clearance_px",
     "outside_clearance_px",

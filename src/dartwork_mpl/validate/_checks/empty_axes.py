@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
+from ..._figure_geometry import drawn_axes
 from .._types import Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -34,7 +35,7 @@ def check_empty_axes(
     """
     warnings: list[VisualWarning] = []
 
-    for i, ax in enumerate(fig.axes):
+    for i, ax in drawn_axes(fig):
         # Count only *visible* artists — a plot whose only line is
         # ``set_visible(False)`` renders empty, and an artist toggled off
         # shouldn't count as content.

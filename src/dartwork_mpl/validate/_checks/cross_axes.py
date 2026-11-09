@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import axes_titles, drawn_tick_labels
+from ..._figure_geometry import axes_titles, drawn_axes, drawn_tick_labels
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
@@ -44,7 +44,7 @@ def check_cross_axes_overlap(
     # Collect (axes_index, role, text_obj, bbox) for every visible
     # label across all axes.
     entries: list[tuple[int, str, str, Any]] = []
-    for idx, ax in enumerate(fig.axes):
+    for idx, ax in drawn_axes(fig):
         try:
             ax_bbox = ax.get_window_extent(renderer)
         except BBOX_ERRORS:

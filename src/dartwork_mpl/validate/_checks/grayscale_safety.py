@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 import matplotlib.colors as mcolors
 
+from ..._figure_geometry import drawn_axes
 from .._types import Severity, VisualWarning
 from ._detail import wire
 from ._luminance import _rel_lum
@@ -114,7 +115,7 @@ def check_grayscale_safety(
     collisions: list[_Collision] = []
     seen: set[tuple[str, str]] = set()
 
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         colors: dict[str, _RGB] = {}
 
         for line in ax.lines:

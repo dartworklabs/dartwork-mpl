@@ -5,6 +5,8 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
+from .._figure_geometry import drawn_axes
+
 #: Minimum DPI dartwork recommends for raster output. The one source for this
 #: check's threshold and advice text and for the ``high_dpi`` requirement of
 #: ``validate_fixes.check_agent_requirements`` (they once drifted to 150 vs 200).
@@ -45,7 +47,7 @@ def check_figure_quality(fig: Figure) -> list[str]:
         issues.append("Style may not be applied (using default font size)")
 
     # Check axes
-    for idx, ax in enumerate(fig.axes):
+    for idx, ax in drawn_axes(fig):
         if not ax.get_visible():
             continue
 

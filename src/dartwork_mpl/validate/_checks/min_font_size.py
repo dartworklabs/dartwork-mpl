@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from matplotlib.text import Text
 
+from ..._figure_geometry import holders_shown
 from .._types import Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
@@ -48,8 +49,8 @@ def _sample(value: str) -> str:
 
 def _visible_texts(fig: Figure) -> Iterator[Text]:
     for artist in fig.findobj(Text):
-        if not isinstance(artist, Text):
-            continue
+        if not isinstance(artist, Text) or not holders_shown(artist):
+            continue  # a hidden SubFigure hides its text
         if not artist.get_visible():
             continue
         if not artist.get_text().strip():
