@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.figsize_for(..., labels=names)` picks a width the category names
+  fit flat.** Given the names under the x axis, `"default"` and
+  `"grouped"` take the narrowest width of the preset's own table (report
+  9 / 12 / 14.5 / 17 cm, scaled on posters; slides 11.4 / 15.4 / 23.4 cm),
+  never narrower than without them, at which the names, measured at the
+  preset's tick label font, stand flat half an em apart; past the widest,
+  the widest, where `dm.simple_layout` wraps or turns them. No other width
+  is made. `advanced/bar`, `waterfall` and `advanced/boxplot` pass their
+  names: on slides they take 23.4, 23.4 and 15.4 cm instead of 15.4, 15.4
+  and 11.4 cm, and their names stand flat on one line where they were
+  turned 30 degrees or wrapped. Calls without `labels`, names that fit, a
+  `scientific` panel (its journal column), the other kinds and grids get
+  the canvas they had. One string is not a list of names (`TypeError`).
 - **x and y tick labels that meet at a corner part.** When both axes end on
   a tick, the first bottom label and the lowest left one overlap at the
   corner (the `−3` and `−3` of a −3..3 square: 1.6–4.2 px in the old
