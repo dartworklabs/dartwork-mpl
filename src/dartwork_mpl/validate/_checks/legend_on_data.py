@@ -60,6 +60,7 @@ from ..._figure_geometry import (
     clip_region,
     drawn_collection_outlines,
     drawn_ink_meets,
+    figure_legends,
     same_position_axes,
     within_clip_path,
 )
@@ -327,8 +328,9 @@ def _legends(fig: Figure, renderer: RendererBase) -> list[_Placed]:
         legend = owner.ax.get_legend()
         if legend is not None and legend.get_visible():
             found.append((owner, legend))
+    # A SubFigure's legends are on it, not on ``fig.legends``.
     found.extend(
-        (None, legend) for legend in fig.legends if legend.get_visible()
+        (None, legend) for legend in figure_legends(fig) if legend.get_visible()
     )
     placed: list[_Placed] = []
     for holder, legend in found:

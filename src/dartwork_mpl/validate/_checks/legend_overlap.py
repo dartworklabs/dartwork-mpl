@@ -14,7 +14,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, TypeAlias, TypedDict
 
-from ..._figure_geometry import axes_titles, iter_figure_level_extents
+from ..._figure_geometry import (
+    axes_titles,
+    figure_legends,
+    iter_figure_level_extents,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -82,7 +86,7 @@ def _legends(fig: Figure) -> Iterator[tuple[int | None, Legend]]:
         legend = ax.get_legend()
         if ax.get_visible() and legend is not None and legend.get_visible():
             yield index, legend
-    for legend in fig.legends:
+    for legend in figure_legends(fig):  # a SubFigure's are on it
         if legend.get_visible():
             yield None, legend
 
@@ -136,7 +140,9 @@ def _targets(
             if ext.width > 0 and ext.height > 0:
                 found.append((index, role, text.get_text(), ext))
     for art, ext in iter_figure_level_extents(fig, renderer, legends=False):
-        found.append((None, _figure_role(fig, art), art.get_text(), ext))
+        # A SubFigure's suptitle is that SubFigure's, not the figure's.
+        owner = art.get_figure(root=False) or fig
+        found.append((None, _figure_role(owner, art), art.get_text(), ext))
     return found
 
 

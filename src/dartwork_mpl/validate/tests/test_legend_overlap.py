@@ -146,3 +146,26 @@ class TestCleanFiguresPass:
         legend.set_visible(False)
         assert _findings(fig) == []
         plt.close(fig)
+
+
+@pytest.mark.parametrize("owner", ["figure", "subfigure"])
+def test_a_subfigure_legend_on_its_suptitle_is_reported(owner: str) -> None:
+    """A SubFigure keeps its legend and suptitle on itself: neither was
+    measured, so one covering the other went unreported. The same pair on
+    the Figure is the control."""
+    dm.style.use("report")
+    fig = plt.figure(figsize=dm.figsize("17cm", "standard"))
+    left, right = fig.subfigures(1, 2)
+    left.subplots().plot([0, 1], [0, 1])
+    ax = right.subplots()
+    x = np.arange(2012, 2024)
+    ax.plot(x, np.sin(x), label="Korea")
+    ax.plot(x, np.cos(x), label="Japan")
+    holder = fig if owner == "figure" else right
+    holder.suptitle("Group suptitle", y=0.99)
+    holder.legend(loc="upper center", ncols=2)
+    found = [f for f in _findings(fig) if f.detail["role"] == "suptitle"]
+    assert len(found) == 1
+    assert found[0].detail["legend_axes"] is None
+    assert found[0].detail["artist_axes"] is None
+    plt.close(fig)
