@@ -79,16 +79,70 @@ def test_figsize_for_takes_the_names() -> None:
 
 
 @pytest.mark.parametrize(
-    "name", ["advanced/bar.py", "waterfall.py", "advanced/boxplot.py"]
+    "name",
+    [
+        "advanced/bar.py",
+        "waterfall.py",
+        "advanced/boxplot.py",
+        "advanced/violin.py",
+    ],
 )
 def test_templates_pass_their_names_and_draw_them_flat(name: str) -> None:
-    """On a slide their names were turned or wrapped (0.38, 0.25 and -0.78
-    em apart flat); given the names, the canvas holds them flat, half an
-    em apart."""
+    """On a slide their names were turned or wrapped (0.38, 0.25, -0.78 and,
+    turned by hand, -0.88 em apart flat); given the names, the canvas holds
+    them flat, half an em apart."""
     turns, wrapped, gap = _row(_template(name, "presentation"))
     assert turns == {0.0}
     assert not wrapped
     assert gap >= 0.5
+
+
+# The widest single-panel canvas each preset's names may take: a journal
+# column stays a column.
+WIDEST_CM = {"scientific": 9.0, "report": 17.0, "presentation": 23.4}
+NAMED = [
+    "advanced/bar.py",
+    "waterfall.py",
+    "advanced/boxplot.py",
+    "advanced/violin.py",
+    "advanced/waterfall.py",
+]
+
+
+@pytest.mark.parametrize("preset", ["scientific", "report", "presentation"])
+@pytest.mark.parametrize("name", NAMED)
+def test_named_templates_stand_flat_or_take_the_widest(
+    name: str, preset: str
+) -> None:
+    """Every template that passes its names: flat half an em apart, or the
+    widest canvas with the layout's own wrap or turn."""
+    fig = _template(name, preset)
+    turns, wrapped, gap = _row(fig)
+    if turns == {0.0} and not wrapped:
+        assert gap >= 0.5
+    else:
+        assert _cm(fig.get_size_inches())[0] == WIDEST_CM[preset]
+
+
+def test_no_template_turns_its_names_by_hand() -> None:
+    """The layout turns or wraps tick labels that would not clear; a
+    template that turns them itself overrides it on every canvas
+    (``advanced/violin`` 20 and ``advanced/waterfall`` 30 degrees did)."""
+    import re
+
+    root = Path(dm.__file__).parent / "asset/prompt/05-templates"
+    by_hand = re.compile(
+        r"set_[xy]tick(?:label)?s\([^)]*rotation|labelrotation|"
+        r"xticks\([^)]*rotation|rotate_tick_labels\("
+    )
+    turned = [
+        str(path.relative_to(root))
+        for path in sorted(root.rglob("*.py"))
+        if by_hand.search(path.read_text(encoding="utf-8"))
+    ]
+    assert turned == []
+    for name in NAMED:
+        assert "labels=" in (root / name).read_text(encoding="utf-8"), name
 
 
 @pytest.mark.parametrize("preset", ["scientific", "report", "presentation"])

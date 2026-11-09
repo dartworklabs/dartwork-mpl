@@ -9,7 +9,8 @@ says:
   bottom labels closer than half an em, so it keeps such a row flat;
 - the widest label plus half an em within the axis width over the label
   count. A long name that overruns its share stays turned though short
-  neighbours leave its pairs room (``advanced/violin``'s regions).
+  neighbours leave its pairs room ('North America' among 'EMEA', 'LATAM',
+  'APAC' and 'MEA' turned by hand on a 9 cm column).
 
 (It compared the widest label plus 4 px with the slot alone, wider than
 the ticks' spacing on a bar axis, and so called unneeded the layout's own
