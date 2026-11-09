@@ -34,6 +34,7 @@ from ._drawn import (
     drawn_ink_meets,
     within_clip_path,
 )
+from ._subfigures import figure_axes, figure_legends, figure_tree, root_position
 
 __all__ = [
     "BBOX_ERRORS",
@@ -56,6 +57,9 @@ __all__ = [
     "drawn_collection_paths",
     "drawn_ink_meets",
     "drawn_tick_labels",
+    "figure_axes",
+    "figure_legends",
+    "figure_tree",
     "get_renderer",
     "iter_figure_level_extents",
     "label_clearance_px",
@@ -65,6 +69,7 @@ __all__ = [
     "pair_clearance_px",
     "reanchor_outside",
     "respread_line_end_labels",
+    "root_position",
     "same_position_axes",
     "secondary_axes",
     "shared_axes",
@@ -174,7 +179,11 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
 
 
 def iter_figure_level_extents(
-    fig: Figure, renderer: RendererBase, *, legends: bool = True
+    fig: Figure,
+    renderer: RendererBase,
+    *,
+    legends: bool = True,
+    subfigures: bool = True,
 ) -> Iterator[tuple[Any, Bbox]]:
     """Yield ``(artist, window_extent)`` for each figure-level artist.
 
@@ -213,6 +222,11 @@ def iter_figure_level_extents(
         Include ``fig.legends``. The OVERFLOW check passes ``False`` —
         figure legends are the LEGEND_OVERFLOW check's responsibility.
         Default ``True``.
+    subfigures : bool, optional
+        Also walk each SubFigure nested in ``fig`` (:func:`figure_tree`),
+        which keeps its own suptitle, texts and legends. The layout's edge
+        reservations pass ``False``: they size the root grid. Default
+        ``True``.
 
     Yields
     ------
@@ -221,17 +235,18 @@ def iter_figure_level_extents(
     """
     seen: set[int] = set()
     candidates: list[Any] = []
-    for art in (
-        getattr(fig, "_suptitle", None),
-        getattr(fig, "_supxlabel", None),
-        getattr(fig, "_supylabel", None),
-        *fig.texts,
-        *(fig.legends if legends else ()),
-    ):
-        if art is None or id(art) in seen:
-            continue
-        seen.add(id(art))
-        candidates.append(art)
+    for member in figure_tree(fig) if subfigures else [fig]:
+        for art in (
+            getattr(member, "_suptitle", None),
+            getattr(member, "_supxlabel", None),
+            getattr(member, "_supylabel", None),
+            *member.texts,
+            *(member.legends if legends else ()),
+        ):
+            if art is None or id(art) in seen:
+                continue
+            seen.add(id(art))
+            candidates.append(art)
 
     for art in candidates:
         if not art.get_visible():
@@ -889,12 +904,12 @@ def outside_span_px(
     that side. Above and below, a panel whose box lies wholly left or right
     of ``ax`` (in any row: a column of its own) ends the range at its frame,
     axis decorations and titles, ``margin_px`` short of them; right and
-    left, a panel wholly above or below does. ``ax``'s twins, hidden Axes
-    and Axes out of the layout do not count.
+    left, a panel wholly above or below does: one in any SubFigure, as
+    well. ``ax``'s twins, hidden Axes and Axes out of the layout do not
+    count.
     """
     root = ax.get_figure(root=True)
-    fig = ax.get_figure(root=False)
-    if root is None or fig is None:
+    if root is None:
         return (-math.inf, math.inf)
     along_x = side in ("above", "below")
     canvas = root.bbox
@@ -905,7 +920,7 @@ def outside_span_px(
     except BBOX_ERRORS:
         return (low, high)
     own = {id(a) for a in same_position_axes(ax)}
-    for other in fig.axes:
+    for other in root.axes:
         if (
             id(other) in own
             or not other.get_visible()

@@ -25,10 +25,12 @@ def _figure_artist_reservations(
     preset's ``axes.labelpad``) also reserves that gap between itself and
     the content. Returns the reservation per edge in figure fraction; all
     zero when no figure-level artists are present (so the layout math is
-    unchanged in the common case).
+    unchanged in the common case). A SubFigure's own suptitle, texts and
+    legends reserve nothing here: they sit in its box, not on the edges of
+    the root grid this sizes.
     """
     res_l = res_r = res_b = res_t = 0.0
-    for art, ext in iter_figure_level_extents(fig, renderer):
+    for art, ext in iter_figure_level_extents(fig, renderer, subfigures=False):
         if not art.get_in_layout():
             continue
         x0f, x1f = ext.x0 / fw_px, ext.x1 / fw_px
