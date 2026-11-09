@@ -14,7 +14,7 @@ from matplotlib.gridspec import (
     SubplotSpec,
 )
 
-from .._figure_geometry import get_renderer, root_position
+from .._figure_geometry import get_renderer, holders_shown, root_position
 from ..units import Length
 from ._content_extent import _axes_content_extent_px
 from ._fit_labels import (
@@ -352,6 +352,7 @@ def simple_layout(
         ax
         for ax in fig.axes
         if (holder is None or ax.get_figure(root=False) is holder)
+        and holders_shown(ax)  # a hidden SubFigure's Axes are not measured
         and (
             use_all_axes
             or (

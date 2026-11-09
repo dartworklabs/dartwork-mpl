@@ -6,7 +6,11 @@ from matplotlib.figure import Figure
 from matplotlib.transforms import Bbox
 
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
-from .._figure_geometry import get_renderer, iter_figure_level_extents
+from .._figure_geometry import (
+    get_renderer,
+    holders_shown,
+    iter_figure_level_extents,
+)
 
 
 def get_bounding_box(boxes: list[Bbox]) -> tuple[float, float, float, float]:
@@ -86,6 +90,8 @@ def tight_crop(
 
     bboxes_disp: list[Bbox] = []
     for ax in fig.axes:
+        if not holders_shown(ax):
+            continue  # a hidden SubFigure draws none of its Axes
         try:
             bb = ax.get_tightbbox(renderer)
         except _BBOX_ERRORS:

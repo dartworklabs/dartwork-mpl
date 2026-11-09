@@ -231,7 +231,7 @@ def _text_boxes_drawn(fig: Figure, renderer: RendererBase) -> list[Bbox]:
     """
     found: list[Text] = []
     for ax in axes_with_secondaries(fig):
-        if not ax.get_visible():
+        if not drawn_in_tree(ax):  # a hidden SubFigure hides its Axes
             continue
         found += [*ax.texts, *axes_titles(ax).values()]
         if not getattr(ax, "axison", True):  # ax.axis("off")
