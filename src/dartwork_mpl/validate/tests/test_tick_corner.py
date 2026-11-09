@@ -113,9 +113,33 @@ def test_after_the_layout_nothing_is_left() -> None:
 
 
 def test_a_polar_plot_has_no_corner() -> None:
-    dm.style.use("report")
+    """Radial labels along 0 degrees run into the ``0°`` label (38 px on a
+    9 cm slide); that is the polar layout, not a corner."""
+    dm.style.use("presentation")
     fig = plt.figure(figsize=dm.figsize("9cm", "square"))
     ax = fig.add_subplot(projection="polar")
-    ax.plot(np.linspace(0, 6, 20), np.linspace(0, 1, 20))
+    ax.plot(np.linspace(0, 6, 20), np.linspace(0, 100, 20))
+    ax.set_rlabel_position(0)
     fig.canvas.draw()
+    assert _worst(fig, ax) > 0.5  # precondition: theta and radial overlap
     assert _corner(fig) == []
+
+
+@pytest.mark.parametrize(
+    ("scene", "axis"), [("tall y labels", "y"), ("wide first name", "x")]
+)
+def test_the_fix_names_the_axis_that_moves_less(scene: str, axis: str) -> None:
+    """Tall y labels beside a narrow ``-3`` part sideways; a first category
+    name reaching under the y labels parts downwards."""
+    if scene == "tall y labels":
+        fig, ax = _square()
+        ax.tick_params(axis="y", labelsize=14)
+    else:
+        dm.style.use("report")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.bar(["Residential heat pumps", "B", "C", "D"], [3, 5, 2, 4])
+    dm.simple_layout(fig, fit_labels=False)
+    warning = _one(fig)
+    assert warning.detail["axis"] == axis
+    ax.tick_params(axis=axis, pad=warning.detail["pad"])
+    assert _worst(fig, ax) <= 0.5

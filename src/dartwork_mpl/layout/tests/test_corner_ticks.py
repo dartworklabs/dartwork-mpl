@@ -131,6 +131,76 @@ def test_a_plot_whose_labels_clear_is_left_as_it_was() -> None:
     assert _pads(ax) == before
 
 
+def test_labels_that_only_touch_stay() -> None:
+    """Under half a pixel the pair touches, as everywhere in the ladder:
+    an x pad of 2.93 pt leaves the corner 0.3 px deep, and nothing moves."""
+    fig, ax = _square()
+    ax.tick_params(axis="x", pad=2.93)
+    dm.simple_layout(fig, fit_labels=False)
+    assert 0 < _worst(fig) <= 0.5  # precondition: touching
+    before = _pads(ax)
+    dm.simple_layout(fig)
+    assert _pads(ax) == before
+
+
+def test_a_minor_label_at_the_corner_parts() -> None:
+    """Major ticks at -2, 0, 2 and labelled minor ones at -3 ... 3: the
+    minor ``-3`` meets the y ``-3``."""
+    from matplotlib.ticker import FixedLocator
+
+    fig, ax = _square()
+    ax.xaxis.set_major_locator(FixedLocator([-2, 0, 2]))
+    ax.xaxis.set_minor_locator(FixedLocator([-3, -1, 1, 3]))
+    ax.xaxis.set_minor_formatter("{x:g}")
+
+    def worst() -> float:
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
+        xs = [
+            t.get_window_extent(renderer)
+            for minor in (False, True)
+            for t in drawn_tick_labels(ax, "x", minor=minor)
+            if t.get_text().strip()
+        ]
+        ys = _boxes(fig, [ax], "y")
+        return max(
+            min(
+                min(a.x1, b.x1) - max(a.x0, b.x0),
+                min(a.y1, b.y1) - max(a.y0, b.y0),
+            )
+            for a in xs
+            for b in ys
+        )
+
+    dm.simple_layout(fig, fit_labels=False)
+    assert worst() > 0.5  # precondition
+    dm.simple_layout(fig)
+    assert worst() <= 0.5
+
+
+def test_a_wrap_that_clears_the_corner_leaves_the_pads() -> None:
+    """The first of four long names reaches under the y labels until the
+    names wrap; the pad step looks only once the wrap has settled, so it
+    finds nothing to move."""
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    names = [
+        "Residential heat pumps",
+        "Commercial chillers",
+        "District heating network",
+        "Industrial waste heat",
+    ]
+    ax.bar(names, [3, 5, 2, 4])
+    dm.simple_layout(fig, fit_labels=False)
+    assert _worst(fig) > 0.5  # precondition: the first name under the 0
+    before = _pads(ax)
+    dm.simple_layout(fig)
+    texts = [t.get_text() for t in drawn_tick_labels(ax, "x")]
+    assert any("\n" in text for text in texts)  # the names wrapped
+    assert _worst(fig) <= 0.5
+    assert _pads(ax) == before
+
+
 def test_the_axis_that_moves_less_moves() -> None:
     """Tall y labels against a narrow ``-3``: the y column moves out."""
     fig, ax = _square()
