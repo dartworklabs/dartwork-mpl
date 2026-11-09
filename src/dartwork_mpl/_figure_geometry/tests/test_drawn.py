@@ -62,6 +62,21 @@ def _close():
         (value_label_on_data, "_clip_path", fg.clip_path_px),
         (value_label_on_data, "_within_path", fg.within_clip_path),
         (_bar_label_settle, "clip_region", fg.clip_region),
+        # What a line, a patch, a text inks; markers and points as discs.
+        (_legend_fit, "line_draws_stroke", fg.line_draws_stroke),
+        (_legend_fit, "line_draws_markers", fg.line_draws_markers),
+        (_legend_fit, "marker_radius_pt", fg.marker_radius_pt),
+        (_legend_fit, "drawn_scatter_discs", fg.drawn_scatter_discs),
+        (_legend_fit, "discs_meet", fg.discs_meet),
+        (_legend_fit, "drawn_patch_box", fg.drawn_patch_box),
+        (_legend_fit, "drawn_text_box", fg.drawn_text_box),
+        (legend_on_data, "line_draws_stroke", fg.line_draws_stroke),
+        (legend_on_data, "line_draws_markers", fg.line_draws_markers),
+        (legend_on_data, "patch_inks", fg.patch_inks),
+        (legend_on_data, "text_inks", fg.text_inks),
+        (legend_on_data, "discs_meet", fg.discs_meet),
+        (value_label_on_data, "marker_radius_pt", fg.marker_radius_pt),
+        (value_label_on_data, "drawn_scatter_discs", fg.drawn_scatter_discs),
     ],
     ids=lambda v: getattr(v, "__name__", str(v)).rsplit(".", 1)[-1],
 )
@@ -79,6 +94,10 @@ def test_the_placer_and_the_checks_hold_the_shared_function(
         (legend_on_data, "_drawn_outlines"),
         (legend_on_data, "_shown"),
         (_bar_label_settle, "_clip_extents"),
+        (legend_on_data, "_line_inks"),
+        (legend_on_data, "_patch_inks"),
+        (legend_on_data, "_text_inks"),
+        (_legend_fit, "_DEFAULT_SCATTER_SIZE"),
     ],
 )
 def test_no_private_copy_of_the_rule_is_left(module, name: str) -> None:
