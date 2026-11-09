@@ -24,6 +24,8 @@ from matplotlib.transforms import Bbox, ScaledTranslation
 
 __all__ = [
     "BBOX_ERRORS",
+    "CORNER_GAP_EM",
+    "CornerOverlap",
     "OutsideSide",
     "anchor_outside",
     "axes_decoration_extents",
@@ -32,6 +34,7 @@ __all__ = [
     "axes_with_secondaries",
     "backdrop_layers",
     "canvas_renderer",
+    "corner_tick_overlaps",
     "drawn_axes_texts",
     "drawn_tick_labels",
     "get_renderer",
@@ -49,6 +52,7 @@ __all__ = [
     "spread_line_end_labels",
     "text_window_extent",
     "tick_label_overlaps",
+    "tick_pad",
     "with_insets",
 ]
 
@@ -600,6 +604,113 @@ def tick_label_overlaps(
                     deepest = depth
                     rotation = float(group[a].get_rotation())
     return TickOverlaps(pairs, len(labels), deepest, rotation)
+
+
+def tick_pad(tick: Any) -> float:
+    """The label pad (pt) of a matplotlib ``Tick`` (``Tick.get_pad``).
+
+    Matplotlib 3.11's type stub declares ``get_pad`` as returning ``None``;
+    it returns the pad, which ``Tick.set_pad`` sets.
+    """
+    return float(tick.get_pad())
+
+
+#: What an x and a y label at a corner are cleared by, in ems of the labels
+#: that move: a hair space. Labels of two axes are told apart by where they
+#: sit; they only must not touch. Measured (I-O1 follow-up 8, a -3..3
+#: square): 0.25 em moved a report x row 3 pt off its 4 pt and a slide one
+#: 5.9 pt, plainly further than the other labels; 0.1 em reads as a gap at
+#: both sizes and, unlike a pixel count, keeps its look at any dpi.
+CORNER_GAP_EM = 0.1
+
+
+class CornerOverlap(NamedTuple):
+    """An x and a y tick label of one plot box that overlap.
+
+    ``depth`` is how deep they cross (px, separating axes, the measure of
+    :func:`tick_label_overlaps`); ``down`` and ``across`` how far their boxes
+    overlap vertically and horizontally (px): what the x labels must move
+    out (down below, up above) or the y labels out (left, right) to clear
+    the pair. ``corner``: ``"lower left"``, ``"lower right"``, ``"upper
+    left"`` or ``"upper right"``, the sides of the plot the pair sits at.
+    """
+
+    x_label: Text
+    y_label: Text
+    x_axes: Axes
+    y_axes: Axes
+    depth: float
+    down: float
+    across: float
+    corner: str
+
+
+def corner_tick_overlaps(
+    axes: Sequence[Axes], renderer: RendererBase
+) -> list[CornerOverlap]:
+    """The x tick labels that overlap a y tick label, among ``axes``.
+
+    ``axes`` are drawn in one box (an Axes and its ``twinx`` / ``twiny``,
+    :func:`same_position_axes`): a bottom label at the left end of the
+    plot meets the lowest left label when both axes end on a tick
+    (``-3`` and ``-3`` of a -3..3 square), or when the first category name
+    is wide enough to reach under the y labels; the other corners alike,
+    with labels on top or on the right, and the right labels of a twin.
+    Every drawn, non-empty label counts, major and minor, as the rectangle
+    its own text fills, turned with it; a pair collides when it overlaps
+    by more than ``_TOUCH_PX``. Neither ``TICK_OVERLAP`` (neighbours along
+    one axis) nor ``CROSS_AXES_OVERLAP`` (other plots) sees these pairs.
+    """
+    xs: list[tuple[Axes, Text]] = []
+    ys: list[tuple[Axes, Text]] = []
+    sides: tuple[tuple[Literal["x", "y"], list[tuple[Axes, Text]]], ...] = (
+        ("x", xs),
+        ("y", ys),
+    )
+    for ax in axes:
+        for which, out in sides:
+            out += [
+                (ax, label)
+                for minor in (False, True)
+                for label in drawn_tick_labels(ax, which, minor=minor)
+                if label.get_text().strip()
+            ]
+    found: list[CornerOverlap] = []
+    if not xs or not ys:
+        return found
+    try:
+        plot = axes[0].get_window_extent(renderer)
+        x_rects = [(_label_corners(t, renderer), t) for _, t in xs]
+        y_rects = [(_label_corners(t, renderer), t) for _, t in ys]
+    except BBOX_ERRORS:
+        return found
+    middle = ((plot.x0 + plot.x1) / 2, (plot.y0 + plot.y1) / 2)
+    for (x_ax, _), (x_rect, x_label) in zip(xs, x_rects, strict=True):
+        for (y_ax, _), (y_rect, y_label) in zip(ys, y_rects, strict=True):
+            depth = _overlap_px(x_rect, y_rect)
+            if depth <= _TOUCH_PX:
+                continue
+            down = min(x_rect[:, 1].max(), y_rect[:, 1].max()) - max(
+                x_rect[:, 1].min(), y_rect[:, 1].min()
+            )
+            across = min(x_rect[:, 0].max(), y_rect[:, 0].max()) - max(
+                x_rect[:, 0].min(), y_rect[:, 0].min()
+            )
+            level = "lower" if x_rect[:, 1].mean() < middle[1] else "upper"
+            side = "left" if y_rect[:, 0].mean() < middle[0] else "right"
+            found.append(
+                CornerOverlap(
+                    x_label,
+                    y_label,
+                    x_ax,
+                    y_ax,
+                    float(depth),
+                    float(down),
+                    float(across),
+                    f"{level} {side}",
+                )
+            )
+    return found
 
 
 def secondary_axes(ax: Axes) -> list[Axes]:
