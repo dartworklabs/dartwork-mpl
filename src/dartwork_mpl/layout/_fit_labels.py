@@ -132,6 +132,7 @@ from .._figure_geometry import (
     CORNER_GAP_EM,
     CornerOverlap,
     corner_tick_overlaps,
+    drawn_in_tree,
     drawn_tick_labels,
     get_renderer,
     same_position_axes,
@@ -912,8 +913,8 @@ def _in_the_way(
         return True
     here = {id(a) for a in same_position_axes(ax)} | {id(ax)}
     for other in fig.axes:
-        if id(other) in here or not other.get_visible():
-            continue
+        if id(other) in here or not drawn_in_tree(other):
+            continue  # a hidden SubFigure's panel is no neighbour
         extent = _axes_content_extent_px(other, renderer, fig)
         if extent is not None and box_overlap_px(name, extent) > _TOUCH_PX:
             return True

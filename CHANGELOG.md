@@ -564,6 +564,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   figures without SubFigures are laid out as before. The margin fit also
   stops when the edges alternate between two fits (a tick locator picking
   wider labels at one width), keeping the one where the content fits.
+- **`dm.tight_crop` keeps a figure with SubFigures whole.** matplotlib places
+  a SubFigure, its titles and its legends as fractions of the figure and
+  offers no public way to move them, so a crop cut a SubFigure title 135 px
+  past the canvas; such a figure now keeps its size, with a warning
+  (`dm.simple_layout` fits each SubFigure to the canvas already). Bar values
+  past a limit also clear a shown SubFigure's own text, and the layout, bar
+  labels and crop no longer count what a hidden SubFigure holds.
 - **No check reports what a hidden SubFigure holds.** `SubFigure.set_visible(False)`
   hides its Axes and texts while their own flags stay on; `OVERLAP`,
   `CROSS_AXES_OVERLAP`, `TICK_OVERLAP`, `TICK_CROWD`, `TICK_ROTATION`,
