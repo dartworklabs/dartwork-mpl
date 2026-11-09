@@ -19,10 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   axis whose labels move less grows by the overlap plus a tenth of an em,
   so the row keeps its line and each label its tick; the axis limits,
   alignment and text size stay, and a pad you set
-  (`ax.tick_params(pad=...)`) stays too. What is left (both pads set by
-  hand) is the new `TICK_CORNER_OVERLAP` check (WARNING), whose fix names
-  the pad that clears it. `fit_labels=False` draws as before; existing
-  check IDs, their order and severities are unchanged.
+  (`ax.tick_params(pad=...)`, or one tick's `set_pad`), before a layout or
+  after it, stays too. Labels drawn at alpha 0 are no pair. What is left
+  (both pads set by hand) is the new `TICK_CORNER_OVERLAP` check (WARNING),
+  whose fix names the Axes (a twin's, for its right labels), the kind of
+  tick (major or minor) and the pad that clear it, as
+  `fig.axes[i].tick_params(axis=..., which=..., pad=...)`.
+  `fit_labels=False` draws as before; existing check IDs, their order and
+  severities are unchanged.
 
 - **`dm.figsize_for("grouped", n_points=, n_series=)` for grouped bars.**
   Grouped bars put `n_series` bars side by side in each of `n_points`

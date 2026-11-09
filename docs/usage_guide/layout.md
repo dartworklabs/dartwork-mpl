@@ -419,7 +419,8 @@ than half a pixel, easiest first:
    The tick pad of one axis grows by the overlap plus a tenth of an em (a
    hair space), the axis whose labels move less, so the row keeps its line
    and every label its tick. Axis limits, alignment and text size stay; a
-   pad you set (`ax.tick_params(pad=...)`) stays too.
+   pad you set (`ax.tick_params(pad=...)`, or one tick's `set_pad`),
+   before or after a layout, stays too. Labels drawn at alpha 0 are no pair.
 
 After each round the margins are fitted again and the figure is checked:
 a change that left a plot under 30 % of its width or height, or gave any
@@ -474,7 +475,9 @@ plot, is left for you.
 `TICK_OVERLAP` (WARNING), with the choices that are the author's: a
 horizontal bar chart (`dm.figsize_for("barh", n_points=n)`) or a wider
 canvas. An x label still on a y label at a corner (both pads set by hand)
-is `TICK_CORNER_OVERLAP` (WARNING), with the pad that clears it. Text over
+is `TICK_CORNER_OVERLAP` (WARNING); its fix names the Axes (a twin's, for
+its right labels), the kind of tick (major or minor) and the pad that
+clear it (`fig.axes[i].tick_params(axis=..., which=..., pad=...)`). Text over
 another panel's text is `CROSS_AXES_OVERLAP`; text that reaches into
 another panel's plot area is not reported yet.
 
