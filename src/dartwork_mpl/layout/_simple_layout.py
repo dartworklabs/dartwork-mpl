@@ -14,7 +14,7 @@ from matplotlib.gridspec import (
     SubplotSpec,
 )
 
-from .._figure_geometry import get_renderer
+from .._figure_geometry import get_renderer, root_position
 from ..units import Length
 from ._content_extent import _axes_content_extent_px
 from ._fit_labels import (
@@ -36,7 +36,12 @@ from ._margins import (
 from ._orphan_tick_font import _adopt_axis_label_font_core
 from ._reservations import _figure_artist_reservations
 from ._settle import _settle_outside_legends
-from ._subfigure_frames import held_grids, place_subfigure_title
+from ._subfigure_frames import (
+    held_grids,
+    place_subfigure_title,
+    shown_subfigures,
+    titles_above,
+)
 from ._subfigure_frames import holder_margins as _holder_margins
 from ._subfigure_frames import holder_of as _holder_of
 
@@ -340,11 +345,19 @@ def simple_layout(
     # place_legend's legends are placed again on them, and the label ladder
     # fits and restores them. ``actual_gs`` (the root) is what the margins
     # are written into; for a nested ``gs`` that is not this set's GridSpec.
+    # A SubFigure's grid is measured in its box, so "all Axes" are those it
+    # holds itself: a sibling's, measured in this box's fractions, would
+    # collapse the plot.
     scope = [
         ax
         for ax in fig.axes
-        if use_all_axes
-        or (ax.get_gridspec() is not None and id(ax.get_gridspec()) == gs_id)
+        if (holder is None or ax.get_figure(root=False) is holder)
+        and (
+            use_all_axes
+            or (
+                ax.get_gridspec() is not None and id(ax.get_gridspec()) == gs_id
+            )
+        )
     ]
 
     # Each call fits from the figure as the caller left it: what an earlier
@@ -363,6 +376,10 @@ def simple_layout(
         _format_ticks(fig)
     _show_twin_spines(fig)
     _color_twins(fig)
+    if holder is not None:
+        # The titles the library places above this grid, parents first.
+        for above in titles_above(holder):
+            place_subfigure_title(fig, above)
 
     _fit_grid(
         fig,
@@ -416,9 +433,14 @@ def _fit_holders(
         _format_ticks(fig)
     _show_twin_spines(fig)
     _color_twins(fig)
-    for (holder, grid), scope, start in zip(grids, scopes, starts, strict=True):
+    # Every shown SubFigure's title first, parents before children, one that
+    # holds only nested SubFigures too; then the grids.
+    for titled in shown_subfigures(fig):
+        place_subfigure_title(fig, titled)
+    for (_holder, grid), scope, start in zip(
+        grids, scopes, starts, strict=True
+    ):
         sub = _holder_of(fig, grid)
-        place_subfigure_title(fig, holder)
         _fit_grid(
             fig,
             grid,
@@ -436,15 +458,49 @@ def _fit_holders(
     _report_hidden_bar_labels(fig)
 
 
-def _same_edges(a: _GridEdges, b: _GridEdges) -> bool:
-    return all(
-        abs(x - y) < 1e-9
-        for x, y in zip(
-            (a.left, a.right, a.bottom, a.top),
-            (b.left, b.right, b.bottom, b.top),
-            strict=True,
-        )
+def _two_state_cycle(answers: Sequence[_GridEdges]) -> bool:
+    """Whether the last four answers are A, B, A, B with A unlike B.
+
+    The solver is deterministic, so a true cycle repeats its edges exactly;
+    a slow approach (each answer a hair from the last) never does.
+    """
+    if len(answers) < 4:
+        return False
+    a, b, c, d = answers[-4:]
+    return a == c and b == d and a != b
+
+
+def _holds(wanted: _GridEdges, edges: _GridEdges) -> bool:
+    """Whether a fit at ``edges`` asks for no more room than they give."""
+    return (
+        wanted.left <= edges.left
+        and wanted.right >= edges.right
+        and wanted.bottom <= edges.bottom
+        and wanted.top >= edges.top
     )
+
+
+def _apply_edges(fig: Figure, actual_gs: GridSpec, edges: _GridEdges) -> None:
+    """Write ``edges`` into the grid and move its Axes there."""
+    actual_gs.update(
+        left=edges.left, right=edges.right, bottom=edges.bottom, top=edges.top
+    )
+    # GridSpec.update only repositions pyplot-managed figures.
+    # A retained closed Figure still needs its own axes updated;
+    # reuse their SubplotSpecs to preserve SubFigure coordinates,
+    # twin relationships and in_layout flags. Open figures whose
+    # positions already match are left untouched.
+    for ax in fig.axes:
+        spec = ax.get_subplotspec()
+        if (
+            spec is not None
+            and spec.get_topmost_subplotspec().get_gridspec() is actual_gs
+        ):
+            # Matplotlib accepts the local SubFigure here, though
+            # its SubplotSpec stub only declares Figure.
+            position = spec.get_position(ax.get_figure(root=False))  # type: ignore[arg-type]
+            if ax.get_position(original=True).bounds != position.bounds:
+                ax.set_subplotspec(spec)
 
 
 def _inner_edges(a: _GridEdges, b: _GridEdges) -> _GridEdges:
@@ -536,33 +592,40 @@ def _fit_margins(
     grid is a SubFigure's.
     """
     last = last_edges
-    before_last: _GridEdges | None = None
+    answers: list[_GridEdges] = []  # the solver's edges, in order
     step: _LayoutStep | None = None
+
+    def solve(last_edges: _GridEdges | None) -> _LayoutStep | None:
+        return _solve_layout_step(
+            fig,
+            margins=margins,
+            scope=scope,
+            last_edges=last_edges,
+            adopt_orphan_tick_font=adopt_orphan_tick_font,
+            holder=holder,
+        )
+
     for _ in range(2):
         for it in range(_MAX_ITER):
-            step = _solve_layout_step(
-                fig,
-                margins=margins,
-                scope=scope,
-                last_edges=last,
-                adopt_orphan_tick_font=adopt_orphan_tick_font,
-                holder=holder,
-            )
+            step = solve(last)
             if step is None:
                 break  # no measurable Axes: nothing to place
             new_edges = step.edges
-            if (
-                last is not None
-                and before_last is not None
-                and step.delta_px >= _CONVERGE_TOL_PX
-                and _same_edges(new_edges, before_last)
-            ):
-                # The edges alternate between two fits: a tick locator
-                # picks wider labels at one width than at the other, which
-                # then fit (AutoLocator's 0.25 and 0.2 steps). Keep the
-                # inner of the two, where the content fits, and stop.
-                new_edges = _inner_edges(new_edges, last)
-                step = _LayoutStep(new_edges, 0.0)
+            answers.append(new_edges)
+            if step.delta_px >= _CONVERGE_TOL_PX and _two_state_cycle(answers):
+                # The edges alternate between two fits (A, B, A, B): a tick
+                # locator picks wider labels at one width than at the
+                # other, which then fit (AutoLocator's 0.25 and 0.2 steps).
+                # Try the inner of the two: kept when a fresh measure there
+                # finds its content fits, else the fit goes on from there.
+                inner = _inner_edges(answers[-1], answers[-2])
+                _apply_edges(fig, actual_gs, inner)
+                trial = solve(inner)
+                if trial is not None and _holds(trial.edges, inner):
+                    new_edges, step = inner, _LayoutStep(inner, 0.0)
+                elif trial is not None:
+                    new_edges, step = trial.edges, trial
+                    answers.append(trial.edges)
 
             if verbose:
                 print(
@@ -572,30 +635,8 @@ def _fit_margins(
                     f"Δ={step.delta_px:.2f}px"
                 )
 
-            actual_gs.update(
-                left=new_edges.left,
-                right=new_edges.right,
-                bottom=new_edges.bottom,
-                top=new_edges.top,
-            )
-            # GridSpec.update only repositions pyplot-managed figures.
-            # A retained closed Figure still needs its own axes updated;
-            # reuse their SubplotSpecs to preserve SubFigure coordinates,
-            # twin relationships and in_layout flags. Open figures whose
-            # positions already match are left untouched.
-            for ax in fig.axes:
-                spec = ax.get_subplotspec()
-                if (
-                    spec is not None
-                    and spec.get_topmost_subplotspec().get_gridspec()
-                    is actual_gs
-                ):
-                    # Matplotlib accepts the local SubFigure here, though
-                    # its SubplotSpec stub only declares Figure.
-                    position = spec.get_position(ax.get_figure(root=False))  # type: ignore[arg-type]
-                    if ax.get_position(original=True).bounds != position.bounds:
-                        ax.set_subplotspec(spec)
-            before_last, last = last, new_edges
+            _apply_edges(fig, actual_gs, new_edges)
+            last = new_edges
 
             if step.delta_px < _CONVERGE_TOL_PX:
                 break
@@ -744,7 +785,10 @@ def _solve_layout_step(
         if ext is None:
             continue
         x0, x1, y0, y1 = ext
-        pos = ax.get_position()
+        # On the canvas, an Axes a SubFigure holds is placed as a fraction of
+        # the root figure, as the content is measured; in a SubFigure's box
+        # every Axes is that SubFigure's own (the scope).
+        pos = root_position(ax) if holder is None else ax.get_position()
         oh_l.append(pos.x0 - (x0 - ox) / fw_px)
         oh_r.append((x1 - ox) / fw_px - pos.x1)
         oh_b.append(pos.y0 - (y0 - oy) / fh_px)

@@ -34,12 +34,14 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
     from matplotlib.text import Text
-    from matplotlib.transforms import BboxBase
+    from matplotlib.transforms import Bbox, BboxBase
 
 #: Where ``SubFigure.suptitle`` puts a title given no ``y``.
 _TITLE_Y = 0.98
 #: The ``y`` this module gave a SubFigure title, while it is still that.
 _PLACED: WeakKeyDictionary[Text, float] = WeakKeyDictionary()
+#: How often a SubFigure title moves under the text it meets, at most.
+_TITLE_TRIES = 8
 _TOUCH_PX = 0.5
 
 
@@ -105,6 +107,9 @@ def holder_margins(fig: Figure, holder: SubFigure, margins: _Sides) -> _Sides:
     another SubFigure keeps half the panel gap (``_TARGET_EM``), so the two
     contents are a gap apart as panels of one grid are; a side the caller
     parted from the next SubFigure (``subfigures(wspace=...)``) adds nothing.
+    An explicit ``wspace=0`` / ``hspace=0`` leaves the boxes touching as the
+    default does, and matplotlib offers no public way to tell the two apart:
+    those sides keep the half gap too (the boxes themselves stay).
     """
     canvas, box = fig.bbox, holder.bbox
     w, h = box.width, box.height
@@ -157,20 +162,52 @@ def place_subfigure_title(fig: Figure, holder: Figure | SubFigure) -> None:
     _PLACED.pop(title, None)
     fig.canvas.draw()
     renderer = get_renderer(fig)
-    box, own = holder.bbox, title.get_window_extent(renderer)
+    box = holder.bbox
     gap = _TARGET_EM * float(title.get_fontsize()) * fig.dpi / 72.0
-    top = own.y1
+    # The figure-level texts above it that lie over its box (they stay put).
+    above: list[Bbox] = []
     owner: Figure | SubFigure | None = holder.get_figure(root=False)
     while owner is not None:
-        for _art, ext in iter_figure_level_extents(
-            owner, renderer, subfigures=False
-        ):
-            over_box = ext.x0 < box.x1 and ext.x1 > box.x0
-            if over_box and ext.y0 < own.y1 and ext.y1 > own.y0:
-                top = min(top, ext.y0 - gap)
-        above = owner.get_figure(root=False)
-        owner = None if above is owner else above
-    if top < own.y1:
-        placed = (top - box.y0) / box.height
+        above += [
+            ext
+            for _art, ext in iter_figure_level_extents(
+                owner, renderer, subfigures=False
+            )
+            if ext.x0 < box.x1 and ext.x1 > box.x0
+        ]
+        parent = owner.get_figure(root=False)
+        owner = None if parent is owner else parent
+    # Under whatever shares its band, then again from there (a subtitle
+    # under the figure title), a few times at most; a check reports the rest.
+    for _ in range(_TITLE_TRIES):
+        own = title.get_window_extent(renderer)
+        met = [
+            ext.y0 - gap for ext in above if ext.y0 < own.y1 and ext.y1 > own.y0
+        ]
+        if not met:
+            return
+        placed = (min(met) - box.y0) / box.height
         title.set_y(placed)
         _PLACED[title] = placed
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
+
+
+def shown_subfigures(fig: Figure) -> list[SubFigure]:
+    """Every SubFigure of ``fig`` no hidden SubFigure hides, parents first."""
+    return [
+        sub
+        for sub in figure_tree(fig)
+        if isinstance(sub, SubFigure) and drawn_in_tree(sub)
+    ]
+
+
+def titles_above(holder: SubFigure) -> list[SubFigure]:
+    """``holder`` and the SubFigures above it, the outermost first."""
+    chain: list[SubFigure] = []
+    sub: Figure | SubFigure | None = holder
+    while isinstance(sub, SubFigure):
+        chain.append(sub)
+        parent = sub.get_figure(root=False)
+        sub = None if parent is sub else parent
+    return chain[::-1]

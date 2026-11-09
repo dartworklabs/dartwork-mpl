@@ -225,6 +225,100 @@ def test_every_subfigure_is_laid_out_in_its_own_box(name: str) -> None:
         gs = ax.get_gridspec()
         assert gs is not None
         assert None not in (gs.left, gs.right, gs.bottom, gs.top), ax
+        _assert_useful_plot(ax)
+
+
+def _assert_useful_plot(ax: Axes) -> None:
+    """A plot keeps a useful share of its holder's box: not one collapsed
+    to the solver's clamp, which "content inside the box" alone misses."""
+    holder = ax.get_figure(root=False)
+    assert holder is not None
+    frame = ax.get_window_extent()
+    assert frame.width > 0.25 * holder.bbox.width, ax
+    assert frame.height > 0.25 * holder.bbox.height, ax
+
+
+@pytest.mark.parametrize("use_all_axes", [True, False])
+def test_a_grid_named_by_gs_keeps_a_useful_plot(use_all_axes: bool) -> None:
+    """``gs=`` on one SubFigure's grid with the default ``use_all_axes``
+    measured the sibling SubFigure's Axes in this box's fractions and
+    clamped the plot to 0.001 of it (review of #666, F1)."""
+    fig = _scene("row_1x2")
+    left = fig.subfigs[0]
+    ax = next(a for a in fig.axes if a.get_figure(root=False) is left)
+    dm.simple_layout(fig, gs=ax.get_gridspec(), use_all_axes=use_all_axes)
+    fig.canvas.draw()
+    _assert_useful_plot(ax)
+    assert _measure(fig)["past"] <= 0.5
+
+
+def test_a_title_only_parent_clears_the_figure_title() -> None:
+    """A SubFigure that holds only nested SubFigures still has its own
+    title placed under the figure title (review of #666, F2)."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    left, right = fig.subfigures(1, 2)
+    left.suptitle("Site A title")
+    fig.suptitle("Root title covering both sites and their local headings")
+    for sub in left.subfigures(2, 1):
+        _small(sub.subplots())
+    _small(right.subplots())
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    root = fig._suptitle.get_window_extent(renderer)  # type: ignore[union-attr]
+    own = left._suptitle.get_window_extent(renderer)  # type: ignore[union-attr]
+    assert not root.overlaps(own)
+    assert _measure(fig)["cross"] < 1.0
+
+
+def test_a_grid_named_by_gs_places_its_subfigure_title() -> None:
+    """``gs=`` places the library-owned titles above that grid as well
+    (review of #666, F3)."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    left, right = fig.subfigures(1, 2)
+    ax = left.subplots()
+    _small(ax)
+    _small(right.subplots())
+    left.suptitle("Site A title")
+    fig.suptitle("Root title covering both sites and their local headings")
+    dm.simple_layout(fig, gs=ax.get_gridspec(), use_all_axes=False)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    root = fig._suptitle.get_window_extent(renderer)  # type: ignore[union-attr]
+    own = left._suptitle.get_window_extent(renderer)  # type: ignore[union-attr]
+    assert not root.overlaps(own)
+
+
+def test_a_subfigure_title_clears_every_text_above_it() -> None:
+    """Moved under the figure title, a SubFigure title met the subtitle
+    under it and stayed there (Codex on #666): it moves until it clears
+    every text above it."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    left, right = fig.subfigures(1, 2)
+    _small(left.subplots())
+    _small(right.subplots())
+    title = fig.suptitle("Measured electric load at both sites")
+    fig.canvas.draw()
+    under = title.get_window_extent(fig.canvas.get_renderer()).y0 - 2.0
+    fig.text(
+        0.5,
+        under / fig.bbox.height,
+        "A subtitle right under the figure title, as wide as both panel titles",
+        ha="center",
+        va="top",
+    )
+    left.suptitle("(a) Site A")
+    right.suptitle("(b) Site B")
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    texts = _figure_texts(fig)
+    assert len(texts) == 4
+    boxes = [t.get_window_extent(renderer) for t in texts]
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1 :]:
+            assert not a.overlaps(b)
+    assert _measure(fig)["cross"] < 1.0
 
 
 def test_a_subfigure_is_fitted_as_the_same_figure_alone() -> None:
