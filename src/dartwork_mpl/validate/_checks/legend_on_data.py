@@ -46,7 +46,15 @@ contours and polar plots are not data here.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, TypedDict
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    TypeAlias,
+    TypedDict,
+    cast,
+)
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -55,6 +63,7 @@ from matplotlib.colors import to_rgba_array
 from matplotlib.lines import Line2D
 from matplotlib.offsetbox import DrawingArea, OffsetBox
 from matplotlib.patches import Patch
+from matplotlib.path import Path
 from matplotlib.text import Text
 
 from ..._figure_geometry import (
@@ -79,7 +88,10 @@ from ._detail import wire
 from ._registry import register_check, register_fix
 from .value_label_on_data import (
     _clip,
+    _dash_px,
+    _dashed,
     _is_data_line,
+    _joined,
     _measure,
     _name,
     _segments_hit,
@@ -92,7 +104,6 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend
-    from matplotlib.path import Path
     from matplotlib.transforms import Bbox
 
     from .value_label_on_data import _Data
@@ -384,7 +395,58 @@ def _area_kind(coll: Collection, owner: Axes) -> tuple[Covered, str] | None:
     return None
 
 
-def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
+def _dashed_outlines(
+    coll: LineCollection,
+    outlines: list[DrawnOutline],
+    renderer: RendererBase,
+    frame: Bbox,
+) -> list[DrawnOutline]:
+    """Each segment of a line collection where its dash pattern inks it.
+
+    As a dashed line's are read (VALUE_LABEL_ON_DATA's ``_dashed``): item
+    ``i`` takes the ``i``-th dash pattern as the renderer cycles them (scaled
+    to its width, in points), the pattern runs along the segment as the
+    canvas strokes it, and only the dashes are kept, each a MOVETO-LINETO
+    piece. A gap colour draws the gaps and a sketch moves the dashes, so
+    either counts solid; a segment whose dashes all fall outside the plot
+    box is left out.
+    """
+    # (offset, on/off) per item as Collection.draw hands them on, scaled.
+    styles = cast("list[tuple[float, Any]]", coll.get_linestyle())
+    if not styles or coll.get_gapcolor() is not None:
+        return outlines
+    sketched = coll.get_sketch_params() is not None
+    w, h = renderer.get_canvas_width_height()
+    found: list[DrawnOutline] = []
+    for outline in outlines:
+        offset, lengths = styles[outline.item % len(styles)]
+        dashes = _dash_px(
+            offset, lengths, renderer.points_to_pixels, sketched=sketched
+        )
+        if dashes is None:
+            found.append(outline)
+            continue
+        # The vertices the canvas strokes: NaN removed, cut to the canvas,
+        # where a re-entry starts the pattern over (as the Line2D recorder).
+        drawn = outline.path.cleaned(
+            remove_nans=True,
+            clip=(0.0, 0.0, w, h),
+            stroke_width=2 * outline.half,
+        )
+        vertices, joined = _joined(drawn)
+        a, b = _dashed(vertices, joined, dashes, frame, outline.half)
+        if not len(a):
+            continue
+        pieces = np.empty((2 * len(a), 2))
+        pieces[0::2], pieces[1::2] = a, b
+        codes = np.tile([Path.MOVETO, Path.LINETO], len(a))
+        found.append(outline._replace(path=Path(pieces, codes)))
+    return found
+
+
+def _areas(
+    owners: list[Axes], renderer: RendererBase, frame: Bbox
+) -> list[_Area]:
     """The filled areas and data line collections of one plot box that draw
     ink, and their clip.
 
@@ -392,7 +454,8 @@ def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
     (:func:`~dartwork_mpl._figure_geometry.drawn_collection_outlines`), and
     the clip as a label's is (:func:`~dartwork_mpl._figure_geometry.clip_region`,
     :func:`~dartwork_mpl._figure_geometry.clip_path_px`: its clip box and the
-    extent of its clip path, when ``clip_on``).
+    extent of its clip path, when ``clip_on``). A line collection counts by
+    its dashes only (:func:`_dashed_outlines`).
     """
     found: list[_Area] = []
     for owner in owners:
@@ -402,6 +465,8 @@ def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
                 continue
             try:
                 outlines = drawn_collection_outlines(coll, renderer)
+                if isinstance(coll, LineCollection):
+                    outlines = _dashed_outlines(coll, outlines, renderer, frame)
                 region = clip_region(coll)
                 clip_path = clip_path_px(coll)
             except BBOX_ERRORS:
@@ -491,7 +556,7 @@ class _Measured:
     def areas(self, plot: _PlotBox) -> list[_Area]:
         key = plot.owner.name
         if key not in self._areas:
-            self._areas[key] = _areas(plot.owners, self._renderer)
+            self._areas[key] = _areas(plot.owners, self._renderer, plot.frame)
         return self._areas[key]
 
 

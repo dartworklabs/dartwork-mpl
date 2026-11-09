@@ -147,6 +147,57 @@ def _add(fig, ax, case: str, b: Bbox):
             )
         case "text_drawn":
             return ax.text(cx, cy, "Drawn note", ha="center", va="center")
+        # Review of #672: ink apart from the glyphs, the face and the edge.
+        case "text_background_clear_glyph":  # glyphs at alpha 0, box opaque
+            return ax.text(cx, cy, "Note", alpha=0, bbox={"fc": GRAY, "pad": 2})
+        case "text_background_no_glyph":  # glyph colour "none", box opaque
+            return ax.text(
+                cx, cy, "Note", color="none", bbox={"fc": GRAY, "pad": 2}
+            )
+        case "marker_alternate_face":  # the left half draws markerfacecoloralt
+            return ax.plot(
+                [cx],
+                [cy],
+                marker="o",
+                ls="none",
+                ms=24,
+                mew=0,
+                mfc="none",
+                mfcalt=GRAY,
+                fillstyle="left",
+            )[0]
+        case "marker_alternate_unused":  # a full marker never draws the alt
+            return ax.plot(
+                [cx],
+                [cy],
+                marker="o",
+                ls="none",
+                ms=24,
+                mew=0,
+                mfc="none",
+                mfcalt=GRAY,
+                fillstyle="full",
+            )[0]
+        case "scatter_clear_edge":  # a 3 pt disc, its 30 pt edge transparent
+            return ax.scatter(
+                [lx],
+                [ly],
+                s=36,
+                linewidths=30,
+                facecolors=GRAY,
+                edgecolors="none",
+            )
+        case "marker_clear_edge":
+            return ax.plot(
+                [lx],
+                [ly],
+                marker="o",
+                ls="none",
+                ms=6,
+                mew=30,
+                mfc=GRAY,
+                mec="none",
+            )[0]
     raise ValueError(case)
 
 
@@ -206,6 +257,9 @@ def test_the_legend_covers_none_of_the_edge_an_artist_draws(case: str) -> None:
         "patch_alpha0",
         "text_alpha0",
         "text_clipped",
+        "marker_alternate_unused",
+        "scatter_clear_edge",
+        "marker_clear_edge",
     ],
 )
 def test_what_draws_nothing_in_the_first_spot_leaves_it_to_the_legend(
@@ -221,7 +275,16 @@ def test_what_draws_nothing_in_the_first_spot_leaves_it_to_the_legend(
 
 
 @pytest.mark.parametrize(
-    "case", ["line_drawn", "scatter_drawn", "patch_drawn", "text_drawn"]
+    "case",
+    [
+        "line_drawn",
+        "scatter_drawn",
+        "patch_drawn",
+        "text_drawn",
+        "text_background_clear_glyph",
+        "text_background_no_glyph",
+        "marker_alternate_face",
+    ],
 )
 def test_what_draws_in_the_first_spot_keeps_the_legend_away(case: str) -> None:
     b = _first_spot()
@@ -231,3 +294,14 @@ def test_what_draws_in_the_first_spot_keeps_the_legend_away(case: str) -> None:
     box = _placed(fig, ax)
     assert _drawn(fig, ax, target, box) == 0
     assert not np.allclose(box.extents, b.extents, atol=1.0)
+
+
+def test_the_check_reads_the_alternate_face_the_placer_avoids() -> None:
+    """A hand legend over the half-filled marker is reported: the placer and
+    LEGEND_ON_DATA agree that the alternate face is ink."""
+    b = _first_spot()
+    fig, ax = _axes()
+    _add(fig, ax, "marker_alternate_face", b)
+    ax.legend(loc="upper right")
+    found = dm.validate_figure(fig, checks=("LEGEND_ON_DATA",), quiet=True)
+    assert [(w.detail or {}).get("covered") for w in found] == [["marker"]]

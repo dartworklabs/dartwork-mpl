@@ -58,11 +58,13 @@ NOWHERE = Bbox.from_extents(0.0, 0.0, 0.0, 0.0)
 
 
 class DrawnOutline(NamedTuple):
-    """One item a collection draws ink with: its path in display px and the
-    half width its own edge is stroked at (0 when it draws no edge)."""
+    """One item a collection draws ink with: its path in display px, the
+    half width its own edge is stroked at (0 when it draws no edge) and its
+    index, which picks its style (a dash pattern) as the renderer cycles it."""
 
     path: Path
     half: float
+    item: int = 0
 
 
 def drawn_collection_paths(coll: Any) -> list[tuple[int, Path]]:
@@ -142,7 +144,7 @@ def drawn_collection_outlines(
             if edge
             else 0.0
         )
-        found.append(DrawnOutline(path, half))
+        found.append(DrawnOutline(path, half, i))
     return found
 
 
@@ -250,8 +252,11 @@ def line_draws_stroke(line: Line2D) -> bool:
 def line_draws_markers(line: Line2D) -> bool:
     """Whether ``line`` draws markers: shown, a marker of some size with a face or an edge.
 
-    A filled marker draws its face when the face colour has alpha; any
-    marker draws its edge at a width above 0 in a colour with alpha.
+    A filled marker draws its face when the face colour has alpha, and, when
+    its fill style splits it (``fillstyle="left"`` and the like: the marker
+    style has an alternate path), its other half in
+    ``markerfacecoloralt``; any marker draws its edge at a width above 0 in
+    a colour with alpha. The line's alpha, when set, replaces each colour's.
     """
     if not artist_shown(line):
         return False
@@ -259,16 +264,23 @@ def line_draws_markers(line: Line2D) -> bool:
     if marker is None or marker in _NO_STROKE or line.get_markersize() <= 0:
         return False
     try:
-        filled = MarkerStyle(marker, line.get_fillstyle()).is_filled()
+        style = MarkerStyle(marker, line.get_fillstyle())
+        filled = style.is_filled()
+        split = filled and style.get_alt_path() is not None
     except (TypeError, ValueError):
-        filled = True
+        filled, split = True, False
     alpha = line.get_alpha()
     face = filled and _alpha(line.get_markerfacecolor(), alpha) > 0
-    edge = (
+    alternate = split and _alpha(line.get_markerfacecoloralt(), alpha) > 0
+    return face or alternate or _marker_edge_inks(line)
+
+
+def _marker_edge_inks(line: Line2D) -> bool:
+    """Whether a line's markers draw their edge: a width and a colour with alpha."""
+    return bool(
         line.get_markeredgewidth() > 0
-        and _alpha(line.get_markeredgecolor(), alpha) > 0
+        and _alpha(line.get_markeredgecolor(), line.get_alpha()) > 0
     )
-    return face or edge
 
 
 def patch_inks(patch: Patch) -> bool:
@@ -314,9 +326,12 @@ def text_inks(text: Text) -> bool:
 def marker_radius_pt(line: Line2D) -> float:
     """How far a line's marker reaches from its centre, in points.
 
-    Half its size plus half its edge width: the edge is stroked on the
-    marker's outline, half of it outside.
+    Half its size plus half its edge width where it draws its edge: the
+    edge is stroked on the marker's outline, half of it outside. An edge in
+    no colour (``mec="none"``, alpha 0) reaches nowhere.
     """
+    if not _marker_edge_inks(line):
+        return float(line.get_markersize() / 2)
     return float(line.get_markersize() / 2 + line.get_markeredgewidth() / 2)
 
 
@@ -329,7 +344,9 @@ def drawn_scatter_discs(
     """The points of a scatter that draw ink: centres and radii, display px.
 
     A point ``sqrt(s)`` pt across reaches half that plus half its edge
-    width past its centre (``px_per_pt`` converts). A masked x or y
+    width past its centre where it draws its edge (``px_per_pt`` converts;
+    an edge whose colour has no alpha, the collection's alpha applied,
+    reaches nowhere). A masked x or y
     (``scatter`` masks both where x, y, s or c is masked) or a non-finite
     offset is not drawn; nor is a point whose face has no alpha and whose
     edge has no alpha or no width, or one of size 0. Each point takes its
@@ -351,7 +368,9 @@ def drawn_scatter_discs(
     edge = np.resize(edges[:, 3], n) if len(edges) else np.zeros(n)
     width = np.resize(widths, n) if widths.size else np.zeros(n)
     size = np.resize(sizes, n)
-    radius = px_per_pt * (np.sqrt(size) + width) / 2
+    # The colours carry the collection's alpha (one, or one per point).
+    stroked = np.where(edge > 0, width, 0.0)
+    radius = px_per_pt * (np.sqrt(size) + stroked) / 2
     keep = np.isfinite(xy).all(axis=1)
     keep &= (face > 0) | ((edge > 0) & (width > 0))
     keep &= size > 0  # a point of size 0 draws nothing, its edge neither
@@ -408,19 +427,23 @@ def drawn_patch_box(patch: Patch, renderer: RendererBase) -> Bbox | None:
 def drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
     """Where an Axes text draws ink, display px; ``None`` when nowhere.
 
-    Its window extent (an annotation's arrow included), joined by its
-    background box (``bbox=``) where that draws (:func:`drawn_patch_box`,
-    its edge included), cut to the text's clip: matplotlib clips the
-    background box with the text. A text that inks nothing
-    (:func:`text_inks`: blank, or at alpha 0) counts nowhere, its
-    background box with it.
+    A shown, non-blank text draws its glyphs (its window extent, an
+    annotation's arrow included) where they ink (:func:`text_inks`) and its
+    background box (``bbox=``) where that inks (:func:`drawn_patch_box`,
+    its edge included): the two are apart, so glyphs at alpha 0 over an
+    opaque box still draw the box. What draws is joined and cut to the
+    text's clip: matplotlib clips the background box with the text.
     """
-    if not text_inks(text):
+    if not drawn_in_tree(text) or not text.get_text().strip():
         return None
-    box = text.get_window_extent(renderer)
+    parts: list[Bbox] = []
+    if text_inks(text):
+        parts.append(text.get_window_extent(renderer))
     background = text.get_bbox_patch()
-    if background is not None:
+    if background is not None:  # placed where the text was last drawn
         drawn = drawn_patch_box(background, renderer)
         if drawn is not None:
-            box = Bbox.union([box, drawn])
-    return _cut_to_clip(box, text)
+            parts.append(drawn)
+    if not parts:
+        return None
+    return _cut_to_clip(Bbox.union(parts), text)

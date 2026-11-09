@@ -67,6 +67,8 @@ from ._registry import register_check, register_fix
 from .value_label_decimal import _value_label
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import GraphicsContextBase
     from matplotlib.collections import Collection
@@ -456,32 +458,15 @@ class _Recorder(RendererBase):
         """The stroke's dash offset and on/off lengths in px; None: solid.
 
         ``Line2D.draw`` hands the renderer its pattern already scaled to
-        the width, in points. An odd list repeats (as SVG and PDF dash).
-        A sketched stroke wanders off its path, so its dashes cannot be
-        placed: it counts as solid, which can only add hits.
+        the width, in points (:func:`_dash_px`).
         """
         offset, lengths = gc.get_dashes()
-        if lengths is None or gc.get_sketch_params() is not None:
-            return None
-        try:
-            on_off = np.asarray(
-                self.points_to_pixels(np.asarray(lengths, dtype=np.float64)),
-                dtype=np.float64,
-            ).ravel()
-            shift = float(np.asarray(self.points_to_pixels(float(offset))))
-        except (TypeError, ValueError):
-            return None
-        if (
-            not on_off.size
-            or not np.isfinite(on_off).all()
-            or (on_off < 0).any()
-            or on_off.sum() <= 0
-            or not np.isfinite(shift)
-        ):
-            return None
-        if on_off.size % 2:
-            on_off = np.concatenate([on_off, on_off])
-        return shift, on_off
+        return _dash_px(
+            offset,
+            lengths,
+            self.points_to_pixels,
+            sketched=gc.get_sketch_params() is not None,
+        )
 
     def draw_markers(
         self,
@@ -505,6 +490,41 @@ class _Recorder(RendererBase):
         line.draw(self)
         marks = np.concatenate(self.marks) if self.marks else np.empty((0, 2))
         return self.strokes, marks
+
+
+def _dash_px(
+    offset: object,
+    lengths: object,
+    to_px: Callable[[ArrayLike], ArrayLike],
+    *,
+    sketched: bool,
+) -> tuple[float, np.ndarray] | None:
+    """A dash pattern (offset and on/off lengths, points) in px; None: solid.
+
+    ``to_px`` is the renderer's ``points_to_pixels``. An odd list repeats
+    (as SVG and PDF dash). A sketched stroke wanders off its path, so its
+    dashes cannot be placed: it counts as solid, which can only add hits.
+    """
+    if lengths is None or sketched:
+        return None
+    try:
+        on_off = np.asarray(
+            to_px(np.asarray(lengths, dtype=np.float64)), dtype=np.float64
+        ).ravel()
+        shift = float(np.asarray(to_px(float(offset or 0.0))))  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    if (
+        not on_off.size
+        or not np.isfinite(on_off).all()
+        or (on_off < 0).any()
+        or on_off.sum() <= 0
+        or not np.isfinite(shift)
+    ):
+        return None
+    if on_off.size % 2:
+        on_off = np.concatenate([on_off, on_off])
+    return shift, on_off
 
 
 def _without_effects(line: Line2D) -> Line2D:

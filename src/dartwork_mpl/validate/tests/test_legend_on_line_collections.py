@@ -154,3 +154,24 @@ def test_a_line_collection_within_half_a_point_is_a_touch() -> None:
 
 def test_a_line_collection_more_than_half_a_point_in_is_a_cover() -> None:
     assert _kinds(_hline_near_the_legend_bottom(1.0)) == [(ID, ["line"])]
+
+
+@pytest.mark.parametrize(
+    ("style", "covered"),
+    [
+        ({"linestyles": [(0, (1, 1000))]}, False),  # one dash, then a gap
+        ({"linestyles": "--"}, True),  # dashes under the legend
+        ({"linestyles": [(0, (1, 1000))], "gapcolor": "oc.gray3"}, True),
+    ],
+    ids=["gap_under_the_legend", "dashes_under_the_legend", "gap_drawn"],
+)
+def test_a_dashed_line_collection_counts_where_its_dashes_draw(
+    style: dict, covered: bool
+) -> None:
+    """Review of #672: the gap of a dashed ``hlines`` draws nothing, as a
+    dashed line's does; a gap colour draws the gaps."""
+    fig, ax = _axes()
+    coll = ax.hlines([9.7], 0, 10, colors=GRAY, lw=3, **style)
+    legend = ax.legend(loc="upper right")
+    assert (_under(fig, legend, [coll]) > 0) is covered  # the oracle
+    assert _kinds(fig) == ([(ID, ["line"])] if covered else [])

@@ -88,6 +88,29 @@ def test_points_that_draw_nothing_are_no_discs() -> None:
     assert np.allclose(xy[:, 0], ax.transData.transform([(4, 5)])[:, 0])
 
 
+def test_a_transparent_edge_adds_nothing_to_a_disc() -> None:
+    """Review of #672: an edge drawn in no colour reaches no further than the
+    face, for a scatter point and a line's marker alike."""
+    fig, ax = _axes()
+    point = ax.scatter(
+        [3], [5], s=400, linewidths=30, facecolors=GRAY, edgecolors="none"
+    )
+    (marker,) = ax.plot(
+        [7], [5], "o", ms=20, mew=30, mfc=GRAY, mec="none", ls="none"
+    )
+    px = fig.dpi / 72.0
+    xy, r = fg.drawn_scatter_discs(point, px)
+    assert r[0] == pytest.approx(10 * px)
+    assert fg.marker_radius_pt(marker) == pytest.approx(10)
+    for artist, centre, radius in (
+        (point, xy[0], r[0]),
+        (marker, ax.transData.transform((7, 5)), 10 * px),
+    ):
+        x, y = centre
+        disc = Bbox.from_extents(x - radius, y - radius, x + radius, y + radius)
+        assert _close_to(disc, _drawn_extent(fig, artist))
+
+
 def test_a_marker_reaches_half_its_edge_past_its_size() -> None:
     fig, ax = _axes()
     (line,) = ax.plot([5], [5], "o", ms=20, mew=8, color=GRAY)
@@ -110,8 +133,38 @@ def test_a_marker_reaches_half_its_edge_past_its_size() -> None:
             {"ls": "none", "marker": "o", "mfc": "none", "mew": 0},
             (False, False),
         ),
+        (  # the left half draws the alternate face
+            {
+                "ls": "none",
+                "marker": "o",
+                "mfc": "none",
+                "mew": 0,
+                "mfcalt": GRAY,
+                "fillstyle": "left",
+            },
+            (False, True),
+        ),
+        (  # a full marker has no alternate half to draw
+            {
+                "ls": "none",
+                "marker": "o",
+                "mfc": "none",
+                "mew": 0,
+                "mfcalt": GRAY,
+                "fillstyle": "full",
+            },
+            (False, False),
+        ),
     ],
-    ids=["stroke", "alpha0", "no_width", "markers", "marker_no_ink"],
+    ids=[
+        "stroke",
+        "alpha0",
+        "no_width",
+        "markers",
+        "marker_no_ink",
+        "alternate_face",
+        "alternate_unused",
+    ],
 )
 def test_a_line_inks_its_stroke_and_markers_by_style(style, inks) -> None:
     _fig, ax = _axes()
@@ -176,6 +229,19 @@ def test_a_text_draws_its_background_box() -> None:
     box = fg.drawn_text_box(text, drawn_renderer(fig))
     assert box is not None and _close_to(box, drawn)
     assert box.width > text.get_window_extent(drawn_renderer(fig)).width + 10
+
+
+@pytest.mark.parametrize(
+    "glyph", [{"alpha": 0}, {"color": "none"}], ids=["alpha0", "colour_none"]
+)
+def test_a_clear_texts_background_box_still_draws(glyph) -> None:
+    """Review of #672: the glyphs draw nothing, the background box does."""
+    fig, ax = _axes()
+    text = ax.text(5, 5, "Note", bbox={"fc": GRAY, "pad": 2}, **glyph)
+    drawn = _drawn_extent(fig, text)
+    assert not fg.text_inks(text)
+    box = fg.drawn_text_box(text, drawn_renderer(fig))
+    assert box is not None and _close_to(box, drawn)
 
 
 def test_a_text_that_draws_nothing_or_only_past_its_clip_has_no_box() -> None:
