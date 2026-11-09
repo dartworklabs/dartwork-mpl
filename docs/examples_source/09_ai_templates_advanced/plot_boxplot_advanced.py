@@ -42,7 +42,10 @@ market_baseline = 0.45  # synthetic weekly market return
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
-fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(labels), n_series=1))
+# The names decide how wide the canvas is for them to stand flat.
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(labels), n_series=1, labels=labels)
+)
 
 bp = ax.boxplot(data, patch_artist=True, widths=0.55, showfliers=False)
 for patch, color in zip(bp["boxes"], colors, strict=False):

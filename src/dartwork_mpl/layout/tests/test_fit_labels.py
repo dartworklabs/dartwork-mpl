@@ -1096,7 +1096,12 @@ def _visible_ticks(axis) -> list[str]:
 
 
 def _boxplot(fit: bool | None):
+    """advanced/boxplot in presentation on the half-body slide canvas
+    (11.4 x 10.5 cm) its four positions get without their names, where the
+    names turn 30 degrees. With them (``figsize_for(labels=)``) it takes
+    15.4 cm and they stand flat."""
     fig, ax = _template_figure("advanced/boxplot.py", "presentation", None)
+    fig.set_size_inches(dm.figsize("11.4cm", "10.5cm"))
     if fit is not None:
         dm.simple_layout(fig, margin=dm.inch(0.08), fit_labels=fit)
     return fig, ax

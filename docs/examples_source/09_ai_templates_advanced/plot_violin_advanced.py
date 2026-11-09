@@ -16,7 +16,7 @@ MCP ``dartwork-mpl://template/advanced/violin``.
 # data_shape: groups: dict[str, list[float]]
 # tags: violin, distribution, quartiles, gradient, narrative
 # narrative: Customer satisfaction score by region; widest spread in APAC
-# advanced_apis: violinplot with custom face colors via dm.cspace, median + p25/p75 dots, ax.set_xticklabels with rotation
+# advanced_apis: violinplot with custom face colors via dm.cspace, median + p25/p75 dots, dm.figsize_for(labels=) sized for the region names
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -43,7 +43,11 @@ p75s = [float(np.percentile(g, 75)) for g in data]
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
-fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(labels), n_series=1))
+# The preset's canvas for these regions; their names decide how wide it is
+# for them to stand flat.
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(labels), n_series=1, labels=labels)
+)
 
 parts = ax.violinplot(
     data, showmeans=False, showmedians=False, showextrema=False, widths=0.65
@@ -79,8 +83,8 @@ for i, m in enumerate(medians):
         color="oc.gray8",
     )
 
-ax.set_xticks(xs)
-ax.set_xticklabels(labels, rotation=20, ha="right")
+# Names flat; where they would not clear, dm.simple_layout wraps or turns them.
+ax.set_xticks(xs, labels)
 ax.set_ylabel("CSAT score (0-100)")
 ax.set_xlabel("Region")
 ax.set_ylim(40, 105)
