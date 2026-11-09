@@ -196,3 +196,59 @@ def test_a_legend_the_caller_placed_stays_and_is_reported(
     assert np.allclose(after.extents, before.extents, atol=0.5)
     assert _gap_px(fig, left) < 0  # it lies on the title
     assert _kinds(fig) == ["LEGEND_OVERLAP"]
+
+
+# ----------------------------------- a figure_legend the caller moved since
+def _moved(fig, left, legend, edit: str) -> None:
+    """Move ``legend`` through its public setters as a caller would."""
+    match edit:
+        case "anchor":
+            legend.set_bbox_to_anchor((0.6, 0.6), transform=left.transSubfigure)
+        case "loc":
+            legend.set_loc("lower left")
+        case "same_numbers_other_transform":
+            # The anchor the library gave, in the root figure's fraction.
+            (x, y) = legend._dm_figure_anchor  # type: ignore[attr-defined]
+            legend.set_bbox_to_anchor((x, y), transform=fig.transFigure)
+
+
+def _box(fig, legend):
+    return legend.get_window_extent(drawn_renderer(fig)).frozen().extents
+
+
+@pytest.mark.parametrize(
+    "edit", ["anchor", "loc", "same_numbers_other_transform"]
+)
+def test_a_figure_legend_the_caller_moved_stays_where_they_put_it(
+    edit: str,
+) -> None:
+    """Review of #674: a legend moved through ``set_bbox_to_anchor`` or
+    ``set_loc`` is the caller's from then on, as ``place_legend``'s are; the
+    layout no longer puts it back under the title."""
+    fig, (left,) = _scene("title_after")
+    (legend,) = left.legends
+    _moved(fig, left, legend, edit)
+    before = _box(fig, legend)
+    _layout(fig)
+    assert np.allclose(_box(fig, legend), before, atol=0.5)
+
+
+def test_a_figure_legend_moved_after_the_first_layout_stays() -> None:
+    fig, (left,) = _scene("title_after")
+    (legend,) = left.legends
+    _layout(fig)  # the library moves it under the title
+    _moved(fig, left, legend, "anchor")
+    left.suptitle(TITLE, fontsize=20)  # a taller title: its spot moves too
+    before = _box(fig, legend)
+    _layout(fig)
+    assert np.allclose(_box(fig, legend), before, atol=0.5)
+
+
+def test_a_figure_legend_nobody_moved_stays_put_in_a_second_layout() -> None:
+    fig, (left,) = _scene("title_after")
+    (legend,) = left.legends
+    _layout(fig)
+    first = _box(fig, legend)
+    _layout(fig)
+    assert np.allclose(_box(fig, legend), first, atol=0.5)
+    assert _gap_px(fig, left) == pytest.approx(_pad_px(fig, left), abs=1.0)
