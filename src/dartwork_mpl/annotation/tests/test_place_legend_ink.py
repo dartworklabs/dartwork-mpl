@@ -116,6 +116,10 @@ def _add(fig, ax, case: str, b: Bbox):
             return line
         case "scatter_alpha0":
             return ax.scatter([cx], [cy], s=200, alpha=0)
+        case "scatter_clipped":
+            points = ax.scatter([cx], [cy], s=200, color=GRAY)
+            points.set_clip_box(away)
+            return points
         case "scatter_masked":
             xs = np.ma.masked_array([cx, 1.0], mask=[True, False])
             return ax.scatter(xs, [cy, 1.0], s=200, color=GRAY)
@@ -197,6 +201,7 @@ def test_the_legend_covers_none_of_the_edge_an_artist_draws(case: str) -> None:
         "line_alpha0",
         "line_clipped",
         "scatter_alpha0",
+        "scatter_clipped",
         "scatter_masked",
         "patch_alpha0",
         "text_alpha0",
