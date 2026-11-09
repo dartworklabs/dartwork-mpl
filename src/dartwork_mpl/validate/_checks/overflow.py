@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, TypedDict
 from ..._figure_geometry import (
     axes_with_secondaries,
     drawn_axes_texts,
+    drawn_in_tree,
     drawn_tick_labels,
     iter_figure_level_extents,
     text_window_extent,
@@ -52,7 +53,7 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
         for txt in drawn_axes_texts(ax):
             if (
                 txt is None
-                or not txt.get_visible()
+                or not drawn_in_tree(txt)  # a hidden SubFigure hides it
                 or txt.get_text().strip() == ""
             ):
                 continue
@@ -115,7 +116,7 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
         # absent and not a layout problem.
         for which in ("x", "y"):
             for tick in drawn_tick_labels(ax, which):
-                if not tick.get_visible() or tick.get_text().strip() == "":
+                if not drawn_in_tree(tick) or tick.get_text().strip() == "":
                     continue
                 try:
                     ext = tick.get_window_extent(renderer)

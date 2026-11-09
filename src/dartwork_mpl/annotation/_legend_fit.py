@@ -29,6 +29,7 @@ from .._figure_geometry import (
     clip_path_px,
     clip_region,
     drawn_collection_outlines,
+    drawn_in_tree,
     drawn_ink_meets,
     drawn_tick_labels,
     root_position,
@@ -372,7 +373,8 @@ def free_sides(ax: Axes) -> list[OutsideChoice]:
     layout fits the outer margins only. The panels are every Axes of the
     figure, those of its SubFigures too, compared by ``get_position`` as a
     fraction of the root figure (:func:`root_position`); Axes out of the
-    layout (``set_in_layout(False)``) and hidden ones do not count.
+    layout (``set_in_layout(False)``) and hidden ones, those of a hidden
+    SubFigure included (:func:`drawn_in_tree`), do not count.
     """
     root = ax.get_figure(root=True)
     if root is None:
@@ -384,7 +386,7 @@ def free_sides(ax: Axes) -> list[OutsideChoice]:
         root_position(other)
         for other in root.axes
         if id(other) not in own
-        and other.get_visible()
+        and drawn_in_tree(other)
         and other.get_in_layout()
     ]
 

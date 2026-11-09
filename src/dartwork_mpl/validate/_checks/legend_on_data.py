@@ -59,6 +59,7 @@ from ..._figure_geometry import (
     clip_path_px,
     clip_region,
     drawn_collection_outlines,
+    drawn_in_tree,
     drawn_ink_meets,
     figure_legends,
     same_position_axes,
@@ -168,7 +169,7 @@ def _owners(fig: Figure) -> list[_Owner]:
     found: list[_Owner] = []
 
     def walk(ax: Axes, name: str, top: int, inset: tuple[int, ...]) -> None:
-        if not ax.get_visible():
+        if not drawn_in_tree(ax):  # a hidden SubFigure hides its Axes
             return
         found.append(_Owner(name, top, inset, ax))
         children = [c for c in ax.child_axes if isinstance(c, Axes)]
@@ -190,7 +191,7 @@ def _text_inks(text: Text) -> bool:
     matplotlib draws it (and as VALUE_LABEL_ON_DATA reads a label).
     """
     return bool(
-        text.get_visible()
+        drawn_in_tree(text)
         and text.get_text().strip()
         and _alpha(text.get_color(), text.get_alpha()) > 0
     )
@@ -326,11 +327,13 @@ def _legends(fig: Figure, renderer: RendererBase) -> list[_Placed]:
     found: list[tuple[_Owner | None, Legend]] = []
     for owner in _owners(fig):
         legend = owner.ax.get_legend()
-        if legend is not None and legend.get_visible():
+        if legend is not None and drawn_in_tree(legend):
             found.append((owner, legend))
     # A SubFigure's legends are on it, not on ``fig.legends``.
     found.extend(
-        (None, legend) for legend in figure_legends(fig) if legend.get_visible()
+        (None, legend)
+        for legend in figure_legends(fig)
+        if drawn_in_tree(legend)
     )
     placed: list[_Placed] = []
     for holder, legend in found:

@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import figure_axes, figure_legends, same_position_axes
+from ..._figure_geometry import (
+    drawn_in_tree,
+    figure_axes,
+    figure_legends,
+    same_position_axes,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -85,7 +90,7 @@ def check_legend_overflow(
 
     for i, ax in enumerate(fig.axes):
         legend = ax.get_legend()
-        if legend is None or not legend.get_visible():
+        if legend is None or not drawn_in_tree(legend):
             continue
         try:
             leg_ext = legend.get_window_extent(renderer)
@@ -170,7 +175,7 @@ def check_legend_overflow(
     # they are more than half the size of the panels they serve: a
     # SubFigure's legend (kept on the SubFigure) serves its panels.
     for legend in figure_legends(fig):
-        if not legend.get_visible():
+        if not drawn_in_tree(legend):  # a hidden SubFigure hides its own
             continue
         panel_area = _panel_area(legend.get_figure(root=False) or fig, renderer)
         try:
@@ -230,7 +235,7 @@ def _panel_area(fig: Figure | SubFigure, renderer: RendererBase) -> float:
     seen: set[int] = set()
     area = 0.0
     for ax in figure_axes(fig):
-        if not ax.get_visible() or id(ax) in seen:
+        if not drawn_in_tree(ax) or id(ax) in seen:
             continue
         seen.update(id(owner) for owner in same_position_axes(ax))
         try:

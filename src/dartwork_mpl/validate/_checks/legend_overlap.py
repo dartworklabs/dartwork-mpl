@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias, TypedDict
 
 from ..._figure_geometry import (
     axes_titles,
+    drawn_in_tree,
     figure_legends,
     iter_figure_level_extents,
 )
@@ -84,10 +85,10 @@ def _legends(fig: Figure) -> Iterator[tuple[int | None, Legend]]:
     """Yield ``(axes index or None, legend)`` for every visible legend."""
     for index, ax in enumerate(fig.axes):
         legend = ax.get_legend()
-        if ax.get_visible() and legend is not None and legend.get_visible():
+        if drawn_in_tree(ax) and legend is not None and drawn_in_tree(legend):
             yield index, legend
     for legend in figure_legends(fig):  # a SubFigure's are on it
-        if legend.get_visible():
+        if drawn_in_tree(legend):  # unless that SubFigure is hidden
             yield None, legend
 
 
@@ -128,7 +129,7 @@ def _targets(
     """Every text a legend must not cover, with its owner, role and extent."""
     found: list[tuple[int | None, Role, str, Bbox]] = []
     for index, ax in enumerate(fig.axes):
-        if not ax.get_visible():
+        if not drawn_in_tree(ax):
             continue
         for role, text in _axes_targets(ax, renderer):
             if not text.get_visible() or not text.get_text().strip():

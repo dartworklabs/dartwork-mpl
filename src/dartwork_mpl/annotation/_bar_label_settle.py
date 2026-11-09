@@ -106,6 +106,7 @@ from .._figure_geometry import (
     axes_titles,
     axes_with_secondaries,
     clip_region,
+    drawn_in_tree,
     drawn_tick_labels,
     figure_legends,
     get_renderer,
@@ -305,7 +306,7 @@ def _clear_legends(
     boxes = [
         (legend, legend.get_window_extent(renderer))
         for legend in legends
-        if legend is not None and legend.get_visible()
+        if legend is not None and drawn_in_tree(legend)
     ]
     if not boxes:
         return

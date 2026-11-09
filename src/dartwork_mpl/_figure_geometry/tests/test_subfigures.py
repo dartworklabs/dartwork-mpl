@@ -69,6 +69,73 @@ def test_figure_legends_are_every_subfigures_too() -> None:
     assert fg.figure_legends(sub) == [sub_legend, nested_legend]
 
 
+def test_drawn_in_tree_reads_every_subfigure_above_the_artist() -> None:
+    """Hiding a SubFigure hides what is in it, though matplotlib leaves
+    each child's own ``get_visible()`` True; a grandparent counts too."""
+    fig = plt.figure()
+    outer = fig.subfigures(1, 2)[1]
+    inner = outer.subfigures(1, 1)
+    ax = inner.add_subplot()
+    title = inner.suptitle("Inner group")
+    assert fg.drawn_in_tree(ax)
+    assert fg.drawn_in_tree(title)
+    outer.set_visible(False)
+    assert ax.get_visible()  # matplotlib's own flag stays True
+    assert not fg.drawn_in_tree(ax)
+    assert not fg.drawn_in_tree(title)
+    assert not fg.drawn_in_tree(inner)
+
+
+def test_a_hidden_root_figure_is_not_read() -> None:
+    """The root Figure's own flag is left as before: only SubFigures hide."""
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    fig.set_visible(False)
+    assert fg.drawn_in_tree(ax)
+    ax.set_visible(False)
+    assert not fg.drawn_in_tree(ax)
+
+
+@pytest.mark.parametrize("hidden", ["holder", "ancestor"])
+def test_a_hidden_subfigures_title_and_legend_have_no_extent(
+    hidden: str,
+) -> None:
+    """What a hidden SubFigure holds is not drawn, so it reserves, crops
+    and covers nothing; the structural lists still name it."""
+    fig = plt.figure()
+    left, right = fig.subfigures(1, 2)
+    left.subplots()
+    holder = right if hidden == "holder" else right.subfigures(1, 1)
+    ax = holder.subplots()
+    ax.plot([0, 1], [0, 1], label="Series")
+    title = holder.suptitle("Hidden group")
+    legend = holder.legend()
+    right.set_visible(False)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    found = [art for art, _ext in fg.iter_figure_level_extents(fig, renderer)]
+    assert title not in found
+    assert legend not in found
+    assert fg.figure_axes(fig) == fig.axes
+    assert legend in fg.figure_legends(fig)
+
+
+def test_a_hidden_subfigure_does_not_end_the_outside_span() -> None:
+    """A panel in a hidden SubFigure is no neighbour: the range above the
+    left panel runs to the canvas edge, not to it."""
+    fig = plt.figure(figsize=(8, 4))
+    left, right = fig.subfigures(1, 2)
+    ax = left.subplots()
+    right.subplots()
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    shown = fg.outside_span_px(ax, "above", renderer)
+    right.set_visible(False)
+    hidden = fg.outside_span_px(ax, "above", renderer)
+    assert shown[1] < fig.bbox.x1
+    assert hidden[1] == pytest.approx(fig.bbox.x1)
+
+
 def test_figure_level_extents_include_a_subfigures_title_and_legend() -> None:
     fig, sub, _nested, (_top, own, _deep) = _tree()
     own.plot([0, 1], [0, 1], label="Own")

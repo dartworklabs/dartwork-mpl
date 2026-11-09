@@ -12,7 +12,13 @@ so a SubFigure's are seen wherever they sit:
   order (for the root Figure, ``fig.axes`` itself: its order is the
   ``axes_index`` the checks report);
 - :func:`figure_legends`: the figure-level legends of a (Sub)Figure's tree;
-- :func:`root_position`: an Axes' position as a fraction of the root Figure.
+- :func:`root_position`: an Axes' position as a fraction of the root Figure;
+- :func:`drawn_in_tree`: whether an artist is shown, every SubFigure above
+  it shown too (hiding a SubFigure hides what it holds, though matplotlib
+  leaves each child's own ``get_visible()`` True).
+
+The lists are structural: they name what a hidden SubFigure holds too. A
+caller that wants what is drawn picks with :func:`drawn_in_tree`.
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ from typing import TYPE_CHECKING
 from matplotlib.transforms import Bbox
 
 if TYPE_CHECKING:
+    from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.legend import Legend
@@ -61,6 +68,26 @@ def figure_axes(fig: Figure | SubFigure) -> list[Axes]:
 def figure_legends(fig: Figure | SubFigure) -> list[Legend]:
     """The figure-level legends of ``fig`` and its nested SubFigures."""
     return [legend for member in figure_tree(fig) for legend in member.legends]
+
+
+def drawn_in_tree(artist: Artist) -> bool:
+    """Whether ``artist`` is shown and so is every SubFigure above it.
+
+    ``SubFigure.set_visible(False)`` hides its Axes, legends and texts
+    without changing their own flags. The root Figure's own flag is not
+    read: a hidden root Figure keeps the answers it had.
+    """
+    if not artist.get_visible():
+        return False
+    root = artist.get_figure(root=True)
+    holder = artist.get_figure(root=False)
+    seen: list[Figure | SubFigure] = []
+    while holder is not None and holder is not root and holder not in seen:
+        if not holder.get_visible():
+            return False
+        seen.append(holder)
+        holder = holder.get_figure(root=False)
+    return True
 
 
 def root_position(ax: Axes) -> Bbox:

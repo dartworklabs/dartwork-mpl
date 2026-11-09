@@ -98,6 +98,22 @@ def test_the_same_panels_in_one_grid_keep_the_legend_inside() -> None:
     assert not getattr(legend, "_dm_outside_fallback", False)
 
 
+def test_a_hidden_subfigure_leaves_its_side_free() -> None:
+    """Hiding the right SubFigure hides its panels (their own flag stays
+    True): the right side is free, so the filled panel's legend goes out
+    there instead of staying on the data (review of #664)."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    left_fig, right_fig = fig.subfigures(1, 2)
+    a1, a2, a3 = left_fig.subplots(3, 1)
+    for ax in (a1, a3):
+        _plain(ax)
+    _filled(a2)
+    right_fig.subplots(3, 1)
+    right_fig.set_visible(False)
+    legend = dm.place_legend(a2)
+    assert getattr(legend, "_dm_outside_fallback", False)
+
+
 def test_a_free_side_beside_a_subfigure_column_is_still_taken() -> None:
     """With only hidden panels to the right, the right side stays free: the
     left column's middle panel, filled, takes it."""

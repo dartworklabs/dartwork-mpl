@@ -14,6 +14,7 @@ from .._figure_geometry import (
     BBOX_ERRORS,
     OutsideSide,
     anchor_outside,
+    drawn_in_tree,
     outside_side,
     outside_span_px,
 )
@@ -527,7 +528,7 @@ def _sibling_sides(ax: Axes) -> set[OutsideSide]:
     sides: set[OutsideSide] = set()
     for other in fig.axes:
         legend = other.get_legend()
-        if other is ax or legend is None:
+        if other is ax or legend is None or not drawn_in_tree(other):
             continue
         side = outside_side(legend)
         if side is not None and getattr(legend, "_dm_outside_fallback", False):

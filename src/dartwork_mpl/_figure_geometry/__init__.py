@@ -34,7 +34,13 @@ from ._drawn import (
     drawn_ink_meets,
     within_clip_path,
 )
-from ._subfigures import figure_axes, figure_legends, figure_tree, root_position
+from ._subfigures import (
+    drawn_in_tree,
+    figure_axes,
+    figure_legends,
+    figure_tree,
+    root_position,
+)
 
 __all__ = [
     "BBOX_ERRORS",
@@ -58,6 +64,7 @@ __all__ = [
     "drawn_axes_texts",
     "drawn_collection_outlines",
     "drawn_collection_paths",
+    "drawn_in_tree",
     "drawn_ink_meets",
     "drawn_tick_labels",
     "figure_axes",
@@ -207,7 +214,8 @@ def iter_figure_level_extents(
 
     The guard, applied to every candidate:
 
-    * skip invisible artists;
+    * skip invisible artists, and those of a hidden SubFigure
+      (:func:`drawn_in_tree`);
     * skip text artists whose text is empty or whitespace-only — a blank
       suptitle / footnote reserves no space and must not extend a
       bounding box (this unifies a prior inconsistency: reservations and
@@ -253,7 +261,7 @@ def iter_figure_level_extents(
             candidates.append(art)
 
     for art in candidates:
-        if not art.get_visible():
+        if not drawn_in_tree(art):  # a hidden SubFigure hides its own
             continue
         # Only text artists carry ``get_text``; legends don't, so they are
         # never dropped for "empty text".
@@ -1053,7 +1061,7 @@ def outside_span_px(
     for other in root.axes:
         if (
             id(other) in own
-            or not other.get_visible()
+            or not drawn_in_tree(other)
             or not other.get_in_layout()
         ):
             continue
