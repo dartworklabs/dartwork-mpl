@@ -377,9 +377,11 @@ def simple_layout(
         _format_ticks(fig)
     _show_twin_spines(fig)
     _color_twins(fig)
+    # The root's figure legends past its labels, then the titles the library
+    # places above this grid, parents first, each SubFigure's figure legend
+    # past its title.
+    _place_title_and_legends(fig, fig)
     if holder is not None:
-        # The titles the library places above this grid, parents first,
-        # each SubFigure's figure legend past its title.
         for above in titles_above(holder):
             _place_title_and_legends(fig, above)
 
@@ -400,12 +402,13 @@ def simple_layout(
     _report_hidden_bar_labels(fig)
 
 
-def _place_title_and_legends(fig: Figure, holder: SubFigure) -> None:
+def _place_title_and_legends(fig: Figure, holder: Figure | SubFigure) -> None:
     """``holder``'s title under the text above it, then its figure legends past it.
 
     On one edge the title comes first, then the legend ``dm.figure_legend``
     placed there (:func:`dartwork_mpl.annotation.settle_figure_legends`),
-    then the panels, which the reservations keep clear of both.
+    then the panels, which the reservations keep clear of both. The root
+    figure's own title stays where it is; its legends move past it.
     """
     from ..annotation import settle_figure_legends
 
@@ -448,11 +451,12 @@ def _fit_holders(
         _format_ticks(fig)
     _show_twin_spines(fig)
     _color_twins(fig)
-    # Every shown SubFigure's title first, parents before children, one that
-    # holds only nested SubFigures too, each with its figure legends past
-    # it; then the grids.
-    for titled in shown_subfigures(fig):
-        _place_title_and_legends(fig, titled)
+    # The root's figure legends past its labels, then every shown
+    # SubFigure's title, parents before children, one that holds only nested
+    # SubFigures too, each with its figure legends past it; then the grids.
+    titled: list[Figure | SubFigure] = [fig, *shown_subfigures(fig)]
+    for holder in titled:
+        _place_title_and_legends(fig, holder)
     for (_holder, grid), scope, start in zip(
         grids, scopes, starts, strict=True
     ):
