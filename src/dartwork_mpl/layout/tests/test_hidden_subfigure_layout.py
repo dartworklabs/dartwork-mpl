@@ -14,6 +14,7 @@ does when both panels sit on one grid (#666's surviving mutant).
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 import matplotlib
@@ -94,6 +95,16 @@ def _cropped(hidden_content: bool) -> tuple[float, float]:
 
 def test_tight_crop_keeps_no_room_for_a_hidden_subfigure() -> None:
     assert _cropped(True) == pytest.approx(_cropped(False), abs=1e-6)
+
+
+def test_with_every_subfigure_hidden_the_root_is_cropped() -> None:
+    """Hidden SubFigures draw nothing: the root's panel is cropped, without
+    the warning a shown SubFigure brings."""
+    width, _height = dm.figsize("17cm", "wide")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        cropped_width, _cropped_height = _cropped(True)
+    assert cropped_width < 0.75 * width
 
 
 def _past_canvas(fig: Figure) -> float:
