@@ -1,7 +1,16 @@
-"""TICK_ROTATION: unnecessary or missing x-axis tick-label rotation."""
+"""TICK_ROTATION: unnecessary or missing x-axis tick-label rotation.
+
+A turn is unneeded where the labels, flat, would stand half an em apart
+(``_FLAT_CLEARANCE_EM``): the distance between their ticks less half of
+each unturned width, as ``dm.simple_layout`` measures before it turns
+bottom labels that come closer. (It compared the widest label plus 4 px
+with the axis width over the label count, wider than the ticks' spacing
+on a bar axis, and so called unneeded the layout's own turns.)
+"""
 
 from __future__ import annotations
 
+from itertools import pairwise
 from typing import TYPE_CHECKING, Literal, TypedDict
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
@@ -10,6 +19,7 @@ from ._registry import register_check, register_fix
 from ._tick_utils import adjacent_bboxes_overlap, iter_view_ticks
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.text import Text
@@ -17,7 +27,13 @@ if TYPE_CHECKING:
 __all__ = ["check_tick_rotation"]
 
 _ROTATION_EPS = 1e-6
-_UNROTATED_LABEL_PAD_PX = 4.0
+# Room (ems of the labels) flat neighbours need for a turn to be unneeded:
+# the layout's own target (``layout._fit_labels._TARGET_EM``), which turns
+# bottom labels closer than this. Closer, two names read as one.
+_FLAT_CLEARANCE_EM = 0.5
+# Slack (display px) under which a gap still counts as the clearance, as
+# the layout allows (``_TOUCH_PX``).
+_SLACK_PX = 0.5
 
 
 class TickRotationUnneededDetail(TypedDict):
@@ -61,6 +77,32 @@ def _unrotated_text_width(label: Text, renderer: RendererBase) -> float | None:
     return float(width)
 
 
+def _flat_room(
+    ax: Axes, ticks: list[Text], renderer: RendererBase
+) -> float | None:
+    """The least room (px) between neighbouring labels were they flat: the
+    distance between their ticks less half of each unturned width, along
+    each row (bottom, top) as the layout reads it. ``None`` when no row has
+    two measurable labels."""
+    bottom = {id(tick.label1) for tick in ax.xaxis.get_major_ticks()}
+    least: float | None = None
+    for side in (True, False):
+        row = []
+        for label in ticks:
+            if (id(label) in bottom) is not side:
+                continue
+            width = _unrotated_text_width(label, renderer)
+            if width is None:
+                continue
+            centre = label.get_transform().transform(label.get_position())[0]
+            row.append((float(centre), width))
+        row.sort()
+        for (x_a, w_a), (x_b, w_b) in pairwise(row):
+            room = x_b - x_a - (w_a + w_b) / 2
+            least = room if least is None else min(least, room)
+    return least
+
+
 @register_check("TICK_ROTATION", order=52)
 def check_tick_rotation(
     fig: Figure, renderer: RendererBase
@@ -97,7 +139,14 @@ def check_tick_rotation(
                 for tick in ticks
                 if (width := _unrotated_text_width(tick, renderer)) is not None
             ]
-            if widths and max(widths) + _UNROTATED_LABEL_PAD_PX < slot_width:
+            room = _flat_room(ax, ticks, renderer)
+            needed = (
+                _FLAT_CLEARANCE_EM
+                * max(float(tick.get_fontsize()) for tick in ticks)
+                * fig.dpi
+                / 72.0
+            )
+            if widths and room is not None and room >= needed - _SLACK_PX:
                 warnings.append(
                     VisualWarning(
                         severity=Severity.INFO,
