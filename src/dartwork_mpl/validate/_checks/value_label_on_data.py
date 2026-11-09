@@ -49,9 +49,12 @@ from matplotlib.contour import ContourSet
 from matplotlib.lines import Line2D
 from matplotlib.path import Path
 from matplotlib.text import Annotation, Text
-from matplotlib.transforms import Bbox, IdentityTransform, TransformedPath
+from matplotlib.transforms import Bbox, IdentityTransform
 
+from ..._figure_geometry import clip_path_px as _clip_path
+from ..._figure_geometry import clip_region as _clip_region
 from ..._figure_geometry import same_position_axes
+from ..._figure_geometry import within_clip_path as _within_path
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -76,12 +79,10 @@ _NO_LINE = ("None", "none", "", " ")
 _NO_MARKER = (None, "None", "none", "", " ")
 _SCATTER = -1  # the marker key of a scatter: never an ``id`` of a line
 _DOLLAR = re.compile(r"(?<!\\)\$")  # an unescaped mathtext delimiter
-_UNCLIPPED = Bbox.from_extents(-np.inf, -np.inf, np.inf, np.inf)
 # A dash is widened by this at both ends: where a rasteriser snaps and
 # smooths the dash ends (measured within 0.6 px of Agg's).
 _DASH_SLACK_PX = 1.0
 _MAX_DASH_CUTS = 1_000_000  # more pattern edges than this: count it solid
-_NOWHERE = Bbox.from_extents(0.0, 0.0, 0.0, 0.0)  # meets nothing
 
 
 class ValueLabelOnDataDetail(TypedDict):
@@ -856,47 +857,11 @@ def _is_value_label(text: Text, contour: set[int]) -> bool:
     return _alpha(patch.get_facecolor()) <= 0
 
 
-def _clip_region(text: Text) -> Bbox:
-    """Where the label's clip lets its glyphs be drawn, in display px.
-
-    ``Text.draw`` clips to its clip box and clip path when ``clip_on`` (an
-    ``ax.text`` is unclipped unless asked). A clip path counts by its
-    bounding box here; the path itself then decides whether the ink it
-    lets through is any at all (:func:`_within_path`).
-    """
-    region = _UNCLIPPED
-    if not text.get_clip_on():
-        return region
-    clip_box = text.get_clip_box()
-    if clip_box is not None:
-        region = _clip(region, clip_box) or _NOWHERE
-    clip_path = text.get_clip_path()  # set_clip_path stores it transformed
-    if isinstance(clip_path, TransformedPath):
-        extent = clip_path.get_fully_transformed_path().get_extents()
-        region = _clip(region, extent) or _NOWHERE
-    return region
-
-
 class _Label(NamedTuple):
     text: Text
     box: Bbox  # its text box, display px
     region: Bbox  # what its clip lets through
     clip_path: Path | None  # its clip path in display px, when clipped
-
-
-def _clip_path(text: Text) -> Path | None:
-    """The label's clip path in display px, when ``clip_on`` uses one."""
-    clip_path = text.get_clip_path()
-    if not text.get_clip_on() or not isinstance(clip_path, TransformedPath):
-        return None
-    return clip_path.get_fully_transformed_path()
-
-
-def _within_path(box: Bbox | None, clip_path: Path | None) -> Bbox | None:
-    """``box`` when its clip path (as filled) lets any of it through."""
-    if box is None or clip_path is None:
-        return box
-    return box if clip_path.intersects_bbox(box, filled=True) else None
 
 
 def _value_labels(ax: Axes, renderer: RendererBase) -> list[_Label]:

@@ -21,10 +21,15 @@ import numpy as np
 from matplotlib.collections import LineCollection, PathCollection, QuadMesh
 from matplotlib.contour import ContourSet
 from matplotlib.legend import Legend
-from matplotlib.transforms import Affine2D, Bbox
+from matplotlib.transforms import Bbox
 
 from .._figure_geometry import (
     BBOX_ERRORS,
+    UNCLIPPED,
+    clip_path_px,
+    clip_region,
+    drawn_collection_outlines,
+    drawn_ink_meets,
     drawn_tick_labels,
     same_position_axes,
 )
@@ -87,21 +92,36 @@ class Ink:
         default_factory=list
     )
     boxes: list[tuple[int, Bbox]] = field(default_factory=list)
+    #: Where a collection's clip lets it draw (its clip region and clip
+    #: path), by the ``id`` of the collection; an artist not here is drawn
+    #: wherever its ink lies.
+    clips: dict[int, tuple[Bbox, Path | None]] = field(default_factory=dict)
 
     def met(self, box: Bbox, clearance: float) -> set[int]:
-        """The artists whose ink comes within ``clearance`` px of ``box``."""
+        """The artists whose ink comes within ``clearance`` px of ``box``.
+
+        A clipped collection's ink counts where its clip lets it draw; the
+        clip cuts its stroke, not its centre line
+        (:func:`~dartwork_mpl._figure_geometry.drawn_ink_meets`).
+        """
         found: set[int] = set()
         grown = box.padded(clearance)
         for key, bb in self.boxes:
             if _overlaps(grown, bb):
                 found.add(key)
         for key, path, half in self.lines:
-            if key not in found and path.intersects_bbox(
-                grown.padded(half), filled=False
-            ):
+            if key in found:
+                continue
+            region, clip_path = self.clips.get(key, (UNCLIPPED, None))
+            if drawn_ink_meets(path, half, grown, region, clip_path):
                 found.add(key)
         for key, path in self.filled:
-            if key not in found and path.intersects_bbox(grown, filled=True):
+            if key in found:
+                continue
+            region, clip_path = self.clips.get(key, (UNCLIPPED, None))
+            if drawn_ink_meets(
+                path, 0.0, grown, region, clip_path, filled=True
+            ):
                 found.add(key)
         for key, xy, r in self.points:
             if key in found or not len(xy):
@@ -146,42 +166,6 @@ def _measure_line(ink: Ink, line: Any, renderer: RendererBase) -> None:
         ink.points.append((key, xy, np.full(len(xy), r)))
 
 
-def _collection_paths(coll: Any) -> list[Path]:
-    """Each path of ``coll`` where matplotlib draws it, in display px.
-
-    As ``Collection.draw`` does: item ``i`` is path ``i``, through its own
-    transform (``get_transforms``) and the collection's, then moved by
-    offset ``i`` in display px (``get_offset_transform``), each list
-    repeated to the longest. ``ax.quiver`` and a ``LineCollection`` given
-    ``offsets`` place their paths this way; without the offsets their ink
-    would sit at the origin.
-    """
-    paths = list(coll.get_paths())
-    if not paths:
-        return []
-    transform = coll.get_transform()
-    items = np.asarray(coll.get_transforms(), dtype=float).reshape(-1, 3, 3)
-    offsets = np.asarray(coll.get_offsets(), dtype=float).reshape(-1, 2)
-    shifts = (
-        coll.get_offset_transform().transform(offsets)
-        if len(offsets)
-        else np.zeros((0, 2))
-    )
-    found: list[Path] = []
-    for i in range(max(len(paths), len(shifts))):
-        path = paths[i % len(paths)]
-        if len(items):
-            path = Affine2D(items[i % len(items)]).transform_path(path)
-        path = transform.transform_path(path)
-        if len(shifts):
-            dx, dy = shifts[i % len(shifts)]
-            if not (np.isfinite(dx) and np.isfinite(dy)):
-                continue
-            path = Affine2D().translate(dx, dy).transform_path(path)
-        found.append(path)
-    return found
-
-
 def _measure_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
     key = id(coll)
     if isinstance(coll, PathCollection):
@@ -199,19 +183,25 @@ def _measure_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
         )
         return
     try:
-        paths = _collection_paths(coll)
+        # Only the items that draw ink, each where Collection.draw puts it
+        # (offsets included) and by its own colours, alpha and width, and
+        # only where its clip lets it draw: the rule LEGEND_ON_DATA reads
+        # collections by too.
+        outlines = drawn_collection_outlines(coll, renderer)
+        region, clip_path = clip_region(coll), clip_path_px(coll)
     except BBOX_ERRORS:
         return
+    if not outlines:
+        return
+    if region is not UNCLIPPED or clip_path is not None:
+        ink.clips[key] = (region, clip_path)
     stroked = isinstance(coll, LineCollection) or (
         isinstance(coll, ContourSet) and not coll.filled
     )
     if stroked:
-        widths = np.atleast_1d(coll.get_linewidth())
-        width = float(widths.max()) if len(widths) else 1.0
-        half = points_px(renderer, width) / 2
-        ink.lines.extend((key, p, half) for p in paths)
+        ink.lines.extend((key, o.path, o.half) for o in outlines)
     else:
-        ink.filled.extend((key, p) for p in paths)
+        ink.filled.extend((key, o.path) for o in outlines)
 
 
 def _measure_box(ink: Ink, artist: Artist, bb: Bbox) -> None:

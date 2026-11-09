@@ -22,17 +22,39 @@ from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, ScaledTranslation
 
+from ._drawn import (
+    NOWHERE,
+    UNCLIPPED,
+    DrawnOutline,
+    artist_shown,
+    clip_path_px,
+    clip_region,
+    drawn_collection_outlines,
+    drawn_collection_paths,
+    drawn_ink_meets,
+    within_clip_path,
+)
+
 __all__ = [
     "BBOX_ERRORS",
+    "NOWHERE",
+    "UNCLIPPED",
+    "DrawnOutline",
     "OutsideSide",
     "anchor_outside",
+    "artist_shown",
     "axes_decoration_extents",
     "axes_text_artists",
     "axes_titles",
     "axes_with_secondaries",
     "backdrop_layers",
     "canvas_renderer",
+    "clip_path_px",
+    "clip_region",
     "drawn_axes_texts",
+    "drawn_collection_outlines",
+    "drawn_collection_paths",
+    "drawn_ink_meets",
     "drawn_tick_labels",
     "get_renderer",
     "iter_figure_level_extents",
@@ -50,6 +72,7 @@ __all__ = [
     "text_window_extent",
     "tick_label_overlaps",
     "with_insets",
+    "within_clip_path",
 ]
 
 if TYPE_CHECKING:
