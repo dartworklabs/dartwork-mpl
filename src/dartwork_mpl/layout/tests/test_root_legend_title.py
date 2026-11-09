@@ -181,3 +181,50 @@ def test_a_figure_legend_the_caller_moved_stays_where_they_put_it(
     _layout(fig)
     after = legend.get_window_extent(drawn_renderer(fig))
     assert np.allclose(after.extents, before.extents, atol=0.5)
+
+
+# --------------------------------------------- the order of the calls
+#: A label at the edge of the canvas, clear of the legend, and a centred one
+#: that meets it (review of #675).
+ORDER_CASES = {
+    "above_edge": ("above", "suptitle", {"x": 0.01, "ha": "left"}),
+    "below_edge": ("below", "supxlabel", {"x": 0.01, "ha": "left"}),
+    "left_edge": ("left", "supylabel", {"y": 0.01, "va": "bottom"}),
+    "above_centred": ("above", "suptitle", {}),
+}
+
+
+def _in_order(case: str, *, label_first: bool):
+    """The legend's and the Axes' boxes once laid out, the label set
+    before or after ``figure_legend``."""
+    side, method, kw = ORDER_CASES[case]
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "wide"))
+    for i in range(2):
+        ax.plot([0, 1], [i, i + 1], label=f"Series {i}")
+    if label_first:
+        getattr(fig, method)("Title", **kw)
+    legend = dm.figure_legend(fig, loc=side)
+    if not label_first:
+        getattr(fig, method)("Title", **kw)
+    _layout(fig)
+    renderer = drawn_renderer(fig)
+    return (
+        legend.get_window_extent(renderer).extents,
+        ax.get_window_extent(renderer).extents,
+    )
+
+
+@pytest.mark.parametrize("case", list(ORDER_CASES))
+def test_the_figure_does_not_depend_on_the_order_of_the_calls(
+    case: str,
+) -> None:
+    """The contract: a ``figure_legend`` legend stacks past the figure's
+    label on its side whichever was set first. Before, a label set first
+    had the legend stacked past it even where the two did not meet (a short
+    suptitle at the left end), while the same label set after left the
+    legend where it was: the call order changed the figure. A label set
+    after now moves the legend as a label set first does."""
+    first_legend, first_axes = _in_order(case, label_first=True)
+    after_legend, after_axes = _in_order(case, label_first=False)
+    assert np.allclose(after_legend, first_legend, atol=1.0)
+    assert np.allclose(after_axes, first_axes, atol=1.0)
