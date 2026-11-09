@@ -145,3 +145,23 @@ def test_a_legend_the_caller_placed_stays_and_is_reported() -> None:
     assert np.allclose(after.extents, before.extents, atol=0.5)
     assert _gap(fig, "above", legend, label) < 0
     assert _kinds(fig) == ["LEGEND_OVERLAP"]
+
+
+@pytest.mark.parametrize("edit", ["anchor", "loc"])
+def test_a_figure_legend_the_caller_moved_stays_where_they_put_it(
+    edit: str,
+) -> None:
+    """The ownership rule of #674 on the root: a legend moved through the
+    returned Legend is the caller's, even with a label set after it."""
+    fig = _figure()
+    legend = dm.figure_legend(fig, loc="above")
+    _label(fig, "above")
+    if edit == "anchor":
+        legend.set_bbox_to_anchor((0.6, 0.6), transform=fig.transSubfigure)
+    else:
+        legend.set_loc("lower left")
+    fig.canvas.draw()
+    before = legend.get_window_extent(drawn_renderer(fig)).frozen()
+    _layout(fig)
+    after = legend.get_window_extent(drawn_renderer(fig))
+    assert np.allclose(after.extents, before.extents, atol=0.5)
