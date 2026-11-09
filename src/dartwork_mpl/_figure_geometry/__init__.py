@@ -633,6 +633,9 @@ class CornerOverlap(NamedTuple):
     out (down below, up above) or the y labels out (left, right) to clear
     the pair. ``corner``: ``"lower left"``, ``"lower right"``, ``"upper
     left"`` or ``"upper right"``, the sides of the plot the pair sits at.
+    ``x_minor`` / ``y_minor``: whether that label is a minor tick's, whose
+    pad (``tick_params(which="minor")``) is its own. ``x_axes`` / ``y_axes``
+    own the labels: of a ``twinx`` pair, the right labels are the twin's.
     """
 
     x_label: Text
@@ -643,6 +646,18 @@ class CornerOverlap(NamedTuple):
     down: float
     across: float
     corner: str
+    x_minor: bool = False
+    y_minor: bool = False
+
+
+def _ink_alpha(text: Text) -> float:
+    """The alpha ``text`` draws its glyphs with: the artist's alpha when it
+    has one (matplotlib's GraphicsContext then forces it over the colour's),
+    else its colour's. At 0 the text draws nothing."""
+    alpha = text.get_alpha()
+    if alpha is not None:
+        return float(alpha)
+    return float(to_rgba(text.get_color())[3])
 
 
 def corner_tick_overlaps(
@@ -657,36 +672,38 @@ def corner_tick_overlaps(
     is wide enough to reach under the y labels; the other corners alike,
     with labels on top or on the right, and the right labels of a twin.
     Every drawn, non-empty label counts, major and minor, as the rectangle
-    its own text fills, turned with it; a pair collides when it overlaps
-    by more than ``_TOUCH_PX``. Neither ``TICK_OVERLAP`` (neighbours along
-    one axis) nor ``CROSS_AXES_OVERLAP`` (other plots) sees these pairs.
+    its own text fills, turned with it, but for one drawn at alpha 0
+    (:func:`_ink_alpha`), which leaves no ink; a pair collides when it
+    overlaps by more than ``_TOUCH_PX``. Neither ``TICK_OVERLAP``
+    (neighbours along one axis) nor ``CROSS_AXES_OVERLAP`` (other plots)
+    sees these pairs.
     """
-    xs: list[tuple[Axes, Text]] = []
-    ys: list[tuple[Axes, Text]] = []
-    sides: tuple[tuple[Literal["x", "y"], list[tuple[Axes, Text]]], ...] = (
-        ("x", xs),
-        ("y", ys),
-    )
+    # (owner Axes, label, minor) of every drawn label, per axis
+    xs: list[tuple[Axes, Text, bool]] = []
+    ys: list[tuple[Axes, Text, bool]] = []
+    sides: tuple[
+        tuple[Literal["x", "y"], list[tuple[Axes, Text, bool]]], ...
+    ] = (("x", xs), ("y", ys))
     for ax in axes:
         for which, out in sides:
             out += [
-                (ax, label)
+                (ax, label, minor)
                 for minor in (False, True)
                 for label in drawn_tick_labels(ax, which, minor=minor)
-                if label.get_text().strip()
+                if label.get_text().strip() and _ink_alpha(label) > 0
             ]
     found: list[CornerOverlap] = []
     if not xs or not ys:
         return found
     try:
         plot = axes[0].get_window_extent(renderer)
-        x_rects = [(_label_corners(t, renderer), t) for _, t in xs]
-        y_rects = [(_label_corners(t, renderer), t) for _, t in ys]
+        x_rects = [_label_corners(t, renderer) for _, t, _ in xs]
+        y_rects = [_label_corners(t, renderer) for _, t, _ in ys]
     except BBOX_ERRORS:
         return found
     middle = ((plot.x0 + plot.x1) / 2, (plot.y0 + plot.y1) / 2)
-    for (x_ax, _), (x_rect, x_label) in zip(xs, x_rects, strict=True):
-        for (y_ax, _), (y_rect, y_label) in zip(ys, y_rects, strict=True):
+    for (x_ax, x_label, x_minor), x_rect in zip(xs, x_rects, strict=True):
+        for (y_ax, y_label, y_minor), y_rect in zip(ys, y_rects, strict=True):
             depth = _overlap_px(x_rect, y_rect)
             if depth <= _TOUCH_PX:
                 continue
@@ -708,6 +725,8 @@ def corner_tick_overlaps(
                     float(down),
                     float(across),
                     f"{level} {side}",
+                    x_minor,
+                    y_minor,
                 )
             )
     return found

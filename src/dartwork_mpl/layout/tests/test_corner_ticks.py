@@ -43,11 +43,13 @@ def _square(preset: str = "report", width: str = "9cm", span: float = 3):
 
 
 def _boxes(fig, axes, which):
+    """Every drawn tick label box of ``which``, major and minor."""
     renderer = get_renderer(fig)
     return [
         label.get_window_extent(renderer)
         for ax in axes
-        for label in drawn_tick_labels(ax, which)
+        for minor in (False, True)
+        for label in drawn_tick_labels(ax, which, minor=minor)
         if label.get_text().strip()
     ]
 
@@ -261,6 +263,48 @@ def test_a_twins_right_labels_part_from_the_bottom_row() -> None:
     assert _worst(fig, [ax, right]) <= 0.5
 
 
+@pytest.mark.parametrize("scene", ["minor y", "minor x", "twin"])
+def test_the_ticks_and_the_axes_that_collide_move(scene: str) -> None:
+    """The step moves the labels of the pair, whatever they are: tall minor
+    y labels (major ticks at -2, 0, 2) move their minor pad, wide minor x
+    labels theirs, a twin's tall right labels the twin's pad (#663: the
+    check's fix had named the major ticks and the first Axes)."""
+    from matplotlib.ticker import FixedLocator
+
+    if scene == "twin":
+        dm.style.use("report")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.plot([0, 10], [0.2, 1])
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0.2, 1)
+        right = ax.twinx()
+        right.plot([0, 10], [-3, 3])
+        right.set_ylim(-3, 3)
+        right.tick_params(axis="y", labelsize=14)
+        moved = right.yaxis
+    else:
+        fig, ax = _square()
+        axis = ax.yaxis if scene == "minor y" else ax.xaxis
+        axis.set_major_locator(FixedLocator([-2, 0, 2]))
+        axis.set_minor_locator(FixedLocator([-3, -1, 1, 3]))
+        axis.set_minor_formatter("{x:g}" if scene == "minor y" else "{x:.2f}")
+        if scene == "minor y":
+            ax.tick_params(axis="y", which="minor", labelsize=14)
+        moved = axis
+    dm.simple_layout(fig, fit_labels=False)
+    assert _worst(fig) > 0.5  # precondition
+    ticks = (
+        moved.get_major_ticks() if scene == "twin" else moved.get_minor_ticks()
+    )
+    before = float(ticks[0].get_pad())
+    dm.simple_layout(fig)
+    assert _worst(fig) <= 0.5
+    ticks = (
+        moved.get_major_ticks() if scene == "twin" else moved.get_minor_ticks()
+    )
+    assert float(ticks[0].get_pad()) > before
+
+
 def test_a_second_layout_draws_the_same_and_false_gives_it_back() -> None:
     fig, ax = _square()
     pads = _pads(ax)
@@ -304,3 +348,58 @@ def test_a_figure_without_a_corner_pair_draws_as_without_the_step() -> None:
 
     others = ("axis_labels", "space", "wrap", "rotate")
     assert drawn(True) == drawn(others)
+
+
+def test_transparent_labels_move_nothing() -> None:
+    """x labels at alpha 0 draw nothing: the corner is clear, no pad moves
+    (independent review of #663)."""
+    fig, ax = _square()
+    for label in ax.get_xticklabels():
+        label.set_alpha(0)
+    before = _pads(ax)
+    dm.simple_layout(fig)
+    assert _pads(ax) == before
+
+
+# ── what you set after a layout is yours (independent review of #663) ──
+
+
+def test_a_pad_you_set_after_the_layout_stays() -> None:
+    """``tick_params(pad=...)`` after a layout, even at the fitted value,
+    is yours: the next layout leaves it, and the axis reports what it
+    draws."""
+    fig, ax = _square()
+    dm.simple_layout(fig)
+    chosen = ax.xaxis.get_major_ticks()[0].get_pad()
+    assert chosen > 2  # precondition: the layout grew it
+    ax.tick_params(axis="x", pad=chosen)
+    dm.simple_layout(fig, fit_labels=False)
+    assert ax.xaxis.get_tick_params()["pad"] == chosen
+    assert ax.xaxis.get_major_ticks()[0].get_pad() == chosen
+
+
+def test_a_tick_you_set_after_the_layout_stays() -> None:
+    """One tick's ``set_pad`` after a layout stays; the others, still as
+    fitted, go back."""
+    fig, ax = _square()
+    dm.simple_layout(fig)
+    ticks = ax.xaxis.get_major_ticks()
+    assert ticks[0].get_pad() > 2  # precondition
+    ticks[1].set_pad(20)
+    dm.simple_layout(fig, fit_labels=False)
+    assert ticks[1].get_pad() == 20
+    assert ticks[0].get_pad() == 2
+
+
+def test_an_axis_with_a_tick_of_its_own_is_yours_next_time() -> None:
+    """Once a tick has a pad of its own, the next layout leaves the axis
+    alone and moves the other one."""
+    fig, ax = _square()
+    dm.simple_layout(fig)
+    ax.xaxis.get_major_ticks()[1].set_pad(20)
+    dm.simple_layout(fig)
+    pads = [t.get_pad() for t in ax.xaxis.get_major_ticks()]
+    assert pads[1] == 20
+    assert {p for i, p in enumerate(pads) if i != 1} == {2}
+    assert ax.yaxis.get_major_ticks()[0].get_pad() > 1  # the y labels moved
+    assert _worst(fig) <= 0.5

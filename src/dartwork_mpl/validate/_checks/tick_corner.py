@@ -12,16 +12,19 @@ the layout's ``pad`` step also uses.
 ``dm.simple_layout`` moves the labels of one axis out by the overlap plus a
 hair space (the axis whose labels move less, through its tick pad); what
 this check reports after a layout is what is left: both pads set by hand,
-or a change the layout took back. The fix grows that pad by hand; it
-never hides a label, makes text smaller or moves the axis limits.
+or a change the layout took back. The fix grows that pad by hand, on the
+Axes that owns the colliding labels (a twin's right labels are the twin's)
+and for the ticks they belong to (a minor label's pad is the minor one);
+it never hides a label, makes text smaller or moves the axis limits.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 from ..._figure_geometry import (
     CORNER_GAP_EM,
+    CornerOverlap,
     corner_tick_overlaps,
     same_position_axes,
     tick_pad,
@@ -31,19 +34,37 @@ from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
 
 __all__ = ["check_tick_corner_overlap"]
 
+Which = Literal["major", "minor"]
+WHICH: tuple[Which, ...] = ("major", "minor")
+
+
+class CornerTarget(TypedDict):
+    """Labels the fix moves: those of ``which`` ticks of one axis of the
+    Axes ``fig.axes[axes_index]``, out to the label pad ``pad`` (pt)."""
+
+    axes_index: int
+    axis: Axis
+    which: Which
+    pad: float
+
 
 class TickCornerOverlapDetail(TypedDict):
     """``pairs`` x / y tick label pairs of one plot box overlap, by up to ``px``.
 
-    ``corner`` and ``x_label`` / ``y_label`` name the deepest pair;
-    ``axis`` is the axis whose labels move less to clear every pair and
-    ``pad`` the label pad (pt) that clears them.
+    ``axes_index`` is the Axes the pairs were found at; ``corner`` and
+    ``x_label`` / ``y_label`` name the deepest pair; ``axis`` is the axis
+    whose labels move less to clear every pair and ``pad`` the label pad
+    (pt) that clears the deepest pair, of ``which`` ticks of the Axes
+    ``fig.axes[owner_index]`` (a twin, for its right labels). ``targets``
+    lists every Axes and kind of tick the move needs, each with its pad.
     """
 
     axes_index: int
@@ -54,6 +75,9 @@ class TickCornerOverlapDetail(TypedDict):
     px: float
     axis: Axis
     pad: float
+    owner_index: int
+    which: Which
+    targets: list[CornerTarget]
 
 
 @register_check("TICK_CORNER_OVERLAP", order=53)
@@ -72,23 +96,19 @@ def check_tick_corner_overlap(
         if not pairs:
             continue
         deepest = max(pairs, key=lambda pair: pair.depth)
-        to_pt = 72.0 / fig.dpi
-        # what the x labels (down / up) or the y labels (left / right) move
-        need_x = max(
-            pair.down * to_pt
-            + CORNER_GAP_EM * float(pair.x_label.get_fontsize())
-            for pair in pairs
+        moves = {side: _moves(pairs, side, fig.dpi) for side in AXES}
+        # the x labels (down / up) or the y labels (left / right), whichever
+        # moves less
+        axis_name: Axis = (
+            "x" if max(moves["x"].values()) <= max(moves["y"].values()) else "y"
         )
-        need_y = max(
-            pair.across * to_pt
-            + CORNER_GAP_EM * float(pair.y_label.get_fontsize())
-            for pair in pairs
+        targets = _targets(fig, axis_name, moves[axis_name])
+        owner, which = _owner(deepest, axis_name)
+        main = next(
+            t
+            for t in targets
+            if t["axes_index"] == fig.axes.index(owner) and t["which"] == which
         )
-        axis_name: Axis = "x" if need_x <= need_y else "y"
-        moved = (
-            deepest.x_axes.xaxis if axis_name == "x" else deepest.y_axes.yaxis
-        )
-        pad = tick_pad(moved.get_major_ticks()[0]) + min(need_x, need_y)
         warnings.append(
             VisualWarning(
                 severity=Severity.WARNING,
@@ -109,7 +129,10 @@ def check_tick_corner_overlap(
                         pairs=len(pairs),
                         px=round(deepest.depth, 1),
                         axis=axis_name,
-                        pad=round(pad, 1),
+                        pad=main["pad"],
+                        owner_index=main["axes_index"],
+                        which=which,
+                        targets=targets,
                     )
                 ),
             )
@@ -121,14 +144,75 @@ def _rectilinear(ax: Axes) -> bool:
     return ax.get_visible() and getattr(ax, "name", None) == "rectilinear"
 
 
+def _owner(pair: CornerOverlap, side: Axis) -> tuple[Axes, Which]:
+    """The Axes owning ``pair``'s ``side`` label, and its kind of tick."""
+    if side == "x":
+        return pair.x_axes, "minor" if pair.x_minor else "major"
+    return pair.y_axes, "minor" if pair.y_minor else "major"
+
+
+def _moves(
+    pairs: Sequence[CornerOverlap], side: Axis, dpi: float
+) -> dict[tuple[Axes, Which], float]:
+    """How far (pt) the ``side`` labels of each owning Axes and kind of
+    tick move out to clear every pair: the overlap plus ``CORNER_GAP_EM``."""
+    to_pt = 72.0 / dpi
+    moves: dict[tuple[Axes, Which], float] = {}
+    for pair in pairs:
+        key = _owner(pair, side)
+        depth = pair.down if side == "x" else pair.across
+        label = pair.x_label if side == "x" else pair.y_label
+        need = depth * to_pt + CORNER_GAP_EM * float(label.get_fontsize())
+        moves[key] = max(moves.get(key, 0.0), need)
+    return moves
+
+
+def _targets(
+    fig: Figure, side: Axis, moves: dict[tuple[Axes, Which], float]
+) -> list[CornerTarget]:
+    """One target per owning Axes and kind of tick: its pad now plus the
+    move, to 0.1 pt (the hair space in the move absorbs the rounding)."""
+    targets: list[CornerTarget] = []
+    for (owner, which), need in moves.items():
+        axis = owner.xaxis if side == "x" else owner.yaxis
+        ticks = axis.majorTicks if which == "major" else axis.minorTicks
+        pad = round(tick_pad(ticks[0]) + need, 1)
+        targets.append(
+            CornerTarget(
+                axes_index=fig.axes.index(owner),
+                axis=side,
+                which=which,
+                pad=pad,
+            )
+        )
+    return sorted(targets, key=lambda t: (t["axes_index"], t["which"]))
+
+
 @register_fix("TICK_CORNER_OVERLAP")
 def _fix_tick_corner_overlap(warning: VisualWarning) -> list[str]:
-    """The layout's move first, then the same pad by hand; never hide or shrink."""
-    axis = choice(warning.detail, "axis", AXES) or "x"
-    pad = number(warning.detail, "pad", 0)
+    """The layout's move first, then the same pads by hand, on the Axes and
+    ticks that collide; never hide or shrink."""
+    lines = []
+    raw = warning.detail.get("targets")
+    for target in raw if isinstance(raw, list) else []:
+        if not isinstance(target, dict):
+            continue
+        index = number(target, "axes_index", -1)
+        axis = choice(target, "axis", AXES)
+        which = choice(target, "which", WHICH)
+        pad = number(target, "pad", 0)
+        if isinstance(index, int) and index >= 0 and axis and which:
+            lines.append(
+                f"fig.axes[{index}].tick_params("
+                f"axis={axis!r}, which={which!r}, pad={pad:g})"
+            )
+    if not lines:  # a detail without targets: the deepest pair's axis
+        axis = choice(warning.detail, "axis", AXES) or "x"
+        pad = number(warning.detail, "pad", 0)
+        lines.append(f"ax.tick_params(axis={axis!r}, pad={pad:g})")
     return [
         "# The layout moves the labels of one axis out (its tick pad)\n"
         "dm.simple_layout(fig)",
         "# Pads you set stay as set: grow the one that moves less\n"
-        f"ax.tick_params(axis={axis!r}, pad={pad:g})",
+        + "\n".join(lines),
     ]

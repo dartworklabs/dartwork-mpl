@@ -58,8 +58,10 @@ and those that do harm are dropped for the rest of the call. At most
     so the row or column keeps its alignment and every label stays at its
     tick. Taken once the other steps have nothing left to change, and kept
     only if the pairs are clear after the margins are fitted again. A pad
-    you set (``ax.tick_params(pad=...)``) stays; if both axes have one,
-    the pair is the author's.
+    you set (``ax.tick_params(pad=...)``, or one tick's ``set_pad``),
+    before a layout or after one, stays, and so does that axis on the
+    next layout; if both axes have one, the pair is the author's. Labels
+    drawn at alpha 0 leave no ink and are no pair.
 
 An axis whose ticks matplotlib picks by its length (``AutoLocator``, no
 locator set by hand) and that a round made shorter keeps the intervals it
@@ -135,6 +137,7 @@ from ._content_extent import _axes_content_extent_px
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
+    from matplotlib.axis import Tick
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.font_manager import FontProperties
@@ -390,11 +393,8 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
                 ):
                     _set_turn(label, turn.rotation, turn.mode)
             padded = _PADS.pop(axis, None)
-            if padded is not None and _pads_now(axis) == (
-                padded.major_set,
-                padded.minor_set,
-            ):
-                _set_pads(axis, padded.major, padded.minor)
+            if padded is not None:
+                _restore_pads(axis, padded)
         for label in (ax.xaxis.label, ax.yaxis.label):
             record = _NAMES.pop(label, None)
             if record is not None and label.get_text() == record[1]:
@@ -1508,16 +1508,50 @@ def _set_pads(axis: Axis, major: float, minor: float) -> None:
 
 
 def _pad_is_free(axis: Axis) -> bool:
-    """Whether ``pad`` may grow ``axis``' label pad: nobody set it
-    (``ax.tick_params(pad=...)``, which matplotlib keeps for the ticks it
-    adds), or this module did and it is still as set."""
+    """Whether ``pad`` may grow ``axis``' label pad.
+
+    Not when you set it: for the axis (``ax.tick_params(pad=...)``, which
+    matplotlib keeps in ``get_tick_params`` for the ticks it adds), or for
+    a tick of its own (``Tick.set_pad``: the ticks of a kind no longer
+    share one pad), before a layout or after one. Within a layout, the pad
+    this module grew stays its own while it is as set.
+    """
+    if any(
+        "pad" in axis.get_tick_params(which=which)
+        for which in ("major", "minor")
+    ):
+        return False
+    pads = (
+        {tick_pad(tick) for tick in axis.majorTicks},
+        {tick_pad(tick) for tick in axis.minorTicks},
+    )
+    if any(len(kind) > 1 for kind in pads):
+        return False
     padded = _PADS.get(axis)
     if padded is not None:
-        return _pads_now(axis) == (padded.major_set, padded.minor_set)
-    return all(
-        "pad" not in axis.get_tick_params(which=which)
-        for which in ("major", "minor")
+        return pads == ({padded.major_set}, {padded.minor_set})
+    return True
+
+
+def _restore_pads(axis: Axis, padded: _Padded) -> None:
+    """Give back the pads ``pad`` grew on ``axis``, where they are as it set
+    them: a pad set for the axis since (``tick_params(pad=...)``, even at
+    the fitted value) stays for that kind of tick, and so does a tick whose
+    pad was set by itself (``Tick.set_pad``); the others, the ticks
+    matplotlib added since included (they copy the first tick), go back."""
+    kinds: tuple[
+        tuple[Literal["major", "minor"], list[Tick], float, float], ...
+    ]
+    kinds = (
+        ("major", axis.majorTicks, padded.major, padded.major_set),
+        ("minor", axis.minorTicks, padded.minor, padded.minor_set),
     )
+    for which, ticks, before, mine in kinds:
+        if "pad" in axis.get_tick_params(which=which):
+            continue  # set for the axis since: yours
+        for tick in ticks:
+            if tick_pad(tick) == mine:
+                tick.set_pad(before)
 
 
 def _corner_moves(
