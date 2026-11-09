@@ -149,6 +149,59 @@ def test_the_report_says_when_neighbours_overlap():
     assert "overlap by 0.30 em" in warning.message
 
 
+def _with_minor(gap_em: float, at: float, text: str):
+    """Five long major names ``gap_em`` apart filling the axis, and one
+    drawn minor label ``text`` at ``at`` in the same bottom row."""
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "8cm"))
+    ax.set_xticks(range(5), ["Long region name"] * 5)
+    ax.set_xlim(0, 4)
+    ax.set_xticks([at], [text], minor=True)
+    fig.canvas.draw()
+    renderer = get_renderer(fig)
+    label = ax.get_xticklabels()[0]
+    width = label.get_window_extent(renderer).width
+    em = label.get_fontsize() * fig.dpi / 72
+    left, bottom, _, height = ax.get_position().bounds
+    span = 4 * (width + gap_em * em)
+    ax.set_position((left, bottom, span / fig.bbox.width, height))
+    fig.canvas.draw()
+    return fig, ax
+
+
+def _minor_preconditions(fig, ax) -> tuple:
+    renderer = get_renderer(fig)
+    gap, length = _row(ax.get_xticklabels(), renderer, "x")
+    assert gap >= 0.5  # the majors alone stand clear
+    assert 1.15 * length > ax.get_window_extent(renderer).width
+    (minor,) = ax.get_xticklabels(minor=True)
+    assert minor.get_visible() and minor.get_text()
+    return renderer, minor
+
+
+def test_a_minor_label_on_a_name_keeps_the_row_crowded():
+    """Majors 0.8 em apart, but a drawn minor label overlaps the first:
+    the row is crowded however far apart the majors stand."""
+    fig, ax = _with_minor(0.8, 0.05, "Minor label")
+    renderer, minor = _minor_preconditions(fig, ax)
+    first = ax.get_xticklabels()[0].get_window_extent(renderer)
+    assert first.overlaps(minor.get_window_extent(renderer))
+    assert len(_crowd(fig, "x")) == 1
+
+
+def test_a_minor_label_half_an_em_clear_leaves_the_row_quiet():
+    """A short minor label in the middle of a 2.5 em gap stands about an
+    em from each name: every neighbour is clear."""
+    fig, ax = _with_minor(2.5, 0.5, "m")
+    renderer, minor = _minor_preconditions(fig, ax)
+    em = minor.get_fontsize() * fig.dpi / 72
+    box = minor.get_window_extent(renderer)
+    names = [t.get_window_extent(renderer) for t in ax.get_xticklabels()]
+    assert box.x0 - names[0].x1 >= 0.5 * em
+    assert names[1].x0 - box.x1 >= 0.5 * em
+    assert _crowd(fig, "x") == []
+
+
 def test_the_check_and_the_layout_share_the_clearance() -> None:
     from dartwork_mpl.layout._fit_labels import _TARGET_EM
     from dartwork_mpl.validate._checks import tick_crowd

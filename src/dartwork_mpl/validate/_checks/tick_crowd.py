@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Literal, TypedDict
 
 from ..._figure_geometry import (
     drawn_axes,
+    drawn_tick_labels,
     label_clearance_px,
     pair_clearance_px,
     pair_gap_px,
@@ -32,6 +33,7 @@ from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.text import Text
@@ -90,6 +92,28 @@ def _row_need_px(
     for a, b in pairwise(ordered):
         need += pair_clearance_px(a, b, renderer, which)
     return need
+
+
+def _gap_rows(
+    ax: Axes, which: Literal["x", "y"], renderer: RendererBase
+) -> list[list[Text]]:
+    """The rows whose neighbours the clearance is measured in: every drawn
+    major and minor label with text, ``label1`` (bottom / left) and
+    ``label2`` (top / right) apart. A minor label beside a name is as much
+    its neighbour as the next name; the occupancy and ``count`` stay those
+    of the major labels. Raises what an unmeasurable label raises."""
+    axis = ax.xaxis if which == "x" else ax.yaxis
+    first = {id(tick.label1) for tick in axis.get_major_ticks()}
+    first |= {id(tick.label1) for tick in axis.get_minor_ticks()}
+    rows: list[list[Text]] = [[], []]
+    for minor in (False, True):
+        for label in drawn_tick_labels(ax, which, minor=minor):
+            if not label.get_text().strip():
+                continue
+            box = label.get_window_extent(renderer)
+            if box.width > 0 and box.height > 0:
+                rows[0 if id(label) in first else 1].append(label)
+    return rows
 
 
 def _closest_gap_em(
@@ -198,7 +222,12 @@ def check_tick_crowding(
                 # closer than half an em. A row with no pair, or one that
                 # cannot be measured, keeps the occupancy's verdict.
                 try:
-                    closest = _closest_gap_em(rows, renderer, axis_name, dpi)
+                    closest = _closest_gap_em(
+                        _gap_rows(ax, axis_name, renderer),
+                        renderer,
+                        axis_name,
+                        dpi,
+                    )
                 except BBOX_ERRORS:
                     closest = None
                 if closest is not None and closest >= _NEIGHBOUR_CLEARANCE_EM:
