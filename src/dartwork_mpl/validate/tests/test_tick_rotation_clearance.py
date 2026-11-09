@@ -5,8 +5,9 @@ It compared the widest label plus 4 px with the axis width over the label
 count, which is wider than the ticks' real spacing on a bar axis (its
 margins) and, at 4 px, about a seventh of an em at 300 dpi. So it called
 "unneeded" the turn the layout makes for labels 0.19 em apart flat, which
-read as one name. Now it measures the flat gaps as the layout does (tick
-centres less half of each unturned width) against half an em.
+read as one name. Now it asks for half an em between the closest two
+ticks less the widest unturned label: no pair leaves less, so where the
+check calls a turn unneeded, the layout keeps the row flat too.
 """
 
 from __future__ import annotations

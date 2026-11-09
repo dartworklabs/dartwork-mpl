@@ -209,10 +209,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   and that no angle clears stays flat. Labels half an em apart or more,
   labels you rotated or broke yourself, your canvas size and
   `fit_labels=False` draw as before; nothing gets smaller. `TICK_ROTATION`
-  calls a turn unneeded only where the labels, flat, would stand half an
-  em apart, measured as the layout does (tick spacing less half of each
-  width); it compared the widest label plus 4 px with the axis width over
-  the label count, and so called the layout's own turns unneeded.
+  calls a turn unneeded only where the labels, flat, would surely stand
+  half an em apart (the closest two ticks less the widest label); it
+  compared the widest label plus 4 px with the axis width over the label
+  count, and so called the layout's own turns unneeded.
 - **`dm.place_legend(ax)` climbs a ladder and keeps the legend off the
   data.** `loc="best"` (no side named) now tries eight inside spots (the
   corners, upper and lower centre, then centre right and left) for one to

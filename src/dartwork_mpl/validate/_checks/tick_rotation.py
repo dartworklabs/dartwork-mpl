@@ -1,11 +1,12 @@
 """TICK_ROTATION: unnecessary or missing x-axis tick-label rotation.
 
-A turn is unneeded where the labels, flat, would stand half an em apart
-(``_FLAT_CLEARANCE_EM``): the distance between their ticks less half of
-each unturned width, as ``dm.simple_layout`` measures before it turns
-bottom labels that come closer. (It compared the widest label plus 4 px
-with the axis width over the label count, wider than the ticks' spacing
-on a bar axis, and so called unneeded the layout's own turns.)
+A turn is unneeded where the labels, flat, would surely stand half an em
+apart (``_FLAT_CLEARANCE_EM``): the closest two ticks less the widest
+unturned label. No neighbour pair leaves less, so ``dm.simple_layout``,
+which turns bottom labels closer than half an em, keeps such a row flat.
+(It compared the widest label plus 4 px with the axis width over the
+label count, wider than the ticks' spacing on a bar axis, and so called
+unneeded the layout's own turns.)
 """
 
 from __future__ import annotations
@@ -80,26 +81,31 @@ def _unrotated_text_width(label: Text, renderer: RendererBase) -> float | None:
 def _flat_room(
     ax: Axes, ticks: list[Text], renderer: RendererBase
 ) -> float | None:
-    """The least room (px) between neighbouring labels were they flat: the
-    distance between their ticks less half of each unturned width, along
-    each row (bottom, top) as the layout reads it. ``None`` when no row has
-    two measurable labels."""
+    """The room (px) neighbouring labels would at least leave were they
+    flat: per row (bottom, top), the closest two ticks less the widest
+    unturned label, as if the widest stood between the closest. No pair
+    leaves less, so where this is half an em the layout too keeps the row
+    flat. ``None`` when no row has two measurable labels."""
     bottom = {id(tick.label1) for tick in ax.xaxis.get_major_ticks()}
     least: float | None = None
     for side in (True, False):
-        row = []
+        centres: list[float] = []
+        widest = 0.0
         for label in ticks:
             if (id(label) in bottom) is not side:
                 continue
             width = _unrotated_text_width(label, renderer)
             if width is None:
                 continue
-            centre = label.get_transform().transform(label.get_position())[0]
-            row.append((float(centre), width))
-        row.sort()
-        for (x_a, w_a), (x_b, w_b) in pairwise(row):
-            room = x_b - x_a - (w_a + w_b) / 2
-            least = room if least is None else min(least, room)
+            centres.append(
+                float(label.get_transform().transform(label.get_position())[0])
+            )
+            widest = max(widest, width)
+        if len(centres) < 2:
+            continue
+        spacing = min(b - a for a, b in pairwise(sorted(centres)))
+        room = spacing - widest
+        least = room if least is None else min(least, room)
     return least
 
 
