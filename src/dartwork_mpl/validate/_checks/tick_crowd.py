@@ -216,7 +216,9 @@ def check_tick_crowding(
             span_in = span_px / dpi
             if measured and occupancy is not None:
                 detail_extra = f"labels fill {occupancy:.0%} of the axis"
-                if closest is not None:
+                if closest is not None and closest < 0:
+                    detail_extra += f"; neighbours overlap by {-closest:.2f} em"
+                elif closest is not None:
                     detail_extra += (
                         f"; closest neighbours {closest:.2f} em apart, "
                         f"under {_NEIGHBOUR_CLEARANCE_EM:g} em"

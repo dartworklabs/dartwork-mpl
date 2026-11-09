@@ -143,6 +143,12 @@ def test_the_report_names_the_closest_neighbours():
     assert "0.30 em apart" in warning.message
 
 
+def test_the_report_says_when_neighbours_overlap():
+    fig, _ax = _close_names(-0.3)
+    (warning,) = _crowd(fig, "x")
+    assert "overlap by 0.30 em" in warning.message
+
+
 def test_the_check_and_the_layout_share_the_clearance() -> None:
     from dartwork_mpl.layout._fit_labels import _TARGET_EM
     from dartwork_mpl.validate._checks import tick_crowd
