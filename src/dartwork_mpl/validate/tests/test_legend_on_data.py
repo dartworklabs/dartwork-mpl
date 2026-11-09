@@ -150,6 +150,30 @@ def test_a_figure_legend_over_the_panels_is_reported() -> None:
     assert w.detail["panels"]  # the panel(s) whose lines it covers
 
 
+@pytest.mark.parametrize("owner", ["figure", "subfigure", "nested"])
+def test_a_subfigure_legend_over_the_panels_is_reported(owner: str) -> None:
+    """A SubFigure keeps its legends on itself, not on ``fig.legends``: one
+    over its panel's lines went unreported. The same legend on the Figure
+    is the control; ``panels`` are ``fig.axes`` indices either way."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    left, right = fig.subfigures(1, 2)
+    left.subplots().plot([0, 1], [0, 1])
+    holder = {"figure": fig, "subfigure": right}.get(owner)
+    if owner == "nested":
+        holder = right.subfigures(1, 1)
+        ax = holder.subplots()
+    else:
+        ax = right.subplots()
+    _dense(ax, 3)
+    holder.legend(*ax.get_legend_handles_labels(), loc="center right")
+    found = _found(fig)
+    assert [w.check_id for w in found] == [ID]
+    (w,) = found
+    assert w.detail["legend_axes"] is None
+    assert w.message.startswith("Figure legend covers")
+    assert w.detail["panels"] == [1]
+
+
 # ------------------------------------------- filled areas: violins, bands
 def _violin_with_a_long_tail(ax):
     """One violin at the right edge whose thin lower tail runs into the

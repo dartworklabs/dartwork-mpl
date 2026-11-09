@@ -4,14 +4,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import same_position_axes
+from ..._figure_geometry import (
+    drawn_in_tree,
+    figure_axes,
+    figure_legends,
+    same_position_axes,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
-    from matplotlib.figure import Figure
+    from matplotlib.figure import Figure, SubFigure
 
 __all__ = ["check_legend_overflow"]
 
@@ -85,7 +90,7 @@ def check_legend_overflow(
 
     for i, ax in enumerate(fig.axes):
         legend = ax.get_legend()
-        if legend is None or not legend.get_visible():
+        if legend is None or not drawn_in_tree(legend):
             continue
         try:
             leg_ext = legend.get_window_extent(renderer)
@@ -167,11 +172,12 @@ def check_legend_overflow(
 
     # Figure-level legends (``fig.legend``) never appear via
     # ``ax.get_legend()``; flag them when they run off the canvas, or when
-    # they are more than half the size of the panels they serve.
-    panel_area = _panel_area(fig, renderer)
-    for legend in fig.legends:
-        if not legend.get_visible():
+    # they are more than half the size of the panels they serve: a
+    # SubFigure's legend (kept on the SubFigure) serves its panels.
+    for legend in figure_legends(fig):
+        if not drawn_in_tree(legend):  # a hidden SubFigure hides its own
             continue
+        panel_area = _panel_area(legend.get_figure(root=False) or fig, renderer)
         try:
             leg_ext = legend.get_window_extent(renderer)
         except BBOX_ERRORS:
@@ -223,12 +229,13 @@ def check_legend_overflow(
     return warnings
 
 
-def _panel_area(fig: Figure, renderer: RendererBase) -> float:
-    """Summed plot-box area of the visible Axes, each twin group once."""
+def _panel_area(fig: Figure | SubFigure, renderer: RendererBase) -> float:
+    """Summed plot-box area of the visible Axes of ``fig`` (its nested
+    SubFigures' included), each twin group once."""
     seen: set[int] = set()
     area = 0.0
-    for ax in fig.axes:
-        if not ax.get_visible() or id(ax) in seen:
+    for ax in figure_axes(fig):
+        if not drawn_in_tree(ax) or id(ax) in seen:
             continue
         seen.update(id(owner) for owner in same_position_axes(ax))
         try:

@@ -106,7 +106,9 @@ from .._figure_geometry import (
     axes_titles,
     axes_with_secondaries,
     clip_region,
+    drawn_in_tree,
     drawn_tick_labels,
+    figure_legends,
     get_renderer,
     outside_side,
     same_position_axes,
@@ -300,11 +302,11 @@ def _clear_legends(
     inside the axes or (re-anchored by the layout) on a side. A label
     hidden here is hidden for ``"legend"``, ``hidden_by`` that legend.
     """
-    legends = [ax.get_legend() for ax in fig.axes] + list(fig.legends)
+    legends = [ax.get_legend() for ax in fig.axes] + figure_legends(fig)
     boxes = [
         (legend, legend.get_window_extent(renderer))
         for legend in legends
-        if legend is not None and legend.get_visible()
+        if legend is not None and drawn_in_tree(legend)
     ]
     if not boxes:
         return

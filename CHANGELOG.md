@@ -501,6 +501,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **SubFigures are neighbours, and their legends and titles are measured.**
+  `dm.place_legend` counts a panel in another SubFigure (nested ones too)
+  as the neighbour it is: the middle of three stacked panels no longer
+  takes the right side and lands on the next SubFigure's tick labels.
+  `dm.figure_legend(subfig)` serves the panels of the SubFigures nested in
+  it (it drew no legend when they held them all). `LEGEND_ON_DATA`,
+  `LEGEND_OVERLAP`, `LEGEND_OVERFLOW` and `OVERFLOW` read a SubFigure's own
+  legends, suptitle and texts, which matplotlib keeps off `fig.legends`;
+  `dm.tight_crop` keeps them and bar labels clear them. Figures without
+  SubFigures are unchanged. `dm.simple_layout` still fits one grid, not a
+  SubFigure's own.
 - **The tick checks count the tick labels matplotlib draws.** `UNIT_DUP`,
   `TICK_DECIMAL`, `TICK_CROWD`, `TICK_ROTATION` and `LEGEND_OVERLAP` read
   ticks through the same reader as the layout checks: a tick just past the

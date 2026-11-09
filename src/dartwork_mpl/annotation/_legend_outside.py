@@ -14,6 +14,7 @@ from .._figure_geometry import (
     BBOX_ERRORS,
     OutsideSide,
     anchor_outside,
+    drawn_in_tree,
     outside_side,
     outside_span_px,
 )
@@ -519,14 +520,15 @@ def fallback_sides(ax: Axes) -> list[OutsideSide]:
 
 
 def _sibling_sides(ax: Axes) -> set[OutsideSide]:
-    """Sides the fallback legends of the figure's other panels took."""
-    fig = ax.get_figure(root=False)
+    """Sides the fallback legends of the figure's other panels took (those
+    in its SubFigures too)."""
+    fig = ax.get_figure(root=True)
     if fig is None:
         return set()
     sides: set[OutsideSide] = set()
     for other in fig.axes:
         legend = other.get_legend()
-        if other is ax or legend is None:
+        if other is ax or legend is None or not drawn_in_tree(other):
             continue
         side = outside_side(legend)
         if side is not None and getattr(legend, "_dm_outside_fallback", False):
