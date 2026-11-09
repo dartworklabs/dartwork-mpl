@@ -10,6 +10,11 @@ reports, per legend, what its box meets:
   insets too), measured as VALUE_LABEL_ON_DATA measures it: bars, drawn
   line segments at their width, markers and scatter points at their size,
   clipped to the plot box. A legend over another panel's data counts too;
+* line collections drawn in data coordinates (``vlines``, ``hlines``,
+  errorbar bars, stem lines, ``eventplot``, a ``LineCollection``), as
+  lines: each segment at its own width and colour where its clip lets it
+  draw, read as ``dm.place_legend`` reads them. One drawn with an axis in
+  Axes coordinates is a reference, not data, as an ``axvline`` is not;
 * filled areas in any plot box (``PolyCollection``: ``fill_between``
   bands, ``stackplot`` layers, violin bodies, ``broken_barh``) that draw
   ink, by their outline where it is drawn (at the edge's width): what a
@@ -41,16 +46,24 @@ contours and polar plots are not data here.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, TypedDict
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    TypeAlias,
+    TypedDict,
+    cast,
+)
 
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.collections import Collection, PolyCollection
+from matplotlib.collections import Collection, LineCollection, PolyCollection
 from matplotlib.colors import to_rgba_array
 from matplotlib.lines import Line2D
-from matplotlib.markers import MarkerStyle
 from matplotlib.offsetbox import DrawingArea, OffsetBox
 from matplotlib.patches import Patch
+from matplotlib.path import Path
 from matplotlib.text import Text
 
 from ..._figure_geometry import (
@@ -58,19 +71,27 @@ from ..._figure_geometry import (
     artist_shown,
     clip_path_px,
     clip_region,
+    discs_meet,
     drawn_collection_outlines,
     drawn_in_tree,
     drawn_ink_meets,
     figure_legends,
+    line_draws_markers,
+    line_draws_stroke,
+    patch_inks,
     same_position_axes,
+    text_inks,
     within_clip_path,
 )
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
 from .value_label_on_data import (
-    _alpha,
     _clip,
+    _dash_px,
+    _dashed,
+    _is_data_line,
+    _joined,
     _measure,
     _name,
     _segments_hit,
@@ -83,7 +104,6 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend
-    from matplotlib.path import Path
     from matplotlib.transforms import Bbox
 
     from .value_label_on_data import _Data
@@ -181,70 +201,6 @@ def _owners(fig: Figure) -> list[_Owner]:
     return found
 
 
-_NO_STROKE = ("None", "none", "", " ")
-
-
-def _text_inks(text: Text) -> bool:
-    """Whether ``text`` draws: a non-blank string in a colour with alpha.
-
-    The text's own alpha, when set, replaces its colour's alpha, as
-    matplotlib draws it (and as VALUE_LABEL_ON_DATA reads a label).
-    """
-    return bool(
-        drawn_in_tree(text)
-        and text.get_text().strip()
-        and _alpha(text.get_color(), text.get_alpha()) > 0
-    )
-
-
-def _line_inks(line: Line2D) -> bool:
-    """A stroke (a line style, a width, a colour) or a marker with a face or an edge."""
-    if not artist_shown(line):
-        return False
-    alpha = line.get_alpha()
-    if (
-        line.get_linestyle() not in _NO_STROKE
-        and line.get_linewidth() > 0
-        and _alpha(line.get_color(), alpha) > 0
-    ):
-        return True
-    marker = line.get_marker()
-    if marker is None or marker in _NO_STROKE or line.get_markersize() <= 0:
-        return False
-    try:
-        filled = MarkerStyle(marker, line.get_fillstyle()).is_filled()
-    except (TypeError, ValueError):
-        filled = True
-    face = filled and _alpha(line.get_markerfacecolor(), alpha) > 0
-    edge = (
-        line.get_markeredgewidth() > 0
-        and _alpha(line.get_markeredgecolor(), alpha) > 0
-    )
-    return face or edge
-
-
-def _patch_inks(patch: Patch) -> bool:
-    """A face, an edge (a width, a line style, a colour) or a hatch with a colour.
-
-    A patch's colours already carry its alpha.
-    """
-    if not artist_shown(patch):
-        return False
-    if patch.get_fill() and _alpha(patch.get_facecolor()) > 0:
-        return True
-    if (
-        patch.get_linewidth() > 0
-        and patch.get_linestyle() not in _NO_STROKE
-        and _alpha(patch.get_edgecolor()) > 0
-    ):
-        return True
-    return bool(
-        patch.get_hatch()
-        and patch.get_hatch_linewidth() > 0
-        and _alpha(patch.get_hatchcolor()) > 0
-    )
-
-
 def _any_alpha(colors: Any) -> bool:
     """Whether any of ``colors`` (one colour, or an RGBA array) has alpha."""
     return bool(np.any(to_rgba_array(colors)[:, 3] > 0))
@@ -281,13 +237,13 @@ def _inks(artist: Artist) -> bool:
     An artist of another type counts when it is shown at all.
     """
     if isinstance(artist, Line2D):
-        return _line_inks(artist)
+        return line_draws_stroke(artist) or line_draws_markers(artist)
     if isinstance(artist, Patch):
-        return _patch_inks(artist)
+        return patch_inks(artist)
     if isinstance(artist, Collection):
         return _collection_inks(artist)
     if isinstance(artist, Text):
-        return _text_inks(artist)
+        return text_inks(artist)
     return artist_shown(artist)
 
 
@@ -315,10 +271,10 @@ def _handle_artists(legend: Legend) -> list[Artist]:
 
 def _draws_ink(legend: Legend) -> bool:
     """Whether ``legend`` draws a frame, a title or an entry the reader sees."""
-    if legend.get_frame_on() and _patch_inks(legend.get_frame()):
+    if legend.get_frame_on() and patch_inks(legend.get_frame()):
         return True
     texts = [legend.get_title(), *legend.get_texts()]
-    if any(_text_inks(text) for text in texts):
+    if any(text_inks(text) for text in texts):
         return True
     return any(_inks(artist) for artist in _handle_artists(legend))
 
@@ -397,9 +353,13 @@ def _data_hits(box: Bbox, data: _Data, frame: Bbox, touch: float) -> list[_Hit]:
         return found
     lined: set[int] = set()
     for line in data.lines:
-        # The stroke reaches ``half`` past its path; contact within
-        # ``touch`` of the legend's edge is a touch.
-        reach = clipped.padded(line.half - touch)
+        # Where the line's clip lets it draw (the clip cuts the stroke, not
+        # the centre line), the stroke reaches ``half`` past its path;
+        # contact within ``touch`` of the legend's edge is a touch.
+        cut = within_clip_path(_clip(clipped, line.region), line.clip_path)
+        if cut is None:
+            continue
+        reach = cut.padded(line.half - touch)
         if reach.width > 0 and reach.height > 0 and _segments_hit(line, reach):
             found.append(_Hit("line", line.name))
             lined.add(line.key)
@@ -407,66 +367,125 @@ def _data_hits(box: Bbox, data: _Data, frame: Bbox, touch: float) -> list[_Hit]:
         if marks.key in lined or not len(marks.xy):
             continue
         run = _window(marks.xy[:, 0], marks.reach, clipped.x0, clipped.x1)
-        x, y = marks.xy[run, 0], marks.xy[run, 1]
-        nx = np.clip(x, clipped.x0, clipped.x1)
-        ny = np.clip(y, clipped.y0, clipped.y1)
         r = np.maximum(marks.r[run] - touch, 0.0)
-        if np.any((x - nx) ** 2 + (y - ny) ** 2 < r**2):
+        if discs_meet(marks.xy[run], r, clipped, marks.region, marks.clip_path):
             found.append(_Hit("marker", marks.name))
     return found
 
 
 class _Area(NamedTuple):
-    """A filled collection where it is drawn: the polygons that draw ink, and
-    where its clip lets them be drawn (a region and a clip path, in px)."""
+    """A filled or line collection where it is drawn: its kind, the items
+    that draw ink, and where its clip lets them be drawn (a region and a
+    clip path, in px)."""
 
+    kind: Covered
     name: str
     outlines: list[DrawnOutline]
     region: Bbox
     clip_path: Path | None
 
 
-def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
-    """The filled areas of one plot box that draw ink, and their clip.
+def _area_kind(coll: Collection, owner: Axes) -> tuple[Covered, str] | None:
+    """``("area", name)`` for a filled collection, ``("line", name)`` for a
+    line collection drawn in data coordinates on both axes; else ``None``."""
+    if isinstance(coll, PolyCollection):
+        return "area", _name(coll) or _UNNAMED_AREA
+    if isinstance(coll, LineCollection) and _is_data_line(coll, owner):
+        return "line", _name(coll)
+    return None
 
-    The polygons and their ink are read as ``dm.place_legend`` reads them
+
+def _dashed_outlines(
+    coll: LineCollection,
+    outlines: list[DrawnOutline],
+    renderer: RendererBase,
+    frame: Bbox,
+) -> list[DrawnOutline]:
+    """Each segment of a line collection where its dash pattern inks it.
+
+    As a dashed line's are read (VALUE_LABEL_ON_DATA's ``_dashed``): item
+    ``i`` takes the ``i``-th dash pattern as the renderer cycles them (scaled
+    to its width, in points), the pattern runs along the segment as the
+    canvas strokes it, and only the dashes are kept, each a MOVETO-LINETO
+    piece. A gap colour draws the gaps and a sketch moves the dashes, so
+    either counts solid; a segment whose dashes all fall outside the plot
+    box is left out.
+    """
+    # (offset, on/off) per item as Collection.draw hands them on, scaled.
+    styles = cast("list[tuple[float, Any]]", coll.get_linestyle())
+    if not styles or coll.get_gapcolor() is not None:
+        return outlines
+    sketched = coll.get_sketch_params() is not None
+    w, h = renderer.get_canvas_width_height()
+    found: list[DrawnOutline] = []
+    for outline in outlines:
+        offset, lengths = styles[outline.item % len(styles)]
+        dashes = _dash_px(
+            offset, lengths, renderer.points_to_pixels, sketched=sketched
+        )
+        if dashes is None:
+            found.append(outline)
+            continue
+        # The vertices the canvas strokes: NaN removed, cut to the canvas,
+        # where a re-entry starts the pattern over (as the Line2D recorder).
+        drawn = outline.path.cleaned(
+            remove_nans=True,
+            clip=(0.0, 0.0, w, h),
+            stroke_width=2 * outline.half,
+        )
+        vertices, joined = _joined(drawn)
+        a, b = _dashed(vertices, joined, dashes, frame, outline.half)
+        if not len(a):
+            continue
+        pieces = np.empty((2 * len(a), 2))
+        pieces[0::2], pieces[1::2] = a, b
+        codes = np.tile([Path.MOVETO, Path.LINETO], len(a))
+        found.append(outline._replace(path=Path(pieces, codes)))
+    return found
+
+
+def _areas(
+    owners: list[Axes], renderer: RendererBase, frame: Bbox
+) -> list[_Area]:
+    """The filled areas and data line collections of one plot box that draw
+    ink, and their clip.
+
+    The items and their ink are read as ``dm.place_legend`` reads them
     (:func:`~dartwork_mpl._figure_geometry.drawn_collection_outlines`), and
     the clip as a label's is (:func:`~dartwork_mpl._figure_geometry.clip_region`,
     :func:`~dartwork_mpl._figure_geometry.clip_path_px`: its clip box and the
-    extent of its clip path, when ``clip_on``).
+    extent of its clip path, when ``clip_on``). A line collection counts by
+    its dashes only (:func:`_dashed_outlines`).
     """
     found: list[_Area] = []
     for owner in owners:
         for coll in owner.collections:
-            if not isinstance(coll, PolyCollection) or not coll.get_visible():
+            kind = _area_kind(coll, owner) if coll.get_visible() else None
+            if kind is None:
                 continue
             try:
                 outlines = drawn_collection_outlines(coll, renderer)
+                if isinstance(coll, LineCollection):
+                    outlines = _dashed_outlines(coll, outlines, renderer, frame)
                 region = clip_region(coll)
                 clip_path = clip_path_px(coll)
             except BBOX_ERRORS:
                 continue
             if outlines:
-                found.append(
-                    _Area(
-                        _name(coll) or _UNNAMED_AREA,
-                        outlines,
-                        region,
-                        clip_path,
-                    )
-                )
+                found.append(_Area(*kind, outlines, region, clip_path))
     return found
 
 
 def _area_hits(
     box: Bbox, areas: list[_Area], frame: Bbox, touch: float
 ) -> list[_Hit]:
-    """Areas whose drawn outline ``box`` crosses, or holds whole.
+    """Areas whose drawn outline ``box`` crosses, or holds whole, and line
+    collections whose drawn segments it meets.
 
     The legend's box is cut to the plot box; contact within ``touch`` of its
-    edge is a touch. Each polygon's outline is stroked its ``half`` past its
-    path, and the area's clip cuts that stroke where it lets it draw, as
-    ``dm.place_legend`` reads it
+    edge is a touch. Each item's outline (a polygon's, a segment) is stroked
+    its ``half`` past its path, and the collection's clip cuts that stroke
+    where it lets it draw, as ``dm.place_legend`` reads it
     (:func:`~dartwork_mpl._figure_geometry.drawn_ink_meets`; a clip path
     that lets none of the box through draws none of it there). A box inside
     an area's interior meets no outline (``filled=False``).
@@ -476,7 +495,7 @@ def _area_hits(
         return []
     inner = clipped.padded(-touch)
     return [
-        _Hit("area", area.name)
+        _Hit(area.kind, area.name)
         for area in areas
         if any(
             drawn_ink_meets(
@@ -494,7 +513,7 @@ def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
     the clip box and to the clip path's extent when ``clip_on``; a clip path
     that lets none of it through, or a text drawn at alpha 0, draws nothing.
     """
-    if not _text_inks(text):
+    if not text_inks(text):
         return None
     try:
         box = _text_box(text, renderer)
@@ -537,7 +556,7 @@ class _Measured:
     def areas(self, plot: _PlotBox) -> list[_Area]:
         key = plot.owner.name
         if key not in self._areas:
-            self._areas[key] = _areas(plot.owners, self._renderer)
+            self._areas[key] = _areas(plot.owners, self._renderer, plot.frame)
         return self._areas[key]
 
 

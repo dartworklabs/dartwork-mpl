@@ -3,11 +3,15 @@
 Everything here is measured with matplotlib's public API on a figure drawn
 once. A trial legend is a detached :class:`~matplotlib.legend.Legend` built
 only to read its size, and a spot's box is where matplotlib anchors a box of
-that size (``Bbox.anchored``), so trying a spot draws nothing. The data a
-legend must keep clear of is read as drawn: line paths at their width
-(``Path.intersects_bbox``), markers and scatter points at their size, bars
-and other patches by their extents, filled collections by their paths, and
-the Axes' texts (value labels, annotations).
+that size (``Bbox.anchored``), so trying a spot draws nothing. The ink a
+legend must keep clear of is read as drawn, by the rules of
+:mod:`~dartwork_mpl._figure_geometry` that ``LEGEND_ON_DATA`` reads it by:
+line paths at their width (``Path.intersects_bbox``), markers and scatter
+points as discs reaching half their edge past their size, bars and other
+patches by their extents grown by half their edge, filled collections by
+their paths and edges, and the Axes' texts (value labels, annotations) with
+their background boxes. Only what inks counts (a style, a width, a colour
+with alpha), and only where its clip lets it draw.
 """
 
 from __future__ import annotations
@@ -28,10 +32,17 @@ from .._figure_geometry import (
     UNCLIPPED,
     clip_path_px,
     clip_region,
+    discs_meet,
     drawn_collection_outlines,
     drawn_in_tree,
     drawn_ink_meets,
+    drawn_patch_box,
+    drawn_scatter_discs,
+    drawn_text_box,
     drawn_tick_labels,
+    line_draws_markers,
+    line_draws_stroke,
+    marker_radius_pt,
     root_position,
     same_position_axes,
 )
@@ -75,10 +86,6 @@ _ANCHOR: dict[str, _Anchor] = {
     "center left": "W",
 }
 
-_NO_LINE = ("None", "none", "", " ")
-_NO_MARKER = (None, "None", "none", "", " ")
-_DEFAULT_SCATTER_SIZE = 36.0  # matplotlib's ``lines.markersize`` ** 2
-
 
 @dataclass
 class Ink:
@@ -89,22 +96,31 @@ class Ink:
     """
 
     lines: list[tuple[int, Path, float]] = field(default_factory=list)
-    filled: list[tuple[int, Path]] = field(default_factory=list)
+    #: A filled path and half the width of the edge drawn on it (0: none).
+    filled: list[tuple[int, Path, float]] = field(default_factory=list)
     points: list[tuple[int, np.ndarray, np.ndarray]] = field(
         default_factory=list
     )
+    #: Boxes already cut to where their artist's clip lets it draw.
     boxes: list[tuple[int, Bbox]] = field(default_factory=list)
-    #: Where a collection's clip lets it draw (its clip region and clip
-    #: path), by the ``id`` of the collection; an artist not here is drawn
-    #: wherever its ink lies.
+    #: Where a line's or a collection's clip lets it draw (its clip region
+    #: and clip path), by the ``id`` of the artist; an artist not here is
+    #: drawn wherever its ink lies.
     clips: dict[int, tuple[Bbox, Path | None]] = field(default_factory=dict)
+
+    def clip(self, key: int, artist: Artist) -> None:
+        """Record where ``artist``'s clip lets it draw, if anything clips it."""
+        region, clip_path = clip_region(artist), clip_path_px(artist)
+        if region is not UNCLIPPED or clip_path is not None:
+            self.clips[key] = (region, clip_path)
 
     def met(self, box: Bbox, clearance: float) -> set[int]:
         """The artists whose ink comes within ``clearance`` px of ``box``.
 
-        A clipped collection's ink counts where its clip lets it draw; the
-        clip cuts its stroke, not its centre line
-        (:func:`~dartwork_mpl._figure_geometry.drawn_ink_meets`).
+        A clipped artist's ink counts where its clip lets it draw; the clip
+        cuts its stroke (or its disc), not its centre line
+        (:func:`~dartwork_mpl._figure_geometry.drawn_ink_meets`,
+        :func:`~dartwork_mpl._figure_geometry.discs_meet`).
         """
         found: set[int] = set()
         grown = box.padded(clearance)
@@ -117,20 +133,19 @@ class Ink:
             region, clip_path = self.clips.get(key, (UNCLIPPED, None))
             if drawn_ink_meets(path, half, grown, region, clip_path):
                 found.add(key)
-        for key, path in self.filled:
+        for key, path, half in self.filled:
             if key in found:
                 continue
             region, clip_path = self.clips.get(key, (UNCLIPPED, None))
             if drawn_ink_meets(
-                path, 0.0, grown, region, clip_path, filled=True
+                path, half, grown, region, clip_path, filled=True
             ):
                 found.add(key)
         for key, xy, r in self.points:
-            if key in found or not len(xy):
+            if key in found:
                 continue
-            nx = np.clip(xy[:, 0], grown.x0, grown.x1)
-            ny = np.clip(xy[:, 1], grown.y0, grown.y1)
-            if np.any((xy[:, 0] - nx) ** 2 + (xy[:, 1] - ny) ** 2 < r**2):
+            region, clip_path = self.clips.get(key, (UNCLIPPED, None))
+            if discs_meet(xy, r, grown, region, clip_path):
                 found.add(key)
         return found
 
@@ -153,36 +168,43 @@ def _finite(xy: np.ndarray) -> np.ndarray:
 
 
 def _measure_line(ink: Ink, line: Any, renderer: RendererBase) -> None:
+    """A line's stroke at its width and its markers as discs, where drawn.
+
+    Only what the line inks (a stroke, markers with a face or an edge), and
+    the markers reaching half their edge past their size, as
+    ``LEGEND_ON_DATA`` reads them; every vertex counts as a marker.
+    """
+    stroke, markers = line_draws_stroke(line), line_draws_markers(line)
+    if not (stroke or markers):
+        return
     key = id(line)
     try:
         path = line.get_transform().transform_path(line.get_path())
+        ink.clip(key, line)
     except BBOX_ERRORS:
         return
-    if line.get_linestyle() not in _NO_LINE:
+    if stroke:
         ink.lines.append(
             (key, path, points_px(renderer, line.get_linewidth()) / 2)
         )
-    if line.get_marker() not in _NO_MARKER:
+    if markers:
         xy = _finite(path.vertices)
-        r = points_px(renderer, line.get_markersize()) / 2
+        r = points_px(renderer, marker_radius_pt(line))
         ink.points.append((key, xy, np.full(len(xy), r)))
 
 
 def _measure_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
     key = id(coll)
-    if isinstance(coll, PathCollection):
+    if isinstance(coll, PathCollection) and len(coll.get_sizes()):
+        # Scatter points as discs, each by its own size, edge and colours,
+        # as LEGEND_ON_DATA reads them (masked and transparent points out).
         try:
-            xy = coll.get_offset_transform().transform(coll.get_offsets())
+            xy, r = drawn_scatter_discs(coll, points_px(renderer, 1.0))
+            ink.clip(key, coll)
         except BBOX_ERRORS:
             return
-        xy = _finite(xy)
-        sizes = np.asarray(coll.get_sizes(), dtype=float)
-        if not len(sizes):
-            sizes = np.array([_DEFAULT_SCATTER_SIZE])
-        radii = np.resize(np.sqrt(sizes) / 2, len(xy))
-        ink.points.append(
-            (key, xy, np.asarray([points_px(renderer, v) for v in radii]))
-        )
+        if len(xy):
+            ink.points.append((key, xy, r))
         return
     try:
         # Only the items that draw ink, each where Collection.draw puts it
@@ -190,24 +212,24 @@ def _measure_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
         # only where its clip lets it draw: the rule LEGEND_ON_DATA reads
         # collections by too.
         outlines = drawn_collection_outlines(coll, renderer)
-        region, clip_path = clip_region(coll), clip_path_px(coll)
+        ink.clip(key, coll)
     except BBOX_ERRORS:
         return
     if not outlines:
         return
-    if region is not UNCLIPPED or clip_path is not None:
-        ink.clips[key] = (region, clip_path)
     stroked = isinstance(coll, LineCollection) or (
         isinstance(coll, ContourSet) and not coll.filled
     )
     if stroked:
         ink.lines.extend((key, o.path, o.half) for o in outlines)
     else:
-        ink.filled.extend((key, o.path) for o in outlines)
+        # A filled item with its edge: the stroke reaches half its width
+        # past the outline.
+        ink.filled.extend((key, o.path, o.half) for o in outlines)
 
 
-def _measure_box(ink: Ink, artist: Artist, bb: Bbox) -> None:
-    if bb.width > 0 and bb.height > 0:
+def _measure_box(ink: Ink, artist: Artist, bb: Bbox | None) -> None:
+    if bb is not None and bb.width > 0 and bb.height > 0:
         ink.boxes.append((id(artist), bb))
 
 
@@ -249,33 +271,29 @@ def _measure_frame(ink: Ink, ax: Axes, renderer: RendererBase) -> None:
 def measure_ink(ax: Axes, renderer: RendererBase) -> Ink:
     """The ink of ``ax`` and every twin drawn in its box.
 
-    Lines (with their markers), patches, collections other than meshes and
-    the Axes' texts; artists that are not visible draw no ink. A
-    non-rectilinear Axes (polar) adds its frame and tick labels, which it
-    draws inside its box (:func:`_measure_frame`).
+    Lines (with their markers), patches (their edges included), collections
+    other than meshes and the Axes' texts (their background boxes
+    included); only what an artist inks counts, where its clip lets it
+    draw. A non-rectilinear Axes (polar) adds its frame and tick labels,
+    which it draws inside its box (:func:`_measure_frame`).
     """
     ink = Ink()
     if ax.name != "rectilinear":
         _measure_frame(ink, ax, renderer)
     for owner in same_position_axes(ax):
         for line in owner.get_lines():
-            if line.get_visible():
-                _measure_line(ink, line, renderer)
+            _measure_line(ink, line, renderer)
         for patch in owner.patches:
-            if not patch.get_visible():
-                continue
             try:
-                _measure_box(ink, patch, patch.get_extents())
+                _measure_box(ink, patch, drawn_patch_box(patch, renderer))
             except BBOX_ERRORS:
                 continue
         for coll in owner.collections:
             if coll.get_visible() and not isinstance(coll, QuadMesh):
                 _measure_collection(ink, coll, renderer)
         for text in owner.texts:
-            if not text.get_visible() or not text.get_text().strip():
-                continue
             try:
-                _measure_box(ink, text, text.get_window_extent(renderer))
+                _measure_box(ink, text, drawn_text_box(text, renderer))
             except BBOX_ERRORS:
                 continue
     return ink

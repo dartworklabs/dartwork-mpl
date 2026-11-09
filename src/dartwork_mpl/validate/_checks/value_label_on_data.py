@@ -51,9 +51,15 @@ from matplotlib.path import Path
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import Bbox, IdentityTransform
 
+from ..._figure_geometry import (
+    UNCLIPPED,
+    drawn_axes,
+    drawn_scatter_discs,
+    marker_radius_pt,
+    same_position_axes,
+)
 from ..._figure_geometry import clip_path_px as _clip_path
 from ..._figure_geometry import clip_region as _clip_region
-from ..._figure_geometry import drawn_axes, same_position_axes
 from ..._figure_geometry import within_clip_path as _within_path
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
@@ -61,8 +67,11 @@ from ._registry import register_check, register_fix
 from .value_label_decimal import _value_label
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import GraphicsContextBase
+    from matplotlib.collections import Collection
     from matplotlib.figure import Figure
     from matplotlib.transforms import Transform
     from matplotlib.typing import ColorType
@@ -124,6 +133,9 @@ class _Polyline(NamedTuple):
     half: float  # half the line width, px
     name: str
     key: int  # ``id`` of the Line2D, so its markers are not counted twice
+    # Where the line's clip lets it draw (LEGEND_ON_DATA cuts by it).
+    region: Bbox = UNCLIPPED
+    clip_path: Path | None = None
 
 
 class _Markers(NamedTuple):
@@ -134,6 +146,9 @@ class _Markers(NamedTuple):
     reach: float  # the largest radius
     name: str
     key: int  # ``id`` of the owning Line2D, ``_SCATTER`` for a scatter
+    # Where the artist's clip lets it draw (LEGEND_ON_DATA cuts by it).
+    region: Bbox = UNCLIPPED
+    clip_path: Path | None = None
 
 
 class _Data(NamedTuple):
@@ -368,8 +383,12 @@ def _bars(owners: list[Axes], frame: Bbox, renderer: RendererBase) -> _Bars:
     )
 
 
-def _is_data_line(line: Line2D, owner: Axes) -> bool:
-    """Drawn in data coordinates on both axes (``axhline``, ``axline`` are not)."""
+def _is_data_line(line: Line2D | Collection, owner: Axes) -> bool:
+    """Drawn in data coordinates on both axes (``axhline``, ``axline`` are not).
+
+    A line, or a line collection (``vlines`` and the like): one given an
+    axis in Axes coordinates is a reference, as ``axvline`` is.
+    """
     try:
         in_x, in_y = line.get_transform().contains_branch_seperately(
             owner.transData
@@ -439,32 +458,15 @@ class _Recorder(RendererBase):
         """The stroke's dash offset and on/off lengths in px; None: solid.
 
         ``Line2D.draw`` hands the renderer its pattern already scaled to
-        the width, in points. An odd list repeats (as SVG and PDF dash).
-        A sketched stroke wanders off its path, so its dashes cannot be
-        placed: it counts as solid, which can only add hits.
+        the width, in points (:func:`_dash_px`).
         """
         offset, lengths = gc.get_dashes()
-        if lengths is None or gc.get_sketch_params() is not None:
-            return None
-        try:
-            on_off = np.asarray(
-                self.points_to_pixels(np.asarray(lengths, dtype=np.float64)),
-                dtype=np.float64,
-            ).ravel()
-            shift = float(np.asarray(self.points_to_pixels(float(offset))))
-        except (TypeError, ValueError):
-            return None
-        if (
-            not on_off.size
-            or not np.isfinite(on_off).all()
-            or (on_off < 0).any()
-            or on_off.sum() <= 0
-            or not np.isfinite(shift)
-        ):
-            return None
-        if on_off.size % 2:
-            on_off = np.concatenate([on_off, on_off])
-        return shift, on_off
+        return _dash_px(
+            offset,
+            lengths,
+            self.points_to_pixels,
+            sketched=gc.get_sketch_params() is not None,
+        )
 
     def draw_markers(
         self,
@@ -488,6 +490,41 @@ class _Recorder(RendererBase):
         line.draw(self)
         marks = np.concatenate(self.marks) if self.marks else np.empty((0, 2))
         return self.strokes, marks
+
+
+def _dash_px(
+    offset: object,
+    lengths: object,
+    to_px: Callable[[ArrayLike], ArrayLike],
+    *,
+    sketched: bool,
+) -> tuple[float, np.ndarray] | None:
+    """A dash pattern (offset and on/off lengths, points) in px; None: solid.
+
+    ``to_px`` is the renderer's ``points_to_pixels``. An odd list repeats
+    (as SVG and PDF dash). A sketched stroke wanders off its path, so its
+    dashes cannot be placed: it counts as solid, which can only add hits.
+    """
+    if lengths is None or sketched:
+        return None
+    try:
+        on_off = np.asarray(
+            to_px(np.asarray(lengths, dtype=np.float64)), dtype=np.float64
+        ).ravel()
+        shift = float(np.asarray(to_px(float(offset or 0.0))))  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    if (
+        not on_off.size
+        or not np.isfinite(on_off).all()
+        or (on_off < 0).any()
+        or on_off.sum() <= 0
+        or not np.isfinite(shift)
+    ):
+        return None
+    if on_off.size % 2:
+        on_off = np.concatenate([on_off, on_off])
+    return shift, on_off
 
 
 def _without_effects(line: Line2D) -> Line2D:
@@ -649,44 +686,33 @@ def _line(
         _without_effects(line) if line.get_path_effects() else line
     )
     name, key = _name(line), id(line)
+    region, clip_path = _clip_region(line), _clip_path(line)
     drawn = [_polyline(stroke, frame, name, key) for stroke in strokes]
-    lines = [polyline for polyline in drawn if polyline is not None]
-    r = np.full(
-        len(xy),
-        _px(line.get_markersize() / 2 + line.get_markeredgewidth() / 2, fig),
-    )
+    lines = [
+        p._replace(region=region, clip_path=clip_path)
+        for p in drawn
+        if p is not None
+    ]
+    r = np.full(len(xy), _px(marker_radius_pt(line), fig))
     seen = _meets_frame(xy, r, frame)
     if not seen.any():
         return lines, None
-    return lines, _sorted_markers(xy[seen], r[seen], name, key)
+    marks = _sorted_markers(xy[seen], r[seen], name, key)
+    return lines, marks._replace(region=region, clip_path=clip_path)
 
 
 def _scatter(
     coll: PathCollection, frame: Bbox, fig: Figure, key: int
 ) -> _Markers | None:
-    # A masked x or y (``scatter`` masks both where x, y, s or c is masked)
-    # is not drawn: NaN keeps it out of the plot box below.
-    offsets = np.ma.filled(
-        np.ma.asarray(coll.get_offsets(), dtype=np.float64), np.nan
-    ).reshape(-1, 2)
-    sizes = np.asarray(coll.get_sizes(), dtype=np.float64)
-    if not len(offsets) or not sizes.size:
-        return None
-    n = len(offsets)
-    xy = coll.get_offset_transform().transform(offsets)
-    faces = np.asarray(coll.get_facecolor(), dtype=np.float64).reshape(-1, 4)
-    edges = np.asarray(coll.get_edgecolor(), dtype=np.float64).reshape(-1, 4)
-    widths = np.asarray(coll.get_linewidth(), dtype=np.float64).ravel()
-    face = np.resize(faces[:, 3], n) if len(faces) else np.zeros(n)
-    edge = np.resize(edges[:, 3], n) if len(edges) else np.zeros(n)
-    width = np.resize(widths, n) if widths.size else np.zeros(n)
-    radius = _px(1.0, fig) * (np.sqrt(np.resize(sizes, n)) + width) / 2
+    """The scatter points drawn into the plot box, read as ``dm.place_legend``
+    reads them (:func:`~dartwork_mpl._figure_geometry.drawn_scatter_discs`)."""
+    xy, radius = drawn_scatter_discs(coll, _px(1.0, fig))
     keep = _meets_frame(xy, radius, frame)
-    keep &= (face > 0) | ((edge > 0) & (width > 0))
-    keep &= radius > 0
     if not keep.any():
         return None
-    return _sorted_markers(xy[keep], radius[keep], _name(coll), key)
+    return _sorted_markers(xy[keep], radius[keep], _name(coll), key)._replace(
+        region=_clip_region(coll), clip_path=_clip_path(coll)
+    )
 
 
 def _measure(

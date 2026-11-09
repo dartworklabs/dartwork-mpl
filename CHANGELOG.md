@@ -144,7 +144,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   warning per legend, every Axes legend (insets from `ax.inset_axes` too)
   and figure legend whose box meets the bars, lines or markers of any plot
   box (twin Axes and insets included, measured as `VALUE_LABEL_ON_DATA`
-  measures data), the outline of a filled area there (`fill_between`
+  measures data, each where its own clip lets it draw), the line
+  collections drawn there in data coordinates (`vlines`, `hlines`,
+  errorbar bars, stem lines, `eventplot`, a `LineCollection`; reported as
+  `"line"`, by the dashes they draw, not their gaps; one with an axis in
+  Axes coordinates is a reference, as an `axvline` is), the outline of a filled area there (`fill_between`
   bands, `stackplot` layers, violin bodies, `broken_barh`: the legend
   crosses its edge, down to a violin's thinnest tail, or holds it whole;
   inside a region's plain interior, such as one of a phase diagram's
@@ -241,9 +245,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   data.** `loc="best"` (no side named) now tries eight inside spots (the
   corners, upper and lower centre, then centre right and left) for one to
   three columns and takes the first whose box no data ink comes within
-  2 pt of: lines at their width, markers and scatter points at their size,
-  bars and other patches, filled areas and the Axes' texts, twins
-  included; on a polar Axes (any non-rectilinear one) also its frame (the
+  2 pt of: lines at their width, markers and scatter points at their size
+  with half the edge they draw (a half-filled marker's other face too),
+  bars and other patches with half their edge, filled areas with their
+  edges and the Axes' texts with their background boxes (`bbox=`, drawn
+  even under glyphs at alpha 0), twins included; only what draws ink
+  counts, so a line, scatter, patch or text at alpha 0, clipped away or
+  masked, or an edge in no colour, no longer sends the legend from a free
+  spot; on a polar Axes (any non-rectilinear one) also its frame (the
   circle, at its width) and the tick labels it draws inside its box (the
   angles round the circle, the radii inside it), so a radar's legend no
   longer takes the bottom of the circle over two angle labels on a slide:
