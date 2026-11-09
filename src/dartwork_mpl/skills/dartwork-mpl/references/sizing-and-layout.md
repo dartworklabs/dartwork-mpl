@@ -29,6 +29,15 @@ Report widths hold up to 16 / 24 / 32 bars, slides 10 / 15; more take the
 widest, where crowded labels are still hidden and reported. A journal
 column (`scientific`) stays 9 cm.
 
+Category names under the x axis go in too: `labels=names`. `"default"`
+and `"grouped"` then take the narrowest width of the preset's own table
+above, never narrower than without them, at which the names, measured at
+the preset's tick label font, stand flat half an em apart (closer,
+`dm.simple_layout` wraps or turns them). Past the widest, the widest, and
+the layout wraps or turns them. Names that fit, and calls without
+`labels`, keep the canvas they had; a journal column stays 9 cm and the
+other kinds keep their width.
+
 Slides: a 16:9 slide is 25.4 × 14.29 cm; under a 28 pt title with 1 cm
 margins a chart has 23.4 × 10.5 cm. `presentation` is `scientific` with every
 point size × 2.6 (23.4 / 9 cm: text 19.5 pt, ticks 18.2 pt, lines 2.6 pt), so
@@ -54,6 +63,8 @@ import dartwork_mpl as dm
 dm.style.use("report")
 quarters, series = ["Q1", "Q2", "Q3", "Q4"], 3
 dm.figsize_for(n_points=len(quarters), n_series=series)  # 12 x 9 cm
+regions = ["North region", "South region", "East region", "West region", "Central region"]
+dm.figsize_for(n_points=len(regions), n_series=1, labels=regions)  # 12 cm, not 9: flat names
 dm.figsize_for("barh", n_points=10, n_series=1)  # 14.5 cm, long labels
 dm.figsize_for("grouped", n_points=9, n_series=3)  # 14.5 cm, 27 bars
 dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm

@@ -274,7 +274,7 @@
       "use_case": "Two-y-scale chart (price + volume) with each axis color-coded to its data"
     },
     "violin": {
-      "advanced_apis": "violinplot with custom face colors via dm.cspace, median + p25/p75 dots, ax.set_xticklabels with rotation",
+      "advanced_apis": "violinplot with custom face colors via dm.cspace, median + p25/p75 dots, dm.figsize_for(labels=) sized for the region names",
       "basic_counterpart": "violin",
       "data_shape": "groups: dict[str, list[float]]",
       "difficulty": "intermediate",

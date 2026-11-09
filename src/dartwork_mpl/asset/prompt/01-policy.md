@@ -36,8 +36,10 @@ replace explicit sizes with template dimensions or a default.
 
 These are defaults, not caps or journal/slide standards: any size the user, a
 journal or a template names wins, through `dm.figsize`. `dm.figsize_for(kind,
-n_points=, n_series=, dual_axis=, nrows=, ncols=)` picks the width from the
-kind (`"barh"`, `"matrix"`, `"slide"`, ...) and the data density, and
+n_points=, n_series=, labels=, dual_axis=, nrows=, ncols=)` picks the width from
+the kind (`"barh"`, `"matrix"`, `"slide"`, ...) and the data density, given the
+category names (`labels=names`) the narrowest of its widths that keeps them
+flat half an em apart, and
 `dm.grid_shape(n)` lays out `n` small multiples; both are provisional
 (`dm.EXPERIMENTAL`). Reuse the recommender/templates for the chart type.
 `presentation` is `scientific` with every point size × 2.6 (text, lines,

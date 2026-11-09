@@ -114,26 +114,59 @@ def test_the_layouts_turn_of_close_codes_is_not_called_unneeded() -> None:
     assert not _unneeded(fig)
 
 
+REGIONS = ["North America", "EMEA", "LATAM", "APAC", "MEA"]
+
+
+def _regions_turned(preset: str):
+    """Five region violins on the preset's canvas for five positions, the
+    names turned 20 degrees by hand (as ``advanced/violin`` once did)."""
+    dm.style.use(preset)
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=5, n_series=1))
+    rng = np.random.default_rng(42)
+    ax.violinplot(
+        [rng.normal(72, 8, 200) for _ in REGIONS],
+        showextrema=False,
+        widths=0.65,
+    )
+    ax.set_xticks(np.arange(1, 6), REGIONS, rotation=20, ha="right")
+    ax.set(xlabel="Region", ylabel="CSAT score (0-100)", ylim=(40, 105))
+    dm.simple_layout(fig, margin=dm.inch(0.12))
+    return fig, ax
+
+
+def _flat_room_and_slot_em(fig, ax) -> tuple[float, float]:
+    """Unturned and centred: the least room between neighbours, and the
+    axis width over the label count less the widest label (ems)."""
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    labels = ax.get_xticklabels()
+    em = labels[0].get_fontsize() * fig.dpi / 72
+    row = sorted(
+        (
+            label.get_transform().transform(label.get_position())[0],
+            renderer.get_text_width_height_descent(
+                label.get_text(), label.get_fontproperties(), ismath=False
+            )[0],
+        )
+        for label in labels
+    )
+    room = min(b - a - (wa + wb) / 2 for (a, wa), (b, wb) in pairwise(row))
+    slot = ax.get_window_extent(renderer).width / len(labels)
+    return room / em, (slot - max(w for _, w in row)) / em
+
+
 @pytest.mark.parametrize("preset", ["scientific", "report", "presentation"])
 def test_a_long_name_between_short_ones_keeps_its_turn(preset: str) -> None:
-    """``advanced/violin`` turns its region names. Flat, its short
-    neighbours would leave 'North America' room in ``scientific`` and
-    ``report``, but the name overruns its share of the axis (0.3 to
-    2.6 em past it): the check keeps quiet, as on main."""
-    from pathlib import Path
-
-    source = (
-        Path(dm.__file__).parent
-        / "asset/prompt/05-templates/advanced/violin.py"
-    ).read_text(encoding="utf-8")
-    ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
-    source = source[: min(i for e in ends if (i := source.find(e)) >= 0)]
-    source = source.replace(
-        'dm.style.use("scientific")', f'dm.style.use("{preset}")'
-    )
-    namespace: dict = {}
-    exec(compile(source, "violin", "exec"), namespace)
-    assert not _unneeded(namespace["fig"])
+    """Region names turned by hand. Flat, short neighbours would leave
+    'North America' half an em in ``scientific`` and ``report``, but the
+    name overruns its share of the axis: the check keeps quiet, as on
+    main."""
+    fig, ax = _regions_turned(preset)
+    room, slot = _flat_room_and_slot_em(fig, ax)
+    if preset != "presentation":
+        # precondition: only the slot keeps the turn
+        assert room >= 0.5 and slot < 0.5, (room, slot)
+    assert not _unneeded(fig)
 
 
 def test_the_check_and_the_layout_share_the_clearance() -> None:

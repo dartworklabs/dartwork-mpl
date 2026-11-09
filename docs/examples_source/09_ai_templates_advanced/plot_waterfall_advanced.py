@@ -59,7 +59,11 @@ pos_color = dm.color("dc.green5").to_hex()
 neg_color = dm.color("dc.amber5").to_hex()
 tot_color = dm.color("oc.gray6").to_hex()
 
-fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(items), n_series=1))
+# The preset's canvas for these steps; their names decide how wide it is for
+# them to stand flat.
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for(n_points=len(items), n_series=1, labels=labels)
+)
 
 totals = ax.bar(
     xs[is_total],
@@ -94,8 +98,8 @@ for i in range(len(items) - 1):
 dm.label_bars(ax, steps, sign="+", color="series")
 dm.label_bars(ax, totals)
 
-ax.set_xticks(xs)
-ax.set_xticklabels(labels, rotation=30, ha="right")
+# Names flat; where they would not clear, dm.simple_layout wraps or turns them.
+ax.set_xticks(xs, labels)
 ax.set_ylabel("Energy (MWh)")
 ax.set_ylim(0, max(level) * 1.15)
 
