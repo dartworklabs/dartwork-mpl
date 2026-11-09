@@ -170,8 +170,9 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   geometry rather than silently deleting data or shrinking fonts.
 - `tight_layout()` is **forbidden** (lint critical).
 - For nested GridSpec, this helper updates root outer margins; it does not
-  solve nested local margins. `SubFigure` is not accepted (missing
-  `get_size_inches`). For exact whole-canvas allocations use native SubFigure
+  solve nested local margins. A `SubFigure` itself is not accepted (missing
+  `get_size_inches`); on the root Figure each SubFigure's grid is fitted in
+  its own box. For exact whole-canvas allocations use native SubFigure
   containers, zero inter-container gaps and native local GridSpec margins.
   Measure container bounds, Axes data bounds and content extents separately;
   do not silently alter allocations. See the executable `03-recipes` guide.

@@ -10,8 +10,59 @@ from .._figure_geometry import iter_figure_level_extents
 from ._margins import _Sides
 
 
+def _holder_reservations(holder: Any, renderer: Any) -> _Sides:
+    """Space (fraction of ``holder``'s box) each edge of a SubFigure's box
+    keeps for the figure-level artists that lie over it.
+
+    Those of ``holder`` and of every (Sub)Figure above it, each assigned to
+    an edge by its own (Sub)Figure (:func:`_reservation_edge`): a figure
+    suptitle over the top row of SubFigures pushes their grids down, a
+    SubFigure's own suptitle its own grid.
+    """
+    box = holder.bbox
+    w, h = box.width, box.height
+    res = {"left": 0.0, "right": 0.0, "bottom": 0.0, "top": 0.0}
+    dpi = holder.get_figure(root=True).dpi
+    owner = holder
+    while owner is not None:
+        ob = owner.bbox
+        for art, ext in iter_figure_level_extents(
+            owner, renderer, subfigures=False
+        ):
+            if (
+                not art.get_in_layout()
+                or not (ext.x0 < box.x1 and ext.x1 > box.x0)
+                or not (ext.y0 < box.y1 and ext.y1 > box.y0)
+            ):
+                continue
+            edge = _reservation_edge(
+                owner,
+                art,
+                (ext.x0 - ob.x0) / ob.width,
+                (ext.x1 - ob.x0) / ob.width,
+                (ext.y0 - ob.y0) / ob.height,
+                (ext.y1 - ob.y0) / ob.height,
+            )
+            gap = float(getattr(art, "_dm_layout_gap_pt", 0.0)) * dpi / 72.0
+            reach = {
+                "left": ext.x1 - box.x0 + gap,
+                "right": box.x1 - ext.x0 + gap,
+                "bottom": ext.y1 - box.y0 + gap,
+                "top": box.y1 - ext.y0 + gap,
+            }[edge]
+            res[edge] = max(res[edge], reach)
+        parent = owner.get_figure(root=False)
+        owner = None if parent is owner else parent
+    return _Sides(
+        left=res["left"] / w,
+        right=res["right"] / w,
+        bottom=res["bottom"] / h,
+        top=res["top"] / h,
+    )
+
+
 def _figure_artist_reservations(
-    fig: Figure, renderer: Any, fw_px: float, fh_px: float
+    fig: Figure, renderer: Any, fw_px: float, fh_px: float, holder: Any = None
 ) -> _Sides:
     """Space (in figure fraction) each edge must reserve for fig-level artists.
 
@@ -27,8 +78,11 @@ def _figure_artist_reservations(
     zero when no figure-level artists are present (so the layout math is
     unchanged in the common case). A SubFigure's own suptitle, texts and
     legends reserve nothing here: they sit in its box, not on the edges of
-    the root grid this sizes.
+    the root grid this sizes. A grid held by a SubFigure (``holder``) is
+    sized in that SubFigure's box instead (:func:`_holder_reservations`).
     """
+    if holder is not None and holder is not fig:
+        return _holder_reservations(holder, renderer)
     res_l = res_r = res_b = res_t = 0.0
     for art, ext in iter_figure_level_extents(fig, renderer, subfigures=False):
         if not art.get_in_layout():
