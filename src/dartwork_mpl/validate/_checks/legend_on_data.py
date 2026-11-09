@@ -41,15 +41,7 @@ contours and polar plots are not data here.
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    NamedTuple,
-    TypeAlias,
-    TypedDict,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, TypedDict
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -59,25 +51,28 @@ from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 from matplotlib.offsetbox import DrawingArea, OffsetBox
 from matplotlib.patches import Patch
-from matplotlib.path import Path
 from matplotlib.text import Text
-from matplotlib.transforms import Affine2D
 
-from ..._figure_geometry import same_position_axes
+from ..._figure_geometry import (
+    DrawnOutline,
+    artist_shown,
+    clip_path_px,
+    clip_region,
+    drawn_collection_outlines,
+    same_position_axes,
+    within_clip_path,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
 from .value_label_on_data import (
     _alpha,
     _clip,
-    _clip_path,
-    _clip_region,
     _measure,
     _name,
     _segments_hit,
     _text_box,
     _window,
-    _within_path,
 )
 
 if TYPE_CHECKING:
@@ -85,6 +80,7 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend
+    from matplotlib.path import Path
     from matplotlib.transforms import Bbox
 
     from .value_label_on_data import _Data
@@ -185,15 +181,6 @@ def _owners(fig: Figure) -> list[_Owner]:
 _NO_STROKE = ("None", "none", "", " ")
 
 
-def _shown(artist: Artist) -> bool:
-    """Visible and not at an artist alpha of 0 (one per item: any above 0)."""
-    alpha = artist.get_alpha()
-    return bool(
-        artist.get_visible()
-        and (alpha is None or np.any(np.asarray(alpha, dtype=float) > 0))
-    )
-
-
 def _text_inks(text: Text) -> bool:
     """Whether ``text`` draws: a non-blank string in a colour with alpha.
 
@@ -209,7 +196,7 @@ def _text_inks(text: Text) -> bool:
 
 def _line_inks(line: Line2D) -> bool:
     """A stroke (a line style, a width, a colour) or a marker with a face or an edge."""
-    if not _shown(line):
+    if not artist_shown(line):
         return False
     alpha = line.get_alpha()
     if (
@@ -238,7 +225,7 @@ def _patch_inks(patch: Patch) -> bool:
 
     A patch's colours already carry its alpha.
     """
-    if not _shown(patch):
+    if not artist_shown(patch):
         return False
     if patch.get_fill() and _alpha(patch.get_facecolor()) > 0:
         return True
@@ -262,7 +249,7 @@ def _any_alpha(colors: Any) -> bool:
 
 def _collection_inks(collection: Collection) -> bool:
     """Any face or edge with alpha, or a hatch; scatter points at size 0 draw nothing."""
-    if not _shown(collection):
+    if not artist_shown(collection):
         return False
     sizes = getattr(collection, "get_sizes", None)
     if sizes is not None:
@@ -298,7 +285,7 @@ def _inks(artist: Artist) -> bool:
         return _collection_inks(artist)
     if isinstance(artist, Text):
         return _text_inks(artist)
-    return _shown(artist)
+    return artist_shown(artist)
 
 
 def _handle_artists(legend: Legend) -> list[Artist]:
@@ -423,105 +410,24 @@ def _data_hits(box: Bbox, data: _Data, frame: Bbox, touch: float) -> list[_Hit]:
     return found
 
 
-class _Outline(NamedTuple):
-    """One polygon an area draws: its path in display px and the half width
-    its own edge is stroked at (0 when it draws no edge)."""
-
-    path: Path
-    half: float
-
-
 class _Area(NamedTuple):
     """A filled collection where it is drawn: the polygons that draw ink, and
     where its clip lets them be drawn (a region and a clip path, in px)."""
 
     name: str
-    outlines: list[_Outline]
+    outlines: list[DrawnOutline]
     region: Bbox
     clip_path: Path | None
-
-
-def _drawn_paths(coll: PolyCollection) -> list[tuple[int, Path]]:
-    """Each item's path in display px, placed as ``Collection.draw`` places
-    it: its own transform (``get_transforms``), the collection's transform,
-    then its offset in display px; the lists repeat to the longest. Each
-    comes with its item index, which picks its colours and width."""
-    paths = list(coll.get_paths())
-    if not paths:
-        return []
-    transform = coll.get_transform()
-    items = np.asarray(coll.get_transforms(), dtype=float).reshape(-1, 3, 3)
-    offsets = np.asarray(coll.get_offsets(), dtype=float).reshape(-1, 2)
-    shifts = (
-        coll.get_offset_transform().transform(offsets)
-        if len(offsets)
-        else np.zeros((0, 2))
-    )
-    drawn: list[tuple[int, Path]] = []
-    for i in range(max(len(paths), len(shifts))):
-        path = paths[i % len(paths)]
-        if len(items):
-            path = Affine2D(items[i % len(items)]).transform_path(path)
-        path = transform.transform_path(path)
-        if len(shifts):
-            dx, dy = shifts[i % len(shifts)]
-            if not (np.isfinite(dx) and np.isfinite(dy)):
-                continue
-            path = Affine2D().translate(dx, dy).transform_path(path)
-        drawn.append((i, path))
-    return drawn
-
-
-def _drawn_outlines(
-    coll: PolyCollection, renderer: RendererBase
-) -> list[_Outline]:
-    """The polygons ``coll`` draws ink with, each by its own style.
-
-    Item ``i`` takes its face, edge, hatch colour and line width as the
-    renderer cycles them (each list repeating); its alpha is its colour's
-    times the collection's alpha for it (one value, or one per polygon;
-    matplotlib also writes that alpha into the colours). An item whose
-    face, hatch and edge all draw nothing is left out, and an edge counts
-    at its own width, not the widest of the collection.
-    """
-    faces = np.asarray(coll.get_facecolor(), dtype=float).reshape(-1, 4)
-    edges = np.asarray(coll.get_edgecolor(), dtype=float).reshape(-1, 4)
-    widths = np.asarray(coll.get_linewidth(), dtype=float).reshape(-1)
-    alpha = coll.get_alpha()
-    alphas = np.asarray(1.0 if alpha is None else alpha, dtype=float).reshape(
-        -1
-    )
-    hatches = (
-        np.asarray(coll.get_hatchcolor(), dtype=float).reshape(-1, 4)
-        if coll.get_hatch() and coll.get_hatch_linewidth() > 0
-        else np.zeros((0, 4))
-    )
-    found: list[_Outline] = []
-    for i, path in _drawn_paths(coll):
-        a = float(alphas[i % len(alphas)]) if len(alphas) else 1.0
-        face = bool(len(faces)) and faces[i % len(faces), 3] * a > 0
-        hatch = bool(len(hatches)) and hatches[i % len(hatches), 3] * a > 0
-        width = float(widths[i % len(widths)]) if len(widths) else 0.0
-        edge = (
-            bool(len(edges)) and width > 0 and edges[i % len(edges), 3] * a > 0
-        )
-        if not (face or edge or hatch):
-            continue
-        half = (
-            float(np.asarray(renderer.points_to_pixels(width))) / 2
-            if edge
-            else 0.0
-        )
-        found.append(_Outline(path, half))
-    return found
 
 
 def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
     """The filled areas of one plot box that draw ink, and their clip.
 
-    The clip is read as a label's is (:func:`_clip_region`,
-    :func:`_clip_path`: its clip box and the extent of its clip path, when
-    ``clip_on``); those read only the Artist clip API.
+    The polygons and their ink are read as ``dm.place_legend`` reads them
+    (:func:`~dartwork_mpl._figure_geometry.drawn_collection_outlines`), and
+    the clip as a label's is (:func:`~dartwork_mpl._figure_geometry.clip_region`,
+    :func:`~dartwork_mpl._figure_geometry.clip_path_px`: its clip box and the
+    extent of its clip path, when ``clip_on``).
     """
     found: list[_Area] = []
     for owner in owners:
@@ -529,9 +435,9 @@ def _areas(owners: list[Axes], renderer: RendererBase) -> list[_Area]:
             if not isinstance(coll, PolyCollection) or not coll.get_visible():
                 continue
             try:
-                outlines = _drawn_outlines(coll, renderer)
-                region = _clip_region(cast("Text", coll))
-                clip_path = _clip_path(cast("Text", coll))
+                outlines = drawn_collection_outlines(coll, renderer)
+                region = clip_region(coll)
+                clip_path = clip_path_px(coll)
             except BBOX_ERRORS:
                 continue
             if outlines:
@@ -567,7 +473,7 @@ def _area_hits(
             reach = clipped.padded(outline.half - touch)
             if reach.width <= 0 or reach.height <= 0:
                 continue
-            cut = _within_path(_clip(reach, area.region), area.clip_path)
+            cut = within_clip_path(_clip(reach, area.region), area.clip_path)
             if cut is not None and outline.path.intersects_bbox(
                 cut, filled=False
             ):
@@ -591,7 +497,7 @@ def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
         return None
     if box is None:
         return None
-    return _within_path(_clip(box, _clip_region(text)), _clip_path(text))
+    return within_clip_path(_clip(box, clip_region(text)), clip_path_px(text))
 
 
 def _text_hits(

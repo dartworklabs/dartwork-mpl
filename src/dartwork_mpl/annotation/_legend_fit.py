@@ -21,10 +21,11 @@ import numpy as np
 from matplotlib.collections import LineCollection, PathCollection, QuadMesh
 from matplotlib.contour import ContourSet
 from matplotlib.legend import Legend
-from matplotlib.transforms import Affine2D, Bbox
+from matplotlib.transforms import Bbox
 
 from .._figure_geometry import (
     BBOX_ERRORS,
+    drawn_collection_paths,
     drawn_tick_labels,
     same_position_axes,
 )
@@ -146,42 +147,6 @@ def _measure_line(ink: Ink, line: Any, renderer: RendererBase) -> None:
         ink.points.append((key, xy, np.full(len(xy), r)))
 
 
-def _collection_paths(coll: Any) -> list[Path]:
-    """Each path of ``coll`` where matplotlib draws it, in display px.
-
-    As ``Collection.draw`` does: item ``i`` is path ``i``, through its own
-    transform (``get_transforms``) and the collection's, then moved by
-    offset ``i`` in display px (``get_offset_transform``), each list
-    repeated to the longest. ``ax.quiver`` and a ``LineCollection`` given
-    ``offsets`` place their paths this way; without the offsets their ink
-    would sit at the origin.
-    """
-    paths = list(coll.get_paths())
-    if not paths:
-        return []
-    transform = coll.get_transform()
-    items = np.asarray(coll.get_transforms(), dtype=float).reshape(-1, 3, 3)
-    offsets = np.asarray(coll.get_offsets(), dtype=float).reshape(-1, 2)
-    shifts = (
-        coll.get_offset_transform().transform(offsets)
-        if len(offsets)
-        else np.zeros((0, 2))
-    )
-    found: list[Path] = []
-    for i in range(max(len(paths), len(shifts))):
-        path = paths[i % len(paths)]
-        if len(items):
-            path = Affine2D(items[i % len(items)]).transform_path(path)
-        path = transform.transform_path(path)
-        if len(shifts):
-            dx, dy = shifts[i % len(shifts)]
-            if not (np.isfinite(dx) and np.isfinite(dy)):
-                continue
-            path = Affine2D().translate(dx, dy).transform_path(path)
-        found.append(path)
-    return found
-
-
 def _measure_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
     key = id(coll)
     if isinstance(coll, PathCollection):
@@ -199,7 +164,9 @@ def _measure_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
         )
         return
     try:
-        paths = _collection_paths(coll)
+        # Where Collection.draw puts each item (offsets included), the one
+        # rule LEGEND_ON_DATA reads collections by too.
+        paths = [path for _i, path in drawn_collection_paths(coll)]
     except BBOX_ERRORS:
         return
     stroked = isinstance(coll, LineCollection) or (
