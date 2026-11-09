@@ -1,12 +1,20 @@
 """TICK_ROTATION: unnecessary or missing x-axis tick-label rotation.
 
-A turn is unneeded where the labels, flat, would surely stand half an em
-apart (``_FLAT_CLEARANCE_EM``): the closest two ticks less the widest
-unturned label. No neighbour pair leaves less, so ``dm.simple_layout``,
-which turns bottom labels closer than half an em, keeps such a row flat.
-(It compared the widest label plus 4 px with the axis width over the
-label count, wider than the ticks' spacing on a bar axis, and so called
-unneeded the layout's own turns.)
+A turn is unneeded where the labels, flat, would stand half an em apart
+(``_FLAT_CLEARANCE_EM``) and each fits its slot, as the warning's detail
+says:
+
+- every neighbouring pair: their ticks' distance less their two unturned
+  half widths, the gaps the flat labels draw. ``dm.simple_layout`` turns
+  bottom labels closer than half an em, so it keeps such a row flat;
+- the widest label plus half an em within the axis width over the label
+  count. A long name that overruns its share stays turned though short
+  neighbours leave its pairs room (``advanced/violin``'s regions).
+
+(It compared the widest label plus 4 px with the slot alone, wider than
+the ticks' spacing on a bar axis, and so called unneeded the layout's own
+turns. Then the closest two ticks less the widest label, which on uneven
+ticks set a long name far from the rest against the closest pair.)
 """
 
 from __future__ import annotations
@@ -82,30 +90,26 @@ def _flat_room(
     ax: Axes, ticks: list[Text], renderer: RendererBase
 ) -> float | None:
     """The room (px) neighbouring labels would at least leave were they
-    flat: per row (bottom, top), the closest two ticks less the widest
-    unturned label, as if the widest stood between the closest. No pair
-    leaves less, so where this is half an em the layout too keeps the row
-    flat. ``None`` when no row has two measurable labels."""
+    flat and centred on their ticks: per row (bottom, top), the least over
+    neighbouring pairs of their ticks' distance less their two unturned
+    half widths. These are the gaps the flat labels draw, which the layout
+    turns below half an em. ``None`` when no row has two measurable
+    labels."""
     bottom = {id(tick.label1) for tick in ax.xaxis.get_major_ticks()}
     least: float | None = None
     for side in (True, False):
-        centres: list[float] = []
-        widest = 0.0
+        row: list[tuple[float, float]] = []
         for label in ticks:
             if (id(label) in bottom) is not side:
                 continue
             width = _unrotated_text_width(label, renderer)
             if width is None:
                 continue
-            centres.append(
-                float(label.get_transform().transform(label.get_position())[0])
-            )
-            widest = max(widest, width)
-        if len(centres) < 2:
-            continue
-        spacing = min(b - a for a, b in pairwise(sorted(centres)))
-        room = spacing - widest
-        least = room if least is None else min(least, room)
+            centre = label.get_transform().transform(label.get_position())[0]
+            row.append((float(centre), width))
+        for (left, w_left), (right, w_right) in pairwise(sorted(row)):
+            room = right - left - (w_left + w_right) / 2
+            least = room if least is None else min(least, room)
     return least
 
 
@@ -152,7 +156,12 @@ def check_tick_rotation(
                 * fig.dpi
                 / 72.0
             )
-            if widths and room is not None and room >= needed - _SLACK_PX:
+            if (
+                widths
+                and room is not None
+                and room >= needed - _SLACK_PX
+                and max(widths) + needed <= slot_width + _SLACK_PX
+            ):
                 warnings.append(
                     VisualWarning(
                         severity=Severity.INFO,
