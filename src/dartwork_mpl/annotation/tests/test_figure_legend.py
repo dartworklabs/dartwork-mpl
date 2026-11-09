@@ -386,3 +386,32 @@ def test_legend_on_data_names_the_figure_legend() -> None:
     assert found
     suggestions = dm.validate_fixes.get_fix_suggestions(found[0])
     assert any("dm.figure_legend(fig)" in s for s in suggestions)
+
+
+def test_a_subfigure_legend_serves_the_panels_of_its_nested_subfigures() -> (
+    None
+):
+    """``SubFigure.axes`` leaves a nested SubFigure's Axes out: the legend
+    had no entries and was not drawn. It names them, replaces their own
+    legends and sits outside every one of their panels."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "8cm"))
+    left, right = fig.subfigures(1, 2)
+    left.subplots().plot([0, 1], [1, 2], label="Other group")
+    upper, lower = (sub.subplots() for sub in right.subfigures(2, 1))
+    _lines(upper, 2, prefix="Upper")
+    _lines(lower, 2, prefix="Lower")
+    upper.legend()
+    legend = dm.figure_legend(right)
+    assert legend is not None
+    assert [t.get_text() for t in legend.get_texts()] == [
+        "Upper 1",
+        "Upper 2",
+        "Lower 1",
+        "Lower 2",
+    ]
+    assert upper.get_legend() is None
+    renderer = drawn_renderer(fig)
+    box = legend.get_window_extent(renderer)
+    for panel in (upper, lower):
+        frame = panel.get_window_extent(renderer)
+        assert not box.overlaps(frame)

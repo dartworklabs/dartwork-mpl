@@ -9,6 +9,8 @@ from matplotlib.transforms import Bbox
 from .._figure_geometry import (
     BBOX_ERRORS,
     OutsideSide,
+    figure_axes,
+    figure_legends,
     get_renderer,
     iter_figure_level_extents,
 )
@@ -55,11 +57,15 @@ def _entry_names(legend: Legend) -> set[str]:
 
 
 def _figure_entries(fig: Figure | SubFigure) -> tuple[list[Any], list[str]]:
-    """Every Axes' labelled artists once, by label, in figure order."""
+    """Every Axes' labelled artists once, by label, in figure order.
+
+    The Axes are those drawn in ``fig``, its nested SubFigures' included
+    (:func:`~dartwork_mpl._figure_geometry.figure_axes`).
+    """
     handles: list[Any] = []
     labels: list[str] = []
     seen: set[str] = set()
-    for ax in fig.axes:
+    for ax in figure_axes(fig):
         for handle, label in zip(*ax.get_legend_handles_labels(), strict=True):
             if label not in seen:
                 seen.add(label)
@@ -169,13 +175,13 @@ def _replaced(fig: Figure | SubFigure, names: set[str]) -> list[Legend]:
     does, so a call that fails leaves every legend as it was.
     """
     found: list[Legend] = []
-    for ax in fig.axes:
+    for ax in figure_axes(fig):
         legend = ax.get_legend()
         if legend is not None and _entry_names(legend) <= names:
             found.append(legend)
     found.extend(
         legend
-        for legend in fig.legends
+        for legend in figure_legends(fig)
         if getattr(legend, "_dm_figure_legend", False)
     )
     return found
@@ -192,7 +198,8 @@ def figure_legend(
     """One legend for every panel of ``fig``, outside the panels.
 
     The entries are every Axes' labelled artists, each label once, in
-    figure order. The Axes legends that hold only those entries (one per
+    figure order; on a SubFigure, its nested SubFigures' panels are its
+    panels too. The Axes legends that hold only those entries (one per
     panel, a twin pair's, ``dm.place_legend``'s) and a legend an earlier
     call drew are removed once the new legend is drawn; any other legend
     stays, and a call that raises (``bbox_to_anchor`` with a side, say)
@@ -239,7 +246,9 @@ def figure_legend(
             )
     renderer = get_renderer(fig)
     boxes = [
-        ax.get_window_extent(renderer) for ax in fig.axes if ax.get_visible()
+        ax.get_window_extent(renderer)
+        for ax in figure_axes(fig)
+        if ax.get_visible()
     ]
     panels = Bbox.union(boxes) if boxes else Bbox(fig.bbox.get_points())
     sides: list[OutsideSide] = (
