@@ -252,6 +252,23 @@ def test_a_grid_named_by_gs_keeps_a_useful_plot(use_all_axes: bool) -> None:
     assert _measure(fig)["past"] <= 0.5
 
 
+def test_a_root_grid_measures_a_subfigures_axes_on_the_canvas() -> None:
+    """The root grid named by ``gs``, with every Axes measured, places an
+    Axes a SubFigure holds as a fraction of the canvas, as its content is
+    measured: the root grid's plot keeps a useful share."""
+    fig = plt.figure(figsize=dm.figsize("17cm", "wide"))
+    grid = fig.add_gridspec(1, 2)
+    top = fig.add_subplot(grid[0, 0])
+    _wide_ticks(top)
+    sub = fig.add_subfigure(grid[0, 1])
+    _tall_ticks(sub.subplots())
+    dm.simple_layout(fig, gs=grid)
+    fig.canvas.draw()
+    frame = top.get_window_extent()
+    assert frame.width > 0.25 * fig.bbox.width
+    assert _measure(fig)["past"] <= 0.5
+
+
 def test_a_title_only_parent_clears_the_figure_title() -> None:
     """A SubFigure that holds only nested SubFigures still has its own
     title placed under the figure title (review of #666, F2)."""
