@@ -106,7 +106,13 @@ def test_gap_fraction_matches_matplotlib_cells() -> None:
 
 
 def test_resolve_steps() -> None:
-    assert resolve_steps(True) == {"axis_labels", "space", "wrap", "rotate"}
+    assert resolve_steps(True) == {
+        "axis_labels",
+        "space",
+        "wrap",
+        "rotate",
+        "pad",
+    }
     assert resolve_steps(False) == frozenset()
     assert resolve_steps(["wrap"]) == {"wrap"}
     assert resolve_steps("wrap") == {"wrap"}

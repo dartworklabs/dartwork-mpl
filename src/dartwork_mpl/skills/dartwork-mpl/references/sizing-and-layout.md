@@ -107,15 +107,17 @@ runs into another panel or past the figure edge wraps at its spaces,
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
 (up to 1.5 cells), and crowded bottom tick labels wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
-degrees; a change that would crush a plot or add overlapping neighbouring
-tick labels on any axis is taken back. Nothing is shortened or made
-smaller. What you set stays: spacing
-you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also when it is too
-small, and labels you rotate or break yourself are left as they are, so
-leave both out unless the user asks. `fit_labels=False` (or
-`dm.config.fit_labels`) turns the fitting off; tick labels that still
-overlap are reported as `TICK_OVERLAP`, text over another panel's text as
-`CROSS_AXES_OVERLAP`.
+degrees; an x tick label on a y tick label at a corner (both axes ending
+on a tick) moves out by the tick pad of the axis that moves less; a change
+that would crush a plot or add overlapping neighbouring tick labels on any
+axis is taken back. Nothing is shortened or made smaller. What you set
+stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
+when it is too small, and labels you rotate or break yourself and tick
+pads you set are left as they are, so leave them out unless the user asks.
+`fit_labels=False` (or `dm.config.fit_labels`) turns the fitting off; tick
+labels that still overlap are reported as `TICK_OVERLAP`, an x label on a
+y label at a corner as `TICK_CORNER_OVERLAP`, text over another panel's
+text as `CROSS_AXES_OVERLAP`.
 
 - `margin="2mm"` (or `"2%"`, `dm.mm(2)`) adds a uniform buffer.
 - `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.

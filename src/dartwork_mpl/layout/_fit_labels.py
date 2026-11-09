@@ -48,6 +48,20 @@ and those that do harm are dropped for the rest of the call. At most
     However long the turned labels, the check after the round decides: a
     turn that would leave a plot too little of the figure is taken back,
     and the names that long stay for the author (a horizontal bar chart).
+``pad``
+    An x tick label that overlaps a y tick label of the same plot box (the
+    ``-3`` and ``-3`` at the corner of a -3..3 square, or a first category
+    name wide enough to reach under the y labels; any corner, a twin's
+    right labels included, :func:`~dartwork_mpl._figure_geometry.corner_tick_overlaps`)
+    moves out: the tick pad of one axis grows by the overlap plus
+    ``CORNER_GAP_EM`` of its label size, the axis whose labels move less,
+    so the row or column keeps its alignment and every label stays at its
+    tick. Taken once the other steps have nothing left to change, and kept
+    only if the pairs are clear after the margins are fitted again. A pad
+    you set (``ax.tick_params(pad=...)``, or one tick's ``set_pad``),
+    before a layout or after one, stays, and so does that axis on the
+    next layout; if both axes have one, the pair is the author's. Labels
+    drawn at alpha 0 leave no ink and are no pair.
 
 An axis whose ticks matplotlib picks by its length (``AutoLocator``, no
 locator set by hand) and that a round made shorter keeps the intervals it
@@ -64,14 +78,15 @@ would without this module. Within one call the ladder only climbs: a
 rotation never turns back into a wrap and an angle never shrinks.
 
 What is left is the author's. Tick labels that still overlap are reported
-by ``TICK_OVERLAP`` and text over another panel's text by
-``CROSS_AXES_OVERLAP``; text reaching into another panel's plot area, or
-an x label's corner touching a y label, is not reported yet.
+by ``TICK_OVERLAP``, an x label on a y label at a corner by
+``TICK_CORNER_OVERLAP`` and text over another panel's text by
+``CROSS_AXES_OVERLAP``; text reaching into another panel's plot area is
+not reported yet.
 
 What you set wins and is left alone: tick labels you rotated, wrote with
 line breaks or aligned other than centred (bottom and top labels alike,
 since only the bottom ones are turned), mathtext labels, axis names with
-line breaks or mathtext, spacing you set. What this module set is recorded
+line breaks or mathtext, spacing and tick pads you set. What this module set is recorded
 per artist, and each ``simple_layout`` call first undoes it where it is
 still as set (:func:`restore_fitted`), so a re-layout at another size fits
 from the figure as you left it and ``fit_labels=False`` gives that figure
@@ -109,21 +124,26 @@ from matplotlib.text import Text
 from matplotlib.ticker import AutoLocator, Formatter, Locator
 
 from .._figure_geometry import (
+    CORNER_GAP_EM,
+    CornerOverlap,
+    corner_tick_overlaps,
     drawn_tick_labels,
     get_renderer,
     same_position_axes,
     tick_label_overlaps,
+    tick_pad,
 )
 from ._content_extent import _axes_content_extent_px
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
+    from matplotlib.axis import Tick
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.font_manager import FontProperties
 
 #: Every step name ``fit_labels`` accepts; the default is all of them.
-STEPS: tuple[str, ...] = ("axis_labels", "space", "wrap", "rotate")
+STEPS: tuple[str, ...] = ("axis_labels", "space", "wrap", "rotate", "pad")
 
 # Overlap (display px) above which two texts collide; less only touches.
 _TOUCH_PX = 0.5
@@ -213,6 +233,20 @@ _TURNED_AXES: WeakKeyDictionary[Axis, _Turned] = WeakKeyDictionary()
 _NAMES: WeakKeyDictionary[Text, tuple[str, str]] = WeakKeyDictionary()
 # GridSpec -> {"wspace" / "hspace": the value this module set}
 _GAPS: WeakKeyDictionary[GridSpec, dict[str, float]] = WeakKeyDictionary()
+
+
+@dataclass(frozen=True)
+class _Padded:
+    """An axis whose label pad this module grew: the pads before, as set."""
+
+    major: float
+    minor: float
+    major_set: float
+    minor_set: float
+
+
+# axis -> the pads this module set on its ticks (``pad``)
+_PADS: WeakKeyDictionary[Axis, _Padded] = WeakKeyDictionary()
 
 #: A root GridSpec's ``left``, ``right``, ``bottom`` and ``top``.
 Edges: TypeAlias = tuple[float | None, float | None, float | None, float | None]
@@ -358,6 +392,9 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
                     "xtick",
                 ):
                     _set_turn(label, turn.rotation, turn.mode)
+            padded = _PADS.pop(axis, None)
+            if padded is not None:
+                _restore_pads(axis, padded)
         for label in (ax.xaxis.label, ax.yaxis.label):
             record = _NAMES.pop(label, None)
             if record is not None and label.get_text() == record[1]:
@@ -766,6 +803,9 @@ def fit_round(
     if steps & {"wrap", "rotate"}:
         for group, whole in _shared_x_groups(axes):
             changes += _fit_x_ticks(group, whole, renderer, steps, state)
+    if "pad" in steps and not changes:
+        # once the labels have settled: a wrap or a turn moves the corners
+        changes += _fit_corners(fig, renderer, axes, state)
     changes += _keep_tick_budgets(axes, state)
     return changes
 
@@ -1448,3 +1488,155 @@ def _labels_clear(
             if gap < need:
                 return False
     return True
+
+
+# ── pad ──────────────────────────────────────────────────────────────
+
+
+def _pads_now(axis: Axis) -> tuple[float, float]:
+    """The label pads (pt) of ``axis``' first major and first minor tick,
+    which the ticks matplotlib adds later copy."""
+    return (tick_pad(axis.majorTicks[0]), tick_pad(axis.minorTicks[0]))
+
+
+def _set_pads(axis: Axis, major: float, minor: float) -> None:
+    """Give every major and every minor tick of ``axis`` these pads (pt)."""
+    for tick in axis.majorTicks:
+        tick.set_pad(major)
+    for tick in axis.minorTicks:
+        tick.set_pad(minor)
+
+
+def _pad_is_free(axis: Axis) -> bool:
+    """Whether ``pad`` may grow ``axis``' label pad.
+
+    Not when you set it: for the axis (``ax.tick_params(pad=...)``, which
+    matplotlib keeps in ``get_tick_params`` for the ticks it adds), or for
+    a tick of its own (``Tick.set_pad``: the ticks of a kind no longer
+    share one pad), before a layout or after one. Within a layout, the pad
+    this module grew stays its own while it is as set.
+    """
+    if any(
+        "pad" in axis.get_tick_params(which=which)
+        for which in ("major", "minor")
+    ):
+        return False
+    pads = (
+        {tick_pad(tick) for tick in axis.majorTicks},
+        {tick_pad(tick) for tick in axis.minorTicks},
+    )
+    if any(len(kind) > 1 for kind in pads):
+        return False
+    padded = _PADS.get(axis)
+    if padded is not None:
+        return pads == ({padded.major_set}, {padded.minor_set})
+    return True
+
+
+def _restore_pads(axis: Axis, padded: _Padded) -> None:
+    """Give back the pads ``pad`` grew on ``axis``, where they are as it set
+    them: a pad set for the axis since (``tick_params(pad=...)``, even at
+    the fitted value) stays for that kind of tick, and so does a tick whose
+    pad was set by itself (``Tick.set_pad``); the others, the ticks
+    matplotlib added since included (they copy the first tick), go back."""
+    kinds: tuple[
+        tuple[Literal["major", "minor"], list[Tick], float, float], ...
+    ]
+    kinds = (
+        ("major", axis.majorTicks, padded.major, padded.major_set),
+        ("minor", axis.minorTicks, padded.minor, padded.minor_set),
+    )
+    for which, ticks, before, mine in kinds:
+        if "pad" in axis.get_tick_params(which=which):
+            continue  # set for the axis since: yours
+        for tick in ticks:
+            if tick_pad(tick) == mine:
+                tick.set_pad(before)
+
+
+def _corner_moves(
+    pairs: Sequence[CornerOverlap], dpi: float
+) -> tuple[dict[Axis, float], dict[Axis, float]]:
+    """How far (pt) the labels of each x axis, or of each y axis, move out
+    to clear every pair: the overlap plus ``CORNER_GAP_EM`` of their size.
+    """
+    to_pt = 72.0 / dpi
+    xs: dict[Axis, float] = {}
+    ys: dict[Axis, float] = {}
+    for pair in pairs:
+        for moves, axis, depth, label in (
+            (xs, pair.x_axes.xaxis, pair.down, pair.x_label),
+            (ys, pair.y_axes.yaxis, pair.across, pair.y_label),
+        ):
+            need = depth * to_pt + CORNER_GAP_EM * float(label.get_fontsize())
+            moves[axis] = max(moves.get(axis, 0.0), need)
+    return xs, ys
+
+
+def _fit_corners(
+    fig: Figure, renderer: RendererBase, axes: Sequence[Axes], state: FitState
+) -> list[_Change]:
+    """Move the labels of one axis out where x and y labels of a plot box
+    overlap: the x labels or the y labels, whichever move less."""
+    changes: list[_Change] = []
+    for group in _plot_boxes(axes):
+        key: Key = ("pad", id(group[0]))
+        if not state.allows(key):
+            continue
+        pairs = corner_tick_overlaps(group, renderer)
+        if not pairs:
+            continue
+        options = [
+            moves
+            for moves in _corner_moves(pairs, fig.dpi)
+            if all(_pad_is_free(axis) for axis in moves)
+        ]
+        if not options:
+            continue  # both pads yours: the author's (TICK_CORNER_OVERLAP)
+        moves = min(options, key=lambda option: max(option.values()))
+        changes.append(_grow_pads(moves, group, key))
+    return changes
+
+
+def _plot_boxes(axes: Sequence[Axes]) -> list[list[Axes]]:
+    """The fitted ``axes`` grouped by the box they are drawn in (an Axes and
+    its twins), from where they were placed: the active position applies
+    the aspect of a fixed-aspect Axes (``imshow``, ``set_aspect``) and would
+    move it mid-layout, so a figure without a corner pair would not draw
+    as before."""
+    groups: dict[tuple[int, tuple[float, ...]], list[Axes]] = {}
+    for ax in axes:
+        if not _cartesian(ax):
+            continue
+        box = tuple(round(v, 9) for v in ax.get_position(original=True).bounds)
+        parent = ax.get_figure(root=False)
+        groups.setdefault((id(parent), box), []).append(ax)
+    return list(groups.values())
+
+
+def _grow_pads(
+    moves: Mapping[Axis, float], group: Sequence[Axes], key: Key
+) -> _Change:
+    before = {axis: (_pads_now(axis), _PADS.get(axis)) for axis in moves}
+    for axis, by in moves.items():
+        (major, minor), padded = before[axis]
+        _set_pads(axis, major + by, minor + by)
+        _PADS[axis] = _Padded(
+            padded.major if padded is not None else major,
+            padded.minor if padded is not None else minor,
+            major + by,
+            minor + by,
+        )
+
+    def undo() -> None:
+        for axis, ((major, minor), padded) in before.items():
+            _set_pads(axis, major, minor)
+            if padded is None:
+                _PADS.pop(axis, None)
+            else:
+                _PADS[axis] = padded
+
+    def clear(renderer: RendererBase) -> bool:
+        return not corner_tick_overlaps(group, renderer)
+
+    return _Change(key, undo, clear)

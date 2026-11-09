@@ -60,6 +60,7 @@ WARNING findings are defects to fix or explain; INFO findings are hints.
 | `OVERFLOW`, `CLIPPED_TEXT` | text outside the canvas or axes | `dm.simple_layout(fig)` after the last artist; `margin=` |
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text collides | `dm.simple_layout(fig)` (it widens `hspace`/`wspace` nobody set); a spacing you set: raise it |
 | `TICK_OVERLAP` | neighbouring tick labels overlap after the layout | a rotation you set: remove it and lay out again; else a horizontal bar chart or a wider canvas (the user's call: report it) |
+| `TICK_CORNER_OVERLAP` | an x tick label on a y tick label at a corner | `dm.simple_layout(fig)` (it grows one tick pad); pads you set: the `fig.axes[i].tick_params(axis=..., which=..., pad=...)` the fix names (a twin's Axes, minor ticks when theirs collide); never move the limits or hide a label |
 | `LEGEND_OVERFLOW` | legend too large, off the canvas, or outside at over half the plot's size | many lines: `dm.label_line_ends(ax)`; else fewer columns, shorter names |
 | `LEGEND_OVERLAP` | legend covers a title, axis or tick label | `dm.place_legend(ax)` (the side the user named, if any), then `simple_layout` |
 | `LEGEND_ON_DATA` | legend covers data, a text, another legend or panel | `dm.place_legend(ax)`, then `simple_layout`; panels sharing series: `dm.figure_legend(fig)`; many lines: `dm.label_line_ends(ax)` |

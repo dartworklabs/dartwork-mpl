@@ -52,6 +52,13 @@ Available Checks
        rectangle its text fills, turned with it); after ``simple_layout``,
        what its wrapping and turning could not clear
      - WARNING
+   * - ``TICK_CORNER_OVERLAP``
+     - An x tick label overlaps a y tick label of the same plot box at a
+       corner (both axes ending on a tick, or a first category name
+       reaching under the y labels; a twin's right labels too); after
+       ``simple_layout``, what its ``pad`` step could not move (pads set by
+       hand)
+     - WARNING
    * - ``TICK_ROTATION``
      - X tick labels are rotated needlessly or overlap when horizontal
      - INFO

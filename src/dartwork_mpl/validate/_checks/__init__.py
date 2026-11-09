@@ -33,6 +33,7 @@ from . import (  # noqa: F401  (imported to register their checks and fixes)
     pie_label,
     preset_override,
     text_contrast,
+    tick_corner,
     tick_crowd,
     tick_decimal,
     tick_overlap,
