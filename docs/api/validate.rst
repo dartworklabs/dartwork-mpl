@@ -60,7 +60,8 @@ Available Checks
        hand)
      - WARNING
    * - ``TICK_ROTATION``
-     - X tick labels are rotated needlessly or overlap when horizontal
+     - X tick labels are rotated needlessly (flat, they would stand half an
+       em apart, the layout's target) or overlap when horizontal
      - INFO
    * - ``TICK_DECIMAL``
      - Numeric tick labels are mixed or duplicated within a unit, print
