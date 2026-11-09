@@ -38,6 +38,7 @@ import matplotlib as mpl
 import matplotlib.colors as mcolors
 from matplotlib.patches import Wedge
 
+from ..._figure_geometry import drawn_axes
 from ...formatting import drawn_like_twin, settled_twin_spines
 from ...style import active_preset_rcparams
 from .._types import Severity, VisualWarning
@@ -303,7 +304,7 @@ def check_preset_override(
         return []
 
     warnings: list[VisualWarning] = []
-    for axes_index, ax in enumerate(fig.axes):
+    for axes_index, ax in drawn_axes(fig):
         if not _is_inspected(ax):
             continue
         warnings.extend(_grid_findings(ax, axes_index, preset))

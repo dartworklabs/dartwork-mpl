@@ -12,7 +12,11 @@ from __future__ import annotations
 from itertools import pairwise
 from typing import TYPE_CHECKING, Literal, TypedDict
 
-from ..._figure_geometry import label_clearance_px, pair_clearance_px
+from ..._figure_geometry import (
+    drawn_axes,
+    label_clearance_px,
+    pair_clearance_px,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix
@@ -115,7 +119,7 @@ def check_tick_crowding(
     warnings: list[VisualWarning] = []
     dpi = fig.get_dpi()
 
-    for i, ax in enumerate(fig.axes):
+    for i, ax in drawn_axes(fig):
         # A row of labels along a straight axis: a polar theta ring or a 3D
         # axis has no width or height to share out.
         if getattr(ax, "name", None) != "rectilinear":

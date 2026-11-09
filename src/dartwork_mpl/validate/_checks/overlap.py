@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import drawn_axes_texts, text_window_extent
+from ..._figure_geometry import drawn_axes, drawn_axes_texts, text_window_extent
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -29,7 +29,7 @@ def check_overlap(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
     """Detect overlapping text labels within each Axes."""
     warnings: list[VisualWarning] = []
 
-    for ax in fig.axes:
+    for _index, ax in drawn_axes(fig):
         texts: list[tuple[str, Any]] = []
         for txt in drawn_axes_texts(ax):
             if (

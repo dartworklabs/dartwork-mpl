@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
-from ..._figure_geometry import tick_label_overlaps
+from ..._figure_geometry import drawn_axes, tick_label_overlaps
 from .._types import Severity, VisualWarning
 from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix
@@ -59,7 +59,7 @@ def check_tick_overlap(
 ) -> list[VisualWarning]:
     """Report neighbouring tick labels of one axis that overlap."""
     warnings: list[VisualWarning] = []
-    for index, ax in enumerate(fig.axes):
+    for index, ax in drawn_axes(fig):
         if getattr(ax, "name", None) != "rectilinear":
             continue
         for which in AXES:

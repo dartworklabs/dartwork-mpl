@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Literal, TypedDict
 
+from ..._figure_geometry import drawn_axes
 from .._types import Severity, VisualWarning
 from ._detail import AXES, Axis, choice, wire
 from ._registry import register_check, register_fix
@@ -78,7 +79,7 @@ def check_unit_dup(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
     """Detect duplicated axis unit text and tick-label affixes."""
     warnings: list[VisualWarning] = []
 
-    for axes_index, ax in enumerate(fig.axes):
+    for axes_index, ax in drawn_axes(fig):
         axis_specs: tuple[tuple[Literal["x", "y"], str], ...] = (
             ("x", ax.get_xlabel()),
             ("y", ax.get_ylabel()),
