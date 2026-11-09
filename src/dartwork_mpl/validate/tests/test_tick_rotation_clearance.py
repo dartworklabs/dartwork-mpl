@@ -83,6 +83,28 @@ def test_the_layouts_turn_of_close_codes_is_not_called_unneeded() -> None:
     assert not _unneeded(fig)
 
 
+@pytest.mark.parametrize("preset", ["scientific", "report", "presentation"])
+def test_a_long_name_between_short_ones_keeps_its_turn(preset: str) -> None:
+    """``advanced/violin`` turns its region names; the longest would not
+    clear half an em flat, though its short neighbours leave its pairs
+    more room. The check measures the widest label against the closest
+    ticks and keeps quiet, as on main."""
+    from pathlib import Path
+
+    source = (
+        Path(dm.__file__).parent
+        / "asset/prompt/05-templates/advanced/violin.py"
+    ).read_text(encoding="utf-8")
+    ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
+    source = source[: min(i for e in ends if (i := source.find(e)) >= 0)]
+    source = source.replace(
+        'dm.style.use("scientific")', f'dm.style.use("{preset}")'
+    )
+    namespace: dict = {}
+    exec(compile(source, "violin", "exec"), namespace)
+    assert not _unneeded(namespace["fig"])
+
+
 def test_the_check_and_the_layout_share_the_clearance() -> None:
     from dartwork_mpl.layout._fit_labels import _TARGET_EM
     from dartwork_mpl.validate._checks import tick_rotation
