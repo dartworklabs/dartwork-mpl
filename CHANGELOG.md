@@ -209,7 +209,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   angles round the circle, the radii inside it), so a radar's legend no
   longer takes the bottom of the circle over two angle labels on a slide:
   it keeps a free corner beyond the circle, else goes outside (above on
-  the bundled radar in `presentation`). The spots are measured where
+  the bundled radar in `presentation`). A collection counts only by the
+  items that draw ink, where its clip lets them draw, read by the same
+  rule as `LEGEND_ON_DATA` reads it: a transparent or alpha-0 polygon or
+  line, or one its clip keeps from drawing, no longer sends the legend
+  from a free spot. The clip cuts a stroke, not its centre line, so a thick
+  line or edge whose centre runs just past its clip still counts where it
+  draws inside, in both. The spots are measured where
   matplotlib anchors them, so a
   call draws the figure once (it drew it for every trial, up to 19 times). When no spot is free it goes outside:
   above, right or below, among the sides no other panel sits beyond,

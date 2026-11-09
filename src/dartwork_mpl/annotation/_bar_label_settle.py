@@ -100,11 +100,12 @@ import numpy as np
 import numpy.typing as npt
 from matplotlib.artist import Artist
 from matplotlib.container import BarContainer
-from matplotlib.transforms import Bbox, TransformedPath
+from matplotlib.transforms import Bbox
 
 from .._figure_geometry import (
     axes_titles,
     axes_with_secondaries,
+    clip_region,
     drawn_tick_labels,
     get_renderer,
     outside_side,
@@ -253,24 +254,12 @@ def _text_boxes_drawn(fig: Figure, renderer: RendererBase) -> list[Bbox]:
         ):
             continue
         box: Bbox | None = text.get_window_extent(renderer)
-        if text.get_clip_on():
-            for clip in _clip_extents(text):
-                box = Bbox.intersection(box, clip) if box else None
+        # Cut to its clip box and clip path's extent, read as every check
+        # reads a clip (UNCLIPPED when clip_on is off).
+        box = Bbox.intersection(box, clip_region(text)) if box else None
         if box is not None and box.width > 0 and box.height > 0:
             boxes.append(box)
     return boxes
-
-
-def _clip_extents(artist: Artist) -> list[Bbox]:
-    """The display boxes ``artist`` is clipped to (its clip box and path)."""
-    clips: list[Bbox] = []
-    clip_box = artist.get_clip_box()
-    if clip_box is not None:
-        clips.append(clip_box)
-    clip_path = artist.get_clip_path()
-    if isinstance(clip_path, TransformedPath):  # what set_clip_path stores
-        clips.append(clip_path.get_fully_transformed_path().get_extents())
-    return clips
 
 
 def _clear_texts(
