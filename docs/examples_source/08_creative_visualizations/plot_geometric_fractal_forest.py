@@ -137,7 +137,7 @@ ax.text(
     "Fractal Forest",
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.gray9",
     weight="bold",
 )
 

@@ -32,6 +32,7 @@ def fibonacci_spiral(n_points=1000):
     golden_ratio = (1 + np.sqrt(5)) / 2
     theta = np.linspace(0, 8 * np.pi, n_points)
     r = np.exp(theta / (2 * np.pi / np.log(golden_ratio)))
+    r = r * 150 / r.max()  # fill the +/-150 axes; unscaled it ends at 6.9
     return r * np.cos(theta), r * np.sin(theta), theta
 
 
@@ -65,6 +66,7 @@ for arm in range(3):
 n_stars = 500
 star_theta = np.random.uniform(0, 8 * np.pi, n_stars)
 star_r = np.exp(star_theta / (2 * np.pi / np.log((1 + np.sqrt(5)) / 2)))
+star_r *= 150 / star_r.max()
 star_r *= np.random.uniform(0.8, 1.2, n_stars)
 star_x = star_r * np.cos(star_theta)
 star_y = star_r * np.sin(star_theta)
@@ -94,7 +96,7 @@ title_text = ax.text(
     "Fibonacci Galaxy M-" + str(np.random.randint(100, 999)),
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.teal9",
     alpha=0.8,
 )
 title_text.set_path_effects(

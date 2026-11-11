@@ -61,7 +61,7 @@ for f in [10, 100, 1000, 10000]:
         f"{f}Hz",
         ha="center",
         fontsize=dm.fs(-1),
-        color="dc.indigo2",
+        color="black",
     )
 
 ax.set_xlim(1, 4)
@@ -76,7 +76,7 @@ ax.text(
     "Frequency Response Evolution",
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.gray9",
     weight="bold",
 )
 ax.text(
@@ -84,7 +84,7 @@ ax.text(
     n_time_steps * 0.15 + 1,
     "Time →",
     fontsize=dm.fs(0),
-    color="dc.indigo2",
+    color="black",
     style="italic",
 )
 

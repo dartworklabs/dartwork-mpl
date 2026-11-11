@@ -38,15 +38,20 @@ colormaps = [
     ("dc.hue", "dc.hue \u2014 perceptual multi-hue"),
 ]
 
-fig = plt.figure(figsize=dm.figsize("17cm", 0.9))
-gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.45)
+fig = plt.figure(figsize=dm.figsize("33cm", "square"))
+gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.55, wspace=0.65)
 
 for idx, (cmap_name, title) in enumerate(colormaps):
     ax = fig.add_subplot(gs[idx // 2, idx % 2])
     cf = ax.contourf(X, Y, Z, levels=20, cmap=cmap_name)
     ax.contour(X, Y, Z, levels=10, colors="white", linewidths=0.3, alpha=0.5)
     fig.colorbar(cf, ax=ax, shrink=0.85, pad=0.04)
-    ax.set_title(title, fontsize=dm.fs(0), weight="bold", pad=12)
+    ax.set_title(
+        title.replace(" \u2014 ", "\n"),
+        fontsize=dm.fs(0),
+        weight="bold",
+        pad=12,
+    )
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_aspect("equal")

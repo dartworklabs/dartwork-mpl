@@ -44,7 +44,7 @@ for i, c in enumerate(colors_warm):
     axs[1].plot(x, y, color=c.to_hex(), lw=dm.lw(1))
 
 for ax in axs:
-    dm.set_decimal(ax, yn=1)
+    dm.set_decimal(ax, yn=0)
     ax.set_xlabel("Time")
     ax.set_ylabel("Intensity")
 

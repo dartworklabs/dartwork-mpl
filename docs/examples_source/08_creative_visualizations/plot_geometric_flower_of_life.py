@@ -111,7 +111,7 @@ ax.text(
     "Flower of Life",
     ha="center",
     fontsize=dm.fs(3),
-    color="dc.teal5",
+    color="dc.teal9",
     weight="bold",
 )
 ax.text(
@@ -120,7 +120,7 @@ ax.text(
     "Sacred Geometry",
     ha="center",
     fontsize=dm.fs(0),
-    color="dc.indigo5",
+    color="dc.indigo9",
     style="italic",
 )
 

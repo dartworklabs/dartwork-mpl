@@ -96,7 +96,7 @@ ax.text(
     "DNA Double Helix",
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.gray9",
     weight="bold",
 )
 ax.text(
@@ -105,7 +105,7 @@ ax.text(
     "A-T  G-C Base Pairs",
     ha="center",
     fontsize=dm.fs(0),
-    color="dc.indigo2",
+    color="dc.indigo8",
 )
 
 dm.simple_layout(fig)

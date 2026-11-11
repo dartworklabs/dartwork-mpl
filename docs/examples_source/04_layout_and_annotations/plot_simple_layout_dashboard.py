@@ -58,8 +58,7 @@ for i in range(3):
 
 dm.label_axes(axes)
 
+fig.suptitle("Dashboard with Auto Layout", fontsize=dm.fs(3))
 dm.simple_layout(fig, margin=dm.inch(0.08))
-
-plt.suptitle("Dashboard with Auto Layout", fontsize=dm.fs(3), y=1.02)
 
 plt.show()

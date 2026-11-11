@@ -40,15 +40,7 @@ def _make_figure(margin_label: str):
         "Long Y-Axis Label\nWith Units\n(measurement)", fontsize=dm.fs(0)
     )
     ax.set_xlabel("X-Axis Label", fontsize=dm.fs(0))
-    ax.text(
-        0.5,
-        1.18,
-        margin_label,
-        transform=ax.transAxes,
-        ha="center",
-        fontsize=dm.fs(2),
-        weight="bold",
-    )
+    fig.suptitle(margin_label, fontsize=dm.fs(2), weight="bold")
     return fig
 
 

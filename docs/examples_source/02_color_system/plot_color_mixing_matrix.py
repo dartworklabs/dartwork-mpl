@@ -31,7 +31,7 @@ palette = [
 ]
 n = len(palette)
 
-fig, ax = plt.subplots(figsize=dm.figsize("11.7cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("25.4cm", "square"))
 
 for i in range(n):
     for j in range(n):
@@ -62,7 +62,7 @@ for i in range(n):
                 va="center",
                 fontsize=dm.fs(-0.5),
                 weight="bold",
-                color="white" if i >= 3 else "black",
+                color="white" if i == 5 else "black",
             )
 
 ax.set_xlim(0, n)

@@ -86,7 +86,7 @@ title = ax.text(
     va="center",
     fontsize=dm.fs(4),
     fontweight=dm.fw(3),
-    color="white",
+    color="dc.violet9",
 )
 title.set_path_effects(
     [path_effects.withStroke(linewidth=dm.lw(1), foreground="dc.violet2")]

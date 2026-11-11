@@ -89,7 +89,7 @@ for _i, (ax, trace, color, label) in enumerate(
         va="center",
         fontsize=dm.fs(0.5),
         weight="bold",
-        color="dc.indigo4",
+        color="dc.indigo8",
     )
     ax.patch.set_alpha(0)  # Transparent background
 
