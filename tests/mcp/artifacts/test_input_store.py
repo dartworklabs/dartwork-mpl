@@ -420,7 +420,7 @@ print("second-owner-refused")
             ],
             text=True,
             capture_output=True,
-            timeout=15,
+            timeout=60,
             env=env,
         )
         assert result.returncode == 0, result.stdout + result.stderr

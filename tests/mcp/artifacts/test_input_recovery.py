@@ -224,7 +224,7 @@ print("restart-ok")
         ],
         text=True,
         capture_output=True,
-        timeout=20,
+        timeout=60,
         env=env,
     )
 

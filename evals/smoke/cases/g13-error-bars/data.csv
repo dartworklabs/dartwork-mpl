@@ -1,0 +1,22 @@
+heat_pump,outdoor_temp_C,cop_mean,cop_sd,n_tests
+Air-source A,-15,2.6,0.18,6
+Air-source A,-10,2.84,0.16,9
+Air-source A,-5,3.01,0.17,7
+Air-source A,0,3.28,0.19,10
+Air-source A,5,3.54,0.18,8
+Air-source A,10,3.69,0.18,6
+Air-source A,15,3.95,0.2,9
+Air-source B,-15,2.71,0.2,7
+Air-source B,-10,2.96,0.21,10
+Air-source B,-5,3.2,0.19,8
+Air-source B,0,3.43,0.2,6
+Air-source B,5,3.66,0.23,9
+Air-source B,10,3.88,0.2,7
+Air-source B,15,4.09,0.23,10
+Ground-source,-15,2.82,0.26,8
+Ground-source,-10,3.06,0.25,6
+Ground-source,-5,3.28,0.23,9
+Ground-source,0,3.55,0.22,7
+Ground-source,5,3.72,0.22,10
+Ground-source,10,3.94,0.23,8
+Ground-source,15,4.23,0.24,6

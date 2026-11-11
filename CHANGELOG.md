@@ -584,6 +584,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   in agent smoke round 3, where one host hid the label by hand and the other
   shipped the duplicate.
 
+- **The skill says names in the data are not translated.** In agent smoke
+  round 3 a host turned Korean category names (`석탄`, `규칙 기반`) into
+  English legend entries without saying so. `references/korean.md` already
+  kept data values as given, but the host had read only `SKILL.md`, whose one
+  sentence on names spoke of translating column names. The Data section now
+  says it where every host reads it.
+
 - **Three false validator findings are gone.** An audit of the 91 gallery
   scripts found 5 of 77 warnings were the validator's own mistakes.
   `GRAYSCALE_SAFETY` could not run (`CHECK_FAILED`) on a collection with

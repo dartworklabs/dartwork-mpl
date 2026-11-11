@@ -1,0 +1,6 @@
+{
+  "id": "r03-value-labels",
+  "kind": "repair",
+  "lang": "en",
+  "request": "plot.py is a colleague's figure for our report. Validate it and fix what is wrong with it. The data and what the figure shows stay the same, and the Measured line keeps its value labels. Leave the original and save the revision as a new script, PNG and PDF."
+}

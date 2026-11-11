@@ -1,0 +1,6 @@
+{
+  "id": "g17-raw-export",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For the facility report, plot the daily energy use in data.csv against date, 14 cm wide. The file is a raw export from the logger. Save PNG, PDF and a runnable script."
+}
