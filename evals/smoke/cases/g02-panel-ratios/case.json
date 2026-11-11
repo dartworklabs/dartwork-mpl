@@ -1,0 +1,6 @@
+{
+  "id": "g02-panel-ratios",
+  "kind": "generate",
+  "lang": "en",
+  "request": "Make a 17 cm wide paper figure from data.csv: a 2 by 2 panel grid, with column widths 2:1 and row heights 3:2. Rows are North and South, columns are response and residual; plot both treatments in every panel. Label the panels (a) through (d), put units on the axes and use one shared legend for the whole figure. Keep all observations. Save PNG, PDF and a runnable script."
+}

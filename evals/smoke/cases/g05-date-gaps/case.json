@@ -1,0 +1,6 @@
+{
+  "id": "g05-date-gaps",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a monitoring report, plot daily demand from data.csv against calendar date. Blank readings and omitted calendar days mean the sensor was offline: keep visible breaks in the line at both kinds of gap, without interpolation. Include the month boundary in the date labels. Keep the 12 cm width and save PNG, PDF and a runnable script."
+}

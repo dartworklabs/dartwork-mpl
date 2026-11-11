@@ -1,0 +1,6 @@
+{
+  "id": "e01-ylabel-only",
+  "kind": "edit",
+  "lang": "ko",
+  "request": "논문용 plot.py에서 왼쪽 y축 문구 'Response (mV)'만 'Sensor response (mV)'로 바꿔 주세요. 데이터, 오른쪽 패널, 글자 크기, 색, 범례, 그림 크기와 배치는 모두 그대로 두세요. 수정본 스크립트와 PNG, PDF를 원본과 별도로 남겨 주세요."
+}

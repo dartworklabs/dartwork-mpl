@@ -1,0 +1,6 @@
+{
+  "id": "e02-line-color-only",
+  "kind": "edit",
+  "lang": "en",
+  "request": "In this report's plot.py, change only the Model line in the left panel to #C44E52. Keep every other property, including the existing legend appearance, the right panel, data, sizes and layout unchanged. Leave the original and save the revision as a new script, PNG and PDF."
+}

@@ -1,0 +1,6 @@
+{
+  "id": "g01-single-column",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a journal paper, plot response against elapsed time from data.csv. This must fit an 8.5 cm single column; use 7 pt axis and tick text. Show measured and predicted as separate lines with a readable legend, keeping their units. Save PNG and PDF and leave the runnable script here."
+}
