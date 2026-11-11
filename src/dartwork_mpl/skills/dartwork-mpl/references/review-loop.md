@@ -71,7 +71,7 @@ WARNING findings are defects to fix or explain; INFO findings are hints.
 | `MARGIN_ASYMMETRY`, `EMPTY_AXES` | lopsided margins, empty panel | rerun `simple_layout`, remove the panel |
 | `GRAYSCALE_SAFETY` (INFO) | similar grey values | mention it; change colours only when asked |
 | `PRESET_OVERRIDE` (INFO) | grid, spines or background differ from the preset | keep the change only if the user asked; else delete the call |
-| `SLIDE_OVERSIZE` | slide canvas exceeds 13.33 × 7.5 in plus 1% | redraw at `dm.figsize_for("full_slide")` or `dm.figsize_for("slide")` under a title |
+| `SLIDE_OVERSIZE` | a slide-preset figure is larger than a slide, so its text shrinks when placed | redraw at `dm.figsize_for("full_slide")` (25.4 × 14.29 cm) or `dm.figsize_for("slide")` under a title |
 | `CHECK_FAILED` | a check could not run | the check is incomplete; say so |
 
 A twin-axes pair can report `CROSS_AXES_OVERLAP` for its shared x ticks;

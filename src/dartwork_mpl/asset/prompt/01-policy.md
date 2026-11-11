@@ -298,6 +298,7 @@ clean validation. Report retained advisories and any unavailable image review.
 
 ### Oversized slide canvases
 
-`SLIDE_OVERSIZE` (WARNING) reports a root canvas above 13.33 × 7.5 in
-with 1% rounding tolerance while a presentation preset is in force; redraw
-at `dm.figsize_for("full_slide")` or `dm.figsize_for("slide")` under a title.
+`SLIDE_OVERSIZE` (WARNING) reports a figure drawn larger than a slide while
+a presentation preset is in force: placed on the slide it is scaled down and
+its text shrinks with it. Redraw at `dm.figsize_for("full_slide")`
+(25.4 × 14.29 cm) or `dm.figsize_for("slide")` under a title.
