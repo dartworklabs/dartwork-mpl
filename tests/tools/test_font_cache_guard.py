@@ -35,6 +35,9 @@ def _run_session(
     (project / "test_inner.py").write_text(
         textwrap.dedent(test_body), encoding="utf-8"
     )
+    # Its own ini file makes the project the root and the conftest cut-off,
+    # so collection starts here and never scans the directories above.
+    (project / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
     environment = {
         **os.environ,
         "MPLCONFIGDIR": str(cache),
@@ -53,7 +56,7 @@ def _run_session(
             "--rootdir",
             str(project),
             "-c",
-            os.devnull,
+            str(project / "pytest.ini"),
             str(project / "test_inner.py"),
         ],
         cwd=project,
@@ -141,3 +144,26 @@ def test_changed_reports_modified_and_missing_but_not_new() -> None:
     after = {"kept": "1", "edited": "2", "created": "1"}
 
     assert changed_font_caches(before, after) == ["edited", "removed"]
+
+
+def test_inner_session_does_not_collect_outside_its_project(
+    tmp_path: Path,
+) -> None:
+    """The inner run never scans the directories above its project.
+
+    With ``-c /dev/null`` pytest cut conftest discovery at ``/dev`` and walked
+    every ancestor of the test file from the filesystem root, so one entry it
+    could not stat anywhere above (another user's directory in a shared
+    ``/tmp`` on a CI runner) failed collection with exit code 4.
+    """
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    (locked / "inner").write_text("x", encoding="utf-8")
+    (tmp_path / "unreadable").symlink_to(locked / "inner")
+    locked.chmod(0)
+    try:
+        result = _run_session(tmp_path, _LEAVES_ALONE, seeded=True)
+    finally:
+        locked.chmod(0o700)
+
+    assert result.returncode == 0, result.stdout + result.stderr
