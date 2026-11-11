@@ -129,8 +129,11 @@ def check_grayscale_safety(
         for collection in ax.collections:
             if not collection.get_visible():
                 continue
+            # ``Collection.get_alpha()`` may be a per-point ndarray, and
+            # ``get_facecolor()`` rows already carry the effective alpha, so
+            # zero-alpha rows are rejected through the RGBA channel alone.
             for facecolor in _facecolor_rows(collection.get_facecolor()):
-                _add_color(colors, facecolor, collection.get_alpha())
+                _add_color(colors, facecolor)
 
         if len(colors) < 2:
             continue

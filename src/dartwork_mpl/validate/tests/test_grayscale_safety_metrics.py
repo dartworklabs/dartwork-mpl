@@ -109,3 +109,51 @@ def test_positive_alpha_uses_source_rgb_before_background_compositing() -> None:
     assert white_warning.detail["pairs"] == black_warning.detail["pairs"]
     assert white_warning.detail["pairs"][0]["relative_y"] == (0.005, 0.072)
     assert white_warning.detail["pairs"][0]["delta_y"] == 0.067
+
+
+def _warnings_for_scatter(
+    colors: tuple[str, ...], alpha: object
+) -> list[VisualWarning]:
+    """Validate one scatter collection and return every finding."""
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.scatter(
+        range(len(colors)), range(len(colors)), c=list(colors), alpha=alpha
+    )
+    warnings = validate_figure(fig, checks=("GRAYSCALE_SAFETY",), quiet=True)
+    plt.close(fig)
+    return warnings
+
+
+def test_grayscale_check_runs_on_collection_with_per_point_alpha() -> None:
+    """A collection with an alpha array must be checked, not CHECK_FAILED.
+
+    ``Collection.get_alpha()`` returns an ndarray for per-point alpha; the
+    check once tested it in a scalar ``or`` and the orchestrator reported the
+    resulting ValueError as ``CHECK_FAILED``.
+    """
+    warnings = _warnings_for_scatter(
+        ("#000048", "#0000ff", "#00ff00"), alpha=[1.0, 0.5, 1.0]
+    )
+
+    assert [item.check_id for item in warnings] == ["GRAYSCALE_SAFETY"]
+    assert warnings[0].detail["pairs"][0]["colors"] == ("#000048", "#0000ff")
+
+
+def test_grayscale_check_skips_only_zero_alpha_rows_of_a_collection() -> None:
+    """Rows with alpha 0 are ignored; the other rows of the collection count.
+
+    The pair stays reported when the invisible row is a third colour, and is
+    not reported when the invisible row is one of the two close colours, so
+    partially visible collections are neither dropped whole nor kept whole.
+    """
+    visible_pair = _warnings_for_scatter(
+        ("#000048", "#0000ff", "#00ff00"), alpha=[1.0, 1.0, 0.0]
+    )
+    hidden_member = _warnings_for_scatter(
+        ("#000048", "#0000ff", "#00ff00"), alpha=[0.0, 1.0, 1.0]
+    )
+
+    assert [item.check_id for item in visible_pair] == ["GRAYSCALE_SAFETY"]
+    assert visible_pair[0].detail["count"] == 1
+    assert hidden_member == []

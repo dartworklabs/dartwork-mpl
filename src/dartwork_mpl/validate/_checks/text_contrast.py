@@ -7,11 +7,14 @@ background is the per-channel median of the pixels inside the text's own
 box (an annotation's words, not its arrow; a 3D Axes' text where it is
 projected). Interpolated and alpha-blended images, collections, overlapping
 faces, Axes drawing order, clip paths and markers all count as they are
-drawn; a text's own box (``bbox=``), a legend's frame and a stroke drawn
-around a text by a path effect stay in the picture, other texts do not.
-The draw does not touch the caller's canvas, and the colours are put back
-even when drawing fails. A text with no finite box on the canvas is not
-read.
+drawn; a text's own box (``bbox=``) and a legend's frame stay in the
+picture, other texts do not. A text drawn with path effects (an outline
+stroke, a halo, a shadow) is read by the ink it really draws: the effects
+are dropped from that reference picture, a second picture keeps them, and
+the pixels that differ between the two are the ink, judged against the
+background as the strongest of its pixels. The draws do not touch the
+caller's canvas, and the colours and effects are put back even when drawing
+fails. A text with no finite box on the canvas is not read.
 """
 
 from __future__ import annotations
@@ -164,34 +167,44 @@ def _pixel_box(box: Bbox, height: int, width: int) -> _PixelBox | None:
     return (top, bottom, left, right)
 
 
-def _hide_ink(text: Text) -> Callable[[], None]:
+def _hide_ink(text: Text, *, drop_effects: bool) -> Callable[[], None]:
     """Make the text's glyphs fully transparent; return the undo.
 
     Only the colour (and an alpha the text sets, which overrides it) moves:
     the text keeps its visibility, size and place, so a layout engine that
-    runs in the draw measures it as before, and its box, arrow and
-    path-effect strokes are still drawn.
+    runs in the draw measures it as before, and its box and arrow are still
+    drawn. With ``drop_effects`` its path effects are taken off as well, so
+    no stroke, halo or shadow of the text stays in the picture.
     """
     color = text.get_color()
     alpha = text.get_alpha()
+    effects = text.get_path_effects()
     rgba = mcolors.to_rgba(color)
     text.set_color((rgba[0], rgba[1], rgba[2], 0.0))
     if alpha is not None:
         text.set_alpha(0.0)
+    if drop_effects:
+        text.set_path_effects([])
 
     def undo() -> None:
         text.set_color(color)
         text.set_alpha(alpha)
+        text.set_path_effects(effects)
 
     return undo
 
 
-def _painted_without_text(fig: Figure) -> np.ndarray:
-    """The root figure drawn with every text's ink hidden, as RGB over white.
+def _painted(fig: Figure, *, keep_effect_texts: bool) -> np.ndarray:
+    """The root figure drawn with text ink hidden, as RGB over white.
+
+    By default every text's ink and path effects are hidden: the paper
+    under the texts. With ``keep_effect_texts`` the texts that carry path
+    effects are drawn exactly as they are, and only the others are hidden,
+    so the picture differs from the paper where those effects put ink.
 
     A renderer of its own at the figure's DPI, so the caller's canvas and
-    its buffer are untouched; every colour is put back even when the draw
-    fails. A transparent figure shows on white paper.
+    its buffer are untouched; every colour and effect is put back even when
+    the draw fails. A transparent figure shows on white paper.
     """
     root = fig.get_figure(root=True) or fig
     width, height = root.bbox.size
@@ -199,7 +212,10 @@ def _painted_without_text(fig: Figure) -> np.ndarray:
     undo: list[Callable[[], None]] = []
     try:
         # One by one, so a failure part-way still undoes those already hidden.
-        undo.extend(_hide_ink(text) for text in root.findobj(Text))
+        for text in root.findobj(Text):
+            if keep_effect_texts and text.get_path_effects():
+                continue
+            undo.append(_hide_ink(text, drop_effects=not keep_effect_texts))
         root.draw(renderer)
     finally:
         for step in reversed(undo):
@@ -209,6 +225,31 @@ def _painted_without_text(fig: Figure) -> np.ndarray:
     alpha = rgba[..., 3:4]
     rgb: np.ndarray = rgba[..., :3] * alpha + (1.0 - alpha)
     return rgb
+
+
+def _effect_ink(
+    paper: np.ndarray, inked: np.ndarray, box: _PixelBox, background: _RGB
+) -> _RGB | None:
+    """The strongest ink a text's path effects draw in ``box``, or ``None``.
+
+    The ink is every pixel that differs between the paper and the picture
+    that keeps the effects; of those, the one whose WCAG contrast with the
+    ``background`` is highest. Anti-aliased edge pixels blend toward the
+    paper, so they never outrank the core of a stroke, and a hairline that
+    covers pixels only in part reads as the faint ink it is. ``None`` means
+    the effects drew nothing that differs from the paper.
+    """
+    top, bottom, left, right = box
+    before = paper[top:bottom, left:right].reshape(-1, 3)
+    after = inked[top:bottom, left:right].reshape(-1, 3)
+    drawn = np.unique(after[np.any(before != after, axis=1)], axis=0)
+    if len(drawn) == 0:
+        return None
+    best = max(
+        (tuple(float(channel) for channel in pixel) for pixel in drawn),
+        key=lambda pixel: _contrast_ratio(pixel, background),
+    )
+    return (best[0], best[1], best[2])
 
 
 def _background_at(pixels: np.ndarray, box: _PixelBox) -> _RGB:
@@ -271,7 +312,13 @@ def check_text_contrast(
     readable = _readable(fig, _renderer)
     if not readable:
         return []
-    pixels = _painted_without_text(fig)
+    pixels = _painted(fig, keep_effect_texts=False)
+    # Only a figure with an outlined (path-effect) text needs the second draw.
+    inked = (
+        _painted(fig, keep_effect_texts=True)
+        if any(text.get_path_effects() for text, _color, _box in readable)
+        else None
+    )
 
     for text, text_color, box in readable:
         cells = _pixel_box(box, pixels.shape[0], pixels.shape[1])
@@ -279,6 +326,16 @@ def check_text_contrast(
             continue  # wholly off the canvas: nothing is drawn to read
 
         background = _background_at(pixels, cells)
+        ink: _RGB = text_color[:3]
+        if inked is not None and text.get_path_effects():
+            # An outlined text reads through whichever of its fill and
+            # stroke contrasts most with the background: judge that ink.
+            effect_ink = _effect_ink(pixels, inked, cells, background)
+            if effect_ink is not None and _contrast_ratio(
+                effect_ink, background
+            ) > _contrast_ratio(ink, background):
+                ink = effect_ink
+        text_color = (ink[0], ink[1], ink[2], text_color[3])
         ratio = _contrast_ratio(text_color[:3], background)
         large_text = _is_large_text(text)
         threshold = _LARGE_AA_THRESHOLD if large_text else _NORMAL_AA_THRESHOLD
