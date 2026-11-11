@@ -15,6 +15,10 @@ next to their code, ADR 0005), so the setup every test needs sits here:
    it, style and config mutations leak across tests ("works alone, fails
    in suite").
 
+3. The font-cache guard (``tests/support/font_cache_guard.py``): the session
+   fails when a test changes a matplotlib font inventory that existed before
+   the session, so a test cannot quietly rewrite the developer's real cache.
+
 Tests that *intentionally* depend on a specific style should call
 ``dm.style.use(...)`` themselves; the reset only happens between tests.
 """
@@ -32,6 +36,8 @@ from pathlib import Path
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
+
+pytest_plugins = ["tests.support.font_cache_guard"]
 
 _REPO_ROOT = Path(__file__).resolve().parent
 _SRC_PATH = str(_REPO_ROOT / "src")
