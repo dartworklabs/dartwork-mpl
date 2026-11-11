@@ -20,7 +20,7 @@ import dartwork_mpl as dm
 dm.style.use("presentation")
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize("13.5cm", "square"), subplot_kw={"projection": "polar"}
+    figsize=dm.figsize("25.4cm", "square"), subplot_kw={"projection": "polar"}
 )
 
 n_hues = 72  # 5° steps
@@ -63,7 +63,8 @@ ax.set_title(
     weight="bold",
     pad=30,
 )
-ax.legend(
+dm.place_legend(
+    ax,
     loc="lower right",
     bbox_to_anchor=(1.25, -0.05),
     fontsize=dm.fs(-0.5),

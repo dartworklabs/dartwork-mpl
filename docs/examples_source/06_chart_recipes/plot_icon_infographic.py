@@ -68,7 +68,7 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
         icon,
         fontproperties=mdi,
         fontsize=dm.fs(8),
-        color=color,
+        color=["dc.teal8", "dc.green8", "dc.violet8", "tw.emerald600"][idx],
         transform=ax.transAxes,
         va="top",
     )
@@ -80,7 +80,7 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
         f"{value}",
         fontsize=dm.fs(6),
         weight="bold",
-        color="dc.indigo4",
+        color="dc.indigo8",
         transform=ax.transAxes,
         ha="right",
         va="top",
@@ -90,7 +90,7 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
         0.55,
         unit,
         fontsize=dm.fs(0),
-        color="dc.indigo2",
+        color="dc.indigo8",
         transform=ax.transAxes,
         ha="right",
         va="top",
@@ -103,7 +103,7 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
         label,
         fontsize=dm.fs(-0.5),
         weight="bold",
-        color="dc.indigo3",
+        color="dc.indigo8",
         transform=ax.transAxes,
         va="top",
     )
@@ -139,8 +139,6 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-fig.suptitle(
-    "Sustainability KPI Dashboard", fontsize=dm.fs(1.5), weight="bold", y=1.05
-)
+fig.suptitle("Sustainability KPI Dashboard", fontsize=dm.fs(1.5), weight="bold")
 dm.simple_layout(fig)
 plt.show()

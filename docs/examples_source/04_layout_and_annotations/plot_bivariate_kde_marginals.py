@@ -30,8 +30,10 @@ y = 1.5 * x + np.random.normal(0, 1.2, n)
 x = np.concatenate([x, np.random.normal(3, 1, n // 2)])
 y = np.concatenate([y, np.random.normal(0, 1.5, n // 2)])
 
-fig = plt.figure(figsize=dm.figsize("13.5cm", "square"))
-gs = gridspec.GridSpec(4, 4, figure=fig, hspace=0.1, wspace=0.1)
+fig = plt.figure(figsize=dm.figsize("25.4cm", "square"))
+gs = gridspec.GridSpec(
+    4, 4, figure=fig, hspace=0.1, wspace=0.1, left=0.16, bottom=0.14
+)
 
 # Main joint plot (contour)
 ax_joint = fig.add_subplot(gs[1:4, 0:3])

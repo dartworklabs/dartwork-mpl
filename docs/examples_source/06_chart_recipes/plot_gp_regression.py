@@ -33,7 +33,7 @@ x_test = np.linspace(-3, 3, 200)
 mean_pred = true_fn(x_test)
 std_pred = 0.1 + 0.4 * np.abs(np.sin(x_test * 1.5))
 
-fig, ax = plt.subplots(figsize=dm.figsize("14.4cm", "golden"))
+fig, ax = plt.subplots(figsize=dm.figsize_for("full_slide"))
 
 # 1. Plot the uncertainty bands (1σ, 2σ, 3σ)
 base_color = dm.color("dc.teal2")
@@ -88,9 +88,7 @@ ax.set_title(
 ax.set_xlabel("Input Feature ($X$)")
 ax.set_ylabel("Target ($Y$)")
 
-ax.legend(
-    loc="upper right", framealpha=0.9, edgecolor="white", fontsize=dm.fs(-0.5)
-)
+dm.place_legend(ax, framealpha=0.9, edgecolor="white", fontsize=dm.fs(-0.5))
 ax.grid(True, alpha=0.3, ls=":")
 dm.simple_layout(fig)
 plt.show()

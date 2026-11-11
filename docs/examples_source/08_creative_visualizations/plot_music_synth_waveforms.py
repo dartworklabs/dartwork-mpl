@@ -64,7 +64,11 @@ for ax, (name, wave), colors, halo, line in zip(
         name,
         transform=ax.transAxes,
         fontsize=dm.fs(1),
-        color=line,
+        color={
+            "Sine Wave": "dc.violet9",
+            "Square Wave": "dc.teal9",
+            "Sawtooth Wave": "dc.orange9",
+        }[name],
         weight="bold",
     )
 

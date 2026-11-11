@@ -124,8 +124,9 @@ for dipole in dipoles:
         ha="center",
         va="center",
         fontsize=dm.fs(0),
-        color="white",
+        color="dc.gray9",
         weight="bold",
+        zorder=21,
     )
 
     ax.add_patch(
@@ -144,8 +145,9 @@ for dipole in dipoles:
         ha="center",
         va="center",
         fontsize=dm.fs(0),
-        color="white",
+        color="dc.gray9",
         weight="bold",
+        zorder=21,
     )
 
 ax.set_xlim(-5, 5)
@@ -161,7 +163,7 @@ ax.text(
     "Magnetic Field Visualization",
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.gray9",
     weight="bold",
 )
 

@@ -121,6 +121,6 @@ ax.set_ylabel("Measurement")
 # Panel labels & layout
 dm.label_axes(fig.axes)
 for a in fig.axes:
-    dm.set_decimal(a, yn=0)
+    dm.set_decimal(a, yn=1 if a is fig.axes[0] else 0)
 dm.simple_layout(fig)
 plt.show()

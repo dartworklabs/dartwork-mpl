@@ -39,7 +39,7 @@ ax.plot(
 # Fill with pseudo-alpha — note alpha=1.0, the color itself handles the lightness
 ax.fill_between(x, np.sin(x) - 1.0, -2.5, color=color_15, alpha=1.0)
 
-ax.legend(loc="upper right")
+dm.place_legend(ax)
 ax.set_title("Solid Colors Simulating Opacity")
 ax.set_ylim(-2.5, 1.5)
 

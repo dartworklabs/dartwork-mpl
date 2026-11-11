@@ -54,6 +54,6 @@ ax.set_title(
 ax.set_xlabel("Time (s)")
 ax.set_ylabel("Signal Intensity")
 
-dm.set_decimal(ax, yn=1)
+dm.set_decimal(ax, yn=0)
 dm.simple_layout(fig)
 plt.show()

@@ -115,7 +115,7 @@ title = ax.text(
     "Gravitational Particle Dynamics",
     ha="center",
     fontsize=dm.fs(3),
-    color="dc.teal5",
+    color="dc.teal9",
     weight="bold",
 )
 title.set_path_effects(

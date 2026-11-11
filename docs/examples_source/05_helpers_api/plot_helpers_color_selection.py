@@ -70,7 +70,7 @@ for i, color in enumerate(colors_seq):
 ax2.set_title("Sequential", fontsize=dm.fs(1))
 ax2.set_xlabel("X", fontsize=dm.fs(0))
 ax2.set_ylabel("Y", fontsize=dm.fs(0))
-ax2.legend(fontsize=dm.fs(-2), ncol=2)
+dm.place_legend(ax2, fontsize=dm.fs(-2), ncol=2)
 _minimal(ax2)
 
 # Diverging palette for bipolar data.
