@@ -265,3 +265,26 @@ def test_a_read_requested_before_the_final_write_counts_by_its_result_time(
     assert smoke.inspection(
         "claude", [], [], final, 10, returned_early, tmp_path
     ).startswith("unknown")
+
+
+def test_every_case_input_is_tracked_by_git():
+    """A case's CSV and base script exist on a fresh checkout, not only here.
+
+    ``*.csv`` is ignored repository-wide, so a new case's ``data.csv`` is left
+    out of a commit unless the ignore rule lets it through.
+    """
+    tracked = set(
+        subprocess.run(
+            ["git", "ls-files", "cases"],
+            cwd=smoke.HERE,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+    )
+    on_disk = {
+        path.relative_to(smoke.HERE).as_posix()
+        for path in (smoke.HERE / "cases").glob("*/*")
+        if path.is_file()
+    }
+    assert on_disk - tracked == set()
