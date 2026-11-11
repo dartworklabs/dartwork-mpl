@@ -1,7 +1,7 @@
 # Agent plotting smoke
 
-This is a small failure-harvesting exercise: fifteen realistic requests, one attempt
-per selected host. Inspect the PNGs and transcripts and file defects. Execution
+This is a small failure-harvesting exercise: twenty-seven realistic requests, one
+attempt per selected host. Inspect the PNGs and transcripts and file defects. Execution
 success only means the host exited successfully, produced PNG/PDF, and its final
 script could be re-run and validated. It says nothing about visual correctness.
 
@@ -19,7 +19,7 @@ uv run python evals/smoke/run_smoke.py --cases g01-single-column --hosts claude 
 ```
 
 `--cases` and `--hosts` accept space-separated or comma-separated names.
-Defaults: all fifteen cases, both hosts, two parallel units, 600 seconds per host.
+Defaults: all twenty-seven cases, both hosts, two parallel units, 600 seconds per host.
 An existing run id is refused. No API keys are passed to either host. Models
 use the host defaults (Codex's configured model selection is retained).
 
@@ -27,6 +27,16 @@ The wheel is built once from the current checkout. Each unit gets a fresh venv,
 the wheel, pandas, the wheel's installed skill, and only its own CSV/base script.
 The raw user request and appended project logistics are recorded separately.
 Edit originals and rendered bases are kept. No host sees the runner or results.
+
+Three kinds of case: `generate` (a new figure from a CSV), `edit` (one asked
+change to a clean `plot.py`) and `repair` (a `plot.py` that runs but carries a
+defect the validator reports; the request only says to validate and fix it).
+For `edit` and `repair` the base is also validated before the host starts
+(`base-validator.json`, `base_warnings` in `run.json`); that replay is removed
+before the host runs, so the host has to find the defect itself. Read a repair
+as base WARNING ids → final WARNING ids, then count in the transcript how many
+render-and-validate passes it took and whether the fix is the one the finding
+asked for.
 
 macOS Seatbelt blocks reads of all worktrees of this repo, the result root,
 other temporary units, and global instructions/skills/session histories.
@@ -61,7 +71,8 @@ content before attaching it. Separate runner failures from library/skill defects
 Do not interpret counts across hosts or rounds as a performance estimate.
 
 Inputs are synthetic and deterministic. `make_cases.py` regenerates the committed
-CSV, metadata and five runnable edit bases; it contains no reference solutions.
+CSV, metadata, five runnable edit bases and four defective repair bases; it
+contains no reference solutions and no repaired versions.
 
 Model-free checks: `uv run pytest evals/smoke/test_smoke.py` (explicit opt-in).
 Default pytest testpaths remain `tests` and `src/dartwork_mpl`; they exclude evals.

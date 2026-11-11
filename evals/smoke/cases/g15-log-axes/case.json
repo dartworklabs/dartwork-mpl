@@ -1,0 +1,6 @@
+{
+  "id": "g15-log-axes",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a paper, plot particle number concentration against particle diameter for the four samples in data.csv. Both quantities span several orders of magnitude, so use logarithmic axes. Draw the limit of 1000 particles per cm³ as a horizontal line with its name next to it. 12 cm wide. Save PNG, PDF and a runnable script."
+}

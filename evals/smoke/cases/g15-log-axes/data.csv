@@ -1,0 +1,53 @@
+diameter_nm,sample,concentration_per_cm3
+10.0,Roadside,254568.87
+17.8,Roadside,125998.75
+31.6,Roadside,42210.01
+56.2,Roadside,24945.13
+100.0,Roadside,13738.39
+177.8,Roadside,4171.63
+316.2,Roadside,2250.14
+562.3,Roadside,1064.17
+1000.0,Roadside,510.49
+1778.3,Roadside,237.11
+3162.3,Roadside,77.22
+5623.4,Roadside,51.32
+10000.0,Roadside,24.49
+10.0,Urban background,119547.88
+17.8,Urban background,57097.95
+31.6,Urban background,26711.23
+56.2,Urban background,12000.01
+100.0,Urban background,5137.25
+177.8,Urban background,2108.49
+316.2,Urban background,844.22
+562.3,Urban background,337.38
+1000.0,Urban background,137.43
+1778.3,Urban background,57.78
+3162.3,Urban background,25.08
+5623.4,Urban background,11.11
+10000.0,Urban background,4.92
+10.0,Indoor office,57885.15
+17.8,Indoor office,25045.5
+31.6,Indoor office,9233.02
+56.2,Indoor office,4790.08
+100.0,Indoor office,1425.69
+177.8,Indoor office,561.9
+316.2,Indoor office,318.19
+562.3,Indoor office,86.54
+1000.0,Indoor office,40.18
+1778.3,Indoor office,15.36
+3162.3,Indoor office,7.37
+5623.4,Indoor office,2.16
+10000.0,Indoor office,0.96
+10.0,Clean room,33452.56
+17.8,Clean room,12806.55
+31.6,Clean room,4404.65
+56.2,Clean room,1706.92
+100.0,Clean room,487.13
+177.8,Clean room,232.94
+316.2,Clean room,106.49
+562.3,Clean room,26.55
+1000.0,Clean room,10.62
+1778.3,Clean room,4.42
+3162.3,Clean room,1.59
+5623.4,Clean room,0.7
+10000.0,Clean room,0.19

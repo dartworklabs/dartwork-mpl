@@ -17,19 +17,91 @@ SPEC.loader.exec_module(smoke)
 
 
 def test_case_inventory_is_balanced_and_has_no_answers():
-    """The review corpus is exactly fifteen fresh requests with only local inputs."""
+    """The review corpus is twenty-seven requests with only local inputs."""
     cases = [
         json.loads(p.read_text())
         for p in (smoke.HERE / "cases").glob("*/case.json")
     ]
-    assert len(cases) == 15
-    assert Counter(c["lang"] for c in cases) == {"ko": 7, "en": 8}
-    assert Counter(c["kind"] for c in cases) == {"generate": 10, "edit": 5}
+    assert len(cases) == 27
+    assert Counter(c["lang"] for c in cases) == {"ko": 13, "en": 14}
+    assert Counter(c["kind"] for c in cases) == {
+        "generate": 18,
+        "edit": 5,
+        "repair": 4,
+    }
     for case in cases:
         assert set(case) == {"id", "kind", "lang", "request"}
         folder = smoke.HERE / "cases" / case["id"]
         assert (folder / "data.csv").is_file()
-        assert (folder / "plot.py").is_file() == (case["kind"] == "edit")
+        assert (folder / "plot.py").is_file() == smoke.has_base(case)
+        assert sorted(p.name for p in folder.iterdir()) == sorted(
+            ["case.json", "data.csv", *(["plot.py"] * smoke.has_base(case))]
+        )
+
+
+def test_edit_and_repair_start_from_a_base_and_generate_does_not():
+    """A base script is rendered, validated and kept apart from the revision."""
+    assert smoke.has_base({"kind": "edit"})
+    assert smoke.has_base({"kind": "repair"})
+    assert not smoke.has_base({"kind": "generate"})
+    assert smoke.final_script({"kind": "repair"}) == "revision.py"
+    assert smoke.final_script({"kind": "generate"}) == "plot.py"
+
+
+def test_warning_ids_keep_only_warnings_once_each():
+    """INFO findings are hints; a WARNING id repeated across saves counts once."""
+    reports = [
+        {
+            "findings": [
+                {"check_id": "TICK_OVERLAP", "severity": "WARNING"},
+                {"check_id": "TICK_CROWD", "severity": "INFO"},
+            ]
+        },
+        {
+            "findings": [
+                {"check_id": "TICK_OVERLAP", "severity": "WARNING"},
+                {"check_id": "LEGEND_ON_DATA", "severity": "WARNING"},
+            ]
+        },
+    ]
+    assert smoke.warning_ids(reports) == ["LEGEND_ON_DATA", "TICK_OVERLAP"]
+    assert smoke.warning_ids([]) == []
+
+
+def test_summary_shows_the_base_warnings_beside_the_final_ones(tmp_path):
+    """A repair is read as before → after; a figure with no base shows none."""
+    records = [
+        {
+            "case": "r01",
+            "host": "claude",
+            "execution": "success",
+            "validator": "re-ran",
+            "warnings": [],
+            "base_validator": "re-ran",
+            "base_warnings": ["LEGEND_ON_DATA"],
+            "tokens": None,
+            "turns": 3,
+        },
+        {
+            "case": "g01",
+            "host": "codex",
+            "execution": "success",
+            "validator": "re-ran",
+            "warnings": ["TICK_OVERLAP"],
+            "tokens": None,
+            "turns": 2,
+        },
+    ]
+    smoke.summary(tmp_path, records)
+    rows = (tmp_path / "SUMMARY.md").read_text().splitlines()
+    repair = next(r for r in rows if "r01/claude" in r).split("|")
+    fresh = next(r for r in rows if "g01/codex" in r).split("|")
+    header = next(r for r in rows if r.startswith("| Case")).split("|")
+    base = header.index(" Base WARNING ids ")
+    assert repair[base].strip() == "LEGEND_ON_DATA"
+    assert repair[base + 1].strip() == "none"
+    assert fresh[base].strip() == "no base"
+    assert fresh[base + 1].strip() == "TICK_OVERLAP"
 
 
 def test_native_usage_preserves_cache_fields_and_missing_values():

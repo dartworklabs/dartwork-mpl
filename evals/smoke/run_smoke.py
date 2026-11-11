@@ -435,6 +435,76 @@ Path("validator.json").write_text(json.dumps(reports, indent=2))
 """
 
 
+def has_base(case):
+    """Edits and repairs start from a script the host must leave as it is."""
+    return case["kind"] in {"edit", "repair"}
+
+
+def final_script(case):
+    """A revision is kept beside its base; a new figure is the only script."""
+    return "revision.py" if has_base(case) else "plot.py"
+
+
+def warning_ids(reports):
+    """The distinct WARNING ids over every validated save and open figure."""
+    return sorted(
+        {
+            f["check_id"]
+            for r in reports
+            for f in r["findings"]
+            if f["severity"] == "WARNING"
+        }
+    )
+
+
+def replay(project, script, py, env, hidden, unit, tag=""):
+    """Re-run a copy of ``script`` and validate each figure as it is saved.
+
+    The copy lives in its own directory, the only place it may write, so a
+    script with absolute paths cannot touch the host's ``out/``. That
+    directory is removed afterwards: a base is replayed before the host
+    starts, and the host must not find its findings.
+    """
+    folder = project / "replay"
+    folder.mkdir()
+    try:
+        for path in project.iterdir():
+            if (
+                not path.is_symlink()
+                and not path.name.startswith(".")
+                and path.name not in {"replay", "out"}
+            ):
+                target = folder / path.name
+                shutil.copytree(
+                    path, target, symlinks=True
+                ) if path.is_dir() else shutil.copy2(path, target)
+        (folder / "_validate.py").write_text(REPLAY)
+        replay_env = dict(env)
+        for key, name in (("TMPDIR", ".tmp"), ("MPLCONFIGDIR", ".mplconfig")):
+            (folder / name).mkdir()
+            replay_env[key] = str(folder / name)
+        log = command(
+            sandbox([py, "_validate.py", script], project, hidden, folder),
+            folder,
+            replay_env,
+            timeout=120,
+        )
+        (unit / f"{tag}replay.log").write_text(log)
+        shutil.copy2(folder / "validator.json", unit / f"{tag}validator.json")
+        if (folder / "out").is_dir() and not (folder / "out").is_symlink():
+            shutil.copytree(
+                folder / "out", unit / f"{tag}replay-artifacts", symlinks=True
+            )
+        reports = json.loads((unit / f"{tag}validator.json").read_text())
+        if not reports:
+            raise RuntimeError(
+                "Script ran but no saved/open figure could be validated"
+            )
+        return reports
+    finally:
+        shutil.rmtree(folder)
+
+
 def host_outputs(project):
     """Whether the host left a real out/figure.png and out/figure.pdf."""
     return all(
@@ -535,16 +605,29 @@ def one(case, host, wheel, run, timeout):
             record["isolation_probe"] = (
                 "passed: checkout/results/global instructions/sibling reads denied"
             )
-            if case["kind"] == "edit":
+            if has_base(case):
                 command(sandbox([py, "plot.py"], project, hidden), project, env)
                 shutil.copytree(project / "out", unit / "base")
                 shutil.rmtree(project / "out")
-            final_script = (
-                "revision.py" if case["kind"] == "edit" else "plot.py"
-            )
+                # What the validator says about the base, for before → after.
+                record["base_validator"] = "could not re-run"
+                try:
+                    record["base_warnings"] = warning_ids(
+                        replay(
+                            project, "plot.py", py, env, hidden, unit, "base-"
+                        )
+                    )
+                    record["base_validator"] = "re-ran"
+                except (
+                    RuntimeError,
+                    OSError,
+                    subprocess.TimeoutExpired,
+                ) as exc:
+                    record["base_replay_error"] = str(exc)
+            final = final_script(case)
             prompt = (
                 case["request"]
-                + f"\n\nProject notes: dartwork-mpl and pandas are installed in .venv. Use .venv/bin/python. The installed dartwork-mpl skill is available in this project. Keep the final runnable script as {final_script} and final outputs as out/figure.png and out/figure.pdf. Do the work yourself without subagents."
+                + f"\n\nProject notes: dartwork-mpl and pandas are installed in .venv. Use .venv/bin/python. The installed dartwork-mpl skill is available in this project. Keep the final runnable script as {final} and final outputs as out/figure.png and out/figure.pdf. Do the work yourself without subagents."
             )
             (unit / "prompt.txt").write_text(prompt)
             argv = host_command(host, prompt, project)
@@ -564,7 +647,7 @@ def one(case, host, wheel, run, timeout):
             # Judged before the replay, which must not be able to supply them.
             produced = host_outputs(project)
             png = project / "out/figure.png"
-            script = project / final_script
+            script = project / final
             final_time = max(
                 (
                     p.stat().st_mtime
@@ -585,66 +668,10 @@ def one(case, host, wheel, run, timeout):
             record["validator"] = "could not re-run"
             if script.is_file() and not script.is_symlink():
                 # Re-run a copy: validation must not overwrite the agent's outputs.
-                replay = project / "replay"
-                replay.mkdir()
-                for path in project.iterdir():
-                    if (
-                        not path.is_symlink()
-                        and not path.name.startswith(".")
-                        and path.name not in {"replay", "out"}
-                    ):
-                        target = replay / path.name
-                        shutil.copytree(
-                            path, target, symlinks=True
-                        ) if path.is_dir() else shutil.copy2(path, target)
-                (replay / "_validate.py").write_text(REPLAY)
-                # The replay may write only under its own directory, so a
-                # script with absolute paths cannot touch the host's out/.
-                replay_env = dict(env)
-                for key, name in (
-                    ("TMPDIR", ".tmp"),
-                    ("MPLCONFIGDIR", ".mplconfig"),
-                ):
-                    (replay / name).mkdir()
-                    replay_env[key] = str(replay / name)
                 try:
-                    log = command(
-                        sandbox(
-                            [py, "_validate.py", final_script],
-                            project,
-                            hidden,
-                            replay,
-                        ),
-                        replay,
-                        replay_env,
-                        timeout=120,
-                    )
-                    (unit / "replay.log").write_text(log)
-                    shutil.copy2(
-                        replay / "validator.json", unit / "validator.json"
-                    )
-                    if (replay / "out").is_dir() and not (
-                        replay / "out"
-                    ).is_symlink():
-                        shutil.copytree(
-                            replay / "out",
-                            unit / "replay-artifacts",
-                            symlinks=True,
-                        )
-                    reports = json.loads((unit / "validator.json").read_text())
-                    if not reports:
-                        raise RuntimeError(
-                            "Script ran but no saved/open figure could be validated"
-                        )
+                    reports = replay(project, final, py, env, hidden, unit)
                     record["validator"] = "re-ran"
-                    record["warnings"] = sorted(
-                        {
-                            f["check_id"]
-                            for r in reports
-                            for f in r["findings"]
-                            if f["severity"] == "WARNING"
-                        }
-                    )
+                    record["warnings"] = warning_ids(reports)
                 except (
                     RuntimeError,
                     OSError,
@@ -674,8 +701,8 @@ def summary(run, records):
         "",
         "Execution is a process/artifact check, not figure correctness. Inspect PNGs and transcripts.",
         "",
-        "| Case / host | Execution | Files | Validator WARNING ids | Host tokens | Turns | Wall s | Opened final PNG after last write |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Case / host | Execution | Files | Base WARNING ids | Validator WARNING ids | Host tokens | Turns | Wall s | Opened final PNG after last write |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in records:
         prefix = f"{r['case']}/{r['host']}"
@@ -685,8 +712,14 @@ def summary(run, records):
         findings = ", ".join(r["warnings"]) or (
             "none" if r.get("validator") == "re-ran" else "could not re-run"
         )
+        if "base_validator" not in r:
+            base = "no base"
+        elif r["base_validator"] != "re-ran":
+            base = "could not re-run"
+        else:
+            base = ", ".join(r["base_warnings"]) or "none"
         lines.append(
-            f"| [{prefix}]({prefix}/run.json) | {r['execution']} | {files} | {findings} | {json.dumps(r['tokens'])} | {r['turns']} | {r.get('wall_s', 'NOTRUN')} | {r.get('opened_final_png', 'unknown')} |"
+            f"| [{prefix}]({prefix}/run.json) | {r['execution']} | {files} | {base} | {findings} | {json.dumps(r['tokens'])} | {r['turns']} | {r.get('wall_s', 'NOTRUN')} | {r.get('opened_final_png', 'unknown')} |"
         )
     (run / "SUMMARY.md").write_text("\n".join(lines) + "\n")
 

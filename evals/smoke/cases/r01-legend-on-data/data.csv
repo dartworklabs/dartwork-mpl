@@ -1,0 +1,91 @@
+week,control,load_MWh
+0,Rule-based control,40.0
+1,Rule-based control,42.0
+2,Rule-based control,43.8
+3,Rule-based control,45.5
+4,Rule-based control,46.7
+5,Rule-based control,47.6
+6,Rule-based control,48.0
+7,Rule-based control,47.9
+8,Rule-based control,47.3
+9,Rule-based control,46.2
+10,Rule-based control,44.8
+11,Rule-based control,43.1
+12,Rule-based control,41.1
+13,Rule-based control,39.1
+14,Rule-based control,37.2
+15,Rule-based control,35.4
+16,Rule-based control,33.9
+17,Rule-based control,32.8
+18,Rule-based control,32.2
+19,Rule-based control,32.0
+20,Rule-based control,32.3
+21,Rule-based control,33.1
+22,Rule-based control,34.4
+23,Rule-based control,35.9
+24,Rule-based control,37.8
+25,Rule-based control,39.7
+26,Rule-based control,41.7
+27,Rule-based control,43.6
+28,Rule-based control,45.3
+29,Rule-based control,46.6
+0,Model predictive control,52.7
+1,Model predictive control,53.6
+2,Model predictive control,54.0
+3,Model predictive control,53.9
+4,Model predictive control,53.3
+5,Model predictive control,52.2
+6,Model predictive control,50.8
+7,Model predictive control,49.1
+8,Model predictive control,47.1
+9,Model predictive control,45.1
+10,Model predictive control,43.2
+11,Model predictive control,41.4
+12,Model predictive control,39.9
+13,Model predictive control,38.8
+14,Model predictive control,38.2
+15,Model predictive control,38.0
+16,Model predictive control,38.3
+17,Model predictive control,39.1
+18,Model predictive control,40.4
+19,Model predictive control,41.9
+20,Model predictive control,43.8
+21,Model predictive control,45.7
+22,Model predictive control,47.7
+23,Model predictive control,49.6
+24,Model predictive control,51.3
+25,Model predictive control,52.6
+26,Model predictive control,53.5
+27,Model predictive control,54.0
+28,Model predictive control,53.9
+29,Model predictive control,53.4
+0,Reinforcement learning,59.3
+1,Reinforcement learning,58.2
+2,Reinforcement learning,56.8
+3,Reinforcement learning,55.1
+4,Reinforcement learning,53.1
+5,Reinforcement learning,51.1
+6,Reinforcement learning,49.2
+7,Reinforcement learning,47.4
+8,Reinforcement learning,45.9
+9,Reinforcement learning,44.8
+10,Reinforcement learning,44.2
+11,Reinforcement learning,44.0
+12,Reinforcement learning,44.3
+13,Reinforcement learning,45.1
+14,Reinforcement learning,46.4
+15,Reinforcement learning,47.9
+16,Reinforcement learning,49.8
+17,Reinforcement learning,51.7
+18,Reinforcement learning,53.7
+19,Reinforcement learning,55.6
+20,Reinforcement learning,57.3
+21,Reinforcement learning,58.6
+22,Reinforcement learning,59.5
+23,Reinforcement learning,60.0
+24,Reinforcement learning,59.9
+25,Reinforcement learning,59.4
+26,Reinforcement learning,58.4
+27,Reinforcement learning,57.0
+28,Reinforcement learning,55.3
+29,Reinforcement learning,53.4

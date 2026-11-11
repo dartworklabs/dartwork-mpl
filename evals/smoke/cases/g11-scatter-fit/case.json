@@ -1,0 +1,6 @@
+{
+  "id": "g11-scatter-fit",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a journal paper, plot cooling power against outdoor temperature from data.csv as a scatter, with the two buildings told apart. Add a least-squares line for each building and write each line's slope and R² on the figure where they do not cover the points. Single column, 9 cm wide. Save PNG, PDF and a runnable script."
+}

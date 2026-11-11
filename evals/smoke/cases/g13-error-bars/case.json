@@ -1,0 +1,6 @@
+{
+  "id": "g13-error-bars",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a report, compare the three heat pumps in data.csv: mean COP against outdoor temperature, one line per heat pump, with error bars of plus and minus one standard deviation. Where the pumps are close, their error bars must still be told apart. 14 cm wide. Save PNG, PDF and a runnable script."
+}
