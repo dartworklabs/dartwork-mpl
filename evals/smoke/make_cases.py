@@ -146,6 +146,50 @@ def main():
             for i in range(6)
         ],
     )
+    case(
+        "g08-slide-grouped-bars",
+        "generate",
+        "ko",
+        "발표 슬라이드의 제목 아래에 넣을 그림을 data.csv로 만들어 주세요. 여섯 개 건물 유형마다 세 가지 제어 방식의 절감률을 나란히 비교하는 막대그래프이고, 막대마다 값을 적어 주세요. 강의실 뒤에서도 읽혀야 합니다. PNG와 PDF, 실행 가능한 스크립트를 남겨 주세요.",
+        ["건물 유형", "제어 방식", "절감률_pct"],
+        [
+            (b, c, round(6 + 2.5 * i + 1.7 * j + ((i * 3 + j) % 4) * 0.6, 1))
+            for i, b in enumerate(
+                ["사무동", "강의동", "실험동", "도서관", "기숙사", "체육관"]
+            )
+            for j, c in enumerate(["규칙 기반", "모델 예측", "강화 학습"])
+        ],
+    )
+    case(
+        "g09-slide-two-charts",
+        "generate",
+        "en",
+        "I need one figure for a 16:9 slide that already has a title: two charts side by side from data.csv. Left: weekly load for the four sites as lines. Right: each site's mean load as bars, in the same site colours. Put the units on the axes and keep the text large enough for a slide. Save PNG, PDF and the script.",
+        ["week", "site", "load_MWh"],
+        [
+            (w, s, round(40 + 6 * k + 8 * math.sin(w / 2 + k), 1))
+            for k, s in enumerate(
+                ["Harbour campus", "Hill campus", "North annex", "Data hall"]
+            )
+            for w in range(1, 13)
+        ],
+    )
+    case(
+        "g10-twelve-series",
+        "generate",
+        "en",
+        "For a technical report, plot all twelve sensors in data.csv against time in one 14 cm wide figure. A reader must be able to tell which line is which sensor by its full name, and the names must not cover the lines. Keep every value. Save PNG, PDF and a runnable script.",
+        ["time_min", "sensor", "temperature_C"],
+        [
+            (
+                t * 5,
+                f"Zone {z:02d} supply air temperature",
+                round(18 + 0.35 * z + 1.5 * math.sin(t / 4 + z / 2), 2),
+            )
+            for z in range(1, 13)
+            for t in range(25)
+        ],
+    )
     edits = [
         (
             "e01-ylabel-only",
@@ -155,7 +199,7 @@ def main():
         (
             "e02-line-color-only",
             "en",
-            "In this report's plot.py, change only the Model line in the left panel to #C44E52. Keep every other property, including the existing legend appearance, the right panel, data, sizes and layout unchanged. Leave the original and save the revision as a new script, PNG and PDF.",
+            "In this report's plot.py, change only the colour of the Model line in the left panel to #C44E52; its legend entry should show the new colour too. Keep everything else unchanged: the Measured line, the right panel, data, text, sizes and layout. Leave the original and save the revision as a new script, PNG and PDF.",
         ),
         (
             "e03-width-only",
@@ -206,6 +250,39 @@ dm.save_formats(fig, "out/base", formats=("png", "pdf"))
             ],
         )
         (folder / "plot.py").write_text(base)
+    folder = case(
+        "e04-paper-to-slide",
+        "edit",
+        "ko",
+        "plot.py는 보고서용 그림입니다. 같은 그림을 16:9 발표 슬라이드 한 장을 가득 채우는 그림으로 바꿔 주세요. 데이터, 두 패널의 구성, 계열 이름과 색은 그대로 두세요. 원본을 보존하고 수정본 스크립트, PNG와 PDF를 따로 저장해 주세요.",
+        ["time_s", "measured_mV", "model_mV"],
+        [
+            (
+                i,
+                round(math.sin(i / 3) + 2, 3),
+                round(0.9 * math.sin(i / 3) + 2, 3),
+            )
+            for i in range(15)
+        ],
+    )
+    (folder / "plot.py").write_text(base)
+    folder = case(
+        "e05-add-series",
+        "edit",
+        "en",
+        "data.csv has a third column, baseline_mV, that plot.py does not draw. Add it to the left panel as a grey dashed line named Baseline, with a legend entry. Change nothing else: the other lines, the right panel, text, sizes and layout stay as they are. Leave the original and save the revision as a new script, PNG and PDF.",
+        ["time_s", "measured_mV", "model_mV", "baseline_mV"],
+        [
+            (
+                i,
+                round(math.sin(i / 3) + 2, 3),
+                round(0.9 * math.sin(i / 3) + 2, 3),
+                round(2 + i / 40, 3),
+            )
+            for i in range(15)
+        ],
+    )
+    (folder / "plot.py").write_text(base)
 
 
 if __name__ == "__main__":

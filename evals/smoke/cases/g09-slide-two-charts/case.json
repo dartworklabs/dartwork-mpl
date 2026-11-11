@@ -1,0 +1,6 @@
+{
+  "id": "g09-slide-two-charts",
+  "kind": "generate",
+  "lang": "en",
+  "request": "I need one figure for a 16:9 slide that already has a title: two charts side by side from data.csv. Left: weekly load for the four sites as lines. Right: each site's mean load as bars, in the same site colours. Put the units on the axes and keep the text large enough for a slide. Save PNG, PDF and the script."
+}

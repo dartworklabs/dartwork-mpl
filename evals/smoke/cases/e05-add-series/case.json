@@ -1,0 +1,6 @@
+{
+  "id": "e05-add-series",
+  "kind": "edit",
+  "lang": "en",
+  "request": "data.csv has a third column, baseline_mV, that plot.py does not draw. Add it to the left panel as a grey dashed line named Baseline, with a legend entry. Change nothing else: the other lines, the right panel, text, sizes and layout stay as they are. Leave the original and save the revision as a new script, PNG and PDF."
+}

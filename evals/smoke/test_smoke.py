@@ -17,14 +17,14 @@ SPEC.loader.exec_module(smoke)
 
 
 def test_case_inventory_is_balanced_and_has_no_answers():
-    """The review corpus is exactly ten fresh requests with only local inputs."""
+    """The review corpus is exactly fifteen fresh requests with only local inputs."""
     cases = [
         json.loads(p.read_text())
         for p in (smoke.HERE / "cases").glob("*/case.json")
     ]
-    assert len(cases) == 10
-    assert Counter(c["lang"] for c in cases) == {"ko": 5, "en": 5}
-    assert Counter(c["kind"] for c in cases) == {"generate": 7, "edit": 3}
+    assert len(cases) == 15
+    assert Counter(c["lang"] for c in cases) == {"ko": 7, "en": 8}
+    assert Counter(c["kind"] for c in cases) == {"generate": 10, "edit": 5}
     for case in cases:
         assert set(case) == {"id", "kind", "lang", "request"}
         folder = smoke.HERE / "cases" / case["id"]
@@ -265,3 +265,26 @@ def test_a_read_requested_before_the_final_write_counts_by_its_result_time(
     assert smoke.inspection(
         "claude", [], [], final, 10, returned_early, tmp_path
     ).startswith("unknown")
+
+
+def test_every_case_input_is_tracked_by_git():
+    """A case's CSV and base script exist on a fresh checkout, not only here.
+
+    ``*.csv`` is ignored repository-wide, so a new case's ``data.csv`` is left
+    out of a commit unless the ignore rule lets it through.
+    """
+    tracked = set(
+        subprocess.run(
+            ["git", "ls-files", "cases"],
+            cwd=smoke.HERE,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+    )
+    on_disk = {
+        path.relative_to(smoke.HERE).as_posix()
+        for path in (smoke.HERE / "cases").glob("*/*")
+        if path.is_file()
+    }
+    assert on_disk - tracked == set()
