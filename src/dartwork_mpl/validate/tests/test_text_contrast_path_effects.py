@@ -106,3 +106,28 @@ def test_another_texts_ink_does_not_rescue_a_faint_outlined_text() -> None:
 
     assert [w.detail["sample"] for w in found] == ["Outlined title"]
     assert found[0].detail["ratio"] < 3.0
+
+
+def test_a_neighbours_stroke_reaching_into_the_box_does_not_rescue_it() -> None:
+    """A neighbour whose glyphs are clear of the box can still paint into it.
+
+    A path effect draws beyond the text's own box: a thick dark stroke (or an
+    offset shadow) of the text below reaches up into the faint title's box
+    although the two glyph boxes do not touch. That ink is the neighbour's.
+    """
+    fig, faint = _outlined_title(fill="white", outline="#d5c7ff", linewidth=3)
+    below = fig.text(0.5, 0.39, "Thick stroke", ha="center", color="#111111")
+    below.set_fontsize(16)
+    below.set_path_effects(
+        [path_effects.withStroke(linewidth=14, foreground="#111111")]
+    )
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    faint_box = faint.get_window_extent(renderer)
+    below_box = below.get_window_extent(renderer)
+    assert not faint_box.overlaps(below_box)
+    assert faint_box.y0 - below_box.y1 < 7 * fig.dpi / 72  # within the stroke
+
+    found = _contrast(fig)
+
+    assert "Outlined title" in [w.detail["sample"] for w in found]

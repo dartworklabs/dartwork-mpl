@@ -10,9 +10,9 @@ faces, Axes drawing order, clip paths and markers all count as they are
 drawn; a text's own box (``bbox=``) and a legend's frame stay in the
 picture, other texts do not. A text drawn with path effects (an outline
 stroke, a halo, a shadow) is read by the ink it really draws: the effects
-are dropped from that reference picture, a second picture keeps them, and
-the pixels that differ between the two are the ink, judged against the
-background as the strongest of its pixels. The draws do not touch the
+are dropped from that reference picture, a second picture draws that text
+alone with them, and the pixels that differ between the two are its ink,
+judged against the background as the strongest of its pixels. The draws do not touch the
 caller's canvas, and the colours and effects are put back even when drawing
 fails. A text with no finite box on the canvas is not read.
 """
@@ -228,18 +228,6 @@ def _painted(fig: Figure, *, keep: tuple[Text, ...] = ()) -> np.ndarray:
     return rgb
 
 
-def _overlaps(first: _PixelBox, second: _PixelBox | None) -> bool:
-    """Whether two pixel boxes share any pixel (``second`` may be off canvas)."""
-    if second is None:
-        return False
-    return (
-        first[0] < second[1]
-        and second[0] < first[1]
-        and first[2] < second[3]
-        and second[2] < first[3]
-    )
-
-
 def _effect_ink(
     paper: np.ndarray, inked: np.ndarray, box: _PixelBox, background: _RGB
 ) -> _RGB | None:
@@ -326,16 +314,6 @@ def check_text_contrast(
     if not readable:
         return []
     pixels = _painted(fig)
-    # Only a figure with an outlined (path-effect) text needs another draw.
-    outlined = tuple(
-        text for text, _color, _box in readable if text.get_path_effects()
-    )
-    inked = _painted(fig, keep=outlined) if outlined else None
-    outlined_cells = [
-        _pixel_box(box, pixels.shape[0], pixels.shape[1])
-        for text, _color, box in readable
-        if text.get_path_effects()
-    ]
 
     for text, text_color, box in readable:
         cells = _pixel_box(box, pixels.shape[0], pixels.shape[1])
@@ -344,14 +322,13 @@ def check_text_contrast(
 
         background = _background_at(pixels, cells)
         ink: _RGB = text_color[:3]
-        if inked is not None and text.get_path_effects():
+        if text.get_path_effects():
             # An outlined text reads through whichever of its fill and
             # stroke contrasts most with the background: judge that ink.
-            own = inked
-            if sum(_overlaps(cells, other) for other in outlined_cells) > 1:
-                # Another outlined text's ink sits in this box: draw this
-                # text alone so only its own effects count as its ink.
-                own = _painted(fig, keep=(text,))
+            # Drawn alone, one extra draw per outlined text: a stroke or an
+            # offset shadow paints beyond its text's box, so a neighbour's
+            # ink can sit in this box even when the two boxes do not touch.
+            own = _painted(fig, keep=(text,))
             effect_ink = _effect_ink(pixels, own, cells, background)
             if effect_ink is not None and _contrast_ratio(
                 effect_ink, background
