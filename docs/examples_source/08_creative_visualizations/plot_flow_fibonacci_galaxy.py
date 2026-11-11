@@ -94,7 +94,7 @@ title_text = ax.text(
     "Fibonacci Galaxy M-" + str(np.random.randint(100, 999)),
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.teal9",
     alpha=0.8,
 )
 title_text.set_path_effects(
