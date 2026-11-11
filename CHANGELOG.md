@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- `SLIDE_OVERSIZE` warns when slide-preset text would shrink on a root canvas exceeding 13.33 × 7.5 in plus 1%.
-
+- **`SLIDE_OVERSIZE`: a slide figure drawn larger than a slide.** Under
+  `presentation` (or `presentation-kr`) a figure wider or taller than the
+  largest common slide, 13.33 × 7.5 in, is scaled down when it is placed and
+  its text shrinks with it: an agent asked for "a figure readable on a
+  slide" drew 24 × 13.5 in, whose text is shown at 0.42×, and nothing said
+  so. `dm.validate_figure` and `dm.review` now warn, name the scale and
+  point to `dm.figsize_for("full_slide")` / `("slide")`. Other presets are
+  never checked.
 - **`dm.figsize_for(..., labels=names)` picks a width the category names
   fit flat.** Given the names under the x axis, `"default"` and
   `"grouped"` take the narrowest width of the preset's own table (report
@@ -571,6 +577,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Three false validator findings are gone.** An audit of the 91 gallery
+  scripts found 5 of 77 warnings were the validator's own mistakes.
+  `GRAYSCALE_SAFETY` could not run (`CHECK_FAILED`) on a collection with
+  per-point alpha: `Collection.get_alpha()` is an array there and a scalar
+  test raised; the facecolor rows already carry the alpha. `MARGIN_ASYMMETRY`
+  measured a header holding a figure title or `fig.legend` as empty, because
+  figure-level text and legends were left out of the content box.
+  `TEXT_CONTRAST` compared only the fill of a text drawn with path effects,
+  so white text with a visible dark outline read as white on white (1:1);
+  it now reads the ink each such text really draws, one extra draw per
+  outlined text, and still reports an outline that is itself too faint.
+- **The gallery draws what it shows.** The same audit found 70 visible
+  defects in 29 gallery figures, live on the docs site: titles cut off at
+  the canvas edge and legends over the data after `presentation` became
+  `scientific` × 2.6, white titles on a white canvas, forced `.0` ticks,
+  and a Fibonacci galaxy drawn as a dot in a black square since April (its
+  spiral ended at radius 6.9 on ±150 axes). A test now runs all 91 gallery
+  scripts and 36 templates and fails on any validator warning.
 - **`dm.simple_layout` lays out every SubFigure in its own box.** It used to
   fit the first Axes' grid alone, with edges measured on the canvas written
   into that SubFigure's grid: tick labels ran off the canvas, a neighbour's
