@@ -944,9 +944,10 @@ def test_viewer_server_stops_after_normal_exit_and_failure(
     not sys.platform.startswith("linux"),
     reason="PR_SET_PDEATHSIG is Linux-only",
 )
-@pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGKILL])
+# Names, not members: Windows has no signal.SIGKILL at collection time.
+@pytest.mark.parametrize("signame", ["SIGTERM", "SIGKILL"])
 def test_viewer_server_dies_with_killed_test_process(
-    tmp_path: Path, signum: int
+    tmp_path: Path, signame: str
 ) -> None:
     """A test process killed mid-test (CI cancel, timeout) takes its server along.
 
@@ -972,7 +973,7 @@ def test_viewer_server_dies_with_killed_test_process(
             time.sleep(0.05)
         server = int(marker.read_text())
         os.kill(server, 0)
-        holder.send_signal(signum)
+        holder.send_signal(getattr(signal, signame))
         holder.wait(timeout=10)
         assert _wait_gone(server), f"server {server} outlived its killed parent"
     finally:
