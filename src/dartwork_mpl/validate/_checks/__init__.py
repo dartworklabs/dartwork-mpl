@@ -32,6 +32,7 @@ from . import (  # noqa: F401  (imported to register their checks and fixes)
     overlap,
     pie_label,
     preset_override,
+    slide_oversize,
     text_contrast,
     tick_corner,
     tick_crowd,

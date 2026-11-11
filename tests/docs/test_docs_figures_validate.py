@@ -35,6 +35,7 @@ _DOCS = Path(__file__).resolve().parents[2] / "docs"
 CHECKS = (
     "OVERFLOW",
     "CLIPPED_TEXT",
+    "SLIDE_OVERSIZE",
     "OVERLAP",
     "CROSS_AXES_OVERLAP",
     "LEGEND_OVERFLOW",
