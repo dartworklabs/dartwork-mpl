@@ -17,14 +17,14 @@ SPEC.loader.exec_module(smoke)
 
 
 def test_case_inventory_is_balanced_and_has_no_answers():
-    """The review corpus is exactly ten fresh requests with only local inputs."""
+    """The review corpus is exactly fifteen fresh requests with only local inputs."""
     cases = [
         json.loads(p.read_text())
         for p in (smoke.HERE / "cases").glob("*/case.json")
     ]
-    assert len(cases) == 10
-    assert Counter(c["lang"] for c in cases) == {"ko": 5, "en": 5}
-    assert Counter(c["kind"] for c in cases) == {"generate": 7, "edit": 3}
+    assert len(cases) == 15
+    assert Counter(c["lang"] for c in cases) == {"ko": 7, "en": 8}
+    assert Counter(c["kind"] for c in cases) == {"generate": 10, "edit": 5}
     for case in cases:
         assert set(case) == {"id", "kind", "lang", "request"}
         folder = smoke.HERE / "cases" / case["id"]

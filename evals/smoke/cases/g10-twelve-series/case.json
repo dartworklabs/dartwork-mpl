@@ -1,0 +1,6 @@
+{
+  "id": "g10-twelve-series",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a technical report, plot all twelve sensors in data.csv against time in one 14 cm wide figure. A reader must be able to tell which line is which sensor by its full name, and the names must not cover the lines. Keep every value. Save PNG, PDF and a runnable script."
+}
