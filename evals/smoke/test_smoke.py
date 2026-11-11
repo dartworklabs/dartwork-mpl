@@ -141,3 +141,108 @@ def test_timeout_kills_child_group_and_keeps_partial_transcript():
         assert record["timed_out"] is True
         assert record["exit_code"] != 0
         assert (project / "events.jsonl").read_text().strip() == "started"
+
+
+def _claude_read(tool_id, path, at):
+    """A timestamped Claude image Read call and its successful image result."""
+    call = {
+        "message": {
+            "content": [
+                {
+                    "type": "tool_use",
+                    "name": "Read",
+                    "id": tool_id,
+                    "input": {"file_path": path},
+                }
+            ]
+        }
+    }
+    result = {
+        "message": {
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "content": [{"type": "image"}],
+                }
+            ]
+        }
+    }
+    return [
+        {"received_at": at, "line": json.dumps(call)},
+        {"received_at": at, "line": json.dumps(result)},
+    ]
+
+
+def test_viewing_another_image_with_the_same_name_is_not_inspection(tmp_path):
+    """Only a view of the final artifact's own path counts, relative or absolute."""
+    final = tmp_path / "out" / "figure.png"
+    draft = _claude_read("t1", str(tmp_path / "draft" / "figure.png"), 20)
+    relative = _claude_read("t2", "out/figure.png", 20)
+
+    assert smoke.inspection(
+        "claude", [], [], final, 10, draft, tmp_path
+    ).startswith("unknown")
+    assert smoke.inspection(
+        "claude", [], [], final, 10, relative, tmp_path
+    ).startswith("yes")
+
+    def rollout(path):
+        return [
+            {
+                "timestamp": "2026-11-11T00:00:20Z",
+                "payload": {
+                    "type": "function_call",
+                    "name": "view_image",
+                    "arguments": json.dumps({"path": path}),
+                },
+            }
+        ]
+
+    assert smoke.inspection(
+        "codex", [], rollout("draft/figure.png"), final, 10, (), tmp_path
+    ).startswith("unknown")
+    assert smoke.inspection(
+        "codex", [], rollout(str(final)), final, 10, (), tmp_path
+    ).startswith("attempted")
+
+
+def test_replay_can_write_only_inside_its_own_directory():
+    """A replayed script cannot create outputs in the host's project folder."""
+    smoke.WORK.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="unit-", dir=smoke.WORK) as folder:
+        project = Path(folder).resolve()
+        replay = project / "replay"
+        replay.mkdir()
+        (project / "out").mkdir()
+        (project / "input.txt").write_text("readable")
+
+        def run(code):
+            return subprocess.run(
+                smoke.sandbox(
+                    ["/usr/bin/python3", "-c", code], project, [], replay
+                ),
+                capture_output=True,
+                text=True,
+                check=False,
+            ).returncode
+
+        host_side = project / "out" / "figure.png"
+        assert run(f"open({str(host_side)!r}, 'w').write('x')") != 0
+        assert not host_side.exists()
+        assert run(f"open({str(replay / 'figure.png')!r}, 'w').write('x')") == 0
+        assert run(f"print(open({str(project / 'input.txt')!r}).read())") == 0
+
+
+def test_host_outputs_require_both_real_files(tmp_path):
+    """Host-produced outputs are a real PNG and PDF, never a symlink."""
+    out = tmp_path / "out"
+    out.mkdir()
+    assert not smoke.host_outputs(tmp_path)
+    (out / "figure.png").write_bytes(b"p")
+    assert not smoke.host_outputs(tmp_path)
+    (out / "figure.pdf").write_bytes(b"d")
+    assert smoke.host_outputs(tmp_path)
+    (out / "figure.pdf").unlink()
+    (out / "figure.pdf").symlink_to(out / "figure.png")
+    assert not smoke.host_outputs(tmp_path)

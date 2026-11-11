@@ -119,8 +119,12 @@ def hidden_paths():
     return sorted(set(paths))
 
 
-def sandbox(argv, project, hidden):
-    """OS-enforced read denial plus write confinement; fail closed off macOS."""
+def sandbox(argv, project, hidden, writable=None):
+    """OS-enforced read denial plus write confinement; fail closed off macOS.
+
+    Reads stay open inside ``project``. Writes are confined to ``writable``
+    (the project by default; the replay passes its own subdirectory).
+    """
     if sys.platform != "darwin" or not Path("/usr/bin/sandbox-exec").exists():
         raise RuntimeError(
             "This runner currently requires macOS sandbox-exec; no unsandboxed fallback"
@@ -132,7 +136,7 @@ def sandbox(argv, project, hidden):
     clauses = [
         "(version 1)",
         "(allow default)",
-        f'(deny file-write* (require-all (require-not (subpath {quote(project)})) (require-not (subpath "/dev"))))',
+        f'(deny file-write* (require-all (require-not (subpath {quote(writable or project)})) (require-not (subpath "/dev"))))',
         f"(deny file-read* (require-all (subpath {quote(WORK.resolve())}) (require-not (subpath {quote(project)}))))",
         # A host that canonicalizes its own home (Codex does) must stat each
         # ancestor. Metadata of the work root itself is allowed; its listing
@@ -335,7 +339,17 @@ def usage(host, rows):
     }
 
 
-def inspection(host, rows, rollouts, final_png, final_time, timeline=()):
+def same_file(tool_path, cwd, target):
+    """Whether a tool's path argument, read from ``cwd``, names ``target``."""
+    path = Path(tool_path)
+    if not path.is_absolute():
+        path = Path(cwd or ".") / path
+    return os.path.realpath(path) == os.path.realpath(target)
+
+
+def inspection(
+    host, rows, rollouts, final_png, final_time, timeline=(), cwd=None
+):
     """Bind successful image-tool results to a path and final artifact write time."""
     if not final_png:
         return "no final PNG"
@@ -355,7 +369,7 @@ def inspection(host, rows, rollouts, final_png, final_time, timeline=()):
                 ):
                     path = block.get("input", {}).get("file_path", "")
                     if (
-                        Path(path).name == final_png.name
+                        same_file(path, cwd, final_png)
                         and received["received_at"] >= final_time
                     ):
                         pending[block["id"]] = path
@@ -388,10 +402,7 @@ def inspection(host, rows, rollouts, final_png, final_time, timeline=()):
             stamp = datetime.fromisoformat(
                 row["timestamp"].replace("Z", "+00:00")
             ).timestamp()
-            if (
-                Path(args["path"]).name == final_png.name
-                and stamp >= final_time
-            ):
+            if same_file(args["path"], cwd, final_png) and stamp >= final_time:
                 return "attempted (view_image after final write; verify image result in rollout)"
         except (KeyError, ValueError, TypeError):
             continue
@@ -421,6 +432,15 @@ for n in plt.get_fignums():
                     "message": w.message} for w in dm.validate_figure(fig, quiet=True)]})
 Path("validator.json").write_text(json.dumps(reports, indent=2))
 """
+
+
+def host_outputs(project):
+    """Whether the host left a real out/figure.png and out/figure.pdf."""
+    return all(
+        (project / "out" / name).is_file()
+        and not (project / "out" / name).is_symlink()
+        for name in ("figure.png", "figure.pdf")
+    )
 
 
 def preserve(project, unit):
@@ -540,6 +560,8 @@ def one(case, host, wheel, run, timeout):
                 shutil.copy2(path, unit / f"rollout-{index}.jsonl")
                 rollouts += events(path)
             record["files"] = preserve(project, unit)
+            # Judged before the replay, which must not be able to supply them.
+            produced = host_outputs(project)
             png = project / "out/figure.png"
             script = project / final_script
             final_time = max(
@@ -557,6 +579,7 @@ def one(case, host, wheel, run, timeout):
                 png if png.exists() else None,
                 final_time,
                 events(unit / "timeline.jsonl"),
+                project,
             )
             record["validator"] = "could not re-run"
             if script.is_file() and not script.is_symlink():
@@ -574,13 +597,25 @@ def one(case, host, wheel, run, timeout):
                             path, target, symlinks=True
                         ) if path.is_dir() else shutil.copy2(path, target)
                 (replay / "_validate.py").write_text(REPLAY)
+                # The replay may write only under its own directory, so a
+                # script with absolute paths cannot touch the host's out/.
+                replay_env = dict(env)
+                for key, name in (
+                    ("TMPDIR", ".tmp"),
+                    ("MPLCONFIGDIR", ".mplconfig"),
+                ):
+                    (replay / name).mkdir()
+                    replay_env[key] = str(replay / name)
                 try:
                     log = command(
                         sandbox(
-                            [py, "_validate.py", final_script], project, hidden
+                            [py, "_validate.py", final_script],
+                            project,
+                            hidden,
+                            replay,
                         ),
                         replay,
-                        env,
+                        replay_env,
                         timeout=120,
                     )
                     (unit / "replay.log").write_text(log)
@@ -618,10 +653,7 @@ def one(case, host, wheel, run, timeout):
             if (
                 record["exit_code"] == 0
                 and not record["host_error"]
-                and png.is_file()
-                and not png.is_symlink()
-                and (project / "out/figure.pdf").is_file()
-                and not (project / "out/figure.pdf").is_symlink()
+                and produced
                 and record["validator"] == "re-ran"
             ):
                 record["execution"] = "success"
