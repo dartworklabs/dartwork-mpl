@@ -194,13 +194,13 @@ def _hide_ink(text: Text, *, drop_effects: bool) -> Callable[[], None]:
     return undo
 
 
-def _painted(fig: Figure, *, keep_effect_texts: bool) -> np.ndarray:
+def _painted(fig: Figure, *, keep: tuple[Text, ...] = ()) -> np.ndarray:
     """The root figure drawn with text ink hidden, as RGB over white.
 
     By default every text's ink and path effects are hidden: the paper
-    under the texts. With ``keep_effect_texts`` the texts that carry path
-    effects are drawn exactly as they are, and only the others are hidden,
-    so the picture differs from the paper where those effects put ink.
+    under the texts. The texts in ``keep`` are drawn exactly as they are,
+    and only the others are hidden, so the picture differs from the paper
+    where those texts put ink.
 
     A renderer of its own at the figure's DPI, so the caller's canvas and
     its buffer are untouched; every colour and effect is put back even when
@@ -212,10 +212,11 @@ def _painted(fig: Figure, *, keep_effect_texts: bool) -> np.ndarray:
     undo: list[Callable[[], None]] = []
     try:
         # One by one, so a failure part-way still undoes those already hidden.
+        kept = {id(text) for text in keep}
         for text in root.findobj(Text):
-            if keep_effect_texts and text.get_path_effects():
+            if id(text) in kept:
                 continue
-            undo.append(_hide_ink(text, drop_effects=not keep_effect_texts))
+            undo.append(_hide_ink(text, drop_effects=True))
         root.draw(renderer)
     finally:
         for step in reversed(undo):
@@ -225,6 +226,18 @@ def _painted(fig: Figure, *, keep_effect_texts: bool) -> np.ndarray:
     alpha = rgba[..., 3:4]
     rgb: np.ndarray = rgba[..., :3] * alpha + (1.0 - alpha)
     return rgb
+
+
+def _overlaps(first: _PixelBox, second: _PixelBox | None) -> bool:
+    """Whether two pixel boxes share any pixel (``second`` may be off canvas)."""
+    if second is None:
+        return False
+    return (
+        first[0] < second[1]
+        and second[0] < first[1]
+        and first[2] < second[3]
+        and second[2] < first[3]
+    )
 
 
 def _effect_ink(
@@ -312,13 +325,17 @@ def check_text_contrast(
     readable = _readable(fig, _renderer)
     if not readable:
         return []
-    pixels = _painted(fig, keep_effect_texts=False)
-    # Only a figure with an outlined (path-effect) text needs the second draw.
-    inked = (
-        _painted(fig, keep_effect_texts=True)
-        if any(text.get_path_effects() for text, _color, _box in readable)
-        else None
+    pixels = _painted(fig)
+    # Only a figure with an outlined (path-effect) text needs another draw.
+    outlined = tuple(
+        text for text, _color, _box in readable if text.get_path_effects()
     )
+    inked = _painted(fig, keep=outlined) if outlined else None
+    outlined_cells = [
+        _pixel_box(box, pixels.shape[0], pixels.shape[1])
+        for text, _color, box in readable
+        if text.get_path_effects()
+    ]
 
     for text, text_color, box in readable:
         cells = _pixel_box(box, pixels.shape[0], pixels.shape[1])
@@ -330,7 +347,12 @@ def check_text_contrast(
         if inked is not None and text.get_path_effects():
             # An outlined text reads through whichever of its fill and
             # stroke contrasts most with the background: judge that ink.
-            effect_ink = _effect_ink(pixels, inked, cells, background)
+            own = inked
+            if sum(_overlaps(cells, other) for other in outlined_cells) > 1:
+                # Another outlined text's ink sits in this box: draw this
+                # text alone so only its own effects count as its ink.
+                own = _painted(fig, keep=(text,))
+            effect_ink = _effect_ink(pixels, own, cells, background)
             if effect_ink is not None and _contrast_ratio(
                 effect_ink, background
             ) > _contrast_ratio(ink, background):

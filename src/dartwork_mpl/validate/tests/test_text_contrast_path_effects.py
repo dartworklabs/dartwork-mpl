@@ -86,3 +86,23 @@ def test_the_check_puts_path_effects_back() -> None:
     assert list(title.get_path_effects()) == effects
     assert title.get_color() == "white"
     plt.close(fig)
+
+
+def test_another_texts_ink_does_not_rescue_a_faint_outlined_text() -> None:
+    """A dark outlined text drawn over a faint one is not the faint one's ink.
+
+    The picture that keeps path effects held every outlined text, so the
+    strong ink of an overlapping neighbour was read as the faint text's own
+    and the warning disappeared.
+    """
+    fig, _faint = _outlined_title(fill="white", outline="#d5c7ff", linewidth=3)
+    strong = fig.text(0.5, 0.5, "Overlapping", ha="center", color="#111111")
+    strong.set_fontsize(16)
+    strong.set_path_effects(
+        [path_effects.withStroke(linewidth=1, foreground="#111111")]
+    )
+
+    found = _contrast(fig)
+
+    assert [w.detail["sample"] for w in found] == ["Outlined title"]
+    assert found[0].detail["ratio"] < 3.0
