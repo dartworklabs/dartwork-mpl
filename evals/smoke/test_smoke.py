@@ -143,7 +143,7 @@ def test_timeout_kills_child_group_and_keeps_partial_transcript():
         assert (project / "events.jsonl").read_text().strip() == "started"
 
 
-def _claude_read(tool_id, path, at):
+def _claude_read(tool_id, path, at, called_at=None):
     """A timestamped Claude image Read call and its successful image result."""
     call = {
         "message": {
@@ -169,7 +169,10 @@ def _claude_read(tool_id, path, at):
         }
     }
     return [
-        {"received_at": at, "line": json.dumps(call)},
+        {
+            "received_at": at if called_at is None else called_at,
+            "line": json.dumps(call),
+        },
         {"received_at": at, "line": json.dumps(result)},
     ]
 
@@ -246,3 +249,19 @@ def test_host_outputs_require_both_real_files(tmp_path):
     (out / "figure.pdf").unlink()
     (out / "figure.pdf").symlink_to(out / "figure.png")
     assert not smoke.host_outputs(tmp_path)
+
+
+def test_a_read_requested_before_the_final_write_counts_by_its_result_time(
+    tmp_path,
+):
+    """The image result's arrival, not the request, is compared with the write."""
+    final = tmp_path / "out" / "figure.png"
+    requested_early = _claude_read("t1", str(final), 20, called_at=5)
+    returned_early = _claude_read("t2", str(final), 5, called_at=5)
+
+    assert smoke.inspection(
+        "claude", [], [], final, 10, requested_early, tmp_path
+    ).startswith("yes")
+    assert smoke.inspection(
+        "claude", [], [], final, 10, returned_early, tmp_path
+    ).startswith("unknown")

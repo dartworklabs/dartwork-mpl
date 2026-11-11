@@ -368,14 +368,15 @@ def inspection(
                     and block.get("name") == "Read"
                 ):
                     path = block.get("input", {}).get("file_path", "")
-                    if (
-                        same_file(path, cwd, final_png)
-                        and received["received_at"] >= final_time
-                    ):
+                    if same_file(path, cwd, final_png):
                         pending[block["id"]] = path
+                # The result's time decides: a Read requested in the same
+                # message as the render is issued before the file exists but
+                # runs, and returns the image, after it.
                 if (
                     block.get("type") == "tool_result"
                     and block.get("tool_use_id") in pending
+                    and received["received_at"] >= final_time
                 ):
                     content = block.get("content", [])
                     if (
