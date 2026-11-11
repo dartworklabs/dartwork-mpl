@@ -16,7 +16,7 @@ MCP ``dartwork-mpl://template/advanced/small_multiples``.
 # data_shape: groups: dict[str, list[float]], x: list[float]
 # tags: small-multiples, panel-ids, shared-axes, narrative
 # narrative: 24-month KPI trend across 6 product lines; sharey reveals the relative wins
-# advanced_apis: dm.grid_shape + dm.figsize_for(nrows, ncols) for the 2 x 3 grid, plt.subplots(sharey=True), dm.label_axes for (a)-(f), per-panel sub-title, fig.supxlabel/supylabel
+# advanced_apis: dm.grid_shape + dm.figsize_for(nrows=nrows, ncols=ncols) for the 2 x 3 grid, plt.subplots(sharey=True), dm.label_axes for (a)-(f), per-panel sub-title, fig.supxlabel/supylabel
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
