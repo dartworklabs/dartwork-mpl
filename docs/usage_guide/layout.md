@@ -725,7 +725,10 @@ Raw matplotlib ticks can sometimes mix integers and floats (e.g. `0.5`, `1`, `1.
 
 `dm.annotate_value(ax, x, y, text)` uses a small point offset above the data
 point by default, tries below when vertical placement collides, and falls back
-to left/right placement when the label would cross the axes spine. Explicit
+to left/right placement when the label would cross the axes spine. When no
+side is free at that offset, a label that would sit on a line, a marker or a
+bar moves to the nearest spot straight above, below, right or left of its
+point (up to 1.75 font sizes farther) that keeps it off the data. Explicit
 `side="left"` / `side="right"` also works with `arrowprops`, keeping the arrow
 straight along one axis. `dm.annotate_corner(ax, text)` places narrative notes
 just inside a corner and can move to a less obstructed corner after rendering.

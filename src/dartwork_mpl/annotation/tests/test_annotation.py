@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import math
+
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
 matplotlib.use("Agg")
@@ -190,6 +195,104 @@ class TestAnnotateValue:
         assert text.get_verticalalignment() == "center"
         assert text.xyann == (-3.0, 0.0)
         assert text.arrow_patch is not None
+        plt.close(fig)
+
+
+def _two_marked_lines() -> tuple[Figure, Axes, list[int], list[float]]:
+    """Two marked sine lines about 1 degC apart under ``report``, with a legend.
+
+    The figure of agent smoke round 3, case r03 (2026-11-12): on the slopes
+    no side of a point is free 3 pt away, by the helper's obstacle boxes.
+    Returns the figure, its Axes and the first line's x and y.
+    """
+    dm.style.use("report")
+    x = list(range(30))
+    measured = [round(20 + 5 * math.sin(i / 3), 2) for i in x]
+    model = [round(21 + 5 * math.sin(i / 3 + 0.4), 2) for i in x]
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "7cm"))
+    ax.plot(x, measured, marker="o", label="Measured")
+    ax.plot(x, model, marker="s", label="Model")
+    ax.set(xlabel="Time (h)", ylabel="Temperature (°C)")
+    dm.place_legend(ax)
+    return fig, ax, x, measured
+
+
+def _labels_on_data(fig: Figure) -> list[str]:
+    """The messages of ``dm.validate_figure``'s VALUE_LABEL_ON_DATA findings."""
+    return [
+        finding.message
+        for finding in dm.validate_figure(fig, quiet=True)
+        if finding.check_id == "VALUE_LABEL_ON_DATA"
+    ]
+
+
+class TestAnnotateValueOffData:
+    """The default call keeps a value label off drawn data when no side is free 3 pt away.
+
+    VALUE_LABEL_ON_DATA names ``dm.annotate_value(ax, x, y, text)`` as its
+    fix, so the validator decides here, not the placement's own measure.
+    """
+
+    @pytest.mark.parametrize("layout", ["after", "before"])
+    def test_default_call_leaves_no_label_on_a_line(self, layout: str) -> None:
+        """Every other point labelled, the layout run after or before: no finding."""
+        fig, ax, x, measured = _two_marked_lines()
+        if layout == "before":
+            dm.simple_layout(fig)
+
+        for i in range(0, len(x), 2):
+            annotate_value(ax, x[i], measured[i], f"{measured[i]:.2f}")
+        dm.simple_layout(fig)
+
+        assert _labels_on_data(fig) == []
+        plt.close(fig)
+
+    def test_fallback_label_already_off_the_data_keeps_its_place(self) -> None:
+        """A least-colliding side whose glyphs clear the data stays 3 pt away.
+
+        On the rising slope the line runs through every side's obstacle
+        boxes, and the label to the right of the point has always cleared
+        the stroke: it does not move.
+        """
+        fig, ax, x, measured = _two_marked_lines()
+
+        text = annotate_value(ax, x[18], measured[18], f"{measured[18]:.2f}")
+
+        assert text.xyann == (3.0, 0.0)
+        assert text.get_horizontalalignment() == "left"
+        assert text.get_verticalalignment() == "center"
+        dm.simple_layout(fig)
+        assert _labels_on_data(fig) == []
+        plt.close(fig)
+
+    def test_label_moved_off_the_data_stays_on_one_axis_of_its_point(
+        self,
+    ) -> None:
+        """A label moved farther keeps a single-axis offset and its side's alignment.
+
+        The crest point's label lands on the neighbouring line 3 pt away
+        on every side; wherever it goes, it is straight above, below, left
+        or right of its point, at least ``offset_pt`` away.
+        """
+        fig, ax, x, measured = _two_marked_lines()
+
+        text = annotate_value(ax, x[4], measured[4], f"{measured[4]:.2f}")
+
+        dx, dy = text.xyann
+        assert (dx == 0.0) != (dy == 0.0)
+        assert max(abs(dx), abs(dy)) >= 3.0
+        expected = {
+            (0, 1): ("center", "bottom"),
+            (0, -1): ("center", "top"),
+            (1, 0): ("left", "center"),
+            (-1, 0): ("right", "center"),
+        }[(int(np.sign(dx)), int(np.sign(dy)))]
+        assert (
+            text.get_horizontalalignment(),
+            text.get_verticalalignment(),
+        ) == expected
+        dm.simple_layout(fig)
+        assert _labels_on_data(fig) == []
         plt.close(fig)
 
 
