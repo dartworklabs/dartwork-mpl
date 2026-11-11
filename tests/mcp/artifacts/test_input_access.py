@@ -362,11 +362,13 @@ assert not isinstance(parse_render_request('fig = None'), ConfigurationError)
 assert isinstance(access.authorize_inputs(sys.argv[1], lambda storage, roots: None), ConfigurationError)
 print('legacy import/parse available; retention configuration_error')
 """
+    # The limit only stops a hung child. It is not a speed check: on a loaded
+    # CI host the import alone has taken over 7 s, against 1.3 s on a laptop.
     result = subprocess.run(
         [sys.executable, "-c", script, str(path), missing],
         capture_output=True,
         text=True,
-        timeout=10,
+        timeout=60,
     )
     assert result.returncode == 0, result.stderr
     assert "retention configuration_error" in result.stdout
