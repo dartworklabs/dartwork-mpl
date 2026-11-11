@@ -93,6 +93,10 @@ Available Checks
      - Grid, spines or a background differ from the active preset (advisory)
      - INFO
 
+   * - ``SLIDE_OVERSIZE``
+     - Slide preset on a root canvas exceeding 13.33 × 7.5 in plus 1%
+     - WARNING
+
 Example
 -------
 

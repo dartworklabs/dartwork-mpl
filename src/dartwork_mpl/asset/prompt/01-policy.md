@@ -295,3 +295,10 @@ objects, including detail and `CHECK_FAILED`; save exact source/full reports
 and PNG/PDF, open the actual images, then revise to a new stem and review again.
 `save_formats` returns `None` and still saves on warnings; it cannot certify
 clean validation. Report retained advisories and any unavailable image review.
+
+### Oversized slide canvases
+
+`SLIDE_OVERSIZE` (WARNING) reports a figure drawn larger than a slide while
+a presentation preset is in force: placed on the slide it is scaled down and
+its text shrinks with it. Redraw at `dm.figsize_for("full_slide")`
+(25.4 × 14.29 cm) or `dm.figsize_for("slide")` under a title.

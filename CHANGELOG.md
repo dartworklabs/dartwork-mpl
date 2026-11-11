@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `SLIDE_OVERSIZE` warns when slide-preset text would shrink on a root canvas exceeding 13.33 × 7.5 in plus 1%.
+
 - **`dm.figsize_for(..., labels=names)` picks a width the category names
   fit flat.** Given the names under the x axis, `"default"` and
   `"grouped"` take the narrowest width of the preset's own table (report

@@ -95,7 +95,7 @@ def validate_figure(
         ``TICK_ROTATION``, ``TICK_CORNER_OVERLAP``, ``TICK_DECIMAL``,
         ``VALUE_LABEL_DECIMAL``,
         ``VALUE_LABEL_ON_DATA``, ``EMPTY_AXES``, ``MARGIN_ASYMMETRY``, ``PIE_LABEL_OFFSET``,
-        ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``.
+        ``CLIPPED_TEXT``, ``PRESET_OVERRIDE``, ``SLIDE_OVERSIZE``.
     exclude : tuple[str, ...], optional
         Check IDs not to run, applied after ``checks``. Unknown IDs raise
         like unknown ``checks``. ``save_formats`` passes

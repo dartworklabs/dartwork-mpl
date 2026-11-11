@@ -18,7 +18,7 @@ from scipy.stats import gaussian_kde
 
 import dartwork_mpl as dm
 
-dm.style.use("presentation")
+dm.style.use("scientific")
 
 np.random.seed(42)
 
@@ -30,7 +30,7 @@ y = 1.5 * x + np.random.normal(0, 1.2, n)
 x = np.concatenate([x, np.random.normal(3, 1, n // 2)])
 y = np.concatenate([y, np.random.normal(0, 1.5, n // 2)])
 
-fig = plt.figure(figsize=dm.figsize("25.4cm", "square"))
+fig = plt.figure(figsize=dm.figsize("9.8cm", "square"))
 gs = gridspec.GridSpec(
     4, 4, figure=fig, hspace=0.1, wspace=0.1, left=0.16, bottom=0.14
 )
@@ -58,7 +58,7 @@ ax_joint.scatter(
 contour = ax_joint.contourf(
     X, Y, Z, levels=12, cmap="dc.lagoon", alpha=0.85, zorder=2
 )
-ax_joint.contour(X, Y, Z, levels=12, colors="white", linewidths=0.5, zorder=3)
+ax_joint.contour(X, Y, Z, levels=12, colors="white", linewidths=0.19, zorder=3)
 
 # 2. Plot the marginal distributions
 cm_color = dm.color("dc.green3")
