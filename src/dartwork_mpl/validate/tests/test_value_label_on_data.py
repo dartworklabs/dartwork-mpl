@@ -797,6 +797,12 @@ def test_costs_less_than_half_a_draw_on_a_dense_figure():
     The budget is relative to drawing the same figure once, so a slow or
     busy machine moves both sides; the absolute figure is in the report
     (about 55 ms against 290 ms for the draw on the development host).
+
+    The two are timed in turn, draw then check, five times over. Timing
+    three draws and then three checks left the checks a 0.2 s window of
+    their own, and a burst of load from another xdist worker that covered
+    it slowed only that side: 3 of 16 full-suite runs on a 32-thread host
+    failed at 0.52-0.71 against a steady 0.34 (2026-11-12).
     """
     fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
     rng = np.random.default_rng(0)
@@ -810,18 +816,23 @@ def test_costs_less_than_half_a_draw_on_a_dense_figure():
         ax.text(xi, yi, f"{yi:.1f}", ha="center", va="center")
     dm.simple_layout(fig)
 
-    def best(fn):
-        runs = []
-        for _ in range(3):
-            start = time.perf_counter()
-            fn()
-            runs.append(time.perf_counter() - start)
-        return min(runs)
+    def timed(fn):
+        start = time.perf_counter()
+        fn()
+        return time.perf_counter() - start
 
-    draw = best(fig.canvas.draw)
+    fig.canvas.draw()  # the renderer the check reads, before any timing
     renderer = get_renderer(fig)
     found: list[object] = []
-    check = best(lambda: found.extend(check_value_label_on_data(fig, renderer)))
+    draws, checks = [], []
+    for _ in range(5):
+        draws.append(timed(fig.canvas.draw))
+        checks.append(
+            timed(
+                lambda: found.extend(check_value_label_on_data(fig, renderer))
+            )
+        )
+    draw, check = min(draws), min(checks)
     assert found, "the dense figure's labels do cover its lines"
     assert check < 0.5 * draw, (check, draw)
 
