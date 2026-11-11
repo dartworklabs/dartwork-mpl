@@ -17,10 +17,10 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-dm.style.use("presentation")
+dm.style.use("scientific")
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize("25.4cm", "square"), subplot_kw={"projection": "polar"}
+    figsize=dm.figsize("9.8cm", "square"), subplot_kw={"projection": "polar"}
 )
 
 n_hues = 72  # 5° steps
@@ -41,9 +41,9 @@ for radius, (L, C, marker_size, label) in enumerate(lightness_levels, start=1):
         theta,
         r_values,
         c=colors,
-        s=(marker_size * 30),
+        s=(marker_size * 4.4),
         edgecolors="white",
-        linewidths=0.3,
+        linewidths=0.12,
         zorder=3,
         label=label,
     )
@@ -61,7 +61,7 @@ ax.set_title(
     "OKLCH Hue Wheel\u2009\u2014\u2009Fixed L and C",
     fontsize=dm.fs(1),
     weight="bold",
-    pad=30,
+    pad=11.5,
 )
 dm.place_legend(
     ax,

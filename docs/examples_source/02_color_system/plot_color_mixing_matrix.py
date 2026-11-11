@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 import dartwork_mpl as dm
 
-dm.style.use("presentation")
+dm.style.use("scientific")
 
 # The first 6 default dartwork-mpl cycle colors
 palette = [
@@ -31,7 +31,7 @@ palette = [
 ]
 n = len(palette)
 
-fig, ax = plt.subplots(figsize=dm.figsize("25.4cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("9.8cm", "square"))
 
 for i in range(n):
     for j in range(n):
@@ -73,14 +73,14 @@ ax.set_xticklabels(palette, fontsize=dm.fs(-0.5), rotation=35, ha="right")
 ax.set_yticks([i + 0.5 for i in range(n)])
 ax.set_yticklabels([palette[n - 1 - i] for i in range(n)], fontsize=dm.fs(-0.5))
 ax.tick_params(
-    bottom=False, left=False, labelbottom=True, labelleft=True, pad=8
+    bottom=False, left=False, labelbottom=True, labelleft=True, pad=3
 )
 
 ax.set_title(
     "50/50 Color Mixing Matrix (Octave cycle)",
     fontsize=dm.fs(1),
     weight="bold",
-    pad=24,
+    pad=9,
 )
 
 for spine in ax.spines.values():
