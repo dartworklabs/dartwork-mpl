@@ -134,6 +134,10 @@ def sandbox(argv, project, hidden):
         "(allow default)",
         f'(deny file-write* (require-all (require-not (subpath {quote(project)})) (require-not (subpath "/dev"))))',
         f"(deny file-read* (require-all (subpath {quote(WORK.resolve())}) (require-not (subpath {quote(project)}))))",
+        # A host that canonicalizes its own home (Codex does) must stat each
+        # ancestor. Metadata of the work root itself is allowed; its listing
+        # and every sibling unit stay unreadable.
+        f"(allow file-read-metadata (literal {quote(WORK.resolve())}))",
     ]
     clauses += [f"(deny file-read* (subpath {quote(p)}))" for p in hidden]
     return ["/usr/bin/sandbox-exec", "-p", "\n".join(clauses), *argv]
