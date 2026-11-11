@@ -283,6 +283,379 @@ dm.save_formats(fig, "out/base", formats=("png", "pdf"))
         ],
     )
     (folder / "plot.py").write_text(base)
+    round3()
+
+
+def wobble(i, k=0):
+    """A repeatable stand-in for noise in [-1, 1]; no random state."""
+    return math.sin(12.9898 * (i + 1) + 78.233 * (k + 1)) * math.cos(
+        4.1414 * (i + 1) * (k + 2)
+    )
+
+
+REPAIR_HEAD = '''"""A colleague's figure for the report."""
+
+import csv
+
+import matplotlib.pyplot as plt
+
+import dartwork_mpl as dm
+
+'''
+
+# Each base runs and saves, and carries one kind of defect the validator
+# reports as a WARNING. No repaired version is kept in this repository.
+REPAIR = {
+    "r01-legend-on-data": REPAIR_HEAD
+    + """dm.style.use("report")
+with open("data.csv") as stream:
+    rows = list(csv.DictReader(stream))
+names = list(dict.fromkeys(r["control"] for r in rows))
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "7cm"))
+for name in names:
+    part = [r for r in rows if r["control"] == name]
+    ax.plot(
+        [float(r["week"]) for r in part],
+        [float(r["load_MWh"]) for r in part],
+        label=name,
+    )
+ax.set(xlabel="Week", ylabel="Load (MWh)")
+ax.legend(loc="center")
+dm.simple_layout(fig)
+dm.save_formats(fig, "out/base", formats=("png", "pdf"))
+""",
+    "r02-turned-ticks": REPAIR_HEAD
+    + """dm.style.use("report-kr")
+with open("data.csv") as stream:
+    rows = list(csv.DictReader(stream))
+fig, ax = plt.subplots(figsize=dm.figsize("10cm", "6cm"))
+ax.bar([r["건물"] for r in rows], [float(r["연간전력_MWh"]) for r in rows])
+ax.set(xlabel="건물", ylabel="연간 전력 사용량 (MWh)")
+dm.simple_layout(fig)
+plt.setp(ax.get_xticklabels(), rotation=15)
+dm.save_formats(fig, "out/base", formats=("png", "pdf"))
+""",
+    "r03-value-labels": REPAIR_HEAD
+    + """dm.style.use("report")
+with open("data.csv") as stream:
+    rows = list(csv.DictReader(stream))
+x = [float(r["time_h"]) for r in rows]
+measured = [float(r["measured_C"]) for r in rows]
+model = [float(r["model_C"]) for r in rows]
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "7cm"))
+ax.plot(x, measured, marker="o", label="Measured")
+ax.plot(x, model, marker="s", label="Model")
+for i in range(0, len(x), 2):
+    ax.text(
+        x[i],
+        measured[i],
+        f"{measured[i]:.2f}",
+        fontsize=4,
+        ha="center",
+        va="center",
+    )
+ax.set(xlabel="Time (h)", ylabel="Temperature (°C)")
+dm.place_legend(ax)
+dm.simple_layout(fig)
+dm.save_formats(fig, "out/base", formats=("png", "pdf"))
+""",
+    "r04-panel-gaps": REPAIR_HEAD
+    + """dm.style.use("report-kr")
+with open("data.csv") as stream:
+    rows = list(csv.DictReader(stream))
+zones = list(dict.fromkeys(r["구역"] for r in rows))
+fig, axs = plt.subplots(
+    2,
+    2,
+    figsize=dm.figsize("14cm", "9cm"),
+    gridspec_kw={"hspace": 0.05, "wspace": 0.05},
+)
+for ax, zone in zip(axs.flat, zones, strict=True):
+    part = [r for r in rows if r["구역"] == zone]
+    ax.plot(
+        [float(r["경과시간_s"]) for r in part],
+        [float(r["응답_mV"]) for r in part],
+    )
+    ax.set(xlabel="경과 시간 (s)", ylabel="응답 (mV)", title=zone)
+dm.simple_layout(fig)
+dm.save_formats(fig, "out/base", formats=("png", "pdf"))
+""",
+}
+
+
+def round3():
+    """Axes the first two rounds never touched, and four figures to repair."""
+    case(
+        "g11-scatter-fit",
+        "generate",
+        "en",
+        "For a journal paper, plot cooling power against outdoor temperature from data.csv as a scatter, with the two buildings told apart. Add a least-squares line for each building and write each line's slope and R² on the figure where they do not cover the points. Single column, 9 cm wide. Save PNG, PDF and a runnable script.",
+        ["outdoor_temp_C", "cooling_power_kW", "building"],
+        [
+            (
+                round(18 + 0.45 * i + 1.5 * wobble(i, k), 1),
+                round(
+                    (12 + 9 * k)
+                    + (2.1 + 0.9 * k) * (0.45 * i + 1.5 * wobble(i, k))
+                    + (5 + 3 * k) * wobble(i, k + 5),
+                    1,
+                ),
+                b,
+            )
+            for k, b in enumerate(["Library", "Laboratory"])
+            for i in range(40)
+        ],
+    )
+    case(
+        "g12-distributions",
+        "generate",
+        "ko",
+        "보고서에 넣을 그림입니다. data.csv에는 세 가지 제어 방식의 일별 에너지 절감률이 60일씩 있습니다. 왼쪽에는 세 방식의 히스토그램을 한 축에 겹쳐 그리고, 오른쪽에는 같은 세 방식을 바이올린과 그 안의 상자그림으로 비교해 주세요. 두 패널에서 방식별 색은 같게 하고 폭은 17 cm입니다. PNG와 PDF, 실행 가능한 스크립트를 남겨 주세요.",
+        ["제어 방식", "일차", "절감률_pct"],
+        [
+            (
+                c,
+                d + 1,
+                round(
+                    8
+                    + 3.5 * k
+                    + (2.2 + 0.8 * k)
+                    * (wobble(d, k) + wobble(d, k + 3) + wobble(d, k + 7)),
+                    2,
+                ),
+            )
+            for k, c in enumerate(["규칙 기반", "모델 예측", "강화 학습"])
+            for d in range(60)
+        ],
+    )
+    case(
+        "g13-error-bars",
+        "generate",
+        "en",
+        "For a report, compare the three heat pumps in data.csv: mean COP against outdoor temperature, one line per heat pump, with error bars of plus and minus one standard deviation. Where the pumps are close, their error bars must still be told apart. 14 cm wide. Save PNG, PDF and a runnable script.",
+        ["heat_pump", "outdoor_temp_C", "cop_mean", "cop_sd", "n_tests"],
+        [
+            (
+                p,
+                t,
+                round(
+                    2.6 + 0.12 * k + 0.045 * (t + 15) + 0.05 * wobble(j, k), 2
+                ),
+                round(0.16 + 0.05 * abs(wobble(j, k + 2)) + 0.03 * k, 2),
+                6 + (j * 3 + k) % 5,
+            )
+            for k, p in enumerate(
+                ["Air-source A", "Air-source B", "Ground-source"]
+            )
+            for j, t in enumerate(range(-15, 20, 5))
+        ],
+    )
+    case(
+        "g14-stacked-share",
+        "generate",
+        "ko",
+        "data.csv는 2017년부터 2024년까지의 에너지원별 발전량(TWh)입니다. 보고서용으로 왼쪽에는 연도별 발전량 누적 막대를, 오른쪽에는 같은 자료를 연도별 비율(합계 100%)로 바꾼 누적 막대를 그려 주세요. 비율 그림에는 구간마다 % 값을 적고, 에너지원의 순서와 색은 두 패널에서 같게 해 주세요. 폭은 17 cm입니다. PNG와 PDF, 스크립트를 남겨 주세요.",
+        ["연도", "에너지원", "발전량_TWh"],
+        [
+            (
+                2017 + y,
+                s,
+                round(
+                    [230 - 11 * y, 120 + 4 * y, 150 + 3 * y, 30 + 9 * y, 9 - y][
+                        k
+                    ]
+                    + 4 * wobble(y, k),
+                    1,
+                ),
+            )
+            for y in range(8)
+            for k, s in enumerate(
+                ["석탄", "가스", "원자력", "재생에너지", "기타"]
+            )
+        ],
+    )
+    case(
+        "g15-log-axes",
+        "generate",
+        "en",
+        "For a paper, plot particle number concentration against particle diameter for the four samples in data.csv. Both quantities span several orders of magnitude, so use logarithmic axes. Draw the limit of 1000 particles per cm³ as a horizontal line with its name next to it. 12 cm wide. Save PNG, PDF and a runnable script.",
+        ["diameter_nm", "sample", "concentration_per_cm3"],
+        [
+            (
+                round(10 ** (1 + 0.25 * i), 1),
+                s,
+                round(
+                    10
+                    ** (
+                        5.4
+                        - 0.3 * k
+                        - (0.34 + 0.03 * k) * i
+                        + 0.12 * wobble(i, k)
+                    ),
+                    2,
+                ),
+            )
+            for k, s in enumerate(
+                ["Roadside", "Urban background", "Indoor office", "Clean room"]
+            )
+            for i in range(13)
+        ],
+    )
+    notes = {
+        7: "냉동기 1호기 기동",
+        9: "냉동기 2호기 추가 기동",
+        14: "피크 부하 제어 시작",
+        31: "정전 후 복구",
+        38: "축열조 방열 전환",
+        40: "수요 반응 지시 수신",
+        55: "외기 냉방 전환",
+        63: "야간 설정 온도 적용",
+    }
+    case(
+        "g16-annotated-events",
+        "generate",
+        "ko",
+        "data.csv는 사흘간의 시간별 전력 부하이고, 일부 행의 '비고' 열에 그 시각에 있었던 일이 적혀 있습니다. 운영 보고서용으로 부하 곡선을 그리고, 비고가 있는 여덟 시점을 화살표와 함께 그 문구 그대로 표시해 주세요. 문구가 곡선이나 다른 문구를 가리면 안 됩니다. 폭은 17 cm입니다. PNG와 PDF, 실행 가능한 스크립트를 남겨 주세요.",
+        ["시각", "부하_kW", "비고"],
+        [
+            (
+                f"2026-06-{15 + h // 24:02d} {h % 24:02d}:00",
+                round(
+                    420
+                    + 180 * max(0.0, math.sin((h % 24 - 6) / 24 * 2 * math.pi))
+                    + 25 * wobble(h),
+                    1,
+                ),
+                notes.get(h, ""),
+            )
+            for h in range(72)
+        ],
+    )
+    # A logger export as it arrives: blank readings, two days missing, two
+    # dates logged twice, one reading a hundred times its neighbours, and a
+    # block of rows out of order. The request says nothing about any of it.
+    days = [
+        (date(2026, 3, 1) + timedelta(days=i), round(31 + 4 * wobble(i), 2))
+        for i in range(45)
+        if i not in (22, 23)
+    ]
+    export = []
+    for i, (day, value) in enumerate(days):
+        text = "" if i in (5, 6, 30) else f"{value}"
+        if i == 17:
+            text = "3120.4"
+        export.append((day.isoformat(), text))
+        if i in (11, 34):
+            export.append((day.isoformat(), f"{round(value + 1.7, 2)}"))
+    export = export[:25] + export[32:] + export[25:32]
+    case(
+        "g17-raw-export",
+        "generate",
+        "en",
+        "For the facility report, plot the daily energy use in data.csv against date, 14 cm wide. The file is a raw export from the logger. Save PNG, PDF and a runnable script.",
+        ["date", "energy_kWh"],
+        export,
+    )
+    case(
+        "g18-wide-magnitudes",
+        "generate",
+        "ko",
+        "data.csv는 여덟 개 시·군의 인구입니다. 보고서용 막대그래프로 그리고 막대마다 값을 적어 주세요. 축 눈금은 만 단위로 읽히게 해 주세요. 가장 작은 군도 이름과 값을 알아볼 수 있어야 합니다. 폭은 14 cm입니다. PNG와 PDF, 실행 가능한 스크립트를 남겨 주세요.",
+        ["시군", "인구_명"],
+        list(
+            zip(
+                [
+                    "한빛특별시",
+                    "새별광역시",
+                    "가람시",
+                    "누리시",
+                    "다온시",
+                    "마루군",
+                    "소담군",
+                    "아라군",
+                ],
+                [9411000, 3293000, 1452000, 652000, 213000, 48700, 21300, 8900],
+                strict=True,
+            )
+        ),
+    )
+    ask_en = "plot.py is a colleague's figure for our report. Validate it and fix what is wrong with it. The data and what the figure shows stay the same{keep}. Leave the original and save the revision as a new script, PNG and PDF."
+    ask_ko = "plot.py는 동료가 만든 보고서 그림입니다. 그림을 검증해서 문제가 있으면 고쳐 주세요. 데이터와 그림이 보여 주는 내용은 그대로 두세요{keep}. 원본을 보존하고 수정본 스크립트, PNG와 PDF를 따로 저장해 주세요."
+    repairs = [
+        (
+            "r01-legend-on-data",
+            "en",
+            ask_en.format(keep=""),
+            ["week", "control", "load_MWh"],
+            [
+                (w, c, round(40 + 6 * k + 8 * math.sin(w / 4 + k), 1))
+                for k, c in enumerate(
+                    [
+                        "Rule-based control",
+                        "Model predictive control",
+                        "Reinforcement learning",
+                    ]
+                )
+                for w in range(30)
+            ],
+        ),
+        (
+            "r02-turned-ticks",
+            "ko",
+            ask_ko.format(keep=""),
+            ["건물", "연간전력_MWh"],
+            list(
+                zip(
+                    [
+                        "서울 본관",
+                        "부산 연구동",
+                        "대전 실험동",
+                        "광주 도서관",
+                        "울산 기숙사",
+                        "춘천 체육관",
+                        "제주 연수원",
+                        "인천 물류동",
+                        "수원 강의동",
+                        "청주 전산동",
+                    ],
+                    [182, 141, 236, 97, 158, 74, 66, 203, 129, 251],
+                    strict=True,
+                )
+            ),
+        ),
+        (
+            "r03-value-labels",
+            "en",
+            ask_en.format(
+                keep=", and the Measured line keeps its value labels"
+            ),
+            ["time_h", "measured_C", "model_C"],
+            [
+                (
+                    i,
+                    round(20 + 5 * math.sin(i / 3), 2),
+                    round(21 + 5 * math.sin(i / 3 + 0.4), 2),
+                )
+                for i in range(30)
+            ],
+        ),
+        (
+            "r04-panel-gaps",
+            "ko",
+            ask_ko.format(
+                keep=". 네 패널과 패널마다의 제목, 축 이름도 유지합니다"
+            ),
+            ["구역", "경과시간_s", "응답_mV"],
+            [
+                (f"{z}구역", i, round(2000 + 1000 * math.sin(i / 3 + z), 1))
+                for z in range(1, 5)
+                for i in range(30)
+            ],
+        ),
+    ]
+    for name, lang, request, header, rows in repairs:
+        folder = case(name, "repair", lang, request, header, rows)
+        (folder / "plot.py").write_text(REPAIR[name])
 
 
 if __name__ == "__main__":
