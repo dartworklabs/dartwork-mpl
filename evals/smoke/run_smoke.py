@@ -461,9 +461,12 @@ def replay(project, script, py, env, hidden, unit, tag=""):
     """Re-run a copy of ``script`` and validate each figure as it is saved.
 
     The copy lives in its own directory, the only place it may write, so a
-    script with absolute paths cannot touch the host's ``out/``. That
-    directory is removed afterwards: a base is replayed before the host
-    starts, and the host must not find its findings.
+    script with absolute paths cannot touch the host's ``out/``. It takes a
+    copy of ``out/`` too: a revision reviewed against ``out/original`` reads
+    the review the host left there. Only files the replay itself wrote are
+    kept as re-rendered outputs. The directory is removed afterwards: a base
+    is replayed before the host starts, and the host must not find its
+    findings.
     """
     folder = project / "replay"
     folder.mkdir()
@@ -472,7 +475,7 @@ def replay(project, script, py, env, hidden, unit, tag=""):
             if (
                 not path.is_symlink()
                 and not path.name.startswith(".")
-                and path.name not in {"replay", "out"}
+                and path.name != "replay"
             ):
                 target = folder / path.name
                 shutil.copytree(
@@ -483,6 +486,11 @@ def replay(project, script, py, env, hidden, unit, tag=""):
         for key, name in (("TMPDIR", ".tmp"), ("MPLCONFIGDIR", ".mplconfig")):
             (folder / name).mkdir()
             replay_env[key] = str(folder / name)
+        copied = {
+            path: path.stat().st_mtime_ns
+            for path in (folder / "out").rglob("*")
+            if path.is_file() and not path.is_symlink()
+        }
         log = command(
             sandbox([py, "_validate.py", script], project, hidden, folder),
             folder,
@@ -492,9 +500,19 @@ def replay(project, script, py, env, hidden, unit, tag=""):
         (unit / f"{tag}replay.log").write_text(log)
         shutil.copy2(folder / "validator.json", unit / f"{tag}validator.json")
         if (folder / "out").is_dir() and not (folder / "out").is_symlink():
-            shutil.copytree(
-                folder / "out", unit / f"{tag}replay-artifacts", symlinks=True
-            )
+            for path in sorted((folder / "out").rglob("*")):
+                if (
+                    path.is_file()
+                    and not path.is_symlink()
+                    and path.stat().st_mtime_ns != copied.get(path)
+                ):
+                    target = (
+                        unit
+                        / f"{tag}replay-artifacts"
+                        / path.relative_to(folder / "out")
+                    )
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(path, target)
         reports = json.loads((unit / f"{tag}validator.json").read_text())
         if not reports:
             raise RuntimeError(

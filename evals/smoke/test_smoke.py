@@ -360,3 +360,47 @@ def test_every_case_input_is_tracked_by_git():
         if path.is_file()
     }
     assert on_disk - tracked == set()
+
+
+def test_replay_finds_what_the_host_left_in_out_and_keeps_only_new_files(
+    tmp_path, monkeypatch
+):
+    """Round 3: a revision reviewed against ``out/original`` could not re-run.
+
+    The review loop writes ``dm.review(fig, stem, baseline="out/original")``,
+    so the replayed script reads a file the host left in ``out/``. The replay
+    gets a copy of that folder; only what the replay itself wrote is kept as
+    a re-rendered output.
+    """
+    smoke.WORK.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(
+        smoke,
+        "REPLAY",
+        "import json, runpy, sys\n"
+        "runpy.run_path(sys.argv[1], run_name='__main__')\n"
+        "open('validator.json', 'w').write(json.dumps([{'findings': []}]))\n",
+    )
+    with tempfile.TemporaryDirectory(prefix="unit-", dir=smoke.WORK) as folder:
+        project = Path(folder).resolve()
+        (project / "out").mkdir()
+        (project / "out" / "original.review.json").write_text("{}")
+        (project / "out" / "figure.png").write_text("host")
+        (project / "revision.py").write_text(
+            "open('out/original.review.json').read()\n"
+            "open('out/figure.png', 'w').write('replayed')\n"
+        )
+        reports = smoke.replay(
+            project,
+            "revision.py",
+            "/usr/bin/python3",
+            smoke.environment(project),
+            [],
+            tmp_path,
+        )
+        assert reports == [{"findings": []}]
+        assert (project / "out" / "figure.png").read_text() == "host"
+        kept = sorted(p.name for p in (tmp_path / "replay-artifacts").iterdir())
+        assert kept == ["figure.png"]
+        assert (tmp_path / "replay-artifacts/figure.png").read_text() == (
+            "replayed"
+        )
