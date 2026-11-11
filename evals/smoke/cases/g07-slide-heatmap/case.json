@@ -1,0 +1,6 @@
+{
+  "id": "g07-slide-heatmap",
+  "kind": "generate",
+  "lang": "en",
+  "request": "Create a single 16:9 presentation figure with two panels from data.csv: on the left show all nine controllers' hourly efficiency curves with a readable legend using their full names; on the right show the same values as a controller-by-hour heatmap, annotate every cell to one decimal place and include a labelled colorbar. Use all six hours, keep values unchanged, and make text readable on a slide. Save PNG, PDF and the script."
+}

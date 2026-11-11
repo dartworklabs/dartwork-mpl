@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Literal, TypedDict
 
-from ..._figure_geometry import drawn_axes
+from ..._figure_geometry import drawn_axes, iter_figure_level_extents
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import SIDES, choice, wire
 from ._registry import register_check, register_fix
@@ -66,6 +66,14 @@ def check_margin_asymmetry(
 
     if not all_extents:
         return warnings
+
+    # Figure-level text and legends (suptitle, ``fig.legend``) live on the
+    # Figure, not on an Axes; leaving them out measured an occupied header as
+    # empty whitespace. Only reached when axes exist, so an axes-less figure
+    # still reports nothing.
+    all_extents.extend(
+        extent for _art, extent in iter_figure_level_extents(fig, renderer)
+    )
 
     content_x0 = min(e.x0 for e in all_extents)
     content_x1 = max(e.x1 for e in all_extents)

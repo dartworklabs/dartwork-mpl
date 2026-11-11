@@ -32,15 +32,20 @@ def publish_pid(marker, *, indent="", hold=None):
     The pid is written to a temporary file beside ``marker`` and renamed over
     it, so a reader that sees ``marker`` reads a whole pid, never ``""``.
     ``hold`` pauses the child after the write and before the rename (a test
-    hook that proves the ordering). The child code must have ``os``, ``time``
-    and ``Path`` (``pathlib.Path``) in scope; ``indent`` prefixes every line.
+    hook that proves the ordering); a held child gives up unpublished after
+    60 s, so a test process killed mid-hold leaves no child polling forever.
+    The child code must have ``os``, ``time`` and ``Path`` (``pathlib.Path``)
+    in scope; ``indent`` prefixes every line.
     """
     staged = str(marker) + ".tmp"
     lines = [f"Path({staged!r}).write_text(str(os.getpid()))"]
     if hold is not None:
-        lines.append(
-            f"while not Path({str(hold)!r}).exists(): time.sleep(0.01)"
-        )
+        lines += [
+            "_hold_until = time.monotonic() + 60",
+            f"while not Path({str(hold)!r}).exists():",
+            "    if time.monotonic() > _hold_until: os._exit(1)",
+            "    time.sleep(0.01)",
+        ]
     lines.append(f"os.replace({staged!r}, {str(marker)!r})")
     return "".join(f"{indent}{line}\n" for line in lines)
 

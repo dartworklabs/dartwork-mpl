@@ -125,3 +125,4 @@ user has seen.
 | Why this design exists | [`docs/philosophy/ai_native.md`](docs/philosophy/ai_native.md) |
 | AI integration overview | [`docs/ai/index.md`](docs/ai/index.md) |
 | Agent-workflow plan and its phases | [the masterplan](docs/superpowers/specs/2026-10-22-agentic-workflow-masterplan.md) · tracker [#623](https://github.com/dartworklabs/dartwork-mpl/issues/623) (mirrors #523) |
+| What is being worked on now, and the release hold | [the 2026-11-11 realignment](docs/superpowers/specs/2026-11-11-agentic-roadmap-realignment.md) · roadmap [#681](https://github.com/dartworklabs/dartwork-mpl/issues/681) |
