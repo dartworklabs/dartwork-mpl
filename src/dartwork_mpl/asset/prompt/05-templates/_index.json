@@ -208,7 +208,7 @@
       "use_case": "Two-variable relationship with regression fit, R-squared annotation, and outlier callout"
     },
     "small_multiples": {
-      "advanced_apis": "dm.grid_shape + dm.figsize_for(nrows, ncols) for the 2 x 3 grid, plt.subplots(sharey=True), dm.label_axes for (a)-(f), per-panel sub-title, fig.supxlabel/supylabel",
+      "advanced_apis": "dm.grid_shape + dm.figsize_for(nrows=nrows, ncols=ncols) for the 2 x 3 grid, plt.subplots(sharey=True), dm.label_axes for (a)-(f), per-panel sub-title, fig.supxlabel/supylabel",
       "basic_counterpart": "small_multiples",
       "data_shape": "groups: dict[str, list[float]], x: list[float]",
       "difficulty": "advanced",
