@@ -138,6 +138,22 @@ def test_plot_text_is_english_unless_the_user_asks() -> None:
     assert "missing from font(s)" in korean
 
 
+def test_names_in_the_data_are_not_translated() -> None:
+    """Smoke round 3: a host turned Korean category names into English.
+
+    ``references/korean.md`` already said data values stay as given, but the
+    host read only the router, whose one sentence on names ("legend names
+    are column names translated") covers column names. The router says it
+    too, in the Data section.
+    """
+    text = " ".join(SKILL_MD.read_text(encoding="utf-8").split())
+    data = text[text.index("## Data") : text.index("## Values")]
+    assert "names in the data" in data
+    assert "never translated" in data
+    korean = (SKILL / "references" / "korean.md").read_text(encoding="utf-8")
+    assert "stay as given" in " ".join(korean.split())
+
+
 def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
     """User decisions 2026-11-03 (eval v13/v14 step 5): 20-A 0-A 19-A 22-A V-A.
 
