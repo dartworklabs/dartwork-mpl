@@ -1146,6 +1146,55 @@ def test_auto_date_locator_labels_read_as_periods():
             plt.close(ax.figure)
 
 
+def _hours(start: str, stop: str) -> np.ndarray:
+    return np.arange(
+        np.datetime64(start), np.datetime64(stop), np.timedelta64(1, "h")
+    )
+
+
+@pytest.mark.parametrize(
+    ("x", "korean"),
+    [
+        # Smoke round 3, g16: three days of hourly load.
+        (_hours("2026-06-15T00:00", "2026-06-18T03:00"), False),
+        (_hours("2026-06-15T00:00", "2026-06-18T03:00"), True),
+        # One midnight in view: the evening before and the morning after.
+        (_hours("2026-05-02T15:00", "2026-05-03T10:00"), False),
+        (_hours("2026-06-15T00:00", "2026-06-17T13:00"), False),
+    ],
+    ids=["three-days", "three-days-kr", "one-midnight", "ends-at-noon"],
+)
+def test_the_corner_date_is_not_printed_twice(x, korean):
+    """Smoke round 3 (g16): an hourly axis printed its last date twice.
+
+    Midnight ticks read the date (``26.06.18``) and the corner label
+    repeated the last one. The corner names the date only while no tick in
+    view reads it.
+    """
+    for width in ("9cm", "14.5cm", "17cm"):
+        ax = _laid_out(x, width, korean=korean)
+        labels = _xticks(ax)
+        corner = ax.xaxis.get_offset_text().get_text()
+        assert any(PERIOD_ANY.fullmatch(t) and "." in t for t in labels), labels
+        assert corner not in labels, (width, labels, corner)
+        plt.close(ax.figure)
+
+
+def test_the_corner_date_stays_when_no_tick_reads_it():
+    """Within one day every tick is a time, so the corner still dates them."""
+    x = np.arange(
+        np.datetime64("2026-05-02T09:00"),
+        np.datetime64("2026-05-02T13:00"),
+        np.timedelta64(1, "m"),
+    )
+    for width in ("9cm", "17cm"):
+        ax = _laid_out(x, width)
+        labels = _xticks(ax)
+        assert all(re.fullmatch(r"\d\d:\d\d", t) for t in labels), labels
+        assert ax.xaxis.get_offset_text().get_text() == "26.05.02"
+        plt.close(ax.figure)
+
+
 def test_century_date_axis_keeps_four_digits():
     years = np.arange(np.datetime64("1880"), np.datetime64("2025")).astype(
         "datetime64[D]"

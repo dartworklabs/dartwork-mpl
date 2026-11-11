@@ -94,6 +94,7 @@ class _YearDigitsDates(mdates.ConciseDateFormatter):
         if digits not in (2, 4):
             raise ValueError(f"digits must be 2 or 4, got {digits!r}")
         self.digits = digits
+        self._corner_repeats_a_tick = False
         self._short = self._fill("%y")
         self._long = self._fill("%Y")
         formats, zero_formats, offset_formats = (
@@ -136,10 +137,27 @@ class _YearDigitsDates(mdates.ConciseDateFormatter):
                 list(group) for group in chosen
             )
         labels: list[str] = super().format_ticks(values)  # type: ignore[no-untyped-call]
-        return [self._tidy(label) for label in labels]
+        labels = [self._tidy(label) for label in labels]
+        # A midnight tick of an hourly axis reads the date the corner label
+        # would repeat (``26.06.18`` twice); the corner dates the axis only
+        # while no tick in view does.
+        in_view = set(_in_view(self, values))
+        shown = {
+            label
+            for value, label in zip(values, labels, strict=True)
+            if float(value) in in_view
+        }
+        corner: str = super().get_offset()  # type: ignore[no-untyped-call]
+        self._corner_repeats_a_tick = self._tidy(corner) in shown
+        return labels
 
     def get_offset(self) -> str:
-        """The corner label of the last :meth:`format_ticks`."""
+        """The corner label of the last :meth:`format_ticks`.
+
+        Empty while a tick in view already reads the same date.
+        """
+        if self._corner_repeats_a_tick:
+            return ""
         offset: str = super().get_offset()  # type: ignore[no-untyped-call]
         return self._tidy(offset)
 
@@ -148,7 +166,8 @@ class PeriodDateFormatter(_YearDigitsDates):
     """Every date tick whole: ``23`` · ``23.01`` · ``23.01.15``.
 
     Times read ``09:00`` under a dated corner label (``26.05.02``); midnight
-    ticks of an hourly axis read the date. ``digits=4`` prints ``2023.01``.
+    ticks of an hourly axis read the date, and the corner label is left out
+    while one of them already reads it. ``digits=4`` prints ``2023.01``.
     """
 
     _TEMPLATES = (

@@ -577,6 +577,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **An hourly date axis no longer prints a date twice.** Midnight ticks read
+  the date (`26.06.18`), and the corner label repeated the last one beside
+  them. The corner label now appears only while no tick in view reads that
+  date — an axis inside one day keeps `09:00 … 12:00` under `26.05.02`. Found
+  in agent smoke round 3, where one host hid the label by hand and the other
+  shipped the duplicate.
+
 - **Three false validator findings are gone.** An audit of the 91 gallery
   scripts found 5 of 77 warnings were the validator's own mistakes.
   `GRAYSCALE_SAFETY` could not run (`CHECK_FAILED`) on a collection with
