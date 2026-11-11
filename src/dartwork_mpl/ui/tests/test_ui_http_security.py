@@ -9,6 +9,7 @@ import http.client
 import importlib.metadata
 import json
 import os
+import signal
 import socket
 import stat
 import subprocess
@@ -25,7 +26,20 @@ import pytest
 import dartwork_mpl
 
 _BOOTSTRAP = r"""
-import asyncio, json, os, socket, sys, threading
+import os, sys
+# Die with the test process. ``_viewer``'s ``finally`` cannot run when pytest
+# or its xdist worker is ended by SIGTERM (Python's default action) or SIGKILL
+# (CI cancel, job timeout, runner stop), and the server was then left running
+# under init for weeks. Linux delivers SIGKILL here when the spawning thread
+# exits; the parent check closes the race with a parent that died before
+# ``prctl`` ran. Other platforms keep the ``finally`` cleanup only.
+if sys.platform.startswith("linux"):
+    import ctypes, signal
+    if ctypes.CDLL(None, use_errno=True).prctl(1, signal.SIGKILL, 0, 0, 0):  # PR_SET_PDEATHSIG
+        raise OSError(ctypes.get_errno(), "prctl(PR_SET_PDEATHSIG) failed")
+    if os.getppid() != int(sys.argv[5]):
+        os._exit(1)
+import asyncio, json, socket, threading
 from pathlib import Path
 from typing import Literal
 # Pin this child's own umask so saved-file modes are deterministic; the test
@@ -39,7 +53,7 @@ from dartwork_mpl.ui import ParamModel
 from dartwork_mpl.ui import ui
 from dartwork_mpl.ui.platform.fs import FilesystemCapabilities
 import uvicorn
-root, expected, unsupported, copy_mode = sys.argv[1:]
+root, expected, unsupported, copy_mode, _parent = sys.argv[1:]
 root = Path(root)
 assert Path(dm.__file__).resolve() == Path(expected).resolve()
 class Params(ParamModel):
@@ -109,6 +123,7 @@ class Viewer:
 
     root: Path
     port: int
+    pid: int
 
     def request(
         self,
@@ -177,6 +192,15 @@ class Viewer:
         }
 
 
+def _child_python(origin: Path) -> tuple[list[str], dict[str, str]]:
+    """Interpreter prefix and environment that import the package under test."""
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    if not sys.flags.isolated:
+        env["PYTHONPATH"] = str(origin.parent.parent)
+    return [sys.executable, *(["-I"] if sys.flags.isolated else []), "-c"], env
+
+
 @contextmanager
 def _viewer(
     root: Path, *, unsupported: bool = False, copy_mode: str = "multiple"
@@ -191,19 +215,15 @@ def _viewer(
         assert not (origin.parent.parent / "pyproject.toml").exists()
         checkout = os.environ.get("DARTWORK_HTTP_EXCLUDED_CHECKOUT")
         assert checkout and not origin.is_relative_to(Path(checkout).resolve())
-    env = os.environ.copy()
-    env.pop("PYTHONPATH", None)
-    if not sys.flags.isolated:
-        env["PYTHONPATH"] = str(origin.parent.parent)
+    python, env = _child_python(origin)
     command = [
-        sys.executable,
-        *(["-I"] if sys.flags.isolated else []),
-        "-c",
+        *python,
         _BOOTSTRAP,
         str(root),
         str(origin),
         "yes" if unsupported else "no",
         copy_mode,
+        str(os.getpid()),
     ]
     with (root / "server.log").open("w") as log:
         child = subprocess.Popen(
@@ -220,7 +240,7 @@ def _viewer(
                         time.sleep(0.02)
                         continue
                     assert Path(metadata["origin"]).resolve() == origin
-                    viewer = Viewer(root, metadata["port"])
+                    viewer = Viewer(root, metadata["port"], child.pid)
                     try:
                         healthy = viewer.request("GET", "/api/health")[0] == 200
                     except (OSError, http.client.HTTPException):
@@ -871,3 +891,93 @@ def test_real_http_string_relative_copy_root(tmp_path: Path) -> None:
         assert (tmp_path / "script/relative.png").read_bytes() == (
             tmp_path / "copy/relative.png"
         ).read_bytes()
+
+
+_HOLDER = r"""
+import importlib.util, sys, time
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("_http_holder", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+with module._viewer(Path(sys.argv[2])) as viewer:
+    staged = Path(sys.argv[3] + ".tmp")
+    staged.write_text(str(viewer.pid))
+    staged.replace(sys.argv[3])
+    time.sleep(120)
+"""
+
+
+def _wait_gone(pid: int, timeout: float = 15.0) -> bool:
+    """Poll until ``pid`` no longer runs (absent or a zombie); False past ``timeout``."""
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            os.kill(pid, 0)
+            stat_line = Path(f"/proc/{pid}/stat").read_text()
+        except ProcessLookupError:
+            return True
+        except OSError:
+            stat_line = ""
+        if stat_line.rpartition(")")[2].split()[:1] == ["Z"]:
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.05)
+
+
+def test_viewer_server_stops_after_normal_exit_and_failure(
+    tmp_path: Path,
+) -> None:
+    """Leaving the block normally or by an exception reaps the server child."""
+    with _viewer(tmp_path / "ok") as viewer:
+        pid = viewer.pid
+        assert viewer.request("GET", "/api/health")[0] == 200
+    assert _wait_gone(pid)
+    with pytest.raises(RuntimeError, match="test failure"):
+        with _viewer(tmp_path / "fail") as viewer:
+            pid = viewer.pid
+            raise RuntimeError("test failure")
+    assert _wait_gone(pid)
+
+
+@pytest.mark.skipif(
+    not sys.platform.startswith("linux"),
+    reason="PR_SET_PDEATHSIG is Linux-only",
+)
+@pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGKILL])
+def test_viewer_server_dies_with_killed_test_process(
+    tmp_path: Path, signum: int
+) -> None:
+    """A test process killed mid-test (CI cancel, timeout) takes its server along.
+
+    SIGTERM and SIGKILL both end Python without running ``finally``; before the
+    parent-death signal the server outlived the test process under init.
+    """
+    marker = tmp_path / "server.pid"
+    python, env = _child_python(Path(dartwork_mpl.__file__).resolve())
+    holder = subprocess.Popen(
+        [*python, _HOLDER, __file__, str(tmp_path / "root"), str(marker)],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    server = None
+    try:
+        deadline = time.monotonic() + 30
+        while not marker.exists():
+            assert holder.poll() is None, (
+                "holder exited before its server was ready"
+            )
+            assert time.monotonic() < deadline, "server never became ready"
+            time.sleep(0.05)
+        server = int(marker.read_text())
+        os.kill(server, 0)
+        holder.send_signal(signum)
+        holder.wait(timeout=10)
+        assert _wait_gone(server), f"server {server} outlived its killed parent"
+    finally:
+        if holder.poll() is None:
+            holder.kill()
+            holder.wait(timeout=10)
+        if server is not None and not _wait_gone(server, timeout=0):
+            os.kill(server, signal.SIGKILL)
