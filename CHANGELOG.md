@@ -577,6 +577,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **`dm.annotate_value` moves a label off the data when no side is free
+  3 pt away.** `VALUE_LABEL_ON_DATA` names the default call as its fix, and
+  on two marked lines 1 °C apart it left 3 of 15 labels on a line: with no
+  free side it took the least-colliding one at `offset_pt` and never looked
+  farther. Such a label now keeps that side only while its glyphs are off
+  the drawn data, and otherwise takes the nearest spot straight above,
+  below, right or left of its point, up to 1.75 font sizes farther, that is
+  off the data, the other labels and the legend. A free side at `offset_pt`
+  and an explicit `side=` are placed as before.
+
 - **An hourly date axis no longer prints a date twice.** Midnight ticks read
   the date (`26.06.18`), and the corner label repeated the last one beside
   them. The corner label now appears only while no tick in view reads that

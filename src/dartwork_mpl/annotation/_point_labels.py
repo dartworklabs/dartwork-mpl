@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.collections import PathCollection
+from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation, Text
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Bbox, IdentityTransform
 
-from .._figure_geometry import BBOX_ERRORS
+from .._figure_geometry import BBOX_ERRORS, same_position_axes
 from ..scale import fs, fw
 from ._kwarg_guard import AXES_ANNOTATE_PARAMETERS, KwargGuard
+from ._legend_fit import measure_ink, points_px
 from ._placement_geometry import (
     _collection_bboxes,
     _collision_area,
@@ -44,6 +48,16 @@ _Corner = Literal["upper left", "upper right", "lower left", "lower right"]
 _HlineSide = Literal["above", "below"]
 
 _HlineAnchor = Literal["left", "center", "right"]
+
+#: How much farther than ``offset_pt`` ``annotate_value``'s auto side may
+#: move a label that lands on data on every side, in the label's own font
+#: sizes: 12 pt for ``report`` value labels (7 pt), 29 pt for
+#: ``presentation`` ones (16.9 pt). Past that a label reads as another
+#: point's.
+_VALUE_REACH_EM = 1.75
+
+#: The step of that search, in points.
+_VALUE_REACH_STEP_PT = 1.0
 
 
 def _parse_value_side(side: str) -> _ValueSide | Literal["auto"]:
@@ -265,6 +279,119 @@ def _annotation_extent(
         return None
 
 
+def _glyph_margins(text: Text, renderer: RendererBase) -> tuple[float, float]:
+    """Return the room under and over ``text``'s glyphs inside its text box, in display px.
+
+    matplotlib gives a line of text the font's ascent and descent, which
+    digits do not fill; ``VALUE_LABEL_ON_DATA`` reads a label by its glyphs,
+    not by that box. The baseline's place comes from laying the same string
+    out at the origin, the glyphs' reach from the renderer's metrics. A
+    label that is not one upright line of plain text (rotated, multi-line,
+    mathtext, TeX) or cannot be measured has no margins: its whole box
+    counts.
+    """
+    string = text.get_text()
+    figure = text.get_figure(root=True)
+    if (
+        figure is None
+        or float(text.get_rotation()) % 360 != 0
+        or "\n" in string
+        or "$" in string
+        or text.get_usetex()
+    ):
+        return 0.0, 0.0
+    prop = text.get_fontproperties()
+    probe = Text(
+        0, 0, string, fontproperties=prop, transform=IdentityTransform()
+    )
+    probe.set_figure(figure)
+    try:
+        line = probe.get_window_extent(renderer)  # [-descent, ascent]
+        _width, height, descent = renderer.get_text_width_height_descent(
+            string, prop, ismath=False
+        )
+    except BBOX_ERRORS:
+        return 0.0, 0.0
+    under = max(0.0, -float(line.y0) - float(descent))
+    over = max(0.0, float(line.y1) - float(height - descent))
+    return under, over
+
+
+def _spot_off_data(
+    ann: Annotation,
+    ax: Axes,
+    renderer: RendererBase,
+    axes_bbox: Bbox,
+    tried: dict[_ValueSide, Bbox],
+    best: _ValueSide,
+    offset_pt: float,
+    text_boxes: list[Bbox],
+) -> tuple[_ValueSide, float]:
+    """Return the side and distance (points) for a label with no free side.
+
+    ``tried`` maps each side measured at ``offset_pt`` to the label's text
+    box there (display px), in the order tried; ``best`` is the
+    least-colliding of them, where such a label always went. No side being
+    free says little: the obstacle boxes are each segment's bounding box,
+    which a sloped line fills only along its diagonal. So the label is
+    read here as ``VALUE_LABEL_ON_DATA`` reads it: its glyphs against the
+    ink (:func:`~._legend_fit.measure_ink`) of what that check counts as
+    data in the plot box, the lines at their width with their markers, the
+    scatter points and the bars. A span, a filled band or a mesh under the
+    label is not data, here as there.
+
+    The label stays on ``best`` at ``offset_pt`` when its glyphs meet no
+    data ink there and its text box is off ``text_boxes`` and the Axes'
+    legend. Otherwise it takes the nearest spot that is, the sides of
+    ``tried`` at each distance from ``offset_pt`` to ``_VALUE_REACH_EM``
+    font sizes farther, the text box inside ``axes_bbox``. With no such
+    spot it stays on ``best`` at ``offset_pt``, as before.
+    """
+    ink = measure_ink(ax, renderer)
+    data: set[int] = set()
+    for owner in same_position_axes(ax):
+        data.update(id(line) for line in owner.get_lines())
+        data.update(
+            id(coll)
+            for coll in owner.collections
+            if isinstance(coll, PathCollection)
+        )
+        data.update(
+            id(patch)
+            for container in owner.containers
+            if isinstance(container, BarContainer)
+            for patch in container.patches
+        )
+    under, over = _glyph_margins(ann, renderer)
+    taken = list(text_boxes)
+    legend = ax.get_legend()
+    if legend is not None and legend.get_visible():
+        with suppress(*BBOX_ERRORS):
+            taken.append(legend.get_window_extent(renderer))
+
+    def clear(box: Bbox) -> bool:
+        """Whether a label at ``box`` is off the other texts and its glyphs off the data."""
+        if _collision_area(box, taken) > 0:
+            return False
+        glyphs = Bbox.from_extents(
+            box.x0, box.y0 + under, box.x1, box.y1 - over
+        )
+        return not ink.met(glyphs, 0.0) & data
+
+    if clear(tried[best]):
+        return best, float(offset_pt)
+    px_per_pt = points_px(renderer, 1.0)
+    reach_pt = _VALUE_REACH_EM * float(ann.get_fontsize())
+    for step in range(int(reach_pt / _VALUE_REACH_STEP_PT) + 1):
+        farther = step * _VALUE_REACH_STEP_PT
+        for side, box in tried.items():
+            (dx, dy), _ha, _va = _annotation_side_spec(side, farther)
+            moved = box.translated(dx * px_per_pt, dy * px_per_pt)
+            if _outside_area(moved, axes_bbox) <= 0 and clear(moved):
+                return side, float(offset_pt) + farther
+    return best, float(offset_pt)
+
+
 def annotate_value(
     ax: Axes,
     x: float,
@@ -285,6 +412,17 @@ def annotate_value(
     opposite vertical side. Explicit ``side="left"`` / ``"right"`` is
     supported, including ``arrowprops``; all offsets are single-axis point
     offsets so arrows remain straight horizontal or vertical connectors.
+
+    When no side is free ``offset_pt`` away (on a sloped line the obstacle
+    boxes of its segments leave none), the label takes the least-colliding
+    side as long as its glyphs stay off the drawn data there: strokes at
+    their width, markers, bars. A label that would sit on data moves to the
+    nearest spot straight above, below, right or left of its point, up to
+    1.75 font sizes farther than ``offset_pt``, that is off the data, the
+    other labels and the legend; with no such spot it stays on the
+    least-colliding side. The Axes is measured as it stands when this is
+    called: ``dm.simple_layout`` run afterwards resizes the Axes while the
+    label's offset stays in points.
 
     The label is one weight step heavier than the preset's base weight
     (``fontweight=fw(1)``) so a data value reads apart from captions;
@@ -333,13 +471,15 @@ def annotate_value(
     except BBOX_ERRORS:
         return ann
 
+    text_boxes = _text_bboxes(existing_texts, renderer)
     obstacles = [
         *_line_segment_bboxes(ax),
         *_patch_bboxes(ax),
         *_collection_bboxes(ax),
-        *_text_bboxes(existing_texts, renderer),
+        *text_boxes,
     ]
     scores: list[tuple[float, _ValueSide]] = []
+    tried: dict[_ValueSide, Bbox] = {}
 
     vertical_sides: tuple[_ValueSide, ...] = ("above", "below")
     for candidate in vertical_sides:
@@ -350,6 +490,7 @@ def annotate_value(
         outside = _outside_area(bbox, axes_bbox)
         collision = _collision_area(bbox, obstacles)
         scores.append((outside + collision, candidate))
+        tried[candidate] = bbox
         if outside <= 0 and collision <= 0:
             return ann
         if outside > 0:
@@ -364,12 +505,23 @@ def annotate_value(
         outside = _outside_area(bbox, axes_bbox)
         collision = _collision_area(bbox, obstacles)
         scores.append((outside + collision, candidate))
+        tried[candidate] = bbox
         if outside <= 0 and collision <= 0:
             return ann
 
     if scores:
         _score, best_side = min(scores, key=lambda item: item[0])
-        _apply_annotation_side(ann, best_side, offset_pt)
+        side_taken, distance = _spot_off_data(
+            ann,
+            ax,
+            renderer,
+            axes_bbox,
+            tried,
+            best_side,
+            offset_pt,
+            text_boxes,
+        )
+        _apply_annotation_side(ann, side_taken, distance)
         fig.canvas.draw()
 
     return ann
