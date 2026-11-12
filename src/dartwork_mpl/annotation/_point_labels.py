@@ -389,7 +389,58 @@ def _spot_off_data(
             moved = box.translated(dx * px_per_pt, dy * px_per_pt)
             if _outside_area(moved, axes_bbox) <= 0 and clear(moved):
                 return side, float(offset_pt) + farther
+    above = tried.get("above")
+    if (
+        above is not None
+        and _free_above_plot(ax, renderer, axes_bbox, above)
+        and clear(above)
+    ):
+        return "above", float(offset_pt)
     return best, float(offset_pt)
+
+
+def _free_above_plot(
+    ax: Axes, renderer: RendererBase, axes_bbox: Bbox, box: Bbox
+) -> bool:
+    """Whether a label at ``box``, reaching over the top of the plot, is in free space.
+
+    ``box`` is the label straight above its point (display px). It reaches
+    over the top when the point is so near it that the label does not fit
+    underneath. That space is free when nothing else is drawn there: no
+    top spine, no tick labels on top, no title and no other Axes the label
+    would meet, and the label no wider than the plot. ``dm.simple_layout``
+    keeps such a label inside the figure, as it does any text beyond the
+    plot.
+    """
+    if box.y1 <= axes_bbox.y1:
+        return False
+    if box.x0 < axes_bbox.x0 or box.x1 > axes_bbox.x1:
+        return False
+    family = same_position_axes(ax)
+    others: list[Bbox] = []
+    for owner in family:
+        if owner.spines["top"].get_visible():
+            return False
+        if any(
+            tick.label2.get_visible() and tick.label2.get_text()
+            for tick in owner.xaxis.get_major_ticks()
+        ):
+            return False
+        titles = (
+            owner.title,
+            getattr(owner, "_left_title", None),
+            getattr(owner, "_right_title", None),
+        )
+        for title in titles:
+            if title is not None and title.get_visible() and title.get_text():
+                with suppress(*BBOX_ERRORS):
+                    others.append(title.get_window_extent(renderer))
+    figure = ax.get_figure(root=False)
+    for other in figure.axes if figure is not None else []:
+        if other not in family and other.get_visible():
+            with suppress(*BBOX_ERRORS):
+                others.append(other.get_window_extent(renderer))
+    return _collision_area(box, others) <= 0
 
 
 def annotate_value(
@@ -419,9 +470,14 @@ def annotate_value(
     their width, markers, bars. A label that would sit on data moves to the
     nearest spot straight above, below, right or left of its point, up to
     1.75 font sizes farther than ``offset_pt``, that is off the data, the
-    other labels and the legend; with no such spot it stays on the
-    least-colliding side. The Axes is measured as it stands when this is
-    called: ``dm.simple_layout`` run afterwards resizes the Axes while the
+    other labels and the legend. A point too near the top of the plot for
+    its label to fit underneath, with no such spot inside the plot (a flat
+    peak, the line on both sides of it), keeps its label straight above it,
+    reaching over the top of the plot, while nothing else is drawn there
+    (a top spine, tick labels on top, a title or another Axes in its way);
+    ``dm.simple_layout`` keeps it inside the figure. With no spot at all the
+    label stays on the least-colliding side. The Axes is measured as it
+    stands when this is called: ``dm.simple_layout`` run afterwards resizes the Axes while the
     label's offset stays in points.
 
     The label is one weight step heavier than the preset's base weight

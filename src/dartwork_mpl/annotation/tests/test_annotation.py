@@ -296,6 +296,98 @@ class TestAnnotateValueOffData:
         plt.close(fig)
 
 
+_OFFICE = [99.1, 97.3, 95.8, 107.6, 121.3, 126.3, 136.8, 140.2, 138.0, 130.2, 114.3, 108.7]  # fmt: skip
+_LABORATORY = [93.9, 95.5, 101.5, 110.3, 119.7, 127.2, 130.9, 130.0, 124.7, 116.4, 107.3, 99.8]  # fmt: skip
+
+
+def _flat_peak(preset: str) -> tuple[Figure, Axes]:
+    """Two monthly lines whose higher one peaks flat, 5 % under the top of the plot.
+
+    The figure of agent smoke round 4, case s01 (2026-11-12), at the turn
+    that moved it from ``report`` to a slide: the y axis starts at zero, so
+    its limits no longer follow the data, and at slide size a label above
+    the peak does not fit under the top of the plot.
+    """
+    dm.style.use(preset)
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=12, n_series=2))
+    ax.plot(range(12), _OFFICE, label="Office")
+    ax.plot(range(12), _LABORATORY, label="Laboratory")
+    ax.set(xlabel="Month", ylabel="Electricity use (MWh)")
+    ax.set_ylim(bottom=0)
+    dm.place_legend(ax)
+    return fig, ax
+
+
+def _px(fig: Figure, artist: object) -> object:
+    """An artist's drawn box in display pixels."""
+    fig.canvas.draw()
+    return artist.get_window_extent(fig.canvas.get_renderer())  # type: ignore[attr-defined]
+
+
+class TestAnnotateValueAtTheTopOfThePlot:
+    """A label with no room under the top of the plot goes above it, not onto its line."""
+
+    def test_slide_peak_label_sits_above_the_plot_off_its_line(self) -> None:
+        """No finding, straight above the point, and inside the figure after the layout."""
+        fig, ax = _flat_peak("presentation")
+
+        text = annotate_value(ax, 7, 140.2, "140.2")
+        dm.simple_layout(fig)
+
+        assert _labels_on_data(fig) == []
+        assert text.xyann[0] == 0.0 and text.xyann[1] >= 3.0
+        assert text.get_verticalalignment() == "bottom"
+        label, plot, page = _px(fig, text), _px(fig, ax), fig.bbox
+        assert label.y1 > plot.y1  # it reaches over the top of the plot
+        # inside the figure; half a pixel is the canvas rounding
+        assert label.y1 <= page.y1 + 0.5
+        assert label.x0 >= page.x0 and label.x1 <= page.x1
+        plt.close(fig)
+
+    def test_report_peak_label_keeps_its_place(self) -> None:
+        """At report size the label is off the data 3 pt above its point: it does not move."""
+        fig, ax = _flat_peak("report")
+
+        text = annotate_value(ax, 7, 140.2, "140.2")
+
+        assert text.xyann == (0.0, 3.0)
+        dm.simple_layout(fig)
+        assert _labels_on_data(fig) == []
+        plt.close(fig)
+
+    def test_label_above_the_plot_is_clear_of_the_title(self) -> None:
+        """A title over the plot and the label over the plot do not share space."""
+        fig, ax = _flat_peak("presentation")
+        ax.set_title("Monthly electricity use")
+
+        text = annotate_value(ax, 7, 140.2, "140.2")
+        dm.simple_layout(fig)
+
+        label, title = _px(fig, text), _px(fig, ax.title)
+        assert not label.overlaps(title)
+        plt.close(fig)
+
+    def test_a_drawn_top_spine_keeps_the_label_beside_its_point(self) -> None:
+        """A label is not drawn across a top spine."""
+        fig, ax = _flat_peak("presentation")
+        ax.spines["top"].set_visible(True)
+
+        text = annotate_value(ax, 7, 140.2, "140.2")
+
+        assert text.xyann[1] == 0.0  # beside its point, as before
+        plt.close(fig)
+
+    def test_tick_labels_on_top_keep_the_label_inside(self) -> None:
+        """The space above the plot belongs to tick labels drawn there."""
+        fig, ax = _flat_peak("presentation")
+        ax.xaxis.tick_top()
+
+        text = annotate_value(ax, 7, 140.2, "140.2")
+
+        assert text.xyann[1] == 0.0  # beside its point, as before
+        plt.close(fig)
+
+
 class TestAnnotateValueWeight:
     """Value labels are one weight step above the preset base (2026-10-22)."""
 
