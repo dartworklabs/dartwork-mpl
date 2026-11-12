@@ -1,0 +1,11 @@
+{
+  "id": "s03-split-and-undo",
+  "kind": "series",
+  "lang": "en",
+  "request": "Plot measured and model supply temperature against time from data.csv, for a report. Save PNG, PDF and a runnable script.",
+  "followups": [
+    "Split it into two panels: the two series on top and model minus measured below.",
+    "Draw a dashed line at zero in the lower panel and shade the hours where the difference is above 1 °C.",
+    "Take the shading out again. Keep the zero line."
+  ]
+}
