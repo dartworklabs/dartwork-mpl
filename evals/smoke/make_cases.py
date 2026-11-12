@@ -9,16 +9,15 @@ from pathlib import Path
 ROOT = Path(__file__).parent / "cases"
 
 
-def case(name, kind, lang, prompt, header, rows):
+def case(name, kind, lang, prompt, header, rows, followups=None):
     folder = ROOT / name
     folder.mkdir(parents=True, exist_ok=True)
+    meta = {"id": name, "kind": kind, "lang": lang, "request": prompt}
+    if followups:
+        # A series: the changes asked for afterwards, one per turn, in order.
+        meta["followups"] = followups
     (folder / "case.json").write_text(
-        json.dumps(
-            {"id": name, "kind": kind, "lang": lang, "request": prompt},
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n"
+        json.dumps(meta, ensure_ascii=False, indent=2) + "\n"
     )
     with (folder / "data.csv").open("w", newline="") as stream:
         writer = csv.writer(stream, lineterminator="\n")
@@ -284,6 +283,7 @@ dm.save_formats(fig, "out/base", formats=("png", "pdf"))
     )
     (folder / "plot.py").write_text(base)
     round3()
+    round4()
 
 
 def wobble(i, k=0):
@@ -656,6 +656,110 @@ def round3():
     for name, lang, request, header, rows in repairs:
         folder = case(name, "repair", lang, request, header, rows)
         (folder / "plot.py").write_text(REPAIR[name])
+
+
+def round4():
+    """One figure changed several times in one conversation."""
+    case(
+        "s01-line-to-slide",
+        "series",
+        "en",
+        "Plot monthly electricity use for the three buildings in data.csv as lines, for a report. Save PNG, PDF and a runnable script.",
+        ["month", "Office_MWh", "Laboratory_MWh", "Library_MWh"],
+        [
+            (
+                f"2025-{m + 1:02d}",
+                round(
+                    118
+                    + 22 * math.cos((m - 7) / 12 * 2 * math.pi)
+                    + 4 * wobble(m, 0),
+                    1,
+                ),
+                round(
+                    112
+                    + 18 * math.cos((m - 6.5) / 12 * 2 * math.pi)
+                    + 4 * wobble(m, 1),
+                    1,
+                ),
+                round(
+                    74
+                    + 12 * math.cos((m - 0.5) / 12 * 2 * math.pi)
+                    + 3 * wobble(m, 2),
+                    1,
+                ),
+            )
+            for m in range(12)
+        ],
+        [
+            "Name the y axis 'Electricity use (MWh)' and take the axis down to zero.",
+            "Write each building's value at its highest month next to that point.",
+            "I am putting this on a slide now. Make it a slide figure.",
+        ],
+    )
+    case(
+        "s02-bars-refine",
+        "series",
+        "ko",
+        "data.csv의 지역별 태양광 설치용량을 막대그래프로 그려 주세요. 보고서에 넣을 그림입니다. PNG와 PDF, 실행 가능한 스크립트를 남겨 주세요.",
+        ["지역", "설치용량_MW"],
+        # Deliberately not in order of size: the second turn asks for that.
+        list(
+            zip(
+                [
+                    "경기",
+                    "강원",
+                    "충북",
+                    "충남",
+                    "전북",
+                    "전남",
+                    "경북",
+                    "경남",
+                    "제주",
+                    "인천",
+                ],
+                [
+                    151.2,
+                    164.9,
+                    139.7,
+                    301.4,
+                    388.1,
+                    412.6,
+                    296.8,
+                    187.3,
+                    82.4,
+                    37.5,
+                ],
+                strict=True,
+            )
+        ),
+        [
+            "용량이 큰 지역부터 차례로 놓아 주세요.",
+            "막대마다 값을 적어 주세요.",
+            "상위 세 지역만 눈에 띄게 해 주세요.",
+        ],
+    )
+    case(
+        "s03-split-and-undo",
+        "series",
+        "en",
+        "Plot measured and model supply temperature against time from data.csv, for a report. Save PNG, PDF and a runnable script.",
+        ["time_h", "measured_C", "model_C"],
+        [
+            (
+                i / 2,
+                round(42 + 6 * math.sin(i / 7) + 0.6 * wobble(i, 0), 2),
+                round(
+                    42.4 + 5.4 * math.sin(i / 7 - 0.15) + 0.2 * wobble(i, 1), 2
+                ),
+            )
+            for i in range(96)
+        ],
+        [
+            "Split it into two panels: the two series on top and model minus measured below.",
+            "Draw a dashed line at zero in the lower panel and shade the hours where the difference is above 1 °C.",
+            "Take the shading out again. Keep the zero line.",
+        ],
+    )
 
 
 if __name__ == "__main__":

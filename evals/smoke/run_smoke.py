@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import contextlib
 import hashlib
+import itertools
 import json
 import os
+import queue
 import re
 import shutil
 import signal
@@ -175,8 +177,13 @@ def probe(project, hidden, env):
         sibling.rmdir()
 
 
-def host_command(host, prompt, project):
-    """Use subscription authentication and suppress global settings/tools."""
+def host_command(host, prompt, project, resume=None):
+    """Use subscription authentication and suppress global settings/tools.
+
+    A series keeps one conversation. Claude takes it as ``prompt=None``: one
+    process that reads a user message per turn from stdin. Codex takes it as
+    ``resume``, the thread id of the first turn, one process per turn.
+    """
     if host == "claude":
         profile = Path(
             os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")
@@ -185,7 +192,11 @@ def host_command(host, prompt, project):
         return [
             executable(host),
             "-p",
-            prompt,
+            *(
+                ["--input-format", "stream-json"]
+                if prompt is None
+                else [prompt]
+            ),
             "--output-format",
             "stream-json",
             "--verbose",
@@ -204,6 +215,7 @@ def host_command(host, prompt, project):
     args = [
         executable(host),
         "exec",
+        *(["resume"] if resume else []),
         "--json",
         "--ignore-user-config",
         "--ignore-rules",
@@ -217,8 +229,8 @@ def host_command(host, prompt, project):
         "multi_agent",
         "--dangerously-bypass-approvals-and-sandbox",
         "--skip-git-repo-check",
-        "-C",
-        str(project),
+        # A resumed session has no -C; every host starts in the project.
+        *([] if resume else ["-C", str(project)]),
     ]
     original = (
         Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
@@ -239,26 +251,29 @@ def host_command(host, prompt, project):
         model = tomllib.loads(original.read_text()).get("model")
         if model:
             args += ["-m", model]
-    return [*args, prompt]
+    return [*args, *([resume] if resume else []), prompt]
 
 
-def run_host(argv, project, env, unit, timeout):
-    """Stream directly to disk and kill the entire process group at the deadline."""
-    start = time.monotonic()
+def start_host(argv, project, env, unit, stdin=subprocess.DEVNULL, seen=None):
+    """Start a host whose output streams to disk; ``seen`` gets each stdout line.
+
+    Files are appended to: the turns of a Codex series are separate processes
+    that share one transcript.
+    """
     # Pipes matter: Node initializes inherited regular descriptors by reopening
     # them, which Seatbelt correctly denies when they point into the result tree.
     proc = subprocess.Popen(
         argv,
         cwd=project,
         env=env,
-        stdin=subprocess.DEVNULL,
+        stdin=stdin,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         start_new_session=True,
     )
 
     def drain(stream, path, timeline=None):
-        with path.open("wb") as output:
+        with path.open("ab") as output:
             for line in iter(stream.readline, b""):
                 output.write(line)
                 output.flush()
@@ -275,6 +290,8 @@ def run_host(argv, project, env, unit, timeout):
                             )
                             + "\n"
                         )
+                    if seen is not None:
+                        seen(line)
 
     readers = [
         threading.Thread(
@@ -285,6 +302,22 @@ def run_host(argv, project, env, unit, timeout):
     ]
     for reader in readers:
         reader.start()
+    return proc, readers
+
+
+def stop_host(proc, readers):
+    """Kill the whole process group and finish writing what it printed."""
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(proc.pid, signal.SIGKILL)
+    proc.wait()
+    for reader in readers:
+        reader.join()
+
+
+def run_host(argv, project, env, unit, timeout):
+    """Stream directly to disk and kill the entire process group at the deadline."""
+    start = time.monotonic()
+    proc, readers = start_host(argv, project, env, unit)
     try:
         code = proc.wait(timeout=timeout)
         timed_out = False
@@ -292,16 +325,71 @@ def run_host(argv, project, env, unit, timeout):
         code = None
         timed_out = True
     finally:
-        with contextlib.suppress(ProcessLookupError):
-            os.killpg(proc.pid, signal.SIGKILL)
-        proc.wait()
-        for reader in readers:
-            reader.join()
+        stop_host(proc, readers)
     return {
         "exit_code": code if code is not None else proc.returncode,
         "timed_out": timed_out,
         "wall_s": round(time.monotonic() - start, 2),
     }
+
+
+def run_turns(argv, messages, project, env, unit, timeout, settle):
+    """One host process, one user message per turn, each with its own deadline.
+
+    The host answers a message with a ``result`` row and then waits for the
+    next. ``settle(index)`` runs in that pause, so it sees the project exactly
+    as the turn left it. A turn that fails or runs out of time ends the series.
+    """
+    answered = queue.Queue()
+
+    def seen(line):
+        with contextlib.suppress(ValueError, AttributeError):
+            if json.loads(line).get("type") == "result":
+                answered.put(True)
+
+    proc, readers = start_host(argv, project, env, unit, subprocess.PIPE, seen)
+    turns = []
+    try:
+        for index, text in enumerate(messages, 1):
+            start = time.monotonic()
+            row = {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [{"type": "text", "text": text}],
+                },
+            }
+            with contextlib.suppress(OSError):
+                proc.stdin.write(json.dumps(row).encode() + b"\n")
+                proc.stdin.flush()
+            turn = {"exit_code": None, "timed_out": False}
+            while turn["exit_code"] is None and not turn["timed_out"]:
+                try:
+                    answered.get(timeout=0.2)
+                    turn["exit_code"] = 0
+                except queue.Empty:
+                    if proc.poll() is not None:
+                        # It ended without answering; its last lines may still
+                        # be on their way through the reader.
+                        with contextlib.suppress(queue.Empty):
+                            answered.get(timeout=2)
+                            turn["exit_code"] = 0
+                        if turn["exit_code"] is None:
+                            turn["exit_code"] = proc.returncode or 1
+                    elif time.monotonic() - start > timeout:
+                        turn["timed_out"] = True
+            turn["wall_s"] = round(time.monotonic() - start, 2)
+            turns.append(turn)
+            if turn["exit_code"] != 0:
+                break
+            settle(index)
+        with contextlib.suppress(OSError):
+            proc.stdin.close()
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.wait(timeout=30)
+    finally:
+        stop_host(proc, readers)
+    return turns
 
 
 def events(path):
@@ -316,9 +404,20 @@ def events(path):
 def usage(host, rows):
     """Keep the host's usage schema rather than inventing equivalent billing totals."""
     if host == "claude":
-        result = next(
-            (r for r in reversed(rows) if r.get("type") == "result"), {}
-        )
+        results = [r for r in rows if r.get("type") == "result"]
+        if len(results) > 1:
+            # A series: one result per user message, each with its own usage.
+            totals = {}
+            for row in results:
+                for key, value in (row.get("usage") or {}).items():
+                    if isinstance(value, int):
+                        totals[key] = totals.get(key, 0) + value
+            return {
+                "tokens": totals or None,
+                "turns": sum(r.get("num_turns") or 0 for r in results) or None,
+                "host_error": any(r.get("is_error") for r in results),
+            }
+        result = results[-1] if results else {}
         return {
             "tokens": result.get("usage"),
             "turns": result.get("num_turns"),
@@ -337,6 +436,30 @@ def usage(host, rows):
             r.get("type") in {"error", "turn.failed"} for r in rows
         ),
     }
+
+
+def series_usage(host, rows, marks):
+    """Usage of each finished turn, and of the whole series.
+
+    ``marks`` are the row counts at which the turns ended, starting with 0.
+    Claude reports each answer's own counters. A resumed Codex session
+    reports running totals, so a turn is the rise since the turn before and
+    the series is the last total.
+    """
+    turns = [usage(host, rows[a:b]) for a, b in itertools.pairwise(marks)]
+    total = usage(host, rows)
+    if host == "codex":
+        before = {}
+        for turn in turns:
+            running = turn["tokens"] or {}
+            turn["tokens"] = {
+                key: value - before.get(key, 0)
+                for key, value in running.items()
+            } or None
+            before = running
+        last = [r for r in rows if r.get("type") == "turn.completed"][-1:]
+        total["tokens"] = usage(host, last)["tokens"]
+    return turns, total
 
 
 def same_file(tool_path, cwd, target):
@@ -443,6 +566,11 @@ def has_base(case):
 def final_script(case):
     """A revision is kept beside its base; a new figure is the only script."""
     return "revision.py" if has_base(case) else "plot.py"
+
+
+def turn_requests(case):
+    """A series is a first request and the changes asked for after it, in order."""
+    return [case["request"], *case.get("followups", [])]
 
 
 def warning_ids(reports):
@@ -643,64 +771,160 @@ def one(case, host, wheel, run, timeout):
                 ) as exc:
                     record["base_replay_error"] = str(exc)
             final = final_script(case)
+            requests = turn_requests(case)
             prompt = (
-                case["request"]
+                requests[0]
                 + f"\n\nProject notes: dartwork-mpl and pandas are installed in .venv. Use .venv/bin/python. The installed dartwork-mpl skill is available in this project. Keep the final runnable script as {final} and final outputs as out/figure.png and out/figure.pdf. Do the work yourself without subagents."
             )
             (unit / "prompt.txt").write_text(prompt)
-            argv = host_command(host, prompt, project)
-            record.update(
-                run_host(
-                    sandbox(argv, project, hidden), project, env, unit, timeout
+
+            def judge(folder):
+                """What the project holds now: files, figure opened, findings."""
+                rows = events(unit / "events.jsonl")
+                rollouts = [
+                    row
+                    for path in sorted(
+                        (project / ".codex/sessions").rglob("*.jsonl")
+                    )
+                    for row in events(path)
+                ]
+                seen = {"files": preserve(project, folder)}
+                # Judged before the replay, which must not be able to supply them.
+                seen["outputs"] = host_outputs(project)
+                png = project / "out/figure.png"
+                script = project / final
+                final_time = max(
+                    (
+                        p.stat().st_mtime
+                        for p in (png, script, project / "out/figure.pdf")
+                        if p.exists()
+                    ),
+                    default=0,
                 )
-            )
-            record.update(usage(host, events(unit / "events.jsonl")))
-            rollouts = []
+                seen["opened_final_png"] = inspection(
+                    host,
+                    rows,
+                    rollouts,
+                    png if png.exists() else None,
+                    final_time,
+                    events(unit / "timeline.jsonl"),
+                    project,
+                )
+                seen["validator"] = "could not re-run"
+                seen["warnings"] = []
+                if script.is_file() and not script.is_symlink():
+                    # Re-run a copy: validation must not overwrite the agent's outputs.
+                    try:
+                        reports = replay(
+                            project, final, py, env, hidden, folder
+                        )
+                        seen["validator"] = "re-ran"
+                        seen["warnings"] = warning_ids(reports)
+                    except (
+                        RuntimeError,
+                        OSError,
+                        subprocess.TimeoutExpired,
+                    ) as exc:
+                        seen["replay_error"] = str(exc)
+                return seen
+
+            if len(requests) == 1:
+                record.update(
+                    run_host(
+                        sandbox(
+                            host_command(host, prompt, project), project, hidden
+                        ),
+                        project,
+                        env,
+                        unit,
+                        timeout,
+                    )
+                )
+            else:
+                turns = []
+                marks = [0]
+
+                def settle(index):
+                    """Record a turn while the host waits for the next request."""
+                    folder = unit / "turns" / str(index)
+                    folder.mkdir(parents=True)
+                    (folder / "request.txt").write_text(
+                        requests[index - 1] + "\n"
+                    )
+                    marks.append(len(events(unit / "events.jsonl")))
+                    turns.append({"turn": index, **judge(folder)})
+
+                if host == "claude":
+                    ran = run_turns(
+                        sandbox(
+                            host_command(host, None, project), project, hidden
+                        ),
+                        [prompt, *requests[1:]],
+                        project,
+                        env,
+                        unit,
+                        timeout,
+                        settle,
+                    )
+                else:
+                    ran, thread = [], None
+                    for index, text in enumerate([prompt, *requests[1:]], 1):
+                        ran.append(
+                            run_host(
+                                sandbox(
+                                    host_command(host, text, project, thread),
+                                    project,
+                                    hidden,
+                                ),
+                                project,
+                                env,
+                                unit,
+                                timeout,
+                            )
+                        )
+                        thread = thread or next(
+                            (
+                                r.get("thread_id")
+                                for r in events(unit / "events.jsonl")
+                                if r.get("type") == "thread.started"
+                            ),
+                            None,
+                        )
+                        if ran[-1]["exit_code"] != 0 or not thread:
+                            break
+                        settle(index)
+                rows = events(unit / "events.jsonl")
+                spent, total = series_usage(host, rows, marks)
+                for turn, how, use in zip(turns, ran, spent, strict=False):
+                    turn.update(how)
+                    turn.update(use)
+                record["turn_records"] = turns
+                record["turns_asked"] = len(requests)
+                record.update(
+                    exit_code=ran[-1]["exit_code"],
+                    timed_out=ran[-1]["timed_out"],
+                    wall_s=round(sum(r["wall_s"] for r in ran), 2),
+                )
+                record.update(total)
+            if len(requests) == 1:
+                record.update(usage(host, events(unit / "events.jsonl")))
             for index, path in enumerate(
-                (project / ".codex/sessions").rglob("*.jsonl")
+                sorted((project / ".codex/sessions").rglob("*.jsonl"))
             ):
                 shutil.copy2(path, unit / f"rollout-{index}.jsonl")
-                rollouts += events(path)
-            record["files"] = preserve(project, unit)
-            # Judged before the replay, which must not be able to supply them.
-            produced = host_outputs(project)
-            png = project / "out/figure.png"
-            script = project / final
-            final_time = max(
-                (
-                    p.stat().st_mtime
-                    for p in (png, script, project / "out/figure.pdf")
-                    if p.exists()
-                ),
-                default=0,
-            )
-            record["opened_final_png"] = inspection(
-                host,
-                events(unit / "events.jsonl"),
-                rollouts,
-                png if png.exists() else None,
-                final_time,
-                events(unit / "timeline.jsonl"),
-                project,
-            )
-            record["validator"] = "could not re-run"
-            if script.is_file() and not script.is_symlink():
-                # Re-run a copy: validation must not overwrite the agent's outputs.
-                try:
-                    reports = replay(project, final, py, env, hidden, unit)
-                    record["validator"] = "re-ran"
-                    record["warnings"] = warning_ids(reports)
-                except (
-                    RuntimeError,
-                    OSError,
-                    subprocess.TimeoutExpired,
-                ) as exc:
-                    record["replay_error"] = str(exc)
+            record.update(judge(unit))
             if (
                 record["exit_code"] == 0
                 and not record["host_error"]
-                and produced
+                and record["outputs"]
                 and record["validator"] == "re-ran"
+                and all(
+                    not t["host_error"]
+                    and t["outputs"]
+                    and t["validator"] == "re-ran"
+                    for t in record.get("turn_records", [])
+                )
+                and len(record.get("turn_records", requests)) == len(requests)
             ):
                 record["execution"] = "success"
         except Exception as exc:  # noqa: BLE001 - every setup failure needs a receipt
@@ -739,6 +963,33 @@ def summary(run, records):
         lines.append(
             f"| [{prefix}]({prefix}/run.json) | {r['execution']} | {files} | {base} | {findings} | {json.dumps(r['tokens'])} | {r['turns']} | {r.get('wall_s', 'NOTRUN')} | {r.get('opened_final_png', 'unknown')} |"
         )
+    series = [r for r in records if "turn_records" in r]
+    if series:
+        lines += [
+            "",
+            "## Series, turn by turn",
+            "",
+            "Each row is the project as that turn left it. A turn that is missing did not finish.",
+            "",
+            "| Case / host | Turn | Outputs | Validator WARNING ids | Host tokens | Host turns | Wall s | Opened the PNG after the turn's last write |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+    for r in series:
+        prefix = f"{r['case']}/{r['host']}"
+        for t in r["turn_records"]:
+            folder = f"{prefix}/turns/{t['turn']}"
+            findings = ", ".join(t["warnings"]) or (
+                "none" if t["validator"] == "re-ran" else "could not re-run"
+            )
+            # The host's nested detail stays in run.json.
+            counters = {
+                key: value
+                for key, value in (t["tokens"] or {}).items()
+                if isinstance(value, int)
+            } or None
+            lines.append(
+                f"| {prefix} | [{t['turn']} of {r['turns_asked']}]({folder}/request.txt) | [{'PNG and PDF' if t['outputs'] else 'missing'}]({folder}/artifacts/out/figure.png) | {findings} | {json.dumps(counters)} | {t['turns']} | {t.get('wall_s', 'NOTRUN')} | {t['opened_final_png']} |"
+            )
     (run / "SUMMARY.md").write_text("\n".join(lines) + "\n")
 
 

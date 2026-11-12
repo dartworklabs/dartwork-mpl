@@ -17,20 +17,27 @@ SPEC.loader.exec_module(smoke)
 
 
 def test_case_inventory_is_balanced_and_has_no_answers():
-    """The review corpus is twenty-seven requests with only local inputs."""
+    """The review corpus is thirty requests with only local inputs."""
     cases = [
         json.loads(p.read_text())
         for p in (smoke.HERE / "cases").glob("*/case.json")
     ]
-    assert len(cases) == 27
-    assert Counter(c["lang"] for c in cases) == {"ko": 13, "en": 14}
+    assert len(cases) == 30
+    assert Counter(c["lang"] for c in cases) == {"ko": 14, "en": 16}
     assert Counter(c["kind"] for c in cases) == {
         "generate": 18,
         "edit": 5,
         "repair": 4,
+        "series": 3,
     }
     for case in cases:
-        assert set(case) == {"id", "kind", "lang", "request"}
+        series = case["kind"] == "series"
+        assert set(case) == {"id", "kind", "lang", "request"} | (
+            {"followups"} if series else set()
+        )
+        # A series is the same figure changed at least three times.
+        assert len(smoke.turn_requests(case)) >= (4 if series else 1)
+        assert (len(smoke.turn_requests(case)) > 1) == series
         folder = smoke.HERE / "cases" / case["id"]
         assert (folder / "data.csv").is_file()
         assert (folder / "plot.py").is_file() == smoke.has_base(case)
@@ -404,3 +411,213 @@ def test_replay_finds_what_the_host_left_in_out_and_keeps_only_new_files(
         assert (tmp_path / "replay-artifacts/figure.png").read_text() == (
             "replayed"
         )
+
+
+FAKE_HOST = r"""
+import json, sys, time
+from pathlib import Path
+plan = json.loads(sys.argv[1])
+for count, line in enumerate(sys.stdin, 1):
+    Path(f"got-{count}").write_text(json.loads(line)["message"]["content"][0]["text"])
+    step = plan.get(str(count), "answer")
+    if step == "hang":
+        time.sleep(60)
+    if step == "die":
+        sys.exit(3)
+    print(json.dumps({"type": "assistant"}), flush=True)
+    print(json.dumps({"type": "result", "is_error": False,
+                      "usage": {"output_tokens": count}, "num_turns": 1}), flush=True)
+"""
+
+
+def _fake_turns(project, plan, messages, timeout=10):
+    """Run the stand-in host through ``run_turns``; no model, no sandbox."""
+    (project / "host.py").write_text(FAKE_HOST)
+    settled = []
+
+    def settle(index):
+        # The host has this turn's message and has not been sent the next.
+        settled.append((index, sorted(p.name for p in project.glob("got-*"))))
+
+    turns = smoke.run_turns(
+        ["/usr/bin/python3", "host.py", json.dumps(plan)],
+        messages,
+        project,
+        smoke.environment(project),
+        project,
+        timeout,
+        settle,
+    )
+    return turns, settled
+
+
+def test_a_series_sends_one_message_per_answer_and_settles_in_between(tmp_path):
+    """Each turn is judged before the host hears the next request."""
+    turns, settled = _fake_turns(tmp_path, {}, ["first", "second", "third"])
+    assert [t["exit_code"] for t in turns] == [0, 0, 0]
+    assert not any(t["timed_out"] for t in turns)
+    assert settled == [
+        (1, ["got-1"]),
+        (2, ["got-1", "got-2"]),
+        (3, ["got-1", "got-2", "got-3"]),
+    ]
+    assert (tmp_path / "got-2").read_text() == "second"
+    rows = smoke.events(tmp_path / "events.jsonl")
+    assert [r["type"] for r in rows] == ["assistant", "result"] * 3
+
+
+def test_a_turn_that_runs_out_of_time_ends_the_series(tmp_path):
+    """The deadline is per turn; later requests are never sent."""
+    turns, settled = _fake_turns(
+        tmp_path, {"2": "hang"}, ["first", "second", "third"], timeout=0.5
+    )
+    assert [t["timed_out"] for t in turns] == [False, True]
+    assert turns[1]["exit_code"] is None
+    assert [index for index, _ in settled] == [1]
+    assert not (tmp_path / "got-3").exists()
+
+
+def test_a_host_that_dies_mid_turn_ends_the_series_without_waiting(tmp_path):
+    """A dead host is a failed turn at once, not a timeout."""
+    turns, settled = _fake_turns(
+        tmp_path, {"2": "die"}, ["first", "second", "third"], timeout=60
+    )
+    assert [t["exit_code"] for t in turns] == [0, 3]
+    assert turns[1]["timed_out"] is False and turns[1]["wall_s"] < 10
+    assert [index for index, _ in settled] == [1]
+
+
+def test_a_later_process_adds_to_the_transcript(tmp_path):
+    """The turns of a Codex series are separate processes with one transcript."""
+    for word in ("one", "two"):
+        smoke.run_host(
+            ["/usr/bin/python3", "-c", f"print({word!r})"],
+            tmp_path,
+            smoke.environment(tmp_path),
+            tmp_path,
+            10,
+        )
+    assert (tmp_path / "events.jsonl").read_text().split() == ["one", "two"]
+
+
+def test_host_commands_keep_one_conversation(tmp_path):
+    """Claude reads its turns from stdin; Codex resumes the first turn's thread."""
+    claude = smoke.host_command("claude", None, tmp_path)
+    at = claude.index("--input-format")
+    assert claude[at - 1 : at + 2] == ["-p", "--input-format", "stream-json"]
+    once = smoke.host_command("claude", "draw it", tmp_path)
+    assert once[1:3] == ["-p", "draw it"] and "--input-format" not in once
+    codex = smoke.host_command("codex", "now sort it", tmp_path, "thread-7")
+    assert codex[1:3] == ["exec", "resume"]
+    assert codex[-2:] == ["thread-7", "now sort it"] and "-C" not in codex
+    first = smoke.host_command("codex", "draw it", tmp_path)
+    assert first[1] == "exec" and "resume" not in first
+    assert first[first.index("-C") + 1] == str(tmp_path)
+
+
+def test_usage_of_a_series_adds_up_its_answers():
+    """One result per user message; the counters of a conversation are summed."""
+    rows = [
+        {
+            "type": "result",
+            "usage": {"output_tokens": n, "cache_read_input_tokens": 10},
+            "num_turns": n,
+            "is_error": False,
+        }
+        for n in (2, 3)
+    ]
+    assert smoke.usage("claude", rows) == {
+        "tokens": {"output_tokens": 5, "cache_read_input_tokens": 20},
+        "turns": 5,
+        "host_error": False,
+    }
+    assert smoke.usage("claude", rows[:1])["tokens"] == rows[0]["usage"]
+
+
+def test_summary_lists_a_series_turn_by_turn(tmp_path):
+    """A series is read as what each turn left, not only the last figure."""
+    turn = {
+        "outputs": True,
+        "validator": "re-ran",
+        "tokens": None,
+        "turns": 4,
+        "wall_s": 61.0,
+        "opened_final_png": "yes",
+    }
+    record = {
+        "case": "s01",
+        "host": "claude",
+        "execution": "failure",
+        "validator": "re-ran",
+        "warnings": ["LEGEND_ON_DATA"],
+        "tokens": None,
+        "turns": 8,
+        "turns_asked": 4,
+        "turn_records": [
+            {**turn, "turn": 1, "warnings": []},
+            {**turn, "turn": 2, "warnings": ["LEGEND_ON_DATA"]},
+        ],
+    }
+    smoke.summary(tmp_path, [record])
+    rows = (tmp_path / "SUMMARY.md").read_text().splitlines()
+    turns = [r.split("|") for r in rows if "turns/" in r]
+    assert [r[2].split("]")[0].strip() for r in turns] == ["[1 of 4", "[2 of 4"]
+    assert [r[4].strip() for r in turns] == ["none", "LEGEND_ON_DATA"]
+
+
+def test_a_resumed_codex_session_reports_running_totals():
+    """Codex counts from the start of the session; a turn is the rise since."""
+    rows = [
+        {"type": "thread.started"},
+        {"type": "turn.completed", "usage": {"output_tokens": 1457}},
+        {"type": "thread.started"},
+        {"type": "turn.completed", "usage": {"output_tokens": 1861}},
+        {"type": "thread.started"},
+    ]
+    turns, total = smoke.series_usage("codex", rows, [0, 2, 4])
+    assert [t["tokens"] for t in turns] == [
+        {"output_tokens": 1457},
+        {"output_tokens": 404},
+    ]
+    assert total["tokens"] == {"output_tokens": 1861}
+    answers = [
+        {"type": "result", "usage": {"output_tokens": n}, "num_turns": 1}
+        for n in (5, 8)
+    ]
+    turns, total = smoke.series_usage("claude", answers, [0, 1, 2])
+    assert [t["tokens"] for t in turns] == [
+        {"output_tokens": 5},
+        {"output_tokens": 8},
+    ]
+    assert total["tokens"] == {"output_tokens": 13}
+
+
+def test_the_turn_table_keeps_only_the_counters(tmp_path):
+    """Nested host detail stays in run.json; the table shows the counts."""
+    turn = {
+        "turn": 1,
+        "outputs": True,
+        "validator": "re-ran",
+        "warnings": [],
+        "tokens": {"output_tokens": 7, "iterations": [{"output_tokens": 7}]},
+        "turns": 2,
+        "opened_final_png": "yes",
+    }
+    record = {
+        "case": "s01",
+        "host": "claude",
+        "execution": "success",
+        "validator": "re-ran",
+        "warnings": [],
+        "tokens": None,
+        "turns": 2,
+        "turns_asked": 1,
+        "turn_records": [turn],
+    }
+    smoke.summary(tmp_path, [record])
+    row = next(
+        r
+        for r in (tmp_path / "SUMMARY.md").read_text().splitlines()
+        if "turns/1" in r
+    )
+    assert '{"output_tokens": 7}' in row and "iterations" not in row

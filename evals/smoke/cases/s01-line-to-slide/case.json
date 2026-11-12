@@ -1,0 +1,11 @@
+{
+  "id": "s01-line-to-slide",
+  "kind": "series",
+  "lang": "en",
+  "request": "Plot monthly electricity use for the three buildings in data.csv as lines, for a report. Save PNG, PDF and a runnable script.",
+  "followups": [
+    "Name the y axis 'Electricity use (MWh)' and take the axis down to zero.",
+    "Write each building's value at its highest month next to that point.",
+    "I am putting this on a slide now. Make it a slide figure."
+  ]
+}

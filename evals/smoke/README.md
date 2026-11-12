@@ -1,6 +1,6 @@
 # Agent plotting smoke
 
-This is a small failure-harvesting exercise: twenty-seven realistic requests, one
+This is a small failure-harvesting exercise: thirty realistic requests, one
 attempt per selected host. Inspect the PNGs and transcripts and file defects. Execution
 success only means the host exited successfully, produced PNG/PDF, and its final
 script could be re-run and validated. It says nothing about visual correctness.
@@ -19,7 +19,8 @@ uv run python evals/smoke/run_smoke.py --cases g01-single-column --hosts claude 
 ```
 
 `--cases` and `--hosts` accept space-separated or comma-separated names.
-Defaults: all twenty-seven cases, both hosts, two parallel units, 600 seconds per host.
+Defaults: all thirty cases, both hosts, two parallel units, 600 seconds per host
+(per turn in a series).
 An existing run id is refused. No API keys are passed to either host. Models
 use the host defaults (Codex's configured model selection is retained).
 
@@ -28,15 +29,26 @@ the wheel, pandas, the wheel's installed skill, and only its own CSV/base script
 The raw user request and appended project logistics are recorded separately.
 Edit originals and rendered bases are kept. No host sees the runner or results.
 
-Three kinds of case: `generate` (a new figure from a CSV), `edit` (one asked
-change to a clean `plot.py`) and `repair` (a `plot.py` that runs but carries a
-defect the validator reports; the request only says to validate and fix it).
+Four kinds of case: `generate` (a new figure from a CSV), `edit` (one asked
+change to a clean `plot.py`), `repair` (a `plot.py` that runs but carries a
+defect the validator reports; the request only says to validate and fix it)
+and `series` (a new figure, then three changes asked one at a time in the same
+conversation: `followups` in `case.json`).
 For `edit` and `repair` the base is also validated before the host starts
 (`base-validator.json`, `base_warnings` in `run.json`); that replay is removed
 before the host runs, so the host has to find the defect itself. Read a repair
 as base WARNING ids → final WARNING ids, then count in the transcript how many
 render-and-validate passes it took and whether the fix is the one the finding
 asked for.
+
+A series keeps one conversation per host: Claude is one process that reads a
+user message per turn, Codex resumes the first turn's session. After each
+answer, and before the next request is sent, the runner records the project as
+that turn left it in `turns/<n>/` (request, scripts, PNG/PDF, validator
+findings, usage, whether the PNG was opened after the turn's last write).
+`SUMMARY.md` lists the turns. Read a series turn by turn: what the request
+changed, what else moved, whether an earlier change survived. A turn that
+fails or runs out of time ends the series, and the unit is a failure.
 
 macOS Seatbelt blocks reads of all worktrees of this repo, the result root,
 other temporary units, and global instructions/skills/session histories.
