@@ -728,7 +728,10 @@ point by default, tries below when vertical placement collides, and falls back
 to left/right placement when the label would cross the axes spine. When no
 side is free at that offset, a label that would sit on a line, a marker or a
 bar moves to the nearest spot straight above, below, right or left of its
-point (up to 1.75 font sizes farther) that keeps it off the data. Explicit
+point (up to 1.75 font sizes farther) that keeps it off the data. A point too
+near the top of the plot for its label to fit underneath, with no such spot,
+keeps the label straight above it, reaching over the top of the plot, and
+`dm.simple_layout` keeps it inside the figure. Explicit
 `side="left"` / `side="right"` also works with `arrowprops`, keeping the arrow
 straight along one axis. `dm.annotate_corner(ax, text)` places narrative notes
 just inside a corner and can move to a less obstructed corner after rendering.

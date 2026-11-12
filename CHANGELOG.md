@@ -584,6 +584,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **`dm.annotate_value` keeps the label of a flat peak off its line when
+  there is no room under the top of the plot.** A report figure moved to
+  `presentation` kept its peak label (`140.2`) on the line: at slide size
+  the label no longer fitted between the point and the top of the plot,
+  the line ran on both sides of the point, and no spot inside the plot was
+  off the data. Such a label now stays straight above its point, reaching
+  over the top of the plot, when nothing else is drawn there (a top spine,
+  tick labels on top, a title or another Axes in its way), and
+  `dm.simple_layout` keeps it inside the figure. Labels that had a spot
+  inside the plot are placed as before. Found in smoke round 4, where both
+  hosts raised the y limit by hand to make room.
+
 - **`dm.annotate_value` moves a label off the data when no side is free
   3 pt away.** `VALUE_LABEL_ON_DATA` names the default call as its fix, and
   on two marked lines 1 °C apart it left 3 of 15 labels on a line: with no
