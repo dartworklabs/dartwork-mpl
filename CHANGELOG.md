@@ -228,6 +228,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **The skill says what to do past the colour cycle.** With more lines than
+  the preset cycle has colours (eight; seven in `dark`), each line that
+  repeats a colour is drawn dashed. In agent smoke round 2 one host did
+  this for twelve sensors and the other drew series nine to twelve as
+  solid lines in colours one to four. Guidance for agents only: the
+  presets and the library's defaults do not change.
+
 - **`TICK_CROWD` speaks only where neighbouring labels stand closer than
   half an em.** It reported a row whenever its labels plus 15 % of their
   footprint were longer than the axis: long names flat 0.52 em apart on the

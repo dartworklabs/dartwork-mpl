@@ -154,6 +154,22 @@ def test_names_in_the_data_are_not_translated() -> None:
     assert "stay as given" in " ".join(korean.split())
 
 
+def test_series_past_the_cycle_are_dashed() -> None:
+    """Owner decision 2026-11-12, after smoke round 2 (g10, twelve series).
+
+    The preset cycle has eight colours (seven in ``dark``). One host drew
+    series nine to twelve as solid lines in colours one to four; the other
+    dashed them. The router states the second, and the colour reference
+    repeats it.
+    """
+    text = " ".join(SKILL_MD.read_text(encoding="utf-8").split())
+    values = text[text.index("## Values") : text.index("## Edits")]
+    assert "repeats a colour" in values
+    assert 'linestyle="--"' in values
+    colours = (SKILL / "references" / "colors.md").read_text(encoding="utf-8")
+    assert 'linestyle="--"' in colours
+
+
 def test_details_nobody_named_follow_the_2026_11_03_decisions() -> None:
     """User decisions 2026-11-03 (eval v13/v14 step 5): 20-A 0-A 19-A 22-A V-A.
 
