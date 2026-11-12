@@ -78,7 +78,7 @@ word for word, every word kept, in its order (`수출 증가율` → `Export gro
 ## Values
 
 - Leave `color=` out so the preset cycle applies; name one when asked or to emphasise
-  (`dc.blue6`: family + step 0–9). More: `references/colors.md`.
+  (`dc.blue6`: family + step 0–9). More series than the cycle has colours (`len(plt.rcParams["axes.prop_cycle"])`): each line that repeats a colour is dashed, `linestyle="--"`. More: `references/colors.md`.
 - `dm.fs(n)`/`dm.lw(n)`: preset font size/line width + n steps (1 pt; 2.6 pt in
   `presentation` = `scientific` × 2.6); `dm.fw(n)`: weight + 100·n (preset, not an artist).
 - Explicit user values win exactly (`fontsize=12`, `"#235fa4"`), even when lint flags

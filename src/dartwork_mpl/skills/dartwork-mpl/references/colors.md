@@ -34,6 +34,12 @@ Unrelated categories: `dc.octave` or a qualitative set (`dc.vivid`,
 `dc.pastel`, `dc.dusty`, `dc.earth`, `dc.jewel`, ...). Ordered groups: steps
 of one family.
 
+More lines than the cycle has colours (eight; seven in `dark`): the cycle
+starts again, so line nine has line one's colour. Keep the colours and draw
+each line that repeats one dashed, `linestyle="--"`, so colour and dash
+together name a line. Lines named at their ends (`dm.label_line_ends(ax)`)
+keep that too.
+
 ## One highlighted series
 
 The highlighted series keeps its own colour (in a new figure, the preset's
