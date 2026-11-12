@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import hashlib
+import itertools
 import json
 import os
 import queue
@@ -437,6 +438,30 @@ def usage(host, rows):
     }
 
 
+def series_usage(host, rows, marks):
+    """Usage of each finished turn, and of the whole series.
+
+    ``marks`` are the row counts at which the turns ended, starting with 0.
+    Claude reports each answer's own counters. A resumed Codex session
+    reports running totals, so a turn is the rise since the turn before and
+    the series is the last total.
+    """
+    turns = [usage(host, rows[a:b]) for a, b in itertools.pairwise(marks)]
+    total = usage(host, rows)
+    if host == "codex":
+        before = {}
+        for turn in turns:
+            running = turn["tokens"] or {}
+            turn["tokens"] = {
+                key: value - before.get(key, 0)
+                for key, value in running.items()
+            } or None
+            before = running
+        last = [r for r in rows if r.get("type") == "turn.completed"][-1:]
+        total["tokens"] = usage(host, last)["tokens"]
+    return turns, total
+
+
 def same_file(tool_path, cwd, target):
     """Whether a tool's path argument, read from ``cwd``, names ``target``."""
     path = Path(tool_path)
@@ -826,15 +851,8 @@ def one(case, host, wheel, run, timeout):
                     (folder / "request.txt").write_text(
                         requests[index - 1] + "\n"
                     )
-                    rows = events(unit / "events.jsonl")
-                    marks.append(len(rows))
-                    turns.append(
-                        {
-                            "turn": index,
-                            **usage(host, rows[marks[-2] :]),
-                            **judge(folder),
-                        }
-                    )
+                    marks.append(len(events(unit / "events.jsonl")))
+                    turns.append({"turn": index, **judge(folder)})
 
                 if host == "claude":
                     ran = run_turns(
@@ -875,8 +893,11 @@ def one(case, host, wheel, run, timeout):
                         if ran[-1]["exit_code"] != 0 or not thread:
                             break
                         settle(index)
-                for turn, how in zip(turns, ran, strict=False):
+                rows = events(unit / "events.jsonl")
+                spent, total = series_usage(host, rows, marks)
+                for turn, how, use in zip(turns, ran, spent, strict=False):
                     turn.update(how)
+                    turn.update(use)
                 record["turn_records"] = turns
                 record["turns_asked"] = len(requests)
                 record.update(
@@ -884,7 +905,9 @@ def one(case, host, wheel, run, timeout):
                     timed_out=ran[-1]["timed_out"],
                     wall_s=round(sum(r["wall_s"] for r in ran), 2),
                 )
-            record.update(usage(host, events(unit / "events.jsonl")))
+                record.update(total)
+            if len(requests) == 1:
+                record.update(usage(host, events(unit / "events.jsonl")))
             for index, path in enumerate(
                 sorted((project / ".codex/sessions").rglob("*.jsonl"))
             ):
@@ -958,8 +981,14 @@ def summary(run, records):
             findings = ", ".join(t["warnings"]) or (
                 "none" if t["validator"] == "re-ran" else "could not re-run"
             )
+            # The host's nested detail stays in run.json.
+            counters = {
+                key: value
+                for key, value in (t["tokens"] or {}).items()
+                if isinstance(value, int)
+            } or None
             lines.append(
-                f"| {prefix} | [{t['turn']} of {r['turns_asked']}]({folder}/request.txt) | [{'PNG and PDF' if t['outputs'] else 'missing'}]({folder}/artifacts/out/figure.png) | {findings} | {json.dumps(t['tokens'])} | {t['turns']} | {t.get('wall_s', 'NOTRUN')} | {t['opened_final_png']} |"
+                f"| {prefix} | [{t['turn']} of {r['turns_asked']}]({folder}/request.txt) | [{'PNG and PDF' if t['outputs'] else 'missing'}]({folder}/artifacts/out/figure.png) | {findings} | {json.dumps(counters)} | {t['turns']} | {t.get('wall_s', 'NOTRUN')} | {t['opened_final_png']} |"
             )
     (run / "SUMMARY.md").write_text("\n".join(lines) + "\n")
 

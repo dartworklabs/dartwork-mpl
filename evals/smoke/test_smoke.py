@@ -563,3 +563,61 @@ def test_summary_lists_a_series_turn_by_turn(tmp_path):
     turns = [r.split("|") for r in rows if "turns/" in r]
     assert [r[2].split("]")[0].strip() for r in turns] == ["[1 of 4", "[2 of 4"]
     assert [r[4].strip() for r in turns] == ["none", "LEGEND_ON_DATA"]
+
+
+def test_a_resumed_codex_session_reports_running_totals():
+    """Codex counts from the start of the session; a turn is the rise since."""
+    rows = [
+        {"type": "thread.started"},
+        {"type": "turn.completed", "usage": {"output_tokens": 1457}},
+        {"type": "thread.started"},
+        {"type": "turn.completed", "usage": {"output_tokens": 1861}},
+        {"type": "thread.started"},
+    ]
+    turns, total = smoke.series_usage("codex", rows, [0, 2, 4])
+    assert [t["tokens"] for t in turns] == [
+        {"output_tokens": 1457},
+        {"output_tokens": 404},
+    ]
+    assert total["tokens"] == {"output_tokens": 1861}
+    answers = [
+        {"type": "result", "usage": {"output_tokens": n}, "num_turns": 1}
+        for n in (5, 8)
+    ]
+    turns, total = smoke.series_usage("claude", answers, [0, 1, 2])
+    assert [t["tokens"] for t in turns] == [
+        {"output_tokens": 5},
+        {"output_tokens": 8},
+    ]
+    assert total["tokens"] == {"output_tokens": 13}
+
+
+def test_the_turn_table_keeps_only_the_counters(tmp_path):
+    """Nested host detail stays in run.json; the table shows the counts."""
+    turn = {
+        "turn": 1,
+        "outputs": True,
+        "validator": "re-ran",
+        "warnings": [],
+        "tokens": {"output_tokens": 7, "iterations": [{"output_tokens": 7}]},
+        "turns": 2,
+        "opened_final_png": "yes",
+    }
+    record = {
+        "case": "s01",
+        "host": "claude",
+        "execution": "success",
+        "validator": "re-ran",
+        "warnings": [],
+        "tokens": None,
+        "turns": 2,
+        "turns_asked": 1,
+        "turn_records": [turn],
+    }
+    smoke.summary(tmp_path, [record])
+    row = next(
+        r
+        for r in (tmp_path / "SUMMARY.md").read_text().splitlines()
+        if "turns/1" in r
+    )
+    assert '{"output_tokens": 7}' in row and "iterations" not in row
