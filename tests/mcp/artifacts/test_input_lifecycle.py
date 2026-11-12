@@ -992,10 +992,25 @@ def test_client_cancellation_and_final_close_join_real_transport_delivery(
     assert fd_count() == before
 
 
+@pytest.mark.parametrize(
+    "export_tail_s", [0.0, 2.5], ids=["prompt", "outlasts-client-grace"]
+)
 def test_stdio_disconnect_joins_blocked_export_before_lock_release(
-    owned_input_root,
+    owned_input_root, export_tail_s, monkeypatch
 ):
-    """Real stdio disconnect drains the server's owned export before releasing pins."""
+    """Real stdio disconnect drains the server's owned export before releasing pins.
+
+    ``export_tail_s`` is how long the export goes on after it is released. The
+    second case is longer than the SDK client's default grace for a server
+    that has lost its stdin (2 s): the server still drains it.
+    """
+    # The SDK client ends a server that has not exited 2 s after its stdin
+    # closed (SIGTERM to the process group). That clock starts before this
+    # test releases the export, so on a loaded host the server was killed
+    # mid-drain and left its staging folder: the test measured the client's
+    # patience, not the server's drain. The deadline here is the 15 s wait
+    # on the owner task below.
+    monkeypatch.setattr("mcp.client.stdio.PROCESS_TERMINATION_TIMEOUT", 60.0)
     api()
     package = importlib.import_module("dartwork_mpl")
     path, storage, source, store = fixture(owned_input_root)
@@ -1005,6 +1020,7 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
         + "import os, time\nfrom pathlib import Path\n"
         + publish_pid(marker)
         + f"while not Path({str(release)!r}).exists(): time.sleep(0.01)\n"
+        + f"time.sleep({export_tail_s!r})\n"
     )
     spec = revision(source)
     from fastmcp.client.transports import PythonStdioTransport
