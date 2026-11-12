@@ -587,6 +587,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   off the data, the other labels and the legend. A free side at `offset_pt`
   and an explicit `side=` are placed as before.
 
+- **An hourly date axis no longer prints a date twice.** Midnight ticks read
+  the date (`26.06.18`), and the corner label repeated the last one beside
+  them. The corner label now appears only while no tick in view reads that
+  date — an axis inside one day keeps `09:00 … 12:00` under `26.05.02`. Found
+  in agent smoke round 3, where one host hid the label by hand and the other
+  shipped the duplicate.
+
 - **The skill says names in the data are not translated.** In agent smoke
   round 3 a host turned Korean category names (`석탄`, `규칙 기반`) into
   English legend entries without saying so. `references/korean.md` already
