@@ -14,8 +14,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  # uv gives a download 30 s by default. On loaded ml-main a stalled
+  # connection ran past it and `uv sync` failed before any test ran.
+  UV_HTTP_TIMEOUT: "120"
+
 # Public PR validation runs on disposable GitHub-hosted machines.
 # Other events retain the existing ml-main route.
+#
+# uv cache: a hosted machine starts empty, so setup-uv restores a pruned
+# cache from GitHub and prunes it again when the job ends. Each ml-main
+# runner keeps its own cache directory between jobs (UV_CACHE_DIR in the
+# runner's environment). Restoring and pruning there emptied it after every
+# job, so every job downloaded all wheels again, and a slow network failed
+# the install. On ml-main the local cache is left as it is.
 jobs:
   lint:
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
@@ -25,8 +37,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
@@ -76,8 +88,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -186,8 +198,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
@@ -246,8 +258,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
@@ -346,8 +358,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
@@ -428,8 +440,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "pyproject.toml"
       - name: Set up Python
         run: uv python install "$UV_PYTHON"
@@ -506,8 +518,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
@@ -546,8 +558,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: true
-          prune-cache: true
+          enable-cache: ${{ github.event_name == 'pull_request' }}
+          prune-cache: ${{ github.event_name == 'pull_request' }}
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
