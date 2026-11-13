@@ -6,6 +6,7 @@ import string
 from typing import Any
 
 import numpy as np
+from matplotlib import cbook
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation, Text
@@ -463,9 +464,19 @@ def label_axes(
         return texts
 
     # ``fontdict`` is an ``Axes.text`` argument; ``annotate`` takes the
-    # properties directly, the explicit keywords winning as in ``ax.text``.
+    # properties directly. As in ``ax.text``, a ``fontdict`` key the helper
+    # sets gives way to it (its aliases folded first, so ``size`` is
+    # ``fontsize``) and the keywords win over both; a keyword alias of a
+    # set property keeps matplotlib's own error.
     fontdict = kwargs.pop("fontdict", None) or {}
-    properties = {**fontdict, **kwargs}
+    properties = {
+        **cbook.normalize_kwargs(fontdict, Text),
+        "fontsize": fontsize,
+        "fontweight": fontweight,
+        "verticalalignment": "baseline" if y is None else "bottom",
+        "horizontalalignment": "left",
+        **kwargs,
+    }
     members: list[tuple[Axes, Annotation]] = []
     for ax, label in zip(axes, labels, strict=False):
         members.append(
@@ -477,10 +488,6 @@ def label_axes(
                     xycoords="axes fraction",
                     xytext=(0.0, 0.0),
                     textcoords="offset points",
-                    fontsize=fontsize,
-                    fontweight=fontweight,
-                    va="baseline" if y is None else "bottom",
-                    ha="left",
                     annotation_clip=False,
                     **properties,
                 ),

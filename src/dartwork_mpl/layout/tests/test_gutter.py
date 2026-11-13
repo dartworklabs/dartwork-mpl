@@ -136,6 +136,20 @@ def test_it_replaces_spacing_set_by_hand() -> None:
     assert _gaps_pt(fig)[0] == pytest.approx(20.0, abs=TOL_PT)
 
 
+def test_a_later_call_without_it_puts_hand_set_spacing_back() -> None:
+    """The spacing the gutter replaced comes back, not matplotlib's."""
+    fig, axes = plt.subplots(
+        1, 2, figsize=dm.figsize("17cm", "7cm"), gridspec_kw={"wspace": 0.8}
+    )
+    for ax in axes:
+        ax.set_ylabel("Value")
+    gs = axes[0].get_subplotspec().get_gridspec()
+    dm.simple_layout(fig, gutter="20pt")
+    assert gs.wspace != pytest.approx(0.8)
+    dm.simple_layout(fig)
+    assert gs.wspace == 0.8
+
+
 @pytest.mark.parametrize(
     ("value", "error"),
     [

@@ -241,6 +241,11 @@ _TURNED_AXES: WeakKeyDictionary[Axis, _Turned] = WeakKeyDictionary()
 _NAMES: WeakKeyDictionary[Text, tuple[str, str]] = WeakKeyDictionary()
 # GridSpec -> {"wspace" / "hspace": the value this module set}
 _GAPS: WeakKeyDictionary[GridSpec, dict[str, float]] = WeakKeyDictionary()
+# GridSpec -> {"wspace" / "hspace": the value a gutter replaced}; absent
+# means it was unset (the ``space`` step only grows unset spacing)
+_REPLACED: WeakKeyDictionary[GridSpec, dict[str, float | None]] = (
+    WeakKeyDictionary()
+)
 
 
 @dataclass(frozen=True)
@@ -414,9 +419,10 @@ def restore_fitted(fig: Figure, axes: Iterable[Axes] | None = None) -> None:
             gs.update(**dict(zip(_EDGES, laid[0], strict=True)))
             moved = True
         if _all_in(_on_grid(fig, gs), ids):  # else: their spacing too
+            replaced = _REPLACED.pop(gs, {})
             for key, value in _GAPS.pop(gs, {}).items():
                 if getattr(gs, key) == value:
-                    gs.update(**{key: None})
+                    gs.update(**{key: replaced.get(key)})
                     moved = True
         if moved:
             _place(fig, gs)
@@ -616,8 +622,11 @@ def record_spacing(gs: GridSpec, key: str, value: float) -> None:
     """Set ``gs``'s ``wspace`` / ``hspace`` as a layout setting it.
 
     The next layout undoes it while it is still as set
-    (:func:`restore_fitted`), like the spacing ``space`` grows.
+    (:func:`restore_fitted`), like the spacing ``space`` grows, and puts
+    back the spacing it replaced (``gridspec_kw``, ``add_gridspec``).
     """
+    if key not in _GAPS.get(gs, {}):  # set by hand, or unset
+        _REPLACED.setdefault(gs, {}).setdefault(key, getattr(gs, key))
     gs.update(**{key: value})
     _GAPS.setdefault(gs, {})[key] = value
 

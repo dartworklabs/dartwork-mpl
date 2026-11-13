@@ -157,6 +157,25 @@ def test_fontdict_reaches_the_label_beside_a_title(titled_axes):
 
 
 @pytest.mark.parametrize(
+    "fontdict",
+    [
+        {"fontsize": 12},
+        {"size": 12},
+        {"fontweight": "bold"},
+        {"va": "top", "horizontalalignment": "right"},
+    ],
+)
+def test_fontdict_naming_a_set_property_gives_way(axes, fontdict):
+    """A ``fontdict`` key the helper also sets gives way to it, as in
+    ``ax.text``; it used to reach ``annotate`` twice (TypeError)."""
+    texts = dm.label_axes(axes, fontdict=fontdict)
+    assert texts[0].get_fontsize() == pytest.approx(dm.fs(1))
+    assert texts[0].get_fontweight() == "normal"
+    assert texts[0].get_ha() == "left"
+    assert texts[0].get_va() == "baseline"
+
+
+@pytest.mark.parametrize(
     ("kwargs", "reader", "expected"),
     [
         ({"fontsize": 20}, "get_fontsize", 20),
