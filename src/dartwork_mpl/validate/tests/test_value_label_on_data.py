@@ -791,18 +791,36 @@ def test_path_effect_dashed_lines_keep_their_gaps():
 
 
 # ------------------------------------------------------------------ cost
+def _cost(fn) -> float:
+    """Seconds of CPU the calling thread spends in ``fn()``.
+
+    Not wall time: on a host running other jobs, waiting for a core is
+    counted against whichever side happens to wait, and on 2026-11-13 the
+    main run measured the check at 311 ms against 475 ms for the draw. On
+    an 18-core Mac the two take 41 and 148 ms with the cores idle, and keep
+    their ratio (0.28-0.32) with 36 busy processes beside them.
+    """
+    start = time.thread_time()
+    fn()
+    return time.thread_time() - start
+
+
+def test_the_cost_clock_leaves_out_time_spent_waiting():
+    assert _cost(lambda: time.sleep(0.2)) < 0.05
+
+
 def test_costs_less_than_half_a_draw_on_a_dense_figure():
     """20,000 points x 5 lines, 100 labels, 30 bars on a 17 cm canvas.
 
-    The budget is relative to drawing the same figure once, so a slow or
-    busy machine moves both sides; the absolute figure is in the report
-    (about 55 ms against 290 ms for the draw on the development host).
+    The budget is relative to drawing the same figure once, so a slow
+    machine moves both sides; the absolute figure is in the report (about
+    55 ms against 290 ms for the draw on the development host).
 
-    The two are timed in turn, draw then check, five times over. Timing
-    three draws and then three checks left the checks a 0.2 s window of
-    their own, and a burst of load from another xdist worker that covered
-    it slowed only that side: 3 of 16 full-suite runs on a 32-thread host
-    failed at 0.52-0.71 against a steady 0.34 (2026-11-12).
+    Both are timed in turn, draw then check, five times over, in CPU time
+    (``_cost``). Timing three draws and then three checks left the checks a
+    window of their own: 3 of 16 full-suite runs on a 32-thread host failed
+    at 0.52-0.71 against a steady 0.34 (2026-11-12). Taking turns was not
+    enough while the clock was wall time: main failed at 0.65 (2026-11-13).
     """
     fig, ax = plt.subplots(figsize=dm.figsize("17cm", "standard"))
     rng = np.random.default_rng(0)
@@ -816,19 +834,14 @@ def test_costs_less_than_half_a_draw_on_a_dense_figure():
         ax.text(xi, yi, f"{yi:.1f}", ha="center", va="center")
     dm.simple_layout(fig)
 
-    def timed(fn):
-        start = time.perf_counter()
-        fn()
-        return time.perf_counter() - start
-
     fig.canvas.draw()  # the renderer the check reads, before any timing
     renderer = get_renderer(fig)
     found: list[object] = []
     draws, checks = [], []
     for _ in range(5):
-        draws.append(timed(fig.canvas.draw))
+        draws.append(_cost(fig.canvas.draw))
         checks.append(
-            timed(
+            _cost(
                 lambda: found.extend(check_value_label_on_data(fig, renderer))
             )
         )
