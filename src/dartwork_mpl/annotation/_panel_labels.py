@@ -129,17 +129,21 @@ def _shown(text: Text) -> bool:
     return text.get_visible() and bool(text.get_text().strip())
 
 
-def _grid_cell(ax: Axes) -> tuple[int, int] | None:
-    """The top-level grid row and column ``ax`` starts in.
+def _grid_cell(ax: Axes) -> tuple[tuple[int, int], tuple[int, int]] | None:
+    """The row and the column of its top-level grid ``ax`` starts in, each
+    keyed by that grid.
 
     A colour bar made with ``fig.colorbar(..., ax=ax)`` splits the cell
     into a nested grid; the panel still belongs to its top-level cell.
+    Each SubFigure (and each ``add_gridspec``) has a grid of its own, so
+    row 0 of one is not row 0 of another.
     """
     spec = ax.get_subplotspec()
     if spec is None:
         return None
     top = spec.get_topmost_subplotspec()
-    return top.rowspan.start, top.colspan.start
+    grid = id(top.get_gridspec())
+    return (grid, top.rowspan.start), (grid, top.colspan.start)
 
 
 def _ylabel_box(ax: Axes, renderer: Any) -> Bbox | None:
@@ -247,8 +251,8 @@ def _place_group(group: _Group, renderer: Any) -> bool:
     ]
     cells = [_grid_cell(ax) for ax in axes]
     widths = [t.get_window_extent(renderer).width for t in texts]
-    rows: dict[int, list[int]] = {}
-    cols: dict[int, list[int]] = {}
+    rows: dict[tuple[int, int], list[int]] = {}
+    cols: dict[tuple[int, int], list[int]] = {}
     for i, cell in enumerate(cells):
         if cell is not None:
             rows.setdefault(cell[0], []).append(i)

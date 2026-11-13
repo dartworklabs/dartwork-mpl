@@ -200,6 +200,28 @@ class TestHorizontal:
         dx = (text.get_window_extent(renderer).x0 - expected) / _pt(fig)
         assert dx == pytest.approx(0.0, abs=TOL_PT)
 
+    def test_subfigures_keep_their_own_columns(self) -> None:
+        """Row 0 / column 0 of one SubFigure is not that of another: each
+        letter stays on its own panel's y name, not a neighbour's."""
+        fig = plt.figure(figsize=dm.figsize("17cm", "7cm"))
+        left, right = fig.subfigures(1, 2)
+        a = left.subplots()
+        b = right.subplots()
+        a.set_ylabel("Short")
+        b.set_ylabel("A much longer\naxis name [unit]")
+        b.plot([0, 1], [0, 100000])
+        a.set_title("Left")
+        b.set_title("Right taller title\nin two lines")
+        texts = dm.label_axes([a, b])
+        dm.simple_layout(fig)
+        renderer = drawn_renderer(fig)
+        for ax, text in zip((a, b), texts, strict=True):
+            name = ax.yaxis.label.get_window_extent(renderer)
+            dx = (text.get_window_extent(renderer).x0 - name.x0) / _pt(fig)
+            assert dx == pytest.approx(0.0, abs=TOL_PT)
+            dy = (_baseline(text) - _title_baseline(ax)) / _pt(fig)
+            assert dy == pytest.approx(0.0, abs=TOL_PT)
+
 
 class TestVertical:
     """The letter's baseline is its title's; untitled panels follow the row."""
