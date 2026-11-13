@@ -721,13 +721,17 @@ dm.simple_layout(fig)
 ## "Multi-panel grid (a/b/c labels)"
 
 `dm.label_axes` accepts `labels` for custom strings and `x` / `y` for
-Axes-relative positions (values may extend outside 0–1). With `x="auto"`,
-it uses -0.18 when an Axes has a y-label and -0.02 otherwise. `y=None`
-(default) is 1.05, except that with `x="auto"` a left title (or a
-centre/right one the letter would touch) takes the letter onto the title's
-line, just before it. An explicit `y` (even `y=1.05`) keeps that height.
+positions. With `x="auto"` (default) each letter is placed from what its panel draws,
+in points: its left edge on the outer edge of the panel's y-axis name (a grid
+column takes its leftmost; a panel without one keeps the spine distance of the
+named panels in its row, or sits where a name would be when no panel has one),
+and its baseline on the panel's title baseline (without a title, the highest
+baseline of its row, or 4 pt above the panel). A title in the way only keeps the
+letter half a letter size before it. `dm.simple_layout` measures the panels again,
+so call `label_axes` first. A number for `x` / `y` is an Axes-relative position
+(values may extend outside 0–1), with the label's left / bottom edge there.
 Extra compatible native `Text` properties, such as `color`,
-`rotation` and `alpha`, pass through to `ax.text`:
+`rotation` and `alpha`, pass through to the label:
 
 ```python
 import matplotlib.pyplot as plt

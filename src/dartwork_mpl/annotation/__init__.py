@@ -32,6 +32,7 @@ __all__ = [
     "settle_bar_labels",
     "settle_figure_legends",
     "settle_legends",
+    "settle_panel_labels",
     "warn_hidden_bar_labels",
     "wrap_axis_label",
     "wrap_axis_labels",
@@ -50,7 +51,7 @@ from ._figure_text import add_note, make_offset
 from ._legend_settle import settle_legends
 from ._line_end_labels import label_line_ends
 from ._optimize_legend import optimize_legend
-from ._panel_labels import label_axes
+from ._panel_labels import label_axes, settle_panel_labels
 from ._place_legend import place_legend
 from ._point_labels import HorizontalAlign as HorizontalAlign
 from ._point_labels import VerticalAlign as VerticalAlign

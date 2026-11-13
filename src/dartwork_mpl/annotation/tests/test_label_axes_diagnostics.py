@@ -16,7 +16,7 @@ def axes():
 
 @pytest.fixture
 def titled_axes():
-    """Two panels whose left titles push the labels onto the title line."""
+    """Two panels with left titles, which keep the labels before them."""
     fig, created = plt.subplots(1, 2)
     for ax in created:
         ax.set_title("Left title", loc="left")
@@ -93,7 +93,7 @@ def test_alignment_full_names_are_not_silently_dropped(axes, name, reader):
         dm.label_axes(axes, **{name: "right"})
     assert all(not ax.texts for ax in axes)
     plain = dm.label_axes(axes)
-    assert getattr(plain[0], reader)() in {"left", "bottom"}
+    assert getattr(plain[0], reader)() in {"left", "baseline"}
 
 
 @pytest.mark.parametrize("name", ["size", "weight"])
@@ -143,10 +143,36 @@ def test_fontdict_still_reaches_the_label(axes):
     assert [t.get_color() for t in texts] == ["red"] * len(axes)
 
 
-def test_fontdict_with_a_title_keeps_its_native_error(titled_axes):
-    """The title path uses ``ax.annotate``, which never took ``fontdict``."""
-    with pytest.raises(AttributeError, match="Annotation"):
-        dm.label_axes(titled_axes, fontdict={"color": "red"})
+def test_fontdict_reaches_the_label_beside_a_title(titled_axes):
+    """``x="auto"`` labels are Annotations, which take no ``fontdict``:
+    ``label_axes`` passes its properties on, the keywords winning as in
+    ``ax.text``."""
+    texts = dm.label_axes(
+        titled_axes,
+        fontdict={"color": "red", "fontstyle": "italic"},
+        color="blue",
+    )
+    assert [t.get_color() for t in texts] == ["blue", "blue"]
+    assert [t.get_fontstyle() for t in texts] == ["italic", "italic"]
+
+
+@pytest.mark.parametrize(
+    "fontdict",
+    [
+        {"fontsize": 12},
+        {"size": 12},
+        {"fontweight": "bold"},
+        {"va": "top", "horizontalalignment": "right"},
+    ],
+)
+def test_fontdict_naming_a_set_property_gives_way(axes, fontdict):
+    """A ``fontdict`` key the helper also sets gives way to it, as in
+    ``ax.text``; it used to reach ``annotate`` twice (TypeError)."""
+    texts = dm.label_axes(axes, fontdict=fontdict)
+    assert texts[0].get_fontsize() == pytest.approx(dm.fs(1))
+    assert texts[0].get_fontweight() == "normal"
+    assert texts[0].get_ha() == "left"
+    assert texts[0].get_va() == "baseline"
 
 
 @pytest.mark.parametrize(

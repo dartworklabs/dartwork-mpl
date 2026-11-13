@@ -1,10 +1,12 @@
 """``label_axes`` keeps panel letters off the panel titles (#523).
 
 With ``set_title(..., loc="left")`` per panel and a shared y axis, the
-default letter position (just left of the spine, above the axes) put "a"
-on "Line A" (the advanced small_multiples template). With ``x="auto"`` a
-left title now always takes the letter onto its line, before the title;
-a centre or right title does only when the letter would touch it.
+0.6 letter position (just left of the spine, above the axes) put "a" on
+"Line A" (the advanced small_multiples template). Since the 2026-11-13
+placement rule a letter sits on its title's baseline at the y-axis-name
+edge of its column; a title in the way (a left title, or a centre or right
+title the letter would reach) only keeps the letter half a letter size
+before it (owner decision, PoC 11-A).
 """
 
 from __future__ import annotations
@@ -27,6 +29,12 @@ TOL_PX = 0.5
 
 def _left(ax):
     return axes_titles(ax)["left"]
+
+
+def _baseline(text) -> float:
+    """The drawn baseline of a baseline-aligned Text, in display px."""
+    assert text.get_verticalalignment() == "baseline"
+    return float(text.get_transform().transform(text.get_position())[1])
 
 
 def _grid(preset: str):
@@ -53,12 +61,15 @@ def _gap_px(fig, text) -> float:
 
 
 class TestLeftTitles:
-    """A left title takes the panel letter onto its line, just before it."""
+    """A left title keeps the panel letter before it, on its baseline."""
 
     @pytest.mark.parametrize("preset", ("report", "scientific"))
     def test_letters_clear_left_titles_without_overlap_findings(
         self, preset: str
     ) -> None:
+        """Each letter ends at least half a letter size before its left
+        title, on the title's baseline; titles are untouched and the
+        validator finds no overlap."""
         fig, axes = _grid(preset)
         sizes = [_left(ax).get_fontsize() for ax in axes]
         texts = label_axes(axes)
@@ -68,10 +79,10 @@ class TestLeftTitles:
             label_box = text.get_window_extent(renderer)
             title_box = title.get_window_extent(renderer)
             assert not label_box.overlaps(title_box)
-            assert title_box.x0 - label_box.x1 == pytest.approx(
-                _gap_px(fig, text), abs=TOL_PX
+            assert title_box.x0 - label_box.x1 >= _gap_px(fig, text) - TOL_PX
+            assert _baseline(text) == pytest.approx(
+                _baseline(title), abs=TOL_PX
             )
-            assert label_box.y0 == pytest.approx(title_box.y0, abs=TOL_PX)
             assert title.get_fontsize() == size
             assert title.get_text().startswith("Line ")
         ids = {
@@ -82,20 +93,26 @@ class TestLeftTitles:
         assert ids == set()
         plt.close(fig)
 
-    def test_letters_follow_the_title_through_simple_layout(self) -> None:
+    def test_letters_keep_their_column_through_simple_layout(self) -> None:
+        """After a layout every letter still clears its title, and the
+        letters of one column share one distance from their spines."""
         fig, axes = _grid("report")
         texts = label_axes(axes)
         dm.simple_layout(fig)
         renderer = drawn_renderer(fig)
+        reach = []
         for ax, text in zip(axes, texts, strict=True):
             label_box = text.get_window_extent(renderer)
             title_box = _left(ax).get_window_extent(renderer)
-            assert title_box.x0 - label_box.x1 == pytest.approx(
-                _gap_px(fig, text), abs=TOL_PX
-            )
+            assert title_box.x0 - label_box.x1 >= _gap_px(fig, text) - TOL_PX
+            reach.append(ax.get_window_extent(renderer).x0 - label_box.x0)
+        for column in range(3):
+            assert reach[column] == pytest.approx(reach[column + 3], abs=TOL_PX)
         plt.close(fig)
 
     def test_letter_follows_a_title_lifted_over_a_legend(self) -> None:
+        """A title ``simple_layout`` lifts over a legend above takes the
+        letter's baseline with it."""
         dm.style.use("report")
         fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
         ax.plot([0, 1], [0, 1], label="one")
@@ -110,8 +127,8 @@ class TestLeftTitles:
         assert _left(ax).get_window_extent(renderer).x1 > legend_box.x0
         label_box = text.get_window_extent(renderer)
         assert label_box.y0 >= legend_box.y1 - TOL_PX
-        assert label_box.y0 == pytest.approx(
-            _left(ax).get_window_extent(renderer).y0, abs=TOL_PX
+        assert _baseline(text) == pytest.approx(
+            _baseline(_left(ax)), abs=TOL_PX
         )
         plt.close(fig)
 
@@ -120,6 +137,7 @@ class TestCallerAndOtherTitles:
     """Explicit positions win; centre titles move the letter only on contact."""
 
     def test_explicit_x_wins(self) -> None:
+        """A numeric ``x`` keeps the Axes-fraction text of 0.7.0."""
         fig, axes = _grid("report")
         texts = label_axes(axes, x=-0.02)
         for text in texts:
@@ -127,6 +145,8 @@ class TestCallerAndOtherTitles:
         plt.close(fig)
 
     def test_explicit_y_is_kept_before_the_title(self) -> None:
+        """A numeric ``y`` keeps the letter's bottom there, still before the
+        left title."""
         fig, axes = _grid("report")
         texts = label_axes(axes, y=1.2)
         renderer = drawn_renderer(fig)
@@ -137,24 +157,37 @@ class TestCallerAndOtherTitles:
             assert label_box.x1 <= _left(ax).get_window_extent(renderer).x0
         plt.close(fig)
 
-    def test_no_title_keeps_the_default_spot(self) -> None:
-        fig, (left, right) = plt.subplots(1, 2)
-        left.set_ylabel("Value")
-        texts = label_axes([left, right])
-        assert [t.get_position() for t in texts] == [
-            (-0.18, 1.05),
-            (-0.02, 1.05),
-        ]
+    def test_untitled_panel_sits_above_its_top(self) -> None:
+        """Without a title the letter's baseline is 4 pt above the panel."""
+        fig, ax = plt.subplots()
+        ax.plot([0, 1], [0, 1])
+        (text,) = label_axes([ax])
+        renderer = drawn_renderer(fig)
+        top = ax.get_window_extent(renderer).y1
+        assert _baseline(text) - top == pytest.approx(
+            4.0 * fig.dpi / 72.0, abs=TOL_PX
+        )
         plt.close(fig)
 
-    def test_short_centre_title_keeps_the_default_spot(self) -> None:
-        fig, ax = plt.subplots()
-        ax.set_title("Short")
-        (text,) = label_axes([ax])
-        assert text.get_position() == (-0.02, 1.05)
+    def test_short_centre_title_gives_its_baseline_only(self) -> None:
+        """A centre title the letter does not reach sets its baseline but
+        does not move it sideways."""
+        fig, (titled, plain) = plt.subplots(1, 2)
+        titled.set_title("Short")
+        texts = label_axes([titled, plain])
+        renderer = drawn_renderer(fig)
+        assert _baseline(texts[0]) == pytest.approx(
+            _baseline(titled.title), abs=TOL_PX
+        )
+        reach = [
+            ax.get_window_extent(renderer).x0 - t.get_window_extent(renderer).x0
+            for ax, t in zip((titled, plain), texts, strict=True)
+        ]
+        assert reach[0] == pytest.approx(reach[1], abs=TOL_PX)
         plt.close(fig)
 
     def test_centre_title_reaching_the_letter_moves_it(self) -> None:
+        """A centre title wider than its panel pushes the letter before it."""
         dm.style.use("report")
         fig, ax = plt.subplots(figsize=dm.figsize("6cm", "standard"))
         ax.set_title("A centre title wider than its own panel here")
