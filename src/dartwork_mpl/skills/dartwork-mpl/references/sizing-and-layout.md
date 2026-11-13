@@ -18,7 +18,8 @@ The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
 under any preset). Density moves it: 6 or fewer points with 2 or fewer series
 on one axis gives 9 cm; `dual_axis=True`, 4+ series or 13+ points gives
 14.5 cm. `matrix`, `dense`, `strip`, `slide`, `full_slide` and grids keep theirs; a grid takes 17 cm and panels keep
-the kind's aspect. `dm.grid_shape(n)` lays out `n` panels: one row up to
+the kind's aspect, except that panels stacked in one column get the row height
+of a two-column grid (two: 17 × 13 cm) and no grid is taller than it is wide. `dm.grid_shape(n)` lays out `n` panels: one row up to
 three, then a near-square grid, wider than tall.
 
 Grouped bars (`n_series` bars side by side in each of `n_points` groups)
