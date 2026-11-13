@@ -162,6 +162,8 @@ _MAX_NAME_LINES = 4
 # Largest wspace / hspace ``space`` sets (a fraction of the mean cell); a
 # collision that needs more is left as it is.
 _MAX_GAP_FRACTION = 1.5
+#: The same cap for ``simple_layout(gutter=...)``.
+MAX_GAP_FRACTION = _MAX_GAP_FRACTION
 # Least of its width and of its height a plot keeps through one round.
 # Measured (I-O1 follow-up): the 169 rounds the stress corpus and the shipped
 # templates (native size, and squeezed to 9 cm) keep held at least 0.39 of
@@ -608,6 +610,16 @@ def gap_fraction(need_px: float, total_px: float, n: int) -> float | None:
     if room <= 0:
         return None
     return need_px * n / room
+
+
+def record_spacing(gs: GridSpec, key: str, value: float) -> None:
+    """Set ``gs``'s ``wspace`` / ``hspace`` as a layout setting it.
+
+    The next layout undoes it while it is still as set
+    (:func:`restore_fitted`), like the spacing ``space`` grows.
+    """
+    gs.update(**{key: value})
+    _GAPS.setdefault(gs, {})[key] = value
 
 
 def box_overlap_px(

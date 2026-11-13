@@ -18,6 +18,8 @@ from .._figure_geometry import get_renderer, holders_shown, root_position
 from ..units import Length
 from ._content_extent import _axes_content_extent_px
 from ._fit_labels import (
+    _all_in,
+    _on_grid,
     _root_gridspec,
     climb,
     grid_edges,
@@ -26,6 +28,7 @@ from ._fit_labels import (
     resolve_steps,
     restore_fitted,
 )
+from ._gutter import fit_gutter, parse_gutter
 from ._margins import (
     _GridEdges,
     _LayoutStep,
@@ -112,6 +115,7 @@ def simple_layout(
     adopt_orphan_tick_font: bool | None = None,
     format_ticks: bool = True,
     fit_labels: bool | Iterable[str] | None = None,
+    gutter: Length | str | float | None = None,
     verbose: bool = False,
 ) -> None:
     """Place axes content at the requested distance from each figure edge.
@@ -203,6 +207,21 @@ def simple_layout(
         ticks the first call thinned can still move on the second; the same
         from then on). The rules are in the docstring of
         ``dartwork_mpl.layout._fit_labels``.
+    gutter : Length | str | float | None, optional
+        The gap between the content of neighbouring panels: a
+        :class:`Length` (``dm.pt(28)``, ``dm.mm(10)``), a unit string
+        (``"28pt"``) or a number of points. The root GridSpec's ``wspace``
+        and ``hspace`` are set, in every step, so that the narrowest gap
+        between the content (tick labels, axis names, titles, colour bars,
+        legends, ``dm.label_axes`` labels) of two panels facing each other
+        across a column or row is this. Matplotlib gives every gap of a grid
+        one width, so the closest pair sets it. It is fitted last, after the
+        ``fit_labels`` steps (which may wrap an axis name that collides at
+        the spacing the figure had), and replaces any spacing set before;
+        the next call without it goes back to that spacing. Content that
+        grows as the panels shrink (an axis name longer than its panel)
+        stops the spacing at 1.5 cells, as ``space`` does. ``None``
+        (default) leaves the spacing alone.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -287,6 +306,7 @@ def simple_layout(
 
         adopt_orphan_tick_font = config.adopt_orphan_tick_font
     steps = resolve_steps(fit_labels)
+    gutter_pt = parse_gutter(gutter)
 
     actual_gs = _resolve_gridspec(fig, gs)
     if actual_gs is None:
@@ -316,6 +336,7 @@ def simple_layout(
             fig,
             margins=margins,
             steps=steps,
+            gutter_pt=gutter_pt,
             use_all_axes=use_all_axes,
             adopt_orphan_tick_font=adopt_orphan_tick_font,
             format_ticks=format_ticks,
@@ -391,6 +412,7 @@ def simple_layout(
         scope=scope,
         margins=margins,
         steps=steps,
+        gutter_pt=gutter_pt,
         start=start,
         adopt_orphan_tick_font=adopt_orphan_tick_font,
         format_ticks=format_ticks,
@@ -421,6 +443,7 @@ def _fit_holders(
     *,
     margins: _Sides,
     steps: frozenset[str],
+    gutter_pt: float | None,
     use_all_axes: bool,
     adopt_orphan_tick_font: bool,
     format_ticks: bool,
@@ -469,6 +492,7 @@ def _fit_holders(
             if sub is None
             else _holder_margins(fig, sub, margins),
             steps=steps,
+            gutter_pt=gutter_pt,
             start=start,
             adopt_orphan_tick_font=adopt_orphan_tick_font,
             format_ticks=format_ticks,
@@ -540,19 +564,25 @@ def _fit_grid(
     scope: Sequence[Axes],
     margins: _Sides,
     steps: frozenset[str],
+    gutter_pt: float | None,
     start: Edges,
     adopt_orphan_tick_font: bool,
     format_ticks: bool,
     verbose: bool,
     holder: SubFigure | None = None,
 ) -> None:
-    """Fit one grid's margins, then climb the label ladder on ``scope``.
+    """Fit one grid's margins, then climb the label ladder on ``scope``,
+    then, with a ``gutter_pt``, fit the panel spacing and the margins again.
 
     ``margins`` are fractions of the box the grid is fitted in: the canvas,
     or the SubFigure ``holder`` that holds the grid (:func:`_fit_holders`).
+    The gutter comes last: the ladder first wraps what collides at the
+    spacing the figure has (an axis name longer than its panel), which a
+    wider spacing would only make room for.
     """
     last: _GridEdges | None = None
     settled = False
+    spacing: float | None = None
 
     def fit_margins() -> bool:
         """Fit the margins to the content now; ``False``: nothing to measure."""
@@ -562,6 +592,7 @@ def _fit_grid(
             actual_gs,
             margins=margins,
             scope=scope,
+            gutter_pt=spacing,
             last_edges=last,
             adopt_orphan_tick_font=adopt_orphan_tick_font,
             format_ticks=format_ticks,
@@ -589,6 +620,11 @@ def _fit_grid(
         put_back_edges(fig, actual_gs, start)
         last = None
         fit_margins()
+    if gutter_pt is not None and _all_in(
+        _on_grid(fig, actual_gs), {id(ax) for ax in scope}
+    ):
+        spacing = gutter_pt
+        fit_margins()
     remember_layout(actual_gs, start)
 
 
@@ -603,6 +639,7 @@ def _fit_margins(
     format_ticks: bool,
     verbose: bool,
     holder: SubFigure | None = None,
+    gutter_pt: float | None = None,
 ) -> tuple[_LayoutStep | None, _GridEdges | None]:
     """Iterate layout steps until the GridSpec edges settle.
 
@@ -620,6 +657,8 @@ def _fit_margins(
             fig,
             margins=margins,
             scope=scope,
+            grid=actual_gs,
+            gutter_pt=gutter_pt,
             last_edges=last_edges,
             adopt_orphan_tick_font=adopt_orphan_tick_font,
             holder=holder,
@@ -719,6 +758,18 @@ def _settle_bar_labels(fig: Figure, renderer: RendererBase) -> bool:
     return before != [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
 
 
+def _settle_panel_labels(fig: Figure, renderer: RendererBase) -> bool:
+    """``dm.label_axes``'s automatic labels from the panels as drawn now."""
+    from ..annotation import settle_panel_labels
+
+    return settle_panel_labels(fig, renderer)
+
+
+def _place_grid(fig: Figure, gs: GridSpec) -> None:
+    """Move the Axes of ``gs`` to where its spacing says now."""
+    put_back_edges(fig, gs, grid_edges(gs))
+
+
 def _clear_bar_labels(fig: Figure, renderer: RendererBase) -> None:
     """Hide the bar labels a legend or other text covers, where they are now."""
     from ..annotation import clear_bar_labels
@@ -741,6 +792,8 @@ def _solve_layout_step(
     last_edges: _GridEdges | None,
     adopt_orphan_tick_font: bool,
     holder: SubFigure | None = None,
+    grid: GridSpec | None = None,
+    gutter_pt: float | None = None,
 ) -> _LayoutStep | None:
     """Measure the figure once and solve one iteration of ``simple_layout``.
 
@@ -766,11 +819,16 @@ def _solve_layout_step(
        beyond that limit they would cover too) and lifts titles over
        legends above their axes (:func:`_settle_outside_legends`),
        redrawing after a move.
-    5. Hides the bar labels a legend or other text covers where those are
+    5. Places ``dm.label_axes``'s automatic labels from the panels as
+       drawn now (:func:`_settle_panel_labels`), then, with a ``gutter``,
+       sets the spacing of ``grid`` so the content of facing panels is
+       that far apart (:func:`~._gutter.fit_gutter`), redrawing after a
+       move.
+    6. Hides the bar labels a legend or other text covers where those are
        drawn now (:func:`_clear_bar_labels`).
-    6. Measures the content overhang of every Axes in ``scope`` and the
+    7. Measures the content overhang of every Axes in ``scope`` and the
        room figure-level artists reserve.
-    7. Hands those measurements to the pure :func:`_solve_edges`.
+    8. Hands those measurements to the pure :func:`_solve_edges`.
 
     The caller writes the returned edges into the GridSpec and decides
     whether to stop iterating based on ``delta_px``.
@@ -790,6 +848,19 @@ def _solve_layout_step(
             break
         fig.canvas.draw()
         renderer = get_renderer(fig)
+    if _settle_panel_labels(fig, renderer):
+        fig.canvas.draw()
+        renderer = get_renderer(fig)
+    spaced = 0.0
+    if gutter_pt is not None and grid is not None:
+        spaced = fit_gutter(fig, grid, scope, gutter_pt, renderer)
+        if spaced > 0.0:
+            _place_grid(fig, grid)
+            fig.canvas.draw()
+            renderer = get_renderer(fig)
+            if _settle_panel_labels(fig, renderer):
+                fig.canvas.draw()
+                renderer = get_renderer(fig)
     _clear_bar_labels(fig, renderer)
     fbox = fig.bbox if holder is None else holder.bbox
     fw_px, fh_px = fbox.width, fbox.height
@@ -823,4 +894,8 @@ def _solve_layout_step(
     overhang = _Sides(
         left=max(oh_l), right=max(oh_r), bottom=max(oh_b), top=max(oh_t)
     )
-    return _solve_edges(overhang, reserved, margins, last_edges, fw_px, fh_px)
+    step = _solve_edges(overhang, reserved, margins, last_edges, fw_px, fh_px)
+    if spaced > step.delta_px:
+        # The panels moved apart or together: not settled yet.
+        return _LayoutStep(step.edges, spaced)
+    return step

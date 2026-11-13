@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`dm.simple_layout(fig, gutter=...)`: one gap between neighbouring
+  panels.** The content of two panels facing each other across a column or
+  row (tick labels, axis names, titles, colour bars, legends, panel letters)
+  is set that far apart, in points (`"28pt"`, `dm.pt(28)` or `28`), by
+  fitting the grid's `wspace` / `hspace` after the label ladder. The four
+  multi-panel figures of one paper had gaps of 2.0, 18.1, 25.2 and 32.2 pt;
+  with `gutter="28pt"` every one is 28 pt. It replaces spacing set by hand,
+  a later call without it puts that spacing back, and content that grows as
+  the panels shrink stops it at 1.5 cells. No default: without it the
+  spacing is what it was.
+
 - **`SLIDE_OVERSIZE`: a slide figure drawn larger than a slide.** Under
   `presentation` (or `presentation-kr`) a figure wider or taller than the
   largest common slide, 13.33 × 7.5 in, is scaled down when it is placed and
@@ -237,6 +248,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `3 × 2` 19 → 17 cm, stacked `matrix`, `dense` and `strip` panels likewise.
   Rows of panels (`1 × n`), `2 × 2`, `2 × 3`, `3 × 3`, posters and slides
   keep their canvas, and so does every figure that passes its own size.
+
+- **`dm.label_axes` places each letter from what its panel draws.** With
+  `x="auto"` (the default) a letter sat at an Axes fraction (x = -0.18 with
+  a y-axis name, -0.02 without; y = 1.05), so its distance from the spine
+  changed with the panel's size and ignored the real tick labels and axis
+  names: in one paper's figures letters sat 77-82 pt inside long category
+  tick labels, 5.8 pt over a long axis name, and at a different place in
+  every figure. Now, in points from the panel's top-left corner, its left
+  edge is the outer edge of the y-axis name (a grid column, colour bars
+  included, takes its leftmost; a panel without one keeps the spine distance
+  of the named panels, or sits where a name would be when none has one) and
+  its baseline is the title's (an untitled panel takes the highest of its
+  row; a y-axis name rising above the panel keeps 2 pt below the letter).
+  A left, centre or right title in the way keeps the letter half a letter
+  size before it; it no longer pulls the letter onto the title.
+  `dm.simple_layout` places the letters again on every step. Every docs
+  figure and template that labels panels moves (before/after seen by the
+  owner). A numeric `x` keeps the 0.7.0 Axes-fraction text; a numeric `y`
+  with `x="auto"` keeps the letter's bottom there. The `x="auto"` labels
+  are now `Annotation`s and take `fontdict` too.
 
 - **The skill says what to do past the colour cycle.** With more lines than
   the preset cycle has colours (eight; seven in `dark`), each line that

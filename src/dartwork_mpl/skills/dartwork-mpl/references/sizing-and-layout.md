@@ -154,9 +154,13 @@ dm.simple_layout(fig)            # widens hspace / wspace where panels' text mee
 plt.close(fig)
 ```
 
+Each letter starts at its column's y-axis name and sits on its title's
+baseline, in points, so call `label_axes` before `simple_layout`.
 Panels with both a title and an x label need no `hspace` of your own: the
 layout parts them. A spacing the user asks for goes in
-`gridspec_kw={"hspace": 0.5}` and then wins.
+`gridspec_kw={"hspace": 0.5}` and then wins; one fixed gap between the
+content of neighbouring panels (a paper's figure set) is
+`dm.simple_layout(fig, gutter="28pt")`, which replaces that spacing.
 
 ## Ratios, mosaics and nesting
 
