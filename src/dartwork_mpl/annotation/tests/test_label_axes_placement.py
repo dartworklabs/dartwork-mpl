@@ -94,13 +94,14 @@ def _category_pair():
 
 def _tall_name_grid(height: str = "4.5cm"):
     """2 x 2 of short panels; b and d have no title. At the default height
-    b's y-axis name is taller than b (the -5.8 pt case)."""
+    b's y-axis name is taller than b (the -5.8 pt case). A wrapped name
+    breaks before its unit only (the insulation-aging owner's rule)."""
     fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", height))
     x = np.linspace(0, 1, 20)
     for i, ax in enumerate(axes.flat):
         ax.plot(x, x ** (i + 1))
-    axes[0, 0].set_ylabel("Conductivity\nratio [-]")
-    axes[0, 1].set_ylabel("Relative moisture\ncontent after\nageing [-]")
+    axes[0, 0].set_ylabel("Conductivity ratio\n[-]")
+    axes[0, 1].set_ylabel("Relative moisture content after ageing\n[-]")
     axes[1, 0].set_ylabel("Ratio [-]")
     axes[1, 1].set_ylabel("Density")
     axes[0, 0].set_title("Conductivity")
@@ -208,7 +209,7 @@ class TestHorizontal:
         a = left.subplots()
         b = right.subplots()
         a.set_ylabel("Short")
-        b.set_ylabel("A much longer\naxis name [unit]")
+        b.set_ylabel("A much longer axis name\n[unit]")
         b.plot([0, 1], [0, 100000])
         a.set_title("Left")
         b.set_title("Right taller title\nin two lines")
@@ -232,7 +233,7 @@ class TestVertical:
         for build in (
             _colorbar_pair,
             _category_pair,
-            lambda: _tall_name_grid("8cm"),
+            lambda: _tall_name_grid("12cm"),
         ):
             fig, axes = build()
             flat = list(np.ravel(axes))
