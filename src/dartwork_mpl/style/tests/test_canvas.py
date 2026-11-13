@@ -64,8 +64,54 @@ class TestGrid:
         size = dm.figsize_for(nrows=1, ncols=2, n_points=3, n_series=1)
         assert _cm(size) == (17.0, 6.5)
 
-    def test_tall_grid_is_capped(self) -> None:
-        assert _cm(dm.figsize_for(nrows=4, ncols=1)) == (17.0, 24.0)
+    # Smoke round 4 (2026-11-12, s03): two stacked panels got 17 x 24 cm,
+    # a whole A4 text block. The owner (2026-11-13): too big for a report
+    # and no slide holds it; at that width the 17 x 13 cm version.
+    @pytest.mark.parametrize("preset", ["report", "scientific"])
+    def test_stacked_panels_are_as_tall_as_a_two_column_row(
+        self, preset: str
+    ) -> None:
+        dm.style.use(preset)
+        assert _cm(dm.figsize_for(nrows=2, ncols=1)) == (17.0, 13.0)
+
+    @pytest.mark.parametrize("kind", ["default", "matrix", "strip", "dense"])
+    def test_stacked_rows_do_not_depend_on_the_kind(self, kind: str) -> None:
+        assert _cm(dm.figsize_for(kind, nrows=2, ncols=1)) == (17.0, 13.0)
+
+    @pytest.mark.parametrize(
+        ("nrows", "ncols", "kind"),
+        [
+            (3, 1, "default"),
+            (4, 1, "default"),
+            (3, 2, "default"),
+            (3, 2, "matrix"),
+            (4, 1, "strip"),
+        ],
+    )
+    def test_tall_grid_is_no_taller_than_wide(
+        self, nrows: int, ncols: int, kind: str
+    ) -> None:
+        assert _cm(dm.figsize_for(kind, nrows=nrows, ncols=ncols)) == (
+            17.0,
+            17.0,
+        )
+
+    @pytest.mark.parametrize(
+        ("nrows", "ncols", "kind", "height"),
+        [
+            (2, 2, "default", 13.0),
+            (3, 3, "default", 13.0),
+            (2, 2, "matrix", 17.0),
+            (1, 3, "default", 4.5),
+        ],
+    )
+    def test_grids_within_the_page_keep_their_panels(
+        self, nrows: int, ncols: int, kind: str, height: float
+    ) -> None:
+        assert _cm(dm.figsize_for(kind, nrows=nrows, ncols=ncols)) == (
+            17.0,
+            height,
+        )
 
 
 class TestPresets:

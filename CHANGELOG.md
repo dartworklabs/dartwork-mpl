@@ -228,6 +228,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **`dm.figsize_for` no longer gives a page-tall grid.** Under report and
+  paper presets two panels stacked in one column got 17 × 24 cm, a whole
+  A4 text block, too large for a report page and too large for any slide;
+  agent smoke round 4 drew one. Panels stacked in one column are now as
+  tall as a row of a two-column 4:3 grid (two of them: 17 × 13 cm, three:
+  17 × 17 cm), and a grid canvas is no taller than it is wide (was 24 cm):
+  `3 × 2` 19 → 17 cm, stacked `matrix`, `dense` and `strip` panels likewise.
+  Rows of panels (`1 × n`), `2 × 2`, `2 × 3`, `3 × 3`, posters and slides
+  keep their canvas, and so does every figure that passes its own size.
+
 - **The skill says what to do past the colour cycle.** With more lines than
   the preset cycle has colours (eight; seven in `dark`), each line that
   repeats a colour is drawn dashed. In agent smoke round 2 one host did

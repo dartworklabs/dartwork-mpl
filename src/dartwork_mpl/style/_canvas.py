@@ -53,9 +53,6 @@ __all__ = ["CANVAS_KINDS", "SLIDE_SCALE", "figsize_for", "grid_shape"]
 _REPORT_FONT_PT = 8.0
 _MAX_TIER_CM = 17.0
 _COLUMNS_CM = (9.0, 17.0)
-# Tallest grid canvas: an A4 text block (25.7 cm) less a caption; on posters,
-# 16:9 of the widest tier.
-_MAX_HEIGHT_CM = 24.0
 _SLIDE_RATIO = 9.0 / 16.0
 # A 10 in 16:9 slide, 25.4 x 14.29 cm: the slide the presentation sizes and
 # SLIDE_SCALE assume. A chart that fills the slide ("a full-slide chart")
@@ -421,8 +418,10 @@ def figsize_for(
     nrows, ncols : int, optional
         Panel grid; :func:`grid_shape` picks them for ``n`` panels. Any grid
         larger than one panel takes the widest tier; every panel keeps the
-        kind's aspect, up to a 24 cm tall canvas (16:9 of the width on
-        posters). On slides a grid fills the body under the title.
+        kind's aspect, except that panels stacked in one column are as tall
+        as a row of a two-column 4:3 grid (two of them: 17 x 13 cm), and the
+        canvas is no taller than it is wide (16:9 of the width on posters).
+        On slides a grid fills the body under the title.
 
     Returns
     -------
@@ -480,9 +479,13 @@ def figsize_for(
 
     if not grid:
         return figsize(f"{width:g}cm", spec.aspect)
-    height = width / ncols * _ratio(spec.aspect) * nrows
-    cap = width * _SLIDE_RATIO if family == "poster" else _MAX_HEIGHT_CM
-    height = min(_half_cm(height), _half_cm(cap))
+    row = width / ncols * _ratio(spec.aspect)
+    if ncols == 1:
+        # A full-width panel stacked over another is a row of a two-column
+        # 4:3 grid, not a whole chart: two of them made 17 x 24 cm.
+        row = min(row, width / 2 * _ratio("standard"))
+    cap = width * _SLIDE_RATIO if family == "poster" else width
+    height = min(_half_cm(row * nrows), _half_cm(cap))
     return figsize(f"{width:g}cm", f"{height:g}cm")
 
 
