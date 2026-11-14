@@ -34,6 +34,23 @@ legends it removes may still change. The
 interactive UI exists as the `dartwork_mpl.ui` subpackage, but it is not
 currently an advertised top-level `dm.ui` attribute.
 
+### Leaving the experimental surface
+
+A name is taken out of `EXPERIMENTAL` when a release is cut, one name at a
+time, and only if all three hold:
+
+1. A published release already contains it. A name added since the last
+   release waits for the next one.
+2. Its signature and documented defaults are the same as in that release:
+   the *Changed* section of `CHANGELOG.md` since that tag does not name it.
+3. An agent smoke round (`evals/smoke/`) run since that release used it, and
+   no defect from those rounds was filed against it.
+
+The release's `CHANGELOG.md` entry lists each name that left. From then on
+the name is stable core and changes through the deprecation cycle below.
+Nothing leaves between releases, and a name that fails a condition stays
+without a note.
+
 ## Deprecation cycle
 
 To remove a public name, first announce the deprecation in `CHANGELOG.md`
