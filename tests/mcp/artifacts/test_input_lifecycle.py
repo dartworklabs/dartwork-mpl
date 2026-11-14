@@ -266,12 +266,15 @@ asyncio.run(check())
         env.pop("DARTWORK_MPL_INPUT_POLICY", None)
     else:
         env["DARTWORK_MPL_INPUT_POLICY"] = str(path)
+    # ``run`` returns when the child has imported the server and exited. The
+    # timeout is a hang guard, not an expectation of import speed: on a loaded
+    # runner the import alone took 26-30 s (#716).
     result = subprocess.run(
         [sys.executable, "-c", code, str(path), policy],
         env=env,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=HANG_GUARD_S,
     )
     assert result.returncode == 0, result.stderr
     assert list(storage.iterdir()) == []
