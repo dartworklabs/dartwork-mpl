@@ -410,7 +410,9 @@ half an em, as two names that close read as one), easiest first:
 1. **Axis names** that run into another panel's text or plot, or past the
    figure edge (a name longer than the figure), wrap at their spaces (at
    most four lines; a bracketed unit stays whole). A name in nobody's way
-   stays on one line, even when it hangs past its own plot.
+   stays on one line, even when it hangs past its own plot, unless the
+   same grid wraps the same words on the same axis: it then takes the same
+   lines, so one name reads the same beside every row.
 2. **Panel spacing**: root `wspace` / `hspace` nobody set grow until
    neighbouring panels' text clears by half an em, when 1.5 cells or less
    does it; narrower panels would not clear a deeper collision, so it stays.

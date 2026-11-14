@@ -177,7 +177,8 @@ def simple_layout(
         What the layout may do when text still collides once the margins
         fit, each step only where text overlaps by more than half a pixel:
         wrap an axis name that runs into another panel or past the figure
-        edge (``"axis_labels"``), widen the space between panels nobody
+        edge, and with it the same name on the same axis of that grid
+        (``"axis_labels"``), widen the space between panels nobody
         spaced (``"space"``), wrap crowded bottom tick labels at their
         spaces (``"wrap"``) and, when they cannot wrap, turn them 30, 45 or
         90 degrees (``"rotate"``). After each round the margins are fitted
