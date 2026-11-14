@@ -33,11 +33,16 @@ jobs:
   # depends on `build` (version-check + `uv build` + sdist-scope guard),
   # so a tag on a commit whose tests fail — or never ran — would still
   # publish to PyPI. `build`/`publish` now transitively require `test`.
+  # Every job is GitHub-hosted, like ci.yml (public repository: hosted
+  # minutes are free; the shared self-hosted runner is not used, #716).
   test:
     name: Test before release
     env:
       UV_PYTHON: "3.12"
-    runs-on: [self-hosted, ml-main]
+      # The bar-label readability tests read the saved PDF through
+      # Ghostscript; here a missing gs fails them instead of skipping.
+      DARTWORK_MPL_REQUIRE_GHOSTSCRIPT: "1"
+    runs-on: ubuntu-24.04
     steps:
       # The quality-oracle regression test resolves and archives the frozen
       # baseline commit, which is absent from a depth-one checkout.
@@ -60,6 +65,13 @@ jobs:
         run: uv python install 3.12
       - name: Install dependencies
         run: uv sync --all-extras --dev
+      # Ubuntu runners ship without Ghostscript (see the test job in ci.yml).
+      - name: Install Ghostscript
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ghostscript
+      - name: Verify Ghostscript (gs for the PDF readability tests)
+        run: gs --version
       - name: Record release test interpreter
         shell: bash
         run: |
@@ -126,8 +138,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Main CI already runs this complete suite on four workers. Keep
-          # every case and the JUnit guard while avoiding a serial release gate.
+          # CI already runs this complete suite in parallel. Keep every case
+          # and the JUnit guard while avoiding a serial release gate.
           uv run pytest -q -n 4 --dist worksteal -rs --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
       - name: Assert MCP / integration tests actually ran
@@ -150,7 +162,7 @@ jobs:
     env:
       UV_PYTHON: "3.12"
     needs: test
-    runs-on: [self-hosted, ml-main]
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -221,7 +233,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    runs-on: [self-hosted, ml-main]
+    runs-on: ubuntu-24.04
     # Header says workflow_dispatch is for dry runs (build only) — guard
     # the publish step so an accidental "Run workflow" click can't upload
     # an untagged build to production PyPI. The build job still runs on
@@ -249,7 +261,7 @@ jobs:
   github_release:
     name: Create / update GitHub Release
     needs: publish
-    runs-on: [self-hosted, ml-main]
+    runs-on: ubuntu-24.04
     # Tag pushes only — workflow_dispatch is a dry run and never publishes.
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:

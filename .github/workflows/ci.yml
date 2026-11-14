@@ -15,30 +15,29 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # uv gives a download 30 s by default. On loaded ml-main a stalled
-  # connection ran past it and `uv sync` failed before any test ran.
+  # uv gives a download 30 s by default. A stalled connection ran past it
+  # and `uv sync` failed before any test ran.
   UV_HTTP_TIMEOUT: "120"
 
-# Public PR validation runs on disposable GitHub-hosted machines.
-# Other events retain the existing ml-main route.
+# Every job runs on a disposable GitHub-hosted machine, for pull requests and
+# for pushes to main. The repository is public, so hosted minutes are free.
+# Until 2026-11-14 pushes ran on a self-hosted runner shared with other
+# repositories; under its load main went red whatever the merged change was
+# (#716), and runs queued for hours.
 #
 # uv cache: a hosted machine starts empty, so setup-uv restores a pruned
-# cache from GitHub and prunes it again when the job ends. Each ml-main
-# runner keeps its own cache directory between jobs (UV_CACHE_DIR in the
-# runner's environment). Restoring and pruning there emptied it after every
-# job, so every job downloaded all wheels again, and a slow network failed
-# the install. On ml-main the local cache is left as it is.
+# cache from GitHub and prunes it again when the job ends.
 jobs:
   lint:
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
@@ -53,18 +52,14 @@ jobs:
         run: uv run mypy
 
   test:
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     # Override the repository's 3.11 pin so each matrix job tests its interpreter.
     env:
       UV_PYTHON: ${{ matrix.python-version }}
-      # Bound shared ml-main load; an empty override preserves hosted PR auto detection.
-      PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
       # The bar-label readability tests read the saved PDF through
       # Ghostscript; here a missing gs fails them instead of skipping.
       DARTWORK_MPL_REQUIRE_GHOSTSCRIPT: "1"
     strategy:
-      # Shared ml-main runs two Python jobs at once; hosted PRs retain all three.
-      max-parallel: ${{ github.event_name == 'pull_request' && 4 || 2 }}
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
@@ -88,8 +83,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -100,9 +95,8 @@ jobs:
 
       # The bar-label readability tests (annotation/tests/test_label_bars.py)
       # rasterise the saved PDF with Ghostscript. Ubuntu runners ship without
-      # it; ml-main has /usr/bin/gs.
-      - name: Install Ghostscript for hosted PR builds
-        if: github.event_name == 'pull_request'
+      # it.
+      - name: Install Ghostscript
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y ghostscript
@@ -114,7 +108,7 @@ jobs:
       # remaining matrix jobs still run the test suite for version
       # compatibility (minus color_pipeline, see below), but skip coverage
       # instrumentation.
-      # `-n auto` uses the job's worker bound or the hosted runner's vCPUs;
+      # `-n auto` uses the hosted runner's vCPUs;
       # the serial run took 16-30 min per job. Keep -n here, not in addopts,
       # so local runs and scripts/test_id_map.py stay serial by default.
       # `--dist worksteal` lets idle workers take queued tests, so a module's
@@ -184,7 +178,7 @@ jobs:
   # data-repair wire contract, which reads its golden by fastmcp.__version__,
   # so a cell version needs an entry in legacy_calls.json.
   test-mcp-artifacts:
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     env:
       UV_PYTHON: "3.12"
       MPLBACKEND: Agg
@@ -198,8 +192,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
@@ -252,14 +246,14 @@ jobs:
   test-no-extras:
     env:
       UV_PYTHON: "3.12"
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
@@ -316,12 +310,10 @@ jobs:
   # not show that the runner's object store holds no other blob, nor confine
   # the rest of the suite; the full `test` job still runs everything.
   approved-inputs:
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     env:
       UV_PYTHON: "3.12"
       MPLBACKEND: Agg
-      # Same bound as the test job on shared ml-main; hosted PRs auto-detect.
-      PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -358,8 +350,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
@@ -430,18 +422,14 @@ jobs:
     name: test-matplotlib (${{ matrix.label }})
     env:
       UV_PYTHON: ${{ matrix.python-version }}
-      # Same bound as the test job: on shared ml-main `-n auto` took every
-      # core (64 workers on 2026-11-06) beside the other jobs; an empty
-      # override preserves hosted PR auto detection.
-      PYTEST_XDIST_AUTO_NUM_WORKERS: ${{ github.event_name != 'pull_request' && '4' || '' }}
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "pyproject.toml"
       - name: Set up Python
         run: uv python install "$UV_PYTHON"
@@ -511,15 +499,15 @@ jobs:
           retention-days: 7
 
   visual:
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
@@ -546,7 +534,7 @@ jobs:
   # ``builder-inited`` hook rejects stale generated authorities before deploy.
   docs:
     if: github.event_name == 'pull_request'
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     # Pin the docs build to a single modern interpreter. Without this,
     # `uv sync` otherwise follows the repository's 3.11 pin. The docs are
     # interpreter-agnostic (build-only job); retain the known-good 3.12 build.
@@ -558,8 +546,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          enable-cache: ${{ github.event_name == 'pull_request' }}
-          prune-cache: ${{ github.event_name == 'pull_request' }}
+          enable-cache: true
+          prune-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
@@ -607,14 +595,12 @@ jobs:
       # sphinx.ext.graphviz to render the auto-extracted module dependency
       # graph (and its Diagrams-Python architecture script also shells out
       # to the same `dot` binary). Ubuntu runners ship without it.
-      - name: Install Graphviz for hosted PR builds
-        if: github.event_name == 'pull_request'
+      - name: Install Graphviz
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y graphviz
 
       - name: Verify Graphviz (dot binary for sphinx.ext.graphviz)
-        # ml-main has Graphviz preinstalled; hosted PR builds install it above.
         run: dot -V
 
       - name: Verify packaged color authorities
