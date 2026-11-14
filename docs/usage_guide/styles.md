@@ -115,6 +115,8 @@ ticks, 2.6 pt lines; one `dm.fs` / `dm.lw` step is 2.6 pt), so a slide chart
 looks like a journal-column figure enlarged to the 23.4 cm slide body under a
 title. `dm.figsize_for` keeps the height at 10.5 cm and picks the width from
 the x positions: 11.4 cm for up to 4, 15.4 cm up to 6, 23.4 cm for more.
+A grid of two rows or more takes the whole slide (25.4 × 14.29 cm), since
+every row has its own title, tick labels and axis name.
 Given the category names (`labels=names`), it takes the next of those widths
 when slide-sized names would not stand flat half an em apart.
 
