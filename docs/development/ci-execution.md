@@ -20,11 +20,12 @@ policy remains in `pyproject.toml`.
 
 Each test artifact retains `pytest-full.xml` and `pytest-summary.txt` for seven
 days. The latter contains pytest output, including its slowest 30 durations.
-`-n auto` (pytest-xdist) runs one worker per vCPU on hosted PR runners. On
-pushes to main, which run on the shared self-hosted ml-main, the `test` and
-`test-matplotlib` jobs set `PYTEST_XDIST_AUTO_NUM_WORKERS=4`, so `-n auto`
-starts four workers beside the other jobs (before 2026-11-07 the Matplotlib
-cells took every core, 64 workers). Each job log prints
+`-n auto` (pytest-xdist) runs one worker per vCPU. Every workflow runs on
+GitHub-hosted `ubuntu-24.04` machines, for pull requests and for pushes to
+main alike: the repository is public, so hosted minutes are free. Until
+2026-11-14 pushes ran on a self-hosted runner shared with other repositories;
+under its load main went red whatever the merged change was (#716) and runs
+queued for hours. Each job log prints
 `created: N/N workers`. The workers' results are
 merged into the one JUnit report with unchanged module/class names, so the
 guard below reads it as before. `-n` lives on the CI command lines only, never

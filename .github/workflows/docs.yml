@@ -14,9 +14,11 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+# GitHub-hosted, like ci.yml: the repository is public, so hosted minutes are
+# free, and the shared self-hosted runner queued and slowed these jobs (#716).
 jobs:
   build:
-    runs-on: [self-hosted, ml-main]
+    runs-on: ubuntu-24.04
     # Pin the docs build to a single modern interpreter (see ci.yml docs job):
     # retain the known-good 3.12 build rather than following the 3.11 pin.
     env:
@@ -52,10 +54,14 @@ jobs:
       # The diagrams PoC page (docs/internals/diagrams_poc.md) renders a
       # sphinx.ext.graphviz directive (auto-extracted module dep graph).
       # Without the `dot` binary the build aborts with "graphviz_dot
-      # executable not found". Mirrors the verification step in ci.yml.
+      # executable not found". Ubuntu runners ship without it. Mirrors the
+      # install and verification steps of the docs job in ci.yml.
+      - name: Install Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y graphviz
+
       - name: Verify Graphviz (dot binary for sphinx.ext.graphviz)
-        # ml-main 러너에 미리 설치돼 있다. 러너에는 passwordless sudo 가
-        # 없으므로 설치 대신 존재만 확인하고, 없으면 즉시 실패시킨다.
         run: dot -V
 
       - name: Verify packaged color authorities
@@ -122,7 +128,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: [self-hosted, ml-main]
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Deploy to GitHub Pages

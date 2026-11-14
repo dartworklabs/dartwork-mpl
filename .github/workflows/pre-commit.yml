@@ -13,16 +13,16 @@ concurrency:
   group: pre-commit-${{ github.ref }}
   cancel-in-progress: true
 
-# Public PR validation runs on disposable GitHub-hosted machines.
-# Other events retain the existing ml-main route.
+# Runs on a disposable GitHub-hosted machine for pull requests and pushes
+# alike (public repository: hosted minutes are free; see ci.yml).
 jobs:
   pre-commit:
     name: Run pre-commit on changed files
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # pre-commit installs its hooks in isolated environments. setup-python
-      # also keeps pip off the self-hosted runner's externally managed Python.
+      # also keeps pip off the runner's externally managed Python.
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
