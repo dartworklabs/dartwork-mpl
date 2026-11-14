@@ -586,7 +586,9 @@ dartwork-mpl includes several helpers that automate tedious formatting tasks.
 positions. With `x="auto"` (default) each letter is placed from what its panel draws,
 in points: its left edge on the outer edge of the panel's y-axis name (a grid
 column takes its leftmost; a panel without one keeps the spine distance of the
-named panels in its row, or sits where a name would be when no panel has one),
+named panels in its row, or sits where a name would be when no panel has one;
+a panel with no tick labels either, as inside a shared y axis, starts on its
+own left spine when the gap to its neighbour does not hold that distance),
 and its baseline on the panel's title baseline (without a title, the highest
 baseline of its row, or 4 pt above the panel). A title in the way only keeps the
 letter half a letter size before it. `dm.simple_layout` measures the panels again,
