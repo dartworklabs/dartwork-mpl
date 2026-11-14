@@ -112,6 +112,11 @@ _TOP_GAP_PT = 4.0
 #: Between the label and the left decoration (y-axis name, tick labels)
 #: below it, when that decoration rises above the panel, in points.
 _CLEARANCE_PT = 2.0
+#: A letter this far (display px) into what a neighbour draws has no room;
+#: less only touches. The layout's own measure of a collision
+#: (``layout._fit_labels._TOUCH_PX``): a letter this rule leaves in place is
+#: one the layout does not part the panels for.
+_TOUCH_PX = 0.5
 
 #: Where a figure keeps the groups of labels ``label_axes`` placed.
 _GROUPS_ATTR = PANEL_LABELS_ATTR
@@ -215,6 +220,54 @@ def _virtual_ylabel_left(ax: Axes, renderer: Any) -> float:
     return inner - float(ax.yaxis.labelpad) * k - float(height)
 
 
+def _bare_left(ax: Axes, renderer: Any) -> bool:
+    """Whether ``ax`` draws nothing left of its left spine: no y-axis name
+    there and no left tick labels (an inner panel of a shared y axis)."""
+    return (
+        ax.name == "rectilinear"
+        and _ylabel_box(ax, renderer) is None
+        and _ytick_box(ax, renderer) is None
+    )
+
+
+def _left_neighbours_end(ax: Axes, renderer: Any) -> float | None:
+    """The right end (px) of what the panels just left of ``ax`` draw.
+
+    Those are the visible Axes of the same top-level grid whose cells end
+    where the cell of ``ax`` starts and share a row with it (a colour bar
+    beside a panel is in that panel's cell); each counts with everything it
+    draws (:meth:`~matplotlib.axes.Axes.get_tightbbox`: plot, titles, tick
+    labels, axis names, legend). ``None`` when ``ax`` is on no grid or has
+    no such neighbour (a first column).
+    """
+    spec = ax.get_subplotspec()
+    root = ax.get_figure(root=True)
+    if spec is None or root is None:
+        return None
+    top = spec.get_topmost_subplotspec()
+    grid = top.get_gridspec()
+    rows = set(top.rowspan)
+    end: float | None = None
+    for other in root.axes:
+        other_spec = other.get_subplotspec()
+        if other is ax or other_spec is None or not other.get_visible():
+            continue
+        cell = other_spec.get_topmost_subplotspec()
+        if (
+            cell.get_gridspec() is not grid
+            or cell.colspan.stop != top.colspan.start
+            or not rows & set(cell.rowspan)
+        ):
+            continue
+        try:
+            box = other.get_tightbbox(renderer)
+        except BBOX_ERRORS:
+            continue
+        if box is not None:
+            end = float(box.x1) if end is None else max(end, float(box.x1))
+    return end
+
+
 def _titles_in_the_way(
     ax: Axes, left: float, width: float, gap: float, renderer: Any
 ) -> list[Bbox]:
@@ -279,9 +332,8 @@ def _place_group(group: _Group, renderer: Any) -> bool:
     # the named panels: the largest in its row, else in the figure; with no
     # name anywhere, where a name would be.
     reach = {i: corners[i][0] - v for i, v in enumerate(lefts) if v is not None}
-    for i, value in enumerate(lefts):
-        if value is not None:
-            continue
+    unnamed = [i for i, value in enumerate(lefts) if value is None]
+    for i in unnamed:
         cell = cells[i]
         same_row = (
             [reach[j] for j in rows.get(cell[0], []) if j in reach]
@@ -293,6 +345,24 @@ def _place_group(group: _Group, renderer: Any) -> bool:
         elif axes[i].name == "rectilinear":
             lefts[i] = _virtual_ylabel_left(axes[i], renderer)
         else:
+            lefts[i] = corners[i][0]
+    # That distance is kept where the room for it is already there. A panel
+    # with nothing on its left (an inner panel of a shared y axis) whose
+    # letter would reach what its left neighbour draws stands on its own
+    # spine instead: held by parting the panels, the distance halved a row
+    # of four on a slide (4.56 to 2.37 cm, smoke round 5, #722). A column of
+    # such panels moves together.
+    bare = [i for i in unnamed if _bare_left(axes[i], renderer)]
+    crowded: set[int] = set()
+    for i in bare:
+        end = _left_neighbours_end(axes[i], renderer)
+        left = lefts[i]
+        if end is not None and left is not None and end - left > _TOUCH_PX:
+            crowded.add(i)
+    for i in bare:
+        cell = cells[i]
+        column = cols.get(cell[1], [i]) if cell else [i]
+        if crowded.intersection(column):
             lefts[i] = corners[i][0]
     placed: list[float] = [float(v) for v in lefts if v is not None]
     # A title in the way: the label's right edge half a label size before
@@ -410,6 +480,12 @@ def label_axes(
           largest in its row, else in the figure); with no y-axis name in
           the whole call, the label goes where one would be (past the tick
           labels by the name's pad and line height).
+          That distance is kept where the room for it is already there:
+          a panel that draws nothing left of its spine (no name, no tick
+          labels: an inner panel of a shared y axis) and whose label
+          would reach what the panel on its left draws starts on its own
+          left spine instead, and its grid column with it, so the layout
+          does not part the panels to hold a letter.
         - its baseline on the panel's title baseline. A panel without a
           title takes the highest baseline of its grid row, or 4 pt above
           its top decoration when that is higher. A y-axis name or tick
