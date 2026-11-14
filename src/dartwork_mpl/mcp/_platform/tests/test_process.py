@@ -113,6 +113,40 @@ def test_child_deadline_survives_early_stdout_stderr_close():
     assert time.monotonic() - start < 1
 
 
+def test_staged_deadline_times_out_after_the_point_with_everything_written_before(
+    tmp_path, monkeypatch
+):
+    """A deadline staged on a point the child reaches keeps a full pipe written before it.
+
+    ``tests/support/child_deadline.expire_when`` relies on ``run_child``
+    reading its clock once per poll. The child fills one pipe, marks the
+    point and sleeps: the run must end on the timeout path, long before the
+    real 60 s, with every byte written before the point in the report.
+    """
+    import sys
+    import time
+
+    from dartwork_mpl.mcp._platform.process import run_child
+    from tests.support.child_deadline import expire_when, reach
+
+    wrote = tmp_path / "wrote"
+    expire_when(monkeypatch, wrote.exists)
+    start = time.monotonic()
+    result = run_child(
+        [
+            sys.executable,
+            "-c",
+            "import os, time\nos.write(2, b'y' * 65536)\n"
+            + reach(wrote)
+            + "time.sleep(60)\n",
+        ],
+        timeout_seconds=60,
+    )
+    assert result.timed_out is True
+    assert result.stderr == "y" * 65536
+    assert time.monotonic() - start < 30
+
+
 @pytest.mark.parametrize("phase", ["open", "write", "close"])
 def test_png_descriptor_write_failure_removes_only_new_file(
     tmp_path, monkeypatch, phase

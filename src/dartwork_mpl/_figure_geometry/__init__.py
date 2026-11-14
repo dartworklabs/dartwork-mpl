@@ -57,6 +57,7 @@ __all__ = [
     "BBOX_ERRORS",
     "CORNER_GAP_EM",
     "NOWHERE",
+    "PANEL_LABELS_ATTR",
     "UNCLIPPED",
     "CornerOverlap",
     "DrawnOutline",
@@ -98,6 +99,7 @@ __all__ = [
     "outside_span_px",
     "pair_clearance_px",
     "pair_gap_px",
+    "panel_labels",
     "patch_inks",
     "reanchor_outside",
     "respread_line_end_labels",
@@ -330,6 +332,24 @@ def axes_titles(ax: Axes) -> dict[str, Text]:
         if text.get_text() == public:
             titles[loc] = text
     return titles
+
+
+#: Where a figure keeps the groups of letters ``dm.label_axes`` placed.
+PANEL_LABELS_ATTR = "_dm_panel_label_groups"
+
+
+def panel_labels(fig: Figure | SubFigure) -> list[tuple[Axes, Text]]:
+    """The letters ``dm.label_axes`` placed on ``fig``, each with its panel.
+
+    Only the automatic ones (``x="auto"``), which the figure keeps in
+    groups; a letter at a position the caller gave is an ordinary text.
+    """
+    root = fig.get_figure(root=True)
+    return [
+        (ax, text)
+        for group in getattr(root, PANEL_LABELS_ATTR, [])
+        for ax, text in group.members
+    ]
 
 
 def axes_text_artists(ax: Axes) -> list[Text]:

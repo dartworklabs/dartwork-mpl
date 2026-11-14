@@ -284,6 +284,7 @@ dm.save_formats(fig, "out/base", formats=("png", "pdf"))
     (folder / "plot.py").write_text(base)
     round3()
     round4()
+    round5()
 
 
 def wobble(i, k=0):
@@ -758,6 +759,253 @@ def round4():
             "Split it into two panels: the two series on top and model minus measured below.",
             "Draw a dashed line at zero in the lower panel and shade the hours where the difference is above 1 °C.",
             "Take the shading out again. Keep the zero line.",
+        ],
+    )
+
+
+def day(h, start=6.0):
+    """A daytime hump in [0, 1]: zero at night, one in mid-afternoon."""
+    return max(0.0, math.sin((h - start) / 24 * 2 * math.pi))
+
+
+GRID_HEAD = '''"""Existing four-panel report figure; edit only the requested target."""
+
+import csv
+
+import matplotlib.pyplot as plt
+
+import dartwork_mpl as dm
+
+dm.style.use("report")
+with open("data.csv") as stream:
+    rows = list(csv.DictReader(stream))
+'''
+
+# Clean bases: each runs, saves and carries no validator WARNING.
+EDIT5 = {
+    "e06-panel-gap": GRID_HEAD
+    + """zones = list(dict.fromkeys(r["zone"] for r in rows))
+fig, axs = plt.subplots(2, 2, figsize=dm.figsize_for(nrows=2, ncols=2))
+for ax, zone in zip(axs.flat, zones, strict=True):
+    part = [r for r in rows if r["zone"] == zone]
+    hours = [float(r["hour"]) for r in part]
+    ax.plot(hours, [float(r["supply_temp_C"]) for r in part], label="Supply")
+    ax.plot(hours, [float(r["return_temp_C"]) for r in part], label="Return")
+    ax.set(xlabel="Hour of day", ylabel="Temperature (°C)", title=zone)
+dm.label_axes(axs)
+dm.figure_legend(fig)
+dm.simple_layout(fig)
+dm.save_formats(fig, "out/base", formats=("png", "pdf"))
+""",
+    "e07-add-panel-letters": GRID_HEAD
+    + """seasons = list(dict.fromkeys(r["season"] for r in rows))
+fig, axs = plt.subplots(
+    2, 2, figsize=dm.figsize_for(nrows=2, ncols=2), sharex=True, sharey=True
+)
+for ax, season in zip(axs.flat, seasons, strict=True):
+    part = [r for r in rows if r["season"] == season]
+    hours = [float(r["hour"]) for r in part]
+    ax.plot(hours, [float(r["office_kW"]) for r in part], label="Office")
+    ax.plot(
+        hours, [float(r["laboratory_kW"]) for r in part], label="Laboratory"
+    )
+    ax.set_title(season)
+for ax in axs[:, 0]:
+    ax.set_ylabel("Electric load (kW)")
+for ax in axs[-1]:
+    ax.set_xlabel("Hour of day")
+dm.figure_legend(fig)
+dm.simple_layout(fig)
+dm.save_formats(fig, "out/base", formats=("png", "pdf"))
+""",
+}
+
+
+def round5():
+    """Stacked panels, grids, panel letters, long axis names and panel gaps."""
+    halves = [i / 2 for i in range(48)]
+    case(
+        "g19-stacked-two",
+        "generate",
+        "en",
+        "For a report, show one day of the chilled-water plant from data.csv in two panels, one above the other, on a shared time axis: supply and return temperature on top, cooling load below. Mark the panels (a) and (b). Save PNG, PDF and a runnable script.",
+        ["hour", "supply_temp_C", "return_temp_C", "cooling_load_kW"],
+        [
+            (
+                h,
+                round(6.6 + 0.5 * day(h) + 0.12 * wobble(i, 0), 2),
+                round(10.2 + 2.6 * day(h) + 0.2 * wobble(i, 1), 2),
+                round(360 + 540 * day(h) + 28 * wobble(i, 2), 1),
+            )
+            for i, h in enumerate(halves)
+        ],
+    )
+    case(
+        "g20-stacked-three-kr",
+        "generate",
+        "ko",
+        "보고서에 넣을 그림입니다. data.csv의 하루치 측정값을 위아래 세 단으로 나눠 그려 주세요. 위에서부터 실내 이산화탄소 농도, 외기 도입 풍량, 공조기 소비 전력이고 시간축은 함께 씁니다. 그림의 글자는 한국어로 하고 축 이름에는 단위를 붙여 주세요. 패널마다 (a), (b), (c)를 달아 주세요. PNG와 PDF, 실행 가능한 스크립트를 남겨 주세요.",
+        [
+            "시각_h",
+            "실내 이산화탄소 농도_ppm",
+            "외기 도입 풍량_m3_h",
+            "공조기 소비 전력_kW",
+        ],
+        [
+            (
+                h,
+                round(430 + 520 * day(h, 7) + 22 * wobble(i, 3), 0),
+                round(1800 + 5400 * day(h, 6.5) + 160 * wobble(i, 4), 0),
+                round(3.4 + 13.5 * day(h, 6.5) + 0.5 * wobble(i, 5), 2),
+            )
+            for i, h in enumerate(halves)
+        ],
+    )
+    case(
+        "g21-grid-long-names",
+        "generate",
+        "en",
+        "For a journal paper, make a figure from data.csv with one panel per air-handling unit, in two rows of three. Each panel plots supply air volumetric flow rate against duct static pressure setpoint. Every panel carries both axis names with their units, the unit's name as its title and a panel letter, (a) to (f). Save PNG, PDF and a runnable script.",
+        [
+            "unit",
+            "duct_static_pressure_setpoint_Pa",
+            "supply_air_volumetric_flow_rate_m3_h",
+        ],
+        [
+            (
+                u,
+                p,
+                round(
+                    (3100 + 650 * k) * math.sqrt(p / 100)
+                    + 90 * wobble(j, k + 6),
+                    0,
+                ),
+            )
+            for k, u in enumerate(
+                [
+                    "AHU-1 East wing",
+                    "AHU-2 West wing",
+                    "AHU-3 Laboratory",
+                    "AHU-4 Auditorium",
+                    "AHU-5 Library",
+                    "AHU-6 Atrium",
+                ]
+            )
+            for j, p in enumerate(range(100, 425, 25))
+        ],
+    )
+    case(
+        "g22-two-groups",
+        "generate",
+        "ko",
+        "기관 보고서용 그림입니다. data.csv에는 두 건물(본관, 연구동)의 여름철 냉방 부하와 겨울철 난방 부하가 시간별로 있습니다. 그림을 왼쪽·오른쪽 두 묶음으로 나누고 묶음마다 건물 이름을 제목으로 달아 주세요. 각 묶음 안에는 위에 냉방 부하, 아래에 난방 부하를 시각에 대해 그립니다. 두 건물이 따로 읽히도록 묶음 사이는 묶음 안의 패널 사이보다 넓게 띄우고, 네 패널에 (a)부터 (d)까지 달아 주세요. 그림의 글자는 한국어로 써 주세요. PNG와 PDF, 스크립트를 남겨 주세요.",
+        ["건물", "시각_h", "여름철 냉방 부하_kW", "겨울철 난방 부하_kW"],
+        [
+            (
+                b,
+                h,
+                round((210 + 160 * k) * day(h, 7) + 38 + 9 * wobble(h, k), 1),
+                round(
+                    (150 + 120 * k) * (1 - 0.75 * day(h, 8))
+                    + 20
+                    + 8 * wobble(h, k + 2),
+                    1,
+                ),
+            )
+            for k, b in enumerate(["본관", "연구동"])
+            for h in range(24)
+        ],
+    )
+    folder = case(
+        "e06-panel-gap",
+        "edit",
+        "ko",
+        "plot.py는 보고서용 네 패널 그림입니다. 패널들이 서로 너무 붙어 보입니다. 이웃한 패널의 내용(눈금 글자, 축 이름, 제목) 사이가 가로세로 모두 8 mm 떨어지게 해 주세요. 그 밖의 것(데이터, 문구, 글자 크기, 색, 그림 크기, 패널 글자, 범례)은 그대로 두세요. 원본을 보존하고 수정본 스크립트, PNG와 PDF를 따로 저장해 주세요.",
+        ["zone", "hour", "supply_temp_C", "return_temp_C"],
+        [
+            (
+                z,
+                h,
+                round(13.5 + 0.4 * k + 1.1 * day(h) + 0.15 * wobble(h, k), 2),
+                round(
+                    21.5 + 0.6 * k + 2.4 * day(h) + 0.2 * wobble(h, k + 4), 2
+                ),
+            )
+            for k, z in enumerate(
+                ["North office", "South office", "Core laboratory", "Atrium"]
+            )
+            for h in range(24)
+        ],
+    )
+    (folder / "plot.py").write_text(EDIT5["e06-panel-gap"])
+    folder = case(
+        "e07-add-panel-letters",
+        "edit",
+        "en",
+        "plot.py is a four-panel figure for our report. Add panel letters, (a) to (d), in bold. Change nothing else: data, text, sizes, colours, the legend and the figure size stay as they are. Leave the original and save the revision as a new script, PNG and PDF.",
+        ["season", "hour", "office_kW", "laboratory_kW"],
+        [
+            (
+                s,
+                h,
+                round(60 + (150 + 45 * k) * day(h, 6.5) + 6 * wobble(h, k), 1),
+                round(
+                    150 + (70 + 25 * k) * day(h, 5) + 8 * wobble(h, k + 4), 1
+                ),
+            )
+            for k, s in enumerate(["Spring", "Summer", "Autumn", "Winter"])
+            for h in range(24)
+        ],
+    )
+    (folder / "plot.py").write_text(EDIT5["e07-add-panel-letters"])
+    case(
+        "s04-grid-to-slide",
+        "series",
+        "en",
+        "Plot the hourly indoor temperature of the four zones in data.csv, one panel per zone, for a report. Save PNG, PDF and a runnable script.",
+        ["hour", "zone", "indoor_temp_C"],
+        [
+            (
+                h,
+                z,
+                round(
+                    21.2
+                    + 0.5 * k
+                    + (2.2 + 0.4 * k) * day(h, 8)
+                    + 0.2 * wobble(h, k + 8),
+                    2,
+                ),
+            )
+            for k, z in enumerate(
+                ["Open office", "Meeting rooms", "Server room", "Lobby"]
+            )
+            for h in range(24)
+        ],
+        [
+            "Add panel letters, a to d.",
+            "The panels sit too close together. Leave about a centimetre of clear space between neighbouring panels.",
+            "This goes on a slide now. Make it a slide figure.",
+        ],
+    )
+    case(
+        "s05-stack-grow",
+        "series",
+        "ko",
+        "data.csv의 하루치 실내 온도와 상대 습도를 위아래 두 패널로 그려 주세요. 보고서에 넣을 그림이고 그림의 글자는 한국어로 해 주세요. PNG와 PDF, 실행 가능한 스크립트를 남겨 주세요.",
+        ["시각_h", "실내 온도_C", "상대 습도_pct", "이산화탄소 농도_ppm"],
+        [
+            (
+                h,
+                round(22.4 + 2.1 * day(h, 8) + 0.15 * wobble(i, 9), 2),
+                round(52 - 11 * day(h, 8) + 1.2 * wobble(i, 10), 1),
+                round(440 + 470 * day(h, 7) + 20 * wobble(i, 11), 0),
+            )
+            for i, h in enumerate(halves)
+        ],
+        [
+            "아래에 이산화탄소 농도 패널을 하나 더 추가해 주세요.",
+            "패널마다 (a), (b), (c)를 달아 주세요.",
+            "y축 이름을 위에서부터 '거주 구역 평균 실내 온도 (°C)', '거주 구역 평균 상대 습도 (%)', '거주 구역 평균 이산화탄소 농도 (ppm)'로 바꿔 주세요.",
         ],
     )
 

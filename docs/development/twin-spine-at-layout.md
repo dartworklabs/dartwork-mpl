@@ -4,13 +4,13 @@ orphan: true
 
 # Twin scale line at the layout, not at import (D7)
 
-Status: implemented on `t3/twinx-explicit-20261106`, first shipped in 0.8.
+Status: implemented on `t3/twinx-explicit-20261106`, first shipped in 0.7.1.
 Decision: root API decision D7 (2026-11-06). Not a release blocker.
 Approved by the user on 2026-11-07, including the look changes 11-1 to 11-5
 listed below (2026-11-07 사용자 승인). Revised the same day after the
 independent review: inset twins, the tick condition, the twin's line first,
-an independent 0.7 oracle and the full import contract. 2026-11-07 사용자
-결정 14: 대안 (the counterexample pair below: twins keep 0.7's line, an
+an independent 0.7.0 oracle and the full import contract. 2026-11-07 사용자
+결정 14: 대안 (the counterexample pair below: twins keep 0.7.0's line, an
 overlay drawn like a twin gains one). Re-review the same day: the twin's
 line first no longer depends on the spine's place (n11). 2026-11-08 사용자
 승인 1-A: a `twiny` member's top spine follows the same rule (I3); root
@@ -77,7 +77,7 @@ hidden. Right and top have separate records.
 
 ## Controls and differences (laid out, scientific)
 
-| Case (review id) | Spine shown in 0.8 | 0.7 |
+| Case (review id) | Spine shown in 0.7.1 | 0.7.0 |
 |---|---|---|
 | side-by-side panels, also with shared x and the right panel moved right | no | no |
 | two Axes in one box, also moved right (no shared axis) | no | no |
@@ -98,15 +98,15 @@ hidden. Right and top have separate records.
 | 1-A `twiny()`, also beside a `twinx()` of the same parent; its ticks or label moved down | twin's top spine | no |
 | 1-A mirrors of x22, 11-3, 11-4 (swap), 11-5, 14 and of the `twiny` with both moved down | as on the right | no |
 
-The first eleven rows match 0.7 pixel for pixel; 11-3 to 11-5, 14 and 1-A
+The first eleven rows match 0.7.0 pixel for pixel; 11-3 to 11-5, 14 and 1-A
 are approved. m02 was decided later the same day by delegation: on its rendered
 PoC the user said such a layout is not drawn in practice, then handed the
 remaining decision to the implementing session ("너가 해줘"), which kept the
 current rule (no line). A y axis with neither ticks nor a label on the right
-is the 11-5 case, and drawing 0.7's line would need a private twin test.
+is the 11-5 case, and drawing 0.7.0's line would need a private twin test.
 Decision 14 settles a pair public state cannot tell apart: the
 overlay in the last row and the twin of x02 / x03 with the same half-moved scale
-differ only in the private `_twinned_axes`, and 0.7 drew a line on the twin
+differ only in the private `_twinned_axes`, and 0.7.0 drew a line on the twin
 alone. Any public rule answers both alike; the user chose to keep the twin's
 line, so the overlay gains one.
 
@@ -160,8 +160,8 @@ before.
 - `formatting/tests/test_twin_spines.py`: 69 cases (20 builds, each also
   neutral and `format_ticks=False`, three presets, five edits) must equal
   `twin_spines_07_golden.json`, recorded from origin/main (no D7 code) with
-  0.7's wrapper, and the pixels of a live 0.7 re-enactment with the new step
-  off. 11-1 to 11-5 and 14 are pinned against the live 0.7 run. The three
+  0.7.0's wrapper, and the pixels of a live 0.7.0 re-enactment with the new step
+  off. 11-1 to 11-5 and 14 are pinned against the live 0.7.0 run. The three
   `twiny` cases differ in the twin's top spine alone, and every pixel that
   changed lies within that spine's extent (1-A); the file is not re-recorded.
   The 1-A mirrors and the per-side record are pinned, and so is a scale
@@ -180,7 +180,7 @@ before.
   colours is equivalent and is not a target.
 - PoC (outside the repository): the 21 approved renders are pixel-identical.
 
-## Shipping (0.8) and wording
+## Shipping (0.7.1) and wording
 
 The user-facing wording is the CHANGELOG *Changed* entry "Importing
 dartwork-mpl no longer rebinds any matplotlib class or function" (kept

@@ -1,0 +1,6 @@
+{
+  "id": "g21-grid-long-names",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a journal paper, make a figure from data.csv with one panel per air-handling unit, in two rows of three. Each panel plots supply air volumetric flow rate against duct static pressure setpoint. Every panel carries both axis names with their units, the unit's name as its title and a panel letter, (a) to (f). Save PNG, PDF and a runnable script."
+}

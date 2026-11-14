@@ -24,6 +24,7 @@ from dartwork_mpl.mcp.artifacts.inputs import InputStore  # noqa: E402
 from dartwork_mpl.mcp.artifacts.policy import ConfigurationError, RenderRequest  # noqa: E402
 from dartwork_mpl.mcp.artifacts.store import ArtifactStore  # noqa: E402
 from tests.mcp.artifacts.input_fixtures import publish_pid  # noqa: E402
+from tests.support.child_deadline import HANG_GUARD_S  # noqa: E402
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -76,7 +77,7 @@ def fd_count():
     return count
 
 
-async def until(predicate):
+async def until(predicate, within=15):
     """Yield to owned work until an observable condition or a bounded test failure."""
 
     async def wait():
@@ -84,7 +85,7 @@ async def until(predicate):
         while not predicate():
             await asyncio.sleep(0.005)
 
-    await asyncio.wait_for(wait(), 15)
+    await asyncio.wait_for(wait(), within)
 
 
 def lock_available(path, store):
@@ -265,12 +266,15 @@ asyncio.run(check())
         env.pop("DARTWORK_MPL_INPUT_POLICY", None)
     else:
         env["DARTWORK_MPL_INPUT_POLICY"] = str(path)
+    # ``run`` returns when the child has imported the server and exited. The
+    # timeout is a hang guard, not an expectation of import speed: on a loaded
+    # runner the import alone took 26-30 s (#716).
     result = subprocess.run(
         [sys.executable, "-c", code, str(path), policy],
         env=env,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=HANG_GUARD_S,
     )
     assert result.returncode == 0, result.stderr
     assert list(storage.iterdir()) == []
@@ -993,24 +997,42 @@ def test_client_cancellation_and_final_close_join_real_transport_delivery(
 
 
 @pytest.mark.parametrize(
-    "export_tail_s", [0.0, 2.5], ids=["prompt", "outlasts-client-grace"]
+    "outlasts", [False, True], ids=["prompt", "outlasts-client-grace"]
 )
 def test_stdio_disconnect_joins_blocked_export_before_lock_release(
-    owned_input_root, export_tail_s, monkeypatch
+    owned_input_root, outlasts, monkeypatch
 ):
     """Real stdio disconnect drains the server's owned export before releasing pins.
 
     ``export_tail_s`` is how long the export goes on after it is released. The
-    second case is longer than the SDK client's default grace for a server
-    that has lost its stdin (2 s): the server still drains it.
+    second case is longer than both default client clocks below, so the drain
+    outlasts each of them even on an idle machine: the server still drains it.
     """
-    # The SDK client ends a server that has not exited 2 s after its stdin
-    # closed (SIGTERM to the process group). That clock starts before this
-    # test releases the export, so on a loaded host the server was killed
-    # mid-drain and left its staging folder: the test measured the client's
-    # patience, not the server's drain. The deadline here is the 15 s wait
-    # on the owner task below.
-    monkeypatch.setattr("mcp.client.stdio.PROCESS_TERMINATION_TIMEOUT", 60.0)
+    # Read the defaults before lifting them. With FastMCP 3.4 the tail is
+    # 5.5 s; a fixed 2.5 s tail outlasted only the SDK's 2 s, so dropping the
+    # 5 s lift below failed only on a loaded host.
+    export_tail_s = 0.0
+    if outlasts:
+        sdk_stdio = importlib.import_module("mcp.client.stdio")
+        export_tail_s = 0.5 + max(
+            sdk_stdio.PROCESS_TERMINATION_TIMEOUT,
+            getattr(fastmcp.settings, "client_disconnect_timeout", 0.0),
+        )
+    # Two client clocks start when the transport closes, before this test
+    # releases the export. The SDK ends a server that has not exited 2 s after
+    # its stdin closed (SIGTERM to the process group); FastMCP 3 stops waiting
+    # for that shutdown after 5 s and returns with the server still draining.
+    # On a loaded host either one ran out mid-drain, and the test then saw a
+    # live child or a leftover staging folder: it measured the client's
+    # patience, not the server's drain. Neither clock decides here; every wait
+    # below ends on its event, or on HANG_GUARD_S if the event never comes.
+    monkeypatch.setattr(
+        "mcp.client.stdio.PROCESS_TERMINATION_TIMEOUT", HANG_GUARD_S
+    )
+    if hasattr(fastmcp.settings, "client_disconnect_timeout"):
+        monkeypatch.setattr(
+            fastmcp.settings, "client_disconnect_timeout", HANG_GUARD_S
+        )
     api()
     package = importlib.import_module("dartwork_mpl")
     path, storage, source, store = fixture(owned_input_root)
@@ -1060,7 +1082,7 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
                     )
                 )
                 try:
-                    await until(marker.exists)
+                    await until(marker.exists, HANG_GUARD_S)
                     ready.set()
                     await disconnect.wait()
                     request.cancel()
@@ -1071,7 +1093,19 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
 
         task = asyncio.create_task(owner())
         try:
-            await asyncio.wait_for(ready.wait(), 20)
+            # Starting the server and its export child takes as long as the
+            # host makes it take. An owner that ended before the export began
+            # is reported as its own error, not as a timeout.
+            started = asyncio.create_task(ready.wait())
+            await asyncio.wait(
+                {started, task},
+                timeout=HANG_GUARD_S,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            started.cancel()
+            if task.done():
+                task.result()
+            assert ready.is_set(), "the export child never published its pid"
             pid = int(marker.read_text())
             disconnect.set()
             await asyncio.sleep(0.1)
@@ -1079,7 +1113,8 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
             os.kill(pid, 0)
             assert any(storage.glob(".pending-*/000.bin"))
             release.touch()
-            await asyncio.wait_for(task, 15)
+            # The owner returns when the server process has exited.
+            await asyncio.wait_for(task, HANG_GUARD_S)
             with pytest.raises(ProcessLookupError):
                 os.kill(pid, 0)
             assert not list(storage.glob(".pending-*"))

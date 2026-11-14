@@ -26,7 +26,9 @@ panel whatever its density, two (17 cm) for grids and the full-width kinds
 (``"dense"``, ``"strip"``). ``presentation`` presets draw under a 16:9
 slide's title, 10.5 cm tall: up to 4 x positions half the 23.4 cm body
 (11.4 cm), up to 6 two thirds (15.4 cm), anything denser the full body;
-``"compact"`` takes half of it and ``"matrix"`` a 10.5 cm square.
+``"compact"`` takes half of it and ``"matrix"`` a 10.5 cm square. One row of
+panels fills the body; two rows or more take the whole slide, since every row
+has its own title, tick labels and axis name.
 ``"slide"`` is the full body under any preset; ``"full_slide"`` is the whole
 16:9 slide (25.4 x 14.29 cm, no title band), the slide the presentation
 sizes assume. ``poster`` scales the tiers by its font size over the report's
@@ -421,7 +423,10 @@ def figsize_for(
         kind's aspect, except that panels stacked in one column are as tall
         as a row of a two-column 4:3 grid (two of them: 17 x 13 cm), and the
         canvas is no taller than it is wide (16:9 of the width on posters).
-        On slides a grid fills the body under the title.
+        On slides one row of panels fills the body under the title
+        (23.4 x 10.5 cm); two rows or more take the whole slide
+        (25.4 x 14.29 cm, the ``"full_slide"`` canvas, no slide title above
+        it), whatever the kind.
 
     Returns
     -------
@@ -454,6 +459,11 @@ def figsize_for(
     # the kinds whose width follows the x positions
     by_names = bool(names) and kind in ("default", "grouped") and not grid
     if family == "slides":
+        if nrows >= 2:
+            # Each row carries its own title, tick labels and axis name,
+            # about 2.6 cm at slide text sizes: two rows in the 10.5 cm
+            # body left plots 2.4 cm tall (smoke round 5, #723).
+            return figsize(f"{_SLIDE_CM[0]:g}cm", _SLIDE_RATIO)
         if grid:
             width, height = _SLIDE_BODY_CM
         else:

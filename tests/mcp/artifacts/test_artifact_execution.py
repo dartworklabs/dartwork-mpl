@@ -21,6 +21,7 @@ from dartwork_mpl.mcp.execution import (
     to_wire,
     validate_plot,
 )
+from tests.support.child_deadline import expire_when, reach
 
 
 def validate_report(*args, **kwargs):
@@ -484,9 +485,14 @@ print('  stderr spaces  ', file=sys.stderr)
     ],
 )
 def test_mapping_failure_reaps_child_and_removes_private_channel(
-    input_workspace, ending, status, timeout
+    input_workspace, tmp_path, monkeypatch, ending, status, timeout
 ):
     """After mapped execution fails or times out, its child and checkpoint directory are gone."""
+    if status == "timeout":
+        # Outside ``input_workspace``, whose listing the test asserts on.
+        printed = tmp_path / "printed"
+        expire_when(monkeypatch, printed.exists)
+        ending = reach(printed).rstrip("\n") + "; " + ending
     fixture = input_workspace / "fixture.csv"
     fixture.write_text("x,y\n1,10\n")
     code = (

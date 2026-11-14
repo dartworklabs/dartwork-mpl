@@ -12,6 +12,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.support.child_deadline import HANG_GUARD_S
+
 
 class TestCliMainGracefulFallback:
     """``main()`` must not raise ``ModuleNotFoundError`` to the caller
@@ -116,8 +118,15 @@ class TestStdioEndToEnd:
         )
 
         # Runtime diagnostics stay on stderr; protocol envelopes stay on stdout.
+        # ``run`` returns when the server exits after its stdin closes. The
+        # timeout is a hang guard, not an expectation of start-up speed: a
+        # loaded runner took longer than 30 s to import and start the server.
         proc = subprocess.run(
-            cmd, input=request, capture_output=True, text=True, timeout=30.0
+            cmd,
+            input=request,
+            capture_output=True,
+            text=True,
+            timeout=HANG_GUARD_S,
         )
 
         # The server returns one JSON-RPC envelope on stdout. It may

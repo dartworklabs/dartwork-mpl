@@ -55,6 +55,7 @@ from tests.mcp.artifacts.input_fixtures import (
     seed,
     selection,
 )
+from tests.support.child_deadline import expire_when
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -634,7 +635,11 @@ def test_failed_or_cancelled_export_releases_owned_work(
     elif failure == "no_figure":
         code += "value = 1\n"
     elif failure == "timeout":
-        code += "import time\ntime.sleep(5)\n" + FIGURE
+        # The deadline passes once the child has published its pid, however
+        # long the host took to start it; the sleep only keeps it alive until
+        # the timeout ends it.
+        expire_when(monkeypatch, marker.exists)
+        code += "import time\ntime.sleep(60)\n" + FIGURE
     else:
         code += FIGURE
         if failure == "export":

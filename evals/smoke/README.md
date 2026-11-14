@@ -1,6 +1,6 @@
 # Agent plotting smoke
 
-This is a small failure-harvesting exercise: thirty realistic requests, one
+This is a small failure-harvesting exercise: thirty-eight realistic requests, one
 attempt per selected host. Inspect the PNGs and transcripts and file defects. Execution
 success only means the host exited successfully, produced PNG/PDF, and its final
 script could be re-run and validated. It says nothing about visual correctness.
@@ -19,7 +19,7 @@ uv run python evals/smoke/run_smoke.py --cases g01-single-column --hosts claude 
 ```
 
 `--cases` and `--hosts` accept space-separated or comma-separated names.
-Defaults: all thirty cases, both hosts, two parallel units, 600 seconds per host
+Defaults: all thirty-eight cases, both hosts, two parallel units, 600 seconds per host
 (per turn in a series).
 An existing run id is refused. No API keys are passed to either host. Models
 use the host defaults (Codex's configured model selection is retained).
@@ -83,7 +83,7 @@ content before attaching it. Separate runner failures from library/skill defects
 Do not interpret counts across hosts or rounds as a performance estimate.
 
 Inputs are synthetic and deterministic. `make_cases.py` regenerates the committed
-CSV, metadata, five runnable edit bases and four defective repair bases; it
+CSV, metadata, seven runnable edit bases and four defective repair bases; it
 contains no reference solutions and no repaired versions.
 
 Model-free checks: `uv run pytest evals/smoke/test_smoke.py` (explicit opt-in).

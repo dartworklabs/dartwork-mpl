@@ -43,7 +43,7 @@ takes `-kr` (`report-kr`); edits keep its language and preset.
   23.4 cm wide for ≤4/≤6/more x points); count x points and series; category names under x: `labels=names`
   (the narrowest of those widths that keeps them flat, half an em apart); `dual_axis=True` with `twinx`;
   kind `"matrix"`, `"grouped"` for bars side by side (`n_series` bars per group), `"full_slide"` (25.4 × 14.29 cm) for a whole 16:9 slide; bars vertical,
-  `"barh"` + `ax.barh` only when names overlap or asked; n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)`.
+  `"barh"` + `ax.barh` only when names overlap or asked; n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)` (on slides, two rows or more: the whole slide).
 - A size the user names wins, any size: `dm.figsize(width, second)`. width `"13cm"`, `"5in"`,
   `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number; second `standard` 4:3, `wide` 3:2,
   `slide` 16:9, `"16:9"`, a ratio or `"8cm"`. A width alone: a new figure is 4:3; an edit
@@ -61,7 +61,7 @@ preset's; change them only on request. Tick numbers and dates are the library's 
 formatter, locator or tick list unless asked or naming categories; no request, the default; a request, that format. No figure title, subtitle,
 source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
-named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`.
+named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`; panel letters: `dm.label_axes(axes)` (a, b, c; `labels=["(a)", ...]`) before `dm.simple_layout`, never a title or `ax.text`.
 A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=` only for a side the user names; never `ax.legend(...)`, `bbox_to_anchor` or `ncols=` of your own (arguments it had stay); others stay as they are. A new figure of eight or more lines names them with `dm.label_line_ends(ax)`, unless a legend is asked for; panels that share their series get one `dm.figure_legend(fig)`.
 A generic chart skill gives chart choice and honest axes; static output: no hover, tooltips,
 rounded bar ends, placeholder palettes.

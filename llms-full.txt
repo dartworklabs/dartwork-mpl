@@ -155,7 +155,7 @@ preset and `dm.figsize_for()` gives its default size.
 |---|---|---|
 | Paper / journal / 논문 | `scientific` | `dm.figsize_for()`: one column (9 cm), two columns (17 cm) for dense data or a grid; the venue's column width wins |
 | Report / document / dashboard / 보고서 | `report` | `dm.figsize_for()`: 9 / 12 / 14.5 / 17 cm by data density, 4:3 |
-| Talk / slides / presentation / 발표 | `presentation` | `dm.figsize_for()`: 10.5 cm tall under a 16:9 slide's title; wide 11.4 cm for up to 4 x positions, 15.4 cm up to 6, 23.4 cm for more, 4+ series or a second y axis; `"compact"` 11.4 cm for two charts side by side; `dm.figsize_for("full_slide")` (25.4 × 14.29 cm) only for a whole 16:9 slide with no title |
+| Talk / slides / presentation / 발표 | `presentation` | `dm.figsize_for()`: 10.5 cm tall under a 16:9 slide's title; wide 11.4 cm for up to 4 x positions, 15.4 cm up to 6, 23.4 cm for more, 4+ series or a second y axis; `"compact"` 11.4 cm for two charts side by side; a grid of two rows or more, and `dm.figsize_for("full_slide")`, the whole 16:9 slide (25.4 × 14.29 cm, no slide title above it) |
 
 ```python
 import matplotlib.pyplot as plt
@@ -978,8 +978,8 @@ What remains at those margins is not a margin problem. The 2×1 recipe's
 19.5 pt, and every panel's legend covers its lines (`LEGEND_ON_DATA`).
 `presentation` sizes text for one chart filling a slide: 19.5 pt is
 8.6 % of an 8 cm row against 3.5 % under `report`, and
-`dm.figsize_for(nrows=2, ncols=2)` under it returns 23.4 × 10.5 cm, not this
-page. `dm.place_legend(ax)` does not rescue it either — on this figure it
+`dm.figsize_for(nrows=2, ncols=2)` under it returns the whole slide,
+25.4 × 14.29 cm, not this page. `dm.place_legend(ax)` does not rescue it either — on this figure it
 lifts each legend above its Axes and onto all four titles (8 findings
 become 5).
 
@@ -1245,7 +1245,9 @@ dm.simple_layout(fig)
 positions. With `x="auto"` (default) each letter is placed from what its panel draws,
 in points: its left edge on the outer edge of the panel's y-axis name (a grid
 column takes its leftmost; a panel without one keeps the spine distance of the
-named panels in its row, or sits where a name would be when no panel has one),
+named panels in its row, or sits where a name would be when no panel has one;
+a panel with no tick labels either, as inside a shared y axis, starts on its
+own left spine when the gap to its neighbour does not hold that distance),
 and its baseline on the panel's title baseline (without a title, the highest
 baseline of its row, or 4 pt above the panel). A title in the way only keeps the
 letter half a letter size before it. `dm.simple_layout` measures the panels again,
@@ -1541,7 +1543,7 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
-## Deprecated in 0.8: `dartwork_mpl.util`
+## Deprecated in 0.7.1: `dartwork_mpl.util`
 
 Every access to a name through `dartwork_mpl.util` (`from dartwork_mpl.util
 import X`, `dartwork_mpl.util.X`) emits a `DeprecationWarning` per access,
@@ -1561,7 +1563,7 @@ or later. Until then each name is the owner's own object
 | `save_and_show`, `save_formats`, `show` | `dartwork_mpl.io` |
 | `set_decimal` | `dartwork_mpl.formatting` |
 
-## Deprecated in 0.8: `.tnum` on font records
+## Deprecated in 0.7.1: `.tnum` on font records
 
 `FontFamily.tnum`, `FontMeasurement.tnum` and `FontFaceMeasurement.tnum`
 emit a `DeprecationWarning` and may be removed in 0.10 or later. Read

@@ -164,7 +164,7 @@ def _alias_objects():
 
 
 def test_tnum_aliases_warn_once_and_return_the_canonical_value() -> None:
-    """The three ``tnum`` aliases are deprecated in 0.8 (removal >= 0.10)."""
+    """The three ``tnum`` aliases are deprecated in 0.7.1 (removal >= 0.10)."""
     for label, obj in _alias_objects().items():
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")

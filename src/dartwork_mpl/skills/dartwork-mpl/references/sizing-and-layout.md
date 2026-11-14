@@ -9,7 +9,7 @@ canvas, so the same request gets the same size whoever draws it:
 |---|---|
 | `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
 | `scientific` | one panel 9 cm (a column), grids and `dense`/`strip` 17 cm |
-| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title |
+| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title; a grid of two rows or more, the whole slide (25.4 × 14.29 cm) |
 | `poster` | report widths × font size / 8 pt |
 
 The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
@@ -42,12 +42,15 @@ other kinds keep their width.
 Slides: a 16:9 slide is 25.4 × 14.29 cm; under a 28 pt title with 1 cm
 margins a chart has 23.4 × 10.5 cm. `presentation` is `scientific` with every
 point size × 2.6 (23.4 / 9 cm: text 19.5 pt, ticks 18.2 pt, lines 2.6 pt), so
-every slide chart keeps the 10.5 cm height and one text size, and the width
+a slide chart keeps the 10.5 cm height and one text size, and the width
 follows the x positions at that text size: up to 4 → 11.4 cm (half the body),
 up to 6 → 15.4 cm (two thirds), more, unknown (scatter), 4+ series or
-`dual_axis=True` → 23.4 cm. Grids, `"barh"`, `"dense"` and `"strip"` take
-23.4 cm, `"compact"` 11.4 cm (two charts side by side) and `"matrix"` a
-10.5 cm square. A chart that is the whole slide with no slide title ("fill
+`dual_axis=True` → 23.4 cm. One row of panels, `"barh"`, `"dense"` and
+`"strip"` take 23.4 cm, `"compact"` 11.4 cm (two charts side by side) and
+`"matrix"` a 10.5 cm square. A grid of two rows or more
+(`dm.figsize_for(nrows=2, ncols=2)`, stacked panels too) is the whole slide,
+25.4 × 14.29 cm, with no slide title above it: every row has its own title,
+tick labels and axis name. A chart that is the whole slide with no slide title ("fill
 the slide", "the entire 16:9 page"): `dm.figsize_for("full_slide")`, 25.4 × 14.29 cm under
 any preset, the 10 in slide these sizes assume (a 13.33 in slide would show the
 same text 25 % smaller on screen).
@@ -75,6 +78,8 @@ nrows, ncols = dm.grid_shape(6)  # (2, 3)
 dm.figsize_for(nrows=nrows, ncols=ncols)  # 17 x 8.5 cm
 dm.style.use("presentation")
 dm.figsize_for(n_points=len(quarters), n_series=series)  # 11.4 x 10.5 cm
+dm.figsize_for(nrows=1, ncols=3)  # 23.4 x 10.5 cm, one row under the title
+dm.figsize_for(nrows=2, ncols=2)  # 25.4 x 14.29 cm, the whole slide
 ```
 
 A size the user names goes to `dm.figsize(width, second)`, which returns the

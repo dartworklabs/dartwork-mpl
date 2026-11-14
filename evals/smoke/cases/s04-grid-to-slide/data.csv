@@ -1,0 +1,97 @@
+hour,zone,indoor_temp_C
+0,Open office,21.08
+1,Open office,21.28
+2,Open office,21.23
+3,Open office,21.08
+4,Open office,21.32
+5,Open office,21.16
+6,Open office,21.17
+7,Open office,21.21
+8,Open office,21.28
+9,Open office,21.6
+10,Open office,22.49
+11,Open office,22.63
+12,Open office,23.14
+13,Open office,23.32
+14,Open office,23.46
+15,Open office,23.18
+16,Open office,23.29
+17,Open office,22.63
+18,Open office,22.32
+19,Open office,21.82
+20,Open office,21.17
+21,Open office,21.15
+22,Open office,21.3
+23,Open office,21.13
+0,Meeting rooms,21.7
+1,Meeting rooms,21.86
+2,Meeting rooms,21.7
+3,Meeting rooms,21.5
+4,Meeting rooms,21.7
+5,Meeting rooms,21.8
+6,Meeting rooms,21.7
+7,Meeting rooms,21.76
+8,Meeting rooms,21.7
+9,Meeting rooms,22.19
+10,Meeting rooms,23.01
+11,Meeting rooms,23.72
+12,Meeting rooms,23.95
+13,Meeting rooms,24.16
+14,Meeting rooms,24.3
+15,Meeting rooms,24.1
+16,Meeting rooms,23.96
+17,Meeting rooms,23.74
+18,Meeting rooms,22.99
+19,Meeting rooms,22.22
+20,Meeting rooms,21.7
+21,Meeting rooms,21.71
+22,Meeting rooms,21.7
+23,Meeting rooms,21.84
+0,Server room,22.23
+1,Server room,22.25
+2,Server room,22.18
+3,Server room,22.07
+4,Server room,22.02
+5,Server room,22.06
+6,Server room,22.15
+7,Server room,22.2
+8,Server room,22.17
+9,Server room,22.85
+10,Server room,23.51
+11,Server room,24.15
+12,Server room,24.72
+13,Server room,25.11
+14,Server room,25.22
+15,Server room,25.05
+16,Server room,24.68
+17,Server room,24.2
+18,Server room,23.66
+19,Server room,23.04
+20,Server room,22.31
+21,Server room,22.27
+22,Server room,22.19
+23,Server room,22.15
+0,Lobby,22.68
+1,Lobby,22.66
+2,Lobby,22.74
+3,Lobby,22.73
+4,Lobby,22.59
+5,Lobby,22.85
+6,Lobby,22.57
+7,Lobby,22.76
+8,Lobby,22.72
+9,Lobby,23.54
+10,Lobby,24.4
+11,Lobby,25.19
+12,Lobby,25.49
+13,Lobby,26.14
+14,Lobby,26.01
+15,Lobby,25.99
+16,Lobby,25.68
+17,Lobby,25.09
+18,Lobby,24.34
+19,Lobby,23.72
+20,Lobby,22.54
+21,Lobby,22.82
+22,Lobby,22.66
+23,Lobby,22.68

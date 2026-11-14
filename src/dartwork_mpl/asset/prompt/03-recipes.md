@@ -457,8 +457,8 @@ What remains at those margins is not a margin problem. The 2×1 recipe's
 19.5 pt, and every panel's legend covers its lines (`LEGEND_ON_DATA`).
 `presentation` sizes text for one chart filling a slide: 19.5 pt is
 8.6 % of an 8 cm row against 3.5 % under `report`, and
-`dm.figsize_for(nrows=2, ncols=2)` under it returns 23.4 × 10.5 cm, not this
-page. `dm.place_legend(ax)` does not rescue it either — on this figure it
+`dm.figsize_for(nrows=2, ncols=2)` under it returns the whole slide,
+25.4 × 14.29 cm, not this page. `dm.place_legend(ax)` does not rescue it either — on this figure it
 lifts each legend above its Axes and onto all four titles (8 findings
 become 5).
 
@@ -724,7 +724,9 @@ dm.simple_layout(fig)
 positions. With `x="auto"` (default) each letter is placed from what its panel draws,
 in points: its left edge on the outer edge of the panel's y-axis name (a grid
 column takes its leftmost; a panel without one keeps the spine distance of the
-named panels in its row, or sits where a name would be when no panel has one),
+named panels in its row, or sits where a name would be when no panel has one;
+a panel with no tick labels either, as inside a shared y axis, starts on its
+own left spine when the gap to its neighbour does not hold that distance),
 and its baseline on the panel's title baseline (without a title, the highest
 baseline of its row, or 4 pt above the panel). A title in the way only keeps the
 letter half a letter size before it. `dm.simple_layout` measures the panels again,

@@ -17,18 +17,18 @@ SPEC.loader.exec_module(smoke)
 
 
 def test_case_inventory_is_balanced_and_has_no_answers():
-    """The review corpus is thirty requests with only local inputs."""
+    """The review corpus is thirty-eight requests with only local inputs."""
     cases = [
         json.loads(p.read_text())
         for p in (smoke.HERE / "cases").glob("*/case.json")
     ]
-    assert len(cases) == 30
-    assert Counter(c["lang"] for c in cases) == {"ko": 14, "en": 16}
+    assert len(cases) == 38
+    assert Counter(c["lang"] for c in cases) == {"ko": 18, "en": 20}
     assert Counter(c["kind"] for c in cases) == {
-        "generate": 18,
-        "edit": 5,
+        "generate": 22,
+        "edit": 7,
         "repair": 4,
-        "series": 3,
+        "series": 5,
     }
     for case in cases:
         series = case["kind"] == "series"
@@ -287,6 +287,60 @@ def test_viewing_another_image_with_the_same_name_is_not_inspection(tmp_path):
     assert smoke.inspection(
         "codex", [], rollout(str(final)), final, 10, (), tmp_path
     ).startswith("attempted")
+
+
+def _codex_exec_view(path, at, image=True, call_id="call_1"):
+    """Codex's code tool: a script that views an image, and what came back."""
+    stamp = f"2026-11-11T00:00:{at:02d}Z"
+    output = [{"type": "input_text", "text": "Script completed"}]
+    if image:
+        output.append(
+            {"type": "input_image", "image_url": "data:image/png;base64,AA"}
+        )
+    return [
+        {
+            "timestamp": stamp,
+            "payload": {
+                "type": "custom_tool_call",
+                "name": "exec",
+                "call_id": call_id,
+                "input": f"const r=await tools.view_image({{path:{json.dumps(path)}}});image(r.image_url);\n",
+            },
+        },
+        {
+            "timestamp": stamp,
+            "payload": {
+                "type": "custom_tool_call_output",
+                "call_id": call_id,
+                "output": output,
+            },
+        },
+    ]
+
+
+def test_an_image_viewed_through_codex_code_tool_is_inspection(tmp_path):
+    """Rounds 1 to 4 recorded "unknown" for every Codex unit although the
+    model was sent the PNG each time: Codex views images from inside its
+    ``exec`` tool, not through a ``view_image`` function call."""
+    final = tmp_path / "out" / "figure.png"
+    # 2026-11-11T00:00:00Z, so second 20 is after a write at +10.
+    midnight = 1794355200
+
+    def seen(rows, written_at=10):
+        return smoke.inspection(
+            "codex", [], rows, final, midnight + written_at, (), tmp_path
+        )
+
+    assert seen(_codex_exec_view(str(final), 20)).startswith("yes")
+    assert seen(_codex_exec_view("out/figure.png", 20)).startswith("yes")
+    # Before the last write, another file, or no image came back: not this.
+    assert seen(_codex_exec_view(str(final), 5)).startswith("unknown")
+    assert seen(
+        _codex_exec_view(str(tmp_path / "out" / "original.png"), 20)
+    ).startswith("unknown")
+    assert seen(_codex_exec_view(str(final), 20, image=False)).startswith(
+        "unknown"
+    )
 
 
 def test_replay_can_write_only_inside_its_own_directory():

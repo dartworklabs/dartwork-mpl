@@ -6,9 +6,9 @@ with a wrapper that ran two lines on the Axes it returned::
     twin.spines["right"].set_visible(True)
     twin.spines["right"].set_linewidth(rcParams["axes.linewidth"])
 
-From 0.8 ``dm.simple_layout`` shows that spine instead (the rule is in the
+From 0.7.1 ``dm.simple_layout`` shows that spine instead (the rule is in the
 docstring of ``dartwork_mpl.formatting._twin_spines``). Each case in
-``CASES`` builds a figure and lays it out. A parity case must match 0.7 in
+``CASES`` builds a figure and lays it out. A parity case must match 0.7.0 in
 two independent ways:
 
 * ``twin_spines_07_golden.json``: the drawn state of every Axes (each
@@ -25,10 +25,10 @@ The controls tell position, shared axes and a native twin apart: side by
 side panels (with a shared x too), two Axes in one box, ``sharex`` and
 ``sharex`` + ``sharey`` overlays, ``twinx``, ``twiny``, three y axes with an
 offset spine and an inset's ``twinx``; with scales moved to the right where
-0.7 drew no line. Every one also runs under neutral twin colours and with
+0.7.0 drew no line. Every one also runs under neutral twin colours and with
 ``format_ticks=False``. Twins with half-moved scales (only the ticks or only
 the label moved left, x02 and x03 of the D7 review, and ``b.twinx()`` of a
-twin, x04) keep 0.7's line too. The rest pins where 0.8 differs from 0.7 on
+twin, x04) keep 0.7.0's line too. The rest pins where 0.7.1 differs from 0.7.0 on
 purpose: 11-1 to 11-5 and decision 14, all approved by the user on
 2026-11-07, and the top spine of a ``twiny`` member (1-A, approved on
 2026-11-08). 0.7 left that spine hidden, so the three ``twiny`` parity
@@ -87,7 +87,7 @@ def install_07(target: Any) -> None:
 
     target.setattr(Axes, "twinx", twinx)
     # No hasattr guard: if the step moves, this raises instead of leaving
-    # the step on and quietly comparing 0.8 with itself.
+    # the step on and quietly comparing 0.7.1 with itself.
     target.setattr(dm_layout, "_show_twin_spines", lambda fig: None)
 
 
@@ -472,7 +472,7 @@ def test_inset_twin_gets_no_series_colours() -> None:
     assert inset_twin["spines"]["right"][2] == _hex("black")
 
 
-# ------------------------------------------------------- 0.8 differences
+# ----------------------------------------------------- 0.7.1 differences
 def _differs_from_07(
     build: Callable[[], Built],
     edit: Callable[[Figure, Axes, Axes], None],
@@ -481,7 +481,7 @@ def _differs_from_07(
     owner: int,
     shown: bool,
 ) -> None:
-    """``owner``'s right spine shows as ``shown`` in 0.8, the other way in 0.7."""
+    """``owner``'s right spine shows as ``shown`` in 0.7.1, the other way in 0.7.0."""
     for old in (False, True):
         with monkeypatch.context() as patch:
             if old:
