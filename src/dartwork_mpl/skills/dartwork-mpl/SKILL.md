@@ -61,7 +61,7 @@ preset's; change them only on request. Tick numbers and dates are the library's 
 formatter, locator or tick list unless asked or naming categories; no request, the default; a request, that format. No figure title, subtitle,
 source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
 a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
-named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`.
+named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`; panel letters: `dm.label_axes(axes)` (a, b, c; `labels=["(a)", ...]`) before `dm.simple_layout`, never a title or `ax.text`.
 A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=` only for a side the user names; never `ax.legend(...)`, `bbox_to_anchor` or `ncols=` of your own (arguments it had stay); others stay as they are. A new figure of eight or more lines names them with `dm.label_line_ends(ax)`, unless a legend is asked for; panels that share their series get one `dm.figure_legend(fig)`.
 A generic chart skill gives chart choice and honest axes; static output: no hover, tooltips,
 rounded bar ends, placeholder palettes.

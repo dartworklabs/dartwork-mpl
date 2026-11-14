@@ -1,4 +1,4 @@
-"""dartwork_mpl.util is a deprecated compatibility module (0.8).
+"""dartwork_mpl.util is a deprecated compatibility module (0.7.1).
 
 util once held these functions; they now live in the slices that own them
 (ADR 0005). During the warning window util re-exports them unchanged, so
@@ -78,7 +78,7 @@ def test_util_name_is_the_owners_object_and_warns(name: str) -> None:
     assert caught[0].filename == __file__
     text = str(caught[0].message)
     assert f"util.{name}" in text and _OWNERS[name] in text
-    assert "deprecated in 0.8" in text and "0.10 or later" in text
+    assert "deprecated in 0.7.1" in text and "0.10 or later" in text
 
 
 def test_unknown_name_raises_attribute_error() -> None:

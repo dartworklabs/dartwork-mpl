@@ -1,0 +1,6 @@
+{
+  "id": "e07-add-panel-letters",
+  "kind": "edit",
+  "lang": "en",
+  "request": "plot.py is a four-panel figure for our report. Add panel letters, (a) to (d), in bold. Change nothing else: data, text, sizes, colours, the legend and the figure size stay as they are. Leave the original and save the revision as a new script, PNG and PDF."
+}

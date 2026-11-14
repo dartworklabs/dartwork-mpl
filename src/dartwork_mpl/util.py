@@ -67,7 +67,7 @@ def __getattr__(name: str) -> Any:
     if owner is None:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     warnings.warn(
-        f"dartwork_mpl.util.{name} is deprecated in 0.8 and may be removed "
+        f"dartwork_mpl.util.{name} is deprecated in 0.7.1 and may be removed "
         f"in 0.10 or later; use `from {owner} import {name}`.",
         DeprecationWarning,
         stacklevel=2,

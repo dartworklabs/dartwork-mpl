@@ -82,12 +82,15 @@ a separate lifecycle state between the two: the name keeps working and warns
 for at least two minor releases.
 
 Deprecated today (first warning, earliest removal; replacements in
-[migration.md](../migration.md)):
+[migration.md](../migration.md)). Both first warned in 0.7.1, a patch
+release: on 2026-11-14 the owner released the whole of `main` as 0.7.1
+rather than 0.8. The earliest removal stays 0.10, the version planned when
+the warnings were written:
 
 | Name | First warning | Earliest removal | Use instead |
 |---|---|---|---|
-| module `dartwork_mpl.util` (warns per access) | 0.8 | 0.10 or later | the owner module of each name (table in migration.md) |
-| `FontFamily.tnum`, `FontMeasurement.tnum`, `FontFaceMeasurement.tnum` | 0.8 | 0.10 | `.tnum_available` (same value) |
+| module `dartwork_mpl.util` (warns per access) | 0.7.1 | 0.10 or later | the owner module of each name (table in migration.md) |
+| `FontFamily.tnum`, `FontMeasurement.tnum`, `FontFaceMeasurement.tnum` | 0.7.1 | 0.10 | `.tnum_available` (same value) |
 
 ### Removing a name
 

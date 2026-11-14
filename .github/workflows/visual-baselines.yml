@@ -6,10 +6,11 @@ on:
 permissions:
   contents: read
 
-# Generate replacement baselines explicitly on the trusted Ubuntu runner.
+# Generate replacement baselines explicitly, on the same GitHub-hosted Ubuntu
+# image the `visual` job in ci.yml compares them on.
 jobs:
   baselines:
-    runs-on: [self-hosted, ml-main]
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

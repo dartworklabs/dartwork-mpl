@@ -1245,7 +1245,9 @@ dm.simple_layout(fig)
 positions. With `x="auto"` (default) each letter is placed from what its panel draws,
 in points: its left edge on the outer edge of the panel's y-axis name (a grid
 column takes its leftmost; a panel without one keeps the spine distance of the
-named panels in its row, or sits where a name would be when no panel has one),
+named panels in its row, or sits where a name would be when no panel has one;
+a panel with no tick labels either, as inside a shared y axis, starts on its
+own left spine when the gap to its neighbour does not hold that distance),
 and its baseline on the panel's title baseline (without a title, the highest
 baseline of its row, or 4 pt above the panel). A title in the way only keeps the
 letter half a letter size before it. `dm.simple_layout` measures the panels again,
@@ -1541,7 +1543,7 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
-## Deprecated in 0.8: `dartwork_mpl.util`
+## Deprecated in 0.7.1: `dartwork_mpl.util`
 
 Every access to a name through `dartwork_mpl.util` (`from dartwork_mpl.util
 import X`, `dartwork_mpl.util.X`) emits a `DeprecationWarning` per access,
@@ -1561,7 +1563,7 @@ or later. Until then each name is the owner's own object
 | `save_and_show`, `save_formats`, `show` | `dartwork_mpl.io` |
 | `set_decimal` | `dartwork_mpl.formatting` |
 
-## Deprecated in 0.8: `.tnum` on font records
+## Deprecated in 0.7.1: `.tnum` on font records
 
 `FontFamily.tnum`, `FontMeasurement.tnum` and `FontFaceMeasurement.tnum`
 emit a `DeprecationWarning` and may be removed in 0.10 or later. Read
