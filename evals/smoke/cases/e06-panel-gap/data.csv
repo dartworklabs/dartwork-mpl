@@ -1,0 +1,97 @@
+zone,hour,supply_temp_C,return_temp_C
+North office,0,13.51,21.67
+North office,1,13.55,21.61
+North office,2,13.38,21.53
+North office,3,13.52,21.49
+North office,4,13.62,21.48
+North office,5,13.4,21.52
+North office,6,13.49,21.58
+North office,7,13.79,22.25
+North office,8,14.08,22.83
+North office,9,14.32,23.28
+North office,10,14.31,23.58
+North office,11,14.63,23.74
+North office,12,14.69,23.77
+North office,13,14.47,23.69
+North office,14,14.46,23.49
+North office,15,14.25,23.17
+North office,16,14.12,22.71
+North office,17,13.8,22.14
+North office,18,13.36,21.47
+North office,19,13.59,21.4
+North office,20,13.55,21.33
+North office,21,13.44,21.3
+North office,22,13.5,21.32
+North office,23,13.46,21.38
+South office,0,13.87,22.25
+South office,1,13.93,22.08
+South office,2,13.98,22.04
+South office,3,14.01,22.13
+South office,4,14.01,22.15
+South office,5,13.99,22.05
+South office,6,13.96,22.05
+South office,7,14.21,22.89
+South office,8,14.45,23.12
+South office,9,14.67,23.88
+South office,10,14.85,24.18
+South office,11,14.98,24.43
+South office,12,15.04,24.4
+South office,13,15.01,24.55
+South office,14,14.89,24.13
+South office,15,14.69,23.71
+South office,16,14.42,23.45
+South office,17,14.1,22.63
+South office,18,13.78,22.11
+South office,19,13.76,22.09
+South office,20,13.76,22.21
+South office,21,13.8,21.91
+South office,22,13.86,22.25
+South office,23,13.92,22.08
+Core laboratory,0,14.25,22.67
+Core laboratory,1,14.3,22.52
+Core laboratory,2,14.26,22.76
+Core laboratory,3,14.4,22.77
+Core laboratory,4,14.24,22.7
+Core laboratory,5,14.24,22.75
+Core laboratory,6,14.43,22.58
+Core laboratory,7,14.51,23.24
+Core laboratory,8,14.86,24.09
+Core laboratory,9,15.06,24.42
+Core laboratory,10,15.34,24.66
+Core laboratory,11,15.28,25.02
+Core laboratory,12,15.38,25.06
+Core laboratory,13,15.48,25.07
+Core laboratory,14,15.14,24.92
+Core laboratory,15,15.1,24.26
+Core laboratory,16,14.85,23.78
+Core laboratory,17,14.64,23.45
+Core laboratory,18,14.21,22.73
+Core laboratory,19,14.32,22.71
+Core laboratory,20,14.4,22.71
+Core laboratory,21,14.17,22.55
+Core laboratory,22,14.35,22.73
+Core laboratory,23,14.3,22.89
+Atrium,0,14.73,23.14
+Atrium,1,14.75,23.17
+Atrium,2,14.7,23.25
+Atrium,3,14.73,23.32
+Atrium,4,14.58,23.34
+Atrium,5,14.72,23.29
+Atrium,6,14.83,23.2
+Atrium,7,14.9,23.77
+Atrium,8,15.21,24.35
+Atrium,9,15.5,24.91
+Atrium,10,15.65,25.38
+Atrium,11,15.86,25.66
+Atrium,12,15.72,25.71
+Atrium,13,15.67,25.56
+Atrium,14,15.78,25.24
+Atrium,15,15.49,24.84
+Atrium,16,15.2,24.39
+Atrium,17,14.98,23.89
+Atrium,18,14.64,23.33
+Atrium,19,14.8,23.33
+Atrium,20,14.74,23.27
+Atrium,21,14.55,23.19
+Atrium,22,14.74,23.14
+Atrium,23,14.76,23.16

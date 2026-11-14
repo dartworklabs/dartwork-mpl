@@ -1,0 +1,11 @@
+{
+  "id": "s04-grid-to-slide",
+  "kind": "series",
+  "lang": "en",
+  "request": "Plot the hourly indoor temperature of the four zones in data.csv, one panel per zone, for a report. Save PNG, PDF and a runnable script.",
+  "followups": [
+    "Add panel letters, a to d.",
+    "The panels sit too close together. Leave about a centimetre of clear space between neighbouring panels.",
+    "This goes on a slide now. Make it a slide figure."
+  ]
+}
