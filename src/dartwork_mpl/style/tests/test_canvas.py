@@ -151,7 +151,8 @@ class TestPresets:
             {"kind": "barh", "n_points": 3, "n_series": 1},
             {"kind": "dense"},
             {"kind": "slide"},
-            {"nrows": 3, "ncols": 1},
+            {"nrows": 1, "ncols": 3},
+            {"nrows": 1, "ncols": 4},
         ],
     )
     def test_presentation_fills_the_slide_body(
@@ -163,6 +164,65 @@ class TestPresets:
         # taller than the room left under a slide title.
         dm.style.use(preset)
         assert _cm(dm.figsize_for(**kwargs)) == (23.4, 10.5)  # type: ignore[arg-type]
+
+    # Smoke round 5 (2026-11-14, s04, #723): a 2 x 2 report grid moved to
+    # slides got the 10.5 cm body, where each row's title, tick labels and
+    # axis name take about 2.6 cm at slide text sizes: panels 2.4 cm tall,
+    # 32 % of the canvas. One host kept it; the other threw the size away
+    # and picked the whole slide by hand, twice. Two rows or more take it.
+    @pytest.mark.parametrize("preset", ["presentation", "presentation-kr"])
+    @pytest.mark.parametrize(
+        ("nrows", "ncols"), [(2, 2), (2, 3), (3, 3), (2, 1), (3, 1), (4, 1)]
+    )
+    def test_presentation_grid_of_rows_takes_the_whole_slide(
+        self, preset: str, nrows: int, ncols: int
+    ) -> None:
+        """Two rows or more on a slide: the whole 25.4 x 14.29 cm slide."""
+        dm.style.use(preset)
+        size = dm.figsize_for(nrows=nrows, ncols=ncols)
+        assert _cm(size) == (25.4, 14.29)
+        assert size == dm.figsize_for("full_slide")
+
+    @pytest.mark.parametrize("kind", ["default", "matrix", "barh", "dense"])
+    def test_presentation_grid_of_rows_does_not_depend_on_the_kind(
+        self, kind: str
+    ) -> None:
+        """The slide is the canvas whatever the panels draw."""
+        dm.style.use("presentation")
+        assert _cm(dm.figsize_for(kind, nrows=2, ncols=2)) == (25.4, 14.29)
+
+    def test_presentation_rows_leave_room_to_plot(self) -> None:
+        """The s04 grid as drawn (titles, shared axes): each panel at least
+        4 cm tall; on the 10.5 cm body it was 2.9 cm before the letters."""
+        import matplotlib.pyplot as plt
+
+        dm.style.use("presentation")
+        fig, axes = plt.subplots(
+            2,
+            2,
+            figsize=dm.figsize_for(nrows=2, ncols=2),
+            sharex=True,
+            sharey=True,
+        )
+        for ax, name in zip(
+            axes.flat,
+            ["Open office", "Meeting rooms", "Server room", "Lobby"],
+            strict=True,
+        ):
+            ax.plot(range(24), [21 + (h % 12) / 6 for h in range(24)])
+            ax.set_title(name)
+        for ax in axes[-1]:
+            ax.set_xlabel("Hour")
+        for ax in axes[:, 0]:
+            ax.set_ylabel("Indoor temp (°C)")
+        dm.simple_layout(fig)
+        fig.canvas.draw()
+        heights = [
+            ax.get_position().height * fig.get_figheight() * CM
+            for ax in axes.flat
+        ]
+        plt.close(fig)
+        assert min(heights) >= 4.0
 
     @pytest.mark.parametrize("preset", ["presentation", "presentation-kr"])
     @pytest.mark.parametrize(

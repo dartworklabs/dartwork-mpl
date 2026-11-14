@@ -457,8 +457,8 @@ What remains at those margins is not a margin problem. The 2×1 recipe's
 19.5 pt, and every panel's legend covers its lines (`LEGEND_ON_DATA`).
 `presentation` sizes text for one chart filling a slide: 19.5 pt is
 8.6 % of an 8 cm row against 3.5 % under `report`, and
-`dm.figsize_for(nrows=2, ncols=2)` under it returns 23.4 × 10.5 cm, not this
-page. `dm.place_legend(ax)` does not rescue it either — on this figure it
+`dm.figsize_for(nrows=2, ncols=2)` under it returns the whole slide,
+25.4 × 14.29 cm, not this page. `dm.place_legend(ax)` does not rescue it either — on this figure it
 lifts each legend above its Axes and onto all four titles (8 findings
 become 5).
 
