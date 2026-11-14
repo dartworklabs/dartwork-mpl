@@ -1,0 +1,79 @@
+unit,duct_static_pressure_setpoint_Pa,supply_air_volumetric_flow_rate_m3_h
+AHU-1 East wing,100,3087.0
+AHU-1 East wing,125,3383.0
+AHU-1 East wing,150,3826.0
+AHU-1 East wing,175,4134.0
+AHU-1 East wing,200,4382.0
+AHU-1 East wing,225,4672.0
+AHU-1 East wing,250,4846.0
+AHU-1 East wing,275,5106.0
+AHU-1 East wing,300,5456.0
+AHU-1 East wing,325,5598.0
+AHU-1 East wing,350,5746.0
+AHU-1 East wing,375,6006.0
+AHU-1 East wing,400,6182.0
+AHU-2 West wing,100,3677.0
+AHU-2 West wing,125,4133.0
+AHU-2 West wing,150,4569.0
+AHU-2 West wing,175,4969.0
+AHU-2 West wing,200,5319.0
+AHU-2 West wing,225,5619.0
+AHU-2 West wing,250,5886.0
+AHU-2 West wing,275,6149.0
+AHU-2 West wing,300,6428.0
+AHU-2 West wing,325,6722.0
+AHU-2 West wing,350,7014.0
+AHU-2 West wing,375,7279.0
+AHU-2 West wing,400,7506.0
+AHU-3 Laboratory,100,4346.0
+AHU-3 Laboratory,125,4954.0
+AHU-3 Laboratory,150,5402.0
+AHU-3 Laboratory,175,5769.0
+AHU-3 Laboratory,200,6275.0
+AHU-3 Laboratory,225,6581.0
+AHU-3 Laboratory,250,6945.0
+AHU-3 Laboratory,275,7303.0
+AHU-3 Laboratory,300,7655.0
+AHU-3 Laboratory,325,7856.0
+AHU-3 Laboratory,350,8317.0
+AHU-3 Laboratory,375,8466.0
+AHU-3 Laboratory,400,8814.0
+AHU-4 Auditorium,100,5050.0
+AHU-4 Auditorium,125,5718.0
+AHU-4 Auditorium,150,6184.0
+AHU-4 Auditorium,175,6592.0
+AHU-4 Auditorium,200,7143.0
+AHU-4 Auditorium,225,7620.0
+AHU-4 Auditorium,250,7985.0
+AHU-4 Auditorium,275,8403.0
+AHU-4 Auditorium,300,8746.0
+AHU-4 Auditorium,325,9021.0
+AHU-4 Auditorium,350,9450.0
+AHU-4 Auditorium,375,9861.0
+AHU-4 Auditorium,400,10098.0
+AHU-5 Library,100,5714.0
+AHU-5 Library,125,6395.0
+AHU-5 Library,150,6971.0
+AHU-5 Library,175,7482.0
+AHU-5 Library,200,7979.0
+AHU-5 Library,225,8486.0
+AHU-5 Library,250,8988.0
+AHU-5 Library,275,9453.0
+AHU-5 Library,300,9858.0
+AHU-5 Library,325,10219.0
+AHU-5 Library,350,10577.0
+AHU-5 Library,375,10962.0
+AHU-5 Library,400,11366.0
+AHU-6 Atrium,100,6340.0
+AHU-6 Atrium,125,7082.0
+AHU-6 Atrium,150,7794.0
+AHU-6 Atrium,175,8413.0
+AHU-6 Atrium,200,8931.0
+AHU-6 Atrium,225,9595.0
+AHU-6 Atrium,250,9981.0
+AHU-6 Atrium,275,10555.0
+AHU-6 Atrium,300,11007.0
+AHU-6 Atrium,325,11429.0
+AHU-6 Atrium,350,11878.0
+AHU-6 Atrium,375,12336.0
+AHU-6 Atrium,400,12632.0

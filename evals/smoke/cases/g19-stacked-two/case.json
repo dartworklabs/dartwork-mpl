@@ -1,0 +1,6 @@
+{
+  "id": "g19-stacked-two",
+  "kind": "generate",
+  "lang": "en",
+  "request": "For a report, show one day of the chilled-water plant from data.csv in two panels, one above the other, on a shared time axis: supply and return temperature on top, cooling load below. Mark the panels (a) and (b). Save PNG, PDF and a runnable script."
+}
