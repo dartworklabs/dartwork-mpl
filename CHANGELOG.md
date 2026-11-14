@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-14
+
 ### Added
 
 - **`dm.simple_layout(fig, gutter=...)`: one gap between neighbouring
@@ -592,13 +594,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Deprecated
 
-- **`dartwork_mpl.util`** is deprecated in 0.8 (a `DeprecationWarning`
+- **`dartwork_mpl.util`** is deprecated in 0.7.1 (a `DeprecationWarning`
   on every access to a name, pointing at your line) and may be removed in
   0.10 or later. Until then every name in it is the owner's own object. Import
   each name from its owner; the table is in
-  [docs/migration.md](docs/migration.md#deprecated-in-08-dartwork_mpl-util).
+  [docs/migration.md](docs/migration.md#deprecated-in-071-dartwork_mpl-util).
 - **`FontFamily.tnum`, `FontMeasurement.tnum`, `FontFaceMeasurement.tnum`**
-  are deprecated in 0.8 (a `DeprecationWarning` on each access) and may be
+  are deprecated in 0.7.1 (a `DeprecationWarning` on each access) and may be
   removed in 0.10 or later; they return the same value as
   `.tnum_available` (whether a bundled font declares the OpenType `tnum`
   feature for browsers; matplotlib does not apply it, see `numeric_axes` for
@@ -2691,6 +2693,7 @@ The following fixes landed between the 0.4.0 cut commit and the PyPI publish.
 
 - Initial public release with style management, color system, font registration, colormap support, and visual validation.
 
-[Unreleased]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/dartworklabs/dartwork-mpl/compare/v0.5.6...v0.6.0
