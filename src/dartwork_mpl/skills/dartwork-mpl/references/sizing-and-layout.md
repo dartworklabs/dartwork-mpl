@@ -120,7 +120,8 @@ convert: 1920 × 1080 px at 200 DPI is
 It measures tick labels, axis labels, titles, legends and colorbars, then
 sets the outer margins so content meets the canvas edge. Call it once, after
 drawing. Where text still collides it fits the labels: an axis name that
-runs into another panel or past the figure edge wraps at its spaces,
+runs into another panel or past the figure edge wraps at its spaces
+(the same name on the same axis of that grid then wraps the same way),
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
 (up to 1.5 cells), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
