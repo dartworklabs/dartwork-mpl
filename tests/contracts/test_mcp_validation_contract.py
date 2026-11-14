@@ -11,6 +11,7 @@ import pytest
 fastmcp = pytest.importorskip("fastmcp")
 
 from dartwork_mpl.mcp import resources, tools  # noqa: E402
+from tests.support.child_deadline import expire_when, reach  # noqa: E402
 
 _FIGURE = """\
 import matplotlib.pyplot as plt
@@ -122,14 +123,22 @@ def test_mcp_failed_check_is_incomplete(hint) -> None:
         ),
         ("print('no figure', flush=True)\n", "no_figure", 20),
         (
-            "import time\nimport sys\nprint('before timeout', flush=True)\nprint('timeout stderr', file=sys.stderr, flush=True)\ntime.sleep(60)\n",
+            "import time\nimport sys\nprint('before timeout', flush=True)\nprint('timeout stderr', file=sys.stderr, flush=True)\n{reached}time.sleep(60)\n",
             "timeout",
             5,
         ),
     ],
 )
-def test_validation_not_complete_on_early_exit(code, status, timeout, hint):
+def test_validation_not_complete_on_early_exit(
+    code, status, timeout, hint, tmp_path, monkeypatch
+):
     """Every early status has string logs and a consistent incomplete envelope."""
+    if status == "timeout":
+        # The deadline passes once the child has printed, however long the
+        # host took to start it.
+        printed = tmp_path / "printed"
+        expire_when(monkeypatch, printed.exists)
+        code = code.format(reached=reach(printed))
     result = _validate(code, timeout_seconds=timeout, chart_type_hint=hint)
     assert result["status"] == status, result
     assert result["validation_complete"] is False
@@ -229,8 +238,14 @@ def interrupt_semantics(fig, renderer):
         ("import time\ntime.sleep(60)\n", "timeout", 5),
     ],
 )
-def test_private_channel_is_absolute_and_cleaned(ending, status, timeout):
+def test_private_channel_is_absolute_and_cleaned(
+    ending, status, timeout, tmp_path, monkeypatch
+):
     """The private channel leaves no result artifact after any runner outcome."""
+    if status == "timeout":
+        printed = tmp_path / "printed"
+        expire_when(monkeypatch, printed.exists)
+        ending = reach(printed) + ending
     result = _validate(
         _FIGURE + "import sys\nprint(sys.argv[1], flush=True)\n" + ending,
         timeout_seconds=timeout,
@@ -340,16 +355,19 @@ def test_legacy_log_overrun_retains_bounded_marked_prefixes():
 @pytest.mark.parametrize("artifact", [False, True])
 @pytest.mark.parametrize("times_out", [False, True])
 def test_completed_and_timeout_logs_equal_finite_baseline_rules(
-    tmp_path, artifact, times_out
+    tmp_path, monkeypatch, artifact, times_out
 ):
     """Real children retain CR/LF/invalid-UTF8/space semantics for the selected outcome."""
     from dartwork_mpl.mcp.execution import ExecutionRejected, export_plot
 
+    wrote = tmp_path / "wrote"
+    if times_out:
+        expire_when(monkeypatch, wrote.exists)
     stdout = b"A\r\nB\rC\xe2\x82\xac\xff"
     stderr = b" \r\nE\rF\xe2\x82\xac\xff \r\n"
     code = (
         f"import os, time\nos.write(1, {stdout[:8]!r})\ntime.sleep(0.01)\nos.write(1, {stdout[8:]!r})\nos.write(2, {stderr!r})\n"
-        + ("time.sleep(60)\n" if times_out else "")
+        + (reach(wrote) + "time.sleep(60)\n" if times_out else "")
     )
     timeout = 3 if times_out else 20
     if artifact:
@@ -430,10 +448,16 @@ def test_seeded_source_timeout_parser_is_total_and_boundary_controls_execute():
     assert result["semantic_warnings"] == []
 
 
-def test_timeout_diagnostic_counts_marker_and_timeout_decoration_inside_byte_cap():
+def test_timeout_diagnostic_counts_marker_and_timeout_decoration_inside_byte_cap(
+    tmp_path, monkeypatch
+):
     """Actual invalid-byte expansion and timeout decoration share the selected channel budget."""
+    wrote = tmp_path / "wrote"
+    expire_when(monkeypatch, wrote.exists)
     result = _validate(
-        "import os, time\nos.write(2, b'\\xff' * 30000)\ntime.sleep(60)\n",
+        "import os, time\nos.write(2, b'\\xff' * 30000)\n"
+        + reach(wrote)
+        + "time.sleep(60)\n",
         timeout_seconds=2,
     )
     assert result["status"] == "timeout", result
