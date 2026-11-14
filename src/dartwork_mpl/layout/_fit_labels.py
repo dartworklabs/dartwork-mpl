@@ -27,7 +27,10 @@ and those that do harm are dropped for the rest of the call. At most
     outside legends) reaches into the other panel's: to the deepest reach
     plus ``_TARGET_EM`` (of the rc font size), never smaller than they are.
     A collision that would need more than ``_MAX_GAP_FRACTION`` of a cell is
-    left as it is (narrower panels would not clear it). Only spacing nobody
+    left as it is (narrower panels would not clear it), and a spacing that
+    grew is kept only if nothing meets across it once the margins are
+    fitted again: a centred title reaches further past a narrower panel, so
+    a collision can follow the gap, and that gap is put back. Only spacing nobody
     set: ``gridspec_kw={"hspace": ...}``, ``fig.add_gridspec(hspace=...)``
     and ``fig.subplots_adjust(hspace=...)`` (any figure spacing other than
     the rc default) stay.
@@ -999,29 +1002,26 @@ def _spacing_is_free(fig: Figure, gs: GridSpec, key: str) -> bool:
     return bool(getattr(fig.subplotpars, key) == default)
 
 
-def _fit_panel_gaps(
-    fig: Figure,
-    renderer: RendererBase,
-    gs: GridSpec,
-    axes: Sequence[Axes],
-    state: FitState,
-) -> list[_Change]:
-    """Grow the ``wspace`` / ``hspace`` of ``gs`` where panel content meets.
+@dataclass(frozen=True)
+class _GapNeed:
+    """What one spacing (``wspace`` or ``hspace``) of a grid has to hold.
 
-    Only when every Axes on ``gs`` is laid out by this call: the spacing
-    moves them all.
+    ``need``: the widest gap (px) two facing panels' content asks for, 0
+    when none collide; ``total``: the grid's extent (px) along that
+    direction; ``n``: its cells along it.
     """
-    if not _all_in(_on_grid(fig, gs), {id(ax) for ax in axes}):
-        return []
+
+    need: float
+    total: float
+    n: int
+
+
+def _gap_needs(
+    fig: Figure, renderer: RendererBase, gs: GridSpec, axes: Sequence[Axes]
+) -> dict[str, _GapNeed]:
+    """The gap the content of ``axes`` on ``gs`` needs across its columns
+    (``"wspace"``) and its rows (``"hspace"``), as the figure is drawn."""
     nrows, ncols = gs.get_geometry()
-    free = {
-        key: n > 1
-        and state.allows(("space_" + key, id(gs)))
-        and _spacing_is_free(fig, gs, key)
-        for key, n in (("wspace", ncols), ("hspace", nrows))
-    }
-    if not any(free.values()):
-        return []
     # The grid's positions are fractions of the (Sub)Figure it is on; the
     # canvas starts at 0, a SubFigure's box where it sits on the canvas.
     frame = getattr(gs, "figure", None) or fig
@@ -1055,28 +1055,63 @@ def _fit_panel_gaps(
                 ahead=oy + bottoms[rows.stop - 1] * fh - y0,
             )
         )
+    return {
+        "wspace": _GapNeed(
+            _deepest_reach(
+                across_cols,
+                [(lefts[c + 1] - rights[c]) * fw for c in range(ncols - 1)],
+            ),
+            (rights[-1] - lefts[0]) * fw,
+            ncols,
+        ),
+        "hspace": _GapNeed(
+            _deepest_reach(
+                across_rows,
+                [(bottoms[r] - tops[r + 1]) * fh for r in range(nrows - 1)],
+            ),
+            (tops[0] - bottoms[-1]) * fh,
+            nrows,
+        ),
+    }
+
+
+def _fit_panel_gaps(
+    fig: Figure,
+    renderer: RendererBase,
+    gs: GridSpec,
+    axes: Sequence[Axes],
+    state: FitState,
+) -> list[_Change]:
+    """Grow the ``wspace`` / ``hspace`` of ``gs`` where panel content meets.
+
+    Only when every Axes on ``gs`` is laid out by this call: the spacing
+    moves them all. A grown spacing stays only if, once the margins are
+    fitted again, no content meets across it any more (the change's
+    ``kept``): narrower panels push a centred title further past its own
+    panel, so a collision can follow the gap, and a gap that did not part
+    the panels only made them smaller (smoke round 5, #722: four slide
+    panels 4.56 to 2.37 cm wide, ``wspace`` 1.44, the text still meeting).
+    """
+    if not _all_in(_on_grid(fig, gs), {id(ax) for ax in axes}):
+        return []
+    nrows, ncols = gs.get_geometry()
+    free = {
+        key: n > 1
+        and state.allows(("space_" + key, id(gs)))
+        and _spacing_is_free(fig, gs, key)
+        for key, n in (("wspace", ncols), ("hspace", nrows))
+    }
+    if not any(free.values()):
+        return []
+    frame = getattr(gs, "figure", None) or fig
+    needs = _gap_needs(fig, renderer, gs, axes)
     em = float(mpl.rcParams["font.size"]) * fig.dpi / 72.0
     params = gs.get_subplot_params(frame)
     changes: list[_Change] = []
-    for key, n, reaches, seps, total in (
-        (
-            "wspace",
-            ncols,
-            across_cols,
-            [(lefts[c + 1] - rights[c]) * fw for c in range(ncols - 1)],
-            (rights[-1] - lefts[0]) * fw,
-        ),
-        (
-            "hspace",
-            nrows,
-            across_rows,
-            [(bottoms[r] - tops[r + 1]) * fh for r in range(nrows - 1)],
-            (tops[0] - bottoms[-1]) * fh,
-        ),
-    ):
+    for key, asked in needs.items():
         if not free[key]:
             continue
-        need = _deepest_reach(reaches, seps)
+        need, total, n = asked.need, asked.total, asked.n
         if need <= 0:
             continue
         gap = gap_fraction(need + _TARGET_EM * em, total, n)
@@ -1095,7 +1130,10 @@ def _fit_panel_gaps(
             else:
                 _GAPS.setdefault(gs, {})[key] = before
 
-        changes.append(_Change(("space_" + key, id(gs)), undo))
+        def parted(renderer: RendererBase, key: str = key) -> bool:
+            return _gap_needs(fig, renderer, gs, axes)[key].need <= 0
+
+        changes.append(_Change(("space_" + key, id(gs)), undo, parted))
     return changes
 
 
