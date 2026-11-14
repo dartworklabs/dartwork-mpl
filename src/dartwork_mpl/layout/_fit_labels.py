@@ -825,7 +825,13 @@ def fit_round(
     changes: list[_Change] = []
     if "axis_labels" in steps:
         changes += _fit_axis_names(fig, renderer, axes, state)
-    if "space" in steps:
+    if "space" in steps and not changes:
+        # Not in the round that wrapped a name: what stands on that name
+        # (a ``dm.label_axes`` letter keeps clear of its top end) is still
+        # where the one-line name put it until the margins are fitted
+        # again, and the rows would be parted for a collision that is gone
+        # (smoke round 5: 0.94 cm between the rows of a 2 x 3 grid, 0.14 cm
+        # with the same name broken by hand). The next round measures them.
         changes += _fit_panel_gaps(fig, renderer, gs, axes, state)
     if steps & {"wrap", "rotate"}:
         for group, whole in _shared_x_groups(axes):
