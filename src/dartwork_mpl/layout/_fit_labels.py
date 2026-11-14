@@ -18,8 +18,9 @@ and those that do harm are dropped for the rest of the call. At most
     the figure edge (a name longer than the figure, which pushes the
     margins until the plot collapses), wraps at its spaces into as few
     lines as fit (at most ``_MAX_NAME_LINES``). A name in nobody's way
-    stays, and lines that would crush the plot are taken back by the check
-    after the round. A bracketed unit stays whole, the lines are as even as
+    stays, unless the same grid wraps the same words on the same axis: it
+    then takes the same lines (one name, one form). Lines that would crush
+    the plot are taken back by the check after the round. A bracketed unit stays whole, the lines are as even as
     the words allow, and nothing but an existing space becomes a break.
 ``space``
     The root GridSpec's ``wspace`` / ``hspace`` grow where the content of
@@ -911,6 +912,50 @@ def _fit_axis_names(
                 _NAMES.pop(label, None)
 
             changes.append(_Change(key, undo))
+    return changes + _follow_wrapped_names(axes, state)
+
+
+def _follow_wrapped_names(
+    axes: Sequence[Axes], state: FitState
+) -> list[_Change]:
+    """Wrap a name the way its grid already wraps the same words.
+
+    One name, one form: a grid that shows "Indoor temp (°C)" on two lines
+    beside its upper row and on one line beside its lower row reads as two
+    quantities (smoke round 5). A name in nobody's way follows the wrapped
+    one when both are the same words on the same axis (x or y) of the same
+    root GridSpec. A name of other words stays.
+    """
+    wrapped_as: dict[tuple[int, str, str], str] = {}
+    named: list[tuple[tuple[int, str, str], Text]] = []
+    for ax in axes:
+        gs = _root_gridspec(ax)
+        if gs is None or not _cartesian(ax):
+            continue
+        for which, axis in (("x", ax.xaxis), ("y", ax.yaxis)):
+            label = axis.label
+            if not axis.get_visible() or not label.get_visible():
+                continue
+            record = _NAMES.get(label)
+            if record is not None and label.get_text() == record[1]:
+                wrapped_as[(id(gs), which, record[0])] = record[1]
+            elif record is None:
+                named.append(((id(gs), which, label.get_text()), label))
+    changes: list[_Change] = []
+    for group, label in named:
+        wrapped = wrapped_as.get(group)
+        key: Key = ("axis_labels", id(label))
+        if wrapped is None or not state.allows(key):
+            continue
+        text = group[2]
+        _NAMES[label] = (text, wrapped)
+        label.set_text(wrapped)
+
+        def undo(label: Text = label, text: str = text) -> None:
+            label.set_text(text)
+            _NAMES.pop(label, None)
+
+        changes.append(_Change(key, undo))
     return changes
 
 
