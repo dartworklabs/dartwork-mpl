@@ -462,6 +462,10 @@ def series_usage(host, rows, marks):
     return turns, total
 
 
+# ``tools.view_image({path: "..."})`` inside a Codex code-tool script.
+VIEWED = re.compile(r"view_image\(\s*\{\s*path\s*:\s*([\"'])(.+?)\1")
+
+
 def same_file(tool_path, cwd, target):
     """Whether a tool's path argument, read from ``cwd``, names ``target``."""
     path = Path(tool_path)
@@ -514,6 +518,37 @@ def inspection(
                         return "yes (successful image Read after final write)"
         return "unknown (no timestamped successful image evidence)"
     # Rollouts retain tool-level timestamps omitted by the public JSON stream.
+    # Codex views an image from inside its code tool: the call is a script
+    # that names the path, and the image comes back in that call's output.
+    scripted = {}
+    for row in rollouts:
+        payload = row.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        if payload.get("type") == "custom_tool_call":
+            paths = VIEWED.findall(str(payload.get("input", "")))
+            if any(same_file(p, cwd, final_png) for _q, p in paths):
+                scripted[payload.get("call_id")] = True
+        if (
+            payload.get("type") == "custom_tool_call_output"
+            and payload.get("call_id") in scripted
+        ):
+            output = payload.get("output")
+            try:
+                stamp = datetime.fromisoformat(
+                    row["timestamp"].replace("Z", "+00:00")
+                ).timestamp()
+            except (KeyError, ValueError, AttributeError):
+                continue
+            if (
+                stamp >= final_time
+                and isinstance(output, list)
+                and any(
+                    isinstance(part, dict) and part.get("type") == "input_image"
+                    for part in output
+                )
+            ):
+                return "yes (image returned by view_image after final write)"
     for row in rollouts:
         payload = row.get("payload", {})
         if (

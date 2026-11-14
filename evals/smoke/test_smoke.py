@@ -289,6 +289,60 @@ def test_viewing_another_image_with_the_same_name_is_not_inspection(tmp_path):
     ).startswith("attempted")
 
 
+def _codex_exec_view(path, at, image=True, call_id="call_1"):
+    """Codex's code tool: a script that views an image, and what came back."""
+    stamp = f"2026-11-11T00:00:{at:02d}Z"
+    output = [{"type": "input_text", "text": "Script completed"}]
+    if image:
+        output.append(
+            {"type": "input_image", "image_url": "data:image/png;base64,AA"}
+        )
+    return [
+        {
+            "timestamp": stamp,
+            "payload": {
+                "type": "custom_tool_call",
+                "name": "exec",
+                "call_id": call_id,
+                "input": f"const r=await tools.view_image({{path:{json.dumps(path)}}});image(r.image_url);\n",
+            },
+        },
+        {
+            "timestamp": stamp,
+            "payload": {
+                "type": "custom_tool_call_output",
+                "call_id": call_id,
+                "output": output,
+            },
+        },
+    ]
+
+
+def test_an_image_viewed_through_codex_code_tool_is_inspection(tmp_path):
+    """Rounds 1 to 4 recorded "unknown" for every Codex unit although the
+    model was sent the PNG each time: Codex views images from inside its
+    ``exec`` tool, not through a ``view_image`` function call."""
+    final = tmp_path / "out" / "figure.png"
+    # 2026-11-11T00:00:00Z, so second 20 is after a write at +10.
+    midnight = 1794355200
+
+    def seen(rows, written_at=10):
+        return smoke.inspection(
+            "codex", [], rows, final, midnight + written_at, (), tmp_path
+        )
+
+    assert seen(_codex_exec_view(str(final), 20)).startswith("yes")
+    assert seen(_codex_exec_view("out/figure.png", 20)).startswith("yes")
+    # Before the last write, another file, or no image came back: not this.
+    assert seen(_codex_exec_view(str(final), 5)).startswith("unknown")
+    assert seen(
+        _codex_exec_view(str(tmp_path / "out" / "original.png"), 20)
+    ).startswith("unknown")
+    assert seen(_codex_exec_view(str(final), 20, image=False)).startswith(
+        "unknown"
+    )
+
+
 def test_replay_can_write_only_inside_its_own_directory():
     """A replayed script cannot create outputs in the host's project folder."""
     smoke.WORK.mkdir(parents=True, exist_ok=True)
