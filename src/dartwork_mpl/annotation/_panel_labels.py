@@ -12,7 +12,12 @@ from matplotlib.figure import Figure
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import Bbox, IdentityTransform
 
-from .._figure_geometry import BBOX_ERRORS, axes_titles, get_renderer
+from .._figure_geometry import (
+    BBOX_ERRORS,
+    PANEL_LABELS_ATTR,
+    axes_titles,
+    get_renderer,
+)
 from ..scale import fs
 from ._kwarg_guard import AXES_TEXT_PARAMETERS, reject_unusable_kwargs
 
@@ -109,7 +114,7 @@ _TOP_GAP_PT = 4.0
 _CLEARANCE_PT = 2.0
 
 #: Where a figure keeps the groups of labels ``label_axes`` placed.
-_GROUPS_ATTR = "_dm_panel_label_groups"
+_GROUPS_ATTR = PANEL_LABELS_ATTR
 
 
 class _Group:

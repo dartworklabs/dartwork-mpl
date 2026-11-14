@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from ..._figure_geometry import axes_titles, drawn_axes, drawn_tick_labels
+from ..._figure_geometry import (
+    axes_titles,
+    drawn_axes,
+    drawn_tick_labels,
+    panel_labels,
+)
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
@@ -44,6 +49,11 @@ def check_cross_axes_overlap(
     # Collect (axes_index, role, text_obj, bbox) for every visible
     # label across all axes.
     entries: list[tuple[int, str, str, Any]] = []
+    # A ``dm.label_axes`` letter belongs to its panel like the title beside
+    # it: a neighbour's title run into it reads as one word.
+    letters: dict[int, list[Any]] = {}
+    for owner, letter in panel_labels(fig):
+        letters.setdefault(id(owner), []).append(letter)
     for idx, ax in drawn_axes(fig):
         try:
             ax_bbox = ax.get_window_extent(renderer)
@@ -63,6 +73,7 @@ def check_cross_axes_overlap(
             *(("title", title) for title in axes_titles(ax).values()),
             *([("xlabel", ax.xaxis.label)] if shown["x"] else []),
             *([("ylabel", ax.yaxis.label)] if shown["y"] else []),
+            *(("panel label", letter) for letter in letters.get(id(ax), [])),
         ]
         for role, txt in candidates:
             if (
