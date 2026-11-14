@@ -771,10 +771,15 @@ def climb(
     grew, still has text meeting across it and cannot grow further), everything the climb kept
     is taken back, the grid's edges are put where the climb started, and
     the ladder is climbed again without that change, so the figure draws as
-    if that step had never been open to it. Each such pass drops at least
-    one change for good, so there are few.
+    if that step had never been open to it; date ticks the margin fit
+    thinned for the narrower panels meanwhile get their counts back
+    (thinning is one way, and is no ``_Change``). Each such pass drops at
+    least one change for good, so there are few.
     """
+    from ..formatting import remember_date_ticks
+
     start = {side: getattr(grid, side) for side in _EDGES}
+    put_back_date_ticks = remember_date_ticks(fig)
     dropped: set[Key] = set()
     tried = False
     while True:
@@ -792,6 +797,7 @@ def climb(
             return tried and not outcome.held
         _undo(outcome.held)
         grid.update(**start)
+        put_back_date_ticks()
         dropped |= unsettled
         if not refit():
             return False

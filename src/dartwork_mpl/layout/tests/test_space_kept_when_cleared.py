@@ -118,6 +118,30 @@ def test_a_gap_that_parts_the_titles_after_several_rounds_stays() -> None:
     assert "CROSS_AXES_OVERLAP" not in _warnings(fig)
 
 
+def test_date_ticks_thinned_for_the_narrow_panels_come_back() -> None:
+    """Seven years of dates under titles no spacing parts: while the gap
+    grew, the narrow panels had their date ticks thinned (8 to 4). With the
+    gap put back the axis has the ticks it has without the ``space`` step;
+    thinning is one way, so they would stay at 4 (Codex review, PR 732)."""
+    import datetime as dt
+
+    def ticks_in_view(fit_labels) -> int:
+        fig, axes = plt.subplots(
+            1, 3, figsize=dm.figsize("17cm", "5cm"), sharey=True
+        )
+        days = [dt.date(2026, 1, 1) + dt.timedelta(days=d) for d in range(2500)]
+        for ax in axes:
+            ax.plot(days, range(2500))
+            ax.set_title("Supply air temperature setpoint at the coil")
+        dm.simple_layout(fig, fit_labels=fit_labels)
+        fig.canvas.draw()
+        assert axes[0].get_gridspec().wspace is None  # put back, or never grown
+        low, high = axes[1].get_xlim()
+        return sum(low <= tick <= high for tick in axes[1].get_xticks())
+
+    assert ticks_in_view(True) == ticks_in_view(NO_SPACE)
+
+
 def test_a_second_layout_draws_the_same_figure() -> None:
     """``simple_layout`` twice on the row that cannot be parted: the same
     panels, and no gap left behind."""

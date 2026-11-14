@@ -31,6 +31,7 @@ from ._defaults import (
     _category_locator,
     apply_default_tick_format,
     category_dates,
+    remember_date_ticks,
     thin_crowded_date_ticks,
 )
 from ._label_unit import axis_unit, axis_unit_of
@@ -56,6 +57,7 @@ __all__ = [
     "format_axis_year",
     "number_text",
     "recommend_tick_decimals",
+    "remember_date_ticks",
     "rotate_tick_labels",
     "set_decimal",
     "settled_twin_spines",
