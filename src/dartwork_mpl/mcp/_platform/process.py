@@ -22,6 +22,11 @@ from typing import IO, cast
 
 _CHANNEL_BYTES = 64 * 1024
 _READ_BYTES = 8 * 1024
+# The clock ``run_child`` measures a child's deadline with, read once per poll
+# of the child's pipes. It has a name so a test can stage the deadline on what
+# the child has done (tests/support/child_deadline.py) instead of on how fast
+# the host started it.
+_monotonic = time.monotonic
 
 
 def _marker(channel: str) -> str:
@@ -308,7 +313,7 @@ def run_child(
         ) as process:
             assert process.stdout is not None and process.stderr is not None
             streams = {process.stdout: "stdout", process.stderr: "stderr"}
-            deadline = time.monotonic() + timeout_seconds
+            deadline = _monotonic() + timeout_seconds
             try:
                 with selectors.DefaultSelector() as selector:
                     if os.name != "nt":
@@ -317,7 +322,7 @@ def run_child(
                             selector.register(stream, selectors.EVENT_READ)
                     while streams or process.poll() is None:
                         exited = process.poll() is not None
-                        remaining = deadline - time.monotonic()
+                        remaining = deadline - _monotonic()
                         if remaining <= 0:
                             timed_out = not exited
                             break
