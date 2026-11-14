@@ -27,7 +27,11 @@ and those that do harm are dropped for the rest of the call. At most
     outside legends) reaches into the other panel's: to the deepest reach
     plus ``_TARGET_EM`` (of the rc font size), never smaller than they are.
     A collision that would need more than ``_MAX_GAP_FRACTION`` of a cell is
-    left as it is (narrower panels would not clear it). Only spacing nobody
+    left as it is (narrower panels would not clear it), and so is one the
+    step grew a spacing for and then gave up on: a centred title reaches
+    further past a narrower panel, so a collision can follow the gap until
+    the next step would pass that limit. The spacing is then put back and
+    the ladder is climbed again without this step for it. Only spacing nobody
     set: ``gridspec_kw={"hspace": ...}``, ``fig.add_gridspec(hspace=...)``
     and ``fig.subplots_adjust(hspace=...)`` (any figure spacing other than
     the rc default) stay.
@@ -116,6 +120,7 @@ from __future__ import annotations
 import copy
 import math
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
@@ -654,11 +659,16 @@ class _Change:
 
     ``kept``: whether the change may stay once the margins are fitted
     again, besides harming nothing (:func:`_harmed`); ``None``: it may.
+    ``settled``: whether the change did what it was made for, or still
+    can, asked once the climb is over; ``None``: it did. A change of
+    several rounds (a spacing that grows a little further each round) is
+    judged by where it ends, not round by round.
     """
 
     key: Key
     undo: Callable[[], None]
     kept: Callable[[RendererBase], bool] | None = None
+    settled: Callable[[RendererBase], bool] | None = None
 
 
 @dataclass(frozen=True)
@@ -755,9 +765,66 @@ def climb(
     fit stops within its tolerance of a fixed point, a hair from where it
     stood; when every change was taken back, the caller fits the margins
     afresh from where it started, so the figure draws as without fitting.
+
+    When the rounds are over, each kept change is asked whether it did what
+    it was for (``_Change.settled``). If one did not (a panel spacing that
+    grew, still has text meeting across it and cannot grow further), everything the climb kept
+    is taken back, the grid's edges are put where the climb started, and
+    the ladder is climbed again without that change, so the figure draws as
+    if that step had never been open to it; date ticks the margin fit
+    thinned for the narrower panels meanwhile get their counts back
+    (thinning is one way, and is no ``_Change``). Each such pass drops at
+    least one change for good, so there are few.
     """
-    state = FitState(budgets=_tick_budgets(axes))
-    tried = kept = False
+    from ..formatting import remember_date_ticks
+
+    start = {side: getattr(grid, side) for side in _EDGES}
+    put_back_date_ticks = remember_date_ticks(fig)
+    dropped: set[Key] = set()
+    tried = False
+    while True:
+        outcome = _climb_once(fig, steps, grid, axes, refit, dropped)
+        if outcome is None:
+            return False  # nothing to measure: no fresh fit either
+        tried = tried or outcome.tried
+        renderer = get_renderer(fig)
+        unsettled = {
+            change.key
+            for change in outcome.held
+            if change.settled is not None and not change.settled(renderer)
+        }
+        if not unsettled:
+            return tried and not outcome.held
+        _undo(outcome.held)
+        grid.update(**start)
+        put_back_date_ticks()
+        dropped |= unsettled
+        if not refit():
+            return False
+
+
+@dataclass(frozen=True)
+class _Climbed:
+    """One pass of the rounds: whether it tried a change, and the changes
+    it kept, in the order they were made."""
+
+    tried: bool
+    held: list[_Change]
+
+
+def _climb_once(
+    fig: Figure,
+    steps: frozenset[str],
+    grid: GridSpec,
+    axes: Sequence[Axes],
+    refit: Callable[[], bool],
+    dropped: AbstractSet[Key],
+) -> _Climbed | None:
+    """The rounds of :func:`climb`, never making a change in ``dropped``;
+    ``None`` when nothing could be measured."""
+    state = FitState(budgets=_tick_budgets(axes), rejected=set(dropped))
+    tried = False
+    held: list[_Change] = []
 
     def changes_now(only: Key | None) -> list[_Change]:
         state.only = None if only is None else frozenset({only})
@@ -768,7 +835,7 @@ def climb(
 
     def attempt(only: Key | None) -> bool | None:
         """One round (or one change of it); ``None``: nothing was measurable."""
-        nonlocal tried, kept
+        nonlocal tried
         changes = changes_now(only)
         if not changes:
             return False
@@ -785,7 +852,7 @@ def climb(
         if not _harmed(before, _health(axes, renderer)) and all(
             change.kept is None or change.kept(renderer) for change in changes
         ):
-            kept = True
+            held.extend(changes)
             return True
         _undo(changes)
         grid.update(**edges)
@@ -803,10 +870,10 @@ def climb(
     for _round in range(_FIT_ROUNDS):
         done = attempt(None)
         if done is None:
-            return False  # nothing to measure: no fresh fit either
+            return None
         if not done:
             break
-    return tried and not kept
+    return _Climbed(tried, held)
 
 
 # The GridSpec edges the margin fit sets, restored with a round taken back.
@@ -825,7 +892,13 @@ def fit_round(
     changes: list[_Change] = []
     if "axis_labels" in steps:
         changes += _fit_axis_names(fig, renderer, axes, state)
-    if "space" in steps:
+    if "space" in steps and not changes:
+        # Not in the round that wrapped a name: what stands on that name
+        # (a ``dm.label_axes`` letter keeps clear of its top end) is still
+        # where the one-line name put it until the margins are fitted
+        # again, and the rows would be parted for a collision that is gone
+        # (smoke round 5: 0.94 cm between the rows of a 2 x 3 grid, 0.14 cm
+        # with the same name broken by hand). The next round measures them.
         changes += _fit_panel_gaps(fig, renderer, gs, axes, state)
     if steps & {"wrap", "rotate"}:
         for group, whole in _shared_x_groups(axes):
@@ -999,29 +1072,26 @@ def _spacing_is_free(fig: Figure, gs: GridSpec, key: str) -> bool:
     return bool(getattr(fig.subplotpars, key) == default)
 
 
-def _fit_panel_gaps(
-    fig: Figure,
-    renderer: RendererBase,
-    gs: GridSpec,
-    axes: Sequence[Axes],
-    state: FitState,
-) -> list[_Change]:
-    """Grow the ``wspace`` / ``hspace`` of ``gs`` where panel content meets.
+@dataclass(frozen=True)
+class _GapNeed:
+    """What one spacing (``wspace`` or ``hspace``) of a grid has to hold.
 
-    Only when every Axes on ``gs`` is laid out by this call: the spacing
-    moves them all.
+    ``need``: the widest gap (px) two facing panels' content asks for, 0
+    when none collide; ``total``: the grid's extent (px) along that
+    direction; ``n``: its cells along it.
     """
-    if not _all_in(_on_grid(fig, gs), {id(ax) for ax in axes}):
-        return []
+
+    need: float
+    total: float
+    n: int
+
+
+def _gap_needs(
+    fig: Figure, renderer: RendererBase, gs: GridSpec, axes: Sequence[Axes]
+) -> dict[str, _GapNeed]:
+    """The gap the content of ``axes`` on ``gs`` needs across its columns
+    (``"wspace"``) and its rows (``"hspace"``), as the figure is drawn."""
     nrows, ncols = gs.get_geometry()
-    free = {
-        key: n > 1
-        and state.allows(("space_" + key, id(gs)))
-        and _spacing_is_free(fig, gs, key)
-        for key, n in (("wspace", ncols), ("hspace", nrows))
-    }
-    if not any(free.values()):
-        return []
     # The grid's positions are fractions of the (Sub)Figure it is on; the
     # canvas starts at 0, a SubFigure's box where it sits on the canvas.
     frame = getattr(gs, "figure", None) or fig
@@ -1055,28 +1125,67 @@ def _fit_panel_gaps(
                 ahead=oy + bottoms[rows.stop - 1] * fh - y0,
             )
         )
+    return {
+        "wspace": _GapNeed(
+            _deepest_reach(
+                across_cols,
+                [(lefts[c + 1] - rights[c]) * fw for c in range(ncols - 1)],
+            ),
+            (rights[-1] - lefts[0]) * fw,
+            ncols,
+        ),
+        "hspace": _GapNeed(
+            _deepest_reach(
+                across_rows,
+                [(bottoms[r] - tops[r + 1]) * fh for r in range(nrows - 1)],
+            ),
+            (tops[0] - bottoms[-1]) * fh,
+            nrows,
+        ),
+    }
+
+
+def _fit_panel_gaps(
+    fig: Figure,
+    renderer: RendererBase,
+    gs: GridSpec,
+    axes: Sequence[Axes],
+    state: FitState,
+) -> list[_Change]:
+    """Grow the ``wspace`` / ``hspace`` of ``gs`` where panel content meets.
+
+    Only when every Axes on ``gs`` is laid out by this call: the spacing
+    moves them all. A grown spacing is put back when the climb ends with
+    content still meeting across it and the gap that would part it past
+    ``_MAX_GAP_FRACTION`` (the change's ``settled``): narrower panels push
+    a centred title further past its own panel, so a collision can follow
+    the gap, and a gap that did not part the panels only made them smaller
+    (smoke round 5, #722: four slide panels 4.56 to 2.37 cm wide,
+    ``wspace`` 1.44, the text still meeting). It is asked at the end and
+    not after each round because that same reach makes a spacing that does
+    part the panels take several rounds to get there; one the rounds ran
+    out on, a step short of clear, stays as it always did.
+    """
+    if not _all_in(_on_grid(fig, gs), {id(ax) for ax in axes}):
+        return []
+    nrows, ncols = gs.get_geometry()
+    free = {
+        key: n > 1
+        and state.allows(("space_" + key, id(gs)))
+        and _spacing_is_free(fig, gs, key)
+        for key, n in (("wspace", ncols), ("hspace", nrows))
+    }
+    if not any(free.values()):
+        return []
+    frame = getattr(gs, "figure", None) or fig
+    needs = _gap_needs(fig, renderer, gs, axes)
     em = float(mpl.rcParams["font.size"]) * fig.dpi / 72.0
     params = gs.get_subplot_params(frame)
     changes: list[_Change] = []
-    for key, n, reaches, seps, total in (
-        (
-            "wspace",
-            ncols,
-            across_cols,
-            [(lefts[c + 1] - rights[c]) * fw for c in range(ncols - 1)],
-            (rights[-1] - lefts[0]) * fw,
-        ),
-        (
-            "hspace",
-            nrows,
-            across_rows,
-            [(bottoms[r] - tops[r + 1]) * fh for r in range(nrows - 1)],
-            (tops[0] - bottoms[-1]) * fh,
-        ),
-    ):
+    for key, asked in needs.items():
         if not free[key]:
             continue
-        need = _deepest_reach(reaches, seps)
+        need, total, n = asked.need, asked.total, asked.n
         if need <= 0:
             continue
         gap = gap_fraction(need + _TARGET_EM * em, total, n)
@@ -1095,7 +1204,20 @@ def _fit_panel_gaps(
             else:
                 _GAPS.setdefault(gs, {})[key] = before
 
-        changes.append(_Change(("space_" + key, id(gs)), undo))
+        def parted(renderer: RendererBase, key: str = key) -> bool:
+            """Whether the spacing parted the panels, or still can: nothing
+            meets across it, or what does is within reach of one more step.
+            ``False`` once the step itself would leave the collision as it
+            is (the gap it asks for is past ``_MAX_GAP_FRACTION``)."""
+            asked = _gap_needs(fig, renderer, gs, axes)[key]
+            if asked.need <= 0:
+                return True
+            gap = gap_fraction(
+                asked.need + _TARGET_EM * em, asked.total, asked.n
+            )
+            return gap is not None and gap <= _MAX_GAP_FRACTION
+
+        changes.append(_Change(("space_" + key, id(gs)), undo, settled=parted))
     return changes
 
 

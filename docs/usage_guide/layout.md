@@ -414,6 +414,9 @@ half an em, as two names that close read as one), easiest first:
 2. **Panel spacing**: root `wspace` / `hspace` nobody set grow until
    neighbouring panels' text clears by half an em, when 1.5 cells or less
    does it; narrower panels would not clear a deeper collision, so it stays.
+   A spacing that grew before the collision turned out that deep (a centred
+   title reaches further past a narrower panel) is put back;
+   `CROSS_AXES_OVERLAP` reports what is left.
 3. **Tick labels** under the plot wrap at their spaces, only the ones that
    collide or sit closer than half an em to a neighbour, into at most three
    lines that keep them half an em apart; a long label beside short ones uses
@@ -583,7 +586,9 @@ dartwork-mpl includes several helpers that automate tedious formatting tasks.
 positions. With `x="auto"` (default) each letter is placed from what its panel draws,
 in points: its left edge on the outer edge of the panel's y-axis name (a grid
 column takes its leftmost; a panel without one keeps the spine distance of the
-named panels in its row, or sits where a name would be when no panel has one),
+named panels in its row, or sits where a name would be when no panel has one;
+a panel with no tick labels either, as inside a shared y axis, starts on its
+own left spine when the gap to its neighbour does not hold that distance),
 and its baseline on the panel's title baseline (without a title, the highest
 baseline of its row, or 4 pt above the panel). A title in the way only keeps the
 letter half a letter size before it. `dm.simple_layout` measures the panels again,

@@ -997,17 +997,27 @@ def test_client_cancellation_and_final_close_join_real_transport_delivery(
 
 
 @pytest.mark.parametrize(
-    "export_tail_s", [0.0, 2.5], ids=["prompt", "outlasts-client-grace"]
+    "outlasts", [False, True], ids=["prompt", "outlasts-client-grace"]
 )
 def test_stdio_disconnect_joins_blocked_export_before_lock_release(
-    owned_input_root, export_tail_s, monkeypatch
+    owned_input_root, outlasts, monkeypatch
 ):
     """Real stdio disconnect drains the server's owned export before releasing pins.
 
     ``export_tail_s`` is how long the export goes on after it is released. The
-    second case is longer than the SDK client's default grace for a server
-    that has lost its stdin (2 s): the server still drains it.
+    second case is longer than both default client clocks below, so the drain
+    outlasts each of them even on an idle machine: the server still drains it.
     """
+    # Read the defaults before lifting them. With FastMCP 3.4 the tail is
+    # 5.5 s; a fixed 2.5 s tail outlasted only the SDK's 2 s, so dropping the
+    # 5 s lift below failed only on a loaded host.
+    export_tail_s = 0.0
+    if outlasts:
+        sdk_stdio = importlib.import_module("mcp.client.stdio")
+        export_tail_s = 0.5 + max(
+            sdk_stdio.PROCESS_TERMINATION_TIMEOUT,
+            getattr(fastmcp.settings, "client_disconnect_timeout", 0.0),
+        )
     # Two client clocks start when the transport closes, before this test
     # releases the export. The SDK ends a server that has not exited 2 s after
     # its stdin closed (SIGTERM to the process group); FastMCP 3 stops waiting
