@@ -1541,7 +1541,7 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
-## Deprecated in 0.8: `dartwork_mpl.util`
+## Deprecated in 0.7.1: `dartwork_mpl.util`
 
 Every access to a name through `dartwork_mpl.util` (`from dartwork_mpl.util
 import X`, `dartwork_mpl.util.X`) emits a `DeprecationWarning` per access,
@@ -1561,7 +1561,7 @@ or later. Until then each name is the owner's own object
 | `save_and_show`, `save_formats`, `show` | `dartwork_mpl.io` |
 | `set_decimal` | `dartwork_mpl.formatting` |
 
-## Deprecated in 0.8: `.tnum` on font records
+## Deprecated in 0.7.1: `.tnum` on font records
 
 `FontFamily.tnum`, `FontMeasurement.tnum` and `FontFaceMeasurement.tnum`
 emit a `DeprecationWarning` and may be removed in 0.10 or later. Read
