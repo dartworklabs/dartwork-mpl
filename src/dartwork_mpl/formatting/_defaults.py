@@ -64,7 +64,8 @@ from __future__ import annotations
 import numbers
 import re
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from functools import partial
 from itertools import pairwise
 from typing import Any, Literal
 
@@ -119,6 +120,7 @@ __all__ = [
     "KoreanConciseDateFormatter",
     "apply_default_tick_format",
     "category_dates",
+    "remember_date_ticks",
     "thin_crowded_date_ticks",
 ]
 
@@ -1138,3 +1140,70 @@ def thin_crowded_date_ticks(fig: Figure) -> int:
             else:
                 locator.minticks, locator.maxticks = original
     return changed
+
+
+def remember_date_ticks(fig: Figure) -> Callable[[], None]:
+    """Remember the tick counts :func:`thin_crowded_date_ticks` may lower on
+    the date axes of ``fig``; calling the result puts them back.
+
+    Thinning is one way: a locator it lowered is never raised again. A
+    layout that thins the ticks for a size it then gives up (a panel
+    spacing that grew and is taken back) calls this before, and the result
+    when it gives the size up, so the wider axis does not keep the fewer
+    ticks of the narrow one. Covers what the thinning covers: the date
+    converter's ``AutoDateLocator`` (tick ceilings), dated category and
+    quarter locators (``step``) and year locators (bins), on both axes and
+    their ``secondary_xaxis`` / ``secondary_yaxis`` children. A locator the
+    axis no longer has when the result is called is left alone.
+    """
+    saved: list[tuple[Axis, ticker.Locator, Callable[[], None]]] = []
+    for ax in fig.axes:
+        if ax.name != "rectilinear":
+            continue
+        secondaries = [
+            _axis_of(s, which)
+            for which in _WHICH
+            for s in _secondary_axes(ax, which)
+        ]
+        for axis in (ax.xaxis, ax.yaxis, *secondaries):
+            locator = axis.get_major_locator()
+            if isinstance(locator, (CategoryDateLocator, QuarterLocator)):
+                saved.append(
+                    (
+                        axis,
+                        locator,
+                        partial(setattr, locator, "step", locator.step),
+                    )
+                )
+            elif isinstance(locator, WholeYearLocator):
+                saved.append(
+                    (axis, locator, partial(locator.thin, locator.nbins))
+                )
+            elif type(locator) is mdates.AutoDateLocator:
+                saved.append(
+                    (
+                        axis,
+                        locator,
+                        partial(
+                            _set_date_ceilings,
+                            locator,
+                            locator.minticks,
+                            dict(locator.maxticks),
+                        ),
+                    )
+                )
+
+    def put_back() -> None:
+        for axis, locator, restore in saved:
+            if axis.get_major_locator() is locator:
+                restore()
+
+    return put_back
+
+
+def _set_date_ceilings(
+    locator: mdates.AutoDateLocator, minticks: int, maxticks: dict[Any, int]
+) -> None:
+    """Give ``locator`` the tick floor and ceilings it had."""
+    locator.minticks = minticks
+    locator.maxticks = dict(maxticks)
