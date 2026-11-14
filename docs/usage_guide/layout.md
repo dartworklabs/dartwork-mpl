@@ -414,6 +414,9 @@ half an em, as two names that close read as one), easiest first:
 2. **Panel spacing**: root `wspace` / `hspace` nobody set grow until
    neighbouring panels' text clears by half an em, when 1.5 cells or less
    does it; narrower panels would not clear a deeper collision, so it stays.
+   A spacing that grew and still left text meeting (a centred title reaches
+   further past a narrower panel) is put back; `CROSS_AXES_OVERLAP` reports
+   what is left.
 3. **Tick labels** under the plot wrap at their spaces, only the ones that
    collide or sit closer than half an em to a neighbour, into at most three
    lines that keep them half an em apart; a long label beside short ones uses
