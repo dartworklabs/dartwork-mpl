@@ -24,6 +24,7 @@ from dartwork_mpl.mcp.artifacts.inputs import InputStore  # noqa: E402
 from dartwork_mpl.mcp.artifacts.policy import ConfigurationError, RenderRequest  # noqa: E402
 from dartwork_mpl.mcp.artifacts.store import ArtifactStore  # noqa: E402
 from tests.mcp.artifacts.input_fixtures import publish_pid  # noqa: E402
+from tests.support.subprocess_timing import COLD_START_S  # noqa: E402
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -76,7 +77,7 @@ def fd_count():
     return count
 
 
-async def until(predicate):
+async def until(predicate, timeout=15.0):
     """Yield to owned work until an observable condition or a bounded test failure."""
 
     async def wait():
@@ -84,7 +85,7 @@ async def until(predicate):
         while not predicate():
             await asyncio.sleep(0.005)
 
-    await asyncio.wait_for(wait(), 15)
+    await asyncio.wait_for(wait(), timeout)
 
 
 def lock_available(path, store):
@@ -993,24 +994,41 @@ def test_client_cancellation_and_final_close_join_real_transport_delivery(
 
 
 @pytest.mark.parametrize(
-    "export_tail_s", [0.0, 2.5], ids=["prompt", "outlasts-client-grace"]
+    "outlasts", [False, True], ids=["prompt", "outlasts-client-grace"]
 )
 def test_stdio_disconnect_joins_blocked_export_before_lock_release(
-    owned_input_root, export_tail_s, monkeypatch
+    owned_input_root, outlasts, monkeypatch
 ):
     """Real stdio disconnect drains the server's owned export before releasing pins.
 
     ``export_tail_s`` is how long the export goes on after it is released. The
-    second case is longer than the SDK client's default grace for a server
-    that has lost its stdin (2 s): the server still drains it.
+    second case is longer than every default client clock below: the server
+    still drains it.
     """
-    # The SDK client ends a server that has not exited 2 s after its stdin
-    # closed (SIGTERM to the process group). That clock starts before this
-    # test releases the export, so on a loaded host the server was killed
-    # mid-drain and left its staging folder: the test measured the client's
-    # patience, not the server's drain. The deadline here is the 15 s wait
-    # on the owner task below.
-    monkeypatch.setattr("mcp.client.stdio.PROCESS_TERMINATION_TIMEOUT", 60.0)
+    # Two client clocks end a server that is still draining, and both start
+    # before this test releases the export:
+    # - the SDK gives a server whose stdin closed 2 s
+    #   (PROCESS_TERMINATION_TIMEOUT), then SIGTERMs its process group;
+    # - FastMCP 3.4+ gives the whole disconnect client_disconnect_timeout
+    #   (5 s), then cancels the session task, and anyio SIGKILLs the server
+    #   alone, which orphans the render child.
+    # On a loaded host either one cut the drain short, so the test measured
+    # the client's patience, not the server's drain (main runs 43129325523,
+    # 43518814853). Both are lifted past this test's own deadline, the wait
+    # on the owner task below. Its waits each bound one cold start or the
+    # drain after it, sized for loaded ml-main (tests/support/subprocess_timing.py).
+    sdk_stdio = importlib.import_module("mcp.client.stdio")
+    grace = max(
+        sdk_stdio.PROCESS_TERMINATION_TIMEOUT,
+        getattr(fastmcp.settings, "client_disconnect_timeout", 0.0),
+    )
+    export_tail_s = grace + 0.5 if outlasts else 0.0
+    client_clock = 2 * COLD_START_S
+    monkeypatch.setattr(sdk_stdio, "PROCESS_TERMINATION_TIMEOUT", client_clock)
+    if hasattr(fastmcp.settings, "client_disconnect_timeout"):
+        monkeypatch.setattr(
+            fastmcp.settings, "client_disconnect_timeout", client_clock
+        )
     api()
     package = importlib.import_module("dartwork_mpl")
     path, storage, source, store = fixture(owned_input_root)
@@ -1043,7 +1061,8 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
 
     async def workflow():
         """Cancel a live request, close the actual transport and observe the real lock."""
-        ready, disconnect = asyncio.Event(), asyncio.Event()
+        connected, ready = asyncio.Event(), asyncio.Event()
+        disconnect = asyncio.Event()
 
         async def owner():
             """The transport's close must keep server cleanup alive until export returns."""
@@ -1054,13 +1073,14 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
                 keep_alive=False,
             )
             async with fastmcp.Client(transport) as client:
+                connected.set()
                 request = asyncio.create_task(
                     client.call_tool(
                         "render_plot", {"code": code, "revision": spec}
                     )
                 )
                 try:
-                    await until(marker.exists)
+                    await until(marker.exists, COLD_START_S)
                     ready.set()
                     await disconnect.wait()
                     request.cancel()
@@ -1071,7 +1091,9 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
 
         task = asyncio.create_task(owner())
         try:
-            await asyncio.wait_for(ready.wait(), 20)
+            # Two cold starts in turn: the server, then its render child.
+            await asyncio.wait_for(connected.wait(), COLD_START_S)
+            await asyncio.wait_for(ready.wait(), COLD_START_S)
             pid = int(marker.read_text())
             disconnect.set()
             await asyncio.sleep(0.1)
@@ -1079,7 +1101,8 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
             os.kill(pid, 0)
             assert any(storage.glob(".pending-*/000.bin"))
             release.touch()
-            await asyncio.wait_for(task, 15)
+            # The export's tail, the rest of the render and the server's exit.
+            await asyncio.wait_for(task, COLD_START_S)
             with pytest.raises(ProcessLookupError):
                 os.kill(pid, 0)
             assert not list(storage.glob(".pending-*"))

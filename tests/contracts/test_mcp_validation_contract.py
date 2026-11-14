@@ -11,6 +11,7 @@ import pytest
 fastmcp = pytest.importorskip("fastmcp")
 
 from dartwork_mpl.mcp import resources, tools  # noqa: E402
+from tests.support.subprocess_timing import RUNNER_TIMEOUT_S  # noqa: E402
 
 _FIGURE = """\
 import matplotlib.pyplot as plt
@@ -432,14 +433,18 @@ def test_seeded_source_timeout_parser_is_total_and_boundary_controls_execute():
 
 def test_timeout_diagnostic_counts_marker_and_timeout_decoration_inside_byte_cap():
     """Actual invalid-byte expansion and timeout decoration share the selected channel budget."""
+    # The child must write before the timeout fires; a 2 s timeout fired
+    # before a loaded child reached its first line (main run 43517408460).
     result = _validate(
         "import os, time\nos.write(2, b'\\xff' * 30000)\ntime.sleep(60)\n",
-        timeout_seconds=2,
+        timeout_seconds=RUNNER_TIMEOUT_S,
     )
     assert result["status"] == "timeout", result
     assert len(result["stderr"].encode()) <= 65536
     assert "stderr truncated; retained prefix only]" in result["stderr"]
-    assert result["stderr"].endswith("Subprocess exceeded 2s timeout.")
+    assert result["stderr"].endswith(
+        f"Subprocess exceeded {RUNNER_TIMEOUT_S}s timeout."
+    )
 
 
 @pytest.mark.parametrize("fault", [MemoryError, RecursionError])

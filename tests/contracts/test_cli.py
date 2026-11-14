@@ -115,9 +115,16 @@ class TestStdioEndToEnd:
             + "\n"
         )
 
+        from tests.support.subprocess_timing import COLD_START_S
+
         # Runtime diagnostics stay on stderr; protocol envelopes stay on stdout.
+        # The bound is a cold start on loaded ml-main, which ran past 30 s.
         proc = subprocess.run(
-            cmd, input=request, capture_output=True, text=True, timeout=30.0
+            cmd,
+            input=request,
+            capture_output=True,
+            text=True,
+            timeout=COLD_START_S,
         )
 
         # The server returns one JSON-RPC envelope on stdout. It may

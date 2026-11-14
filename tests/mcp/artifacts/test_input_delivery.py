@@ -55,6 +55,7 @@ from tests.mcp.artifacts.input_fixtures import (
     seed,
     selection,
 )
+from tests.support.subprocess_timing import RUNNER_TIMEOUT_S
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -634,7 +635,9 @@ def test_failed_or_cancelled_export_releases_owned_work(
     elif failure == "no_figure":
         code += "value = 1\n"
     elif failure == "timeout":
-        code += "import time\ntime.sleep(5)\n" + FIGURE
+        # Outlast the timeout, which must fire after the marker: a 2 s one
+        # fired before a loaded child got there (main run 43518814853).
+        code += "import time\ntime.sleep(60)\n" + FIGURE
     else:
         code += FIGURE
         if failure == "export":
@@ -658,7 +661,7 @@ def test_failed_or_cancelled_export_releases_owned_work(
     monkeypatch.setattr(delivery, "export_plot", export)
     monkeypatch.setattr(InputTransaction, "check", check)
     request = RenderRequest(
-        code, timeout_seconds=2 if failure == "timeout" else 20
+        code, timeout_seconds=RUNNER_TIMEOUT_S if failure == "timeout" else 20
     )
     if failure == "cancel":
         with pytest.raises(asyncio.CancelledError):
