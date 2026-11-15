@@ -67,7 +67,3 @@ def optimize_legend(
         legend_params["loc"] = preferred_loc
 
     ax.legend(**legend_params)
-
-
-# Keep historical import and pickle resolution after the ownership move.
-optimize_legend.__module__ = "dartwork_mpl.helpers.labels"

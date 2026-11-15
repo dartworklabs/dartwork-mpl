@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 import dartwork_mpl as dm
-import dartwork_mpl.helpers as helpers
 import dartwork_mpl.validate as owner
 
 
@@ -277,7 +276,6 @@ def test_diagnostics_are_complete_immutable_bounded_and_public_only_on_owners():
     assert dm.DataPolicyWarning is owner.DataPolicyWarning
     for name in ("DataPolicyError", "DataPolicyWarning"):
         assert dm.__all__.count(name) == owner.__all__.count(name) == 1
-        assert not hasattr(helpers, name)
 
 
 def test_seeded_masks_preserve_original_order_input_storage_and_partition():

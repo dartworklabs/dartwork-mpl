@@ -1,44 +1,9 @@
-"""Curated palette ownership retains historical lookup and serialization contracts."""
-
-import inspect
-import pickle
-from typing import Literal, get_type_hints
+"""Curated palette selection contracts."""
 
 import numpy as np
 import pytest
 
 import dartwork_mpl as dm
-import dartwork_mpl._colors as owner
-import dartwork_mpl.helpers as helpers
-import dartwork_mpl.helpers.colors as historical
-
-
-def test_owner_aliases_and_metadata():
-    """The new surface is the original callable, including historical pickle identity."""
-    assert hasattr(owner, "make_palette")
-    f = owner.make_palette
-    assert (
-        f is dm.make_palette is helpers.make_palette is historical.make_palette
-    )
-    assert f.__module__ == "dartwork_mpl.helpers.colors"
-    assert f.__name__ == f.__qualname__ == "make_palette"
-    assert f.__defaults__ == ("categorical", None)
-    assert f.__annotations__ == {
-        "n": "int",
-        "kind": "Literal['categorical', 'sequential', 'diverging']",
-        "highlight": "int | None",
-        "return": "list[str]",
-    }
-    assert get_type_hints(f) == {
-        "n": int,
-        "kind": Literal["categorical", "sequential", "diverging"],
-        "highlight": int | None,
-        "return": list[str],
-    }
-    assert list(inspect.signature(f).parameters) == ["n", "kind", "highlight"]
-    old = b"\x80\x04\x950\x00\x00\x00\x00\x00\x00\x00\x8c\x1bdartwork_mpl.helpers.colors\x94\x8c\x0cmake_palette\x94\x93\x94."
-    assert pickle.loads(old) is f
-    assert pickle.dumps(f, protocol=4) == old
 
 
 @pytest.mark.parametrize(

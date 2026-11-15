@@ -47,8 +47,3 @@ class TestDiagnosticsExports:
         assert callable(diagnostics.render_cmap_catalog)
         assert callable(diagnostics.render_color_catalog)
         assert dm.plot_fonts is diagnostics.plot_fonts
-
-    def test_explore_keeps_font_preview(self) -> None:
-        from dartwork_mpl import diagnostics, explore
-
-        assert explore.plot_fonts is diagnostics.plot_fonts

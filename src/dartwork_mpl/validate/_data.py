@@ -355,7 +355,3 @@ def validate_data(
         )
 
     return x, y
-
-
-# Preserve historical callable pickle resolution and public metadata.
-validate_data.__module__ = "dartwork_mpl.helpers.data"

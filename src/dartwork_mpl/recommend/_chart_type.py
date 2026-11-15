@@ -93,7 +93,3 @@ def suggest_chart_type(
             return "scatter_density"
         return "hexbin"
     return "line"
-
-
-# Preserve historical pickle lookup and callable metadata.
-suggest_chart_type.__module__ = "dartwork_mpl.helpers.quality"

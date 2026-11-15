@@ -56,18 +56,13 @@ ENTRY_POINTS = frozenset(
         # `python -m dartwork_mpl._colors._build`
         "dartwork_mpl._colors._build",
         "dartwork_mpl.cli",
-        # deprecated re-exports of names that moved to their owners (0.7.1, 0.10+)
-        "dartwork_mpl.util",
-        # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
+        # `python -m dartwork_mpl.mcp.server`
         "dartwork_mpl.mcp.server",
         # The MCP wiring tables the discovery scanners read (ADR 0001 A1).
         "dartwork_mpl.mcp.artifacts.transport",
         "dartwork_mpl.mcp.prompts",
         "dartwork_mpl.mcp.resources",
         "dartwork_mpl.mcp.tools",
-        "dartwork_mpl.ui.__main__",
-        # `dartwork_mpl.ui.run`: mounts every viewer sub-slice's routes
-        "dartwork_mpl.ui.ui",
     }
 )
 
@@ -80,14 +75,6 @@ PLATFORM = frozenset(
         "dartwork_mpl.edgecase",
         # MCP process capture and asset confinement.
         "dartwork_mpl.mcp._platform",
-        # The viewer's loopback access checks, directory handles, HTTP body
-        # and refusal helpers and bounded JSON decoder; the package
-        # initializer only names them.
-        "dartwork_mpl.ui.platform",
-        "dartwork_mpl.ui.platform.access",
-        "dartwork_mpl.ui.platform.fs",
-        "dartwork_mpl.ui.platform.http",
-        "dartwork_mpl.ui.platform.json_bounds",
     }
 )
 
@@ -113,11 +100,9 @@ SLICES = frozenset(
         "dartwork_mpl.annotation",
         "dartwork_mpl.config",
         "dartwork_mpl.diagnostics",
-        "dartwork_mpl.explore",
         "dartwork_mpl.figure_review",
         "dartwork_mpl.font",
         "dartwork_mpl.formatting",
-        "dartwork_mpl.helpers",
         "dartwork_mpl.icon",
         "dartwork_mpl.io",
         "dartwork_mpl.layout",
@@ -141,15 +126,6 @@ SLICES = frozenset(
         "dartwork_mpl.style",
         "dartwork_mpl.templates",
         "dartwork_mpl.tokens",
-        "dartwork_mpl.ui",
-        # The viewer's sub-slices (ADR 0005, audit ui-cli §4).
-        "dartwork_mpl.ui.page",
-        "dartwork_mpl.ui.params",
-        "dartwork_mpl.ui.render",
-        "dartwork_mpl.ui.saving",
-        "dartwork_mpl.ui.scaffold",
-        "dartwork_mpl.ui.script",
-        "dartwork_mpl.ui.state",
         "dartwork_mpl.validate",
     }
 )
@@ -157,9 +133,6 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl.helpers", "dartwork_mpl.recommend"): (
-        "historical recommendation aliases expose the native callable"
-    ),
     ("dartwork_mpl.lint", "dartwork_mpl.prompt"): (
         "lint parses the bundled anti-pattern catalog opened by its corpus owner"
     ),
@@ -252,12 +225,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.diagnostics", "dartwork_mpl.font"): (
         "the font diagnostic draws the bundled font files"
     ),
-    ("dartwork_mpl.explore", "dartwork_mpl._colors"): (
-        "the explorer browses the shipped colour families"
-    ),
-    ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
-        "the explorer draws the colour and font diagnostics it lists"
-    ),
     ("dartwork_mpl.figure_review", "dartwork_mpl.io"): (
         "a review saves the figure with save_formats, the files a plain save writes"
     ),
@@ -273,12 +240,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.formatting", "dartwork_mpl.config"): (
         "default tick text follows the user's tick_years, date_style and "
         "number_ladder; twin axes follow twin_colors"
-    ),
-    ("dartwork_mpl.helpers", "dartwork_mpl._colors"): (
-        "historical curated palette imports re-export the color owner's callable"
-    ),
-    ("dartwork_mpl.helpers", "dartwork_mpl.annotation"): (
-        "historical legend imports re-export annotation's callable"
     ),
     ("dartwork_mpl.io", "dartwork_mpl.config"): (
         "saving applies the user's export defaults from dm.config"
@@ -386,58 +347,11 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.templates", "dartwork_mpl.size"): (
         "a template's default figure size is a physical width and aspect"
     ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.page"): (
-        "the viewer app serves the page that renders its controls"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.params"): (
-        "the viewer builds its controls and parses requests from the user's"
-        " parameter model"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.render"): (
-        "the viewer mounts the preview, download and image-save routes"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.saving"): (
-        "the viewer's HTTP edge answers a refused save name with its status"
-        " and code"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
-        "the dartwork-mpl-ui init command copies the scaffold project"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.script"): (
-        "the viewer mounts the reproducing-script routes"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.state"): (
-        "the viewer opens the saved-state store at startup and mounts its routes"
-    ),
-    ("dartwork_mpl.ui.render", "dartwork_mpl.io"): (
-        "a server image save writes the figure with save_formats, as a user would"
-    ),
-    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.params"): (
-        "a render validates the request's active values against the user's model"
-    ),
-    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.saving"): (
-        "a server image save writes through the confined output slots"
-    ),
-    ("dartwork_mpl.ui.saving", "dartwork_mpl.ui.params"): (
-        "a server-save request carries the user's validated active values"
-    ),
-    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.params"): (
-        "the script embeds the model's source and the active values"
-    ),
-    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.saving"): (
-        "a server script save writes through the confined output slots"
-    ),
-    ("dartwork_mpl.ui.state", "dartwork_mpl.ui.params"): (
-        "saved state holds the active values and the model's declared field names"
-    ),
     ("dartwork_mpl.validate", "dartwork_mpl._colors.contrast"): (
         "the text-contrast and grayscale checks judge WCAG contrast"
     ),
     ("dartwork_mpl.validate", "dartwork_mpl._colors.model"): (
         "the grayscale check compares colours in the model's OKLab and Y"
-    ),
-    ("dartwork_mpl.helpers", "dartwork_mpl.validate"): (
-        "historical diagnostic aliases expose native data validation, quality and DPI threshold"
     ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
@@ -453,10 +367,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
 # Compatibility shims: public module path -> the unit that owns its contents.
 SHIMS: Mapping[str, str] = {
     # dm.validate_fixes predates the validate slice's fix modules.
-    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate",
-    "dartwork_mpl.helpers.colors": "dartwork_mpl._colors",
-    "dartwork_mpl.helpers.labels": "dartwork_mpl.annotation",
-    "dartwork_mpl.helpers.data": "dartwork_mpl.validate",
+    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate"
 }
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
@@ -504,9 +415,8 @@ PINNED: Mapping[str, str] = {
 DEBT: Mapping[str, str] = {}
 
 # Package paths that hold user-facing sample code, not package source: the
-# bundled prompt templates and the UI scaffold templates copied into user
-# projects (they import `dartwork_mpl` as any user would).
-EXCLUDED_DIRS = (("asset",), ("ui", "scaffold", "templates"))
+# bundled prompt templates (they import `dartwork_mpl` as any user would).
+EXCLUDED_DIRS = (("asset",),)
 
 
 @dataclass(frozen=True)

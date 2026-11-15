@@ -50,12 +50,10 @@ only when you need it:
 | ------------ | ----------------------------------------- | --------------------- |
 | `[notebook]` | `dm.show()` inline SVG display in Jupyter | `ipython`             |
 | `[mcp]`      | the MCP server for AI assistants          | `fastmcp`, `httpx`    |
-| `[ui]`       | the interactive parameter viewer          | `fastapi`, `uvicorn`  |
 
-The UI extra requires FastAPI >=0.110.0.
 
 ```shell
-pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
+pip install "dartwork-mpl[notebook]"   # or [mcp]
 ```
 
 <br/>
@@ -84,7 +82,7 @@ pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
   lint + auto-fix, figure validation, color lookup, and the live policy corpus to
   Claude Code / Cursor / Windsurf. No-MCP agents read the same corpus from disk.
 - **Batteries included.** Material Design Icons + Font Awesome 6 fonts, ready-made
-  plot templates (`plot_diverging_bar`, …), and a FastAPI viewer for live tuning.
+  plot templates (`plot_diverging_bar`, …).
 
 <br/>
 
@@ -255,10 +253,9 @@ src/dartwork_mpl/
 ├── validate.py / lint.py      # validate_figure · lint + migrate_legacy_code
 ├── io.py / formatting.py      # save_formats, show · format_axis_*
 ├── icon.py / font.py / cmap.py / diagnostics/   # fonts, colormaps, viz helpers
-├── templates/ / helpers/      # plot templates · high-level composition helpers
+├── templates/                 # plot templates
 ├── agent.py / prompt.py       # bundled LLM corpus · prompt guides
 ├── mcp/                       # MCP server (server / resources / tools / prompts)
-├── ui/                        # interactive FastAPI viewer
 └── asset/                     # bundled styles, colors, fonts, icons, prompts
 ```
 

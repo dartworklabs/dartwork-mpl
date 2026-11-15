@@ -44,7 +44,7 @@ REMOVED_NAMES: tuple[str, ...] = (
 REMOVED_NAME_HINTS: dict[str, str] = {
     "subplots": "plt.subplots",
     "figure": "plt.figure",
-    "agent_utils": "dm.helpers",
+    "agent_utils": "dm.lint",
     "xplot": "dm.templates",
     "install_llm_txt": "get_agent_doc",
     "uninstall_llm_txt": "get_agent_doc",

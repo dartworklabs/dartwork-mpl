@@ -57,14 +57,25 @@ del _scenario
 
 
 def _rms_against_baseline(name: str, tmp_path: Path, **config: object) -> float:
-    """Render scenario ``name`` as pytest-mpl does; its RMS against the baseline."""
+    """Render scenario ``name`` as pytest-mpl does; its RMS against the baseline.
+
+    pytest-mpl renders under the Agg backend. Without the switch the figure
+    takes the process's pyplot backend (``macosx`` when this test runs alone
+    on a Mac, with its own device pixel ratio), and the result would depend
+    on whether an earlier test had already switched to Agg.
+    """
     scenario = next(s for s in _SCENARIOS if s.name == name)
-    out = tmp_path / f"{name}.png"
-    with plt.style.context("default", after_reset=True):
-        with dm.config.override(**config):
-            fig = scenario.build()
-        fig.savefig(out, metadata={"Software": None})
-        plt.close(fig)
+    out = tmp_path / f"{name}-{len(config)}.png"
+    previous = plt.get_backend()
+    plt.switch_backend("agg")
+    try:
+        with plt.style.context("default", after_reset=True):
+            with dm.config.override(**config):
+                fig = scenario.build()
+            fig.savefig(out, metadata={"Software": None})
+            plt.close(fig)
+    finally:
+        plt.switch_backend(previous)
     result = compare_images(
         str(_BASELINE / f"{name}.png"), str(out), tol=0, in_decorator=True
     )

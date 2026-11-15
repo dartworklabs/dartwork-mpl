@@ -55,7 +55,6 @@ Changelog = "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md
 
 [project.scripts]
 dartwork-mpl-mcp = "dartwork_mpl.cli:main"
-dartwork-mpl-ui = "dartwork_mpl.ui.__main__:main"
 
 [project.optional-dependencies]
 notebook = [
@@ -94,16 +93,6 @@ mcp = [
     "httpx>=0.27.0",
     # HTTPX Raw GitHub fetches need a bundle without compromised emSign roots.
     "certifi>=2026.10.19",
-]
-ui = [
-    # FastAPI's dependency minima alone still admit recorded vulnerable
-    # Starlette/AnyIO releases; carry the security floors in this extra too.
-    "anyio>=4.14.2",
-    "starlette>=1.3.1",
-    "fastapi>=0.110.0",
-    "pydantic>=2.0.0",
-    "uvicorn[standard]>=0.27.0",
-    "InquirerPy>=0.3.4",
 ]
 
 [build-system]
@@ -163,9 +152,9 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 [dependency-groups]
 # `uv sync` installs this group: everything ruff, basedpyright and pytest need.
 dev = [
-    # Every optional extra, so the MCP / notebook / UI code is type-checked
+    # Every optional extra, so the MCP / notebook code is type-checked
     # and tested in the default environment.
-    "dartwork-mpl[mcp,notebook,ui]",
+    "dartwork-mpl[mcp,notebook]",
     "basedpyright>=1.40",
     # Tests only: date-axis and canvas-label tests take pandas inputs.
     "pandas>=2.2.3",

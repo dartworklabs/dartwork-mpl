@@ -15,26 +15,6 @@ raise `ModuleNotFoundError` without a replacement hint.
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
 > end-to-end.
 
-## Deprecated in 0.7.1: `dartwork_mpl.util`
-
-Every access to a name through `dartwork_mpl.util` (`from dartwork_mpl.util
-import X`, `dartwork_mpl.util.X`) emits a `DeprecationWarning` per access,
-pointing at your line, so a second import or another module warns too;
-`import dartwork_mpl.util` alone does not. The module may be removed in 0.10
-or later. Until then each name is the owner's own object
-(`dartwork_mpl.util.X is <owner>.X`). Every name below is also
-`dm.X` at the package root.
-
-| Names | Import from |
-|---|---|
-| `arrow_axis`, `label_axes`, `make_offset` | `dartwork_mpl.annotation` |
-| `copy_prompt`, `get_prompt`, `list_prompts`, `prompt_path` | `dartwork_mpl.prompt` |
-| `fs`, `fw`, `lw` | `dartwork_mpl.scale` |
-| `get_bounding_box`, `simple_layout` | `dartwork_mpl.layout` |
-| `mix_colors`, `pseudo_alpha` | `dartwork_mpl` (`dm.mix_colors`, `dm.pseudo_alpha`) |
-| `save_and_show`, `save_formats`, `show` | `dartwork_mpl.io` |
-| `set_decimal` | `dartwork_mpl.formatting` |
-
 ## Deprecated in 0.7.1: `.tnum` on font records
 
 `FontFamily.tnum`, `FontMeasurement.tnum` and `FontFaceMeasurement.tnum`
@@ -83,9 +63,6 @@ date-unit deprecation came from Matplotlib 3.10's own date code.
 Use Matplotlib >=3.10.1,<3.11 with 0.6.0 (raised to >=3.11.0 in 0.7.0,
 see above). Use NumPy >=1.26,<2.5 with Matplotlib 3.10: NumPy 2.5 deprecates
 the generic date units Matplotlib 3.10 still uses.
-The UI extra requires FastAPI >=0.110.0. FastAPI 0.137 and later keep each
-included router as one wrapper route; the UI policy now matches against the
-routers it builds, so those versions serve requests normally.
 
 Upgrade to Python 3.11 or newer before installing 0.6.0. Supported test
 runtimes are 3.11, 3.12 and 3.13. The security patch set requires Pillow 13
@@ -250,7 +227,6 @@ preserved when you switch to the curated replacement:
 | `dartwork_mpl.asset_viz` | `dartwork_mpl.diagnostics` (`ModuleNotFoundError`) |
 | MCP `dartwork-mpl://guide/general-guide` | `dartwork-mpl://guide/agent-entry` |
 | MCP `dartwork-mpl://guide/layout-guide` | `dartwork-mpl://guide/policy` |
-| `ui._config` (`append_history` / `load_history`, then `save_preset` / `load_presets`) | none; the private module is gone. The viewer keeps its state in `dartwork_mpl.ui.state` |
 
 ## v0.5.0 — installer removal & lighter core
 

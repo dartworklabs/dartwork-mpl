@@ -279,8 +279,8 @@ rules:
       pattern: '\bdm\.(?:agent_utils|xplot)\b'
     message: |
       `dm.agent_utils` and `dm.xplot` were REMOVED in 0.4. The
-      agent_utils surfaces moved to `dm.lint` / `dm.validate_figure` /
-      `dm.helpers`; the xplot templates now live in `dm.templates`
+      agent_utils surfaces moved to `dm.lint` / `dm.validate_figure`;
+      the xplot templates now live in `dm.templates`
       (e.g. `dm.templates.plot_diverging_bar`). See docs/migration.md.
     fix_suggestion: 'see docs/migration.md'
 
