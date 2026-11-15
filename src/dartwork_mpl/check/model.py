@@ -14,67 +14,21 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import pairwise
 
-from ..vocab import Which, X, Y
+from ..vocab import Box, Which, X, Y
 from .roles import Role
 
 #: Contact up to this (points) is a touch, not a cover.
 TOUCH_PT = 0.5
 
 
-@dataclass(frozen=True)
-class Box:
-    """A display-px rectangle."""
-
-    x0: float
-    y0: float
-    x1: float
-    y1: float
-
-    @property
-    def width(self) -> float:
-        """The box's width."""
-        return self.x1 - self.x0
-
-    @property
-    def height(self) -> float:
-        """The box's height."""
-        return self.y1 - self.y0
-
-    @property
-    def area(self) -> float:
-        """Width times height, never negative."""
-        return max(self.width, 0.0) * max(self.height, 0.0)
-
-    def overlap(self, other: Box) -> Box:
-        """The intersection (empty boxes have no area)."""
-        return Box(
-            max(self.x0, other.x0),
-            max(self.y0, other.y0),
-            min(self.x1, other.x1),
-            min(self.y1, other.y1),
-        )
-
-    def cover(self, other: Box) -> float:
-        """The shared area as a share of the smaller box's area."""
-        inter = self.overlap(other)
-        if inter.width <= 0 or inter.height <= 0:
-            return 0.0
-        return inter.area / max(min(self.area, other.area), 1e-9)
-
-    def gap(self, other: Box) -> float:
-        """How far apart the boxes are (negative: by how much they overlap)."""
-        dx = max(self.x0, other.x0) - min(self.x1, other.x1)
-        dy = max(self.y0, other.y0) - min(self.y1, other.y1)
-        return max(dx, dy)
-
-    def margins(self, outer: Box) -> dict[str, float]:
-        """Room between this box and each edge of ``outer`` (negative: past it)."""
-        return {
-            "left": self.x0 - outer.x0,
-            "right": outer.x1 - self.x1,
-            "bottom": self.y0 - outer.y0,
-            "top": outer.y1 - self.y1,
-        }
+def margins(box: Box, outer: Box) -> dict[str, float]:
+    """Room between ``box`` and each edge of ``outer`` (negative: past it)."""
+    return {
+        "left": box.x0 - outer.x0,
+        "right": outer.x1 - box.x1,
+        "bottom": box.y0 - outer.y0,
+        "top": outer.y1 - box.y1,
+    }
 
 
 #: Both axes, x first.
@@ -240,7 +194,7 @@ class Legend:
 
     def spill(self, canvas: Box) -> float:
         """How far the legend runs past the canvas (negative: inside)."""
-        return -min(self.box.margins(canvas).values())
+        return -min(margins(self.box, canvas).values())
 
     @property
     def name(self) -> str:
@@ -312,7 +266,7 @@ class Facts:
         groups: dict[str, list[Text]] = {}
         for t in self.all_texts:
             side, room = min(
-                t.box.margins(self.canvas).items(), key=lambda s: s[1]
+                margins(t.box, self.canvas).items(), key=lambda s: s[1]
             )
             if low <= room < high:
                 groups.setdefault(side, []).append(t)

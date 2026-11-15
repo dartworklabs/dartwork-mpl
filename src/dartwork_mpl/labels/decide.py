@@ -15,7 +15,8 @@ import math
 
 import numpy as np
 
-from .bar_geometry import CrowdFacts, Headroom, HeadroomFacts, Shown, Span
+from ..vocab import Span
+from .bar_geometry import CrowdFacts, Headroom, HeadroomFacts, Shown
 from .bar_options import (
     Edge,
     Higher,

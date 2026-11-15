@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..geometry import axis_of, same_position_axes, shared_axes
-from ..vocab import Which, X, Y
+from ..vocab import Span, Which, X, Y
 from . import decide
-from .bar_geometry import CrowdFacts, HeadroomFacts, Pixels, Room, Span, Spot
+from .bar_geometry import CrowdFacts, HeadroomFacts, Pixels, Room, Spot
 from .bar_options import Rotate, Skip
 from .bars import OFFSET_PT, BarFamily, BarLabel, families_of, format_ticks_now
 from .measure import bar_centres, px_per_pt

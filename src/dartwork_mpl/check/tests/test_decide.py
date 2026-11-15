@@ -5,7 +5,8 @@ from __future__ import annotations
 import pytest
 
 from dartwork_mpl.check.findings import Finding, Findings, Warn
-from dartwork_mpl.check.model import Box, Number, step_decimals
+from dartwork_mpl.check.model import Number, margins, step_decimals
+from dartwork_mpl.vocab import Box
 
 
 @pytest.mark.parametrize(
@@ -57,7 +58,7 @@ def test_box_cover_gap_and_margins():
     a, b = Box(0, 0, 10, 10), Box(5, 5, 25, 25)
     assert a.cover(b) == pytest.approx(0.25)
     assert a.gap(Box(13, 0, 20, 10)) == 3
-    assert Box(-2, 1, 5, 5).margins(a)["left"] == -2
+    assert margins(Box(-2, 1, 5, 5), a)["left"] == -2
 
 
 def test_report_lists_findings_fixes_and_what_did_not_run():

@@ -9,23 +9,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..vocab import Span
 from .bar_options import Toward
 
 
 # ------------------------------------------------------------ bar geometry
-@dataclass(frozen=True)
-class Span:
-    """A ``[low, high]`` extent along one display axis, pixels."""
-
-    low: float
-    high: float
-
-    @property
-    def width(self) -> float:
-        """``high - low``."""
-        return self.high - self.low
-
-
 @dataclass(frozen=True)
 class Pixels:
     """A display length in pixels."""
@@ -81,12 +69,12 @@ class CrowdFacts:
                         min(last.span.low, spot.span.low),
                         max(last.span.high, spot.span.high),
                     ),
-                    max(last.widest, spot.span.width),
+                    max(last.widest, spot.span.length),
                     (*last.members, i),
                 )
             else:
                 out.append(
-                    Position(spot.centre, spot.span, spot.span.width, (i,))
+                    Position(spot.centre, spot.span, spot.span.length, (i,))
                 )
         return tuple(out)
 

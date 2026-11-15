@@ -11,7 +11,7 @@ import math
 from itertools import combinations, pairwise
 
 from .findings import Findings, Info, Warn
-from .model import Facts, Number, Text, TickRow, quote, step_decimals
+from .model import Facts, Number, Text, TickRow, margins, quote, step_decimals
 from .roles import Role
 
 WARN, INFO = Warn(), Info()
@@ -38,7 +38,7 @@ MARGIN_RATIO, MARGIN_MIN_PX = 3.0, 30.0
 def overflow(facts: Facts, found: Findings) -> Findings:
     """Texts cut off by the canvas edge, grouped by edge."""
     for side, cut in facts.edge_groups(-math.inf, -CUT_PX).items():
-        worst = max(-min(t.box.margins(facts.canvas).values()) for t in cut)
+        worst = max(-min(margins(t.box, facts.canvas).values()) for t in cut)
         found = found.flag(
             "OVERFLOW",
             WARN,
@@ -75,7 +75,7 @@ def margin_asymmetry(facts: Facts, found: Findings) -> Findings:
     """Whitespace on one side much larger than on the opposite side."""
     if facts.content is None:
         return found
-    m = facts.content.margins(facts.canvas)
+    m = margins(facts.content, facts.canvas)
     for a, b in (("left", "right"), ("bottom", "top")):
         low, high = sorted((max(m[a], 0.0), max(m[b], 0.0)))
         if low > MARGIN_MIN_PX and high / low > MARGIN_RATIO:

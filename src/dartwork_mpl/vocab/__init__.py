@@ -5,6 +5,7 @@ becomes one of these types here, once.
 
 ``axis``  An Axes' x and y axis, and which side of it an axis label sits on.
 ``align``  Text alignment: left, centre or right of an anchor; above, below or on it.
+``box``  A rectangle and an extent in display pixels.
 ``edge``  A box's four edges, and the figure edge a figure legend reserves.
 ``projection``  An Axes' projection: plain 2D, 3D or curved.
 ``number``  The scale a number prints in: the factor, prefix and suffix of a tick.
@@ -41,6 +42,7 @@ from .axis import (
     parse_axis_side,
     parse_which,
 )
+from .box import Box, Span
 from .edge import EDGES, Bottom, Edge, Left, Reserve, Right, Top, edge_of
 from .locale import DefaultLocale, KoreanLocale, Locale
 from .number import AffixedZero, BareZero, ScaleZero, TickScale
@@ -64,6 +66,7 @@ __all__ = [
     "BareZero",
     "Baseline",
     "Bottom",
+    "Box",
     "Curved",
     "DefaultLocale",
     "Edge",
@@ -81,6 +84,7 @@ __all__ = [
     "Reserve",
     "Right",
     "ScaleZero",
+    "Span",
     "ThreeD",
     "TickScale",
     "Top",

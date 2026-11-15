@@ -120,8 +120,8 @@ def content_box(axes: AxesContent) -> Box | None:
         return None
     return Box(
         min(b.x0 for b in boxes),
-        max(b.x1 for b in boxes),
         min(b.y0 for b in boxes),
+        max(b.x1 for b in boxes),
         max(b.y1 for b in boxes),
     )
 

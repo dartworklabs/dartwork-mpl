@@ -18,10 +18,10 @@ from ..vocab import (
     AlignRight,
     AlignTop,
     HAlign,
+    Span,
     VAlign,
     VCentre,
 )
-from .bar_geometry import Span
 
 
 # ------------------------------------------------------------ notes
@@ -218,7 +218,7 @@ class AtFraction:
 
     def shown(self, left: float, right: float, frame: Span) -> float:
         """The display x of this place in the Axes ``frame``."""
-        return frame.low + frame.width * self.fraction
+        return frame.low + frame.length * self.fraction
 
     @property
     def tries(self) -> tuple[LinePlace, ...]:

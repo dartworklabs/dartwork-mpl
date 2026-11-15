@@ -12,7 +12,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from .boxes import Box, Entries, Hits, Size, Span
+from ..vocab import Box, Span
+from .boxes import Entries, Hits, Size
 from .model import Columns, Request
 from .sides import Loc, Side, middle
 

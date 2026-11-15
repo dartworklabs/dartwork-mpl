@@ -45,7 +45,7 @@ orphan: true
 
 | 패키지 | 개념 | 쓰는 곳 |
 | --- | --- | --- |
-| `vocab` | slice들이 함께 쓰는 낱말. 모듈 하나가 어휘 하나다: `axis`(x·y 축과 라벨이 놓이는 쪽), `align`(글자 정렬), `edge`(상자의 네 변, figure 범례가 잡는 변), `projection`(평면, 3D, 그 밖), `number`(숫자가 찍히는 눈금 단위), `locale`(기본 관례와 한국 관례) | 모든 slice, geometry |
+| `vocab` | slice들이 함께 쓰는 낱말. 모듈 하나가 어휘 하나다: `axis`(x·y 축과 라벨이 놓이는 쪽), `align`(글자 정렬), `box`(픽셀 사각형 `Box`와 구간 `Span`), `edge`(상자의 네 변, figure 범례가 잡는 변), `projection`(평면, 3D, 그 밖), `number`(숫자가 찍히는 눈금 단위), `locale`(기본 관례와 한국 관례) | 모든 slice, geometry |
 | `length` | 물리 길이 `Length`와 단위(`dm.cm` 등) | size, layout, 루트 |
 | `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels, check |
 | `edgecase` | 엣지 케이스 등록 장치 | 모든 slice |

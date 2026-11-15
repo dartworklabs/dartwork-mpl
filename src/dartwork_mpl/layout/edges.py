@@ -77,7 +77,7 @@ def _along_plot(piece: Piece, plot: Box | None, canvas: Canvas) -> Piece:
     else:
         y0 = y0 if y0 < 0.0 else max(y0, plot.y0)
         y1 = y1 if y1 > canvas.height else min(y1, plot.y1)
-    return replace(piece, box=Box(x0, x1, y0, y1))
+    return replace(piece, box=Box(x0, y0, x1, y1))
 
 
 def _has_outside_legend(facts: ContentFacts, plan: Fit) -> bool:
@@ -245,7 +245,7 @@ def _overlong(name: AxisName, facts: TextFacts) -> bool:
         return False
     b, c = name.box, facts.canvas
     off = max(-b.x0, b.x1 - c.width, -b.y0, b.y1 - c.height)
-    return off > TOUCH_PX or any(b.overlap(o) > TOUCH_PX for o in name.others)
+    return off > TOUCH_PX or any(-b.gap(o) > TOUCH_PX for o in name.others)
 
 
 def _name_lines(name: AxisName) -> Line | None:

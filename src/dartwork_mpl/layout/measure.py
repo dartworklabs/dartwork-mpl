@@ -89,7 +89,7 @@ def cartesian(ax: Axes) -> bool:
 
 def box_of(ext: Bbox) -> Box:
     """A matplotlib extent as the layout's :class:`Box`."""
-    return Box(float(ext.x0), float(ext.x1), float(ext.y0), float(ext.y1))
+    return Box(float(ext.x0), float(ext.y0), float(ext.x1), float(ext.y1))
 
 
 def _measurable(ext: Bbox) -> bool:

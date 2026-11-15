@@ -16,7 +16,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import assert_never
 
-from .boxes import Box, Entries, Hits, Size, Span
+from ..vocab import Box, Span
+from .boxes import Entries, Hits, Size, reach_past
 from .model import TALL_SHARE, Columns
 from .plans import (
     Anchor,
@@ -162,7 +163,7 @@ def place(facts: LegendFacts) -> LegendPlan:
 def anchor(facts: AnchorFacts) -> Anchor:
     """Past the decorations beyond the side, centred on the Axes."""
     reach = [
-        facts.axes.reach_past(facts.side, box) for box in facts.decorations
+        reach_past(facts.axes, facts.side, box) for box in facts.decorations
     ]
     return Anchor(clearance=max([0.0, *reach]))
 

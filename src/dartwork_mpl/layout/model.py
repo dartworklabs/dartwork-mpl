@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Literal, NewType, TypeAlias
 
 from ..length import Length
-from ..vocab import Edge, Which
+from ..vocab import Box, Edge, Which
 
 Px = NewType("Px", float)
 Degrees = NewType("Degrees", float)
@@ -225,28 +225,6 @@ Answer: TypeAlias = Go | Refuse
 
 
 # -- one measuring step -------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class Box:
-    """A display-pixel rectangle."""
-
-    x0: float
-    x1: float
-    y0: float
-    y1: float
-
-    @property
-    def width(self) -> float:
-        """Its width (px)."""
-        return self.x1 - self.x0
-
-    def overlap(self, other: Box) -> float:
-        """How deep two boxes cross (<= 0: apart)."""
-        return min(
-            min(self.x1, other.x1) - max(self.x0, other.x0),
-            min(self.y1, other.y1) - max(self.y0, other.y0),
-        )
 
 
 @dataclass(frozen=True)

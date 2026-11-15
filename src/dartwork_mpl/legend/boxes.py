@@ -11,76 +11,46 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from ..vocab import Box
 from .sides import Loc, Side
 
 
-@dataclass(frozen=True)
-class Box:
-    """A display-px rectangle."""
+def along(box: Box, side: Side) -> tuple[float, float]:
+    """The box's extent along ``side`` (x across, y right and left)."""
+    return (box.x0, box.x1) if side.across else (box.y0, box.y1)
 
-    x0: float
-    y0: float
-    x1: float
-    y1: float
 
-    @property
-    def width(self) -> float:
-        """The box's width."""
-        return self.x1 - self.x0
+def normal(box: Box, side: Side) -> tuple[float, float]:
+    """The box's extent towards ``side`` (y above and below, x beside)."""
+    return (box.y0, box.y1) if side.across else (box.x0, box.x1)
 
-    @property
-    def height(self) -> float:
-        """The box's height."""
-        return self.y1 - self.y0
 
-    def along(self, side: Side) -> tuple[float, float]:
-        """The box's extent along ``side`` (x across, y right and left)."""
-        return (self.x0, self.x1) if side.across else (self.y0, self.y1)
+def reach_past(box: Box, side: Side, ext: Box) -> float:
+    """How far ``ext`` reaches past ``side`` of ``box`` (0 when its centre is
+    not beyond)."""
+    low, high = normal(box, side)
+    e0, e1 = normal(ext, side)
+    centre = (e0 + e1) / 2
+    past = centre > high + 0.5 if side.far else centre < low - 0.5
+    return beyond(box, side, ext) if past else 0.0
 
-    def normal(self, side: Side) -> tuple[float, float]:
-        """The box's extent towards ``side`` (y above and below, x beside)."""
-        return (self.y0, self.y1) if side.across else (self.x0, self.x1)
 
-    def padded(self, pad: float) -> Box:
-        """This box grown by ``pad`` on every side."""
-        return Box(self.x0 - pad, self.y0 - pad, self.x1 + pad, self.y1 + pad)
+def beyond(box: Box, side: Side, ext: Box) -> float:
+    """How far ``ext`` reaches past ``side`` of ``box``, wherever its centre is."""
+    low, high = normal(box, side)
+    e0, e1 = normal(ext, side)
+    return e1 - high if side.far else low - e0
 
-    def overlaps(self, other: Box) -> bool:
-        """Whether the boxes share some area."""
-        return min(self.x1, other.x1) > max(self.x0, other.x0) and min(
-            self.y1, other.y1
-        ) > max(self.y0, other.y0)
 
-    def outside_share(self, outer: Box) -> float:
-        """The share of this box's area that lies outside ``outer``."""
-        w = max(min(self.x1, outer.x1) - max(self.x0, outer.x0), 0.0)
-        h = max(min(self.y1, outer.y1) - max(self.y0, outer.y0), 0.0)
-        area = max(self.width * self.height, 1.0)
-        return (self.width * self.height - w * h) / area
-
-    def reach_past(self, side: Side, ext: Box) -> float:
-        """How far ``ext`` reaches past ``side`` (0 when its centre is not beyond)."""
-        low, high = self.normal(side)
-        e0, e1 = ext.normal(side)
-        centre = (e0 + e1) / 2
-        past = centre > high + 0.5 if side.far else centre < low - 0.5
-        return self.beyond(side, ext) if past else 0.0
-
-    def beyond(self, side: Side, ext: Box) -> float:
-        """How far ``ext`` reaches past ``side``, wherever its centre is."""
-        low, high = self.normal(side)
-        e0, e1 = ext.normal(side)
-        return e1 - high if side.far else low - e0
-
-    def behind(self, side: Side, other: Box, eps: float) -> bool:
-        """Whether ``other`` sits beyond ``side`` of this box, facing it."""
-        low, high = self.normal(side)
-        o0, o1 = other.normal(side)
-        a0, a1 = self.along(side)
-        b0, b1 = other.along(side)
-        facing = min(a1, b1) - max(a0, b0) > eps
-        beyond = o0 >= high - eps if side.far else o1 <= low + eps
-        return facing and beyond
+def behind(box: Box, side: Side, other: Box, eps: float) -> bool:
+    """Whether ``other`` sits beyond ``side`` of ``box``, facing it."""
+    low, high = normal(box, side)
+    o0, o1 = normal(other, side)
+    a0, a1 = along(box, side)
+    b0, b1 = along(other, side)
+    facing = min(a1, b1) - max(a0, b0) > eps
+    past = o0 >= high - eps if side.far else o1 <= low + eps
+    return facing and past
 
 
 @dataclass(frozen=True)
@@ -106,19 +76,6 @@ class Size:
     def finite(self) -> bool:
         """Both sides finite (a trial legend that measured)."""
         return math.isfinite(self.width) and math.isfinite(self.height)
-
-
-@dataclass(frozen=True)
-class Span:
-    """Where a legend outside a side may lie along it, display px."""
-
-    low: float
-    high: float
-
-    @property
-    def length(self) -> float:
-        """The span's length."""
-        return self.high - self.low
 
 
 @dataclass(frozen=True)

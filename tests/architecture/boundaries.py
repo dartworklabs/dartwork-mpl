@@ -70,7 +70,7 @@ PLATFORM = frozenset(
         # layout margins).
         "dartwork_mpl.length",
         # The words slices share, one pure module each: an axis and its
-        # sides, text alignment, a box's edges, an Axes' projection, the
+        # sides, text alignment, a pixel box and span, a box's edges, an Axes' projection, the
         # scale a number prints in, a figure's locale.
         "dartwork_mpl.vocab",
         # Figure measurement two or more slices share.

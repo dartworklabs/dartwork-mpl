@@ -10,7 +10,6 @@ from dartwork_mpl.labels.bar_geometry import (
     HeadroomFacts,
     Pixels,
     Room,
-    Span,
     Spot,
 )
 from dartwork_mpl.labels.bar_options import (
@@ -30,6 +29,7 @@ from dartwork_mpl.labels.model import parse_bar_options
 from dartwork_mpl.labels.panels import Column, Panel, PanelsFacts, Title
 from dartwork_mpl.labels.places import Tries, Try
 from dartwork_mpl.labels.stacks import BarRun, BarsFacts
+from dartwork_mpl.vocab import Span
 
 
 def _spots(*spans: tuple[float, float]) -> tuple[Spot, ...]:

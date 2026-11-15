@@ -33,7 +33,7 @@ from dartwork_mpl.layout.tests.test_decide import (
 )
 from dartwork_mpl.vocab import Bottom, Top, Y
 
-PLOT = Box(100.0, 900.0, 100.0, 400.0)
+PLOT = Box(100.0, 100.0, 900.0, 400.0)
 
 
 def fit_of(facts):
@@ -57,7 +57,7 @@ def texts(groups=(), names=(), spacings=(), wrapped_names=None) -> TextFacts:
 
 
 def test_axes_3d_counts_its_tight_boxes() -> None:
-    tight = (Piece(Box(50.0, 950.0, 50.0, 450.0)),)
+    tight = (Piece(Box(50.0, 50.0, 950.0, 450.0)),)
     a = replace(axes(PLOT), tight=tight)
     fired, plan = fit_of(content(a))
     assert fired == ("axes-3d",)
@@ -65,15 +65,15 @@ def test_axes_3d_counts_its_tight_boxes() -> None:
 
 
 def test_outside_legend_along_side_counts_past_the_canvas_only() -> None:
-    above = Piece(Box(50.0, 1020.0, 410.0, 450.0), outside=Top())
+    above = Piece(Box(50.0, 410.0, 1020.0, 450.0), outside=Top())
     fired, plan = fit_of(content(axes(PLOT, above)))
     assert fired == ("outside-legend-along-side",)
-    assert plan.axes[0].pieces[0].box == Box(100.0, 1020.0, 410.0, 450.0)
+    assert plan.axes[0].pieces[0].box == Box(100.0, 410.0, 1020.0, 450.0)
 
 
 def test_figure_text_edge_band_reserves_by_reading_direction() -> None:
     # A source line in the bottom-left corner is nearer the left edge.
-    note = FigureArtist(Box(5.0, 300.0, 5.0, 20.0), None, False, None, Px(0.0))
+    note = FigureArtist(Box(5.0, 5.0, 300.0, 20.0), None, False, None, Px(0.0))
     fired, plan = fit_of(content(axes(PLOT), artists=[note]))
     assert fired == ("figure-text-edge-band",)
     assert plan.reserves == (Bottom(),)
@@ -81,7 +81,7 @@ def test_figure_text_edge_band_reserves_by_reading_direction() -> None:
 
 def test_figure_legend_side_reserves_its_side() -> None:
     wide = FigureArtist(
-        Box(2.0, 998.0, 200.0, 300.0), None, None, Top(), Px(0.0)
+        Box(2.0, 200.0, 998.0, 300.0), None, None, Top(), Px(0.0)
     )
     fired, plan = fit_of(content(axes(PLOT), artists=[wide]))
     assert fired == ("figure-legend-side",)
@@ -96,15 +96,15 @@ def name(label: int, text_: str, box: Box, span: float = 300.0) -> AxisName:
         Px(span),
         box,
         group,
-        (Box(0.0, 50.0, 100.0, 200.0),),
+        (Box(0.0, 100.0, 50.0, 200.0),),
         chars,
     )
 
 
 def test_overlong_axis_name_wraps_and_its_twin_follows() -> None:
     long = "x" * 200 + " " + "y" * 200  # 401 chars over a 300 px side
-    blocked = name(1, long, Box(10.0, 30.0, 0.0, 600.0))  # past the top
-    clear = name(2, long, Box(500.0, 520.0, 100.0, 400.0))
+    blocked = name(1, long, Box(10.0, 0.0, 30.0, 600.0))  # past the top
+    clear = name(2, long, Box(500.0, 100.0, 520.0, 400.0))
     fired, plan = text_plan(texts(names=[blocked, clear]))
     assert fired == ("overlong-axis-name",)
     wrapped = Line("x" * 200 + "\n" + "y" * 200)

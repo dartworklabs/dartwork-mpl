@@ -39,7 +39,8 @@ from ..geometry import (
     same_position_axes,
     text_inks,
 )
-from .boxes import Box, Hits
+from ..vocab import Box
+from .boxes import Hits
 from .model import CLEARANCE_PT
 
 if TYPE_CHECKING:

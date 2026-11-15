@@ -7,7 +7,7 @@ from dataclasses import replace
 import pytest
 
 from dartwork_mpl.legend import decide
-from dartwork_mpl.legend.boxes import Box, Entries, Hits, Size, Span
+from dartwork_mpl.legend.boxes import Entries, Hits, Size
 from dartwork_mpl.legend.model import Columns, Request
 from dartwork_mpl.legend.plans import (
     AnchorFacts,
@@ -28,6 +28,7 @@ from dartwork_mpl.legend.sides import (
     UpperLeft,
     UpperRight,
 )
+from dartwork_mpl.vocab import Box, Span
 
 AXES = Box(0, 0, 400, 300)
 

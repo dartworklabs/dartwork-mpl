@@ -51,7 +51,7 @@ def axes(plot: Box, *pieces: Piece) -> AxesContent:
 
 
 def text(x0: float, x1: float, y0: float, y1: float, **kw: object) -> Piece:
-    return Piece(Box(x0, x1, y0, y1), **kw)  # type: ignore[arg-type]
+    return Piece(Box(x0, y0, x1, y1), **kw)  # type: ignore[arg-type]
 
 
 def content(
@@ -105,7 +105,7 @@ def test_bad_margins_raise(margin: object, error: type[Exception]) -> None:
 
 
 def test_edges_put_the_content_at_the_margin() -> None:
-    plot = Box(100.0, 900.0, 100.0, 400.0)
+    plot = Box(100.0, 100.0, 900.0, 400.0)
     label = text(60.0, 80.0, 150.0, 350.0)  # 40 px left of the plot
     step = solve(content(axes(plot, label), margins=Sides(0.01, 0.0, 0.0, 0.0)))
     assert step is not None
@@ -117,7 +117,7 @@ def test_edges_put_the_content_at_the_margin() -> None:
 
 
 def test_delta_is_the_largest_edge_move_in_pixels() -> None:
-    plot = Box(0.0, 1000.0, 0.0, 500.0)
+    plot = Box(0.0, 0.0, 1000.0, 500.0)
     last = Edges(0.0, 1.0, 0.0, 0.99)
     step = solve(content(axes(plot), last=last))
     assert step is not None and step.delta == pytest.approx(5.0)
@@ -126,7 +126,7 @@ def test_delta_is_the_largest_edge_move_in_pixels() -> None:
 
 def test_edges_stay_a_valid_rectangle() -> None:
     huge = text(-5000.0, 6000.0, -5000.0, 6000.0)
-    step = solve(content(axes(Box(100.0, 900.0, 100.0, 400.0), huge)))
+    step = solve(content(axes(Box(100.0, 100.0, 900.0, 400.0), huge)))
     assert step is not None
     e = step.edges
     assert 0.0 <= e.left < e.right <= 1.0 and 0.0 <= e.bottom < e.top <= 1.0
@@ -140,11 +140,11 @@ def test_no_content_no_step() -> None:
 @pytest.mark.parametrize(
     ("holds", "box", "edge"),
     [
-        (Top(), Box(400, 600, 470, 495), Top()),  # suptitle
-        (Top(), Box(0, 20, 100, 120), Left()),  # low: nearest
-        (Bottom(), Box(400, 600, 5, 20), Bottom()),  # supxlabel
-        (Left(), Box(5, 20, 200, 300), Left()),  # supylabel
-        (None, Box(950, 990, 200, 300), Right()),  # a text
+        (Top(), Box(400, 470, 600, 495), Top()),  # suptitle
+        (Top(), Box(0, 100, 20, 120), Left()),  # low: nearest
+        (Bottom(), Box(400, 5, 600, 20), Bottom()),  # supxlabel
+        (Left(), Box(5, 200, 20, 300), Left()),  # supylabel
+        (None, Box(950, 200, 990, 300), Right()),  # a text
     ],
 )
 def test_figure_artist_reserves_its_role_edge_else_the_nearest(
@@ -156,8 +156,8 @@ def test_figure_artist_reserves_its_role_edge_else_the_nearest(
 
 
 def test_a_reservation_adds_its_reach_and_gap() -> None:
-    title = FigureArtist(Box(400, 600, 450, 500), Top(), False, None, Px(10.0))
-    plot = axes(Box(0.0, 1000.0, 0.0, 500.0))
+    title = FigureArtist(Box(400, 450, 600, 500), Top(), False, None, Px(10.0))
+    plot = axes(Box(0.0, 0.0, 1000.0, 500.0))
     step = solve(content(plot, artists=[title]))
     assert step is not None and step.edges.top == pytest.approx(1 - 60 / 500)
 

@@ -27,7 +27,7 @@ orphan: true
 | `src/dartwork_mpl/<slice>/` | 코어 slice 하나. `model`, `decide`, `edges`, `measure`/`apply`, 개념 이름의 모듈, `assets/`, `tests/`. 다른 slice를 import하지 않는다 | architecture |
 | `src/dartwork_mpl/<slice>/edges.py` | 그 slice의 이름 붙은 엣지 케이스(`EDGES`, `<NAME>_EDGES`). 새 특수 처리는 목록 끝에 더한다 | architecture |
 | `src/dartwork_mpl/compose/<slice>.py` | 그 slice가 다른 slice를 쓰는 자리. 공개 함수를 조립만 한다. 루트만 import한다 | architecture |
-| `src/dartwork_mpl/vocab/` | slice들이 함께 쓰는 순수 어휘. 모듈 하나가 어휘 하나(`axis`, `align`, `edge`, `projection`, `number`, `locale`) | architecture |
+| `src/dartwork_mpl/vocab/` | slice들이 함께 쓰는 순수 어휘. 모듈 하나가 어휘 하나(`axis`, `align`, `box`, `edge`, `projection`, `number`, `locale`) | architecture |
 | `src/dartwork_mpl/length/`, `colorspace/` | 두 slice 이상이 쓰는 순수 타입과 산술(platform) | architecture |
 | `src/dartwork_mpl/geometry/` | 두 slice 이상이 쓰는 figure 측정 코드(platform, matplotlib) | architecture |
 | `src/dartwork_mpl/edgecase/` | 엣지 케이스 등록 장치(platform) | architecture |

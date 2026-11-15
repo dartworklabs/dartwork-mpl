@@ -23,7 +23,8 @@ from ..geometry import (
     drawn_in_tree,
     same_position_axes,
 )
-from .boxes import Box, Entries, Size, Span
+from ..vocab import Box, Span
+from .boxes import Entries, Size, along, behind
 from .ink import box_of, data_ink, px
 from .model import (
     Columns,
@@ -161,7 +162,7 @@ def free_sides(ax: Axes) -> tuple[Side, ...]:
     return tuple(
         side
         for side in FALLBACK_SIDES
-        if not any(me.behind(side, pos, eps) for pos in others)
+        if not any(behind(me, side, pos, eps) for pos in others)
     )
 
 
@@ -214,7 +215,7 @@ def span(ax: Axes, side: Side, renderer: RendererBase, margin: float) -> Span:
     if root is None:
         return Span(-np.inf, np.inf)
     canvas = box_of(root.bbox)
-    low, high = canvas.along(side)
+    low, high = along(canvas, side)
     low, high = low + margin, high - margin
     try:
         me = box_of(ax.get_window_extent(renderer))
@@ -233,12 +234,12 @@ def span(ax: Axes, side: Side, renderer: RendererBase, margin: float) -> Span:
                 *_titles(other, renderer),
             )
         ]
-        f0, f1 = box_of(frame).along(side)
-        m0, m1 = me.along(side)
+        f0, f1 = along(box_of(frame), side)
+        m0, m1 = along(me, side)
         if f1 <= m0 + 0.5:
-            low = max(low, max(e.along(side)[1] for e in ext) + margin)
+            low = max(low, max(along(e, side)[1] for e in ext) + margin)
         elif f0 >= m1 - 0.5:
-            high = min(high, min(e.along(side)[0] for e in ext) - margin)
+            high = min(high, min(along(e, side)[0] for e in ext) - margin)
     return Span(float(low), float(high))
 
 
