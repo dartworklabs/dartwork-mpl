@@ -8,9 +8,9 @@ writing ``chart.png.png``.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import ClassVar, Protocol, runtime_checkable
+from typing import ClassVar, Literal, Protocol, TypedDict, runtime_checkable
 
 # Suffixes savefig writes; a stem ending in one of them has it cut off.
 EXTENSIONS = "png pdf svg svgz eps ps jpg jpeg tif tiff webp raw rgba"
@@ -44,6 +44,36 @@ Writer.PDF = Writer("pdf", timestamp_key="CreationDate")
 Writer.SVG = Writer("svg", timestamp_key="Date", svg=True)
 Writer.SVGZ = Writer("svgz", timestamp_key="Date", svg=True, gzipped=True)
 WRITERS = (Writer.PLAIN, Writer.PDF, Writer.SVG, Writer.SVGZ)
+
+
+# matplotlib's colour forms for ``facecolor`` / ``edgecolor`` (its
+# ``ColorType``), spelled here because a model file imports no matplotlib.
+RGB = tuple[float, float, float]
+RGBA = tuple[float, float, float, float]
+Colour = str | RGB | RGBA | tuple[str | RGB | RGBA, float]
+
+
+class SaveOptions(TypedDict, total=False):
+    """The keywords ``save_formats`` hands on to ``Figure.savefig``.
+
+    ``metadata`` is read here first (timestamps, SVG salt); the rest reach
+    savefig unchanged. A backend keyword not named here still reaches
+    savefig at run time; the checker only knows these. The artists in
+    ``bbox_extra_artists`` are only forwarded, so they stay ``object``.
+    """
+
+    dpi: float | Literal["figure"]
+    metadata: Mapping[str, object] | None
+    facecolor: Colour | Literal["auto"]
+    edgecolor: Colour | Literal["auto"]
+    transparent: bool
+    pad_inches: float | Literal["layout"]
+    bbox_extra_artists: Sequence[object]
+    format: str
+    backend: str
+    orientation: Literal["landscape", "portrait"]
+    papertype: str
+    pil_kwargs: Mapping[str, object]
 
 
 @dataclass(frozen=True)

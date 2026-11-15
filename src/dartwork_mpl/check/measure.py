@@ -7,9 +7,10 @@ is changed, hidden or moved.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import suppress
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -70,6 +71,8 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend as MplLegend
 
+T = TypeVar("T")
+
 _BOLD = {"bold", "heavy", "black", "extra bold", "semibold", "demibold"}
 
 
@@ -84,16 +87,14 @@ class Reader:
     def __init__(self, fig: Figure) -> None:
         """Draw ``fig`` once so every position is current."""
         self.fig = fig
-        with walk.recording() as drawn:
-            fig.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
-        self.drawn = drawn
+        fig.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
         self.renderer: RendererBase = get_renderer(fig)
         self.pt = fig.dpi / 72.0
         self.skipped: list[str] = []
         self.panels = walk.drawn_axes(fig)
         self.letters = {id(t) for _ax, t in walk.panel_labels(fig)}
 
-    def text(self, t: Any, role: Role, panel: int | None) -> Text | None:
+    def text(self, t: MplText, role: Role, panel: int | None) -> Text | None:
         """A drawn, non-blank text as a fact; ``None`` when it has no box."""
         if not drawn_in_tree(t) or not t.get_text().strip():
             return None
@@ -101,7 +102,7 @@ class Reader:
             if isinstance(t, Annotation):
                 bb = words_box(t, self.renderer)
             else:
-                bb = self.drawn.extent(t, self.renderer)
+                bb = walk.extent(t, self.renderer)
         except BBOX_ERRORS:
             return None
         if bb is None or not np.isfinite(bb.extents).all():
@@ -110,6 +111,15 @@ class Reader:
             return None
         em = float(t.get_fontsize()) * self.pt
         return Text(t, t.get_text(), role, panel, box_of(bb), em)
+
+    def attempt(self, read: Callable[[], T], failed: T, rules: str) -> T:
+        """``read()``; ``failed`` when a box cannot be read, the rules it
+        feeds then listed as skipped."""
+        try:
+            return read()
+        except BBOX_ERRORS:
+            self.skipped.append(rules)
+            return failed
 
     # ------------------------------------------------------------ texts
     def axes_texts(self) -> tuple[Text, ...]:
@@ -137,7 +147,7 @@ class Reader:
                     for t in drawn_tick_labels(ax, axis.mpl)
                 )
             for secondary in walk.secondary_axes(ax):
-                names, ticks = walk.secondary_texts(secondary, self.drawn)
+                names, ticks = walk.secondary_texts(secondary)
                 found.extend(self.text(t, Role.AXIS_LABEL, i) for t in names)
                 found.extend(self.text(t, Role.TICK, i) for t in ticks)
         return tuple(t for t in found if t is not None)
@@ -149,6 +159,7 @@ class Reader:
             for t, _ext in iter_figure_level_extents(
                 self.fig, self.renderer, legends=False
             )
+            if isinstance(t, MplText)
         ]
         return tuple(t for t in found if t is not None)
 
@@ -175,7 +186,7 @@ class Reader:
         span = which.pick(frame.width, frame.height)
         r = self.renderer
 
-        def centre(t: Any) -> float:
+        def centre(t: MplText) -> float:
             b = t.get_window_extent(r)
             return float(which.pick(b.x0 + b.x1, b.y0 + b.y1))
 
@@ -451,31 +462,18 @@ class Reader:
 def measure(fig: Figure) -> Facts:
     """Every fact the rules read, from one draw of ``fig``."""
     r = Reader(fig)
-    sections: dict[str, Any] = {}
-    for name, read, rules in (
-        ("texts", r.axes_texts, "OVERFLOW, TEXT_AT_EDGE, OVERLAP"),
-        ("figure_texts", r.figure_texts, "OVERFLOW, TEXT_AT_EDGE"),
-        ("ticks", r.ticks, "TICK_*"),
-        ("legends", r.legends, "LEGEND_*"),
-        ("panels", r.panel_facts, "EMPTY_AXES"),
-        ("content", r.content, "MARGIN_ASYMMETRY"),
-    ):
-        try:
-            sections[name] = read()
-        except BBOX_ERRORS:
-            r.skipped.append(rules)
-    texts = sections.get("texts", ())
-    rows, corners = sections.get("ticks", ((), ()))
+    texts = r.attempt(r.axes_texts, (), "OVERFLOW, TEXT_AT_EDGE, OVERLAP")
+    figure_texts = r.attempt(r.figure_texts, (), "OVERFLOW, TEXT_AT_EDGE")
+    rows, corners = r.attempt(r.ticks, ((), ()), "TICK_*")
+    legends = r.attempt(r.legends, (), "LEGEND_*")
+    panels = r.attempt(r.panel_facts, (), "EMPTY_AXES")
+    content = r.attempt(r.content, None, "MARGIN_ASYMMETRY")
     try:
         values = r.values(texts)
     except BBOX_ERRORS:
         values = ()
         r.skipped.append("VALUE_LABEL_ON_DATA")
-    every = (
-        texts
-        + tuple(t for row in rows for t in row.labels)
-        + sections.get("figure_texts", ())
-    )
+    every = texts + tuple(t for row in rows for t in row.labels) + figure_texts
     try:
         contrast = text_contrast(fig, every)
     except BBOX_ERRORS:
@@ -485,13 +483,13 @@ def measure(fig: Figure) -> Facts:
         canvas=box_of(Bbox(fig.bbox.get_points())),
         px_per_pt=r.pt,
         texts=texts,
-        figure_texts=sections.get("figure_texts", ()),
+        figure_texts=figure_texts,
         ticks=rows,
         corners=corners,
-        legends=sections.get("legends", ()),
+        legends=legends,
         values=values,
         contrast=contrast,
-        panels=sections.get("panels", ()),
-        content=sections.get("content"),
+        panels=panels,
+        content=content,
         skipped=tuple(r.skipped),
     )
