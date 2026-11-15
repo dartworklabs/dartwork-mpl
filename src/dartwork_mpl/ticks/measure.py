@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 import re
-import weakref
 from collections.abc import Sequence
 from itertools import pairwise
 from typing import Protocol, runtime_checkable
@@ -22,38 +21,18 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 from matplotlib.transforms import IdentityTransform, Transform
 
-from ..axis import Far, Near, Which, X, Y, bars_along, parse_which
-from ..geometry import (
-    axes_titles,
-    axis_of,
-    label_side,
-    projection,
-    same_position_axes,
-    shared_axes,
-)
-from ..projection import Curved, Rectilinear, ThreeD
-from .axis_plans import (
-    AxesFacts,
-    AxisFacts,
-    AxisKind,
-    DateAxis,
-    NumberAxis,
-    OtherAxis,
-    TwinFacts,
-)
+from ..axis import Which, X, Y, bars_along, parse_which
+from ..geometry import axes_titles, axis_of, shared_axes
+from .axis_plans import AxisFacts, AxisKind, DateAxis, NumberAxis, OtherAxis
 from .defaults import config
 from .model import (
-    TWIN_SIDES,
     Asked,
     ByFigure,
     Ems,
     FollowFigure,
     Ladder,
     Language,
-    RightSide,
     TickValues,
-    TopSide,
-    TwinSide,
     YearDigits,
     Zone,
     parse_digits,
@@ -64,10 +43,6 @@ _HANGUL = re.compile("[가-힣]")
 FIRST_YEAR, LAST_YEAR = 1900, 2099
 WHOLE_TOL = 1e-6  # bar centres rebuilt as x + width / 2 sit a few ulps off
 QUARTER_DAYS = (89.0, 92.0)
-# The sides of each Axes whose twin spine a layout showed (or found showing).
-SETTLED: weakref.WeakKeyDictionary[Axes, set[TwinSide]] = (
-    weakref.WeakKeyDictionary()
-)
 
 
 def with_insets(axes: Sequence[Axes]) -> list[Axes]:
@@ -402,153 +377,6 @@ def axis_facts(ax: Axes, which: Which) -> AxisFacts:
         own_locator=axis.isDefault_majloc and not configured(locator),
         fixed_texts=isinstance(fmt, ticker.FixedFormatter),
     )
-
-
-# -- twin scales ----------------------------------------------------------------
-
-
-def _scale(side: TwinSide) -> Which:
-    """The axis whose scale sits on ``side`` (a twin hides the other)."""
-    match side:
-        case RightSide():
-            return Y()
-        case TopSide():
-            return X()
-
-
-def plain(ax: Axes) -> bool:
-    """Whether ``ax`` is matplotlib's plain 2D Axes."""
-    match projection(ax):
-        case Rectilinear():
-            return True
-        case ThreeD() | Curved():
-            return False
-
-
-def _rectilinear(ax: Axes) -> bool:
-    return ax.get_visible() and plain(ax)
-
-
-def boxes(fig: Figure) -> dict[Axes, list[Axes]]:
-    """Each visible rectilinear Axes drawn in a box with others, and that box.
-
-    Walked with insets, depth first: an inset is not in ``fig.axes`` but its
-    ``twinx`` is, so the inset finds its twin and the twin its box.
-    """
-    found: dict[Axes, list[Axes]] = {}
-    for ax in with_insets(fig.axes):
-        if ax in found or not _rectilinear(ax):
-            continue
-        group = [m for m in same_position_axes(ax) if _rectilinear(m)]
-        if len(group) >= 2:
-            found.update(dict.fromkeys(group, group))
-    return found
-
-
-def _owns(ax: Axes, group: Sequence[Axes], scale: Which) -> bool:
-    """``ax`` shows its ``scale`` axis, which no box member shares while the other is shared."""
-    shared_other = shared_axes(ax, scale.other)
-    shared_scale = shared_axes(ax, scale)
-    return axis_of(ax, scale).get_visible() and any(
-        m is not ax and m in shared_other and m not in shared_scale
-        for m in group
-    )
-
-
-def _far_side(axis: Axis) -> bool:
-    """Tick labels (else marks) show on the right / top and not the left / bottom."""
-    tick = (axis.get_major_ticks() or axis.get_major_ticks(1))[0]
-    labels = (tick.label1.get_visible(), tick.label2.get_visible())
-    marks = (tick.tick1line.get_visible(), tick.tick2line.get_visible())
-    near, far = labels if any(labels) else marks
-    return far and not near
-
-
-def _draws(ax: Axes, group: Sequence[Axes], side: TwinSide) -> bool:
-    """``ax`` draws its own scale on ``side``: ticks and label there (one, for a twin)."""
-    scale = _scale(side)
-    other = scale.other
-    if not _owns(ax, group, scale):
-        return False
-    axis = axis_of(ax, scale)
-    match label_side(axis):
-        case Far():
-            label = True
-        case Near():
-            label = False
-    ticks = _far_side(axis)
-    if axis_of(ax, other).get_visible():
-        return ticks and label
-    return ticks or label
-
-
-def twin_facts(ax: Axes, group: Sequence[Axes]) -> TwinFacts:
-    """How ``ax`` and its box draw twin scales on the right and the top."""
-    if len(group) < 2:
-        return TwinFacts()
-    draws: set[TwinSide] = set()
-    hides: set[TwinSide] = set()
-    twin_draws: set[TwinSide] = set()
-    for side in TWIN_SIDES:
-        other = _scale(side).other
-        if _draws(ax, group, side):
-            draws.add(side)
-        if not axis_of(ax, other).get_visible():
-            hides.add(side)
-        if any(
-            _draws(m, group, side) and not axis_of(m, other).get_visible()
-            for m in group
-        ):
-            twin_draws.add(side)
-    return TwinFacts(
-        frozenset(draws),
-        frozenset(hides),
-        frozenset(twin_draws),
-        settled_twin_spines(ax),
-    )
-
-
-def axes_facts(
-    ax: Axes, digits: YearDigits, box: Sequence[Axes] = ()
-) -> AxesFacts:
-    """An Axes before the layout, drawn in ``box`` with its twins."""
-    twin = twin_facts(ax, box)
-    return AxesFacts(axis_facts(ax, X()), axis_facts(ax, Y()), digits, twin)
-
-
-def drawn_like_twin(ax: Axes) -> bool:
-    """Whether ``ax`` is drawn as a twin is, read from public state.
-
-    An earlier Axes in its box shares exactly one axis with it, and ``ax``
-    hides that axis: ``ax.twinx()`` hides the twin's x, ``twiny`` its y.
-    """
-    fig = ax.get_figure(root=True)
-    if fig is None or not _rectilinear(ax):
-        return False
-    order = with_insets(fig.axes)
-    if ax not in order:
-        return False
-    earlier = [
-        m
-        for m in order[: order.index(ax)]
-        if _rectilinear(m) and ax in same_position_axes(m)
-    ]
-    sx, sy = shared_axes(ax, X()), shared_axes(ax, Y())
-    return any(
-        (m in sx and m not in sy and not ax.xaxis.get_visible())
-        or (m in sy and m not in sx and not ax.yaxis.get_visible())
-        for m in earlier
-    )
-
-
-def settled_twin_spines(ax: Axes) -> frozenset[TwinSide]:
-    """The sides of ``ax`` whose twin spine a layout showed (or found showing)."""
-    return frozenset(SETTLED.get(ax, ()))
-
-
-def settle_twin_spine(ax: Axes, side: TwinSide) -> None:
-    """Record that a layout showed the twin spine on ``side`` of ``ax``."""
-    SETTLED.setdefault(ax, set()).add(side)
 
 
 # -- crowding --------------------------------------------------------------------

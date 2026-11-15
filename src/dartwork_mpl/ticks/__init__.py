@@ -44,7 +44,7 @@ from .formatters import (
     fill,
     tick_scale_of,
 )
-from .measure import config_digits, drawn_like_twin, settled_twin_spines
+from .measure import config_digits
 from .model import (
     SI,
     CurrencyPosition,
@@ -66,6 +66,7 @@ from .model import (
     year_suffix,
 )
 from .text import number_text, recommend_tick_decimals, value_label_decimals
+from .twins import drawn_like_twin, settled_twin_spines
 
 __all__ = [
     "TickScale",
