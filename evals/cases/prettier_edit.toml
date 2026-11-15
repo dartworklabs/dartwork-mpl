@@ -1,0 +1,25 @@
+prompt = "plot.py 로 만든 그림이 좀 별로야. 더 예쁘게 다듬어줘."
+
+[files]
+"plot.py" = """
+import matplotlib.pyplot as plt
+
+months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
+online = [120, 135, 150, 149, 170, 182, 190, 205]
+store = [200, 190, 185, 170, 168, 160, 158, 150]
+
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(months, online, "o-", color="red", label="Online")
+ax.plot(months, store, "s-", color="blue", label="Store")
+ax.set_title("Orders per month", fontsize=20)
+ax.set_ylabel("orders")
+ax.legend(loc="upper left", fontsize=14)
+ax.grid(True)
+plt.tight_layout()
+plt.savefig("orders.png", dpi=80)
+"""
+
+[expect]
+panels = 1
+marks = ["line"]
+texts = ["Online", "Store", "Jan", "Aug"]
