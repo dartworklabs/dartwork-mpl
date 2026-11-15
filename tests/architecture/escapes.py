@@ -11,14 +11,18 @@ T3  ``isinstance`` in ``decide.py`` and ``edges.py``. A domain function that
     asks what it was given has a parameter type that is too wide.
 T4  A ``_dm_`` attribute on a matplotlib object. State hidden there has no
     type and couples slices where no import shows it.
-T5  An enum member compared in ``if`` / ``elif`` / a conditional expression
-    (``x is Kind.DATES``). A new member falls through silently; ``match`` with
-    ``assert_never`` does not.
+T5  An enum member in any comparison (``x is Kind.DATES``, ``x in (Kind.A,
+    Kind.B)``), in a condition or a returned predicate alike. A new member
+    falls through silently; ``match`` with ``assert_never`` does not.
 T6  A string literal compared (``side == "above"``, ``loc in ("left",
     "right")``) or a ``Literal["..."]`` annotation, anywhere but ``model.py``.
     A string is parsed once in ``model.py`` into a type, then never compared.
 T7  A ``match`` whose ``case _`` does anything but ``assert_never``. A
     catch-all hides the variant nobody handled.
+T9  A function returning ``TypeGuard`` / ``TypeIs``. It narrows on the
+    author's word, like a cast; a parser returns the type or raises.
+T10 ``getattr`` / ``hasattr`` / ``setattr`` / ``delattr``. An attribute
+    reached by name is one the checker cannot follow.
 T8  ``Enum`` classes. A flag that picks behaviour in several places wants a
     variant type carrying its own data; each enum left is a place to look.
 """
@@ -45,6 +49,7 @@ PARSERS = ("model.py",)  # the one place a string becomes a type
 IGNORE = re.compile(r"#\s*(type|pyright):\s*ignore(?:\[([^\]]*)\])?")
 ENUM_BASES = frozenset({"Enum", "StrEnum", "IntEnum", "Flag", "IntFlag"})
 SMUGGLED = "_dm_"
+REFLECT = frozenset({"getattr", "setattr", "hasattr", "delattr"})
 
 
 def _count(sources: Sources, one: Callable[[str, str], int]) -> dict[str, int]:
@@ -135,22 +140,17 @@ def _is_member(node: ast.expr) -> bool:
     )
 
 
-def _tests(tree: ast.AST) -> Iterator[ast.expr]:
-    """Every condition: ``if`` / ``elif`` / ``while`` tests and ``a if c else b``."""
-    for n in ast.walk(tree):
-        if isinstance(n, ast.If | ast.While | ast.IfExp):
-            yield n.test
-        elif isinstance(n, ast.comprehension):
-            yield from n.ifs
-
-
 def enum_branches(sources: Sources) -> dict[str, int]:
     def one(_: str, text: str) -> int:
         return sum(
             isinstance(c, ast.Compare)
-            and any(_is_member(side) for side in (c.left, *c.comparators))
-            for test in _tests(ast.parse(text))
-            for c in ast.walk(test)
+            and any(
+                _is_member(e)
+                for side in (c.left, *c.comparators)
+                for e in ast.walk(side)
+                if isinstance(e, ast.expr)
+            )
+            for c in ast.walk(ast.parse(text))
         )
 
     return _count(sources, one)
@@ -170,8 +170,10 @@ def string_branches(sources: Sources) -> dict[str, int]:
             return 0
         count = 0
         for n in ast.walk(ast.parse(text)):
-            if isinstance(n, ast.Compare) and any(
-                _is_text(side) for side in (n.left, *n.comparators)
+            if (
+                isinstance(n, ast.Compare)
+                and any(_is_text(side) for side in (n.left, *n.comparators))
+                and _name(n.left) != "__name__"
             ):
                 count += 1
             elif isinstance(n, ast.Subscript) and _name(n.value) == "Literal":
@@ -222,6 +224,30 @@ def enums(sources: Sources) -> dict[str, int]:
     return _count(sources, one)
 
 
+def guards(sources: Sources) -> dict[str, int]:
+    def one(_: str, text: str) -> int:
+        return sum(
+            isinstance(n, ast.Name | ast.Attribute)
+            and _name(n) in {"TypeGuard", "TypeIs"}
+            and isinstance(getattr(n, "ctx", None), ast.Load)
+            for f in ast.walk(ast.parse(text))
+            if isinstance(f, ast.FunctionDef) and f.returns is not None
+            for n in ast.walk(f.returns)
+        )
+
+    return _count(sources, one)
+
+
+def reflection(sources: Sources) -> dict[str, int]:
+    def one(_: str, text: str) -> int:
+        return sum(
+            isinstance(n, ast.Call) and _name(n.func) in REFLECT
+            for n in ast.walk(ast.parse(text))
+        )
+
+    return _count(sources, one)
+
+
 MEASURES: Mapping[str, Callable[[Sources], dict[str, int]]] = {
     "T1_casts": casts,
     "T2_ignores": ignores,
@@ -231,6 +257,8 @@ MEASURES: Mapping[str, Callable[[Sources], dict[str, int]]] = {
     "T6_string_branches": string_branches,
     "T7_swallowing_matches": swallowing_matches,
     "T8_enums": enums,
+    "T9_guards": guards,
+    "T10_reflection": reflection,
 }
 WHY = {
     "T1_casts": "a cast asserts a type nobody checked; parse into the type instead",
@@ -240,5 +268,7 @@ WHY = {
     "T5_enum_branches": "an if on an enum member lets a new member fall through; use match with assert_never, or a variant type",
     "T6_string_branches": "code compares strings; parse the string once in model.py into a type",
     "T7_swallowing_matches": "a catch-all case hides the unhandled variant; end with case _: assert_never(x)",
+    "T9_guards": "a TypeGuard is a cast with a function around it; parse into the type and return it",
+    "T10_reflection": "getattr/hasattr/setattr reach an attribute the checker cannot see; name the type that has it",
     "T8_enums": "an enum is a status flag; a variant type carries its own data and is matched exhaustively. Adding one is the owner's decision",
 }
