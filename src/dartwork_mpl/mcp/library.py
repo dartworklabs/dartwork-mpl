@@ -183,7 +183,7 @@ def get(kind: str, id: str) -> str:
         }
     )
 
+
+def dumps(data: Mapping[str, object]) -> str:
     """Indented JSON text; values JSON cannot hold (a colour cycle) as text."""
     return json.dumps(data, indent=2, ensure_ascii=False, default=str)
-    """Indented JSON text."""
-    return json.dumps(data, indent=2, ensure_ascii=False)
