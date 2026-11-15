@@ -26,7 +26,18 @@ from typing import (
 
 import numpy as np
 
-from ..align import AlignCentre, AlignLeft, AlignRight, HAlign, HAlignName
+from ..align import (
+    AlignCentre,
+    AlignLeft,
+    AlignRight,
+    Bottom,
+    HAlign,
+    HAlignName,
+    Top,
+    VAlign,
+    VAlignName,
+    VCentre,
+)
 
 Rgba: TypeAlias = tuple[float, float, float, float]
 Colour: TypeAlias = str | Rgba
@@ -35,9 +46,6 @@ Colour: TypeAlias = str | Rgba
 AnyColour: TypeAlias = str | tuple[float, float, float] | Rgba
 """A colour a caller passes: a name or hex, an RGB or an RGBA tuple."""
 
-VerticalName: TypeAlias = Literal[
-    "baseline", "bottom", "center", "center_baseline", "top"
-]
 FontStyleName: TypeAlias = Literal["normal", "italic", "oblique"]
 
 
@@ -63,8 +71,8 @@ class LetterStyle(TypedDict, total=False):
     fontvariant: Literal["normal", "small-caps"]
     horizontalalignment: HAlignName
     ha: HAlignName
-    verticalalignment: VerticalName
-    va: VerticalName
+    verticalalignment: VAlignName
+    va: VAlignName
     multialignment: HAlignName
     ma: HAlignName
     rotation: float | Literal["vertical", "horizontal"] | None
@@ -108,53 +116,6 @@ class AnnotateStyle(NoteStyle, total=False):
 
     fontsize: float | str
     size: float | str
-
-
-# ------------------------------------------------------------ alignment
-@dataclass(frozen=True)
-class Bottom:
-    """Text standing on its anchor."""
-
-    mpl: ClassVar[Literal["bottom"]] = "bottom"
-
-
-@dataclass(frozen=True)
-class Top:
-    """Text hanging from its anchor."""
-
-    mpl: ClassVar[Literal["top"]] = "top"
-
-
-@dataclass(frozen=True)
-class VCentre:
-    """Text centred on its anchor, top to bottom."""
-
-    mpl: ClassVar[Literal["center"]] = "center"
-
-
-@dataclass(frozen=True)
-class Baseline:
-    """Text whose baseline runs through its anchor."""
-
-    mpl: ClassVar[Literal["baseline"]] = "baseline"
-
-
-@dataclass(frozen=True)
-class VCentreBaseline:
-    """Text whose baseline is centred on its anchor."""
-
-    mpl: ClassVar[Literal["center_baseline"]] = "center_baseline"
-
-
-VAlign: TypeAlias = Bottom | Top | VCentre | Baseline | VCentreBaseline
-
-
-def parse_valign(name: str) -> VAlign:
-    """``Text.get_verticalalignment()``; ``ValueError`` for another name."""
-    for align in (Bottom(), Top(), VCentre(), Baseline(), VCentreBaseline()):
-        if name == align.mpl:
-            return align
-    raise ValueError(f"not a vertical alignment: {name!r}")
 
 
 # ------------------------------------------------------------ bar ends

@@ -12,7 +12,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
-from ..align import HAlign
+from ..align import HAlign, VAlign
 from . import decide
 from .given import PresetText
 from .measure import (
@@ -32,7 +32,6 @@ from .model import (
     TextStyle,
     Tries,
     Try,
-    VAlign,
     corner_order,
     parse_corner,
     parse_line_side,

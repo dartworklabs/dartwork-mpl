@@ -1,4 +1,4 @@
-"""Where text sits across its anchor: matplotlib's horizontal alignment.
+"""Where text sits on its anchor: matplotlib's horizontal and vertical alignment.
 
 Each variant carries the name matplotlib takes for it (``.mpl``), written
 once; a caller's ``ha="left"`` becomes a variant here and nowhere else.
@@ -46,3 +46,55 @@ def parse_halign(value: object) -> HAlign:
     if value == "right":
         return AlignRight()
     raise ValueError(f"ha must be 'left', 'center' or 'right', got {value!r}")
+
+
+VAlignName: TypeAlias = Literal[
+    "baseline", "bottom", "center", "center_baseline", "top"
+]
+"""A vertical alignment as a caller or matplotlib writes it."""
+
+
+@dataclass(frozen=True)
+class Bottom:
+    """Text standing on its anchor."""
+
+    mpl: ClassVar[Literal["bottom"]] = "bottom"
+
+
+@dataclass(frozen=True)
+class Top:
+    """Text hanging from its anchor."""
+
+    mpl: ClassVar[Literal["top"]] = "top"
+
+
+@dataclass(frozen=True)
+class VCentre:
+    """Text centred on its anchor, top to bottom."""
+
+    mpl: ClassVar[Literal["center"]] = "center"
+
+
+@dataclass(frozen=True)
+class Baseline:
+    """Text whose baseline runs through its anchor."""
+
+    mpl: ClassVar[Literal["baseline"]] = "baseline"
+
+
+@dataclass(frozen=True)
+class VCentreBaseline:
+    """Text whose baseline is centred on its anchor."""
+
+    mpl: ClassVar[Literal["center_baseline"]] = "center_baseline"
+
+
+VAlign: TypeAlias = Bottom | Top | VCentre | Baseline | VCentreBaseline
+
+
+def parse_valign(name: str) -> VAlign:
+    """``Text.get_verticalalignment()``; ``ValueError`` for another name."""
+    for align in (Bottom(), Top(), VCentre(), Baseline(), VCentreBaseline()):
+        if name == align.mpl:
+            return align
+    raise ValueError(f"not a vertical alignment: {name!r}")

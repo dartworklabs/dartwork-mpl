@@ -17,6 +17,14 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, IdentityTransform
 
+from ..align import (
+    Baseline,
+    Bottom,
+    Top,
+    VCentre,
+    VCentreBaseline,
+    parse_valign,
+)
 from ..axis import Far, Near, X, Y, bars_along
 from ..colorspace import (
     ContrastFacts,
@@ -37,21 +45,7 @@ from ..geometry import (
     same_position_axes,
 )
 from ..projection import Curved, Rectilinear, ThreeD
-from .model import (
-    Baseline,
-    Bottom,
-    Edge,
-    Ink,
-    Panel,
-    Segment,
-    StackTotal,
-    Title,
-    Top,
-    Try,
-    VCentre,
-    VCentreBaseline,
-    parse_valign,
-)
+from .model import Edge, Ink, Panel, Segment, StackTotal, Title, Try
 from .stacks import BarRun
 
 if TYPE_CHECKING:

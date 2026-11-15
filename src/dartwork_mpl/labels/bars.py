@@ -21,7 +21,7 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
-from ..align import AlignCentre
+from ..align import AlignCentre, VCentre
 from ..edgecase import settle
 from ..geometry import canvas_renderer, same_position_axes
 from ..number import TickScale
@@ -51,7 +51,6 @@ from .model import (
     TickLike,
     Toward,
     ValueFacts,
-    VCentre,
     parse_bar_options,
     placement,
     template_fields,

@@ -5,8 +5,7 @@
  "C4_compose_decisions": {},
  "C5_compose_importers": [],
  "R1_module_lines": {
-  "src/dartwork_mpl/labels/measure.py": 504,
-  "src/dartwork_mpl/labels/model.py": 1117,
+  "src/dartwork_mpl/labels/model.py": 1078,
   "src/dartwork_mpl/layout/measure.py": 605,
   "src/dartwork_mpl/legend/apply.py": 599,
   "src/dartwork_mpl/legend/measure.py": 532,
