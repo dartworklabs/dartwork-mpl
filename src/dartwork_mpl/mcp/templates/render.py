@@ -14,16 +14,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias
 
-from dartwork_mpl.prompt import list_template_names
-
 from .. import _platform
 from . import bundled
 
 
 def _execute(
-    path: Path, timeout_seconds: float
+    source: str, timeout_seconds: float
 ) -> tuple[_platform.CapturedProcess, bytes | None]:
-    """Run the template file at ``path`` in a fresh Agg child inside a temporary directory.
+    """Run a template's source in a fresh Agg child inside a temporary directory.
 
     Returns the finished child and the bytes of the first PNG it wrote
     there, or None when the child timed out, failed, or wrote no PNG. The
@@ -31,6 +29,8 @@ def _execute(
     """
     with tempfile.TemporaryDirectory() as tmp:
         out_base = Path(tmp) / "out"
+        path = Path(tmp) / "template.py"
+        path.write_text(source, encoding="utf-8")
         # The template ends with ``dm.save_formats(fig, "<name>")``
         # which writes to ``<cwd>/<name>.png``. We just need to
         # run it in our tmp dir and read whatever PNG appears.
@@ -104,10 +104,10 @@ RenderOutcome: TypeAlias = (
 
 
 def _render(
-    path: Path, return_format: str, timeout_seconds: float, prefix: str
+    source: str, return_format: str, timeout_seconds: float, prefix: str
 ) -> RenderOutcome:
-    """Render the template at ``path``; ``"path"`` publishes under ``prefix``, else in memory."""
-    proc, png_bytes = _execute(path, timeout_seconds)
+    """Render a template's source; ``"path"`` publishes under ``prefix``, else in memory."""
+    proc, png_bytes = _execute(source, timeout_seconds)
     if proc.timed_out:
         return RenderTimedOut(timeout_seconds)
     if png_bytes is None:
@@ -174,9 +174,9 @@ def render_basic(
     ``path`` publishes to a new private temp file the caller owns;
     ``base64`` encodes the PNG in memory. Unknown selection wins over format.
     """
-    path = bundled._resolve_template_path(plot_type)
-    if path is None:
-        available = list_template_names()
+    code = bundled.source(plot_type)
+    if code is None:
+        available = bundled.names()
         return {
             "status": "unknown_template",
             "plot_type": plot_type,
@@ -192,7 +192,7 @@ def render_basic(
         )
         if return_format not in ("base64", "path")
         else _render(
-            path,
+            code,
             return_format,
             timeout_seconds,
             f"dartwork-mpl-render-{plot_type}-",
@@ -217,15 +217,15 @@ def render_advanced(
     Invalid formats are rejected after tier selection without render effects;
     only a successful basic-tier render is reported as ``fell_back``.
     """
-    advanced_path = bundled._resolve_template_path(plot_type, advanced=True)
-    basic_path = bundled._resolve_template_path(plot_type)
+    advanced_code = bundled.source(plot_type, advanced=True)
+    basic_code = bundled.source(plot_type)
 
-    if advanced_path is not None:
-        path, tier = advanced_path, "advanced"
-    elif basic_path is not None:
-        path, tier = basic_path, "basic"
+    if advanced_code is not None:
+        code, tier = advanced_code, "advanced"
+    elif basic_code is not None:
+        code, tier = basic_code, "basic"
     else:
-        available = list_template_names()
+        available = bundled.names()
         return {
             "status": "unknown_template",
             "plot_type": plot_type,
@@ -236,7 +236,7 @@ def render_advanced(
                 f"No template named {plot_type!r}. "
                 f"Available basic: {available}. "
                 f"Available advanced: "
-                f"{list_template_names(advanced=True)}."
+                f"{bundled.names(advanced=True)}."
             ),
         }
 
@@ -246,7 +246,7 @@ def render_advanced(
         )
         if return_format not in ("base64", "path")
         else _render(
-            path,
+            code,
             return_format,
             timeout_seconds,
             f"dartwork-mpl-render-advanced-{plot_type}-",

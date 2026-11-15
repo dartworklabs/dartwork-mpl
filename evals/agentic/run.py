@@ -24,7 +24,7 @@ After a run, transcripts are scanned for any access to grading files
 Skill arms are decision experiments: they require ``--hide-grading``. The
 skill reaches the project either as a copied folder (``--ab-skill DIR``) or
 through the wheel's own installer (``--ab-skill-install``: ``python -m
-dartwork_mpl.skills install`` in the project before the host starts).
+dartwork_mpl.guide install`` in the project before the host starts).
 """
 
 from __future__ import annotations
@@ -223,7 +223,7 @@ def prepare(
         shutil.copytree(project / "out", unit / "base_out", dirs_exist_ok=True)
     if skill == "install":
         out = sh(
-            [str(py), "-m", "dartwork_mpl.skills", "install"],
+            [str(py), "-m", "dartwork_mpl.guide", "install"],
             cwd=project,
             env=env,
         )
@@ -1380,7 +1380,7 @@ def main() -> int:
         "--ab-skill-install",
         action="store_true",
         help="run both arms; the skill arm installs the wheel's own skill "
-        "(python -m dartwork_mpl.skills install) before the host starts",
+        "(python -m dartwork_mpl.guide install) before the host starts",
     )
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument(

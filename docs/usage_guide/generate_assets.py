@@ -615,27 +615,6 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     return path
 
 
-def _save_diverging_bar(images_dir: Path) -> Path:
-    """Save & Export: templates diverging bar chart."""
-    dm.style.use("scientific")
-    from dartwork_mpl.templates import plot_diverging_bar
-
-    fig, _ax = plot_diverging_bar(
-        labels=["Accuracy", "Precision", "Recall", "F1-Score", "AUC"],
-        neg_values=np.array([-30, -55, -10, -20, -15]),
-        pos_values=np.array([60, 20, 45, 50, 35]),
-        neg_label="Decrease",
-        pos_label="Increase",
-        add_total=False,
-        figsize=dm.figsize("15cm", "10cm"),
-    )
-
-    path = images_dir / "save_diverging_bar.svg"
-    _save_svg(fig, path, bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
 # NOTE: The full-OpenColor `save_diagnostics.svg` preview was removed in
 # the docs UX overhaul (issue #171). The interactive copy-on-click swatch
 # grid on the Color System page is the canonical browser for palettes;
@@ -683,7 +662,6 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("arrow_axis_example", _save_arrow_axis_example),
         ("validation_example", _save_validation_example),
         ("save_scientific", _save_scientific_chart),
-        ("save_diverging_bar", _save_diverging_bar),
         # ("save_diagnostics", _save_diagnostics_preview),  # removed in #171 docs UX overhaul
         ("evolution_step1", _save_evolution_step1),
         ("evolution_step2", _save_evolution_step2),

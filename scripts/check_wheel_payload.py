@@ -27,14 +27,6 @@ def expected_members(tracked: list[str]) -> set[str]:
         ):
             continue
         expected.add(name.removeprefix("src/"))
-    # wheel.force-include: the consumer AGENTS/CLAUDE entries above remain
-    # ordinary tracked package data and must not be excluded from parity.
-    expected.update(
-        {
-            "dartwork_mpl/asset/agent/llms.txt",
-            "dartwork_mpl/asset/agent/llms-full.txt",
-        }
-    )
     return expected
 
 

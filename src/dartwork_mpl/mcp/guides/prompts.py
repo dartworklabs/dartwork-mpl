@@ -3,7 +3,7 @@
 The prompt strings deliberately *describe* forbidden patterns without
 spelling out their literal call form, so that the prompt text itself does
 not trigger the dartwork-mpl lint engine. Each rule reference cites the lint
-rule id from ``02-anti-patterns.yaml``.
+rule id from the anti-pattern catalog.
 """
 
 _MAX_INPUT_CHARS = 8192
@@ -138,9 +138,8 @@ Apply the context-appropriate preset via `dm.style.use(...)` (or a style stack).
 `base`, `font-*`, `lang-kr`, `theme-*`, `spine-*` are *primitive* mplstyle building blocks — the composite presets above are usually what you want.
 
 ## Reference resources (read on demand)
-- `dartwork-mpl://guide/agent-entry` — entry point + decision tree
-- `dartwork-mpl://guide/policy` — width / aspect / layout / color / save policy
-- `dartwork-mpl://guide/recipes` — intent → function-call cookbook
+- `dartwork-mpl://guide/agent-entry` — the skill: preset, size, layout, save, review
+- `dartwork-mpl://guide/recipes` — native customisation recipes
 - `dartwork-mpl://guide/anti-patterns` — machine-readable lint catalog
 - `dartwork-mpl://templates/{{plot_type}}` — bundled tier-1 (minimal) starter scripts
 - `dartwork-mpl://templates/advanced/{{plot_type}}` — tier-2 templates with reference lines and value labels (no title or source note unless asked)
@@ -150,9 +149,8 @@ Apply the context-appropriate preset via `dm.style.use(...)` (or a style stack).
 The 18 templates are structural starters, not limits on native chart types
 or artist properties. Use them where relevant, replacing their synthetic data:
 
-1. **`suggest_chart_type(x_type, y_type, n_points, n_series)`** — when the
-   plot type isn't already obvious from the description. Returns both
-   basic and advanced template URIs for the recommended type.
+1. **`find_template(intent, tier="all")`** — when the plot type isn't
+   already obvious from the description.
 2. **`render_template_advanced(plot_type)`** — optional tier-2 preview.
    Include reference lines, labels and narrative claims only when justified
    by the actual data and the user's intent.
@@ -259,8 +257,7 @@ dm.simple_layout(fig, margin=dm.inch(0.08))
 ## MCP review and recovery (post-write)
 
 1. Create native `fig`, then call `lint_dartwork_mpl_code(code)`. Fix reported
-   issues as necessary; use `apply_lint_fixes` only for relevant findings and
-   inspect its edits. Keep the actual data, aligned rows, masks, groups,
+   issues as necessary. Keep the actual data, aligned rows, masks, groups,
    ordering, units and declared transformations unchanged during style edits.
 2. Call `render_plot(code, chart_type_hint="<plot_type>")` to execute, validate
    and persist once. Use published defaults unless the task needs an override
@@ -324,7 +321,7 @@ Do not substitute template data, reaggregate, impute, sort or drop observations
 to improve appearance. If a data change is necessary, explain it separately and
 seek clarification rather than silently including it in a style correction.
 
-## Review Checklist (aligned with `asset/prompt/02-anti-patterns.yaml`)
+## Review Checklist (aligned with `dartwork-mpl://guide/anti-patterns`)
 Check all rules and confirm findings with `lint_dartwork_mpl_code(code)`.
 Fix critical issues and preserve data/trust constraints. Treat aesthetic advice
 as default guidance: supported explicit colors, colormaps, rotation and other
@@ -368,7 +365,7 @@ For each issue found:
 
 Then provide the complete corrected source and explain the presentation changes
 and preserved data policy. Call `lint_dartwork_mpl_code(...)` and fix necessary
-findings; `apply_lint_fixes` is optional and its edits need review.
+findings.
 
 For MCP delivery, retain the original artifact ID and call `render_plot` on the
 corrected native `fig` source. If no original ID exists, render the unchanged

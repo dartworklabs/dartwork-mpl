@@ -30,42 +30,24 @@ def register_resources(mcp: FastMCP) -> None:
 
     # ── Guide Resources ──────────────────────────────────────────────
     #
-    # SSOT layout (asset/prompt/00-index, 01-policy, 02-anti-patterns,
-    # 03-recipes, 05-templates, _legacy).
+    # The same files the bundled skill ships, read through dm.guide.
 
     @mcp.resource("dartwork-mpl://guide/agent-entry")
     def agent_entry() -> str:
-        """Agent entry point — decision tree + always-true facts."""
-        return guides.guide_text("00-index")
-
-    @mcp.resource("dartwork-mpl://guide/policy")
-    def policy() -> str:
-        """Policy: layout plus the OKLab/OKLCH color-metric split."""
-        return guides.guide_text("01-policy")
+        """The agent skill (SKILL.md): preset, size, layout, save, data, review."""
+        return guides.guide_text("skill")
 
     @mcp.resource(
         "dartwork-mpl://guide/anti-patterns", mime_type="application/yaml"
     )
     def anti_patterns() -> str:
         """Machine-readable anti-pattern catalog (the lint engine source)."""
-        return guides.anti_pattern_catalog()
+        return guides.guide_text("anti-patterns")
 
     @mcp.resource("dartwork-mpl://guide/recipes")
     def recipes() -> str:
-        """Intent → function-call cookbook."""
-        return guides.guide_text("03-recipes")
-
-    @mcp.resource("dartwork-mpl://guide/migration")
-    def migration_guide() -> str:
-        """0.3 → 0.4 migration pointer.
-
-        The full migration guide lives at ``docs/migration.md`` and is
-        rendered at the GitHub Pages URL below. The bundled stub that
-        used to back this resource was removed in T5 of the AI-readiness
-        roadmap so that the prompt corpus has a single source of truth in the
-        rendered docs rather than a stub-and-fallback split.
-        """
-        return guides.migration_pointer()
+        """Native customisation recipes: lines, spines, canvases, regions."""
+        return guides.guide_text("recipes")
 
     # ── API Reference ────────────────────────────────────────────────
 
@@ -142,9 +124,8 @@ def register_resources(mcp: FastMCP) -> None:
 
     # ── Plot Template Resources ──────────────────────────────────────
     #
-    # Templates live in asset/prompt/05-templates/{plot_type}.py and
-    # are the single source of truth — the lint engine and drift CI
-    # read the same files.
+    # Templates are read through dm.guide (template/<id>,
+    # template/advanced/<id>), the files the skill points at.
 
     @mcp.resource("dartwork-mpl://templates/list")
     def templates_list() -> str:
@@ -168,8 +149,7 @@ def register_resources(mcp: FastMCP) -> None:
 
         The advanced tier adds synthetic data, reference lines and value
         labels; neither tier draws a title or source note. Falls back to
-        the basic template if no advanced version exists yet — so the
-        ``suggest_chart_type`` / ``create_plot`` URIs always resolve. Both
+        the basic template if no advanced version exists yet. Both
         tiers use the same confined bare-ID lookup; invalid IDs return
         the existing not-found response.
         """

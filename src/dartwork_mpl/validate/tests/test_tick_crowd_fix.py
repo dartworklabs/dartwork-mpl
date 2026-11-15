@@ -244,11 +244,8 @@ def test_fixed_tick_labels_are_names_and_keep_them(how: str) -> None:
 def test_the_waterfall_template_s_names_are_names() -> None:
     """``waterfall`` names its steps with ``set_xticks(x, labels)``; on a
     narrow slide canvas, before its layout, they crowd."""
-    from pathlib import Path
 
-    source = (
-        Path(dm.__file__).parent / "asset/prompt/05-templates/waterfall.py"
-    ).read_text(encoding="utf-8")
+    source = dm.guide.read("template/waterfall")
     source = source[: source.index("dm.simple_layout(fig")]
     source = source.replace(
         'dm.style.use("scientific")', 'dm.style.use("presentation")'

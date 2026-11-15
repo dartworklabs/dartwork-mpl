@@ -7,8 +7,6 @@ exhaustively into the legacy reply dict.
 from dataclasses import dataclass
 from typing import Any, TypeAlias
 
-from dartwork_mpl.prompt import list_template_names
-
 from . import bundled
 
 # Heuristic detection — purely lexical so it stays cheap and lets the agent
@@ -54,18 +52,17 @@ ComposeOutcome: TypeAlias = Composed | InvalidTier | NoTemplate
 def _select(plot_type: str, tier: str) -> ComposeOutcome:
     """Read the template for ``tier``; ``advanced`` falls back to ``basic``."""
     if tier == "advanced":
-        path = bundled._resolve_template_path(plot_type, advanced=True)
-        if path is None:
+        code = bundled.source(plot_type, advanced=True)
+        if code is None:
             # Fall back to basic if advanced doesn't exist yet.
-            path = bundled._resolve_template_path(plot_type)
+            code = bundled.source(plot_type)
             tier = "basic"
     elif tier == "basic":
-        path = bundled._resolve_template_path(plot_type)
+        code = bundled.source(plot_type)
     else:
         return InvalidTier(tier)
-    if path is None:
+    if code is None:
         return NoTemplate(tier)
-    code = path.read_text(encoding="utf-8")
     applied = tuple(
         layer
         for layer, patterns in _DETECT_PATTERNS.items()
@@ -95,7 +92,7 @@ def compose(
                 "missing": [],
             }
         case NoTemplate(tier):
-            available = list_template_names()
+            available = bundled.names()
             return {
                 "status": "unknown_template",
                 "tier": tier,
