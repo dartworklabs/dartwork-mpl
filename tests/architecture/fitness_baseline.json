@@ -47,8 +47,6 @@
   "src/dartwork_mpl/geometry/axes.py": 1
  },
  "T11_untyped": {
-  "src/dartwork_mpl/check/ink.py": 4,
-  "src/dartwork_mpl/check/measure.py": 3,
   "src/dartwork_mpl/geometry/ink.py": 2,
   "src/dartwork_mpl/labels/bars.py": 2,
   "src/dartwork_mpl/labels/ends.py": 2,
@@ -60,8 +58,6 @@
   "src/dartwork_mpl/legend/apply.py": 11,
   "src/dartwork_mpl/legend/measure.py": 10,
   "src/dartwork_mpl/legend/model.py": 3,
-  "src/dartwork_mpl/save/__init__.py": 1,
-  "src/dartwork_mpl/save/apply.py": 3,
   "src/dartwork_mpl/ticks/__init__.py": 4,
   "src/dartwork_mpl/ticks/apply.py": 4,
   "src/dartwork_mpl/ticks/dates.py": 4,

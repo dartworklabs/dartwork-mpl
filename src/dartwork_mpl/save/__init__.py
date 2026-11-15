@@ -9,14 +9,14 @@ from __future__ import annotations
 import os
 import warnings
 from collections.abc import Iterable
-from typing import Any
+from typing import Unpack
 
 from matplotlib.figure import Figure
 
 from ..edgecase import settle
 from . import apply, decide
 from .edges import EDGES
-from .model import SaveRequest
+from .model import SaveOptions, SaveRequest
 
 __all__ = ["save_formats"]
 
@@ -26,7 +26,7 @@ def save_formats(
     image_stem: str | os.PathLike[str],
     formats: Iterable[str] = ("png", "pdf"),
     bbox_inches: str | None = None,
-    **kwargs: Any,
+    **kwargs: Unpack[SaveOptions],
 ) -> None:
     """Write ``fig`` to ``image_stem.<fmt>`` for each format in ``formats``.
 

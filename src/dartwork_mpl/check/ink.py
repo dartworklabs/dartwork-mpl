@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import matplotlib.colors as mcolors
 import numpy as np
@@ -26,6 +26,7 @@ from matplotlib.collections import (
 )
 from matplotlib.container import BarContainer
 from matplotlib.contour import ContourSet
+from matplotlib.text import Text as MplText
 from matplotlib.transforms import Bbox
 
 from ..color import contrast_ratio
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
+    from matplotlib.legend import Legend as MplLegend
     from matplotlib.lines import Line2D
     from matplotlib.path import Path
 
@@ -220,12 +222,9 @@ def data_ink(
     return ink
 
 
-def words_box(text: object, renderer: RendererBase) -> Bbox | None:
+def words_box(text: MplText, renderer: RendererBase) -> Bbox | None:
     """Where a text's words draw (not an annotation's arrow), cut to its clip."""
-    from matplotlib.text import Text
-
-    assert isinstance(text, Text)
-    box = Text.get_window_extent(text, renderer)
+    box = MplText.get_window_extent(text, renderer)
     if not np.isfinite(box.extents).all() or box.width <= 0 or box.height <= 0:
         return None
     region = clip_region(text)
@@ -233,14 +232,14 @@ def words_box(text: object, renderer: RendererBase) -> Bbox | None:
     return within_clip_path(seen, clip_path_px(text))
 
 
-def legend_inks(leg: Any) -> bool:
+def legend_inks(leg: MplLegend) -> bool:
     """A legend that draws a frame, a title or an entry text."""
     if leg.get_frame_on() and patch_inks(leg.get_frame()):
         return True
     return any(text_inks(t) for t in (leg.get_title(), *leg.get_texts()))
 
 
-def plain_label(text: Any, ax: Axes) -> bool:
+def plain_label(text: MplText, ax: Axes) -> bool:
     """A value label measured by its box: inked, upright, no background box,
     not a contour label."""
     if not text_inks(text) or float(text.get_rotation()) % 90:
@@ -255,7 +254,7 @@ def plain_label(text: Any, ax: Axes) -> bool:
 _BOLD = {"bold", "heavy", "black", "extra bold", "semibold", "demibold"}
 
 
-def _large(artist: Any) -> bool:
+def _large(artist: MplText) -> bool:
     """WCAG large text: 18 pt, or 14 pt bold."""
     size, weight = float(artist.get_fontsize()), artist.get_fontweight()
     bold = str(weight).lower() in _BOLD or (
@@ -281,7 +280,9 @@ def text_contrast(fig: Figure, texts: tuple[Text, ...]) -> tuple[Contrast, ...]:
     rows, cols = pixels.shape[:2]
     found: list[Contrast] = []
     for t in texts:
-        artist: Any = t.handle
+        artist = t.handle
+        if not isinstance(artist, MplText):
+            continue
         ink = mcolors.to_rgba(artist.get_color(), artist.get_alpha())
         if ink[3] <= 0 or artist.get_path_effects():
             continue
