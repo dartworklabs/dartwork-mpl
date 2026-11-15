@@ -13,7 +13,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 
-from dartwork_mpl._figure_geometry import axes_text_artists, axes_titles
+from dartwork_mpl._figure_geometry import axes_titles
 
 
 def test_titles_match_the_public_get_title() -> None:
@@ -32,15 +32,4 @@ def test_a_title_the_public_api_disowns_is_dropped(monkeypatch) -> None:
     ax.set_title("Left headline", loc="left")
     monkeypatch.setattr(ax, "get_title", lambda loc="center": "")
     assert "left" not in axes_titles(ax)
-    plt.close(fig)
-
-
-def test_text_artists_cover_texts_titles_and_axis_labels() -> None:
-    fig, ax = plt.subplots()
-    note = ax.text(0.5, 0.5, "note")
-    ax.set_title("Left headline", loc="left")
-    artists = axes_text_artists(ax)
-    assert note in artists
-    assert ax.xaxis.label in artists and ax.yaxis.label in artists
-    assert any(t.get_text() == "Left headline" for t in artists)
     plt.close(fig)

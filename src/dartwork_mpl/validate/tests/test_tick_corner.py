@@ -111,12 +111,6 @@ def test_the_suggested_pad_clears_the_pair() -> None:
     assert _corner(fig) == []
 
 
-def test_after_the_layout_nothing_is_left() -> None:
-    fig, _ax = _square()
-    dm.simple_layout(fig)
-    assert _corner(fig) == []
-
-
 def test_a_polar_plot_has_no_corner() -> None:
     """Radial labels along 0 degrees run into the ``0°`` label (38 px on a
     9 cm slide); that is the polar layout, not a corner."""

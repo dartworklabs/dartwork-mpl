@@ -142,9 +142,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "layout writes the library's tick numbers before measuring them and "
         "thins crowded dates at the fitted size"
     ),
-    ("dartwork_mpl.layout", "dartwork_mpl.config"): (
-        "layout follows the user's tick-label font adoption setting"
-    ),
     ("dartwork_mpl.layout", "dartwork_mpl.size"): (
         "margins are given as physical lengths"
     ),
@@ -200,6 +197,9 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.legend.model": (
         "the legend's geometry and plan types need nothing outside them"
+    ),
+    "dartwork_mpl.layout.decide": (
+        "grid edges are decided from measured content and margins alone"
     ),
     "dartwork_mpl.size.decide": (
         "the canvas is decided from the parsed request and the page alone"

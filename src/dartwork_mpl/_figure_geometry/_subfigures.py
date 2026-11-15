@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from matplotlib.legend import Legend
 
 
-# Owners: labels, layout.
+# Owners: labels.
 def figure_tree(fig: Figure | SubFigure) -> list[Figure | SubFigure]:
     """``fig``, then each of its SubFigures and theirs, depth first."""
     tree: list[Figure | SubFigure] = [fig]
@@ -76,7 +76,7 @@ def figure_legends(fig: Figure | SubFigure) -> list[Legend]:
     return [legend for member in figure_tree(fig) for legend in member.legends]
 
 
-# Owners: check, labels, layout, legend.
+# Owners: check, labels, legend.
 def drawn_in_tree(artist: Artist) -> bool:
     """Whether ``artist`` is shown and so is every SubFigure above it.
 
@@ -87,7 +87,7 @@ def drawn_in_tree(artist: Artist) -> bool:
     return bool(artist.get_visible() and holders_shown(artist))
 
 
-# Owners: check, layout.
+# Owners: check.
 def holders_shown(artist: Artist) -> bool:
     """Whether every SubFigure above ``artist`` is shown (its own flag aside).
 
@@ -115,7 +115,7 @@ def drawn_axes(fig: Figure) -> list[tuple[int, Axes]]:
     return [(i, ax) for i, ax in enumerate(fig.axes) if holders_shown(ax)]
 
 
-# Owners: layout, legend.
+# Owners: legend.
 def root_position(ax: Axes) -> Bbox:
     """``ax.get_position()`` as a fraction of the root Figure.
 

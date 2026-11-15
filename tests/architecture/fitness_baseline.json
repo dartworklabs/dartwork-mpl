@@ -1,23 +1,21 @@
 {
  "R1_module_lines": {
-  "src/dartwork_mpl/_figure_geometry/__init__.py": 1047,
+  "src/dartwork_mpl/_figure_geometry/__init__.py": 1031,
   "src/dartwork_mpl/figure_review/_summary.py": 602,
-  "src/dartwork_mpl/layout/_fit_labels.py": 1853,
-  "src/dartwork_mpl/layout/_simple_layout.py": 833,
+  "src/dartwork_mpl/layout/edges.py": 586,
+  "src/dartwork_mpl/layout/measure.py": 525,
   "src/dartwork_mpl/legend/apply.py": 523,
   "src/dartwork_mpl/legend/measure.py": 554,
   "src/dartwork_mpl/validate/_checks/legend_on_data.py": 687,
   "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
  },
  "R2_slice_lines": {
-  "layout": 4020,
   "validate": 7403,
   "validate/_checks": 6301
  },
  "R3_underscore_modules": {
   "_figure_geometry": 3,
   "figure_review": 2,
-  "layout": 9,
   "validate": 9
  },
  "R3_underscore_toplevel": [
@@ -32,16 +30,11 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 59
+  "modules": 60
  },
  "R7_function_lines": {
-  "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 86,
+  "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 83,
   "src/dartwork_mpl/figure_review/__init__.py::review": 90,
-  "src/dartwork_mpl/layout/_content_extent.py::_axes_content_extent_px": 128,
-  "src/dartwork_mpl/layout/_crop.py::tight_crop": 136,
-  "src/dartwork_mpl/layout/_gutter.py::fit_gutter": 86,
-  "src/dartwork_mpl/layout/_simple_layout.py::_solve_layout_step": 118,
-  "src/dartwork_mpl/layout/_simple_layout.py::simple_layout": 319,
   "src/dartwork_mpl/validate/_checks/cross_axes.py::check_cross_axes_overlap": 144,
   "src/dartwork_mpl/validate/_checks/grayscale_safety.py::check_grayscale_safety": 120,
   "src/dartwork_mpl/validate/_checks/legend.py::check_legend_overflow": 166,

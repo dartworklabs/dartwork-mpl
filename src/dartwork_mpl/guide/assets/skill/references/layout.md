@@ -126,14 +126,12 @@ runs into another panel or past the figure edge wraps at its spaces
 (up to 1.5 cells), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
-degrees; an x tick label on a y tick label at a corner (both axes ending
-on a tick) moves out by the tick pad of the axis that moves less; a change
-that would crush a plot or add overlapping neighbouring tick labels on any
-axis is taken back. Nothing is shortened or made smaller. What you set
+degrees; a change that would leave a plot under 30 % of its width or height
+is taken back. Nothing is shortened or made smaller. What you set
 stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
-when it is too small, and labels you rotate or break yourself and tick
-pads you set are left as they are, so leave them out unless the user asks.
-`fit_labels=False` (or `dm.config.fit_labels`) turns the fitting off; tick
+when it is too small, and labels you rotate or break yourself are left as
+they are, so leave them out unless the user asks.
+`fit_labels=False` turns the fitting off; tick
 labels that still overlap are reported as `TICK_OVERLAP`, an x label on a
 y label at a corner as `TICK_CORNER_OVERLAP`, text over another panel's
 text as `CROSS_AXES_OVERLAP`.
@@ -141,10 +139,8 @@ text as `CROSS_AXES_OVERLAP`.
 - `margin="2mm"` (or `"2%"`, `dm.mm(2)`) adds a uniform buffer.
 - `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.
 - With one main GridSpec pass it: `dm.simple_layout(fig, gs=gs)`.
-- A `SubFigure` is not accepted; pass the parent `Figure`. With SubFigures,
-  each SubFigure's grid is fitted inside its own box: canvas sides keep
-  `margin`, sides between SubFigures keep the panel gap, and the boxes,
-  `width_ratios`/`wspace` and a `y` you gave a SubFigure title stay.
+- A figure with SubFigures is left as it is (with a warning): put the
+  panels on one GridSpec (nested `subgridspec` is fine) instead.
 
 ## Equal grid with panel labels
 
@@ -164,9 +160,7 @@ Each letter starts at its column's y-axis name and sits on its title's
 baseline, in points, so call `label_axes` before `simple_layout`.
 Panels with both a title and an x label need no `hspace` of your own: the
 layout parts them. A spacing the user asks for goes in
-`gridspec_kw={"hspace": 0.5}` and then wins; one fixed gap between the
-content of neighbouring panels (a paper's figure set) is
-`dm.simple_layout(fig, gutter="28pt")`, which replaces that spacing.
+`gridspec_kw={"hspace": 0.5}` and then wins.
 
 ## Ratios, mosaics and nesting
 

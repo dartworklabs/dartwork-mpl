@@ -170,7 +170,7 @@ def test_a_long_name_between_short_ones_keeps_its_turn(preset: str) -> None:
 
 
 def test_the_check_and_the_layout_share_the_clearance() -> None:
-    from dartwork_mpl.layout._fit_labels import _TARGET_EM
+    from dartwork_mpl.layout.model import CLEARANCE_EM as _TARGET_EM
     from dartwork_mpl.validate._checks import tick_rotation
 
     assert getattr(tick_rotation, "_FLAT_CLEARANCE_EM", None) == _TARGET_EM

@@ -1,33 +1,8 @@
-"""Process-wide defaults for dartwork-mpl behaviour toggles.
+"""Process-wide defaults for the library's own tick text.
 
-Each public-API call site that exposes a boolean keyword whose default
-matters across an entire project (rather than per-call) reads its
-fallback from the :class:`Config` singleton :data:`config` here. Set it
-once, near the top of your program (or in a notebook's first cell), and
-every subsequent call across :mod:`~dartwork_mpl.layout` and
-:mod:`~dartwork_mpl.io` honours the new default without you having to
-thread the keyword through every call site.
-
-The keyword argument on each function stays available for per-call
-overrides — passing it explicitly always wins over the global default.
-
-Example
--------
-::
-
-    import matplotlib.pyplot as plt
-    import dartwork_mpl as dm
-
-    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
-    ax.plot([1, 2, 3], [1, 4, 9])  # no axis label
-    dm.simple_layout(fig)          # tick fonts left untouched by default
-
-    # Opt in for one call.
-    dm.simple_layout(fig, adopt_orphan_tick_font=True)
-
-    # Or scope the opt-in to a block.
-    with dm.config.override(adopt_orphan_tick_font=True):
-        dm.save_formats(fig, "out", formats=("png",))
+``dm.config.tick_years`` and ``dm.config.number_ladder`` are read by the
+``ticks`` slice wherever it writes default tick labels. Set them once, or
+scope them with ``with dm.config.override(tick_years=4): ...``.
 """
 
 from __future__ import annotations
@@ -44,28 +19,12 @@ __all__ = ["Config", "config"]
 class Config:
     """Process-wide dartwork-mpl defaults.
 
-    Slotted so a typo'd direct assignment (``dm.config.adopt_orphan_tick_fonts
-    = False`` — note the plural) raises ``AttributeError`` instead of
+    Slotted so a typo'd direct assignment (``dm.config.tick_year
+    = 4`` — no "s") raises ``AttributeError`` instead of
     silently creating a dead attribute that never affects behaviour.
 
     Attributes
     ----------
-    adopt_orphan_tick_font : bool, default ``False``
-        Fallback default for the ``adopt_orphan_tick_font`` keyword on
-        :func:`dartwork_mpl.simple_layout`, which
-        accepts ``True`` / ``False`` / ``None`` (the call-site default);
-        ``None`` is read here. Set this to ``True`` to make orphan-axis
-        tick fonts adopt the axis-label font everywhere. Per-call overrides
-        (passing ``True`` / ``False`` explicitly) still win.
-    warn_on_orphan_tick_adoption : bool, default ``False``
-        When ``True``, emit a one-time :class:`UserWarning` every time
-        orphan-tick font adoption mutates a figure (via
-        :func:`dartwork_mpl.layout.adopt_axis_label_font` or its drivers
-        :func:`~dartwork_mpl.simple_layout`). Useful when debugging a
-        figure whose ticks change unexpectedly after a layout — or when
-        running under matplotlib's ``constrained_layout``, where the
-        font change can trigger a re-layout on the next draw. Default is
-        off so the common path stays quiet.
     tick_years : {2, 4}, default ``2``
         Digits of the year in tick labels on axes nobody formatted (x axes
         whose data are integer years, ticked on whole years, and date axes,
@@ -85,23 +44,10 @@ class Config:
         it is read.
         ``"si"`` is the option for k/M/G/T in Korean figures too
         (``with dm.config.override(number_ladder="si"):``, or assign it).
-    fit_labels : bool | tuple[str, ...], default ``True``
-        What ``dm.simple_layout`` may do when text still collides once the
-        margins fit: ``True`` every step (``"axis_labels"``, ``"space"``,
-        ``"wrap"``, ``"rotate"``, ``"pad"``), ``False`` none, a tuple of step names
-        only those (``with dm.config.override(fit_labels=False):``, or
-        assign it). A ``fit_labels=`` argument wins per call. A figure laid
-        out before gets what it fitted undone on its next
-        ``dm.simple_layout``. Unknown step names raise ``ValueError`` where
-        it is read, steps that are not strings ``TypeError``. The rules are
-        in the docstring of ``dartwork_mpl.layout._fit_labels``.
     """
 
-    adopt_orphan_tick_font: bool = False
-    warn_on_orphan_tick_adoption: bool = False
     tick_years: Literal[2, 4] = 2
     number_ladder: Literal["auto", "si", "myriad"] = "auto"
-    fit_labels: bool | tuple[str, ...] = True
 
     @contextmanager
     def override(self, **overrides: object) -> Iterator[None]:
@@ -127,9 +73,8 @@ class Config:
         -------
         ::
 
-            with dm.config.override(adopt_orphan_tick_font=True):
-                dm.simple_layout(fig)   # adoption enabled just here
-            dm.simple_layout(fig)        # adoption skipped (back to default)
+            with dm.config.override(tick_years=4):
+                dm.simple_layout(fig)   # four-digit years just here
         """
         known = {f.name for f in fields(self)}
         unknown = set(overrides) - known
