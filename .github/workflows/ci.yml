@@ -33,15 +33,15 @@ jobs:
       - run: uv run --no-sync ruff check
       - run: uv run --no-sync ruff format --check
       - run: uv run --no-sync basedpyright
-      # A plain `pip install dartwork-mpl` (no extras) must import and draw.
-      - name: No-extras smoke
+      # A plain `pip install dartwork-mpl` (runtime dependencies only) must
+      # import and draw.
+      - name: Runtime-only smoke
         env:
           MPLBACKEND: Agg
         run: |
           uv sync --frozen --no-dev
           uv run --no-sync python -c "
-          import importlib.util as u, matplotlib.pyplot as plt, dartwork_mpl as dm
-          assert u.find_spec('fastmcp') is None and u.find_spec('IPython') is None
+          import matplotlib.pyplot as plt, dartwork_mpl as dm
           dm.style.use('scientific')
           fig, ax = plt.subplots(figsize=dm.figsize('8cm', 'wide'))
           ax.plot([0, 1, 2], [1, 3, 2])

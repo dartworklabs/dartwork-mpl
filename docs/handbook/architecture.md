@@ -6,9 +6,9 @@ orphan: true
 
 > **한눈에**
 >
-> 패키지는 작은 코어 slice 열두 개다. 각 slice 안에서는 결정을 순수 함수로, matplotlib 객체 변경을 얇은 shell로 나눈다. 반드시 지키는 것은 미감과 "matplotlib을 감싸지 않음"이다. 그 밖의 기능은 의미가 없으면 제거한다.
+> 패키지는 작은 코어 slice 열한 개다. 각 slice 안에서는 결정을 순수 함수로, matplotlib 객체 변경을 얇은 shell로 나눈다. 반드시 지키는 것은 미감과 "matplotlib을 감싸지 않음"이다. 그 밖의 기능은 의미가 없으면 제거한다.
 
-## 코어 slice 열두 개
+## 코어 slice 열한 개
 
 기능에 비해 코드가 복잡한 것은 잘못 만들고 있다는 증거다. 그래서 "그려줘 하면 예쁜 차트"에 직접 필요한 것만 작은 slice로 둔다. slice 하나가 패키지 하나다: `src/dartwork_mpl/<slice>/`. 여기에 들지 않는 코드는 이 리포에 두지 않는다.
 
@@ -25,7 +25,6 @@ orphan: true
 | `check` | 그려진 그림의 결함 찾기(`dm.check`). 그림을 바꾸지 않는다 |
 | `save` | 여러 형식으로 저장 |
 | `guide` | 에이전트 지침: skill, 템플릿, 안티패턴 lint |
-| `mcp` | 위 slice를 에이전트에 연결하는 얇은 진입점. 도구 다섯 개 |
 
 slice끼리는 선언한 표면(`__init__.py`의 `__all__`)으로만 만난다. 허용된 의존 방향과 그 이유는 [tests/architecture/boundaries.py](../../tests/architecture/boundaries.py)의 `ALLOWED`가 정본이다. 두 slice 이상이 함께 쓰는 측정 코드는 platform 패키지 `geometry`에 있고, platform은 어떤 slice도 import하지 않는다. 한 slice만 쓰는 측정 코드는 그 slice 안에 있다. 공용 `utils/`나 `common/`은 만들지 않는다. 같은 이유로 함께 바뀌는 것이 관찰되기 전에는 중복이 틀린 추상화보다 싸기 때문이다.
 
@@ -65,22 +64,12 @@ matplotlib의 `Figure`와 `Axes`는 상태를 바꾸는 객체다. 이 사실은
 | **`check`는 그림을 바꾸지 않는다** | check slice 테스트 | 검사했더니 그림이 달라진다 |
 | **slice 경계와 파일 규칙** | `tests/architecture/` | 한 기능 변경이 여러 폴더로 번진다 |
 | **호환 층을 두지 않는다.** 재노출 파일, 별칭, 제거된 이름 안내 장치를 만들지 않는다 | 리뷰, fitness의 이름 규칙 | 지운 코드가 다른 모양으로 돌아온다 |
-| **`render`는 샌드박스가 아니다.** 신뢰한 코드만 실행한다 | 도구 설명, 실행 제한 테스트 | 허브가 남이 올린 코드를 이 경로로 실행하면 그 머신이 뚫린다 |
 
 미감 불변식의 출처: [ADR 0001](../adr/0001-oklab-centered-color-construction.md) A1, [ADR 0009](../adr/0009-blueprint.md) 결정 2. 제거 정책의 출처: [ADR 0008](../adr/0008-owner-priority-lock-reset.md) 결정 1·2.
 
-## MCP 표면과 산출물 계약
-
-`dartwork-mpl-mcp`는 stdio로만 동작하고 도구 다섯 개만 낸다: `guide`, `search_reference`, `get_reference`, `lint`, `render`. 리소스와 프롬프트는 없다. 에이전트가 고민 없이 맞는 도구를 고를 수 있어야 하기 때문이다.
-
-`render`는 코드를 자식 프로세스에서 한 번 실행하고 한 폴더에 묶음을 쓴다: `figure.png`, `figure.pdf`, `source.py`, `report.json`(`dm.check` 결과), `manifest.json`. 데이터 파일은 복사하지 않고 해시와 크기만 manifest에 적는다. 이 묶음이 허브가 받는 계약이다. 저장·공유·만료는 허브의 몫이라 이 라이브러리에는 저장소가 없다. manifest 스키마는 `mcp/model.py`가 정본이다.
-
-자식 프로세스는 빈 임시 폴더에서 돌고, 환경변수는 허용 목록만 받으며, 시간 초과 시 프로세스 그룹 전체가 종료된다. CPU 시간과 파일 크기에 제한이 걸린다. 메모리 제한은 Linux에서만 걸린다. macOS는 그 제한을 거부한다.
-
 ## 남은 리팩터 목표
 
-소유자가 2026-11-15에 정한 여섯 단계 중 Handbook, 구조 정리, MCP 재설계는 반영됐다. 남은 것은 다음과 같다.
+소유자가 2026-11-15에 정한 단계 중 남은 것은 다음과 같다.
 
 1. **문서 분리.** `docs/`의 사용자 문서·갤러리·브랜딩을 허브 리포로 옮기고 이 리포에는 개발 문서만 남긴다. 지금 `docs/`에는 지워진 API를 설명하는 페이지가 많다.
 2. **git 히스토리의 대용량 잔재 제거.** 문서 분리 다음에 한 번만 한다.
-3. **허브 계약 확정.** 위 산출물 묶음을 허브가 실제로 받아 보고 고친다.

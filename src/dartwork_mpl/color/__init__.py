@@ -73,7 +73,7 @@ __all__ = [
     "wcag_luminance",
 ]
 
-# For other slices (validation, labels, MCP): tuples in, numbers out.
+# For other slices (validation, labels): tuples in, numbers out.
 LIBRARIES: tuple[Library, ...] = CATALOG.libraries
 SEMANTIC_TOKEN_NAMES = SEMANTIC_NAMES
 

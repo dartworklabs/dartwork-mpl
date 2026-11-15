@@ -92,7 +92,7 @@ def settings(helper: Path | None) -> dict[str, Any]:
 
 
 def command(
-    arm: judge.Arm, prompt: str, cfg: Path, model: str, helper: Path | None
+    arm: judge.Arm, prompt: str, model: str, helper: Path | None
 ) -> list[str]:
     """The exact ``claude`` command line for one run."""
     cmd = ["claude", "-p", prompt, "--model", model]
@@ -101,9 +101,6 @@ def command(
     cmd += ["--settings", json.dumps(settings(helper))]
     cmd += ["--permission-mode", "bypassPermissions"]
     cmd += ["--tools", ",".join(arm.tools), "--strict-mcp-config"]
-    if arm.mcp:
-        cmd += ["--allowedTools", ",".join(judge.MCP_TOOLS)]
-        cmd += ["--mcp-config", str(cfg / "mcp.json")]
     return cmd
 
 
@@ -139,8 +136,8 @@ def auth_helper(cfg: Path) -> Path | None:
     return helper
 
 
-def prepare(case: Case, arm: judge.Arm, project: Path, cfg: Path) -> None:
-    """Write the case's files, install the skill, write the MCP config."""
+def prepare(case: Case, arm: judge.Arm, project: Path) -> None:
+    """Write the case's files and install the skill."""
     for name, text in case.files.items():
         (project / name).write_text(text.lstrip("\n"), encoding="utf-8")
     if arm.skill:
@@ -154,11 +151,6 @@ def prepare(case: Case, arm: judge.Arm, project: Path, cfg: Path) -> None:
         subprocess.run(
             [sys.executable, *install], check=True, capture_output=True
         )
-    server = shutil.which(
-        "dartwork-mpl-mcp", path=str(Path(sys.executable).parent)
-    )
-    config = {"mcpServers": {judge.SERVER: {"command": server, "args": []}}}
-    (cfg / "mcp.json").write_text(json.dumps(config))
 
 
 def newest(project: Path, suffix: str, since: float) -> Path | None:
@@ -297,33 +289,20 @@ def lint(source: str) -> list[dict[str, Any]]:
 
 
 def collect(
-    arm: judge.Arm, trace: judge.Trace, project: Path, out: Path, since: float
+    trace: judge.Trace, project: Path, out: Path, since: float
 ) -> tuple[str | None, str | None, list[str]]:
     """Copy the final image and source into ``out``; their names and the script's args."""
-    image: Path | None
-    source: str | None
-    args: list[str] = []
-    if arm.mcp:
-        last = judge.last_rendered(trace)
-        source, image = (
-            (last[0], out / "bundle" / "figure.png") if last else (None, None)
-        )
-        if last and Path(last[1]["out_dir"]).is_dir():
-            shutil.copytree(
-                last[1]["out_dir"], out / "bundle", dirs_exist_ok=True
-            )
-    else:
-        image = newest(project, ".png", since)
-        ran = script_run(trace)
-        script = newest(project, ".py", since)
-        args = ran[1] if ran else []
-        source = (
-            script_source(trace, project, ran[0])
-            if ran
-            else script.read_text(encoding="utf-8")
-            if script
-            else inline_source(trace)
-        )
+    image = newest(project, ".png", since)
+    ran = script_run(trace)
+    script = newest(project, ".py", since)
+    args = ran[1] if ran else []
+    source = (
+        script_source(trace, project, ran[0])
+        if ran
+        else script.read_text(encoding="utf-8")
+        if script
+        else inline_source(trace)
+    )
     if source is not None:
         (out / "source.py").write_text(source, encoding="utf-8")
     if image is None or not image.exists():
@@ -379,7 +358,7 @@ def assess(
     arm = judge.ARM_SPECS[arm_name]
     lines = (out / "stream.jsonl").read_text(errors="replace").splitlines()
     trace = judge.parse_stream(lines)
-    image, source_name, args = collect(arm, trace, project, out, since)
+    image, source_name, args = collect(trace, project, out, since)
     source = (out / "source.py").read_text("utf-8") if source_name else None
     if source and session.get("cwd"):  # a copied project: point paths at it
         cwd = str(session["cwd"])
@@ -416,10 +395,6 @@ def assess(
         **session,
         "isolation": {k: (trace.init or {}).get(k) for k in INIT_KEYS},
         "tools": trace.tool_names,
-        "renders": [
-            (p or {}).get("report", {}).get("status", "no payload")
-            for _, p in judge.renders(trace)
-        ],
         "turns": result.get("num_turns"),
         "cost_usd": result.get("total_cost_usd"),
         "usage": result.get("usage"),
@@ -445,8 +420,8 @@ def run_one(case: Case, arm_name: str, out: Path, model: str) -> dict[str, Any]:
     )
     cfg = Path(tempfile.mkdtemp(prefix="dmpl-eval-cfg-"))
     try:
-        prepare(case, arm, project, cfg)
-        cmd = command(arm, case.prompt, cfg, model, auth_helper(cfg))
+        prepare(case, arm, project)
+        cmd = command(arm, case.prompt, model, auth_helper(cfg))
         started = time.time()
         timeout = launch(cmd, project, cfg, out)
         session = {

@@ -8,7 +8,7 @@ orphan: true
 
 > **핵심**
 >
-> 사용자가 skill과 MCP를 켜고 "그려줘"라고 하면 예쁜 차트가 나와야 한다. 이 리포의 모든 코드·도구·문서·테스트는 이 결과에 기여할 때만 의미가 있다. 기여하지 않는 것은 제거 대상이다.
+> 사용자가 skill을 켜고 "그려줘"라고 하면 예쁜 차트가 나와야 한다. 이 리포의 모든 코드·도구·문서·테스트는 이 결과에 기여할 때만 의미가 있다. 기여하지 않는 것은 제거 대상이다.
 
 소유자가 2026-11-15에 정한 기준이다. 기능을 넣을지, 남길지, 지울지 판단이 갈리면 이 문장으로 정한다. 구조 규칙, 검증 게이트, 문서도 이 기준을 빨리 안전하게 달성하기 위한 수단일 뿐이다.
 
@@ -31,7 +31,7 @@ dartwork-mpl은 matplotlib 위의 얇은 유틸리티 층이다. 논문·보고�
 | 사용자 | 쓰는 방식 | 이 리포가 주는 것 |
 | --- | --- | --- |
 | 연구자·엔지니어 | Python에서 `import dartwork_mpl as dm` | preset, `dm.figsize`, `dm.simple_layout`, 색, `dm.check` |
-| AI 코딩 에이전트 | 동봉된 skill, MCP 서버 | 지침과 템플릿, lint, 렌더와 검사 결과 |
+| AI 코딩 에이전트 | 동봉된 skill과 에이전트 자신의 셸(`python plot.py`) | 지침과 템플릿, `dm.lint_code`, `dm.check`, `dm.guide.search`·`dm.guide.read` |
 
 ## 채택한 목표: 렌더링 도구이자 시각화 허브
 
@@ -57,7 +57,6 @@ Handbook은 모든 영역의 정본이 아니다. 아래 표는 각 영역에서
 | 출하 색 값 | `src/dartwork_mpl/color/assets/`의 색 표와 [tests/test_shipped_colors_hash.py](../../tests/test_shipped_colors_hash.py)의 digest | 미감 불변식으로 설명 |
 | 시각 스타일 | `src/dartwork_mpl/style/assets/`의 preset, `font/assets/`의 폰트, [tests/visual/baseline/](../../tests/visual/baseline/) | 미감 불변식으로 설명 |
 | 에이전트 지침과 안티패턴 | [src/dartwork_mpl/guide/assets/](../../src/dartwork_mpl/guide/assets/)의 skill, 템플릿, `anti-patterns.yaml` | 위치만 가리킴 |
-| MCP 도구와 산출물 형식 | `src/dartwork_mpl/mcp/`의 `server.py`와 `model.py` | 계약의 이유를 설명 ([architecture.md](architecture.md)) |
 | 검증 절차와 합격 기준 | [verification.md](verification.md)와 `.github/workflows/` | Handbook이 직접 소유 |
 | 결정 권한과 변경 흐름 | [change-flow.md](change-flow.md) | Handbook이 직접 소유 |
 | 릴리스 버전 | `pyproject.toml`의 `version`, `v*.*.*` 태그, PyPI | 절차를 설명 ([change-flow.md](change-flow.md)) |

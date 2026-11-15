@@ -10,36 +10,24 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-SERVER = "dartwork-mpl"
 SKILL = "dartwork-mpl"
-MCP_TOOLS = tuple(
-    f"mcp__{SERVER}__{name}"
-    for name in ("guide", "search_reference", "get_reference", "lint", "render")
-)
-RENDER = f"mcp__{SERVER}__render"
 SCRIPT_TOOLS = ("Bash", "Read", "Write", "Edit")
-ARMS = ("bare", "skill", "mcp")
+ARMS = ("bare", "skill")
 VERDICTS = ("OK", "DEFECT", "NO_FIGURE", "INVALID", "NOTRUN")
 
 
 @dataclass(frozen=True)
 class Arm:
-    """What one arm loads: built-in tools, the skill, the MCP server."""
+    """What one arm loads: built-in tools and the skill."""
 
     name: str
     tools: tuple[str, ...]
     skill: bool
-    mcp: bool
-
-    def expected_tools(self) -> set[str]:
-        """Every tool the init event must list, and no other."""
-        return {*self.tools, *(MCP_TOOLS if self.mcp else ())}
 
 
 ARM_SPECS = {
-    "bare": Arm("bare", SCRIPT_TOOLS, skill=False, mcp=False),
-    "skill": Arm("skill", (*SCRIPT_TOOLS, "Skill"), skill=True, mcp=False),
-    "mcp": Arm("mcp", ("Read", "Skill"), skill=True, mcp=True),
+    "bare": Arm("bare", SCRIPT_TOOLS, skill=False),
+    "skill": Arm("skill", (*SCRIPT_TOOLS, "Skill"), skill=True),
 }
 
 
@@ -88,16 +76,15 @@ def parse_stream(lines: list[str]) -> Trace:
 
 
 def isolation_problems(init: dict[str, Any] | None, arm: Arm) -> list[str]:
-    """Why the session was not exactly our skill and our server (empty: isolated)."""
+    """Why the session was not exactly our skill and the arm's tools (empty: isolated)."""
     if init is None:
         return ["no init event in the stream"]
     problems: list[str] = []
     servers = [
         (s.get("name"), s.get("status")) for s in init.get("mcp_servers") or []
     ]
-    want_servers = [(SERVER, "connected")] if arm.mcp else []
-    if servers != want_servers:
-        problems.append(f"mcp_servers {servers}, expected {want_servers}")
+    if servers:
+        problems.append(f"mcp_servers {servers}, expected none")
     skills = list(init.get("skills") or [])
     want_skills = [SKILL] if arm.skill else []
     if skills != want_skills:
@@ -105,61 +92,12 @@ def isolation_problems(init: dict[str, Any] | None, arm: Arm) -> list[str]:
     plugins = [p.get("name") for p in init.get("plugins") or []]
     if plugins:
         problems.append(f"plugins loaded: {plugins}")
-    tools = set(init.get("tools") or [])
-    if tools != arm.expected_tools():
-        extra = sorted(tools - arm.expected_tools())
-        missing = sorted(arm.expected_tools() - tools)
+    tools, want = set(init.get("tools") or []), set(arm.tools)
+    if tools != want:
+        extra = sorted(tools - want)
+        missing = sorted(want - tools)
         problems.append(f"tools differ: extra {extra}, missing {missing}")
     return problems
-
-
-def tool_text(result: dict[str, Any]) -> str:
-    """The text blocks of one tool result, joined."""
-    content = result.get("content")
-    if isinstance(content, str):
-        return content
-    blocks: list[Any] = content if isinstance(content, list) else []  # pyright: ignore[reportUnknownVariableType]
-    parts = [
-        str(b.get("text", ""))
-        for b in blocks
-        if isinstance(b, dict) and b.get("type") == "text"  # pyright: ignore[reportUnknownMemberType]
-    ]
-    return "\n".join(parts)
-
-
-def render_payload(result: dict[str, Any]) -> dict[str, Any] | None:
-    """The JSON payload a ``render`` call returned, if it is one."""
-    text = tool_text(result)
-    start = text.find("{")
-    if start < 0:
-        return None
-    try:
-        data = json.loads(text[start:])
-    except ValueError:
-        return None
-    return data if isinstance(data, dict) and "out_dir" in data else None
-
-
-def renders(trace: Trace) -> list[tuple[str, dict[str, Any] | None]]:
-    """Each ``render`` call: its code and the payload it got back."""
-    found: list[tuple[str, dict[str, Any] | None]] = []
-    for call in trace.calls:
-        if call.get("name") != RENDER:
-            continue
-        code = str((call.get("input") or {}).get("code", ""))
-        result = trace.results.get(str(call.get("id")))
-        found.append((code, render_payload(result) if result else None))
-    return found
-
-
-def last_rendered(trace: Trace) -> tuple[str, dict[str, Any]] | None:
-    """The code and payload of the last ``render`` that drew a figure."""
-    done = [
-        (code, p)
-        for code, p in renders(trace)
-        if p is not None and (p.get("report") or {}).get("status") == "rendered"
-    ]
-    return done[-1] if done else None
 
 
 def missing_facts(expect: dict[str, Any], figure: dict[str, Any]) -> list[str]:

@@ -49,13 +49,7 @@ PACKAGE = "dartwork_mpl"
 
 # Modules that only wire: they may import any unit's surface. The package
 # root runs on every `import dartwork_mpl`, so no unit may import it.
-ENTRY_POINTS = frozenset(
-    {
-        "dartwork_mpl",
-        # The MCP server's tool table: wiring onto the mcp slice's shells.
-        "dartwork_mpl.mcp.server",
-    }
-)
+ENTRY_POINTS = frozenset({"dartwork_mpl"})
 
 # Units holding business-agnostic mechanism. They import no slice.
 PLATFORM = frozenset(
@@ -77,7 +71,6 @@ SLICES = frozenset(
         "dartwork_mpl.labels",
         "dartwork_mpl.legend",
         "dartwork_mpl.layout",
-        "dartwork_mpl.mcp",
         "dartwork_mpl.save",
         "dartwork_mpl.size",
         "dartwork_mpl.style",
@@ -88,21 +81,6 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl.mcp", "dartwork_mpl.guide"): (
-        "the reading tools serve the skill, references, templates and lint"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.style"): (
-        "presets are searched and returned with their style stack and values"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.color"): (
-        "colour families and names are searched and returned with their values"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.save"): (
-        "render writes the figure as a plain dm.save_formats save does"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.check"): (
-        "render's report quotes the figure checker's findings"
-    ),
     ("dartwork_mpl.style", "dartwork_mpl.color"): (
         "a preset switch re-applies the locale's semantic colour tokens"
     ),
@@ -213,12 +191,6 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.guide.model": (
         "parsing source, catalog and guidance text needs nothing outside it"
-    ),
-    "dartwork_mpl.mcp.decide": (
-        "search ranks, the saved figure and a run's outcome decide from parsed facts"
-    ),
-    "dartwork_mpl.mcp.model": (
-        "parsing tool arguments and child output needs nothing outside it"
     ),
 }
 
