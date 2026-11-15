@@ -10,12 +10,11 @@ from dartwork_mpl.layout.edges import FIT_EDGES, TEXT_EDGES
 from dartwork_mpl.layout.model import (
     ArtistId,
     AxisName,
+    Bottom,
     Box,
     Count,
     Degrees,
-    Edge,
     FigureArtist,
-    Gap,
     Line,
     Piece,
     Px,
@@ -24,7 +23,9 @@ from dartwork_mpl.layout.model import (
     Spacing,
     TextFacts,
     TickGroup,
-    Which,
+    Top,
+    WSpace,
+    YAxis,
 )
 from dartwork_mpl.layout.tests.test_decide import (
     CANVAS,
@@ -66,7 +67,7 @@ def test_axes_3d_counts_its_tight_boxes() -> None:
 
 
 def test_outside_legend_along_side_counts_past_the_canvas_only() -> None:
-    above = Piece(Box(50.0, 1020.0, 410.0, 450.0), outside=Edge.TOP)
+    above = Piece(Box(50.0, 1020.0, 410.0, 450.0), outside=Top())
     fired, plan = fit_of(content(axes(PLOT, above)))
     assert fired == ("outside-legend-along-side",)
     assert plan.axes[0].pieces[0].box == Box(100.0, 1020.0, 410.0, 450.0)
@@ -77,20 +78,20 @@ def test_figure_text_edge_band_reserves_by_reading_direction() -> None:
     note = FigureArtist(Box(5.0, 300.0, 5.0, 20.0), None, False, None, Px(0.0))
     fired, plan = fit_of(content(axes(PLOT), artists=[note]))
     assert fired == ("figure-text-edge-band",)
-    assert plan.reserves == (Edge.BOTTOM,)
+    assert plan.reserves == (Bottom(),)
 
 
 def test_figure_legend_side_reserves_its_side() -> None:
     wide = FigureArtist(
-        Box(2.0, 998.0, 200.0, 300.0), None, None, Edge.TOP, Px(0.0)
+        Box(2.0, 998.0, 200.0, 300.0), None, None, Top(), Px(0.0)
     )
     fired, plan = fit_of(content(axes(PLOT), artists=[wide]))
     assert fired == ("figure-legend-side",)
-    assert plan.reserves == (Edge.TOP,)
+    assert plan.reserves == (Top(),)
 
 
 def name(label: int, text_: str, box: Box, span: float = 300.0) -> AxisName:
-    group = (ArtistId(7), Which.Y)
+    group = (ArtistId(7), YAxis())
     return AxisName(
         ArtistId(label),
         Line(text_),
@@ -118,7 +119,7 @@ def test_colliding_panels_part_by_half_an_em() -> None:
         Reach((1, 2), (0, 1), Px(30.0), Px(0.0)),
     )
     space = Spacing(
-        Gap.WSPACE,
+        WSpace(),
         reaches,
         (Px(20.0),),
         Px(800.0),
@@ -128,7 +129,7 @@ def test_colliding_panels_part_by_half_an_em() -> None:
     )
     fired, plan = text_plan(texts(spacings=[space]))
     assert fired == ("colliding-panels",)
-    assert plan.spacing[Gap.WSPACE] == 75.0 * 2 / (800.0 - 75.0)
+    assert plan.spacing[WSpace()] == 75.0 * 2 / (800.0 - 75.0)
 
 
 def test_crowded_ticks_wrap_at_spaces() -> None:
