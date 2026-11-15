@@ -1,22 +1,23 @@
 """The legend's named special cases, applied after the ``decide`` functions.
 
-Each decision has its own facts type; an edge case applies only to its own.
+Each decision has its own facts and plan types and its own registry:
+``ENTRY_EDGES`` for which entries a legend shows, ``TITLE_EDGES`` for the
+pad of the Axes titles.
 """
 
 from __future__ import annotations
 
 from ..edgecase import EdgeCase
-from .model import EntryFacts, EntryPlan, Facts, Plan, TitleFacts, TitlePad
+from .model import EntryFacts, EntryPlan, TitleFacts, TitlePad
 
 
-def has_twins(facts: Facts, plan: Plan) -> bool:
+def has_twins(facts: EntryFacts, plan: EntryPlan) -> bool:
     """The Axes has twins drawn in its box."""
-    return isinstance(facts, EntryFacts) and len(facts.owners) > 1
+    return len(facts.owners) > 1
 
 
-def merge_twins(facts: Facts, plan: Plan) -> Plan:
+def merge_twins(facts: EntryFacts, plan: EntryPlan) -> EntryPlan:
     """Every twin's entries once, on the twin drawn last; theirs removed."""
-    assert isinstance(facts, EntryFacts)
     owners = facts.owners
     host = max(range(len(owners)), key=lambda i: owners[i].rank)
     seen: set[str] = set()
@@ -32,14 +33,13 @@ def merge_twins(facts: Facts, plan: Plan) -> Plan:
     return EntryPlan(host=host, picks=tuple(picks), remove=remove)
 
 
-def has_legend_above(facts: Facts, plan: Plan) -> bool:
+def has_legend_above(facts: TitleFacts, plan: TitlePad) -> bool:
     """Axes titles with a legend above the Axes."""
-    return isinstance(facts, TitleFacts) and bool(facts.legends_above)
+    return bool(facts.legends_above)
 
 
-def lift_titles(facts: Facts, plan: Plan) -> Plan:
+def lift_titles(facts: TitleFacts, plan: TitlePad) -> TitlePad:
     """Raise the titles so their baseline sits the title gap above the legend."""
-    assert isinstance(facts, TitleFacts)
     pad = max(title.pad for title in facts.titles)
     needed = 0.0
     for title in facts.titles:
@@ -54,7 +54,7 @@ def lift_titles(facts: Facts, plan: Plan) -> Plan:
     return TitlePad(needed) if needed > pad + 0.5 else plan
 
 
-EDGES: tuple[EdgeCase[Facts, Plan], ...] = (
+ENTRY_EDGES: tuple[EdgeCase[EntryFacts, EntryPlan], ...] = (
     EdgeCase(
         name="twin-merge",
         why=(
@@ -66,6 +66,9 @@ EDGES: tuple[EdgeCase[Facts, Plan], ...] = (
         applies=has_twins,
         adjust=merge_twins,
     ),
+)
+
+TITLE_EDGES: tuple[EdgeCase[TitleFacts, TitlePad], ...] = (
     EdgeCase(
         name="title-over-above-legend",
         why=(

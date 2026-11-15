@@ -12,7 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
 import numpy as np
@@ -59,6 +59,7 @@ from .model import (
     Span,
     TitleBox,
     TitleFacts,
+    trial_keywords,
 )
 
 if TYPE_CHECKING:
@@ -207,7 +208,7 @@ class Trials:
 
     def __init__(
         self,
-        parent: Axes | Figure | SubFigure,
+        parent: Axes | Figure,
         handles: Sequence[Any],
         entries: Entries,
         kw: dict[str, Any],
@@ -220,7 +221,7 @@ class Trials:
             list(handles),
             renderer,
         )
-        self.kw = {k: v for k, v in kw.items() if k != "draggable"}
+        self.kw = trial_keywords(kw)
         self.kw.setdefault("loc", loc)  # never matplotlib's "best" search
         self.sizes: dict[tuple[Entries, Columns], Size] = {}
         self.base = self.trial(entries, Columns(1))
@@ -229,9 +230,10 @@ class Trials:
 
     def trial(self, entries: Entries, columns: Columns) -> Legend:
         """A detached legend of ``entries`` in ``columns`` (nothing drawn)."""
-        owner = cast("Axes | Figure", self.parent)
         labels = list(entries.labels)
-        return Legend(owner, self.handles, labels, ncols=columns.n, **self.kw)
+        return Legend(
+            self.parent, self.handles, labels, ncols=columns.n, **self.kw
+        )
 
     def size_of(self, entries: Entries, columns: Columns) -> Size:
         """The trial legend's size, measured once per entries and columns."""
@@ -275,22 +277,13 @@ def _others(ax: Axes) -> list[Axes]:
 
 def free_sides(ax: Axes) -> tuple[Side, ...]:
     """The fallback sides of ``ax`` no other panel sits beyond."""
-    me, eps = _root_position(ax), 1e-6
-    others = [_root_position(o) for o in _others(ax)]
-
-    def blocked(side: Side) -> bool:
-        for pos in others:
-            across = min(pos.x1, me.x1) - max(pos.x0, me.x0) > eps
-            along = min(pos.y1, me.y1) - max(pos.y0, me.y0) > eps
-            if (
-                (side is Side.ABOVE and pos.y0 >= me.y1 - eps and across)
-                or (side is Side.BELOW and pos.y1 <= me.y0 + eps and across)
-                or (side is Side.RIGHT and pos.x0 >= me.x1 - eps and along)
-            ):
-                return True
-        return False
-
-    return tuple(side for side in FALLBACK_SIDES if not blocked(side))
+    me, eps = box_of(_root_position(ax)), 1e-6
+    others = [box_of(_root_position(o)) for o in _others(ax)]
+    return tuple(
+        side
+        for side in FALLBACK_SIDES
+        if not any(me.behind(side, pos, eps) for pos in others)
+    )
 
 
 def _titles(ax: Axes, renderer: RendererBase) -> list[Bbox]:
@@ -459,8 +452,14 @@ def figure_facts(
     kw: dict[str, Any],
     renderer: RendererBase,
 ) -> FigureFacts:
-    """What placing a figure legend reads: its sizes."""
-    trials = Trials(fig, handles, entries, kw, renderer, loc="upper center")
+    """What placing a figure legend reads: its sizes.
+
+    The trials hang on the root figure: a trial is never drawn, its size
+    is the same under a SubFigure of it, and matplotlib types a
+    ``Legend``'s parent as an Axes or a Figure only.
+    """
+    root = fig.get_figure(root=True)
+    trials = Trials(root, handles, entries, kw, renderer, loc="upper center")
     return FigureFacts(
         side=request.side,
         columns=request.columns,

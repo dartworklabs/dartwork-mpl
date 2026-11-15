@@ -1,16 +1,23 @@
 """Draw the legends the decisions plan, and the layout's legend hooks.
 
-A legend ``place_legend`` built carries a :class:`Record` (``_dm_legend``):
-what it was placed from and where. The layout places it again at the size
-it settles on only while it still sits where the library put it; a legend
-the caller moved (``set_loc``, ``set_bbox_to_anchor``) is the caller's.
+A legend ``place_legend`` built has a :class:`Record` in this module's
+registry: what it was placed from and where. The layout places it again at
+the size it settles on only while it still sits where the library put it; a
+legend the caller moved (``set_loc``, ``set_bbox_to_anchor``) is the
+caller's. A figure legend ``figure_legend`` placed has a :class:`Reserve`:
+the figure edge it holds and the room the layout keeps from it.
+
+The registries hold their legends weakly, and a record names its handles
+by identity (found again on the Axes when the legend is rebuilt), so a
+closed figure is freed with its legends.
 """
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, assert_never
 
 import matplotlib as mpl
 from matplotlib.font_manager import FontProperties
@@ -27,35 +34,28 @@ from ..geometry import (
     same_position_axes,
 )
 from . import decide, measure
-from .edges import EDGES
+from .edges import ENTRY_EDGES, TITLE_EDGES
 from .model import (
     Anchor,
+    Best,
     Entries,
-    EntryPlan,
-    FigurePlan,
     Inside,
+    Keywords,
     LegendPlan,
     Outside,
+    Passed,
     Request,
+    Reserve,
     Side,
-    TitlePad,
-    parse_side,
-    split_columns,
+    parse_keywords,
+    parse_loc,
 )
 
 if TYPE_CHECKING:
+    from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
-    from matplotlib.typing import LegendLocType
-
-_ANCHORS = {
-    Side.ABOVE: ((0.5, 1.0), (0.0, 1.0)),
-    Side.BELOW: ((0.5, 0.0), (0.0, -1.0)),
-    Side.RIGHT: ((1.0, 0.5), (1.0, 0.0)),
-    Side.LEFT: ((0.0, 0.5), (-1.0, 0.0)),
-}
-_CALLER_ANCHOR = ("bbox_to_anchor", "bbox_transform")
 
 
 @dataclass
@@ -64,11 +64,14 @@ class Record:
 
     ``plan`` is ``None`` for a matplotlib ``loc`` passed through; ``size``
     the Axes size (half px) and span it was last decided at; ``at`` the
-    legend's ``loc`` code and anchor box the library set.
+    legend's ``loc`` code and anchor box the library set; ``outside`` the
+    side the library anchored it outside of. ``handles`` are the ``id`` of
+    each handle, in entry order: a record holding the artists themselves
+    would keep its legend, and with it the figure, alive.
     """
 
     request: Request
-    handles: list[Any]
+    handles: tuple[int, ...]
     entries: Entries
     kw: dict[str, Any]
     plan: LegendPlan | None
@@ -76,21 +79,58 @@ class Record:
     pad: float = 0.0
     at: tuple[Any, Any] = (None, None)
     anchor: Anchor | None = None
+    outside: Side | None = None
+
+
+def _record(
+    request: Request,
+    handles: Sequence[Artist],
+    entries: Entries,
+    kw: dict[str, Any],
+    plan: LegendPlan | None,
+) -> Record:
+    ids = tuple(id(h) for h in handles)
+    return Record(request, ids, entries, kw, plan)
+
+
+def handles_of(ax: Axes, record: Record) -> list[Artist] | None:
+    """``record``'s handles, as ``ax`` and its twins hold them now.
+
+    ``None`` when one is gone or no longer carries its entry's name.
+    """
+    found: dict[int, tuple[Artist, str]] = {}
+    for owner in same_position_axes(ax):
+        hs, labels = owner.get_legend_handles_labels()
+        for handle, label in zip(hs, labels, strict=True):
+            found[id(handle)] = (handle, label)
+    handles: list[Artist] = []
+    for key, name in zip(record.handles, record.entries.labels, strict=True):
+        handle, label = found.get(key, (None, None))
+        if handle is None or label != name:
+            return None
+        handles.append(handle)
+    return handles
+
+
+_RECORDS: weakref.WeakKeyDictionary[Legend, Record] = (
+    weakref.WeakKeyDictionary()
+)
+_RESERVES: weakref.WeakKeyDictionary[Legend, Reserve] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def record_of(legend: Legend | None) -> Record | None:
     """The record of a legend the library placed and the caller has not moved."""
-    record = getattr(legend, "_dm_legend", None)
-    if legend is None or not isinstance(record, Record):
+    record = None if legend is None else _RECORDS.get(legend)
+    if legend is None or record is None:
         return None
     return record if _still_at(legend, record.at) else None
 
 
 def _remember(legend: Legend, record: Record) -> Legend:
     record.at = _at(legend)
-    legend._dm_legend = record  # type: ignore[attr-defined]
-    # annotation's bar labels tell the library's legends by this mark.
-    legend._dm_placed_legend = True  # type: ignore[attr-defined]
+    _RECORDS[legend] = record
     return legend
 
 
@@ -119,22 +159,21 @@ def anchor_outside(
     except BBOX_ERRORS:
         return False
     plan = Anchor(decide.anchor(facts).clearance * 72.0 / root.dpi)
-    record = getattr(legend, "_dm_legend", None)
-    previous = record.anchor if isinstance(record, Record) else None
+    record = _RECORDS.get(legend)
+    if record is None:
+        return False
+    previous = record.anchor
     if (
         previous is not None
-        and getattr(legend, "_dm_outside_side", None) == side.value
+        and record.outside == side
         and abs(previous.clearance - plan.clearance) <= 0.01
     ):
         return False
-    (x, y), (dx, dy) = _ANCHORS[side]
-    out = plan.clearance / 72.0
+    (dx, dy), out = side.outward, plan.clearance / 72.0
     offset = ScaledTranslation(dx * out, dy * out, root.dpi_scale_trans)
-    legend.set_bbox_to_anchor((x, y), ax.transAxes + offset)
-    legend._dm_outside_side = side.value  # type: ignore[attr-defined]
-    if isinstance(record, Record):
-        record.anchor = plan
-        _remember(legend, record)
+    legend.set_bbox_to_anchor(side.middle, ax.transAxes + offset)
+    record.anchor, record.outside = plan, side
+    _remember(legend, record)
     return True
 
 
@@ -151,22 +190,29 @@ def _half_px(
 
 
 def draw(
-    ax: Axes, record: Record, plan: LegendPlan, renderer: RendererBase
+    ax: Axes,
+    record: Record,
+    handles: list[Artist],
+    plan: LegendPlan,
+    renderer: RendererBase,
 ) -> Legend:
     """Draw ``record``'s legend on ``ax`` as ``plan`` says and record it."""
-    if isinstance(plan, Inside):
-        loc, labels = plan.loc.value, record.entries.labels
-    else:
-        loc, labels = plan.side.legend_loc, plan.entries.labels
+    match plan:
+        case Inside(loc=spot):
+            loc, labels = spot, record.entries.labels
+        case Outside(side=side, entries=entries):
+            loc, labels = side.legend_loc, entries.labels
+        case _:
+            assert_never(plan)
     legend = _new_legend(
         ax,
-        record.handles,
+        handles,
         list(labels),
-        loc=cast("LegendLocType", loc),
+        loc=loc.code,
         ncols=plan.columns.n,
         **record.kw,
     )
-    record = replace(record, plan=plan, anchor=None)
+    record = replace(record, plan=plan, anchor=None, outside=None)
     _remember(legend, record)
     if isinstance(plan, Outside):
         anchor_outside(legend, ax, plan.side, renderer)
@@ -176,13 +222,14 @@ def draw(
 def decide_for(
     ax: Axes,
     record: Record,
+    handles: list[Artist],
     renderer: RendererBase,
     current: LegendPlan | None = None,
 ) -> LegendPlan:
-    """Decide (with the edge cases) where ``record``'s legend goes on ``ax``."""
+    """Decide where ``record``'s legend of ``handles`` goes on ``ax``."""
     facts = measure.legend_facts(
         ax,
-        record.handles,
+        handles,
         record.entries,
         record.request,
         record.kw,
@@ -190,9 +237,7 @@ def decide_for(
         current,
     )
     record.pad = facts.pad
-    plan = settle_edges(facts, decide.place(facts), EDGES).plan
-    assert isinstance(plan, Inside | Outside)
-    return plan
+    return decide.place(facts)
 
 
 def _same_place(a: LegendPlan, b: LegendPlan) -> bool:
@@ -235,12 +280,11 @@ def place_legend(ax: Axes, loc: str, kw: dict[str, Any]) -> Legend | None:
     """Place the legend of ``ax`` (:func:`dartwork_mpl.legend.place_legend`)."""
     owners = same_position_axes(ax)
     facts, handles = measure.entry_facts(owners, ax)
-    plan = settle_edges(facts, decide.entries(facts), EDGES).plan
-    assert isinstance(plan, EntryPlan)
+    plan = settle_edges(facts, decide.entries(facts), ENTRY_EDGES).plan
     host = owners[plan.host]
     old = host.get_legend()
     if not plan.picks:
-        if old is not None and hasattr(old, "_dm_legend"):
+        if old is not None and old in _RECORDS:
             old.remove()
         return None
     picked = [handles[i][j] for i, j in plan.picks]
@@ -250,42 +294,51 @@ def place_legend(ax: Axes, loc: str, kw: dict[str, Any]) -> Legend | None:
     source = old or next(
         (o.get_legend() for o in owners if o.get_legend()), None
     )
-    kept = _kept_settings(source)
-    if "fontsize" in kw or "prop" in kw:
-        kept.pop("fontsize", None)
-    rest, columns = split_columns({**kept, **kw})
-    side = parse_side(loc)
-    anchored = any(k in rest for k in _CALLER_ANCHOR)
-    if side is not None and anchored:
-        key = next(k for k in _CALLER_ANCHOR if k in rest)
-        raise ValueError(
-            f"place_legend(loc={loc!r}) anchors the legend itself; "
-            f"remove {key}= or pass a matplotlib loc instead"
-        )
+    keywords = parse_keywords(kw, _kept_settings(source))
+    placement = parse_loc(loc)
+    if isinstance(placement, Side):
+        _refuse_anchor("place_legend", loc, keywords)
     for i in plan.remove:
         if (partner := owners[i].get_legend()) is not None:
             partner.remove()
     if old is not None:
         old.remove()
-    request = Request(side, columns, anchored)
-    if side is None and loc != "best":
-        if columns is not None:
-            rest["ncols"] = columns.n
-        legend = _new_legend(
-            host,
-            picked,
-            list(entries.labels),
-            loc=cast("LegendLocType", loc),
-            **rest,
-        )
-        return _remember(legend, Record(request, picked, entries, rest, None))
-    record = Record(request, picked, entries, rest, None)
+    columns, anchored = keywords.columns, keywords.anchored
+    match placement:
+        case Passed(loc=raw):
+            rest = dict(keywords.rest)
+            if columns is not None:
+                rest["ncols"] = columns.n
+            legend = _new_legend(
+                host, picked, list(entries.labels), loc=raw, **rest
+            )
+            request = Request(None, columns, anchored)
+            return _remember(
+                legend, _record(request, picked, entries, rest, None)
+            )
+        case Best():
+            request = Request(None, columns, anchored)
+        case Side():
+            request = Request(placement, columns, anchored)
+        case _:
+            assert_never(placement)
+    record = _record(request, picked, entries, keywords.rest, None)
     root = host.get_figure(root=True)
     if root is None:
         raise ValueError("place_legend needs an Axes on a Figure")
     root.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
     renderer = get_renderer(root)
-    return draw(host, record, decide_for(host, record, renderer), renderer)
+    spot = decide_for(host, record, picked, renderer)
+    return draw(host, record, picked, spot, renderer)
+
+
+def _refuse_anchor(name: str, loc: str, keywords: Keywords) -> None:
+    """A named side anchors the legend itself: a caller anchor is an error."""
+    if keywords.anchor is not None:
+        raise ValueError(
+            f"{name}(loc={loc!r}) anchors the legend itself; "
+            f"remove {keywords.anchor}= or pass a matplotlib loc instead"
+        )
 
 
 # ------------------------------------------------------------ layout hooks
@@ -303,10 +356,13 @@ def _again(
     if size == record.size:
         return False
     record.size = size
-    new = decide_for(ax, record, renderer, current=plan)
+    handles = handles_of(ax, record)
+    if handles is None:
+        return False
+    new = decide_for(ax, record, handles, renderer, current=plan)
     if _same_place(new, plan):
         return False
-    rebuilt = record_of(draw(ax, record, new, renderer))
+    rebuilt = record_of(draw(ax, record, handles, new, renderer))
     if rebuilt is not None:
         rebuilt.size = _half_px(ax, renderer, new, record.pad)
     return True
@@ -316,9 +372,9 @@ def _lift_titles(ax: Axes, renderer: RendererBase) -> bool:
     facts = measure.title_facts(ax, renderer)
     if facts is None:
         return False
-    plan = settle_edges(facts, decide.title_pad(facts), EDGES).plan
+    plan = settle_edges(facts, decide.title_pad(facts), TITLE_EDGES).plan
     root = ax.get_figure(root=True)
-    if not isinstance(plan, TitlePad) or plan.px is None or root is None:
+    if plan.px is None or root is None:
         return False
     offset = ScaledTranslation(0.0, plan.px / root.dpi, root.dpi_scale_trans)
     for title in axes_titles(ax).values():
@@ -348,7 +404,7 @@ def settle(
             moved = True
     for ax in fig.axes:
         legend = ax.get_legend()
-        side = parse_side(outside_side(legend) or "")
+        side = outside_side(legend)
         if (
             legend is not None
             and side is not None
@@ -362,18 +418,15 @@ def settle(
     return moved
 
 
-OutsideSide: TypeAlias = Literal["above", "below", "right", "left"]
-"""A side of an Axes that a legend can be anchored outside of."""
-
-
-def outside_side(legend: Legend | None) -> OutsideSide | None:
+def outside_side(legend: Legend | None) -> Side | None:
     """The side the library anchored ``legend`` outside of, or ``None``."""
-    side = getattr(legend, "_dm_outside_side", None)
-    match side:
-        case "above" | "below" | "right" | "left":
-            return side
-        case _:
-            return None
+    record = None if legend is None else _RECORDS.get(legend)
+    return None if record is None else record.outside
+
+
+def figure_reserve(artist: Artist) -> Reserve | None:
+    """The edge a ``figure_legend`` legend holds and its gap, else ``None``."""
+    return _RESERVES.get(artist) if isinstance(artist, Legend) else None
 
 
 # ---------------------------------------------------------- figure legends
@@ -395,57 +448,65 @@ def figure_legend(
         if (legend := ax.get_legend()) is not None
         and set(_names(legend)) <= names
     ]
-    replaced += [
-        lg for lg in figure_legends(fig) if hasattr(lg, "_dm_figure_plan")
-    ]
+    replaced += [lg for lg in figure_legends(fig) if lg in _RESERVES]
     if not handles:
         for legend in replaced:
             legend.remove()
         return None
-    side = parse_side(loc)
-    if side is None and loc != "best":
-        legend = _new_legend(
-            fig, handles, labels, loc=cast("LegendLocType", loc), **kw
-        )
-    else:
-        rest, columns = split_columns(kw)
-        for key in _CALLER_ANCHOR:
-            if key in rest:
-                raise ValueError(
-                    f"figure_legend(loc={loc!r}) anchors the legend itself; "
-                    f"remove {key}= or pass a matplotlib loc instead"
-                )
-        renderer = get_renderer(fig)
-        entries = Entries(tuple(labels))
-        facts = measure.figure_facts(
-            fig, handles, entries, Request(side, columns), rest, renderer
-        )
-        plan = settle_edges(facts, decide.figure_place(facts), EDGES).plan
-        assert isinstance(plan, FigurePlan)
-        legend = _new_legend(
-            fig,
-            handles,
-            labels,
-            loc=cast("LegendLocType", plan.side.figure_loc),
-            ncols=plan.columns.n,
-            bbox_to_anchor=plan.anchor,
-            bbox_transform=fig.transSubfigure,
-            **rest,
-        )
-        # simple_layout keeps this gap between the legend and the panels.
-        legend._dm_layout_gap_pt = float(legend.borderaxespad) * float(  # type: ignore[attr-defined]
-            legend.prop.get_size_in_points()
-        )
-        legend._dm_figure_side = plan.side.value  # type: ignore[attr-defined]
-        _set_figure_plan(legend, plan)
+    placement = parse_loc(loc)
+    match placement:
+        case Passed(loc=raw):
+            legend = _new_legend(fig, handles, labels, loc=raw, **kw)
+        case Best():
+            legend = _placed_figure_legend(fig, handles, labels, None, loc, kw)
+        case Side():
+            legend = _placed_figure_legend(
+                fig, handles, labels, placement, loc, kw
+            )
+        case _:
+            assert_never(placement)
     for old in replaced:
         old.remove()
     return legend
 
 
+def _placed_figure_legend(
+    fig: Figure | SubFigure,
+    handles: list[Any],
+    labels: list[str],
+    side: Side | None,
+    loc: str,
+    kw: dict[str, Any],
+) -> Legend:
+    """The figure legend on ``side`` (``None``: the side that fits)."""
+    keywords = parse_keywords(kw)
+    _refuse_anchor("figure_legend", loc, keywords)
+    renderer = get_renderer(fig)
+    entries = Entries(tuple(labels))
+    request = Request(side, keywords.columns)
+    facts = measure.figure_facts(
+        fig, handles, entries, request, keywords.rest, renderer
+    )
+    plan = decide.figure_place(facts)
+    legend = _new_legend(
+        fig,
+        handles,
+        labels,
+        loc=plan.side.figure_loc.code,
+        ncols=plan.columns.n,
+        bbox_to_anchor=plan.anchor,
+        bbox_transform=fig.transSubfigure,
+        **keywords.rest,
+    )
+    # simple_layout keeps this gap between the legend and the panels.
+    gap = float(legend.borderaxespad) * float(legend.prop.get_size_in_points())
+    _RESERVES[legend] = Reserve(plan.side, gap)
+    return legend
+
+
 def _names(legend: Legend) -> tuple[str, ...]:
-    record = getattr(legend, "_dm_legend", None)
-    if isinstance(record, Record):
+    record = _RECORDS.get(legend)
+    if record is not None:
         return record.entries.labels
     return tuple(t.get_text() for t in legend.get_texts())
 
@@ -461,8 +522,3 @@ def _still_at(legend: Legend, at: tuple[Any, Any] | None) -> bool:
         return False
     loc, box = _at(legend)
     return loc == at[0] and box is at[1]
-
-
-def _set_figure_plan(legend: Legend, plan: FigurePlan) -> None:
-    legend._dm_figure_plan = plan  # type: ignore[attr-defined]
-    legend._dm_figure_at = _at(legend)  # type: ignore[attr-defined]

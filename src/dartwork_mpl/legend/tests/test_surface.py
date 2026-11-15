@@ -51,7 +51,7 @@ def test_a_full_plot_sends_the_legend_above_and_the_title_over_it():
     ax.set_title("Measurements")
     legend = dm.place_legend(ax)
     dm.simple_layout(fig)
-    assert dm.legend.outside_side(legend) == "above"
+    assert dm.legend.outside_side(legend) == dm.legend.Side.ABOVE
     assert _box(fig, legend).y0 >= _box(fig, ax).y1
     assert _box(fig, ax.title).y0 >= _box(fig, legend).y1
 

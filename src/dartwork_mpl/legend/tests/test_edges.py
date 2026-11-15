@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.legend import decide
-from dartwork_mpl.legend.edges import EDGES
+from dartwork_mpl.legend.edges import ENTRY_EDGES, TITLE_EDGES
 from dartwork_mpl.legend.model import (
     Box,
     Entries,
@@ -20,7 +20,8 @@ from dartwork_mpl.legend.model import (
 
 
 def _settled(f, plan):
-    return settle(f, plan, EDGES)
+    edges = ENTRY_EDGES if isinstance(f, EntryFacts) else TITLE_EDGES
+    return settle(f, plan, edges)
 
 
 def _twins(**second) -> EntryFacts:

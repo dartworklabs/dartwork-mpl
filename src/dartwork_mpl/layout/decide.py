@@ -14,6 +14,7 @@ case: an ordinary figure has nothing to fit.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import assert_never
 
 from .model import (
     EDGE_EPSILON,
@@ -27,7 +28,6 @@ from .model import (
     Edge,
     Edges,
     FigureArtist,
-    FigureRole,
     Fit,
     Go,
     PlotSize,
@@ -59,18 +59,29 @@ def answer(request: Request) -> Answer:
 # -- one step -----------------------------------------------------------------
 
 
-def role_edge(artist: FigureArtist, canvas: Canvas) -> Edge | None:
-    """The edge a suptitle, supxlabel or supylabel holds on its half."""
-    box = artist.box
+def on_half(edge: Edge, box: Box, canvas: Canvas) -> bool:
+    """Whether the centre of ``box`` lies on the half of the canvas at ``edge``."""
     xc = (box.x0 + box.x1) / 2 / canvas.width
     yc = (box.y0 + box.y1) / 2 / canvas.height
-    if artist.role is FigureRole.SUPTITLE and yc >= 0.5:
-        return Edge.TOP
-    if artist.role is FigureRole.SUPXLABEL and yc < 0.5:
-        return Edge.BOTTOM
-    if artist.role is FigureRole.SUPYLABEL and xc < 0.5:
-        return Edge.LEFT
-    return None
+    match edge:
+        case Edge.TOP:
+            return yc >= 0.5
+        case Edge.BOTTOM:
+            return yc < 0.5
+        case Edge.LEFT:
+            return xc < 0.5
+        case Edge.RIGHT:
+            return xc >= 0.5
+        case _:
+            assert_never(edge)
+
+
+def role_edge(artist: FigureArtist, canvas: Canvas) -> Edge | None:
+    """The edge a suptitle, supxlabel or supylabel holds on its half."""
+    edge = artist.holds
+    if edge is None or not on_half(edge, artist.box, canvas):
+        return None
+    return edge
 
 
 def nearest_edge(artist: FigureArtist, canvas: Canvas) -> Edge:

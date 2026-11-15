@@ -12,7 +12,13 @@ from .bar_layout import settle_bars
 from .bars import label_bars
 from .ends import label_line_ends, space_line_ends
 from .letters import label_axes, settle_panels
-from .notes import add_note, annotate_corner, annotate_value, label_hline
+from .notes import (
+    add_note,
+    annotate_corner,
+    annotate_value,
+    label_hline,
+    note_gap_pt,
+)
 
 __all__ = [
     "add_note",
@@ -22,6 +28,7 @@ __all__ = [
     "label_bars",
     "label_hline",
     "label_line_ends",
+    "note_gap_pt",
     "settle_bars",
     "settle_panels",
     "space_line_ends",

@@ -1,8 +1,9 @@
 """The layout's named special cases, applied after the ``decide`` functions.
 
-Each decision has its own facts type (:data:`~.model.Facts`); an edge case
-applies only to its own. The text cases run once the margins hold; the loop
-fits the margins again after them and undoes a round that crushed a plot.
+Each decision has its own facts and plan types and its own registry:
+``FIT_EDGES`` for what one step counts as content, ``TEXT_EDGES`` for the
+text fitted once the margins hold; the loop fits the margins again after
+those and undoes a round that crushed a plot.
 """
 
 from __future__ import annotations
@@ -30,13 +31,11 @@ from .model import (
     Count,
     Degrees,
     Edge,
-    Facts,
     FigureArtist,
     Fit,
     Gap,
     Line,
     Piece,
-    Plan,
     Px,
     Reach,
     Share,
@@ -46,23 +45,22 @@ from .model import (
     TickGroup,
     TickRow,
     Width,
+    lies_across,
+    tokens,
 )
 
 # -- one step: what counts as content -----------------------------------------
 
 
-def _each_axes(plan: Plan, change: Callable[[AxesContent], AxesContent]) -> Fit:
-    assert isinstance(plan, Fit)
+def _each_axes(plan: Fit, change: Callable[[AxesContent], AxesContent]) -> Fit:
     return replace(plan, axes=tuple(change(a) for a in plan.axes))
 
 
-def _has_3d(facts: Facts, plan: Plan) -> bool:
-    return isinstance(facts, ContentFacts) and any(
-        a.tight is not None for a in facts.axes
-    )
+def _has_3d(facts: ContentFacts, plan: Fit) -> bool:
+    return any(a.tight is not None for a in facts.axes)
 
 
-def _tight_3d(facts: Facts, plan: Plan) -> Plan:
+def _tight_3d(facts: ContentFacts, plan: Fit) -> Fit:
     return _each_axes(
         plan, lambda a: a if a.tight is None else replace(a, pieces=a.tight)
     )
@@ -74,7 +72,7 @@ def _along_plot(piece: Piece, plot: Box | None, canvas: Canvas) -> Piece:
     if piece.outside is None or plot is None:
         return piece
     x0, x1, y0, y1 = piece.box.x0, piece.box.x1, piece.box.y0, piece.box.y1
-    if piece.outside in (Edge.TOP, Edge.BOTTOM):
+    if lies_across(piece.outside):
         x0 = x0 if x0 < 0.0 else max(x0, plot.x0)
         x1 = x1 if x1 > canvas.width else min(x1, plot.x1)
     else:
@@ -83,14 +81,11 @@ def _along_plot(piece: Piece, plot: Box | None, canvas: Canvas) -> Piece:
     return replace(piece, box=Box(x0, x1, y0, y1))
 
 
-def _has_outside_legend(facts: Facts, plan: Plan) -> bool:
-    return isinstance(plan, Fit) and any(
-        p.outside is not None for a in plan.axes for p in a.pieces
-    )
+def _has_outside_legend(facts: ContentFacts, plan: Fit) -> bool:
+    return any(p.outside is not None for a in plan.axes for p in a.pieces)
 
 
-def _cut_legend_to_plot(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, ContentFacts)
+def _cut_legend_to_plot(facts: ContentFacts, plan: Fit) -> Fit:
     canvas = facts.canvas
     return _each_axes(
         plan,
@@ -116,53 +111,28 @@ def _band_edge(art: FigureArtist, canvas: Canvas) -> Edge | None:
     return None
 
 
-def _has_band_text(facts: Facts, plan: Plan) -> bool:
-    return isinstance(facts, ContentFacts) and any(
+def _has_band_text(facts: ContentFacts, plan: Fit) -> bool:
+    return any(
         _band_edge(art, facts.canvas) is not None for art in facts.artists
     )
 
 
-def _reserve_by_reading(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, ContentFacts) and isinstance(plan, Fit)
+def _reserve_by_reading(facts: ContentFacts, plan: Fit) -> Fit:
     pairs = zip(facts.artists, plan.reserves, strict=True)
     edges = tuple(_band_edge(art, facts.canvas) or e for art, e in pairs)
     return replace(plan, reserves=edges)
 
 
-def _has_sided_legend(facts: Facts, plan: Plan) -> bool:
-    return isinstance(facts, ContentFacts) and any(
-        a.side is not None for a in facts.artists
-    )
+def _has_sided_legend(facts: ContentFacts, plan: Fit) -> bool:
+    return any(a.side is not None for a in facts.artists)
 
 
-def _reserve_legend_side(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, ContentFacts) and isinstance(plan, Fit)
+def _reserve_legend_side(facts: ContentFacts, plan: Fit) -> Fit:
     pairs = zip(facts.artists, plan.reserves, strict=True)
     return replace(plan, reserves=tuple(art.side or e for art, e in pairs))
 
 
 # -- text: pure helpers -------------------------------------------------------
-
-
-def tokens(text: Line) -> tuple[Line, ...]:
-    """Words split at spaces outside brackets: ``(MWh per year)`` stays whole."""
-    out: list[Line] = []
-    depth = 0
-    word = ""
-    for ch in text:
-        if ch in "([":
-            depth += 1
-        elif ch in ")]" and depth:
-            depth -= 1
-        if ch.isspace() and depth == 0:
-            if word:
-                out.append(Line(word))
-            word = ""
-        else:
-            word += ch
-    if word:
-        out.append(Line(word))
-    return tuple(out)
 
 
 def balanced_lines(
@@ -289,15 +259,12 @@ def _name_lines(name: AxisName) -> Line | None:
     return Line("\n".join(balanced_lines(words, most, name.width)[0]))
 
 
-def _has_overlong_name(facts: Facts, plan: Plan) -> bool:
-    return isinstance(facts, TextFacts) and any(
-        _overlong(n, facts) for n in facts.names
-    )
+def _has_overlong_name(facts: TextFacts, plan: TextPlan) -> bool:
+    return any(_overlong(n, facts) for n in facts.names)
 
 
-def _wrap_names(facts: Facts, plan: Plan) -> Plan:
+def _wrap_names(facts: TextFacts, plan: TextPlan) -> TextPlan:
     """The same name on the same axis of a grid takes the same lines."""
-    assert isinstance(facts, TextFacts) and isinstance(plan, TextPlan)
     names: dict[ArtistId, Line] = dict(plan.names)
     forms = dict(facts.wrapped_names)
     for name in facts.names:
@@ -322,18 +289,14 @@ def _parted(space: Spacing) -> Share | None:
     return gap
 
 
-def _has_colliding_panels(facts: Facts, plan: Plan) -> bool:
+def _has_colliding_panels(facts: TextFacts, plan: TextPlan) -> bool:
     """Not in a round that wraps a name: what stands on it has not moved."""
-    return (
-        isinstance(facts, TextFacts)
-        and isinstance(plan, TextPlan)
-        and not plan.names
-        and any(_parted(s) is not None for s in facts.spacings)
+    return not plan.names and any(
+        _parted(s) is not None for s in facts.spacings
     )
 
 
-def _part_panels(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, TextFacts) and isinstance(plan, TextPlan)
+def _part_panels(facts: TextFacts, plan: TextPlan) -> TextPlan:
     spacing: dict[Gap, Share] = dict(plan.spacing)
     for space in facts.spacings:
         if (gap := _parted(space)) is not None:
@@ -384,12 +347,11 @@ def _new_wraps(facts: TextFacts) -> Mapping[ArtistId, Mapping[Line, Line]]:
     return found
 
 
-def _has_wrappable_ticks(facts: Facts, plan: Plan) -> bool:
-    return isinstance(facts, TextFacts) and bool(_new_wraps(facts))
+def _has_wrappable_ticks(facts: TextFacts, plan: TextPlan) -> bool:
+    return bool(_new_wraps(facts))
 
 
-def _wrap_ticks(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, TextFacts) and isinstance(plan, TextPlan)
+def _wrap_ticks(facts: TextFacts, plan: TextPlan) -> TextPlan:
     return replace(plan, wraps={**plan.wraps, **_new_wraps(facts)})
 
 
@@ -403,12 +365,11 @@ def _turnable(facts: TextFacts) -> list[TickGroup]:
     ]
 
 
-def _has_unwrappable_ticks(facts: Facts, plan: Plan) -> bool:
-    return isinstance(facts, TextFacts) and bool(_turnable(facts))
+def _has_unwrappable_ticks(facts: TextFacts, plan: TextPlan) -> bool:
+    return bool(_turnable(facts))
 
 
-def _turn_ticks(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, TextFacts) and isinstance(plan, TextPlan)
+def _turn_ticks(facts: TextFacts, plan: TextPlan) -> TextPlan:
     wraps: dict[ArtistId, Mapping[Line, Line]] = dict(plan.wraps)
     turns: dict[ArtistId, Degrees] = dict(plan.turns)
     for group in _turnable(facts):
@@ -420,7 +381,7 @@ def _turn_ticks(facts: Facts, plan: Plan) -> Plan:
     return replace(plan, wraps=wraps, turns=turns)
 
 
-EDGES: tuple[EdgeCase[Facts, Plan], ...] = (
+FIT_EDGES: tuple[EdgeCase[ContentFacts, Fit], ...] = (
     EdgeCase(
         name="axes-3d",
         why="a 3-D plot's stale tick labels sit thousands of px off the "
@@ -455,6 +416,9 @@ EDGES: tuple[EdgeCase[Facts, Plan], ...] = (
         applies=_has_sided_legend,
         adjust=_reserve_legend_side,
     ),
+)
+
+TEXT_EDGES: tuple[EdgeCase[TextFacts, TextPlan], ...] = (
     EdgeCase(
         name="overlong-axis-name",
         why="an axis name longer than its panel ran into the next panel or "

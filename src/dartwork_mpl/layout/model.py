@@ -13,7 +13,7 @@ import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import NewType, TypeAlias
+from typing import Literal, NewType, TypeAlias, assert_never
 
 from ..size import Length
 
@@ -71,6 +71,86 @@ class Edge(Enum):
     RIGHT = "right"
     BOTTOM = "bottom"
     TOP = "top"
+
+
+def lies_across(edge: Edge) -> bool:
+    """Top and bottom lie across the width; left and right along the height."""
+    match edge:
+        case Edge.TOP | Edge.BOTTOM:
+            return True
+        case Edge.LEFT | Edge.RIGHT:
+            return False
+        case _:
+            assert_never(edge)
+
+
+def edge_of(*, across: bool, far: bool) -> Edge:
+    """The edge across (top, bottom) or along the height, at the far end
+    (top, right) or the near one."""
+    if across:
+        return Edge.TOP if far else Edge.BOTTOM
+    return Edge.RIGHT if far else Edge.LEFT
+
+
+# -- what matplotlib writes, read once ----------------------------------------
+
+#: How matplotlib anchors a rotated tick label (``Text.set_rotation_mode``).
+Mode: TypeAlias = Literal["default", "anchor", "xtick", "ytick"]
+#: The mode a layout turns tick labels with: their ends stay at their ticks.
+TURN_MODE: Mode = "xtick"
+
+
+def turned_as(rotation: float, mode: Mode, angle: Degrees) -> bool:
+    """A label still at the ``angle`` and mode a layout turned it to."""
+    return rotation == angle and mode == TURN_MODE
+
+
+@dataclass(frozen=True)
+class Projection:
+    """An Axes' projection, from the name matplotlib gives it (``ax.name``).
+
+    ``flat``: the plain rectilinear Axes, the only kind whose text is fitted;
+    ``cube``: a 3-D Axes, measured by its tight boxes.
+    """
+
+    flat: bool
+    cube: bool
+
+
+def parse_projection(name: str) -> Projection:
+    """``ax.name`` as a :class:`Projection`."""
+    return Projection(flat=name == "rectilinear", cube=name == "3d")
+
+
+def authored(text: str) -> bool:
+    """Text its author broke into lines or wrote as mathtext."""
+    return "\n" in text or "$" in text
+
+
+def centred(align: str) -> bool:
+    """A horizontal alignment (``Text.get_horizontalalignment``) of centre."""
+    return align == "center"
+
+
+def tokens(text: Line) -> tuple[Line, ...]:
+    """Words split at spaces outside brackets: ``(MWh per year)`` stays whole."""
+    out: list[Line] = []
+    depth = 0
+    word = ""
+    for ch in text:
+        if ch in "([":
+            depth += 1
+        elif ch in ")]" and depth:
+            depth -= 1
+        if ch.isspace() and depth == 0:
+            if word:
+                out.append(Line(word))
+            word = ""
+        else:
+            word += ch
+    if word:
+        out.append(Line(word))
+    return tuple(out)
 
 
 # -- margins ------------------------------------------------------------------
@@ -215,23 +295,15 @@ class Box:
         )
 
 
-class Role(Enum):
-    """What a piece of an Axes' content is."""
-
-    TEXT = "text"  # texts, titles, axis names
-    TICK = "tick"  # tick labels in view, offset text
-    LEGEND = "legend"
-
-
 @dataclass(frozen=True)
 class Piece:
-    """One drawn thing of an Axes that must stay on the canvas.
+    """One drawn thing of an Axes that must stay on the canvas: a text,
+    title, axis name, tick label in view, offset text or legend.
 
     ``outside``: the side of the plot the library anchored a legend outside.
     """
 
     box: Box
-    role: Role
     outside: Edge | None = None
 
 
@@ -249,27 +321,20 @@ class AxesContent:
     tight: tuple[Piece, ...] | None = None
 
 
-class FigureRole(Enum):
-    """What a figure-level artist is."""
-
-    SUPTITLE = "suptitle"
-    SUPXLABEL = "supxlabel"
-    SUPYLABEL = "supylabel"
-    TEXT = "text"
-    LEGEND = "legend"
-
-
 @dataclass(frozen=True)
 class FigureArtist:
     """A figure-level text or legend: it reserves one edge of the canvas.
 
-    ``vertical`` is ``None`` for an artist without a rotation (a legend);
-    ``side`` the edge ``dm.figure_legend`` placed it on; ``gap`` the room it
-    keeps from the panels (px).
+    ``holds``: the edge its role holds while it sits on that half (a
+    suptitle the top, a supxlabel the bottom, a supylabel the left);
+    ``None`` for any other text or legend. ``vertical`` is ``None`` for an
+    artist without a rotation (a legend); ``side`` the edge
+    ``dm.figure_legend`` placed it on; ``gap`` the room it keeps from the
+    panels (px).
     """
 
     box: Box
-    role: FigureRole
+    holds: Edge | None
     vertical: bool | None
     side: Edge | None
     gap: Px
@@ -461,7 +526,3 @@ class TextPlan:
     def empty(self) -> bool:
         """Nothing to change."""
         return not (self.wraps or self.turns or self.names or self.spacing)
-
-
-Facts: TypeAlias = Request | ContentFacts | TextFacts
-Plan: TypeAlias = Answer | Fit | TextPlan

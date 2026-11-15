@@ -16,8 +16,8 @@ from .. import labels, legend, ticks
 from ..edgecase import settle
 from ..geometry import get_renderer
 from . import apply, decide, measure
-from .edges import EDGES
-from .model import FIT_ROUNDS, MAX_STEPS, Edges, Fit, Sides, Step, TextPlan
+from .edges import FIT_EDGES, TEXT_EDGES
+from .model import FIT_ROUNDS, MAX_STEPS, Edges, Sides, Step
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -47,8 +47,7 @@ def one_step(fig: Figure, margins: Sides, last: Edges | None) -> Step | None:
     if labels.settle_panels(fig, renderer):
         renderer = _redraw(fig)
     facts = measure.content_facts(fig, renderer, margins, last)
-    fit = settle(facts, decide.fit(facts), EDGES).plan
-    assert isinstance(fit, Fit)
+    fit = settle(facts, decide.fit(facts), FIT_EDGES).plan
     return decide.solve(facts, fit)
 
 
@@ -88,8 +87,7 @@ class Fitter:
             facts, objects = measure.text_facts(
                 self.fig, self.gs, renderer, record
             )
-            plan = settle(facts, decide.text_plan(facts), EDGES).plan
-            assert isinstance(plan, TextPlan)
+            plan = settle(facts, decide.text_plan(facts), TEXT_EDGES).plan
             if plan.empty:
                 return
             before = measure.plot_sizes(self.fig, renderer)
