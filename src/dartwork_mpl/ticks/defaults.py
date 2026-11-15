@@ -1,13 +1,13 @@
-"""Process-wide defaults for the library's own tick text.
+"""Process-wide defaults for the library's own tick text (``dm.config``).
 
-``dm.config.tick_years`` and ``dm.config.number_ladder`` are read by the
-``ticks`` slice wherever it writes default tick labels. Set them once, or
-scope them with ``with dm.config.override(tick_years=4): ...``.
+``dm.config.tick_years`` and ``dm.config.number_ladder`` are read wherever
+this slice writes default tick labels. Set them once, or scope them with
+``with dm.config.override(tick_years=4): ...``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, fields
 from typing import Literal
@@ -50,7 +50,7 @@ class Config:
     number_ladder: Literal["auto", "si", "myriad"] = "auto"
 
     @contextmanager
-    def override(self, **overrides: object) -> Iterator[None]:
+    def override(self, **overrides: object) -> Generator[None]:
         """Temporarily override one or more defaults inside a ``with`` block.
 
         Restores every overridden field to its previous value on exit —

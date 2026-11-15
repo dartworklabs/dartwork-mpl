@@ -47,9 +47,6 @@ from .color import (
     set_colors,
 )
 
-# Config (process-wide behaviour-toggle defaults)
-from .config import Config, config
-
 # Agent guidance: the skill, templates and anti-pattern lint
 from .guide import lint as lint_code
 
@@ -93,6 +90,7 @@ from .style import fs, fw, lw
 from .ticks import (
     axis_unit,
     axis_unit_of,
+    config,
     format_axis_billions,
     format_axis_currency,
     format_axis_dates,
@@ -135,8 +133,7 @@ EXPERIMENTAL: frozenset[str] = frozenset(
 __all__ = [  # noqa: RUF022
     # API stability markers
     "EXPERIMENTAL",
-    # Config
-    "Config",
+    # Tick-text defaults
     "config",
     # Color module
     "Color",

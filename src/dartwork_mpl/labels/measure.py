@@ -17,23 +17,24 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, IdentityTransform
 
-from .._figure_geometry import (
-    BBOX_ERRORS,
-    axes_titles,
-    backdrop_layers,
-    get_renderer,
-    same_position_axes,
-)
 from ..color import (
     composite_layers,
     composite_over,
     ensure_contrast,
     readable_text_color,
 )
+from ..geometry import (
+    BBOX_ERRORS,
+    axes_titles,
+    get_renderer,
+    same_position_axes,
+)
 from .model import Ink, Panel, Title, Try
 from .stacks import BarRun
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.patches import Rectangle
@@ -373,3 +374,57 @@ def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
         top=top,
         decos=decos,
     )
+
+
+def host_axes(ax: Axes) -> Axes:
+    """The Axes drawn last in ``ax``'s box: the top-most twin.
+
+    Matplotlib draws Axes by zorder, then in figure order, so the
+    ``ax.set_zorder(ax2.get_zorder() + 1)`` idiom puts ``ax`` on top.
+    """
+    owners = same_position_axes(ax)
+    parent = ax.get_figure(root=False)
+    order = parent.axes if parent is not None else owners
+    return max(
+        owners,
+        key=lambda member: (
+            member.get_zorder(),
+            order.index(member) if member in order else -1,
+        ),
+    )
+
+
+def backdrop_layers(
+    axes: Sequence[Axes],
+) -> list[tuple[float, float, float, float]]:
+    """The patch colours that show behind ``axes``' data, lowest first.
+
+    The figure's patch, then its subfigure's (when the Axes sit in one),
+    then each Axes' own patch in zorder (stable on the order given); a patch
+    that is not drawn adds nothing. Fold them over white with
+    ``composite_layers``. The ``axes`` share one figure.
+    """
+    first = axes[0]
+    root = first.get_figure(root=True)
+    parent = first.get_figure(root=False)
+    containers = (root, parent if parent is not root else None)
+    layers = [
+        mcolors.to_rgba(container.get_facecolor())
+        for container in containers
+        if container is not None and container.patch.get_visible()
+    ]
+    layers.extend(
+        mcolors.to_rgba(member.get_facecolor())
+        for member in sorted(axes, key=lambda m: m.get_zorder())
+        if _frame_on(member) and member.patch.get_visible()
+    )
+    return layers
+
+
+def _frame_on(ax: Axes) -> bool:
+    """Whether ``ax`` draws its patch; a 3D Axes has no frame switch.
+
+    ``Axes3D`` sets ``get_frame_on`` to ``None`` and always draws its patch.
+    """
+    frame_on = getattr(ax, "get_frame_on", None)
+    return bool(frame_on()) if callable(frame_on) else True

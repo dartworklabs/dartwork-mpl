@@ -18,8 +18,8 @@ from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 
-from .._figure_geometry import get_renderer, with_insets
 from ..edgecase import settle
+from ..geometry import get_renderer
 from . import decide
 from .dates import (
     CategoryDateLocator,
@@ -39,6 +39,7 @@ from .measure import (
     label_gap,
     language,
     rotated,
+    with_insets,
 )
 from .model import (
     AxesPlan,

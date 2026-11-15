@@ -1,6 +1,6 @@
 {
     "files": {
-        "./src/dartwork_mpl/_figure_geometry/__init__.py": [
+        "./src/dartwork_mpl/check/walk.py": [
             {
                 "code": "reportMissingTypeStubs",
                 "range": {
@@ -96,7 +96,9 @@
                     "endColumn": 42,
                     "lineCount": 1
                 }
-            },
+            }
+        ],
+        "./src/dartwork_mpl/geometry/axes.py": [
             {
                 "code": "reportUnknownVariableType",
                 "range": {
@@ -136,17 +138,19 @@
                     "endColumn": 53,
                     "lineCount": 1
                 }
-            },
+            }
+        ],
+        "./src/dartwork_mpl/geometry/figure.py": [
             {
-                "code": "reportMatchNotExhaustive",
+                "code": "reportUnnecessaryComparison",
                 "range": {
-                    "startColumn": 10,
-                    "endColumn": 14,
+                    "startColumn": 7,
+                    "endColumn": 19,
                     "lineCount": 1
                 }
             }
         ],
-        "./src/dartwork_mpl/_figure_geometry/_drawn.py": [
+        "./src/dartwork_mpl/geometry/ink.py": [
             {
                 "code": "reportUnknownMemberType",
                 "range": {
@@ -160,26 +164,6 @@
                 "range": {
                     "startColumn": 7,
                     "endColumn": 21,
-                    "lineCount": 1
-                }
-            }
-        ],
-        "./src/dartwork_mpl/_figure_geometry/_subfigures.py": [
-            {
-                "code": "reportUnnecessaryComparison",
-                "range": {
-                    "startColumn": 7,
-                    "endColumn": 19,
-                    "lineCount": 1
-                }
-            }
-        ],
-        "./src/dartwork_mpl/config.py": [
-            {
-                "code": "reportDeprecated",
-                "range": {
-                    "startColumn": 5,
-                    "endColumn": 19,
                     "lineCount": 1
                 }
             }

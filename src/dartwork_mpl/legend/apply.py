@@ -10,24 +10,22 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 import matplotlib as mpl
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.transforms import ScaledTranslation
 
-from .._figure_geometry import (
+from ..edgecase import settle as settle_edges
+from ..geometry import (
     BBOX_ERRORS,
-    OutsideSide,
     axes_titles,
     figure_axes,
     figure_legends,
     get_renderer,
     same_position_axes,
 )
-from .._figure_geometry import outside_side as anchored_side
-from ..edgecase import settle as settle_edges
 from . import decide, measure
 from .edges import EDGES
 from .model import (
@@ -350,7 +348,7 @@ def settle(
             moved = True
     for ax in fig.axes:
         legend = ax.get_legend()
-        side = parse_side(anchored_side(legend) or "")
+        side = parse_side(outside_side(legend) or "")
         if (
             legend is not None
             and side is not None
@@ -364,9 +362,18 @@ def settle(
     return moved
 
 
-def outside_side(legend: Legend) -> OutsideSide | None:
+OutsideSide: TypeAlias = Literal["above", "below", "right", "left"]
+"""A side of an Axes that a legend can be anchored outside of."""
+
+
+def outside_side(legend: Legend | None) -> OutsideSide | None:
     """The side the library anchored ``legend`` outside of, or ``None``."""
-    return anchored_side(legend)
+    side = getattr(legend, "_dm_outside_side", None)
+    match side:
+        case "above" | "below" | "right" | "left":
+            return side
+        case _:
+            return None
 
 
 # ---------------------------------------------------------- figure legends

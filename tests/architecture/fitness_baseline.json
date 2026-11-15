@@ -1,15 +1,10 @@
 {
  "R1_module_lines": {
-  "src/dartwork_mpl/_figure_geometry/__init__.py": 1031,
   "src/dartwork_mpl/layout/measure.py": 509
  },
  "R2_slice_lines": {},
- "R3_underscore_modules": {
-  "_figure_geometry": 3
- },
- "R3_underscore_toplevel": [
-  "_figure_geometry"
- ],
+ "R3_underscore_modules": {},
+ "R3_underscore_toplevel": [],
  "R4_cycles": [],
  "R4_lazy_cycle_edges": {
   "top_level_edges": 0
@@ -17,10 +12,9 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 54
+  "modules": 55
  },
  "R7_function_lines": {
-  "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 83,
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81
  },
  "R8_entry_function_lines": {

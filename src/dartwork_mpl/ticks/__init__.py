@@ -23,9 +23,10 @@ import numpy.typing as npt
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 
-from .._figure_geometry import shared_axes
+from ..geometry import shared_axes
 from .apply import figure_ladder, prepare, remember_dates, thin_dates
 from .dates import CategoryDateFormatter, category_locator
+from .defaults import config
 from .formatters import (
     AxisUnitFormatter,
     LabelUnitFormatter,
@@ -53,6 +54,7 @@ __all__ = [
     "Unit",
     "axis_unit",
     "axis_unit_of",
+    "config",
     "drawn_like_twin",
     "format_axis_billions",
     "format_axis_currency",

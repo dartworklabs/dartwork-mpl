@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl._figure_geometry import get_renderer
+from dartwork_mpl.geometry import get_renderer
 
 
 @pytest.fixture(autouse=True)

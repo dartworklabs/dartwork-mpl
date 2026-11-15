@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl._figure_geometry import drawn_tick_labels, get_renderer
 from dartwork_mpl.edgecase import settle
+from dartwork_mpl.geometry import drawn_tick_labels, get_renderer
 from dartwork_mpl.size import decide
 from dartwork_mpl.size.edges import EDGES
 from dartwork_mpl.size.model import (

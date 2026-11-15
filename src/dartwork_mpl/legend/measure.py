@@ -2,7 +2,7 @@
 
 A trial legend is a detached ``Legend`` built only to read its size, so
 trying a spot or a column count draws nothing. Data ink is read by the drawn
-rules ``check`` shares (``_figure_geometry``): lines at their width, markers
+rules ``check`` shares (``geometry.ink``): lines at their width, markers
 and scatter points as discs, patches and texts by their drawn boxes, filled
 collections by their outlines, each only where its clip lets it draw.
 """
@@ -21,25 +21,24 @@ from matplotlib.contour import ContourSet
 from matplotlib.legend import Legend
 from matplotlib.transforms import Bbox, BboxBase
 
-from .._figure_geometry import (
+from ..geometry import (
     BBOX_ERRORS,
     UNCLIPPED,
-    axes_decoration_extents,
     axes_titles,
     clip_path_px,
     clip_region,
+    cut_to_clip,
     discs_meet,
     drawn_collection_outlines,
     drawn_in_tree,
     drawn_ink_meets,
     drawn_patch_box,
     drawn_scatter_discs,
-    drawn_text_box,
     line_draws_markers,
     line_draws_stroke,
     marker_radius_pt,
-    root_position,
     same_position_axes,
+    text_inks,
 )
 from .model import (
     CLEARANCE_PT,
@@ -68,6 +67,7 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.path import Path
+    from matplotlib.text import Text
 
 
 def box_of(bb: BboxBase) -> Box:
@@ -158,6 +158,31 @@ def _add_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
         return
 
 
+def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
+    """Where an Axes text draws ink, display px; ``None`` when nowhere.
+
+    A shown, non-blank text draws its glyphs (its window extent, an
+    annotation's arrow included) where they ink (:func:`text_inks`) and its
+    background box (``bbox=``) where that inks (:func:`drawn_patch_box`,
+    its edge included): the two are apart, so glyphs at alpha 0 over an
+    opaque box still draw the box. What draws is joined and cut to the
+    text's clip: matplotlib clips the background box with the text.
+    """
+    if not drawn_in_tree(text) or not text.get_text().strip():
+        return None
+    parts: list[Bbox] = []
+    if text_inks(text):
+        parts.append(text.get_window_extent(renderer))
+    background = text.get_bbox_patch()
+    if background is not None:  # placed where the text was last drawn
+        drawn = drawn_patch_box(background, renderer)
+        if drawn is not None:
+            parts.append(drawn)
+    if not parts:
+        return None
+    return cut_to_clip(Bbox.union(parts), text)
+
+
 def data_ink(ax: Axes, renderer: RendererBase) -> Ink:
     """Lines, patches, collections (not meshes) and texts of ``ax`` and twins."""
     ink = Ink(px(renderer, CLEARANCE_PT))
@@ -172,7 +197,7 @@ def data_ink(ax: Axes, renderer: RendererBase) -> Ink:
                 _add_box(ink, patch, drawn_patch_box(patch, renderer))
         for text in owner.texts:
             with suppress(*BBOX_ERRORS):
-                _add_box(ink, text, drawn_text_box(text, renderer))
+                _add_box(ink, text, _drawn_text_box(text, renderer))
     return ink
 
 
@@ -223,6 +248,18 @@ class Trials:
 
 
 # ----------------------------------------------------------------- sides
+def _root_position(ax: Axes) -> Bbox:
+    """``ax.get_position()`` as a fraction of the root Figure, through its SubFigure."""
+    position = ax.get_position()
+    parent = ax.get_figure(root=False)
+    root = ax.get_figure(root=True)
+    if parent is None or root is None or parent is root:
+        return position
+    return position.transformed(parent.transSubfigure).transformed(
+        root.transFigure.inverted()
+    )
+
+
 def _others(ax: Axes) -> list[Axes]:
     """The figure's other panels: drawn, in the layout, not ``ax``'s twins."""
     root = ax.get_figure(root=True)
@@ -238,8 +275,8 @@ def _others(ax: Axes) -> list[Axes]:
 
 def free_sides(ax: Axes) -> tuple[Side, ...]:
     """The fallback sides of ``ax`` no other panel sits beyond."""
-    me, eps = root_position(ax), 1e-6
-    others = [root_position(o) for o in _others(ax)]
+    me, eps = _root_position(ax), 1e-6
+    others = [_root_position(o) for o in _others(ax)]
 
     def blocked(side: Side) -> bool:
         for pos in others:
@@ -267,6 +304,37 @@ def _titles(ax: Axes, renderer: RendererBase) -> list[Bbox]:
     return found
 
 
+def _decoration_extents(ax: Axes, renderer: RendererBase) -> list[Bbox]:
+    """Window extents of ``ax``'s in-view tick labels (major and minor), axis
+    labels and offset texts (``1e6``) on visible axes; titles, ``ax.texts``
+    and legends are not included. An out-of-view tick stays on the artist
+    tree undrawn; it and blank, hidden, unmeasurable or empty texts are
+    skipped.
+    """
+    texts: list[Text] = []
+    for axis, index in ((ax.xaxis, 0), (ax.yaxis, 1)):
+        if not axis.get_visible():
+            continue
+        vmin, vmax = sorted(axis.get_view_interval())
+        tol = abs(vmax - vmin) * 1e-5
+        for tick in axis.get_ticklabels(which="both"):
+            value = tick.get_position()[index]
+            if vmin - tol <= value <= vmax + tol:
+                texts.append(tick)
+        texts.extend((axis.label, axis.get_offset_text()))
+    extents: list[Bbox] = []
+    for text in texts:
+        if not text.get_visible() or not text.get_text().strip():
+            continue
+        try:
+            ext = text.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        if ext.width > 0 and ext.height > 0:
+            extents.append(ext)
+    return extents
+
+
 def span(ax: Axes, side: Side, renderer: RendererBase, margin: float) -> Span:
     """Where a legend outside ``side`` may lie along it: the canvas less
     ``margin``, ended ``margin`` short of the panels beside ``ax``."""
@@ -289,7 +357,7 @@ def span(ax: Axes, side: Side, renderer: RendererBase, margin: float) -> Span:
             box_of(e)
             for e in (
                 frame,
-                *axes_decoration_extents(other, renderer),
+                *_decoration_extents(other, renderer),
                 *_titles(other, renderer),
             )
         ]
@@ -307,7 +375,7 @@ def decorations(ax: Axes, renderer: RendererBase) -> tuple[Box, ...]:
     return tuple(
         box_of(ext)
         for owner in same_position_axes(ax)
-        for ext in axes_decoration_extents(owner, renderer)
+        for ext in _decoration_extents(owner, renderer)
     )
 
 

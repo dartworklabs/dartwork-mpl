@@ -29,7 +29,7 @@ def _matplotlib_state_isolation() -> Iterator[None]:
     # the instance itself.
     from dataclasses import fields
 
-    from dartwork_mpl.config import config as _dm_config
+    from dartwork_mpl.ticks import config as _dm_config
 
     snapshot = {f.name: getattr(_dm_config, f.name) for f in fields(_dm_config)}
     yield

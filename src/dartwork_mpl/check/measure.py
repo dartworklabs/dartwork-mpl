@@ -17,29 +17,20 @@ from matplotlib.text import Annotation
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
 from matplotlib.transforms import Bbox
 
-from .._figure_geometry import (
+from ..geometry import (
     BBOX_ERRORS,
     axes_titles,
-    corner_tick_overlaps,
-    drawn_axes,
-    drawn_axes_texts,
     drawn_in_tree,
     drawn_tick_labels,
     figure_axes,
     figure_legends,
     get_renderer,
     iter_figure_level_extents,
-    label_clearance_px,
-    pair_clearance_px,
-    pair_gap_px,
-    panel_labels,
     same_position_axes,
-    secondary_axes,
     shared_axes,
     text_inks,
-    text_window_extent,
-    tick_label_overlaps,
 )
+from . import walk
 from .ink import (
     Ink,
     cut,
@@ -61,6 +52,13 @@ from .model import (
     Text,
     TickRow,
     ValueLabel,
+)
+from .overlap import (
+    corner_tick_overlaps,
+    label_clearance_px,
+    pair_clearance_px,
+    pair_gap_px,
+    tick_label_overlaps,
 )
 
 if TYPE_CHECKING:
@@ -88,8 +86,8 @@ class Reader:
         self.renderer: RendererBase = get_renderer(fig)
         self.pt = fig.dpi / 72.0
         self.skipped: list[str] = []
-        self.panels = drawn_axes(fig)
-        self.letters = {id(t) for _ax, t in panel_labels(fig)}
+        self.panels = walk.drawn_axes(fig)
+        self.letters = {id(t) for _ax, t in walk.panel_labels(fig)}
 
     def text(self, t: Any, role: Role, panel: int | None) -> Text | None:
         """A drawn, non-blank text as a fact; ``None`` when it has no box."""
@@ -99,7 +97,7 @@ class Reader:
             if isinstance(t, Annotation):
                 bb = words_box(t, self.renderer)
             else:
-                bb = text_window_extent(t, self.renderer)
+                bb = walk.text_window_extent(t, self.renderer)
         except BBOX_ERRORS:
             return None
         if bb is None or not np.isfinite(bb.extents).all():
@@ -117,10 +115,10 @@ class Reader:
         and a polar or 3D Axes' tick labels too: they have no tick row)."""
         found: list[Text | None] = []
         for i, ax in self.panels:
-            for owner in (ax, *secondary_axes(ax)):
+            for owner in (ax, *walk.secondary_axes(ax)):
                 titles = {id(t) for t in axes_titles(owner).values()}
                 labels = {id(owner.xaxis.label), id(owner.yaxis.label)}
-                for t in drawn_axes_texts(owner):
+                for t in walk.drawn_axes_texts(owner):
                     role = (
                         Role.TITLE
                         if id(t) in titles

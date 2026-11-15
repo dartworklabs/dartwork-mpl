@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
-from .._figure_geometry import PANEL_LABELS_ATTR
+from ..geometry import PANEL_LABELS_ATTR
 from ..style import fs
 from . import decide
 from .measure import drawn_renderer, panel, px_per_pt

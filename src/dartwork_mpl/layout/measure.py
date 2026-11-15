@@ -16,14 +16,14 @@ from matplotlib.gridspec import (
 )
 from matplotlib.text import Text
 
-from .._figure_geometry import (
+from ..edgecase import settle
+from ..geometry import (
     BBOX_ERRORS,
     axes_titles,
     drawn_tick_labels,
     iter_figure_level_extents,
     same_position_axes,
 )
-from ..edgecase import settle
 from ..legend import outside_side
 from . import decide
 from .edges import EDGES
