@@ -5,7 +5,7 @@ Public: :func:`label_bars`, :func:`annotate_value`, :func:`annotate_corner`,
 :func:`add_note`. Each but ``label_line_ends`` takes the active preset's text
 (:class:`PresetText`), and ``label_bars`` how ticks print numbers
 (:class:`TickText`); ``compose.labels`` gives them, as ``dm`` exposes them. The layout's hooks (:func:`settle_bars`,
-:func:`space_line_ends`, :func:`settle_panels`, :func:`warn_hidden`) settle them at the size ``dm.simple_layout`` fits;
+:func:`space_line_ends`, :func:`settle_panels`) settle them at the size ``dm.simple_layout`` fits;
 ``check`` reads the placed letters from ``geometry.panel_letters``.
 """
 
