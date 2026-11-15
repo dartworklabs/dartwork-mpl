@@ -32,7 +32,7 @@ from .canvas import (
     SquareBody,
     WholeBody,
 )
-from .model import ASPECTS, Aspect, FigureSize, Grid, Panels
+from .model import ASPECTS, Aspect, FigureSize
 
 # Journal columns: one panel in one column, wider content across two.
 COLUMN, TWO_COLUMNS = cm(9), cm(17)
@@ -51,18 +51,6 @@ SLIDE_HALF_POINTS, SLIDE_TWO_THIRDS_POINTS = 4, 6
 def figure_size(width: Length, height: Aspect | Length) -> FigureSize:
     """The figure a physical width and an aspect or height describe."""
     return Canvas(width, height).size()
-
-
-def grid_for(panels: Panels) -> Grid:
-    """Rows and columns for ``panels`` small multiples.
-
-    Up to three sit in one row; more fill a near-square grid with
-    ``ceil(sqrt(n))`` columns, wider than tall.
-    """
-    if panels.n <= 3:
-        return Grid(1, panels.n)
-    ncols = math.ceil(math.sqrt(panels.n))
-    return Grid(math.ceil(panels.n / ncols), ncols)
 
 
 def half_cm(length: Length) -> Length:

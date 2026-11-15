@@ -148,17 +148,6 @@ def count(name: str, value: object, minimum: int) -> int:
 
 
 @dataclass(frozen=True)
-class Panels:
-    """How many small-multiple panels a figure holds (at least one)."""
-
-    n: int
-
-    def __post_init__(self) -> None:
-        """Reject a count that is not an int of at least one."""
-        count("n", self.n, 1)
-
-
-@dataclass(frozen=True)
 class Grid:
     """Panel rows and columns, each at least one."""
 

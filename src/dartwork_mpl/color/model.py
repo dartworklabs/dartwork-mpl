@@ -168,16 +168,6 @@ class InRgb:
 Space = InOklch | InOklab | InRgb
 
 
-def parse_space(text: object) -> Space:
-    """A space name; ``ValueError`` for anything else."""
-    for space in (InOklch(), InOklab(), InRgb()):
-        if text == space.value:
-            return space
-    raise ValueError(
-        f"Unsupported color space: {text}. Must be 'oklch', 'oklab', or 'rgb'"
-    )
-
-
 @dataclass(frozen=True)
 class Semantic:
     """The four role colours: gain, loss, reference, highlight."""

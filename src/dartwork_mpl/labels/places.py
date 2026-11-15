@@ -144,23 +144,6 @@ class LowerRight:
 Corner: TypeAlias = UpperLeft | UpperRight | LowerLeft | LowerRight
 
 
-CORNERS: tuple[Corner, ...] = (
-    UpperLeft(),
-    UpperRight(),
-    LowerLeft(),
-    LowerRight(),
-)
-
-
-def corner_order(first: Corner) -> tuple[Corner, ...]:
-    """``first``, then the other corners in :data:`CORNERS` order."""
-    return (first, *(c for c in CORNERS if c != first))
-
-
-LineSide: TypeAlias = Above | Below
-"""``label_hline``'s side of the line."""
-
-
 @dataclass(frozen=True)
 class LeftEnd:
     """The drawn line's left end; the label starts there."""
@@ -227,22 +210,6 @@ class AtFraction:
 
 
 LinePlace: TypeAlias = LeftEnd | LineMiddle | RightEnd | AtFraction
-
-
-LINE_ENDS: tuple[LinePlace, ...] = (RightEnd(), LeftEnd())
-
-
-@dataclass(frozen=True)
-class EitherEnd:
-    """``x="auto"``: the clearer end of the drawn line, the right first."""
-
-    @property
-    def tries(self) -> tuple[LinePlace, ...]:
-        """Both ends, in the order tried."""
-        return LINE_ENDS
-
-
-LineX: TypeAlias = LinePlace | EitherEnd
 
 
 @dataclass(frozen=True)

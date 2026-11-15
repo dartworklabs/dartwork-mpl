@@ -49,23 +49,14 @@ from .bar_options import (
     Where,
 )
 from .places import (
-    CORNERS,
     Above,
     AnySide,
-    AtFraction,
     AtLeft,
     Below,
-    Corner,
-    EitherEnd,
     FromPanel,
     Left,
-    LeftEnd,
     LetterX,
-    LineMiddle,
-    LineSide,
-    LineX,
     Right,
-    RightEnd,
     SideChoice,
 )
 
@@ -119,8 +110,7 @@ class LetterStyle(TypedDict, total=False):
 
 
 class NoteStyle(LetterStyle, total=False):
-    """The keywords ``annotate_value`` / ``annotate_corner`` / ``label_hline``
-    hand to ``ax.annotate``; their size is their own ``fontsize``."""
+    """The keywords ``annotate_value`` hands to ``ax.annotate``; their size is their own ``fontsize``."""
 
     fontweight: float | str
     weight: float | str
@@ -277,47 +267,6 @@ def parse_side(value: object) -> SideChoice:
     raise ValueError(
         "side must be 'auto', 'above', 'below', 'left', or 'right'"
     )
-
-
-def parse_corner(value: object) -> Corner:
-    """``annotate_corner``'s ``loc``; ``ValueError`` otherwise."""
-    names = dict(
-        zip(
-            ("upper left", "upper right", "lower left", "lower right"),
-            CORNERS,
-            strict=True,
-        )
-    )
-    if isinstance(value, str) and value in names:
-        return names[value]
-    raise ValueError(
-        "loc must be 'upper left', 'upper right', 'lower left', or "
-        "'lower right'"
-    )
-
-
-def parse_line_side(value: object) -> LineSide:
-    """``label_hline``'s ``side``; ``ValueError`` otherwise."""
-    if value == "above":
-        return Above()
-    if value == "below":
-        return Below()
-    raise ValueError("side must be 'above' or 'below'")
-
-
-def parse_line_x(value: object) -> LineX:
-    """``label_hline``'s ``x``: an end, the middle, a fraction or ``"auto"``."""
-    if not isinstance(value, str):
-        return AtFraction(_number(value))
-    names: dict[str, LineX] = {
-        "auto": EitherEnd(),
-        "left": LeftEnd(),
-        "center": LineMiddle(),
-        "right": RightEnd(),
-    }
-    if value in names:
-        return names[value]
-    raise ValueError("x must be 'auto', 'left', 'center', 'right', or a float")
 
 
 def parse_letter_x(value: object) -> LetterX:

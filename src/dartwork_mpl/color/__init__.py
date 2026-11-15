@@ -1,18 +1,16 @@
-"""Colour names and values, palettes, contrast and mixing.
+"""Colour names and values, palettes and contrast.
 
 Importing the slice registers every shipped colour with matplotlib, so
 ``color="dc.teal5"``, ``color="oc.red5"`` and ``cmap="dc.aurora"`` work in
 any plotting call. ``dm.colors(name, n)`` returns a family's designed
-``n``-colour form, ``dm.color(text)`` one :class:`Color`, ``dm.cspace`` an
-OKLCH gradient, and ``dm.ensure_contrast`` / ``dm.readable_text_color``
+``n``-colour form, ``dm.color(text)`` one :class:`Color`, and ``dm.ensure_contrast`` / ``dm.readable_text_color``
 keep text legible. Each call parses its input (``model``), decides
 (``decide`` and the named ``edges``) and hands back plain values.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, overload
+from typing import overload
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -36,31 +34,22 @@ from .model import (
     Form,
     Name,
     SemanticFacts,
-    Steps,
-    Weight,
     parse_ratio,
-    parse_space,
     parse_written,
     rgb_color,
 )
-
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes
 
 __all__ = [
     "apply_semantic",
     "color",
     "colors",
-    "cspace",
     "ensure_contrast",
     "hex",
     "list_colors",
     "oklab",
     "oklch",
-    "pseudo_alpha",
     "readable_text_color",
     "rgb",
-    "set_colors",
 ]
 
 # For other slices (validation, labels): tuples in, numbers out.
@@ -110,34 +99,6 @@ def rgb(r: float, g: float, b: float) -> Color:
 def hex(text: str) -> Color:
     """A colour from ``"#rgb"`` or ``"#rrggbb"``."""
     return Color(Rgb.from_hex(text).oklab())
-
-
-def cspace(
-    start: Color | str, end: Color | str, n: int, space: str = "oklch"
-) -> list[Color]:
-    """``n`` colours from ``start`` to ``end``, ends included.
-
-    In OKLCH (the default) the hue runs the short way round, so
-    ``dm.cspace("dc.teal5", "dc.teal1", n=5)`` is five steps of one teal;
-    ``space="oklab"`` or ``"rgb"`` takes the straight line instead::
-
-        bar_colors = [c.to_hex() for c in dm.cspace("dc.teal5", "dc.teal1", 5)]
-    """
-    first, last, where = color(start), color(end), parse_space(space)
-    return list(decide.gradient(first, last, Steps(n), where))
-
-
-def pseudo_alpha(
-    color: object, alpha: float = 1.0, background: object = "white"
-) -> RGB:
-    """The opaque colour ``color`` at ``alpha`` shows over ``background``.
-
-    Flat colours do not darken where they overlap, as real alpha does.
-    """
-    weight = Weight.parse(alpha)
-    over = Color(measure.rgb(color).oklab())
-    under = Color(measure.rgb(background).oklab())
-    return decide.mix(over, under, weight).to_rgb()
 
 
 # -- contrast ------------------------------------------------------------------
@@ -247,36 +208,6 @@ def list_colors(kind: str | None = None) -> list[dict[str, object]]:
         for found in CATALOG.families.values()
         if wanted is None or found.kind == wanted
     ]
-
-
-def set_colors(
-    name_or_list: str | Iterable[str] | None = None,
-    *,
-    ax: Axes | None = None,
-    n: int | None = None,
-    styles: bool = False,
-) -> None:
-    """Set the colour cycle (of ``ax``, or the global one).
-
-    ``None`` is ``dc.octave``; a family name takes its form (``n`` required
-    unless qualitative); a list of colours is used as given. ``styles=True``
-    multiplies it with solid, dashed and dotted lines::
-
-        dm.set_colors("dc.octave")         # after style.use, before plotting
-    """
-    if name_or_list is None:
-        colours = discrete(family("octave"), 8)
-    elif isinstance(name_or_list, str):
-        found = family(name_or_list)
-        if n is None and found.kind.continuous:
-            raise ValueError(
-                f"{found.name!r} is a {found.kind.value} family and requires "
-                "n= when used with dm.set_colors(...)."
-            )
-        colours = discrete(found, n if n is not None else found.size)
-    else:
-        colours = list(name_or_list)
-    apply.set_cycle(apply.color_cycle(colours, styles), ax)
 
 
 def apply_semantic(locale: Locale) -> None:

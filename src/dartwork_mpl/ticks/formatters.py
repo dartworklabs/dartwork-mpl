@@ -20,7 +20,6 @@ from ..vocab import AffixedZero, BareZero, ScaleZero, TickScale
 from . import decide
 from .measure import in_view, tick_values
 from .model import (
-    PLAIN,
     AxisText,
     ExactZero,
     MaxNParams,
@@ -137,52 +136,6 @@ class AxisUnitFormatter(ticker.Formatter):
         return TickScale(unit.factor, style.currency, unit.label)
 
 
-class LabelUnitFormatter(AxisUnitFormatter):
-    """Plain-number ticks, the axis unit written into the axis labels.
-
-    ``templates`` maps each axis whose label this formatter writes (the
-    installing one and those sharing its ticker) to its template with
-    ``{unit}``. Each draw writes ``fill(template, unit)``; a label someone
-    set since (an edit, a line break from the layout) is theirs and is left
-    alone. On a log axis the ticks print whole values and the unit is plain.
-    """
-
-    def __init__(self, style: NumberStyle, templates: dict[Axis, str]) -> None:
-        """Keep the settings this formatter or locator was made with."""
-        super().__init__(style)
-        self.templates = dict(templates)
-        self.wrote: dict[Axis, str] = {}
-        self.unit: Unit | None = None
-
-    def decide(self, ticks: TickValues) -> AxisText:
-        """The axis decision; a per-tick unit cannot go into one label."""
-        text = super().decide(ticks)
-        return AxisText(text.unit or PLAIN, text.decimals)
-
-    def write(self, value: float, unit: Unit, decimals: int) -> str:
-        """The number alone: the label names the unit."""
-        return super().write(value, Unit(unit.factor, ""), decimals)
-
-    def scale_for(self, value: float) -> TickScale:
-        """The unit's factor with no suffix."""
-        scale = super().scale_for(value)
-        return TickScale(scale.factor, scale.prefix, "")
-
-    def set_locs(self, locs: list[float]) -> None:
-        """Settle the unit, then write it into every label still ours."""
-        super().set_locs(locs)
-        if self._text is None:
-            return
-        self.unit = self._text.unit or PLAIN
-        for axis, template in list(self.templates.items()):
-            if axis in self.wrote and axis.label.get_text() != self.wrote[axis]:
-                del self.templates[axis]  # set by someone since: theirs
-                continue
-            text = fill(template, self.unit.label)
-            axis.label.set_text(text)
-            self.wrote[axis] = text
-
-
 def fill(template: str, unit: str) -> str:
     """``template`` with ``unit`` for ``{unit}``; an empty ``()`` goes."""
     text = template.replace("{unit}", unit)
@@ -195,7 +148,7 @@ def tick_scale_of(axis: Axis, value: float) -> TickScale:
     """How ``axis``'s major ticks print ``value``, as of their last draw.
 
     The library's number formatters report their unit and currency
-    (``33G``; under ``dm.axis_unit`` no suffix: the label names it), a
+    (``33G``), a
     ``PercentFormatter`` its ``xmax / 100`` and symbol, any other formatter
     the plain scale.
     """

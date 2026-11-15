@@ -2,8 +2,7 @@
 
 ``dm.figsize(width, aspect)`` turns a physical width and an aspect (or a
 height) into matplotlib's inch tuple. :func:`figsize_for` picks the canvas
-of the presets it is given when the request names no size, and
-``dm.grid_shape(n)`` the rows and columns for ``n`` panels. Each call parses its input into the
+of the presets it is given when the request names no size. Each call parses its input into the
 slice's types (``model``), decides (``decide`` and the named ``edges``) and
 hands back plain inches.
 """
@@ -17,14 +16,14 @@ from ..length import Length
 from . import decide, measure
 from .canvas import CanvasFacts, CanvasRequest, parse_canvas_kind, parse_names
 from .edges import EDGES
-from .model import STANDARD, Grid, Panels, parse_height
+from .model import STANDARD, Grid, parse_height
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from .measure import LayerReader
 
-__all__ = ["figsize", "figsize_for", "grid_shape"]
+__all__ = ["figsize", "figsize_for"]
 
 
 def figsize(width: object, aspect: object = STANDARD) -> tuple[float, float]:
@@ -73,15 +72,3 @@ def figsize_for(
     facts = CanvasFacts(request, page, measure.name_widths(request.names))
     plan = decide.canvas(request, page)
     return settle(facts, plan, EDGES).plan.size().inches
-
-
-def grid_shape(n: int) -> tuple[int, int]:
-    """Return ``(nrows, ncols)`` for ``n`` small-multiple panels.
-
-    Up to three panels sit in one row; more fill a near-square grid,
-    wider than tall (6 -> (2, 3), 10 -> (3, 4))::
-
-        nrows, ncols = dm.grid_shape(len(cities))
-    """
-    grid = decide.grid_for(Panels(n))
-    return (grid.nrows, grid.ncols)

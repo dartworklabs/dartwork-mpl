@@ -199,9 +199,6 @@ class QuarterDateFormatter(ticker.Formatter):
 
 # -- dates at category positions ---------------------------------------------------
 
-MONTH_STEPS = (1, 2, 3, 4, 6, 12)
-OTHER_STEPS = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 15, 20, 25, 30, 50, 100)
-
 
 def _within(position: float, vmin: float, vmax: float) -> bool:
     low, high = sorted((float(vmin), float(vmax)))
@@ -236,27 +233,6 @@ class CategoryDateLocator(ticker.Locator):
         if self.axis is None:
             return self.tick_values(-math.inf, math.inf)
         return self.tick_values(*self.axis.get_view_interval())
-
-
-def category_locator(
-    dates: npt.NDArray[np.datetime64], quarters: bool
-) -> CategoryDateLocator:
-    """Calendar steps for months, quarter steps keeping Q1, else counting on."""
-    if quarters:
-        index = [m.year * 4 + (m.month - 1) // 3 for m in _moments(dates)]
-        starts = [
-            next((p for p, q in enumerate(index) if q % step == 0), len(index))
-            for step in QUARTER_STEPS
-        ]
-        return CategoryDateLocator(len(dates), QUARTER_STEPS, starts)
-    days = np.diff(dates).astype("timedelta64[s]").astype(float) / 86_400.0
-    monthly = len(dates) >= 2 and bool(np.all((days >= 28.0) & (days <= 31.0)))
-    steps = MONTH_STEPS if monthly else OTHER_STEPS if len(dates) >= 2 else (1,)
-    return CategoryDateLocator(len(dates), steps)
-
-
-def _moments(dates: npt.NDArray[np.datetime64]) -> list[datetime.datetime]:
-    return [num2date(float(v)) for v in _date2num(dates)]
 
 
 class CategoryDateFormatter(ticker.Formatter):

@@ -1,19 +1,13 @@
-"""Hand the shipped colours to matplotlib: names, colormaps, role colours,
-and the colour cycle ``dm.set_colors`` sets."""
+"""Hand the shipped colours to matplotlib: names, colormaps, role colours."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
-from cycler import Cycler, cycler
-from matplotlib.axes import Axes
 
 from .model import Catalog, Semantic
-
-LINESTYLES = ("-", "--", ":")
 
 
 def colormaps(catalog: Catalog) -> list[mcolors.ListedColormap]:
@@ -66,17 +60,3 @@ def register(catalog: Catalog) -> None:
 def apply_semantic(tokens: Semantic) -> None:
     """Bind ``dc.pos``/``neg``/``ref``/``hl`` in matplotlib's named colours."""
     bind(tokens.names())
-
-
-def color_cycle(colours: Sequence[str], styles: bool) -> Cycler[str, str]:
-    """A colour cycle, multiplied by three line styles when ``styles``."""
-    cycle = cycler(color=list(colours))
-    return cycler(linestyle=list(LINESTYLES)) * cycle if styles else cycle
-
-
-def set_cycle(cycle: Cycler[str, str], ax: Axes | None) -> None:
-    """Set ``cycle`` on ``ax``, or as the global default."""
-    if ax is not None:
-        ax.set_prop_cycle(cycle)  # pyright: ignore[reportUnknownMemberType]
-        return
-    plt.rcParams["axes.prop_cycle"] = cycle

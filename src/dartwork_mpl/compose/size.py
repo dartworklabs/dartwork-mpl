@@ -32,8 +32,7 @@ def figsize_for(
     ``"full_slide"`` (the whole 16:9 slide). ``n_points`` (x positions) and
     ``n_series`` move the width between the preset's tiers; ``labels`` (the
     category names, in axis order) widens it until they stand flat;
-    ``dual_axis`` marks a ``twinx``; ``nrows`` / ``ncols`` a panel grid (see
-    :func:`grid_shape`). Raises ``ValueError`` for an unknown kind or a count
+    ``dual_axis`` marks a ``twinx``; ``nrows`` / ``ncols`` a panel grid. Raises ``ValueError`` for an unknown kind or a count
     below its minimum, ``TypeError`` for a count that is not an int or
     labels without an axis order (a string, set or mapping)::
 

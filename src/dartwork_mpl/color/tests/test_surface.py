@@ -63,16 +63,6 @@ def test_unknown_names_say_what_was_meant():
         dm.rgb(255, 0.5, 0)
 
 
-def test_gradient_bars_like_the_bar_template():
-    gradient = dm.cspace("dc.teal5", "dc.teal1", n=5)
-    hexes = [c.to_hex() for c in gradient]
-    assert hexes[0] == mcolors.to_hex("dc.teal5")
-    assert hexes[-1] == mcolors.to_hex("dc.teal1")
-    assert len(set(hexes)) == 5
-    fig, ax = plt.subplots()
-    ax.bar(range(5), [5, 4, 3, 2, 1], color=hexes)
-
-
 def test_families_forms_and_colormaps():
     families = dm.list_colors()
     assert len(families) == 56
@@ -95,19 +85,6 @@ def test_families_forms_and_colormaps():
         dm.list_colors("pastel")
 
 
-def test_set_colors_sets_the_cycle_a_chart_draws_with():
-    dm.set_colors("dc.vivid")
-    fig, ax = plt.subplots()
-    (line,) = ax.plot([0, 1])
-    assert mcolors.to_hex(line.get_color()) == dm.colors("vivid", n=1)[0]
-    dm.set_colors(["red", "blue"], ax=ax, styles=True)
-    lines = [ax.plot([0, 1])[0] for _ in range(3)]
-    assert [ln.get_color() for ln in lines] == ["red", "blue", "red"]
-    assert [ln.get_linestyle() for ln in lines] == ["-", "-", "--"]
-    with pytest.raises(ValueError, match="requires n="):
-        dm.set_colors("dc.teal")
-
-
 def test_annotation_ink_stays_readable_on_any_face():
     fig, ax = plt.subplots()
     ink = dm.ensure_contrast("dc.amber5", ax.get_facecolor())
@@ -116,13 +93,6 @@ def test_annotation_ink_stays_readable_on_any_face():
     assert dm.readable_text_color("#222222") == "white"
     assert dm.readable_text_color("#f7f7f7") == "black"
     assert dm.readable_text_color("dc.blue7", light="w", dark="k") in {"w", "k"}
-
-
-def test_flat_alpha():
-    assert dm.pseudo_alpha("red", 1.0) == pytest.approx((1.0, 0.0, 0.0))
-    assert dm.pseudo_alpha("red", 0.0) == pytest.approx((1.0, 1.0, 1.0))
-    with pytest.raises(ValueError, match=r"alpha must be .* \[0, 1\]"):
-        dm.pseudo_alpha("red", 1.5)
 
 
 def test_presets_rebind_the_role_colours():

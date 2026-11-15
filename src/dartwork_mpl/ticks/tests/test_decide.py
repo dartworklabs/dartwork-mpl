@@ -15,7 +15,6 @@ from dartwork_mpl.ticks.axis_plans import (
 )
 from dartwork_mpl.ticks.decide import axis_plan, axis_text, ladder
 from dartwork_mpl.ticks.model import (
-    FINANCE,
     MYRIAD,
     SI,
     Asked,
@@ -57,7 +56,6 @@ def _text(values: list[float], style: NumberStyle) -> tuple[str, int | None]:
         ([0, 1e6, 2e6], NumberStyle.parse(SI, "max", decimals=2), ("M", 2)),
         ([0, 2.5e7, 1.75e8], NumberStyle.parse(MYRIAD), ("억", 2)),
         ([0, 2.5e7, 1.75e8], NumberStyle.parse(MYRIAD, "whole"), ("만", 0)),
-        ([0, 1.5e9, 3e9], NumberStyle.parse(FINANCE), ("B", 1)),
         # the library's numbers: plain under a million, a unit from it ...
         ([0, 2.5e5, 7.5e5], NumberStyle(SI, DefaultUnit()), ("", 0)),
         ([0, 1e6, 4e6], NumberStyle(SI, DefaultUnit()), ("M", 0)),

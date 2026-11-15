@@ -32,7 +32,7 @@ orphan: true
 | --- | --- | --- |
 | `compose/style.py` | preset의 locale에 맞춘 `color`의 역할 색을 `style`에 넣는다 | 없음(루트가 `join()`을 한 번 부른다) |
 | `compose/size.py` | `style`의 활성 preset 이름과 레이어 읽기 | `dm.figsize_for` |
-| `compose/labels.py` | `style`의 `fs`·`fw`, `ticks`의 눈금 단위와 숫자 표기 | `dm.label_bars`, `dm.annotate_value`, `dm.annotate_corner`, `dm.label_hline`, `dm.label_axes`, `dm.add_note` |
+| `compose/labels.py` | `style`의 `fs`·`fw`, `ticks`의 눈금 단위와 숫자 표기 | `dm.label_bars`, `dm.annotate_value`, `dm.label_axes`, `dm.add_note` |
 | `compose/layout.py` | `ticks`·`labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
 
 `layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 눈금 글자를 먼저 쓰고, 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자를 자리 잡게 한 뒤 여백을 잰다. 여백이 맞으면 날짜 눈금을 솎는다. 픽셀은 이 순서에 달려 있다.

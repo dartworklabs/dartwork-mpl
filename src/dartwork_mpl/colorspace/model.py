@@ -4,7 +4,7 @@ WCAG contrast and the facts and plans of a contrast lift.
 A colour is held as OKLab coordinates (:class:`Color`) and rendered to
 encoded sRGB (:class:`Rgb`) by reducing chroma at fixed lightness and hue
 until it fits the gamut. This is the shipped arithmetic: the multiply/add
-order of every kernel is part of what makes ``dm.cspace`` and ``dm.oklch``
+order of every kernel is part of what makes ``dm.colors`` and ``dm.oklch``
 return the same hex on every machine, so do not "simplify" it.
 """
 
@@ -221,7 +221,7 @@ class Oklch:
 
 @dataclass(frozen=True)
 class Color:
-    """One colour, held as OKLab; ``dm.color(...)`` and ``dm.cspace`` return it.
+    """One colour, held as OKLab; ``dm.color(...)`` returns it.
 
     Equal coordinates are equal colours. ``to_hex()`` is what a plotting
     call wants: ``ax.bar(x, y, color=dm.color("dc.teal4").to_hex())``.

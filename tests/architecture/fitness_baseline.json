@@ -23,9 +23,9 @@
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81
  },
  "R8_entry_function_lines": {
-  "src/dartwork_mpl/compose/labels.py::label_bars": 53,
+  "src/dartwork_mpl/compose/labels.py::label_bars": 52,
   "src/dartwork_mpl/compose/layout.py::simple_layout": 51,
-  "src/dartwork_mpl/compose/size.py::figsize_for": 37
+  "src/dartwork_mpl/compose/size.py::figsize_for": 36
  },
  "R8_missing_all": [],
  "T10_reflection": {},

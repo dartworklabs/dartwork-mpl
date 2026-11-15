@@ -47,8 +47,6 @@ ROWS = (
         (f"{M}1.0", f"{M}0.5", "0.0", "0.5", "1.0")),
     Row("default-millions", "report", lambda ax: ax.plot([0, 1, 2], [0, 2.5e6, 4e6]), "y",
         ("0", "1M", "2M", "3M", "4M")),
-    Row("si-signed", "scientific", lambda ax: (ax.plot(np.linspace(0, 10, 100), WAVE), dm.format_axis_si(ax)), "y",
-        (f"{M}1.0M", f"{M}0.5M", "0", "0.5M", "1.0M")),
     # Korean numbers (a Korean title makes the figure Korean).
     Row("kr-man", "report-kr", lambda ax: ax.plot([0, 1, 2], [1.0e6, 1.8e6, 2.6e6]), "y",
         ("100만", "125만", "150만", "175만", "200만", "225만", "250만", "275만")),
@@ -56,8 +54,6 @@ ROWS = (
         ("0", "0.25억", "0.50억", "0.75억", "1.00억", "1.25억", "1.50억", "1.75억")),
     Row("kr-whole-man", "report-kr", lambda ax: (ax.plot([0, 1, 2], [0, 0.9e8, 1.75e8]), dm.format_axis_myriad(ax, unit="whole")), "y",
         ("0", "2,500만", "5,000만", "7,500만", "10,000만", "12,500만", "15,000만", "17,500만")),
-    Row("kr-unit-in-label", "report-kr", lambda ax: (ax.plot([0, 1, 2], [0, 0.6e8, 1.2e8]), dm.axis_unit(ax, "y", label="인구 ({unit}명)")), "y",
-        ("0", "0.2", "0.4", "0.6", "0.8", "1.0", "1.2"), label="인구 (억명)"),
     Row("kr-si-asked", "report-kr", lambda ax: ax.plot([0, 1, 2], [1.0e6, 1.8e6, 2.6e6]), "y",
         ("1.00M", "1.25M", "1.50M", "1.75M", "2.00M", "2.25M", "2.50M", "2.75M"), config={"number_ladder": "si"}),
     # Years and dates.
@@ -75,8 +71,6 @@ ROWS = (
         ("24.03.01", "24.03.08", "24.03.15", "24.03.22", "24.04.01")),
     Row("quarterly", "report", lambda ax: ax.plot(QUARTERS, np.arange(12)), "x",
         ("22.Q1", "22.Q2", "22.Q3", "22.Q4", "23.Q1", "23.Q2", "23.Q3", "23.Q4", "24.Q1", "24.Q2", "24.Q3", "24.Q4")),
-    Row("dates-under-bars", "report", lambda ax: (ax.bar(np.arange(6), [3, 4, 5, 4, 6, 7]), dm.format_axis_dates(ax, MONTHS[:6])), "x",
-        ("24.01", "24.02", "24.03", "24.04", "24.05", "24.06")),
 )  # fmt: skip
 
 

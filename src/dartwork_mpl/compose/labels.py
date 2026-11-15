@@ -27,14 +27,7 @@ if TYPE_CHECKING:
 
     from dartwork_mpl.labels import LetterStyle, NoteStyle, TextStyle
 
-__all__ = [
-    "add_note",
-    "annotate_corner",
-    "annotate_value",
-    "label_axes",
-    "label_bars",
-    "label_hline",
-]
+__all__ = ["add_note", "annotate_value", "label_axes", "label_bars"]
 
 PRESET_TEXT = labels_slice.PresetText(size=fs, weight=fw)
 TICK_TEXT = labels_slice.TickText(
@@ -64,8 +57,7 @@ def label_bars(
 
     ``dm.fs(-1)``, ``dm.fw(1)``, the text colour, 3 pt beyond the bar end
     (negative bars below, ``barh`` left; past an error bar's cap); the value
-    in the axis's tick unit (``33G``, ``31%``, ``$800``; plain under
-    ``dm.axis_unit``), three significant digits on the largest value and
+    in the axis's tick unit (``33G``, ``31%``), three significant digits on the largest value and
     the fewest decimals that print every value exactly. Stacked bars get each
     segment's value at its middle and the stack's net beyond its end; a
     label on its bar takes white or the text colour, whichever reads.
@@ -123,63 +115,6 @@ def annotate_value(
         text,
         side=side,
         offset_pt=offset_pt,
-        fontsize=fontsize,
-        preset=PRESET_TEXT,
-        **kw,
-    )
-
-
-def annotate_corner(
-    ax: Axes,
-    text: str,
-    *,
-    loc: str = "upper left",
-    inset_pt: float = 3.0,
-    avoid_overlap: bool = True,
-    fontsize: float | None = None,
-    **kw: Unpack[NoteStyle],
-) -> Text:
-    """Narrative text inside an axes corner, ``inset_pt`` points in.
-
-    With ``avoid_overlap`` the first corner clear of the data and other
-    text wins, ``loc`` first, then upper left, upper right, lower left,
-    lower right. ``dm.fs(-2)`` text; keywords go to ``ax.annotate``.
-    """
-    return labels_slice.annotate_corner(
-        ax,
-        text,
-        loc=loc,
-        inset_pt=inset_pt,
-        avoid_overlap=avoid_overlap,
-        fontsize=fontsize,
-        preset=PRESET_TEXT,
-        **kw,
-    )
-
-
-def label_hline(
-    ax: Axes,
-    y: float,
-    text: str,
-    *,
-    x: str | float = "right",
-    side: str = "above",
-    gap_pt: float = 2.0,
-    fontsize: float | None = None,
-    **kw: Unpack[NoteStyle],
-) -> Text:
-    """A label against the horizontal line at ``y``, ``gap_pt`` points off it.
-
-    ``x``: the drawn line's ``"right"`` / ``"left"`` end or ``"center"``, an
-    axes fraction, or ``"auto"`` (the clearer end). ``dm.fs(-2)`` text.
-    """
-    return labels_slice.label_hline(
-        ax,
-        y,
-        text,
-        x=x,
-        side=side,
-        gap_pt=gap_pt,
         fontsize=fontsize,
         preset=PRESET_TEXT,
         **kw,

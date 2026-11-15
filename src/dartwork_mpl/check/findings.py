@@ -64,7 +64,7 @@ FIXES: dict[str, str] = {
     "TICK_CORNER_OVERLAP": "dm.simple_layout(fig) moves one axis' labels "
     "out; pads you set: ax.tick_params(axis='x', pad=...)",
     "TICK_DECIMAL": "ax.yaxis.set_major_formatter('{x:.1f}') with the decimals the "
-    "tick step needs; dm.format_axis_* print whole numbers bare",
+    "tick step needs",
     "MISSING_AXIS_LABEL": "name the quantity and unit: "
     "ax.set_ylabel('Revenue (M USD)')",
     "TEXT_CONTRAST": "a darker ink, or dm.readable_text_color(background)",

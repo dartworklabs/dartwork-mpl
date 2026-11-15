@@ -16,10 +16,8 @@ from dartwork_mpl.ticks import (
     remember_dates,
     settled_twin_spines,
     thin_dates,
-    tick_scale_of,
 )
 from dartwork_mpl.ticks.model import RightSide
-from dartwork_mpl.vocab import AffixedZero, TickScale
 
 MONTHS = np.arange("2019-01", "2025-01", dtype="datetime64[M]")
 
@@ -76,18 +74,6 @@ def test_crowded_dates_thin_and_are_put_back(figure):
     assert len(_shown(ax.xaxis)) > 5
 
 
-def test_dates_under_bars_thin_by_calendar_steps(figure):
-    ax = figure.axes[0]
-    months = MONTHS[:24]
-    ax.bar(np.arange(24), np.arange(24))
-    dm.format_axis_dates(ax, months)
-    figure.set_size_inches(2.5, 2)
-    dm.simple_layout(figure)
-    shown = [t for t in _shown(ax.xaxis) if t]
-    assert ax.xaxis.get_major_locator().step in (2, 3, 4, 6, 12)
-    assert shown[0] == "19.01"
-
-
 def test_texts_fixed_by_order_keep_their_ticks(figure):
     ax = figure.axes[0]
     ax.plot(np.arange(2005, 2016) + 0.5, np.arange(11))
@@ -109,44 +95,6 @@ def test_formatters_someone_set_are_kept(figure):
     dm.simple_layout(figure)
     assert _shown(ax.yaxis)[-1] == "100%"
     assert type(ax.xaxis.get_major_formatter()) is mticker.ScalarFormatter
-
-
-def test_unit_in_shared_labels_and_a_later_label_is_yours():
-    dm.style.use("report")
-    fig, (top, bottom) = plt.subplots(
-        2, sharex=True, figsize=dm.figsize("13cm", "standard")
-    )
-    try:
-        top.plot([0, 1], [0, 1])
-        top.set_xlabel("Energy")
-        bottom.set_xlabel("Energy")
-        bottom.plot([0, 2e6], [0, 1])
-        dm.axis_unit(bottom, "x", label="Energy ({unit}Wh)")
-        fig.canvas.draw()
-        assert (top.get_xlabel(), bottom.get_xlabel()) == (
-            "Energy (M)",
-            "Energy (MWh)",
-        )
-        assert dm.axis_unit_of(bottom, "x") == dm.ticks.Unit(1e6, "M")
-        bottom.set_xlabel("Energy in MWh")
-        fig.canvas.draw()
-        assert bottom.get_xlabel() == "Energy in MWh"
-    finally:
-        plt.close(fig)
-
-
-def test_text_reads_like_the_ticks(figure):
-    ax = figure.axes[0]
-    ax.plot([0, 1], [0, 3e9])
-    dm.format_axis_si(ax)
-    figure.canvas.draw()
-    assert tick_scale_of(ax.yaxis, 3e9) == TickScale(1e9, "", "G")
-    dm.format_axis_currency(ax, axis="x")
-    assert tick_scale_of(ax.xaxis, 1.0) == TickScale(
-        1.0, "$", "", AffixedZero()
-    )
-    ax.xaxis.set_major_formatter(mticker.PercentFormatter(1))
-    assert tick_scale_of(ax.xaxis, 0.5) == TickScale(0.01, "", "%")
 
 
 def test_an_hourly_axis_does_not_repeat_its_date(figure):

@@ -86,7 +86,7 @@ A figure is finished when you have looked at it, not when the script ran.
 | one legend for panels that share series | `dm.figure_legend(fig)` |
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
-| k/M, 만/억, or the unit moved into the axis label | `dm.format_axis_si(ax)`, `dm.format_axis_myriad(ax)`, `dm.axis_unit(ax, "y", label="Sales ({unit} USD)")` |
+| 만/억 on the ticks | `dm.format_axis_myriad(ax)` (an axis from a million up already prints `1M`, or `100만` under a Korean preset) |
 
 Call them before `dm.simple_layout`, which makes room for what they add.
 

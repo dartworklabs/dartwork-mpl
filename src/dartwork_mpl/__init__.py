@@ -32,30 +32,20 @@ from .check import check
 from .color import (
     color,
     colors,
-    cspace,
     ensure_contrast,
     hex,
     list_colors,
     oklab,
     oklch,
-    pseudo_alpha,
     readable_text_color,
     rgb,
-    set_colors,
 )
 
 # Colour values
 from .colorspace import Color
 
 # Value labels, panel letters, notes (sized by the active preset)
-from .compose.labels import (
-    add_note,
-    annotate_corner,
-    annotate_value,
-    label_axes,
-    label_bars,
-    label_hline,
-)
+from .compose.labels import add_note, annotate_value, label_axes, label_bars
 
 # Layout, with what the other slices settle at the fitted size
 from .compose.layout import simple_layout
@@ -72,44 +62,13 @@ from .length import Length, cm, col1, col2, inch, mm, pt
 
 # Saving
 from .save import save_formats
-from .size import figsize, grid_shape
+from .size import figsize
 
 # Preset-relative sizes
 from .style import fs, fw, lw
 
 # Tick text
-from .ticks import (
-    axis_unit,
-    axis_unit_of,
-    config,
-    format_axis_currency,
-    format_axis_dates,
-    format_axis_myriad,
-    format_axis_si,
-)
-
-# Public surfaces that are provisional -- shape may change in a minor
-# release without a full deprecation cycle. Documented in
-# docs/development/api-stability.md. ``figsize_for`` (the preset's default
-# canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
-# ``add_note`` (a source line in the preset's note style) its placement;
-# ``label_line_ends`` (line names instead of a legend) its spacing and colour;
-# ``axis_unit`` / ``axis_unit_of`` (the axis unit in its label) their ladders,
-# label template rules and unit rules; ``label_bars`` (value labels on bars)
-# its placement, crowding and stacked-total rules; ``figure_legend`` (one
-# legend for every panel) its side rule and which panel legends it removes.
-EXPERIMENTAL: frozenset[str] = frozenset(
-    {
-        "add_note",
-        "axis_unit",
-        "axis_unit_of",
-        "figsize_for",
-        "figure_legend",
-        "grid_shape",
-        "label_bars",
-        "label_line_ends",
-    }
-)
+from .ticks import config, format_axis_myriad
 
 # Define __all__ for explicit exports. The order is intentionally
 # grouped by module/concern (Color → Icon → Style → …), not
@@ -118,20 +77,17 @@ EXPERIMENTAL: frozenset[str] = frozenset(
 
 __all__ = [  # noqa: RUF022
     # API stability markers
-    "EXPERIMENTAL",
     # Tick-text defaults
     "config",
     # Color module
     "Color",
     "color",
     "colors",
-    "cspace",
     "hex",
     "list_colors",
     "oklab",
     "oklch",
     "rgb",
-    "set_colors",
     "ensure_contrast",
     "readable_text_color",
     # Icon module
@@ -143,7 +99,6 @@ __all__ = [  # noqa: RUF022
     # Layout
     "simple_layout",
     # Color utilities
-    "pseudo_alpha",
     # Physical units and figure size
     "cm",
     "inch",
@@ -154,24 +109,16 @@ __all__ = [  # noqa: RUF022
     "Length",
     "figsize",
     "figsize_for",
-    "grid_shape",
     # Point-unit offsets
     # Formatting
     "format_axis_myriad",
-    "format_axis_dates",
-    "format_axis_currency",
-    "format_axis_si",
-    "axis_unit",
-    "axis_unit_of",
     # Saving
     "save_formats",
     # Axes annotation
     "annotate_value",
     "add_note",
-    "annotate_corner",
     "label_axes",
     "label_bars",
-    "label_hline",
     "label_line_ends",
     "place_legend",
     "figure_legend",

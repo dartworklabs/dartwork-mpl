@@ -14,8 +14,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from typing import ClassVar, Literal, NewType, TypeAlias, TypedDict
 
-import numpy as np
-
 from ..vocab import AffixedZero, BareZero
 
 Decimals = NewType("Decimals", int)
@@ -31,7 +29,6 @@ Zone: TypeAlias = datetime.tzinfo | str | None
 """A time zone as matplotlib's date functions take it: a ``tzinfo``, its
 name (``"Asia/Seoul"``), or ``None`` for ``rcParams["timezone"]``."""
 
-DateLike: TypeAlias = str | datetime.date | np.datetime64
 """One date as a caller writes it: an ISO string, a ``date`` / ``datetime``
 (a pandas ``Timestamp`` is one) or a ``datetime64``."""
 
@@ -127,13 +124,11 @@ class Ladder:
 
 SI = Ladder.of((1e3, "k"), (1e6, "M"), (1e9, "G"), (1e12, "T"))
 MYRIAD = Ladder.of((1e4, "만"), (1e8, "억"), (1e12, "조"), (1e16, "경"))
-FINANCE = Ladder.of((1e3, "k"), (1e6, "M"), (1e9, "B"), (1e12, "T"))
 MYRIAD_LOCALES = {
     "ko": MYRIAD,
     "zh": Ladder.of((1e4, "万"), (1e8, "亿"), (1e12, "兆"), (1e16, "京")),
     "ja": Ladder.of((1e4, "万"), (1e8, "億"), (1e12, "兆"), (1e16, "京")),
 }
-LADDERS = {"si": SI, "myriad": MYRIAD, "finance": FINANCE}
 
 
 def myriad_ladder(locale: object) -> Ladder:
@@ -144,43 +139,6 @@ def myriad_ladder(locale: object) -> Ladder:
         f"locale must be one of 'ko', 'zh', or 'ja' (got {locale!r})"
     )
 
-
-CurrencyPosition: TypeAlias = Literal["prefix", "suffix"]
-"""Where ``format_axis_currency`` writes the symbol, as a caller says it."""
-
-
-@dataclass(frozen=True)
-class SymbolFirst:
-    """``"prefix"``: the symbol before the number, after the minus (``-$5``)."""
-
-    def parts(self, symbol: str) -> tuple[str, str]:
-        """``(currency, unit label)`` for ``symbol``."""
-        return symbol, ""
-
-
-@dataclass(frozen=True)
-class SymbolLast:
-    """``"suffix"``: the symbol after the number (``5€``)."""
-
-    def parts(self, symbol: str) -> tuple[str, str]:
-        """``(currency, unit label)`` for ``symbol``."""
-        return "", symbol
-
-
-SymbolPlace: TypeAlias = SymbolFirst | SymbolLast
-
-
-def parse_currency_position(value: object) -> SymbolPlace:
-    """``format_axis_currency``'s ``position``; ``ValueError`` otherwise."""
-    if value == "prefix":
-        return SymbolFirst()
-    if value == "suffix":
-        return SymbolLast()
-    raise ValueError(f"position must be 'prefix' or 'suffix', got {value!r}")
-
-
-LadderName: TypeAlias = Literal["auto", "myriad", "finance", "si"]
-"""``dm.axis_unit``'s ``ladder``."""
 
 NumberLadder: TypeAlias = Literal["auto", "si", "myriad"]
 """``dm.config.number_ladder``."""
@@ -208,17 +166,6 @@ def parse_number_ladder(value: object) -> LadderChoice:
     )
 
 
-def parse_ladder_name(value: object) -> LadderChoice:
-    """``dm.axis_unit``'s ``ladder``; ``ValueError`` otherwise."""
-    if value == "auto":
-        return FollowFigure()
-    if isinstance(value, str) and value in LADDERS:
-        return LADDERS[value]
-    raise ValueError(
-        f"ladder must be 'auto', 'myriad', 'finance' or 'si', got {value!r}"
-    )
-
-
 @dataclass(frozen=True)
 class ByFigure:
     """``"auto"``: the ladder follows the figure; ``korean`` its text is."""
@@ -235,13 +182,6 @@ class Asked:
 
 Language: TypeAlias = ByFigure | Asked
 """What picks the large-number ladder."""
-
-
-def unit_template(label: str) -> str:
-    """An axis label with ``{unit}`` marking where the unit goes."""
-    if "{unit}" in label:
-        return label
-    return f"{label} ({{unit}})" if label.strip() else "({unit})"
 
 
 def parse_digits(value: object, what: str = "years") -> YearDigits:

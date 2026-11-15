@@ -80,8 +80,9 @@ request names, so the preset styles the rest.
 | a source or note | `dm.add_note(fig, "Source: …")` |
 | emphasis on one series | it keeps its colour, the others `set_color("dc.gray4")`, then `dm.place_legend(ax)` again for fresh handles |
 | values on bars or points | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
-| 12000 → 12k; 만/억 | `dm.format_axis_si(ax)`; `dm.format_axis_myriad(ax)` |
-| dates under bars | `dm.format_axis_dates(ax, dates)` |
+| 12000 → 12k | `ax.yaxis.set_major_formatter(lambda v, _: f"{v / 1000:g}k")` |
+| 만/억 | `dm.format_axis_myriad(ax)` |
+| dates under bars | plot against the dates themselves (`ax.bar(dates, values)`), not positions |
 | four-digit years | `with dm.config.override(tick_years=4):` around figure creation to the last `dm.simple_layout` |
 | a different size | rebuild with a new `dm.figsize`; a width alone keeps the old height |
 | for slides | `dm.style.use("presentation")` and a new `dm.figsize_for(...)`; point sizes written in the code scale by `dm.fs(0)` new over old |

@@ -31,7 +31,7 @@ dartwork-mpl은 matplotlib 위의 얇은 유틸리티 층이다. 논문·보고�
 | 사용자 | 쓰는 방식 | 이 리포가 주는 것 |
 | --- | --- | --- |
 | 연구자·엔지니어 | Python에서 `import dartwork_mpl as dm` | preset, `dm.figsize`, `dm.simple_layout`, 색, `dm.check` |
-| AI 코딩 에이전트 | 동봉된 skill과 에이전트 자신의 셸(`python plot.py`) | 지침과 템플릿, `dm.lint_code`, `dm.check`, `dm.guide.search`·`dm.guide.read` |
+| AI 코딩 에이전트 | 동봉된 skill과 에이전트 자신의 셸(`python plot.py`) | 지침, `dm.lint_code`, `dm.check` |
 
 ## 제품의 세 층
 

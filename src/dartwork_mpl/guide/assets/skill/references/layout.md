@@ -22,7 +22,7 @@ Pass what you know and it picks from that table.
 | `n_points=`, `n_series=` | sparse charts get the narrow canvas, dense ones the wide |
 | `labels=names` | wide enough for category names to stand flat |
 | `dual_axis=True` | room for a second y axis |
-| `nrows=`, `ncols=` | a grid; `dm.grid_shape(n)` gives rows and columns for `n` panels |
+| `nrows=`, `ncols=` | a grid of panels |
 | kind `"barh"`, `"grouped"`, `"matrix"`, `"compact"`, `"dense"`, `"strip"` | horizontal bars, grouped bars, a square heatmap, a small figure, wide time series |
 | kind `"slide"`, `"full_slide"` | the body under a 16:9 slide's title (23.4 × 10.5 cm), the whole slide (25.4 × 14.29 cm) |
 
@@ -43,8 +43,7 @@ dm.figsize_for("grouped", n_points=9, n_series=3)  # 12 cm, like "default"
 dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
 dm.figsize_for("slide")  # 23.4 x 10.5 cm, under a slide title
 dm.figsize_for("full_slide")  # 25.4 x 14.29 cm, the whole 16:9 slide
-nrows, ncols = dm.grid_shape(6)  # (2, 3)
-dm.figsize_for(nrows=nrows, ncols=ncols)  # 17 x 8.5 cm
+dm.figsize_for(nrows=2, ncols=3)  # 17 x 8.5 cm
 dm.style.use("presentation")
 dm.figsize_for(n_points=len(quarters), n_series=series)  # 11.4 x 10.5 cm
 dm.figsize_for(nrows=1, ncols=3)  # 23.4 x 10.5 cm, one row under the title

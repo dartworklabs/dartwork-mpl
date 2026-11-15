@@ -24,7 +24,6 @@ import numpy as np
 import dartwork_mpl as dm
 
 dm.style.use("report")
-dm.set_colors("dc.octave")             # after style.use, before plotting
 print(dm.colors("dc.teal", n=4))       # four ordered steps of one family
 print(dm.colors("dc.vivid", n=3))      # first three of a qualitative set
 print([c["name"] for c in dm.list_colors("qualitative")])

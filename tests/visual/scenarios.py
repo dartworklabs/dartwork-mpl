@@ -183,7 +183,6 @@ def _build_line_signals() -> Figure:
 
     ax.plot(x, y1, label="Signal A", color=palette[0], linewidth=dm.lw(0))
     ax.plot(x, y2, label="Signal B", color=palette[1], linewidth=dm.lw(0))
-    dm.format_axis_si(ax, axis="y")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.grid(

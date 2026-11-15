@@ -62,12 +62,11 @@ def test_negative_bars_and_barh_put_labels_past_the_end():
 @pytest.mark.parametrize(
     ("format_axis", "values", "texts"),
     [
-        (dm.format_axis_si, [1.25e6, 12.5e6, 0.5e6], ["1.2M", "12.5M", "0.5M"]),
         (
-            dm.format_axis_currency,
-            [800, -800, 0],
-            ["$800", "\N{MINUS SIGN}$800", "$0"],
-        ),
+            dm.format_axis_myriad,
+            [1.25e8, 12.5e8, 0.5e8],
+            ["1.2억", "12.5억", "0.5억"],
+        )
     ],
 )
 def test_labels_take_the_tick_unit(format_axis, values, texts):
@@ -134,19 +133,6 @@ def test_a_value_label_takes_the_first_free_side():
     assert peak.xyann == (0.0, 3.0)  # above, clear
     assert end.xyann[0] != 0.0  # the top of the plot: sideways, not below
     assert peak.get_fontsize() == pytest.approx(dm.fs(-1))
-
-
-def test_corner_and_reference_line_labels():
-    fig, ax = plt.subplots()
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.scatter([0.03], [0.97])
-    note = dm.annotate_corner(ax, "n = 5")
-    assert note.xy == (1.0, 1.0)  # a point takes the upper left
-    ax.plot([0.2, 0.6], [0.5, 0.5])
-    target = dm.label_hline(ax, 0.5, "Target")
-    assert target.xy[0] == pytest.approx(0.6, abs=0.01)
-    assert target.get_horizontalalignment() == "right"
 
 
 def test_panel_letters_sit_on_the_title_baseline_and_align_per_column():

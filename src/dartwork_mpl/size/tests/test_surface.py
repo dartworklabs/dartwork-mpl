@@ -122,31 +122,6 @@ class TestLength:
             dm.Length(5.0)  # type: ignore[misc]
 
 
-class TestGridShape:
-    """One row up to three panels, then a near-square grid, wider than tall."""
-
-    @pytest.mark.parametrize(
-        ("n", "shape"),
-        [
-            (1, (1, 1)),
-            (3, (1, 3)),
-            (4, (2, 2)),
-            (5, (2, 3)),
-            (7, (3, 3)),
-            (10, (3, 4)),
-            (12, (3, 4)),
-        ],
-    )
-    def test_shape(self, n: int, shape: tuple[int, int]) -> None:
-        assert dm.grid_shape(n) == shape
-
-    def test_rejects_zero_and_floats(self) -> None:
-        with pytest.raises(ValueError, match="must be >= 1"):
-            dm.grid_shape(0)
-        with pytest.raises(TypeError, match="must be an int"):
-            dm.grid_shape(2.0)  # type: ignore[arg-type]
-
-
 class TestFigsizeFor:
     """The active preset's canvas, the same for the same request."""
 
@@ -205,8 +180,3 @@ class TestFigsizeFor:
     def test_labels_need_an_axis_order(self, labels: object) -> None:
         with pytest.raises(TypeError, match="labels must be"):
             dm.figsize_for(labels=labels)
-
-    @pytest.mark.parametrize("name", ["figsize_for", "grid_shape"])
-    def test_is_provisional(self, name: str) -> None:
-        assert name in dm.EXPERIMENTAL
-        assert name in dm.__all__

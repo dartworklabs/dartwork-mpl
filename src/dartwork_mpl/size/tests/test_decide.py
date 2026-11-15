@@ -15,7 +15,7 @@ from dartwork_mpl.size.canvas import (
     Slides,
     parse_canvas_kind,
 )
-from dartwork_mpl.size.model import Grid, Panels
+from dartwork_mpl.size.model import Grid
 
 REPORT, PAPER, SLIDES = Page(), Page(Paper()), Page(Slides())
 POSTER = Page(Poster(), 1.5)
@@ -122,11 +122,6 @@ def test_a_grid_takes_the_widest_tier_and_keeps_its_panels(
     kind: str, grid: Grid, page: Page, expected: tuple[float, float]
 ) -> None:
     assert _cm(_ask(kind, grid=grid), page) == expected
-
-
-def test_grid_for_panels() -> None:
-    assert decide.grid_for(Panels(6)) == Grid(2, 3)
-    assert decide.grid_for(Panels(2)) == Grid(1, 2)
 
 
 def test_half_cm_rounds_a_half_that_went_through_inches_up() -> None:
