@@ -3,7 +3,7 @@ and the colour cycle ``dm.set_colors`` sets."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -31,13 +31,25 @@ def colormaps(catalog: Catalog) -> list[mcolors.ListedColormap]:
     return maps
 
 
+def bind(names: Mapping[str, str]) -> None:
+    """Set each name in matplotlib's named colours.
+
+    One at a time: the mapping drops its cache of resolved colours when an
+    item is set, and ``dict.update`` goes around that, so a name looked up
+    before a rebind would keep its old colour.
+    """
+    named = mcolors.get_named_colors_mapping()
+    for name, value in names.items():
+        named[name] = value
+
+
 def register(catalog: Catalog) -> None:
     """Register every name and colormap; a map already there must be ours.
 
     Idempotent, so a re-import is harmless. A different map under one of
     the names raises ``ValueError`` before anything is registered.
     """
-    mcolors.get_named_colors_mapping().update(catalog.named)
+    bind(catalog.named)
     missing: list[mcolors.ListedColormap] = []
     for cmap in colormaps(catalog):
         if cmap.name not in mpl.colormaps:
@@ -53,7 +65,7 @@ def register(catalog: Catalog) -> None:
 
 def apply_semantic(tokens: Semantic) -> None:
     """Bind ``dc.pos``/``neg``/``ref``/``hl`` in matplotlib's named colours."""
-    mcolors.get_named_colors_mapping().update(tokens.names())
+    bind(tokens.names())
 
 
 def color_cycle(colours: Sequence[str], styles: bool) -> Cycler[str, str]:

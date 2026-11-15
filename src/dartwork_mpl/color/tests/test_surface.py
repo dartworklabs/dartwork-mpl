@@ -139,3 +139,12 @@ def test_presets_rebind_the_role_colours():
     assert named["dc.pos"] == mcolors.to_hex("dc.red5")
     dm.style.use("report")
     assert named["dc.pos"] == mcolors.to_hex("dc.green6")
+
+
+def test_a_role_colour_follows_the_preset_after_it_was_looked_up():
+    dm.style.use("report")
+    gain = mcolors.to_hex("dc.pos")
+    dm.style.use("report-kr")
+    assert mcolors.to_hex("dc.pos") != gain  # Korean: gains are red
+    dm.style.use("report")
+    assert mcolors.to_hex("dc.pos") == gain
