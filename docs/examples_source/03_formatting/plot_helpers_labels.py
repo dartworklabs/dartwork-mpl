@@ -1,9 +1,9 @@
 """
-helpers.labels — Legend and Value Annotations
-==============================================
+Legend and Value Annotations
+============================
 
-``dm.helpers.labels`` provides ``optimize_legend`` for smart legend
-placement and ``dm.label_bars`` for the per-bar
+``dm.place_legend`` places a legend off the data and ``dm.label_bars``
+writes the per-bar
 value labels. Axis labels are set directly via
 ``ax.set_xlabel`` / ``ax.set_ylabel``.
 
@@ -53,13 +53,13 @@ ax1.set_ylabel("Amplitude (mV)", fontsize=dm.fs(0))
 ax1.set_title("Auto-Formatted Labels", fontsize=dm.fs(1))
 _minimal(ax1)
 
-# Optimized legend placement.
+# Legend placed off the data.
 ax2 = axes[0, 1]
 ax2.plot(x, y1, color="dc.red2", label="Signal A", lw=dm.lw(1))
 ax2.plot(x, y2, color="dc.green2", label="Signal B", lw=dm.lw(1))
 ax2.fill_between(x[40:60], -0.5, 0.5, alpha=0.3, color="gray", label="Region")
-dm.helpers.labels.optimize_legend(ax2, preferred_loc="best")
-ax2.set_title("Optimized Legend", fontsize=dm.fs(1))
+dm.place_legend(ax2)
+ax2.set_title("Placed Legend", fontsize=dm.fs(1))
 ax2.set_xlabel("X", fontsize=dm.fs(0))
 ax2.set_ylabel("Y", fontsize=dm.fs(0))
 _minimal(ax2)

@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from matplotlib.patches import Rectangle
 
 matplotlib.use("Agg")
 
@@ -21,11 +20,9 @@ from dartwork_mpl.annotation import (
     arrow_axis,
     label_axes,
     label_hline,
-    place_legend,
     wrap_axis_label,
     wrap_axis_labels,
 )
-from tests.support.mpl_observe import legend_ncols, pinned_legend_corner
 
 
 class TestLabelAxes:
@@ -523,84 +520,13 @@ class TestLabelHLine:
         plt.close(fig)
 
 
-class TestPlaceLegend:
-    """Legend placement that avoids data and text obstacles and widens tall legends."""
-
-    def test_place_legend_chooses_empty_upper_right_candidate(self) -> None:
-        fig, ax = plt.subplots(figsize=(5, 4))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        rectangles = [
-            Rectangle((0.00, 0.62), 0.36, 0.36, label="occupied"),
-            Rectangle((0.00, 0.00), 0.36, 0.36),
-            Rectangle((0.62, 0.00), 0.36, 0.36),
-            Rectangle((0.35, 0.62), 0.30, 0.36),
-        ]
-        for rect in rectangles:
-            ax.add_patch(rect)
-
-        legend = place_legend(ax)
-
-        assert legend is not None
-        assert pinned_legend_corner(legend) == "upper right"
-        plt.close(fig)
-
-    def test_place_legend_repositions_existing_legend(self) -> None:
-        fig, ax = plt.subplots()
-        ax.plot([0, 1], [0, 1], label="series")
-        ax.legend(loc="lower left")
-
-        legend = place_legend(ax, loc="upper right")
-
-        assert legend is ax.get_legend()
-        assert pinned_legend_corner(legend) == "upper right"
-        plt.close(fig)
-
-    def test_place_legend_avoids_existing_text_obstacle(self) -> None:
-        fig, ax = plt.subplots(figsize=(5, 4))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.plot([0, 1], [0.1, 0.2], label="series")
-        ax.add_patch(Rectangle((0.0, 0.0), 0.25, 0.25))
-        ax.text(
-            0.98,
-            0.98,
-            "callout",
-            transform=ax.transAxes,
-            ha="right",
-            va="top",
-            fontsize=20,
-        )
-
-        legend = place_legend(ax)
-
-        assert legend is not None
-        assert pinned_legend_corner(legend) == "upper left"
-        plt.close(fig)
-
-    def test_place_legend_raises_ncol_for_tall_legend(self) -> None:
-        fig, ax = plt.subplots(figsize=(4, 2))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        for index in range(9):
-            ax.plot(
-                [0.05, 0.15],
-                [0.05 + index * 0.02, 0.08 + index * 0.02],
-                label=f"Series {index}",
-            )
-        ax.add_patch(Rectangle((0.45, 0.2), 0.10, 0.60))
-
-        legend = place_legend(ax)
-
-        assert legend is not None
-        assert legend_ncols(legend) > 1
-        plt.close(fig)
+class TestPublicExports:
+    """The annotation entry points are the package-level names."""
 
     def test_public_exports(self) -> None:
         assert dm.annotate_value is annotate_value
         assert dm.annotate_corner is annotate_corner
         assert dm.label_hline is label_hline
-        assert dm.place_legend is place_legend
         assert dm.wrap_axis_label is wrap_axis_label
         assert dm.wrap_axis_labels is wrap_axis_labels
 

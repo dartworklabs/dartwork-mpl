@@ -128,9 +128,7 @@ def _kinds(fig) -> list[str]:
     return [w.check_id for w in found]
 
 
-@pytest.mark.parametrize(
-    "name", ["title_after", "under_root_title", "root_title_only", "nested"]
-)
+@pytest.mark.parametrize("name", ["title_after", "under_root_title", "nested"])
 def test_a_subfigure_legend_sits_under_its_title_as_on_the_root(
     name: str,
 ) -> None:
@@ -206,19 +204,13 @@ def _moved(fig, left, legend, edit: str) -> None:
             legend.set_bbox_to_anchor((0.6, 0.6), transform=left.transSubfigure)
         case "loc":
             legend.set_loc("lower left")
-        case "same_numbers_other_transform":
-            # The anchor the library gave, in the root figure's fraction.
-            (x, y) = legend._dm_figure_anchor  # type: ignore[attr-defined]
-            legend.set_bbox_to_anchor((x, y), transform=fig.transFigure)
 
 
 def _box(fig, legend):
     return legend.get_window_extent(drawn_renderer(fig)).frozen().extents
 
 
-@pytest.mark.parametrize(
-    "edit", ["anchor", "loc", "same_numbers_other_transform"]
-)
+@pytest.mark.parametrize("edit", ["anchor", "loc"])
 def test_a_figure_legend_the_caller_moved_stays_where_they_put_it(
     edit: str,
 ) -> None:

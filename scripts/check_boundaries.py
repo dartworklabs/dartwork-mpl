@@ -151,9 +151,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "the text-contrast and grayscale checks judge WCAG contrast and "
         "compare colours in OKLab and Y"
     ),
-    ("dartwork_mpl.annotation", "dartwork_mpl.config"): (
-        "place_legend reads the project-wide legend fallback and wrap defaults"
-    ),
     ("dartwork_mpl.annotation", "dartwork_mpl.ticks"): (
         "bar value labels print in their axis's tick unit, like the ticks"
     ),
@@ -180,9 +177,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.ticks"): (
         "layout writes the library's tick numbers before measuring them and "
         "thins crowded dates at the fitted size"
-    ),
-    ("dartwork_mpl.legend", "dartwork_mpl.annotation"): (
-        "the layout's legend hooks delegate to the legend code until legend is rebuilt"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.config"): (
         "layout follows the user's tick-label font adoption setting"
@@ -268,6 +262,13 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.ticks.model": (
         "the tick types and config parsing need nothing outside them"
+    ),
+    "dartwork_mpl.legend.decide": (
+        "where a legend goes is decided from measured facts and their "
+        "measuring functions alone"
+    ),
+    "dartwork_mpl.legend.model": (
+        "the legend's geometry and plan types need nothing outside them"
     ),
     "dartwork_mpl.size.decide": (
         "the canvas is decided from the parsed request and the page alone"

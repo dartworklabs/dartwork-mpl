@@ -281,7 +281,7 @@ composition helper is reachable as `dm.<name>`.
 | Pick a chart type from a data description | `dm.suggest_chart_type(...)` |
 | Get a curated palette for N data series | `dm.make_palette(n, kind=...)` |
 | Label bar tops with their values | `dm.label_bars(ax)` (printed like the ticks; one keyword per request) |
-| Place the legend without overlapping data | `dm.optimize_legend(ax, ...)` |
+| Place the legend without overlapping data | `dm.place_legend(ax)` |
 | Run heuristic quality checks on a figure | `dm.check_figure_quality(fig)` |
 | Save with hi-res presets in multiple formats | `dm.save_formats(fig, "out")` |
 | Lint generated code before returning it | `dm.lint_code(code)` (Python) or `lint_dartwork_mpl_code(code)` (MCP) |

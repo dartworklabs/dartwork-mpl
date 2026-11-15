@@ -120,22 +120,6 @@ def test_a_hidden_subfigures_title_and_legend_have_no_extent(
     assert legend in fg.figure_legends(fig)
 
 
-def test_a_hidden_subfigure_does_not_end_the_outside_span() -> None:
-    """A panel in a hidden SubFigure is no neighbour: the range above the
-    left panel runs to the canvas edge, not to it."""
-    fig = plt.figure(figsize=(8, 4))
-    left, right = fig.subfigures(1, 2)
-    ax = left.subplots()
-    right.subplots()
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    shown = fg.outside_span_px(ax, "above", renderer)
-    right.set_visible(False)
-    hidden = fg.outside_span_px(ax, "above", renderer)
-    assert shown[1] < fig.bbox.x1
-    assert hidden[1] == pytest.approx(fig.bbox.x1)
-
-
 def test_figure_level_extents_include_a_subfigures_title_and_legend() -> None:
     fig, sub, _nested, (_top, own, _deep) = _tree()
     own.plot([0, 1], [0, 1], label="Own")

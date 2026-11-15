@@ -85,27 +85,6 @@ class Config:
         it is read.
         ``"si"`` is the option for k/M/G/T in Korean figures too
         (``with dm.config.override(number_ladder="si"):``, or assign it).
-    legend_fallback : {"auto", "above", "right", "below", "inside"}, default ``"auto"``
-        Where :func:`dartwork_mpl.place_legend` puts a legend with no side
-        named when no inside spot is free of data. ``"auto"`` takes, among
-        the sides no other panel sits beyond, the one that leaves the larger
-        plot (above unless another side takes at least 10 % and 5 % of the
-        plot less); ``"above"`` / ``"right"`` / ``"below"`` always that
-        side; ``"inside"`` keeps the legend in the spot that covers the
-        fewest series (``dm.validate_figure`` then reports
-        ``LEGEND_ON_DATA``). Any other value raises ``ValueError`` where it
-        is read.
-    legend_wrap : bool, default ``True``
-        Let :func:`dartwork_mpl.place_legend` break long entry names at
-        spaces when the legend outside its Axes would otherwise not fit
-        (centred on the Axes and moved in at the canvas edge, it must stay
-        on the canvas and off the other columns' panels; it may be wider
-        than the Axes) or take more than 60 % of the plot (on a side
-        named right or left, also when it is wider than 40 % of the Axes); a
-        trailing bracketed unit stays whole. A better fit comes first;
-        among ways that fit as well, more lines per name are taken only for
-        at least 5 % of the canvas more plot. ``False`` keeps every name on
-        one line.
     fit_labels : bool | tuple[str, ...], default ``True``
         What ``dm.simple_layout`` may do when text still collides once the
         margins fit: ``True`` every step (``"axis_labels"``, ``"space"``,
@@ -122,10 +101,6 @@ class Config:
     warn_on_orphan_tick_adoption: bool = False
     tick_years: Literal[2, 4] = 2
     number_ladder: Literal["auto", "si", "myriad"] = "auto"
-    legend_fallback: Literal["auto", "above", "right", "below", "inside"] = (
-        "auto"
-    )
-    legend_wrap: bool = True
     fit_labels: bool | tuple[str, ...] = True
 
     @contextmanager
