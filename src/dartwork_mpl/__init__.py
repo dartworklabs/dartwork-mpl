@@ -71,12 +71,7 @@ from .labels import (
 )
 
 # Layout
-from .layout import (
-    adopt_axis_label_font,
-    get_bounding_box,
-    simple_layout,
-    tight_crop,
-)
+from .layout import simple_layout
 from .legend import figure_legend, place_legend
 
 # Scaling helpers
@@ -189,10 +184,7 @@ __all__ = [  # noqa: RUF022
     "fw",
     "lw",
     # Layout
-    "adopt_axis_label_font",
     "simple_layout",
-    "tight_crop",
-    "get_bounding_box",
     # Color utilities
     "mix_colors",
     "pseudo_alpha",

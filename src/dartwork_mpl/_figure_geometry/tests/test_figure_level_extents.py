@@ -1,11 +1,9 @@
 """Tests for the shared figure-level artist extent iterator.
 
-``_figure_geometry.iter_figure_level_extents`` is the single source three sites
-now share — ``layout._figure_artist_reservations``, ``layout.tight_crop``,
-and the ``OVERFLOW`` check — for walking ``fig.suptitle`` / ``fig.text`` /
-``fig.legend`` with one guard triplet. These tests pin the guard and the
-one intentional consistency fix the consolidation surfaced: a blank
-(whitespace-only) figure title no longer reserves crop space.
+``_figure_geometry.iter_figure_level_extents`` is the one walk the layout's
+edge reservations and the ``OVERFLOW`` check share over ``fig.suptitle`` /
+``fig.text`` / ``fig.legend``, with one guard triplet. These tests pin the guard and the
+rule that a blank (whitespace-only) figure title reserves nothing.
 """
 
 from __future__ import annotations
@@ -17,7 +15,6 @@ from dartwork_mpl._figure_geometry import (
     get_renderer,
     iter_figure_level_extents,
 )
-from dartwork_mpl.layout import tight_crop
 
 matplotlib.use("Agg")  # Non-interactive backend for testing.
 
@@ -71,31 +68,3 @@ class TestIterFigureLevelExtents:
         fig.supxlabel("shared x")
         assert len(_extents(fig)) == 1
         plt.close(fig)
-
-
-class TestConsolidatedGuardConsistency:
-    """The consolidation unified a latent guard divergence: ``tight_crop``
-    used to reserve space for a blank suptitle while the layout engine and
-    OVERFLOW already skipped it."""
-
-    @staticmethod
-    def _crop_with_title(title):
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.plot([1, 2, 3], [1, 2, 3])
-        if title is not None:
-            fig.suptitle(title)
-        size = tight_crop(fig)
-        plt.close(fig)
-        return tuple(round(v, 3) for v in size)
-
-    def test_whitespace_title_crops_like_no_title(self) -> None:
-        no_title = self._crop_with_title(None)
-        whitespace = self._crop_with_title("   ")
-        assert whitespace == no_title
-
-    def test_real_title_still_reserves_space(self) -> None:
-        no_title = self._crop_with_title(None)
-        real = self._crop_with_title("A Real Title")
-        # A non-blank title must still enlarge the crop (guards only drop
-        # blank/degenerate artists, never real content).
-        assert real[1] > no_title[1]

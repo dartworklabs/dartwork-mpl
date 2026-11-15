@@ -223,13 +223,6 @@ def settle_bars(fig: Figure, renderer: RendererBase) -> bool:
     return before != [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
 
 
-def hide_covered(fig: Figure, renderer: RendererBase) -> None:
-    """Nothing to hide: ``dm.place_legend`` keeps legends off the labels.
-
-    The layout still calls this hook; it goes when the layout drops it.
-    """
-
-
 def warn_hidden(fig: Figure, *, stacklevel: int = 1) -> None:
     """Warn once about bar labels the fitted size left no room for.
 

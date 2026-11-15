@@ -65,7 +65,6 @@ __all__ = [
     "OutsideSide",
     "artist_shown",
     "axes_decoration_extents",
-    "axes_text_artists",
     "axes_titles",
     "axes_with_secondaries",
     "backdrop_layers",
@@ -227,10 +226,8 @@ def iter_figure_level_extents(
     Figure-level artists — ``fig.suptitle`` / ``fig.supxlabel`` /
     ``fig.supylabel`` (the private ``_sup*`` attributes), ``fig.text``
     entries, and ``fig.legend`` legends — live on the Figure, not on any
-    Axes, so per-axes extent walks never see them. Three sites previously
-    re-derived this candidate list plus the identical guard triplet:
-    ``layout._figure_artist_reservations``, ``layout.tight_crop``, and the
-    ``OVERFLOW`` visual check. This is their single source.
+    Axes, so per-axes extent walks never see them. The layout's edge
+    reservations and the ``OVERFLOW`` check share this walk.
 
     matplotlib stores the sup-title / sup-labels in ``fig.texts`` *as well
     as* the ``_sup*`` attributes, so candidates are de-duplicated by
@@ -244,8 +241,7 @@ def iter_figure_level_extents(
       (:func:`drawn_in_tree`);
     * skip text artists whose text is empty or whitespace-only — a blank
       suptitle / footnote reserves no space and must not extend a
-      bounding box (this unifies a prior inconsistency: reservations and
-      OVERFLOW already skipped blank text, ``tight_crop`` did not);
+      bounding box;
     * swallow :data:`BBOX_ERRORS` from ``get_window_extent``;
     * drop zero-area extents — uninformative, and they poison the
       downstream ``min`` / ``max`` / ``Bbox.union`` math.
@@ -356,26 +352,15 @@ def panel_labels(fig: Figure | SubFigure) -> list[tuple[Axes, Text]]:
     ]
 
 
-# Owners: layout.
-def axes_text_artists(ax: Axes) -> list[Text]:
-    """Return ``ax.texts``, the three titles and the x/y axis labels.
-
-    A 3D axes' ``ax.text(x, y, z, ...)`` is among them; measure it with
-    :func:`text_window_extent`, not ``get_window_extent``.
-    """
-    titles = axes_titles(ax).values()
-    return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
-
-
 # Owners: check.
 def drawn_axes_texts(ax: Axes) -> list[Text]:
-    """:func:`axes_text_artists` less the axis labels matplotlib leaves out.
+    """``ax.texts``, the three titles and the axis labels matplotlib draws.
 
     An axis label draws with its axis (:func:`_axes_draws_its_axes`): not
     on a 2D Axes after ``ax.axis("off")`` or with that axis hidden, nor on a
     3D Axes after ``set_axis_off``; there it stays where it was never drawn,
     often past the canvas. The checks read these texts; the layout still
-    measures every label (:func:`axes_text_artists`).
+    measures every label.
     """
     labels = [
         axis.label
@@ -531,7 +516,7 @@ def drawn_tick_labels(
 _TOUCH_PX = 0.5
 
 
-# Owners: check, layout (the result of tick_label_overlaps).
+# Owners: check.
 class TickOverlaps(NamedTuple):
     """Neighbouring tick labels of one axis that overlap.
 
@@ -674,7 +659,7 @@ def _overlap_px(p: np.ndarray, q: np.ndarray) -> float:
     return least
 
 
-# Owners: check, layout.
+# Owners: check.
 def tick_label_overlaps(
     ax: Axes, which: Literal["x", "y"], renderer: RendererBase
 ) -> TickOverlaps:
@@ -684,8 +669,7 @@ def tick_label_overlaps(
     text fills, turned with it; neighbours are taken in order along the
     axis on each side separately (bottom / top, left / right), and collide
     when they overlap by more than ``_TOUCH_PX``. The measure of
-    ``TICK_OVERLAP`` and of the layout's check that a fitting step made
-    nothing worse.
+    ``TICK_OVERLAP``.
     """
     axis = ax.xaxis if which == "x" else ax.yaxis
     # Major and minor labels share the line: a minor label can run into a
@@ -724,7 +708,7 @@ def tick_label_overlaps(
     return TickOverlaps(pairs, len(labels), deepest, rotation)
 
 
-# Owners: check, layout.
+# Owners: check.
 def tick_pad(tick: Any) -> float:
     """The label pad (pt) of a matplotlib ``Tick`` (``Tick.get_pad``).
 
@@ -734,7 +718,7 @@ def tick_pad(tick: Any) -> float:
     return float(tick.get_pad())
 
 
-# Owners: check, layout.
+# Owners: check.
 #: What an x and a y label at a corner are cleared by, in ems of the labels
 #: that move: a hair space. Labels of two axes are told apart by where they
 #: sit; they only must not touch. Measured (I-O1 follow-up 8, a -3..3
@@ -744,7 +728,7 @@ def tick_pad(tick: Any) -> float:
 CORNER_GAP_EM = 0.1
 
 
-# Owners: check, layout.
+# Owners: check.
 class CornerOverlap(NamedTuple):
     """An x and a y tick label of one plot box that overlap.
 
@@ -781,7 +765,7 @@ def _ink_alpha(text: Text) -> float:
     return float(to_rgba(text.get_color())[3])
 
 
-# Owners: check, layout.
+# Owners: check.
 def corner_tick_overlaps(
     axes: Sequence[Axes], renderer: RendererBase
 ) -> list[CornerOverlap]:
@@ -854,7 +838,7 @@ def corner_tick_overlaps(
     return found
 
 
-# Owners: layout.
+# Owners: layout, check (through axes_with_secondaries).
 def secondary_axes(ax: Axes) -> list[Axes]:
     """Return the visible ``secondary_xaxis`` / ``secondary_yaxis`` children of ``ax``.
 

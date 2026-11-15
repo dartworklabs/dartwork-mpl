@@ -203,7 +203,7 @@ def test_a_minor_label_half_an_em_clear_leaves_the_row_quiet():
 
 
 def test_the_check_and_the_layout_share_the_clearance() -> None:
-    from dartwork_mpl.layout._fit_labels import _TARGET_EM
+    from dartwork_mpl.layout.model import CLEARANCE_EM as _TARGET_EM
     from dartwork_mpl.validate._checks import tick_crowd
 
     assert getattr(tick_crowd, "_NEIGHBOUR_CLEARANCE_EM", None) == _TARGET_EM
