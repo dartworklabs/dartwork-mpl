@@ -28,7 +28,7 @@ survives unrelated edits):
                          through other platform units included
   cycle                  units that reach each other, lazy and TYPE_CHECKING
                          imports and package initializers included
-  decision import        a module listed in DECISIONS importing another unit
+  decision import        a module listed in DECISIONS importing another slice
   unowned module         a production module no unit or entry point owns
   unused allowance       an ALLOWED entry no import backs
   stale debt             a DEBT entry that no longer occurs (delete it)
@@ -123,7 +123,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
 # Compatibility shims: public module path -> the unit that owns its contents.
 SHIMS: Mapping[str, str] = {}
 
-# Modules holding pure decisions: they import no other unit, surfaces included.
+# Modules holding pure decisions: they import no slice, surfaces included.
+# The platform's vocabulary (geometry's axis variants) is shared by every
+# slice, so a decision may name it.
 DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.check.decide": (
         "what is wrong with a figure is decided from its measured facts alone"
@@ -454,7 +456,7 @@ def violations(
             shown = submodule if submodule else base
             if not is_surface:
                 errors.add(f"private import: {name} -> {shown}")
-            if name in layout.decisions:
+            if name in layout.decisions and target_unit not in layout.platform:
                 errors.add(f"decision import: {name} -> {target_unit}")
             if source_unit in layout.platform:
                 continue
