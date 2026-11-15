@@ -29,7 +29,7 @@ def simple_layout(
     fig: Figure,
     gs: GridSpecBase | SubplotSpec | None = None,
     *,
-    margin: MarginInput = 0,
+    margin: MarginInput = "1mm",
     ml: MarginInput | None = None,
     mr: MarginInput | None = None,
     mt: MarginInput | None = None,
@@ -40,8 +40,9 @@ def simple_layout(
 
     ``margin`` (and per side ``ml``, ``mr``, ``mt``, ``mb``) is a
     :class:`~dartwork_mpl.Length` (``dm.mm(2)``), a unit string (``"2mm"``),
-    a percentage (``"2%"``) or a figure fraction (``0.02``); ``0`` puts the
-    content flush with the edges. ``gs`` names the grid to fit (its root
+    a percentage (``"2%"``) or a figure fraction (``0.02``). The default keeps
+    1 mm clear, because glyphs flush with the canvas edge are cut; ``0`` puts
+    the content flush with the edges. ``gs`` names the grid to fit (its root
     GridSpec), default the first Axes'; every Axes is measured. A
     suptitle, ``fig.text`` note or figure legend keeps its edge clear.
 

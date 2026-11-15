@@ -51,7 +51,7 @@ Fix every WARNING; weigh each INFO. The fix line names the usual remedy.
 | rule | Means |
 |---|---|
 | `OVERFLOW` | text cut off by the canvas edge |
-| `TEXT_AT_EDGE` (INFO) | text flush with the canvas edge: `dm.simple_layout(fig, margin="1mm")` |
+| `TEXT_AT_EDGE` (INFO) | text flush with the canvas edge: leave `dm.simple_layout`'s default margin, or raise it |
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
 | `LEGEND_OVERFLOW`, `LEGEND_OVERLAP`, `LEGEND_ON_DATA` | legend too big, over a title or label, over data |

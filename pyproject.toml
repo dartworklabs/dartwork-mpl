@@ -27,8 +27,7 @@ classifiers = [
 ]
 # Runtime dependencies of ``import dartwork_mpl`` only. Audit note
 # (2026-07): ``palettable`` and the superseded ``colorspacious`` palette
-# generator had no live imports and were dropped; ``scipy`` remains in the
-# dev group for docs examples only. ``cycler`` is imported directly by the Model B
+# generator had no live imports and were dropped. ``cycler`` is imported directly by the Model B
 # color-cycle API, so it is declared here instead of being relied on as a
 # matplotlib transitive.
 dependencies = [
@@ -97,7 +96,7 @@ build-backend = "hatchling.build"
 
 # Explicit sdist whitelist. Without this, hatch defaults to "everything
 # not in .gitignore", which sweeps in worktree caches (`.claude/`),
-# docs/_build, dev-only docs/examples, and similar cruft. ``include``
+# and similar cruft. ``include``
 # is *additive* on top of hatch's default file discovery, so we use
 # ``only-include`` to make the whitelist authoritative. The bundled
 # fonts (~60 MB) live under src/dartwork_mpl/font/assets and are picked up
@@ -134,51 +133,7 @@ dev = [
     "pytest-mpl>=0.17",
     "pytest-xdist>=3.8.0",
     "ruff>=0.4.0",
-    # Gallery examples (KDE / Voronoi), which tests/docs executes.
-    "scipy>=1.15.2",
 ]
-# Documentation site only (`uv sync --group docs`); never needed to test.
-docs = [
-    # Enables sphinx-gallery's parallel example execution (conf.py
-    # `parallel`), which speeds up cache-miss docs builds.
-    "joblib>=1.3.0",
-    "myst-parser>=4.0.1",
-    "notebook>=7.6.3",
-    # Security floors for the developer-only Jupyter/docs graph. Notebook
-    # 7.6.3 also forces JupyterLab >=4.6.4,<4.7 and jupyter-builder.
-    "bleach>=6.4.0",
-    "filelock>=4.2.1",
-    "jupyter-server>=2.20.0",
-    "jupyterlab>=4.6.4,<4.7",
-    "mistune>=3.3.3",
-    "nbconvert>=7.17.2",
-    "setuptools>=84.1.0",
-    "soupsieve>=4.0.0",
-    "tornado>=6.6.1",
-    "urllib3>=2.8.0",
-    "virtualenv>=21.14.13",
-    "openpyxl>=3.1.5",
-    "shibuya>=2025.11.10",
-    "sphinx>=8.1.3",
-    "sphinx-copybutton>=0.5.2",
-    "sphinx-design>=0.6.1",
-    "sphinx-gallery>=0.19.0",
-    "sphinx-markdown-builder>=0.6.8",
-    "sphinx-tabs>=3.4.7",
-    "sphinxcontrib-mermaid>=1.0.0",
-    # Mingrammer Diagrams — system architecture as code. Used by
-    # docs/internals/scripts/build_architecture_diagram.py to emit
-    # docs/_static/diagrams/architecture_overview.svg before sphinx-build.
-    # Shells out to the `dot` binary (apt/brew install graphviz).
-    "diagrams>=0.24.4",
-]
-
-# The docs environment needs Python 3.11.5 or later; the package itself
-# still installs on every Python >=3.11. Each patched soupsieve (3.0.2 and
-# later) requires 3.11.5, so a lock that also covers 3.11.0-3.11.4 keeps the
-# vulnerable 2.10 for those interpreters.
-[tool.uv.dependency-groups]
-docs = { requires-python = ">=3.11.5" }
 
 # Run tests with: uv run pytest -n auto
 
@@ -251,28 +206,6 @@ known-first-party = ["dartwork_mpl"]
 split-on-trailing-comma = false
 
 [tool.ruff.lint.per-file-ignores]
-# RUF001/002/003 (ambiguous unicode in strings/docstrings/comments):
-# documentation and examples intentionally use mathematical and Greek
-# characters (×, σ, α, γ, ∪, ℝ, −, ∨, –) as content. They are not
-# confusable identifiers, and the rule adds noise without value here.
-"docs/**/*.py" = ["RUF001", "RUF002", "RUF003"]
-"examples/**/*.py" = ["RUF001", "RUF002", "RUF003"]
-# E402: these scripts intentionally modify sys.path before importing.
-# W293: docs/color_system/generate_assets.py embeds a JavaScript
-# template string whose blank lines carry whitespace as part of the
-# rendered HTML output, not Python source style.
-"docs/color_system/generate_assets.py" = ["E402", "W293"]
-# UP017 (datetime.UTC alias): the pre-registered evaluation plan keeps these
-# two files byte-identical to the frozen protocol (9134d36c); evals are owned
-# by the evaluation track, so no automatic modernisation applies to them.
-"evals/agentic/preregister.py" = ["UP017"]
-"evals/agentic/test_regressions.py" = ["UP017"]
-"docs/fonts/generate_assets.py" = ["E402"]
-# BLE001: these asset generators run a best-effort batch loop that must
-# continue past any individual failure (one broken example shouldn't abort
-# the whole build). The blind-except pattern is intentional.
-"docs/api/generate_assets.py" = ["BLE001"]
-"docs/usage_guide/generate_assets.py" = ["BLE001"]
 # Tests legitimately use unused unpacked variables (e.g. fig, ax tuples
 # where only one is asserted), nested context managers, manual list
 # comprehensions, blind excepts in cleanup code, ambiguous unicode in
@@ -316,11 +249,6 @@ split-on-trailing-comma = false
     "D106",
     "D107",
 ]
-
-# The agent-eval harness (evals/, outside the package; the default pytest
-# and CI do not collect it) follows the test-code rule: every module and
-# class has a docstring, functions are described by their names.
-"evals/**/*.py" = ["D102", "D103", "D104", "D105", "D106", "D107"]
 
 [tool.basedpyright]
 # `uv run basedpyright` (no arguments) is the one command, locally and in CI.

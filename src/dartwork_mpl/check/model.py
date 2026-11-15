@@ -369,7 +369,7 @@ def step_decimals(values: Iterable[float]) -> int:
 FIXES: dict[str, str] = {
     "OVERFLOW": "dm.simple_layout(fig) makes room for axis text; move a "
     "fig.text or annotation placed past the plot inward",
-    "TEXT_AT_EDGE": 'dm.simple_layout(fig, margin="1mm") leaves room between '
+    "TEXT_AT_EDGE": "dm.simple_layout(fig) keeps 1 mm by default; a margin of 0 was asked for, or the text was added after the layout: leave room between "
     "the text and the canvas edge",
     "OVERLAP": "move or shorten one of them; dm.simple_layout(fig) spaces "
     "titles, axis labels and tick labels",

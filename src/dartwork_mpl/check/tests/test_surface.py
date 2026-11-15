@@ -121,15 +121,26 @@ def test_corner_tick_labels_meet():
     assert dm.check(fig).of("TICK_CORNER_OVERLAP")
 
 
-def test_the_baseline_defects_are_caught():
-    """Known defects of the frozen pixel baselines are reported."""
+def test_the_default_margin_clears_the_edge_and_crowding_is_caught():
+    """Text no longer sits on the canvas edge; a value against a name is reported."""
     from tests.visual.scenarios import all_scenarios
 
     built = {s.name: s for s in all_scenarios()}
     ends = dm.check(built["line_ends_annotated"].build())
     assert "'19.4 TWh'" in ends.of("TEXT_CROWD")[0].message
-    assert "right: 'Nuclear'" in ends.of("TEXT_AT_EDGE")[0].message
-    grid = dm.check(built["panel_grid_figure_legend"].build())
-    assert "left: 'a', 'Response', 'c'" in grid.of("TEXT_AT_EDGE")[0].message
-    dates = dm.check(built["kr_myriad_dates"].build())
-    assert "'방문객 수'" in dates.of("TEXT_AT_EDGE")[0].message
+    for name in (
+        "line_ends_annotated",
+        "panel_grid_figure_legend",
+        "kr_myriad_dates",
+    ):
+        assert not dm.check(built[name].build()).of("TEXT_AT_EDGE")
+
+
+def test_a_zero_margin_puts_text_on_the_edge():
+    """TEXT_AT_EDGE: asking for margin=0 leaves the outer text flush with the canvas."""
+    from tests.visual.scenarios import all_scenarios
+
+    built = {s.name: s for s in all_scenarios()}
+    fig = built["kr_myriad_dates"].build()
+    dm.simple_layout(fig, margin=0)
+    assert "'방문객 수'" in dm.check(fig).of("TEXT_AT_EDGE")[0].message

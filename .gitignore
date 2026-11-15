@@ -1,86 +1,16 @@
-.venv
-__pycache__
-
-# To order to prevent commit of file of large size.
-*.csv
-example/heatmaps/multivariate_normal_*
-
-# 예외 처리: examples 디렉토리의 CSV 파일 허용
-examples/**/*.csv
-# Frozen agent-eval inputs (small, pinned by SHA256SUMS)
-!evals/agentic/fixtures/data/*.csv
-
-
-_build/
-
-# Sphinx documentation build artifacts
-docs/_build/
-# Sphinx Gallery generates all files in gallery/ directory
-docs/gallery/
-docs/examples_gallery/
-docs/sg_execution_times.rst
-docs/color_system/images/
-docs/images/*.png
-
-# Editor specific settings
-.vscode/
+.venv/
+__pycache__/
 .ruff_cache/
 .pytest_cache/
-.coverage
-htmlcov/
-*.log
+.DS_Store
 .env
+*.log
+dist/
 
-# Claude Code agent harness — worktrees, transcripts, caches. The skills
-# link is skm's and is committed (skm-basics §5).
+# Claude Code agent harness: worktrees, transcripts, caches. The skills
+# link is skm's and is committed.
 .claude/*
 !.claude/skills
 
-# Jupyter notebooks — use examples/ .py scripts instead
-*.ipynb
-.ipynb_checkpoints/
-.venv/
-venv/
-*.swp
-*.swo
-*~
-.DS_Store
-.agent_simple_layout
-agent-playbooks
-
-# dartwork-mpl UI runtime files
-.dartwork_ui_config.json
-.dartwork_ui_history.jsonl
-
-# Copied font files for docs HTML specimens
-docs/_static/fonts/
-
-# Generated font documentation assets
-docs/fonts/_preview.html
-docs/fonts/_generated/
-docs/fonts/images/
-docs/_static/font-face.css
-
-# Python package build artifacts (uv build)
-dist/
-*.egg-info/
-
-# Stray render artifacts from running the quickstart / examples in the
-# repo root (e.g. save_and_show(fig, "first") -> first.png).
-/first.png
-/output.png
-/output/
-/build/
-
-# Rendered output from running the example sources directly. The gallery
-# build regenerates these; docs/examples_source/ tracks only .py/.rst/.md.
-docs/examples_source/**/*.png
-docs/examples_source/**/*.pdf
-
-# Superpowers / SDD agent working notes, like .claude/ above.
-.superpowers/
-
-# Sphinx audit by-products (nitpick target counts / warning tallies).
-/docs/missing_targets.json
-/docs/sphinx_warnings.txt
-/BRIEF-report.md
+# Agent-eval runs: rendered figures and transcripts never go into git.
+evals/runs/

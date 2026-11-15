@@ -67,7 +67,7 @@ def test_crowded_dates_thin_and_are_put_back(figure):
     ax.plot(MONTHS[48:66], np.arange(18))
     figure.set_size_inches(2.0, 2)
     put_back = remember_dates(figure)
-    dm.simple_layout(figure)  # prepare, fit, then thin
+    dm.simple_layout(figure, margin=0)  # prepare, fit, then thin
     assert _shown(ax.xaxis) == ["23.01", "23.05", "23.09", "24.01", "24.05"]
     assert thin_dates(figure) is False  # thinned already
     put_back()

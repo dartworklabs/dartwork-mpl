@@ -118,7 +118,7 @@ convert: 1920 × 1080 px at 200 DPI is
 ## Margins: `dm.simple_layout`
 
 It measures tick labels, axis labels, titles, legends and colorbars, then
-sets the outer margins so content meets the canvas edge. Call it once, after
+sets the outer margins so content sits 1 mm from the canvas edge. Call it once, after
 drawing. Where text still collides it fits the labels: an axis name that
 runs into another panel or past the figure edge wraps at its spaces
 (the same name on the same axis of that grid then wraps the same way),
@@ -136,7 +136,7 @@ labels that still overlap are reported as `TICK_OVERLAP`, an x label on a
 y label at a corner as `TICK_CORNER_OVERLAP`, text over another panel's
 text as `CROSS_AXES_OVERLAP`.
 
-- `margin="2mm"` (or `"2%"`, `dm.mm(2)`) adds a uniform buffer.
+- `margin="3mm"` (or `"2%"`, `dm.mm(3)`) sets the buffer; the default is `"1mm"`, `0` is flush.
 - `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.
 - With one main GridSpec pass it: `dm.simple_layout(fig, gs=gs)`.
 - A figure with SubFigures is left as it is (with a warning): put the
