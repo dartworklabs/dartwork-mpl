@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from cycler import Cycler, cycler
 from matplotlib.axes import Axes
 
-from .model import Catalog, Kind, Semantic
+from .model import Catalog, Semantic
 
 LINESTYLES = ("-", "--", ":")
 
@@ -21,7 +21,7 @@ def colormaps(catalog: Catalog) -> list[mcolors.ListedColormap]:
     maps: list[mcolors.ListedColormap] = []
     for family in catalog.families.values():
         name = f"dc.{family.name}"
-        if family.kind is Kind.QUALITATIVE:
+        if not family.kind.continuous:
             rgba = [mcolors.to_rgba(h) for h in family.stops]
             maps.append(mcolors.ListedColormap(rgba, name=name))
             continue

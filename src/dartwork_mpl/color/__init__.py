@@ -26,7 +26,6 @@ from .model import (
     Count,
     Family,
     Form,
-    Ink,
     Kind,
     Locale,
     Name,
@@ -130,9 +129,7 @@ def cspace(
         bar_colors = [c.to_hex() for c in dm.cspace("dc.teal5", "dc.teal1", 5)]
     """
     first, last, where = color(start), color(end), Space.parse(space)
-    if where is not Space.OKLCH:
-        return list(decide.straight(first, last, Steps(n), where))
-    return list(decide.sample(decide.ends(first, last), Steps(n)))
+    return list(decide.gradient(first, last, Steps(n), where))
 
 
 def mix_colors(color1: object, color2: object, alpha: float = 0.5) -> RGB:
@@ -185,7 +182,7 @@ def readable_text_color(
     ink = decide.readable(
         measure.rgb(background), measure.rgb(light), measure.rgb(dark)
     )
-    return light if ink is Ink.LIGHT else dark
+    return ink.pick(light, dark)
 
 
 def contrast_ratio(
@@ -295,7 +292,7 @@ def list_colors(kind: str | None = None) -> list[dict[str, object]]:
         {
             "name": found.name,
             "kind": found.kind.value,
-            "continuous": found.kind is not Kind.QUALITATIVE,
+            "continuous": found.kind.continuous,
             "discrete_size": found.size,
         }
         for found in CATALOG.families.values()
@@ -322,7 +319,7 @@ def set_colors(
         colours = discrete(family("octave"), 8)
     elif isinstance(name_or_list, str):
         found = family(name_or_list)
-        if n is None and found.kind is not Kind.QUALITATIVE:
+        if n is None and found.kind.continuous:
             raise ValueError(
                 f"{found.name!r} is a {found.kind.value} family and requires "
                 "n= when used with dm.set_colors(...)."
@@ -347,9 +344,7 @@ def make_palette(n: int, kind: str = "categorical") -> list[str]:
 def apply_semantic(locale: str) -> None:
     """Bind the role colours ``dc.pos``/``neg``/``ref``/``hl`` for ``locale``
     (``"kr"``: gains red, losses blue; anything else: gains green)."""
-    facts = SemanticFacts(
-        Locale.KR if locale == "kr" else Locale.DEFAULT, CATALOG
-    )
+    facts = SemanticFacts(Locale.parse(locale), CATALOG)
     tokens = settle(facts, decide.semantic(facts), (KR_TOKENS,)).plan
     apply.apply_semantic(tokens)
 

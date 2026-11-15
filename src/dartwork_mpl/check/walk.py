@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.axes._secondary_axes import SecondaryAxis
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
 from ..geometry import PANEL_LABELS_ATTR, axes_titles, draws_axis, holders_shown
+from .model import spatial
 
 if TYPE_CHECKING:
-    from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
 
@@ -40,25 +42,33 @@ def panel_labels(fig: Figure | SubFigure) -> list[tuple[Axes, Text]]:
     ]
 
 
+def reads_as_axes(child: object) -> TypeGuard[Axes]:
+    """An Axes, or a ``SecondaryAxis``, read as one.
+
+    Matplotlib's ``SecondaryAxis`` is not an ``Axes`` subclass, but it has
+    what the measurements read (its x/y axes, texts, window extent; no
+    titles), so it is read as an ``Axes``. matplotlib.axes does not export
+    it (3.11).
+    """
+    return isinstance(child, Axes | SecondaryAxis)
+
+
 def secondary_axes(ax: Axes) -> list[Axes]:
     """Return the visible ``secondary_xaxis`` / ``secondary_yaxis`` children of ``ax``.
 
     Matplotlib keeps them in ``ax.child_axes``, not in ``fig.axes``, so a
     walk over ``fig.axes`` never sees their tick labels, offset text or axis
     label, which sit around ``ax``'s box like its own. Inset Axes, also
-    children, are not included. Matplotlib's ``SecondaryAxis`` is not an
-    ``Axes`` subclass, but it has what the measurements read (its x/y axes,
-    texts, window extent; no titles), so the list is typed as ``Axes``.
+    children, are not included. Each is read as an ``Axes``
+    (:func:`reads_as_axes`).
     """
-    # matplotlib.axes does not export SecondaryAxis (3.11).
-    from matplotlib.axes._secondary_axes import SecondaryAxis
-
-    children = [
+    return [
         child
         for child in ax.child_axes
-        if isinstance(child, SecondaryAxis) and child.get_visible()
+        if isinstance(child, SecondaryAxis)
+        and child.get_visible()
+        and reads_as_axes(child)
     ]
-    return cast("list[Axes]", children)
 
 
 def drawn_axes_texts(ax: Axes) -> list[Text]:
@@ -92,7 +102,7 @@ def text_window_extent(text: Text, renderer: RendererBase) -> Bbox:
     its ``get_window_extent``.
     """
     get_position_3d = getattr(text, "get_position_3d", None)
-    if get_position_3d is None or getattr(text.axes, "name", None) != "3d":
+    if get_position_3d is None or not spatial(getattr(text.axes, "name", None)):
         return text.get_window_extent(renderer)
     axes: Any = text.axes  # an Axes3D: get_zlim, M
     figure = text.get_figure(root=False)

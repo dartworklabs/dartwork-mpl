@@ -16,6 +16,7 @@ import colorsys
 import difflib
 import math
 from difflib import SequenceMatcher
+from typing import assert_never
 
 import numpy as np
 
@@ -121,19 +122,39 @@ def sample(gradient: Gradient, steps: Steps) -> tuple[Color, ...]:
     )
 
 
-def straight(
+def gradient(
     start: Color, end: Color, steps: Steps, space: Space
 ) -> tuple[Color, ...]:
-    """``steps`` colours on the straight OKLab or sRGB line between the ends."""
-    if space is Space.OKLAB:
-        a, b = start.to_oklab(), end.to_oklab()
-    else:
-        a, b = start.to_rgb(), end.to_rgb()
+    """``steps`` colours from ``start`` to ``end`` in ``space``: OKLCH the
+    hue the short way round, OKLab or sRGB the straight line."""
+    match space:
+        case Space.OKLCH:
+            return sample(ends(start, end), steps)
+        case Space.OKLAB:
+            return oklab_line(start, end, steps)
+        case Space.RGB:
+            return rgb_line(start, end, steps)
+        case _:
+            assert_never(space)
+
+
+def oklab_line(start: Color, end: Color, steps: Steps) -> tuple[Color, ...]:
+    """``steps`` colours on the straight OKLab line between the ends."""
+    a, b = start.to_oklab(), end.to_oklab()
     axes = [np.linspace(a[i], b[i], steps.n) for i in range(3)]
-    points = [tuple(float(axis[k]) for axis in axes) for k in range(steps.n)]
-    if space is Space.OKLAB:
-        return tuple(Color(Oklab(*p)) for p in points)
-    return tuple(Color(Rgb(*p).oklab()) for p in points)
+    return tuple(
+        Color(Oklab(*(float(axis[k]) for axis in axes))) for k in range(steps.n)
+    )
+
+
+def rgb_line(start: Color, end: Color, steps: Steps) -> tuple[Color, ...]:
+    """``steps`` colours on the straight sRGB line between the ends."""
+    a, b = start.to_rgb(), end.to_rgb()
+    axes = [np.linspace(a[i], b[i], steps.n) for i in range(3)]
+    return tuple(
+        Color(Rgb(*(float(axis[k]) for axis in axes)).oklab())
+        for k in range(steps.n)
+    )
 
 
 def mix(first: Color, second: Color, weight: Weight) -> Color:

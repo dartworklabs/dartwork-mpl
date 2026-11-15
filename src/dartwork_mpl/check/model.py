@@ -14,6 +14,9 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import pairwise
+from typing import Literal, TypeVar, assert_never
+
+T = TypeVar("T")
 
 #: Contact up to this (points) is a touch, not a cover.
 TOUCH_PT = 0.5
@@ -92,12 +95,91 @@ class Role(Enum):
     PANEL_LETTER = "panel letter"
     FIGURE_TEXT = "figure text"
 
+    @property
+    def free(self) -> bool:
+        """A text the user placed (``ax.text``, an annotation, a value)."""
+        match self:
+            case Role.TEXT:
+                return True
+            case (
+                Role.TITLE
+                | Role.AXIS_LABEL
+                | Role.TICK
+                | Role.PANEL_LETTER
+                | Role.FIGURE_TEXT
+            ):
+                return False
+            case _:
+                assert_never(self)
+
+    @property
+    def tick(self) -> bool:
+        """A tick label."""
+        match self:
+            case Role.TICK:
+                return True
+            case (
+                Role.TITLE
+                | Role.AXIS_LABEL
+                | Role.TEXT
+                | Role.PANEL_LETTER
+                | Role.FIGURE_TEXT
+            ):
+                return False
+            case _:
+                assert_never(self)
+
+    @property
+    def under_legend(self) -> bool:
+        """A text a legend must not cover: title, axis label, tick, figure text."""
+        match self:
+            case Role.TITLE | Role.AXIS_LABEL | Role.TICK | Role.FIGURE_TEXT:
+                return True
+            case Role.TEXT | Role.PANEL_LETTER:
+                return False
+            case _:
+                assert_never(self)
+
 
 class Axis(Enum):
     """An Axes' x or y axis."""
 
     X = "x"
     Y = "y"
+
+    def pick(self, x: T, y: T) -> T:
+        """``x`` for the x axis, ``y`` for the y axis."""
+        match self:
+            case Axis.X:
+                return x
+            case Axis.Y:
+                return y
+            case _:
+                assert_never(self)
+
+    @property
+    def mpl(self) -> Literal["x", "y"]:
+        """matplotlib's name for the axis (``which=``)."""
+        return self.pick("x", "y")
+
+
+#: Both axes, x first.
+AXES = (Axis.X, Axis.Y)
+
+
+def flat(projection: str) -> bool:
+    """An Axes' ``name`` is the plain x/y projection (not polar, 3D ...)."""
+    return projection == "rectilinear"
+
+
+def lies_across(orientation: str | None) -> bool:
+    """A bar container's ``orientation`` draws horizontal bars."""
+    return orientation == "horizontal"
+
+
+def spatial(projection: str | None) -> bool:
+    """An Axes' ``name`` is the 3D projection."""
+    return projection == "3d"
 
 
 _NUMBER = re.compile(r"[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?")
@@ -131,7 +213,12 @@ class Number:
         v, n = self.value, round(self.value)
         if abs(v - n) > 1e-9 * max(1.0, abs(v)):
             return False
-        return not (n == 0 and v != 0 and "e" not in self.digits.lower())
+        return not (n == 0 and v != 0 and not self.scientific)
+
+    @property
+    def scientific(self) -> bool:
+        """Printed with an exponent (``1e-3``)."""
+        return "e" in self.digits.lower()
 
     @property
     def bare_zero(self) -> bool:

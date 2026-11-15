@@ -102,7 +102,7 @@ def overlap(facts: Facts, found: Findings) -> Findings:
     """Texts of one Axes drawn over each other (tick pairs: TICK_OVERLAP)."""
     for panel, texts in facts.by_panel.items():
         for a, b in combinations(texts, 2):
-            if a.role is Role.TICK and b.role is Role.TICK:
+            if a.role.tick and b.role.tick:
                 continue
             share = a.box.cover(b.box)
             if share > COVER:
@@ -119,10 +119,7 @@ def overlap(facts: Facts, found: Findings) -> Findings:
 def cross_axes(facts: Facts, found: Findings) -> Findings:
     """Titles, axis labels, letters and ticks of different Axes colliding."""
     texts = [
-        t
-        for group in facts.by_panel.values()
-        for t in group
-        if t.role is not Role.TEXT
+        t for group in facts.by_panel.values() for t in group if not t.role.free
     ]
     seen: set[tuple[object, ...]] = set()
     for a, b in combinations(texts, 2):
@@ -145,7 +142,7 @@ def cross_axes(facts: Facts, found: Findings) -> Findings:
 def phrase(facts: Facts, found: Findings) -> Findings:
     """A value label beside a name on one row, near enough to read as one."""
     for panel, texts in facts.by_panel.items():
-        free = [t for t in texts if t.role is Role.TEXT]
+        free = [t for t in texts if t.role.free]
         for a, b in combinations(free, 2):
             if (a.number is None) == (b.number is None):
                 continue
@@ -230,12 +227,9 @@ def legend_overflow(facts: Facts, found: Findings) -> Findings:
     return found
 
 
-_LEGEND_TARGETS = (Role.TITLE, Role.AXIS_LABEL, Role.TICK, Role.FIGURE_TEXT)
-
-
 def legend_overlap(facts: Facts, found: Findings) -> Findings:
     """A legend over a title, axis label, tick label or figure text."""
-    targets = [t for t in facts.all_texts if t.role in _LEGEND_TARGETS]
+    targets = [t for t in facts.all_texts if t.role.under_legend]
     for leg in facts.legends:
         hit: dict[tuple[int | None, Role], list[Text]] = {}
         for t in targets:
@@ -298,9 +292,7 @@ def value_label_decimal(facts: Facts, found: Findings) -> Findings:
         labels = [
             (t, n)
             for t in texts
-            if t.role is Role.TEXT
-            and (n := t.number) is not None
-            and "e" not in n.digits.lower()
+            if t.role.free and (n := t.number) is not None and not n.scientific
         ]
         extra = [t for t, n in labels if n.decimals]
         if len(labels) >= 2 and extra and all(n.whole for _t, n in labels):

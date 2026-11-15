@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import math
 from itertools import pairwise
-from typing import TYPE_CHECKING, Literal, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
 from ..geometry import BBOX_ERRORS, drawn_tick_labels
+from .model import AXES, Axis
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -83,7 +84,7 @@ def _half_reach(corners: np.ndarray, normal: np.ndarray) -> float:
 
 
 def pair_clearance_px(
-    a: Text, b: Text, renderer: RendererBase, which: Literal["x", "y"]
+    a: Text, b: Text, renderer: RendererBase, which: Axis
 ) -> float:
     """How far apart along the x or y axis the centres of ``a`` and ``b`` must be.
 
@@ -98,7 +99,7 @@ def pair_clearance_px(
     where they meet, need far more.
     """
     rect_a, rect_b = _label_corners(a, renderer), _label_corners(b, renderer)
-    direction = np.array([1.0, 0.0] if which == "x" else [0.0, 1.0])
+    direction = np.array(which.pick([1.0, 0.0], [0.0, 1.0]))
     reach = math.inf
     for rect in (rect_a, rect_b):
         for edge in (rect[1] - rect[0], rect[3] - rect[0]):
@@ -114,7 +115,7 @@ def pair_clearance_px(
 
 
 def label_clearance_px(
-    label: Text, renderer: RendererBase, which: Literal["x", "y"]
+    label: Text, renderer: RendererBase, which: Axis
 ) -> float:
     """How far along the x or y axis a copy of ``label`` must move to clear it.
 
@@ -166,7 +167,7 @@ def _overlap_px(p: np.ndarray, q: np.ndarray) -> float:
 
 
 def tick_label_overlaps(
-    ax: Axes, which: Literal["x", "y"], renderer: RendererBase
+    ax: Axes, which: Axis, renderer: RendererBase
 ) -> TickOverlaps:
     """Neighbouring drawn tick labels of one axis of ``ax`` that overlap.
 
@@ -176,19 +177,19 @@ def tick_label_overlaps(
     when they overlap by more than ``_TOUCH_PX``. The measure of
     ``TICK_OVERLAP``.
     """
-    axis = ax.xaxis if which == "x" else ax.yaxis
+    axis = which.pick(ax.xaxis, ax.yaxis)
     # Major and minor labels share the line: a minor label can run into a
     # major one as easily as into another minor one.
     drawn = [
-        *drawn_tick_labels(ax, which),
-        *drawn_tick_labels(ax, which, minor=True),
+        *drawn_tick_labels(ax, which.mpl),
+        *drawn_tick_labels(ax, which.mpl, minor=True),
     ]
     first_side = {
         id(tick.label1)
         for tick in (*axis.get_major_ticks(), *axis.get_minor_ticks())
     }
     labels = [label for label in drawn if label.get_text().strip()]
-    coordinate = 0 if which == "x" else 1
+    coordinate = which.pick(0, 1)
     pairs, deepest, rotation = 0, 0.0, 0.0
     for side in (True, False):
         group = [t for t in labels if (id(t) in first_side) is side]
@@ -270,17 +271,14 @@ def corner_tick_overlaps(
     # (owner Axes, label, minor) of every drawn label, per axis
     xs: list[tuple[Axes, Text, bool]] = []
     ys: list[tuple[Axes, Text, bool]] = []
-    sides: tuple[
-        tuple[Literal["x", "y"], list[tuple[Axes, Text, bool]]], ...
-    ] = (("x", xs), ("y", ys))
     for ax in axes:
-        for which, out in sides:
-            out += [
+        for which in AXES:
+            which.pick(xs, ys).extend(
                 (ax, label, minor)
                 for minor in (False, True)
-                for label in drawn_tick_labels(ax, which, minor=minor)
+                for label in drawn_tick_labels(ax, which.mpl, minor=minor)
                 if label.get_text().strip() and _ink_alpha(label) > 0
-            ]
+            )
     found: list[CornerOverlap] = []
     if not xs or not ys:
         return found

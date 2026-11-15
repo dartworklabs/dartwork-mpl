@@ -12,12 +12,22 @@ from __future__ import annotations
 import colorsys
 import math
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple, NewType
+from typing import (
+    NamedTuple,
+    NewType,
+    SupportsFloat,
+    SupportsIndex,
+    TypeGuard,
+    TypeVar,
+    assert_never,
+)
 
 from .space import Color, Hex, Oklab, Oklch, Rgb, finite
+
+T = TypeVar("T")
 
 # A matplotlib colour name (``"oc.red5"``, ``"tab:blue"``) or any text.
 Name = NewType("Name", str)
@@ -101,6 +111,30 @@ class Kind(Enum):
                 f"Unknown color kind {text!r}; expected one of: {expected}."
             ) from None
 
+    @property
+    def continuous(self) -> bool:
+        """The family has a 256-step colormap (all but qualitative)."""
+        match self:
+            case Kind.QUALITATIVE:
+                return False
+            case (
+                Kind.SEQUENTIAL | Kind.MULTI_HUE | Kind.DIVERGING | Kind.CYCLIC
+            ):
+                return True
+            case _:
+                assert_never(self)
+
+    @property
+    def open_ended(self) -> bool:
+        """Any ``n`` up to the limit is designed (multi-hue, cyclic)."""
+        match self:
+            case Kind.MULTI_HUE | Kind.CYCLIC:
+                return True
+            case Kind.SEQUENTIAL | Kind.DIVERGING | Kind.QUALITATIVE:
+                return False
+            case _:
+                assert_never(self)
+
 
 # The most stops each kind's designed discrete form has (None: no limit
 # beyond ``Family.size``).
@@ -131,7 +165,7 @@ class Family:
     @property
     def size(self) -> int | None:
         """Stops in the designed form; None for multi-hue and cyclic."""
-        if self.kind in (Kind.MULTI_HUE, Kind.CYCLIC):
+        if self.kind.open_ended:
             return None
         return len(self.stops)
 
@@ -160,6 +194,16 @@ class Count:
         return cls(value)
 
 
+def real(value: object) -> float:
+    """``value`` as ``float()`` reads it; ``TypeError`` for what it cannot."""
+    if isinstance(value, str | SupportsFloat | SupportsIndex):
+        return float(value)
+    raise TypeError(
+        "float() argument must be a string or a real number, "
+        f"not {type(value).__name__!r}"
+    )
+
+
 @dataclass(frozen=True)
 class Ratio:
     """A WCAG contrast ratio, at least 1 (1:1) and at most 21 (black on white)."""
@@ -169,7 +213,7 @@ class Ratio:
     @classmethod
     def parse(cls, value: object) -> Ratio:
         """A positive finite ratio; else ``ValueError``."""
-        number = float(value)  # type: ignore[arg-type]
+        number = real(value)
         if not math.isfinite(number) or number <= 0:
             raise ValueError("min_ratio must be a positive finite number")
         return cls(number)
@@ -184,7 +228,7 @@ class Weight:
     @classmethod
     def parse(cls, value: object) -> Weight:
         """A share in ``[0, 1]``; else ``ValueError``."""
-        number = float(value)  # type: ignore[arg-type]
+        number = real(value)
         if not math.isfinite(number) or not 0.0 <= number <= 1.0:
             raise ValueError(
                 f"alpha must be a finite number in [0, 1], got {value!r}"
@@ -223,6 +267,11 @@ class Locale(Enum):
 
     DEFAULT = "default"
     KR = "kr"
+
+    @classmethod
+    def parse(cls, text: str) -> Locale:
+        """``"kr"`` is Korea's convention; anything else the default."""
+        return cls.KR if text == "kr" else cls.DEFAULT
 
 
 @dataclass(frozen=True)
@@ -368,6 +417,16 @@ class Ink(Enum):
     LIGHT = "light"
     DARK = "dark"
 
+    def pick(self, light: T, dark: T) -> T:
+        """``light`` for the light ink, ``dark`` for the dark one."""
+        match self:
+            case Ink.LIGHT:
+                return light
+            case Ink.DARK:
+                return dark
+            case _:
+                assert_never(self)
+
 
 @dataclass(frozen=True)
 class Form:
@@ -383,3 +442,122 @@ class SemanticFacts:
 
     locale: Locale
     catalog: Catalog
+
+
+# -- the shipped tables --------------------------------------------------------
+
+Row = tuple[Hex, ...]
+
+
+def _is_object(value: object) -> TypeGuard[Mapping[object, object]]:
+    return isinstance(value, dict)
+
+
+def _is_array(value: object) -> TypeGuard[Sequence[object]]:
+    return isinstance(value, list)
+
+
+def json_object(value: object, where: str) -> dict[str, object]:
+    """A JSON object with string keys; ``ValueError`` names ``where``."""
+    if not _is_object(value):
+        raise ValueError(f"{where}: expected a JSON object")
+    found: dict[str, object] = {}
+    for key, item in value.items():
+        if not isinstance(key, str):
+            raise ValueError(f"{where}: key {key!r} is not a string")
+        found[key] = item
+    return found
+
+
+def json_list(value: object, where: str) -> list[object]:
+    """A JSON array; ``ValueError`` names ``where``."""
+    if not _is_array(value):
+        raise ValueError(f"{where}: expected a JSON array")
+    return list(value)
+
+
+def json_text(value: object, where: str) -> str:
+    """A JSON string; ``ValueError`` names ``where``."""
+    if not isinstance(value, str):
+        raise ValueError(f"{where}: expected a string, got {value!r}")
+    return value
+
+
+def json_whole(value: object, where: str) -> int:
+    """A JSON integer; ``ValueError`` names ``where``."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{where}: expected an integer, got {value!r}")
+    return value
+
+
+def rows(value: object, where: str) -> dict[str, Row]:
+    """``{name: ["#rrggbb", ...]}`` as rows of hex values."""
+    return {
+        name: tuple(
+            Hex(json_text(h, f"{where}.{name}"))
+            for h in json_list(row, f"{where}.{name}")
+        )
+        for name, row in json_object(value, where).items()
+    }
+
+
+def shades(value: object, where: str) -> dict[str, tuple[tuple[str, str], ...]]:
+    """``{name: [[weight, "rrggbb"], ...]}``: a library's shades by name."""
+    found: dict[str, tuple[tuple[str, str], ...]] = {}
+    for name, row in json_object(value, where).items():
+        pairs: list[tuple[str, str]] = []
+        for pair in json_list(row, f"{where}.{name}"):
+            weight, shade = json_list(pair, f"{where}.{name}")
+            pairs.append(
+                (
+                    json_text(weight, f"{where}.{name}"),
+                    json_text(shade, f"{where}.{name}"),
+                )
+            )
+        found[name] = tuple(pairs)
+    return found
+
+
+def picks(value: object, where: str) -> dict[str, tuple[tuple[int, ...], ...]]:
+    """``{family: {n: [index, ...]}}``: each form's colormap indices, in file
+    order."""
+    return {
+        name: tuple(
+            tuple(
+                json_whole(i, f"{where}.{name}")
+                for i in json_list(ix, f"{where}.{name}")
+            )
+            for ix in json_object(forms, f"{where}.{name}").values()
+        )
+        for name, forms in json_object(value, where).items()
+    }
+
+
+def paired(name: str) -> bool:
+    """A diverging colormap's name: two ladders, ``low_high``."""
+    return "_" in name
+
+
+@dataclass(frozen=True)
+class Shipped:
+    """``dartwork.json``: the rows every ``dc.*`` family is built from."""
+
+    ladders: Mapping[str, Row]
+    cycles: Mapping[str, Row]
+    colormaps: Mapping[str, Row]
+    picks: Mapping[str, tuple[tuple[int, ...], ...]]
+    qualitative: Mapping[str, Row]
+    diverging: Mapping[str, Row]
+
+    @classmethod
+    def parse(cls, data: object) -> Shipped:
+        """The decoded file; ``ValueError`` names the part out of shape."""
+        table = json_object(data, "dartwork.json")
+        return cls(
+            ladders=rows(table["ladders"], "ladders"),
+            cycles=rows(table["cycles"], "cycles"),
+            colormaps=rows(table["colormaps"], "colormaps"),
+            picks=picks(table["multi_hue_stops"], "multi_hue_stops"),
+            qualitative=rows(table["qualitative"], "qualitative"),
+            diverging=rows(table["diverging"], "diverging"),
+        )
