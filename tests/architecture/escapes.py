@@ -23,6 +23,8 @@ T9  A function returning ``TypeGuard`` / ``TypeIs``. It narrows on the
     author's word, like a cast; a parser returns the type or raises.
 T10 ``getattr`` / ``hasattr`` / ``setattr`` / ``delattr``. An attribute
     reached by name is one the checker cannot follow.
+T11 ``Any`` in an annotation, ``vars()`` and ``__dict__``. Each switches the
+    checker off for the value it touches.
 T8  ``Enum`` classes. A flag that picks behaviour in several places wants a
     variant type carrying its own data; each enum left is a place to look.
 """
@@ -248,6 +250,21 @@ def reflection(sources: Sources) -> dict[str, int]:
     return _count(sources, one)
 
 
+def untyped(sources: Sources) -> dict[str, int]:
+    def one(_: str, text: str) -> int:
+        count = 0
+        for n in ast.walk(ast.parse(text)):
+            if isinstance(n, ast.Name) and n.id == "Any":
+                count += isinstance(n.ctx, ast.Load)
+            elif (isinstance(n, ast.Call) and _name(n.func) == "vars") or (
+                isinstance(n, ast.Attribute) and n.attr == "__dict__"
+            ):
+                count += 1
+        return count
+
+    return _count(sources, one)
+
+
 MEASURES: Mapping[str, Callable[[Sources], dict[str, int]]] = {
     "T1_casts": casts,
     "T2_ignores": ignores,
@@ -259,6 +276,7 @@ MEASURES: Mapping[str, Callable[[Sources], dict[str, int]]] = {
     "T8_enums": enums,
     "T9_guards": guards,
     "T10_reflection": reflection,
+    "T11_untyped": untyped,
 }
 WHY = {
     "T1_casts": "a cast asserts a type nobody checked; parse into the type instead",
@@ -270,5 +288,6 @@ WHY = {
     "T7_swallowing_matches": "a catch-all case hides the unhandled variant; end with case _: assert_never(x)",
     "T9_guards": "a TypeGuard is a cast with a function around it; parse into the type and return it",
     "T10_reflection": "getattr/hasattr/setattr reach an attribute the checker cannot see; name the type that has it",
+    "T11_untyped": "Any, vars() and __dict__ switch the checker off for whatever they touch; give the value its type",
     "T8_enums": "an enum is a status flag; a variant type carries its own data and is matched exhaustively. Adding one is the owner's decision",
 }
