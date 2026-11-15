@@ -43,9 +43,9 @@ platform package (`vocab` holds the small shared vocabularies, one module
 each; `length`, `colorspace`, `edgecase` are pure too; `geometry` measures
 figures).
 Where one slice needs another, `compose/<slice>.py` joins them with no
-decisions, and only the package root imports it: `dm.style`,
-`dm.simple_layout`, `dm.figsize_for` and the label functions are composed
-there. `tests/architecture/` enforces all of this.
+decisions, and only the package root imports it: `dm.simple_layout`,
+`dm.figsize_for` and the label functions are composed there, and the role
+colours are joined into `dm.style`. `tests/architecture/` enforces all of this.
 
 ## Plotting rules live in the bundled skill
 

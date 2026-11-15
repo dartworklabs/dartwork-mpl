@@ -30,14 +30,14 @@ orphan: true
 
 | 조립 모듈 | 잇는 것 | 루트가 내보내는 이름 |
 | --- | --- | --- |
-| `compose/style.py` | 번들 폰트 등록, preset, preset의 locale에 맞춘 `color`의 역할 색 | `dm.style`(이 모듈 자체) |
+| `compose/style.py` | preset의 locale에 맞춘 `color`의 역할 색을 `style`에 넣는다 | 없음(루트가 `join()`을 한 번 부른다) |
 | `compose/size.py` | `style`의 활성 preset 이름과 레이어 읽기 | `dm.figsize_for` |
 | `compose/labels.py` | `style`의 `fs`·`fw`, `ticks`의 눈금 단위와 숫자 표기 | `dm.label_bars`, `dm.annotate_value`, `dm.annotate_corner`, `dm.label_hline`, `dm.label_axes`, `dm.add_note` |
 | `compose/layout.py` | `ticks`·`labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
 
 `layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 눈금 글자를 먼저 쓰고, 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자를 자리 잡게 한 뒤 여백을 잰다. 여백이 맞으면 날짜 눈금을 솎는다. 픽셀은 이 순서에 달려 있다.
 
-`dm.style`은 slice `dartwork_mpl.style`이 아니라 `compose/style.py`다. 루트가 이 이름에 조립 모듈을 묶는다. `from dartwork_mpl.style import ...`는 여전히 slice를 가리킨다.
+`dm.style`은 slice `dartwork_mpl.style` 그 자체다. `style`은 preset을 적용한 뒤 그 locale을 넘겨줄 함수 하나(`Tint`)를 자리에 갖고 있고, `compose/style.py`의 `join()`이 그 자리에 `color`의 역할 색 바인딩을 넣는다. 루트가 import될 때 한 번 부른다. 폰트는 루트가 import 시점에 등록하므로 `style`이 다시 부르지 않는다.
 
 ## platform
 

@@ -1,9 +1,9 @@
 """Presets, and sizes relative to the active one.
 
 :func:`use` sets matplotlib's rcParams to a shipped preset and
-:func:`context` does it for one block; each hands the preset's locale to a
-function the caller passes (``dm.style`` passes the colour slice's). ``dm.fs(n)``, ``dm.lw(n)``
-and ``dm.fw(n)`` read the preset's font size, line width and weight and move
+:func:`context` does it for one block; each hands the preset's locale to the
+function :func:`join` was given (the colour slice's role colours, joined in
+by ``compose.style``). ``dm.fs(n)``, ``dm.lw(n)`` and ``dm.fw(n)`` read the preset's font size, line width and weight and move
 them by ``n`` steps, so a chart keeps its proportions under every preset.
 """
 
@@ -29,6 +29,7 @@ __all__ = [
     "context",
     "fs",
     "fw",
+    "join",
     "load_style_dict",
     "lw",
     "presets",
@@ -42,22 +43,39 @@ presets: Mapping[str, tuple[str, ...]] = MappingProxyType(
 )
 
 
-def use(preset: str | list[str], rc: dict[str, object], tint: Tint) -> None:
-    """Apply ``preset`` (a name or several, in order), then the ``rc``
-    overrides, then hand the preset's locale to ``tint``.
+def join(tint: Tint) -> None:
+    """Hand every applied preset's locale to ``tint`` from now on.
 
-    ``dm.style.use`` is this joined with the bundled fonts and the colour
-    slice's role colours (``compose.style``).
+    The slice knows no colours; ``compose.style`` joins the colour slice's
+    role colours in, once, when the package is imported.
     """
-    apply.use(preset, rc, tint)
+    apply.TINT[0] = tint
+
+
+def use(preset: str | list[str], **rc: object) -> None:
+    """Apply a preset, or several in order, then ``rc`` overrides.
+
+    Presets: ``scientific`` (papers), ``report`` (documents, dashboards),
+    ``minimal``, ``presentation`` (slides), ``poster``, ``web``, ``dark``,
+    and a Korean ``-kr`` twin of each. rcParams start from matplotlib's
+    defaults: nothing of an earlier preset is left, but your own rcParams
+    edits on keys the preset does not set are kept.
+    Overrides take ``font_size=12`` or ``**{"font.size": 12}``. ``TypeError``
+    for a name that is not a string, ``KeyError`` for an unknown preset or
+    rcParam, ``ValueError`` for an invalid value; a rejected call changes
+    nothing::
+
+        dm.style.use("report")
+        dm.style.use("presentation-kr", font_size=16)
+    """
+    apply.use(preset, rc)
 
 
 def context(
-    preset: str | list[str], rc: dict[str, object], tint: Tint
+    preset: str | list[str], **rc: object
 ) -> AbstractContextManager[None]:
-    """:func:`use` for one ``with`` block; everything is restored after,
-    ``tint`` given the earlier preset's locale again."""
-    return apply.context(preset, rc, tint)
+    """:func:`use` for one ``with`` block; everything is restored after."""
+    return apply.context(preset, rc)
 
 
 def active_presets() -> tuple[str, ...]:

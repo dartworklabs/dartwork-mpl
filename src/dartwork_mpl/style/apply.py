@@ -32,14 +32,23 @@ LOCK = threading.Lock()
 STATE = [State()]  # one slot, replaced whole
 
 
-#: What a preset's locale is handed to once it is applied: the colour
-#: slice's role colours, joined in by ``compose.style``.
+#: What a preset's locale is handed to once it is applied.
 Tint = Callable[[Locale], None]
 
 
-def use(request: object, overrides: dict[str, object], tint: Tint) -> None:
+def no_tint(locale: Locale) -> None:
+    """The slice alone: a preset's locale changes nothing outside it."""
+    del locale
+
+
+# One slot, replaced whole: the colour slice's role colours once
+# ``compose.style`` has joined them in.
+TINT: list[Tint] = [no_tint]
+
+
+def use(request: object, overrides: dict[str, object]) -> None:
     """Clear the last preset's values, apply the request's layers, then
-    ``overrides``, then ``tint`` the preset's locale. A rejected name or
+    ``overrides``, then tint for the preset's locale. A rejected name or
     override changes nothing."""
     chain = decide.chain(REGISTRY.parse(request))
     known = list(mpl.rcParams)
@@ -48,7 +57,7 @@ def use(request: object, overrides: dict[str, object], tint: Tint) -> None:
     )
     with LOCK:
         write(chain, validated)
-        tint(chain.locale)
+        TINT[0](chain.locale)
 
 
 def write(chain: Chain, overrides: RcParams) -> None:
@@ -76,16 +85,14 @@ def write(chain: Chain, overrides: RcParams) -> None:
 
 
 @contextmanager
-def context(
-    request: object, overrides: dict[str, object], tint: Tint
-) -> Generator[None]:
-    """:func:`use` for one block; rcParams, the active preset and what
-    ``tint`` set for its locale come back on exit."""
+def context(request: object, overrides: dict[str, object]) -> Generator[None]:
+    """:func:`use` for one block; rcParams, the active preset and the tint
+    of its locale come back on exit."""
     saved = replace(STATE[0])
     with mpl.rc_context():  # pyright: ignore[reportUnknownMemberType]
-        use(request, overrides, tint)
+        use(request, overrides)
         try:
             yield
         finally:
             STATE[0] = saved
-            tint(saved.locale)
+            TINT[0](saved.locale)

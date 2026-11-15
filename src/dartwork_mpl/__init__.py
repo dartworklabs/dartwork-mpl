@@ -22,9 +22,8 @@ try:
 except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
     __version__ = "0.0.0+unknown"
 
-# Submodules reachable as ``dm.<submodule>``. ``dm.style`` is the preset
-# slice joined with fonts and role colours (``compose.style``).
-from . import font, guide
+# Submodules reachable as ``dm.<submodule>``.
+from . import font, guide, style
 
 # Defects of a drawn figure
 from .check import check
@@ -49,7 +48,6 @@ from .color import (
 
 # Colour values
 from .colorspace import Color
-from .compose import style
 
 # Value labels, panel letters, notes (sized by the active preset)
 from .compose.labels import (
@@ -66,6 +64,7 @@ from .compose.layout import simple_layout
 
 # Figure size, and the active preset's canvas
 from .compose.size import figsize_for
+from .compose.style import join as _join_style
 
 # Agent guidance: the skill, templates and anti-pattern lint
 from .guide import lint as lint_code
@@ -206,3 +205,6 @@ __all__ = [  # noqa: RUF022
 # all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl.color``
 # import above.
 font.ensure_loaded()
+
+# A preset's locale picks the role colours from here on.
+_join_style()
