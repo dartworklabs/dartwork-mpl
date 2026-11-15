@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import datetime
 import re
+import weakref
 from collections.abc import Sequence
 from itertools import pairwise
-from typing import Any, Literal
+from typing import Any
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
@@ -19,31 +20,47 @@ from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
-from ..geometry import same_position_axes, shared_axes
+from ..geometry import (
+    Which,
+    X,
+    Y,
+    axis_of,
+    bars_along,
+    is_rectilinear,
+    same_position_axes,
+    shared_axes,
+)
 from .defaults import config
 from .model import (
+    Asked,
     AxesFacts,
     AxisFacts,
+    AxisKind,
+    ByFigure,
+    DateAxis,
     Digits,
     Ems,
-    Kind,
-    LadderChoice,
+    FollowFigure,
+    Ladder,
     Language,
+    NumberAxis,
+    OtherAxis,
     Side,
     TickValues,
     TwinFacts,
+    linear_scale,
     parse_digits,
+    parse_number_ladder,
 )
 
-Which = Literal["x", "y"]
 _HANGUL = re.compile("[가-힣]")
 FIRST_YEAR, LAST_YEAR = 1900, 2099
 WHOLE_TOL = 1e-6  # bar centres rebuilt as x + width / 2 sit a few ulps off
 QUARTER_DAYS = (89.0, 92.0)
-SETTLED: dict[Side, str] = {
-    "right": "_dm_twin_spine_right_settled",
-    "top": "_dm_twin_spine_top_settled",
-}
+# The sides of each Axes whose twin spine a layout showed (or found showing).
+SETTLED: weakref.WeakKeyDictionary[Axes, set[Side]] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def with_insets(axes: Sequence[Axes]) -> list[Axes]:
@@ -61,11 +78,6 @@ def with_insets(axes: Sequence[Axes]) -> list[Axes]:
             with_insets([c for c in ax.child_axes if isinstance(c, Axes)])
         )
     return out
-
-
-def axis_of(ax: Axes, which: Which) -> Axis:
-    """``ax.xaxis`` or ``ax.yaxis``."""
-    return ax.xaxis if which == "x" else ax.yaxis
 
 
 def in_view(axis: Axis, values: Sequence[float]) -> list[float]:
@@ -108,10 +120,11 @@ def korean_labels(fig: Figure | None, extra: str = "") -> bool:
 
 def language(fig: Figure | None, extra: str = "") -> Language:
     """``config.number_ladder`` and whether the figure reads Korean."""
-    asked = LadderChoice.parse(config.number_ladder)
-    return Language(
-        asked, asked is LadderChoice.AUTO and korean_labels(fig, extra)
-    )
+    match parse_number_ladder(config.number_ladder):
+        case FollowFigure():
+            return ByFigure(korean_labels(fig, extra))
+        case Ladder() as asked:
+            return Asked(asked)
 
 
 def config_digits() -> Digits:
@@ -130,12 +143,17 @@ def _bar_positions(
     Bars grouped side by side at ``year -/+ w/2`` stand for the year.
     """
     patches = container.patches
-    if which == "x":
-        start = np.array([p.get_x() for p in patches], dtype=float)
-        end = start + np.array([p.get_width() for p in patches], dtype=float)
-    else:
-        start = np.array([p.get_y() for p in patches], dtype=float)
-        end = start + np.array([p.get_height() for p in patches], dtype=float)
+    match which:
+        case X():
+            start = np.array([p.get_x() for p in patches], dtype=float)
+            end = start + np.array(
+                [p.get_width() for p in patches], dtype=float
+            )
+        case Y():
+            start = np.array([p.get_y() for p in patches], dtype=float)
+            end = start + np.array(
+                [p.get_height() for p in patches], dtype=float
+            )
     centre: npt.NDArray[np.float64] = (start + end) / 2
     if not slot:
         return centre
@@ -149,14 +167,14 @@ def _fill_outline(
     coll: FillBetweenPolyCollection, which: Which, data: Any
 ) -> npt.NDArray[np.float64] | None:
     """A ``fill_between`` area's outline along ``which``, if all on whole numbers."""
-    if getattr(coll, "t_direction", None) != which:
+    if getattr(coll, "t_direction", None) != which.letter:
         return None
     if not all(coll.get_transform().contains_branch_seperately(data)):
         return None  # span shading in axes fractions marks a period
     paths = coll.get_paths()
     if not paths:
         return None
-    column = 0 if which == "x" else 1
+    column = which.column
     values = np.concatenate(
         [np.asarray(p.vertices, dtype=float)[:, column] for p in paths]
     )
@@ -183,10 +201,9 @@ def plotted(
     it plots none), bar centres of bars along ``which`` and the outline of
     ``fill_between`` / ``stackplot`` areas.
     """
-    column = 0 if which == "x" else 1
-    bars = "vertical" if which == "x" else "horizontal"
+    column = which.column
     chunks: list[npt.NDArray[np.float64]] = []
-    for member in shared_axes(ax, which):
+    for member in shared_axes(ax, which.letter):
         data = member.transData
         for line in member.lines:
             if all(line.get_transform().contains_branch_seperately(data)):
@@ -204,7 +221,8 @@ def plotted(
         chunks.extend(
             _bar_positions(c, which, bar_slot)
             for c in member.containers
-            if isinstance(c, BarContainer) and c.orientation == bars
+            if isinstance(c, BarContainer)
+            and bars_along(c.orientation) == which
         )
     if not chunks:
         return np.empty(0, dtype=float)
@@ -292,57 +310,64 @@ def configured(locator: ticker.Locator) -> bool:
     )
 
 
-def _kind(axis: Axis) -> Kind:
+def _years(ax: Axes, which: Which) -> bool:
+    """x data that are integer years (y data are never read as years)."""
+    match which:
+        case X():
+            return are_years(plotted(ax, which, bar_slot=True))
+        case Y():
+            return False
+
+
+def _quarter_ends(ax: Axes, which: Which, axis: Axis) -> bool | None:
+    """Quarterly dates on the converter's locator: on quarter ends or not."""
+    locator = axis.get_major_locator()
+    if not (axis.isDefault_majloc and converter_locator(locator)):
+        return None
+    dates = plotted(ax, which)
+    if not is_quarterly(dates):
+        return None
+    return quarter_ends(dates, getattr(locator, "tz", None))
+
+
+def _kind(ax: Axes, which: Which) -> AxisKind:
+    axis = axis_of(ax, which)
     fmt = axis.get_major_formatter()
     if isinstance(fmt, mdates.ConciseDateFormatter):
         dated = isinstance(axis.get_major_locator(), mdates.DateLocator)
-        return Kind.DATES if dated and _stock_concise(fmt) else Kind.OTHER
-    if axis.get_scale() == "linear" and axis.get_converter() is None:
-        return Kind.NUMBERS
-    return Kind.OTHER
+        if dated and _stock_concise(fmt):
+            return DateAxis(_quarter_ends(ax, which, axis))
+        return OtherAxis()
+    if linear_scale(axis.get_scale()) and axis.get_converter() is None:
+        return NumberAxis(_years(ax, which))
+    return OtherAxis()
 
 
 def axis_facts(ax: Axes, which: Which) -> AxisFacts:
     """One axis as the library's default format reads it."""
     axis = axis_of(ax, which)
-    kind = _kind(axis)
     fmt, locator = axis.get_major_formatter(), axis.get_major_locator()
-    own_locator = axis.isDefault_majloc and not configured(locator)
-    fixed = isinstance(fmt, ticker.FixedFormatter)
-    years, ends = False, None
-    if kind is Kind.NUMBERS and which == "x":
-        years = are_years(plotted(ax, "x", bar_slot=True))
-    if (
-        kind is Kind.DATES
-        and axis.isDefault_majloc
-        and converter_locator(locator)
-    ):
-        dates = plotted(ax, which)
-        if is_quarterly(dates):
-            ends = quarter_ends(dates, getattr(locator, "tz", None))
     return AxisFacts(
-        x=which == "x",
-        kind=kind,
+        x=which.horizontal,
+        kind=_kind(ax, which),
         ticks=tick_values(axis),
         own_formatter=axis.isDefault_majfmt,
-        own_locator=own_locator,
-        fixed_texts=fixed,
-        years=years,
-        quarter_ends=ends,
+        own_locator=axis.isDefault_majloc and not configured(locator),
+        fixed_texts=isinstance(fmt, ticker.FixedFormatter),
     )
 
 
 # -- twin scales ----------------------------------------------------------------
 
-_SIDES: dict[Side, tuple[Which, Which, str]] = {
-    # the side: the axis whose scale sits there, the axis a twin hides, the near side
-    "right": ("y", "x", "left"),
-    "top": ("x", "y", "bottom"),
+_SIDES: dict[Side, Which] = {
+    # the side: the axis whose scale sits there (a twin hides the other)
+    "right": Y(),
+    "top": X(),
 }
 
 
 def _rectilinear(ax: Axes) -> bool:
-    return ax.get_visible() and ax.name == "rectilinear"
+    return ax.get_visible() and is_rectilinear(ax)
 
 
 def boxes(fig: Figure) -> dict[Axes, list[Axes]]:
@@ -363,8 +388,8 @@ def boxes(fig: Figure) -> dict[Axes, list[Axes]]:
 
 def _owns(ax: Axes, group: Sequence[Axes], scale: Which) -> bool:
     """``ax`` shows its ``scale`` axis, which no box member shares while the other is shared."""
-    other: Which = "x" if scale == "y" else "y"
-    shared_other, shared_scale = shared_axes(ax, other), shared_axes(ax, scale)
+    shared_other = shared_axes(ax, scale.other.letter)
+    shared_scale = shared_axes(ax, scale.letter)
     return axis_of(ax, scale).get_visible() and any(
         m is not ax and m in shared_other and m not in shared_scale
         for m in group
@@ -382,7 +407,8 @@ def _far_side(axis: Axis) -> bool:
 
 def _draws(ax: Axes, group: Sequence[Axes], side: Side) -> bool:
     """``ax`` draws its own scale on ``side``: ticks and label there (one, for a twin)."""
-    scale, other, _near = _SIDES[side]
+    scale = _SIDES[side]
+    other = scale.other
     if not _owns(ax, group, scale):
         return False
     axis = axis_of(ax, scale)
@@ -399,7 +425,8 @@ def twin_facts(ax: Axes, group: Sequence[Axes]) -> TwinFacts:
     draws: set[Side] = set()
     hides: set[Side] = set()
     twin_draws: set[Side] = set()
-    for side, (_scale, other, _near) in _SIDES.items():
+    for side, scale in _SIDES.items():
+        other = scale.other
         if _draws(ax, group, side):
             draws.add(side)
         if not axis_of(ax, other).get_visible():
@@ -420,7 +447,7 @@ def twin_facts(ax: Axes, group: Sequence[Axes]) -> TwinFacts:
 def axes_facts(ax: Axes, digits: Digits, box: Sequence[Axes] = ()) -> AxesFacts:
     """An Axes before the layout, drawn in ``box`` with its twins."""
     twin = twin_facts(ax, box)
-    return AxesFacts(axis_facts(ax, "x"), axis_facts(ax, "y"), digits, twin)
+    return AxesFacts(axis_facts(ax, X()), axis_facts(ax, Y()), digits, twin)
 
 
 def drawn_like_twin(ax: Axes) -> bool:
@@ -440,7 +467,7 @@ def drawn_like_twin(ax: Axes) -> bool:
         for m in order[: order.index(ax)]
         if _rectilinear(m) and ax in same_position_axes(m)
     ]
-    sx, sy = shared_axes(ax, "x"), shared_axes(ax, "y")
+    sx, sy = shared_axes(ax, X.letter), shared_axes(ax, Y.letter)
     return any(
         (m in sx and m not in sy and not ax.xaxis.get_visible())
         or (m in sy and m not in sx and not ax.yaxis.get_visible())
@@ -450,9 +477,12 @@ def drawn_like_twin(ax: Axes) -> bool:
 
 def settled_twin_spines(ax: Axes) -> frozenset[Side]:
     """The sides of ``ax`` whose twin spine a layout showed (or found showing)."""
-    return frozenset(
-        side for side, attr in SETTLED.items() if getattr(ax, attr, False)
-    )
+    return frozenset(SETTLED.get(ax, ()))
+
+
+def settle_twin_spine(ax: Axes, side: Side) -> None:
+    """Record that a layout showed the twin spine on ``side`` of ``ax``."""
+    SETTLED.setdefault(ax, set()).add(side)
 
 
 # -- crowding --------------------------------------------------------------------

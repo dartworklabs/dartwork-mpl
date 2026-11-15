@@ -9,23 +9,21 @@ lists here are structural; :func:`drawn_in_tree` picks what is drawn.
 
 from __future__ import annotations
 
+import weakref
 from typing import TYPE_CHECKING, Any
 
 from .renderer import BBOX_ERRORS
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
     from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.legend import Legend
+    from matplotlib.text import Annotation
     from matplotlib.transforms import Bbox
-
-#: Where a figure keeps the groups of letters ``dm.label_axes`` placed
-#: (``labels`` writes them, ``check`` reads them).
-PANEL_LABELS_ATTR = "_dm_panel_label_groups"
 
 
 def figure_tree(fig: Figure | SubFigure) -> list[Figure | SubFigure]:
@@ -170,3 +168,22 @@ def iter_figure_level_extents(
         if ext.width <= 0 or ext.height <= 0:
             continue
         yield art, ext
+
+
+# The panel letters placed on each root Figure, each with its panel. The
+# slice that places them records them; any slice may read them.
+_PANEL_LETTERS: weakref.WeakKeyDictionary[
+    Figure, list[tuple[Axes, Annotation]]
+] = weakref.WeakKeyDictionary()
+
+
+def record_panel_letters(
+    fig: Figure, members: Sequence[tuple[Axes, Annotation]]
+) -> None:
+    """Remember the letters placed on the root Figure ``fig``."""
+    _PANEL_LETTERS.setdefault(fig, []).extend(members)
+
+
+def panel_letters(fig: Figure | SubFigure) -> list[tuple[Axes, Annotation]]:
+    """The automatic panel letters on ``fig``'s root, each with its panel."""
+    return list(_PANEL_LETTERS.get(fig.get_figure(root=True), []))

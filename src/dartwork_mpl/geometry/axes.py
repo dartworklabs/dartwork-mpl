@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
 import numpy as np
 from matplotlib.text import Text
 
+from .model import Letter, TitleLoc, Which, X, Y, rectilinear, three_d, which
+
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
+    from matplotlib.axis import Axis
 
 # ``ax.title`` is only the centre title. ``ax.set_title(..., loc="left")``
 # and ``loc="right"`` write to these private attributes instead, so a walk
 # over ``ax.title`` alone never sees a left-aligned headline.
-_TITLE_ATTRS: dict[Literal["center", "left", "right"], str] = {
+_TITLE_ATTRS: dict[TitleLoc, str] = {
     "center": "title",
     "left": "_left_title",
     "right": "_right_title",
@@ -43,6 +46,25 @@ def axes_titles(ax: Axes) -> dict[str, Text]:
     return titles
 
 
+def axis_of(ax: Axes, axis: Which) -> Axis:
+    """``ax.xaxis`` or ``ax.yaxis``."""
+    match axis:
+        case X():
+            return ax.xaxis
+        case Y():
+            return ax.yaxis
+
+
+def is_rectilinear(ax: Axes) -> bool:
+    """Whether ``ax`` is matplotlib's plain 2D Axes (not polar, 3D, ...)."""
+    return rectilinear(ax.name)
+
+
+def is_3d(ax: Axes) -> bool:
+    """Whether ``ax`` is a 3D Axes."""
+    return three_d(getattr(ax, "name", None))
+
+
 # Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
 _EDGE_RTOL = 1e-10
 
@@ -64,13 +86,13 @@ def draws_axis(ax: Axes, axis: Any) -> bool:
     """
     if not ax.get_visible():
         return False
-    if getattr(ax, "name", None) == "3d":
+    if is_3d(ax):
         return bool(getattr(ax, "_axis3don", True))
     return bool(getattr(ax, "axison", True)) and bool(axis.get_visible())
 
 
 def drawn_tick_labels(
-    ax: Axes, which: Literal["x", "y"], *, minor: bool = False
+    ax: Axes, letter: Letter, *, minor: bool = False
 ) -> list[Text]:
     """The major (or ``minor``) tick labels matplotlib draws on an axis.
 
@@ -87,7 +109,7 @@ def drawn_tick_labels(
     colorbar tick a hair past its limit, the ticks of a title-only panel,
     the labels of a hidden axis or a hidden Axes.
     """
-    axis = ax.xaxis if which == "x" else ax.yaxis
+    axis = axis_of(ax, which(letter))
     if not draws_axis(ax, axis):
         return []
     transform = axis.get_transform()
@@ -96,7 +118,7 @@ def drawn_tick_labels(
     if not locs.size:
         return []
     view_low, view_high = sorted(float(v) for v in axis.get_view_interval())
-    if getattr(ax, "name", None) == "3d" and mpl.rcParams["axes3d.automargin"]:
+    if is_3d(ax) and mpl.rcParams["axes3d.automargin"]:
         delta = view_high - view_low
         view_low, view_high = (
             view_low + delta * _AUTOMARGIN_3D,
@@ -123,15 +145,19 @@ def drawn_tick_labels(
     return drawn
 
 
-def shared_axes(ax: Axes, which: Literal["x", "y"]) -> list[Axes]:
-    """``ax`` and every Axes sharing its ``which`` axis, in figure order.
+def shared_axes(ax: Axes, letter: Letter) -> list[Axes]:
+    """``ax`` and every Axes sharing its ``letter`` axis, in figure order.
 
     These are the Axes made with ``sharex`` / ``sharey`` and the partners of
     ``twinx`` (shares x) and ``twiny`` (shares y): they read one scale, so
     their limits and tick formatters move together. An Axes the figure no
     longer holds sorts last.
     """
-    group = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
+    match which(letter):
+        case X():
+            group = ax.get_shared_x_axes()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        case Y():
+            group = ax.get_shared_y_axes()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
     members: list[Axes] = list(group.get_siblings(ax))
     fig = ax.get_figure(root=True)
     order = fig.axes if fig is not None else []

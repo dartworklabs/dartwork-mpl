@@ -12,7 +12,7 @@ from __future__ import annotations
 import datetime
 import math
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
@@ -118,7 +118,9 @@ def _quarter_moment(index: int, ends: bool, tz: Any) -> datetime.datetime:
         naive -= datetime.timedelta(days=1)
     localize = getattr(tz, "localize", None)  # pytz zones
     if callable(localize):
-        return cast("datetime.datetime", localize(naive))
+        moment = localize(naive)
+        assert isinstance(moment, datetime.datetime)
+        return moment
     return naive.replace(tzinfo=tz)
 
 

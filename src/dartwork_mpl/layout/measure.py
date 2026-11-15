@@ -8,12 +8,14 @@ from itertools import pairwise
 from typing import TYPE_CHECKING, Any, assert_never
 
 import matplotlib as mpl
+from matplotlib.axis import Axis
 from matplotlib.gridspec import (
     GridSpec,
     GridSpecBase,
     GridSpecFromSubplotSpec,
     SubplotSpec,
 )
+from matplotlib.text import Text
 
 from ..edgecase import settle
 from ..geometry import (
@@ -32,6 +34,7 @@ from .model import (
     ArtistId,
     AxesContent,
     AxisName,
+    Bottom,
     Box,
     Canvas,
     ContentFacts,
@@ -40,6 +43,8 @@ from .model import (
     Edges,
     FigureArtist,
     Gap,
+    HSpace,
+    Left,
     Line,
     Piece,
     PlotSize,
@@ -51,8 +56,11 @@ from .model import (
     TextFacts,
     TickGroup,
     TickRow,
-    Which,
+    Top,
     Width,
+    WSpace,
+    XAxis,
+    YAxis,
     authored,
     centred,
     edge_of,
@@ -60,6 +68,7 @@ from .model import (
 )
 
 if TYPE_CHECKING:
+    from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
@@ -107,8 +116,7 @@ def grid_axes(fig: Figure, gs: GridSpec) -> list[Axes]:
 
 def _cartesian(ax: Axes) -> bool:
     """A visible rectilinear Axes with its axes on: the only kind fitted."""
-    on = ax.get_visible() and getattr(ax, "axison", True)
-    return bool(on) and parse_projection(ax.name).flat
+    return ax.get_visible() and ax.axison and parse_projection(ax.name).flat
 
 
 # -- one step -----------------------------------------------------------------
@@ -187,8 +195,9 @@ def _tight_3d(ax: Axes, renderer: RendererBase) -> tuple[Piece, ...]:
     """A 3-D Axes' axes, legend, titles and 2-D texts by their tight boxes
     (a ``Text3D`` has none, as matplotlib's own layouts find)."""
     pieces: list[Piece] = []
-    zaxis = getattr(ax, "zaxis", None)
-    for artist in (ax.xaxis, ax.yaxis, zaxis, ax.get_legend()):
+    # Its x, y and z axes: a 3-D Axes lists the z axis among its children.
+    axes = {id(c): c for c in ax.get_children() if isinstance(c, Axis)}
+    for artist in (*axes.values(), ax.get_legend()):
         if artist is None or not artist.get_visible():
             continue
         with contextlib.suppress(*BBOX_ERRORS):
@@ -236,14 +245,31 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
     return AxesContent(plot, position, tuple(pieces))
 
 
-def _figure_artist(fig: Figure, art: Any, ext: Bbox) -> FigureArtist:
-    holds = {
-        id(getattr(fig, "_suptitle", None)): Edge.TOP,
-        id(getattr(fig, "_supxlabel", None)): Edge.BOTTOM,
-        id(getattr(fig, "_supylabel", None)): Edge.LEFT,
-    }
-    rotation = getattr(art, "get_rotation", None)
-    vertical = None if rotation is None else 45 <= rotation() % 180 <= 135
+def _roles(fig: Figure) -> dict[int, Edge]:
+    """The edge each of ``fig``'s suptitle, supxlabel and supylabel holds,
+    by ``id`` of the text in ``fig.texts`` that writes it.
+
+    matplotlib names these texts only by what they write
+    (``get_suptitle`` and so on); the first text writing it is taken.
+    """
+    roles: dict[int, Edge] = {}
+    for written, edge in (
+        (fig.get_suptitle(), Top()),
+        (fig.get_supxlabel(), Bottom()),
+        (fig.get_supylabel(), Left()),
+    ):
+        found = next((t for t in fig.texts if t.get_text() == written), None)
+        if written and found is not None:
+            roles.setdefault(id(found), edge)
+    return roles
+
+
+def _figure_artist(
+    fig: Figure, roles: dict[int, Edge], art: Artist, ext: Bbox
+) -> FigureArtist:
+    vertical = (
+        45 <= art.get_rotation() % 180 <= 135 if isinstance(art, Text) else None
+    )
     reserve = figure_reserve(art)
     if reserve is not None:
         side, gap_pt = _edge(reserve.side), reserve.gap_pt
@@ -251,7 +277,7 @@ def _figure_artist(fig: Figure, art: Any, ext: Bbox) -> FigureArtist:
         side, gap_pt = None, note_gap_pt(art) or 0.0
     return FigureArtist(
         _box(ext),
-        holds.get(id(art)),
+        roles.get(id(art)),
         vertical,
         side,
         Px(gap_pt * fig.dpi / 72.0),
@@ -268,8 +294,9 @@ def content_facts(
 ) -> ContentFacts:
     """Every Axes' content and the figure-level artists, as drawn now."""
     contents = [axes_content(ax, renderer) for ax in fig.axes]
+    roles = _roles(fig)
     artists = tuple(
-        _figure_artist(fig, art, ext)
+        _figure_artist(fig, roles, art, ext)
         for art, ext in iter_figure_level_extents(
             fig, renderer, subfigures=False
         )
@@ -407,8 +434,8 @@ def _names(
             continue
         frame = ax.get_window_extent(renderer)
         for which, axis, span in (
-            (Which.X, ax.xaxis, frame.width),
-            (Which.Y, ax.yaxis, frame.height),
+            (XAxis(), ax.xaxis, frame.width),
+            (YAxis(), ax.yaxis, frame.height),
         ):
             label, text = axis.label, axis.label.get_text()
             if (
@@ -439,9 +466,9 @@ def _names(
 def spacing_of(gs: GridSpec, key: Gap) -> float | None:
     """The ``wspace`` / ``hspace`` set on ``gs`` (``None``: the figure's)."""
     match key:
-        case Gap.WSPACE:
+        case WSpace():
             return gs.wspace
-        case Gap.HSPACE:
+        case HSpace():
             return gs.hspace
         case _:
             assert_never(key)
@@ -450,12 +477,12 @@ def spacing_of(gs: GridSpec, key: Gap) -> float | None:
 def _figure_default(fig: Figure, key: Gap) -> bool:
     """The figure's own spacing is still matplotlib's default."""
     match key:
-        case Gap.WSPACE:
+        case WSpace():
             now, rc = (
                 fig.subplotpars.wspace,
                 mpl.rcParams["figure.subplot.wspace"],
             )
-        case Gap.HSPACE:
+        case HSpace():
             now, rc = (
                 fig.subplotpars.hspace,
                 mpl.rcParams["figure.subplot.hspace"],
@@ -480,7 +507,7 @@ def _spacings(
     nrows, ncols = gs.get_geometry()
     free = [
         key
-        for key, n in ((Gap.WSPACE, ncols), (Gap.HSPACE, nrows))
+        for key, n in ((WSpace(), ncols), (HSpace(), nrows))
         if n > 1 and _free(fig, gs, key, record)
     ]
     if not free:
@@ -506,7 +533,7 @@ def _spacings(
     out: list[Spacing] = []
     for key in free:
         match key:
-            case Gap.WSPACE:
+            case WSpace():
                 gaps = [
                     (lefts[i + 1] - rights[i]) * fw for i in range(ncols - 1)
                 ]
@@ -516,7 +543,7 @@ def _spacings(
                     ncols,
                 )
                 now = Share(float(params.wspace))
-            case Gap.HSPACE:
+            case HSpace():
                 gaps = [
                     (bottoms[i] - tops[i + 1]) * fh for i in range(nrows - 1)
                 ]

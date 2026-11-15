@@ -8,9 +8,10 @@ settles the labels at the size ``dm.simple_layout`` fits.
 from __future__ import annotations
 
 import string
+import weakref
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -21,7 +22,7 @@ from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
 from ..edgecase import settle
-from ..geometry import canvas_renderer, same_position_axes
+from ..geometry import Y, bars_along, canvas_renderer, same_position_axes
 from ..style import fs, fw
 from . import decide, edges
 from .measure import (
@@ -35,10 +36,18 @@ from .measure import (
 )
 from .model import (
     BarOptions,
+    Center,
+    Edge,
     Ink,
     InkFacts,
+    Inside,
     Kind,
+    Outside,
     Placement,
+    Rgba,
+    Segment,
+    StackTotal,
+    Toward,
     ValueFacts,
     parse_bar_options,
     placement,
@@ -58,16 +67,15 @@ OFFSET_PT = 3.0
 EDGE_TOL_PX = 1.0
 # How far (px) a label on its bar may reach past the bar's sides.
 FIT_TOL_PX = 0.5
-FAMILIES_ATTR = "_dm_bar_labels"
 
 
 class BarLabel(Annotation):
     """One bar's value label, rewritten in its axis's tick unit at each draw.
 
-    ``kind``: ``"edge"`` a plain bar, ``"segment"`` one bar of a stack,
-    ``"total"`` the stack's net (on the bar ending the stack); ``stack``:
-    the ids of its stack's containers. ``off_bar``: an ``"inside"`` label
-    its bar does not hold, drawn beyond the end instead.
+    ``kind``: a plain bar, one bar of a stack or the stack's net (on the
+    bar ending the stack); ``stack``: the ids of its stack's containers.
+    ``off_bar``: an ``"inside"`` label its bar does not hold, drawn beyond
+    the end instead.
     """
 
     def __init__(
@@ -82,11 +90,13 @@ class BarLabel(Annotation):
         """A label for bar ``index`` of ``container``, not yet added."""
         self.family, self.container, self.index = family, container, index
         self.bar = container.patches[index]
-        self.bar_axes: Axes = self.bar.axes  # type: ignore[assignment]
+        bar_axes = self.bar.axes
+        assert isinstance(bar_axes, Axes)  # label_bars labels drawn bars only
+        self.bar_axes: Axes = bar_axes
         self.kind: Kind = kind
         self.value, self.stack = value, stack
         self.where: Placement = placement(kind, family.options.where)
-        self.vertical = container.orientation != "horizontal"
+        self.vertical = bars_along(container.orientation) != Y()
         self.off_bar = False
         self.hidden = False  # hidden by the layout for room
         self.tick_scale: TickScale | None = None
@@ -97,7 +107,7 @@ class BarLabel(Annotation):
             "",
             (0.0, 0.0),
             xytext=(0.0, 0.0),
-            xycoords=self.bar if self.where == "center" else "data",
+            xycoords=self.bar if self.centred else "data",
             textcoords="offset points",
             annotation_clip=False,
             fontsize=fs(-1),
@@ -110,30 +120,52 @@ class BarLabel(Annotation):
         return self.bar_axes.yaxis if self.vertical else self.bar_axes.xaxis
 
     @property
+    def centred(self) -> bool:
+        """Whether the label sits at its bar's middle."""
+        return isinstance(self.where, Center)
+
+    @property
+    def inside(self) -> bool:
+        """Whether the label sits inside its bar's end (its bar holds it)."""
+        return isinstance(self.where, Inside) and not self.off_bar
+
+    @property
     def on_bar(self) -> bool:
         """Whether the label is drawn on its bar."""
-        if self.where == "center":
-            return True
-        return self.where == "inside" and not self.off_bar
+        match self.where:
+            case Center():
+                return True
+            case Inside():
+                return not self.off_bar
+            case Outside():
+                return False
 
     @property
     def beyond_end(self) -> bool:
         """Beyond its own bar's end, in the room the value axis gives."""
-        return self.where == "outside" or self.off_bar
+        return not self.on_bar
 
     @property
-    def outward(self) -> Literal[1, -1]:
+    def outward(self) -> Toward:
         """+1 when the bar grows towards higher display coordinates."""
         bar = self.bar
         length = bar.get_height() if self.vertical else bar.get_width()
-        sign = -1 if length < 0 else 1
-        return -sign if self.value_axis.get_inverted() else sign  # type: ignore[return-value]
+        grows_up = (length >= 0) != bool(self.value_axis.get_inverted())
+        return 1 if grows_up else -1
+
+    def _needs_room(self) -> bool:
+        """A segment's label on its bar shows only while the bar holds it."""
+        match self.kind:
+            case Segment():
+                return not isinstance(self.where, Outside)
+            case Edge() | StackTotal():
+                return False
 
     def get_visible(self) -> bool:
         """Visible, its anchor in the view, and (a segment) room on its bar."""
         if not (super().get_visible() and self._in_view()):
             return False
-        if self.kind != "segment" or self.where == "outside" or self._measuring:
+        if self._measuring or not self._needs_room():
             return True
         self._measuring = True
         try:
@@ -148,7 +180,7 @@ class BarLabel(Annotation):
         super().update_positions(renderer)
 
     def _in_view(self) -> bool:
-        if self.where == "center":
+        if self.centred:
             box = self.bar.get_window_extent()
             shown = np.array([(box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2])
         else:
@@ -176,19 +208,23 @@ class BarLabel(Annotation):
         if not along:
             thick = box.width if self.vertical else box.height
             return bool(np.isfinite(thick) and px <= thick + FIT_TOL_PX)
-        inset = OFFSET_PT * px_per_pt(self) if self.where == "inside" else 0.0
+        inset = (
+            OFFSET_PT * px_per_pt(self)
+            if isinstance(self.where, Inside)
+            else 0.0
+        )
         length = box.height if self.vertical else box.width
         return bool(np.isfinite(length) and length >= px + inset)
 
     def place(self) -> None:
         """Anchor and align the label on its bar."""
-        if self.where == "center":
+        if self.centred:
             self.xy, self.xyann = (0.5, 0.5), (0.0, 0.0)
             self.set_horizontalalignment("center")
             self.set_verticalalignment("center")
             return
         x, y = bar_end(self.bar, self.vertical)
-        inside = self.where == "inside" and not self.off_bar
+        inside = self.inside
         extent = error_extent(self.container, self.index, self.vertical)
         if not inside and extent is not None:  # past the cap, in the view
             low, high = sorted(map(float, self.value_axis.get_view_interval()))
@@ -244,7 +280,7 @@ class BarFamily:
         if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
             self.refresh()
         label.off_bar = False
-        if label.kind == "edge" and label.where == "inside":
+        if isinstance(label.kind, Edge) and isinstance(label.where, Inside):
             along, across = label.extent()
             label.off_bar = not (
                 label.fits(along, along=True)
@@ -263,8 +299,8 @@ class BarFamily:
             readable_ink(bar, axes) if label.on_bar else Ink(),
             series_ink(bar, axes, label.kind) if series else Ink(),
         )
-        color = settle(facts, decide.ink(facts), edges.INK).plan.color
-        label.set_color(label.text_ink if color is None else color)  # type: ignore[arg-type]
+        color = settle(facts, decide.ink(facts), edges.INK_EDGES).plan.color
+        label.set_color(label.text_ink if color is None else color)
 
 
 def _template(fmt: str, number: str, value: float) -> str:
@@ -296,8 +332,8 @@ def compose(
     if callable(options.fmt):
         return str(options.fmt(scaled))
     fixed = options.decimals is not None
-    facts = ValueFacts(scaled, decimals, fixed, options.sign)
-    text = settle(facts, decide.bar_text(facts), edges.TEXT).plan
+    facts = ValueFacts(scaled, decimals, fixed, options.plus)
+    text = settle(facts, decide.bar_text(facts), edges.TEXT_EDGES).plan
     if isinstance(options.fmt, str):
         number = text.lead + number_text(
             text.value, text.decimals, fixed=text.fixed
@@ -313,7 +349,9 @@ def compose(
     )
 
 
-def _containers(ax: Axes, bars: object) -> list[BarContainer]:
+def _containers(
+    ax: Axes, bars: BarContainer | Iterable[object] | None
+) -> list[BarContainer]:
     if bars is None:
         found = [c for c in ax.containers if isinstance(c, BarContainer)]
         if not found:
@@ -323,19 +361,16 @@ def _containers(ax: Axes, bars: object) -> list[BarContainer]:
                 "that Axes)"
             )
         return found
-    if isinstance(bars, BarContainer):
-        items: list[object] = [bars]
-    elif isinstance(bars, Iterable):
-        items = list(cast("Iterable[object]", bars))
-    else:
-        items = [bars]
+    items: list[object] = (
+        [bars] if isinstance(bars, BarContainer) else _items(bars)
+    )
     containers: list[BarContainer] = [
         c for c in items if isinstance(c, BarContainer)
     ]
     if len(containers) != len(items):
         raise TypeError(
             "bars must be a BarContainer (what ax.bar / ax.barh return) or a "
-            f"list of them (got {type(cast(object, bars)).__name__})"
+            f"list of them (got {type(bars).__name__})"
         )
     box = same_position_axes(ax)
     for container in containers:
@@ -348,9 +383,24 @@ def _containers(ax: Axes, bars: object) -> list[BarContainer]:
     return containers
 
 
+def _items(bars: Iterable[object]) -> list[object]:
+    """The caller's bars as a list; a non-iterable stands alone (and is
+    refused by the caller)."""
+    try:
+        return list(bars)
+    except TypeError:
+        return [bars]
+
+
+# The ``label_bars`` calls on each Axes, oldest first.
+FAMILIES: weakref.WeakKeyDictionary[Axes, list[BarFamily]] = (
+    weakref.WeakKeyDictionary()
+)
+
+
 def families_of(ax: Axes) -> list[BarFamily]:
     """The ``label_bars`` calls recorded on ``ax``, oldest first."""
-    return getattr(ax, FAMILIES_ATTR, [])
+    return FAMILIES.get(ax, [])
 
 
 def format_ticks_now(axis: Axis) -> None:
@@ -367,7 +417,7 @@ def _release(ax: Axes, containers: list[BarContainer]) -> None:
         for family in families:
             for label in list(family.texts):
                 if id(label.container) in taken or (
-                    label.kind == "total" and label.stack & taken
+                    isinstance(label.kind, StackTotal) and label.stack & taken
                 ):
                     family.texts.remove(label)
                     if label.axes is not None:
@@ -378,7 +428,7 @@ def _release(ax: Axes, containers: list[BarContainer]) -> None:
 def _add(family: BarFamily, label: BarLabel) -> None:
     """Add ``label`` unclipped to the Axes drawn last in its bars' box."""
     host = host_axes(label.bar_axes)
-    if label.where != "center":
+    if not label.centred:
         label.xycoords = (
             "data" if host is label.bar_axes else label.bar_axes.transData
         )
@@ -387,6 +437,11 @@ def _add(family: BarFamily, label: BarLabel) -> None:
     label.set_clip_box(None)
     label.set_clip_path(None)
     family.texts.append(label)
+
+
+def _rgba(color: Any) -> Rgba:
+    """A matplotlib colour as RGBA; ``ValueError`` for anything else."""
+    return mcolors.to_rgba(color)
 
 
 def label_bars(
@@ -437,14 +492,14 @@ def label_bars(
         fmt=fmt,
         color=color,
         sign=sign,
-        is_color=mcolors.is_color_like,
+        to_rgba=_rgba,
     )
     containers = _containers(ax, bars)
     if not containers:
         return []
     _release(ax, containers)
     facts = BarsFacts(tuple(bar_run(c) for c in containers), options.total)
-    plan = settle(facts, decide.plain_labels(facts), edges.BARS).plan
+    plan = settle(facts, decide.plain_labels(facts), edges.BARS_EDGES).plan
     stacks: dict[int | None, frozenset[int]] = {}
     for p in plan.labels:
         stacks[p.stack] = stacks.get(p.stack, frozenset()) | {
@@ -464,7 +519,5 @@ def label_bars(
     family.refresh()
     for label in family.texts:
         family.follow(label)
-    if not hasattr(ax, FAMILIES_ATTR):
-        setattr(ax, FAMILIES_ATTR, [])
-    families_of(ax).append(family)
+    FAMILIES.setdefault(ax, []).append(family)
     return list(family.texts)

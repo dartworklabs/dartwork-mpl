@@ -11,25 +11,25 @@ from __future__ import annotations
 import math
 import numbers
 import string
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from typing import Literal, SupportsFloat, SupportsIndex, TypeAlias, TypeVar
 
 import numpy as np
 
-Where: TypeAlias = Literal["auto", "outside", "inside", "center"]
-# Where one label sits once "auto" is resolved for its kind.
-Placement: TypeAlias = Literal["outside", "inside", "center"]
-# What a bar label labels: a plain bar, one stack segment, a stack's net.
-Kind: TypeAlias = Literal["edge", "segment", "total"]
-Total: TypeAlias = Literal["auto", "only", False]
-Crowded: TypeAlias = Literal["rotate", "skip"]
-Sign: TypeAlias = Literal["-", "+"]
 Fmt: TypeAlias = str | Callable[[float], object] | None
+Rgba: TypeAlias = tuple[float, float, float, float]
+Colour: TypeAlias = str | Rgba
+"""A colour as matplotlib takes it: a name or hex, or an RGBA tuple."""
 Side: TypeAlias = Literal["above", "below", "right", "left"]
 Corner: TypeAlias = Literal[
     "upper left", "upper right", "lower left", "lower right"
 ]
+HAlign: TypeAlias = Literal["left", "center", "right"]
+VAlign: TypeAlias = Literal["bottom", "center", "top"]
+# ``label_hline``: the side of the line, and the drawn line's end or middle.
+LineSide: TypeAlias = Literal["above", "below"]
+LineAnchor: TypeAlias = Literal["left", "center", "right"]
 # +1: the bar grows towards higher display coordinates (up, right).
 Toward: TypeAlias = Literal[1, -1]
 
@@ -40,25 +40,129 @@ CORNERS: tuple[Corner, ...] = (
     "lower left",
     "lower right",
 )
+LINE_SIDES: tuple[LineSide, ...] = ("above", "below")
+LINE_ANCHORS: tuple[LineAnchor, ...] = ("left", "center", "right")
+LINE_ENDS: tuple[LineAnchor, ...] = ("right", "left")
 
 
 # ------------------------------------------------------------ bar options
 @dataclass(frozen=True)
-class BarOptions:
-    """The keywords of one ``label_bars`` call, validated."""
+class Outside:
+    """Beyond the bar's end."""
 
-    where: Where = "auto"
-    total: Total = "auto"
-    crowded: Crowded = "rotate"
+
+@dataclass(frozen=True)
+class Inside:
+    """Inside the bar at its end, while the bar holds the label."""
+
+
+@dataclass(frozen=True)
+class Center:
+    """At the bar's middle."""
+
+
+Placement: TypeAlias = Outside | Inside | Center
+"""Where one label sits once ``"auto"`` is resolved for its kind."""
+
+
+@dataclass(frozen=True)
+class ByKind:
+    """``where="auto"``: a plain bar's label beyond its end, a segment's at
+    its middle."""
+
+
+Where: TypeAlias = ByKind | Placement
+
+
+@dataclass(frozen=True)
+class Edge:
+    """The label of a plain bar."""
+
+
+@dataclass(frozen=True)
+class Segment:
+    """The label of one bar of a stack."""
+
+
+@dataclass(frozen=True)
+class StackTotal:
+    """A stack's net, on the bar ending the stack."""
+
+
+Kind: TypeAlias = Edge | Segment | StackTotal
+"""What a bar label labels."""
+
+
+@dataclass(frozen=True)
+class TotalsToo:
+    """``total="auto"``: stacks get their segments and their totals."""
+
+
+@dataclass(frozen=True)
+class TotalsOnly:
+    """``total="only"``: stacks get only their totals."""
+
+
+@dataclass(frozen=True)
+class NoTotals:
+    """``total=False``: stacks get only their segments."""
+
+
+Total: TypeAlias = TotalsToo | TotalsOnly | NoTotals
+
+
+@dataclass(frozen=True)
+class Rotate:
+    """``crowded="rotate"``: crowded labels on vertical bars turn."""
+
+
+@dataclass(frozen=True)
+class Skip:
+    """``crowded="skip"``: crowded labels stay level; some are hidden."""
+
+
+Crowded: TypeAlias = Rotate | Skip
+
+
+@dataclass(frozen=True)
+class TextInk:
+    """The preset's text colour."""
+
+
+@dataclass(frozen=True)
+class SeriesInk:
+    """``color="series"``: a label off its bar takes the bar's colour."""
+
+
+@dataclass(frozen=True)
+class OwnInk:
+    """One colour the call gave."""
+
+    rgba: Rgba
+
+
+LabelInk: TypeAlias = TextInk | SeriesInk | OwnInk
+
+
+@dataclass(frozen=True)
+class BarOptions:
+    """The keywords of one ``label_bars`` call, validated.
+
+    ``plus``: ``sign="+"``, rises are signed too (``+30``).
+    """
+
+    where: Where = ByKind()
+    total: Total = TotalsToo()
+    crowded: Crowded = Rotate()
     decimals: int | None = None
     fmt: Fmt = None
-    color: object = None
-    sign: Sign = "-"
+    color: LabelInk = TextInk()
+    plus: bool = False
 
     @property
     def series(self) -> bool:
         """``color="series"``: a label off its bar takes the bar's colour."""
-        return isinstance(self.color, str) and self.color == "series"
+        return isinstance(self.color, SeriesInk)
 
 
 def template_fields(template: str) -> list[tuple[str, str, str]]:
@@ -72,42 +176,34 @@ def template_fields(template: str) -> list[tuple[str, str, str]]:
     ]
 
 
-def _choice(name: str, value: object, allowed: tuple[object, ...]) -> None:
-    if not any(
-        value is a or (isinstance(a, str) and value == a) for a in allowed
-    ):
-        names = ", ".join(repr(a) for a in allowed)
-        raise ValueError(f"{name} must be one of {names} (got {value!r})")
+T = TypeVar("T")
 
 
-def parse_bar_options(
-    *,
-    where: object,
-    total: object,
-    crowded: object,
-    decimals: object,
-    fmt: object,
-    color: object,
-    sign: object,
-    is_color: Callable[[object], bool],
-) -> BarOptions:
-    """The call's keywords as :class:`BarOptions`; ``ValueError`` names a bad one.
+def _choice(name: str, value: object, table: Mapping[object, T]) -> T:
+    """The entry ``value`` names; ``ValueError`` naming the keyword."""
+    for key, choice in table.items():
+        if value is key or (isinstance(key, str) and value == key):
+            return choice
+    names = ", ".join(repr(a) for a in table)
+    raise ValueError(f"{name} must be one of {names} (got {value!r})")
 
-    ``is_color`` says whether a value is a matplotlib colour (the shell
-    passes matplotlib's own test, so this module stays pure).
-    """
-    _choice("where", where, ("auto", "outside", "inside", "center"))
-    _choice("total", total, ("auto", "only", False))
-    _choice("crowded", crowded, ("rotate", "skip"))
-    _choice("sign", sign, ("-", "+"))
-    if decimals is not None and (
-        isinstance(decimals, bool)
-        or not isinstance(decimals, numbers.Integral)
-        or int(decimals) < 0
-    ):
-        raise ValueError(
-            f"decimals must be None or an integer >= 0 (got {decimals!r})"
-        )
+
+WHERE: Mapping[object, Where] = {
+    "auto": ByKind(),
+    "outside": Outside(),
+    "inside": Inside(),
+    "center": Center(),
+}
+TOTAL: Mapping[object, Total] = {
+    "auto": TotalsToo(),
+    "only": TotalsOnly(),
+    False: NoTotals(),
+}
+CROWDED: Mapping[object, Crowded] = {"rotate": Rotate(), "skip": Skip()}
+PLUS: Mapping[object, bool] = {"-": False, "+": True}
+
+
+def _fmt(fmt: object) -> Fmt:
     if isinstance(fmt, str):
         try:
             fields = template_fields(fmt)
@@ -121,22 +217,66 @@ def parse_bar_options(
             raise ValueError(
                 f"fmt must hold a '{{}}' for the number (got {fmt!r})"
             )
-    elif fmt is not None and not callable(fmt):
-        raise ValueError(
-            f"fmt must be None, a '{{}}' template or a callable (got {fmt!r})"
-        )
-    if not (color is None or color == "series" or is_color(color)):
+        return fmt
+    if fmt is None:
+        return None
+    if callable(fmt):
+        return fmt
+    raise ValueError(
+        f"fmt must be None, a '{{}}' template or a callable (got {fmt!r})"
+    )
+
+
+def _ink(color: object, to_rgba: Callable[[object], Rgba]) -> LabelInk:
+    if color is None:
+        return TextInk()
+    if isinstance(color, str) and color == "series":
+        return SeriesInk()
+    try:
+        return OwnInk(to_rgba(color))
+    except (ValueError, TypeError):
         raise ValueError(
             f"color must be None, 'series' or a matplotlib colour (got {color!r})"
+        ) from None
+
+
+def parse_bar_options(
+    *,
+    where: object,
+    total: object,
+    crowded: object,
+    decimals: object,
+    fmt: object,
+    color: object,
+    sign: object,
+    to_rgba: Callable[[object], Rgba],
+) -> BarOptions:
+    """The call's keywords as :class:`BarOptions`; ``ValueError`` names a bad one.
+
+    ``to_rgba`` reads a matplotlib colour, raising ``ValueError`` for
+    anything else (the shell passes matplotlib's own, so this module stays
+    pure).
+    """
+    parsed_where = _choice("where", where, WHERE)
+    parsed_total = _choice("total", total, TOTAL)
+    parsed_crowded = _choice("crowded", crowded, CROWDED)
+    plus = _choice("sign", sign, PLUS)
+    if decimals is not None and (
+        isinstance(decimals, bool)
+        or not isinstance(decimals, numbers.Integral)
+        or int(decimals) < 0
+    ):
+        raise ValueError(
+            f"decimals must be None or an integer >= 0 (got {decimals!r})"
         )
     return BarOptions(
-        where=where,  # type: ignore[arg-type]  # checked by _choice
-        total=total,  # type: ignore[arg-type]
-        crowded=crowded,  # type: ignore[arg-type]
-        decimals=None if decimals is None else int(decimals),  # type: ignore[call-overload]
-        fmt=fmt,  # type: ignore[arg-type]
-        color=color,
-        sign=sign,  # type: ignore[arg-type]
+        where=parsed_where,
+        total=parsed_total,
+        crowded=parsed_crowded,
+        decimals=None if decimals is None else int(decimals),
+        fmt=_fmt(fmt),
+        color=_ink(color, to_rgba),
+        plus=plus,
     )
 
 
@@ -146,11 +286,106 @@ def placement(kind: Kind, where: Where) -> Placement:
     ``"auto"`` puts a plain bar's label beyond its end and a segment's at its
     middle; a total always sits beyond the stack's end.
     """
-    if kind == "total":
-        return "outside"
-    if where == "auto":
-        return "center" if kind == "segment" else "outside"
-    return where
+    auto: Placement
+    match kind:
+        case StackTotal():
+            return Outside()
+        case Segment():
+            auto = Center()
+        case Edge():
+            auto = Outside()
+    match where:
+        case ByKind():
+            return auto
+        case Outside() | Inside() | Center():
+            return where
+
+
+# ------------------------------------------------------------ notes
+def _among(value: object, options: Sequence[T]) -> T | None:
+    """The option equal to ``value``, if any."""
+    for option in options:
+        if option == value:
+            return option
+    return None
+
+
+@dataclass(frozen=True)
+class FirstFree:
+    """``"auto"``: the first place that is free, in the helper's order."""
+
+
+def parse_side(value: object) -> Side | FirstFree:
+    """``annotate_value``'s ``side``; ``ValueError`` otherwise."""
+    if value == "auto":
+        return FirstFree()
+    found = _among(value, SIDES)
+    if found is None:
+        raise ValueError(
+            "side must be 'auto', 'above', 'below', 'left', or 'right'"
+        )
+    return found
+
+
+def parse_corner(value: object) -> Corner:
+    """``annotate_corner``'s ``loc``; ``ValueError`` otherwise."""
+    found = _among(value, CORNERS)
+    if found is None:
+        raise ValueError(
+            "loc must be 'upper left', 'upper right', 'lower left', or "
+            "'lower right'"
+        )
+    return found
+
+
+def parse_line_side(value: object) -> LineSide:
+    """``label_hline``'s ``side``; ``ValueError`` otherwise."""
+    found = _among(value, LINE_SIDES)
+    if found is None:
+        raise ValueError("side must be 'above' or 'below'")
+    return found
+
+
+def parse_line_x(value: object) -> LineAnchor | float | FirstFree:
+    """``label_hline``'s ``x``: an end, the middle, a fraction or ``"auto"``."""
+    if not isinstance(value, str):
+        return _number(value)
+    if value == "auto":
+        return FirstFree()
+    found = _among(value, LINE_ANCHORS)
+    if found is None:
+        raise ValueError(
+            "x must be 'auto', 'left', 'center', 'right', or a float"
+        )
+    return found
+
+
+@dataclass(frozen=True)
+class FromPanel:
+    """``label_axes(x="auto")``: each letter placed from what its panel draws."""
+
+
+def parse_letter_x(value: object) -> float | FromPanel:
+    """``label_axes``' ``x``: ``"auto"`` or an Axes-relative left edge."""
+    if isinstance(value, str):
+        return FromPanel() if value == "auto" else float(value)
+    return _number(value)
+
+
+def _number(value: object) -> float:
+    if isinstance(value, SupportsFloat | SupportsIndex):
+        return float(value)
+    raise TypeError(f"expected a number, got {value!r}")
+
+
+def left_side(position: str) -> bool:
+    """Whether an axis label position is matplotlib's ``"left"``."""
+    return position == "left"
+
+
+def on_baseline(alignment: str) -> bool:
+    """Whether a vertical alignment is matplotlib's ``"baseline"``."""
+    return alignment == "baseline"
 
 
 # ------------------------------------------------------------ value text
@@ -161,7 +396,7 @@ class ValueFacts:
     scaled: float
     decimals: int
     fixed: bool
-    sign: Sign
+    plus: bool = False
 
 
 @dataclass(frozen=True)
@@ -302,10 +537,10 @@ class Headroom:
 # ------------------------------------------------------------ ink
 @dataclass(frozen=True)
 class Ink:
-    """A colour as matplotlib takes it (hex, name), or ``None``: the
-    preset's text colour."""
+    """A colour as matplotlib takes it, or ``None``: the preset's text
+    colour."""
 
-    color: object = None
+    color: Colour | None = None
 
 
 @dataclass(frozen=True)

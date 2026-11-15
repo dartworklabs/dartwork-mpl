@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -22,6 +22,13 @@ BBOX_ERRORS: tuple[type[BaseException], ...] = (
 )
 
 
+@runtime_checkable
+class _Rendering(Protocol):
+    """A canvas that hands out its renderer (Agg and its subclasses)."""
+
+    def get_renderer(self) -> RendererBase: ...
+
+
 def canvas_renderer(fig: Figure | SubFigure) -> RendererBase | None:
     """The canvas's own renderer at the Figure's current size and DPI.
 
@@ -30,8 +37,8 @@ def canvas_renderer(fig: Figure | SubFigure) -> RendererBase | None:
     never draws, so an artist may call it while the figure is drawn.
     """
     canvas = fig.canvas
-    if hasattr(canvas, "get_renderer"):
-        return canvas.get_renderer()  # type: ignore[no-any-return]
+    if isinstance(canvas, _Rendering):
+        return canvas.get_renderer()
     return None
 
 
@@ -92,7 +99,7 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     try:
         measuring = _PngCanvas(root)  # attaches itself as root.canvas
         root.draw_without_rendering()
-        renderer: RendererBase = measuring.get_renderer()  # type: ignore[no-untyped-call]
+        renderer: RendererBase = measuring.get_renderer()
     finally:
         root.set_canvas(original)
     return renderer

@@ -12,7 +12,6 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Literal, NewType, TypeAlias, assert_never
 
 from ..size import Length
@@ -50,35 +49,63 @@ EDGE_BAND = 0.15
 EDGE_BAND_TOL = 1e-9
 
 
-class Which(Enum):
-    """An Axes' horizontal or vertical axis."""
-
-    X = "x"
-    Y = "y"
+@dataclass(frozen=True)
+class XAxis:
+    """An Axes' horizontal axis."""
 
 
-class Gap(Enum):
-    """A GridSpec spacing: between columns or between rows."""
-
-    WSPACE = "wspace"
-    HSPACE = "hspace"
+@dataclass(frozen=True)
+class YAxis:
+    """An Axes' vertical axis."""
 
 
-class Edge(Enum):
-    """An edge of the canvas or of a plot."""
+Which: TypeAlias = XAxis | YAxis
 
-    LEFT = "left"
-    RIGHT = "right"
-    BOTTOM = "bottom"
-    TOP = "top"
+
+@dataclass(frozen=True)
+class WSpace:
+    """A GridSpec's spacing between columns (``wspace``)."""
+
+
+@dataclass(frozen=True)
+class HSpace:
+    """A GridSpec's spacing between rows (``hspace``)."""
+
+
+Gap: TypeAlias = WSpace | HSpace
+
+
+@dataclass(frozen=True)
+class Left:
+    """The left edge of the canvas or of a plot."""
+
+
+@dataclass(frozen=True)
+class Right:
+    """The right edge of the canvas or of a plot."""
+
+
+@dataclass(frozen=True)
+class Bottom:
+    """The bottom edge of the canvas or of a plot."""
+
+
+@dataclass(frozen=True)
+class Top:
+    """The top edge of the canvas or of a plot."""
+
+
+Edge: TypeAlias = Left | Right | Bottom | Top
+#: Every edge, in the order :class:`Sides` lists them.
+ALL_EDGES: tuple[Edge, ...] = (Left(), Right(), Bottom(), Top())
 
 
 def lies_across(edge: Edge) -> bool:
     """Top and bottom lie across the width; left and right along the height."""
     match edge:
-        case Edge.TOP | Edge.BOTTOM:
+        case Top() | Bottom():
             return True
-        case Edge.LEFT | Edge.RIGHT:
+        case Left() | Right():
             return False
         case _:
             assert_never(edge)
@@ -88,8 +115,8 @@ def edge_of(*, across: bool, far: bool) -> Edge:
     """The edge across (top, bottom) or along the height, at the far end
     (top, right) or the near one."""
     if across:
-        return Edge.TOP if far else Edge.BOTTOM
-    return Edge.RIGHT if far else Edge.LEFT
+        return Top() if far else Bottom()
+    return Right() if far else Left()
 
 
 # -- what matplotlib writes, read once ----------------------------------------

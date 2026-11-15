@@ -6,16 +6,23 @@ import pytest
 
 from dartwork_mpl.labels import decide
 from dartwork_mpl.labels.model import (
+    Center,
     Column,
     CrowdFacts,
+    Edge,
     HeadroomFacts,
+    Inside,
+    Outside,
     Panel,
     PanelsFacts,
     Pixels,
     Room,
+    Segment,
     Span,
     Spot,
+    StackTotal,
     Title,
+    TotalsToo,
     Tries,
     Try,
     ValueFacts,
@@ -73,7 +80,7 @@ def test_headroom_grows_only_as_far_as_the_labels_need(rooms, view):
     ("value", "decimals", "fixed"), [(21.4, 1, False), (0.0, 2, True)]
 )
 def test_bar_text_is_the_value_at_the_call_decimals(value, decimals, fixed):
-    text = decide.bar_text(ValueFacts(value, decimals, fixed, "-"))
+    text = decide.bar_text(ValueFacts(value, decimals, fixed))
     assert (text.value, text.decimals, text.fixed, text.lead) == (
         value,
         decimals,
@@ -90,10 +97,10 @@ def test_every_finite_bar_gets_a_plain_label():
         (3, float("nan"), 5),
         ("ax", "vertical"),
     )
-    plan = decide.plain_labels(BarsFacts((run,), "auto"))
+    plan = decide.plain_labels(BarsFacts((run,), TotalsToo()))
     assert [(p.index, p.kind, p.value) for p in plan.labels] == [
-        (0, "edge", 3),
-        (2, "edge", 5),
+        (0, Edge(), 3),
+        (2, Edge(), 5),
     ]
 
 
@@ -159,6 +166,10 @@ def test_spread_keeps_order_and_the_mean_of_a_crowded_group():
     assert out == pytest.approx((7.5, 13.5, 40.0))
 
 
+def _no_colour(value: object) -> tuple[float, float, float, float]:
+    raise ValueError(value)
+
+
 def test_options_parse_once_and_name_a_bad_keyword():
     options = parse_bar_options(
         where="auto",
@@ -168,11 +179,12 @@ def test_options_parse_once_and_name_a_bad_keyword():
         fmt="{:.1f} GWh",
         color="series",
         sign="+",
-        is_color=lambda c: False,
+        to_rgba=_no_colour,
     )
     assert options.series
-    assert placement("segment", options.where) == "center"
-    assert placement("total", "inside") == "outside"
+    assert options.plus
+    assert placement(Segment(), options.where) == Center()
+    assert placement(StackTotal(), Inside()) == Outside()
     for bad in (
         {"where": "top"},
         {"decimals": -1},
@@ -192,4 +204,4 @@ def test_options_parse_once_and_name_a_bad_keyword():
             **bad,
         }
         with pytest.raises(ValueError, match=next(iter(bad))):
-            parse_bar_options(**kw, is_color=lambda c: False)
+            parse_bar_options(**kw, to_rgba=_no_colour)
