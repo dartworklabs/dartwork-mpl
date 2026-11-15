@@ -54,6 +54,7 @@ ENTRY_POINTS = frozenset(
     {
         "dartwork_mpl",
         "dartwork_mpl.compose",
+        "dartwork_mpl.compose.labels",
         "dartwork_mpl.compose.size",
         "dartwork_mpl.compose.style",
     }
@@ -110,12 +111,6 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl.labels", "dartwork_mpl.ticks"): (
-        "bar value labels print in their axis's tick unit, like the ticks"
-    ),
-    ("dartwork_mpl.labels", "dartwork_mpl.style"): (
-        "label text is sized and weighted relative to the active preset"
-    ),
     ("dartwork_mpl.layout", "dartwork_mpl.labels"): (
         "bar labels, line-end names and panel letters settle at the size the "
         "layout fits, before it measures the margins"

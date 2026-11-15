@@ -1,7 +1,5 @@
 {
  "C1_slice_imports_slice": [
-  "dartwork_mpl.labels -> dartwork_mpl.style",
-  "dartwork_mpl.labels -> dartwork_mpl.ticks",
   "dartwork_mpl.layout -> dartwork_mpl.labels",
   "dartwork_mpl.layout -> dartwork_mpl.legend",
   "dartwork_mpl.layout -> dartwork_mpl.ticks"
@@ -11,7 +9,6 @@
  "C4_compose_decisions": {},
  "C5_compose_importers": [],
  "R1_module_lines": {
-  "src/dartwork_mpl/labels/bars.py": 516,
   "src/dartwork_mpl/labels/measure.py": 504,
   "src/dartwork_mpl/labels/model.py": 1117,
   "src/dartwork_mpl/layout/measure.py": 592,
@@ -38,6 +35,7 @@
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81
  },
  "R8_entry_function_lines": {
+  "src/dartwork_mpl/compose/labels.py::label_bars": 53,
   "src/dartwork_mpl/compose/size.py::figsize_for": 37
  },
  "R8_missing_all": [],

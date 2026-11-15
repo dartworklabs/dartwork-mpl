@@ -13,8 +13,8 @@ from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
 from ..geometry import record_panel_letters
-from ..style import fs
 from . import decide
+from .given import PresetText
 from .measure import drawn_renderer, panel, px_per_pt
 from .model import AtLeft, FromPanel, LetterStyle, PanelsFacts, parse_letter_x
 
@@ -90,25 +90,18 @@ def label_axes(
     fontweight: str = "normal",
     x: float | str = "auto",
     y: float | None = None,
+    *,
+    preset: PresetText,
     **kwargs: Unpack[LetterStyle],
 ) -> list[Text]:
-    """Panel letters (a, b, c, ...) at the top-left of each panel.
-
-    ``x="auto"`` (default) places each letter from what its panel draws:
-    its left edge on the outer edge of the panel's y-axis name (a grid
-    column takes its leftmost), its baseline on the panel's title baseline
-    (untitled: 4 pt above the top decoration, level with its row).
-    ``dm.simple_layout`` places them again at the size it settles on. A
-    number is an Axes-relative left edge; ``y`` an Axes-relative bottom.
-    ``fontsize`` defaults to ``dm.fs(1)``; keywords go to the texts.
-    """
+    """``dm.label_axes``, its letters sized by ``preset``."""
     axes = (
         list(np.asarray(axes, dtype=object).flat)
         if isinstance(axes, np.ndarray)
         else list(axes)
     )
     labels = _letters(len(axes)) if labels is None else labels
-    size = fs(1) if fontsize is None else fontsize
+    size = preset.size(1) if fontsize is None else fontsize
     match parse_letter_x(x):
         case AtLeft(x=left):
             return [

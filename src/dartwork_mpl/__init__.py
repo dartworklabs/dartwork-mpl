@@ -49,22 +49,22 @@ from .color import (
 )
 from .compose import style
 
-# Figure size, and the active preset's canvas
-from .compose.size import figsize_for
-
-# Agent guidance: the skill, templates and anti-pattern lint
-from .guide import lint as lint_code
-
-# Value labels, panel letters, notes
-from .labels import (
+# Value labels, panel letters, notes (sized by the active preset)
+from .compose.labels import (
     add_note,
     annotate_corner,
     annotate_value,
     label_axes,
     label_bars,
     label_hline,
-    label_line_ends,
 )
+
+# Figure size, and the active preset's canvas
+from .compose.size import figsize_for
+
+# Agent guidance: the skill, templates and anti-pattern lint
+from .guide import lint as lint_code
+from .labels import label_line_ends
 
 # Layout
 from .layout import simple_layout

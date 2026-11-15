@@ -24,8 +24,9 @@ from matplotlib.transforms import IdentityTransform
 from ..align import AlignCentre
 from ..edgecase import settle
 from ..geometry import canvas_renderer, same_position_axes
-from ..style import fs, fw
+from ..number import TickScale
 from . import decide, edges
+from .given import NumberText, PresetText, TickText
 from .measure import (
     bar_end,
     bar_run,
@@ -113,8 +114,8 @@ class BarLabel(Annotation):
             xycoords=self.bar if self.centred else "data",
             textcoords="offset points",
             annotation_clip=False,
-            fontsize=fs(-1),
-            fontweight=fw(1),
+            fontsize=family.preset.size(-1),
+            fontweight=family.preset.weight(1),
         )
 
     @property
@@ -242,31 +243,34 @@ class BarFamily:
 
     containers: list[BarContainer]
     options: BarOptions
+    preset: PresetText
+    ticks: TickText
     texts: list[BarLabel] = field(default_factory=list)
 
     def refresh(self) -> None:
         """Every label's text in its axis's tick unit now, one decimal count
         for the call unless ``decimals=`` fixed it."""
-        # The ticks' number rule, imported here: the formatting package
-        # still closes an import cycle through the root package.
-        from ..ticks import tick_scale_of, value_label_decimals
-
-        scales = [tick_scale_of(t.value_axis, t.value) for t in self.texts]
+        scales = [
+            self.ticks.scale_of(t.value_axis, t.value) for t in self.texts
+        ]
         scaled = [
             t.value / s.factor for t, s in zip(self.texts, scales, strict=True)
         ]
         count = self.options.decimals
         if count is None:
-            count = value_label_decimals(scaled)
+            count = self.ticks.decimals(scaled)
         for label, scale, value in zip(self.texts, scales, scaled, strict=True):
             label.tick_scale = scale
-            label.set_text(compose(value, scale, count, self.options))
+            label.set_text(
+                compose(value, scale, count, self.options, self.ticks.number)
+            )
 
     def follow(self, label: BarLabel) -> None:
         """Follow the tick unit, the bar's room and the ink for where it sits."""
-        from ..ticks import tick_scale_of
-
-        if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
+        if (
+            self.ticks.scale_of(label.value_axis, label.value)
+            != label.tick_scale
+        ):
             self.refresh()
         label.off_bar = False
         if label.kind.spills and label.where.inset:
@@ -313,11 +317,13 @@ def _template(fmt: str, number: str, value: float) -> str:
 
 
 def compose(
-    scaled: float, scale: TickScale, decimals: int, options: BarOptions
+    scaled: float,
+    scale: TickScale,
+    decimals: int,
+    options: BarOptions,
+    number_text: NumberText,
 ) -> str:
     """One label's text for a value already divided by ``scale.factor``."""
-    from ..ticks import number_text
-
     fixed = options.decimals is not None
     facts = ValueFacts(scaled, decimals, fixed, options.plus)
     match options.fmt:
@@ -447,35 +453,10 @@ def label_bars(
     fmt: str | Callable[[float], object] | None = None,
     color: ColorType | None = None,
     sign: str = "-",
+    preset: PresetText,
+    ticks: TickText,
 ) -> list[Text]:
-    """Label each bar with its value, printed like the axis's ticks.
-
-    One call for "put the values on the bars" / "막대에 값 표시"::
-
-        ax.bar(months, energy_wh)
-        dm.label_bars(ax)
-        dm.simple_layout(fig)
-
-    ``dm.fs(-1)``, ``dm.fw(1)``, the text colour, 3 pt beyond the bar end
-    (negative bars below, ``barh`` left; past an error bar's cap); the value
-    in the axis's tick unit (``33G``, ``31%``, ``$800``; plain under
-    ``dm.axis_unit``), three significant digits on the largest value and
-    the fewest decimals that print every value exactly. Stacked bars get each
-    segment's value at its middle and the stack's net beyond its end; a
-    label on its bar takes white or the text colour, whichever reads.
-    ``dm.simple_layout`` turns crowded labels vertical (vertical bars),
-    hides those that still meet from the last bar, and grows an
-    autoscaled value axis to hold them. Calling this again on the same bars
-    replaces their labels; restyle a label after ``dm.simple_layout``.
-
-    ``where``: ``"auto"``, ``"outside"``, ``"inside"`` (while the bar holds
-    the label), ``"center"``. ``total``: ``"auto"``, ``"only"``, ``False``.
-    ``crowded``: ``"rotate"`` or ``"skip"`` (hide every other label).
-    ``decimals``: a fixed count. ``fmt``: a ``{}`` template (``"${}B"``,
-    ``"{:+.1f}%"``) or a callable of the value in the tick unit. ``color``:
-    any colour, or ``"series"`` (labels off their bar in the bar's colour,
-    made readable). ``sign="+"`` signs rises too (``+30``).
-    """
+    """``dm.label_bars``: text sized by ``preset``, values printed as ``ticks`` print them."""
     options = parse_bar_options(
         where=where,
         total=total,
@@ -498,7 +479,7 @@ def label_bars(
             id(containers[p.run])
         }
     stacks[None] = frozenset()
-    family = BarFamily(containers, options)
+    family = BarFamily(containers, options, preset, ticks)
     for p in plan.labels:
         container = containers[p.run]
         if isinstance(container.patches[p.index].axes, Axes):

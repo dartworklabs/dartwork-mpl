@@ -13,8 +13,8 @@ from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
 from ..align import HAlign
-from ..style import fs, fw
 from . import decide
+from .given import PresetText
 from .measure import (
     drawn_renderer,
     line_boxes,
@@ -84,16 +84,10 @@ def annotate_value(
     side: str = "auto",
     offset_pt: float = 3.0,
     fontsize: float | None = None,
+    preset: PresetText,
     **kw: Unpack[NoteStyle],
 ) -> Text:
-    """Label one data value, ``offset_pt`` points from its point.
-
-    ``side="auto"`` takes the first of above, below, right, left that stays
-    inside the axes clear of the data and other text; else the least
-    covered side inside the axes. A label that would leave the axes above
-    its point moves sideways rather than below. ``dm.fs(-1)`` text, one
-    weight step heavier (``dm.fw(1)``); keywords go to ``ax.annotate``.
-    """
+    """``dm.annotate_value``, its text sized by ``preset``."""
     sides = parse_side(side).tries
     existing = list(ax.texts)
     first = sides[0]
@@ -102,7 +96,7 @@ def annotate_value(
             ha=first.ha.mpl,
             va=first.va.mpl,
             annotation_clip=False,
-            fontweight=kw.pop("weight", fw(1)),
+            fontweight=kw.pop("weight", preset.weight(1)),
         )
         | kw
     )
@@ -112,7 +106,7 @@ def annotate_value(
         xycoords="data",
         xytext=_side_offset(first, float(offset_pt)),
         textcoords="offset points",
-        fontsize=fs(-1) if fontsize is None else fontsize,
+        fontsize=preset.size(-1) if fontsize is None else fontsize,
         **style,
     )
     if len(sides) < 2:
@@ -150,14 +144,10 @@ def annotate_corner(
     inset_pt: float = 3.0,
     avoid_overlap: bool = True,
     fontsize: float | None = None,
+    preset: PresetText,
     **kw: Unpack[NoteStyle],
 ) -> Text:
-    """Narrative text inside an axes corner, ``inset_pt`` points in.
-
-    With ``avoid_overlap`` the first corner clear of the data and other
-    text wins, ``loc`` first, then upper left, upper right, lower left,
-    lower right. ``dm.fs(-2)`` text; keywords go to ``ax.annotate``.
-    """
+    """``dm.annotate_corner``, its text sized by ``preset``."""
     corner = parse_corner(loc)
     existing = list(ax.texts)
     dx, dy = corner.inward
@@ -167,7 +157,7 @@ def annotate_corner(
         xycoords="axes fraction",
         xytext=(dx * float(inset_pt), dy * float(inset_pt)),
         textcoords="offset points",
-        fontsize=fs(-2) if fontsize is None else fontsize,
+        fontsize=preset.size(-2) if fontsize is None else fontsize,
         **(
             NoteStyle(ha=corner.ha.mpl, va=corner.va.mpl, annotation_clip=False)
             | kw
@@ -236,13 +226,10 @@ def label_hline(
     side: str = "above",
     gap_pt: float = 2.0,
     fontsize: float | None = None,
+    preset: PresetText,
     **kw: Unpack[NoteStyle],
 ) -> Text:
-    """A label against the horizontal line at ``y``, ``gap_pt`` points off it.
-
-    ``x``: the drawn line's ``"right"`` / ``"left"`` end or ``"center"``, an
-    axes fraction, or ``"auto"`` (the clearer end). ``dm.fs(-2)`` text.
-    """
+    """``dm.label_hline``, its text sized by ``preset``."""
     off = parse_line_side(side)
     places = parse_line_x(x).tries
     existing = list(ax.texts)
@@ -254,7 +241,7 @@ def label_hline(
         xycoords="data",
         xytext=(0.0, off.offset[1] * float(gap_pt)),
         textcoords="offset points",
-        fontsize=fs(-2) if fontsize is None else fontsize,
+        fontsize=preset.size(-2) if fontsize is None else fontsize,
         **(
             NoteStyle(ha=first.ha.mpl, va=off.va.mpl, annotation_clip=False)
             | kw
@@ -277,14 +264,11 @@ def label_hline(
     return ann
 
 
-def add_note(fig: Figure, text: str, **kw: Unpack[TextStyle]) -> Text:
-    """A source or note line at the figure's lower left, ``dm.fs(-1)``.
-
-    ``dm.simple_layout`` keeps the plot above it, ``axes.labelpad`` apart::
-
-        dm.add_note(fig, "Source: internal web logs")
-    """
-    style = TextStyle(ha="left", va="bottom", fontsize=fs(-1)) | kw
+def add_note(
+    fig: Figure, text: str, *, preset: PresetText, **kw: Unpack[TextStyle]
+) -> Text:
+    """``dm.add_note``, its text sized by ``preset``."""
+    style = TextStyle(ha="left", va="bottom", fontsize=preset.size(-1)) | kw
     note = fig.text(0.0, 0.0, text, **style)  # pyright: ignore[reportUnknownMemberType]
     _NOTE_GAPS[note] = float(mpl.rcParams["axes.labelpad"])
     return note
