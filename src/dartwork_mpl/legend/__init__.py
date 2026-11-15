@@ -12,8 +12,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Unpack
 
-from . import apply
-from .apply import figure_reserve, outside_edge, settle
+from . import apply, figure
+from .apply import outside_edge, settle
+from .figure import figure_reserve
 from .model import AskedLoc, parse_columns
 from .sides import Above, Below, Left, Right, Side
 
@@ -99,4 +100,4 @@ def figure_legend(
     ``fig.legend``. ``dm.simple_layout`` keeps the panels clear of it.
     Returns ``None`` when no Axes has a labelled artist.
     """
-    return apply.figure_legend(fig, loc, parse_columns(ncols, ncol), kw)
+    return figure.figure_legend(fig, loc, parse_columns(ncols, ncol), kw)

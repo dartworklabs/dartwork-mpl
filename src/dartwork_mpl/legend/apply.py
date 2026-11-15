@@ -1,13 +1,12 @@
-"""Draw the legends the decisions plan, and the layout's legend hooks.
+"""Draw the Axes legends the decisions plan, and the layout's legend hooks.
 
 A legend ``place_legend`` built has a :class:`Record` in this module's
 registry: what it was placed from and where. The layout places it again at
 the size it settles on only while it still sits where the library put it; a
 legend the caller moved (``set_loc``, ``set_bbox_to_anchor``) is the
-caller's. A figure legend ``figure_legend`` placed has a :class:`Reserve`:
-the figure edge it holds and the room the layout keeps from it.
+caller's. Figure legends are ``figure``'s.
 
-The registries hold their legends weakly, and a record names its handles
+The registry holds its legends weakly, and a record names its handles
 by identity (found again on the Axes when the legend is rebuilt), so a
 closed figure is freed with its legends.
 """
@@ -25,13 +24,11 @@ from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.transforms import Bbox, ScaledTranslation
 
-from ..edge import Edge, Reserve, edge_of
+from ..edge import Edge, edge_of
 from ..edgecase import settle as settle_edges
 from ..geometry import (
     BBOX_ERRORS,
     axes_titles,
-    figure_axes,
-    figure_legends,
     get_renderer,
     same_position_axes,
 )
@@ -123,9 +120,6 @@ def handles_of(ax: Axes, record: Record) -> list[Artist] | None:
 _RECORDS: weakref.WeakKeyDictionary[Legend, Record] = (
     weakref.WeakKeyDictionary()
 )
-_RESERVES: weakref.WeakKeyDictionary[Legend, Reserve] = (
-    weakref.WeakKeyDictionary()
-)
 
 
 def record_of(legend: Legend | None, renderer: RendererBase) -> Record | None:
@@ -182,7 +176,7 @@ def _remember(legend: Legend, record: Record) -> Legend:
     return legend
 
 
-def _new_legend(
+def new_legend(
     owner: Axes | Figure | SubFigure,
     handles: Sequence[Artist],
     labels: Sequence[str],
@@ -257,7 +251,7 @@ def draw(
             loc, labels = side.legend_loc, entries.labels
         case _:
             assert_never(plan)
-    legend = _new_legend(
+    legend = new_legend(
         ax,
         handles,
         list(labels),
@@ -352,7 +346,7 @@ def place_legend(
     keywords = parse_keywords(kw, _kept_settings(source), columns)
     placement = parse_loc(loc)
     if isinstance(placement, Side):
-        _refuse_anchor("place_legend", loc, keywords)
+        refuse_anchor("place_legend", loc, keywords)
     for i in plan.remove:
         if (partner := owners[i].get_legend()) is not None:
             partner.remove()
@@ -361,7 +355,7 @@ def place_legend(
     anchored = keywords.anchored
     match placement:
         case Passed(loc=raw):
-            legend = _new_legend(
+            legend = new_legend(
                 host,
                 picked,
                 list(entries.labels),
@@ -389,7 +383,7 @@ def place_legend(
     return draw(host, record, picked, spot, renderer)
 
 
-def _refuse_anchor(
+def refuse_anchor(
     name: str, loc: AskedLoc, keywords: Keywords[LegendKeywords]
 ) -> None:
     """A named side anchors the legend itself: a caller anchor is an error."""
@@ -490,105 +484,8 @@ def outside_edge(legend: Legend) -> Edge | None:
     return None if side is None else edge_of(across=side.across, far=side.far)
 
 
-def figure_reserve(artist: Artist) -> Reserve | None:
-    """The edge a ``figure_legend`` legend holds and its gap, else ``None``."""
-    return _RESERVES.get(artist) if isinstance(artist, Legend) else None
-
-
-# ---------------------------------------------------------- figure legends
-def figure_legend(
-    fig: Figure | SubFigure,
-    loc: AskedLoc,
-    columns: Columns | None,
-    kw: LegendKeywords,
-) -> Legend | None:
-    """One legend for ``fig``'s panels (:func:`dartwork_mpl.legend.figure_legend`)."""
-    handles: list[Artist] = []
-    labels: list[str] = []
-    for ax in figure_axes(fig):
-        for handle, label in zip(*ax.get_legend_handles_labels(), strict=True):
-            if label not in labels:
-                handles.append(handle)
-                labels.append(label)
-    names = set(labels)
-    replaced = [
-        legend
-        for ax in figure_axes(fig)
-        if (legend := ax.get_legend()) is not None
-        and set(_names(legend)) <= names
-    ]
-    replaced += [lg for lg in figure_legends(fig) if lg in _RESERVES]
-    if not handles:
-        for legend in replaced:
-            legend.remove()
-        return None
-    placement = parse_loc(loc)
-    match placement:
-        case Passed(loc=raw):
-            legend = _new_legend(
-                fig,
-                handles,
-                labels,
-                loc=raw,
-                ncols=1 if columns is None else columns.n,
-                **kw,
-            )
-        case Best():
-            legend = _placed_figure_legend(
-                fig, handles, labels, None, loc, columns, kw
-            )
-        case Above() | Below() | Right() | Left():
-            legend = _placed_figure_legend(
-                fig, handles, labels, placement, loc, columns, kw
-            )
-        case _:
-            assert_never(placement)
-    for old in replaced:
-        old.remove()
-    return legend
-
-
-def _placed_figure_legend(
-    fig: Figure | SubFigure,
-    handles: list[Artist],
-    labels: list[str],
-    side: Side | None,
-    loc: AskedLoc,
-    columns: Columns | None,
-    kw: LegendKeywords,
-) -> Legend:
-    """The figure legend on ``side`` (``None``: the side that fits)."""
-    keywords = parse_keywords(kw, LegendKeywords(), columns)
-    _refuse_anchor("figure_legend", loc, keywords)
-    renderer = get_renderer(fig)
-    entries = Entries(tuple(labels))
-    request = Request(side, keywords.columns)
-    facts = measure.figure_facts(
-        fig, handles, entries, request, keywords.rest, renderer
-    )
-    plan = decide.figure_place(facts)
-    legend = _new_legend(
-        fig,
-        handles,
-        labels,
-        loc=plan.side.figure_loc.code,
-        ncols=plan.columns.n,
-        **(
-            keywords.rest
-            | LegendKeywords(
-                bbox_to_anchor=plan.anchor, bbox_transform=fig.transSubfigure
-            )
-        ),
-    )
-    # simple_layout keeps this gap between the legend and the panels.
-    gap = float(legend.borderaxespad) * float(legend.prop.get_size_in_points())
-    _RESERVES[legend] = Reserve(
-        edge_of(across=plan.side.across, far=plan.side.far), gap
-    )
-    return legend
-
-
-def _names(legend: Legend) -> tuple[str, ...]:
+def entry_names(legend: Legend) -> tuple[str, ...]:
+    """The names ``legend`` shows: its record's entries, else its texts."""
     record = _RECORDS.get(legend)
     if record is not None:
         return record.entries.labels
