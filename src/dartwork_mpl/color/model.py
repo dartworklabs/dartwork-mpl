@@ -25,6 +25,7 @@ from typing import (
     runtime_checkable,
 )
 
+from ..locale import Locale
 from .family import Count, Family
 from .space import Color, Hex, Oklab, Oklch, Rgb, finite
 
@@ -183,29 +184,6 @@ def parse_space(text: object) -> Space:
     raise ValueError(
         f"Unsupported color space: {text}. Must be 'oklch', 'oklab', or 'rgb'"
     )
-
-
-@dataclass(frozen=True)
-class DefaultLocale:
-    """Gains green, losses red."""
-
-    red_gains: ClassVar[bool] = False
-
-
-@dataclass(frozen=True)
-class KoreanLocale:
-    """Korea's markets: gains red, losses blue."""
-
-    red_gains: ClassVar[bool] = True
-
-
-#: Whose convention the semantic gain/loss colours follow.
-Locale = DefaultLocale | KoreanLocale
-
-
-def parse_locale(text: str) -> Locale:
-    """``"kr"`` is Korea's convention; anything else the default."""
-    return KoreanLocale() if text == "kr" else DefaultLocale()
 
 
 @dataclass(frozen=True)

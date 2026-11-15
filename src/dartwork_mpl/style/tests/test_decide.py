@@ -4,15 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from dartwork_mpl.locale import DefaultLocale, KoreanLocale
 from dartwork_mpl.style import apply, decide
-from dartwork_mpl.style.model import (
-    DefaultLocale,
-    KoreanLocale,
-    Points,
-    Steps,
-    Weight,
-    override_key,
-)
+from dartwork_mpl.style.model import Points, Steps, Weight, override_key
 
 REGISTRY = apply.REGISTRY
 

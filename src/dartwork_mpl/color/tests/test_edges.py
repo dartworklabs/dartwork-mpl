@@ -10,15 +10,14 @@ from dartwork_mpl.color.catalog import CATALOG
 from dartwork_mpl.color.family import Count
 from dartwork_mpl.color.model import (
     ContrastFacts,
-    DefaultLocale,
     DivergingSource,
     Form,
-    KoreanLocale,
     Ratio,
     SemanticFacts,
 )
 from dartwork_mpl.color.space import Rgb
 from dartwork_mpl.edgecase import settle
+from dartwork_mpl.locale import DefaultLocale, KoreanLocale
 
 
 def fired(facts, plan, edge):

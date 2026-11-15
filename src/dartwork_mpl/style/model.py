@@ -13,7 +13,9 @@ import json
 from collections.abc import Collection, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import ClassVar, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
+
+from ..locale import Locale
 
 #: Slides over a journal column (23.4 cm / 9 cm): the presentation presets
 #: are the scientific ones with every point size times this.
@@ -39,32 +41,6 @@ WEIGHTS: Mapping[str, int] = {
     "black": 900,
 }
 NORMAL_WEIGHT = 400
-
-
-@dataclass(frozen=True)
-class DefaultLocale:
-    """``dc.pos`` / ``dc.neg``: gains green, losses red."""
-
-    word: ClassVar[str] = "default"
-
-    def __str__(self) -> str:
-        """The colour slice's name for it (``dm.apply_semantic``)."""
-        return self.word
-
-
-@dataclass(frozen=True)
-class KoreanLocale:
-    """``dc.pos`` / ``dc.neg``: gains red, losses blue."""
-
-    word: ClassVar[str] = "kr"
-
-    def __str__(self) -> str:
-        """The colour slice's name for it (``dm.apply_semantic``)."""
-        return self.word
-
-
-#: Which convention the role colours ``dc.pos`` / ``dc.neg`` follow.
-Locale = DefaultLocale | KoreanLocale
 
 
 @dataclass(frozen=True)

@@ -63,6 +63,9 @@ PLATFORM = frozenset(
         # A physical length and its units (size measures canvases in it,
         # layout margins).
         "dartwork_mpl.length",
+        # Whose convention a figure follows (style reads it off a preset,
+        # color binds the role colours for it).
+        "dartwork_mpl.locale",
         # Figure measurement two or more slices share.
         "dartwork_mpl.geometry",
         # The edge-case registry every slice's edges.py appends to.

@@ -2,17 +2,8 @@
 
 from __future__ import annotations
 
-from .model import (
-    KOREAN_LAYER,
-    Active,
-    Chain,
-    DefaultLocale,
-    KoreanLocale,
-    Points,
-    Preset,
-    Steps,
-    Weight,
-)
+from ..locale import DefaultLocale, KoreanLocale
+from .model import KOREAN_LAYER, Active, Chain, Points, Preset, Steps, Weight
 
 #: One ``dm.fs`` / ``dm.lw`` step on paper, reports and the web.
 POINT = Points(1.0)

@@ -18,6 +18,7 @@ import matplotlib as mpl
 import matplotlib.colors as mcolors
 
 from ..edgecase import settle
+from ..locale import DefaultLocale, Locale
 from . import apply, decide, measure
 from .catalog import CATALOG
 from .edges import FULL_LADDER, HEX_ROUNDING, KR_TOKENS
@@ -31,7 +32,6 @@ from .model import (
     SemanticFacts,
     Steps,
     Weight,
-    parse_locale,
     parse_space,
     parse_written,
     rgb_color,
@@ -339,13 +339,13 @@ def make_palette(n: int, kind: str = "categorical") -> list[str]:
     return list(decide.palette(PaletteRequest.parse(n, kind)))
 
 
-def apply_semantic(locale: str) -> None:
+def apply_semantic(locale: Locale) -> None:
     """Bind the role colours ``dc.pos``/``neg``/``ref``/``hl`` for ``locale``
-    (``"kr"``: gains red, losses blue; anything else: gains green)."""
-    facts = SemanticFacts(parse_locale(locale), CATALOG)
+    (Korean: gains red, losses blue; the default: gains green)."""
+    facts = SemanticFacts(locale, CATALOG)
     tokens = settle(facts, decide.semantic(facts), (KR_TOKENS,)).plan
     apply.apply_semantic(tokens)
 
 
 apply.register(CATALOG)
-apply_semantic("default")
+apply_semantic(DefaultLocale())
