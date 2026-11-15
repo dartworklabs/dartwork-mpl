@@ -344,9 +344,6 @@ dm.save_formats(fig, "phase_diagram")
 dm.save_formats(fig, "phase_diagram", formats=("png", "pdf", "svg"))
 ```
 
-For interactive sessions, use `dm.save_and_show(fig, "name")` — it
-saves first and then displays the figure inline.
-
 ---
 
 ## 8. Legacy ↔ 0.4 Cheat Sheet

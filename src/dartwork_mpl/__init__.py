@@ -107,9 +107,6 @@ from .formatting import (
 # Import icon module exports
 from .icon import icon_font, icon_font_path, list_icon_fonts
 
-# I/O
-from .io import save_and_show, save_formats, show
-
 # Layout
 from .layout import (
     adopt_axis_label_font,
@@ -130,6 +127,9 @@ from .prompt import (
 # --- Explicit imports from split modules (formerly in util.py) ---
 # Scaling helpers
 from .recommend import suggest_chart_type
+
+# Saving
+from .save import save_formats
 from .scale import dpi, fs, fw, lw
 
 # Physical units and figure size
@@ -284,10 +284,8 @@ __all__ = [  # noqa: RUF022
     "recommend_tick_decimals",
     "rotate_tick_labels",
     "avoid_tick_overlap",
-    # I/O
+    # Saving
     "save_formats",
-    "save_and_show",
-    "show",
     # Axes annotation
     "annotate_value",
     "add_note",

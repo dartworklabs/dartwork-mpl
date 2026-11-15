@@ -58,7 +58,7 @@ class TestSavesLikeSaveFormats:
 
     def test_png_pixels_and_pdf_bytes_match(self, tmp_path: Path) -> None:
         fig = _lines()
-        dm.save_formats(fig, str(tmp_path / "plain"), validate=False)
+        dm.save_formats(fig, str(tmp_path / "plain"))
         r = dm.review(fig, tmp_path / "rev", quiet=True)
         plt.close(fig)
         assert set(r.paths) == {"png", "pdf", "json"}

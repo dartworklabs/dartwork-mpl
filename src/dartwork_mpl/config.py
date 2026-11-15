@@ -52,8 +52,7 @@ class Config:
     ----------
     adopt_orphan_tick_font : bool, default ``False``
         Fallback default for the ``adopt_orphan_tick_font`` keyword on
-        :func:`dartwork_mpl.simple_layout`, :func:`dartwork_mpl.save_formats`,
-        and :func:`dartwork_mpl.save_and_show`. Each of those functions
+        :func:`dartwork_mpl.simple_layout`, which
         accepts ``True`` / ``False`` / ``None`` (the call-site default);
         ``None`` is read here. Set this to ``True`` to make orphan-axis
         tick fonts adopt the axis-label font everywhere. Per-call overrides
@@ -62,9 +61,8 @@ class Config:
         When ``True``, emit a one-time :class:`UserWarning` every time
         orphan-tick font adoption mutates a figure (via
         :func:`dartwork_mpl.layout.adopt_axis_label_font` or its drivers
-        :func:`~dartwork_mpl.simple_layout`, :func:`~dartwork_mpl.save_formats`,
-        :func:`~dartwork_mpl.save_and_show`). Useful when debugging a
-        figure whose ticks change unexpectedly after a save — or when
+        :func:`~dartwork_mpl.simple_layout`). Useful when debugging a
+        figure whose ticks change unexpectedly after a layout — or when
         running under matplotlib's ``constrained_layout``, where the
         font change can trigger a re-layout on the next draw. Default is
         off so the common path stays quiet.

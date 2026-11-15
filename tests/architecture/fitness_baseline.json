@@ -9,7 +9,7 @@
   "src/dartwork_mpl/_colors/model/_color.py": 1003,
   "src/dartwork_mpl/_colors/verify/_comparison.py": 1849,
   "src/dartwork_mpl/_colors/verify/_gates.py": 1263,
-  "src/dartwork_mpl/_compat.py": 747,
+  "src/dartwork_mpl/_compat.py": 776,
   "src/dartwork_mpl/_figure_geometry/__init__.py": 1462,
   "src/dartwork_mpl/annotation/_bar_label_settle.py": 1088,
   "src/dartwork_mpl/annotation/_bar_labels.py": 860,
@@ -23,7 +23,6 @@
   "src/dartwork_mpl/formatting/_defaults.py": 1210,
   "src/dartwork_mpl/formatting/_label_unit.py": 612,
   "src/dartwork_mpl/formatting/_twin_colors.py": 628,
-  "src/dartwork_mpl/io/__init__.py": 574,
   "src/dartwork_mpl/layout/_fit_labels.py": 1853,
   "src/dartwork_mpl/layout/_simple_layout.py": 903,
   "src/dartwork_mpl/lint/detect.py": 742,
@@ -52,7 +51,7 @@
   "annotation": 8271,
   "formatting": 4909,
   "layout": 4235,
-  "mcp": 11141,
+  "mcp": 11140,
   "mcp/artifacts": 5316,
   "ui": 6333,
   "validate": 7410,
@@ -95,7 +94,7 @@
  ],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 159
+  "modules": 162
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_colors/_compatibility_metrics.py::_global_extrema": 101,
@@ -134,8 +133,6 @@
   "src/dartwork_mpl/diagnostics/_fonts.py::plot_fonts": 232,
   "src/dartwork_mpl/figure_review/__init__.py::review": 90,
   "src/dartwork_mpl/formatting/_label_unit.py::axis_unit": 135,
-  "src/dartwork_mpl/io/__init__.py::save_formats": 122,
-  "src/dartwork_mpl/io/__init__.py::show": 88,
   "src/dartwork_mpl/layout/_content_extent.py::_axes_content_extent_px": 128,
   "src/dartwork_mpl/layout/_crop.py::tight_crop": 136,
   "src/dartwork_mpl/layout/_gutter.py::fit_gutter": 86,
@@ -151,7 +148,7 @@
   "src/dartwork_mpl/mcp/artifacts/store.py::ArtifactStore.publish": 123,
   "src/dartwork_mpl/mcp/artifacts/store.py::configure_store": 83,
   "src/dartwork_mpl/mcp/artifacts/transport.py::register_artifacts": 197,
-  "src/dartwork_mpl/mcp/catalog/info.py::info_payload": 121,
+  "src/dartwork_mpl/mcp/catalog/info.py::info_payload": 120,
   "src/dartwork_mpl/mcp/docs_fetch/raw_github.py::fetch": 92,
   "src/dartwork_mpl/mcp/execution/__init__.py::_run": 278,
   "src/dartwork_mpl/mcp/guides/prompts.py::create_plot_text": 251,

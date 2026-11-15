@@ -48,14 +48,13 @@ only when you need it:
 
 | Extra        | Enables                                   | Pulls in              |
 | ------------ | ----------------------------------------- | --------------------- |
-| `[notebook]` | `dm.show()` inline SVG display in Jupyter | `ipython`             |
 | `[mcp]`      | the MCP server for AI assistants          | `fastmcp`, `httpx`    |
 | `[ui]`       | the interactive parameter viewer          | `fastapi`, `uvicorn`  |
 
 The UI extra requires FastAPI >=0.110.0.
 
 ```shell
-pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
+pip install "dartwork-mpl[mcp]"   # or [ui]
 ```
 
 <br/>

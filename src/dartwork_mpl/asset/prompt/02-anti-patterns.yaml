@@ -163,8 +163,8 @@ rules:
       kind: regex
       pattern: '\bplt\.show\s*\(\)'
     message: |
-      Prefer `dm.save_and_show(fig, "name")` or `dm.save_formats(fig,
-      "name")` so the figure ships with its rendered artifact.
+      Prefer `dm.save_formats(fig, "name")` so the figure ships with its
+      rendered artifact.
 
   - id: dm-subplots-removed
     severity: critical
@@ -409,8 +409,7 @@ rules:
     message: |
       Direct `savefig(...)` bypasses the dartwork-mpl save preset
       (multi-format, dpi, metadata). Use
-      `dm.save_formats(fig, "name")` for scripts or
-      `dm.save_and_show(fig, "name")` for notebooks.
+      `dm.save_formats(fig, "name")`.
     fix_suggestion: 'dm.save_formats(fig, "name")'
 
   - id: jet-cmap

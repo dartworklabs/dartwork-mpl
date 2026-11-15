@@ -61,7 +61,6 @@ The core install is intentionally lean — add an extra only when you need it:
 
 | Extra | Enables | Example |
 |---|---|---|
-| `[notebook]` | `dm.show()` inline SVG display in Jupyter | `pip install "dartwork-mpl[notebook]"` |
 | `[mcp]` | the MCP server for AI assistants | `uv add "dartwork-mpl[mcp]"` |
 | `[ui]` | the interactive parameter viewer | `pip install "dartwork-mpl[ui]"` |
 

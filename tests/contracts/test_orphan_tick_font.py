@@ -188,146 +188,6 @@ def test_exported_at_package_root() -> None:
     assert "adopt_axis_label_font" in dm.__all__
 
 
-class TestSaveFormatsIntegration:
-    """save_formats preserves ticks by default and supports adoption."""
-
-    def test_save_formats_keeps_tick_font_by_default(self, tmp_path) -> None:
-        dm.style.use("scientific")
-        fig, ax = plt.subplots()
-        ax.plot(range(10), range(10))
-        ax.set_ylabel("y label")  # x unlabeled; NOTE: no simple_layout call
-        ax.tick_params(axis="x", labelsize=5.5)
-        fig.canvas.draw()
-        before = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
-        dm.save_formats(
-            fig, str(tmp_path / "out"), formats=("png",), validate=False
-        )
-        after = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
-        assert after == before
-        plt.close(fig)
-
-    def test_save_formats_explicit_true_adopts(self, tmp_path) -> None:
-        dm.style.use("scientific")
-        fig, ax = plt.subplots()
-        ax.plot(range(10), range(10))
-        dm.save_formats(
-            fig,
-            str(tmp_path / "out"),
-            formats=("png",),
-            validate=False,
-            adopt_orphan_tick_font=True,
-        )
-        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
-        plt.close(fig)
-
-    def test_save_formats_y_orphan_adopts(self, tmp_path) -> None:
-        """y unlabeled (only xlabel set) -> y ticks adopt via save path."""
-        dm.style.use("scientific")
-        fig, ax = plt.subplots()
-        ax.plot(range(10), range(10))
-        ax.set_xlabel("x label")  # x labeled, y unlabeled
-        dm.save_formats(
-            fig,
-            str(tmp_path / "out"),
-            formats=("png",),
-            validate=False,
-            adopt_orphan_tick_font=True,
-        )
-        assert _y_tick(ax).get_fontweight() == ax.yaxis.label.get_fontweight()
-        plt.close(fig)
-
-    def test_save_formats_offset_text_adopts(self, tmp_path) -> None:
-        """Offset text adopts through the save_formats path end-to-end."""
-        dm.style.use("scientific")
-        fig, ax = plt.subplots()
-        ax.plot(range(10), [v * 1e9 for v in range(10)])  # 1e9 offset, no label
-        dm.save_formats(
-            fig,
-            str(tmp_path / "out"),
-            formats=("png",),
-            validate=False,
-            adopt_orphan_tick_font=True,
-        )
-        ot = ax.yaxis.get_offset_text()
-        assert ot.get_text().strip()
-        assert ot.get_fontweight() == ax.yaxis.label.get_fontweight()
-        plt.close(fig)
-
-    def test_save_formats_idempotent_after_simple_layout(
-        self, tmp_path
-    ) -> None:
-        """simple_layout then save_formats leaves tick font unchanged."""
-        dm.style.use("scientific")
-        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
-        ax.plot(range(10), range(10))
-        ax.set_ylabel("y label")  # x orphan
-        simple_layout(fig, adopt_orphan_tick_font=True)
-        xt = _x_tick(ax)
-        before = (
-            xt.get_fontsize(),
-            xt.get_fontweight(),
-            tuple(xt.get_fontfamily()),
-            xt.get_fontstyle(),
-        )
-        dm.save_formats(
-            fig,
-            str(tmp_path / "out"),
-            formats=("png",),
-            validate=False,
-            adopt_orphan_tick_font=True,
-        )
-        xt = _x_tick(ax)
-        after = (
-            xt.get_fontsize(),
-            xt.get_fontweight(),
-            tuple(xt.get_fontfamily()),
-            xt.get_fontstyle(),
-        )
-        assert after == before
-        plt.close(fig)
-
-    def test_save_formats_empty_figure_no_error(self, tmp_path) -> None:
-        """save_formats on a figure with no axes succeeds (no-op adoption)."""
-        dm.style.use("scientific")
-        fig = plt.figure()
-        dm.save_formats(
-            fig, str(tmp_path / "empty"), formats=("png",), validate=False
-        )
-        assert (tmp_path / "empty.png").exists()
-        plt.close(fig)
-
-
-class TestSaveAndShowIntegration:
-    """save_and_show preserves ticks by default and supports adoption."""
-
-    def test_save_and_show_keeps_tick_font_by_default(
-        self, tmp_path, monkeypatch
-    ) -> None:
-        monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
-        dm.style.use("scientific")
-        fig, ax = plt.subplots()
-        ax.plot(range(10), range(10))
-        ax.set_ylabel("y label")  # x orphan
-        ax.tick_params(axis="x", labelsize=5.5)
-        fig.canvas.draw()
-        before = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
-        dm.save_and_show(fig, str(tmp_path / "out.svg"))
-        after = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
-        assert after == before
-
-    def test_save_and_show_explicit_true_adopts(
-        self, tmp_path, monkeypatch
-    ) -> None:
-        monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
-        dm.style.use("scientific")
-        fig, ax = plt.subplots()
-        ax.plot(range(10), range(10))
-        dm.save_and_show(
-            fig, str(tmp_path / "out.svg"), adopt_orphan_tick_font=True
-        )
-        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
-
-
 class TestConfigGlobalDefault:
     """`dm.config.adopt_orphan_tick_font` flips the default on every
     entry point that accepts the matching keyword. Explicit per-call
@@ -374,30 +234,6 @@ class TestConfigGlobalDefault:
         assert _x_tick(ax).get_fontweight() == default_weight
         plt.close(fig)
 
-    def test_config_on_applies_save_formats_adoption(self, tmp_path) -> None:
-        fig, ax = self._build()
-        try:
-            dm.config.adopt_orphan_tick_font = True
-            dm.save_formats(
-                fig, str(tmp_path / "out"), formats=("png",), validate=False
-            )
-        finally:
-            dm.config.adopt_orphan_tick_font = False
-        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
-        plt.close(fig)
-
-    def test_config_on_applies_save_and_show_adoption(
-        self, tmp_path, monkeypatch
-    ) -> None:
-        monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
-        fig, ax = self._build()
-        try:
-            dm.config.adopt_orphan_tick_font = True
-            dm.save_and_show(fig, str(tmp_path / "out.svg"))
-        finally:
-            dm.config.adopt_orphan_tick_font = False
-        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
-
 
 class TestConfigOverrideContextManager:
     """`with dm.config.override(...)` scopes a temporary change and
@@ -419,7 +255,6 @@ class TestConfigOverrideContextManager:
         assert not dm.config.adopt_orphan_tick_font
 
     def test_override_unknown_field_raises(self) -> None:
-        import pytest
 
         with pytest.raises(AttributeError, match="no attribute"):
             with dm.config.override(nonexistent=True):
@@ -542,62 +377,3 @@ class TestWarnOnOrphanTickAdoption:
         with dm.config.override(warn_on_orphan_tick_adoption=True):
             assert dm.config.warn_on_orphan_tick_adoption
         assert not dm.config.warn_on_orphan_tick_adoption
-
-
-@pytest.mark.parametrize("formats", [("jpgg",), ("png", "jpgg")])
-def test_rejected_formats_preserve_orphan_fonts_and_figure(tmp_path, formats):
-    """Capability failure leaves tick fonts, positions, artists and canvas intact."""
-    dm.style.use("scientific")
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-    ax.plot([0, 1], [0, 1], linewidth=dm.lw(0))
-    ax.tick_params(labelsize=dm.fs(-2))
-    fig.canvas.draw()
-    texts = [
-        *ax.get_xticklabels(),
-        *ax.get_yticklabels(),
-        ax.xaxis.get_offset_text(),
-        ax.yaxis.get_offset_text(),
-    ]
-    before_fonts = [text.get_fontproperties().copy() for text in texts]
-    before_bounds = ax.get_position().bounds
-    before_children = fig.get_children()
-    before_canvas = fig.canvas
-    before_rc = dict(plt.rcParams)
-    with pytest.raises(ValueError, match="jpgg"):
-        dm.save_formats(
-            fig,
-            str(tmp_path / "absent" / "plot"),
-            formats=formats,
-            adopt_orphan_tick_font=True,
-        )
-    assert [text.get_fontproperties() for text in texts] == before_fonts
-    assert ax.get_position().bounds == before_bounds
-    assert fig.get_children() == before_children
-    assert fig.canvas is before_canvas
-    assert dict(plt.rcParams) == before_rc
-    assert not (tmp_path / "absent").exists()
-
-
-def test_empty_formats_preserve_successful_adoption_and_directory_effects(
-    tmp_path,
-):
-    """An empty one-shot iterable still adopts orphan fonts and creates parents."""
-    dm.style.use("scientific")
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-    ax.plot([0, 1], [0, 1], linewidth=dm.lw(0))
-    ax.tick_params(labelsize=dm.fs(-2))
-    fig.canvas.draw()
-    assert _x_tick(ax).get_fontsize() != ax.xaxis.label.get_fontsize()
-    assert (
-        dm.save_formats(
-            fig,
-            str(tmp_path / "nested" / "plot"),
-            formats=iter(()),
-            adopt_orphan_tick_font=True,
-            validate=False,
-        )
-        is None
-    )
-    assert _x_tick(ax).get_fontsize() == ax.xaxis.label.get_fontsize()
-    assert (tmp_path / "nested").is_dir()
-    assert list((tmp_path / "nested").iterdir()) == []

@@ -455,7 +455,7 @@ def _run(
                     _write_result()
                     try:
                         from dartwork_mpl import save_formats
-                        save_formats(fig, output_stem, formats=("png", "pdf"), validate=False, adopt_orphan_tick_font=False)
+                        save_formats(fig, output_stem, formats=("png", "pdf"))
                     except Exception:
                         payload["_export_failed"] = True
                         _write_result()

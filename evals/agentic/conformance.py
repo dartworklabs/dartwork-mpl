@@ -44,7 +44,6 @@ FACE_CREATORS = {
     "axes",
     "savefig",
     "save_formats",
-    "save_and_show",
     "subfigures",
 }
 STYLE_CALLS = {

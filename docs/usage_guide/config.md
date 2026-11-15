@@ -18,8 +18,8 @@ them, and the [API page](../api/config.rst) lists every field (`tick_years`,
 
 | Field | Default | Affects |
 |---|---|---|
-| `adopt_orphan_tick_font` | `False` | `simple_layout`, `save_formats`, `save_and_show` — when enabled and an axis has tick labels but no axis label, dartwork copies the *axis label* font (size + weight + family) onto the ticks. Set `True` to opt in; otherwise tick fonts stay untouched. |
-| `warn_on_orphan_tick_adoption` | `False` | Same three call sites. When `True`, emits a one-time `UserWarning` every time the adoption mutates a figure. Useful when debugging surprise tick changes, or when running under matplotlib's `constrained_layout` where the font swap can trigger a re-layout. |
+| `adopt_orphan_tick_font` | `False` | `simple_layout` — when enabled and an axis has tick labels but no axis label, dartwork copies the *axis label* font (size + weight + family) onto the ticks. Set `True` to opt in; otherwise tick fonts stay untouched. |
+| `warn_on_orphan_tick_adoption` | `False` | Same call site. When `True`, emits a one-time `UserWarning` every time the adoption mutates a figure. Useful when debugging surprise tick changes, or when running under matplotlib's `constrained_layout` where the font swap can trigger a re-layout. |
 | `legend_fallback` | `"auto"` | `place_legend(ax)` with no side named, when no inside spot is free of data: `"auto"` takes the side that costs the plot least among those no other panel sits beyond (above unless another is clearly cheaper); `"above"`, `"right"`, `"below"` fix the side; `"inside"` keeps the legend in the spot that covers the fewest series. |
 | `legend_wrap` | `True` | `place_legend` breaks long entry names at spaces only when the legend outside would otherwise not fit (centred on its Axes and moved in at the canvas edge, it must stay on the canvas and off the other columns' panels) or take more than 60 % of the plot (on a side named right or left, also when it is wider than 40 % of the Axes), a bracketed unit kept whole; a better fit comes first, and among ways that fit as well more lines per name only for at least 5 % of the canvas more plot. `False` keeps every name on one line. |
 
@@ -30,7 +30,7 @@ The full surface is in [`config.py`](https://github.com/dartworklabs/dartwork-mp
 ### 1. Opt in project-wide
 
 Set once near the top of your entry script or notebook. Every
-`simple_layout` / `save_formats` / `save_and_show` call afterwards
+`simple_layout` call afterwards
 picks it up.
 
 ```python
@@ -166,8 +166,6 @@ The roadmap of candidate fields is tracked at issue
 
 - [Layout and Typography](layout.md) — where `adopt_orphan_tick_font`
   actually fires.
-- [Save and Validation](save_export.md) — `save_formats` / `save_and_show`
-  read the same field.
 - `dm.dpi(n)` — the DPI ladder (preset's base `savefig.dpi` + `n × 50`)
   that pairs naturally with these defaults. With the presets now
   shipping `300` as base, `dm.dpi()` returns `300.0`, `dm.dpi(1)`

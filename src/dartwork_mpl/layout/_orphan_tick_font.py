@@ -91,7 +91,7 @@ def _adopt_axis_label_font_core(fig: Figure) -> None:
                 f"Orphan tick-label font adoption applied to {mutated_axes} "
                 f"axis(es) on this figure. Disable with "
                 f"`adopt_orphan_tick_font=False` on the calling function "
-                f"(simple_layout / save_formats / save_and_show) or set "
+                f"(simple_layout) or set "
                 f"`dm.config.adopt_orphan_tick_font = False` globally. "
                 f"Silence this warning with "
                 f"`dm.config.warn_on_orphan_tick_adoption = False`.",

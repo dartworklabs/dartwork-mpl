@@ -74,8 +74,8 @@ def _interactive_init() -> None:
     try:
         from InquirerPy import inquirer
     except ImportError as exc:
-        # Mirror the graceful optional-dep gating used by the mcp /
-        # notebook extras instead of surfacing a raw ImportError.
+        # Mirror the graceful optional-dep gating used by the mcp
+        # extra instead of surfacing a raw ImportError.
         raise SystemExit(
             "Interactive init requires the 'ui' extra: "
             'pip install "dartwork-mpl[ui]" — or skip the prompts by '

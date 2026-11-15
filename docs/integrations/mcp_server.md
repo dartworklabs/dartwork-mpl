@@ -535,8 +535,7 @@ its warning list; `quiet=True` suppresses printing without removing failures.
 `render_plot(code: str, figure_var: str = "fig", timeout_seconds: float = 20.0,
 chart_type_hint: str | None = None, revision: object | None = None)` uses the same trusted-code execution and
 validation contract above. It exports the selected native Figure once through
-`dm.save_formats(..., formats=("png", "pdf"), validate=False,
-adopt_orphan_tick_font=False)`, preserving the validated Figure without adding
+`dm.save_formats(..., formats=("png", "pdf"))`, preserving the validated Figure without adding
 style or layout. Existing template renderers still return base64 PNG or a local
 path; they do not publish artifact bundles.
 
@@ -603,7 +602,7 @@ For an agent creating or revising a plot, use this review loop:
 
 MCP snippets leave saving to `render_plot`; a separate cwd save or duplicate
 `validate_generated_plot` execution is not required. Standalone Python scripts
-can use `dm.save_formats`, and notebooks can use `dm.save_and_show`.
+and notebooks can use `dm.save_formats`.
 
 This runnable example uses a real FastMCP Client and the configured local server.
 The example data is synthetic. Replace it completely for a real request. The

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from ..io import save_formats
+from ..save import save_formats
 from ..validate import Severity, VisualWarning, validate_figure
 from ._diff import Change, diff_summaries
 from ._summary import summarize
@@ -235,7 +235,7 @@ def review(
     before = None if baseline is None else _baseline_summary(baseline)
     patterns = tuple(allow)
 
-    save_formats(fig, stem_str, formats=formats, validate=False, **save_kwargs)
+    save_formats(fig, stem_str, formats=formats, **save_kwargs)
     findings = validate_figure(fig, quiet=True)
     failed = [
         str(f.detail.get("check_id", "?"))

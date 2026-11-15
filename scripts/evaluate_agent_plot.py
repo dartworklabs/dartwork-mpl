@@ -590,8 +590,6 @@ def replay(
             result["export"] = {
                 "api": "dartwork_mpl.save_formats",
                 "formats": ["png", "pdf"],
-                "validate": False,
-                "adopt_orphan_tick_font": False,
                 "staging": "owned_workspace",
             }
             result["png_sha256"] = hashlib.sha256(
@@ -660,13 +658,7 @@ def _replay_child(
     import dartwork_mpl as dm
 
     stem = export_dir / "plot"
-    dm.save_formats(
-        fig,
-        str(stem),
-        formats=("png", "pdf"),
-        validate=False,
-        adopt_orphan_tick_font=False,
-    )
+    dm.save_formats(fig, str(stem), formats=("png", "pdf"))
     if not _replay_write(
         output / "plot.png",
         stem.with_suffix(".png").read_bytes(),
@@ -916,8 +908,6 @@ def _saved_semantics(
     expected_export = {
         "api": "dartwork_mpl.save_formats",
         "formats": ["png", "pdf"],
-        "validate": False,
-        "adopt_orphan_tick_font": False,
         "staging": "owned_workspace",
     }
     if replayed.get("export") != expected_export or replayed.get(
