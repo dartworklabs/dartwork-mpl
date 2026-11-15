@@ -2,7 +2,7 @@
 
 > **한눈에**
 >
-> 이 리포에서 지운 공개 함수 19개와, 예시가 그 자리를 채울 때 보여줘야 할 내용의 목록이다. 허브가 이 목록을 가져가 예시를 만든다. 번들 템플릿 36개도 지웠고, 그것들은 예시의 출발점으로 쓸 수 있다.
+> 이 리포에서 지운 공개 함수 19개와 눈금 자동 표기 9가지, 그리고 예시가 그 자리를 채울 때 보여줘야 할 내용의 목록이다. 허브가 이 목록을 가져가 예시를 만든다. 번들 템플릿 36개도 지웠고, 그것들은 예시의 출발점으로 쓸 수 있다.
 
 기준은 [handbook/philosophy.md](handbook/philosophy.md) 1절의 "무엇이 기능이 되는가"다. 기준 커밋은 `3e50748d`(`refactor/foundation`)이고, 아래 파일 경로와 줄 번호는 그 커밋의 것이다.
 
@@ -81,7 +81,29 @@
 - `format_axis_myriad`: 만·억 표기는 단위와 자릿수를 함께 골라야 해서 몇 줄로 풀어 쓸 수 없고, 평가에서 실제로 쓰였다.
 - `annotate_value`: 평가에서 실제로 쓰였다. `ax.annotate` 몇 줄로 대신할 수 있으므로 예시가 생기면 지울 수 있다.
 
-눈금의 자동 표기는 그대로다. 포맷을 지정하지 않은 축은 백만부터 `1M`, 한국어 preset에서는 `100만`으로 찍히고, 연도와 날짜도 자동으로 줄여 쓴다.
+## B2. 눈금 자동 표기에서 지운 것
+
+`dm.simple_layout`이 포맷을 지정하지 않은 축에 그려진 데이터를 읽고 표기를 골라 주던 동작이다. 소유자가 2026-11-16에 지우기로 했다. 이제 눈금 글자는 preset 토큰(`axes.formatter.useoffset: False`, `axes.formatter.limits`, `date.autoformatter.*`)과 matplotlib의 기본 formatter가 쓴다. `dm.config`(`tick_years`, `number_ladder`)도 함께 지웠다.
+
+기준 커밋은 `0da90445`다. 원본은 `git show 0da90445:src/dartwork_mpl/<구현 경로>`로 읽고, 동작의 세부는 같은 커밋의 `ticks/tests/test_tick_text.py`, `test_surface.py`, `test_edges.py`에 있다. 자동 동작이라 skill과 템플릿에서 부르는 횟수가 없으므로 "쓰임" 칸은 두지 않는다.
+
+| 동작 | 하던 일 | 구현 | 예시가 보여줘야 할 것 | 상태 |
+| --- | --- | --- | --- | --- |
+| SI 단위 눈금 | 백만부터 `1M`, `2.5M`(필요한 만큼만 소수) | `ticks/decide.py:104`(`DefaultUnit`) | `EngFormatter`나 `FuncFormatter`로 `1.5M`. 소수가 둘을 넘으면 단위 없이 쓰는 판단 |지움 |
+| 축 전체에 한 단위 | 보이는 눈금 전부로 단위 하나와 정확한 최소 소수 자릿수 하나를 고른다(`0.5M, 1.0M`) | `ticks/formatters.py`(`AxisUnitFormatter`), `ticks/decide.py:104` | formatter가 `set_locs`에서 눈금을 모두 보고 자릿수를 정하는 법. 눈금마다 따로 정하면 `0.5M, 1M`처럼 섞인다 |지움 |
+| 천 단위 구분 기호 | 1,000 이상인 축에 `1,250`, 연도처럼 보이는 x 눈금은 제외 | `ticks/decide.py:137` | `StrMethodFormatter("{x:,.0f}")`. 연도 축에는 쓰지 않는 이유 |지움 |
+| 한국어 그림의 만·억 | 축 이름·제목·범례에 한글이 있으면 `100만` | `ticks/edges.py:35`, `ticks/measure.py:82` | `dm.format_axis_myriad(ax)` 한 줄로 충분하다는 점 |지움 |
+| 연도 눈금 | x 데이터가 1900–2099의 정수면 정수 연도에만 눈금, 두 자리(`24`), 백 년이 보이면 네 자리 | `ticks/edges.py:49`, `ticks/formatters.py:170`, `:205` | `MaxNLocator(integer=True)`와 `FuncFormatter(lambda v, _: f"{int(v) % 100:02d}")`. 확대하면 `2017.5`가 생기는 함정 |지움 |
+| 분기 라벨 | 3개월 간격 날짜를 `24.Q1`로, 분기말 날짜면 분기말에 눈금 | `ticks/edges.py:88`, `ticks/dates.py:127`, `:171` | `MonthLocator(bymonth=(1, 4, 7, 10))`와 분기를 계산하는 `FuncFormatter` |지움 |
+| 짧은 날짜 | 모든 눈금을 `24.01`, `24.01.15`로, 시간 축은 `09:00`과 모서리 날짜 | `ticks/dates.py:25` | preset의 `date.autoformatter.*`가 대부분 대신한다(아래). 시간 축의 날짜를 모서리에 한 번만 쓰려면 `ConciseDateFormatter`의 `formats`·`zero_formats`·`offset_formats` |지움 |
+| 날짜 솎기 | 여백을 맞춘 뒤 날짜 라벨 사이가 1 em보다 좁으면 눈금을 줄인다 | `ticks/apply.py:172`, `:237` | `AutoDateLocator(maxticks=…)` 또는 `MonthLocator(interval=…)`. 그림 너비에 맞춰 간격을 고르는 법 |지움 |
+| 트윈 축의 spine | preset이 숨긴 오른쪽·위 spine을 `twinx`·`twiny`의 눈금 쪽에서 켠다 | `ticks/edges.py:118`, `ticks/twins.py:110` | `ax2.spines["right"].set_visible(True)` 한 줄. skill의 `references/layout.md`에 있다 |지움 |
+
+토큰이 대신하는 것과 못 하는 것:
+
+- 큰 수는 오프셋(`1e6`) 없이 정수로 찍힌다(`2000000`). 천 단위 구분 기호는 rcParams로 쓸 수 없다(`axes.formatter.use_locale`은 기기의 locale에 따라 달라진다).
+- 날짜는 `date.converter: auto`와 `date.autoformatter.*`로 `24`, `24.01`, `24.01.15`, 시간 축은 `03.01 06:00`으로 찍힌다. matplotlib 3.11의 concise 변환기는 `date.autoformatter.*`를 읽지 않으므로 converter를 `auto`로 바꿨다. 그래서 바뀌는 해만 연도를 쓰는 concise의 생략과 모서리 날짜가 없다.
+- 숫자 연도 축은 `2016, 2018`로 네 자리다. 두 자리 연도는 토큰으로 쓸 수 없다.
 
 ## C. 기능으로 남기는 것
 
@@ -100,5 +122,4 @@
 
 ## 정하지 않은 것
 
-- `dm.config`(`tick_years`, `number_ladder`): 자동 표기의 연도 자릿수와 단위 계열을 바꾸는 전역 설정이다. `dm.EXPERIMENTAL`은 지웠다.
 - 길이 단위의 공개 이름(`dm.cm`, `dm.mm`, `dm.pt`, `dm.inch`, `dm.col1`, `dm.col2`): `dm.figsize("13cm")`처럼 문자열로도 쓸 수 있어 겹친다. 예시의 문제는 아니다.

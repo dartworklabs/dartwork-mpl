@@ -19,7 +19,7 @@ orphan: true
 | `color` | 색 이름과 값, 팔레트, 대비 |
 | `font` | 번들 폰트 등록과 선택 |
 | `layout` | 내용에 맞춘 결정적 여백(`simple_layout`) |
-| `ticks` | 눈금의 숫자·날짜·단위 형식 |
+| `ticks` | 만·억 단위 눈금(`format_axis_myriad`)과, 값 라벨이 따라 쓸 축의 숫자 표기. 그 밖의 눈금 글자는 preset 토큰(`axes.formatter.*`, `date.autoformatter.*`)과 matplotlib이 쓴다 |
 | `labels` | 값 라벨, 패널 문자, 주석 |
 | `legend` | 범례 배치 |
 | `check` | 그려진 그림의 결함 찾기(`dm.check`). 그림을 바꾸지 않는다 |
@@ -33,9 +33,9 @@ orphan: true
 | `compose/style.py` | preset의 locale에 맞춘 `color`의 역할 색을 `style`에 넣는다 | 없음(루트가 `join()`을 한 번 부른다) |
 | `compose/size.py` | `style`의 활성 preset 이름과 레이어 읽기 | `dm.figsize_for` |
 | `compose/labels.py` | `style`의 `fs`·`fw`, `ticks`의 눈금 단위와 숫자 표기 | `dm.label_bars`, `dm.annotate_value`, `dm.label_axes`, `dm.add_note` |
-| `compose/layout.py` | `ticks`·`labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
+| `compose/layout.py` | `labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
 
-`layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 눈금 글자를 먼저 쓰고, 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자를 자리 잡게 한 뒤 여백을 잰다. 여백이 맞으면 날짜 눈금을 솎는다. 픽셀은 이 순서에 달려 있다.
+`layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자를 자리 잡게 한 뒤 여백을 잰다. 픽셀은 이 순서에 달려 있다. 눈금 글자는 `layout`이 바꾸지 않는다. 사용자가 정한 formatter 아니면 preset 토큰이 쓴 그대로 잰다.
 
 `dm.style`은 slice `dartwork_mpl.style` 그 자체다. `style`은 preset을 적용한 뒤 그 locale을 넘겨줄 함수 하나(`Tint`)를 자리에 갖고 있고, `compose/style.py`의 `join()`이 그 자리에 `color`의 역할 색 바인딩을 넣는다. 루트가 import될 때 한 번 부른다. 폰트는 루트가 import 시점에 등록하므로 `style`이 다시 부르지 않는다.
 
@@ -71,7 +71,7 @@ platform의 순수 패키지도 같은 파일 이름 규칙을 따른다(`length
 
 **도메인 파일은 primitive 타입으로 말하지 않는다.** `decide.py`와 `edges.py`의 함수는 인자와 반환을 도메인 타입으로 적는다. `str`, `int`, `float`, `dict`, `Any` 같은 primitive나 annotation 누락은 오류다. `float` 두 개를 받는 함수는 폭과 높이가 바뀌어도 통과하지만 `Length`와 `Aspect`는 그렇지 않기 때문이다.
 
-**엣지 케이스는 본문 분기가 아니라 목록에 덧붙인다.** 극좌표 축, 한국어 만 단위, 빽빽한 날짜처럼 드문 그림에서만 필요한 처리는 `decide.py`에 분기를 더하지 않는다. `edges.py`의 목록 끝에 `EdgeCase` 하나를 더한다. 목록은 사실·계획 타입 쌍마다 하나이고 `EDGES` 또는 `<NAME>_EDGES`(`FIT_EDGES`, `LIFT_EDGES` 등)라고 부른다. 각 항목은 이름, 이유(`why`), 예제(`example`), 적용 조건, 계획을 바꾸는 함수를 갖는다. `settle`이 순서대로 적용하고 어떤 것이 작동했는지 돌려준다. 본 경로는 평범한 경우만 읽으면 되고, 엣지 케이스는 이름으로 세고 지울 수 있다. `check`의 검사 규칙도 같은 방식으로 등록한다. 장치는 [edgecase/\_\_init\_\_.py](../../src/dartwork_mpl/edgecase/__init__.py)에 있다.
+**엣지 케이스는 본문 분기가 아니라 목록에 덧붙인다.** 극좌표 축, 3D 축, 겹치는 눈금 글자처럼 드문 그림에서만 필요한 처리는 `decide.py`에 분기를 더하지 않는다. `edges.py`의 목록 끝에 `EdgeCase` 하나를 더한다. 목록은 사실·계획 타입 쌍마다 하나이고 `EDGES` 또는 `<NAME>_EDGES`(`FIT_EDGES`, `LIFT_EDGES` 등)라고 부른다. 각 항목은 이름, 이유(`why`), 예제(`example`), 적용 조건, 계획을 바꾸는 함수를 갖는다. `settle`이 순서대로 적용하고 어떤 것이 작동했는지 돌려준다. 본 경로는 평범한 경우만 읽으면 되고, 엣지 케이스는 이름으로 세고 지울 수 있다. `check`의 검사 규칙도 같은 방식으로 등록한다. 장치는 [edgecase/\_\_init\_\_.py](../../src/dartwork_mpl/edgecase/__init__.py)에 있다.
 
 **엣지 케이스는 이유와 예제가 있어야 존재한다.** `why`는 그 엣지가 없으면 예제에서 무엇이 잘못되는지를 한 문장으로 말한다. 고치는 방법이 아니라 결함을 쓴다. `example`은 그 패키지의 `tests/`에 있는 테스트 하나를 `test_<파일>.py::[클래스::]test_<함수>`로 가리킨다. 그 테스트는 엣지 이름을 적고 단언하며, 실행되는 동안 그 엣지가 실제로 작동해야 한다. 둘 중 하나라도 없으면 테스트가 실패한다. 줄 수에는 상한이 없다. 대신 실제 그림에서 한 번도 작동하지 않는 엣지 케이스는 그 코드, 그것만 쓰던 타입과 측정 코드, 테스트, 지침 문구와 함께 지운다. 실제 그림은 픽셀 장면, 번들 템플릿, robustness 장면이다. `edgecase.tally`에 `Counter`를 넣으면 `settle`이 작동한 이름을 센다. 기본은 꺼져 있다.
 
