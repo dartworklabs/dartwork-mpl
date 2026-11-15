@@ -49,6 +49,9 @@ from .color import (
 )
 from .compose import style
 
+# Figure size, and the active preset's canvas
+from .compose.size import figsize_for
+
 # Agent guidance: the skill, templates and anti-pattern lint
 from .guide import lint as lint_code
 
@@ -70,9 +73,7 @@ from .length import Length, cm, col1, col2, inch, mm, pt
 
 # Saving
 from .save import save_formats
-
-# Physical units and figure size
-from .size import figsize, figsize_for, grid_shape, list_aspect_tokens
+from .size import figsize, grid_shape, list_aspect_tokens
 
 # Preset-relative sizes
 from .style import fs, fw, lw

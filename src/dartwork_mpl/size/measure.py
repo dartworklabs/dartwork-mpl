@@ -1,7 +1,8 @@
 """Facts the canvas decision reads from outside the slice.
 
-The active preset says which page the figure is for; matplotlib says how wide
-category names are once drawn as tick labels.
+The active presets (given by the caller: ``compose.size`` passes the style
+slice's) say which page the figure is for; matplotlib says how wide category
+names are once drawn as tick labels.
 """
 
 from __future__ import annotations
@@ -13,11 +14,16 @@ from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
-from ..style import active_presets, load_style_dict
 from .canvas import Family, NameWidths, Page, Paper, Poster, Report, Slides
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from matplotlib import RcParams
     from matplotlib.backend_bases import RendererBase
+
+    #: The rcParams a bundled style layer declares, by the layer's name.
+    LayerReader = Callable[[str], RcParams]
 
 REPORT_FONT_PT = 8.0
 FAMILIES: dict[str, Family] = {
@@ -28,17 +34,18 @@ FAMILIES: dict[str, Family] = {
 }
 
 
-def active_page() -> Page:
-    """The page of the first preset in force that names one; a report page
-    when none does. A poster scales its text by its font over 8 pt."""
-    for name in active_presets():
+def active_page(presets: Sequence[str], layer: LayerReader) -> Page:
+    """The page of the first of the active ``presets`` that names one; a
+    report page when none does. A poster scales its text by its font (read
+    with ``layer``) over 8 pt."""
+    for name in presets:
         base = name.removesuffix("-kr")
         family = FAMILIES.get(base)
         match family:
             case None:
                 continue
             case Poster():
-                font_pt = float(load_style_dict(f"font-{base}")["font.size"])
+                font_pt = float(layer(f"font-{base}")["font.size"])
                 return Page(family, font_pt / REPORT_FONT_PT)
             case Report() | Paper() | Slides():
                 return Page(family)

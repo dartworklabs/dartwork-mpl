@@ -51,7 +51,12 @@ PACKAGE = "dartwork_mpl"
 # root runs on every `import dartwork_mpl`, so no unit may import it; the
 # compose modules join slices for the root (composition.py rules C2..C5).
 ENTRY_POINTS = frozenset(
-    {"dartwork_mpl", "dartwork_mpl.compose", "dartwork_mpl.compose.style"}
+    {
+        "dartwork_mpl",
+        "dartwork_mpl.compose",
+        "dartwork_mpl.compose.size",
+        "dartwork_mpl.compose.style",
+    }
 )
 
 # Units holding business-agnostic mechanism. They import no slice.
@@ -119,9 +124,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.ticks"): (
         "layout writes the library's tick numbers before measuring them and "
         "thins crowded dates at the fitted size"
-    ),
-    ("dartwork_mpl.size", "dartwork_mpl.style"): (
-        "the default canvas follows the active preset's page and font"
     ),
 }
 

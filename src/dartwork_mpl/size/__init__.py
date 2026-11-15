@@ -1,14 +1,16 @@
 """Figure size: what "13 cm wide, standard aspect" means.
 
 ``dm.figsize(width, aspect)`` turns a physical width and an aspect (or a
-height) into matplotlib's inch tuple. ``dm.figsize_for(...)`` picks the active
-preset's canvas when the request names no size, and ``dm.grid_shape(n)`` the
-rows and columns for ``n`` panels. Each call parses its input into the
+height) into matplotlib's inch tuple. :func:`figsize_for` picks the canvas
+of the presets it is given when the request names no size, and
+``dm.grid_shape(n)`` the rows and columns for ``n`` panels. Each call parses its input into the
 slice's types (``model``), decides (``decide`` and the named ``edges``) and
 hands back plain inches.
 """
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ..edgecase import settle
 from ..length import Length
@@ -16,6 +18,11 @@ from . import decide, measure
 from .canvas import CanvasFacts, CanvasRequest, parse_canvas_kind, parse_names
 from .edges import EDGES
 from .model import ASPECTS, STANDARD, Grid, Panels, parse_height
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from .measure import LayerReader
 
 __all__ = ["figsize", "figsize_for", "grid_shape", "list_aspect_tokens"]
 
@@ -45,22 +52,14 @@ def figsize_for(
     dual_axis: bool = False,
     nrows: int = 1,
     ncols: int = 1,
+    presets: Sequence[str],
+    layer: LayerReader,
 ) -> tuple[float, float]:
-    """Return the active preset's canvas for a chart that names no size.
+    """The canvas for a chart that names no size, on the page of the active
+    ``presets`` (a poster's font read with ``layer``).
 
-    The same arguments under the same preset always give the same canvas.
-    ``kind``: ``"default"`` (lines, bars, scatter...), ``"grouped"`` (grouped
-    bars), ``"barh"``, ``"compact"``, ``"matrix"`` (heatmaps), ``"dense"``,
-    ``"strip"``, ``"slide"`` (under a slide title, 23.4 x 10.5 cm) or
-    ``"full_slide"`` (the whole 16:9 slide). ``n_points`` (x positions) and
-    ``n_series`` move the width between the preset's tiers; ``labels`` (the
-    category names, in axis order) widens it until they stand flat;
-    ``dual_axis`` marks a ``twinx``; ``nrows`` / ``ncols`` a panel grid (see
-    :func:`grid_shape`). Raises ``ValueError`` for an unknown kind or a count
-    below its minimum, ``TypeError`` for a count that is not an int or
-    labels without an axis order (a string, set or mapping)::
-
-        fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(years)))
+    ``dm.figsize_for`` is this given the style slice's active presets
+    (``compose.size``); the other arguments are documented there.
     """
     request = CanvasRequest(
         kind=parse_canvas_kind(kind),
@@ -70,7 +69,7 @@ def figsize_for(
         grid=Grid(nrows, ncols),
         names=parse_names(labels),
     )
-    page = measure.active_page()
+    page = measure.active_page(presets, layer)
     facts = CanvasFacts(request, page, measure.name_widths(request.names))
     plan = decide.canvas(request, page)
     return settle(facts, plan, EDGES).plan.size().inches
