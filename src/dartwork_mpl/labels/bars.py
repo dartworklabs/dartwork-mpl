@@ -295,13 +295,9 @@ def compose(
     if callable(options.fmt):
         return str(options.fmt(scaled))
     fixed = options.decimals is not None
-    facts = ValueFacts(scaled, decimals, fixed, options.precise, options.sign)
+    facts = ValueFacts(scaled, decimals, fixed, options.sign)
     text = settle(facts, decide.bar_text(facts), edges.TEXT).plan
-    bound = text.lead in ("<", ">")
     if isinstance(options.fmt, str):
-        if bound:
-            number = number_text(text.value, text.decimals)
-            return text.lead + _template(options.fmt, number, text.value)
         number = text.lead + number_text(
             text.value, text.decimals, fixed=text.fixed
         )
@@ -312,7 +308,7 @@ def compose(
         fixed=text.fixed,
         prefix=scale.prefix,
         suffix=scale.suffix,
-        zero="bare" if bound else scale.zero,
+        zero=scale.zero,
     )
 
 
@@ -416,12 +412,11 @@ def label_bars(
     (negative bars below, ``barh`` left; past an error bar's cap); the value
     in the axis's tick unit (``33G``, ``31%``, ``$800``; plain under
     ``dm.axis_unit``), three significant digits on the largest value and
-    the fewest decimals that print every value exactly (a non-zero value
-    that rounds to zero prints its bound, ``<0.1M``). Stacked bars get each
+    the fewest decimals that print every value exactly. Stacked bars get each
     segment's value at its middle and the stack's net beyond its end; a
     label on its bar takes white or the text colour, whichever reads.
     ``dm.simple_layout`` turns crowded labels vertical (vertical bars),
-    hides those that still meet from the last bar (and warns), and grows an
+    hides those that still meet from the last bar, and grows an
     autoscaled value axis to hold them. Calling this again on the same bars
     replaces their labels; restyle a label after ``dm.simple_layout``.
 

@@ -21,12 +21,10 @@ from .model import (
     CrowdFacts,
     Headroom,
     HeadroomFacts,
-    HiddenFacts,
     Ink,
     InkFacts,
     LabelText,
     Letters,
-    Notice,
     PanelsFacts,
     Shown,
     Span,
@@ -123,11 +121,6 @@ def headroom(facts: HeadroomFacts) -> Headroom:
     if new_high <= high and new_low >= low:
         return Headroom(None)
     return Headroom(Span(new_low, new_high))
-
-
-def notice(facts: HiddenFacts) -> Notice:
-    """Nothing to say when every label is shown."""
-    return Notice()
 
 
 # ------------------------------------------------------------ ink

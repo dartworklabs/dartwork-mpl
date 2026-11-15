@@ -277,14 +277,10 @@ def _shown(text: Text) -> bool:
     return text.get_visible() and bool(text.get_text().strip())
 
 
-def _cell(
-    ax: Axes, outer: bool
-) -> tuple[tuple[int, int], tuple[int, int]] | None:
+def _cell(ax: Axes) -> tuple[tuple[int, int], tuple[int, int]] | None:
     spec = ax.get_subplotspec()
     if spec is None:
         return None
-    if outer:
-        spec = spec.get_topmost_subplotspec()
     grid = id(spec.get_gridspec())
     return (grid, spec.rowspan.start), (grid, spec.colspan.start)
 
@@ -343,49 +339,16 @@ def _guess_ylabel_x0(ax: Axes, renderer: RendererBase) -> float:
     return inner - float(ax.yaxis.labelpad) * px_per_pt(ax) - float(height)
 
 
-def _left_neighbours_x1(ax: Axes, renderer: RendererBase) -> float | None:
-    """The right end of what the panels just left of ``ax`` draw (same
-    top-level grid, cells ending where its cell starts, a shared row)."""
-    spec, root = ax.get_subplotspec(), ax.get_figure(root=True)
-    if spec is None or root is None:
-        return None
-    top = spec.get_topmost_subplotspec()
-    rows = set(top.rowspan)
-    end: float | None = None
-    for other in root.axes:
-        other_spec = other.get_subplotspec()
-        if other is ax or other_spec is None or not other.get_visible():
-            continue
-        cell = other_spec.get_topmost_subplotspec()
-        if (
-            cell.get_gridspec() is not top.get_gridspec()
-            or cell.colspan.stop != top.colspan.start
-            or not rows & set(cell.rowspan)
-        ):
-            continue
-        try:
-            box = other.get_tightbbox(renderer)
-        except BBOX_ERRORS:
-            continue
-        if box is not None:
-            end = float(box.x1) if end is None else max(end, float(box.x1))
-    return end
-
-
 def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
     """What ``ax`` draws around its top-left corner, for its ``letter``."""
-    k = px_per_pt(ax)
     corner = tuple(map(float, ax.transAxes.transform((0.0, 1.0))))
     box = letter.get_window_extent(renderer)
-    rectilinear = ax.name == "rectilinear"
-    ylabel = _ylabel_box(ax, renderer) if rectilinear else None
+    ylabel = _ylabel_box(ax, renderer) if ax.name == "rectilinear" else None
     ticks = _ytick_box(ax, renderer)
-    bare = rectilinear and ylabel is None and ticks is None
     titles = tuple(
-        Title(loc, float(e.x0), float(e.x1), baseline_px(t, renderer))
-        for loc, t in axes_titles(ax).items()
+        Title(baseline_px(t, renderer))
+        for t in axes_titles(ax).values()
         if _shown(t)
-        for e in (t.get_window_extent(renderer),)
     )
     top = corner[1]
     try:
@@ -403,13 +366,9 @@ def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
         corner=(corner[0], corner[1]),
         width=float(box.width),
         descent=baseline_px(letter, renderer) - float(box.y0),
-        gap=0.5 * float(letter.get_fontsize()) * k,
-        cell=_cell(ax, outer=False),
-        outer_cell=_cell(ax, outer=True),
+        cell=_cell(ax),
         ylabel_x0=None if ylabel is None else float(ylabel.x0),
         guess_x0=_guess_ylabel_x0(ax, renderer),
-        bare=bare,
-        neighbour_x1=_left_neighbours_x1(ax, renderer) if bare else None,
         titles=titles,
         top=top,
         decos=decos,

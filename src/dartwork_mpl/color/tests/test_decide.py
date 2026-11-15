@@ -127,9 +127,9 @@ def test_suggest_finds_close_registered_names():
     ],
 )
 def test_palette_lists(n, kind, expected):
-    assert decide.palette(PaletteRequest.parse(n, kind, None)) == expected
+    assert decide.palette(PaletteRequest.parse(n, kind)) == expected
 
 
 def test_palette_repeats_past_its_list():
-    names = decide.palette(PaletteRequest.parse(10, "categorical", None))
+    names = decide.palette(PaletteRequest.parse(10, "categorical"))
     assert names[8:] == names[:2]

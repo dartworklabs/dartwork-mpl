@@ -9,26 +9,16 @@ value axes grow just enough for the labels beyond the bar ends.
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
 from .._figure_geometry import same_position_axes, shared_axes
-from ..edgecase import settle
-from . import decide, edges
+from . import decide
 from .bars import OFFSET_PT, BarFamily, BarLabel, families_of, format_ticks_now
 from .measure import bar_centres, px_per_pt
-from .model import (
-    CrowdFacts,
-    HeadroomFacts,
-    HiddenFacts,
-    Pixels,
-    Room,
-    Span,
-    Spot,
-)
+from .model import CrowdFacts, HeadroomFacts, Pixels, Room, Span, Spot
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -221,27 +211,3 @@ def settle_bars(fig: Figure, renderer: RendererBase) -> bool:
     for value_axis in value_axes:
         value_axis.grow(renderer)
     return before != [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
-
-
-def warn_hidden(fig: Figure, *, stacklevel: int = 1) -> None:
-    """Warn once about bar labels the fitted size left no room for.
-
-    ``crowded="skip"`` hides on purpose and does not count. ``stacklevel``
-    as in ``warnings.warn``, counted from the caller of this function.
-    """
-    labels = [
-        t
-        for ax in fig.axes
-        for f in families_of(ax)
-        if f.options.crowded != "skip"
-        for t in f.texts
-    ]
-    hidden = [t for t in labels if t.hidden]
-    facts = HiddenFacts(
-        len(labels),
-        sum(t.vertical for t in hidden),
-        sum(not t.vertical for t in hidden),
-    )
-    text = settle(facts, decide.notice(facts), edges.HIDDEN).plan.text
-    if text is not None:
-        warnings.warn(text, UserWarning, stacklevel=stacklevel + 1)

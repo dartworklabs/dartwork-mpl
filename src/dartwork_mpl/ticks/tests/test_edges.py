@@ -3,14 +3,8 @@
 from __future__ import annotations
 
 from dartwork_mpl.edgecase import settle
-from dartwork_mpl.ticks.decide import axes_plan, axis_text, ladder, thinning
-from dartwork_mpl.ticks.edges import (
-    AXES_EDGES,
-    EDGES,
-    LADDER_EDGES,
-    TEXT_EDGES,
-    THIN_EDGES,
-)
+from dartwork_mpl.ticks.decide import axes_plan, ladder, thinning
+from dartwork_mpl.ticks.edges import AXES_EDGES, EDGES, LADDER_EDGES, THIN_EDGES
 from dartwork_mpl.ticks.model import (
     MYRIAD,
     SI,
@@ -22,12 +16,8 @@ from dartwork_mpl.ticks.model import (
     Kind,
     LadderChoice,
     Language,
-    Leave,
-    NumberStyle,
     PeriodDates,
-    PinTicks,
     QuarterDates,
-    TextFacts,
     TickValues,
     TwinFacts,
     YearTicks,
@@ -49,7 +39,7 @@ def _settle(facts: AxesFacts):
 
 
 def test_every_stage_settles_its_own_part_of_the_registry():
-    assert (*LADDER_EDGES, *AXES_EDGES, *TEXT_EDGES, *THIN_EDGES) == EDGES
+    assert (*LADDER_EDGES, *AXES_EDGES, *THIN_EDGES) == EDGES
 
 
 def test_korean_myriad():
@@ -88,24 +78,6 @@ def test_quarterly_dates():
     assert _settle(_axes(monthly)).plan.x == PeriodDates(2)
 
 
-def test_author_fixed_tick_texts():
-    fixed = AxisFacts(
-        x=True, kind=Kind.NUMBERS, ticks=TICKS, own_formatter=False,
-        fixed_texts=True, pinnable=True, years=True,
-    )  # fmt: skip
-    settled = _settle(_axes(fixed))
-    assert settled.fired == ("author-fixed-tick-texts",)
-    assert settled.plan.x == PinTicks()
-    moved = AxisFacts(
-        x=True,
-        kind=Kind.NUMBERS,
-        ticks=TICKS,
-        own_formatter=False,
-        fixed_texts=True,
-    )
-    assert _settle(_axes(moved)).plan.x == Leave()  # counts differ: left alone
-
-
 def test_twin_scale_spine():
     twin = TwinFacts(
         draws=frozenset({"right"}),
@@ -127,15 +99,6 @@ def test_twin_scale_spine():
         settled=frozenset({"right"}),
     )
     assert _settle(_axes(twin=again)).fired == ()
-
-
-def test_log_per_tick_unit():
-    facts = TextFacts(
-        TickValues.of([1, 1e3, 1e6], linear=False), NumberStyle.parse(SI)
-    )
-    settled = settle(facts, axis_text(facts), TEXT_EDGES)
-    assert settled.fired == ("log-per-tick-unit",)
-    assert (settled.plan.unit, settled.plan.decimals) == (None, None)
 
 
 def test_crowded_dates_thin():

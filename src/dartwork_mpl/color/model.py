@@ -265,17 +265,14 @@ class PaletteKind(Enum):
 
 @dataclass(frozen=True)
 class PaletteRequest:
-    """``n`` series of ``kind``; ``highlight`` the series to emphasise."""
+    """``n`` series of ``kind``."""
 
     n: int
     kind: PaletteKind
-    highlight: int | None
 
     @classmethod
-    def parse(
-        cls, n: object, kind: object, highlight: object
-    ) -> PaletteRequest:
-        """Check ``n`` and ``kind``; drop an out-of-range ``highlight``."""
+    def parse(cls, n: object, kind: object) -> PaletteRequest:
+        """Check ``n`` and ``kind``."""
         palette_kind = PaletteKind.parse(kind)
         if not isinstance(n, int) or isinstance(n, bool):
             raise TypeError(f"n must be an int, got {type(n).__name__}")
@@ -283,18 +280,7 @@ class PaletteRequest:
             raise ValueError(
                 "n must be non-negative; use 0 for an empty palette"
             )
-        index = None
-        if highlight is not None:
-            mark = float(highlight)  # type: ignore[arg-type]
-            if 0 <= mark < n:
-                if mark != int(mark):
-                    raise ValueError(
-                        f"highlight must be a whole number index in 0..{n - 1}; "
-                        f"got {highlight!r}, which would recede every series "
-                        "and emphasise none."
-                    )
-                index = int(mark)
-        return cls(n, palette_kind, index)
+        return cls(n, palette_kind)
 
 
 @dataclass(frozen=True)
@@ -397,21 +383,3 @@ class SemanticFacts:
 
     locale: Locale
     catalog: Catalog
-
-
-_SHADE = re.compile(r"^(.*?)(\d+)$")
-
-
-def shifted(name: Name, steps: int) -> Name:
-    """An Open Color name ``steps`` shades darker (negative: lighter), 0..9."""
-    match = _SHADE.match(name)
-    if match is None:
-        return name
-    shade = max(0, min(9, int(match.group(2)) + steps))
-    return Name(f"{match.group(1)}{shade}")
-
-
-def namespace(name: Name) -> Name | None:
-    """``"dc."`` for ``"dc.blue5"``; None for a name with no dot."""
-    head, dot, _ = name.partition(".")
-    return Name(f"{head}.") if dot else None

@@ -9,8 +9,7 @@ collections by their outlines, each only where its clip lets it draw.
 
 from __future__ import annotations
 
-import re
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
@@ -36,8 +35,6 @@ from .._figure_geometry import (
     drawn_patch_box,
     drawn_scatter_discs,
     drawn_text_box,
-    drawn_tick_labels,
-    iter_figure_level_extents,
     line_draws_markers,
     line_draws_stroke,
     marker_radius_pt,
@@ -53,7 +50,6 @@ from .model import (
     Entries,
     EntryFacts,
     FigureFacts,
-    FigurePlan,
     Hits,
     LegendFacts,
     LegendPlan,
@@ -64,7 +60,6 @@ from .model import (
     Span,
     TitleBox,
     TitleFacts,
-    Width,
 )
 
 if TYPE_CHECKING:
@@ -181,55 +176,9 @@ def data_ink(ax: Axes, renderer: RendererBase) -> Ink:
     return ink
 
 
-def frame_ink(ax: Axes, renderer: RendererBase) -> Ink | None:
-    """A non-rectilinear Axes' spines and tick labels, drawn inside its box."""
-    if ax.name == "rectilinear":
-        return None
-    ink = Ink(px(renderer, CLEARANCE_PT))
-    if getattr(ax, "axison", True) and ax.get_frame_on():
-        for spine in ax.spines.values():
-            if spine.get_visible():
-                path = spine.get_transform().transform_path(spine.get_path())
-                half = px(renderer, spine.get_linewidth()) / 2
-                ink.strokes.append((id(spine), path, half, False))
-    for which in ("x", "y"):
-        for label in drawn_tick_labels(ax, cast("Any", which)):
-            if label.get_text().strip():
-                try:
-                    _add_box(ink, label, label.get_window_extent(renderer))
-                except BBOX_ERRORS:
-                    continue
-    return ink
-
-
 # --------------------------------------------------------- trial legends
-_UNIT_TAIL = re.compile(r"\s*([([][^)\]]{1,32}[)\]])\s*$")
-
-
-def wrap_label(text: str, width: float, measure: Callable[[str], float]) -> str:
-    """Break ``text`` at spaces so each line is at most ``width`` px.
-
-    Greedy, word by word; a trailing bracketed unit (``(2019 = 100)``) stays
-    whole. Text that fits, or holds a line break or mathtext, is kept.
-    """
-    if "\n" in text or "$" in text or measure(text) <= width:
-        return text
-    match = _UNIT_TAIL.search(text)
-    words = (text[: match.start()] if match else text).split()
-    words += [match.group(1)] if match else []
-    if len(words) < 2:
-        return text
-    lines = [words[0]]
-    for word in words[1:]:
-        if measure(f"{lines[-1]} {word}") <= width:
-            lines[-1] = f"{lines[-1]} {word}"
-        else:
-            lines.append(word)
-    return "\n".join(lines)
-
-
 class Trials:
-    """Trial legends of one set of handles: sizes, pad, handle overhead."""
+    """Trial legends of one set of handles: sizes and pad."""
 
     def __init__(
         self,
@@ -240,7 +189,7 @@ class Trials:
         renderer: RendererBase,
         loc: str = "upper right",
     ) -> None:
-        """Build the 1-column trial that gives the pad and handle overhead."""
+        """Build the 1-column trial that gives the pad."""
         self.parent, self.handles, self.renderer = (
             parent,
             list(handles),
@@ -252,11 +201,6 @@ class Trials:
         self.base = self.trial(entries, Columns(1))
         em = px(renderer, float(self.base.prop.get_size_in_points()))
         self.pad = float(self.base.borderaxespad) * em
-        self.overhead = em * (
-            float(self.base.handlelength)
-            + float(self.base.handletextpad)
-            + 2 * float(self.base.borderpad)
-        )
 
     def trial(self, entries: Entries, columns: Columns) -> Legend:
         """A detached legend of ``entries`` in ``columns`` (nothing drawn)."""
@@ -276,19 +220,6 @@ class Trials:
             except BBOX_ERRORS:
                 self.sizes[key] = Size(float("inf"), float("inf"))
         return self.sizes[key]
-
-    def wrap(self, entries: Entries, width: Width) -> Entries:
-        """``entries`` with each name broken at spaces to ``width``."""
-
-        def measure(text: str) -> float:
-            w, _h, _d = self.renderer.get_text_width_height_descent(
-                text, self.base.prop, ismath=False
-            )
-            return float(w)
-
-        return Entries(
-            tuple(wrap_label(t, width.px, measure) for t in entries.labels)
-        )
 
 
 # ----------------------------------------------------------------- sides
@@ -392,7 +323,6 @@ def legend_facts(
 ) -> LegendFacts:
     """What placing the legend of ``ax`` reads, at the size it has now."""
     trials = Trials(ax, handles, entries, kw, renderer)
-    frame = frame_ink(ax, renderer)
     parent = Bbox(trials.base.get_bbox_to_anchor().get_points())
     return LegendFacts(
         request=request,
@@ -400,29 +330,19 @@ def legend_facts(
         axes=box_of(ax.get_window_extent(renderer)),
         parent=box_of(parent),
         pad=trials.pad,
-        canvas_width=float(renderer.get_canvas_width_height()[0]),
-        overhead=trials.overhead,
         free_sides=free_sides(ax),
         size_of=trials.size_of,
         meets=data_ink(ax, renderer).meets,
         span_of=lambda side: span(ax, side, renderer, trials.pad),
-        wrap=trials.wrap,
-        frame=None if frame is None else frame.meets,
         current=current,
     )
 
 
-def anchor_facts(
-    legend: Legend, ax: Axes, side: Side, renderer: RendererBase
-) -> AnchorFacts:
-    """An outside legend against ``side`` of ``ax``: its size, span, labels."""
-    em = px(renderer, float(legend.prop.get_size_in_points()))
-    own = legend.get_window_extent(renderer)
+def anchor_facts(ax: Axes, side: Side, renderer: RendererBase) -> AnchorFacts:
+    """An outside legend against ``side`` of ``ax``: the labels beyond it."""
     return AnchorFacts(
         side=side,
         axes=box_of(ax.get_window_extent(renderer)),
-        legend=Size(float(own.width), float(own.height)),
-        span=span(ax, side, renderer, float(legend.borderaxespad) * em),
         decorations=decorations(ax, renderer),
     )
 
@@ -463,34 +383,6 @@ def title_facts(ax: Axes, renderer: RendererBase) -> TitleFacts | None:
     return TitleFacts(tuple(titles), tuple(above), gap)
 
 
-#: The figure's own label on each side a figure legend shares.
-_FIGURE_LABELS = {
-    Side.ABOVE: "_suptitle",
-    Side.BELOW: "_supxlabel",
-    Side.LEFT: "_supylabel",
-}
-
-
-def label_edges(
-    fig: Figure | SubFigure, renderer: RendererBase
-) -> dict[Side, float]:
-    """Where the figure's suptitle / supxlabel / supylabel ends, figure fraction."""
-    box = fig.bbox
-    labels = {id(getattr(fig, a, None)): s for s, a in _FIGURE_LABELS.items()}
-    edges: dict[Side, float] = {}
-    for art, ext in iter_figure_level_extents(
-        cast("Figure", fig), renderer, legends=False
-    ):
-        side = labels.get(id(art)) if art is not None else None
-        if side is Side.ABOVE:
-            edges[side] = float((ext.y0 - box.y0) / box.height)
-        elif side is Side.BELOW:
-            edges[side] = float((ext.y1 - box.y0) / box.height)
-        elif side is Side.LEFT:
-            edges[side] = float((ext.x1 - box.x0) / box.width)
-    return edges
-
-
 def figure_facts(
     fig: Figure | SubFigure,
     handles: Sequence[Any],
@@ -499,7 +391,7 @@ def figure_facts(
     kw: dict[str, Any],
     renderer: RendererBase,
 ) -> FigureFacts:
-    """What placing a figure legend reads: its sizes and the figure's labels."""
+    """What placing a figure legend reads: its sizes."""
     trials = Trials(fig, handles, entries, kw, renderer, loc="upper center")
     return FigureFacts(
         side=request.side,
@@ -508,7 +400,6 @@ def figure_facts(
         figure=box_of(fig.bbox),
         pad=trials.pad,
         size_of=trials.size_of,
-        label_edges=label_edges(fig, renderer),
     )
 
 
@@ -532,22 +423,6 @@ def entry_facts(
             float(owner.get_zorder()),
             order.index(owner) if owner in order else -1,
         )
-        ours = legend is not None and hasattr(legend, "_dm_legend")
-        found.append(Owner(Entries(tuple(labels)), rank, texts, ours))
+        found.append(Owner(Entries(tuple(labels)), rank, texts))
         handles.append(list(hs))
     return EntryFacts(tuple(found), list(owners).index(focus)), handles
-
-
-def label_facts(
-    holder: Figure | SubFigure, plan: FigurePlan, renderer: RendererBase
-) -> FigureFacts:
-    """A placed figure legend against its figure's labels as they are now."""
-    return FigureFacts(
-        side=plan.side,
-        columns=plan.columns,
-        entries=Entries(()),
-        figure=box_of(holder.bbox),
-        pad=0.0,
-        size_of=lambda entries, columns: Size(0.0, 0.0),
-        label_edges=label_edges(holder, renderer),
-    )

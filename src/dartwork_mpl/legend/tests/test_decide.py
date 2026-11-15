@@ -49,13 +49,10 @@ def facts(n=3, ink=(), request=BEST, span=400.0, **kw) -> LegendFacts:
         axes=AXES,
         parent=AXES,
         pad=5.0,
-        canvas_width=500.0,
-        overhead=20.0,
         free_sides=FALLBACK_SIDES,
         size_of=size_of,
         meets=meets,
         span_of=lambda side: Span(0.0, span),
-        wrap=lambda entries, width: entries,
     )
     return replace(base, **kw)
 
@@ -147,7 +144,7 @@ def test_placed_again_a_legend_only_moves_inwards():
 
 def test_the_anchor_clears_the_labels_beyond_its_side_only():
     labels = (Box(0, -20, 400, -2), Box(-40, 0, -5, 300))
-    below = AnchorFacts(Side.BELOW, AXES, Size(100, 20), Span(0, 500), labels)
+    below = AnchorFacts(Side.BELOW, AXES, labels)
     above = replace(below, side=Side.ABOVE)
     assert decide.anchor(below).clearance == 20
     assert decide.anchor(above).clearance == 0

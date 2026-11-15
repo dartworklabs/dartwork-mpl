@@ -13,9 +13,7 @@ from typing import cast
 
 import matplotlib.colors as mcolors
 
-from ..edgecase import settle
 from .decide import suggest
-from .edges import SAME_NAMESPACE
 from .model import Lookup, Name
 from .space import Rgb, Rgba
 
@@ -30,7 +28,7 @@ def registry() -> tuple[Name, ...]:
 def unknown_name(name: str) -> str:
     """Why ``name`` is not a colour, and where a valid one can be found."""
     lookup = Lookup(Name(name), registry())
-    close = settle(lookup, suggest(lookup), (SAME_NAMESPACE,)).plan.names
+    close = suggest(lookup).names
     if close:
         found = "Closest registered names: " + ", ".join(map(repr, close))
     else:

@@ -12,15 +12,11 @@ from dartwork_mpl.color.model import (
     Count,
     DivergingSource,
     Form,
-    Gradient,
     Locale,
-    Lookup,
-    Name,
-    PaletteRequest,
     Ratio,
     SemanticFacts,
 )
-from dartwork_mpl.color.space import Oklch, Rgb
+from dartwork_mpl.color.space import Rgb
 from dartwork_mpl.edgecase import settle
 
 
@@ -60,16 +56,6 @@ def test_curated_diverging_row():
     assert not fired(derived, plan, edges.CURATED_ROW).fired
 
 
-def test_grey_gradient_end():
-    white, teal = Oklch(1.0, 0.0, 90.0), Oklch(0.7, 0.12, 170.0)
-    ends = Gradient(white, teal)
-    settled = fired(ends, ends, edges.GREY_END)
-    assert settled.fired == ("grey-gradient-end",)
-    assert settled.plan.start.h == 170.0
-    both_grey = Gradient(white, Oklch(0.0, 0.0, 0.0))
-    assert not fired(both_grey, both_grey, edges.GREY_END).fired
-
-
 def test_hex_rounding_shortfall():
     # dc.amber5's bisected lightness on white rounds to #ab6700, a hair
     # under 4.5:1; one 8-bit step further (#a96600) passes.
@@ -94,22 +80,3 @@ def test_kr_semantic_tokens():
     plan = decide.semantic(default)
     assert plan.pos == CATALOG.ladder("green")[6]
     assert not fired(default, plan, edges.KR_TOKENS).fired
-
-
-def test_same_namespace_suggestions():
-    registry = tuple(Name(n) for n in ("dc.blue5", "oc.blue5", "oc.blue55"))
-    typo = Lookup(Name("dc.blue55"), registry)
-    settled = fired(typo, decide.suggest(typo), edges.SAME_NAMESPACE)
-    assert settled.fired == ("same-namespace-suggestions",)
-    assert all(n.startswith("dc.") for n in settled.plan.names)
-    stray = Lookup(Name("dz.blue5"), registry)
-    assert not fired(stray, decide.suggest(stray), edges.SAME_NAMESPACE).fired
-
-
-def test_highlight_series():
-    request = PaletteRequest.parse(3, "categorical", 1)
-    settled = fired(request, decide.palette(request), edges.HIGHLIGHT)
-    assert settled.fired == ("highlight-series",)
-    assert settled.plan == ("oc.blue3", "oc.red7", "oc.green3")
-    ignored = PaletteRequest.parse(3, "categorical", 99)
-    assert not fired(ignored, decide.palette(ignored), edges.HIGHLIGHT).fired

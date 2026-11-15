@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.layout import decide
-from dartwork_mpl.layout.edges import EDGES, SUBFIGURES
+from dartwork_mpl.layout.edges import EDGES
 from dartwork_mpl.layout.model import (
     ArtistId,
     AxisName,
@@ -14,18 +14,13 @@ from dartwork_mpl.layout.model import (
     Count,
     Degrees,
     Edge,
-    Edges,
     FigureArtist,
     FigureRole,
     Gap,
-    History,
     Line,
-    Next,
     Piece,
     Px,
     Reach,
-    Refuse,
-    Request,
     Role,
     Share,
     Spacing,
@@ -39,7 +34,6 @@ from dartwork_mpl.layout.tests.test_decide import (
     chars,
     content,
     row,
-    text,
 )
 
 PLOT = Box(100.0, 900.0, 100.0, 400.0)
@@ -65,34 +59,12 @@ def texts(groups=(), names=(), spacings=(), wrapped_names=None) -> TextFacts:
     )
 
 
-def test_subfigures_left_alone() -> None:
-    request = Request(has_axes=True, has_grid=True, has_subfigures=True)
-    result = settle(request, decide.answer(request), EDGES)
-    assert result.fired == ("subfigures-left-alone",)
-    assert result.plan == Refuse(SUBFIGURES)
-
-
 def test_axes_3d_counts_its_tight_boxes() -> None:
     tight = (Piece(Box(50.0, 950.0, 50.0, 450.0), Role.TICK),)
     a = replace(axes(PLOT), tight=tight)
     fired, plan = fit_of(content(a))
     assert fired == ("axes-3d",)
     assert plan.axes[0].pieces == tight
-
-
-def test_secondary_axis_children_count() -> None:
-    top = Piece(Box(400.0, 600.0, 400.0, 430.0), Role.TICK, secondary=True)
-    fired, plan = fit_of(content(axes(PLOT, top)))
-    assert fired == ("secondary-axis-children",)
-    assert plan.axes[0].pieces == (top,)
-    assert decide.fit(content(axes(PLOT, top))).axes[0].pieces == ()
-
-
-def test_pinned_text_overhang_is_dropped() -> None:
-    title = text(100.0, 1100.0, 410.0, 430.0, anchor_x=100.0)  # loc="left"
-    fired, plan = fit_of(content(axes(PLOT, title)))
-    assert fired == ("pinned-text-overhang",)
-    assert plan.axes[0].pieces[0].box == Box(100.0, 900.0, 410.0, 430.0)
 
 
 def test_outside_legend_along_side_counts_past_the_canvas_only() -> None:
@@ -125,16 +97,6 @@ def test_figure_legend_side_reserves_its_side() -> None:
     fired, plan = fit_of(content(axes(PLOT), artists=[wide]))
     assert fired == ("figure-legend-side",)
     assert plan.reserves == (Edge.TOP,)
-
-
-def test_locator_flip_flop_tries_the_inner_box() -> None:
-    a, b = Edges(0.1, 0.9, 0.1, 0.9), Edges(0.12, 0.92, 0.1, 0.9)
-    history = History((a, b, a, b), Px(20.0))
-    result = settle(history, decide.next_edges(history), EDGES)
-    assert result.fired == ("locator-flip-flop",)
-    assert result.plan == Next(Edges(0.12, 0.9, 0.1, 0.9), trial=True)
-    settled = History((a, b, a, b), Px(0.1))
-    assert settle(settled, decide.next_edges(settled), EDGES).fired == ()
 
 
 def name(label: int, text_: str, box: Box, span: float = 300.0) -> AxisName:

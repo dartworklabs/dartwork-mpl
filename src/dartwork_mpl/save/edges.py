@@ -40,18 +40,20 @@ EDGES: tuple[EdgeCase[SaveRequest, SavePlan], ...] = (
     EdgeCase(
         name="caller-timestamp",
         why=(
-            "a caller who passes metadata={'CreationDate': ...} wants that "
-            "date in the file; blanking it would drop their value"
+            "a caller's metadata={'CreationDate': ...} was blanked out of "
+            "the PDF along with matplotlib's own date"
         ),
+        example="test_decide.py::test_caller_timestamp_wins_only_where_it_applies",
         applies=sets_a_timestamp,
         adjust=keep_caller_metadata,
     ),
     EdgeCase(
         name="ambient-svg-salt",
         why=(
-            "a build that sets svg.hashsalt itself already has reproducible "
-            "ids under its own salt; the file-name salt would change them"
+            "a build's own svg.hashsalt was replaced by the file-name salt, "
+            "changing the SVG ids it had pinned"
         ),
+        example="test_decide.py::test_ambient_svg_salt_is_left_in_force",
         applies=has_ambient_salt,
         adjust=keep_ambient_salt,
     ),

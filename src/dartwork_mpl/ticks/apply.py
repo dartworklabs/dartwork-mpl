@@ -49,7 +49,6 @@ from .model import (
     Numbers,
     NumberStyle,
     PeriodDates,
-    PinTicks,
     QuarterDates,
     Rule,
     YearTicks,
@@ -98,10 +97,6 @@ def _apply_axis(axis: Axis, plan: AxisPlan, ladder: Ladder) -> None:
             axis.set_major_locator(WholeYearLocator())
         if plan.formatter:
             axis.set_major_formatter(YearTickFormatter(plan.digits))
-    elif isinstance(plan, PinTicks):
-        axis.set_major_locator(
-            ticker.FixedLocator(list(axis.get_majorticklocs()))
-        )
 
 
 def _apply_spines(ax: Axes, plan: AxesPlan) -> None:

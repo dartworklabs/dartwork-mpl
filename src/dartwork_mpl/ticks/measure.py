@@ -59,17 +59,12 @@ def in_view(axis: Axis, values: Sequence[float]) -> list[float]:
     return [float(v) for v in values if low <= float(v) <= high]
 
 
-def draws_linearly(axis: Axis) -> bool:
-    """Whether ``axis`` draws on a linear scale (one unit fits its ticks)."""
-    return axis.get_scale() == "linear"
-
-
 def tick_values(
     axis: Axis, values: Sequence[float] | None = None
 ) -> TickValues:
     """The given (or current major) tick values inside the view."""
     locs = list(axis.get_majorticklocs()) if values is None else list(values)
-    return TickValues.of(in_view(axis, locs), linear=draws_linearly(axis))
+    return TickValues.of(in_view(axis, locs))
 
 
 def korean_labels(fig: Figure | None, extra: str = "") -> bool:
@@ -300,7 +295,6 @@ def axis_facts(ax: Axes, which: Which) -> AxisFacts:
     fmt, locator = axis.get_major_formatter(), axis.get_major_locator()
     own_locator = axis.isDefault_majloc and not configured(locator)
     fixed = isinstance(fmt, ticker.FixedFormatter)
-    pinnable = fixed and len(axis.get_majorticklocs()) == len(fmt.seq)
     years, ends = False, None
     if kind is Kind.NUMBERS and which == "x":
         years = are_years(plotted(ax, "x", bar_slot=True))
@@ -319,7 +313,6 @@ def axis_facts(ax: Axes, which: Which) -> AxisFacts:
         own_formatter=axis.isDefault_majfmt,
         own_locator=own_locator,
         fixed_texts=fixed,
-        pinnable=pinnable,
         years=years,
         quarter_ends=ends,
     )

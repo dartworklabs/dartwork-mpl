@@ -149,13 +149,12 @@ that keyword. The defaults are that look in the text colour, 3 pt beyond the
 bar end; the number printed like the axis ticks (plain under
 `dm.axis_unit`, with the ticks' `k` under `dm.format_axis_si`), three
 significant digits on the largest value and no meaningless decimals
-(`21.4, 18.0, 21.5`; `120, 135`; a tiny value reads `<0.1M`, not `0`);
+(`21.4, 18.0, 21.5`; `120, 135`);
 stacked bars' segments centred with a total; crowded labels on vertical bars
 turned vertical by `dm.simple_layout`; a bar ending outside the view has no
-label. Labels still lost for room (thin `barh` rows, dense groups) make
-`dm.simple_layout` warn with the count: if the rows are thin, make the
-figure taller (wider for vertical bars); report the warning if the size is
-fixed. Restyle a returned label after `dm.simple_layout`.
+label. Labels still lost for room (thin `barh` rows, dense groups) are
+hidden: count them in the image; if the rows are thin, make the figure
+taller (wider for vertical bars); report them if the size is fixed. Restyle a returned label after `dm.simple_layout`.
 
 | Asked | Keyword |
 |---|---|

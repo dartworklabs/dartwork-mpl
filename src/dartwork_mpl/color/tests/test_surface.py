@@ -127,12 +127,10 @@ def test_flat_alpha_and_mixes():
 
 
 def test_make_palette_feeds_a_bar_chart():
-    names = dm.make_palette(4, highlight=0)
-    assert names == ["oc.blue7", "oc.red3", "oc.green3", "oc.orange3"]
+    names = dm.make_palette(4)
+    assert names == ["oc.blue5", "oc.red5", "oc.green5", "oc.orange5"]
     fig, ax = plt.subplots()
     ax.bar(range(4), [1, 2, 3, 4], color=names)
-    with pytest.raises(ValueError, match="whole number"):
-        dm.make_palette(3, highlight=1.5)
 
 
 def test_presets_rebind_the_role_colours():

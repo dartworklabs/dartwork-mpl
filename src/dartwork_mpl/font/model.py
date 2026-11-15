@@ -11,9 +11,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Fewer bundled files than this means the install lost its fonts.
-MIN_BUNDLED_FILES = 5
-
 
 @dataclass(frozen=True)
 class Weight:
@@ -34,10 +31,9 @@ class Face:
 
 @dataclass(frozen=True)
 class Table:
-    """The font table after the bundled files were added, and their count."""
+    """The font table after the bundled files were added."""
 
     faces: tuple[Face, ...]
-    bundled_files: int
 
     def single_weight_families(self) -> frozenset[str]:
         """Bundled family names that ship exactly one file."""
@@ -51,11 +47,10 @@ class Table:
 @dataclass(frozen=True)
 class Plan:
     """The table to install: positions into ``Table.faces`` in their new
-    order, each with the weight it should carry, and a warning to show."""
+    order, each with the weight it should carry."""
 
     order: tuple[int, ...]
     weights: tuple[Weight, ...]
-    warning: str | None = None
 
 
 @dataclass(frozen=True)

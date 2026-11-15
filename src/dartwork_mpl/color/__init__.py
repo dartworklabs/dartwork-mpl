@@ -20,7 +20,7 @@ import matplotlib.colors as mcolors
 from ..edgecase import settle
 from . import apply, decide, measure
 from .catalog import CATALOG
-from .edges import FULL_LADDER, GREY_END, HEX_ROUNDING, HIGHLIGHT, KR_TOKENS
+from .edges import FULL_LADDER, HEX_ROUNDING, KR_TOKENS
 from .model import (
     SEMANTIC_NAMES,
     ContrastFacts,
@@ -138,9 +138,7 @@ def cspace(
     first, last, where = color(start), color(end), Space.parse(space)
     if where is not Space.OKLCH:
         return list(decide.straight(first, last, Steps(n), where))
-    plan = decide.ends(first, last)
-    settled = settle(plan, plan, (GREY_END,)).plan
-    return list(decide.sample(settled, Steps(n)))
+    return list(decide.sample(decide.ends(first, last), Steps(n)))
 
 
 def mix_colors(color1: object, color2: object, alpha: float = 0.5) -> RGB:
@@ -341,19 +339,15 @@ def set_colors(
     apply.set_cycle(apply.color_cycle(colours, styles), ax)
 
 
-def make_palette(
-    n: int, kind: str = "categorical", highlight: int | None = None
-) -> list[str]:
+def make_palette(n: int, kind: str = "categorical") -> list[str]:
     """``n`` Open Color names for ``"categorical"``, ``"sequential"``
     (light to dark blues) or ``"diverging"`` (red, grey, blue) series.
 
-    ``highlight`` darkens that series and lightens the rest; an index
-    outside ``0..n-1`` is ignored. Colours repeat past the list's length::
+    Colours repeat past the list's length::
 
-        colors = dm.make_palette(4, highlight=0)
+        colors = dm.make_palette(4)
     """
-    request = PaletteRequest.parse(n, kind, highlight)
-    return list(settle(request, decide.palette(request), (HIGHLIGHT,)).plan)
+    return list(decide.palette(PaletteRequest.parse(n, kind)))
 
 
 def apply_semantic(locale: str) -> None:

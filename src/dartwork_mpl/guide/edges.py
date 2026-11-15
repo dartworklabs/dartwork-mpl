@@ -78,29 +78,33 @@ def drop_registered_colors(facts: LintFacts, plan: Findings) -> Findings:
 EDGES: tuple[EdgeCase[LintFacts, Findings], ...] = (
     EdgeCase(
         name="quoted-text",
-        why="docstrings and comments quote the anti-patterns they warn about"
-        " ('never figsize=(w, h)'); prose is not code",
+        why="a docstring warning 'never figsize=(w, h)' was flagged as if it "
+        "were code",
+        example="test_edges.py::test_quoted_text",
         applies=quotes_a_pattern,
         adjust=drop_quoted,
     ),
     EdgeCase(
         name="hand-merge-without-twin",
-        why="one legend gathered from two separate panels is the caller's"
-        " layout; only a twin pair has the merge dm.place_legend does",
+        why="one legend gathered by hand from two separate panels was "
+        "flagged as a twin merge, which only a twin pair has",
+        example="test_edges.py::test_hand_merge_without_twin",
         applies=merges_without_twin,
         adjust=drop_hand_merge,
     ),
     EdgeCase(
         name="colormap-registered-in-source",
-        why="a script that registers its own colormap names it before matplotlib"
-        " knows it; the lint never runs the registration",
+        why="a script that registers its own colormap got an "
+        "invalid-colormap-name finding for it",
+        example="test_edges.py::test_colormap_registered_in_source",
         applies=registers_a_colormap,
         adjust=drop_registered_colormaps,
     ),
     EdgeCase(
         name="color-registered-in-source",
-        why="a script may add names to get_named_colors_mapping() before"
-        " drawing with them; the lint never runs the assignment",
+        why="a script that adds its own colour name got an "
+        "invalid-color-name finding for it",
+        example="test_edges.py::test_color_registered_in_source",
         applies=registers_a_color,
         adjust=drop_registered_colors,
     ),

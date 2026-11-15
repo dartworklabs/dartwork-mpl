@@ -30,8 +30,6 @@ from .model import (
     FigureRole,
     Fit,
     Go,
-    History,
-    Next,
     PlotSize,
     Px,
     Refuse,
@@ -91,10 +89,7 @@ def fit(facts: ContentFacts) -> Fit:
     """Each Axes' own pieces; each figure artist on its role's or nearest edge."""
     own = tuple(
         AxesContent(
-            plot=a.plot,
-            position=a.position,
-            pieces=tuple(p for p in a.pieces if not p.secondary),
-            tight=a.tight,
+            plot=a.plot, position=a.position, pieces=a.pieces, tight=a.tight
         )
         for a in facts.axes
     )
@@ -179,34 +174,6 @@ def solve(facts: ContentFacts, fit: Fit) -> Step | None:
         abs(top - last.top) * height,
     )
     return Step(edges, Px(delta))
-
-
-# -- the iteration ------------------------------------------------------------
-
-
-def next_edges(history: History) -> Next:
-    """Write what the last step asked for."""
-    return Next(history.answers[-1])
-
-
-def inner(a: Edges, b: Edges) -> Edges:
-    """The smaller of two grid boxes, edge by edge."""
-    return Edges(
-        max(a.left, b.left),
-        min(a.right, b.right),
-        max(a.bottom, b.bottom),
-        min(a.top, b.top),
-    )
-
-
-def holds(wanted: Edges, edges: Edges) -> bool:
-    """Whether a step at ``edges`` asks for no more room than they give."""
-    return (
-        wanted.left <= edges.left
-        and wanted.right >= edges.right
-        and wanted.bottom <= edges.bottom
-        and wanted.top >= edges.top
-    )
 
 
 # -- text ---------------------------------------------------------------------

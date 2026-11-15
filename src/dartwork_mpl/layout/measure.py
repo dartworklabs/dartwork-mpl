@@ -22,7 +22,6 @@ from .._figure_geometry import (
     drawn_tick_labels,
     iter_figure_level_extents,
     same_position_axes,
-    secondary_axes,
 )
 from ..edgecase import settle
 from ..legend import outside_side
@@ -121,14 +120,6 @@ def _measurable(ext: Bbox) -> bool:
     return finite and ext.width > 0 and ext.height > 0
 
 
-def _anchor_x(text: Text) -> float | None:
-    try:
-        place = text.get_transform().transform(text.get_unitless_position())
-    except BBOX_ERRORS:
-        return None
-    return float(place[0])
-
-
 def _across(owner: Axes, value: float, box: Bbox, along_x: bool) -> bool:
     """Whether a tick sits across ``box`` (0.5 px slack): a reciprocal
     secondary axis puts ticks in view but far off the canvas."""
@@ -139,7 +130,7 @@ def _across(owner: Axes, value: float, box: Bbox, along_x: bool) -> bool:
     return bool(box.y0 - 0.5 <= place <= box.y1 + 0.5)
 
 
-def _texts(owner: Axes, renderer: RendererBase, secondary: bool) -> list[Piece]:
+def _texts(owner: Axes, renderer: RendererBase) -> list[Piece]:
     """Texts, the three titles and both axis names."""
     pieces: list[Piece] = []
     labels = (owner.xaxis.label, owner.yaxis.label)
@@ -151,12 +142,11 @@ def _texts(owner: Axes, renderer: RendererBase, secondary: bool) -> list[Piece]:
         except BBOX_ERRORS:
             continue
         if _measurable(ext):
-            anchor = _anchor_x(text)
-            pieces.append(Piece(_box(ext), Role.TEXT, anchor, None, secondary))
+            pieces.append(Piece(_box(ext), Role.TEXT))
     return pieces
 
 
-def _ticks(owner: Axes, renderer: RendererBase, secondary: bool) -> list[Piece]:
+def _ticks(owner: Axes, renderer: RendererBase) -> list[Piece]:
     """Labels of ticks in view and across the plot; offset texts."""
     pieces: list[Piece] = []
     for axis in (owner.xaxis, owner.yaxis):
@@ -179,14 +169,13 @@ def _ticks(owner: Axes, renderer: RendererBase, secondary: bool) -> list[Piece]:
             if value < vmin - tol or value > vmax + tol:
                 continue
             if _measurable(ext) and _across(owner, value, box, along_x):
-                pieces.append(Piece(_box(ext), Role.TICK, secondary=secondary))
+                pieces.append(Piece(_box(ext), Role.TICK))
         offset = axis.get_offset_text()
         if offset.get_visible() and offset.get_text().strip():
             with contextlib.suppress(*BBOX_ERRORS):
                 ext = offset.get_window_extent(renderer)
                 if _measurable(ext):
-                    piece = Piece(_box(ext), Role.TICK, secondary=secondary)
-                    pieces.append(piece)
+                    pieces.append(Piece(_box(ext), Role.TICK))
     return pieces
 
 
@@ -210,7 +199,7 @@ def _tight_3d(ax: Axes, renderer: RendererBase) -> tuple[Piece, ...]:
         except BBOX_ERRORS:
             continue
         if ext is not None and ext.width > 0 and ext.height > 0:
-            pieces.append(Piece(_box(ext), Role.TEXT, _anchor_x(text)))
+            pieces.append(Piece(_box(ext), Role.TEXT))
     return tuple(pieces)
 
 
@@ -231,12 +220,7 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
         if window is None:
             return None
         return AxesContent(plot, position, (), _tight_3d(ax, renderer))
-    pieces = [*_texts(ax, renderer, False), *_ticks(ax, renderer, False)]
-    for child in secondary_axes(ax):
-        pieces += [
-            *_texts(child, renderer, True),
-            *_ticks(child, renderer, True),
-        ]
+    pieces = [*_texts(ax, renderer), *_ticks(ax, renderer)]
     legend = ax.get_legend()
     if legend is not None and legend.get_visible():
         with contextlib.suppress(*BBOX_ERRORS):
@@ -244,7 +228,7 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
             if ext.width > 0 and ext.height > 0:
                 side = outside_side(legend)
                 outside = None if side is None else SIDES[side]
-                pieces.append(Piece(_box(ext), Role.LEGEND, None, outside))
+                pieces.append(Piece(_box(ext), Role.LEGEND, outside))
     return AxesContent(plot, position, tuple(pieces))
 
 

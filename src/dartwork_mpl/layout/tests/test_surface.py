@@ -144,13 +144,6 @@ def test_left_alone() -> None:
     with pytest.warns(UserWarning, match="no GridSpec"):
         dm.simple_layout(manual)
 
-    nested = plt.figure()
-    ax = nested.subfigures(1, 2)[0].subplots()
-    before = ax.get_position().bounds
-    with pytest.warns(UserWarning, match="SubFigures"):
-        dm.simple_layout(nested)
-    assert ax.get_position().bounds == before
-
 
 def test_a_margin_that_is_not_finite_raises_before_drawing() -> None:
     fig = line_chart()

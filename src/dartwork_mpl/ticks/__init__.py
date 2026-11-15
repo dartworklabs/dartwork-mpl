@@ -34,12 +34,7 @@ from .formatters import (
     fill,
     tick_scale_of,
 )
-from .measure import (
-    config_digits,
-    drawn_like_twin,
-    draws_linearly,
-    settled_twin_spines,
-)
+from .measure import config_digits, drawn_like_twin, settled_twin_spines
 from .model import (
     LADDERS,
     MYRIAD_LOCALES,
@@ -59,7 +54,6 @@ __all__ = [
     "axis_unit",
     "axis_unit_of",
     "drawn_like_twin",
-    "draws_linearly",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_dates",

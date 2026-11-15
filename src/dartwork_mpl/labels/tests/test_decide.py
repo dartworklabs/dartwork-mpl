@@ -6,7 +6,6 @@ import pytest
 
 from dartwork_mpl.labels import decide
 from dartwork_mpl.labels.model import (
-    BarOptions,
     Column,
     CrowdFacts,
     HeadroomFacts,
@@ -74,7 +73,7 @@ def test_headroom_grows_only_as_far_as_the_labels_need(rooms, view):
     ("value", "decimals", "fixed"), [(21.4, 1, False), (0.0, 2, True)]
 )
 def test_bar_text_is_the_value_at_the_call_decimals(value, decimals, fixed):
-    text = decide.bar_text(ValueFacts(value, decimals, fixed, False, "-"))
+    text = decide.bar_text(ValueFacts(value, decimals, fixed, "-"))
     assert (text.value, text.decimals, text.fixed, text.lead) == (
         value,
         decimals,
@@ -122,18 +121,14 @@ def test_first_free_falls_back_to_the_least_covered():
 
 
 def _panel(x: float, *, cell=None, ylabel=None, title=None, top=100.0) -> Panel:
-    titles = () if title is None else (Title("center", x, x + 50, title),)
+    titles = () if title is None else (Title(title),)
     return Panel(
         corner=(x, 100.0),
         width=8.0,
         descent=2.0,
-        gap=4.0,
         cell=cell,
-        outer_cell=cell,
         ylabel_x0=ylabel,
         guess_x0=x - 30,
-        bare=False,
-        neighbour_x1=None,
         titles=titles,
         top=top,
         decos=(),
@@ -175,7 +170,7 @@ def test_options_parse_once_and_name_a_bad_keyword():
         sign="+",
         is_color=lambda c: False,
     )
-    assert options.series and options.precise
+    assert options.series
     assert placement("segment", options.where) == "center"
     assert placement("total", "inside") == "outside"
     for bad in (
@@ -198,4 +193,3 @@ def test_options_parse_once_and_name_a_bad_keyword():
         }
         with pytest.raises(ValueError, match=next(iter(bad))):
             parse_bar_options(**kw, is_color=lambda c: False)
-    assert not BarOptions(fmt="{} GWh").precise

@@ -624,6 +624,74 @@ def _build_donut_wide_wrong_pctdistance() -> Figure:
     return fig
 
 
+# ───────────────────────────────────────────────────────
+# K. Figures the bundled skill teaches whose edge cases no other scenario
+#    fires. Each keeps an edge case alive (``EdgeCase.example``); remove the
+#    scenario and the edge fires on no real figure.
+# ───────────────────────────────────────────────────────
+
+
+def _build_quarterly_dates_line() -> Figure:
+    """Quarterly dates: ``23.Q1`` ticks, thinned on a narrow axis."""
+    import pandas as pd
+
+    dm.style.use("report")
+    dates = pd.date_range("2019-03-31", periods=20, freq="QE")
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=20, n_series=1))
+    ax.plot(dates, [1.0 + 0.1 * i for i in range(20)])
+    ax.set(xlabel="Quarter", ylabel="Sales")
+    return fig
+
+
+def _build_panels_long_axis_name() -> Figure:
+    """An axis name longer than its panel: ``dm.simple_layout`` wraps it."""
+    dm.style.use("report")
+    fig, axes = plt.subplots(1, 3, figsize=dm.figsize("13cm", "wide"))
+    for ax in axes:
+        ax.plot([0, 1], [0, 1])
+        ax.set_xlabel("Annual electricity use per household (MWh per year)")
+    axes[0].set_ylabel("Share")
+    return fig
+
+
+def _build_presentation_small_text() -> Figure:
+    """A slide chart with text one step smaller, ``dm.fs(-1)``."""
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=4, n_series=1))
+    ax.plot([1, 2, 3, 4], [3.1, 3.4, 3.2, 3.9])
+    ax.set_xlabel("Quarter", fontsize=dm.fs(-1))
+    ax.set_ylabel("Revenue")
+    return fig
+
+
+def _build_source_note() -> Figure:
+    """A source line under the chart, ``dm.add_note(fig, t)``."""
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=8, n_series=1))
+    ax.plot(range(8), [3, 4, 4, 5, 6, 6, 7, 8])
+    ax.set(xlabel="Week", ylabel="Orders")
+    dm.add_note(fig, "Source: internal order system")
+    return fig
+
+
+def _build_waterfall_report() -> Figure:
+    """The waterfall template's calls on a report page, with rises."""
+    dm.style.use("report")
+    names = ["Opening stock", "New orders", "Returns", "Write-offs", "Closing"]
+    steps = [120.0, 45.0, -20.0, -15.0]
+    fig, ax = plt.subplots(
+        figsize=dm.figsize_for(n_points=len(names), n_series=1, labels=names)
+    )
+    level = [0.0, 120.0, 165.0, 145.0]
+    bars = ax.bar(range(4), steps, bottom=[0.0, *level[1:]])
+    total = ax.bar([4], [sum(steps)])
+    dm.label_bars(ax, bars, sign="+")
+    dm.label_bars(ax, total)
+    ax.set_xticks(range(5), names)
+    ax.set_ylabel("Units")
+    return fig
+
+
 # SCENARIOS is a flat list of RobustnessScenario (no pytest.param
 # wrappers remain after the #159/#160 redesign). test_catalog_alignment.py
 # and test_robustness_suite.py still route entries through small
@@ -849,4 +917,22 @@ SCENARIOS: list = [
         name="donut_wide_wrong_pctdistance",
         build=_build_donut_wide_wrong_pctdistance,
     ),
+    # K. Taught figures that keep an edge case alive
+    RobustnessScenario(
+        name="quarterly_dates_line", build=_build_quarterly_dates_line
+    ),
+    RobustnessScenario(
+        name="panels_long_axis_name", build=_build_panels_long_axis_name
+    ),
+    RobustnessScenario(
+        name="presentation_small_text", build=_build_presentation_small_text
+    ),
+    RobustnessScenario(
+        name="source_note",
+        build=_build_source_note,
+        # dm.add_note sets the note at the canvas's left edge (x = 0), so the
+        # white-border check cannot hold; the layout reserves its row.
+        pixel_checks=(),
+    ),
+    RobustnessScenario(name="waterfall_report", build=_build_waterfall_report),
 ]

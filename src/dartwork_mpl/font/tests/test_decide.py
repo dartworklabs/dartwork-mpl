@@ -11,10 +11,9 @@ def test_the_ordinary_table_keeps_order_and_declared_weights():
         Face("Roboto-Light.ttf", "Roboto", Weight(300), True),
         Face("Arial.ttf", "Arial", Weight("normal"), False),
     )
-    plan = table_plan(Table(faces, bundled_files=1))
+    plan = table_plan(Table(faces))
     assert plan.order == (0, 1)
     assert plan.weights == (Weight(300), Weight("normal"))
-    assert plan.warning is None
 
 
 def test_single_weight_families_are_bundled_names_with_one_file():
@@ -24,7 +23,7 @@ def test_single_weight_families_are_bundled_names_with_one_file():
         Face("Roboto-Bold.ttf", "Roboto", Weight(700), True),
         Face("Arial.ttf", "Arial", Weight(400), False),
     )
-    assert Table(faces, 3).single_weight_families() == {"Noto Sans Math"}
+    assert Table(faces).single_weight_families() == {"Noto Sans Math"}
 
 
 EXPECTED = Expected(

@@ -3,7 +3,8 @@
 Loaded as a plugin (``-p tests.fixtures`` in ``pyproject.toml``), so it applies
 to both trees without a ``conftest.py`` at the repository root. After each
 test it closes figures, resets ``rcParams`` and the active preset, and restores
-``dm.config``, so one test's style cannot leak into the next.
+``dm.config``, so one test's style cannot leak into the next. It also checks
+that an edge case's example test really makes that edge fire.
 """
 
 from __future__ import annotations

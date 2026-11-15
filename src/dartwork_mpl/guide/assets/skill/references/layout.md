@@ -9,7 +9,7 @@ canvas, so the same request gets the same size whoever draws it:
 |---|---|
 | `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
 | `scientific` | one panel 9 cm (a column), grids and `dense`/`strip` 17 cm |
-| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title; a grid of two rows or more, the whole slide (25.4 × 14.29 cm) |
+| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title |
 | `poster` | report widths × font size / 8 pt |
 
 The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
@@ -18,17 +18,11 @@ The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
 under any preset). Density moves it: 6 or fewer points with 2 or fewer series
 on one axis gives 9 cm; `dual_axis=True`, 4+ series or 13+ points gives
 14.5 cm. `matrix`, `dense`, `strip`, `slide`, `full_slide` and grids keep theirs; a grid takes 17 cm and panels keep
-the kind's aspect, except that panels stacked in one column get the row height
-of a two-column grid (two: 17 × 13 cm) and no grid is taller than it is wide. `dm.grid_shape(n)` lays out `n` panels: one row up to
+the kind's aspect, and no grid is taller than it is wide. `dm.grid_shape(n)` lays out `n` panels: one row up to
 three, then a near-square grid, wider than tall.
 
 Grouped bars (`n_series` bars side by side in each of `n_points` groups)
-take `"grouped"`: it sizes like `"default"` and also counts the bars, each
-needing its value label's room, so 4 groups of 3 bars get 15.4 cm on a
-slide instead of 11.4 cm, where `dm.label_bars` hid 4 of the 12 values.
-Report widths hold up to 16 / 24 / 32 bars, slides 10 / 15; more take the
-widest, where crowded labels are still hidden and reported. A journal
-column (`scientific`) stays 9 cm.
+take `"grouped"`: it sizes like `"default"`.
 
 Category names under the x axis go in too: `labels=names`. `"default"`
 and `"grouped"` then take the narrowest width of the preset's own table
@@ -47,10 +41,10 @@ follows the x positions at that text size: up to 4 → 11.4 cm (half the body),
 up to 6 → 15.4 cm (two thirds), more, unknown (scatter), 4+ series or
 `dual_axis=True` → 23.4 cm. One row of panels, `"barh"`, `"dense"` and
 `"strip"` take 23.4 cm, `"compact"` 11.4 cm (two charts side by side) and
-`"matrix"` a 10.5 cm square. A grid of two rows or more
-(`dm.figsize_for(nrows=2, ncols=2)`, stacked panels too) is the whole slide,
-25.4 × 14.29 cm, with no slide title above it: every row has its own title,
-tick labels and axis name. A chart that is the whole slide with no slide title ("fill
+`"matrix"` a 10.5 cm square; any grid takes the 23.4 × 10.5 cm body. A grid
+of two rows or more takes the whole slide, `dm.figsize_for("full_slide")`,
+with no slide title above it: every row has its own title, tick labels and
+axis name. A chart that is the whole slide with no slide title ("fill
 the slide", "the entire 16:9 page"): `dm.figsize_for("full_slide")`, 25.4 × 14.29 cm under
 any preset, the 10 in slide these sizes assume (a 13.33 in slide would show the
 same text 25 % smaller on screen).
@@ -70,7 +64,7 @@ dm.figsize_for(n_points=len(quarters), n_series=series)  # 12 x 9 cm
 regions = ["North region", "South region", "East region", "West region", "Central region"]
 dm.figsize_for(n_points=len(regions), n_series=1, labels=regions)  # 12 cm, not 9: flat names
 dm.figsize_for("barh", n_points=10, n_series=1)  # 14.5 cm, long labels
-dm.figsize_for("grouped", n_points=9, n_series=3)  # 14.5 cm, 27 bars
+dm.figsize_for("grouped", n_points=9, n_series=3)  # 12 cm, like "default"
 dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
 dm.figsize_for("slide")  # 23.4 x 10.5 cm, under a slide title
 dm.figsize_for("full_slide")  # 25.4 x 14.29 cm, the whole 16:9 slide
@@ -79,7 +73,7 @@ dm.figsize_for(nrows=nrows, ncols=ncols)  # 17 x 8.5 cm
 dm.style.use("presentation")
 dm.figsize_for(n_points=len(quarters), n_series=series)  # 11.4 x 10.5 cm
 dm.figsize_for(nrows=1, ncols=3)  # 23.4 x 10.5 cm, one row under the title
-dm.figsize_for(nrows=2, ncols=2)  # 25.4 x 14.29 cm, the whole slide
+dm.figsize_for("full_slide")  # 25.4 x 14.29 cm: a grid of two rows
 ```
 
 A size the user names goes to `dm.figsize(width, second)`, which returns the
@@ -139,8 +133,8 @@ text as `CROSS_AXES_OVERLAP`.
 - `margin="3mm"` (or `"2%"`, `dm.mm(3)`) sets the buffer; the default is `"1mm"`, `0` is flush.
 - `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.
 - With one main GridSpec pass it: `dm.simple_layout(fig, gs=gs)`.
-- A figure with SubFigures is left as it is (with a warning): put the
-  panels on one GridSpec (nested `subgridspec` is fine) instead.
+- It does not lay out SubFigures: put the panels on one GridSpec (nested
+  `subgridspec` is fine) instead.
 
 ## Equal grid with panel labels
 

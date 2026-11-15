@@ -27,6 +27,7 @@ EDGES: tuple[EdgeCase[Active, Points], ...] = (
             "the presentation presets are scientific x 2.6, so a 1 pt step "
             "there is a 0.4 pt step on paper: fs(-1) barely shrank slide text"
         ),
+        example="test_edges.py::test_slide_step_is_scientific_times_2_6",
         applies=is_slide,
         adjust=slide_step,
     ),
