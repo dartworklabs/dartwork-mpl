@@ -13,12 +13,8 @@ from matplotlib.transforms import Bbox
 # — one source for the bbox-measurement exception set (the two modules
 # used to carry identical private copies).
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
-from .._figure_geometry import (
-    axes_text_artists,
-    axes_titles,
-    outside_side,
-    secondary_axes,
-)
+from .._figure_geometry import axes_text_artists, axes_titles, secondary_axes
+from ..legend import outside_side
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes

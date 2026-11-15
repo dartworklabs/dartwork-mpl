@@ -1,34 +1,71 @@
-"""What settles before ``simple_layout`` measures: outside legends, line-end labels and titles over legends."""
+"""The layout's legend hooks, delegating to ``annotation`` until ``legend`` is rebuilt.
+
+The title lift over a legend above its Axes lives here already (moved
+verbatim from ``layout``): it is a legend rule the layout only triggers.
+"""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import matplotlib as mpl
-from matplotlib.figure import Figure
 from matplotlib.transforms import Bbox, ScaledTranslation
 
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
 from .._figure_geometry import (
+    OutsideSide,
     axes_titles,
-    outside_side,
     reanchor_outside,
-    respread_line_end_labels,
     same_position_axes,
 )
+from .._figure_geometry import outside_side as _anchored_side
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.figure import Figure, SubFigure
+    from matplotlib.legend import Legend
 
 
-def _bar_values_past_limits(ax: Axes, renderer: RendererBase) -> list[Bbox]:
-    """Where ``dm.label_bars`` values beyond a limit of ``ax`` are drawn."""
-    from ..annotation import bar_values_past_limits
+def settle(
+    fig: Figure, renderer: RendererBase, axes: Sequence[Axes] | None = None
+) -> bool:
+    """Legends at the Axes size now, then titles lifted over legends above them.
 
-    return bar_values_past_limits(ax, renderer)
+    ``dm.place_legend``'s legends on ``axes`` (every Axes when ``None``) are
+    placed again at the size those Axes have now; a legend anchored outside
+    a side moves past that side's labels (and past the ``dm.label_bars``
+    values beyond that limit it would cover); a title never sits on a
+    legend above its Axes. Returns whether anything moved (the caller
+    redraws before measuring).
+    """
+    from ..annotation import bar_values_past_limits, settle_legends
+
+    moved = settle_legends(fig, renderer, axes)
+    for ax in fig.axes:
+        legend = ax.get_legend()
+        if legend is not None and _anchored_side(legend) is not None:
+            values = bar_values_past_limits(ax, renderer)
+            if reanchor_outside(legend, ax, renderer, values):
+                moved = True
+    for ax in fig.axes:
+        if _lift_titles_over_legends(ax, renderer):
+            moved = True
+    return moved
+
+
+def place_figure_legends(fig: Figure, holder: Figure | SubFigure) -> None:
+    """``dm.figure_legend``'s legends of ``holder`` past its title and labels."""
+    from ..annotation import settle_figure_legends
+
+    settle_figure_legends(fig, holder)
+
+
+def outside_side(legend: Legend) -> OutsideSide | None:
+    """The side a legend is anchored outside of, or ``None`` (inside, by hand)."""
+    return _anchored_side(legend)
 
 
 def _legend_extents_above(ax: Axes, renderer: RendererBase) -> list[Bbox]:
@@ -104,37 +141,3 @@ def _lift_titles_over_legends(ax: Axes, renderer: RendererBase) -> bool:
     for title in axes_titles(ax).values():
         title.set_transform(ax.transAxes + offset)
     return True
-
-
-def _settle_outside_legends(
-    fig: Figure, renderer: RendererBase, axes: Sequence[Axes] | None = None
-) -> bool:
-    """Re-anchor outside legends, re-space line-end labels, lift titles over legends.
-
-    Runs on every Axes of ``fig`` before the layout measures it, so a
-    legend placed before its axis labels existed moves past them (and past
-    the ``dm.label_bars`` values beyond that limit it would cover) and a
-    title never sits on a legend above its Axes. ``dm.place_legend``'s own
-    legends on ``axes`` (the Axes this layout measures; all of them when
-    ``None``) are first placed again at the size those Axes have now
-    (:func:`dartwork_mpl.annotation.settle_legends`). Returns whether
-    anything moved (the caller redraws before measuring).
-    """
-    from ..annotation import settle_legends
-
-    moved = settle_legends(fig, renderer, axes)
-    for ax in fig.axes:
-        legend = ax.get_legend()
-        if legend is not None and outside_side(legend) is not None:
-            # Past the bar values beyond that limit it would cover, too.
-            values = _bar_values_past_limits(ax, renderer)
-            if reanchor_outside(legend, ax, renderer, values):
-                moved = True
-        # Line-end labels (dm.label_line_ends) were spaced at the size the
-        # Axes had then; space them again at its size now.
-        if respread_line_end_labels(ax, renderer):
-            moved = True
-    for ax in fig.axes:
-        if _lift_titles_over_legends(ax, renderer):
-            moved = True
-    return moved

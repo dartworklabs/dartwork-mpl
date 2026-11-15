@@ -6,6 +6,11 @@ public API. Besides measuring, it anchors an artist outside one side of an
 Axes past that side's labels (:func:`anchor_outside`), so the annotation
 slice that places such an artist and the layout that re-anchors it after
 the Axes changed share one rule without importing each other.
+
+Each public name carries an ``# Owners:`` comment: the slices (``layout``,
+``ticks``, ``labels``, ``legend``, ``check``) whose code uses it. A name only
+one slice uses moves into that slice when it is rebuilt; ``validate``,
+``figure_review`` and ``lint`` count as ``check``.
 """
 
 from __future__ import annotations
@@ -123,9 +128,11 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
 
+# Owners: legend.
 OutsideSide: TypeAlias = Literal["above", "below", "right", "left"]
 """A side of an Axes that an artist can be anchored outside of."""
 
+# Owners: check, labels, layout, legend.
 #: Exceptions matplotlib may raise from ``get_window_extent`` /
 #: ``get_tightbbox`` on artists in degenerate states (NaN-only data,
 #: zero-area fonts, renderers that refuse the call). Single source for
@@ -138,6 +145,7 @@ BBOX_ERRORS: tuple[type[BaseException], ...] = (
 )
 
 
+# Owners: labels.
 def canvas_renderer(fig: Figure | SubFigure) -> RendererBase | None:
     """The canvas's own renderer at the Figure's current size and DPI.
 
@@ -168,6 +176,7 @@ class _PngCanvas(FigureCanvasAgg):
         return "png"
 
 
+# Owners: check, labels, layout, legend, ticks.
 def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     """Return a measurement renderer without replacing the caller's canvas.
 
@@ -214,6 +223,7 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     return renderer
 
 
+# Owners: check, layout, legend.
 def iter_figure_level_extents(
     fig: Figure | SubFigure,
     renderer: RendererBase,
@@ -312,6 +322,7 @@ _TITLE_ATTRS: dict[Literal["center", "left", "right"], str] = {
 }
 
 
+# Owners: check, labels, layout, legend.
 def axes_titles(ax: Axes) -> dict[str, Text]:
     """Return the title Text artists of ``ax`` keyed by ``set_title``'s ``loc``.
 
@@ -334,10 +345,12 @@ def axes_titles(ax: Axes) -> dict[str, Text]:
     return titles
 
 
+# Owners: labels (check reads it through panel_labels).
 #: Where a figure keeps the groups of letters ``dm.label_axes`` placed.
 PANEL_LABELS_ATTR = "_dm_panel_label_groups"
 
 
+# Owners: check.
 def panel_labels(fig: Figure | SubFigure) -> list[tuple[Axes, Text]]:
     """The letters ``dm.label_axes`` placed on ``fig``, each with its panel.
 
@@ -352,6 +365,7 @@ def panel_labels(fig: Figure | SubFigure) -> list[tuple[Axes, Text]]:
     ]
 
 
+# Owners: layout.
 def axes_text_artists(ax: Axes) -> list[Text]:
     """Return ``ax.texts``, the three titles and the x/y axis labels.
 
@@ -362,6 +376,7 @@ def axes_text_artists(ax: Axes) -> list[Text]:
     return [*ax.texts, *titles, ax.xaxis.label, ax.yaxis.label]
 
 
+# Owners: check.
 def drawn_axes_texts(ax: Axes) -> list[Text]:
     """:func:`axes_text_artists` less the axis labels matplotlib leaves out.
 
@@ -379,6 +394,7 @@ def drawn_axes_texts(ax: Axes) -> list[Text]:
     return [*ax.texts, *axes_titles(ax).values(), *labels]
 
 
+# Owners: check.
 def text_window_extent(text: Text, renderer: RendererBase) -> Bbox:
     """The window extent of ``text`` where it draws.
 
@@ -465,6 +481,7 @@ def _axes_draws_its_axes(ax: Axes, axis: Any) -> bool:
     return bool(getattr(ax, "axison", True)) and bool(axis.get_visible())
 
 
+# Owners: check, labels, layout, legend.
 def drawn_tick_labels(
     ax: Axes, which: Literal["x", "y"], *, minor: bool = False
 ) -> list[Text]:
@@ -523,6 +540,7 @@ def drawn_tick_labels(
 _TOUCH_PX = 0.5
 
 
+# Owners: check, layout (the result of tick_label_overlaps).
 class TickOverlaps(NamedTuple):
     """Neighbouring tick labels of one axis that overlap.
 
@@ -579,6 +597,7 @@ def _half_reach(corners: np.ndarray, normal: np.ndarray) -> float:
     )
 
 
+# Owners: check.
 def pair_clearance_px(
     a: Text, b: Text, renderer: RendererBase, which: Literal["x", "y"]
 ) -> float:
@@ -610,6 +629,7 @@ def pair_clearance_px(
     return reach
 
 
+# Owners: check.
 def label_clearance_px(
     label: Text, renderer: RendererBase, which: Literal["x", "y"]
 ) -> float:
@@ -624,6 +644,7 @@ def label_clearance_px(
     return pair_clearance_px(label, label, renderer, which)
 
 
+# Owners: check.
 def pair_gap_px(a: Text, b: Text, renderer: RendererBase) -> float:
     """The room (display px) between the rectangles ``a`` and ``b`` fill.
 
@@ -662,6 +683,7 @@ def _overlap_px(p: np.ndarray, q: np.ndarray) -> float:
     return least
 
 
+# Owners: check, layout.
 def tick_label_overlaps(
     ax: Axes, which: Literal["x", "y"], renderer: RendererBase
 ) -> TickOverlaps:
@@ -711,6 +733,7 @@ def tick_label_overlaps(
     return TickOverlaps(pairs, len(labels), deepest, rotation)
 
 
+# Owners: check, layout.
 def tick_pad(tick: Any) -> float:
     """The label pad (pt) of a matplotlib ``Tick`` (``Tick.get_pad``).
 
@@ -720,6 +743,7 @@ def tick_pad(tick: Any) -> float:
     return float(tick.get_pad())
 
 
+# Owners: check, layout.
 #: What an x and a y label at a corner are cleared by, in ems of the labels
 #: that move: a hair space. Labels of two axes are told apart by where they
 #: sit; they only must not touch. Measured (I-O1 follow-up 8, a -3..3
@@ -729,6 +753,7 @@ def tick_pad(tick: Any) -> float:
 CORNER_GAP_EM = 0.1
 
 
+# Owners: check, layout.
 class CornerOverlap(NamedTuple):
     """An x and a y tick label of one plot box that overlap.
 
@@ -765,6 +790,7 @@ def _ink_alpha(text: Text) -> float:
     return float(to_rgba(text.get_color())[3])
 
 
+# Owners: check, layout.
 def corner_tick_overlaps(
     axes: Sequence[Axes], renderer: RendererBase
 ) -> list[CornerOverlap]:
@@ -837,6 +863,7 @@ def corner_tick_overlaps(
     return found
 
 
+# Owners: layout.
 def secondary_axes(ax: Axes) -> list[Axes]:
     """Return the visible ``secondary_xaxis`` / ``secondary_yaxis`` children of ``ax``.
 
@@ -858,11 +885,13 @@ def secondary_axes(ax: Axes) -> list[Axes]:
     return cast("list[Axes]", children)
 
 
+# Owners: check, labels.
 def axes_with_secondaries(fig: Figure | SubFigure) -> list[Axes]:
     """Return ``fig.axes``, each followed by its :func:`secondary_axes`."""
     return [owner for ax in fig.axes for owner in (ax, *secondary_axes(ax))]
 
 
+# Owners: labels, ticks.
 def shared_axes(ax: Axes, which: Literal["x", "y"]) -> list[Axes]:
     """``ax`` and every Axes sharing its ``which`` axis, in figure order.
 
@@ -879,6 +908,7 @@ def shared_axes(ax: Axes, which: Literal["x", "y"]) -> list[Axes]:
     return members
 
 
+# Owners: ticks.
 def with_insets(axes: Sequence[Axes]) -> list[Axes]:
     """Return ``axes``, each followed by its inset Axes, nested ones too.
 
@@ -898,6 +928,7 @@ def with_insets(axes: Sequence[Axes]) -> list[Axes]:
     return out
 
 
+# Owners: check, labels, layout, legend, ticks.
 def same_position_axes(ax: Axes) -> list[Axes]:
     """Return ``ax`` and the visible Axes drawn in the same box as it.
 
@@ -923,6 +954,7 @@ def same_position_axes(ax: Axes) -> list[Axes]:
     return [ax, *partners]
 
 
+# Owners: labels, ticks.
 def backdrop_layers(
     axes: Sequence[Axes],
 ) -> list[tuple[float, float, float, float]]:
@@ -959,6 +991,7 @@ def _frame_on(ax: Axes) -> bool:
     return bool(frame_on()) if callable(frame_on) else True
 
 
+# Owners: legend (inside outside_clearance_px only).
 def axes_decoration_extents(ax: Axes, renderer: RendererBase) -> list[Bbox]:
     """Return the window extents of ``ax``'s axis decorations.
 
@@ -993,6 +1026,7 @@ def axes_decoration_extents(ax: Axes, renderer: RendererBase) -> list[Bbox]:
     return extents
 
 
+# Owners: legend (inside anchor_outside only).
 def outside_clearance_px(
     ax: Axes, side: OutsideSide, renderer: RendererBase
 ) -> float:
@@ -1091,6 +1125,7 @@ class _OutsideAnchor:
     shift_pt: float = 0.0
 
 
+# Owners: legend.
 def outside_span_px(
     ax: Axes, side: OutsideSide, renderer: RendererBase, margin_px: float = 0.0
 ) -> tuple[float, float]:
@@ -1243,6 +1278,7 @@ def _overhang_reach_px(
     return reach
 
 
+# Owners: legend.
 def anchor_outside(
     artist: Any,
     ax: Axes,
@@ -1300,6 +1336,7 @@ def anchor_outside(
     return True
 
 
+# Owners: legend.
 def reanchor_outside(
     artist: Any,
     ax: Axes,
@@ -1319,6 +1356,7 @@ def reanchor_outside(
     return anchor_outside(artist, ax, side, renderer, obstacles)
 
 
+# Owners: legend, labels (layout reads it through legend.outside_side).
 def outside_side(artist: Any) -> OutsideSide | None:
     """The side :func:`anchor_outside` anchored ``artist`` on, or ``None``."""
     previous = getattr(artist, _OUTSIDE_ATTR, None)
@@ -1419,6 +1457,7 @@ def _apply_line_end_spread(
     return moved
 
 
+# Owners: labels.
 def spread_line_end_labels(
     ax: Axes,
     labels: list[Any],
@@ -1445,6 +1484,7 @@ def spread_line_end_labels(
     return _apply_line_end_spread(ax, group, renderer)
 
 
+# Owners: labels (layout runs it through labels.space_line_ends).
 def respread_line_end_labels(ax: Axes, renderer: RendererBase) -> bool:
     """Space :func:`spread_line_end_labels` labels again at ``ax``'s size now.
 

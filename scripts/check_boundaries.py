@@ -119,6 +119,8 @@ SLICES = frozenset(
         "dartwork_mpl.formatting",
         "dartwork_mpl.helpers",
         "dartwork_mpl.icon",
+        "dartwork_mpl.labels",
+        "dartwork_mpl.legend",
         "dartwork_mpl.io",
         "dartwork_mpl.layout",
         "dartwork_mpl.lint",
@@ -140,6 +142,7 @@ SLICES = frozenset(
         "dartwork_mpl.skills",
         "dartwork_mpl.style",
         "dartwork_mpl.templates",
+        "dartwork_mpl.ticks",
         "dartwork_mpl.tokens",
         "dartwork_mpl.ui",
         # The viewer's sub-slices (ADR 0005, audit ui-cli §4).
@@ -289,18 +292,32 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.io", "dartwork_mpl.validate"): (
         "saving runs the visual validation the user asked for"
     ),
-    ("dartwork_mpl.layout", "dartwork_mpl.annotation"): (
-        "bar value labels settle crowding and headroom at the size the "
+    ("dartwork_mpl.labels", "dartwork_mpl.annotation"): (
+        "the layout's label hooks delegate to the label code until labels is rebuilt"
+    ),
+    ("dartwork_mpl.layout", "dartwork_mpl.labels"): (
+        "bar labels, line-end names and panel letters settle at the size the "
         "layout fits, before it measures the margins"
+    ),
+    ("dartwork_mpl.layout", "dartwork_mpl.legend"): (
+        "legends settle at the size the layout fits; an outside legend's "
+        "side bounds what the margins measure of it"
+    ),
+    ("dartwork_mpl.layout", "dartwork_mpl.ticks"): (
+        "layout writes the library's tick numbers before measuring them and "
+        "thins crowded dates at the fitted size"
+    ),
+    ("dartwork_mpl.legend", "dartwork_mpl.annotation"): (
+        "the layout's legend hooks delegate to the legend code until legend is rebuilt"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.config"): (
         "layout follows the user's tick-label font adoption setting"
     ),
-    ("dartwork_mpl.layout", "dartwork_mpl.formatting"): (
-        "layout writes the library's tick numbers before measuring them"
-    ),
     ("dartwork_mpl.layout", "dartwork_mpl.size"): (
         "margins are given as physical lengths"
+    ),
+    ("dartwork_mpl.ticks", "dartwork_mpl.formatting"): (
+        "the layout's tick hooks delegate to formatting until ticks is rebuilt"
     ),
     ("dartwork_mpl.mcp", "dartwork_mpl._colors.registry"): (
         "the MCP colour tool and resource list the registered colour libraries"

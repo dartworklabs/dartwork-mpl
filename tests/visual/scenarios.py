@@ -478,7 +478,6 @@ def _build_kr_math_labels() -> Figure:
     return fig
 
 
-
 def _build_labelled_bars() -> Figure:
     dm.style.use("report")
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
@@ -542,10 +541,22 @@ def _build_line_ends_annotated() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     years = np.arange(2015, 2025)
     series = (
-        ("Solar", np.array([2.1, 2.9, 3.8, 5.0, 6.4, 8.1, 10.2, 12.9, 15.8, 19.4])),
-        ("Wind", np.array([6.0, 6.8, 7.5, 8.1, 8.9, 9.6, 10.4, 11.0, 11.9, 12.6])),
-        ("Hydro", np.array([10.5, 10.4, 10.6, 10.2, 10.3, 10.1, 9.9, 9.8, 9.9, 9.7])),
-        ("Nuclear", np.array([8.9, 9.1, 8.8, 8.6, 8.7, 8.4, 8.5, 8.2, 8.0, 8.1])),
+        (
+            "Solar",
+            np.array([2.1, 2.9, 3.8, 5.0, 6.4, 8.1, 10.2, 12.9, 15.8, 19.4]),
+        ),
+        (
+            "Wind",
+            np.array([6.0, 6.8, 7.5, 8.1, 8.9, 9.6, 10.4, 11.0, 11.9, 12.6]),
+        ),
+        (
+            "Hydro",
+            np.array([10.5, 10.4, 10.6, 10.2, 10.3, 10.1, 9.9, 9.8, 9.9, 9.7]),
+        ),
+        (
+            "Nuclear",
+            np.array([8.9, 9.1, 8.8, 8.6, 8.7, 8.4, 8.5, 8.2, 8.0, 8.1]),
+        ),
     )
     for name, values in series:
         ax.plot(years, values, label=name)
@@ -579,10 +590,32 @@ def _build_kr_myriad_dates() -> Figure:
     dm.style.use("report-kr")
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
     months = np.arange("2023-01", "2024-07", dtype="datetime64[M]")
-    visitors = 1_000_000 + np.array(
-        [12, 9, 15, 21, 28, 34, 47, 52, 38, 30, 24, 33,
-         19, 17, 26, 35, 41, 50]
-    ) * 30_000
+    visitors = (
+        1_000_000
+        + np.array(
+            [
+                12,
+                9,
+                15,
+                21,
+                28,
+                34,
+                47,
+                52,
+                38,
+                30,
+                24,
+                33,
+                19,
+                17,
+                26,
+                35,
+                41,
+                50,
+            ]
+        )
+        * 30_000
+    )
     ax.plot(months, visitors, marker="o")
     ax.set_xlabel("월")
     ax.set_ylabel("방문객 수")

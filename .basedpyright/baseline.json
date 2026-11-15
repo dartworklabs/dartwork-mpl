@@ -4600,16 +4600,6 @@
                 }
             }
         ],
-        "./src/dartwork_mpl/layout/_settle.py": [
-            {
-                "code": "reportUnusedFunction",
-                "range": {
-                    "startColumn": 4,
-                    "endColumn": 27,
-                    "lineCount": 1
-                }
-            }
-        ],
         "./src/dartwork_mpl/layout/_simple_layout.py": [
             {
                 "code": "reportPrivateUsage",
@@ -4696,14 +4686,6 @@
                 "range": {
                     "startColumn": 27,
                     "endColumn": 54,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportPrivateUsage",
-                "range": {
-                    "startColumn": 21,
-                    "endColumn": 44,
                     "lineCount": 1
                 }
             },

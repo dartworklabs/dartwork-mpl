@@ -777,10 +777,10 @@ def climb(
     (thinning is one way, and is no ``_Change``). Each such pass drops at
     least one change for good, so there are few.
     """
-    from ..formatting import remember_date_ticks
+    from ..ticks import remember_dates
 
     start = {side: getattr(grid, side) for side in _EDGES}
-    put_back_date_ticks = remember_date_ticks(fig)
+    put_back_date_ticks = remember_dates(fig)
     dropped: set[Key] = set()
     tried = False
     while True:

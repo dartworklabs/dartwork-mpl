@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from matplotlib.legend import Legend
 
 
+# Owners: labels, layout.
 def figure_tree(fig: Figure | SubFigure) -> list[Figure | SubFigure]:
     """``fig``, then each of its SubFigures and theirs, depth first."""
     tree: list[Figure | SubFigure] = [fig]
@@ -55,6 +56,7 @@ def _parents(ax: Axes) -> list[Figure | SubFigure]:
     return found
 
 
+# Owners: check, legend.
 def figure_axes(fig: Figure | SubFigure) -> list[Axes]:
     """The Axes drawn in ``fig`` or in a SubFigure nested in it.
 
@@ -68,11 +70,13 @@ def figure_axes(fig: Figure | SubFigure) -> list[Axes]:
     return [ax for ax in root.axes if fig in _parents(ax)]
 
 
+# Owners: check, labels, legend.
 def figure_legends(fig: Figure | SubFigure) -> list[Legend]:
     """The figure-level legends of ``fig`` and its nested SubFigures."""
     return [legend for member in figure_tree(fig) for legend in member.legends]
 
 
+# Owners: check, labels, layout, legend.
 def drawn_in_tree(artist: Artist) -> bool:
     """Whether ``artist`` is shown and so is every SubFigure above it.
 
@@ -83,6 +87,7 @@ def drawn_in_tree(artist: Artist) -> bool:
     return bool(artist.get_visible() and holders_shown(artist))
 
 
+# Owners: check, layout.
 def holders_shown(artist: Artist) -> bool:
     """Whether every SubFigure above ``artist`` is shown (its own flag aside).
 
@@ -99,6 +104,7 @@ def holders_shown(artist: Artist) -> bool:
     return True
 
 
+# Owners: check.
 def drawn_axes(fig: Figure) -> list[tuple[int, Axes]]:
     """Each Axes of ``fig.axes`` no hidden SubFigure hides, with its index.
 
@@ -109,6 +115,7 @@ def drawn_axes(fig: Figure) -> list[tuple[int, Axes]]:
     return [(i, ax) for i, ax in enumerate(fig.axes) if holders_shown(ax)]
 
 
+# Owners: layout, legend.
 def root_position(ax: Axes) -> Bbox:
     """``ax.get_position()`` as a fraction of the root Figure.
 
