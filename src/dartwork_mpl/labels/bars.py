@@ -22,7 +22,7 @@ from matplotlib.transforms import IdentityTransform
 
 from .._figure_geometry import canvas_renderer, host_axes, same_position_axes
 from ..edgecase import settle
-from ..scale import fs, fw
+from ..style import fs, fw
 from . import decide, edges
 from .measure import (
     bar_end,

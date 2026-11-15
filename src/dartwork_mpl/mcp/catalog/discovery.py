@@ -22,8 +22,7 @@ from dartwork_mpl import guide
 # private state, which moved between fastmcp 2.x and 3.x.)
 
 _MCP_DIR = Path(__file__).parents[1]
-_ASSET_DIR = Path(__file__).parents[2] / "asset"
-_MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
+_MPLSTYLE_DIR = Path(__file__).parents[2] / "style" / "assets"
 
 
 # Sync/async ``@mcp.tool()`` — empty- and keyword-arg forms.

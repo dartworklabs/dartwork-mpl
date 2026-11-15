@@ -98,7 +98,7 @@ dm.col1; dm.col2                    # 9 cm / 17 cm academic-column sugar
 
 # ── Styling & scaling ─────────────────────────────────────────────────
 dm.style.use("scientific")          # apply a preset
-dm.style.stack(["base", "font-scientific", "lang-kr"])   # compose
+dm.style.use(["scientific", "dark"])  # several presets, in order
 dm.fs(2); dm.fw(1); dm.lw(-0.3)     # preset-relative font size / weight / line width
 
 # ── Color ─────────────────────────────────────────────────────────────
@@ -166,8 +166,8 @@ palette codemod and removed-name map.
 | `dark`         | Dark backgrounds for Jupyter and dark-mode slides |
 
 Each has a Korean `-kr` variant (`scientific-kr`, `report-kr`, …) with Korean-aware
-fonts. List them with `sorted(dm.style.presets)` (`dm.list_styles()` lists the
-underlying `.mplstyle` layers).
+fonts. List them with `sorted(dm.style.presets)`, which maps each preset to its
+`.mplstyle` layers.
 
 <br/>
 

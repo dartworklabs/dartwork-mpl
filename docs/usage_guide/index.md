@@ -94,7 +94,7 @@ Tutorials <tutorials>
 ```
 
 :::{tip}
-**Where do assets live?** Style files are in `asset/mplstyle/`, colors in
+**Where do assets live?** Style files are in `style/assets/`, colors in
 `asset/color/`, and fonts in `asset/font/`. Physical-width helpers live
 in `dm.units` (`dm.cm`, `dm.inch`, `dm.mm`, plus the academic-column
 sugar `dm.col1` / `dm.col2`). See [Design Philosophy](../philosophy/index)

@@ -1,6 +1,6 @@
 """Smoke matrix exercising every dartwork-mpl style preset.
 
-For every preset listed in ``dm.style.presets_dict()`` we apply the
+For every preset listed in ``dm.style.presets`` we apply the
 preset, build a trivially clean chart (single line plot + axis
 labels), save PNG+PDF to a temporary directory, and assert that:
 
@@ -12,7 +12,7 @@ labels), save PNG+PDF to a temporary directory, and assert that:
        data).
     4. PDF text embeds TrueType fonts rather than Type 3 glyph programs.
 
-Why a separate file: the existing ``src/dartwork_mpl/style/tests/test_style.py`` covers
+Why a separate file: ``src/dartwork_mpl/style/tests`` covers
 preset *loading* but not the round-trip through ``save_formats`` and
 ``validate_figure``. This matrix proves that every advertised preset
 actually produces a savable, validation-clean figure end-to-end.
@@ -54,7 +54,7 @@ def _assert_embedded_truetype(pdf_path: Path) -> None:
 
 def _all_preset_names() -> list[str]:
     """Return every preset name registered in presets.json."""
-    return sorted(dm.style.presets_dict().keys())
+    return sorted(dm.style.presets)
 
 
 @pytest.mark.parametrize("preset", _all_preset_names())
@@ -114,20 +114,6 @@ def test_preset_round_trip(preset: str, tmp_path: Path) -> None:
         f"{[(w.check_id, w.message) for w in severe]}"
     )
 
-    plt.close(fig)
-
-
-@pytest.mark.parametrize("style_name", ["dmpl", "dmpl_light"])
-def test_legacy_style_embeds_truetype(style_name: str, tmp_path: Path) -> None:
-    """Standalone legacy styles must embed the same PDF font format."""
-    dm.style.stack([style_name])
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-    ax.plot([1, 2, 3], [1, 4, 9])
-    ax.set_xlabel("Index")
-    dm.simple_layout(fig)
-    stem = tmp_path / style_name
-    dm.save_formats(fig, str(stem), formats=("pdf",))
-    _assert_embedded_truetype(stem.with_suffix(".pdf"))
     plt.close(fig)
 
 

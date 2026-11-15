@@ -209,45 +209,23 @@ Theme layers (`theme-*`) override colors or chrome. `lang-kr` swaps font
 families. You don't need to manage layers manually — `dm.style.use()` handles
 the stacking.
 
-## Advanced: custom stacking
+## Several presets in order
 
-For use cases not covered by presets, you can compose layers directly:
+`dm.style.use([...])` applies several presets' layers in order, later ones
+winning:
 
 ```python
-# Dark report — report fonts + dark colors
-dm.style.stack(["base", "font-report", "theme-dark"])
+# Report sizes with the dark theme on top
+dm.style.use(["report", "dark"])
 
-# Minimal with large fonts — web sizes + no chrome
-dm.style.stack(["base", "font-web", "theme-minimal"])
-
-# List all available style layers
-dm.list_styles()
-# → ['base', 'font-scientific', 'font-report', 'font-minimal',
-#     'font-presentation', 'font-poster', 'font-web', 'theme-minimal',
-#     'theme-dark', 'lang-kr', 'spine-no', 'spine-yes', ...]
+# The layers each preset applies
+dm.style.presets["report-kr"]
+# → ('base', 'font-report', 'lang-kr')
 
 # Inspect any single layer
-dm.load_style_dict("font-web")
+dm.style.load_style_dict("font-web")
 # → {'font.size': 11.0, 'axes.titlesize': 13.0, ...}
 ```
-
-## Standalone style layers
-
-Individual layers for use with `style.stack`:
-
-| Layer           | Purpose                                            |
-| --------------- | -------------------------------------------------- |
-| `base`          | Shared defaults (line widths, Roboto, tick sizes)  |
-| `font-*`        | Font sizes + spine visibility for each preset      |
-| `theme-dark`    | Dark color scheme (backgrounds, text, tick colors) |
-| `theme-minimal` | Removes all spines, ticks, and grid lines          |
-| `lang-kr`       | Korean font family override                        |
-| `spine-no`      | Hides top + right spines                           |
-| `spine-yes`     | Shows all four spines                              |
-
-> **Legacy note:** `dmpl` and `dmpl_light` predate the current preset system
-> and are retained for backwards compatibility. For new projects, use a named
-> preset instead.
 
 ## See also
 

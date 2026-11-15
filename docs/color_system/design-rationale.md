@@ -716,7 +716,7 @@ Stated plainly, per principle 4:
   only to its specified foreground/background pair. The dark preset's
   seven-color cycle therefore has pair-specific WCAG text-contrast checks for
   named backgrounds and separate model-specific ΔE00/CVD collision
-  diagnostics in `src/dartwork_mpl/asset/mplstyle/theme-dark.mplstyle`.
+  diagnostics in `src/dartwork_mpl/style/assets/theme-dark.mplstyle`.
 - **Observer-wide accessibility.** CIELAB/CIEDE2000 and the named CVD
   simulations are model-specific finished-output diagnostics. Their thresholds
   are regression contracts, not guarantees for an individual observer,

@@ -2,7 +2,7 @@
 
 Templates are read through ``dartwork_mpl.guide`` by reference id
 (``template/<id>``, ``template/advanced/<id>``); styles live in
-``asset/mplstyle/*.mplstyle`` and are resolved through the platform's style
+``style/assets/*.mplstyle`` and are resolved through the platform's style
 lookup.
 """
 
@@ -13,8 +13,7 @@ from dartwork_mpl import guide
 
 from .._platform import resolve_style_path
 
-_ASSET_DIR = Path(__file__).parents[2] / "asset"
-_MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
+_MPLSTYLE_DIR = Path(__file__).parents[2] / "style" / "assets"
 
 
 def _prefix(advanced: bool) -> str:

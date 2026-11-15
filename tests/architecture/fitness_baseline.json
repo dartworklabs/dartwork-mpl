@@ -1,7 +1,6 @@
 {
  "R1_module_lines": {
-  "src/dartwork_mpl/_compat.py": 773,
-  "src/dartwork_mpl/_figure_geometry/__init__.py": 1048,
+  "src/dartwork_mpl/_figure_geometry/__init__.py": 1047,
   "src/dartwork_mpl/figure_review/_summary.py": 602,
   "src/dartwork_mpl/layout/_fit_labels.py": 1853,
   "src/dartwork_mpl/layout/_simple_layout.py": 833,
@@ -15,31 +14,25 @@
   "src/dartwork_mpl/mcp/execution/__init__.py": 502,
   "src/dartwork_mpl/mcp/plot_data/repair.py": 675,
   "src/dartwork_mpl/mcp/plot_data/validators.py": 725,
-  "src/dartwork_mpl/style/__init__.py": 680,
   "src/dartwork_mpl/validate/_checks/legend_on_data.py": 687,
   "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
  },
  "R2_slice_lines": {
   "layout": 4020,
-  "mcp": 10859,
+  "mcp": 10856,
   "mcp/artifacts": 5316,
   "validate": 7403,
   "validate/_checks": 6301
  },
  "R3_underscore_modules": {
-  "_compat": 1,
   "_figure_geometry": 3,
-  "_rc": 1,
   "figure_review": 2,
   "layout": 9,
   "mcp": 2,
-  "tokens": 1,
   "validate": 9
  },
  "R3_underscore_toplevel": [
-  "_compat",
-  "_figure_geometry",
-  "_rc"
+  "_figure_geometry"
  ],
  "R4_cycles": [
   "pkg: dartwork_mpl.validate, dartwork_mpl.validate._checks"
@@ -50,7 +43,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 96
+  "modules": 98
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 86,
@@ -76,8 +69,6 @@
   "src/dartwork_mpl/mcp/plot_data/validators.py::_grouped_samples_issues": 92,
   "src/dartwork_mpl/mcp/resources.py::register_resources": 136,
   "src/dartwork_mpl/mcp/tools.py::register_tools": 433,
-  "src/dartwork_mpl/style/__init__.py::Style.context": 82,
-  "src/dartwork_mpl/style/__init__.py::Style.use": 89,
   "src/dartwork_mpl/validate/_checks/cross_axes.py::check_cross_axes_overlap": 144,
   "src/dartwork_mpl/validate/_checks/grayscale_safety.py::check_grayscale_safety": 120,
   "src/dartwork_mpl/validate/_checks/legend.py::check_legend_overflow": 166,

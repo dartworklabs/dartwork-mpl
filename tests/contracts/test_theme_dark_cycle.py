@@ -20,8 +20,8 @@ _STYLE = (
     Path(__file__).resolve().parents[2]
     / "src"
     / "dartwork_mpl"
-    / "asset"
-    / "mplstyle"
+    / "style"
+    / "assets"
     / "theme-dark.mplstyle"
 )
 

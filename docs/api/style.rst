@@ -1,10 +1,10 @@
 Style Management
 ================
 
-Helpers for discovering and applying the packaged matplotlib styles. The
-``Style`` manager reads ``asset/mplstyle``, provides preset combinations
-(scientific, report, minimal, presentation, poster, web, dark, and Korean
-variants), resets ``rcParams``, and stacks multiple style files when needed.
+Apply a packaged preset (scientific, report, minimal, presentation, poster,
+web, dark, and Korean ``-kr`` variants) and size text and lines relative to
+it with ``dm.fs`` / ``dm.lw`` / ``dm.fw``. A preset is a chain of
+``.mplstyle`` layers under ``dartwork_mpl/style/assets``.
 
 Typical usage
 -------------
@@ -23,12 +23,14 @@ Typical usage
    dm.style.use("dark")             # dark backgrounds
    dm.style.use("presentation-kr")  # Korean font variant
 
-   # Stack multiple styles for advanced customization
-   dm.style.stack(["base", "font-report", "theme-dark"])
+   # Several presets in order, or one for a single block
+   dm.style.use(["report", "dark"])
+   with dm.style.context("presentation"):
+       ...
 
-   # Inspect what a style will set
-   available = dm.list_styles()
-   style_dict = dm.load_style_dict("font-presentation")
+   # Inspect what a layer sets
+   layers = dm.style.presets["report"]
+   style_dict = dm.style.load_style_dict("font-presentation")
 
 API
 ---

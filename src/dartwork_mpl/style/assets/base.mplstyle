@@ -151,7 +151,7 @@ pdf.fonttype:      42       # Embed TrueType fonts in PDF output
 # distinguishability, opt in per-Axes with `dm.set_colors(ax=ax, styles=True)`,
 # which adds the linestyle extension only where it is safe. The dc.* tokens
 # resolve because dartwork_mpl registers its named colors into matplotlib's
-# global mapping on package import, before Style.stack() parses this file.
+# global mapping on package import, before dm.style.use() parses this file.
 axes.prop_cycle: cycler('color', ['dc.blue6', 'dc.orange9', 'dc.green5', 'dc.pink3', 'dc.amber7', 'dc.violet8', 'dc.cyan8', 'dc.rose8'])
 image.cmap: dc.aurora
 

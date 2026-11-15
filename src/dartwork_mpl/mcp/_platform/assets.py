@@ -9,8 +9,7 @@ from pathlib import Path
 
 __all__ = ["resolve_style_path"]
 
-_ASSET_DIR = Path(__file__).parents[2] / "asset"
-_MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
+_MPLSTYLE_DIR = Path(__file__).parents[2] / "style" / "assets"
 _STYLE_ID_RE = re.compile(r"[A-Za-z0-9_-]+")
 
 

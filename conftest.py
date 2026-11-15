@@ -69,8 +69,7 @@ def _matplotlib_state_isolation() -> Iterator[None]:
     # Restore matplotlib's compiled-in defaults so style mutations from
     # one test don't bleed into the next.
     mpl.rcdefaults()
-    # Ownership describes the live preset values, so it cannot outlive the
-    # rcdefaults reset above. Keep the private dictionary's identity stable.
-    from dartwork_mpl.style import _dm_preset_values
+    # No preset is active after the reset above.
+    from dartwork_mpl.style import apply as _style_apply
 
-    _dm_preset_values.clear()
+    _style_apply.STATE[0] = _style_apply.State()
