@@ -124,13 +124,10 @@ DECISIONS: Mapping[str, str] = {
         "parsing colour input into colour types needs nothing outside it"
     ),
     "dartwork_mpl.ticks.decide": (
-        "tick units, decimals and default formats are decided from tick facts alone"
+        "a myriad axis's unit and decimals are decided from tick facts alone"
     ),
     "dartwork_mpl.ticks.model": (
-        "the tick types and config parsing need nothing outside them"
-    ),
-    "dartwork_mpl.ticks.axis_plans": (
-        "what prepare and thin_dates read and decide are tick types alone"
+        "the tick types and argument parsing need nothing outside them"
     ),
     "dartwork_mpl.legend.decide": (
         "where a legend goes is decided from measured facts and their "

@@ -1,7 +1,7 @@
 """How an axis's ticks print a number, for text that should read alike.
 
 A bar value label prints its value in the unit its axis's ticks use
-(``33G``, ``31%``, ``$800``). The ticks slice says which scale an axis
+(``1.2억``, ``31%``). The ticks slice says which scale an axis
 prints in; the labels slice prints with it. This is the scale they share.
 """
 
@@ -30,7 +30,7 @@ class TickScale:
     """How an axis's ticks print a number, for text that should read alike.
 
     ``prefix``, the value divided by ``factor``, ``suffix``:
-    ``TickScale(1e9, "", "G")`` prints ``33e9`` as ``33G``. ``zero``: a value
+    ``TickScale(1e8, "", "억")`` prints ``1.2e8`` as ``1.2억``. ``zero``: a value
     that prints as zero drops the affixes (:class:`BareZero`) or keeps them
     (:class:`AffixedZero`: ``$0``).
     """

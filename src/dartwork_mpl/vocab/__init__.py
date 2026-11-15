@@ -38,7 +38,6 @@ from .axis import (
     bars_along,
     parse_axes,
     parse_axis_side,
-    parse_which,
 )
 from .box import Box, Span
 from .edge import EDGES, Bottom, Edge, Left, Reserve, Right, Top, edge_of
@@ -98,5 +97,4 @@ __all__ = [
     "parse_axis_side",
     "parse_projection",
     "parse_valign",
-    "parse_which",
 ]

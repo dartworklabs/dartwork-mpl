@@ -4,38 +4,23 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.ticks.axis_plans import (
-    AxisFacts,
-    DateAxis,
-    Leave,
-    NumberAxis,
-    Numbers,
-    OtherAxis,
-    PeriodDates,
-)
-from dartwork_mpl.ticks.decide import axis_plan, axis_text, ladder
+from dartwork_mpl.ticks.decide import axis_text
 from dartwork_mpl.ticks.model import (
-    MYRIAD,
-    SI,
-    Asked,
-    ByFigure,
-    DefaultUnit,
-    ExactZero,
+    MYRIAD_LOCALES,
     NumberStyle,
-    PerTick,
     TextFacts,
     TickValues,
 )
 from dartwork_mpl.ticks.text import (
+    alone_text,
     fewest_exact_decimals,
     number_text,
-    per_tick_text,
-    recommend_tick_decimals,
     value_label_decimals,
 )
 from dartwork_mpl.vocab import AffixedZero
 
 M = "\N{MINUS SIGN}"
+KO = MYRIAD_LOCALES["ko"]
 
 
 def _text(values: list[float], style: NumberStyle) -> tuple[str, int | None]:
@@ -46,23 +31,13 @@ def _text(values: list[float], style: NumberStyle) -> tuple[str, int | None]:
 @pytest.mark.parametrize(
     ("values", "style", "expected"),
     [
-        ([0, 200, 400, 800], NumberStyle.parse(SI), ("", 0)),
-        ([0, 400, 800, 1200], NumberStyle.parse(SI), ("k", 1)),
-        ([-1e6, -5e5, 0, 5e5, 1e6], NumberStyle.parse(SI), ("M", 1)),
-        ([0, 1e6, 2e6], NumberStyle.parse(SI), ("M", 0)),
-        ([0, 250, 500, 1250], NumberStyle.parse(SI), ("k", 2)),
-        ([0, 400, 800, 1200], NumberStyle.parse(SI, "whole"), ("", 0)),
-        ([-1e6, 0, 1e6], NumberStyle.parse(SI, "k"), ("k", 0)),
-        ([0, 1e6, 2e6], NumberStyle.parse(SI, "max", decimals=2), ("M", 2)),
-        ([0, 2.5e7, 1.75e8], NumberStyle.parse(MYRIAD), ("억", 2)),
-        ([0, 2.5e7, 1.75e8], NumberStyle.parse(MYRIAD, "whole"), ("만", 0)),
-        # the library's numbers: plain under a million, a unit from it ...
-        ([0, 2.5e5, 7.5e5], NumberStyle(SI, DefaultUnit()), ("", 0)),
-        ([0, 1e6, 4e6], NumberStyle(SI, DefaultUnit()), ("M", 0)),
-        # ... unless that needs more than two decimals
-        ([123456, 123457, 123458], NumberStyle(SI, DefaultUnit()), ("", 0)),
-        ([1_000_000, 1_000_500], NumberStyle(SI, DefaultUnit()), ("", 0)),
-        ([], NumberStyle.parse(SI, "k", decimals=1), ("k", 1)),
+        ([0, 2000, 4000, 8000], NumberStyle.parse(KO), ("", 0)),
+        ([0, 4000, 8000, 12000], NumberStyle.parse(KO), ("만", 1)),
+        ([0, 2.5e7, 1.75e8], NumberStyle.parse(KO), ("억", 2)),
+        ([0, 2.5e7, 1.75e8], NumberStyle.parse(KO, "whole"), ("만", 0)),
+        ([-1e8, 0, 1e8], NumberStyle.parse(KO, "만"), ("만", 0)),
+        ([0, 1e8, 2e8], NumberStyle.parse(KO, "whole", decimals=2), ("억", 2)),
+        ([], NumberStyle.parse(KO, "만", decimals=1), ("만", 1)),
     ],
 )
 def test_one_unit_and_decimal_count_per_axis(values, style, expected):
@@ -71,9 +46,9 @@ def test_one_unit_and_decimal_count_per_axis(values, style, expected):
 
 def test_a_style_names_only_rules_and_ladder_labels():
     with pytest.raises(ValueError, match="unit must be"):
-        NumberStyle.parse(SI, "억")
+        NumberStyle.parse(KO, "M")
     with pytest.raises(ValueError, match="non-negative"):
-        NumberStyle.parse(SI, decimals=-1)
+        NumberStyle.parse(KO, decimals=-1)
 
 
 @pytest.mark.parametrize(
@@ -96,7 +71,7 @@ def test_fewest_exact_decimals(values, expected):
     ("args", "kwargs", "expected"),
     [
         ((1750, 0), {}, "1,750"),
-        ((-1.5, 1), {"suffix": "M"}, f"{M}1.5M"),
+        ((-1.5, 1), {"suffix": "억"}, f"{M}1.5억"),
         ((-0.0001, 2), {}, "0"),
         ((0, 2), {"fixed": True}, "0.00"),
         ((0, 0), {"prefix": "$", "zero": AffixedZero()}, "$0"),
@@ -108,51 +83,13 @@ def test_number_text(args, kwargs, expected):
 
 
 @pytest.mark.parametrize(
-    ("value", "style", "expected"),
-    [
-        (1500, NumberStyle.parse(SI, decimals=1, per_tick=PerTick(separators=False)), "1.5k"),
-        (800, NumberStyle.parse(SI, decimals=1, per_tick=PerTick(separators=False)), "800.0"),
-        (1.5e8, NumberStyle.parse(MYRIAD, decimals=1, per_tick=PerTick(zero=ExactZero(), compact=True)), "1.5억"),
-        (7500, NumberStyle.parse(MYRIAD, decimals=1, per_tick=PerTick(zero=ExactZero(), compact=True)), "7,500"),
-    ],
-)  # fmt: skip
-def test_fixed_decimals_write_each_value_alone(value, style, expected):
-    assert per_tick_text(value, style) == expected
+    ("value", "expected"),
+    [(1.5e8, "1.5억"), (7500, "7,500"), (2e4, "2만"), (0, "0")],
+)
+def test_fixed_decimals_write_each_value_alone(value, expected):
+    assert alone_text(value, NumberStyle.parse(KO, decimals=1)) == expected
 
 
-def test_value_labels_and_the_validator_step_rule():
+def test_value_label_decimals():
     assert value_label_decimals([21.4, 18.0, 21.5]) == 1
     assert value_label_decimals([120, 135]) == 0
-    assert recommend_tick_decimals([0, 0.25, 0.5]) == 1
-    assert recommend_tick_decimals([3]) == 0
-
-
-NUMBERS = NumberAxis()
-
-
-def _axis(kind=NUMBERS, values=(0, 1), **kw) -> AxisFacts:
-    return AxisFacts(
-        x=kw.pop("x", False), kind=kind, ticks=TickValues.of(values), **kw
-    )
-
-
-@pytest.mark.parametrize(
-    ("facts", "expected"),
-    [
-        (_axis(values=(0, 500, 1000, 1500)), Numbers()),
-        (_axis(values=(0, 250, 750)), Leave()),
-        (_axis(values=(0, 500, 1000), own_formatter=False), Leave()),
-        (_axis(values=(1950, 2000, 2050), x=True), Leave()),  # looks like years
-        (_axis(values=(1950, 2000, 2050)), Numbers()),
-        (_axis(DateAxis()), PeriodDates(2)),
-        (_axis(OtherAxis(), values=(0, 5000)), Leave()),
-    ],
-)
-def test_default_format_of_an_axis_nobody_formatted(facts, expected):
-    assert axis_plan(facts, 2) == expected
-
-
-def test_the_ladder_asked_by_name():
-    assert ladder(Asked(MYRIAD)) is MYRIAD
-    assert ladder(Asked(SI)) is SI
-    assert ladder(ByFigure(korean=False)) is SI

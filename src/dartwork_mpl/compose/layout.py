@@ -1,6 +1,6 @@
 """``dm.simple_layout``: the margin fit, with what the other slices settle.
 
-Tick text, bar labels, legends, line-end names and panel letters settle at
+Bar labels, legends, line-end names and panel letters settle at
 the size the layout fits, before it measures the margins; a legend outside
 its Axes, a figure legend and a note line hold room the margins keep clear.
 The layout slice runs them in its order from the functions given here.
@@ -18,7 +18,6 @@ from dartwork_mpl.labels import (
     space_line_ends,
 )
 from dartwork_mpl.legend import figure_reserve, outside_edge, settle
-from dartwork_mpl.ticks import prepare, thin_dates
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -29,12 +28,10 @@ if TYPE_CHECKING:
 __all__ = ["simple_layout"]
 
 NEIGHBOURS = layout.Neighbours(
-    prepare_ticks=prepare,
     settle_bars=settle_bars,
     settle_legends=settle,
     space_line_ends=space_line_ends,
     settle_panels=settle_panels,
-    thin_dates=thin_dates,
     outside_edge=outside_edge,
     figure_reserve=figure_reserve,
     note_gap_pt=note_gap_pt,
@@ -62,10 +59,9 @@ def simple_layout(
     GridSpec), default the first Axes'; every Axes is measured. A
     suptitle, ``fig.text`` note or figure legend keeps its edge clear.
 
-    Before measuring, axes nobody formatted get the library's tick numbers
-    and dates (:func:`dartwork_mpl.ticks.prepare`), and ``dm.label_bars``
-    values, ``dm.place_legend`` legends, ``dm.label_line_ends`` names and
-    ``dm.label_axes`` letters settle at the size being fitted.
+    ``dm.label_bars`` values, ``dm.place_legend`` legends,
+    ``dm.label_line_ends`` names and ``dm.label_axes`` letters settle at the
+    size being fitted.
 
     With ``fit_labels`` (default), text that still collides once the
     margins hold is fitted: crowded bottom tick labels wrap at their spaces

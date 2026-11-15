@@ -28,7 +28,7 @@ dm.save_formats(fig, "output/exports-v1", formats=("png", "pdf"))   # 4. then lo
 
 1. **Preset by where the figure goes.** `scientific` for a paper or thesis, `report` for a report, document or dashboard, `presentation` for slides. Also `poster`, `web`, `dark`, `minimal`. Korean text anywhere on the figure takes the `-kr` twin (`report-kr`), which carries the Korean fonts.
 2. **Size in physical units.** `dm.figsize("12cm", "wide")` takes a width and an aspect token, a ratio or a height. With no size in the request, `dm.figsize_for(n_points=, n_series=)` picks one from how dense the chart is. A figure made at its final size keeps its text at the preset's point size on the page.
-3. **`dm.simple_layout(fig)` after everything is drawn.** It measures the text and sets the margins, formats tick numbers and dates, and wraps or turns labels that collide. Leave rotation, panel spacing and tick formatters to it unless the user asks.
+3. **`dm.simple_layout(fig)` after everything is drawn.** It measures the text and sets the margins, and wraps or turns labels that collide. Leave rotation and panel spacing to it unless the user asks.
 4. **`dm.save_formats`** keeps the canvas at the size you set.
 
 `figsize=(6, 4)`, `plt.tight_layout()`, `plt.style.use(...)`, `bbox_inches="tight"` and a bare `fig.savefig()` all bypass the physical sizing, so the figure no longer prints at its stated size. Use them only when the user asks.
@@ -86,7 +86,8 @@ A figure is finished when you have looked at it, not when the script ran.
 | one legend for panels that share series | `dm.figure_legend(fig)` |
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
-| 만/억 on the ticks | `dm.format_axis_myriad(ax)` (an axis from a million up already prints `1M`, or `100만` under a Korean preset) |
+| 만/억 on the ticks | `dm.format_axis_myriad(ax)` |
+| 1.5M, 12k on the ticks | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter())` |
 
 Call them before `dm.simple_layout`, which makes room for what they add.
 

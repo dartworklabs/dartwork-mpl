@@ -155,6 +155,17 @@ pdf.fonttype:      42       # Embed TrueType fonts in PDF output
 axes.prop_cycle: cycler('color', ['dc.blue6', 'dc.orange9', 'dc.green5', 'dc.pink3', 'dc.amber7', 'dc.violet8', 'dc.cyan8', 'dc.rose8'])
 image.cmap: dc.aurora
 
-# Date axes nobody formatted read "2024, Mar, May … 2025" (ConciseDateFormatter)
-# instead of "2024-01, 2024-03 …", whose labels collide at column widths.
-date.converter: concise
+# Tick text. Numbers print whole: no detached "1e6" and no "+2.02e3" offset
+# under the axis (a 1e15 axis reads 1000000000000000). Dates print every tick
+# whole and short: 24 · 24.01 · 24.01.15. The concise converter ignores
+# date.autoformatter.*, so the auto converter (AutoDateFormatter) reads them.
+axes.formatter.useoffset: False
+axes.formatter.limits: -5, 16
+date.converter: auto
+date.autoformatter.year: %y
+date.autoformatter.month: %y.%m
+date.autoformatter.day: %y.%m.%d
+date.autoformatter.hour: %m.%d %H:%M
+date.autoformatter.minute: %H:%M
+date.autoformatter.second: %H:%M:%S
+date.autoformatter.microsecond: %M:%S.%f

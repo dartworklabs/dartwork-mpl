@@ -57,7 +57,7 @@ def label_bars(
 
     ``dm.fs(-1)``, ``dm.fw(1)``, the text colour, 3 pt beyond the bar end
     (negative bars below, ``barh`` left; past an error bar's cap); the value
-    in the axis's tick unit (``33G``, ``31%``), three significant digits on the largest value and
+    in the axis's tick unit (``1.2억``, ``31%``), three significant digits on the largest value and
     the fewest decimals that print every value exactly. Stacked bars get each
     segment's value at its middle and the stack's net beyond its end; a
     label on its bar takes white or the text colour, whichever reads.

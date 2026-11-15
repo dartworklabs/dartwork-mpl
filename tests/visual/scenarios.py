@@ -381,6 +381,7 @@ def _build_dual_axis_timeseries() -> Figure:
     ax.tick_params(axis="y", labelcolor=ink[0])
 
     ax2 = ax.twinx()
+    ax2.spines["right"].set_visible(True)  # the presets hide it
     ax2.plot(
         dates,
         secondary,

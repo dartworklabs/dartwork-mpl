@@ -1,73 +1,60 @@
-"""The matplotlib formatters and locators the tick plans install.
+"""The matplotlib formatter ``format_axis_myriad`` installs, and how an axis
+prints a value for text that should read like its ticks.
 
-Each formatter decides when matplotlib formats its ticks (every draw), from
-the ticks in view: :class:`AxisUnitFormatter` one unit and decimal count
-per axis (``decide.axis_text``), :class:`YearTickFormatter` whole years
-(dates are in ``dates``).
+:class:`AxisUnitFormatter` decides when matplotlib formats its ticks (every
+draw), from the ticks in view: one unit and decimal count per axis
+(``decide.axis_text``).
 """
 
 from __future__ import annotations
 
 import math
-import re
 from collections.abc import Sequence
-from typing import Unpack
 
 import matplotlib.ticker as ticker
 from matplotlib.axis import Axis
 
-from ..vocab import AffixedZero, BareZero, ScaleZero, TickScale
+from ..vocab import TickScale
 from . import decide
-from .measure import in_view, tick_values
 from .model import (
     AxisText,
-    ExactZero,
-    MaxNParams,
+    EachAlone,
+    FixedUnit,
+    MaxUnit,
     NumberStyle,
     TextFacts,
     TickValues,
     Unit,
-    YearDigits,
+    WholeUnit,
 )
-from .text import fewest_exact_decimals, number_text, per_tick_text
-
-WHOLE_TOL = 1e-6
+from .text import alone_text, fewest_exact_decimals, number_text
 
 
-def shown_values(
-    formatter: ticker.Formatter, values: Sequence[float]
-) -> list[float]:
-    """The values inside the formatter's axis view (all of them unattached)."""
-    axis = formatter.axis
-    if not isinstance(axis, Axis):
-        return [float(v) for v in values]
-    return in_view(axis, values)
-
-
-# -- numbers ---------------------------------------------------------------------
+def tick_values(axis: Axis, values: Sequence[float]) -> TickValues:
+    """The values inside the axis view, a limit's float noise included."""
+    low, high = sorted(float(v) for v in axis.get_view_interval())
+    slack = 1e-12 * (high - low)
+    low -= 1e-9 * abs(low) + slack
+    high += 1e-9 * abs(high) + slack
+    return TickValues.of([float(v) for v in values if low <= float(v) <= high])
 
 
 class AxisUnitFormatter(ticker.Formatter):
     """One unit and one decimal count per axis, settled from the ticks in view.
 
-    With ``style.per_tick`` each value is written alone with fixed decimals
-    (the ``decimals=n`` paths and currency). Called without a draw, a value
-    decides for itself.
+    Under :class:`EachAlone` each value is written alone. Called without a
+    draw, a value decides for itself.
     """
 
     def __init__(self, style: NumberStyle) -> None:
-        """Keep the settings this formatter or locator was made with."""
+        """Keep the settings this formatter was made with."""
         self.style = style
         self._text: AxisText | None = None
-
-    def decide(self, ticks: TickValues) -> AxisText:
-        """The unit and decimals for these ticks."""
-        return decide.axis_text(TextFacts(ticks, self.style))
 
     def set_locs(self, locs: list[float]) -> None:
         """Record the ticks and settle this axis's unit and decimals."""
         super().set_locs(locs)
-        if self.style.per_tick is not None or not len(locs):
+        if not len(locs):
             self._text = None
             return
         axis = self.axis
@@ -79,7 +66,7 @@ class AxisUnitFormatter(ticker.Formatter):
         )
         if not ticks.values:  # none in view: every tick votes
             ticks = TickValues.of(values)
-        self._text = self.decide(ticks)
+        self._text = decide.axis_text(TextFacts(ticks, self.style))
 
     def format_ticks(self, values: list[float]) -> list[str]:
         """Every tick under one axis-wide decision."""
@@ -87,68 +74,49 @@ class AxisUnitFormatter(ticker.Formatter):
         return [self(v, i) for i, v in enumerate(values)]
 
     def _decision(self, value: float) -> tuple[Unit, int | None]:
-        text = self._text
-        if text is None:
-            text = self.decide(TickValues.of([value]))
+        text = self._text or decide.axis_text(
+            TextFacts(TickValues.of([value]), self.style)
+        )
         unit = text.unit or decide.max_unit(
             TickValues((value,)), self.style.ladder
         )
         return unit, text.decimals
 
-    def write(self, value: float, unit: Unit, decimals: int) -> str:
-        """``value`` in ``unit`` with ``decimals`` places, as a tick."""
-        return number_text(
-            value / unit.factor,
-            decimals,
-            fixed=self.style.decimals is not None,
-            prefix=self.style.currency,
-            suffix=unit.label,
-        )
-
     def __call__(self, x: float, pos: int | None = None) -> str:
         """One value under the last axis decision (or its own)."""
-        value = float(x)
-        if self.style.per_tick is not None:
-            return per_tick_text(value, self.style)
+        value, style = float(x), self.style
+        match style.rule:
+            case EachAlone():
+                return alone_text(value, style)
+            case MaxUnit() | WholeUnit() | FixedUnit():
+                pass
         if not math.isfinite(value):
             return str(value)
         unit, decimals = self._decision(value)
         if decimals is None:
             decimals = fewest_exact_decimals([abs(value) / unit.factor])
-        return self.write(value, unit, decimals)
+        return number_text(
+            value / unit.factor,
+            decimals,
+            fixed=style.decimals is not None,
+            prefix=style.currency,
+            suffix=unit.label,
+        )
 
     def scale_for(self, value: float) -> TickScale:
         """How a tick at ``value`` prints under the last decision."""
-        style, rules = self.style, self.style.per_tick
-        if rules is not None:
-            if style.unit is None:
+        match self.style.rule:
+            case EachAlone():
                 return TickScale()
-            zero: ScaleZero
-            match rules.zero:
-                case AffixedZero():
-                    zero = AffixedZero()
-                case BareZero() | ExactZero():
-                    zero = BareZero()
-            return TickScale(
-                style.unit.factor, style.currency, style.unit.label, zero
-            )
-        unit, _ = self._decision(float(value))
-        return TickScale(unit.factor, style.currency, unit.label)
-
-
-def fill(template: str, unit: str) -> str:
-    """``template`` with ``unit`` for ``{unit}``; an empty ``()`` goes."""
-    text = template.replace("{unit}", unit)
-    text = re.sub(r"\(\s+", "(", text)
-    text = re.sub(r"\s+\)", ")", text)
-    return re.sub(r"\s*\(\)", "", text)
+            case MaxUnit() | WholeUnit() | FixedUnit():
+                unit, _ = self._decision(float(value))
+                return TickScale(unit.factor, self.style.currency, unit.label)
 
 
 def tick_scale_of(axis: Axis, value: float) -> TickScale:
     """How ``axis``'s major ticks print ``value``, as of their last draw.
 
-    The library's number formatters report their unit and currency
-    (``33G``), a
+    A myriad formatter reports its unit and currency (``1.2억``), a
     ``PercentFormatter`` its ``xmax / 100`` and symbol, any other formatter
     the plain scale.
     """
@@ -158,85 +126,3 @@ def tick_scale_of(axis: Axis, value: float) -> TickScale:
     if isinstance(formatter, ticker.PercentFormatter) and formatter.xmax:
         return TickScale(formatter.xmax / 100.0, "", formatter.symbol)
     return TickScale()
-
-
-# -- years -----------------------------------------------------------------------
-
-
-def _whole(value: float) -> bool:
-    return math.isfinite(value) and abs(value - round(value)) <= WHOLE_TOL
-
-
-class WholeYearLocator(ticker.MaxNLocator):
-    """Ticks on whole years, every 1, 2, 5, 10, 20, 50 ... years.
-
-    ``nbins`` set by someone (``ax.locator_params``) is a request the
-    layout's thinning keeps; :meth:`thin` is the layout's own.
-    """
-
-    asked_nbins: bool = False
-    nbins: int | str = "auto"
-    """The tick-count ceiling (``"auto"``: from the axis length)."""
-
-    def __init__(self) -> None:
-        """Keep the settings this formatter or locator was made with."""
-        super().__init__(  # pyright: ignore[reportUnknownMemberType]
-            nbins="auto", steps=[1, 2, 5, 10], integer=True
-        )
-        self.asked_nbins = False
-
-    def set_params(
-        self, *, nbins: int | str | None = None, **kwargs: Unpack[MaxNParams]
-    ) -> None:
-        """Set MaxNLocator parameters; an ``nbins`` set here is a request."""
-        if nbins is None:
-            super().set_params(**kwargs)  # pyright: ignore[reportUnknownMemberType]
-            return
-        self.nbins = nbins
-        self.asked_nbins = True
-        super().set_params(nbins=nbins, **kwargs)  # pyright: ignore[reportUnknownMemberType]
-
-    def thin(self, nbins: int | str) -> None:
-        """The layout's own ``nbins``, not a request."""
-        self.nbins = nbins
-        ticker.MaxNLocator.set_params(self, nbins=nbins)  # pyright: ignore[reportUnknownMemberType]
-
-
-class YearTickFormatter(ticker.Formatter):
-    """Whole years as two digits (``24``) or four (``2024``), plus ``suffix``.
-
-    Two digits that would repeat in view (1965, 2065) print four. While a
-    tick in view falls between years (a zoom under two years) every tick
-    prints its value (``2019.2 ... 2019.7``), never a rounded year.
-    """
-
-    def __init__(self, digits: YearDigits, suffix: str = "") -> None:
-        """Keep the settings this formatter or locator was made with."""
-        self.digits: YearDigits = digits
-        self.suffix = suffix
-        self._four = digits.four(())
-        self._decimals: int | None = None
-
-    def set_locs(self, locs: list[float]) -> None:
-        """Years or values, from the ticks in view."""
-        super().set_locs(locs)
-        shown = shown_values(self, locs)
-        between = not all(_whole(v) for v in shown)
-        self._decimals = fewest_exact_decimals(shown) if between else None
-        years = [round(v) for v in shown if _whole(v)]
-        self._four = self.digits.four(years)
-
-    def format_ticks(self, values: list[float]) -> list[str]:
-        """Every tick under one decision."""
-        self.set_locs(values)
-        return [self(v, i) for i, v in enumerate(values)]
-
-    def __call__(self, x: float, pos: int | None = None) -> str:
-        """One tick: its year, or its value between years."""
-        if self._decimals is not None:
-            return number_text(float(x), self._decimals).replace(",", "")
-        if not _whole(float(x)):
-            return ""
-        year = round(x)
-        body = f"{year}" if self._four else f"{year % 100:02d}"
-        return f"{body}{self.suffix}"

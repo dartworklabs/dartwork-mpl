@@ -33,11 +33,8 @@ plt.close(fig)
 - `dm.style.context("report-kr")` scopes the preset to one block.
 - Do not set `font.family` by hand; the preset's family list holds the
   bundled math and symbol fallbacks.
-- Korean numbers: an axis you did not format already counts in 만/억/조 from
-  1,000,000 (`50만 … 250만`, `0.2조`);
-  `dm.format_axis_myriad(ax)` puts 만/억 on each tick. k/M/G/T in a Korean figure only
-  when asked: `with dm.config.override(number_ladder="si"):` around the
-  code from figure creation to the last `dm.simple_layout`.
+- Korean numbers: `dm.format_axis_myriad(ax)` counts the ticks in 만/억/조
+  (`50만 … 250만`); an axis you do not format prints whole numbers.
 
 ## Other languages
 

@@ -3,9 +3,8 @@
 Each step draws the figure, lets the slices that place things at the Axes
 size settle them (bar labels, legends, line-end names, panel letters, each
 given as a function in :class:`~.given.Neighbours`),
-measures and solves. After the margins hold, date ticks are thinned (one
-more fit if they changed) and crowded text is fitted, each round followed
-by a fresh fit and undone if it crushed a plot.
+measures and solves. After the margins hold, crowded text is fitted, each
+round followed by a fresh fit and undone if it crushed a plot.
 """
 
 from __future__ import annotations
@@ -66,18 +65,15 @@ class Fitter:
 
     def fit(self) -> Step | None:
         """Fit until the edges move under half a pixel (``None``: nothing
-        to measure); then once more if thinning date ticks changed them."""
+        to measure)."""
         step: Step | None = None
-        for _ in range(2):
-            for _ in range(MAX_STEPS):
-                step = one_step(self.fig, self.margins, self.last, self.given)
-                if step is None:
-                    break
-                apply.write_edges(self.fig, self.gs, step.edges)
-                self.last = step.edges
-                if step.converged:
-                    break
-            if step is None or not self.given.thin_dates(self.fig):
+        for _ in range(MAX_STEPS):
+            step = one_step(self.fig, self.margins, self.last, self.given)
+            if step is None:
+                break
+            apply.write_edges(self.fig, self.gs, step.edges)
+            self.last = step.edges
+            if step.converged:
                 break
         return step
 
@@ -118,7 +114,6 @@ def run(
     """Lay out ``fig`` on ``gs`` from the figure as its author left it."""
     apply.restore(fig)
     start = apply.grid_edges(gs)
-    given.prepare_ticks(fig)
     fitter = Fitter(fig, gs, margins, given)
     step = fitter.fit()
     if fit_text and step is not None and step.converged:

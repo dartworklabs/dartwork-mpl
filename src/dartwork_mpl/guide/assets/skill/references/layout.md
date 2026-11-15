@@ -174,6 +174,7 @@ needs `fig.subfigures` with local margins instead of `simple_layout`:
 ```python
 fig, ax1 = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 ax2 = ax1.twinx()
+ax2.spines["right"].set_visible(True)  # the presets hide it
 ax1.bar(range(6), [3, 4, 6, 5, 4, 2], color="dc.blue3")
 ax2.plot(range(6), [12, 15, 21, 19, 14, 9], color="dc.red5", marker="o")
 ax1.set(xlabel="Month", ylabel="Rain (mm)")
@@ -214,7 +215,7 @@ plt.close(fig)
 - Eight or more lines: `dm.label_line_ends(ax)` names them at their ends;
   `LEGEND_OVERFLOW` reports a legend outside that is more than half the
   plot's size.
-- A twin pair: `dm.simple_layout` shows the twin's right spine; the axis
+- A twin pair: show the twin's right spine yourself, as above; the axis
   colours stay neutral unless you colour a side like its series
   (`ax2.tick_params(axis="y", colors=…)`); one legend for both is `dm.place_legend(ax)`,
   never `ax.legend(h1 + h2, l1 + l2)`; it and `dm.label_bars(ax)` put the

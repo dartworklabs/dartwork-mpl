@@ -58,21 +58,14 @@ class Y:
 Which: TypeAlias = X | Y
 
 
-def parse_which(value: object) -> Which:
-    """``"x"`` or ``"y"`` from a caller or matplotlib; ``ValueError`` otherwise."""
-    if value == "x":
-        return X()
-    if value == "y":
-        return Y()
-    raise ValueError(f"axis must be 'x' or 'y', got {value!r}")
-
-
 def parse_axes(value: object) -> tuple[Which, ...]:
     """``"x"``, ``"y"`` or ``"both"`` from a caller; ``ValueError`` otherwise."""
     if value == "both":
         return (X(), Y())
-    if value in ("x", "y"):
-        return (parse_which(value),)
+    if value == "x":
+        return (X(),)
+    if value == "y":
+        return (Y(),)
     raise ValueError(f"axis must be 'x', 'y' or 'both', got {value!r}")
 
 

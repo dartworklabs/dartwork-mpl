@@ -68,7 +68,7 @@ from .size import figsize
 from .style import fs, fw, lw
 
 # Tick text
-from .ticks import config, format_axis_myriad
+from .ticks import format_axis_myriad
 
 # Define __all__ for explicit exports. The order is intentionally
 # grouped by module/concern (Color → Icon → Style → …), not
@@ -77,8 +77,6 @@ from .ticks import config, format_axis_myriad
 
 __all__ = [  # noqa: RUF022
     # API stability markers
-    # Tick-text defaults
-    "config",
     # Color module
     "Color",
     "color",

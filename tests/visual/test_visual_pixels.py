@@ -14,12 +14,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pytest
 from matplotlib.figure import Figure
 from matplotlib.testing.compare import compare_images
-
-import dartwork_mpl as dm
 
 from .scenarios import Scenario, all_scenarios
 
@@ -27,7 +26,7 @@ from .scenarios import Scenario, all_scenarios
 #: the CI cells' renders are byte-identical to the baselines except
 #: ``scatter_fit`` under NumPy 2.5 (RMS 0.007, 95 pixels); the smallest real
 #: change measured (one character of one tick label) scores 1.65 and the
-#: ``tick_years=4`` relabel of ``dual_axis_timeseries`` 11.18. 0.5 sits 70x
+#: four-digit-year relabel of ``dual_axis_timeseries`` 11.18. 0.5 sits 70x
 #: above that noise and 3x below the smallest change.
 PIXEL_TOLERANCE = 0.5
 
@@ -56,8 +55,11 @@ for _scenario in _SCENARIOS:
 del _scenario
 
 
-def _rms_against_baseline(name: str, tmp_path: Path, **config: object) -> float:
-    """Render scenario ``name`` as pytest-mpl does; its RMS against the baseline.
+def _rms_against_baseline(
+    name: str, tmp_path: Path, relabel: Callable[[Figure], None] | None = None
+) -> float:
+    """Render scenario ``name`` as pytest-mpl does, ``relabel`` applied after
+    it is built; its RMS against the baseline.
 
     pytest-mpl renders under the Agg backend. Without the switch the figure
     takes the process's pyplot backend (``macosx`` when this test runs alone
@@ -65,13 +67,14 @@ def _rms_against_baseline(name: str, tmp_path: Path, **config: object) -> float:
     on whether an earlier test had already switched to Agg.
     """
     scenario = next(s for s in _SCENARIOS if s.name == name)
-    out = tmp_path / f"{name}-{len(config)}.png"
+    out = tmp_path / f"{name}-{relabel is not None}.png"
     previous = plt.get_backend()
     plt.switch_backend("agg")
     try:
         with plt.style.context("default", after_reset=True):
-            with dm.config.override(**config):
-                fig = scenario.build()
+            fig = scenario.build()
+            if relabel is not None:
+                relabel(fig)
             fig.savefig(out, metadata={"Software": None})
             plt.close(fig)
     finally:
@@ -82,13 +85,17 @@ def _rms_against_baseline(name: str, tmp_path: Path, **config: object) -> float:
     return 0.0 if result is None else float(result["rms"])
 
 
+def _four_digit_years(fig: Figure) -> None:
+    fig.axes[0].xaxis.set_major_formatter(mdates.DateFormatter("%Y.%m"))
+
+
 def test_pixel_tolerance_catches_a_tick_text_change(
     request: pytest.FixtureRequest, tmp_path: Path
 ) -> None:
     """The gate fails a render whose only change is the tick text.
 
-    ``dual_axis_timeseries`` with four-digit years relabels the x ticks and
-    moves nothing else; at the old 20-25 tolerances it passed (RMS 11.2).
+    ``dual_axis_timeseries`` with four-digit years relabels the x ticks after
+    the layout and moves nothing else; at the old 20-25 tolerances it passed (RMS 11.2).
     Baselines are compared only under ``--mpl``, on the platform they are
     made on.
     """
@@ -96,7 +103,7 @@ def test_pixel_tolerance_catches_a_tick_text_change(
         pytest.skip("pixel baselines are compared only under --mpl")
     unchanged = _rms_against_baseline("dual_axis_timeseries", tmp_path)
     relabelled = _rms_against_baseline(
-        "dual_axis_timeseries", tmp_path, tick_years=4
+        "dual_axis_timeseries", tmp_path, _four_digit_years
     )
     assert unchanged <= PIXEL_TOLERANCE, unchanged
     assert relabelled > PIXEL_TOLERANCE, relabelled

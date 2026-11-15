@@ -83,7 +83,7 @@ request names, so the preset styles the rest.
 | 12000 → 12k | `ax.yaxis.set_major_formatter(lambda v, _: f"{v / 1000:g}k")` |
 | 만/억 | `dm.format_axis_myriad(ax)` |
 | dates under bars | plot against the dates themselves (`ax.bar(dates, values)`), not positions |
-| four-digit years | `with dm.config.override(tick_years=4):` around figure creation to the last `dm.simple_layout` |
+| four-digit years on a date axis | `ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%Y.%m"))` |
 | a different size | rebuild with a new `dm.figsize`; a width alone keeps the old height |
 | for slides | `dm.style.use("presentation")` and a new `dm.figsize_for(...)`; point sizes written in the code scale by `dm.fs(0)` new over old |
 

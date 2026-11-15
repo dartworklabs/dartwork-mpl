@@ -1,94 +1,19 @@
 """The ticks slice's types, and the one place user input becomes them.
 
-A tick axis is read into :class:`AxesFacts` (what the axes show and who set
-their formatters) and decided into :class:`AxesPlan` (one :data:`AxisPlan`
-per axis and the spines to show). Tick text is decided at draw time from
-:class:`TickValues` into an :class:`AxisText`: one :class:`Unit` from a
-:class:`Ladder` and one decimal count for the whole axis.
+``format_axis_myriad`` reads its arguments into a :class:`NumberStyle`: a
+:class:`Ladder` of myriad units and the :data:`UnitRule` that picks one.
+At draw time the ticks in view (:class:`TickValues`) decide an
+:class:`AxisText`: one :class:`Unit` and one decimal count for the axis.
 """
 
 from __future__ import annotations
 
-import datetime
 from collections.abc import Sequence
-from dataclasses import dataclass, field, replace
-from typing import ClassVar, Literal, NewType, TypeAlias, TypedDict
-
-from ..vocab import AffixedZero, BareZero
+from dataclasses import dataclass
+from typing import NewType, TypeAlias
 
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
-
-Ems = NewType("Ems", float)
-"""A length in ems of the tick font."""
-
-Digits = Literal[2, 4]
-"""Year digits on tick labels, as a caller writes them: ``2`` or ``4``."""
-
-Zone: TypeAlias = datetime.tzinfo | str | None
-"""A time zone as matplotlib's date functions take it: a ``tzinfo``, its
-name (``"Asia/Seoul"``), or ``None`` for ``rcParams["timezone"]``."""
-
-"""One date as a caller writes it: an ISO string, a ``date`` / ``datetime``
-(a pandas ``Timestamp`` is one) or a ``datetime64``."""
-
-
-class MaxNParams(TypedDict, total=False):
-    """The ``MaxNLocator.set_params`` keywords other than ``nbins``."""
-
-    steps: Sequence[float] | None
-    integer: bool
-    symmetric: bool
-    prune: Literal["lower", "upper", "both"] | None
-    min_n_ticks: int
-
-
-def repeat_two_digits(years: Sequence[int]) -> bool:
-    """Whether two distinct years share their last two digits (1965, 2065)."""
-    seen: dict[int, int] = {}
-    return any(seen.setdefault(y % 100, y) != y for y in years)
-
-
-@dataclass(frozen=True)
-class TwoDigits:
-    """Years as ``24``, unless two in view would repeat (1965, 2065)."""
-
-    def four(self, years: Sequence[int]) -> bool:
-        """Whether ``years`` print with four digits."""
-        return repeat_two_digits(years)
-
-
-@dataclass(frozen=True)
-class FourDigits:
-    """Years as ``2024``."""
-
-    def four(self, years: Sequence[int]) -> bool:
-        """Always four digits."""
-        return True
-
-
-YearDigits: TypeAlias = TwoDigits | FourDigits
-"""How many digits a tick year prints."""
-
-
-@dataclass(frozen=True)
-class RightSide:
-    """The right side, where a ``twinx`` draws its y scale."""
-
-    spine: ClassVar[Literal["right"]] = "right"
-
-
-@dataclass(frozen=True)
-class TopSide:
-    """The top side, where a ``twiny`` draws its x scale."""
-
-    spine: ClassVar[Literal["top"]] = "top"
-
-
-TwinSide: TypeAlias = RightSide | TopSide
-"""A side whose spine the layout shows for a twin scale."""
-
-TWIN_SIDES: tuple[TwinSide, ...] = (RightSide(), TopSide())
 
 
 @dataclass(frozen=True)
@@ -122,10 +47,8 @@ class Ladder:
         return ", ".join(repr(r.label) for r in self.rungs)
 
 
-SI = Ladder.of((1e3, "k"), (1e6, "M"), (1e9, "G"), (1e12, "T"))
-MYRIAD = Ladder.of((1e4, "만"), (1e8, "억"), (1e12, "조"), (1e16, "경"))
 MYRIAD_LOCALES = {
-    "ko": MYRIAD,
+    "ko": Ladder.of((1e4, "만"), (1e8, "억"), (1e12, "조"), (1e16, "경")),
     "zh": Ladder.of((1e4, "万"), (1e8, "亿"), (1e12, "兆"), (1e16, "京")),
     "ja": Ladder.of((1e4, "万"), (1e8, "億"), (1e12, "兆"), (1e16, "京")),
 }
@@ -138,62 +61,6 @@ def myriad_ladder(locale: object) -> Ladder:
     raise ValueError(
         f"locale must be one of 'ko', 'zh', or 'ja' (got {locale!r})"
     )
-
-
-NumberLadder: TypeAlias = Literal["auto", "si", "myriad"]
-"""``dm.config.number_ladder``."""
-
-
-@dataclass(frozen=True)
-class FollowFigure:
-    """``"auto"``: the ladder follows the figure's language."""
-
-
-LadderChoice: TypeAlias = FollowFigure | Ladder
-"""A ladder asked by name, or the one the figure's language picks."""
-
-
-def parse_number_ladder(value: object) -> LadderChoice:
-    """``config.number_ladder``; ``ValueError`` naming the config field."""
-    if value == "auto":
-        return FollowFigure()
-    if value == "si":
-        return SI
-    if value == "myriad":
-        return MYRIAD
-    raise ValueError(
-        f"config.number_ladder must be 'auto', 'si' or 'myriad', got {value!r}"
-    )
-
-
-@dataclass(frozen=True)
-class ByFigure:
-    """``"auto"``: the ladder follows the figure; ``korean`` its text is."""
-
-    korean: bool
-
-
-@dataclass(frozen=True)
-class Asked:
-    """A ladder asked by name, whatever the figure's language."""
-
-    ladder: Ladder
-
-
-Language: TypeAlias = ByFigure | Asked
-"""What picks the large-number ladder."""
-
-
-def parse_digits(value: object, what: str = "years") -> YearDigits:
-    """``2`` or ``4``; ``ValueError`` naming ``what`` otherwise."""
-    if value == 2 and not isinstance(value, bool):
-        return TwoDigits()
-    if value == 4 and not isinstance(value, bool):
-        return FourDigits()
-    raise ValueError(f"{what} must be 2 or 4, got {value!r}")
-
-
-# -- tick text ---------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -215,37 +82,14 @@ class FixedUnit:
 
 
 @dataclass(frozen=True)
-class DefaultUnit:
-    """The library's numbers on an axis nobody formatted: plain below one
-    million, the largest tick's unit from there unless that needs over two
-    decimals."""
+class EachAlone:
+    """Fixed decimals under the max rule: each tick in its own unit, trailing
+    zeros dropped (``1.5억``), under the first rung whole with none
+    (``7,500``)."""
 
 
-UnitRule: TypeAlias = MaxUnit | WholeUnit | FixedUnit | DefaultUnit
+UnitRule: TypeAlias = MaxUnit | WholeUnit | FixedUnit | EachAlone
 """How an axis picks its unit from a ladder."""
-
-
-@dataclass(frozen=True)
-class ExactZero:
-    """Only an exact zero reads ``0``; a small value keeps its digits."""
-
-
-ZeroText: TypeAlias = BareZero | AffixedZero | ExactZero
-"""How a value written alone prints when it rounds to zero."""
-
-
-@dataclass(frozen=True)
-class PerTick:
-    """How a fixed-decimal formatter writes each value alone.
-
-    ``separators``: thousands separators or none. ``zero``: how a value
-    that prints as zero reads (:data:`ZeroText`). ``compact``: trailing zeros go (``1.5억``) and a value under the first
-    rung above one prints whole with no unit (``7,500``).
-    """
-
-    separators: bool = True
-    zero: ZeroText = field(default_factory=BareZero)
-    compact: bool = False
 
 
 @dataclass(frozen=True)
@@ -256,7 +100,6 @@ class NumberStyle:
     rule: UnitRule = MaxUnit()
     decimals: Decimals | None = None
     currency: str = ""
-    per_tick: PerTick | None = None
 
     @property
     def unit(self) -> Unit | None:
@@ -264,16 +107,8 @@ class NumberStyle:
         match self.rule:
             case FixedUnit(unit=unit):
                 return unit
-            case MaxUnit() | WholeUnit() | DefaultUnit():
+            case MaxUnit() | WholeUnit() | EachAlone():
                 return None
-
-    def each_alone(self, per_tick: PerTick) -> NumberStyle:
-        """Fixed decimals under the max rule write each tick alone."""
-        match self.rule:
-            case MaxUnit() if self.decimals is not None:
-                return replace(self, per_tick=per_tick)
-            case MaxUnit() | WholeUnit() | FixedUnit() | DefaultUnit():
-                return self
 
     @classmethod
     def parse(
@@ -283,7 +118,6 @@ class NumberStyle:
         *,
         decimals: object = None,
         currency: str = "",
-        per_tick: PerTick | None = None,
     ) -> NumberStyle:
         """``unit`` is ``"max"``, ``"whole"`` or one ladder label.
 
@@ -295,10 +129,11 @@ class NumberStyle:
             or decimals < 0
         ):
             raise ValueError(f"decimals must be non-negative, got {decimals!r}")
+        count = None if decimals is None else Decimals(decimals)
         fixed = ladder.find(unit)
         rule: UnitRule
         if unit == "max":
-            rule = MaxUnit()
+            rule = MaxUnit() if count is None else EachAlone()
         elif unit == "whole":
             rule = WholeUnit()
         elif fixed is not None:
@@ -308,8 +143,7 @@ class NumberStyle:
                 f"unit must be 'max', 'whole' or one of {ladder.labels()} "
                 f"(got {unit!r})"
             )
-        count = None if decimals is None else Decimals(decimals)
-        return cls(ladder, rule, count, currency, per_tick)
+        return cls(ladder, rule, count, currency)
 
 
 @dataclass(frozen=True)
@@ -337,8 +171,8 @@ class TextFacts:
 class AxisText:
     """One axis decision: one unit and one decimal count for every tick.
 
-    ``unit`` is ``None`` when each tick takes its own unit, ``decimals``
-    ``None`` when each tick takes its own count.
+    ``unit`` is ``None`` when no tick is in view, ``decimals`` ``None`` when
+    each tick takes its own count.
     """
 
     unit: Unit | None

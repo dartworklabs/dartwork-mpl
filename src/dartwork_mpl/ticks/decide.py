@@ -1,71 +1,30 @@
-"""Pure tick decisions for the ordinary axis: domain types in, plan out.
+"""Pure tick decisions: domain types in, one axis-wide decision out.
 
-At draw time a number axis reads the ticks it shows and takes one unit from
+At draw time a myriad axis reads the ticks it shows and takes one unit from
 its ladder and the fewest decimals that print every tick exactly
-(:func:`axis_text`). Before the layout measures, an axis nobody formatted
-gets the library's format (:func:`axes_plan`): a date axis on matplotlib's
-concise formatter reads whole two-digit dates (``24.01``), a number axis
-reaching 1,000 gets thousands separators and, from one million, the largest
-tick's unit (``0.5M``). Special cases (Korean units, year axes, quarters,
-texts someone fixed, twin spines, log axes, crowded dates) are in
-``edges.py``.
+(:func:`axis_text`).
 """
 
 from __future__ import annotations
 
 from typing import assert_never
 
-from .axis_plans import (
-    AxesFacts,
-    AxesPlan,
-    AxisFacts,
-    AxisPlan,
-    Crowding,
-    DateAxis,
-    Leave,
-    NumberAxis,
-    Numbers,
-    OtherAxis,
-    PeriodDates,
-    Thinning,
-)
 from .model import (
-    PLAIN,
-    SI,
-    Asked,
     AxisText,
-    ByFigure,
     Cost,
     Decimals,
-    DefaultUnit,
+    EachAlone,
     FixedUnit,
     Ladder,
-    Language,
     MaxUnit,
     TextFacts,
     TickValues,
     Unit,
     WholeUnit,
-    YearDigits,
 )
 from .text import fewest_exact_decimals, number_text
 
-TOLERANCE = 1e-9  # a 999.9999999 tick still reads 1k
-SEPARATORS_FROM = 1_000.0
-UNIT_FROM = 1_000_000.0
-MOST_UNIT_DECIMALS = 2  # past this a default axis keeps plain numbers
-YEAR_LIKE = (1_000.0, 2_999.0)  # x ticks all here read 2024, not 2,024
-
-
-def ladder(language: Language) -> Ladder:
-    """The ladder asked by name; one following the figure starts from SI."""
-    match language:
-        case Asked(ladder=asked):
-            return asked
-        case ByFigure():
-            return SI
-        case _:
-            assert_never(language)
+TOLERANCE = 1e-9  # a 9,999.9999999 tick still reads 1만
 
 
 def fewest_decimals(ticks: TickValues, unit: Unit) -> Decimals:
@@ -103,21 +62,14 @@ def _cost(facts: TextFacts, unit: Unit) -> Cost:
 
 def axis_unit(facts: TextFacts) -> Unit:
     """The one unit the axis prints in, by the style's rule."""
-    style, ticks = facts.style, facts.ticks
+    style = facts.style
     match style.rule:
         case FixedUnit(unit=unit):
             return unit
         case WholeUnit():
             return min(style.ladder.rungs, key=lambda rung: _cost(facts, rung))
-        case MaxUnit():
-            return max_unit(ticks, style.ladder)
-        case DefaultUnit():
-            unit = max_unit(ticks, style.ladder)
-            top = max(abs(v) for v in ticks.values)
-            crowded = fewest_decimals(ticks, unit) > MOST_UNIT_DECIMALS
-            if top < UNIT_FROM * (1 - TOLERANCE) or crowded:
-                return PLAIN
-            return unit
+        case MaxUnit() | EachAlone():
+            return max_unit(facts.ticks, style.ladder)
         case _:
             assert_never(style.rule)
 
@@ -132,39 +84,3 @@ def axis_text(facts: TextFacts) -> AxisText:
     if decimals is None:
         decimals = fewest_decimals(facts.ticks, unit)
     return AxisText(unit, decimals)
-
-
-def reaches_thousands(facts: AxisFacts) -> bool:
-    """Whether the ticks reach 1,000, except x ticks that all look like years."""
-    values = facts.ticks.values
-    if not values or max(abs(v) for v in values) < SEPARATORS_FROM:
-        return False
-    low, high = YEAR_LIKE
-    return not (facts.x and all(low <= v <= high for v in values))
-
-
-def axis_plan(facts: AxisFacts, digits: YearDigits) -> AxisPlan:
-    """The library's format for one axis nobody formatted."""
-    if not facts.own_formatter:
-        return Leave()
-    match facts.kind:
-        case DateAxis():
-            return PeriodDates(digits)
-        case NumberAxis():
-            return Numbers() if reaches_thousands(facts) else Leave()
-        case OtherAxis():
-            return Leave()
-        case _:
-            assert_never(facts.kind)
-
-
-def axes_plan(facts: AxesFacts) -> AxesPlan:
-    """The library's format for both axes of one Axes."""
-    return AxesPlan(
-        axis_plan(facts.x, facts.digits), axis_plan(facts.y, facts.digits)
-    )
-
-
-def thinning(facts: Crowding) -> Thinning:
-    """Date ticks keep their count; crowded ones are an edge case."""
-    return Thinning()

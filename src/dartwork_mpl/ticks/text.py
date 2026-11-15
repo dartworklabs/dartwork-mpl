@@ -2,11 +2,10 @@
 
 ``fewest_exact_decimals`` is the axis rule: the fewest decimals that print
 every value exactly and distinctly (a 2.5 step keeps one: ``17.5, 20.0``).
-``recommend_tick_decimals`` is the looser step rule the validator applies to
-drawn ticks. ``value_label_decimals`` is the value-label rule: three
-significant digits on the largest value, cut to the fewest exact ones.
-``number_text`` prints a value as an axis-wide tick does: thousands
-separators, ``0`` for zero and the minus sign matplotlib draws.
+``value_label_decimals`` is the value-label rule: three significant digits
+on the largest value, cut to the fewest exact ones. ``number_text`` prints a
+value as an axis-wide tick does: thousands separators, ``0`` for zero and
+the minus sign matplotlib draws.
 """
 
 from __future__ import annotations
@@ -14,13 +13,12 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from itertools import pairwise
-from typing import SupportsFloat, SupportsIndex
 
 from ..vocab import AffixedZero, BareZero, ScaleZero
-from .model import PLAIN, ExactZero, NumberStyle, PerTick, Unit
+from .model import PLAIN, NumberStyle, Unit
 
 BARE = BareZero()
-MAX_DECIMALS = 12  # a 1e-9 log tick needs nine
+MAX_DECIMALS = 12  # a 1e-9 tick needs nine
 _EXACT_ABS_TOL = 1e-6
 _EXACT_REL_TOL = 1e-14
 
@@ -30,30 +28,12 @@ def minus(unicode_minus: bool) -> str:
     return "\N{MINUS SIGN}" if unicode_minus else "-"
 
 
-def recommend_tick_decimals(values: Sequence[float]) -> int:
-    """Decimals the smallest step between sorted values needs, at most four.
-
-    Duplicate and non-finite values are ignored; fewer than two values need
-    none.
-    """
-    finite = sorted(
-        v
-        for v in (_float(x) for x in values)
-        if v is not None and math.isfinite(v)
-    )
-    steps = [b - a for a, b in pairwise(finite) if b - a > 0]
+def _step_decimals(values: Sequence[float]) -> int:
+    """Decimals the smallest step between sorted values needs, at most four."""
+    steps = [b - a for a, b in pairwise(values) if b - a > 0]
     if not steps:
         return 0
     return min(4, max(0, math.ceil(-math.log10(min(steps)) - 1e-9)))
-
-
-def _float(value: object) -> float | None:
-    if not isinstance(value, str | SupportsFloat | SupportsIndex):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def _is_exact(value: float, decimals: int) -> bool:
@@ -95,7 +75,7 @@ def fewest_exact_decimals(values: Sequence[float]) -> int:
             return decimals
     if len(finite) == 1:
         return min(MAX_DECIMALS, _significant(finite[0]))
-    decimals = recommend_tick_decimals(finite)
+    decimals = _step_decimals(finite)
     while decimals < MAX_DECIMALS and not _distinct(finite, decimals):
         decimals += 1
     return decimals
@@ -151,45 +131,27 @@ def _unicode_minus(asked: bool | None) -> bool:
     return bool(mpl.rcParams["axes.unicode_minus"])
 
 
-def per_tick_text(value: float, style: NumberStyle) -> str:
-    """``value`` alone with ``style.decimals`` places (see :class:`PerTick`).
+def alone_text(value: float, style: NumberStyle) -> str:
+    """``value`` alone in its own unit with ``style.decimals`` places.
 
-    The value takes the fixed unit, else the largest rung at or below its
-    magnitude; ``compact`` gives a value under the first rung above one the
-    plain unit and drops trailing zeros.
+    The largest rung at or below its magnitude, trailing zeros dropped; a
+    value under the first rung above one prints whole with no unit, and only
+    an exact zero reads ``0``.
     """
-    rules = style.per_tick or PerTick()
-    unit, decimals = _own_unit(abs(value), style, rules), style.decimals or 0
-    if rules.compact and unit.factor == 1:
-        decimals = 0
-    separator = "," if rules.separators else ""
-    number = format(abs(value) / unit.factor, f"{separator}.{decimals}f")
-    if rules.compact and decimals:
+    if value == 0:
+        return "0"
+    unit = _own_unit(abs(value), style)
+    decimals = 0 if unit.factor == 1 else style.decimals or 0
+    number = format(abs(value) / unit.factor, f",.{decimals}f")
+    if decimals:
         number = number.rstrip("0").rstrip(".")
     sign = minus(_unicode_minus(None)) if value < 0 else ""
-    prints_zero = float(number.replace(",", "")) == 0
-    match rules.zero:
-        case ExactZero():
-            if value == 0:
-                return "0"
-        case BareZero():
-            if prints_zero:
-                return f"{0:.{decimals}f}"
-        case AffixedZero():
-            if prints_zero:
-                sign = ""
     return f"{sign}{style.currency}{number}{unit.label}"
 
 
-def _own_unit(magnitude: float, style: NumberStyle, rules: PerTick) -> Unit:
-    """No float tolerance here: ``999.9999999`` stays under ``k``."""
-    if style.unit is not None:
-        return style.unit
-    rungs = style.ladder.rungs
-    if not rules.compact:
-        under = [r for r in rungs if r.factor <= magnitude]
-        return under[-1] if under else rungs[0]
-    above = [r for r in rungs if r.factor > 1]
+def _own_unit(magnitude: float, style: NumberStyle) -> Unit:
+    """No float tolerance here: ``9,999.9999999`` stays under ``만``."""
+    above = [r for r in style.ladder.rungs if r.factor > 1]
     if magnitude < above[0].factor:
         return PLAIN
     return [r for r in above if r.factor <= magnitude][-1]
