@@ -29,7 +29,13 @@ def test_bar_labels_print_like_the_ticks_above_the_bars_with_headroom():
     bars = ax.bar(list("ABCDE"), [42.5, 37.1, 51.8, 29.4, 46.0])
     labels = dm.label_bars(ax)
     dm.simple_layout(fig)
-    assert [t.get_text() for t in labels] == ["42.5", "37.1", "51.8", "29.4", "46.0"]
+    assert [t.get_text() for t in labels] == [
+        "42.5",
+        "37.1",
+        "51.8",
+        "29.4",
+        "46.0",
+    ]
     plot = ax.get_window_extent()
     for box, bar in zip(_boxes(fig, labels), bars, strict=True):
         assert box.y0 > bar.get_window_extent().y1  # beyond the end
@@ -56,8 +62,16 @@ def test_negative_bars_and_barh_put_labels_past_the_end():
 @pytest.mark.parametrize(
     ("format_axis", "values", "texts"),
     [
-        (dm.format_axis_millions, [1.25e6, 12.5e6, 0.03e6], ["1.2M", "12.5M", "<0.1M"]),
-        (dm.format_axis_currency, [800, -800, 0], ["$800", "\N{MINUS SIGN}$800", "$0"]),
+        (
+            dm.format_axis_millions,
+            [1.25e6, 12.5e6, 0.03e6],
+            ["1.2M", "12.5M", "<0.1M"],
+        ),
+        (
+            dm.format_axis_currency,
+            [800, -800, 0],
+            ["$800", "\N{MINUS SIGN}$800", "$0"],
+        ),
     ],
 )
 def test_labels_take_the_tick_unit(format_axis, values, texts):

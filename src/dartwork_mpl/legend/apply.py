@@ -46,9 +46,10 @@ def settle(
     moved = settle_legends(fig, renderer, axes)
     for ax in fig.axes:
         legend = ax.get_legend()
-        if legend is not None and _anchored_side(legend) is not None:
-            if reanchor_outside(legend, ax, renderer):
-                moved = True
+        if legend is None or _anchored_side(legend) is None:
+            continue
+        if reanchor_outside(legend, ax, renderer):
+            moved = True
     for ax in fig.axes:
         if _lift_titles_over_legends(ax, renderer):
             moved = True

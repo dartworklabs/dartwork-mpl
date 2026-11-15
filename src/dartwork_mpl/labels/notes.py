@@ -4,7 +4,7 @@ figure's note line."""
 from __future__ import annotations
 
 import itertools
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import matplotlib as mpl
 import numpy as np
@@ -21,38 +21,39 @@ from .measure import (
     point_boxes,
     text_boxes,
 )
-from .model import CORNERS, SIDES, Corner, Side, Tries
+from .model import CORNERS, SIDES, Corner, Side, Tries, Try
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
+    from matplotlib.transforms import Bbox
 
-# Between a bar end (a point) and its label, in points.
-OFFSET_PT = 3.0
-# How far (px) an anchor may sit past the view and still show.
-EDGE_TOL_PX = 1.0
-# How far (px) a label on its bar may reach past the bar's sides.
-FIT_TOL_PX = 0.5
-# Clear space between neighbouring bar labels, in points.
-GAP_PT = 1.5
-FAMILIES_ATTR = "_dm_bar_labels"
-LINE_ENDS_ATTR = "_dm_line_end_labels"
+HAlign: TypeAlias = Literal["left", "center", "right"]
+VAlign: TypeAlias = Literal["bottom", "center", "top"]
 
 
-# ------------------------------------------------------------ point labels
+_SIDE_SPECS: dict[Side, tuple[tuple[float, float], HAlign, VAlign]] = {
+    "above": ((0.0, 1.0), "center", "bottom"),
+    "below": ((0.0, -1.0), "center", "top"),
+    "right": ((1.0, 0.0), "left", "center"),
+    "left": ((-1.0, 0.0), "right", "center"),
+}
+_SIDE_NAMES: dict[str, Side] = {side: side for side in SIDES}
+_CORNER_NAMES: dict[str, Corner] = {corner: corner for corner in CORNERS}
+
+
 def _side_offset(
     side: Side, offset_pt: float
-) -> tuple[tuple[float, float], str, str]:
-    return {
-        "above": ((0.0, offset_pt), "center", "bottom"),
-        "below": ((0.0, -offset_pt), "center", "top"),
-        "right": ((offset_pt, 0.0), "left", "center"),
-        "left": ((-offset_pt, 0.0), "right", "center"),
-    }[side]
+) -> tuple[tuple[float, float], HAlign, VAlign]:
+    (dx, dy), ha, va = _SIDE_SPECS[side]
+    return (dx * offset_pt, dy * offset_pt), ha, va
 
 
 def _put(
-    ann: Annotation, xyann: tuple[float, float], ha: str, va: str | None = None
+    ann: Annotation,
+    xyann: tuple[float, float],
+    ha: HAlign,
+    va: VAlign | None = None,
 ) -> None:
     ann.xyann = xyann
     ann.set_horizontalalignment(ha)
@@ -62,7 +63,7 @@ def _put(
 
 def _obstacles(
     ax: Axes, texts: list[Text], renderer: RendererBase, lines: bool = True
-) -> list[Any]:
+) -> list[Bbox]:
     found = line_boxes(ax) if lines else []
     return [
         *found,
@@ -91,16 +92,15 @@ def annotate_value(
     its point moves sideways rather than below. ``dm.fs(-1)`` text, one
     weight step heavier (``dm.fw(1)``); keywords go to ``ax.annotate``.
     """
-    if side not in ("auto", *SIDES):
+    first = _SIDE_NAMES.get(side)
+    if first is None and side != "auto":
         raise ValueError(
             "side must be 'auto', 'above', 'below', 'left', or 'right'"
         )
     kw.setdefault("fontweight", kw.pop("weight", fw(1)))
     existing = list(ax.texts)
-    offset, ha, va = _side_offset(
-        "above" if side == "auto" else side, float(offset_pt)
-    )  # type: ignore[arg-type]
-    ann = ax.annotate(
+    offset, ha, va = _side_offset(first or "above", float(offset_pt))
+    ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
         xy=(x, y),
         xycoords="data",
@@ -117,7 +117,7 @@ def annotate_value(
     renderer = drawn_renderer(ax)
     frame = ax.get_window_extent(renderer)
     obstacles = _obstacles(ax, existing, renderer)
-    tries = []
+    tries: list[Try] = []
     for candidate in SIDES:
         _put(ann, *_side_offset(candidate, float(offset_pt)))
         tries.append(
@@ -129,7 +129,7 @@ def annotate_value(
 
 
 _CORNER_SPECS: dict[
-    Corner, tuple[tuple[float, float], tuple[float, float], str, str]
+    Corner, tuple[tuple[float, float], tuple[float, float], HAlign, VAlign]
 ] = {
     "upper left": ((0.0, 1.0), (1.0, -1.0), "left", "top"),
     "upper right": ((1.0, 1.0), (-1.0, -1.0), "right", "top"),
@@ -160,13 +160,14 @@ def annotate_corner(
     text wins, ``loc`` first, then upper left, upper right, lower left,
     lower right. ``dm.fs(-2)`` text; keywords go to ``ax.annotate``.
     """
-    if loc not in CORNERS:
+    corner = _CORNER_NAMES.get(loc)
+    if corner is None:
         raise ValueError(
             "loc must be 'upper left', 'upper right', 'lower left', or 'lower right'"
         )
     existing = list(ax.texts)
-    anchor, (dx, dy), ha, va = _CORNER_SPECS[loc]  # type: ignore[index]
-    ann = ax.annotate(
+    anchor, (dx, dy), ha, va = _CORNER_SPECS[corner]
+    ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
         xy=anchor,
         xycoords="axes fraction",
@@ -183,10 +184,11 @@ def annotate_corner(
     renderer = drawn_renderer(ax)
     frame = ax.get_window_extent(renderer)
     obstacles = _obstacles(ax, existing, renderer)
-    order = [loc, *(c for c in CORNERS if c != loc)]
-    tries = []
+    i = CORNERS.index(corner)
+    order = (corner, *CORNERS[:i], *CORNERS[i + 1 :])
+    tries: list[Try] = []
     for candidate in order:
-        _corner(ann, candidate, float(inset_pt))  # type: ignore[arg-type]
+        _corner(ann, candidate, float(inset_pt))
         tries.append(
             measure_try(ann.get_window_extent(renderer), frame, obstacles)
         )
@@ -194,7 +196,7 @@ def annotate_corner(
         ann,
         order[decide.first_free(Tries(tuple(tries))).index],
         float(inset_pt),
-    )  # type: ignore[arg-type]
+    )
     return ann
 
 
@@ -225,15 +227,16 @@ def _hline_span(
 
 def _hline_x(
     ax: Axes, y: float, x: str | float, renderer: RendererBase
-) -> tuple[float, str]:
+) -> tuple[float, HAlign]:
     """The data x and alignment for anchor ``x`` on the line at ``y``."""
     left, right = _hline_span(ax, y, renderer)
-    if isinstance(x, str):
-        shown, ha = {
-            "left": (left, "left"),
-            "right": (right, "right"),
-            "center": ((left + right) / 2, "center"),
-        }[x]
+    ha: HAlign
+    if x == "left":
+        shown, ha = left, "left"
+    elif x == "right":
+        shown, ha = right, "right"
+    elif x == "center":
+        shown, ha = (left + right) / 2, "center"
     else:
         frame = ax.get_window_extent(renderer)
         shown, ha = frame.x0 + frame.width * float(x), "center"
@@ -266,7 +269,7 @@ def label_hline(
     existing = list(ax.texts)
     renderer = drawn_renderer(ax)
     x_pos, ha = _hline_x(ax, y, "right" if x == "auto" else x, renderer)
-    ann = ax.annotate(
+    ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
         xy=(x_pos, y),
         xycoords="data",
@@ -283,7 +286,7 @@ def label_hline(
     frame = ax.get_window_extent(renderer)
     obstacles = _obstacles(ax, existing, renderer, lines=False)
     ends = ("right", "left")
-    tries = []
+    tries: list[Try] = []
     for end in ends:
         x_pos, ha = _hline_x(ax, y, end, renderer)
         ann.xy = (x_pos, y)
@@ -299,7 +302,6 @@ def label_hline(
     return ann
 
 
-# ------------------------------------------------------------ note
 def add_note(fig: Figure, text: str, **kw: Any) -> Text:
     """A source or note line at the figure's lower left, ``dm.fs(-1)``.
 
@@ -307,12 +309,8 @@ def add_note(fig: Figure, text: str, **kw: Any) -> Text:
 
         dm.add_note(fig, "Source: internal web logs")
     """
-    note = fig.text(
-        0.0,
-        0.0,
-        text,
-        **{"ha": "left", "va": "bottom", "fontsize": fs(-1), **kw},
-    )
+    style: dict[str, Any] = {"ha": "left", "va": "bottom", "fontsize": fs(-1)}
+    note = fig.text(0.0, 0.0, text, **{**style, **kw})  # pyright: ignore[reportUnknownMemberType]
     # simple_layout reserves this gap above the note (the layout reads it).
     note._dm_layout_gap_pt = float(mpl.rcParams["axes.labelpad"])  # type: ignore[attr-defined]
     return note

@@ -61,22 +61,7 @@ from ._colors.blend import mix_colors, pseudo_alpha
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
-from .annotation import (
-    figure_legend,
-    optimize_legend,
-    place_legend,
-)
-
-# Value labels, panel letters, notes
-from .labels import (
-    add_note,
-    annotate_corner,
-    annotate_value,
-    label_axes,
-    label_bars,
-    label_hline,
-    label_line_ends,
-)
+from .annotation import figure_legend, optimize_legend, place_legend
 
 # Config (process-wide behaviour-toggle defaults)
 from .config import Config, config
@@ -106,6 +91,17 @@ from .formatting import (
 
 # Import icon module exports
 from .icon import icon_font, icon_font_path, list_icon_fonts
+
+# Value labels, panel letters, notes
+from .labels import (
+    add_note,
+    annotate_corner,
+    annotate_value,
+    label_axes,
+    label_bars,
+    label_hline,
+    label_line_ends,
+)
 
 # Layout
 from .layout import (

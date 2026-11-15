@@ -601,12 +601,11 @@ default `decimals=None` or a
 `PercentFormatter`, plain values under a formatter it cannot read, such as
 a `FuncFormatter`: pass `fmt=`); three significant digits on the largest
 value, then the fewest exact decimals, one count per call, no meaningless
-`.0` (a tiny value that count rounds to zero reads `<0.1M`, not `0`; on a
-log axis each label takes its own count: `0.01M`, `45M`); stacked bars' segments centred and a total beyond the stack; crowded
+`.0` (a tiny value that count rounds to zero reads `<0.1M`, not `0`);
+stacked bars' segments centred and a total beyond the stack; crowded
 labels on vertical bars turned vertical by `dm.simple_layout`, which also
 grows autoscaled limits just enough for the labels (limits you set stay; a
-bar past them shows its true value at the limit: on the bar when the bar
-holds the number, else just beyond it).
+bar ending outside them has no label).
 
 ```python
 import matplotlib.pyplot as plt
@@ -621,20 +620,17 @@ dm.simple_layout(fig)
 ```
 
 Requests, one keyword each: `where="inside"` / `"center"` / `"outside"`;
-`total="only"` / `False` (stacks); `crowded="skip"` (every other label) /
-`"inside"`; `decimals=1`; `fmt="{} GWh"`, `"{:.2f}"` or a callable (a
+`total="only"` / `False` (stacks); `crowded="skip"` (every other label);
+`decimals=1`; `fmt="{} GWh"`, `"{:.2f}"` or a callable (a
 template wraps the signed number, `$−3.5B`; a callable for `−$3.5B`);
-`size=dm.fs(0)`; `color="dc.gray7"`, or `"series"` for labels off their bar;
+`color="dc.gray7"`, or `"series"` for labels off their bar;
 `sign="+"` for `+30` on the rises (a waterfall's steps, changes).
 Stacks need matching bottoms (a waterfall is not one); pad split series with
 NaN, not 0. A label asked inside a bar too narrow or short for it sits
-beyond the end in the text colour. Grouped series whose labels meet take
-turns by bar index (two alternate, in reading order), one call or one per
-series, where that keeps as many labels as the plain rule. If labels are
-lost for room (thin `barh` rows, dense groups) or under a fixed legend,
+beyond the end in the text colour. Labels that still meet are hidden from
+the last bar; when labels are lost for room (thin `barh` rows, dense groups)
 `dm.simple_layout` warns with the count: make the figure taller (wider for
-vertical bars), or place the legend with `dm.place_legend(ax)`; keep the
-warning in the report. On a twin pair the labels go on the top axes.
+vertical bars), and keep the warning in the report. On a twin pair the labels go on the top axes.
 
 ## "Twin axis"
 

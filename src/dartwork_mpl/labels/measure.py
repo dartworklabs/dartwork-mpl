@@ -46,9 +46,9 @@ FloatArray = np.ndarray
 def drawn_renderer(ax: Axes) -> RendererBase:
     """The renderer of ``ax``'s figure after a draw (boxes are current)."""
     fig = ax.get_figure(root=True)
-    if fig is None or fig.canvas is None:
+    if fig is None:
         raise ValueError("Axes must be part of a Figure with a canvas")
-    fig.canvas.draw()
+    fig.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
     return get_renderer(fig)
 
 
@@ -75,7 +75,7 @@ def bar_end(bar: Rectangle, vertical: bool) -> tuple[float, float]:
 
 def bar_run(container: BarContainer) -> BarRun:
     """Each bar's middle across, start and signed length along its value."""
-    rows = []
+    rows: list[tuple[float, float, float]] = []
     for p in container.patches:
         x, y, w, h = (
             float(v)
@@ -126,7 +126,7 @@ def error_extent(
 
 def bar_centres(bar_axes: Axes, vertical: bool) -> tuple[float, ...]:
     """The middle across the bars, on screen, of every bar in the plot area."""
-    out = []
+    out: list[float] = []
     for member in same_position_axes(bar_axes):
         for container in member.containers:
             if not isinstance(container, BarContainer):
@@ -210,7 +210,7 @@ def patch_boxes(ax: Axes) -> list[Bbox]:
             continue
         try:
             box = (
-                patch.get_path()
+                patch.get_path()  # pyright: ignore[reportUnknownMemberType]
                 .transformed(patch.get_transform())
                 .get_extents()
             )
@@ -382,9 +382,10 @@ def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
     ticks = _ytick_box(ax, renderer)
     bare = rectilinear and ylabel is None and ticks is None
     titles = tuple(
-        Title(loc, float(ext.x0), float(ext.x1), baseline_px(t, renderer))
+        Title(loc, float(e.x0), float(e.x1), baseline_px(t, renderer))
         for loc, t in axes_titles(ax).items()
-        if _shown(t) and (ext := t.get_window_extent(renderer)) is not None
+        if _shown(t)
+        for e in (t.get_window_extent(renderer),)
     )
     top = corner[1]
     try:

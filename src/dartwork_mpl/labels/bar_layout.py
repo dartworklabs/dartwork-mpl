@@ -41,7 +41,7 @@ GAP_PT = 1.5
 
 def _live(fig: Figure) -> list[BarFamily]:
     """The calls with labels still drawn (a cleared Axes drops its own)."""
-    live = []
+    live: list[BarFamily] = []
     for ax in fig.axes:
         families = families_of(ax)
         for family in families:
@@ -56,7 +56,7 @@ def _live(fig: Figure) -> list[BarFamily]:
 
 
 def _spots(labels: list[BarLabel], renderer: RendererBase) -> tuple[Spot, ...]:
-    out = []
+    out: list[Spot] = []
     for label in labels:
         box, bar = (
             label.get_window_extent(renderer),
@@ -149,7 +149,7 @@ class _ValueAxis:
         along = 1 if self.name == "y" else 0
         box = self.axes.get_window_extent(renderer)
         low, high = (box.y0, box.y1) if along else (box.x0, box.x1)
-        rooms = []
+        rooms: list[Room] = []
         for label in self.labels:
             room = self._room(label, along, renderer)
             own = label.bar_axes.get_window_extent(renderer)

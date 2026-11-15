@@ -22,19 +22,7 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
 
-# Between a bar end (a point) and its label, in points.
-OFFSET_PT = 3.0
-# How far (px) an anchor may sit past the view and still show.
-EDGE_TOL_PX = 1.0
-# How far (px) a label on its bar may reach past the bar's sides.
-FIT_TOL_PX = 0.5
-# Clear space between neighbouring bar labels, in points.
-GAP_PT = 1.5
-FAMILIES_ATTR = "_dm_bar_labels"
-LINE_ENDS_ATTR = "_dm_line_end_labels"
 
-
-# ------------------------------------------------------------ panel letters
 @dataclass(eq=False)
 class LetterGroup:
     """The letters one ``label_axes`` call placed (``members``: each panel
@@ -46,7 +34,7 @@ class LetterGroup:
 
 def _letters(n: int) -> list[str]:
     """a, b, ..., z, aa, ab, ..."""
-    out = []
+    out: list[str] = []
     for i in range(n):
         chars, k = "", i
         while k >= 0:
@@ -120,7 +108,7 @@ def label_axes(
     size = fs(1) if fontsize is None else fontsize
     if x != "auto":
         return [
-            ax.text(
+            ax.text(  # pyright: ignore[reportUnknownMemberType]
                 float(x),
                 1.05 if y is None else y,
                 label,
@@ -136,7 +124,7 @@ def label_axes(
     members = [
         (
             ax,
-            ax.annotate(
+            ax.annotate(  # pyright: ignore[reportUnknownMemberType]
                 label,
                 xy=(0.0, 1.0 if y is None else y),
                 xycoords="axes fraction",

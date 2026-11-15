@@ -377,13 +377,7 @@ SEQUENCES = [
         "draw",
     ),
     ("layout", "label-outer", "relayout", "zoom", "edit-unit:sibling", "draw"),
-    (
-        "layout",
-        "edit-unit:installer",
-        "zoom",
-        "empty:sibling",
-        "relayout",
-    ),
+    ("layout", "edit-unit:installer", "zoom", "empty:sibling", "relayout"),
 ]
 
 

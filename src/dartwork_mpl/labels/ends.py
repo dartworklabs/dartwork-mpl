@@ -21,19 +21,9 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.lines import Line2D
 
-# Between a bar end (a point) and its label, in points.
-OFFSET_PT = 3.0
-# How far (px) an anchor may sit past the view and still show.
-EDGE_TOL_PX = 1.0
-# How far (px) a label on its bar may reach past the bar's sides.
-FIT_TOL_PX = 0.5
-# Clear space between neighbouring bar labels, in points.
-GAP_PT = 1.5
-FAMILIES_ATTR = "_dm_bar_labels"
 LINE_ENDS_ATTR = "_dm_line_end_labels"
 
 
-# ------------------------------------------------------------ line ends
 @dataclass(eq=False)
 class _LineEnds:
     labels: list[Annotation]
@@ -80,8 +70,8 @@ def space_line_ends(fig: Figure, renderer: RendererBase) -> bool:
 
 
 def _last_point(line: Line2D) -> tuple[float, float] | None:
-    x = np.asarray(line.convert_xunits(line.get_xdata()), dtype=float)
-    y = np.asarray(line.convert_yunits(line.get_ydata()), dtype=float)
+    x = np.asarray(line.convert_xunits(line.get_xdata()), dtype=float)  # pyright: ignore[reportUnknownMemberType]
+    y = np.asarray(line.convert_yunits(line.get_ydata()), dtype=float)  # pyright: ignore[reportUnknownMemberType]
     if x.size == 0 or x.shape != y.shape:
         return None
     finite = np.flatnonzero(np.isfinite(x) & np.isfinite(y))
@@ -133,7 +123,7 @@ def label_line_ends(
             **kw,
         }
         group.labels.append(
-            ax.annotate(
+            ax.annotate(  # pyright: ignore[reportUnknownMemberType]
                 str(line.get_label()),
                 xy=end,
                 xycoords="data",

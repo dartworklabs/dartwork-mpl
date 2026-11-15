@@ -154,7 +154,7 @@ class BarsFacts:
     ) -> Planned | None:
         """The stack's net at ``index``, on the container whose bar ends the
         stack on the side the net points to (``None``: no bar there)."""
-        ends = []
+        ends: list[tuple[int, float, float]] = []
         for i in members:
             run = self.runs[i]
             value, end = (

@@ -10,7 +10,7 @@ from __future__ import annotations
 import string
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -82,7 +82,8 @@ class BarLabel(Annotation):
         self.family, self.container, self.index = family, container, index
         self.bar = container.patches[index]
         self.bar_axes: Axes = self.bar.axes  # type: ignore[assignment]
-        self.kind, self.value, self.stack = kind, value, stack
+        self.kind: Kind = kind
+        self.value, self.stack = value, stack
         self.where: Placement = placement(kind, family.options.where)
         self.vertical = container.orientation != "horizontal"
         self.off_bar = False
@@ -91,7 +92,7 @@ class BarLabel(Annotation):
         self.inked_for: bool | None = None
         self.text_ink = mcolors.to_rgba(mpl.rcParams["text.color"])
         self._measuring = False
-        super().__init__(
+        super().__init__(  # pyright: ignore[reportUnknownMemberType]
             "",
             (0.0, 0.0),
             xytext=(0.0, 0.0),
@@ -136,7 +137,7 @@ class BarLabel(Annotation):
         self._measuring = True
         try:
             self.family.follow(self)
-            return self._fits(self._extent()[0], along=True)
+            return self.fits(self.extent()[0], along=True)
         finally:
             self._measuring = False
 
@@ -160,7 +161,7 @@ class BarLabel(Annotation):
             and box.y0 - EDGE_TOL_PX <= shown[1] <= box.y1 + EDGE_TOL_PX
         )
 
-    def _extent(self) -> tuple[float, float]:
+    def extent(self) -> tuple[float, float]:
         """The text's extent (along, across) its bar, display pixels."""
         fig = self.get_figure(root=True)
         renderer = canvas_renderer(fig) if fig is not None else None
@@ -168,7 +169,7 @@ class BarLabel(Annotation):
         w, h = float(box.width), float(box.height)
         return (h, w) if self.vertical else (w, h)
 
-    def _fits(self, px: float, *, along: bool) -> bool:
+    def fits(self, px: float, *, along: bool) -> bool:
         """Whether ``px`` of text fits along (plus the inset) or across."""
         box = self.bar.get_window_extent()
         if not along:
@@ -243,10 +244,10 @@ class BarFamily:
             self.refresh()
         label.off_bar = False
         if label.kind == "edge" and label.where == "inside":
-            along, across = label._extent()
+            along, across = label.extent()
             label.off_bar = not (
-                label._fits(along, along=True)
-                and label._fits(across, along=False)
+                label.fits(along, along=True)
+                and label.fits(across, along=False)
             )
         label.place()
         if label.on_bar == label.inked_for:
@@ -269,7 +270,7 @@ def _template(fmt: str, number: str, value: float) -> str:
     """``fmt`` with each ``{}`` replaced by ``number``; a field with a
     format spec formats ``value`` itself, with matplotlib's minus."""
     f = string.Formatter()
-    out = []
+    out: list[str] = []
     for literal, spec, conversion in template_fields(fmt):
         out.append(literal)
         if spec or conversion:
@@ -325,22 +326,29 @@ def _containers(ax: Axes, bars: object) -> list[BarContainer]:
                 "that Axes)"
             )
         return found
-    items = [bars] if isinstance(bars, BarContainer) else bars
-    items = list(items) if isinstance(items, Iterable) else [items]
-    if not all(isinstance(c, BarContainer) for c in items):
+    if isinstance(bars, BarContainer):
+        items: list[object] = [bars]
+    elif isinstance(bars, Iterable):
+        items = list(cast("Iterable[object]", bars))
+    else:
+        items = [bars]
+    containers: list[BarContainer] = [
+        c for c in items if isinstance(c, BarContainer)
+    ]
+    if len(containers) != len(items):
         raise TypeError(
             "bars must be a BarContainer (what ax.bar / ax.barh return) or a "
-            f"list of them (got {type(bars).__name__})"
+            f"list of them (got {type(cast(object, bars)).__name__})"
         )
     box = same_position_axes(ax)
-    for container in items:
+    for container in containers:
         drawn = {p.axes for p in container.patches} - {None}
         if container.datavalues is None or not drawn <= set(box):
             raise ValueError(
                 f"bars must come from ax.bar / ax.barh / ax.hist on {ax!r} or "
                 "a twin of it: pass the Axes that drew them"
             )
-    return items
+    return containers
 
 
 def families_of(ax: Axes) -> list[BarFamily]:

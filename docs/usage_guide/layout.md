@@ -817,8 +817,7 @@ decimals are three significant digits on the largest value, then the
 fewest decimals that print every value exactly, one count for the whole
 call: `21.4, 18.0, 21.5`; `120, 135`; never a meaningless `.0`. A
 non-zero value that this count rounds to zero prints the bound it lies
-within (`<0.1M` beside `12.5M`, `>−0.1M`), never `0`; on a log value axis
-each label takes its own count, as the log ticks do (`0.01M`, `45M`). A
+within (`<0.1M` beside `12.5M`, `>−0.1M`), never `0`. A
 formatter's `decimals=n` sizes its ticks, not the labels (`1.25M` beside
 `1.0M`; `decimals=2` on the labels for cents). `fmt` takes a `{}` template
 around that number (`"{} GWh"`), a format-spec field that formats the value
@@ -854,47 +853,24 @@ dm.simple_layout(fig)
 to keep the outside labels and 3 pt inside the axes. Limits you set
 (`ax.set_ylim`, also `ax.set_ybound`; the x ones for `barh`) stay: a label
 that does not fit sits outside the axes, and `dm.simple_layout` keeps room
-for it in the figure. A bar that runs past a limit you set shows its true
-value at that limit: just inside it, on the bar, when the bar holds the
-number (`set_ylim(0, 100)` on a bar of 135 prints `135` under the top edge,
-in white or the text colour, whichever reads on the bar); on a bar too
-narrow (or a part in view too short) for it, just beyond the limit in the
-text colour (the series colour under `color="series"`). Beyond a lower or
-left limit lie the tick labels, above a top limit the title: a value that
-would cover such text is hidden, and `dm.simple_layout` warns; a wider limit
-or wider bars show it. A bar wholly outside the view, or a stack's segments
-and total past the limit, get none. Crowding and the fit of labels inside the bars
-are decided before the axis grows.
+for it in the figure. A bar whose end lies outside the view has no label.
 
 **Overlaps.** Labels that would still overlap are hidden, from the last bar
 on screen (the right end, the top row of `barh`) back. Labels from separate
 calls on one plot area (one `dm.label_bars` per series) are checked
-together, so they do not overlap each other either. Grouped series take
-turns where their labels meet, in reading order on screen (left to right,
-`barh` top to bottom): two series alternate by bar index, three or more
-count down (first, last, …). The turns are used only when they keep every
-label whose turn comes first and as many labels as the plain rule;
-otherwise the plain rule decides, and in thin `barh` rows or dense groups
-one series can lose its labels. Stacks keep the plain rule. `barh` labels
+together, so they do not overlap each other either. `barh` labels
 never turn. When labels are lost for room (not by `crowded="skip"`, which
 asks for it) `dm.simple_layout` warns once, with the count. If the rows are
 thin, make the figure taller (for example `dm.figsize("12cm", "16cm")`
 rather than `"standard"`); for vertical bars, wider. A taller or wider
 figure brings the labels back.
 
-**Legends.** A label that a legend covers is hidden, and `dm.simple_layout`
-warns once with the count and the cure for that legend. `dm.place_legend(ax)`
-puts the legend clear of the labels; on a side (`loc="above"`, `"below"`,
-`"right"`, `"left"`) the layout anchors it past the values beyond that
-limit, so a cut bar keeps its true value. A legend you fix with
-`ax.legend(loc=...)` or `fig.legend` keeps its place: the warning names
-`dm.place_legend(ax)`, or for a legend outside the axes the same side
-through `loc=`.
+**Legends.** `dm.place_legend(ax)` puts the legend clear of the labels.
 
 On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
-last, so the partner's line is never drawn over them. A later `Text.set_*`
-on a returned label wins over every redraw and layout, and calling
-`dm.label_bars` again on the same bars replaces their labels.
+last, so the partner's line is never drawn over them. Restyle a returned
+label after `dm.simple_layout`; calling `dm.label_bars` again on the same
+bars replaces their labels.
 
 ### Legends (`place_legend`, `figure_legend`)
 

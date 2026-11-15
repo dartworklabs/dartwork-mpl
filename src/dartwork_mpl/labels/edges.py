@@ -76,7 +76,9 @@ def _stack_labels(facts: BarsFacts, plan: BarsPlan) -> BarsPlan:
     """Segments labelled at their middles and each stack's net beyond its
     end; zero bars that pad a position get no label."""
     piles = facts.piles()
-    padding = set().union(*(p.padding() for p in piles))
+    padding: set[tuple[int, int]] = set()
+    for pile in piles:
+        padding |= pile.padding()
     stacks = [p.members for p in piles if p.stacked]
     stack_of = {i: k for k, members in enumerate(stacks) for i in members}
     labels: list[Planned] = []
@@ -182,7 +184,7 @@ def _on_own_spine(facts: PanelsFacts, plan: Letters) -> Letters:
 def _before_title(facts: PanelsFacts, plan: Letters) -> Letters:
     """Each letter's right edge half a letter size before a title it would
     reach; a left title always counts."""
-    lefts = []
+    lefts: list[float] = []
     for p, left in zip(facts.panels, plan.lefts, strict=True):
         for t in p.titles:
             if t.loc == "left" or (
