@@ -75,13 +75,6 @@ class Config:
         own. ``4`` is the four-digit option (``2024``, ``2024.01``):
         ``with dm.config.override(tick_years=4):`` around the code from
         figure creation to the last ``dm.simple_layout``, or assign it.
-    date_style : {"period", "concise"}, default ``"period"``
-        Date tick words on the same axes: ``"period"`` writes every tick as
-        a whole date (``23.01``, ``23.01.15``, quarterly data ``23.Q1``);
-        ``"concise"`` writes matplotlib's concise words (``23, May, Sep``;
-        ``23년, 5월`` in Korean figures; quarters ``23, Q2``). With
-        ``tick_years=4`` it is matplotlib's own concise formatter
-        (``2023, May, Sep``; ``2023년, 5월``).
     number_ladder : {"auto", "si", "myriad"}, default ``"auto"``
         Unit ladder for large numbers: the one-unit tick labels of axes
         nobody formatted (from 1,000,000) and ``dm.axis_unit(ladder="auto")``.
@@ -92,25 +85,6 @@ class Config:
         it is read.
         ``"si"`` is the option for k/M/G/T in Korean figures too
         (``with dm.config.override(number_ladder="si"):``, or assign it).
-    twin_colors : {"series", "neutral"}, default ``"series"``
-        Axis colours of ``twinx`` / ``twiny`` pairs, set by
-        ``dm.simple_layout``. ``"series"``: a side whose series all draw
-        one colour that no series on the other scale shares gets that colour
-        on its spine and tick marks (at least 3:1 against the background)
-        and the same hue darkened to 4.5:1 on its tick labels and axis
-        label; single axes stay as they are. The full rules are in the
-        docstring of ``dartwork_mpl.formatting._twin_colors``. A colour you
-        set on any part of a side (spine, tick marks, tick labels, axis
-        label) makes that whole side yours: its other parts keep the
-        preset's colours, and the other side still takes its series colour.
-        A colour set after a layout is kept; one set before the first layout
-        that equals the preset default (``"black"``) cannot be told from the
-        default and is painted, so use ``"neutral"`` for such figures.
-        ``"neutral"`` keeps the preset's axis colours on twins too
-        (``dm.config.twin_colors = "neutral"``, or
-        ``with dm.config.override(twin_colors="neutral"):``); a figure laid
-        out before gets them back on its next ``dm.simple_layout``. Any other
-        value raises ``ValueError`` where it is read.
     legend_fallback : {"auto", "above", "right", "below", "inside"}, default ``"auto"``
         Where :func:`dartwork_mpl.place_legend` puts a legend with no side
         named when no inside spot is free of data. ``"auto"`` takes, among
@@ -147,9 +121,7 @@ class Config:
     adopt_orphan_tick_font: bool = False
     warn_on_orphan_tick_adoption: bool = False
     tick_years: Literal[2, 4] = 2
-    date_style: Literal["period", "concise"] = "period"
     number_ladder: Literal["auto", "si", "myriad"] = "auto"
-    twin_colors: Literal["series", "neutral"] = "series"
     legend_fallback: Literal["auto", "above", "right", "below", "inside"] = (
         "auto"
     )

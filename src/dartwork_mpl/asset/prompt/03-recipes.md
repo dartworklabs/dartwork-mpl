@@ -648,14 +648,11 @@ ax2.plot(x, temp, color="oc.red6", marker="o", markersize=3,
 dm.simple_layout(fig)
 ```
 
-`dm.simple_layout` colours each side like its one series (spine and ticks at
-3:1, tick labels and axis label at 4.5:1); a colour you set on any part of
-a side makes that whole side yours (its other parts keep the preset's
-colours; the other side keeps its series colour), except one set before the
-first layout that equals the preset's default (`"black"`): it cannot be
-told from the default and is painted. For black or neutral
-twin axes, `with dm.config.override(twin_colors="neutral"):` (or
-`dm.config.twin_colors = "neutral"`) keeps the preset's. One
+`dm.simple_layout` shows the twin's right spine, which the presets hide; the
+axis colours stay the preset's. To tie each scale to its series, colour it
+yourself: `ax2.tick_params(axis="y", colors=…)`, `ax2.yaxis.label.set_color(…)`
+and `ax2.spines["right"].set_color(…)`, with the series colour raised to
+readable contrast by `dm.ensure_contrast(color, ax2.get_facecolor())`. One
 legend for both: `dm.place_legend(ax1)`, not `ax1.legend(h1 + h2, l1 + l2)`;
 it keeps the legend's title and settings (pass `ncols` again), rebuilds a
 legend it made with the series added or removed since, and leaves a legend
@@ -677,8 +674,7 @@ Untouched Korean axes read `50만 … 250만` and `23.01` / `16` dates and years
 (no `년`). A unit in the label instead: `dm.axis_unit(ax, "y", label="인구
 ({unit}명)")` (`0, 0.2 … 1.0`; `dm.axis_unit_of(ax)` for value labels). Other
 formats on request, one `dm.config` field each: `tick_years=4` (four-digit
-years), `date_style="concise"` (`23, May, Sep`), `number_ladder="si"` (`0.5M`
-in Korean figures). The override applies to what runs inside its `with`
+years), `number_ladder="si"` (`0.5M` in Korean figures). The override applies to what runs inside its `with`
 block: wrap the code from figure creation to the last `dm.simple_layout`, or
 set the field on `dm.config`.
 

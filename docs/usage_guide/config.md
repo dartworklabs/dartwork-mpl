@@ -13,8 +13,8 @@ adopt_orphan_tick_font=True)` overrides whatever you set on
 ## What's in there
 
 `dm.config` is a `@dataclass` with named fields; the table shows some of
-them, and the [API page](../api/config.rst) lists every field (`tick_years`,
-`date_style`, `number_ladder` and `twin_colors` too).
+them, and the [API page](../api/config.rst) lists every field (`tick_years`
+and `number_ladder` too).
 
 | Field | Default | Affects |
 |---|---|---|

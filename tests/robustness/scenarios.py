@@ -225,8 +225,7 @@ def _build_triple_twinx_offset_spine() -> Figure:
     The scenario runs on matplotlib's defaults (no preset), which show
     every right spine. Under a preset, which hides them, the right spines
     of the second and third axis show at ``dm.simple_layout``; that is
-    tested with the offset in
-    ``src/dartwork_mpl/formatting/tests/test_twin_spines.py``."""
+    tested in ``src/dartwork_mpl/ticks/tests/test_surface.py``."""
     fig, ax1 = plt.subplots(figsize=dm.figsize("14cm", "standard"))
     ax1.plot([1, 2, 3, 4], [1, 4, 9, 16], color="#1f77b4")
     ax1.set_ylabel("Series A")

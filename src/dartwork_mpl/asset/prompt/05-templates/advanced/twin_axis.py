@@ -8,7 +8,7 @@
 # data_shape: x: list[float], y_price: list[float], y_volume: list[float]
 # tags: twin-axis, price-volume, color-coded, narrative
 # narrative: Daily price + volume; price target axhline on the left axis
-# advanced_apis: ax.twinx (each axis takes its series colour from dartwork-mpl), axhline target, no chart-junk
+# advanced_apis: ax.twinx (each axis coloured like its series with dm.ensure_contrast), axhline target, no chart-junk
 # ai-template-meta-end
 
 import matplotlib.pyplot as plt
@@ -73,6 +73,21 @@ dm.label_hline(
 )
 
 ax_price.set_xlabel("Trading day")
+
+# Each y scale in its series' colour, against the axes background: spine and
+# ticks at 3:1, tick labels and name at 4.5:1. The volume bars show at 55 %.
+background = ax_price.get_facecolor()
+for ax, side, shown in (
+    (ax_price, "left", price_color),
+    (ax_vol, "right", dm.pseudo_alpha(vol_color, 0.55)),
+):
+    line = dm.ensure_contrast(shown, background, min_ratio=3.0)
+    text = dm.ensure_contrast(shown, background)
+    ax.spines[side].set_color(line)
+    ax.tick_params(axis="y", color=line, labelcolor=text)
+    ax.yaxis.label.set_color(text)
+# The twin draws its own copy of the left spine over the price axis's.
+ax_vol.spines["left"].set_color(ax_price.spines["left"].get_edgecolor())
 
 dm.simple_layout(fig, margin=dm.inch(0.12))
 dm.validate_with_fixes(fig)

@@ -19,10 +19,6 @@
   "src/dartwork_mpl/annotation/_point_labels.py": 871,
   "src/dartwork_mpl/figure_review/_summary.py": 602,
   "src/dartwork_mpl/font/__init__.py": 842,
-  "src/dartwork_mpl/formatting/__init__.py": 623,
-  "src/dartwork_mpl/formatting/_defaults.py": 1210,
-  "src/dartwork_mpl/formatting/_label_unit.py": 612,
-  "src/dartwork_mpl/formatting/_twin_colors.py": 628,
   "src/dartwork_mpl/layout/_fit_labels.py": 1853,
   "src/dartwork_mpl/layout/_simple_layout.py": 833,
   "src/dartwork_mpl/lint/detect.py": 742,
@@ -49,7 +45,6 @@
   "_colors/model": 2536,
   "_colors/verify": 3227,
   "annotation": 8271,
-  "formatting": 4909,
   "layout": 4020,
   "mcp": 11140,
   "mcp/artifacts": 5316,
@@ -66,7 +61,6 @@
   "annotation": 22,
   "diagnostics": 1,
   "figure_review": 2,
-  "formatting": 9,
   "layout": 9,
   "mcp": 2,
   "recommend": 1,
@@ -82,8 +76,9 @@
   "_rc"
  ],
  "R4_cycles": [
-  "pkg: dartwork_mpl, dartwork_mpl.annotation, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.helpers, dartwork_mpl.lint, dartwork_mpl.validate, dartwork_mpl.validate._checks",
-  "pkg: dartwork_mpl._colors, dartwork_mpl._colors.catalog, dartwork_mpl._colors.construction, dartwork_mpl._colors.families_api, dartwork_mpl._colors.registry, dartwork_mpl._colors.verify"
+  "pkg: dartwork_mpl, dartwork_mpl.lint",
+  "pkg: dartwork_mpl._colors, dartwork_mpl._colors.catalog, dartwork_mpl._colors.construction, dartwork_mpl._colors.families_api, dartwork_mpl._colors.registry, dartwork_mpl._colors.verify",
+  "pkg: dartwork_mpl.validate, dartwork_mpl.validate._checks"
  ],
  "R4_lazy_cycle_edges": {
   "top_level_edges": 0
@@ -94,7 +89,7 @@
  ],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 165
+  "modules": 166
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_colors/_compatibility_metrics.py::_global_extrema": 101,
@@ -132,7 +127,6 @@
   "src/dartwork_mpl/annotation/_point_labels.py::label_hline": 85,
   "src/dartwork_mpl/diagnostics/_fonts.py::plot_fonts": 232,
   "src/dartwork_mpl/figure_review/__init__.py::review": 90,
-  "src/dartwork_mpl/formatting/_label_unit.py::axis_unit": 135,
   "src/dartwork_mpl/layout/_content_extent.py::_axes_content_extent_px": 128,
   "src/dartwork_mpl/layout/_crop.py::tight_crop": 136,
   "src/dartwork_mpl/layout/_gutter.py::fit_gutter": 86,

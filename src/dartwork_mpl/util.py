@@ -32,7 +32,7 @@ _OWNERS = {
     "prompt_path": "dartwork_mpl.prompt",
     "pseudo_alpha": "dartwork_mpl",
     "save_formats": "dartwork_mpl.save",
-    "set_decimal": "dartwork_mpl.formatting",
+    "set_decimal": "dartwork_mpl.ticks",
     "simple_layout": "dartwork_mpl.layout",
 }
 

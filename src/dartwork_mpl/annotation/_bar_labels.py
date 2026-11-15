@@ -91,13 +91,13 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 
 from .._figure_geometry import canvas_renderer, same_position_axes
-from ..formatting import (
+from ..scale import fs, fw
+from ..ticks import (
     TickScale,
     draws_linearly,
     tick_scale_of,
     value_label_decimals,
 )
-from ..scale import fs, fw
 from ._bar_label_geometry import (
     clipped_edge,
     fits_across,

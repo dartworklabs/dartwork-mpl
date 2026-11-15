@@ -131,27 +131,6 @@ def test_live_agg_renderer_is_retained_across_repeated_measurements():
 
 
 @pytest.mark.parametrize("kind", ["closed", "native"])
-@pytest.mark.parametrize("subfigure", [False, True])
-def test_explicit_tick_overlap_edit_matches_live_canvas(kind, subfigure):
-    """Direct tick thinning and rotation keep their effect on detached canvases."""
-    dm.style.use("report")
-    results = []
-    for current in ("agg", kind):
-        fig, _, ax = _figure(current, 123, subfigure)
-        ax.set_xticks(range(9), [f"Observation number {i}" for i in range(9)])
-        before = _state(fig)
-        dm.avoid_tick_overlap(ax, max_visible=4, rotation=35)
-        labels = ax.get_xticklabels()
-        results.append(
-            [(label.get_text(), label.get_rotation()) for label in labels]
-        )
-        assert _state(fig) == before
-    assert len(results[1]) == 4
-    assert all(rotation == 35 for _, rotation in results[1])
-    assert results[1] == results[0]
-
-
-@pytest.mark.parametrize("kind", ["closed", "native"])
 def test_concise_date_thinning_matches_live_canvas(kind):
     """Automatic date tick density uses current renderer extents after close."""
     dm.style.use("report")

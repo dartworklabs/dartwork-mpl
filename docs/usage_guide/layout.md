@@ -646,8 +646,7 @@ figure:
 | reaches one million | `0, 0.5M … 2.5M` (the largest tick's unit) |
 | reaches one million, Korean axis labels, titles or legend | `0, 50만 … 250만` (만/억/조) |
 | below 1,000 | unchanged: `0, 250 … 750` |
-| a `secondary_xaxis` / `secondary_yaxis` whose functions are affine (the same values, `×1.3`, °C shown as °F) | the parent's rules: `1,600 … 2,400`; `0.5M`. A curved one (`1 / x`) keeps matplotlib's, as log axes do |
-| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; a `secondary_xaxis` showing them too; also non-year data such as elevations), or a y axis whose data *positions* are such years (horizontal bars `ax.barh(range(2014, 2025), …)`, grouped too, `fill_betweenx` spans; a `secondary_yaxis` following them). A line's, scatter's or bar's y values are quantities and keep their numbers (`1,985 … 2,045`) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4`. Zoomed under two whole years, every tick prints its value: `2023.2 … 2023.7`, never a rounded year or an empty label |
+| an x axis whose plotted data are all integers in 1900–2099 (annual lines, bars, grouped bars, scatter, `stackplot` / `fill_between` areas; also non-year data such as elevations). y values are quantities and keep their numbers (`1,985 … 2,045`) | ticks on whole years only, two digits: `16, 18 … 24`; four digits when two ticks would read alike (`1900`, `2000`) or with `tick_years=4`. Zoomed under two whole years, every tick prints its value: `2023.2 … 2023.7`, never a rounded year or an empty label |
 | monthly dates | `23.01, 23.07, 24.01` (year, then month; two-digit years) |
 | quarterly dates | `23.Q1, 23.Q3, 24.Q1` |
 | dates on a narrow axis | fewer ticks until labels are one em apart |
@@ -655,18 +654,15 @@ figure:
 Korean figures print the same dates and years, without a suffix.
 
 The rule: no request, the library default; a request, that format.
-`ax.ticklabel_format(...)` is such a request: `style="plain"` prints full
-numbers (`500000`) where the default would read `0.5M`, and scientific
-notation or an offset gets matplotlib's own formatter. One limit: before
-`dm.simple_layout`, a request equal to matplotlib's own defaults
-(`style="sci"` alone, `useOffset=True`, `scilimits=` equal to the rc
-`axes.formatter.limits`) changes nothing matplotlib records, so it cannot
-be told from no request and the library's ticks stay (`0.5M`; on a year
-axis `14 … 24`). Three paths work in either order: give the axis a
-`ScalarFormatter()` first, call `dm.format_axis_year(ax)` first on a year
-axis, or pass a value that differs from the default (`scilimits=(0, 0)`,
-`useMathText=True`). A request made only after the layout is applied, but
-its `1e6` multiplier has no room and is drawn outside the figure: run
+`ax.ticklabel_format(...)` before `dm.simple_layout` is such a request: the
+axis keeps matplotlib's formatter with it. One limit: a request equal to
+matplotlib's own defaults (`style="sci"` alone, `useOffset=True`,
+`scilimits=` equal to the rc `axes.formatter.limits`) changes nothing
+matplotlib records, so it cannot be told from no request and the library's
+ticks stay. Give the axis a `ScalarFormatter()` first, or pass a value that
+differs from the default (`scilimits=(0, 0)`, `useMathText=True`). After
+the layout the axis holds the library's formatter, which
+`ticklabel_format` cannot configure: set a `ScalarFormatter()` and run
 `dm.simple_layout(fig)` again. `dm.lint_code` reports the default request
 made before the layout (`ticklabel-format-default-before-layout`).
 
@@ -680,10 +676,9 @@ ax.ticklabel_format(axis="y", style="sci")
 dm.simple_layout(fig)  # 0.0 … 3.0 with the 1e6 multiplier inside the figure
 ```
 
-A prompt can ask for three other formats, one `dm.config` field each:
-`tick_years=4` (four-digit years: `2016`, `2023.01`), `date_style="concise"`
-(matplotlib's concise words: `23, May, Sep`; `2023, May, Sep` with
-`tick_years=4`) and `number_ladder="si"` (`k/M/G/T` in Korean figures too).
+A prompt can ask for two other formats, one `dm.config` field each:
+`tick_years=4` (four-digit years: `2016`, `2023.01`) and
+`number_ladder="si"` (`k/M/G/T` in Korean figures too).
 
 ```python
 with dm.config.override(tick_years=4):        # four-digit years
@@ -1038,24 +1033,12 @@ exact same code.
 
 ### Series colours and one legend
 
-`dm.simple_layout(fig)` colours each side of a `twinx` / `twiny` pair like
-the one series read on it: the spine and tick marks take the series colour,
-raised to 3:1 against the background, and the tick labels and axis label
-the same hue raised to 4.5:1. A side whose series draw several colours,
-or a hue close to the other side's, stays neutral, and single Axes are
-never touched. `with dm.config.override(twin_colors="neutral"):` around
-the figure, or `dm.config.twin_colors = "neutral"`, keeps the preset's axis
-colours. A colour you set wins, and makes that whole side yours:
-`ax2.tick_params(axis="y", colors=...)`, `labelcolor=`,
-`ax2.yaxis.label.set_color(...)` or `ax2.spines["right"].set_color(...)` on
-any part of a side leaves its other parts in the preset's colours (no
-series colour mixed with yours), while the other side keeps its series
-colour. The left spine you see on a `twinx` pair is the twin's copy,
-`ax2.spines["left"]`: a colour there makes the left side yours. One
-exception: a colour set before the first `dm.simple_layout`
-that equals the preset's default (`"black"` under the light presets) cannot
-be told from the default and is painted with the rest of the side; for
-black or neutral twin axes use `dm.config.twin_colors = "neutral"`.
+Twin axes keep the preset's neutral colours. To tie a scale to its series,
+colour that side yourself: `ax2.tick_params(axis="y", colors=...)`,
+`ax2.yaxis.label.set_color(...)` and `ax2.spines["right"].set_color(...)`,
+with `dm.ensure_contrast(color, ax2.get_facecolor())` for readable text
+(the advanced `twin_axis` template does this). The left spine you see on a
+`twinx` pair is the twin's copy, `ax2.spines["left"]`.
 
 The presets hide the right and top spines, so `dm.simple_layout(fig)` also
 shows the right one on an Axes drawing its own y scale on the right: its y

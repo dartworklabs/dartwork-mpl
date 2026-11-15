@@ -2,7 +2,7 @@
 
 Up to 0.7, ``import dartwork_mpl`` replaced ``matplotlib.axes.Axes.twinx``
 with a wrapper that showed the twin's right spine. From 0.8 that spine shows
-at ``dm.simple_layout`` (``dartwork_mpl.formatting._twin_spines``). A fresh
+at ``dm.simple_layout`` (``dartwork_mpl.ticks``). A fresh
 interpreter imports matplotlib, records what it can see, then imports and
 reloads the package twice and checks after each step:
 

@@ -16,7 +16,7 @@ Measured on matplotlib 3.11.2:
 only the box question. The native twin is matplotlib's private
 ``_twinned_axes`` grouper: no library code reads it, and this module reads it
 only as an independent control. The twin role is
-:func:`dartwork_mpl.formatting.drawn_like_twin`, which ``PRESET_OVERRIDE``
+:func:`dartwork_mpl.ticks.drawn_like_twin`, which ``PRESET_OVERRIDE``
 skips; it is read from public state. The three cases where the native twin
 and the role agree say nothing about whether they mean the same; the two
 where they differ pin the role's own meaning.
@@ -36,7 +36,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from dartwork_mpl._figure_geometry import same_position_axes, shared_axes
-from dartwork_mpl.formatting import _twin_colors, drawn_like_twin
+from dartwork_mpl.ticks import drawn_like_twin
 
 BOX = (0.1, 0.1, 0.8, 0.8)
 
@@ -106,10 +106,6 @@ def test_each_contract_answers_on_its_own(name: str) -> None:
     assert _native_twin(first, second) is native_twin
     assert drawn_like_twin(second) is twin_role
     assert drawn_like_twin(first) is False  # nothing before it in its box
-    # the twin-colour grouping is by position, so every case forms a group
-    assert _twin_colors._twin_groups(fig) == [[first, second]]
-    assert _twin_colors._reads_on(first, "bottom", second) is shares_x
-    assert _twin_colors._reads_on(first, "left", second) is False
     plt.close(fig)
 
 
@@ -118,7 +114,6 @@ def test_twinx_and_twiny_share_one_axis_each() -> None:
     right, top = ax.twinx(), ax.twiny()
     assert shared_axes(ax, "x") == [ax, right]
     assert shared_axes(ax, "y") == [ax, top]
-    assert _twin_colors._own_sides(right, [ax, right, top]) == ["right"]
     assert [drawn_like_twin(m) for m in (ax, right, top)] == [False, True, True]
     plt.close(fig)
 

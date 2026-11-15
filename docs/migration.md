@@ -52,7 +52,7 @@ format yourself; each other format is one `dm.config` field.
 | Default now | Before | Ask for another format |
 |---|---|---|
 | year data (integers 1900–2099) tick whole years: `16, 18 … 24` | `2016 …`, or `2005.0, 2007.5 …` | `tick_years=4`: `2016, 2018 …` |
-| dates `23.01, 23.07`; quarters `23.Q1` | `2023, May, Sep` | `date_style="concise"`: `23, May, Sep` (`2023, May, Sep` with `tick_years=4`) |
+| dates `23.01, 23.07`; quarters `23.Q1` | `2023, May, Sep` | `tick_years=4`: `2023.01, 2023.07` |
 | Korean figures: `50만 … 250만` from 1,000,000 | `0.5M … 2.5M` | `number_ladder="si"`: `0.5M … 2.5M` |
 
 Use them as `with dm.config.override(tick_years=4):`. The override applies to

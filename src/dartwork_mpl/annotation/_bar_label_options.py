@@ -28,7 +28,7 @@ from typing import Literal, TypeAlias
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
-from ..formatting import TickScale, number_text
+from ..ticks import TickScale, number_text
 from ._bar_label_ink import is_series
 
 __all__ = [

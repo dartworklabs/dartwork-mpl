@@ -87,23 +87,6 @@ from .diagnostics import plot_fonts
 # Review loop: save, validate, summarize, compare (masterplan stages 3-4)
 from .figure_review import review
 
-# Formatting utilities
-from .formatting import (
-    avoid_tick_overlap,
-    axis_unit,
-    axis_unit_of,
-    format_axis_billions,
-    format_axis_currency,
-    format_axis_dates,
-    format_axis_millions,
-    format_axis_myriad,
-    format_axis_si,
-    format_axis_year,
-    recommend_tick_decimals,
-    rotate_tick_labels,
-    set_decimal,
-)
-
 # Import icon module exports
 from .icon import icon_font, icon_font_path, list_icon_fonts
 
@@ -152,6 +135,21 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 
 # Extended plot functions (from templates, formerly xplot)
 from .templates import plot_diverging_bar
+
+# Tick text
+from .ticks import (
+    axis_unit,
+    axis_unit_of,
+    format_axis_billions,
+    format_axis_currency,
+    format_axis_dates,
+    format_axis_millions,
+    format_axis_myriad,
+    format_axis_si,
+    format_axis_year,
+    rotate_tick_labels,
+    set_decimal,
+)
 
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
@@ -281,9 +279,7 @@ __all__ = [  # noqa: RUF022
     "format_axis_si",
     "axis_unit",
     "axis_unit_of",
-    "recommend_tick_decimals",
     "rotate_tick_labels",
-    "avoid_tick_overlap",
     # Saving
     "save_formats",
     # Axes annotation

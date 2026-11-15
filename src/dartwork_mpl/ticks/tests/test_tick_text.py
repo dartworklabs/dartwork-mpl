@@ -71,8 +71,10 @@ ROWS = (
         ("16년", "18년", "20년", "22년", "24년")),
     Row("monthly-bars", "report", lambda ax: ax.bar(MONTHS, np.arange(12) + 1), "x",
         ("24.01", "24.03", "24.05", "24.07", "24.09", "24.11")),
-    Row("monthly-concise", "report", lambda ax: ax.plot(MONTHS, np.arange(12)), "x",
-        ("24", "Mar", "May", "Jul", "Sep", "Nov"), config={"date_style": "concise"}),
+    # Changed with the concise date style's deletion (was "monthly-concise":
+    # 24, Mar, May ... under config date_style="concise").
+    Row("monthly-line", "report", lambda ax: ax.plot(MONTHS, np.arange(12)), "x",
+        ("24.01", "24.03", "24.05", "24.07", "24.09", "24.11")),
     Row("daily", "report", lambda ax: ax.plot(DAYS, np.arange(31)), "x",
         ("24.03.01", "24.03.08", "24.03.15", "24.03.22", "24.04.01")),
     Row("quarterly", "report", lambda ax: ax.plot(QUARTERS, np.arange(12)), "x",
