@@ -10,7 +10,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable
 from functools import partial
-from typing import Any, cast
+from typing import Any
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
@@ -19,7 +19,7 @@ from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 
 from ..edgecase import settle
-from ..geometry import get_renderer
+from ..geometry import get_renderer, is_rectilinear
 from . import decide
 from .dates import (
     CategoryDateLocator,
@@ -30,7 +30,6 @@ from .dates import (
 from .edges import AXES_EDGES, LADDER_EDGES, THIN_EDGES
 from .formatters import AxisUnitFormatter, WholeYearLocator, YearTickFormatter
 from .measure import (
-    SETTLED,
     axes_facts,
     boxes,
     config_digits,
@@ -39,6 +38,7 @@ from .measure import (
     label_gap,
     language,
     rotated,
+    settle_twin_spine,
     with_insets,
 )
 from .model import (
@@ -46,12 +46,13 @@ from .model import (
     AxisPlan,
     Candidate,
     Crowding,
+    DefaultUnit,
     Ladder,
+    Leave,
     Numbers,
     NumberStyle,
     PeriodDates,
     QuarterDates,
-    Rule,
     YearTicks,
 )
 
@@ -66,46 +67,46 @@ def _formats(ax: Axes, fig: Figure) -> bool:
     """Whether the library formats ``ax``'s ticks: a figure Axes, no colorbar."""
     return (
         ax in fig.axes
-        and ax.name == "rectilinear"
+        and is_rectilinear(ax)
         and getattr(ax, "_colorbar", None) is None
     )
 
 
 def _apply_axis(axis: Axis, plan: AxisPlan, ladder: Ladder) -> None:
     fmt, locator = axis.get_major_formatter(), axis.get_major_locator()
-    if isinstance(plan, Numbers):
-        axis.set_major_formatter(
-            AxisUnitFormatter(NumberStyle(ladder, Rule.DEFAULT))
-        )
-    elif isinstance(plan, PeriodDates) and isinstance(
-        fmt, mdates.ConciseDateFormatter
-    ):
-        axis.set_major_formatter(
-            PeriodDateFormatter(
-                locator,
-                getattr(fmt, "_tz", None),
-                digits=plan.digits,
-                show_offset=fmt.show_offset,
-                usetex=getattr(fmt, "_usetex", None),
+    match plan:
+        case Numbers():
+            axis.set_major_formatter(
+                AxisUnitFormatter(NumberStyle(ladder, DefaultUnit()))
             )
-        )
-    elif isinstance(plan, QuarterDates):
-        tz = getattr(locator, "tz", None)
-        axis.set_major_locator(QuarterLocator(ends=plan.ends, tz=tz))
-        axis.set_major_formatter(QuarterDateFormatter(plan.digits, tz))
-    elif isinstance(plan, YearTicks):
-        if plan.locator:
-            axis.set_major_locator(WholeYearLocator())
-        if plan.formatter:
-            axis.set_major_formatter(YearTickFormatter(plan.digits))
+        case PeriodDates(digits=digits):
+            if isinstance(fmt, mdates.ConciseDateFormatter):
+                axis.set_major_formatter(
+                    PeriodDateFormatter(
+                        locator,
+                        getattr(fmt, "_tz", None),
+                        digits=digits,
+                        show_offset=fmt.show_offset,
+                        usetex=getattr(fmt, "_usetex", None),
+                    )
+                )
+        case QuarterDates(digits=digits, ends=ends):
+            tz = getattr(locator, "tz", None)
+            axis.set_major_locator(QuarterLocator(ends=ends, tz=tz))
+            axis.set_major_formatter(QuarterDateFormatter(digits, tz))
+        case YearTicks(digits=digits, locator=whole, formatter=words):
+            if whole:
+                axis.set_major_locator(WholeYearLocator())
+            if words:
+                axis.set_major_formatter(YearTickFormatter(digits))
+        case Leave():
+            pass
 
 
 def _apply_spines(ax: Axes, plan: AxesPlan) -> None:
     for side in plan.spines:
         ax.spines[side].set_visible(True)
-        setattr(
-            ax, SETTLED[side], True
-        )  # once: a spine hidden later stays hidden
+        settle_twin_spine(ax, side)  # once: a spine hidden later stays hidden
 
 
 def prepare(fig: Figure, *, numbers: bool = True) -> None:
@@ -118,7 +119,7 @@ def prepare(fig: Figure, *, numbers: bool = True) -> None:
     ladder = figure_ladder(fig) if numbers else None
     twins = boxes(fig)
     for ax in with_insets(fig.axes):
-        if ax.name != "rectilinear":
+        if not is_rectilinear(ax):
             continue
         facts = axes_facts(ax, digits, twins.get(ax, ()))
         plan = settle(facts, decide.axes_plan(facts), AXES_EDGES).plan
@@ -194,7 +195,7 @@ def _thin_axis(axis: Axis, renderer: Any) -> bool:
             renderer,
         )
     if isinstance(locator, WholeYearLocator):
-        if "nbins" in locator.requested:
+        if locator.asked_nbins:
             return False
         current, nbins = in_view(axis, locator()), locator.nbins
         options = [
@@ -230,8 +231,8 @@ def _thin_axis(axis: Axis, renderer: Any) -> bool:
 
 
 def _maxticks(locator: mdates.AutoDateLocator) -> dict[Any, int]:
-    """The locator's tick ceilings per date unit (the stubs say ``int | None``)."""
-    return cast("dict[Any, int]", dict(locator.maxticks))
+    """The locator's tick ceilings per date unit (each set, never ``None``)."""
+    return {unit: n for unit, n in locator.maxticks.items() if n is not None}
 
 
 def _ceilings(
@@ -246,7 +247,7 @@ def thin_dates(fig: Figure) -> bool:
     renderer = get_renderer(fig)
     changed = False
     for ax in fig.axes:
-        if ax.name == "rectilinear":
+        if is_rectilinear(ax):
             for axis in (ax.xaxis, ax.yaxis):
                 changed |= _thin_axis(axis, renderer)
     return changed
@@ -256,7 +257,7 @@ def remember_dates(fig: Figure) -> Callable[[], None]:
     """Record the date tick counts :func:`thin_dates` may lower; the call puts them back."""
     saved: list[tuple[Axis, ticker.Locator, Callable[[], None]]] = []
     for ax in fig.axes:
-        if ax.name != "rectilinear":
+        if not is_rectilinear(ax):
             continue
         for axis in (ax.xaxis, ax.yaxis):
             locator = axis.get_major_locator()

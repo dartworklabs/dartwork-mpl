@@ -9,16 +9,19 @@ from dartwork_mpl.ticks.model import (
     FINANCE,
     MYRIAD,
     SI,
+    Asked,
     AxisFacts,
-    Kind,
-    LadderChoice,
-    Language,
+    ByFigure,
+    DateAxis,
+    DefaultUnit,
+    ExactZero,
     Leave,
+    NumberAxis,
     Numbers,
     NumberStyle,
+    OtherAxis,
     PeriodDates,
     PerTick,
-    Rule,
     TextFacts,
     TickValues,
 )
@@ -53,11 +56,11 @@ def _text(values: list[float], style: NumberStyle) -> tuple[str, int | None]:
         ([0, 2.5e7, 1.75e8], NumberStyle.parse(MYRIAD, "whole"), ("만", 0)),
         ([0, 1.5e9, 3e9], NumberStyle.parse(FINANCE), ("B", 1)),
         # the library's numbers: plain under a million, a unit from it ...
-        ([0, 2.5e5, 7.5e5], NumberStyle(SI, Rule.DEFAULT), ("", 0)),
-        ([0, 1e6, 4e6], NumberStyle(SI, Rule.DEFAULT), ("M", 0)),
+        ([0, 2.5e5, 7.5e5], NumberStyle(SI, DefaultUnit()), ("", 0)),
+        ([0, 1e6, 4e6], NumberStyle(SI, DefaultUnit()), ("M", 0)),
         # ... unless that needs more than two decimals
-        ([123456, 123457, 123458], NumberStyle(SI, Rule.DEFAULT), ("", 0)),
-        ([1_000_000, 1_000_500], NumberStyle(SI, Rule.DEFAULT), ("", 0)),
+        ([123456, 123457, 123458], NumberStyle(SI, DefaultUnit()), ("", 0)),
+        ([1_000_000, 1_000_500], NumberStyle(SI, DefaultUnit()), ("", 0)),
         ([], NumberStyle.parse(SI, "k", decimals=1), ("k", 1)),
     ],
 )
@@ -108,8 +111,8 @@ def test_number_text(args, kwargs, expected):
     [
         (1500, NumberStyle.parse(SI, decimals=1, per_tick=PerTick(separators=False)), "1.5k"),
         (800, NumberStyle.parse(SI, decimals=1, per_tick=PerTick(separators=False)), "800.0"),
-        (1.5e8, NumberStyle.parse(MYRIAD, decimals=1, per_tick=PerTick(zero="exact", compact=True)), "1.5억"),
-        (7500, NumberStyle.parse(MYRIAD, decimals=1, per_tick=PerTick(zero="exact", compact=True)), "7,500"),
+        (1.5e8, NumberStyle.parse(MYRIAD, decimals=1, per_tick=PerTick(zero=ExactZero(), compact=True)), "1.5억"),
+        (7500, NumberStyle.parse(MYRIAD, decimals=1, per_tick=PerTick(zero=ExactZero(), compact=True)), "7,500"),
     ],
 )  # fmt: skip
 def test_fixed_decimals_write_each_value_alone(value, style, expected):
@@ -123,7 +126,10 @@ def test_value_labels_and_the_validator_step_rule():
     assert recommend_tick_decimals([3]) == 0
 
 
-def _axis(kind=Kind.NUMBERS, values=(0, 1), **kw) -> AxisFacts:
+NUMBERS = NumberAxis()
+
+
+def _axis(kind=NUMBERS, values=(0, 1), **kw) -> AxisFacts:
     return AxisFacts(
         x=kw.pop("x", False), kind=kind, ticks=TickValues.of(values), **kw
     )
@@ -137,8 +143,8 @@ def _axis(kind=Kind.NUMBERS, values=(0, 1), **kw) -> AxisFacts:
         (_axis(values=(0, 500, 1000), own_formatter=False), Leave()),
         (_axis(values=(1950, 2000, 2050), x=True), Leave()),  # looks like years
         (_axis(values=(1950, 2000, 2050)), Numbers()),
-        (_axis(Kind.DATES), PeriodDates(2)),
-        (_axis(Kind.OTHER, values=(0, 5000)), Leave()),
+        (_axis(DateAxis()), PeriodDates(2)),
+        (_axis(OtherAxis(), values=(0, 5000)), Leave()),
     ],
 )
 def test_default_format_of_an_axis_nobody_formatted(facts, expected):
@@ -146,6 +152,6 @@ def test_default_format_of_an_axis_nobody_formatted(facts, expected):
 
 
 def test_the_ladder_asked_by_name():
-    assert ladder(Language(LadderChoice.MYRIAD, korean=False)) is MYRIAD
-    assert ladder(Language(LadderChoice.SI, korean=True)) is SI
-    assert ladder(Language(LadderChoice.AUTO, korean=False)) is SI
+    assert ladder(Asked(MYRIAD)) is MYRIAD
+    assert ladder(Asked(SI)) is SI
+    assert ladder(ByFigure(korean=False)) is SI

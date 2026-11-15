@@ -1,18 +1,32 @@
 """The labels' named special cases, applied after the decisions in ``decide.py``.
 
 Each one came from a chart that came out wrong without it; the ``why`` says
-which. ``EDGES`` holds them all, grouped by the decision they follow
-(:data:`TEXT`, :data:`BARS`, :data:`INK`): keep each group's entries
-together and in order.
+which. Each decision settles its own registry, in order: the value text
+(:data:`TEXT_EDGES`), which bars get labels (:data:`BARS_EDGES`) and the
+ink (:data:`INK_EDGES`).
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any, cast
 
 from ..edgecase import EdgeCase
-from .model import Ink, InkFacts, LabelText, ValueFacts, prints_zero
+from .model import (
+    Edge,
+    Ink,
+    InkFacts,
+    LabelText,
+    NoTotals,
+    OwnInk,
+    Segment,
+    SeriesInk,
+    StackTotal,
+    TextInk,
+    TotalsOnly,
+    TotalsToo,
+    ValueFacts,
+    prints_zero,
+)
 from .stacks import BarsFacts, BarsPlan, Planned
 
 
@@ -20,8 +34,8 @@ from .stacks import BarsFacts, BarsPlan, Planned
 def _wants_plus(facts: ValueFacts, plan: LabelText) -> bool:
     """``sign="+"`` and a positive value that does not print as zero."""
     return (
-        facts.sign == "+"
-        and plan.lead == ""
+        facts.plus
+        and not plan.lead
         and plan.value > 0
         and not prints_zero(plan.value, plan.decimals)
     )
@@ -46,6 +60,13 @@ def _stack_labels(facts: BarsFacts, plan: BarsPlan) -> BarsPlan:
         padding |= pile.padding()
     stacks = [p.members for p in piles if p.stacked]
     stack_of = {i: k for k, members in enumerate(stacks) for i in members}
+    match facts.total:
+        case TotalsToo():
+            segments, totals = True, True
+        case TotalsOnly():
+            segments, totals = False, True
+        case NoTotals():
+            segments, totals = True, False
     labels: list[Planned] = []
     for label in plan.labels:
         if (label.run, label.index) in padding:
@@ -53,9 +74,9 @@ def _stack_labels(facts: BarsFacts, plan: BarsPlan) -> BarsPlan:
         k = stack_of.get(label.run)
         if k is None:
             labels.append(label)
-        elif facts.total != "only":
-            labels.append(replace(label, kind="segment", stack=k))
-    if facts.total is not False:
+        elif segments:
+            labels.append(replace(label, kind=Segment(), stack=k))
+    if totals:
         for k, members in enumerate(stacks):
             for index in range(len(facts.runs[members[0]].values)):
                 total = facts.total_at(members, index, k)
@@ -66,7 +87,11 @@ def _stack_labels(facts: BarsFacts, plan: BarsPlan) -> BarsPlan:
 
 # ------------------------------------------------------------ ink
 def _own_colour(facts: InkFacts) -> bool:
-    return facts.options.color is not None and not facts.options.series
+    match facts.options.color:
+        case OwnInk():
+            return True
+        case TextInk() | SeriesInk():
+            return False
 
 
 def _on_bar(facts: InkFacts, plan: Ink) -> bool:
@@ -78,14 +103,18 @@ def _readable(facts: InkFacts, plan: Ink) -> Ink:
 
 
 def _series_off_bar(facts: InkFacts, plan: Ink) -> bool:
-    return not facts.on_bar and facts.options.series and facts.kind != "total"
+    match facts.kind:
+        case StackTotal():
+            return False
+        case Edge() | Segment():
+            return not facts.on_bar and facts.options.series
 
 
 def _series(facts: InkFacts, plan: Ink) -> Ink:
     return facts.series_ink
 
 
-EDGES: tuple[EdgeCase[Any, Any], ...] = (
+TEXT_EDGES: tuple[EdgeCase[ValueFacts, LabelText], ...] = (
     EdgeCase(
         name="signed-steps",
         why="a waterfall's rises printed bare beside its falls (30 and "
@@ -94,6 +123,9 @@ EDGES: tuple[EdgeCase[Any, Any], ...] = (
         applies=_wants_plus,
         adjust=_plus,
     ),
+)
+
+BARS_EDGES: tuple[EdgeCase[BarsFacts, BarsPlan], ...] = (
     EdgeCase(
         name="stacked-segments-totals",
         why="stacked bars labelled each bar's end, not the segments and the "
@@ -102,6 +134,9 @@ EDGES: tuple[EdgeCase[Any, Any], ...] = (
         applies=_shares_positions,
         adjust=_stack_labels,
     ),
+)
+
+INK_EDGES: tuple[EdgeCase[InkFacts, Ink], ...] = (
     EdgeCase(
         name="inside-readable-ink",
         why="a label in the text colour vanished on a dark bar",
@@ -118,8 +153,3 @@ EDGES: tuple[EdgeCase[Any, Any], ...] = (
         adjust=_series,
     ),
 )
-
-
-TEXT = cast("tuple[EdgeCase[ValueFacts, LabelText], ...]", EDGES[0:1])
-BARS = cast("tuple[EdgeCase[BarsFacts, BarsPlan], ...]", EDGES[1:2])
-INK = cast("tuple[EdgeCase[InkFacts, Ink], ...]", EDGES[2:4])

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import numbers
 from collections.abc import Callable, Sequence
-from typing import Any, Literal
+from typing import Any
 
 import matplotlib.ticker as ticker
 import numpy as np
@@ -23,7 +23,17 @@ import numpy.typing as npt
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 
-from ..geometry import shared_axes
+from ..geometry import (
+    Letter,
+    Letters,
+    Which,
+    X,
+    Y,
+    axis_of,
+    parse_axes,
+    parse_which,
+    shared_axes,
+)
 from .apply import figure_ladder, prepare, remember_dates, thin_dates
 from .dates import CategoryDateFormatter, category_locator
 from .defaults import config
@@ -37,15 +47,25 @@ from .formatters import (
 )
 from .measure import config_digits, drawn_like_twin, settled_twin_spines
 from .model import (
-    LADDERS,
     MYRIAD_LOCALES,
     SI,
+    AffixedZero,
+    CurrencyPosition,
+    Digits,
+    ExactZero,
+    FollowFigure,
+    HAlign,
     Ladder,
+    LadderName,
     NumberStyle,
     PerTick,
     TickScale,
     Unit,
+    YearLocale,
     parse_digits,
+    parse_ladder_name,
+    prefixed,
+    unit_template,
 )
 from .text import number_text, recommend_tick_decimals, value_label_decimals
 
@@ -75,24 +95,19 @@ __all__ = [
     "value_label_decimals",
 ]
 
-AxisName = Literal["x", "y", "both"]
 # The fixed-decimal paths write each value alone.
 FIXED_TEXT = PerTick(separators=False)
-CURRENCY_TEXT = PerTick(zero="affixed")
-MYRIAD_TEXT = PerTick(zero="exact", compact=True)
+CURRENCY_TEXT = PerTick(zero=AffixedZero())
+MYRIAD_TEXT = PerTick(zero=ExactZero(), compact=True)
 
 
-def _axes(ax: Axes, axis: str) -> list[Axis]:
-    if axis not in ("x", "y", "both"):
-        raise ValueError(f"axis must be 'x', 'y' or 'both', got {axis!r}")
-    return [
-        a
-        for name, a in (("x", ax.xaxis), ("y", ax.yaxis))
-        if axis in (name, "both")
-    ]
+def _axes(ax: Axes, axis: object) -> list[Axis]:
+    return [axis_of(ax, which) for which in parse_axes(axis)]
 
 
-def _install(ax: Axes, axis: str, make: Callable[[], ticker.Formatter]) -> None:
+def _install(
+    ax: Axes, axis: object, make: Callable[[], ticker.Formatter]
+) -> None:
     for target in _axes(
         ax, axis
     ):  # each axis its own: the decision is per axis
@@ -101,7 +116,7 @@ def _install(ax: Axes, axis: str, make: Callable[[], ticker.Formatter]) -> None:
 
 def _numbers(
     ax: Axes,
-    axis: str,
+    axis: object,
     ladder: Ladder,
     unit: str,
     decimals: int | None,
@@ -109,16 +124,15 @@ def _numbers(
     currency: str = "",
 ) -> None:
     """One ladder; an integer ``decimals`` with ``unit="max"`` writes each tick alone."""
-    each = per_tick if decimals is not None and unit == "max" else None
     style = NumberStyle.parse(
-        ladder, unit, decimals=decimals, currency=currency, per_tick=each
-    )
+        ladder, unit, decimals=decimals, currency=currency
+    ).each_alone(per_tick)
     _install(ax, axis, lambda: AxisUnitFormatter(style))
 
 
 def format_axis_si(
     ax: Axes,
-    axis: AxisName = "y",
+    axis: Letters = "y",
     decimals: int | None = None,
     unit: str = "max",
 ) -> None:
@@ -135,7 +149,7 @@ def format_axis_si(
 
 
 def _one_unit(
-    ax: Axes, axis: str, factor: float, suffix: str, decimals: int | None
+    ax: Axes, axis: object, factor: float, suffix: str, decimals: int | None
 ) -> None:
     ladder = Ladder((Unit(factor, suffix),))
     each = FIXED_TEXT if decimals is not None else None
@@ -145,7 +159,7 @@ def _one_unit(
 
 def format_axis_millions(
     ax: Axes,
-    axis: AxisName = "y",
+    axis: Letters = "y",
     suffix: str = "M",
     decimals: int | None = None,
 ) -> None:
@@ -158,7 +172,7 @@ def format_axis_millions(
 
 def format_axis_billions(
     ax: Axes,
-    axis: AxisName = "y",
+    axis: Letters = "y",
     suffix: str = "B",
     decimals: int | None = None,
 ) -> None:
@@ -168,13 +182,13 @@ def format_axis_billions(
 
 def format_axis_currency(
     ax: Axes,
-    axis: AxisName = "y",
+    axis: Letters = "y",
     symbol: str = "$",
-    position: Literal["prefix", "suffix"] = "prefix",
+    position: CurrencyPosition = "prefix",
     decimals: int = 0,
 ) -> None:
     """Currency ticks with ``decimals`` places: ``-$1,500``, ``$0``, ``1,000€``."""
-    prefix = position == "prefix"
+    prefix = prefixed(position)
     ladder = Ladder((Unit(1.0, "" if prefix else symbol),))
     style = NumberStyle.parse(
         ladder,
@@ -188,7 +202,7 @@ def format_axis_currency(
 
 def format_axis_myriad(
     ax: Axes,
-    axis: AxisName = "y",
+    axis: Letters = "y",
     *,
     locale: str = "ko",
     decimals: int | None = None,
@@ -231,10 +245,7 @@ _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
 
 
 def format_axis_year(
-    ax: Axes,
-    axis: AxisName = "x",
-    locale: Literal["ko", "ja", "zh", "en"] = "ko",
-    digits: Literal[2, 4] = 2,
+    ax: Axes, axis: Letters = "x", locale: YearLocale = "ko", digits: Digits = 2
 ) -> None:
     """Year ticks with a locale suffix: ``25년`` (``digits=4``: ``2025년``).
 
@@ -264,7 +275,7 @@ def category_dates(
     ``datetime64`` array; a number, ``None`` or an unparsable string raises.
     """
     dtype = getattr(dates, "dtype", None)
-    if isinstance(dtype, np.dtype) and dtype.kind == "M":
+    if isinstance(dtype, np.dtype) and np.issubdtype(dtype, np.datetime64):  # pyright: ignore[reportUnknownArgumentType]
         values = list(np.asarray(dates).astype("datetime64[s]").ravel())
     else:
         values = list(np.asarray(dates, dtype=object).ravel())
@@ -290,9 +301,9 @@ def category_dates(
 def format_axis_dates(
     ax: Axes,
     dates: Sequence[Any] | Any,
-    axis: Literal["x", "y"] = "x",
+    axis: Letter = "x",
     *,
-    years: Literal[2, 4] | None = None,
+    years: Digits | None = None,
 ) -> None:
     """Label category positions with the dates they stand for.
 
@@ -305,28 +316,21 @@ def format_axis_dates(
         ax.bar(range(len(df)), df["sales"])
         dm.format_axis_dates(ax, df["month"])
     """
-    if axis not in ("x", "y"):
-        raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
+    which = parse_which(axis)
     count = config_digits() if years is None else parse_digits(years)
     parsed = category_dates(dates)
     formatter = CategoryDateFormatter(parsed, count)
-    target = ax.xaxis if axis == "x" else ax.yaxis
+    target = axis_of(ax, which)
     target.set_major_locator(category_locator(parsed, formatter.quarters))
     target.set_major_formatter(formatter)
 
 
-def _template(label: str) -> str:
-    if "{unit}" in label:
-        return label
-    return f"{label} ({{unit}})" if label.strip() else "({unit})"
-
-
 def axis_unit(
     ax: Axes,
-    axis: Literal["x", "y"] = "y",
+    axis: Letter = "y",
     *,
     label: str | None = None,
-    ladder: Literal["auto", "myriad", "finance", "si"] = "auto",
+    ladder: LadderName = "auto",
     scale: str = "max",
     decimals: int | None = None,
 ) -> LabelUnitFormatter:
@@ -346,9 +350,7 @@ def axis_unit(
     label you set later is yours and stays as you wrote it. Returns the
     installed formatter; its ``unit`` is the unit of the last draw.
     """
-    if axis not in ("x", "y"):
-        raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
-    target = ax.xaxis if axis == "x" else ax.yaxis
+    target = axis_of(ax, parse_which(axis))
     current = target.get_major_formatter()
     known = current.templates if isinstance(current, LabelUnitFormatter) else {}
     if label is None:
@@ -358,15 +360,12 @@ def axis_unit(
             and current.wrote.get(target) == label
         ):
             label = known.get(target, label)  # called again: keep the template
-    template = _template(label)
-    if ladder == "auto":
-        rungs = figure_ladder(ax.get_figure(root=True), template)
-    elif ladder in LADDERS:
-        rungs = LADDERS[ladder]
-    else:
-        raise ValueError(
-            f"ladder must be 'auto', 'myriad', 'finance' or 'si', got {ladder!r}"
-        )
+    template = unit_template(label)
+    match parse_ladder_name(ladder):
+        case FollowFigure():
+            rungs = figure_ladder(ax.get_figure(root=True), template)
+        case Ladder() as asked:
+            rungs = asked
     try:
         style = NumberStyle.parse(rungs, scale, decimals=decimals)
     except ValueError as error:
@@ -377,7 +376,7 @@ def axis_unit(
         if other in known:
             templates[other] = known[other]
         elif text.strip():
-            templates[other] = _template(text)
+            templates[other] = unit_template(text)
     formatter = LabelUnitFormatter(style, templates)
     if isinstance(current, LabelUnitFormatter):
         formatter.wrote.update(
@@ -395,26 +394,24 @@ def axis_unit(
 def _sharing(axis: Axis) -> list[Axis]:
     """The other axes sharing ``axis``'s ticker (``sharex`` / ``sharey``)."""
     ax = axis.axes
-    which = "x" if axis is ax.xaxis else "y"
+    which: Which = X() if axis is ax.xaxis else Y()
     axes: list[Axis] = [
-        m.xaxis if which == "x" else m.yaxis for m in shared_axes(ax, which)
+        axis_of(m, which) for m in shared_axes(ax, which.letter)
     ]
     return [a for a in axes if a is not axis and a.major is axis.major]
 
 
-def axis_unit_of(ax: Axes, axis: Literal["x", "y"] = "y") -> Unit | None:
+def axis_unit_of(ax: Axes, axis: Letter = "y") -> Unit | None:
     """The unit :func:`axis_unit` chose for this axis at the last draw, if any."""
-    if axis not in ("x", "y"):
-        raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
-    formatter = (ax.xaxis if axis == "x" else ax.yaxis).get_major_formatter()
+    formatter = axis_of(ax, parse_which(axis)).get_major_formatter()
     return formatter.unit if isinstance(formatter, LabelUnitFormatter) else None
 
 
 def rotate_tick_labels(
     ax: Axes,
-    axis: AxisName = "x",
+    axis: Letters = "x",
     rotation: float = 45,
-    ha: Literal["left", "center", "right"] | None = None,
+    ha: HAlign | None = None,
 ) -> None:
     """Turn the tick labels in place (the last resort for long names).
 

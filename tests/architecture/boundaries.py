@@ -87,6 +87,10 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.check", "dartwork_mpl.color"): (
         "the text-contrast rule judges ink against paper by WCAG contrast"
     ),
+    ("dartwork_mpl.check", "dartwork_mpl.labels"): (
+        "the panel-letter rules judge the letters label_axes placed, which "
+        "the labels slice records"
+    ),
     ("dartwork_mpl.labels", "dartwork_mpl.color"): (
         "a label on its bar, a series-coloured label and a line-end name "
         "take a readable ink"

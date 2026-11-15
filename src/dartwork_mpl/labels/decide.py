@@ -19,15 +19,19 @@ from .model import (
     Choice,
     Column,
     CrowdFacts,
+    Edge,
     Headroom,
     HeadroomFacts,
     Ink,
     InkFacts,
     LabelText,
     Letters,
+    OwnInk,
     PanelsFacts,
+    SeriesInk,
     Shown,
     Span,
+    TextInk,
     Tries,
     ValueFacts,
 )
@@ -49,7 +53,7 @@ def plain_labels(facts: BarsFacts) -> BarsPlan:
     """One label per drawn bar (finite value), containers in order."""
     return BarsPlan(
         tuple(
-            Planned(run, index, "edge", value)
+            Planned(run, index, Edge(), value)
             for run, bars in enumerate(facts.runs)
             for index, value in enumerate(bars.values)
             if math.isfinite(value)
@@ -126,9 +130,11 @@ def headroom(facts: HeadroomFacts) -> Headroom:
 # ------------------------------------------------------------ ink
 def ink(facts: InkFacts) -> Ink:
     """The call's colour when it gave one, else the preset text colour."""
-    if facts.options.color is not None and not facts.options.series:
-        return Ink(facts.options.color)
-    return Ink()
+    match facts.options.color:
+        case OwnInk(rgba=rgba):
+            return Ink(rgba)
+        case TextInk() | SeriesInk():
+            return Ink()
 
 
 # ------------------------------------------------------------ point labels

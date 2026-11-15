@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import string
+import weakref
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -11,15 +12,14 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
-from ..geometry import PANEL_LABELS_ATTR
 from ..style import fs
 from . import decide
 from .measure import drawn_renderer, panel, px_per_pt
-from .model import PanelsFacts
+from .model import FromPanel, PanelsFacts, parse_letter_x
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
-    from matplotlib.figure import Figure
+    from matplotlib.figure import Figure, SubFigure
 
 
 @dataclass(eq=False)
@@ -29,6 +29,24 @@ class LetterGroup:
 
     members: list[tuple[Axes, Annotation]]
     fixed_y: bool
+
+
+# The groups of letters ``label_axes`` placed, by root Figure.
+GROUPS: weakref.WeakKeyDictionary[Figure, list[LetterGroup]] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def panel_letters(fig: Figure | SubFigure) -> list[tuple[Axes, Annotation]]:
+    """The letters ``dm.label_axes`` placed on ``fig``'s root, each with its panel.
+
+    Only the automatic ones (``x="auto"``); a letter at a position the
+    caller gave is an ordinary text.
+    """
+    root = fig.get_figure(root=True)
+    return [
+        member for group in GROUPS.get(root, []) for member in group.members
+    ]
 
 
 def _letters(n: int) -> list[str]:
@@ -71,7 +89,7 @@ def _place_letters(group: LetterGroup, renderer: RendererBase) -> bool:
 def settle_panels(fig: Figure, renderer: RendererBase) -> bool:
     """``dm.label_axes`` letters from the panels as drawn now; whether one moved."""
     moved = False
-    for group in getattr(fig.get_figure(root=True), PANEL_LABELS_ATTR, []):
+    for group in GROUPS.get(fig.get_figure(root=True), []):
         moved = _place_letters(group, renderer) or moved
     return moved
 
@@ -102,10 +120,11 @@ def label_axes(
     )
     labels = _letters(len(axes)) if labels is None else labels
     size = fs(1) if fontsize is None else fontsize
-    if x != "auto":
+    left = parse_letter_x(x)
+    if not isinstance(left, FromPanel):
         return [
             ax.text(  # pyright: ignore[reportUnknownMemberType]
-                float(x),
+                left,
                 1.05 if y is None else y,
                 label,
                 transform=ax.transAxes,
@@ -142,9 +161,7 @@ def label_axes(
     if fig is None:
         return [t for _ax, t in members]
     group = LetterGroup(members, fixed_y=y is not None)
-    if not hasattr(fig, PANEL_LABELS_ATTR):
-        setattr(fig, PANEL_LABELS_ATTR, [])
-    getattr(fig, PANEL_LABELS_ATTR).append(group)
+    GROUPS.setdefault(fig, []).append(group)
     renderer = drawn_renderer(members[0][0])
     for _round in range(2):  # a row or column aligns on its placed letters
         if not _place_letters(group, renderer):

@@ -23,10 +23,6 @@ if TYPE_CHECKING:
     from matplotlib.legend import Legend
     from matplotlib.transforms import Bbox
 
-#: Where a figure keeps the groups of letters ``dm.label_axes`` placed
-#: (``labels`` writes them, ``check`` reads them).
-PANEL_LABELS_ATTR = "_dm_panel_label_groups"
-
 
 def figure_tree(fig: Figure | SubFigure) -> list[Figure | SubFigure]:
     """``fig``, then each of its SubFigures and theirs, depth first."""
