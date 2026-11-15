@@ -15,7 +15,8 @@ from matplotlib.text import Annotation, Text
 
 from . import decide
 from .measure import drawn_renderer, px_per_pt, readable_on
-from .model import AnnotateStyle, Column
+from .model import AnnotateStyle
+from .panels import Column
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase

@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from ..edgecase import EdgeCase
-from .model import (
+from .bar_options import (
     Edge,
     Ink,
     InkFacts,

@@ -14,6 +14,7 @@ from matplotlib.text import Annotation, Text
 
 from ..align import HAlign, VAlign
 from . import decide
+from .bar_geometry import Span
 from .given import PresetText
 from .measure import (
     drawn_renderer,
@@ -24,20 +25,14 @@ from .measure import (
     text_boxes,
 )
 from .model import (
-    Corner,
-    LinePlace,
     NoteStyle,
-    Side,
-    Span,
     TextStyle,
-    Tries,
-    Try,
-    corner_order,
     parse_corner,
     parse_line_side,
     parse_line_x,
     parse_side,
 )
+from .places import Corner, LinePlace, Side, Tries, Try, corner_order
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase

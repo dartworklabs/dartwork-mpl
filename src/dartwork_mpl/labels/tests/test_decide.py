@@ -5,32 +5,30 @@ from __future__ import annotations
 import pytest
 
 from dartwork_mpl.labels import decide
-from dartwork_mpl.labels.model import (
-    Center,
-    Column,
+from dartwork_mpl.labels.bar_geometry import (
     CrowdFacts,
-    Edge,
     HeadroomFacts,
+    Pixels,
+    Room,
+    Span,
+    Spot,
+)
+from dartwork_mpl.labels.bar_options import (
+    Center,
+    Edge,
     Higher,
     Inside,
     Lower,
     Outside,
-    Panel,
-    PanelsFacts,
-    Pixels,
-    Room,
     Segment,
-    Span,
-    Spot,
     StackTotal,
-    Title,
     TotalsToo,
-    Tries,
-    Try,
     ValueFacts,
-    parse_bar_options,
     placement,
 )
+from dartwork_mpl.labels.model import parse_bar_options
+from dartwork_mpl.labels.panels import Column, Panel, PanelsFacts, Title
+from dartwork_mpl.labels.places import Tries, Try
 from dartwork_mpl.labels.stacks import BarRun, BarsFacts
 
 

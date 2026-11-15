@@ -26,18 +26,7 @@ from ..edgecase import settle
 from ..geometry import canvas_renderer, same_position_axes
 from ..number import TickScale
 from . import decide, edges
-from .given import NumberText, PresetText, TickText
-from .measure import (
-    bar_end,
-    bar_run,
-    error_extent,
-    host_axes,
-    px_per_pt,
-    readable_ink,
-    series_ink,
-    stands_up,
-)
-from .model import (
+from .bar_options import (
     BarOptions,
     Call,
     Higher,
@@ -51,10 +40,20 @@ from .model import (
     TickLike,
     Toward,
     ValueFacts,
-    parse_bar_options,
     placement,
-    template_fields,
 )
+from .given import NumberText, PresetText, TickText
+from .measure import (
+    bar_end,
+    bar_run,
+    error_extent,
+    host_axes,
+    px_per_pt,
+    readable_ink,
+    series_ink,
+    stands_up,
+)
+from .model import parse_bar_options, template_fields
 from .stacks import BarsFacts
 
 if TYPE_CHECKING:

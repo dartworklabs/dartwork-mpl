@@ -165,6 +165,18 @@ DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.labels.model": (
         "parsing label_bars' keywords needs nothing outside it"
     ),
+    "dartwork_mpl.labels.bar_options": (
+        "a bar label's options, kinds and ink are types over their own values"
+    ),
+    "dartwork_mpl.labels.bar_geometry": (
+        "a bar label's spans, crowding and headroom are measured numbers alone"
+    ),
+    "dartwork_mpl.labels.places": (
+        "a short label's sides, corners and line places carry their own offsets"
+    ),
+    "dartwork_mpl.labels.panels": (
+        "panel letters and line-end columns are measured boxes alone"
+    ),
     "dartwork_mpl.style.decide": (
         "which layers apply and what a step is worth decide from presets alone"
     ),

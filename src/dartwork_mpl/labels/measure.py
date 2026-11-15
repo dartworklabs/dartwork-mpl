@@ -45,7 +45,9 @@ from ..geometry import (
     same_position_axes,
 )
 from ..projection import Curved, Rectilinear, ThreeD
-from .model import Edge, Ink, Panel, Segment, StackTotal, Title, Try
+from .bar_options import Edge, Ink, Segment, StackTotal
+from .panels import Panel, Title
+from .places import Try
 from .stacks import BarRun
 
 if TYPE_CHECKING:
@@ -56,7 +58,7 @@ if TYPE_CHECKING:
     from matplotlib.patches import Rectangle
     from matplotlib.typing import ColorType
 
-    from .model import Kind
+    from .bar_options import Kind
 
 FloatArray = np.ndarray
 

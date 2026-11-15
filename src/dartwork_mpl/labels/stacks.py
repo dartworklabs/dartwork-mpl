@@ -15,7 +15,7 @@ from typing import TypeAlias
 import numpy as np
 import numpy.typing as npt
 
-from .model import Kind, StackTotal, Total
+from .bar_options import Kind, StackTotal, Total
 
 FloatArray: TypeAlias = npt.NDArray[np.float64]
 # Relative slack for "the same position" and "starts at the running end":

@@ -17,18 +17,10 @@ import numpy as np
 from ..axis import Which, X, Y
 from ..geometry import axis_of, same_position_axes, shared_axes
 from . import decide
+from .bar_geometry import CrowdFacts, HeadroomFacts, Pixels, Room, Span, Spot
+from .bar_options import Rotate, Skip
 from .bars import OFFSET_PT, BarFamily, BarLabel, families_of, format_ticks_now
 from .measure import bar_centres, px_per_pt
-from .model import (
-    CrowdFacts,
-    HeadroomFacts,
-    Pixels,
-    Room,
-    Rotate,
-    Skip,
-    Span,
-    Spot,
-)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes

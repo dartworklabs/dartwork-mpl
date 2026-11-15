@@ -16,7 +16,9 @@ from ..geometry import record_panel_letters
 from . import decide
 from .given import PresetText
 from .measure import drawn_renderer, panel, px_per_pt
-from .model import AtLeft, FromPanel, LetterStyle, PanelsFacts, parse_letter_x
+from .model import LetterStyle, parse_letter_x
+from .panels import PanelsFacts
+from .places import AtLeft, FromPanel
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase

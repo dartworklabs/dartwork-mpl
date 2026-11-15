@@ -15,28 +15,21 @@ import math
 
 import numpy as np
 
-from .model import (
-    Choice,
-    Column,
-    CrowdFacts,
+from .bar_geometry import CrowdFacts, Headroom, HeadroomFacts, Shown, Span
+from .bar_options import (
     Edge,
-    Headroom,
-    HeadroomFacts,
     Higher,
     Ink,
     InkFacts,
     LabelText,
-    Letters,
     Lower,
     OwnInk,
-    PanelsFacts,
     SeriesInk,
-    Shown,
-    Span,
     TextInk,
-    Tries,
     ValueFacts,
 )
+from .panels import Column, Letters, PanelsFacts
+from .places import Choice, Tries
 from .stacks import BarsFacts, BarsPlan, Planned
 
 # Above the top decoration of a panel without a title, and between a letter

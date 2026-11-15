@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.labels import decide, edges
-from dartwork_mpl.labels.model import (
+from dartwork_mpl.labels.bar_options import (
     BarOptions,
     Edge,
     Ink,
