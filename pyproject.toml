@@ -151,6 +151,8 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "--import-mode=importlib",
+    "-p",
+    "tests.fixtures",
 ]
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
