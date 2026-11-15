@@ -41,14 +41,13 @@ def settle(
     legend above its Axes. Returns whether anything moved (the caller
     redraws before measuring).
     """
-    from ..annotation import bar_values_past_limits, settle_legends
+    from ..annotation import settle_legends
 
     moved = settle_legends(fig, renderer, axes)
     for ax in fig.axes:
         legend = ax.get_legend()
         if legend is not None and _anchored_side(legend) is not None:
-            values = bar_values_past_limits(ax, renderer)
-            if reanchor_outside(legend, ax, renderer, values):
+            if reanchor_outside(legend, ax, renderer):
                 moved = True
     for ax in fig.axes:
         if _lift_titles_over_legends(ax, renderer):

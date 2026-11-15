@@ -486,40 +486,6 @@ def _save_set_decimal_dm(images_dir: Path) -> Path:
     return path
 
 
-def _save_arrow_axis_example(images_dir: Path) -> Path:
-    """Showcase dm.arrow_axis() conceptually."""
-    np.random.seed(42)
-    dm.style.use("scientific")
-
-    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "square"))
-
-    x = np.random.rand(20)
-    y = x + np.random.randn(20) * 0.2
-    ax.scatter(x, y, color="dc.teal2", alpha=0.7, edgecolors="white", s=60)
-
-    # Hide default spines and ticks
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    dm.arrow_axis(ax, direction="x", label="Risk", color="gray", offset=-0.02)
-    dm.arrow_axis(
-        ax, direction="y", label="Expected Return", color="gray", pad=0.03
-    )
-
-    dm.simple_layout(fig)
-    path = images_dir / "arrow_axis_example.svg"
-    try:
-        _save_svg(fig, path, bbox_inches="tight")
-    except Exception as e:
-        print(f"Warning: arrow_axis failed {e}")
-    plt.close(fig)
-    return path
-
-
 # ── colors.md ──────────────────────────────────────────────────────────
 
 
@@ -680,7 +646,6 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("label_axes_dm", _save_label_axes_dm),
         ("set_decimal_vanilla", _save_set_decimal_vanilla),
         ("set_decimal_dm", _save_set_decimal_dm),
-        ("arrow_axis_example", _save_arrow_axis_example),
         ("validation_example", _save_validation_example),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),

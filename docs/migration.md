@@ -27,7 +27,7 @@ or later. Until then each name is the owner's own object
 
 | Names | Import from |
 |---|---|
-| `arrow_axis`, `label_axes`, `make_offset` | `dartwork_mpl.annotation` |
+| `label_axes` | `dartwork_mpl.labels` |
 | `copy_prompt`, `get_prompt`, `list_prompts`, `prompt_path` | `dartwork_mpl.prompt` |
 | `fs`, `fw`, `lw` | `dartwork_mpl.scale` |
 | `get_bounding_box`, `simple_layout` | `dartwork_mpl.layout` |

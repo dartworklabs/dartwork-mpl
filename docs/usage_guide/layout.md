@@ -572,10 +572,7 @@ requested margin from each figure edge. This means:
 | `place_legend(ax)`            | Puts the legend inside where it covers no data, else outside on the side that costs the plot least; one legend for a twin pair |
 | `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels, names wrapped only to fit; `simple_layout` keeps titles above it |
 | `figure_legend(fig)`          | One legend for every panel, outside the panels (above, or right when clearly cheaper); removes the panel legends it replaces |
-| `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
-| `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick label decimals with a dynamic formatter; locator and limits stay |
-| `make_offset(x, y, fig)`      | Point-unit offset transform (Figure DPI) for precise text positioning |
 | `get_bounding_box(boxes)`     | Merges multiple axes bounding boxes into one                  |
 
 ## Annotation & Formatting
@@ -758,7 +755,6 @@ dm.annotate_corner(ax, "Screened subset", loc="upper left")
 ax.axhline(baseline, lw=0.5, ls=":")
 dm.label_hline(ax, baseline, "Reference", x="auto")
 dm.place_legend(ax)
-dm.wrap_axis_label(ax, axis="y")
 ```
 
 ### Value labels on bars (`label_bars`)
@@ -793,11 +789,10 @@ bars vertical. Each alternative is one keyword:
 |---|---|
 | labels inside the bar ends, at the middle, beyond the end | `where="inside"`, `"center"`, `"outside"` (default `"auto"`: beyond a plain bar's end, at a segment's middle) |
 | only the stacks' totals, or no totals | `total="only"`, `total=False` (default `"auto"`: segments and totals) |
-| crowded labels: every other one hidden, or inside the bars | `crowded="skip"`, `crowded="inside"` (default `"rotate"`) |
+| crowded labels: every other one hidden | `crowded="skip"` (default `"rotate"`) |
 | a fixed number of decimals | `decimals=1` |
 | a unit or another number format | `fmt="{} GWh"`, `fmt="{:.2f}"`, or a callable |
 | a plus on the rises (waterfall steps, changes) | `sign="+"`: `+30`, `−15`, `+$800` (default `"-"`: only negatives carry a sign) |
-| another size | `size=dm.fs(0)` |
 | another colour; the bar's colour for labels off their bar | `color="dc.gray7"`; `color="series"` (labels on a bar and totals keep theirs) |
 
 A label asked inside its bar stays there only while the bar holds it, as
@@ -980,15 +975,6 @@ dm.simple_layout(fig)
 assert fig.legends == [legend] and axs[0, 0].get_legend() is None
 plt.close(fig)
 ```
-
-### Bidirectional arrow axes (`arrow_axis`)
-
-For conceptual or qualitative plots (like "Risk vs Return"), drawing bidirectional label axes manually is surprisingly difficult in matplotlib. `dm.arrow_axis()` handles the positioning, offsets, and arrows automatically.
-
-:::{figure} images/arrow_axis_example.svg
-:alt: Arrow axis example showing Risk vs Expected Return
-:width: 100%
-:::
 
 ## Typography
 

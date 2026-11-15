@@ -10,13 +10,9 @@
   "src/dartwork_mpl/_colors/verify/_comparison.py": 1849,
   "src/dartwork_mpl/_colors/verify/_gates.py": 1263,
   "src/dartwork_mpl/_compat.py": 776,
-  "src/dartwork_mpl/_figure_geometry/__init__.py": 1502,
-  "src/dartwork_mpl/annotation/_bar_label_settle.py": 1088,
-  "src/dartwork_mpl/annotation/_bar_labels.py": 860,
+  "src/dartwork_mpl/_figure_geometry/__init__.py": 1384,
   "src/dartwork_mpl/annotation/_legend_fit.py": 515,
   "src/dartwork_mpl/annotation/_legend_outside.py": 592,
-  "src/dartwork_mpl/annotation/_panel_labels.py": 597,
-  "src/dartwork_mpl/annotation/_point_labels.py": 871,
   "src/dartwork_mpl/figure_review/_summary.py": 602,
   "src/dartwork_mpl/font/__init__.py": 842,
   "src/dartwork_mpl/formatting/__init__.py": 623,
@@ -48,7 +44,6 @@
   "_colors/construction": 3025,
   "_colors/model": 2536,
   "_colors/verify": 3227,
-  "annotation": 8271,
   "formatting": 4909,
   "layout": 4020,
   "mcp": 11140,
@@ -63,7 +58,7 @@
   "_compat": 1,
   "_figure_geometry": 3,
   "_rc": 1,
-  "annotation": 22,
+  "annotation": 10,
   "diagnostics": 1,
   "figure_review": 2,
   "formatting": 9,
@@ -82,7 +77,7 @@
   "_rc"
  ],
  "R4_cycles": [
-  "pkg: dartwork_mpl, dartwork_mpl.annotation, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.helpers, dartwork_mpl.lint, dartwork_mpl.validate, dartwork_mpl.validate._checks",
+  "pkg: dartwork_mpl, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.helpers, dartwork_mpl.lint, dartwork_mpl.validate, dartwork_mpl.validate._checks",
   "pkg: dartwork_mpl._colors, dartwork_mpl._colors.catalog, dartwork_mpl._colors.construction, dartwork_mpl._colors.families_api, dartwork_mpl._colors.registry, dartwork_mpl._colors.verify"
  ],
  "R4_lazy_cycle_edges": {
@@ -94,7 +89,7 @@
  ],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 165
+  "modules": 170
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_colors/_compatibility_metrics.py::_global_extrema": 101,
@@ -121,15 +116,8 @@
   "src/dartwork_mpl/_colors/verify/_gates.py::check_all": 101,
   "src/dartwork_mpl/_colors/verify/_gates.py::evaluate_quality_metrics": 96,
   "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 86,
-  "src/dartwork_mpl/annotation/_axis_labels.py::arrow_axis": 156,
-  "src/dartwork_mpl/annotation/_bar_labels.py::label_bars": 261,
   "src/dartwork_mpl/annotation/_figure_legend.py::figure_legend": 93,
-  "src/dartwork_mpl/annotation/_panel_labels.py::_place_group": 134,
-  "src/dartwork_mpl/annotation/_panel_labels.py::label_axes": 153,
   "src/dartwork_mpl/annotation/_place_legend.py::place_legend": 97,
-  "src/dartwork_mpl/annotation/_point_labels.py::annotate_corner": 84,
-  "src/dartwork_mpl/annotation/_point_labels.py::annotate_value": 138,
-  "src/dartwork_mpl/annotation/_point_labels.py::label_hline": 85,
   "src/dartwork_mpl/diagnostics/_fonts.py::plot_fonts": 232,
   "src/dartwork_mpl/figure_review/__init__.py::review": 90,
   "src/dartwork_mpl/formatting/_label_unit.py::axis_unit": 135,

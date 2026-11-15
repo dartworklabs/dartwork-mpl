@@ -1,6 +1,6 @@
 """One rule for what an artist draws: ``dm.place_legend`` and the validate checks share it.
 
-The placer (``annotation._legend_fit``, ``annotation._bar_label_settle``) and
+The placer (``annotation._legend_fit``) and
 the checks (``validate._checks.legend_on_data``, ``value_label_on_data``) used
 to carry their own copies of how a collection's paths are placed, which of
 its items draw ink and where a clip lets an artist draw. They now call the
@@ -26,7 +26,7 @@ from matplotlib.transforms import Bbox
 
 import dartwork_mpl as dm
 from dartwork_mpl import _figure_geometry as fg
-from dartwork_mpl.annotation import _bar_label_settle, _legend_fit
+from dartwork_mpl.annotation import _legend_fit
 from dartwork_mpl.validate._checks import legend_on_data, value_label_on_data
 
 
@@ -61,7 +61,6 @@ def _close():
         (value_label_on_data, "_clip_region", fg.clip_region),
         (value_label_on_data, "_clip_path", fg.clip_path_px),
         (value_label_on_data, "_within_path", fg.within_clip_path),
-        (_bar_label_settle, "clip_region", fg.clip_region),
         # What a line, a patch, a text inks; markers and points as discs.
         (_legend_fit, "line_draws_stroke", fg.line_draws_stroke),
         (_legend_fit, "line_draws_markers", fg.line_draws_markers),
@@ -93,7 +92,6 @@ def test_the_placer_and_the_checks_hold_the_shared_function(
         (legend_on_data, "_drawn_paths"),
         (legend_on_data, "_drawn_outlines"),
         (legend_on_data, "_shown"),
-        (_bar_label_settle, "_clip_extents"),
         (legend_on_data, "_line_inks"),
         (legend_on_data, "_patch_inks"),
         (legend_on_data, "_text_inks"),

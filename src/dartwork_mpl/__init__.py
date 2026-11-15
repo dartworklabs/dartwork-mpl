@@ -62,20 +62,20 @@ from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
 from .annotation import (
+    figure_legend,
+    optimize_legend,
+    place_legend,
+)
+
+# Value labels, panel letters, notes
+from .labels import (
     add_note,
     annotate_corner,
     annotate_value,
-    arrow_axis,
-    figure_legend,
     label_axes,
     label_bars,
     label_hline,
     label_line_ends,
-    make_offset,
-    optimize_legend,
-    place_legend,
-    wrap_axis_label,
-    wrap_axis_labels,
 )
 
 # Config (process-wide behaviour-toggle defaults)
@@ -269,7 +269,6 @@ __all__ = [  # noqa: RUF022
     "list_aspect_tokens",
     "tokens",
     # Point-unit offsets
-    "make_offset",
     # Formatting
     "set_decimal",
     "format_axis_millions",
@@ -296,9 +295,6 @@ __all__ = [  # noqa: RUF022
     "label_line_ends",
     "place_legend",
     "figure_legend",
-    "wrap_axis_label",
-    "wrap_axis_labels",
-    "arrow_axis",
     # Prompt utilities
     "prompt_path",
     "get_prompt",

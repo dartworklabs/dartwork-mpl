@@ -4,15 +4,14 @@ Layout Utilities
 Utilities for tightening layouts without juggling ``plt.subplots_adjust``.
 ``simple_layout`` measures visible artists and arithmetically places GridSpec
 edges so axes content lands at the requested distance from the figure bounds;
-``make_offset`` converts point offsets to a transform through the Figure DPI; ``label_axes`` adds
+``label_axes`` adds
 standardized panel labels; ``annotate_value``, ``annotate_corner``, and
 ``label_hline`` create compact point-offset labels; ``label_bars`` writes each
 bar's value on it, printed like the axis ticks; ``place_legend`` puts an axes
 legend inside where it covers no data, else outside on the side that costs the
 plot least, or outside the side named (``loc="above"``, ``"below"``,
 ``"right"``, ``"left"``), and merges a twin pair's legends into one;
-``figure_legend`` puts one legend for every panel outside the panels; ``arrow_axis``
-draws annotated bidirectional arrows; and ``wrap_axis_label`` /
+``figure_legend`` puts one legend for every panel outside the panels; and
 ``set_decimal``/``get_bounding_box`` provide quick helpers when formatting axes.
 
 Example
@@ -36,12 +35,8 @@ Example
    # Decimal formatting
    dm.set_decimal(axes[0], xn=2, yn=1)
 
-   # Arrow annotations
-   dm.arrow_axis(axes[1], 'x', 'Installation cost')
-   dm.arrow_axis(axes[2], 'y', 'Information richness')
-
 .. figure:: images/layout_example.svg
-   :alt: 3-panel layout with label_axes, arrow_axis, and set_decimal
+   :alt: 3-panel layout with label_axes and set_decimal
    :width: 100%
 
 API
@@ -62,7 +57,6 @@ Layout Functions
 Annotation Functions
 ^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: dartwork_mpl.make_offset
 .. autofunction:: dartwork_mpl.label_axes
 .. autofunction:: dartwork_mpl.annotate_value
 .. autofunction:: dartwork_mpl.annotate_corner
@@ -71,9 +65,6 @@ Annotation Functions
 .. autofunction:: dartwork_mpl.label_line_ends
 .. autofunction:: dartwork_mpl.place_legend
 .. autofunction:: dartwork_mpl.figure_legend
-.. autofunction:: dartwork_mpl.wrap_axis_label
-.. autofunction:: dartwork_mpl.wrap_axis_labels
-.. autofunction:: dartwork_mpl.arrow_axis
 
 Value Labels on Bars
 ^^^^^^^^^^^^^^^^^^^^

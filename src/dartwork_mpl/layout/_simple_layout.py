@@ -282,7 +282,7 @@ def simple_layout(
     kept, a view set with ``set_ybound`` included; a label that does not
     fit sits outside the axes and the margins make room for it. The rules
     are in the docstring of
-    ``dartwork_mpl.annotation._bar_label_settle``.
+    ``dartwork_mpl.labels``.
 
     Examples
     --------

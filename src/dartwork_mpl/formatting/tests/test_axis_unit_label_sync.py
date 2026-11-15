@@ -10,7 +10,7 @@ every label of the group of axes sharing the formatted axis:
       text, and it is the current tick unit (never stale, never doubled);
 (ii)  when the ticks are scaled, at least one visible label carries it;
 (iii) the user's text outside the unit token is kept verbatim (modulo the
-      line breaks ``dm.wrap_axis_labels`` puts in);
+      line breaks the layout puts in);
 (iv)  an emptied label stays empty unless it is the only place left to show
       the unit (ii): then the unit goes to an outer visible label.
 
@@ -344,11 +344,6 @@ def _empty(s: State, target: str) -> None:
     s.own_text(ax, "")
 
 
-def _wrap(s: State, _target: str) -> None:
-    s.fig.canvas.draw()
-    dm.wrap_axis_labels(s.fig)
-
-
 def _label_outer(s: State, _target: str) -> None:
     s.fig.canvas.draw()
     before = {s.axis(a): s.axis(a).label.get_text() for a in s.axes}
@@ -367,13 +362,12 @@ OPS: dict[str, Callable[[State, str], None]] = {
     "edit-unit": _edit_unit,
     "edit-plain": _edit_plain,
     "empty": _empty,
-    "wrap": _wrap,
     "relayout": _layout,
     "label-outer": _label_outer,
 }
 SEQUENCES = [
     ("layout", "zoom", "edit-unit:installer", "zoom", "relayout"),
-    ("layout", "edit-plain:sibling", "zoom", "wrap", "zoom", "relayout"),
+    ("layout", "edit-plain:sibling", "zoom", "zoom", "relayout"),
     (
         "layout",
         "empty:installer",
@@ -385,7 +379,6 @@ SEQUENCES = [
     ("layout", "label-outer", "relayout", "zoom", "edit-unit:sibling", "draw"),
     (
         "layout",
-        "wrap",
         "edit-unit:installer",
         "zoom",
         "empty:sibling",

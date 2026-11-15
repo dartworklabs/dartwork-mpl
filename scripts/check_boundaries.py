@@ -233,18 +233,11 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl._colors.verify", "dartwork_mpl._colors._ssot"): (
         "the gates read the quality baseline the validated authority pins"
     ),
-    ("dartwork_mpl.annotation", "dartwork_mpl._colors.contrast"): (
-        "line-end and bar value labels keep their series' colour at a "
-        "readable contrast"
-    ),
     ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
         "legend edge colours require registered shipped colours"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl.config"): (
         "place_legend reads the project-wide legend fallback and wrap defaults"
-    ),
-    ("dartwork_mpl.annotation", "dartwork_mpl.formatting"): (
-        "bar value labels print in their axis's tick unit, like the ticks"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
@@ -283,8 +276,15 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.helpers", "dartwork_mpl.annotation"): (
         "historical legend imports re-export annotation's callable"
     ),
-    ("dartwork_mpl.labels", "dartwork_mpl.annotation"): (
-        "the layout's label hooks delegate to the label code until labels is rebuilt"
+    ("dartwork_mpl.labels", "dartwork_mpl._colors.contrast"): (
+        "a label on its bar, a series-coloured label and a line-end name "
+        "take a readable ink"
+    ),
+    ("dartwork_mpl.labels", "dartwork_mpl.formatting"): (
+        "bar value labels print in their axis's tick unit, like the ticks"
+    ),
+    ("dartwork_mpl.labels", "dartwork_mpl.scale"): (
+        "label text is sized and weighted relative to the active preset"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.labels"): (
         "bar labels, line-end names and panel letters settle at the size the "
@@ -474,6 +474,12 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.size.model": (
         "parsing user input into size types needs nothing outside it"
+    ),
+    "dartwork_mpl.labels.decide": (
+        "label placement is decided from measured boxes and parsed options alone"
+    ),
+    "dartwork_mpl.labels.model": (
+        "parsing label_bars' keywords needs nothing outside it"
     ),
     "dartwork_mpl.save.decide": (
         "which files to write is decided from the parsed request alone"

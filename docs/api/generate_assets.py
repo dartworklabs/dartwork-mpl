@@ -67,7 +67,7 @@ def _save_svg(fig, path: Path, **savefig_kwargs) -> Path:
 
 
 def _save_layout_example(images_dir: Path) -> Path:
-    """API layout: 2×2-panel with label_axes, arrow_axis, set_decimal."""
+    """API layout: 2×2-panel with label_axes, set_decimal."""
     np.random.seed(42)
     dm.style.use("scientific")
 
@@ -88,9 +88,6 @@ def _save_layout_example(images_dir: Path) -> Path:
 
     dm.label_axes([ax1, ax2, ax3])
     dm.set_decimal(ax1, xn=2, yn=1)
-    dm.arrow_axis(ax2, "x", "Installation cost")
-    dm.arrow_axis(ax3, "y", "Information richness")
-    # Lay out after every label exists, so the arrow labels get room too.
     dm.simple_layout(fig, gs=gs)
 
     path = images_dir / "layout_example.svg"

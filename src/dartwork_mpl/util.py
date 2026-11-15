@@ -18,16 +18,14 @@ import warnings
 from typing import Any
 
 _OWNERS = {
-    "arrow_axis": "dartwork_mpl.annotation",
     "copy_prompt": "dartwork_mpl.prompt",
     "fs": "dartwork_mpl.scale",
     "fw": "dartwork_mpl.scale",
     "get_bounding_box": "dartwork_mpl.layout",
     "get_prompt": "dartwork_mpl.prompt",
-    "label_axes": "dartwork_mpl.annotation",
+    "label_axes": "dartwork_mpl.labels",
     "list_prompts": "dartwork_mpl.prompt",
     "lw": "dartwork_mpl.scale",
-    "make_offset": "dartwork_mpl.annotation",
     "mix_colors": "dartwork_mpl",
     "prompt_path": "dartwork_mpl.prompt",
     "pseudo_alpha": "dartwork_mpl",
@@ -39,7 +37,6 @@ _OWNERS = {
 
 # Names bound nowhere in this module: __getattr__ supplies them.
 __all__ = [  # noqa: F822
-    "arrow_axis",
     "copy_prompt",
     "fs",
     "fw",
@@ -48,7 +45,6 @@ __all__ = [  # noqa: F822
     "label_axes",
     "list_prompts",
     "lw",
-    "make_offset",
     "mix_colors",
     "prompt_path",
     "pseudo_alpha",
