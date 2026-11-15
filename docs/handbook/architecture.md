@@ -19,7 +19,7 @@ orphan: true
 | `color` | 색 이름과 값, 팔레트, 대비 |
 | `font` | 번들 폰트 등록과 선택 |
 | `layout` | 내용에 맞춘 결정적 여백(`simple_layout`) |
-| `ticks` | 만·억 단위 눈금(`format_axis_myriad`)과, 값 라벨이 따라 쓸 축의 숫자 표기. 그 밖의 눈금 글자는 preset 토큰(`axes.formatter.*`, `date.autoformatter.*`)과 matplotlib이 쓴다 |
+| `ticks` | 큰 수의 기본 표기(천 단위 쉼표, 백만부터 `1M`, 한국어 preset에서는 `100만`), 만·억 단위 눈금(`format_axis_myriad`), 값 라벨이 따라 쓸 축의 숫자 표기. 날짜와 그 밖의 눈금 글자는 preset 토큰(`date.autoformatter.*`)과 matplotlib이 쓴다 |
 | `labels` | 값 라벨, 패널 문자, 주석 |
 | `legend` | 범례 배치 |
 | `check` | 그려진 그림의 결함 찾기(`dm.check`). 그림을 바꾸지 않는다 |
@@ -33,9 +33,9 @@ orphan: true
 | `compose/style.py` | preset의 locale에 맞춘 `color`의 역할 색을 `style`에 넣는다 | 없음(루트가 `join()`을 한 번 부른다) |
 | `compose/size.py` | `style`의 활성 preset 이름과 레이어 읽기 | `dm.figsize_for` |
 | `compose/labels.py` | `style`의 `fs`·`fw`, `ticks`의 눈금 단위와 숫자 표기 | `dm.label_bars`, `dm.annotate_value`, `dm.label_axes`, `dm.add_note` |
-| `compose/layout.py` | `labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
+| `compose/layout.py` | `ticks`의 큰 수 표기(`style`의 preset locale에 맞춘 단위), `labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
 
-`layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자를 자리 잡게 한 뒤 여백을 잰다. 픽셀은 이 순서에 달려 있다. 눈금 글자는 `layout`이 바꾸지 않는다. 사용자가 정한 formatter 아니면 preset 토큰이 쓴 그대로 잰다.
+`layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자를 자리 잡게 한 뒤 여백을 잰다. 픽셀은 이 순서에 달려 있다. 재기 전에 한 번, 아무도 포맷을 정하지 않은 수 축에 큰 수 표기를 건다. 데이터를 읽어 축의 종류를 추측하지 않는다. 판단은 눈금 값이 1,000에 닿는지 하나다.
 
 `dm.style`은 slice `dartwork_mpl.style` 그 자체다. `style`은 preset을 적용한 뒤 그 locale을 넘겨줄 함수 하나(`Tint`)를 자리에 갖고 있고, `compose/style.py`의 `join()`이 그 자리에 `color`의 역할 색 바인딩을 넣는다. 루트가 import될 때 한 번 부른다. 폰트는 루트가 import 시점에 등록하므로 `style`이 다시 부르지 않는다.
 

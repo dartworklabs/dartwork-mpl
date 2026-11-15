@@ -9,10 +9,13 @@ from __future__ import annotations
 
 from typing import assert_never
 
+from ..vocab import Which, X, Y
 from .model import (
+    PLAIN,
     AxisText,
     Cost,
     Decimals,
+    DefaultUnit,
     EachAlone,
     FixedUnit,
     Ladder,
@@ -25,6 +28,26 @@ from .model import (
 from .text import fewest_exact_decimals, number_text
 
 TOLERANCE = 1e-9  # a 9,999.9999999 tick still reads 1만
+SEPARATORS_FROM = 1_000.0
+UNIT_FROM = 1_000_000.0
+MOST_UNIT_DECIMALS = 2  # past this a default axis keeps plain numbers
+YEAR_LIKE = (1_000.0, 2_999.0)  # ticks across all here read 2024, not 2,024
+
+
+def reads_large(ticks: TickValues, which: Which) -> bool:
+    """Whether an axis nobody formatted takes the preset's numbers: its
+    ticks reach 1,000, and are not years along x."""
+    if not ticks.values or max(abs(v) for v in ticks.values) < SEPARATORS_FROM:
+        return False
+    low, high = YEAR_LIKE
+    years = all(low <= v <= high for v in ticks.values)
+    match which:
+        case X():
+            return not years
+        case Y():
+            return True
+        case _:
+            assert_never(which)
 
 
 def fewest_decimals(ticks: TickValues, unit: Unit) -> Decimals:
@@ -70,6 +93,13 @@ def axis_unit(facts: TextFacts) -> Unit:
             return min(style.ladder.rungs, key=lambda rung: _cost(facts, rung))
         case MaxUnit() | EachAlone():
             return max_unit(facts.ticks, style.ladder)
+        case DefaultUnit():
+            unit = max_unit(facts.ticks, style.ladder)
+            top = max(abs(v) for v in facts.ticks.values)
+            crowded = fewest_decimals(facts.ticks, unit) > MOST_UNIT_DECIMALS
+            if top < UNIT_FROM * (1 - TOLERANCE) or crowded:
+                return PLAIN
+            return unit
         case _:
             assert_never(style.rule)
 

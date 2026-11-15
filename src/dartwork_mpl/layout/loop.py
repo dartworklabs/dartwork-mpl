@@ -114,6 +114,7 @@ def run(
     """Lay out ``fig`` on ``gs`` from the figure as its author left it."""
     apply.restore(fig)
     start = apply.grid_edges(gs)
+    given.prepare_ticks(fig)
     fitter = Fitter(fig, gs, margins, given)
     step = fitter.fit()
     if fit_text and step is not None and step.converged:

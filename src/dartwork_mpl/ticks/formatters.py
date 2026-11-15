@@ -18,6 +18,7 @@ from ..vocab import TickScale
 from . import decide
 from .model import (
     AxisText,
+    DefaultUnit,
     EachAlone,
     FixedUnit,
     MaxUnit,
@@ -88,7 +89,7 @@ class AxisUnitFormatter(ticker.Formatter):
         match style.rule:
             case EachAlone():
                 return alone_text(value, style)
-            case MaxUnit() | WholeUnit() | FixedUnit():
+            case MaxUnit() | WholeUnit() | FixedUnit() | DefaultUnit():
                 pass
         if not math.isfinite(value):
             return str(value)
@@ -108,7 +109,7 @@ class AxisUnitFormatter(ticker.Formatter):
         match self.style.rule:
             case EachAlone():
                 return TickScale()
-            case MaxUnit() | WholeUnit() | FixedUnit():
+            case MaxUnit() | WholeUnit() | FixedUnit() | DefaultUnit():
                 unit, _ = self._decision(float(value))
                 return TickScale(unit.factor, self.style.currency, unit.label)
 

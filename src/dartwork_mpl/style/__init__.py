@@ -14,6 +14,7 @@ from contextlib import AbstractContextManager
 from types import MappingProxyType
 
 from ..edgecase import settle
+from ..vocab import Locale
 from . import apply, decide, measure
 from .apply import Tint
 from .edges import EDGES
@@ -23,6 +24,7 @@ from .model import SLIDE_SCALE, Active, Points, Steps
 __all__ = [
     "SLIDE_SCALE",
     "Tint",
+    "active_locale",
     "active_presets",
     "context",
     "fs",
@@ -73,6 +75,11 @@ def context(
 ) -> AbstractContextManager[None]:
     """:func:`use` for one ``with`` block; everything is restored after."""
     return apply.context(preset, rc)
+
+
+def active_locale() -> Locale:
+    """Whose convention the active preset follows (the default: none applied)."""
+    return apply.STATE[0].locale
 
 
 def active_presets() -> tuple[str, ...]:

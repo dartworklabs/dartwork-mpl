@@ -34,7 +34,8 @@ plt.close(fig)
 - Do not set `font.family` by hand; the preset's family list holds the
   bundled math and symbol fallbacks.
 - Korean numbers: `dm.format_axis_myriad(ax)` counts the ticks in 만/억/조
-  (`50만 … 250만`); an axis you do not format prints whole numbers.
+  (`50만 … 250만`); a Korean (`-kr`) preset already does from 1,000,000 on
+  an axis you do not format.
 
 ## Other languages
 

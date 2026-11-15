@@ -87,7 +87,7 @@ A figure is finished when you have looked at it, not when the script ran.
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
 | 만/억 on the ticks | `dm.format_axis_myriad(ax)` |
-| 1.5M, 12k on the ticks | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter())` |
+| 12k on the ticks (from a million the axis prints `1M` by itself) | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter())` |
 
 Call them before `dm.simple_layout`, which makes room for what they add.
 

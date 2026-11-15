@@ -10,7 +10,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import NewType, TypeAlias
+from typing import NewType, TypeAlias, assert_never
+
+from ..vocab import DefaultLocale, KoreanLocale, Locale
 
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
@@ -47,8 +49,23 @@ class Ladder:
         return ", ".join(repr(r.label) for r in self.rungs)
 
 
+SI = Ladder.of((1e3, "k"), (1e6, "M"), (1e9, "G"), (1e12, "T"))
+MYRIAD = Ladder.of((1e4, "만"), (1e8, "억"), (1e12, "조"), (1e16, "경"))
+
+
+def preset_ladder(locale: Locale) -> Ladder:
+    """The units a preset of ``locale`` counts large numbers in."""
+    match locale:
+        case KoreanLocale():
+            return MYRIAD
+        case DefaultLocale():
+            return SI
+        case _:
+            assert_never(locale)
+
+
 MYRIAD_LOCALES = {
-    "ko": Ladder.of((1e4, "만"), (1e8, "억"), (1e12, "조"), (1e16, "경")),
+    "ko": MYRIAD,
     "zh": Ladder.of((1e4, "万"), (1e8, "亿"), (1e12, "兆"), (1e16, "京")),
     "ja": Ladder.of((1e4, "万"), (1e8, "億"), (1e12, "兆"), (1e16, "京")),
 }
@@ -88,7 +105,14 @@ class EachAlone:
     (``7,500``)."""
 
 
-UnitRule: TypeAlias = MaxUnit | WholeUnit | FixedUnit | EachAlone
+@dataclass(frozen=True)
+class DefaultUnit:
+    """The preset's numbers on an axis nobody formatted: plain below one
+    million, the largest tick's unit from there unless that needs over two
+    decimals."""
+
+
+UnitRule: TypeAlias = MaxUnit | WholeUnit | FixedUnit | EachAlone | DefaultUnit
 """How an axis picks its unit from a ladder."""
 
 
@@ -107,7 +131,7 @@ class NumberStyle:
         match self.rule:
             case FixedUnit(unit=unit):
                 return unit
-            case MaxUnit() | WholeUnit() | EachAlone():
+            case MaxUnit() | WholeUnit() | EachAlone() | DefaultUnit():
                 return None
 
     @classmethod

@@ -10,17 +10,21 @@ labels) asks :func:`tick_scale_of` and prints with :func:`number_text`.
 
 from __future__ import annotations
 
+import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
-from ..geometry import axis_of
-from ..vocab import Letters, parse_axes
-from .formatters import AxisUnitFormatter, tick_scale_of
-from .model import NumberStyle, myriad_ladder
+from ..geometry import axis_of, projection
+from ..vocab import Letters, Locale, Rectilinear, X, Y, parse_axes
+from . import decide
+from .formatters import AxisUnitFormatter, tick_scale_of, tick_values
+from .model import DefaultUnit, NumberStyle, myriad_ladder, preset_ladder
 from .text import number_text, value_label_decimals
 
 __all__ = [
     "format_axis_myriad",
     "number_text",
+    "prepare",
     "tick_scale_of",
     "value_label_decimals",
 ]
@@ -48,3 +52,25 @@ def format_axis_myriad(
     )
     for which in parse_axes(axis):  # one formatter each: it decides per axis
         axis_of(ax, which).set_major_formatter(AxisUnitFormatter(style))
+
+
+def prepare(fig: Figure, locale: Locale) -> None:
+    """Large numbers on axes nobody formatted, before the layout measures.
+
+    A plain number axis whose ticks reach 1,000 prints thousands separators
+    and, from one million, one unit for the axis: ``1M`` or, under a Korean
+    preset, ``100만``. An axis with a formatter someone set, a log, date or
+    category axis and ticks along x that read as years are left alone.
+    """
+    style = NumberStyle(preset_ladder(locale), DefaultUnit())
+    for ax in fig.axes:
+        if not isinstance(projection(ax), Rectilinear):
+            continue
+        for which in (X(), Y()):
+            axis = axis_of(ax, which)
+            untouched = axis.isDefault_majfmt and isinstance(
+                axis.get_major_formatter(), ticker.ScalarFormatter
+            )
+            ticks = tick_values(axis, list(axis.get_majorticklocs()))
+            if untouched and decide.reads_large(ticks, which):
+                axis.set_major_formatter(AxisUnitFormatter(style))

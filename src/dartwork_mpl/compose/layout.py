@@ -1,6 +1,6 @@
 """``dm.simple_layout``: the margin fit, with what the other slices settle.
 
-Bar labels, legends, line-end names and panel letters settle at
+Large numbers on the ticks, bar labels, legends, line-end names and panel letters settle at
 the size the layout fits, before it measures the margins; a legend outside
 its Axes, a figure legend and a note line hold room the margins keep clear.
 The layout slice runs them in its order from the functions given here.
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from dartwork_mpl import layout
+from dartwork_mpl import layout, ticks
 from dartwork_mpl.labels import (
     note_gap_pt,
     settle_bars,
@@ -18,6 +18,7 @@ from dartwork_mpl.labels import (
     space_line_ends,
 )
 from dartwork_mpl.legend import figure_reserve, outside_edge, settle
+from dartwork_mpl.style import active_locale
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -27,7 +28,14 @@ if TYPE_CHECKING:
 
 __all__ = ["simple_layout"]
 
+
+def prepare_ticks(fig: Figure) -> None:
+    """The preset's large numbers, in the units of its locale."""
+    ticks.prepare(fig, active_locale())
+
+
 NEIGHBOURS = layout.Neighbours(
+    prepare_ticks=prepare_ticks,
     settle_bars=settle_bars,
     settle_legends=settle,
     space_line_ends=space_line_ends,

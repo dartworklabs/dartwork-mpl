@@ -89,8 +89,6 @@
 
 | 동작 | 하던 일 | 구현 | 예시가 보여줘야 할 것 | 상태 |
 | --- | --- | --- | --- | --- |
-| SI 단위 눈금 | 백만부터 `1M`, `2.5M`(필요한 만큼만 소수) | `ticks/decide.py:104`(`DefaultUnit`) | `EngFormatter`나 `FuncFormatter`로 `1.5M`. 소수가 둘을 넘으면 단위 없이 쓰는 판단 |지움 |
-| 축 전체에 한 단위 | 보이는 눈금 전부로 단위 하나와 정확한 최소 소수 자릿수 하나를 고른다(`0.5M, 1.0M`) | `ticks/formatters.py`(`AxisUnitFormatter`), `ticks/decide.py:104` | formatter가 `set_locs`에서 눈금을 모두 보고 자릿수를 정하는 법. 눈금마다 따로 정하면 `0.5M, 1M`처럼 섞인다 |지움 |
 | 천 단위 구분 기호 | 1,000 이상인 축에 `1,250`, 연도처럼 보이는 x 눈금은 제외 | `ticks/decide.py:137` | `StrMethodFormatter("{x:,.0f}")`. 연도 축에는 쓰지 않는 이유 |지움 |
 | 한국어 그림의 만·억 | 축 이름·제목·범례에 한글이 있으면 `100만` | `ticks/edges.py:35`, `ticks/measure.py:82` | `dm.format_axis_myriad(ax)` 한 줄로 충분하다는 점 |지움 |
 | 연도 눈금 | x 데이터가 1900–2099의 정수면 정수 연도에만 눈금, 두 자리(`24`), 백 년이 보이면 네 자리 | `ticks/edges.py:49`, `ticks/formatters.py:170`, `:205` | `MaxNLocator(integer=True)`와 `FuncFormatter(lambda v, _: f"{int(v) % 100:02d}")`. 확대하면 `2017.5`가 생기는 함정 |지움 |
@@ -101,7 +99,7 @@
 
 토큰이 대신하는 것과 못 하는 것:
 
-- 큰 수는 오프셋(`1e6`) 없이 정수로 찍힌다(`2000000`). 천 단위 구분 기호는 rcParams로 쓸 수 없다(`axes.formatter.use_locale`은 기기의 locale에 따라 달라진다).
+- 큰 수의 기본 표기는 기능으로 남았다. 천 단위 쉼표와 `1M`·`100만`은 스타일 값으로 쓸 수 없고, 빠지면 축에 `2600000`이 찍힌다.
 - 날짜는 `date.converter: auto`와 `date.autoformatter.*`로 `24`, `24.01`, `24.01.15`, 시간 축은 `03.01 06:00`으로 찍힌다. matplotlib 3.11의 concise 변환기는 `date.autoformatter.*`를 읽지 않으므로 converter를 `auto`로 바꿨다. 그래서 바뀌는 해만 연도를 쓰는 concise의 생략과 모서리 날짜가 없다.
 - 숫자 연도 축은 `2016, 2018`로 네 자리다. 두 자리 연도는 토큰으로 쓸 수 없다.
 
