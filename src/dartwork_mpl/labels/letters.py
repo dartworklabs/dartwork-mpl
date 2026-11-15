@@ -6,7 +6,7 @@ import string
 import weakref
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Unpack
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -16,7 +16,7 @@ from ..geometry import record_panel_letters
 from ..style import fs
 from . import decide
 from .measure import drawn_renderer, panel, px_per_pt
-from .model import AtLeft, FromPanel, PanelsFacts, parse_letter_x
+from .model import AtLeft, FromPanel, LetterStyle, PanelsFacts, parse_letter_x
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -90,7 +90,7 @@ def label_axes(
     fontweight: str = "normal",
     x: float | str = "auto",
     y: float | None = None,
-    **kwargs: Any,
+    **kwargs: Unpack[LetterStyle],
 ) -> list[Text]:
     """Panel letters (a, b, c, ...) at the top-left of each panel.
 
@@ -119,9 +119,7 @@ def label_axes(
                     transform=ax.transAxes,
                     fontsize=size,
                     fontweight=fontweight,
-                    va="bottom",
-                    ha="left",
-                    **kwargs,
+                    **(LetterStyle(va="bottom", ha="left") | kwargs),
                 )
                 for ax, label in zip(axes, labels, strict=False)
             ]
@@ -139,9 +137,13 @@ def label_axes(
                 annotation_clip=False,
                 fontsize=size,
                 fontweight=fontweight,
-                verticalalignment="baseline" if y is None else "bottom",
-                horizontalalignment="left",
-                **kwargs,
+                **(
+                    LetterStyle(
+                        verticalalignment="baseline" if y is None else "bottom",
+                        horizontalalignment="left",
+                    )
+                    | kwargs
+                ),
             ),
         )
         for ax, label in zip(axes, labels, strict=False)

@@ -20,6 +20,7 @@ from typing import (
     SupportsFloat,
     SupportsIndex,
     TypeAlias,
+    TypedDict,
     TypeVar,
 )
 
@@ -28,6 +29,84 @@ import numpy as np
 Rgba: TypeAlias = tuple[float, float, float, float]
 Colour: TypeAlias = str | Rgba
 """A colour as matplotlib takes it: a name or hex, or an RGBA tuple."""
+
+AnyColour: TypeAlias = str | tuple[float, float, float] | Rgba
+"""A colour a caller passes: a name or hex, an RGB or an RGBA tuple."""
+
+HorizontalName: TypeAlias = Literal["left", "center", "right"]
+VerticalName: TypeAlias = Literal[
+    "baseline", "bottom", "center", "center_baseline", "top"
+]
+FontStyleName: TypeAlias = Literal["normal", "italic", "oblique"]
+
+
+class LetterStyle(TypedDict, total=False):
+    """The ``Text`` keywords the label helpers hand on to matplotlib.
+
+    These are the properties a caller styles a label with; matplotlib
+    still takes any other ``Text`` property it knows at run time, the
+    checker only knows these. Size and weight are in :class:`TextStyle`;
+    ``label_axes`` takes them as its own parameters.
+    """
+
+    color: AnyColour
+    c: AnyColour
+    alpha: float | None
+    backgroundcolor: AnyColour
+    fontfamily: str | Sequence[str]
+    family: str | Sequence[str]
+    fontname: str
+    fontstyle: FontStyleName
+    style: FontStyleName
+    fontstretch: float | str
+    fontvariant: Literal["normal", "small-caps"]
+    horizontalalignment: HorizontalName
+    ha: HorizontalName
+    verticalalignment: VerticalName
+    va: VerticalName
+    multialignment: HorizontalName
+    ma: HorizontalName
+    rotation: float | Literal["vertical", "horizontal"] | None
+    rotation_mode: Literal["default", "anchor"] | None
+    linespacing: float | None
+    wrap: bool
+    usetex: bool | None
+    parse_math: bool
+    bbox: dict[str, object] | None
+    zorder: float
+    clip_on: bool
+    visible: bool
+    in_layout: bool
+    label: str
+    gid: str | None
+    url: str | None
+    path_effects: Sequence[object]
+
+
+class NoteStyle(LetterStyle, total=False):
+    """The keywords ``annotate_value`` / ``annotate_corner`` / ``label_hline``
+    hand to ``ax.annotate``; their size is their own ``fontsize``."""
+
+    fontweight: float | str
+    weight: float | str
+    arrowprops: dict[str, object] | None
+    annotation_clip: bool | None
+
+
+class TextStyle(LetterStyle, total=False):
+    """The ``Text`` keywords ``add_note`` hands to ``fig.text``."""
+
+    fontsize: float | str
+    size: float | str
+    fontweight: float | str
+    weight: float | str
+
+
+class AnnotateStyle(NoteStyle, total=False):
+    """The keywords ``label_line_ends`` hands to ``ax.annotate``."""
+
+    fontsize: float | str
+    size: float | str
 
 
 # ------------------------------------------------------------ alignment
@@ -397,7 +476,11 @@ def _fmt(fmt: object) -> Fmt:
     )
 
 
-def _ink(color: object, to_rgba: Callable[[object], Rgba]) -> LabelInk:
+C = TypeVar("C")
+"""A colour as the shell's ``to_rgba`` reads it."""
+
+
+def _ink(color: C | None, to_rgba: Callable[[C], Rgba]) -> LabelInk:
     if color is None:
         return TextInk()
     if isinstance(color, str) and color == "series":
@@ -417,9 +500,9 @@ def parse_bar_options(
     crowded: object,
     decimals: object,
     fmt: object,
-    color: object,
+    color: C | None,
     sign: object,
-    to_rgba: Callable[[object], Rgba],
+    to_rgba: Callable[[C], Rgba],
 ) -> BarOptions:
     """The call's keywords as :class:`BarOptions`; ``ValueError`` names a bad one.
 

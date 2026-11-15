@@ -7,7 +7,7 @@ import re
 import weakref
 from collections.abc import Sequence
 from itertools import pairwise
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
@@ -15,11 +15,12 @@ import numpy as np
 import numpy.typing as npt
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
+from matplotlib.backend_bases import RendererBase
 from matplotlib.collections import FillBetweenPolyCollection, PathCollection
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.text import Text
-from matplotlib.transforms import IdentityTransform
+from matplotlib.transforms import IdentityTransform, Transform
 
 from ..geometry import (
     Curved,
@@ -60,6 +61,7 @@ from .model import (
     TwinFacts,
     TwinSide,
     YearDigits,
+    Zone,
     parse_digits,
     parse_number_ladder,
 )
@@ -178,7 +180,7 @@ class Directed(Protocol):
 
 
 def _fill_outline(
-    coll: FillBetweenPolyCollection, which: Which, data: Any
+    coll: FillBetweenPolyCollection, which: Which, data: Transform
 ) -> npt.NDArray[np.float64] | None:
     """A ``fill_between`` area's outline along ``which``, if all on whole numbers."""
     if not isinstance(coll, Directed) or parse_which(coll.t_direction) != which:
@@ -265,13 +267,13 @@ def is_quarterly(nums: npt.ArrayLike) -> bool:
     return bool(np.all((gaps >= QUARTER_DAYS[0]) & (gaps <= QUARTER_DAYS[1])))
 
 
-def num2date(value: float, tz: Any = None) -> datetime.datetime:
+def num2date(value: float, tz: Zone = None) -> datetime.datetime:
     """One matplotlib date number as a ``datetime``."""
     moment: datetime.datetime = mdates.num2date(value, tz=tz)  # pyright: ignore[reportUnknownMemberType]
     return moment
 
 
-def quarter_ends(nums: npt.ArrayLike, tz: Any = None) -> bool:
+def quarter_ends(nums: npt.ArrayLike, tz: Zone = None) -> bool:
     """Whether every date is a quarter's last day."""
     days = {
         num2date(float(v), tz).date()
@@ -316,19 +318,42 @@ def converter_locator(locator: ticker.Locator) -> bool:
     )
 
 
-_LOCATOR_PARAMS = ("_nbins", "_steps", "_prune", "_symmetric", "_min_n_ticks")
+#: Views matplotlib's own ``AutoLocator`` is compared on: narrow and wide,
+#: from zero and away from it, uneven about zero (``symmetric``), years.
+_PROBES = (
+    (0.0, 1.0),
+    (0.0, 7.0),
+    (0.13, 0.97),
+    (-3.0, 10.0),
+    (-1.0, 0.2),
+    (0.0, 1000.0),
+    (1.0, 2e6),
+    (1990.0, 2024.0),
+)
 
 
 def configured(locator: ticker.Locator) -> bool:
-    """Whether someone changed matplotlib's own locator in place (``locator_params``)."""
+    """Whether someone changed matplotlib's own locator in place (``locator_params``).
+
+    ``set_params`` keeps what it is given in private attributes with no
+    getter, so the locator is asked what it does instead: it is configured
+    when it picks other ticks than a fresh ``AutoLocator`` on the same axis,
+    on its own view or on any of a few others.
+    """
     if type(locator) is not ticker.AutoLocator:
         return False
-    fresh = vars(ticker.AutoLocator())
+    fresh = ticker.AutoLocator()
+    views = list(_PROBES)
+    if locator.axis is not None:
+        fresh.set_axis(locator.axis)
+        low, high = locator.axis.get_view_interval()
+        views.append((float(low), float(high)))
     return any(
         not np.array_equal(
-            np.asarray(vars(locator).get(n)), np.asarray(fresh.get(n))
+            np.asarray(locator.tick_values(a, b), dtype=float),
+            np.asarray(fresh.tick_values(a, b), dtype=float),
         )
-        for n in _LOCATOR_PARAMS
+        for a, b in views
     )
 
 
@@ -352,7 +377,7 @@ def _quarter_ends(ax: Axes, which: Which, axis: Axis) -> bool | None:
     return quarter_ends(dates, date_zone(locator))
 
 
-def date_zone(locator: ticker.Locator) -> Any:
+def date_zone(locator: ticker.Locator) -> datetime.tzinfo | None:
     """The time zone a date locator reads its dates in (``None``: UTC)."""
     return locator.tz if isinstance(locator, mdates.DateLocator) else None
 
@@ -535,7 +560,7 @@ def settle_twin_spine(ax: Axes, side: TwinSide) -> None:
 # -- crowding --------------------------------------------------------------------
 
 
-def label_gap(axis: Axis, locs: Sequence[float], renderer: Any) -> Ems:
+def label_gap(axis: Axis, locs: Sequence[float], renderer: RendererBase) -> Ems:
     """Smallest gap between neighbouring tick labels at ``locs``, in ems."""
     if len(locs) < 2:
         return Ems(float("inf"))

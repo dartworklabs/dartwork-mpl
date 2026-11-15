@@ -9,9 +9,12 @@ per axis and the spines to show). Tick text is decided at draw time from
 
 from __future__ import annotations
 
+import datetime
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
-from typing import ClassVar, Literal, NewType, TypeAlias
+from typing import ClassVar, Literal, NewType, TypeAlias, TypedDict
+
+import numpy as np
 
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
@@ -21,6 +24,24 @@ Ems = NewType("Ems", float)
 
 Digits = Literal[2, 4]
 """Year digits on tick labels, as a caller writes them: ``2`` or ``4``."""
+
+Zone: TypeAlias = datetime.tzinfo | str | None
+"""A time zone as matplotlib's date functions take it: a ``tzinfo``, its
+name (``"Asia/Seoul"``), or ``None`` for ``rcParams["timezone"]``."""
+
+DateLike: TypeAlias = str | datetime.date | np.datetime64
+"""One date as a caller writes it: an ISO string, a ``date`` / ``datetime``
+(a pandas ``Timestamp`` is one) or a ``datetime64``."""
+
+
+class MaxNParams(TypedDict, total=False):
+    """The ``MaxNLocator.set_params`` keywords other than ``nbins``."""
+
+    steps: Sequence[float] | None
+    integer: bool
+    symmetric: bool
+    prune: Literal["lower", "upper", "both"] | None
+    min_n_ticks: int
 
 
 def repeat_two_digits(years: Sequence[int]) -> bool:

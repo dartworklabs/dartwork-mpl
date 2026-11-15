@@ -5,7 +5,7 @@ from __future__ import annotations
 import weakref
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Unpack
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -15,7 +15,7 @@ from matplotlib.text import Annotation, Text
 
 from . import decide
 from .measure import drawn_renderer, px_per_pt
-from .model import Column
+from .model import AnnotateStyle, Column
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -92,7 +92,7 @@ def label_line_ends(
     lines: Iterable[Line2D] | None = None,
     *,
     gap_pt: float | None = None,
-    **kw: Any,
+    **kw: Unpack[AnnotateStyle],
 ) -> list[Text]:
     """Name each line at its last point instead of a legend.
 
@@ -120,13 +120,15 @@ def label_line_ends(
         end = _last_point(line)
         if end is None:
             continue
-        style: dict[str, Any] = {
-            "color": ensure_contrast(line.get_color(), background),
-            "ha": "left",
-            "va": "center",
-            "annotation_clip": False,
-            **kw,
-        }
+        style = (
+            AnnotateStyle(
+                color=ensure_contrast(line.get_color(), background),
+                ha="left",
+                va="center",
+                annotation_clip=False,
+            )
+            | kw
+        )
         group.labels.append(
             ax.annotate(  # pyright: ignore[reportUnknownMemberType]
                 str(line.get_label()),

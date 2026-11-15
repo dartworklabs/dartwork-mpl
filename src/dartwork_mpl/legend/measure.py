@@ -12,11 +12,16 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import matplotlib as mpl
 import numpy as np
-from matplotlib.collections import LineCollection, PathCollection, QuadMesh
+from matplotlib.collections import (
+    Collection,
+    LineCollection,
+    PathCollection,
+    QuadMesh,
+)
 from matplotlib.contour import ContourSet
 from matplotlib.legend import Legend
 from matplotlib.transforms import Bbox, BboxBase
@@ -50,8 +55,12 @@ from .model import (
     EntryFacts,
     FigureFacts,
     Hits,
+    Inherit,
+    LabelColourWord,
     LegendFacts,
     LegendPlan,
+    LegendStyle,
+    LocName,
     Owner,
     Request,
     Side,
@@ -67,8 +76,31 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.legend_handler import HandlerBase
+    from matplotlib.lines import Line2D
     from matplotlib.path import Path
     from matplotlib.text import Text
+    from matplotlib.transforms import Transform
+    from matplotlib.typing import ColorType
+
+
+class LegendKeywords(LegendStyle, total=False):
+    """:class:`LegendStyle` and the keywords whose values are matplotlib's."""
+
+    prop: FontProperties | dict[str, object] | None
+    title_fontproperties: FontProperties | dict[str, object] | None
+    labelcolor: ColorType | Sequence[ColorType] | LabelColourWord | None
+    edgecolor: ColorType | Inherit | None
+    facecolor: ColorType | Inherit | None
+    bbox_to_anchor: (
+        BboxBase
+        | tuple[float, float]
+        | tuple[float, float, float, float]
+        | None
+    )
+    bbox_transform: Transform | None
+    handler_map: dict[Artist | type, HandlerBase] | None
 
 
 def box_of(bb: BboxBase) -> Box:
@@ -123,7 +155,7 @@ def _add_box(ink: Ink, artist: Artist, bb: Bbox | None) -> None:
         ink.boxes.append((id(artist), bb))
 
 
-def _add_line(ink: Ink, line: Any, renderer: RendererBase) -> None:
+def _add_line(ink: Ink, line: Line2D, renderer: RendererBase) -> None:
     stroke, markers = line_draws_stroke(line), line_draws_markers(line)
     if not (stroke or markers):
         return
@@ -142,7 +174,7 @@ def _add_line(ink: Ink, line: Any, renderer: RendererBase) -> None:
         ink.discs.append((id(line), xy, np.full(len(xy), r)))
 
 
-def _add_collection(ink: Ink, coll: Any, renderer: RendererBase) -> None:
+def _add_collection(ink: Ink, coll: Collection, renderer: RendererBase) -> None:
     try:
         if isinstance(coll, PathCollection) and len(coll.get_sizes()):
             xy, r = drawn_scatter_discs(coll, px(renderer, 1.0))
@@ -209,11 +241,11 @@ class Trials:
     def __init__(
         self,
         parent: Axes | Figure,
-        handles: Sequence[Any],
+        handles: Sequence[Artist],
         entries: Entries,
-        kw: dict[str, Any],
+        kw: LegendKeywords,
         renderer: RendererBase,
-        loc: str = "upper right",
+        loc: LocName = "upper right",
     ) -> None:
         """Build the 1-column trial that gives the pad."""
         self.parent, self.handles, self.renderer = (
@@ -222,7 +254,7 @@ class Trials:
             renderer,
         )
         self.kw = trial_keywords(kw)
-        self.kw.setdefault("loc", loc)  # never matplotlib's "best" search
+        self.loc: LocName = loc  # never matplotlib's "best" search
         self.sizes: dict[tuple[Entries, Columns], Size] = {}
         self.base = self.trial(entries, Columns(1))
         em = px(renderer, float(self.base.prop.get_size_in_points()))
@@ -232,7 +264,12 @@ class Trials:
         """A detached legend of ``entries`` in ``columns`` (nothing drawn)."""
         labels = list(entries.labels)
         return Legend(
-            self.parent, self.handles, labels, ncols=columns.n, **self.kw
+            self.parent,
+            self.handles,
+            labels,
+            loc=self.loc,
+            ncols=columns.n,
+            **self.kw,
         )
 
     def size_of(self, entries: Entries, columns: Columns) -> Size:
@@ -375,10 +412,10 @@ def decorations(ax: Axes, renderer: RendererBase) -> tuple[Box, ...]:
 # ----------------------------------------------------------------- facts
 def legend_facts(
     ax: Axes,
-    handles: Sequence[Any],
+    handles: Sequence[Artist],
     entries: Entries,
     request: Request,
-    kw: dict[str, Any],
+    kw: LegendKeywords,
     renderer: RendererBase,
     current: LegendPlan | None = None,
 ) -> LegendFacts:
@@ -446,10 +483,10 @@ def title_facts(ax: Axes, renderer: RendererBase) -> TitleFacts | None:
 
 def figure_facts(
     fig: Figure | SubFigure,
-    handles: Sequence[Any],
+    handles: Sequence[Artist],
     entries: Entries,
     request: Request,
-    kw: dict[str, Any],
+    kw: LegendKeywords,
     renderer: RendererBase,
 ) -> FigureFacts:
     """What placing a figure legend reads: its sizes.
@@ -472,12 +509,12 @@ def figure_facts(
 
 def entry_facts(
     owners: Sequence[Axes], focus: Axes
-) -> tuple[EntryFacts, list[list[Any]]]:
+) -> tuple[EntryFacts, list[list[Artist]]]:
     """Each twin's labelled artists, draw order and current legend."""
     parent = focus.get_figure(root=False)
     order = list(parent.axes) if parent is not None else list(owners)
     found: list[Owner] = []
-    handles: list[list[Any]] = []
+    handles: list[list[Artist]] = []
     for owner in owners:
         hs, labels = owner.get_legend_handles_labels()
         legend = owner.get_legend()

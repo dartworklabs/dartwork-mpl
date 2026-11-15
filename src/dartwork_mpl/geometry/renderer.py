@@ -4,11 +4,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from matplotlib.backend_bases import RendererBase
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
+from .model import MathMode
+
 if TYPE_CHECKING:
-    from matplotlib.backend_bases import RendererBase
+    from matplotlib.artist import Artist
+    from matplotlib.backend_bases import GraphicsContextBase
     from matplotlib.figure import Figure, SubFigure
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.path import Path
+    from matplotlib.transforms import Affine2DBase, Transform
+    from matplotlib.typing import ColorType
+    from numpy.typing import ArrayLike
 
 #: Exceptions matplotlib may raise from ``get_window_extent`` /
 #: ``get_tightbbox`` on artists in degenerate states (NaN-only data,
@@ -103,3 +112,80 @@ def get_renderer(fig: Figure | SubFigure) -> RendererBase:
     finally:
         root.set_canvas(original)
     return renderer
+
+
+class _GroupLog(RendererBase):
+    """A renderer that paints nothing and logs the groups an artist opens.
+
+    Text is measured by ``real``, so an artist laid out while it draws
+    here (a 3D axis placing its tick labels) lands where it did in the
+    figure's own draw.
+    """
+
+    def __init__(self, real: RendererBase) -> None:
+        super().__init__()
+        self.real = real
+        self.opened: list[str] = []
+
+    def open_group(self, s: str, gid: str | None = None) -> None:
+        """Log group ``s``."""
+        self.opened.append(s)
+
+    def draw_path(
+        self,
+        gc: GraphicsContextBase,
+        path: Path,
+        transform: Transform,
+        rgbFace: ColorType | None = None,
+    ) -> None:
+        """Paint nothing."""
+
+    def draw_image(
+        self,
+        gc: GraphicsContextBase,
+        x: float,
+        y: float,
+        im: ArrayLike,
+        transform: Affine2DBase | None = None,
+    ) -> None:
+        """Paint nothing."""
+
+    def draw_gouraud_triangles(
+        self,
+        gc: GraphicsContextBase,
+        triangles_array: ArrayLike,
+        colors_array: ArrayLike,
+        transform: Transform,
+    ) -> None:
+        """Paint nothing."""
+
+    def flipy(self) -> bool:
+        """As ``real``."""
+        return self.real.flipy()
+
+    def get_canvas_width_height(self) -> tuple[float, float]:
+        """The canvas size of ``real``."""
+        return self.real.get_canvas_width_height()
+
+    def points_to_pixels(self, points: ArrayLike) -> ArrayLike:
+        """Points in px as ``real`` converts them."""
+        return self.real.points_to_pixels(points)
+
+    def get_text_width_height_descent(
+        self, s: str, prop: FontProperties, ismath: MathMode
+    ) -> tuple[float, float, float]:
+        """Text measured by ``real``."""
+        return self.real.get_text_width_height_descent(s, prop, ismath)
+
+
+def opens_group(artist: Artist, fig: Figure | SubFigure, group: str) -> bool:
+    """Whether drawing ``artist`` of ``fig`` opens the renderer group ``group``.
+
+    Matplotlib names what it draws by group (``"axis3d"`` for each axis a
+    3D Axes draws, ``"pane3d"`` for its panes). The artist is drawn once
+    into a renderer that paints nothing; that draw lays it out as the
+    figure's own draw did.
+    """
+    log = _GroupLog(get_renderer(fig))
+    artist.draw(log)
+    return group in log.opened

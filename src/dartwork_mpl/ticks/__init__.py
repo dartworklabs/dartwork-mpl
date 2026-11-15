@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import numbers
 from collections.abc import Callable, Sequence
-from typing import Any
 
 import matplotlib.ticker as ticker
 import numpy as np
@@ -53,6 +52,7 @@ from .model import (
     AlignLeft,
     AlignRight,
     CurrencyPosition,
+    DateLike,
     Digits,
     ExactZero,
     FollowFigure,
@@ -261,7 +261,7 @@ def format_axis_year(
 
 
 def category_dates(
-    dates: Sequence[Any] | npt.NDArray[Any],
+    dates: Sequence[DateLike] | npt.ArrayLike,
 ) -> npt.NDArray[np.datetime64]:
     """The dates positions ``0, 1, …`` stand for, as ``datetime64[s]``.
 
@@ -298,7 +298,7 @@ def category_dates(
 
 def format_axis_dates(
     ax: Axes,
-    dates: Sequence[Any] | Any,
+    dates: Sequence[DateLike] | npt.ArrayLike,
     axis: Letter = "x",
     *,
     years: Digits | None = None,

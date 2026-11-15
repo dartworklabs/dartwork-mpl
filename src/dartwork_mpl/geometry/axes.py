@@ -26,6 +26,7 @@ from .model import (
     parse_projection,
     parse_which,
 )
+from .renderer import opens_group
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -95,17 +96,17 @@ def draws_axis(ax: Axes, axis: Axis) -> bool:
 
     A 2D Axes draws an axis when it is visible, its axes are on
     (``ax.axis("off")`` turns them off) and the axis itself is visible. A
-    3D Axes keeps ``axison`` off and draws its three axes while its private
-    ``_axis3don`` is set (``set_axis_off`` clears it), whatever each axis'
-    own visibility (``Axes3D.draw``, ``axis3d.Axis.draw``); no public getter
-    exists, so it is read as is, and a test fails if matplotlib renames it.
+    3D Axes keeps ``axison`` off and draws its three axes until
+    ``set_axis_off``, whatever each axis' own visibility (``Axes3D.draw``,
+    ``axis3d.Axis.draw``). No public getter says which, so the Axes is drawn
+    into a renderer that paints nothing and is asked whether it opened an
+    ``"axis3d"`` group.
     """
     if not ax.get_visible():
         return False
     match projection(ax):
         case ThreeD():
-            # No public getter; ``Axes3D`` is untyped, so its name is read.
-            return bool(getattr(ax, "_axis3don", True))
+            return opens_group(ax, ax.figure, "axis3d")
         case Rectilinear() | Curved():
             return ax.axison and axis.get_visible()
 

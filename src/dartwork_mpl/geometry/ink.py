@@ -30,7 +30,7 @@ Everything is in display px for the figure as last drawn.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 from matplotlib.colors import to_rgba
@@ -42,7 +42,7 @@ from .figure import drawn_in_tree
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
     from matplotlib.backend_bases import RendererBase
-    from matplotlib.collections import PathCollection
+    from matplotlib.collections import Collection, PathCollection
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
     from matplotlib.path import Path
@@ -65,7 +65,7 @@ class DrawnOutline(NamedTuple):
     item: int = 0
 
 
-def drawn_collection_paths(coll: Any) -> list[tuple[int, Path]]:
+def drawn_collection_paths(coll: Collection) -> list[tuple[int, Path]]:
     """Each item's path of ``coll`` where matplotlib draws it, in display px.
 
     As ``Collection.draw`` does: item ``i`` is path ``i``, through its own
@@ -103,7 +103,7 @@ def drawn_collection_paths(coll: Any) -> list[tuple[int, Path]]:
 
 
 def drawn_collection_outlines(
-    coll: Any, renderer: RendererBase
+    coll: Collection, renderer: RendererBase
 ) -> list[DrawnOutline]:
     """The items ``coll`` draws ink with, each by its own style.
 

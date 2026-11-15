@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Sequence
-from typing import Any
+from typing import Unpack
 
 import matplotlib.ticker as ticker
 from matplotlib.axis import Axis
@@ -24,6 +24,7 @@ from .model import (
     AxisText,
     BareZero,
     ExactZero,
+    MaxNParams,
     NumberStyle,
     ScaleZero,
     TextFacts,
@@ -235,14 +236,15 @@ class WholeYearLocator(ticker.MaxNLocator):
         self.asked_nbins = False
 
     def set_params(
-        self, *, nbins: int | str | None = None, **kwargs: Any
+        self, *, nbins: int | str | None = None, **kwargs: Unpack[MaxNParams]
     ) -> None:
         """Set MaxNLocator parameters; an ``nbins`` set here is a request."""
-        if nbins is not None:
-            kwargs["nbins"] = nbins
-            self.nbins = nbins
-            self.asked_nbins = True
-        super().set_params(**kwargs)  # pyright: ignore[reportUnknownMemberType]
+        if nbins is None:
+            super().set_params(**kwargs)  # pyright: ignore[reportUnknownMemberType]
+            return
+        self.nbins = nbins
+        self.asked_nbins = True
+        super().set_params(nbins=nbins, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
     def thin(self, nbins: int | str) -> None:
         """The layout's own ``nbins``, not a request."""
