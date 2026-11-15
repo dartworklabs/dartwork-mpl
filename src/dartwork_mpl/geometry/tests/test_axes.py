@@ -14,7 +14,7 @@ def test_every_title_is_found_by_its_loc() -> None:
     ax.set_title("Left headline", loc="left")
     ax.set_title("Right note", loc="right")
     titles = g.axes_titles(ax)
-    assert {loc: t.get_text() for loc, t in titles.items()} == {
+    assert {loc.loc: t.get_text() for loc, t in titles.items()} == {
         "center": "",
         "left": "Left headline",
         "right": "Right note",

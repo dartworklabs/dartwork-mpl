@@ -7,7 +7,7 @@ import re
 import weakref
 from collections.abc import Sequence
 from itertools import pairwise
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
@@ -19,36 +19,47 @@ from matplotlib.collections import FillBetweenPolyCollection, PathCollection
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.text import Text
+from matplotlib.transforms import IdentityTransform
 
 from ..geometry import (
+    Curved,
+    Far,
+    Near,
+    Rectilinear,
+    ThreeD,
     Which,
     X,
     Y,
+    axes_titles,
     axis_of,
     bars_along,
-    is_rectilinear,
+    label_side,
+    parse_which,
+    projection,
     same_position_axes,
     shared_axes,
 )
 from .defaults import config
 from .model import (
+    TWIN_SIDES,
     Asked,
     AxesFacts,
     AxisFacts,
     AxisKind,
     ByFigure,
     DateAxis,
-    Digits,
     Ems,
     FollowFigure,
     Ladder,
     Language,
     NumberAxis,
     OtherAxis,
-    Side,
+    RightSide,
     TickValues,
+    TopSide,
     TwinFacts,
-    linear_scale,
+    TwinSide,
+    YearDigits,
     parse_digits,
     parse_number_ladder,
 )
@@ -58,7 +69,7 @@ FIRST_YEAR, LAST_YEAR = 1900, 2099
 WHOLE_TOL = 1e-6  # bar centres rebuilt as x + width / 2 sit a few ulps off
 QUARTER_DAYS = (89.0, 92.0)
 # The sides of each Axes whose twin spine a layout showed (or found showing).
-SETTLED: weakref.WeakKeyDictionary[Axes, set[Side]] = (
+SETTLED: weakref.WeakKeyDictionary[Axes, set[TwinSide]] = (
     weakref.WeakKeyDictionary()
 )
 
@@ -103,18 +114,13 @@ def korean_labels(fig: Figure | None, extra: str = "") -> bool:
     if fig is not None:
         for ax in fig.axes:
             texts += [ax.get_xlabel(), ax.get_ylabel()]
-            texts += [
-                ax.get_title(loc=loc) for loc in ("left", "center", "right")
-            ]
+            texts += [t.get_text() for t in axes_titles(ax).values()]
             legend = ax.get_legend()
             if legend is not None:
                 texts += [t.get_text() for t in legend.get_texts()]
         for legend in fig.legends:
             texts += [t.get_text() for t in legend.get_texts()]
-        for name in ("_suptitle", "_supxlabel", "_supylabel"):
-            artist = getattr(fig, name, None)
-            if artist is not None:
-                texts.append(artist.get_text())
+        texts += [fig.get_suptitle(), fig.get_supxlabel(), fig.get_supylabel()]
     return any(_HANGUL.search(t) for t in texts)
 
 
@@ -127,7 +133,7 @@ def language(fig: Figure | None, extra: str = "") -> Language:
             return Asked(asked)
 
 
-def config_digits() -> Digits:
+def config_digits() -> YearDigits:
     """``config.tick_years``."""
     return parse_digits(config.tick_years, "config.tick_years")
 
@@ -163,11 +169,19 @@ def _bar_positions(
     return np.where(inside, near, centre)
 
 
+@runtime_checkable
+class Directed(Protocol):
+    """A ``fill_between`` area: ``t_direction`` names the axis it runs along
+    (public on matplotlib's class, missing from its stub)."""
+
+    t_direction: str
+
+
 def _fill_outline(
     coll: FillBetweenPolyCollection, which: Which, data: Any
 ) -> npt.NDArray[np.float64] | None:
     """A ``fill_between`` area's outline along ``which``, if all on whole numbers."""
-    if getattr(coll, "t_direction", None) != which.letter:
+    if not isinstance(coll, Directed) or parse_which(coll.t_direction) != which:
         return None
     if not all(coll.get_transform().contains_branch_seperately(data)):
         return None  # span shading in axes fractions marks a period
@@ -275,11 +289,19 @@ def _stock_concise(fmt: ticker.Formatter) -> bool:
     """Matplotlib's own concise date formatter with its own format strings."""
     if type(fmt) is not mdates.ConciseDateFormatter:
         return False
+    assert isinstance(fmt, mdates.ConciseDateFormatter)
     fresh = mdates.ConciseDateFormatter(mdates.AutoDateLocator())
-    return all(
-        list(getattr(fmt, n)) == list(getattr(fresh, n))
-        for n in ("formats", "zero_formats", "offset_formats")
-    )
+    return _format_strings(fmt) == _format_strings(fresh)
+
+
+def _format_strings(
+    fmt: mdates.ConciseDateFormatter,
+) -> tuple[list[str], list[str], list[str]]:
+    """A concise formatter's tick, zero and offset format strings."""
+    formats: list[str] = list(fmt.formats)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+    zeros: list[str] = list(fmt.zero_formats)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+    offsets: list[str] = list(fmt.offset_formats)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+    return formats, zeros, offsets
 
 
 def converter_locator(locator: ticker.Locator) -> bool:
@@ -327,7 +349,12 @@ def _quarter_ends(ax: Axes, which: Which, axis: Axis) -> bool | None:
     dates = plotted(ax, which)
     if not is_quarterly(dates):
         return None
-    return quarter_ends(dates, getattr(locator, "tz", None))
+    return quarter_ends(dates, date_zone(locator))
+
+
+def date_zone(locator: ticker.Locator) -> Any:
+    """The time zone a date locator reads its dates in (``None``: UTC)."""
+    return locator.tz if isinstance(locator, mdates.DateLocator) else None
 
 
 def _kind(ax: Axes, which: Which) -> AxisKind:
@@ -338,7 +365,8 @@ def _kind(ax: Axes, which: Which) -> AxisKind:
         if dated and _stock_concise(fmt):
             return DateAxis(_quarter_ends(ax, which, axis))
         return OtherAxis()
-    if linear_scale(axis.get_scale()) and axis.get_converter() is None:
+    linear = isinstance(axis.get_transform(), IdentityTransform)
+    if linear and axis.get_converter() is None:
         return NumberAxis(_years(ax, which))
     return OtherAxis()
 
@@ -359,15 +387,27 @@ def axis_facts(ax: Axes, which: Which) -> AxisFacts:
 
 # -- twin scales ----------------------------------------------------------------
 
-_SIDES: dict[Side, Which] = {
-    # the side: the axis whose scale sits there (a twin hides the other)
-    "right": Y(),
-    "top": X(),
-}
+
+def _scale(side: TwinSide) -> Which:
+    """The axis whose scale sits on ``side`` (a twin hides the other)."""
+    match side:
+        case RightSide():
+            return Y()
+        case TopSide():
+            return X()
+
+
+def plain(ax: Axes) -> bool:
+    """Whether ``ax`` is matplotlib's plain 2D Axes."""
+    match projection(ax):
+        case Rectilinear():
+            return True
+        case ThreeD() | Curved():
+            return False
 
 
 def _rectilinear(ax: Axes) -> bool:
-    return ax.get_visible() and is_rectilinear(ax)
+    return ax.get_visible() and plain(ax)
 
 
 def boxes(fig: Figure) -> dict[Axes, list[Axes]]:
@@ -405,14 +445,19 @@ def _far_side(axis: Axis) -> bool:
     return far and not near
 
 
-def _draws(ax: Axes, group: Sequence[Axes], side: Side) -> bool:
+def _draws(ax: Axes, group: Sequence[Axes], side: TwinSide) -> bool:
     """``ax`` draws its own scale on ``side``: ticks and label there (one, for a twin)."""
-    scale = _SIDES[side]
+    scale = _scale(side)
     other = scale.other
     if not _owns(ax, group, scale):
         return False
     axis = axis_of(ax, scale)
-    ticks, label = _far_side(axis), str(axis.get_label_position()) == side
+    match label_side(axis):
+        case Far():
+            label = True
+        case Near():
+            label = False
+    ticks = _far_side(axis)
     if axis_of(ax, other).get_visible():
         return ticks and label
     return ticks or label
@@ -422,11 +467,11 @@ def twin_facts(ax: Axes, group: Sequence[Axes]) -> TwinFacts:
     """How ``ax`` and its box draw twin scales on the right and the top."""
     if len(group) < 2:
         return TwinFacts()
-    draws: set[Side] = set()
-    hides: set[Side] = set()
-    twin_draws: set[Side] = set()
-    for side, scale in _SIDES.items():
-        other = scale.other
+    draws: set[TwinSide] = set()
+    hides: set[TwinSide] = set()
+    twin_draws: set[TwinSide] = set()
+    for side in TWIN_SIDES:
+        other = _scale(side).other
         if _draws(ax, group, side):
             draws.add(side)
         if not axis_of(ax, other).get_visible():
@@ -444,7 +489,9 @@ def twin_facts(ax: Axes, group: Sequence[Axes]) -> TwinFacts:
     )
 
 
-def axes_facts(ax: Axes, digits: Digits, box: Sequence[Axes] = ()) -> AxesFacts:
+def axes_facts(
+    ax: Axes, digits: YearDigits, box: Sequence[Axes] = ()
+) -> AxesFacts:
     """An Axes before the layout, drawn in ``box`` with its twins."""
     twin = twin_facts(ax, box)
     return AxesFacts(axis_facts(ax, X()), axis_facts(ax, Y()), digits, twin)
@@ -475,12 +522,12 @@ def drawn_like_twin(ax: Axes) -> bool:
     )
 
 
-def settled_twin_spines(ax: Axes) -> frozenset[Side]:
+def settled_twin_spines(ax: Axes) -> frozenset[TwinSide]:
     """The sides of ``ax`` whose twin spine a layout showed (or found showing)."""
     return frozenset(SETTLED.get(ax, ()))
 
 
-def settle_twin_spine(ax: Axes, side: Side) -> None:
+def settle_twin_spine(ax: Axes, side: TwinSide) -> None:
     """Record that a layout showed the twin spine on ``side`` of ``ax``."""
     SETTLED.setdefault(ax, set()).add(side)
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 
 from .model import Digits, NumberLadder
 
@@ -51,7 +51,13 @@ class Config:
     number_ladder: NumberLadder = "auto"
 
     @contextmanager
-    def override(self, **overrides: object) -> Generator[None]:
+    def override(
+        self,
+        *,
+        tick_years: Digits | None = None,
+        number_ladder: NumberLadder | None = None,
+        **unknown: object,
+    ) -> Generator[None]:
         """Temporarily override one or more defaults inside a ``with`` block.
 
         Restores every overridden field to its previous value on exit —
@@ -61,9 +67,10 @@ class Config:
 
         Parameters
         ----------
-        **overrides
-            ``field_name=value`` pairs. Every name must already exist on
-            :class:`Config`.
+        tick_years, number_ladder
+            The defaults to change inside the block (``None``: unchanged).
+        **unknown
+            Any other keyword raises :class:`AttributeError`.
 
         Yields
         ------
@@ -77,21 +84,24 @@ class Config:
             with dm.config.override(tick_years=4):
                 dm.simple_layout(fig)   # four-digit years just here
         """
-        known = {f.name for f in fields(self)}
-        unknown = set(overrides) - known
         if unknown:
+            known = {f.name for f in fields(self)}
             raise AttributeError(
                 f"dm.config has no attribute(s): {sorted(unknown)}. "
                 f"Known fields: {sorted(known)}."
             )
-        saved = {name: getattr(self, name) for name in overrides}
-        for name, value in overrides.items():
-            setattr(self, name, value)
+        saved = replace(self)
+        if tick_years is not None:
+            self.tick_years = tick_years
+        if number_ladder is not None:
+            self.number_ladder = number_ladder
         try:
             yield
         finally:
-            for name, value in saved.items():
-                setattr(self, name, value)
+            if tick_years is not None:
+                self.tick_years = saved.tick_years
+            if number_ladder is not None:
+                self.number_ladder = saved.number_ladder
 
 
 #: Process-wide :class:`Config` singleton. Mutate its attributes (or use

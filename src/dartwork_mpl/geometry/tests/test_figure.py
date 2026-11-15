@@ -22,8 +22,8 @@ def test_suptitle_texts_and_legends_count_once_and_blanks_not() -> None:
     label = fig.supxlabel("shared x")  # also kept in fig.texts
     fig.text(0.1, 0.1, "   ")
     fig.text(0.2, 0.2, "hidden").set_visible(False)
-    assert _found(fig) == [title, label, note, legend]
-    assert _found(fig, legends=False) == [title, label, note]
+    assert _found(fig) == [title, note, label, legend]
+    assert _found(fig, legends=False) == [title, note, label]
 
 
 def _tree():

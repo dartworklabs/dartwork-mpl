@@ -19,7 +19,7 @@ from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 
 from ..edgecase import settle
-from ..geometry import get_renderer, is_rectilinear
+from ..geometry import get_renderer
 from . import decide
 from .dates import (
     CategoryDateLocator,
@@ -34,9 +34,11 @@ from .measure import (
     boxes,
     config_digits,
     converter_locator,
+    date_zone,
     in_view,
     label_gap,
     language,
+    plain,
     rotated,
     settle_twin_spine,
     with_insets,
@@ -53,6 +55,7 @@ from .model import (
     NumberStyle,
     PeriodDates,
     QuarterDates,
+    TwoDigits,
     YearTicks,
 )
 
@@ -64,12 +67,12 @@ def figure_ladder(fig: Figure | None, extra: str = "") -> Ladder:
 
 
 def _formats(ax: Axes, fig: Figure) -> bool:
-    """Whether the library formats ``ax``'s ticks: a figure Axes, no colorbar."""
-    return (
-        ax in fig.axes
-        and is_rectilinear(ax)
-        and getattr(ax, "_colorbar", None) is None
-    )
+    """Whether the library formats ``ax``'s ticks: a plain figure Axes.
+
+    A colorbar's Axes is one too; its long axis carries the colorbar's own
+    formatter and its short axis no ticks, so the plans leave both.
+    """
+    return ax in fig.axes and plain(ax)
 
 
 def _apply_axis(axis: Axis, plan: AxisPlan, ladder: Ladder) -> None:
@@ -84,14 +87,13 @@ def _apply_axis(axis: Axis, plan: AxisPlan, ladder: Ladder) -> None:
                 axis.set_major_formatter(
                     PeriodDateFormatter(
                         locator,
-                        getattr(fmt, "_tz", None),
+                        date_zone(locator),
                         digits=digits,
                         show_offset=fmt.show_offset,
-                        usetex=getattr(fmt, "_usetex", None),
                     )
                 )
         case QuarterDates(digits=digits, ends=ends):
-            tz = getattr(locator, "tz", None)
+            tz = date_zone(locator)
             axis.set_major_locator(QuarterLocator(ends=ends, tz=tz))
             axis.set_major_formatter(QuarterDateFormatter(digits, tz))
         case YearTicks(digits=digits, locator=whole, formatter=words):
@@ -105,7 +107,7 @@ def _apply_axis(axis: Axis, plan: AxisPlan, ladder: Ladder) -> None:
 
 def _apply_spines(ax: Axes, plan: AxesPlan) -> None:
     for side in plan.spines:
-        ax.spines[side].set_visible(True)
+        ax.spines[side.spine].set_visible(True)
         settle_twin_spine(ax, side)  # once: a spine hidden later stays hidden
 
 
@@ -115,11 +117,11 @@ def prepare(fig: Figure, *, numbers: bool = True) -> None:
     With ``numbers``, the library's tick numbers and dates on axes nobody
     formatted; always, the spine of each twin scale.
     """
-    digits = config_digits() if numbers else 2
+    digits = config_digits() if numbers else TwoDigits()
     ladder = figure_ladder(fig) if numbers else None
     twins = boxes(fig)
     for ax in with_insets(fig.axes):
-        if not is_rectilinear(ax):
+        if not plain(ax):
             continue
         facts = axes_facts(ax, digits, twins.get(ax, ()))
         plan = settle(facts, decide.axes_plan(facts), AXES_EDGES).plan
@@ -182,16 +184,12 @@ def _thin_axis(axis: Axis, renderer: Any) -> bool:
     locator = axis.get_major_locator()
     if isinstance(locator, CategoryDateLocator | QuarterLocator):
         step = locator.step
-        options = [
-            partial(setattr, locator, "step", s)
-            for s in locator.steps
-            if s > step
-        ]
+        options = [partial(locator.take, s) for s in locator.steps if s > step]
         return _thin(
             axis,
             in_view(axis, locator()),
             options,
-            partial(setattr, locator, "step", step),
+            partial(locator.take, step),
             renderer,
         )
     if isinstance(locator, WholeYearLocator):
@@ -247,7 +245,7 @@ def thin_dates(fig: Figure) -> bool:
     renderer = get_renderer(fig)
     changed = False
     for ax in fig.axes:
-        if is_rectilinear(ax):
+        if plain(ax):
             for axis in (ax.xaxis, ax.yaxis):
                 changed |= _thin_axis(axis, renderer)
     return changed
@@ -257,12 +255,12 @@ def remember_dates(fig: Figure) -> Callable[[], None]:
     """Record the date tick counts :func:`thin_dates` may lower; the call puts them back."""
     saved: list[tuple[Axis, ticker.Locator, Callable[[], None]]] = []
     for ax in fig.axes:
-        if not is_rectilinear(ax):
+        if not plain(ax):
             continue
         for axis in (ax.xaxis, ax.yaxis):
             locator = axis.get_major_locator()
             if isinstance(locator, CategoryDateLocator | QuarterLocator):
-                restore = partial(setattr, locator, "step", locator.step)
+                restore = partial(locator.take, locator.step)
             elif isinstance(locator, WholeYearLocator):
                 restore = partial(locator.thin, locator.nbins)
             elif type(locator) is mdates.AutoDateLocator:

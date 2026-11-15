@@ -47,14 +47,17 @@ from .formatters import (
 )
 from .measure import config_digits, drawn_like_twin, settled_twin_spines
 from .model import (
-    MYRIAD_LOCALES,
     SI,
     AffixedZero,
+    AlignCentre,
+    AlignLeft,
+    AlignRight,
     CurrencyPosition,
     Digits,
     ExactZero,
     FollowFigure,
     HAlign,
+    HAlignName,
     Ladder,
     LadderName,
     NumberStyle,
@@ -62,10 +65,13 @@ from .model import (
     TickScale,
     Unit,
     YearLocale,
+    myriad_ladder,
+    parse_currency_position,
     parse_digits,
+    parse_halign,
     parse_ladder_name,
-    prefixed,
     unit_template,
+    year_suffix,
 )
 from .text import number_text, recommend_tick_decimals, value_label_decimals
 
@@ -188,13 +194,13 @@ def format_axis_currency(
     decimals: int = 0,
 ) -> None:
     """Currency ticks with ``decimals`` places: ``-$1,500``, ``$0``, ``1,000€``."""
-    prefix = prefixed(position)
-    ladder = Ladder((Unit(1.0, "" if prefix else symbol),))
+    currency, label = parse_currency_position(position).parts(symbol)
+    ladder = Ladder((Unit(1.0, label),))
     style = NumberStyle.parse(
         ladder,
-        ladder.rungs[0].label,
+        label,
         decimals=decimals,
-        currency=symbol if prefix else "",
+        currency=currency,
         per_tick=CURRENCY_TEXT,
     )
     _install(ax, axis, lambda: AxisUnitFormatter(style))
@@ -217,12 +223,8 @@ def format_axis_myriad(
     ``decimals`` with ``unit="max"`` writes each tick alone in its own unit,
     trailing zeros dropped (``1.5억``, ``7,500``).
     """
-    if locale not in MYRIAD_LOCALES:
-        raise ValueError(
-            f"locale must be one of 'ko', 'zh', or 'ja' (got {locale!r})"
-        )
     _numbers(
-        ax, axis, MYRIAD_LOCALES[locale], unit, decimals, MYRIAD_TEXT, currency
+        ax, axis, myriad_ladder(locale), unit, decimals, MYRIAD_TEXT, currency
     )
 
 
@@ -241,9 +243,6 @@ def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
             axis.set_major_formatter(_fixed_point(places))
 
 
-_YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
-
-
 def format_axis_year(
     ax: Axes, axis: Letters = "x", locale: YearLocale = "ko", digits: Digits = 2
 ) -> None:
@@ -253,17 +252,12 @@ def format_axis_year(
     that would repeat print four; a tick between years (a zoom under two
     years) makes every tick print its value.
     """
-    if locale not in _YEAR_SUFFIX:
-        raise ValueError(
-            f"Unknown locale {locale!r}; valid locales: {', '.join(_YEAR_SUFFIX)}"
-        )
+    suffix = year_suffix(locale)
     count = parse_digits(digits, "digits")
     for target in _axes(ax, axis):
         if target.isDefault_majloc:
             target.set_major_locator(WholeYearLocator())
-        target.set_major_formatter(
-            YearTickFormatter(count, _YEAR_SUFFIX[locale])
-        )
+        target.set_major_formatter(YearTickFormatter(count, suffix))
 
 
 def category_dates(
@@ -274,11 +268,15 @@ def category_dates(
     ISO strings, ``datetime`` / ``date`` values, pandas timestamps or a
     ``datetime64`` array; a number, ``None`` or an unparsable string raises.
     """
-    dtype = getattr(dates, "dtype", None)
-    if isinstance(dtype, np.dtype) and np.issubdtype(dtype, np.datetime64):  # pyright: ignore[reportUnknownArgumentType]
-        values = list(np.asarray(dates).astype("datetime64[s]").ravel())
+    loose = np.asarray(dates, dtype=object)
+    try:
+        typed = np.asarray(dates)
+    except (TypeError, ValueError):  # ragged input stays loose
+        typed = loose
+    if np.issubdtype(typed.dtype, np.datetime64):
+        values = list(typed.astype("datetime64[s]").ravel())
     else:
-        values = list(np.asarray(dates, dtype=object).ravel())
+        values = list(loose.ravel())
     if not values:
         raise ValueError("format_axis_dates needs at least one date")
     parsed: list[np.datetime64] = []
@@ -411,17 +409,23 @@ def rotate_tick_labels(
     ax: Axes,
     axis: Letters = "x",
     rotation: float = 45,
-    ha: HAlign | None = None,
+    ha: HAlignName | None = None,
 ) -> None:
     """Turn the tick labels in place (the last resort for long names).
 
     ``ha`` defaults to ``"right"`` for a positive angle, ``"left"`` for a
     negative one and ``"center"`` for none.
     """
-    align = ha or (
-        "right" if rotation > 0 else "left" if rotation < 0 else "center"
+    align: HAlign = (
+        parse_halign(ha)
+        if ha is not None
+        else AlignRight()
+        if rotation > 0
+        else AlignLeft()
+        if rotation < 0
+        else AlignCentre()
     )
     for target in _axes(ax, axis):
         for text in target.get_ticklabels():
             text.set_rotation(rotation)
-            text.set_horizontalalignment(align)
+            text.set_horizontalalignment(align.mpl)

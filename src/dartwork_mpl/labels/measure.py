@@ -25,14 +25,35 @@ from ..color import (
 )
 from ..geometry import (
     BBOX_ERRORS,
+    Curved,
+    Far,
+    Near,
+    Rectilinear,
+    ThreeD,
     X,
+    Y,
     axes_titles,
     bars_along,
     get_renderer,
-    is_rectilinear,
+    label_side,
+    projection,
     same_position_axes,
 )
-from .model import Ink, Panel, StackTotal, Title, Try, left_side, on_baseline
+from .model import (
+    Baseline,
+    Bottom,
+    Edge,
+    Ink,
+    Panel,
+    Segment,
+    StackTotal,
+    Title,
+    Top,
+    Try,
+    VCentre,
+    VCentreBaseline,
+    parse_valign,
+)
 from .stacks import BarRun
 
 if TYPE_CHECKING:
@@ -77,19 +98,26 @@ def bar_end(bar: Rectangle, vertical: bool) -> tuple[float, float]:
     return (x + w / 2, y + h) if vertical else (x + w, y + h / 2)
 
 
+def stands_up(container: BarContainer) -> bool:
+    """Whether the bars stand along x (``ax.bar``) rather than y (``barh``);
+    a container made without an orientation is read as upright."""
+    match bars_along(container.orientation):
+        case X() | None:
+            return True
+        case Y():
+            return False
+
+
 def bar_run(container: BarContainer) -> BarRun:
     """Each bar's middle across, start and signed length along its value."""
     rows: list[tuple[float, float, float]] = []
+    upright = stands_up(container)
     for p in container.patches:
         x, y, w, h = (
             float(v)
             for v in (p.get_x(), p.get_y(), p.get_width(), p.get_height())
         )
-        rows.append(
-            (x + w / 2, y, h)
-            if bars_along(container.orientation) == X()
-            else (y + h / 2, x, w)
-        )
+        rows.append((x + w / 2, y, h) if upright else (y + h / 2, x, w))
     table = np.asarray(rows, dtype=float).reshape(-1, 3)
     host = (
         id(container.patches[0].axes) if container.patches else None,
@@ -167,8 +195,11 @@ def readable_ink(patch: Rectangle, bar_axes: Axes) -> Ink:
 
 def series_ink(patch: Rectangle, bar_axes: Axes, kind: Kind) -> Ink:
     """The bar's colour as drawn, darkened (or lightened) to 4.5:1 text."""
-    if isinstance(kind, StackTotal):
-        return Ink()
+    match kind:
+        case StackTotal():
+            return Ink()
+        case Edge() | Segment():
+            pass
     background = _background(bar_axes)
     face = mcolors.to_rgba(patch.get_facecolor())
     if face[3] == 0 and patch.get_linewidth() > 0:
@@ -292,7 +323,12 @@ def _cell(ax: Axes) -> tuple[tuple[int, int], tuple[int, int]] | None:
 def _ylabel_box(ax: Axes, renderer: RendererBase) -> Bbox | None:
     """The y-axis name of ``ax`` when it is drawn on the left."""
     label = ax.yaxis.label
-    if not _shown(label) or not left_side(str(ax.yaxis.get_label_position())):
+    match label_side(ax.yaxis):
+        case Near():
+            pass
+        case Far():
+            return None
+    if not _shown(label):
         return None
     try:
         return label.get_window_extent(renderer)
@@ -315,8 +351,11 @@ def _ytick_box(ax: Axes, renderer: RendererBase) -> Bbox | None:
 
 def baseline_px(text: Text, renderer: RendererBase) -> float:
     """The baseline of ``text`` in display pixels."""
-    if on_baseline(text.get_verticalalignment()):
-        return float(text.get_transform().transform(text.get_position())[1])
+    match parse_valign(text.get_verticalalignment()):
+        case Baseline():
+            return float(text.get_transform().transform(text.get_position())[1])
+        case Bottom() | Top() | VCentre() | VCentreBaseline():
+            pass
     probe = Text(
         0,
         0,
@@ -333,7 +372,7 @@ def baseline_px(text: Text, renderer: RendererBase) -> float:
 def _guess_ylabel_x0(ax: Axes, renderer: RendererBase) -> float:
     """Where the outer edge of a y-axis name of ``ax`` would be."""
     x0 = float(ax.transAxes.transform((0.0, 1.0))[0])
-    if not is_rectilinear(ax):
+    if not _plain(ax):
         return x0
     ticks = _ytick_box(ax, renderer)
     inner = min(x0, ticks.x0) if ticks is not None else x0
@@ -347,7 +386,7 @@ def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
     """What ``ax`` draws around its top-left corner, for its ``letter``."""
     corner = tuple(map(float, ax.transAxes.transform((0.0, 1.0))))
     box = letter.get_window_extent(renderer)
-    ylabel = _ylabel_box(ax, renderer) if is_rectilinear(ax) else None
+    ylabel = _ylabel_box(ax, renderer) if _plain(ax) else None
     ticks = _ytick_box(ax, renderer)
     titles = tuple(
         Title(baseline_px(t, renderer))
@@ -424,10 +463,22 @@ def backdrop_layers(
     return layers
 
 
+def _plain(ax: Axes) -> bool:
+    """Whether ``ax`` is matplotlib's plain 2D Axes."""
+    match projection(ax):
+        case Rectilinear():
+            return True
+        case ThreeD() | Curved():
+            return False
+
+
 def _frame_on(ax: Axes) -> bool:
     """Whether ``ax`` draws its patch; a 3D Axes has no frame switch.
 
     ``Axes3D`` sets ``get_frame_on`` to ``None`` and always draws its patch.
     """
-    frame_on = getattr(ax, "get_frame_on", None)
-    return bool(frame_on()) if callable(frame_on) else True
+    match projection(ax):
+        case ThreeD():
+            return True
+        case Rectilinear() | Curved():
+            return ax.get_frame_on()

@@ -9,6 +9,7 @@ from dartwork_mpl.ticks.model import (
     FINANCE,
     MYRIAD,
     SI,
+    AffixedZero,
     Asked,
     AxisFacts,
     ByFigure,
@@ -98,7 +99,7 @@ def test_fewest_exact_decimals(values, expected):
         ((-1.5, 1), {"suffix": "M"}, f"{M}1.5M"),
         ((-0.0001, 2), {}, "0"),
         ((0, 2), {"fixed": True}, "0.00"),
-        ((0, 0), {"prefix": "$", "zero": "affixed"}, "$0"),
+        ((0, 0), {"prefix": "$", "zero": AffixedZero()}, "$0"),
         ((-1500, 0), {"prefix": "$"}, f"{M}$1,500"),
     ],
 )

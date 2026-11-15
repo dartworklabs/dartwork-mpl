@@ -1,9 +1,11 @@
-"""matplotlib's names for an axis and a projection, read once into types.
+"""matplotlib's names for an axis, a title, a projection and a label side,
+read once into types.
 
 matplotlib says ``"x"`` / ``"y"`` for an Axes' two axes; here an axis is
 :class:`X` or :class:`Y` (:data:`Which`), matched exhaustively, and
-``.letter`` gives matplotlib's name back. A projection is read by name only
-to ask whether it is the plain 2D one or the 3D one.
+``.letter`` gives matplotlib's name back. Each other variant here carries the
+string matplotlib takes for it, written once, the same way. A string from
+matplotlib or a caller becomes a variant here and nowhere else.
 """
 
 from __future__ import annotations
@@ -12,17 +14,17 @@ from dataclasses import dataclass
 from typing import ClassVar, Literal, TypeAlias
 
 Letter: TypeAlias = Literal["x", "y"]
-"""matplotlib's name for one axis of an Axes."""
+"""matplotlib's name for one axis of an Axes, as a caller writes it."""
 
-TitleLoc: TypeAlias = Literal["center", "left", "right"]
-"""``ax.set_title``'s ``loc``."""
+Letters: TypeAlias = Literal["x", "y", "both"]
+"""matplotlib's name for one axis of an Axes, or both."""
 
 
 @dataclass(frozen=True)
 class X:
     """The horizontal axis, ``ax.xaxis``: column 0 of an ``(x, y)`` pair."""
 
-    letter: ClassVar[Letter] = "x"
+    letter: ClassVar[Literal["x"]] = "x"
     column: ClassVar[int] = 0
     horizontal: ClassVar[bool] = True
 
@@ -36,7 +38,7 @@ class X:
 class Y:
     """The vertical axis, ``ax.yaxis``: column 1 of an ``(x, y)`` pair."""
 
-    letter: ClassVar[Letter] = "y"
+    letter: ClassVar[Literal["y"]] = "y"
     column: ClassVar[int] = 1
     horizontal: ClassVar[bool] = False
 
@@ -49,17 +51,8 @@ class Y:
 Which: TypeAlias = X | Y
 
 
-def which(letter: Letter) -> Which:
-    """The axis matplotlib names ``letter``."""
-    return X() if letter == "x" else Y()
-
-
-Letters: TypeAlias = Literal["x", "y", "both"]
-"""matplotlib's name for one axis of an Axes, or both."""
-
-
 def parse_which(value: object) -> Which:
-    """``"x"`` or ``"y"`` from a caller; ``ValueError`` otherwise."""
+    """``"x"`` or ``"y"`` from a caller or matplotlib; ``ValueError`` otherwise."""
     if value == "x":
         return X()
     if value == "y":
@@ -89,11 +82,78 @@ def bars_along(orientation: object) -> Which | None:
     return None
 
 
-def rectilinear(name: str) -> bool:
-    """Whether a projection name is matplotlib's plain 2D Axes."""
-    return name == "rectilinear"
+# ------------------------------------------------------------ titles
+@dataclass(frozen=True)
+class CentreTitle:
+    """``ax.set_title(...)``: the title over the middle of the Axes."""
+
+    loc: ClassVar[Literal["center"]] = "center"
 
 
-def three_d(name: object) -> bool:
-    """Whether a projection name is matplotlib's 3D Axes."""
-    return name == "3d"
+@dataclass(frozen=True)
+class LeftTitle:
+    """``ax.set_title(..., loc="left")``: a headline over the left edge."""
+
+    loc: ClassVar[Literal["left"]] = "left"
+
+
+@dataclass(frozen=True)
+class RightTitle:
+    """``ax.set_title(..., loc="right")``: a note over the right edge."""
+
+    loc: ClassVar[Literal["right"]] = "right"
+
+
+TitleLoc: TypeAlias = CentreTitle | LeftTitle | RightTitle
+"""One of an Axes' three titles."""
+
+
+# ------------------------------------------------------------ projections
+@dataclass(frozen=True)
+class Rectilinear:
+    """matplotlib's plain 2D Axes."""
+
+
+@dataclass(frozen=True)
+class ThreeD:
+    """A 3D Axes (``projection="3d"``)."""
+
+
+@dataclass(frozen=True)
+class Curved:
+    """Any other projection: polar, geographic, a registered one."""
+
+
+Projection: TypeAlias = Rectilinear | ThreeD | Curved
+
+
+def parse_projection(name: str) -> Projection:
+    """The projection matplotlib names ``name`` (``Axes.name``)."""
+    if name == "rectilinear":
+        return Rectilinear()
+    if name == "3d":
+        return ThreeD()
+    return Curved()
+
+
+# ------------------------------------------------------------ label sides
+@dataclass(frozen=True)
+class Near:
+    """An axis label on its axis' own side: left of y, below x."""
+
+
+@dataclass(frozen=True)
+class Far:
+    """An axis label across the plot: right of y, above x (a twin's side)."""
+
+
+AxisSide: TypeAlias = Near | Far
+
+
+def parse_axis_side(position: str) -> AxisSide:
+    """``Axis.get_label_position()``; ``ValueError`` for another name."""
+    if position in ("left", "bottom"):
+        return Near()
+    if position in ("right", "top"):
+        return Far()
+    raise ValueError(f"not an axis label position: {position!r}")

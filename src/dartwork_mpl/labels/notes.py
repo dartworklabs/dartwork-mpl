@@ -23,18 +23,15 @@ from .measure import (
     text_boxes,
 )
 from .model import (
-    CORNERS,
-    LINE_ENDS,
-    SIDES,
     Corner,
-    FirstFree,
     HAlign,
-    LineAnchor,
-    LineSide,
+    LinePlace,
     Side,
+    Span,
     Tries,
     Try,
     VAlign,
+    corner_order,
     parse_corner,
     parse_line_side,
     parse_line_x,
@@ -46,24 +43,10 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.transforms import Bbox
 
-_SIDE_SPECS: dict[Side, tuple[tuple[float, float], HAlign, VAlign]] = {
-    "above": ((0.0, 1.0), "center", "bottom"),
-    "below": ((0.0, -1.0), "center", "top"),
-    "right": ((1.0, 0.0), "left", "center"),
-    "left": ((-1.0, 0.0), "right", "center"),
-}
-# label_hline: the offset's sign off the line, and the alignment facing it.
-_LINE_SIDES: dict[LineSide, tuple[float, VAlign]] = {
-    "above": (1.0, "bottom"),
-    "below": (-1.0, "top"),
-}
 
-
-def _side_offset(
-    side: Side, offset_pt: float
-) -> tuple[tuple[float, float], HAlign, VAlign]:
-    (dx, dy), ha, va = _SIDE_SPECS[side]
-    return (dx * offset_pt, dy * offset_pt), ha, va
+def _side_offset(side: Side, offset_pt: float) -> tuple[float, float]:
+    dx, dy = side.offset
+    return dx * offset_pt, dy * offset_pt
 
 
 def _put(
@@ -73,9 +56,9 @@ def _put(
     va: VAlign | None = None,
 ) -> None:
     ann.xyann = xyann
-    ann.set_horizontalalignment(ha)
+    ann.set_horizontalalignment(ha.mpl)
     if va is not None:
-        ann.set_verticalalignment(va)
+        ann.set_verticalalignment(va.mpl)
 
 
 def _obstacles(
@@ -109,53 +92,47 @@ def annotate_value(
     its point moves sideways rather than below. ``dm.fs(-1)`` text, one
     weight step heavier (``dm.fw(1)``); keywords go to ``ax.annotate``.
     """
-    asked = parse_side(side)
+    sides = parse_side(side).tries
     kw.setdefault("fontweight", kw.pop("weight", fw(1)))
     existing = list(ax.texts)
-    first: Side = "above" if isinstance(asked, FirstFree) else asked
-    offset, ha, va = _side_offset(first, float(offset_pt))
+    first = sides[0]
     ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
         xy=(x, y),
         xycoords="data",
-        xytext=offset,
+        xytext=_side_offset(first, float(offset_pt)),
         textcoords="offset points",
-        ha=kw.pop("ha", ha),
-        va=kw.pop("va", va),
+        ha=kw.pop("ha", first.ha.mpl),
+        va=kw.pop("va", first.va.mpl),
         fontsize=fs(-1) if fontsize is None else fontsize,
         annotation_clip=kw.pop("annotation_clip", False),
         **kw,
     )
-    if not isinstance(asked, FirstFree):
+    if len(sides) < 2:
         return ann
     renderer = drawn_renderer(ax)
     frame = ax.get_window_extent(renderer)
     obstacles = _obstacles(ax, existing, renderer)
     tries: list[Try] = []
-    for candidate in SIDES:
-        _put(ann, *_side_offset(candidate, float(offset_pt)))
+    for candidate in sides:
+        _put(
+            ann,
+            _side_offset(candidate, float(offset_pt)),
+            candidate.ha,
+            candidate.va,
+        )
         tries.append(
             measure_try(ann.get_window_extent(renderer), frame, obstacles)
         )
-    chosen = SIDES[decide.value_side(Tries(tuple(tries))).index]
-    _put(ann, *_side_offset(chosen, float(offset_pt)))
+    chosen = sides[decide.value_side(Tries(tuple(tries))).index]
+    _put(ann, _side_offset(chosen, float(offset_pt)), chosen.ha, chosen.va)
     return ann
 
 
-_CORNER_SPECS: dict[
-    Corner, tuple[tuple[float, float], tuple[float, float], HAlign, VAlign]
-] = {
-    "upper left": ((0.0, 1.0), (1.0, -1.0), "left", "top"),
-    "upper right": ((1.0, 1.0), (-1.0, -1.0), "right", "top"),
-    "lower left": ((0.0, 0.0), (1.0, 1.0), "left", "bottom"),
-    "lower right": ((1.0, 0.0), (-1.0, 1.0), "right", "bottom"),
-}
-
-
 def _corner(ann: Annotation, loc: Corner, inset_pt: float) -> None:
-    anchor, (dx, dy), ha, va = _CORNER_SPECS[loc]
-    ann.xy = anchor
-    _put(ann, (dx * inset_pt, dy * inset_pt), ha, va)
+    dx, dy = loc.inward
+    ann.xy = loc.anchor
+    _put(ann, (dx * inset_pt, dy * inset_pt), loc.ha, loc.va)
 
 
 def annotate_corner(
@@ -176,15 +153,15 @@ def annotate_corner(
     """
     corner = parse_corner(loc)
     existing = list(ax.texts)
-    anchor, (dx, dy), ha, va = _CORNER_SPECS[corner]
+    dx, dy = corner.inward
     ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
-        xy=anchor,
+        xy=corner.anchor,
         xycoords="axes fraction",
         xytext=(dx * float(inset_pt), dy * float(inset_pt)),
         textcoords="offset points",
-        ha=kw.pop("ha", ha),
-        va=kw.pop("va", va),
+        ha=kw.pop("ha", corner.ha.mpl),
+        va=kw.pop("va", corner.va.mpl),
         fontsize=fs(-2) if fontsize is None else fontsize,
         annotation_clip=kw.pop("annotation_clip", False),
         **kw,
@@ -194,8 +171,7 @@ def annotate_corner(
     renderer = drawn_renderer(ax)
     frame = ax.get_window_extent(renderer)
     obstacles = _obstacles(ax, existing, renderer)
-    i = CORNERS.index(corner)
-    order = (corner, *CORNERS[:i], *CORNERS[i + 1 :])
+    order = corner_order(corner)
     tries: list[Try] = []
     for candidate in order:
         _corner(ann, candidate, float(inset_pt))
@@ -235,24 +211,13 @@ def _hline_span(
     return (min(xs), max(xs)) if xs else (frame.x0, frame.x1)
 
 
-def _hline_x(
-    ax: Axes, y: float, x: LineAnchor | float, renderer: RendererBase
-) -> tuple[float, HAlign]:
-    """The data x and alignment for anchor ``x`` on the line at ``y``."""
+def _hline_x(ax: Axes, y: float, x: LinePlace, renderer: RendererBase) -> float:
+    """The data x of place ``x`` on the line at ``y``."""
     left, right = _hline_span(ax, y, renderer)
-    ha: HAlign
-    if not isinstance(x, str):
-        frame = ax.get_window_extent(renderer)
-        shown, ha = frame.x0 + frame.width * float(x), "center"
-    else:
-        ends: dict[LineAnchor, float] = {
-            "left": left,
-            "right": right,
-            "center": (left + right) / 2,
-        }
-        shown, ha = ends[x], x
+    frame = ax.get_window_extent(renderer)
+    shown = x.shown(left, right, Span(float(frame.x0), float(frame.x1)))
     display_y = ax.transData.transform((ax.get_xlim()[0], y))[1]
-    return float(ax.transData.inverted().transform((shown, display_y))[0]), ha
+    return float(ax.transData.inverted().transform((shown, display_y))[0])
 
 
 def label_hline(
@@ -271,43 +236,37 @@ def label_hline(
     ``x``: the drawn line's ``"right"`` / ``"left"`` end or ``"center"``, an
     axes fraction, or ``"auto"`` (the clearer end). ``dm.fs(-2)`` text.
     """
-    toward, va = _LINE_SIDES[parse_line_side(side)]
-    anchor = parse_line_x(x)
+    off = parse_line_side(side)
+    places = parse_line_x(x).tries
     existing = list(ax.texts)
     renderer = drawn_renderer(ax)
-    first: LineAnchor | float = (
-        LINE_ENDS[0] if isinstance(anchor, FirstFree) else anchor
-    )
-    x_pos, ha = _hline_x(ax, y, first, renderer)
+    first = places[0]
     ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
-        xy=(x_pos, y),
+        xy=(_hline_x(ax, y, first, renderer), y),
         xycoords="data",
-        xytext=(0.0, toward * float(gap_pt)),
+        xytext=(0.0, off.offset[1] * float(gap_pt)),
         textcoords="offset points",
-        ha=kw.pop("ha", ha),
-        va=kw.pop("va", va),
+        ha=kw.pop("ha", first.ha.mpl),
+        va=kw.pop("va", off.va.mpl),
         fontsize=fs(-2) if fontsize is None else fontsize,
         annotation_clip=kw.pop("annotation_clip", False),
         **kw,
     )
-    if not isinstance(anchor, FirstFree):
+    if len(places) < 2:
         return ann
     frame = ax.get_window_extent(renderer)
     obstacles = _obstacles(ax, existing, renderer, lines=False)
     tries: list[Try] = []
-    for end in LINE_ENDS:
-        x_pos, ha = _hline_x(ax, y, end, renderer)
-        ann.xy = (x_pos, y)
-        ann.set_horizontalalignment(ha)
+    for end in places:
+        ann.xy = (_hline_x(ax, y, end, renderer), y)
+        ann.set_horizontalalignment(end.ha.mpl)
         tries.append(
             measure_try(ann.get_window_extent(renderer), frame, obstacles)
         )
-    x_pos, ha = _hline_x(
-        ax, y, LINE_ENDS[decide.first_free(Tries(tuple(tries))).index], renderer
-    )
-    ann.xy = (x_pos, y)
-    ann.set_horizontalalignment(ha)
+    chosen = places[decide.first_free(Tries(tuple(tries))).index]
+    ann.xy = (_hline_x(ax, y, chosen, renderer), y)
+    ann.set_horizontalalignment(chosen.ha.mpl)
     return ann
 
 
