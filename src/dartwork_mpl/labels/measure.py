@@ -26,15 +26,13 @@ from ..color import (
 )
 from ..geometry import (
     BBOX_ERRORS,
-    Curved,
-    Rectilinear,
-    ThreeD,
     axes_titles,
     get_renderer,
     label_side,
     projection,
     same_position_axes,
 )
+from ..projection import Curved, Rectilinear, ThreeD
 from .model import (
     Baseline,
     Bottom,

@@ -4,7 +4,7 @@ Platform code: it knows matplotlib's renderer and artist extents and nothing
 about any capability, and it imports no slice. A calculation one slice alone
 uses lives in that slice.
 
-- :mod:`.model`: matplotlib's names for titles and projections as types;
+- :mod:`.model`: matplotlib's names for an Axes' titles as types;
 - :mod:`.renderer`: a measurement renderer and the errors measuring raises;
 - :mod:`.figure`: what a (Sub)Figure holds and its figure-level artists;
 - :mod:`.axes`: an Axes' titles and drawn tick labels, its twins and shares;
@@ -48,28 +48,15 @@ from .ink import (
     text_inks,
     within_clip_path,
 )
-from .model import (
-    CentreTitle,
-    Curved,
-    LeftTitle,
-    Projection,
-    Rectilinear,
-    RightTitle,
-    ThreeD,
-    TitleLoc,
-)
+from .model import CentreTitle, LeftTitle, RightTitle, TitleLoc
 from .renderer import BBOX_ERRORS, canvas_renderer, get_renderer
 
 __all__ = [
     "BBOX_ERRORS",
     "UNCLIPPED",
     "CentreTitle",
-    "Curved",
     "LeftTitle",
-    "Projection",
-    "Rectilinear",
     "RightTitle",
-    "ThreeD",
     "TitleLoc",
     "axes_titles",
     "axis_of",

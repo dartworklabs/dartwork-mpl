@@ -25,6 +25,7 @@ from ..geometry import (
     axes_titles,
     drawn_tick_labels,
     iter_figure_level_extents,
+    projection,
     same_position_axes,
 )
 from ..labels import note_gap_pt
@@ -64,7 +65,6 @@ from .model import (
     authored,
     centred,
     edge_of,
-    parse_projection,
 )
 
 if TYPE_CHECKING:
@@ -116,7 +116,7 @@ def grid_axes(fig: Figure, gs: GridSpec) -> list[Axes]:
 
 def _cartesian(ax: Axes) -> bool:
     """A visible rectilinear Axes with its axes on: the only kind fitted."""
-    return ax.get_visible() and ax.axison and parse_projection(ax.name).flat
+    return ax.get_visible() and ax.axison and projection(ax).flat
 
 
 # -- one step -----------------------------------------------------------------
@@ -229,7 +229,7 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
     plot = None
     if window is not None and window.width > 0 and window.height > 0:
         plot = _box(window)
-    if parse_projection(ax.name).cube:
+    if projection(ax).spatial:
         if window is None:
             return None
         return AxesContent(plot, position, (), _tight_3d(ax, renderer))

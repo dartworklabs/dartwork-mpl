@@ -9,17 +9,14 @@ import numpy as np
 from matplotlib.text import Text
 
 from ..axis import AxisSide, Which, X, Y, parse_axis_side
-from .model import (
-    CentreTitle,
+from ..projection import (
     Curved,
-    LeftTitle,
     Projection,
     Rectilinear,
-    RightTitle,
     ThreeD,
-    TitleLoc,
     parse_projection,
 )
+from .model import CentreTitle, LeftTitle, RightTitle, TitleLoc
 from .renderer import opens_group
 
 if TYPE_CHECKING:

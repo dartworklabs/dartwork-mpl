@@ -30,6 +30,7 @@ from ..geometry import (
     figure_legends,
     get_renderer,
     iter_figure_level_extents,
+    projection,
     same_position_axes,
     shared_axes,
     text_inks,
@@ -55,7 +56,6 @@ from .model import (
     Text,
     TickRow,
     ValueLabel,
-    flat,
 )
 from .overlap import (
     corner_tick_overlaps,
@@ -141,7 +141,7 @@ class Reader:
                     else roles.FreeText()
                 )
                 found.append(self.text(t, role, i))
-            if not flat(ax.name):
+            if not projection(ax).flat:
                 found.extend(
                     self.text(t, roles.TickLabel(), i)
                     for axis in AXES
@@ -248,7 +248,7 @@ class Reader:
         corners: list[Corner] = []
         seen: set[int] = set()
         for i, ax in self.panels:
-            if not flat(ax.name):
+            if not projection(ax).flat:
                 continue
             for which in AXES:
                 row = self.tick_row(i, ax, which)
@@ -256,7 +256,7 @@ class Reader:
                     rows.append(row)
             if id(ax) in seen:
                 continue
-            group = [a for a in same_position_axes(ax) if flat(a.name)]
+            group = [a for a in same_position_axes(ax) if projection(a).flat]
             seen.update(id(a) for a in group)
             pairs = corner_tick_overlaps(group, self.renderer)
             if pairs:
@@ -294,7 +294,7 @@ class Reader:
         seen: set[int] = set()
         plots: list[tuple[int, list[Axes], Bbox]] = []
         for i, ax in self._owners():
-            if not flat(ax.name) or id(ax) in seen:
+            if not projection(ax).flat or id(ax) in seen:
                 continue
             group = same_position_axes(ax)
             seen.update(id(a) for a in group)
@@ -398,7 +398,7 @@ class Reader:
             ax = handle.axes
             if (
                 not isinstance(ax, Axes)
-                or not flat(ax.name)
+                or not projection(ax).flat
                 or not plain_label(handle, ax)
             ):
                 continue

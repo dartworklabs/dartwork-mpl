@@ -120,23 +120,6 @@ def turned_as(rotation: float, mode: Mode, angle: Degrees) -> bool:
     return rotation == angle and mode == TURN_MODE
 
 
-@dataclass(frozen=True)
-class Projection:
-    """An Axes' projection, from the name matplotlib gives it (``ax.name``).
-
-    ``flat``: the plain rectilinear Axes, the only kind whose text is fitted;
-    ``cube``: a 3-D Axes, measured by its tight boxes.
-    """
-
-    flat: bool
-    cube: bool
-
-
-def parse_projection(name: str) -> Projection:
-    """``ax.name`` as a :class:`Projection`."""
-    return Projection(flat=name == "rectilinear", cube=name == "3d")
-
-
 def authored(text: str) -> bool:
     """Text its author broke into lines or wrote as mathtext."""
     return "\n" in text or "$" in text

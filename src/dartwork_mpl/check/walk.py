@@ -18,7 +18,7 @@ from ..geometry import (
     in_view_tick_labels,
     panel_letters,
 )
-from .model import spatial
+from ..projection import parse_projection
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -112,7 +112,7 @@ def extent(text: Text, renderer: RendererBase) -> Bbox:
     draws (:func:`placed`). Every other text: its ``get_window_extent``.
     """
     axes = text.axes
-    if axes is None or not spatial(axes.name):
+    if axes is None or not parse_projection(axes.name).spatial:
         return text.get_window_extent(renderer)
     return placed(text)
 

@@ -1,4 +1,4 @@
-"""matplotlib's names for a title and a projection, read once into types.
+"""matplotlib's names for an Axes' three titles, read once into types.
 
 Each variant here carries the string matplotlib takes for it, written once. A
 string from matplotlib becomes a variant here and nowhere else.
@@ -37,31 +37,3 @@ class RightTitle:
 
 TitleLoc: TypeAlias = CentreTitle | LeftTitle | RightTitle
 """One of an Axes' three titles."""
-
-
-# ------------------------------------------------------------ projections
-@dataclass(frozen=True)
-class Rectilinear:
-    """matplotlib's plain 2D Axes."""
-
-
-@dataclass(frozen=True)
-class ThreeD:
-    """A 3D Axes (``projection="3d"``)."""
-
-
-@dataclass(frozen=True)
-class Curved:
-    """Any other projection: polar, geographic, a registered one."""
-
-
-Projection: TypeAlias = Rectilinear | ThreeD | Curved
-
-
-def parse_projection(name: str) -> Projection:
-    """The projection matplotlib names ``name`` (``Axes.name``)."""
-    if name == "rectilinear":
-        return Rectilinear()
-    if name == "3d":
-        return ThreeD()
-    return Curved()

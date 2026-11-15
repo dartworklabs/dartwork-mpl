@@ -24,9 +24,6 @@ from matplotlib.transforms import IdentityTransform, Transform
 
 from ..axis import Far, Near, Which, X, Y, bars_along, parse_which
 from ..geometry import (
-    Curved,
-    Rectilinear,
-    ThreeD,
     axes_titles,
     axis_of,
     label_side,
@@ -34,6 +31,7 @@ from ..geometry import (
     same_position_axes,
     shared_axes,
 )
+from ..projection import Curved, Rectilinear, ThreeD
 from .defaults import config
 from .model import (
     TWIN_SIDES,

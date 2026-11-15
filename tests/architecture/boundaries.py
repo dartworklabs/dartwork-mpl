@@ -57,6 +57,9 @@ PLATFORM = frozenset(
         # The x/y axis and an axis label's side, as pure types (check,
         # labels, layout, ticks and geometry name them).
         "dartwork_mpl.axis",
+        # An Axes' projection as a pure type (check, layout, labels, ticks
+        # and geometry ask it).
+        "dartwork_mpl.projection",
         # Figure measurement two or more slices share.
         "dartwork_mpl.geometry",
         # The edge-case registry every slice's edges.py appends to.

@@ -81,19 +81,9 @@ class Box:
 AXES: tuple[Which, ...] = (X(), Y())
 
 
-def flat(projection: str) -> bool:
-    """An Axes' ``name`` is the plain x/y projection (not polar, 3D ...)."""
-    return projection == "rectilinear"
-
-
 def lies_across(orientation: str | None) -> bool:
     """A bar container's ``orientation`` draws horizontal bars."""
     return orientation == "horizontal"
-
-
-def spatial(projection: str | None) -> bool:
-    """An Axes' ``name`` is the 3D projection."""
-    return projection == "3d"
 
 
 _NUMBER = re.compile(r"[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?")
