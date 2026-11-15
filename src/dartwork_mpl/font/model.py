@@ -69,3 +69,15 @@ class Expected:
     single_weight: frozenset[str]
     math: frozenset[str]
     preset_weight: Weight
+
+
+def math_sets(fontset: str, fallback: str) -> set[str]:
+    """The mathtext sets ``mathtext.fontset`` consults.
+
+    A ``custom`` set falls back to ``mathtext.fallback``; the built-in sets
+    (Computer Modern included) fall back to STIX.
+    """
+    sets = {fallback} if fontset == "custom" else {fontset, "stix"}
+    if "cm" in sets:
+        sets.add("stix")
+    return sets

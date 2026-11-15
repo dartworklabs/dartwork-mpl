@@ -13,12 +13,12 @@ import json
 from collections.abc import Mapping
 from importlib.resources import files
 from types import MappingProxyType
-from typing import cast
 
 from ..edgecase import settle
 from .decide import diverging_row
 from .edges import CURATED_ROW
-from .model import Catalog, DivergingSource, Family, Kind, Library
+from .model import Catalog, DivergingSource, Family, Kind, Library, Row, paired
+from .shipped import Shipped, shades
 from .space import Hex
 
 __all__ = ["CATALOG", "CURATED"]
@@ -38,16 +38,9 @@ LIBRARIES = (
     Library("primer", "pr.", "primer_colors.json", "Primer"),
 )
 
-Row = tuple[Hex, ...]
-
 
 def _read(name: str) -> str:
     return (ASSETS / name).read_text(encoding="utf-8")
-
-
-def _rows(table: object) -> dict[str, Row]:
-    rows = cast("dict[str, list[str]]", table)
-    return {name: tuple(Hex(h) for h in row) for name, row in rows.items()}
 
 
 def _library(library: Library) -> dict[str, Hex]:
@@ -61,21 +54,20 @@ def _library(library: Library) -> dict[str, Hex]:
             key, value = line.split(":", maxsplit=1)
             named[f"{prefix}{key.strip()}"] = Hex(value.strip())
         return named
-    table = json.loads(_read(library.source))
-    shades = cast("dict[str, list[list[str]]]", table)
+    table = shades(json.loads(_read(library.source)), library.source)
     return {
         f"{prefix}{name.lower().replace(' ', '')}{weight}": Hex(f"#{value}")
-        for name, row in shades.items()
+        for name, row in table.items()
         for weight, value in row
     }
 
 
-def _families(data: Mapping[str, object]) -> dict[str, Family]:
+def _families(data: Shipped) -> dict[str, Family]:
     """Every ``dc.*`` family, by kind in the order ``list_colors`` shows."""
-    ladders, cmaps = _rows(data["ladders"]), _rows(data["colormaps"])
-    curated = _rows(data["diverging"])
-    picks = cast("dict[str, dict[str, list[int]]]", data["multi_hue_stops"])
-    diverging = [name for name in cmaps if "_" in name]
+    ladders, cmaps = data.ladders, data.colormaps
+    curated = data.diverging
+    picks = data.picks
+    diverging = [name for name in cmaps if paired(name)]
     multi_hue = [
         name
         for name in cmaps
@@ -87,19 +79,14 @@ def _families(data: Mapping[str, object]) -> dict[str, Family]:
         source = DivergingSource(ladders[low], ladders[high], curated.get(name))
         return settle(source, diverging_row(source), (CURATED_ROW,)).plan
 
-    qualitative = {**_rows(data["qualitative"]), **_rows(data["cycles"])}
+    qualitative = {**data.qualitative, **data.cycles}
     families = [
         *(
             Family(name, Kind.SEQUENTIAL, row, cmaps[name])
             for name, row in ladders.items()
         ),
         *(
-            Family(
-                name,
-                Kind.MULTI_HUE,
-                cmap=cmaps[name],
-                picks=tuple(tuple(ix) for ix in picks[name].values()),
-            )
+            Family(name, Kind.MULTI_HUE, cmap=cmaps[name], picks=picks[name])
             for name in multi_hue
         ),
         *(
@@ -130,9 +117,9 @@ def _named(families: Mapping[str, Family]) -> dict[str, Hex]:
 
 def load() -> tuple[Catalog, Mapping[str, Row]]:
     """The catalog, and the hand-tuned sets (the hash test freezes them)."""
-    data = cast("dict[str, object]", json.loads(_read("dartwork.json")))
+    data = Shipped.parse(json.loads(_read("dartwork.json")))
     families = _families(data)
-    curated = {**_rows(data["qualitative"]), **_rows(data["diverging"])}
+    curated = {**data.qualitative, **data.diverging}
     catalog = Catalog(
         libraries=LIBRARIES,
         families=MappingProxyType(families),

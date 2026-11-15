@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import cast
+from typing import TypeGuard, assert_never
 
 # Suffixes savefig writes; a stem ending in one of them has it cut off.
 EXTENSIONS = "png pdf svg svgz eps ps jpg jpeg tif tiff webp raw rgba"
@@ -28,16 +28,42 @@ class Writer(Enum):
 
     @property
     def timestamp_key(self) -> str | None:
-        """The metadata key that would embed the wall-clock time."""
-        return TIMESTAMP_KEYS.get(self)
+        """The metadata key that would embed the wall-clock time.
 
+        PDF writes ``/CreationDate`` and SVG ``<dc:date>`` unless the key
+        is None.
+        """
+        match self:
+            case Writer.PDF:
+                return "CreationDate"
+            case Writer.SVG | Writer.SVGZ:
+                return "Date"
+            case Writer.PLAIN:
+                return None
+            case _:
+                assert_never(self)
 
-# PDF writes ``/CreationDate`` and SVG ``<dc:date>`` unless the key is None.
-TIMESTAMP_KEYS = {
-    Writer.PDF: "CreationDate",
-    Writer.SVG: "Date",
-    Writer.SVGZ: "Date",
-}
+    @property
+    def svg(self) -> bool:
+        """Writes SVG, whose ids ``svg.hashsalt`` seeds."""
+        match self:
+            case Writer.SVG | Writer.SVGZ:
+                return True
+            case Writer.PLAIN | Writer.PDF:
+                return False
+            case _:
+                assert_never(self)
+
+    @property
+    def gzipped(self) -> bool:
+        """Writes SVG gzipped here, with a fixed header time."""
+        match self:
+            case Writer.SVGZ:
+                return True
+            case Writer.PLAIN | Writer.PDF | Writer.SVG:
+                return False
+            case _:
+                assert_never(self)
 
 
 @dataclass(frozen=True)
@@ -87,6 +113,10 @@ class Format:
         return cls(ext, writer)
 
 
+def _mapping(value: object) -> TypeGuard[Mapping[object, object]]:
+    return isinstance(value, Mapping)
+
+
 @dataclass(frozen=True)
 class Metadata:
     """savefig ``metadata`` items, in order (key order reaches the PDF)."""
@@ -98,12 +128,11 @@ class Metadata:
         """The caller's ``metadata`` mapping, or ``None`` when not given."""
         if value is None:
             return None
-        if not isinstance(value, Mapping):
+        if not _mapping(value):
             raise TypeError(
                 f"metadata must be a dict (got {type(value).__name__})"
             )
-        items = cast(Mapping[object, object], value).items()
-        return cls(tuple((str(k), v) for k, v in items))
+        return cls(tuple((str(k), v) for k, v in value.items()))
 
     def keys(self) -> frozenset[str]:
         """The keys set."""

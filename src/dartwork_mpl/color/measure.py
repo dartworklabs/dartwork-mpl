@@ -9,7 +9,6 @@ have to be guessed at.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import cast
 
 import matplotlib.colors as mcolors
 
@@ -20,8 +19,12 @@ from .space import Rgb, Rgba
 
 def registry() -> tuple[Name, ...]:
     """Every registered colour name, sorted (non-string keys dropped)."""
-    # A caller may leave a non-string key in this live, mutable mapping.
-    keys = cast("Iterable[object]", mcolors.get_named_colors_mapping())
+    return names(mcolors.get_named_colors_mapping())
+
+
+def names(keys: Iterable[object]) -> tuple[Name, ...]:
+    """The string keys, sorted: a caller may leave a non-string key in
+    matplotlib's live, mutable mapping, whatever its stub says."""
     return tuple(sorted(Name(n) for n in keys if isinstance(n, str)))
 
 
@@ -43,7 +46,9 @@ def unknown_name(name: str) -> str:
 def rgba(value: object) -> Rgba:
     """``value`` as matplotlib reads it, alpha included."""
     try:
-        return Rgba.of(mcolors.to_rgba(value))  # type: ignore[arg-type]
+        # The public colour arguments take what matplotlib reads at run
+        # time (arrays too), wider than its ColorType stub; it validates.
+        return Rgba.of(mcolors.to_rgba(value))  # pyright: ignore[reportArgumentType]
     except ValueError as exc:
         if not isinstance(value, str):
             raise

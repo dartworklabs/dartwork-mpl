@@ -19,6 +19,7 @@ import matplotlib.colors as mcolors
 import numpy as np
 from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.collections import (
+    Collection,
     LineCollection,
     PathCollection,
     PolyCollection,
@@ -45,7 +46,7 @@ from ..geometry import (
     text_inks,
     within_clip_path,
 )
-from .model import Contrast, Hit, Text
+from .model import Contrast, Hit, Text, lies_across
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
@@ -154,12 +155,12 @@ def _line(ink: Ink, line: Line2D, px_per_pt: float) -> None:
 
 def _collection(
     ink: Ink,
-    coll: object,
+    coll: Collection,
     renderer: RendererBase,
     px_per_pt: float,
     areas: bool,
 ) -> None:
-    region, clip = clip_region(coll), clip_path_px(coll)  # type: ignore[arg-type]
+    region, clip = clip_region(coll), clip_path_px(coll)
     if isinstance(coll, PathCollection) and len(coll.get_sizes()):
         xy, r = drawn_scatter_discs(coll, px_per_pt)
         if len(xy):
@@ -206,7 +207,7 @@ def data_ink(
                     box = drawn_patch_box(patch, renderer)
                     if box is not None and box.width > 0 and box.height > 0:
                         hit = Hit("bar", name_of(container))
-                        horizontal = container.orientation == "horizontal"
+                        horizontal = lies_across(container.orientation)
                         ink.bars.append((hit, box, horizontal))
     return ink
 
@@ -265,9 +266,9 @@ def text_contrast(fig: Figure, texts: tuple[Text, ...]) -> tuple[Contrast, ...]:
     """
     root = fig.get_figure(root=True) or fig
     w, h = root.bbox.size
-    agg = RendererAgg(int(w), int(h), root.dpi)  # type: ignore[no-untyped-call]
+    agg = RendererAgg(int(w), int(h), root.dpi)
     root.draw(agg)
-    rgba = np.asarray(agg.buffer_rgba(), dtype=float) / 255.0  # type: ignore[no-untyped-call]
+    rgba = np.asarray(agg.buffer_rgba(), dtype=float) / 255.0
     pixels = rgba[..., :3] * rgba[..., 3:] + (1.0 - rgba[..., 3:])
     rows, cols = pixels.shape[:2]
     found: list[Contrast] = []

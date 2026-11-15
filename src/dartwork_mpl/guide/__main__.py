@@ -24,11 +24,19 @@ def main(argv: list[str] | None = None) -> int:
     install.add_argument(
         "--force", action="store_true", help="replace what is there"
     )
-    commands.add_parser("path", help="print the installed skill folder")
+    install.set_defaults(run=_install)
+    path = commands.add_parser("path", help="print the installed skill folder")
+    path.set_defaults(run=_path)
     args = parser.parse_args(argv)
-    if args.command == "path":
-        print(skill_path())
-        return 0
+    return args.run(args)
+
+
+def _path(_args: argparse.Namespace) -> int:
+    print(skill_path())
+    return 0
+
+
+def _install(args: argparse.Namespace) -> int:
     try:
         done = install_skill(args.dest, copy=args.copy, force=args.force)
     except FileExistsError as exc:

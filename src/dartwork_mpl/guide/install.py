@@ -27,6 +27,10 @@ class Installed:
     action: str
 
 
+#: This package's import name (``dartwork_mpl``).
+PACKAGE = __name__.partition(".")[0]
+
+
 def skill_path() -> Path:
     """The installed skill folder (``SKILL.md`` and ``references/``)."""
     return Path(str(SKILL)).resolve()
@@ -34,7 +38,7 @@ def skill_path() -> Path:
 
 def _ours(target: Path) -> bool:
     """A link this installer made: it points into a dartwork_mpl package."""
-    return target.is_symlink() and "dartwork_mpl" in str(target.readlink())
+    return target.is_symlink() and PACKAGE in str(target.readlink())
 
 
 def _targets(dest: Path) -> list[Path]:

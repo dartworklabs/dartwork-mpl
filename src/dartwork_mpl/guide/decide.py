@@ -10,7 +10,7 @@ tags counting twice, templates first on a tie.
 
 from __future__ import annotations
 
-import re
+from typing import assert_never
 
 from .model import (
     Check,
@@ -27,30 +27,21 @@ from .model import (
     Spot,
 )
 
-# A colour matplotlib parses without a name: hex (#rgb, #rgba, #rrggbb,
-# #rrggbbaa), a cycle entry (C0) or a grey level in [0, 1].
-_HEX = re.compile(r"#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
-_CYCLE = re.compile(r"C\d+")
-_GREY = re.compile(r"(?:0(?:\.\d*)?|1(?:\.0*)?|\.\d+)")
-
 
 def is_color(literal: Literal, known: Known) -> bool:
     """Whether matplotlib reads the literal as a colour."""
-    value = literal.value.strip()
-    return bool(
-        value.lower() in known.colors
-        or value.lower() == "none"
-        or _HEX.fullmatch(value)
-        or _CYCLE.fullmatch(value)
-        or _GREY.fullmatch(value)
-    )
+    return known.is_color(literal.value)
 
 
 def broken(literal: Literal, known: Known) -> bool:
     """Whether a literal names nothing matplotlib has registered."""
-    if literal.check is Check.COLORMAP:
-        return literal.value not in known.colormaps
-    return not is_color(literal, known)
+    match literal.check:
+        case Check.COLORMAP:
+            return literal.value not in known.colormaps
+        case Check.COLOR:
+            return not is_color(literal, known)
+        case _:
+            assert_never(literal.check)
 
 
 def finding(rule: Rule, facts: LintFacts, spot: Spot) -> Finding:

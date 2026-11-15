@@ -58,7 +58,9 @@ def install(plan: Plan) -> None:
     if any(a is not b for a, b in zip(old, new, strict=True)):
         # In place: matplotlib's manager holds this list object.
         manager.ttflist[:] = new
-        manager._findfont_cached.cache_clear()  # type: ignore[attr-defined]
+        # The lookup cache is private and missing from matplotlib's stub;
+        # nothing public clears it.
+        manager._findfont_cached.cache_clear()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 
 
 def register() -> None:

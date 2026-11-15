@@ -15,9 +15,18 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple, NewType
+from typing import (
+    NamedTuple,
+    NewType,
+    SupportsFloat,
+    SupportsIndex,
+    TypeVar,
+    assert_never,
+)
 
 from .space import Color, Hex, Oklab, Oklch, Rgb, finite
+
+T = TypeVar("T")
 
 # A matplotlib colour name (``"oc.red5"``, ``"tab:blue"``) or any text.
 Name = NewType("Name", str)
@@ -101,6 +110,30 @@ class Kind(Enum):
                 f"Unknown color kind {text!r}; expected one of: {expected}."
             ) from None
 
+    @property
+    def continuous(self) -> bool:
+        """The family has a 256-step colormap (all but qualitative)."""
+        match self:
+            case Kind.QUALITATIVE:
+                return False
+            case (
+                Kind.SEQUENTIAL | Kind.MULTI_HUE | Kind.DIVERGING | Kind.CYCLIC
+            ):
+                return True
+            case _:
+                assert_never(self)
+
+    @property
+    def open_ended(self) -> bool:
+        """Any ``n`` up to the limit is designed (multi-hue, cyclic)."""
+        match self:
+            case Kind.MULTI_HUE | Kind.CYCLIC:
+                return True
+            case Kind.SEQUENTIAL | Kind.DIVERGING | Kind.QUALITATIVE:
+                return False
+            case _:
+                assert_never(self)
+
 
 # The most stops each kind's designed discrete form has (None: no limit
 # beyond ``Family.size``).
@@ -131,7 +164,7 @@ class Family:
     @property
     def size(self) -> int | None:
         """Stops in the designed form; None for multi-hue and cyclic."""
-        if self.kind in (Kind.MULTI_HUE, Kind.CYCLIC):
+        if self.kind.open_ended:
             return None
         return len(self.stops)
 
@@ -160,6 +193,16 @@ class Count:
         return cls(value)
 
 
+def real(value: object) -> float:
+    """``value`` as ``float()`` reads it; ``TypeError`` for what it cannot."""
+    if isinstance(value, str | SupportsFloat | SupportsIndex):
+        return float(value)
+    raise TypeError(
+        "float() argument must be a string or a real number, "
+        f"not {type(value).__name__!r}"
+    )
+
+
 @dataclass(frozen=True)
 class Ratio:
     """A WCAG contrast ratio, at least 1 (1:1) and at most 21 (black on white)."""
@@ -169,7 +212,7 @@ class Ratio:
     @classmethod
     def parse(cls, value: object) -> Ratio:
         """A positive finite ratio; else ``ValueError``."""
-        number = float(value)  # type: ignore[arg-type]
+        number = real(value)
         if not math.isfinite(number) or number <= 0:
             raise ValueError("min_ratio must be a positive finite number")
         return cls(number)
@@ -184,7 +227,7 @@ class Weight:
     @classmethod
     def parse(cls, value: object) -> Weight:
         """A share in ``[0, 1]``; else ``ValueError``."""
-        number = float(value)  # type: ignore[arg-type]
+        number = real(value)
         if not math.isfinite(number) or not 0.0 <= number <= 1.0:
             raise ValueError(
                 f"alpha must be a finite number in [0, 1], got {value!r}"
@@ -223,6 +266,11 @@ class Locale(Enum):
 
     DEFAULT = "default"
     KR = "kr"
+
+    @classmethod
+    def parse(cls, text: str) -> Locale:
+        """``"kr"`` is Korea's convention; anything else the default."""
+        return cls.KR if text == "kr" else cls.DEFAULT
 
 
 @dataclass(frozen=True)
@@ -368,6 +416,16 @@ class Ink(Enum):
     LIGHT = "light"
     DARK = "dark"
 
+    def pick(self, light: T, dark: T) -> T:
+        """``light`` for the light ink, ``dark`` for the dark one."""
+        match self:
+            case Ink.LIGHT:
+                return light
+            case Ink.DARK:
+                return dark
+            case _:
+                assert_never(self)
+
 
 @dataclass(frozen=True)
 class Form:
@@ -383,3 +441,11 @@ class SemanticFacts:
 
     locale: Locale
     catalog: Catalog
+
+
+Row = tuple[Hex, ...]
+
+
+def paired(name: str) -> bool:
+    """A diverging colormap's name: two ladders, ``low_high``."""
+    return "_" in name

@@ -6,6 +6,8 @@ are not a defect; the ``why`` says which source that was.
 
 from __future__ import annotations
 
+from typing import assert_never
+
 from ..edgecase import EdgeCase
 from .model import Check, Code, Findings, LintFacts, Registered
 
@@ -37,7 +39,13 @@ def drop_hand_merge(facts: LintFacts, plan: Findings) -> Findings:
 
 
 def _registered_by(code: Code, check: Check) -> Registered:
-    return code.colormaps if check is Check.COLORMAP else code.colors
+    match check:
+        case Check.COLORMAP:
+            return code.colormaps
+        case Check.COLOR:
+            return code.colors
+        case _:
+            assert_never(check)
 
 
 def _self_registered(

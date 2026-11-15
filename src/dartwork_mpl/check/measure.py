@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from matplotlib.category import StrCategoryFormatter
@@ -41,6 +41,7 @@ from .ink import (
     words_box,
 )
 from .model import (
+    AXES,
     Axis,
     Box,
     Corner,
@@ -52,6 +53,7 @@ from .model import (
     Text,
     TickRow,
     ValueLabel,
+    flat,
 )
 from .overlap import (
     corner_tick_overlaps,
@@ -60,6 +62,7 @@ from .overlap import (
     pair_gap_px,
     tick_label_overlaps,
 )
+from .walk import reads_as_axes
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -67,7 +70,6 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend as MplLegend
 
-Which = Literal["x", "y"]
 _BOLD = {"bold", "heavy", "black", "extra bold", "semibold", "demibold"}
 
 
@@ -104,8 +106,6 @@ class Reader:
             return None
         if bb.width <= 0 or bb.height <= 0:
             return None
-        if role is Role.TEXT and id(t) in self.letters:
-            role = Role.PANEL_LETTER
         em = float(t.get_fontsize()) * self.pt
         return Text(t, t.get_text(), role, panel, box_of(bb), em)
 
@@ -124,14 +124,16 @@ class Reader:
                         if id(t) in titles
                         else Role.AXIS_LABEL
                         if id(t) in labels
+                        else Role.PANEL_LETTER
+                        if id(t) in self.letters
                         else Role.TEXT
                     )
                     found.append(self.text(t, role, i))
-                if owner.name != "rectilinear" or owner is not ax:
+                if not flat(owner.name) or owner is not ax:
                     found.extend(
                         self.text(t, Role.TICK, i)
-                        for which in ("x", "y")
-                        for t in drawn_tick_labels(owner, which)
+                        for axis in AXES
+                        for t in drawn_tick_labels(owner, axis.mpl)
                     )
         return tuple(t for t in found if t is not None)
 
@@ -146,18 +148,18 @@ class Reader:
         return tuple(t for t in found if t is not None)
 
     # ------------------------------------------------------------ ticks
-    def _sup_label(self, ax: Axes, which: Which) -> bool:
+    def _sup_label(self, ax: Axes, which: Axis) -> bool:
         fig = ax.get_figure(root=False)
-        sup = getattr(fig, "_supxlabel" if which == "x" else "_supylabel", None)
+        sup = getattr(fig, which.pick("_supxlabel", "_supylabel"), None)
         return bool(
             sup is not None and sup.get_visible() and sup.get_text().strip()
         )
 
-    def tick_row(self, i: int, ax: Axes, which: Which) -> TickRow | None:
+    def tick_row(self, i: int, ax: Axes, which: Axis) -> TickRow | None:
         """One axis' drawn major labels and what they need along it."""
-        axis = ax.xaxis if which == "x" else ax.yaxis
+        axis = which.pick(ax.xaxis, ax.yaxis)
         drawn = [
-            t for t in drawn_tick_labels(ax, which) if t.get_text().strip()
+            t for t in drawn_tick_labels(ax, which.mpl) if t.get_text().strip()
         ]
         first = {id(tick.label1) for tick in axis.get_major_ticks()}
         rows = [
@@ -172,12 +174,12 @@ class Reader:
         if not labels:
             return None
         frame = ax.get_window_extent(self.renderer)
-        span = frame.width if which == "x" else frame.height
+        span = which.pick(frame.width, frame.height)
         r = self.renderer
 
         def centre(t: Any) -> float:
             b = t.get_window_extent(r)
-            return float(b.x0 + b.x1 if which == "x" else b.y0 + b.y1)
+            return float(which.pick(b.x0 + b.x1, b.y0 + b.y1))
 
         need: float | None = 0.0
         closest: float | None = None
@@ -206,11 +208,11 @@ class Reader:
             isinstance(formatter, FuncFormatter)
             and isinstance(axis.get_major_locator(), FixedLocator)
         )
-        twins = [a for a in shared_axes(ax, which) if a is not ax]
+        twins = [a for a in shared_axes(ax, which.mpl) if a is not ax]
         return TickRow(
             handle=ax,
             panel=i,
-            axis=Axis(which),
+            axis=which,
             labels=labels,
             span=float(span),
             need=need,
@@ -223,7 +225,7 @@ class Reader:
             ),
             labelled_elsewhere=self._sup_label(ax, which)
             or any(
-                (a.xaxis if which == "x" else a.yaxis).label.get_text().strip()
+                which.pick(a.xaxis, a.yaxis).label.get_text().strip()
                 for a in twins
             ),
         )
@@ -234,17 +236,15 @@ class Reader:
         corners: list[Corner] = []
         seen: set[int] = set()
         for i, ax in self.panels:
-            if ax.name != "rectilinear":
+            if not flat(ax.name):
                 continue
-            for which in ("x", "y"):
+            for which in AXES:
                 row = self.tick_row(i, ax, which)
                 if row is not None:
                     rows.append(row)
             if id(ax) in seen:
                 continue
-            group = [
-                a for a in same_position_axes(ax) if a.name == "rectilinear"
-            ]
+            group = [a for a in same_position_axes(ax) if flat(a.name)]
             seen.update(id(a) for a in group)
             pairs = corner_tick_overlaps(group, self.renderer)
             if pairs:
@@ -270,7 +270,8 @@ class Reader:
             if drawn_in_tree(ax):
                 found.append((i, ax))
                 for child in ax.child_axes:
-                    walk(i, cast("Axes", child))
+                    if reads_as_axes(child):
+                        walk(i, child)
 
         for i, ax in enumerate(self.fig.axes):
             walk(i, ax)
@@ -281,7 +282,7 @@ class Reader:
         seen: set[int] = set()
         plots: list[tuple[int, list[Axes], Bbox]] = []
         for i, ax in self._owners():
-            if ax.name != "rectilinear" or id(ax) in seen:
+            if not flat(ax.name) or id(ax) in seen:
                 continue
             group = same_position_axes(ax)
             seen.update(id(a) for a in group)
@@ -377,14 +378,10 @@ class Reader:
         inks: dict[int, Ink] = {}
         touch = 0.5 * self.pt
         for t in texts:
-            if t.role is not Role.TEXT or t.number is None or t.panel is None:
+            if not t.role.free or t.number is None or t.panel is None:
                 continue
             ax = getattr(t.handle, "axes", None)
-            if (
-                ax is None
-                or ax.name != "rectilinear"
-                or not plain_label(t.handle, ax)
-            ):
+            if ax is None or not flat(ax.name) or not plain_label(t.handle, ax):
                 continue
             if id(ax) not in inks:
                 frame = ax.get_window_extent(self.renderer)

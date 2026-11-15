@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
-from .model import Format, SavePlan, Write, Writer
+from .model import Format, SavePlan, Write
 
 
 def ambient_salt() -> bool:
@@ -50,11 +50,11 @@ def save_one(
     # path parameters unparameterised, so both read as partially unknown.
     salted = (
         plt.rc_context({"svg.hashsalt": item.salt})  # pyright: ignore[reportUnknownMemberType]
-        if item.salt is not None and item.writer in (Writer.SVG, Writer.SVGZ)
+        if item.salt is not None and item.writer.svg
         else contextlib.nullcontext()
     )
     with salted:
-        if item.writer is not Writer.SVGZ:
+        if not item.writer.gzipped:
             fig.savefig(item.path, bbox_inches=bbox_inches, **options)  # pyright: ignore[reportUnknownMemberType]
             return
         buffer = io.BytesIO()
