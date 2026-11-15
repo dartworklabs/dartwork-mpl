@@ -6,7 +6,7 @@ category names are once drawn as tick labels.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, assert_never
 
 import matplotlib as mpl
 from matplotlib.backends.backend_agg import RendererAgg
@@ -34,11 +34,16 @@ def active_page() -> Page:
     for name in active_presets():
         base = name.removesuffix("-kr")
         family = FAMILIES.get(base)
-        if family is Family.POSTER:
-            font_pt = float(load_style_dict(f"font-{base}")["font.size"])
-            return Page(family, font_pt / REPORT_FONT_PT)
-        if family is not None:
-            return Page(family)
+        match family:
+            case None:
+                continue
+            case Family.POSTER:
+                font_pt = float(load_style_dict(f"font-{base}")["font.size"])
+                return Page(family, font_pt / REPORT_FONT_PT)
+            case Family.REPORT | Family.PAPER | Family.SLIDES:
+                return Page(family)
+            case _:
+                assert_never(family)
     return Page()
 
 
@@ -54,8 +59,7 @@ def name_widths(names: tuple[str, ...]) -> NameWidths | None:
         return None
     dpi = float(mpl.rcParams["figure.dpi"])
     figure = Figure(dpi=dpi)
-    # backend_agg ships no type stubs: the renderer is a RendererBase
-    renderer: RendererBase = RendererAgg(1, 1, dpi)  # type: ignore[no-untyped-call]
+    renderer: RendererBase = RendererAgg(1, 1, dpi)
     widths: list[float] = []
     size = 0.0
     for name in names:

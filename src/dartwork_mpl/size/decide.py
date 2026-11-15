@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
+from typing import assert_never
 
 from .model import (
     ASPECTS,
@@ -137,12 +138,24 @@ def slide_canvas(request: CanvasRequest) -> Canvas:
     points, series = request.n_points, request.n_series
     if not request.grid.single:
         return SLIDE_BODY
-    if request.kind is CanvasKind.COMPACT:
-        return Canvas(SLIDE_HALF, height)
-    if request.kind is CanvasKind.MATRIX:
-        return Canvas(cm(10.5), height)
-    plain = request.kind in (CanvasKind.DEFAULT, CanvasKind.GROUPED)
-    if not plain or points is None or request.dual_axis:
+    match request.kind:
+        case CanvasKind.COMPACT:
+            return Canvas(SLIDE_HALF, height)
+        case CanvasKind.MATRIX:
+            return Canvas(cm(10.5), height)
+        case CanvasKind.DEFAULT | CanvasKind.GROUPED:
+            pass
+        case (
+            CanvasKind.BARH
+            | CanvasKind.DENSE
+            | CanvasKind.STRIP
+            | CanvasKind.SLIDE
+            | CanvasKind.FULL_SLIDE
+        ):
+            return SLIDE_BODY
+        case _:
+            assert_never(request.kind)
+    if points is None or request.dual_axis:
         return SLIDE_BODY
     if (series is not None and series >= 4) or points > SLIDE_TWO_THIRDS_POINTS:
         return SLIDE_BODY
@@ -165,14 +178,17 @@ def canvas(request: CanvasRequest, page: Page) -> Canvas:
     spec = KINDS[request.kind]
     if spec.absolute:
         return Canvas(spec.width, spec.aspect)
-    if page.family is Family.SLIDES:
-        return slide_canvas(request)
     single = request.grid.single
-    if page.family is Family.PAPER:
-        full = not single or (spec.fixed and spec.width.cm > MEDIUM.cm)
-        width = TWO_COLUMNS if full else COLUMN
-    else:
-        width = scaled(density_width(request) if single else WIDEST, page)
+    match page.family:
+        case Family.SLIDES:
+            return slide_canvas(request)
+        case Family.PAPER:
+            full = not single or (spec.fixed and spec.width.cm > MEDIUM.cm)
+            width = TWO_COLUMNS if full else COLUMN
+        case Family.REPORT | Family.POSTER:
+            width = scaled(density_width(request) if single else WIDEST, page)
+        case _:
+            assert_never(page.family)
     if single:
         return Canvas(width, spec.aspect)
     return grid_canvas(request, page, width)

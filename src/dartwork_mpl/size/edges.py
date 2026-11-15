@@ -7,6 +7,7 @@ which.
 from __future__ import annotations
 
 from itertools import pairwise
+from typing import assert_never
 
 from ..edgecase import EdgeCase
 from .decide import REPORT_TIERS, SLIDE_TIERS, scaled
@@ -41,10 +42,13 @@ def widen_for_names(facts: CanvasFacts, plan: Canvas) -> Canvas:
     assert facts.names is not None  # has_category_names
     widths, size = facts.names.widths_pt, facts.names.size_pt
     need = max((a + b) / 2 for a, b in pairwise(widths)) + CLEARANCE_EM * size
-    if facts.page.family is Family.SLIDES:
-        tiers = SLIDE_TIERS
-    else:
-        tiers = tuple(scaled(tier, facts.page) for tier in REPORT_TIERS)
+    match facts.page.family:
+        case Family.SLIDES:
+            tiers = SLIDE_TIERS
+        case Family.REPORT | Family.PAPER | Family.POSTER:
+            tiers = tuple(scaled(tier, facts.page) for tier in REPORT_TIERS)
+        case _:
+            assert_never(facts.page.family)
     for tier in tiers:
         if tier.cm < plan.width.cm - 1e-9:
             continue

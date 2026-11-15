@@ -18,7 +18,7 @@ from collections.abc import Iterable, Mapping
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import cast
+from typing import TypeGuard
 
 CM_PER_INCH = 2.54
 MM_PER_INCH = 25.4
@@ -188,6 +188,24 @@ def _unit_hint(text: str) -> str:
     return f" Did you mean {unit!r}-style, e.g. '{number}{unit}'?"
 
 
+def _ratio(ratio: object) -> float:
+    """``ratio`` when it is a positive finite number; else ``ValueError``."""
+    if isinstance(ratio, bool):
+        raise ValueError(
+            "aspect must be a positive number; bool is not accepted "
+            "(use a token like 'standard' or a float like 0.5)"
+        )
+    if not isinstance(ratio, int | float):
+        raise ValueError(
+            f"aspect must be str, int, or float (got {type(ratio).__name__})"
+        )
+    if not math.isfinite(ratio) or ratio <= 0:
+        raise ValueError(
+            f"aspect must be positive and finite (got {float(ratio)})"
+        )
+    return ratio
+
+
 @dataclass(frozen=True)
 class Aspect:
     """A figure's height as a share of its width (``height / width``)."""
@@ -196,21 +214,7 @@ class Aspect:
 
     def __post_init__(self) -> None:
         """Reject a ratio that is not positive and finite."""
-        ratio = cast("object", self.ratio)  # unchecked callers pass anything
-        if isinstance(ratio, bool):
-            raise ValueError(
-                "aspect must be a positive number; bool is not accepted "
-                "(use a token like 'standard' or a float like 0.5)"
-            )
-        if not isinstance(ratio, int | float):
-            raise ValueError(
-                f"aspect must be str, int, or float "
-                f"(got {type(ratio).__name__})"
-            )
-        if not math.isfinite(ratio) or ratio <= 0:
-            raise ValueError(
-                f"aspect must be positive and finite (got {float(ratio)})"
-            )
+        _ratio(self.ratio)  # unchecked callers pass anything
 
     @classmethod
     def parse(cls, value: object) -> Aspect:
@@ -218,7 +222,7 @@ class Aspect:
         if isinstance(value, Aspect):
             return value
         if not isinstance(value, str):
-            return cls(cast("float", value))  # __post_init__ rejects the rest
+            return cls(_ratio(value))
         key = _unquote(value).lower()
         if key in ASPECTS:
             return ASPECTS[key]
@@ -367,6 +371,10 @@ class KindSpec:
     absolute: bool = False  # the same physical size under every preset
 
 
+def _iterable(value: object) -> TypeGuard[Iterable[object]]:
+    return isinstance(value, Iterable)
+
+
 _ORDERED = "in axis order (a list, tuple, array or index)"
 
 
@@ -385,12 +393,12 @@ def parse_names(labels: object) -> tuple[str, ...]:
             f"labels must be the category names {_ORDERED}; a {kind} has "
             "none, so pass list(...) of the names in the order they are plotted"
         )
-    if not isinstance(labels, Iterable):
+    if not _iterable(labels):
         raise TypeError(
             f"labels must be the category names {_ORDERED}; got "
             f"{kind} {labels!r}"
         )
-    return tuple(str(label) for label in cast("Iterable[object]", labels))
+    return tuple(str(label) for label in labels)
 
 
 @dataclass(frozen=True)
