@@ -14,9 +14,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Literal, NewType, TypeAlias
 
-from ..axis import Which
-from ..edge import Edge
 from ..length import Length
+from ..vocab import Edge, Which
 
 Px = NewType("Px", float)
 Degrees = NewType("Degrees", float)

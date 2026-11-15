@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import assert_never
 
-from ..edge import EDGES, Bottom, Edge, Left, Right, Top
+from ..vocab import EDGES, Bottom, Edge, Left, Right, Top
 from .model import (
     EDGE_EPSILON,
     MIN_PLOT_SHARE,

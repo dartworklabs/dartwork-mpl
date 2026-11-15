@@ -22,17 +22,23 @@ import numpy.typing as npt
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 
-from ..align import (
+from ..geometry import axis_of, shared_axes
+from ..vocab import (
+    AffixedZero,
     AlignCentre,
     AlignLeft,
     AlignRight,
     HAlign,
     HAlignName,
+    Letter,
+    Letters,
+    Which,
+    X,
+    Y,
+    parse_axes,
     parse_halign,
+    parse_which,
 )
-from ..axis import Letter, Letters, Which, X, Y, parse_axes, parse_which
-from ..geometry import axis_of, shared_axes
-from ..number import AffixedZero
 from .apply import figure_ladder, prepare, remember_dates, thin_dates
 from .dates import CategoryDateFormatter, category_locator
 from .defaults import config

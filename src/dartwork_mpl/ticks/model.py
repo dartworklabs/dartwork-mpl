@@ -16,7 +16,7 @@ from typing import ClassVar, Literal, NewType, TypeAlias, TypedDict
 
 import numpy as np
 
-from ..number import AffixedZero, BareZero
+from ..vocab import AffixedZero, BareZero
 
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""

@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..axis import Which, X, Y
 from ..geometry import axis_of, same_position_axes, shared_axes
+from ..vocab import Which, X, Y
 from . import decide
 from .bar_geometry import CrowdFacts, HeadroomFacts, Pixels, Room, Span, Spot
 from .bar_options import Rotate, Skip

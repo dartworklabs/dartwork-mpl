@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import ClassVar, TypeAlias
 
-from ..align import AlignLeft, AlignRight, Bottom, HAlign, Top, VAlign
+from ..vocab import AlignBottom, AlignLeft, AlignRight, AlignTop, HAlign, VAlign
 
 Rgba: TypeAlias = tuple[float, float, float, float]
 
@@ -30,7 +30,7 @@ class Higher:
 
     sign: ClassVar[float] = 1.0
     ha: ClassVar[HAlign] = AlignLeft()
-    va: ClassVar[VAlign] = Bottom()
+    va: ClassVar[VAlign] = AlignBottom()
 
     @property
     def flip(self) -> Lower:
@@ -48,7 +48,7 @@ class Lower:
 
     sign: ClassVar[float] = -1.0
     ha: ClassVar[HAlign] = AlignRight()
-    va: ClassVar[VAlign] = Top()
+    va: ClassVar[VAlign] = AlignTop()
 
     @property
     def flip(self) -> Higher:

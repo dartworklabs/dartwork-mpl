@@ -15,8 +15,8 @@ from matplotlib.axis import Axis
 from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 
-from ..axis import X, Y
 from ..geometry import drawn_tick_labels, same_position_axes
+from ..vocab import X, Y
 from .measure import (
     box_of,
     canvas,

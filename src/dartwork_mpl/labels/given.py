@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
-from ..number import BareZero, ScaleZero, TickScale
+from ..vocab import BareZero, ScaleZero, TickScale
 
 if TYPE_CHECKING:
     from matplotlib.axis import Axis

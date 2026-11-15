@@ -41,18 +41,13 @@ orphan: true
 
 ## platform
 
-두 slice 이상이 함께 쓰는 것은 platform 패키지에 둔다. platform은 어떤 slice도 import하지 않는다. 한 slice만 쓰는 것은 그 slice 안에 둔다. 패키지 하나가 개념 하나이고 이름은 그 개념이다. `utils`, `common`, `shared`, `core`, `types`, `base`는 만들지 않는다. 순수 타입과 matplotlib 코드는 한 패키지에 두지 않는다. 순수 파일이 platform을 import해도 matplotlib이 끌려오지 않아야 하기 때문이다([test_pure_imports.py](../../tests/architecture/test_pure_imports.py)).
+두 slice 이상이 함께 쓰는 것은 platform 패키지에 둔다. platform은 어떤 slice도 import하지 않는다. 한 slice만 쓰는 것은 그 slice 안에 둔다. 패키지 하나가 개념 하나이고 이름은 그 개념이다. `utils`, `common`, `shared`, `core`, `types`, `base`는 만들지 않는다. 데이터와 파싱만 있는 작은 어휘는 `vocab` 한 패키지에 모듈 하나씩 둔다. 산술이나 결정이 있으면(`length`, `colorspace`) 자기 패키지를 갖는다. 순수 타입과 matplotlib 코드는 한 패키지에 두지 않는다. 순수 파일이 platform을 import해도 matplotlib이 끌려오지 않아야 하기 때문이다([test_pure_imports.py](../../tests/architecture/test_pure_imports.py)).
 
 | 패키지 | 개념 | 쓰는 곳 |
 | --- | --- | --- |
-| `axis` | Axes의 x·y 축(`X`, `Y`, `Which`), 축 라벨이 놓이는 쪽 | check, labels, layout, ticks, geometry |
-| `projection` | Axes의 projection(평면, 3D, 그 밖) | check, labels, ticks, geometry |
-| `align` | 글자의 가로·세로 정렬 | labels, ticks |
-| `edge` | 상자의 네 변, figure 범례가 잡는 변(`Reserve`) | layout, legend |
+| `vocab` | slice들이 함께 쓰는 낱말. 모듈 하나가 어휘 하나다: `axis`(x·y 축과 라벨이 놓이는 쪽), `align`(글자 정렬), `edge`(상자의 네 변, figure 범례가 잡는 변), `projection`(평면, 3D, 그 밖), `number`(숫자가 찍히는 눈금 단위), `locale`(기본 관례와 한국 관례) | 모든 slice, geometry |
 | `length` | 물리 길이 `Length`와 단위(`dm.cm` 등) | size, layout, 루트 |
-| `locale` | 기본 관례와 한국 관례 | style, color |
 | `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels, check |
-| `number` | 숫자가 찍히는 눈금 단위(`TickScale`) | ticks, labels |
 | `edgecase` | 엣지 케이스 등록 장치 | 모든 slice |
 | `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨 | check, labels, layout, legend, ticks |
 
@@ -72,7 +67,7 @@ matplotlib의 `Figure`와 `Axes`는 상태를 바꾸는 객체다. 이 사실은
 | `assets/` | 그 slice만 쓰는 데이터 파일 | 다른 slice가 경로로 읽지 않는다 |
 | `__init__.py` | 표면 | 연결만 |
 
-platform의 순수 패키지도 같은 파일 이름 규칙을 따른다(`axis/model.py`, `colorspace/decide.py`, `colorspace/edges.py`).
+platform의 순수 패키지도 같은 파일 이름 규칙을 따른다(`length/model.py`, `colorspace/decide.py`, `colorspace/edges.py`). `vocab`만 예외로, 모듈 이름이 어휘 이름이고 모든 모듈이 `model.py`와 같은 규칙(순수, 문자열 파싱 허용)을 받는다.
 
 **도메인 파일은 primitive 타입으로 말하지 않는다.** `decide.py`와 `edges.py`의 함수는 인자와 반환을 도메인 타입으로 적는다. `str`, `int`, `float`, `dict`, `Any` 같은 primitive나 annotation 누락은 오류다. `float` 두 개를 받는 함수는 폭과 높이가 바뀌어도 통과하지만 `Length`와 `Aspect`는 그렇지 않기 때문이다.
 

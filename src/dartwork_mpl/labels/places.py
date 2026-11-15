@@ -11,13 +11,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import ClassVar, TypeAlias
 
-from ..align import (
+from ..vocab import (
+    AlignBottom,
     AlignCentre,
     AlignLeft,
     AlignRight,
-    Bottom,
+    AlignTop,
     HAlign,
-    Top,
     VAlign,
     VCentre,
 )
@@ -31,7 +31,7 @@ class Above:
 
     offset: ClassVar[tuple[float, float]] = (0.0, 1.0)
     ha: ClassVar[HAlign] = AlignCentre()
-    va: ClassVar[VAlign] = Bottom()
+    va: ClassVar[VAlign] = AlignBottom()
 
     @property
     def tries(self) -> tuple[Side, ...]:
@@ -45,7 +45,7 @@ class Below:
 
     offset: ClassVar[tuple[float, float]] = (0.0, -1.0)
     ha: ClassVar[HAlign] = AlignCentre()
-    va: ClassVar[VAlign] = Top()
+    va: ClassVar[VAlign] = AlignTop()
 
     @property
     def tries(self) -> tuple[Side, ...]:
@@ -108,7 +108,7 @@ class UpperLeft:
     anchor: ClassVar[tuple[float, float]] = (0.0, 1.0)
     inward: ClassVar[tuple[float, float]] = (1.0, -1.0)
     ha: ClassVar[HAlign] = AlignLeft()
-    va: ClassVar[VAlign] = Top()
+    va: ClassVar[VAlign] = AlignTop()
 
 
 @dataclass(frozen=True)
@@ -118,7 +118,7 @@ class UpperRight:
     anchor: ClassVar[tuple[float, float]] = (1.0, 1.0)
     inward: ClassVar[tuple[float, float]] = (-1.0, -1.0)
     ha: ClassVar[HAlign] = AlignRight()
-    va: ClassVar[VAlign] = Top()
+    va: ClassVar[VAlign] = AlignTop()
 
 
 @dataclass(frozen=True)
@@ -128,7 +128,7 @@ class LowerLeft:
     anchor: ClassVar[tuple[float, float]] = (0.0, 0.0)
     inward: ClassVar[tuple[float, float]] = (1.0, 1.0)
     ha: ClassVar[HAlign] = AlignLeft()
-    va: ClassVar[VAlign] = Bottom()
+    va: ClassVar[VAlign] = AlignBottom()
 
 
 @dataclass(frozen=True)
@@ -138,7 +138,7 @@ class LowerRight:
     anchor: ClassVar[tuple[float, float]] = (1.0, 0.0)
     inward: ClassVar[tuple[float, float]] = (-1.0, 1.0)
     ha: ClassVar[HAlign] = AlignRight()
-    va: ClassVar[VAlign] = Bottom()
+    va: ClassVar[VAlign] = AlignBottom()
 
 
 Corner: TypeAlias = UpperLeft | UpperRight | LowerLeft | LowerRight

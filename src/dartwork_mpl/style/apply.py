@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
-from ..locale import DefaultLocale, Locale
+from ..vocab import DefaultLocale, Locale
 from . import decide, measure
 from .model import Chain, Preset, override_key
 

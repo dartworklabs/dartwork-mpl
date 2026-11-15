@@ -14,7 +14,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..edge import Edge, Reserve
+from ..vocab import Edge, Reserve
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist

@@ -4,7 +4,9 @@
  "C3_compose_reaches": [],
  "C4_compose_decisions": {},
  "C5_compose_importers": [],
- "R1_module_lines": {},
+ "R1_module_lines": {
+  "src/dartwork_mpl/labels/measure.py": 506
+ },
  "R2_slice_lines": {},
  "R3_underscore_modules": {},
  "R3_underscore_toplevel": [],
@@ -15,7 +17,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 83
+  "modules": 78
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81

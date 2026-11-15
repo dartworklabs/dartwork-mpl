@@ -30,7 +30,7 @@ from ..colorspace import (
     readable,
 )
 from ..edgecase import settle
-from ..locale import DefaultLocale, Locale
+from ..vocab import DefaultLocale, Locale
 from . import apply, decide, measure
 from .catalog import CATALOG
 from .edges import FULL_LADDER, KR_TOKENS

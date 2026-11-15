@@ -20,7 +20,6 @@ from matplotlib.text import Text as MplText
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
 from matplotlib.transforms import Bbox
 
-from ..axis import Which
 from ..geometry import (
     BBOX_ERRORS,
     axes_titles,
@@ -35,6 +34,7 @@ from ..geometry import (
     shared_axes,
     text_inks,
 )
+from ..vocab import Which
 from . import roles, walk
 from .ink import (
     Ink,

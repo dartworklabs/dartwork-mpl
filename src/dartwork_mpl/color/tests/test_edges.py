@@ -8,7 +8,7 @@ from dartwork_mpl.color.catalog import CATALOG
 from dartwork_mpl.color.family import Count
 from dartwork_mpl.color.model import DivergingSource, Form, SemanticFacts
 from dartwork_mpl.edgecase import settle
-from dartwork_mpl.locale import DefaultLocale, KoreanLocale
+from dartwork_mpl.vocab import DefaultLocale, KoreanLocale
 
 
 def fired(facts, plan, edge):

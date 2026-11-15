@@ -1,6 +1,6 @@
 """One legend for every panel: ``figure_legend``, and the edge it reserves.
 
-A figure legend the library placed has a :class:`~dartwork_mpl.edge.Reserve`
+A figure legend the library placed has a :class:`~dartwork_mpl.vocab.Reserve`
 in this module's registry: the figure edge it holds and the room the layout
 keeps from it. The registry holds its legends weakly.
 """
@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, assert_never
 
 from matplotlib.legend import Legend
 
-from ..edge import Reserve, edge_of
 from ..geometry import figure_axes, figure_legends, get_renderer
+from ..vocab import Reserve, edge_of
 from . import decide, measure
 from .apply import entry_names, new_legend, refuse_anchor
 from .boxes import Entries

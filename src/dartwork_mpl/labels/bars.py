@@ -21,10 +21,9 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
-from ..align import AlignCentre, VCentre
 from ..edgecase import settle
 from ..geometry import canvas_renderer, same_position_axes
-from ..number import TickScale
+from ..vocab import AlignCentre, TickScale, VCentre
 from . import decide, edges
 from .bar_options import (
     BarOptions,
@@ -61,7 +60,7 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.typing import ColorType
 
-    from ..number import TickScale
+    from ..vocab import TickScale
 
 # Between a bar end and its label, in points.
 OFFSET_PT = 3.0

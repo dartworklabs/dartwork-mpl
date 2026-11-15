@@ -14,7 +14,6 @@ from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 
-from ..axis import Far, Near, Which, X, Y
 from ..geometry import (
     axis_of,
     label_side,
@@ -22,7 +21,7 @@ from ..geometry import (
     same_position_axes,
     shared_axes,
 )
-from ..projection import Curved, Rectilinear, ThreeD
+from ..vocab import Curved, Far, Near, Rectilinear, ThreeD, Which, X, Y
 from .axis_plans import AxesFacts, TwinFacts
 from .measure import axis_facts, with_insets
 from .model import TWIN_SIDES, RightSide, TopSide, TwinSide, YearDigits

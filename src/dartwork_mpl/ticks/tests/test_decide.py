@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.number import AffixedZero
 from dartwork_mpl.ticks.axis_plans import (
     AxisFacts,
     DateAxis,
@@ -35,6 +34,7 @@ from dartwork_mpl.ticks.text import (
     recommend_tick_decimals,
     value_label_decimals,
 )
+from dartwork_mpl.vocab import AffixedZero
 
 M = "\N{MINUS SIGN}"
 

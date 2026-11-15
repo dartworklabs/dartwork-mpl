@@ -25,7 +25,7 @@ from typing import (
 )
 
 from ..colorspace import Color, Hex, Oklab, Oklch, Ratio, Rgb, finite
-from ..locale import Locale
+from ..vocab import Locale
 from .family import Count, Family
 
 T = TypeVar("T")

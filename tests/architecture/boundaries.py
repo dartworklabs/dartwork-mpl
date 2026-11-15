@@ -63,30 +63,16 @@ ENTRY_POINTS = frozenset(
 # Units holding business-agnostic mechanism. They import no slice.
 PLATFORM = frozenset(
     {
-        # Horizontal text alignment (labels and ticks align text to an
-        # anchor).
-        "dartwork_mpl.align",
         # Colour values and their arithmetic: sRGB, OKLab, compositing,
         # WCAG contrast (color, labels and check compute with them).
         "dartwork_mpl.colorspace",
-        # A box's four edges and the figure edge a figure legend reserves
-        # (legend names them, layout keeps the margins clear of them).
-        "dartwork_mpl.edge",
-        # The x/y axis and an axis label's side, as pure types (check,
-        # labels, layout, ticks and geometry name them).
-        "dartwork_mpl.axis",
-        # The scale a number prints in (ticks reports an axis's, labels prints
-        # bar values in it).
-        "dartwork_mpl.number",
-        # An Axes' projection as a pure type (check, layout, labels, ticks
-        # and geometry ask it).
-        "dartwork_mpl.projection",
         # A physical length and its units (size measures canvases in it,
         # layout margins).
         "dartwork_mpl.length",
-        # Whose convention a figure follows (style reads it off a preset,
-        # color binds the role colours for it).
-        "dartwork_mpl.locale",
+        # The words slices share, one pure module each: an axis and its
+        # sides, text alignment, a box's edges, an Axes' projection, the
+        # scale a number prints in, a figure's locale.
+        "dartwork_mpl.vocab",
         # Figure measurement two or more slices share.
         "dartwork_mpl.geometry",
         # The edge-case registry every slice's edges.py appends to.
@@ -115,7 +101,7 @@ SLICES = frozenset(
 SHIMS: Mapping[str, str] = {}
 
 # Modules holding pure decisions: they import no slice, surfaces included.
-# A decision may name the platform's vocabulary (axis, edge, length ...);
+# A decision may name the platform's vocabulary (vocab, length ...);
 # tests/architecture/test_pure_imports.py checks that doing so loads no
 # matplotlib.
 DECISIONS: Mapping[str, str] = {

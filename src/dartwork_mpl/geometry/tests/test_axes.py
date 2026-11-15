@@ -5,7 +5,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 
 from dartwork_mpl import geometry as g
-from dartwork_mpl.axis import X, Y
+from dartwork_mpl.vocab import X, Y
 
 BOX = (0.1, 0.1, 0.8, 0.8)
 

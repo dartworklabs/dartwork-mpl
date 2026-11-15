@@ -20,7 +20,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 from matplotlib.ticker import Formatter
 
-from ..axis import Which
+from ..vocab import Which
 from .measure import grid_axes
 from .model import (
     TURN_MODE,

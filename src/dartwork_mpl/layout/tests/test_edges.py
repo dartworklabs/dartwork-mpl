@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from dartwork_mpl.axis import Y
-from dartwork_mpl.edge import Bottom, Top
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.layout import decide
 from dartwork_mpl.layout.edges import FIT_EDGES, TEXT_EDGES
@@ -33,6 +31,7 @@ from dartwork_mpl.layout.tests.test_decide import (
     content,
     row,
 )
+from dartwork_mpl.vocab import Bottom, Top, Y
 
 PLOT = Box(100.0, 900.0, 100.0, 400.0)
 

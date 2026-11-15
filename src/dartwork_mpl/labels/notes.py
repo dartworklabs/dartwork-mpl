@@ -12,7 +12,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
-from ..align import HAlign, VAlign
+from ..vocab import HAlign, VAlign
 from . import decide
 from .bar_geometry import Span
 from .given import PresetText

@@ -16,7 +16,7 @@ from collections.abc import Sequence
 from itertools import pairwise
 from typing import SupportsFloat, SupportsIndex
 
-from ..number import AffixedZero, BareZero, ScaleZero
+from ..vocab import AffixedZero, BareZero, ScaleZero
 from .model import PLAIN, ExactZero, NumberStyle, PerTick, Unit
 
 BARE = BareZero()

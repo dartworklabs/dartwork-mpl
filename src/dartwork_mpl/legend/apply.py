@@ -24,7 +24,6 @@ from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.transforms import Bbox, ScaledTranslation
 
-from ..edge import Edge, edge_of
 from ..edgecase import settle as settle_edges
 from ..geometry import (
     BBOX_ERRORS,
@@ -32,6 +31,7 @@ from ..geometry import (
     get_renderer,
     same_position_axes,
 )
+from ..vocab import Edge, edge_of
 from . import decide, measure
 from .boxes import Entries
 from .edges import ENTRY_EDGES, TITLE_EDGES

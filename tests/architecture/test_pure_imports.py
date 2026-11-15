@@ -1,7 +1,7 @@
 """A pure file stays pure when it runs: importing it loads no matplotlib.
 
 ``test_domain_rules`` (D2) reads a domain file's own imports. This test runs
-them: every ``model.py``, ``decide.py`` and ``edges.py`` and every module in
+them: every ``model.py``, ``decide.py``, ``edges.py``, ``vocab`` module and every module in
 ``boundaries.DECISIONS`` is imported in a fresh interpreter, and the test
 fails if ``matplotlib`` is then in ``sys.modules``. A pure file that imports
 a platform package which imports matplotlib fails here, though its own
@@ -41,11 +41,12 @@ print("matplotlib" in sys.modules)
 
 
 def pure_modules() -> list[str]:
-    """Every domain file and DECISIONS module, by dotted name."""
+    """Every domain file, vocab module and DECISIONS module, by dotted name."""
     found = set(boundaries.DECISIONS)
     for path in PKG_DIR.rglob("*.py"):
         rel = path.relative_to(PKG_DIR)
-        if path.name in DOMAIN_FILES and not boundaries.is_test(rel):
+        domain = path.name in DOMAIN_FILES or rel.parts[0] == "vocab"
+        if domain and not boundaries.is_test(rel):
             if rel.parts[: len(("guide", "assets"))] == ("guide", "assets"):
                 continue
             found.add(".".join(("dartwork_mpl", *rel.with_suffix("").parts)))

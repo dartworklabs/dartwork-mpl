@@ -55,14 +55,14 @@ VAlignName: TypeAlias = Literal[
 
 
 @dataclass(frozen=True)
-class Bottom:
+class AlignBottom:
     """Text standing on its anchor."""
 
     mpl: ClassVar[Literal["bottom"]] = "bottom"
 
 
 @dataclass(frozen=True)
-class Top:
+class AlignTop:
     """Text hanging from its anchor."""
 
     mpl: ClassVar[Literal["top"]] = "top"
@@ -89,12 +89,20 @@ class VCentreBaseline:
     mpl: ClassVar[Literal["center_baseline"]] = "center_baseline"
 
 
-VAlign: TypeAlias = Bottom | Top | VCentre | Baseline | VCentreBaseline
+VAlign: TypeAlias = (
+    AlignBottom | AlignTop | VCentre | Baseline | VCentreBaseline
+)
 
 
 def parse_valign(name: str) -> VAlign:
     """``Text.get_verticalalignment()``; ``ValueError`` for another name."""
-    for align in (Bottom(), Top(), VCentre(), Baseline(), VCentreBaseline()):
+    for align in (
+        AlignBottom(),
+        AlignTop(),
+        VCentre(),
+        Baseline(),
+        VCentreBaseline(),
+    ):
         if name == align.mpl:
             return align
     raise ValueError(f"not a vertical alignment: {name!r}")

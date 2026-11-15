@@ -12,8 +12,8 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 
-from ..edge import Bottom, Edge, Left, Right, Top
 from ..edgecase import EdgeCase
+from ..vocab import Bottom, Edge, Left, Right, Top
 from . import decide
 from .model import (
     ANGLES,

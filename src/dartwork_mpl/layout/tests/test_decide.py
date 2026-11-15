@@ -6,7 +6,6 @@ import math
 
 import pytest
 
-from dartwork_mpl.edge import Bottom, Edge, Left, Right, Top
 from dartwork_mpl.layout import decide
 from dartwork_mpl.layout.edges import (
     balanced_lines,
@@ -40,6 +39,7 @@ from dartwork_mpl.layout.model import (
     tokens,
 )
 from dartwork_mpl.length import mm
+from dartwork_mpl.vocab import Bottom, Edge, Left, Right, Top
 
 CANVAS = Canvas(Px(1000.0), Px(500.0))
 NONE = Sides(0.0, 0.0, 0.0, 0.0)

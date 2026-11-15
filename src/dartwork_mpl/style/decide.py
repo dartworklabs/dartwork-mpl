@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..locale import DefaultLocale, KoreanLocale
+from ..vocab import DefaultLocale, KoreanLocale
 from .model import KOREAN_LAYER, Active, Chain, Points, Preset, Steps, Weight
 
 #: One ``dm.fs`` / ``dm.lw`` step on paper, reports and the web.

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Protocol, runtime_checkable
 
-from ..locale import Locale
+from ..vocab import Locale
 
 #: Slides over a journal column (23.4 cm / 9 cm): the presentation presets
 #: are the scientific ones with every point size times this.

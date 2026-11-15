@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl.axis import X
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.geometry import drawn_tick_labels, get_renderer
 from dartwork_mpl.size import decide
@@ -26,6 +25,7 @@ from dartwork_mpl.size.canvas import (
 )
 from dartwork_mpl.size.edges import EDGES
 from dartwork_mpl.size.model import Grid
+from dartwork_mpl.vocab import X
 
 REPORT, PAPER, SLIDES = Page(), Page(Paper()), Page(Slides())
 TEMPLATES_WITH_NAMES = (

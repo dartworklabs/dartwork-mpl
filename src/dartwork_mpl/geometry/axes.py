@@ -8,12 +8,16 @@ import matplotlib as mpl
 import numpy as np
 from matplotlib.text import Text
 
-from ..axis import AxisSide, Which, X, Y, parse_axis_side
-from ..projection import (
+from ..vocab import (
+    AxisSide,
     Curved,
     Projection,
     Rectilinear,
     ThreeD,
+    Which,
+    X,
+    Y,
+    parse_axis_side,
     parse_projection,
 )
 from .model import CentreTitle, LeftTitle, RightTitle, TitleLoc

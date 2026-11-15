@@ -10,7 +10,6 @@ from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
-from ..axis import Which
 from ..geometry import (
     axes_titles,
     draws_axis,
@@ -18,7 +17,7 @@ from ..geometry import (
     in_view_tick_labels,
     panel_letters,
 )
-from ..projection import parse_projection
+from ..vocab import Which, parse_projection
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase

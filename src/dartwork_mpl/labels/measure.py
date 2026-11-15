@@ -17,15 +17,6 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, IdentityTransform
 
-from ..align import (
-    Baseline,
-    Bottom,
-    Top,
-    VCentre,
-    VCentreBaseline,
-    parse_valign,
-)
-from ..axis import Far, Near, X, Y, bars_along
 from ..colorspace import (
     ContrastFacts,
     Ratio,
@@ -44,7 +35,22 @@ from ..geometry import (
     projection,
     same_position_axes,
 )
-from ..projection import Curved, Rectilinear, ThreeD
+from ..vocab import (
+    AlignBottom,
+    AlignTop,
+    Baseline,
+    Curved,
+    Far,
+    Near,
+    Rectilinear,
+    ThreeD,
+    VCentre,
+    VCentreBaseline,
+    X,
+    Y,
+    bars_along,
+    parse_valign,
+)
 from .bar_options import Edge, Ink, Segment, StackTotal
 from .panels import Panel, Title
 from .places import Try
@@ -369,7 +375,7 @@ def baseline_px(text: Text, renderer: RendererBase) -> float:
     match parse_valign(text.get_verticalalignment()):
         case Baseline():
             return float(text.get_transform().transform(text.get_position())[1])
-        case Bottom() | Top() | VCentre() | VCentreBaseline():
+        case AlignBottom() | AlignTop() | VCentre() | VCentreBaseline():
             pass
     probe = Text(
         0,

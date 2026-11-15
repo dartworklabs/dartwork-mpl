@@ -16,7 +16,7 @@ from typing import Unpack
 import matplotlib.ticker as ticker
 from matplotlib.axis import Axis
 
-from ..number import AffixedZero, BareZero, ScaleZero, TickScale
+from ..vocab import AffixedZero, BareZero, ScaleZero, TickScale
 from . import decide
 from .measure import in_view, tick_values
 from .model import (

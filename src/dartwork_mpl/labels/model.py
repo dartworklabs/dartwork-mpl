@@ -23,7 +23,7 @@ from typing import (
     TypeVar,
 )
 
-from ..align import HAlignName, VAlignName
+from ..vocab import HAlignName, VAlignName
 from .bar_options import (
     BarOptions,
     ByKind,

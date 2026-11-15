@@ -15,8 +15,9 @@ T5  An enum member in any comparison (``x is Kind.DATES``, ``x in (Kind.A,
     Kind.B)``), in a condition or a returned predicate alike. A new member
     falls through silently; ``match`` with ``assert_never`` does not.
 T6  A string literal compared (``side == "above"``, ``loc in ("left",
-    "right")``) or a ``Literal["..."]`` annotation, anywhere but ``model.py``.
-    A string is parsed once in ``model.py`` into a type, then never compared.
+    "right")``) or a ``Literal["..."]`` annotation, anywhere but ``model.py``
+    and the shared ``vocab/``. A string is parsed once there into a type,
+    then never compared.
 T7  A ``match`` whose ``case _`` does anything but ``assert_never``. A
     catch-all hides the variant nobody handled.
 T9  A function returning ``TypeGuard`` / ``TypeIs``. It narrows on the
@@ -50,7 +51,8 @@ STUB_GAPS = frozenset(
     }
 )
 DOMAIN = ("decide.py", "edges.py")
-PARSERS = ("model.py",)  # the one place a string becomes a type
+PARSERS = ("model.py",)  # a slice's one place a string becomes a type
+VOCAB = "src/dartwork_mpl/vocab/"  # the shared vocabulary: the same, for all
 IGNORE = re.compile(r"#\s*(type|pyright):\s*ignore(?:\[([^\]]*)\])?")
 ENUM_BASES = frozenset({"Enum", "StrEnum", "IntEnum", "Flag", "IntFlag"})
 SMUGGLED = "_dm_"
@@ -171,7 +173,7 @@ def _is_text(node: ast.expr) -> bool:
 
 def string_branches(sources: Sources) -> dict[str, int]:
     def one(path: str, text: str) -> int:
-        if path.endswith(PARSERS):
+        if path.endswith(PARSERS) or path.startswith(VOCAB):
             return 0
         count = 0
         for n in ast.walk(ast.parse(text)):

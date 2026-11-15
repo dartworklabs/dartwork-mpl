@@ -15,7 +15,6 @@ from matplotlib.gridspec import (
 )
 from matplotlib.text import Text
 
-from ..edge import Bottom, Edge, Left, Top
 from ..edgecase import settle
 from ..geometry import (
     BBOX_ERRORS,
@@ -23,6 +22,7 @@ from ..geometry import (
     iter_figure_level_extents,
     projection,
 )
+from ..vocab import Bottom, Edge, Left, Top
 from . import decide
 from .edges import FIT_EDGES
 from .model import (

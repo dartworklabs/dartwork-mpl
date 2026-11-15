@@ -21,8 +21,8 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 from matplotlib.transforms import IdentityTransform, Transform
 
-from ..axis import Which, X, Y, bars_along, parse_which
 from ..geometry import axes_titles, axis_of, shared_axes
+from ..vocab import Which, X, Y, bars_along, parse_which
 from .axis_plans import AxisFacts, AxisKind, DateAxis, NumberAxis, OtherAxis
 from .defaults import config
 from .model import (

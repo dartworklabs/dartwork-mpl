@@ -39,8 +39,9 @@ strings are parsed), `decide.py` (pure decisions, domain types only),
 concept when one of those grows, `assets/` (its own data files), `tests/`.
 
 A slice imports no other slice. What two or more slices share lives in a
-platform package (`axis`, `projection`, `align`, `edge`, `length`, `locale`,
-`colorspace`, `number`, `edgecase` are pure; `geometry` measures figures).
+platform package (`vocab` holds the small shared vocabularies, one module
+each; `length`, `colorspace`, `edgecase` are pure too; `geometry` measures
+figures).
 Where one slice needs another, `compose/<slice>.py` joins them with no
 decisions, and only the package root imports it: `dm.style`,
 `dm.simple_layout`, `dm.figsize_for` and the label functions are composed
