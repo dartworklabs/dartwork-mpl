@@ -64,24 +64,13 @@ from .labels import (
 # Layout
 from .layout import simple_layout
 from .legend import figure_legend, place_legend
+from .length import Length, cm, col1, col2, inch, mm, pt
 
 # Saving
 from .save import save_formats
 
 # Physical units and figure size
-from .size import (
-    Length,
-    cm,
-    col1,
-    col2,
-    figsize,
-    figsize_for,
-    grid_shape,
-    inch,
-    list_aspect_tokens,
-    mm,
-    pt,
-)
+from .size import figsize, figsize_for, grid_shape, list_aspect_tokens
 
 # Presets and preset-relative sizes
 from .style import fs, fw, lw

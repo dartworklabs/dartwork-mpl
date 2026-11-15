@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 from typing import assert_never
 
+from ..length import Length, cm
 from .canvas import (
     BROAD,
     MEDIUM,
@@ -31,7 +32,7 @@ from .canvas import (
     SquareBody,
     WholeBody,
 )
-from .model import ASPECTS, Aspect, FigureSize, Grid, Length, Panels, cm
+from .model import ASPECTS, Aspect, FigureSize, Grid, Panels
 
 # Journal columns: one panel in one column, wider content across two.
 COLUMN, TWO_COLUMNS = cm(9), cm(17)

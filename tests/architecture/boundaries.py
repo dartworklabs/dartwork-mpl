@@ -60,6 +60,9 @@ PLATFORM = frozenset(
         # An Axes' projection as a pure type (check, layout, labels, ticks
         # and geometry ask it).
         "dartwork_mpl.projection",
+        # A physical length and its units (size measures canvases in it,
+        # layout margins).
+        "dartwork_mpl.length",
         # Figure measurement two or more slices share.
         "dartwork_mpl.geometry",
         # The edge-case registry every slice's edges.py appends to.
@@ -114,9 +117,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.ticks"): (
         "layout writes the library's tick numbers before measuring them and "
         "thins crowded dates at the fitted size"
-    ),
-    ("dartwork_mpl.layout", "dartwork_mpl.size"): (
-        "margins are given as physical lengths"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"

@@ -12,16 +12,8 @@ from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from typing import ClassVar, Protocol, runtime_checkable
 
-from .model import (
-    ASPECTS,
-    STANDARD,
-    Aspect,
-    FigureSize,
-    Grid,
-    Length,
-    cm,
-    count,
-)
+from ..length import Length, cm
+from .model import ASPECTS, STANDARD, Aspect, FigureSize, Grid, count
 
 
 @dataclass(frozen=True)

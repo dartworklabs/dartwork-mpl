@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Literal, NewType, TypeAlias, assert_never
 
 from ..axis import Which
-from ..size import Length
+from ..length import Length
 
 Px = NewType("Px", float)
 Degrees = NewType("Degrees", float)

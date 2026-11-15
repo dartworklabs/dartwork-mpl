@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from dartwork_mpl.length import cm
 from dartwork_mpl.size import decide
 from dartwork_mpl.size.canvas import (
     CanvasRequest,
@@ -14,7 +15,7 @@ from dartwork_mpl.size.canvas import (
     Slides,
     parse_canvas_kind,
 )
-from dartwork_mpl.size.model import Grid, Panels, cm
+from dartwork_mpl.size.model import Grid, Panels
 
 REPORT, PAPER, SLIDES = Page(), Page(Paper()), Page(Slides())
 POSTER = Page(Poster(), 1.5)

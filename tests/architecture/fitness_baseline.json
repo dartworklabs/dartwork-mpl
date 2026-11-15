@@ -6,7 +6,6 @@
   "dartwork_mpl.labels -> dartwork_mpl.ticks",
   "dartwork_mpl.layout -> dartwork_mpl.labels",
   "dartwork_mpl.layout -> dartwork_mpl.legend",
-  "dartwork_mpl.layout -> dartwork_mpl.size",
   "dartwork_mpl.layout -> dartwork_mpl.ticks",
   "dartwork_mpl.size -> dartwork_mpl.style",
   "dartwork_mpl.style -> dartwork_mpl.color",
@@ -37,7 +36,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 60
+  "modules": 62
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81

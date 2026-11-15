@@ -43,7 +43,7 @@ from dartwork_mpl.layout.model import (
     parse_margins,
     tokens,
 )
-from dartwork_mpl.size import mm
+from dartwork_mpl.length import mm
 
 CANVAS = Canvas(Px(1000.0), Px(500.0))
 NONE = Sides(0.0, 0.0, 0.0, 0.0)

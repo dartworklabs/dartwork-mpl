@@ -1,4 +1,4 @@
-"""Physical units and figure size: what "13 cm wide, standard aspect" means.
+"""Figure size: what "13 cm wide, standard aspect" means.
 
 ``dm.figsize(width, aspect)`` turns a physical width and an aspect (or a
 height) into matplotlib's inch tuple. ``dm.figsize_for(...)`` picks the active
@@ -11,37 +11,13 @@ hands back plain inches.
 from __future__ import annotations
 
 from ..edgecase import settle
+from ..length import Length
 from . import decide, measure
 from .canvas import CanvasFacts, CanvasRequest, parse_canvas_kind, parse_names
 from .edges import EDGES
-from .model import (
-    ASPECTS,
-    STANDARD,
-    Grid,
-    Length,
-    Panels,
-    cm,
-    col1,
-    col2,
-    inch,
-    mm,
-    parse_height,
-    pt,
-)
+from .model import ASPECTS, STANDARD, Grid, Panels, parse_height
 
-__all__ = [
-    "Length",
-    "cm",
-    "col1",
-    "col2",
-    "figsize",
-    "figsize_for",
-    "grid_shape",
-    "inch",
-    "list_aspect_tokens",
-    "mm",
-    "pt",
-]
+__all__ = ["figsize", "figsize_for", "grid_shape", "list_aspect_tokens"]
 
 
 def figsize(width: object, aspect: object = STANDARD) -> tuple[float, float]:
