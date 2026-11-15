@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import itertools
 import weakref
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Unpack
 
 import matplotlib as mpl
 import numpy as np
@@ -26,8 +26,10 @@ from .model import (
     Corner,
     HAlign,
     LinePlace,
+    NoteStyle,
     Side,
     Span,
+    TextStyle,
     Tries,
     Try,
     VAlign,
@@ -82,7 +84,7 @@ def annotate_value(
     side: str = "auto",
     offset_pt: float = 3.0,
     fontsize: float | None = None,
-    **kw: Any,
+    **kw: Unpack[NoteStyle],
 ) -> Text:
     """Label one data value, ``offset_pt`` points from its point.
 
@@ -93,20 +95,25 @@ def annotate_value(
     weight step heavier (``dm.fw(1)``); keywords go to ``ax.annotate``.
     """
     sides = parse_side(side).tries
-    kw.setdefault("fontweight", kw.pop("weight", fw(1)))
     existing = list(ax.texts)
     first = sides[0]
+    style = (
+        NoteStyle(
+            ha=first.ha.mpl,
+            va=first.va.mpl,
+            annotation_clip=False,
+            fontweight=kw.pop("weight", fw(1)),
+        )
+        | kw
+    )
     ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
         xy=(x, y),
         xycoords="data",
         xytext=_side_offset(first, float(offset_pt)),
         textcoords="offset points",
-        ha=kw.pop("ha", first.ha.mpl),
-        va=kw.pop("va", first.va.mpl),
         fontsize=fs(-1) if fontsize is None else fontsize,
-        annotation_clip=kw.pop("annotation_clip", False),
-        **kw,
+        **style,
     )
     if len(sides) < 2:
         return ann
@@ -143,7 +150,7 @@ def annotate_corner(
     inset_pt: float = 3.0,
     avoid_overlap: bool = True,
     fontsize: float | None = None,
-    **kw: Any,
+    **kw: Unpack[NoteStyle],
 ) -> Text:
     """Narrative text inside an axes corner, ``inset_pt`` points in.
 
@@ -160,11 +167,11 @@ def annotate_corner(
         xycoords="axes fraction",
         xytext=(dx * float(inset_pt), dy * float(inset_pt)),
         textcoords="offset points",
-        ha=kw.pop("ha", corner.ha.mpl),
-        va=kw.pop("va", corner.va.mpl),
         fontsize=fs(-2) if fontsize is None else fontsize,
-        annotation_clip=kw.pop("annotation_clip", False),
-        **kw,
+        **(
+            NoteStyle(ha=corner.ha.mpl, va=corner.va.mpl, annotation_clip=False)
+            | kw
+        ),
     )
     if not avoid_overlap:
         return ann
@@ -229,7 +236,7 @@ def label_hline(
     side: str = "above",
     gap_pt: float = 2.0,
     fontsize: float | None = None,
-    **kw: Any,
+    **kw: Unpack[NoteStyle],
 ) -> Text:
     """A label against the horizontal line at ``y``, ``gap_pt`` points off it.
 
@@ -247,11 +254,11 @@ def label_hline(
         xycoords="data",
         xytext=(0.0, off.offset[1] * float(gap_pt)),
         textcoords="offset points",
-        ha=kw.pop("ha", first.ha.mpl),
-        va=kw.pop("va", off.va.mpl),
         fontsize=fs(-2) if fontsize is None else fontsize,
-        annotation_clip=kw.pop("annotation_clip", False),
-        **kw,
+        **(
+            NoteStyle(ha=first.ha.mpl, va=off.va.mpl, annotation_clip=False)
+            | kw
+        ),
     )
     if len(places) < 2:
         return ann
@@ -270,15 +277,15 @@ def label_hline(
     return ann
 
 
-def add_note(fig: Figure, text: str, **kw: Any) -> Text:
+def add_note(fig: Figure, text: str, **kw: Unpack[TextStyle]) -> Text:
     """A source or note line at the figure's lower left, ``dm.fs(-1)``.
 
     ``dm.simple_layout`` keeps the plot above it, ``axes.labelpad`` apart::
 
         dm.add_note(fig, "Source: internal web logs")
     """
-    style: dict[str, Any] = {"ha": "left", "va": "bottom", "fontsize": fs(-1)}
-    note = fig.text(0.0, 0.0, text, **{**style, **kw})  # pyright: ignore[reportUnknownMemberType]
+    style = TextStyle(ha="left", va="bottom", fontsize=fs(-1)) | kw
+    note = fig.text(0.0, 0.0, text, **style)  # pyright: ignore[reportUnknownMemberType]
     _NOTE_GAPS[note] = float(mpl.rcParams["axes.labelpad"])
     return note
 

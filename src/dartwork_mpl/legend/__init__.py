@@ -8,16 +8,18 @@ name.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Unpack
 
 from . import apply
 from .apply import figure_reserve, outside_side, settle
-from .model import Side
+from .model import AskedLoc, Side, parse_columns
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.legend import Legend
+
+    from .measure import LegendKeywords
 
 __all__ = [
     "Side",
@@ -29,7 +31,14 @@ __all__ = [
 ]
 
 
-def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
+def place_legend(
+    ax: Axes,
+    *,
+    loc: AskedLoc = "best",
+    ncols: int | None = None,
+    ncol: int | None = None,
+    **kw: Unpack[LegendKeywords],
+) -> Legend | None:
     """Place or reposition an Axes legend; returns it (``None``: no entries).
 
     ``loc="best"``: the first inside spot (four corners, upper and lower
@@ -60,11 +69,16 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
     legend keeps its title, frame, font size and custom handlers; keywords
     here (``ncols``, ``fontsize``, ``frameon`` ...) win.
     """
-    return apply.place_legend(ax, loc, kw)
+    return apply.place_legend(ax, loc, parse_columns(ncols, ncol), kw)
 
 
 def figure_legend(
-    fig: Figure | SubFigure, *, loc: str = "best", **kw: Any
+    fig: Figure | SubFigure,
+    *,
+    loc: AskedLoc = "best",
+    ncols: int | None = None,
+    ncol: int | None = None,
+    **kw: Unpack[LegendKeywords],
 ) -> Legend | None:
     """One legend for every panel of ``fig``, outside the panels.
 
@@ -78,4 +92,4 @@ def figure_legend(
     ``fig.legend``. ``dm.simple_layout`` keeps the panels clear of it.
     Returns ``None`` when no Axes has a labelled artist.
     """
-    return apply.figure_legend(fig, loc, kw)
+    return apply.figure_legend(fig, loc, parse_columns(ncols, ncol), kw)

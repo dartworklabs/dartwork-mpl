@@ -19,6 +19,9 @@ Letter: TypeAlias = Literal["x", "y"]
 Letters: TypeAlias = Literal["x", "y", "both"]
 """matplotlib's name for one axis of an Axes, or both."""
 
+MathMode: TypeAlias = bool | Literal["TeX"]
+"""How a renderer reads a text: plain, mathtext (``True``) or TeX."""
+
 
 @dataclass(frozen=True)
 class X:

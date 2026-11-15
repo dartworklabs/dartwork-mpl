@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import contextlib
 import math
+from dataclasses import dataclass
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any, assert_never
+from typing import TYPE_CHECKING, assert_never
 
 import matplotlib as mpl
 from matplotlib.axis import Axis
@@ -393,8 +394,16 @@ def _row(
     )
 
 
+@dataclass(frozen=True)
+class TextArtists:
+    """The artists the ids in text facts name: tick axes, axis labels."""
+
+    axes: dict[int, Axis]
+    labels: dict[int, Text]
+
+
 def _groups(
-    fig: Figure, renderer: RendererBase, record: Record, objects: dict[int, Any]
+    fig: Figure, renderer: RendererBase, record: Record, objects: TextArtists
 ) -> list[TickGroup]:
     """The fitted Axes by shared x axis (one formatter, so one wrap)."""
     from .apply import WrappedTickFormatter
@@ -414,7 +423,7 @@ def _groups(
         unwrap = {v: k for k, v in lines.items()}
         rows: list[TickRow] = []
         for member in members:
-            objects[id(member.xaxis)] = member.xaxis
+            objects.axes[id(member.xaxis)] = member.xaxis
             if (row := _row(member, renderer, unwrap, record)) is not None:
                 rows.append(row)
         wrapped = {Line(k): Line(v) for k, v in lines.items()}
@@ -423,7 +432,7 @@ def _groups(
 
 
 def _names(
-    fig: Figure, renderer: RendererBase, record: Record, objects: dict[int, Any]
+    fig: Figure, renderer: RendererBase, record: Record, objects: TextArtists
 ) -> list[AxisName]:
     """One-line names without mathtext that this layout has not wrapped."""
     boxes: dict[int, Box] | None = None
@@ -449,7 +458,7 @@ def _names(
                 continue
             boxes = content_boxes(fig, renderer) if boxes is None else boxes
             here = {id(a) for a in same_position_axes(ax)} | {id(ax)}
-            objects[id(label)] = label
+            objects.labels[id(label)] = label
             name = AxisName(
                 label=ArtistId(id(label)),
                 text=Line(text),
@@ -566,9 +575,9 @@ def _spacings(
 
 def text_facts(
     fig: Figure, gs: GridSpec, renderer: RendererBase, record: Record
-) -> tuple[TextFacts, dict[int, Any]]:
+) -> tuple[TextFacts, TextArtists]:
     """What text fitting reads, and the artists its ids name."""
-    objects: dict[int, Any] = {}
+    objects = TextArtists({}, {})
     groups = _groups(fig, renderer, record, objects)
     names = _names(fig, renderer, record, objects)
     wrapped = {

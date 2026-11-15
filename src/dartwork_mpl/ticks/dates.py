@@ -12,7 +12,7 @@ from __future__ import annotations
 import datetime
 import math
 from collections.abc import Sequence
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
@@ -20,8 +20,8 @@ import numpy as np
 import numpy.typing as npt
 
 from .formatters import shown_values
-from .measure import is_quarterly, num2date
-from .model import YearDigits
+from .measure import date_zone, is_quarterly, num2date
+from .model import YearDigits, Zone
 
 
 def _date2num(dates: npt.NDArray[np.datetime64]) -> npt.NDArray[np.float64]:
@@ -46,7 +46,7 @@ class PeriodDateFormatter(mdates.ConciseDateFormatter):
     def __init__(
         self,
         locator: ticker.Locator,
-        tz: Any = None,
+        tz: Zone = None,
         *,
         digits: YearDigits,
         show_offset: bool = True,
@@ -54,7 +54,7 @@ class PeriodDateFormatter(mdates.ConciseDateFormatter):
     ) -> None:
         """Keep the settings this formatter or locator was made with."""
         self.digits: YearDigits = digits
-        self.zone: datetime.tzinfo | str | None = tz
+        self.zone: Zone = tz
         self._short = self._fill("%y")
         self._long = self._fill("%Y")
         self._corner_shown = False
@@ -118,7 +118,9 @@ class Localizes(Protocol):
         ...
 
 
-def _quarter_moment(index: int, ends: bool, tz: Any) -> datetime.datetime:
+def _quarter_moment(
+    index: int, ends: bool, tz: datetime.tzinfo | None
+) -> datetime.datetime:
     """Midnight starting (or ending) quarter ``index`` = year * 4 + quarter - 1."""
     year, quarter = divmod(index + (1 if ends else 0), 4)
     naive = datetime.datetime(year, quarter * 3 + 1, 1)
@@ -136,7 +138,7 @@ class QuarterLocator(mdates.DateLocator):
     ``step`` through ``steps``.
     """
 
-    def __init__(self, *, ends: bool = False, tz: Any = None) -> None:
+    def __init__(self, *, ends: bool = False, tz: Zone = None) -> None:
         """Keep the settings this formatter or locator was made with."""
         super().__init__(tz)  # pyright: ignore[reportUnknownMemberType]
         self.steps = LONG_QUARTER_STEPS
@@ -158,14 +160,15 @@ class QuarterLocator(mdates.DateLocator):
         low, high = sorted((float(vmin), float(vmax)))
         if not (math.isfinite(low) and math.isfinite(high)):
             return []
-        first, last = num2date(low, self.tz), num2date(high, self.tz)
+        zone = date_zone(self)
+        first, last = num2date(low, zone), num2date(high, zone)
         start = max(first.year * 4 + (first.month - 1) // 3 - 1, 4)
         stop = min(last.year * 4 + (last.month - 1) // 3 + 1, 9999 * 4 + 2)
         start += -start % self.step
         ticks: list[float] = []
         for index in range(start, stop + 1, self.step):
             num = float(
-                mdates.date2num(_quarter_moment(index, self.ends, self.tz))  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+                mdates.date2num(_quarter_moment(index, self.ends, zone))  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
             )
             if low <= num <= high:
                 ticks.append(num)
@@ -175,10 +178,10 @@ class QuarterLocator(mdates.DateLocator):
 class QuarterDateFormatter(ticker.Formatter):
     """Quarter words for the ticks in view; none for ticks outside it."""
 
-    def __init__(self, digits: YearDigits, tz: Any = None) -> None:
+    def __init__(self, digits: YearDigits, tz: Zone = None) -> None:
         """Keep the settings this formatter or locator was made with."""
         self.digits: YearDigits = digits
-        self.tz = tz
+        self.tz: Zone = tz
 
     def format_ticks(self, values: list[float]) -> list[str]:
         """Words for the ticks in view, worded together."""

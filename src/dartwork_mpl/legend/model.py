@@ -10,14 +10,72 @@ in the facts, so ``decide`` and ``edges`` stay free of matplotlib.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar, Generic, Literal, TypedDict, TypeVar
 
 #: Room kept between a legend box and the nearest data ink, in points.
 CLEARANCE_PT = 2.0
 #: A one-column legend taller than this share of the Axes is tried last.
 TALL_SHARE = 0.55
+
+
+LocName = Literal[
+    "best",
+    "upper right",
+    "upper left",
+    "lower left",
+    "lower right",
+    "right",
+    "center left",
+    "center right",
+    "lower center",
+    "upper center",
+    "center",
+    "outside upper left",
+    "outside upper center",
+    "outside upper right",
+    "outside right upper",
+    "outside right center",
+    "outside right lower",
+    "outside lower right",
+    "outside lower center",
+    "outside lower left",
+    "outside left lower",
+    "outside left center",
+    "outside left upper",
+]
+"""A ``loc`` matplotlib names (``"outside ..."``: figure legends only)."""
+
+#: Every :data:`LocName`, to read a caller's string against.
+LOC_NAMES: tuple[LocName, ...] = (
+    "best",
+    "upper right",
+    "upper left",
+    "lower left",
+    "lower right",
+    "right",
+    "center left",
+    "center right",
+    "lower center",
+    "upper center",
+    "center",
+    "outside upper left",
+    "outside upper center",
+    "outside upper right",
+    "outside right upper",
+    "outside right center",
+    "outside right lower",
+    "outside lower right",
+    "outside lower center",
+    "outside lower left",
+    "outside left lower",
+    "outside left center",
+    "outside left upper",
+)
+
+MatplotlibLoc = LocName | tuple[float, float] | int
+"""A ``loc`` as matplotlib takes it: a name, an anchor point or a code."""
 
 
 @dataclass(frozen=True)
@@ -28,7 +86,7 @@ class Loc:
     spots, in the order they are tried, are :data:`INSIDE_SPOTS`.
     """
 
-    code: str
+    code: LocName
     x: float
     y: float
 
@@ -282,26 +340,93 @@ class Best:
 class Passed:
     """Any other ``loc``: matplotlib's, handed to it unchanged."""
 
-    loc: str
+    loc: MatplotlibLoc
 
 
 Placement = Best | Side | Passed
 """What a caller's ``loc`` asks for."""
 
 
-def parse_loc(loc: str) -> Placement:
-    """``loc`` as the best spot, an outside side, or matplotlib's own."""
+AskedLoc = str | tuple[float, float] | int
+"""A ``loc`` as a caller passes it: a word, or matplotlib's point or code."""
+
+
+def parse_loc(loc: AskedLoc) -> Placement:
+    """``loc`` as the best spot, an outside side, or matplotlib's own.
+
+    A string that is neither raises ``ValueError`` here, before any legend
+    is removed; a point or a code goes to matplotlib as it is.
+    """
+    if not isinstance(loc, str):
+        return Passed(loc)
     if loc == "best":
         return Best()
-    return next((s for s in SIDES if s.word == loc), Passed(loc))
+    side = next((s for s in SIDES if s.word == loc), None)
+    if side is not None:
+        return side
+    for name in LOC_NAMES:
+        if name == loc:
+            return Passed(name)
+    words = ", ".join(repr(w) for w in ("best", *(s.word for s in SIDES)))
+    raise ValueError(
+        f"loc must be {words} or a matplotlib loc such as 'upper left' "
+        f"(got {loc!r})"
+    )
 
 
 #: The caller keywords that anchor a legend themselves.
 CALLER_ANCHOR = ("bbox_to_anchor", "bbox_transform")
 
 
+class LegendStyle(TypedDict, total=False):
+    """The ``Legend`` keywords a caller styles a legend with, plain values.
+
+    The keywords whose values are matplotlib objects (colours, an anchor
+    box, a font) are added by ``measure.LegendKeywords``; matplotlib still
+    takes any other keyword it knows at run time. ``loc`` and the column
+    count are the placing functions' own parameters.
+    """
+
+    fontsize: float | str | None
+    title: str | None
+    title_fontsize: float | None
+    frameon: bool | None
+    fancybox: bool | None
+    shadow: bool | dict[str, object] | None
+    framealpha: float | None
+    linewidth: float | None
+    borderpad: float | None
+    labelspacing: float | None
+    handlelength: float | None
+    handleheight: float | None
+    handletextpad: float | None
+    borderaxespad: float | None
+    columnspacing: float | None
+    markerscale: float | None
+    markerfirst: bool
+    numpoints: int | None
+    scatterpoints: int | None
+    scatteryoffsets: Sequence[float] | None
+    reverse: bool
+    mode: Literal["expand"] | None
+    alignment: Literal["center", "left", "right"]
+    draggable: bool
+
+
+LabelColourWord = Literal[
+    "linecolor", "markerfacecolor", "mfc", "markeredgecolor", "mec"
+]
+"""A ``labelcolor`` that takes each entry's colour from its handle."""
+
+Inherit = Literal["inherit"]
+"""A legend frame colour taken from ``axes.facecolor`` / ``axes.edgecolor``."""
+
+K = TypeVar("K", bound=LegendStyle)
+"""The caller's keyword dict, as the shell types it."""
+
+
 @dataclass(frozen=True)
-class Keywords:
+class Keywords(Generic[K]):
     """The caller's legend keywords, read once.
 
     ``rest`` goes to matplotlib; ``columns`` is an explicit ``ncol`` /
@@ -309,7 +434,7 @@ class Keywords:
     (``bbox_to_anchor``, ``bbox_transform``), if any.
     """
 
-    rest: dict[str, Any]
+    rest: K
     columns: Columns | None
     anchor: str | None
 
@@ -319,38 +444,34 @@ class Keywords:
         return self.anchor is not None
 
 
-def parse_keywords(
-    kw: Mapping[str, object], kept: Mapping[str, object] | None = None
-) -> Keywords:
+def parse_columns(ncols: object, ncol: object) -> Columns | None:
+    """An explicit ``ncols`` (``ncol`` wins, as in matplotlib), or ``None``."""
+    asked = ncols if ncol is None else ncol
+    if asked is None:
+        return None
+    if isinstance(asked, bool) or not isinstance(asked, int):
+        raise TypeError(f"ncols must be an int (got {type(asked).__name__})")
+    return Columns(asked)
+
+
+def parse_keywords(kw: K, kept: K, columns: Columns | None) -> Keywords[K]:
     """The caller's keywords over the ``kept`` settings of a rebuilt legend.
 
     A caller ``fontsize`` or ``prop`` replaces the kept font size.
     """
-    base = dict(kept or {})
+    base = kept.copy()
     if "fontsize" in kw or "prop" in kw:
         base.pop("fontsize", None)
-    rest, columns = split_columns({**base, **kw})
+    rest = base | kw
     anchor = next((k for k in CALLER_ANCHOR if k in rest), None)
     return Keywords(rest, columns, anchor)
 
 
-def split_columns(
-    kw: Mapping[str, object],
-) -> tuple[dict[str, object], Columns | None]:
-    """Legend keywords without ``ncol`` / ``ncols``, and the count they asked for."""
-    rest = dict(kw)
-    asked = rest.pop("ncols", None)
-    asked = rest.pop("ncol", asked)
-    if asked is None:
-        return rest, None
-    if isinstance(asked, bool) or not isinstance(asked, int):
-        raise TypeError(f"ncols must be an int (got {type(asked).__name__})")
-    return rest, Columns(asked)
-
-
-def trial_keywords(kw: Mapping[str, Any]) -> dict[str, Any]:
+def trial_keywords(kw: K) -> K:
     """The keywords a trial legend is built with: not ``draggable``."""
-    return {k: v for k, v in kw.items() if k != "draggable"}
+    rest = kw.copy()
+    rest.pop("draggable", None)
+    return rest
 
 
 # ------------------------------------------------------------------- plans

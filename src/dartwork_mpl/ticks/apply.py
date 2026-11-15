@@ -10,12 +10,12 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable
 from functools import partial
-from typing import Any
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
+from matplotlib.backend_bases import RendererBase
 from matplotlib.figure import Figure
 
 from ..edgecase import settle
@@ -150,7 +150,7 @@ def _thin(
     current: list[float],
     options: list[Callable[[], None]],
     restore: Callable[[], None],
-    renderer: Any,
+    renderer: RendererBase,
 ) -> bool:
     """Measure each sparser option, take the one the edges pick; else put back.
 
@@ -175,7 +175,7 @@ def _thin(
     return True
 
 
-def _thin_axis(axis: Axis, renderer: Any) -> bool:
+def _thin_axis(axis: Axis, renderer: RendererBase) -> bool:
     """Fewer ticks on one crowded date, quarter, category-date or year axis."""
     if isinstance(axis.get_major_formatter(), ticker.FixedFormatter) or rotated(
         axis
@@ -228,13 +228,13 @@ def _thin_axis(axis: Axis, renderer: Any) -> bool:
     )
 
 
-def _maxticks(locator: mdates.AutoDateLocator) -> dict[Any, int]:
+def _maxticks(locator: mdates.AutoDateLocator) -> dict[int, int]:
     """The locator's tick ceilings per date unit (each set, never ``None``)."""
     return {unit: n for unit, n in locator.maxticks.items() if n is not None}
 
 
 def _ceilings(
-    locator: mdates.AutoDateLocator, minticks: int, maxticks: dict[Any, int]
+    locator: mdates.AutoDateLocator, minticks: int, maxticks: dict[int, int]
 ) -> None:
     locator.minticks = minticks
     locator.maxticks = dict(maxticks)

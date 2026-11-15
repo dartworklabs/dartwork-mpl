@@ -13,14 +13,14 @@ from __future__ import annotations
 import weakref
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, assert_never
+from typing import TYPE_CHECKING, assert_never
 
 from matplotlib.axis import Axis
 from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 from matplotlib.ticker import Formatter
 
-from .measure import grid_axes, spacing_of
+from .measure import TextArtists, grid_axes, spacing_of
 from .model import (
     TURN_MODE,
     ArtistId,
@@ -55,35 +55,36 @@ class WrappedTickFormatter(Formatter):
         self.lines = dict(lines)
         self.base_default = base_default
 
+    def _base(self) -> Formatter:
+        """The base formatter, on the axis matplotlib gave this one."""
+        if self.base.axis is not self.axis:
+            self.base.set_axis(self.axis)
+        return self.base
+
     def __call__(self, x: float, pos: int | None = None) -> str:
         """The base formatter's label, wrapped where ``lines`` says."""
-        text = self.base(x, pos)
+        text = self._base()(x, pos)
         return self.lines.get(text, text)
 
     def format_ticks(self, values: list[float]) -> list[str]:
         """As the base formatter."""
-        return [self.lines.get(t, t) for t in self.base.format_ticks(values)]
+        return [self.lines.get(t, t) for t in self._base().format_ticks(values)]
 
     def set_locs(self, locs: list[float]) -> None:
         """As the base formatter."""
-        self.base.set_locs(locs)
+        self._base().set_locs(locs)
 
     def get_offset(self) -> str:
         """As the base formatter."""
-        return self.base.get_offset()
+        return self._base().get_offset()
 
     def format_data(self, value: float) -> str:
         """As the base formatter."""
-        return self.base.format_data(value)
+        return self._base().format_data(value)
 
     def format_data_short(self, value: float) -> str:
         """As the base formatter."""
-        return self.base.format_data_short(value)
-
-    def set_axis(self, axis: Any) -> None:
-        """As the base formatter."""
-        super().set_axis(axis)
-        self.base.set_axis(axis)
+        return self._base().format_data_short(value)
 
 
 @dataclass(frozen=True)
@@ -328,17 +329,18 @@ def _space(
 def text(
     gs: GridSpec,
     plan: TextPlan,
-    objects: Mapping[int, Any],
+    objects: TextArtists,
     groups: Mapping[ArtistId, tuple[ArtistId, Which]],
     record: Record,
 ) -> Callable[[], None]:
     """Apply ``plan``; the returned call takes all of it back."""
     undos = [
-        _name(objects[k], v, groups[k], record) for k, v in plan.names.items()
+        _name(objects.labels[k], v, groups[k], record)
+        for k, v in plan.names.items()
     ]
     undos += [_space(gs, k, v, record) for k, v in plan.spacing.items()]
-    undos += [_wrap(objects[k], v) for k, v in plan.wraps.items()]
-    undos += [_turn(objects[k], v, record) for k, v in plan.turns.items()]
+    undos += [_wrap(objects.axes[k], v) for k, v in plan.wraps.items()]
+    undos += [_turn(objects.axes[k], v, record) for k, v in plan.turns.items()]
 
     def undo() -> None:
         for step in reversed(undos):

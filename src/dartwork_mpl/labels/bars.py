@@ -11,7 +11,7 @@ import string
 import weakref
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -60,6 +60,7 @@ from .stacks import BarsFacts
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.typing import ColorType
 
     from ..ticks import TickScale
 
@@ -430,7 +431,7 @@ def _add(family: BarFamily, label: BarLabel) -> None:
     family.texts.append(label)
 
 
-def _rgba(color: Any) -> Rgba:
+def _rgba(color: ColorType) -> Rgba:
     """A matplotlib colour as RGBA; ``ValueError`` for anything else."""
     return mcolors.to_rgba(color)
 
@@ -444,7 +445,7 @@ def label_bars(
     crowded: str = "rotate",
     decimals: int | None = None,
     fmt: str | Callable[[float], object] | None = None,
-    color: Any = None,
+    color: ColorType | None = None,
     sign: str = "-",
 ) -> list[Text]:
     """Label each bar with its value, printed like the axis's ticks.
