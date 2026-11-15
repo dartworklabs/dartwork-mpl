@@ -60,7 +60,8 @@ ENTRY_POINTS = frozenset(
 # Units holding business-agnostic mechanism. They import no slice.
 PLATFORM = frozenset(
     {
-        "dartwork_mpl._figure_geometry",
+        # Figure measurement two or more slices share.
+        "dartwork_mpl.geometry",
         # The edge-case registry every slice's edges.py appends to.
         "dartwork_mpl.edgecase",
     }
@@ -71,7 +72,6 @@ SLICES = frozenset(
     {
         "dartwork_mpl.check",
         "dartwork_mpl.color",
-        "dartwork_mpl.config",
         "dartwork_mpl.font",
         "dartwork_mpl.guide",
         "dartwork_mpl.labels",
@@ -133,9 +133,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.size"): (
         "margins are given as physical lengths"
-    ),
-    ("dartwork_mpl.ticks", "dartwork_mpl.config"): (
-        "default tick text follows the user's tick_years and number_ladder"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"

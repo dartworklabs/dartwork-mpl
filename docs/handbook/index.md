@@ -26,7 +26,7 @@ orphan: true
 | `src/dartwork_mpl/<slice>/` | 코어 slice 하나. `model`, `decide`, `edges`, `measure`/`apply`, `assets/`, `tests/` | architecture |
 | `src/dartwork_mpl/<slice>/edges.py` | 그 slice의 이름 붙은 엣지 케이스. 새 특수 처리는 여기 끝에 더한다 | architecture |
 | `src/dartwork_mpl/edgecase/` | 엣지 케이스 등록 장치 | architecture |
-| `src/dartwork_mpl/_figure_geometry/` | 여러 slice가 쓰는 측정 코드(platform) | architecture |
+| `src/dartwork_mpl/geometry/` | 두 slice 이상이 쓰는 측정 코드(platform) | architecture |
 | `src/dartwork_mpl/guide/assets/` | skill, 템플릿, 안티패턴 목록. 에이전트가 읽는 전부 | purpose, verification(지침 게이트) |
 | `src/dartwork_mpl/mcp/` | MCP 도구 다섯 개와 산출물 형식 | architecture |
 | `src/dartwork_mpl/color/assets/`, `tests/test_shipped_colors_hash.py` | 출하 색 값과 그 고정점 | architecture(미감 불변식), verification |

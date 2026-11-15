@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from .. import labels, legend, ticks
-from .._figure_geometry import get_renderer
 from ..edgecase import settle
+from ..geometry import get_renderer
 from . import apply, decide, measure
 from .edges import EDGES
 from .model import FIT_ROUNDS, MAX_STEPS, Edges, Fit, Sides, Step, TextPlan

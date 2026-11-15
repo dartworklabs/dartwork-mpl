@@ -20,14 +20,15 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
-from .._figure_geometry import canvas_renderer, host_axes, same_position_axes
 from ..edgecase import settle
+from ..geometry import canvas_renderer, same_position_axes
 from ..style import fs, fw
 from . import decide, edges
 from .measure import (
     bar_end,
     bar_run,
     error_extent,
+    host_axes,
     px_per_pt,
     readable_ink,
     series_ink,

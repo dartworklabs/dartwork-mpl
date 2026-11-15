@@ -1,7 +1,7 @@
 """Where ink is drawn: a plot's data, under a legend or a value label, and a
 text's glyphs against the paper under them.
 
-Read by the drawn rules the legend slice also uses (``_figure_geometry``):
+Read by the drawn rules the legend slice also uses (``geometry.ink``):
 lines at their width, markers and scatter points as discs, bars by their
 drawn boxes, filled areas by their outlines, each only where its clip lets
 it draw. A dashed line counts as solid and every vertex of a marked line as
@@ -27,7 +27,8 @@ from matplotlib.container import BarContainer
 from matplotlib.contour import ContourSet
 from matplotlib.transforms import Bbox
 
-from .._figure_geometry import (
+from ..color import contrast_ratio
+from ..geometry import (
     BBOX_ERRORS,
     UNCLIPPED,
     clip_path_px,
@@ -44,7 +45,6 @@ from .._figure_geometry import (
     text_inks,
     within_clip_path,
 )
-from ..color import contrast_ratio
 from .model import Contrast, Hit, Text
 
 if TYPE_CHECKING:

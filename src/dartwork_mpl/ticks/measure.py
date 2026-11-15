@@ -19,7 +19,8 @@ from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
-from .._figure_geometry import same_position_axes, shared_axes, with_insets
+from ..geometry import same_position_axes, shared_axes
+from .defaults import config
 from .model import (
     AxesFacts,
     AxisFacts,
@@ -43,6 +44,23 @@ SETTLED: dict[Side, str] = {
     "right": "_dm_twin_spine_right_settled",
     "top": "_dm_twin_spine_top_settled",
 }
+
+
+def with_insets(axes: Sequence[Axes]) -> list[Axes]:
+    """Return ``axes``, each followed by its inset Axes, nested ones too.
+
+    ``ax.inset_axes`` keeps an inset in ``ax.child_axes``, not in
+    ``fig.axes``, while a ``twinx`` of that inset lands in ``fig.axes``.
+    ``secondary_xaxis`` / ``secondary_yaxis`` children are not Axes and are
+    left out.
+    """
+    out: list[Axes] = []
+    for ax in axes:
+        out.append(ax)
+        out.extend(
+            with_insets([c for c in ax.child_axes if isinstance(c, Axes)])
+        )
+    return out
 
 
 def axis_of(ax: Axes, which: Which) -> Axis:
@@ -90,8 +108,6 @@ def korean_labels(fig: Figure | None, extra: str = "") -> bool:
 
 def language(fig: Figure | None, extra: str = "") -> Language:
     """``config.number_ladder`` and whether the figure reads Korean."""
-    from ..config import config  # the root config: lazy, as layout reads it
-
     asked = LadderChoice.parse(config.number_ladder)
     return Language(
         asked, asked is LadderChoice.AUTO and korean_labels(fig, extra)
@@ -100,8 +116,6 @@ def language(fig: Figure | None, extra: str = "") -> Language:
 
 def config_digits() -> Digits:
     """``config.tick_years``."""
-    from ..config import config
-
     return parse_digits(config.tick_years, "config.tick_years")
 
 

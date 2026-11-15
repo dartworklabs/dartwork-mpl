@@ -1,10 +1,8 @@
 """What an artist actually draws: a collection's paths and ink, and an artist's clip.
 
 One rule for every caller that asks "is there ink here": ``dm.place_legend``
-keeps clear of it and ``LEGEND_ON_DATA`` (with the other validate checks)
-reports what covers it. The two used to read collections, transparency and
-clipping each in their own way, so a legend could avoid what was not drawn,
-or a check count what the placer ignored.
+keeps clear of it and ``dm.check`` reports what covers it, so a legend never
+avoids what is not drawn, nor a check count what the placer ignored.
 
 - :func:`drawn_collection_paths`: each item's path where ``Collection.draw``
   puts it (its own transform, the collection's, then its offset in display
@@ -14,7 +12,8 @@ or a check count what the placer ignored.
 - :func:`artist_shown`: visible and not at an artist alpha of 0 (one alpha
   per item: any above 0);
 - :func:`clip_region`, :func:`clip_path_px`, :func:`within_clip_path`:
-  where an artist's clip box and clip path let it draw;
+  where an artist's clip box and clip path let it draw; :func:`cut_to_clip`
+  a box cut to them;
 - :func:`drawn_ink_meets`: whether a path's ink (stroked, or filled) lies in
   a box where its clip lets it draw, the clip cutting the stroke, not the
   centre line;
@@ -24,8 +23,7 @@ or a check count what the placer ignored.
 - :func:`marker_radius_pt`, :func:`drawn_scatter_discs`, :func:`discs_meet`:
   markers and scatter points as discs reaching half their edge past their
   size, and whether any reaches into a box where its clip lets it draw;
-- :func:`drawn_patch_box`, :func:`drawn_text_box`: where a patch (its edge
-  included) and a text (its background box included) draw.
+- :func:`drawn_patch_box`: where a patch draws, its edge included.
 
 Everything is in display px for the figure as last drawn.
 """
@@ -39,7 +37,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.markers import MarkerStyle
 from matplotlib.transforms import Affine2D, Bbox, TransformedPath
 
-from ._subfigures import drawn_in_tree
+from .figure import drawn_in_tree
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
@@ -51,15 +49,12 @@ if TYPE_CHECKING:
     from matplotlib.text import Text
     from matplotlib.typing import ColorType
 
-# Owners: check, labels, legend.
 #: The region of an artist drawn without a clip: everywhere.
 UNCLIPPED = Bbox.from_extents(-np.inf, -np.inf, np.inf, np.inf)
-# Owners: check, labels, legend (inside clip_region only).
 #: The region of an artist its clip lets draw nowhere: meets nothing.
 NOWHERE = Bbox.from_extents(0.0, 0.0, 0.0, 0.0)
 
 
-# Owners: check.
 class DrawnOutline(NamedTuple):
     """One item a collection draws ink with: its path in display px, the
     half width its own edge is stroked at (0 when it draws no edge) and its
@@ -70,7 +65,6 @@ class DrawnOutline(NamedTuple):
     item: int = 0
 
 
-# Owners: check, legend (inside drawn_collection_outlines only).
 def drawn_collection_paths(coll: Any) -> list[tuple[int, Path]]:
     """Each item's path of ``coll`` where matplotlib draws it, in display px.
 
@@ -108,7 +102,6 @@ def drawn_collection_paths(coll: Any) -> list[tuple[int, Path]]:
     return drawn
 
 
-# Owners: check, legend.
 def drawn_collection_outlines(
     coll: Any, renderer: RendererBase
 ) -> list[DrawnOutline]:
@@ -153,7 +146,6 @@ def drawn_collection_outlines(
     return found
 
 
-# Owners: check.
 def artist_shown(artist: Artist) -> bool:
     """Visible and not at an artist alpha of 0 (one per item: any above 0)."""
     alpha = artist.get_alpha()
@@ -171,7 +163,6 @@ def _intersect(box: Bbox, frame: Bbox) -> Bbox | None:
     return Bbox.from_extents(x0, y0, x1, y1)
 
 
-# Owners: check, labels, legend.
 def clip_region(artist: Artist) -> Bbox:
     """Where ``artist``'s clip lets it draw, in display px.
 
@@ -195,7 +186,6 @@ def clip_region(artist: Artist) -> Bbox:
     return region
 
 
-# Owners: check, legend.
 def clip_path_px(artist: Artist) -> Path | None:
     """``artist``'s clip path in display px, when ``clip_on`` uses one."""
     clip_path = artist.get_clip_path()
@@ -204,7 +194,6 @@ def clip_path_px(artist: Artist) -> Path | None:
     return clip_path.get_fully_transformed_path()
 
 
-# Owners: check.
 def within_clip_path(box: Bbox | None, clip_path: Path | None) -> Bbox | None:
     """``box`` when its clip path (as filled) lets any of it through."""
     if box is None or clip_path is None:
@@ -212,7 +201,6 @@ def within_clip_path(box: Bbox | None, clip_path: Path | None) -> Bbox | None:
     return box if clip_path.intersects_bbox(box, filled=True) else None
 
 
-# Owners: check, legend.
 def drawn_ink_meets(
     path: Path,
     half: float,
@@ -249,7 +237,6 @@ def _alpha(color: ColorType, alpha: float | None = None) -> float:
     return float(to_rgba(color, alpha)[3])
 
 
-# Owners: check, legend.
 def line_draws_stroke(line: Line2D) -> bool:
     """Whether ``line`` strokes its path: shown, with a line style, a width and a colour with alpha."""
     return bool(
@@ -260,7 +247,6 @@ def line_draws_stroke(line: Line2D) -> bool:
     )
 
 
-# Owners: check, legend.
 def line_draws_markers(line: Line2D) -> bool:
     """Whether ``line`` draws markers: shown, a marker of some size with a face or an edge.
 
@@ -295,7 +281,6 @@ def _marker_edge_inks(line: Line2D) -> bool:
     )
 
 
-# Owners: check.
 def patch_inks(patch: Patch) -> bool:
     """A shown patch with a face, an edge (a width, a line style, a colour) or a hatch with a colour.
 
@@ -322,7 +307,6 @@ def _edge_inks(patch: Patch) -> bool:
     )
 
 
-# Owners: check.
 def text_inks(text: Text) -> bool:
     """Whether ``text`` draws: drawn, a non-blank string in a colour with alpha.
 
@@ -337,7 +321,6 @@ def text_inks(text: Text) -> bool:
 
 
 # ------------------------------------------------------- markers as discs
-# Owners: check, legend.
 def marker_radius_pt(line: Line2D) -> float:
     """How far a line's marker reaches from its centre, in points.
 
@@ -353,7 +336,6 @@ def marker_radius_pt(line: Line2D) -> float:
 _EMPTY_DISCS = (np.empty((0, 2)), np.empty(0))
 
 
-# Owners: check, legend.
 def drawn_scatter_discs(
     coll: PathCollection, px_per_pt: float
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -393,7 +375,6 @@ def drawn_scatter_discs(
     return xy[keep], radius[keep]
 
 
-# Owners: check, legend.
 def discs_meet(
     xy: np.ndarray,
     r: np.ndarray,
@@ -416,13 +397,13 @@ def discs_meet(
     return bool(np.any((xy[:, 0] - nx) ** 2 + (xy[:, 1] - ny) ** 2 < r**2))
 
 
-# --------------------------------------------- where a patch, a text draws
-def _cut_to_clip(box: Bbox, artist: Artist) -> Bbox | None:
+# ------------------------------------------------- where a patch draws
+def cut_to_clip(box: Bbox, artist: Artist) -> Bbox | None:
+    """``box`` cut to where ``artist``'s clip lets it draw; ``None`` when nowhere."""
     cut = _intersect(box, clip_region(artist))
     return within_clip_path(cut, clip_path_px(artist))
 
 
-# Owners: legend.
 def drawn_patch_box(patch: Patch, renderer: RendererBase) -> Bbox | None:
     """Where ``patch`` draws ink, display px; ``None`` when nowhere.
 
@@ -439,30 +420,4 @@ def drawn_patch_box(patch: Patch, renderer: RendererBase) -> Bbox | None:
             float(np.asarray(renderer.points_to_pixels(patch.get_linewidth())))
             / 2
         )
-    return _cut_to_clip(box, patch)
-
-
-# Owners: legend.
-def drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
-    """Where an Axes text draws ink, display px; ``None`` when nowhere.
-
-    A shown, non-blank text draws its glyphs (its window extent, an
-    annotation's arrow included) where they ink (:func:`text_inks`) and its
-    background box (``bbox=``) where that inks (:func:`drawn_patch_box`,
-    its edge included): the two are apart, so glyphs at alpha 0 over an
-    opaque box still draw the box. What draws is joined and cut to the
-    text's clip: matplotlib clips the background box with the text.
-    """
-    if not drawn_in_tree(text) or not text.get_text().strip():
-        return None
-    parts: list[Bbox] = []
-    if text_inks(text):
-        parts.append(text.get_window_extent(renderer))
-    background = text.get_bbox_patch()
-    if background is not None:  # placed where the text was last drawn
-        drawn = drawn_patch_box(background, renderer)
-        if drawn is not None:
-            parts.append(drawn)
-    if not parts:
-        return None
-    return _cut_to_clip(Bbox.union(parts), text)
+    return cut_to_clip(box, patch)

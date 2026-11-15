@@ -27,7 +27,7 @@ orphan: true
 | `guide` | 에이전트 지침: skill, 템플릿, 안티패턴 lint |
 | `mcp` | 위 slice를 에이전트에 연결하는 얇은 진입점. 도구 다섯 개 |
 
-slice끼리는 선언한 표면(`__init__.py`의 `__all__`)으로만 만난다. 허용된 의존 방향과 그 이유는 [tests/architecture/boundaries.py](../../tests/architecture/boundaries.py)의 `ALLOWED`가 정본이다. 여러 slice가 함께 쓰는 측정 코드는 platform 모듈 `_figure_geometry`에 있고, platform은 어떤 slice도 import하지 않는다. 공용 `utils/`나 `common/`은 만들지 않는다. 같은 이유로 함께 바뀌는 것이 관찰되기 전에는 중복이 틀린 추상화보다 싸기 때문이다.
+slice끼리는 선언한 표면(`__init__.py`의 `__all__`)으로만 만난다. 허용된 의존 방향과 그 이유는 [tests/architecture/boundaries.py](../../tests/architecture/boundaries.py)의 `ALLOWED`가 정본이다. 두 slice 이상이 함께 쓰는 측정 코드는 platform 패키지 `geometry`에 있고, platform은 어떤 slice도 import하지 않는다. 한 slice만 쓰는 측정 코드는 그 slice 안에 있다. 공용 `utils/`나 `common/`은 만들지 않는다. 같은 이유로 함께 바뀌는 것이 관찰되기 전에는 중복이 틀린 추상화보다 싸기 때문이다.
 
 `layout`은 `ticks`, `labels`, `legend`를 정해진 함수로만 부른다. 레이아웃 한 단계 안에서 눈금 글자를 정하고, 라벨과 범례를 자리 잡게 한 뒤, 여백을 잰다.
 
@@ -84,4 +84,3 @@ matplotlib의 `Figure`와 `Axes`는 상태를 바꾸는 객체다. 이 사실은
 1. **문서 분리.** `docs/`의 사용자 문서·갤러리·브랜딩을 허브 리포로 옮기고 이 리포에는 개발 문서만 남긴다. 지금 `docs/`에는 지워진 API를 설명하는 페이지가 많다.
 2. **git 히스토리의 대용량 잔재 제거.** 문서 분리 다음에 한 번만 한다.
 3. **허브 계약 확정.** 위 산출물 묶음을 허브가 실제로 받아 보고 고친다.
-4. **남은 이름 정리.** `_figure_geometry`의 언더바 이름과 `config.py`가 남아 있다.

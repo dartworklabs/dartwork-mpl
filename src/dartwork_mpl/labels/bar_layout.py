@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
-from .._figure_geometry import same_position_axes, shared_axes
+from ..geometry import same_position_axes, shared_axes
 from . import decide
 from .bars import OFFSET_PT, BarFamily, BarLabel, families_of, format_ticks_now
 from .measure import bar_centres, px_per_pt
