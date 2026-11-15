@@ -23,14 +23,14 @@ orphan: true
 
 | path pattern | 의미 | 수정할 때 같이 볼 topic |
 | --- | --- | --- |
-| `src/dartwork_mpl/<slice>/` | 기능 slice 하나. 표면은 `__init__.py`의 `__all__` | architecture |
-| `src/dartwork_mpl/<slice>/tests/` | 그 slice만 관찰하는 테스트. wheel에서 빠진다 | architecture, verification |
-| `src/dartwork_mpl/_figure_geometry/`, `_rc/`, `mcp/_platform/`, `ui/platform/` | 업무를 모르는 platform 코드 | architecture |
-| `scripts/check_boundaries.py` | slice 경계 규칙과 허용 목록의 정본 | architecture, verification |
-| `src/dartwork_mpl/_colors/`, `tests/test_shipped_colors_hash.py` | 출하 색 값과 그 고정점 | architecture(미감 불변식), verification |
-| `src/dartwork_mpl/asset/`, `tests/visual/baseline/` | 스타일 preset·폰트 자산과 픽셀 기준 이미지 | architecture(미감 불변식), verification |
-| `src/dartwork_mpl/asset/prompt/`, `src/dartwork_mpl/skills/` | 패키지에 동봉되는 에이전트 지침 | purpose |
-| `src/dartwork_mpl/mcp/` | MCP 서버. 채택한 목표에 따라 재설계 대상 | architecture |
-| `tests/architecture/`, `tests/contracts/` | 여러 slice에 걸친 구조·계약 검사 | verification |
+| `src/dartwork_mpl/<slice>/` | 코어 slice 하나. `model`, `decide`, `edges`, `measure`/`apply`, `assets/`, `tests/` | architecture |
+| `src/dartwork_mpl/<slice>/edges.py` | 그 slice의 이름 붙은 엣지 케이스. 새 특수 처리는 여기 끝에 더한다 | architecture |
+| `src/dartwork_mpl/edgecase/` | 엣지 케이스 등록 장치 | architecture |
+| `src/dartwork_mpl/_figure_geometry/` | 여러 slice가 쓰는 측정 코드(platform) | architecture |
+| `src/dartwork_mpl/guide/assets/` | skill, 템플릿, 안티패턴 목록. 에이전트가 읽는 전부 | purpose, verification(지침 게이트) |
+| `src/dartwork_mpl/mcp/` | MCP 도구 다섯 개와 산출물 형식 | architecture |
+| `src/dartwork_mpl/color/assets/`, `tests/test_shipped_colors_hash.py` | 출하 색 값과 그 고정점 | architecture(미감 불변식), verification |
+| `tests/visual/` | 픽셀 장면과 기준 이미지 | verification |
+| `tests/architecture/`, `scripts/check_boundaries.py` | 경계, 도메인 파일 규칙, fitness | architecture, verification |
 | `docs/adr/` | 결정 기록과 index | change-flow |
-| `.github/workflows/` | CI와 릴리스 게이트 | verification, change-flow |
+| `.github/workflows/` | CI(`lint`, `test`)와 릴리스 | verification, change-flow |

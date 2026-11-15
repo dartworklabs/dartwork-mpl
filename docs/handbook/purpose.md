@@ -30,8 +30,8 @@ dartwork-mpl은 matplotlib 위의 얇은 유틸리티 층이다. 논문·보고�
 
 | 사용자 | 쓰는 방식 | 이 리포가 주는 것 |
 | --- | --- | --- |
-| 연구자·엔지니어 | Python에서 `import dartwork_mpl as dm` | preset, `dm.figsize`, `dm.simple_layout`, 색, 검증 |
-| AI 코딩 에이전트 | 동봉된 skill·prompt 코퍼스, MCP 서버 | 지침, lint, 렌더와 검증 결과 |
+| 연구자·엔지니어 | Python에서 `import dartwork_mpl as dm` | preset, `dm.figsize`, `dm.simple_layout`, 색, `dm.check` |
+| AI 코딩 에이전트 | 동봉된 skill, MCP 서버 | 지침과 템플릿, lint, 렌더와 검사 결과 |
 
 ## 채택한 목표: 렌더링 도구이자 시각화 허브
 
@@ -52,11 +52,12 @@ Handbook은 모든 영역의 정본이 아니다. 아래 표는 각 영역에서
 | 영역 | 정본 | Handbook의 역할 |
 | --- | --- | --- |
 | 라이브러리 동작 | `src/dartwork_mpl/` 코드 | 의도와 불변식만 설명 |
-| 공개 API 표면 | `dm.__all__`, 각 slice의 `__all__`, [api-stability.md](../development/api-stability.md) | 표면이 바뀌는 조건을 설명 ([architecture.md](architecture.md)) |
-| slice 경계와 허용 의존 | [scripts/check_boundaries.py](../../scripts/check_boundaries.py)의 `ENTRY_POINTS`·`PLATFORM`·`SLICES`·`ALLOWED`·`DECISIONS`·`DEBT` | 규칙의 이유를 설명 |
-| 출하 색 값 | [tests/test_shipped_colors_hash.py](../../tests/test_shipped_colors_hash.py)의 digest와 `_colors` 생성 코드 | 미감 불변식으로 설명 |
-| 시각 스타일 | `src/dartwork_mpl/asset/`의 preset·폰트와 [tests/visual/baseline/](../../tests/visual/baseline/) | 미감 불변식으로 설명 |
-| 에이전트 지침과 안티패턴 | [src/dartwork_mpl/asset/prompt/](../../src/dartwork_mpl/asset/prompt/), 특히 `02-anti-patterns.yaml` | 위치만 가리킴 |
+| 공개 API 표면 | `dm.__all__`과 각 slice의 `__all__` | 표면이 바뀌는 조건을 설명 ([architecture.md](architecture.md)) |
+| slice 경계와 허용 의존 | [scripts/check_boundaries.py](../../scripts/check_boundaries.py) | 규칙의 이유를 설명 |
+| 출하 색 값 | `src/dartwork_mpl/color/assets/`의 색 표와 [tests/test_shipped_colors_hash.py](../../tests/test_shipped_colors_hash.py)의 digest | 미감 불변식으로 설명 |
+| 시각 스타일 | `src/dartwork_mpl/style/assets/`의 preset, `font/assets/`의 폰트, [tests/visual/baseline/](../../tests/visual/baseline/) | 미감 불변식으로 설명 |
+| 에이전트 지침과 안티패턴 | [src/dartwork_mpl/guide/assets/](../../src/dartwork_mpl/guide/assets/)의 skill, 템플릿, `anti-patterns.yaml` | 위치만 가리킴 |
+| MCP 도구와 산출물 형식 | `src/dartwork_mpl/mcp/`의 `server.py`와 `model.py` | 계약의 이유를 설명 ([architecture.md](architecture.md)) |
 | 검증 절차와 합격 기준 | [verification.md](verification.md)와 `.github/workflows/` | Handbook이 직접 소유 |
 | 결정 권한과 변경 흐름 | [change-flow.md](change-flow.md) | Handbook이 직접 소유 |
 | 릴리스 버전 | `pyproject.toml`의 `version`, `v*.*.*` 태그, PyPI | 절차를 설명 ([change-flow.md](change-flow.md)) |

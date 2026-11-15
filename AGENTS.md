@@ -1,144 +1,100 @@
 # dartwork-mpl — contributor entry point
 
-You are working **on** dartwork-mpl, a publication-quality matplotlib
-design system. This file is for AI coding assistants changing this
-repository. For human contributors, see [`README.md`](README.md).
+You are working **on** dartwork-mpl, a matplotlib design system. This file is
+for AI coding assistants changing this repository. The same content is
+mirrored in [`AGENTS.md`](AGENTS.md).
 
-The same content is mirrored in [`AGENTS.md`](AGENTS.md) so non-Claude
-clients (Codex, Aider, Continue, etc.) can pick it up.
-A machine-readable index is in [`llms.txt`](llms.txt) and a single-file
-concatenated dump in [`llms-full.txt`](llms-full.txt).
+## The one criterion
 
-## System Handbook (read first)
+A user turns on the skill and the MCP server, says "draw this", and a
+beautiful chart comes out. Code, tools, docs and tests exist only as far as
+they serve that. What does not is removed.
+
+## Read the Handbook first
 
 Before changing code, read only the topics you need from
-[`docs/handbook/index.md`](docs/handbook/index.md). It owns the
-project's purpose, structure, invariants (aesthetics are held; other
-features may be removed when meaningless), verification gates and who
-decides what. When your change alters current state, update the
-matching Handbook topic in the same PR.
+[`docs/handbook/index.md`](docs/handbook/index.md). It owns the purpose, the
+structure and its rules, the invariants, the verification gates and who
+decides what. When your change alters current state, update the matching
+Handbook topic in the same PR.
 
-## What is dartwork-mpl
+## What is here
 
-A thin utility layer on top of matplotlib that gives you a free-form
-physical-width API, ten aspect tokens, curated style presets, an
-OKLCH-aware color system, content-aware layout, validation, and an
-MCP server for AI agent integration. It does **not** wrap matplotlib
-with a new API — `Figure` / `Axes` stay native.
+A thin layer on top of matplotlib: `Figure` and `Axes` stay native. The
+package is twelve small slices under `src/dartwork_mpl/`:
+
+`style` `size` `color` `font` `layout` `ticks` `labels` `legend` `check`
+`save` `guide` `mcp`
+
+Each slice keeps the same files: `model.py` (domain types), `decide.py` (pure
+decisions, domain types only), `edges.py` (named edge cases appended to
+`EDGES`), `measure.py` / `apply.py` (thin matplotlib shell), `assets/` (its
+own data files), `tests/`. `tests/architecture/` enforces this.
 
 ## Plotting rules live in the bundled skill
 
-Before writing or reviewing any plotting code here (docs examples,
-templates, tests), read
-[`src/dartwork_mpl/skills/dartwork-mpl/SKILL.md`](src/dartwork_mpl/skills/dartwork-mpl/SKILL.md)
+Before writing or reviewing plotting code here (templates, examples, tests),
+read [`src/dartwork_mpl/guide/assets/skill/SKILL.md`](src/dartwork_mpl/guide/assets/skill/SKILL.md)
 and the `references/` file it routes to. It is the single source of the
 consumer rules: preset by purpose, `dm.figsize`, `dm.simple_layout` (never
-`plt.tight_layout()`), `dm.save_formats`, colour names, `dm.fs` / `dm.lw` /
-`dm.fw`, editing only the requested target, and the render → inspect →
-revise loop.
+`plt.tight_layout()`), `dm.save_formats`, `dm.fs` / `dm.lw` / `dm.fw`, colour
+names, and the draw → `dm.check` → fix loop. Change a consumer rule there
+first. `python -m dartwork_mpl.guide install` links the skill into a project.
 
-What ships to agents in other projects:
-
-| Surface | Source | Limit (tested) |
-|---|---|---|
-| Skill, installed by `python -m dartwork_mpl.skills install` | `src/dartwork_mpl/skills/dartwork-mpl/` | `SKILL.md` ≤ 120 lines; every Python block runs and lints |
-| Consumer entry, `dm.get_agent_doc("AGENTS")` | `src/dartwork_mpl/asset/agent/AGENTS.md` | ≤ 60 lines |
-| Prompt corpus, `dm.get_prompt(...)` / MCP resources | `src/dartwork_mpl/asset/prompt/` | lists match runtime |
-
-Change a consumer rule in the skill first, then keep the corpus and docs in
-step. The full anti-pattern SSOT is
-[`src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml`](src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml);
-`dm.lint_code(code)` or the MCP tool `lint_dartwork_mpl_code` runs it.
+The anti-pattern catalog is
+[`src/dartwork_mpl/guide/assets/anti-patterns.yaml`](src/dartwork_mpl/guide/assets/anti-patterns.yaml);
+`dm.lint_code(code)` or the MCP tool `lint` runs it.
 
 ## MCP server
 
-For Claude Code / Cursor / any MCP client, see the step-by-step setup
-in [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
-The server exposes 19 tools (lint + auto-fix + figure validation + render + color lookup + info
-+ chart-type recommender + layered-plot composer + advanced-tier render + durable artifact delivery + retained-input deletion), 10 resources +
-9 resource templates (the prompt corpus + 18 basic + 18 tier-2 advanced plot templates + five artifact members), and 2 prompts.
-New MCP features are frozen ([#623](https://github.com/dartworklabs/dartwork-mpl/issues/623),
-which quotes the decision because #523 is not retrievable from every account);
-bug and security fixes continue, and tool names, order, schemas and docstrings
-do not change. The freeze covers the MCP surface — a native Python contract
-outside it is not frozen by this clause.
+`dartwork-mpl-mcp` (stdio only) exposes five tools and nothing else:
+`guide`, `search_reference`, `get_reference`, `lint`, `render`. `render`
+runs caller code once in a child process and writes a bundle (`figure.png`,
+`figure.pdf`, `source.py`, `report.json`, `manifest.json`). It is not a
+sandbox. Storage and sharing belong to the separate hub repository, not to
+this library.
 
-Inputs are kept in the operator-selected private `storage_dir` on the server
-host. Unset policy denies Copy/Retained/delete. Historical report receipts do
-not prove current availability or upstream freshness; actual Retained admission
-checks reuse. Clients handle per-input display and ambiguous data choices. See
-the MCP guide for hashes, seven-day child copies and deletion limits.
+## What is held
+
+- **Shipped colour values.** `tests/test_shipped_colors_hash.py` pins them.
+  Never regenerate its digests to make a failing test pass: a failure means a
+  shipped colour moved, which is the owner's decision.
+- **The rendered look.** Fonts, weights, spines, grids and preset looks do not
+  change outside a fix whose before/after the owner has seen.
+  `tests/visual` holds the pixel baselines (`--mpl`, RMS ≤ 0.5).
+
+Everything else — public names, import paths, wire shapes, old tests — may
+change or be deleted when it does not serve the one criterion. Do not add
+shims, aliases or compatibility layers.
+
+## Checks
+
+```bash
+uv run ruff check && uv run ruff format --check
+uv run basedpyright
+uv run pytest -q -n auto --mpl
+```
+
+Tests are small on purpose: pure `decide` tables, one test per named edge
+case, a few realistic charts through the public surface. Do not add tests
+that pin implementation details, bytes, prose or tooling.
+
+The anti-pattern ratchet (`tests/test_antipattern_ratchet.py`) holds each
+example's and template's lint count to `tests/antipattern_baseline.json`. New
+code must be clean; lower the baseline with
+`uv run python tests/test_antipattern_ratchet.py --update` after fixing.
 
 ## Design documents and agent work
 
-These four rules exist because a colour-system refactor stalled for weeks
-behind a 13,868-line design document whose completion criteria could not be
-met on any developer machine. The full post-mortem is
-[ADR 0002](docs/adr/0002-separate-shipped-color-compatibility-from-oklab-authoring.md).
+1. **A design document does not exceed 200 lines.** Longer means the work
+   needs splitting.
+2. **Land a mechanical check before review.** A pinned digest, a golden file,
+   a measured threshold. Review against it, not against opinions.
+3. **A lock is released by its own ADR**, not by a clause in another document.
+   The owner's decisions come first and are recorded that way.
+4. **Completion criteria must run in this repository's development
+   environment.**
+5. **A check that did not run is reported as NOTRUN, never as passed.**
 
-1. **A design document does not exceed 200 lines.** If it wants to be longer,
-   the work needs splitting, not a longer document. A design nobody can read
-   is not a design.
-2. **Adversarial review requires an external decider.** "Reviewer A and B both
-   passed" is not a stopping condition on its own — reviewers reading the same
-   document can always find one more gap, so the loop diverges. Land a
-   mechanical check first (a pinned digest, a golden file, a measured
-   threshold), then review against it.
-3. **An ADR may not release a preceding ADR's lock.** If an accepted decision
-   froze something, superseding it is a separate decision that needs its own
-   approval — not a clause inside the document that wants the freedom.
-4. **Completion criteria must be executable in this repository's development
-   environment.** A criterion that requires hardware, an OS or a tool nobody
-   has is not a high standard; it is an unreachable one.
-
-The colour freeze specifically: `tests/test_shipped_colors_hash.py` pins every
-shipped colour value. Never regenerate its digests to make a failing test pass
-— a failure means a shipped colour moved, which is a decision for a human, not
-a test fix.
-
-The visual style is also held: fonts, weights, spines, grids, preset looks
-and colour values do not change outside a bug fix whose before/after the
-user has seen.
-
-The anti-pattern ratchet: `tests/test_antipattern_ratchet.py` lints every
-tracked example, docs script and bundled template and holds each file's
-critical/warning count to `tests/antipattern_baseline.json`. New code must be
-clean. When you fix issues, lower the baseline with
-`uv run python tests/test_antipattern_ratchet.py --update` — never run it to
-let a count go up.
-
-## Skills and limits for agent work
-
-- **One skill path for product code.** Work on this repository follows the
-  skills `.agents/skills.toml` selects: `arch-*` for specs, plans and review
-  against them, `code-*` for implementation, tests and CI. Another skill set
-  on the same machine (a `coding:*` plugin, say) is not added on top as a
-  second list of duties; name it explicitly only when a task needs it.
-- **Repairs inside a live approval are finished, not re-asked.** A fix that
-  stays within a decision still in force reuses that decision's invariants
-  and checks and is carried through to the verification it needs. Only a new
-  look, a new public contract or a policy change goes back to its decision.
-- **`design-tokens` is for looking tokens up.** Selecting it approves no
-  vendoring, lock, source replacement, promotion to the central source or
-  minor release. The colour freeze, the held visual style, the MCP and
-  evaluation freezes and the user's release hold come first.
-- **A file-access limit covers every way of reading.** A path an agent may
-  not open is also off limits to test fixtures, subprocesses, archives and
-  copies, not only to searches. A check that did not actually run is
-  reported as NOTRUN, never as passed.
-
-## Where to read more
-
-| If you want… | Open |
-|---|---|
-| 5-minute hands-on tour | [`docs/usage_guide/quickstart.md`](docs/usage_guide/quickstart.md) |
-| Width / aspect / layout deep dive | [`docs/usage_guide/layout.md`](docs/usage_guide/layout.md) |
-| Color system & palettes | [`docs/color_system/colors.md`](docs/color_system/colors.md) (or the [design rationale](docs/color_system/design-rationale.md)) |
-| Fonts, math & symbols | [`docs/fonts/index.md`](docs/fonts/index.md) (or the [math/symbol guide](docs/fonts/math_and_symbols.md)) |
-| Saving, validation & reproducible output | [`docs/usage_guide/save_export.md`](docs/usage_guide/save_export.md) |
-| 18 ready-to-use plot templates | [`docs/examples_gallery/09_ai_templates/`](docs/examples_gallery/09_ai_templates/) (rendered) or [`src/dartwork_mpl/asset/prompt/05-templates/`](src/dartwork_mpl/asset/prompt/05-templates/) (source) |
-| Upgrading from v4 | [`docs/migration.md`](docs/migration.md) |
-| Why this design exists | [`docs/philosophy/ai_native.md`](docs/philosophy/ai_native.md) |
-| AI integration overview | [`docs/ai/index.md`](docs/ai/index.md) |
-| Agent-workflow plan and its phases | [the masterplan](docs/superpowers/specs/2026-10-22-agentic-workflow-masterplan.md) · tracker [#623](https://github.com/dartworklabs/dartwork-mpl/issues/623) (mirrors #523) |
-| What is being worked on now, and the release hold | [the 2026-11-11 realignment](docs/superpowers/specs/2026-11-11-agentic-roadmap-realignment.md) · roadmap [#681](https://github.com/dartworklabs/dartwork-mpl/issues/681) |
+Branches: `develop` and `main` are protected; work on a branch and open a PR
+to `develop`. `main` only receives merges from `develop`.
