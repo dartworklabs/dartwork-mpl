@@ -1,10 +1,12 @@
 # Plot text language and Korean presets
 
-Plot text is English by default, whatever language the chat uses: a figure
-requested in Korean gets English titles and labels and the plain preset.
-Write Korean, or any other language, when the user asks for it. Data values
-(city names, categories) stay as given, and an edit keeps the language the
-figure already has.
+Read this when Korean (or another non-Latin script) appears on the figure.
+
+Text on the figure follows the document the figure goes into: a Korean report
+gets Korean labels, a paper for an English journal gets English ones. When
+that is unknown, follow the language of the request's own labels and data.
+Data values (city names, categories) stay as given, and an edit keeps the
+language the figure already has.
 
 Pick a `-kr` preset when any label, title, legend, annotation or data value
 on the figure is Korean: `scientific-kr`, `report-kr`, `presentation-kr`,

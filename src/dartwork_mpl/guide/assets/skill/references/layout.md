@@ -1,5 +1,8 @@
 # Sizing and layout
 
+Read this for canvas sizes, margins, multi-panel grids, twin axes, outside
+legends and colorbars.
+
 ## Canvas size
 
 With no size in the request, `dm.figsize_for` returns the active preset's
@@ -12,47 +15,19 @@ canvas, so the same request gets the same size whoever draws it:
 | `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title |
 | `poster` | report widths × font size / 8 pt |
 
-The kind sets the base (`"default"` 12 cm, `"barh"` 14.5 cm, `"compact"`
-9 cm, all 4:3 like `dm.figsize`; `"matrix"` 12 cm square, `"dense"` 17 cm 2:1,
-`"strip"` 17 cm 0.45, `"slide"` 23.4 × 10.5 cm and `"full_slide"` 25.4 × 14.29 cm
-under any preset). Density moves it: 6 or fewer points with 2 or fewer series
-on one axis gives 9 cm; `dual_axis=True`, 4+ series or 13+ points gives
-14.5 cm. `matrix`, `dense`, `strip`, `slide`, `full_slide` and grids keep theirs; a grid takes 17 cm and panels keep
-the kind's aspect, and no grid is taller than it is wide. `dm.grid_shape(n)` lays out `n` panels: one row up to
-three, then a near-square grid, wider than tall.
+Pass what you know and it picks from that table.
 
-Grouped bars (`n_series` bars side by side in each of `n_points` groups)
-take `"grouped"`: it sizes like `"default"`.
+| Argument | Effect |
+|---|---|
+| `n_points=`, `n_series=` | sparse charts get the narrow canvas, dense ones the wide |
+| `labels=names` | wide enough for category names to stand flat |
+| `dual_axis=True` | room for a second y axis |
+| `nrows=`, `ncols=` | a grid; `dm.grid_shape(n)` gives rows and columns for `n` panels |
+| kind `"barh"`, `"grouped"`, `"matrix"`, `"compact"`, `"dense"`, `"strip"` | horizontal bars, grouped bars, a square heatmap, a small figure, wide time series |
+| kind `"slide"`, `"full_slide"` | the body under a 16:9 slide's title (23.4 × 10.5 cm), the whole slide (25.4 × 14.29 cm) |
 
-Category names under the x axis go in too: `labels=names`. `"default"`
-and `"grouped"` then take the narrowest width of the preset's own table
-above, never narrower than without them, at which the names, measured at
-the preset's tick label font, stand flat half an em apart (closer,
-`dm.simple_layout` wraps or turns them). Past the widest, the widest, and
-the layout wraps or turns them. Names that fit, and calls without
-`labels`, keep the canvas they had; a journal column stays 9 cm and the
-other kinds keep their width.
-
-Slides: a 16:9 slide is 25.4 × 14.29 cm; under a 28 pt title with 1 cm
-margins a chart has 23.4 × 10.5 cm. `presentation` is `scientific` with every
-point size × 2.6 (23.4 / 9 cm: text 19.5 pt, ticks 18.2 pt, lines 2.6 pt), so
-a slide chart keeps the 10.5 cm height and one text size, and the width
-follows the x positions at that text size: up to 4 → 11.4 cm (half the body),
-up to 6 → 15.4 cm (two thirds), more, unknown (scatter), 4+ series or
-`dual_axis=True` → 23.4 cm. One row of panels, `"barh"`, `"dense"` and
-`"strip"` take 23.4 cm, `"compact"` 11.4 cm (two charts side by side) and
-`"matrix"` a 10.5 cm square; any grid takes the 23.4 × 10.5 cm body. A grid
-of two rows or more takes the whole slide, `dm.figsize_for("full_slide")`,
-with no slide title above it: every row has its own title, tick labels and
-axis name. A chart that is the whole slide with no slide title ("fill
-the slide", "the entire 16:9 page"): `dm.figsize_for("full_slide")`, 25.4 × 14.29 cm under
-any preset, the 10 in slide these sizes assume (a 13.33 in slide would show the
-same text 25 % smaller on screen).
-
-Bars are vertical; horizontal bars (`ax.barh`, `dm.figsize_for("barh")`) only
-when the category names would overlap side by side, or when asked. Axis limits
-are the library's: bars start at 0 by themselves, lines keep matplotlib's data
-margins; `set_ylim` / `set_xlim` only when asked.
+`presentation` is `scientific` with every point size × 2.6, so a slide chart
+is drawn at slide size and its text is readable from the back of the room.
 
 ```python
 import matplotlib.pyplot as plt

@@ -30,7 +30,8 @@ could not measure this figure: it is not proven clean, say so.
 
 ## Look at the image
 
-Open `output/figure-v1.png` with your image-viewing tool. Check that:
+Open `output/figure-v1.png` with your image-viewing tool and read it as the
+reader would. First: does the point land in five seconds? Then check that:
 
 - every title, label, tick label and legend entry is inside the canvas and
   readable at the printed size;

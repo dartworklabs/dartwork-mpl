@@ -1,5 +1,8 @@
 # Native customisation recipes
 
+Read this for matplotlib details the presets do not decide: dash patterns,
+spines, exact whole-canvas splits, presets side by side.
+
 Presets supply defaults, not a closed list of properties: every matplotlib
 artist property stays available. Find the artist (panel, series, label),
 change only what was asked, and keep the data, canvas, colours and legend.
@@ -18,25 +21,6 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.set(xlabel="Time (s)", ylabel="Signal")
 dm.simple_layout(fig)
 ```
-
-## Sizes relative to the preset or to the current value
-
-`dm.fs(n)` is the preset's `font.size` plus `n` steps, `dm.lw(n)` its
-`lines.linewidth` plus `n` steps (a step is 1 pt, 2.6 pt under
-`presentation`), `dm.fw(n)` its `font.weight` plus 100 per step. They read the
-preset, never an artist. "One step larger than now" is the getter plus one,
-and a second "one more" adds to that again:
-
-```python
-for label in (ax.xaxis.label, ax.yaxis.label):
-    label.set_fontsize(label.get_fontsize() + 1)   # current + 1 pt
-ax.yaxis.label.set_fontweight(dm.fw(1))            # preset weight + 100
-```
-
-An absolute request (`fontsize=12`, `linewidth=1.5`) is used exactly; the
-`fontsize-literal` / `linewidth-literal` lint warnings are then reported, not
-"fixed". Hairlines stay literal (`linewidth=0.3`): `dm.lw(-1)` is 0 on a
-preset whose base is 1 pt, and `linewidth=0` means no border.
 
 ## One line: width, colour and dash spacing
 
@@ -67,31 +51,6 @@ plt.close(fig)
 ```
 
 Axis labels (`ax.xaxis.label`) are not tick labels (`ax.get_xticklabels()`).
-
-## Exact canvas width and height
-
-Width and height are physical and may use different units. `bbox_inches=None`
-(the default) keeps the canvas; `"tight"` crops it. DPI sets pixel density,
-never the physical size. The `oversize-width` lint above 17 cm is page-fit
-advice: a requested 24 cm stays 24 cm.
-
-```python
-for name, size in (
-    ("cm", dm.figsize("24cm", "12cm")),
-    ("mm", dm.figsize("240mm", "120mm")),
-    ("in", dm.figsize(dm.inch(24 / 2.54), dm.inch(12 / 2.54))),
-):
-    fig, ax = plt.subplots(figsize=size)
-    ax.plot([0, 1, 2], [1, 3, 2])
-    ax.set(xlabel="Time", ylabel="Value")
-    dm.simple_layout(fig, margin="2%")
-    dm.save_formats(fig, f"output/canvas-{name}", formats=("png", "pdf"))
-    plt.close(fig)
-```
-
-File-only scripts run with `MPLBACKEND=Agg python plot.py`: a GUI backend can
-round the canvas at creation. Check `fig.get_size_inches()` and the PDF page
-size (72 pt per inch) against the request and report any mismatch.
 
 ## Whole-canvas regions
 
@@ -137,12 +96,6 @@ for preset in ("scientific", "report", "presentation"):
         dm.save_formats(fig, f"output/preset-{preset}", formats=("png",))
         plt.close(fig)
 ```
-
-## Saving
-
-`dm.save_formats(fig, "output/figure", formats=("svg", "png", "pdf"), dpi=300)`
-writes every format from one call. A figure that ends with only `plt.show()`
-leaves no file.
 
 ## When to ask
 

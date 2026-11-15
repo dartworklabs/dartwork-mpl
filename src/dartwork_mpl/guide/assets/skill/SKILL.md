@@ -1,120 +1,107 @@
 ---
 name: dartwork-mpl
-description: matplotlib plot, chart, figure, graph, 그래프, 그림, 플롯, 차트 with dartwork-mpl (import dartwork_mpl as dm). Use whenever Python code creates, edits, resizes, restyles, saves or reviews a static figure for a paper, report, document, dashboard or slides in a project where dartwork-mpl is installed. Covers the style preset, physical size with dm.figsize, dm.simple_layout margins, dm.save_formats, keeping data and NaN gaps intact, natural-language edits of one target and the render-inspect-revise loop. Also read it when a generic dataviz skill is active, for how dartwork-mpl figures differ.
+description: Static charts with matplotlib and dartwork-mpl (import dartwork_mpl as dm) - plot, chart, figure, graph, 그래프, 그림, 플롯, 차트. Use whenever Python code creates, edits, restyles, resizes, saves or reviews a figure for a paper, report, document, dashboard or slides in a project where dartwork-mpl is installed. Gives the four-call skeleton, what makes a chart good, and the draw, check, look loop. Not for interactive web charts (Plotly, D3, Altair).
 license: MIT
 ---
 
 # dartwork-mpl
 
-A thin layer over matplotlib; `Figure` and `Axes` stay native.
+A thin layer over matplotlib. `Figure` and `Axes` stay native, so everything you know about matplotlib still works. The library owns typography, line weights, spines, colour and margins. You own the message.
+
+This is guidance, not a rulebook. Requests differ. Where it does not cover yours, do what serves the reader of the figure.
+
+## The skeleton
 
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-x, y = [0, 1, 2], [1, 3, 2]
-dm.style.use("report")                                          # 1. preset first
-fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(x), n_series=1))
-ax.plot(x, y)                                  # 2. the preset's canvas and colours
-ax.set(xlabel="Time (s)", ylabel="Response")
-dm.simple_layout(fig)                                           # 3. after drawing
-dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"))  # 4. then look
+years, exports = [2019, 2020, 2021, 2022, 2023], [542, 512, 644, 684, 632]
+dm.style.use("report")                                   # 1. preset, before the figure
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))   # 2. physical size
+ax.plot(years, exports)
+ax.set(xlabel="Year", ylabel="Exports (USD bn)")
+dm.simple_layout(fig)                                    # 3. margins, after drawing
+print(dm.check(fig))                                     # defects, each with its fix
+dm.save_formats(fig, "output/exports-v1", formats=("png", "pdf"))   # 4. then look at the PNG
 ```
 
-## Preset by purpose
+1. **Preset by where the figure goes.** `scientific` for a paper or thesis, `report` for a report, document or dashboard, `presentation` for slides. Also `poster`, `web`, `dark`, `minimal`. Korean text anywhere on the figure takes the `-kr` twin (`report-kr`), which carries the Korean fonts.
+2. **Size in physical units.** `dm.figsize("12cm", "wide")` takes a width and an aspect token, a ratio or a height. With no size in the request, `dm.figsize_for(n_points=, n_series=)` picks one from how dense the chart is. A figure made at its final size keeps its text at the preset's point size on the page.
+3. **`dm.simple_layout(fig)` after everything is drawn.** It measures the text and sets the margins, formats tick numbers and dates, and wraps or turns labels that collide. Leave rotation, panel spacing and tick formatters to it unless the user asks.
+4. **`dm.save_formats`** keeps the canvas at the size you set.
 
-User size or style and journal/template rules first, then earlier project choices:
+`figsize=(6, 4)`, `plt.tight_layout()`, `plt.style.use(...)`, `bbox_inches="tight"` and a bare `fig.savefig()` all bypass the physical sizing, so the figure no longer prints at its stated size. Use them only when the user asks.
 
-| Purpose | Preset |
+Sizes written in code stay relative to the preset: `dm.fs(1)` is the preset font size plus one step, `dm.lw(1)` and `dm.fw(1)` the same for line width and weight. Colours are strings: `"dc.blue6"` (family, step 0 light to 9 dark). Leave `color=` out and the preset cycle applies.
+
+## What a good chart is
+
+**It makes one point.** Before any plotting code, say in one sentence what the reader should take away: "Exports recovered faster than imports after 2021." That sentence picks the form. A change over time is a line, a ranking is sorted bars, a relationship is a scatter, parts of a whole are stacked bars. If you cannot write the sentence, plot the data plainly and say the figure has no single message yet.
+
+**The point is visible without reading the axes.** Put the series that matters in colour and the rest in grey. Name lines at their ends when there are only a few. Mark the one value, crossing or period the reader must notice. Order categories by value unless they have an order of their own.
+
+**The medium decides where the words go.** A paper figure leaves its message to the caption, so it has no title. A report or slide figure may say its point in the title: "Exports passed the 2019 level in 2021", not "Exports by year". State only what the data shows.
+
+**Everything on it encodes something.** Colour means a category, a magnitude or emphasis, never decoration. Every number has a unit, in the axis label. Bars start at zero.
+
+## Defaults to steer away from
+
+Generic output looks like this. When the request leaves a choice open, do not spend it here:
+
+- a legend box for two or three lines, where end labels would do
+- a different colour on every bar when the bars are one series
+- a title that repeats the axis labels
+- a number on every bar and every point, so no number stands out
+- two y axes, which invent a relationship from the choice of scales
+- rotated tick labels, where horizontal bars or a wider canvas would read flat
+- a grid, a border and markers on every point competing with the data
+
+The opposite failure is the empty chart: technically clean and saying nothing. Spend your one bold move on the point.
+
+## The user's data and words
+
+**The user's words win.** A named size, colour, title, font size or "no legend" is done exactly, even where this page would choose otherwise. An "only X" edit changes X and nothing else. Free choices are the ones the request leaves open.
+
+**The data is not yours to change.** Never drop, fill, sort, aggregate, clip or invent rows without saying so. A missing value stays a visible gap. Names in the data stay as written. Template numbers are placeholders, never results.
+
+Text on the figure follows the document it goes into. Unknown: follow the language of the request's own labels and data.
+
+## Check, then look
+
+A figure is finished when you have looked at it, not when the script ran.
+
+1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlaps, a legend on data, crowded ticks, meaningless decimals. Fix every WARNING and weigh each INFO. `NOT RUN` means a rule could not measure, so say so.
+2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
+3. Fix what you saw, save as the next version (`-v2`, keep v1) and say what changed. If you cannot view images, say the figure was not visually reviewed.
+
+`dm.check` finds the mechanical defects. Whether the chart says anything is up to you.
+
+## Tools for the craft
+
+| To | Call |
 |---|---|
-| paper, journal, thesis, 논문 | `scientific` |
-| report, document, dashboard, 보고서, 문서 | `report` |
-| talk, slides, 발표 | `presentation` |
-| poster · web page · dark background · sparse | `poster` · `web` · `dark` · `minimal` |
+| name lines at their ends, no legend box | `dm.label_line_ends(ax)` |
+| a legend that avoids the data, or sits on a named side | `dm.place_legend(ax)`, `dm.place_legend(ax, loc="above")` |
+| one legend for panels that share series | `dm.figure_legend(fig)` |
+| values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
+| panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
+| k/M, 만/억, or the unit moved into the axis label | `dm.format_axis_si(ax)`, `dm.format_axis_myriad(ax)`, `dm.axis_unit(ax, "y", label="Sales ({unit} USD)")` |
 
-Plot text you write is English whatever the chat language; another language
-only when the user asks ("제목은 한국어로"). Korean on the figure, asked for or from the data,
-takes `-kr` (`report-kr`); edits keep its language and preset.
+Call them before `dm.simple_layout`, which makes room for what they add.
 
-## Size, layout, save
+## Look things up
 
-- No size asked, or a figure moved to slides: `dm.figsize_for(kind, n_points=, n_series=)`
-  (report 9/12/14.5/17 cm by density, paper columns; `presentation` 10.5 cm tall, 11.4/15.4/
-  23.4 cm wide for ≤4/≤6/more x points); count x points and series; category names under x: `labels=names`
-  (the narrowest of those widths that keeps them flat, half an em apart); `dual_axis=True` with `twinx`;
-  kind `"matrix"`, `"grouped"` for bars side by side (`n_series` bars per group), `"full_slide"` (25.4 × 14.29 cm) for a whole 16:9 slide; bars vertical,
-  `"barh"` + `ax.barh` only when names overlap or asked; n panels: `dm.grid_shape(n)` → `figsize_for(nrows=, ncols=)` (on slides, two rows or more: `"full_slide"`).
-- A size the user names wins, any size: `dm.figsize(width, second)`. width `"13cm"`, `"5in"`,
-  `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number; second `standard` 4:3, `wide` 3:2,
-  `slide` 16:9, `"16:9"`, a ratio or `"8cm"`. A width alone: a new figure is 4:3; an edit
-  keeps the old height in cm.
-- `dm.simple_layout(fig)` after everything is drawn sets outer margins (1 mm from the canvas edge by default;
-  `margin="3mm"` for more), tick numbers and thins crowded date labels; where text collides it wraps axis names and tick labels (bottom labels also under half an em apart), widens panel gaps nobody set and turns tick labels that cannot wrap, so leave rotation and `hspace`/`wspace` to it; `dm.save_formats` keeps the canvas.
-- Never `figsize=(w, h)`, `plt.tight_layout()`, `plt.style.use()`, bare `fig.savefig()`, `dpi=` on `plt.subplots`.
-
-## Look: the preset's, plus what was asked
-
-Spines, grid, ticks, axis limits (bars start at 0), fonts, background and margins are the
-preset's; change them only on request. Tick numbers and dates are the library's (`1,750`,
-`0.5M`, `16 … 24` on whole-year ticks (x data all integers in 1900–2099, also elevations; on y only `barh` positions; `tick_years=4`: `2016`), `23.01`, `23.Q1`, Korean `50만`; dates under bars: `dm.format_axis_dates(ax, dates)`, not rotated): no
-formatter, locator or tick list unless asked or naming categories; no request, the default; a request, that format. No figure title, subtitle,
-source note, value labels, extra panel or one-series legend unless asked (small multiples name each panel);
-a vague ask gets one panel. An asked-for element keeps the preset's style in every detail not
-named: `ax.set_title(t)`, `ax.grid(True, axis="y")`, `dm.add_note(fig, t)`, `dm.label_line_ends(ax)`; panel letters: `dm.label_axes(axes)` (a, b, c; `labels=["(a)", ...]`) before `dm.simple_layout`, never a title or `ax.text`.
-A legend you add, move or merge (a twin pair's two into one) is `dm.place_legend(ax)`, with `loc=` only for a side the user names; never `ax.legend(...)`, `bbox_to_anchor` or `ncols=` of your own (arguments it had stay); others stay as they are. A new figure of eight or more lines names them with `dm.label_line_ends(ax)`, unless a legend is asked for; panels that share their series get one `dm.figure_legend(fig)`.
-A generic chart skill gives chart choice and honest axes; static output: no hover, tooltips, rounded bar ends.
-
-## Data
-
-Plot the user's values as given; names in the data (categories, series, places) stay as written, never translated. Never drop, fill, sort, aggregate, clip or invent rows silently; state every transformation. Missing values stay visible gaps (a NaN breaks the line). A preview is not the dataset;
-template numbers are placeholders. Dates are dates, a bare year (2012) a number; "A against B": A on y ("rent against floor area": rent on y).
-A new figure labels both axes. Labels and legend names are column names translated word for word, sentence case, also when the request words
-them otherwise (`order_date` → `Order date`, `margin_pct` → `Margin (%)`, `고객수` → `Customer count`); only a value with no column takes the request's noun
-word for word, every word kept, in its order (`수출 증가율` → `Export growth rate`, "the share of online orders" → `Share of online orders`); no unit nothing states (a rate the data gives stays bare, no `(%)`; a share you compute × 100 says `(%)`).
-
-## Values
-
-- Leave `color=` out so the preset cycle applies; name one when asked or to emphasise
-  (`dc.blue6`: family + step 0–9). More series than the cycle has colours (`len(plt.rcParams["axes.prop_cycle"])`): each line that repeats a colour is dashed, `linestyle="--"`. More: `references/colors.md`.
-- `dm.fs(n)`/`dm.lw(n)`: preset font size/line width + n steps (1 pt; 2.6 pt in
-  `presentation` = `scientific` × 2.6); `dm.fw(n)`: weight + 100·n (preset, not an artist).
-- Explicit user values win exactly (`fontsize=12`, `"#235fa4"`), even when lint flags
-  literals. Hairlines stay literal (`linewidth=0.3`).
-- k/M or 만/억 asked: `dm.format_axis_si` / `_myriad`. One unit per axis, the
-  largest tick's unit (`0.25억 … 1.75억`), `unit="whole"` (`2,500만 … 17,500만`);
-  `decimals=` is exact. No meaningless decimals: `200`, `1k`, not `200.0`, `1.0k`.
-- Unit in the label, plain ticks: `dm.axis_unit(ax, "y", label="인구 ({unit}명)")`. Asked for four-digit years or k/M in Korean: `with dm.config.override(tick_years=4)` / `(number_ladder="si")` from figure creation to the last `dm.simple_layout`.
-- Numeric value labels you add: on bars `dm.label_bars(ax)` (no request, its defaults; a request, that keyword: `where=`, `decimals=`, `fmt=`, `sign=` …); on lines and points `dm.annotate_value(ax, x, y, text)` (`fs(-1)`, `fw(1)`, a free side); existing ones keep theirs (broad asks: Edits).
-
-## Edits
-
-"Only X" requests: find that artist (panel, series, label, title), change only the asked property; keep data,
-preset, canvas, colours, the legend as it is (a highlight too; a `LEGEND_OVERLAP` the original already has stays, reported; one your
-change makes: `dm.place_legend(ax)` on that legend's axes with its own arguments, not spacing or font size; list it) and the rest; keep the original, write the revision as a new script and stem.
-A preset switch (paper → slides) multiplies pt values written in the code by the presets' ratio (`scientific` →
-`presentation`: × 2.6, unrounded). Broad asks ("look better"): keep data, preset, canvas, chart type and axes (no
-new twin), limits (a line crossing value labels too), axis labels as written, text (add none) and its size (touching
-value labels larger than `dm.fs(-1)` drop to it and, with no weight written, take `dm.fw(1)`), title and legend; fix only defects the image shows, list each.
-
-## Review loop (every figure and revision; findings: `references/review.md`)
-
-1. `print(dm.check(fig))`: every defect, each with its fix; then `dm.save_formats(fig, "output/figure-v1")` (a path the user names gets the final version).
-2. Open the PNG with your image-viewing tool: clipped or overlapping text, legend over data,
-   crowded ticks, wasted space, wrong data. No image tool: say it was not visually reviewed.
-3. Fix every WARNING, weigh INFO (an edit: check the original first; "only X" keeps its warnings, reported); `NOT RUN` in the report: the check is incomplete, say so.
-4. Change only what is needed, save as `figure-v2` (keep v1), `dm.check` again and look again; report the changes and the findings left.
-
-## Templates and references
-
-18 chart types ship as `basic` and `advanced` scripts: `dm.guide.search("grouped bars")` ranks them,
-`print(dm.guide.read("template/advanced/bar"))` prints one; the user's data, labels and preset replace every
-placeholder (recount `figsize_for`'s counts, new `save_formats` stem). Without this folder each reference
-below is `dm.guide.read("guide/layout")` and so on (`dm.guide.references()` lists the ids). Over MCP the same reads are `guide(topic)`, `search_reference(query)`, `get_reference(kind, id)` and `lint(code)`; `render(code)` runs it once, returns the PNG and findings.
+Read only the page the task needs. Without this folder each is `dm.guide.read("guide/layout")` and so on.
 
 | Need | Read |
 |---|---|
-| canvas tables, tokens, pixels, grids, ratios, mosaics, twin axes, legends outside | `references/layout.md` |
-| finding the artist, one-target edits, value labels, "make it better" | `references/editing.md` |
-| colour names, palettes, colormaps, one highlighted series | `references/colors.md` |
-| plot text language, Korean presets, other scripts | `references/korean.md` |
-| lines, dashes, spines, backends, whole-canvas splits | `references/recipes.md` |
+| choosing the form, emphasis, annotation, titles | `references/craft.md` |
+| canvas sizes, margins, grids, twin axes, legends outside, colorbars | `references/layout.md` |
+| changing an existing figure, value labels | `references/editing.md` |
+| colour names, palettes, colormaps | `references/colors.md` |
+| Korean text, fonts and number units | `references/korean.md` |
+| what each `dm.check` finding means | `references/review.md` |
+| native matplotlib details: dashes, spines, exact canvas regions | `references/recipes.md` |
+
+A starting script for 18 chart types: `dm.guide.search("grouped bars")` ranks them and `print(dm.guide.read("template/advanced/bar"))` prints one. Adapt it to the point; its data and labels are placeholders.
