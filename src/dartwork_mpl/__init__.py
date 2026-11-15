@@ -36,8 +36,6 @@ from .color import (
     ensure_contrast,
     hex,
     list_colors,
-    make_palette,
-    mix_colors,
     oklab,
     oklch,
     pseudo_alpha,
@@ -74,7 +72,7 @@ from .length import Length, cm, col1, col2, inch, mm, pt
 
 # Saving
 from .save import save_formats
-from .size import figsize, grid_shape, list_aspect_tokens
+from .size import figsize, grid_shape
 
 # Preset-relative sizes
 from .style import fs, fw, lw
@@ -84,15 +82,10 @@ from .ticks import (
     axis_unit,
     axis_unit_of,
     config,
-    format_axis_billions,
     format_axis_currency,
     format_axis_dates,
-    format_axis_millions,
     format_axis_myriad,
     format_axis_si,
-    format_axis_year,
-    rotate_tick_labels,
-    set_decimal,
 )
 
 # Public surfaces that are provisional -- shape may change in a minor
@@ -150,7 +143,6 @@ __all__ = [  # noqa: RUF022
     # Layout
     "simple_layout",
     # Color utilities
-    "mix_colors",
     "pseudo_alpha",
     # Physical units and figure size
     "cm",
@@ -163,20 +155,14 @@ __all__ = [  # noqa: RUF022
     "figsize",
     "figsize_for",
     "grid_shape",
-    "list_aspect_tokens",
     # Point-unit offsets
     # Formatting
-    "set_decimal",
-    "format_axis_millions",
     "format_axis_myriad",
-    "format_axis_year",
     "format_axis_dates",
-    "format_axis_billions",
     "format_axis_currency",
     "format_axis_si",
     "axis_unit",
     "axis_unit_of",
-    "rotate_tick_labels",
     # Saving
     "save_formats",
     # Axes annotation
@@ -194,7 +180,6 @@ __all__ = [  # noqa: RUF022
     "lint_code",
     # Defects of a drawn figure
     "check",
-    "make_palette",
 ]
 
 # Eagerly register the bundled fonts on import so that

@@ -136,21 +136,6 @@ MYRIAD_LOCALES = {
 LADDERS = {"si": SI, "myriad": MYRIAD, "finance": FINANCE}
 
 
-YearLocale: TypeAlias = Literal["ko", "ja", "zh", "en"]
-"""The languages ``format_axis_year`` writes a year suffix in."""
-
-YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
-
-
-def year_suffix(locale: object) -> str:
-    """``format_axis_year``'s ``locale`` as its year suffix; ``ValueError``."""
-    if isinstance(locale, str) and locale in YEAR_SUFFIX:
-        return YEAR_SUFFIX[locale]
-    raise ValueError(
-        f"Unknown locale {locale!r}; valid locales: {', '.join(YEAR_SUFFIX)}"
-    )
-
-
 def myriad_ladder(locale: object) -> Ladder:
     """``format_axis_myriad``'s ``locale`` as its ladder; ``ValueError``."""
     if isinstance(locale, str) and locale in MYRIAD_LOCALES:

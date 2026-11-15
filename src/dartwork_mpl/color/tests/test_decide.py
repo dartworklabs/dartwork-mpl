@@ -7,15 +7,7 @@ import pytest
 from dartwork_mpl.color import decide
 from dartwork_mpl.color.catalog import CATALOG
 from dartwork_mpl.color.family import Count
-from dartwork_mpl.color.model import (
-    Form,
-    Gradient,
-    Lookup,
-    Name,
-    PaletteRequest,
-    Steps,
-    Weight,
-)
+from dartwork_mpl.color.model import Form, Gradient, Lookup, Name, Steps, Weight
 from dartwork_mpl.colorspace import Color, Oklch, Rgb
 
 WHITE, BLACK = Rgb(1.0, 1.0, 1.0), Rgb(0.0, 0.0, 0.0)
@@ -82,22 +74,3 @@ def test_suggest_finds_close_registered_names():
     registry = tuple(Name(n) for n in ("dc.teal5", "dc.teal4", "oc.red5"))
     close = decide.suggest(Lookup(Name("dc.tael5"), registry)).names
     assert close[0] == "dc.teal5"
-
-
-@pytest.mark.parametrize(
-    ("n", "kind", "expected"),
-    [
-        (3, "categorical", ("oc.blue5", "oc.red5", "oc.green5")),
-        (3, "sequential", ("oc.blue3", "oc.blue4", "oc.blue5")),
-        (6, "sequential", tuple(f"oc.blue{i}" for i in range(1, 7))),
-        (3, "diverging", ("oc.red6", "oc.red4", "oc.gray5")),
-        (0, "categorical", ()),
-    ],
-)
-def test_palette_lists(n, kind, expected):
-    assert decide.palette(PaletteRequest.parse(n, kind)) == expected
-
-
-def test_palette_repeats_past_its_list():
-    names = decide.palette(PaletteRequest.parse(10, "categorical"))
-    assert names[8:] == names[:2]

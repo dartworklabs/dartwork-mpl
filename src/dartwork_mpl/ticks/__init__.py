@@ -25,18 +25,12 @@ from matplotlib.axis import Axis
 from ..geometry import axis_of, shared_axes
 from ..vocab import (
     AffixedZero,
-    AlignCentre,
-    AlignLeft,
-    AlignRight,
-    HAlign,
-    HAlignName,
     Letter,
     Letters,
     Which,
     X,
     Y,
     parse_axes,
-    parse_halign,
     parse_which,
 )
 from .apply import figure_ladder, prepare, remember_dates, thin_dates
@@ -45,8 +39,6 @@ from .defaults import config
 from .formatters import (
     AxisUnitFormatter,
     LabelUnitFormatter,
-    WholeYearLocator,
-    YearTickFormatter,
     fill,
     tick_scale_of,
 )
@@ -63,13 +55,11 @@ from .model import (
     NumberStyle,
     PerTick,
     Unit,
-    YearLocale,
     myriad_ladder,
     parse_currency_position,
     parse_digits,
     parse_ladder_name,
     unit_template,
-    year_suffix,
 )
 from .text import number_text, recommend_tick_decimals, value_label_decimals
 from .twins import drawn_like_twin, settled_twin_spines
@@ -80,19 +70,14 @@ __all__ = [
     "axis_unit_of",
     "config",
     "drawn_like_twin",
-    "format_axis_billions",
     "format_axis_currency",
     "format_axis_dates",
-    "format_axis_millions",
     "format_axis_myriad",
     "format_axis_si",
-    "format_axis_year",
     "number_text",
     "prepare",
     "recommend_tick_decimals",
     "remember_dates",
-    "rotate_tick_labels",
-    "set_decimal",
     "settled_twin_spines",
     "thin_dates",
     "tick_scale_of",
@@ -152,38 +137,6 @@ def format_axis_si(
     _numbers(ax, axis, SI, unit, decimals, FIXED_TEXT)
 
 
-def _one_unit(
-    ax: Axes, axis: object, factor: float, suffix: str, decimals: int | None
-) -> None:
-    ladder = Ladder((Unit(factor, suffix),))
-    each = FIXED_TEXT if decimals is not None else None
-    style = NumberStyle.parse(ladder, suffix, decimals=decimals, per_tick=each)
-    _install(ax, axis, lambda: AxisUnitFormatter(style))
-
-
-def format_axis_millions(
-    ax: Axes,
-    axis: Letters = "y",
-    suffix: str = "M",
-    decimals: int | None = None,
-) -> None:
-    """Ticks in millions (``0.5M, 1.0M``; ``1M, 2M``), fewest exact decimals.
-
-    An integer ``decimals`` fixes the places on every tick.
-    """
-    _one_unit(ax, axis, 1e6, suffix, decimals)
-
-
-def format_axis_billions(
-    ax: Axes,
-    axis: Letters = "y",
-    suffix: str = "B",
-    decimals: int | None = None,
-) -> None:
-    """Ticks in billions (``1.5B``), as :func:`format_axis_millions`."""
-    _one_unit(ax, axis, 1e9, suffix, decimals)
-
-
 def format_axis_currency(
     ax: Axes,
     axis: Letters = "y",
@@ -224,38 +177,6 @@ def format_axis_myriad(
     _numbers(
         ax, axis, myriad_ladder(locale), unit, decimals, MYRIAD_TEXT, currency
     )
-
-
-def _fixed_point(places: int) -> ticker.FuncFormatter:
-    def text(value: float, _pos: object = None) -> str:
-        return f"{value:.{places}f}"
-
-    return ticker.FuncFormatter(text)
-
-
-def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
-    """Fixed-point tick text with ``xn`` / ``yn`` places; ``None`` leaves an axis."""
-    for places, axis in ((xn, ax.xaxis), (yn, ax.yaxis)):
-        if places is not None:
-            format(0.0, f".{places}f")  # refuse a bad count before changing
-            axis.set_major_formatter(_fixed_point(places))
-
-
-def format_axis_year(
-    ax: Axes, axis: Letters = "x", locale: YearLocale = "ko", digits: Digits = 2
-) -> None:
-    """Year ticks with a locale suffix: ``25년`` (``digits=4``: ``2025년``).
-
-    Unless someone set the locator, ticks fall on whole years. Two digits
-    that would repeat print four; a tick between years (a zoom under two
-    years) makes every tick print its value.
-    """
-    suffix = year_suffix(locale)
-    count = parse_digits(digits, "digits")
-    for target in _axes(ax, axis):
-        if target.isDefault_majloc:
-            target.set_major_locator(WholeYearLocator())
-        target.set_major_formatter(YearTickFormatter(count, suffix))
 
 
 def category_dates(
@@ -399,29 +320,3 @@ def axis_unit_of(ax: Axes, axis: Letter = "y") -> Unit | None:
     """The unit :func:`axis_unit` chose for this axis at the last draw, if any."""
     formatter = axis_of(ax, parse_which(axis)).get_major_formatter()
     return formatter.unit if isinstance(formatter, LabelUnitFormatter) else None
-
-
-def rotate_tick_labels(
-    ax: Axes,
-    axis: Letters = "x",
-    rotation: float = 45,
-    ha: HAlignName | None = None,
-) -> None:
-    """Turn the tick labels in place (the last resort for long names).
-
-    ``ha`` defaults to ``"right"`` for a positive angle, ``"left"`` for a
-    negative one and ``"center"`` for none.
-    """
-    align: HAlign = (
-        parse_halign(ha)
-        if ha is not None
-        else AlignRight()
-        if rotation > 0
-        else AlignLeft()
-        if rotation < 0
-        else AlignCentre()
-    )
-    for target in _axes(ax, axis):
-        for text in target.get_ticklabels():
-            text.set_rotation(rotation)
-            text.set_horizontalalignment(align.mpl)

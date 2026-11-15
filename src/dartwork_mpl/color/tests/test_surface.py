@@ -118,19 +118,11 @@ def test_annotation_ink_stays_readable_on_any_face():
     assert dm.readable_text_color("dc.blue7", light="w", dark="k") in {"w", "k"}
 
 
-def test_flat_alpha_and_mixes():
+def test_flat_alpha():
     assert dm.pseudo_alpha("red", 1.0) == pytest.approx((1.0, 0.0, 0.0))
     assert dm.pseudo_alpha("red", 0.0) == pytest.approx((1.0, 1.0, 1.0))
-    assert mcolors.to_hex(dm.mix_colors("red", "blue")) == "#8c53a2"
     with pytest.raises(ValueError, match=r"alpha must be .* \[0, 1\]"):
-        dm.mix_colors("red", "blue", 1.5)
-
-
-def test_make_palette_feeds_a_bar_chart():
-    names = dm.make_palette(4)
-    assert names == ["oc.blue5", "oc.red5", "oc.green5", "oc.orange5"]
-    fig, ax = plt.subplots()
-    ax.bar(range(4), [1, 2, 3, 4], color=names)
+        dm.pseudo_alpha("red", 1.5)
 
 
 def test_presets_rebind_the_role_colours():

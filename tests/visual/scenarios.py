@@ -215,7 +215,6 @@ def _build_bar_value_labels() -> Figure:
     palette = _blue_colors(4)
 
     bars = ax.bar(categories, values, color=palette)
-    dm.format_axis_millions(ax, axis="y")
     for bar, value in zip(bars, values, strict=True):
         height = bar.get_height()
         ax.text(

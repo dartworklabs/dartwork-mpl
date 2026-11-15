@@ -13,7 +13,9 @@
 1. 아래 표의 "구현" 위치에서 함수와 docstring을 읽는다. 동작의 세부는 같은 slice의 `tests/test_surface.py`와 `tests/test_edges.py`에 있다.
 2. 그 함수 없이 같은 결과를 내는 코드를 쓴다. matplotlib과 남는 dm 기능(`dm.style`, `dm.figsize`, `dm.simple_layout`, `dm.save_formats`, 색 이름, `dm.fs`·`dm.lw`·`dm.fw`)만 쓴다.
 3. "예시가 보여줘야 할 것"을 그림에서 확인할 수 있게 한다. 표에 적힌 함정은 함수가 대신 처리해 주던 것이므로 예시 코드에 드러나야 한다.
-4. 예시가 생기면 이 표의 "예시" 칸에 허브의 주소를 적는 PR을 이 리포에 연다. 그 뒤에 이 리포가 함수를 지운다.
+4. 예시가 생기면 이 표의 "상태" 칸에 허브의 주소를 적는 PR을 이 리포에 연다.
+
+"상태"가 "지움"인 함수는 이 리포에서 이미 지웠다. 원본은 기준 커밋에서 읽는다(`git show 3e50748d:src/dartwork_mpl/<구현 경로>`). 빈 칸은 아직 남아 있는 함수다.
 
 "쓰임"은 skill 문서에 나온 횟수 / 번들 템플릿 36개 중 쓰는 파일 수 / 마지막 평가(`20261115-214430`)의 skill 실행 16개 중 쓴 수다.
 
@@ -21,33 +23,36 @@
 
 다른 기능이 이 함수의 결과를 읽지 않는다. 지워도 남는 기능의 동작은 달라지지 않는다.
 
-| 함수 | 하는 일 | 구현 | 쓰임 | 예시가 보여줘야 할 것 | 예시 |
+| 함수 | 하는 일 | 구현 | 쓰임 | 예시가 보여줘야 할 것 | 상태 |
 | --- | --- | --- | --- | --- | --- |
-| `set_decimal` | 눈금을 고정 소수 자릿수로 쓴다 | `ticks/__init__.py:236` | 0/0/0 | `FuncFormatter` 또는 `StrMethodFormatter` 한 줄 | |
-| `format_axis_millions` | 눈금을 `1.5M`으로 쓴다 | `ticks/__init__.py:164` | 0/0/0 | 필요한 만큼만 소수를 쓰는 법(`1M, 2M` 대 `0.5M, 1.0M`) | |
-| `format_axis_billions` | 눈금을 `1.5B`로 쓴다 | `ticks/__init__.py:177` | 0/0/0 | 위와 한 예시로 묶는다 | |
+| `set_decimal` | 눈금을 고정 소수 자릿수로 쓴다 | `ticks/__init__.py:236` | 0/0/0 | `FuncFormatter` 또는 `StrMethodFormatter` 한 줄 |지움 |
+| `format_axis_millions` | 눈금을 `1.5M`으로 쓴다 | `ticks/__init__.py:164` | 0/0/0 | 필요한 만큼만 소수를 쓰는 법(`1M, 2M` 대 `0.5M, 1.0M`) |지움 |
+| `format_axis_billions` | 눈금을 `1.5B`로 쓴다 | `ticks/__init__.py:177` | 0/0/0 | 위와 한 예시로 묶는다 |지움 |
 | `format_axis_currency` | 눈금을 `$1,500`, `1,000€`로 쓴다 | `ticks/__init__.py:187` | 0/1/0 | 음수의 부호 위치(`-$1,500`), 기호가 뒤에 오는 통화 | |
-| `format_axis_year` | 눈금을 `25년`으로 쓴다 | `ticks/__init__.py:244` | 1/0/0 | 두 자리와 네 자리 연도 | |
-| `rotate_tick_labels` | 눈금 글자를 돌린다 | `ticks/__init__.py:404` | 0/0/0 | 돌린 글자의 정렬(`ha="right"`, `rotation_mode="anchor"`). 먼저 가로 막대로 바꾸는 것이 낫다는 점 | |
+| `format_axis_year` | 눈금을 `25년`으로 쓴다 | `ticks/__init__.py:244` | 1/0/0 | 두 자리와 네 자리 연도 |지움 |
+| `rotate_tick_labels` | 눈금 글자를 돌린다 | `ticks/__init__.py:404` | 0/0/0 | 돌린 글자의 정렬(`ha="right"`, `rotation_mode="anchor"`). 먼저 가로 막대로 바꾸는 것이 낫다는 점 |지움 |
 | `label_hline` | 가로 기준선에 이름을 붙인다 | `compose/labels.py:160` | 0/2/0 | 선에서 포인트 단위로 띄우기(`annotate`의 `textcoords="offset points"`), 선 위와 아래 | |
 | `annotate_corner` | 축 구석에 설명 글을 쓴다 | `compose/labels.py:132` | 0/1/0 | `transAxes` 좌표와 포인트 단위 안쪽 여백. 데이터와 겹치면 다른 구석으로 옮기는 판단 | |
-| `mix_colors` | 두 색을 OKLab에서 섞는다 | `color/__init__.py:142` | 0/0/0 | `dm.color(...)`의 OKLab 값으로 직접 섞기 | |
+| `mix_colors` | 두 색을 OKLab에서 섞는다 | `color/__init__.py:142` | 0/0/0 | `dm.color(...)`의 OKLab 값으로 직접 섞기 |지움 |
 | `pseudo_alpha` | 투명도를 불투명 색으로 바꾼다 | `color/__init__.py:151` | 0/3/0 | 겹친 면이 진해지지 않게 불투명 색을 쓰는 이유와 계산 | |
-| `make_palette` | Open Color 이름 `n`개를 돌려준다 | `color/__init__.py:338` | 0/0/0 | 범주, 순차, 발산 계열에 맞는 색 이름 고르기 | |
+| `make_palette` | Open Color 이름 `n`개를 돌려준다 | `color/__init__.py:338` | 0/0/0 | 범주, 순차, 발산 계열에 맞는 색 이름 고르기 |지움 |
 | `cspace` | 두 색 사이의 색 `n`개를 만든다 | `color/__init__.py:127` | 0/9/0 | 순서 있는 계열에 한 색상의 명도 단계를 쓰는 법 | |
 | `readable_text_color` | 배경에 맞는 흰색 또는 검은색을 고른다 | `color/__init__.py:185` | 0/2/0 | 히트맵 칸의 숫자 색 고르기 | |
 | `ensure_contrast` | 대비가 모자란 색을 조정한다 | `color/__init__.py:164` | 0/10/0 | 색 위의 글자가 읽히는 대비(4.5:1) 확인과 보정 | |
 | `list_colors` | `dc.*` 계열 목록을 돌려준다 | `color/__init__.py:288` | 2/0/0 | 예시가 아니라 허브의 색 표 페이지가 대신한다 | |
 | `grid_shape` | 패널 `n`개의 행과 열 수를 정한다 | `size/__init__.py:78` | 2/2/0 | small multiples의 행과 열 고르기, 빈 칸 처리 | |
-| `list_aspect_tokens` | 비율 이름 목록을 돌려준다 | `size/__init__.py:90` | 1/0/0 | 예시가 아니라 skill의 표가 대신한다 | |
+| `list_aspect_tokens` | 비율 이름 목록을 돌려준다 | `size/__init__.py:90` | 1/0/0 | 예시가 아니라 skill의 표가 대신한다 |지움 |
 
-템플릿이 쓰는 함수(`cspace`, `ensure_contrast`, `pseudo_alpha` 등)는 템플릿이 허브로 옮겨질 때 함께 풀어 써야 한다.
+아직 남은 아홉 개는 번들 템플릿이나 픽셀 기준 그림이 쓰고 있다. 템플릿이 허브로 옮겨진 뒤에 지울 수 있다.
+
+- `ensure_contrast`(템플릿 10개), `cspace`(9개), `pseudo_alpha`(3개), `readable_text_color`(2개): 예시 자체가 널리 쓰는 색 산술이다. 예시마다 풀어 쓰면 길고 틀리기 쉬우므로 기능으로 남기는 쪽이 맞을 수 있다. 소유자가 정한다.
+- `label_hline`(2개), `annotate_corner`(1개), `grid_shape`(2개, skill 문서), `format_axis_currency`(1개), `list_colors`(skill 문서, 색 digest 테스트)
 
 ## B. 얽힘을 먼저 확인해야 하는 것
 
 다른 기능이 이 함수가 남긴 결과를 읽는다. 지우려면 그 연결도 함께 정해야 한다.
 
-| 함수 | 하는 일 | 구현 | 쓰임 | 얽힌 곳 | 예시가 보여줘야 할 것 | 예시 |
+| 함수 | 하는 일 | 구현 | 쓰임 | 얽힌 곳 | 예시가 보여줘야 할 것 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `format_axis_si` | 눈금을 `12k`, `3M`으로 쓴다 | `ticks/__init__.py:137` | 2/5/0 | `label_bars`가 축과 같은 단위로 막대 값을 쓴다(`compose/labels.py:41`) | 축 전체가 한 단위와 한 자릿수를 쓰게 하는 법 | |
 | `format_axis_myriad` | 눈금을 만, 억, 조로 쓴다 | `ticks/__init__.py:207` | 3/0/3 | 위와 같다. 평가에서 실제로 쓰인 유일한 눈금 함수다 | 한국어 큰 수 표기, 통화 기호 | |

@@ -197,62 +197,6 @@ class Semantic:
         }
 
 
-SEMANTIC_NAMES = ("dc.pos", "dc.neg", "dc.ref", "dc.hl")
-
-
-@dataclass(frozen=True)
-class Categorical:
-    """Unordered series: distinct hues."""
-
-    value: ClassVar[str] = "categorical"
-
-
-@dataclass(frozen=True)
-class Ordered:
-    """Series in order: one hue, light to dark."""
-
-    value: ClassVar[str] = "sequential"
-
-
-@dataclass(frozen=True)
-class TwoSided:
-    """Series either side of a midpoint: two hues and a grey."""
-
-    value: ClassVar[str] = "diverging"
-
-
-#: What ``dm.make_palette`` encodes.
-PaletteKind = Categorical | Ordered | TwoSided
-
-
-def parse_palette_kind(text: object) -> PaletteKind:
-    """A palette kind; ``ValueError`` for anything else."""
-    for kind in (Categorical(), Ordered(), TwoSided()):
-        if text == kind.value:
-            return kind
-    raise ValueError(f"Unknown kind: {text!r}")
-
-
-@dataclass(frozen=True)
-class PaletteRequest:
-    """``n`` series of ``kind``."""
-
-    n: int
-    kind: PaletteKind
-
-    @classmethod
-    def parse(cls, n: object, kind: object) -> PaletteRequest:
-        """Check ``n`` and ``kind``."""
-        palette_kind = parse_palette_kind(kind)
-        if not isinstance(n, int) or isinstance(n, bool):
-            raise TypeError(f"n must be an int, got {type(n).__name__}")
-        if n < 0:
-            raise ValueError(
-                "n must be non-negative; use 0 for an empty palette"
-            )
-        return cls(n, palette_kind)
-
-
 @dataclass(frozen=True)
 class Lookup:
     """A colour name to correct, and every registered name."""

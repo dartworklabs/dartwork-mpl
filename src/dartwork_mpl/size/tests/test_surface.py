@@ -122,17 +122,6 @@ class TestLength:
             dm.Length(5.0)  # type: ignore[misc]
 
 
-def test_aspect_tokens_are_listed_tallest_first() -> None:
-    tokens = dm.list_aspect_tokens()
-    assert list(tokens)[:3] == ["tall", "portrait", "square"]
-    assert tokens["slide"] == 9 / 16
-    tokens["slide"] = 1.0
-    assert dm.list_aspect_tokens()["slide"] == 9 / 16
-    for name, ratio in tokens.items():
-        if name != "slide":
-            assert dm.figsize("10in", name)[1] == pytest.approx(10 * ratio)
-
-
 class TestGridShape:
     """One row up to three panels, then a near-square grid, wider than tall."""
 

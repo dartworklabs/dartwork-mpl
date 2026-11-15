@@ -11,21 +11,18 @@ keep text legible. Each call parses its input (``model``), decides
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, overload
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
-from .. import colorspace
 from ..colorspace import (
     Color,
     ContrastFacts,
     Oklab,
     Oklch,
     Rgb,
-    Rgba,
-    contrast,
     lifted,
     readable,
 )
@@ -38,7 +35,6 @@ from .family import Count, Family, parse_kind
 from .model import (
     Form,
     Name,
-    PaletteRequest,
     SemanticFacts,
     Steps,
     Weight,
@@ -55,24 +51,16 @@ __all__ = [
     "apply_semantic",
     "color",
     "colors",
-    "composite_layers",
-    "composite_over",
-    "contrast_ratio",
     "cspace",
     "ensure_contrast",
     "hex",
     "list_colors",
-    "make_palette",
-    "mix_colors",
     "oklab",
     "oklch",
     "pseudo_alpha",
     "readable_text_color",
-    "relative_y",
     "rgb",
     "set_colors",
-    "srgb_to_oklab",
-    "wcag_luminance",
 ]
 
 # For other slices (validation, labels): tuples in, numbers out.
@@ -139,15 +127,6 @@ def cspace(
     return list(decide.gradient(first, last, Steps(n), where))
 
 
-def mix_colors(color1: object, color2: object, alpha: float = 0.5) -> RGB:
-    """Blend two colours in OKLab: ``alpha`` of ``color1``, the rest of
-    ``color2``. Returns an sRGB tuple; ``alpha`` outside ``[0, 1]`` raises."""
-    weight = Weight.parse(alpha)
-    first = Color(measure.rgb(color1).oklab())
-    second = Color(measure.rgb(color2).oklab())
-    return decide.mix(first, second, weight).to_rgb()
-
-
 def pseudo_alpha(
     color: object, alpha: float = 1.0, background: object = "white"
 ) -> RGB:
@@ -155,7 +134,10 @@ def pseudo_alpha(
 
     Flat colours do not darken where they overlap, as real alpha does.
     """
-    return mix_colors(color, background, alpha=alpha)
+    weight = Weight.parse(alpha)
+    over = Color(measure.rgb(color).oklab())
+    under = Color(measure.rgb(background).oklab())
+    return decide.mix(over, under, weight).to_rgb()
 
 
 # -- contrast ------------------------------------------------------------------
@@ -190,44 +172,6 @@ def readable_text_color(
         measure.rgb(background), measure.rgb(light), measure.rgb(dark)
     )
     return ink.pick(light, dark)
-
-
-def contrast_ratio(
-    foreground: Sequence[float], background: Sequence[float]
-) -> float:
-    """The WCAG contrast ratio of two sRGB tuples."""
-    return contrast(Rgb.of(tuple(foreground)), Rgb.of(tuple(background))).value
-
-
-def wcag_luminance(rgb: Sequence[float]) -> float:
-    """WCAG 2.x relative luminance of an sRGB tuple."""
-    return Rgb.of(tuple(rgb)).wcag_luminance()
-
-
-def relative_y(rgb: Sequence[float]) -> float:
-    """Modeled relative CIE Y of an sRGB tuple (white is 1.0)."""
-    return Rgb.of(tuple(rgb)).relative_y()
-
-
-def srgb_to_oklab(rgb: Sequence[float]) -> RGB:
-    """OKLab ``(L, a, b)`` of an sRGB tuple."""
-    lab = Rgb.of(tuple(rgb)).oklab()
-    return (lab.L, lab.a, lab.b)
-
-
-def composite_over(top: Sequence[float], below: Sequence[float]) -> RGB:
-    """The RGBA ``top`` painted over the opaque ``below``."""
-    return colorspace.composite_over(
-        Rgba.of(tuple(top)), Rgb.of(tuple(below))
-    ).channels
-
-
-def composite_layers(
-    layers: Iterable[Sequence[float]], below: Sequence[float] = (1.0, 1.0, 1.0)
-) -> RGB:
-    """RGBA ``layers`` painted in order, lowest first, over ``below``."""
-    stack = tuple(Rgba.of(tuple(layer)) for layer in layers)
-    return colorspace.composite_layers(stack, Rgb.of(tuple(below))).channels
 
 
 # -- families ------------------------------------------------------------------
@@ -333,17 +277,6 @@ def set_colors(
     else:
         colours = list(name_or_list)
     apply.set_cycle(apply.color_cycle(colours, styles), ax)
-
-
-def make_palette(n: int, kind: str = "categorical") -> list[str]:
-    """``n`` Open Color names for ``"categorical"``, ``"sequential"``
-    (light to dark blues) or ``"diverging"`` (red, grey, blue) series.
-
-    Colours repeat past the list's length::
-
-        colors = dm.make_palette(4)
-    """
-    return list(decide.palette(PaletteRequest.parse(n, kind)))
 
 
 def apply_semantic(locale: Locale) -> None:

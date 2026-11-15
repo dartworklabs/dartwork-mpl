@@ -88,7 +88,7 @@ def _build_long_xtick_labels_45_rotation() -> Figure:
     labels = [f"category_label_45_{i:02d}" for i in range(8)]
     ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
     ax.set_ylabel("Value")
-    dm.rotate_tick_labels(ax, axis="x", rotation=45)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     return fig
 
 
@@ -97,7 +97,7 @@ def _build_long_xtick_labels_90_rotation() -> Figure:
     labels = [f"category_label_90_{i:02d}" for i in range(8)]
     ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
     ax.set_ylabel("Value")
-    dm.rotate_tick_labels(ax, axis="x", rotation=90)
+    plt.setp(ax.get_xticklabels(), rotation=90, ha="right")
     return fig
 
 

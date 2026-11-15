@@ -67,7 +67,6 @@ dm.figsize(dm.col1, "golden")    # paper, one column (9 cm)
 dm.figsize(dm.col2, 0.45)        # two columns, height = 0.45 x width
 dm.figsize("24cm", "12cm")       # exact width and height
 dm.figsize("19.2cm", "12.6cm")   # three 6 cm squares x 2 rows, 0.6 cm gaps
-print(dm.list_aspect_tokens())   # {token: height / width}
 ```
 
 Aspect tokens (width:height): `tall` 2:3, `portrait` 4:5, `square` 1:1,

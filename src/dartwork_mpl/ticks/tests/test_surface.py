@@ -149,15 +149,6 @@ def test_text_reads_like_the_ticks(figure):
     assert tick_scale_of(ax.xaxis, 0.5) == TickScale(0.01, "", "%")
 
 
-def test_a_year_zoom_prints_values_not_rounded_years(figure):
-    ax = figure.axes[0]
-    ax.plot([2019.0, 2020.0], [0, 1])
-    dm.format_axis_year(ax, locale="en", digits=4)
-    ax.set_xlim(2019.2, 2019.7)
-    dm.simple_layout(figure)
-    assert _shown(ax.xaxis)[:2] == ["2019.2", "2019.3"]
-
-
 def test_an_hourly_axis_does_not_repeat_its_date(figure):
     ax = figure.axes[0]
     hours = np.arange("2024-03-01T00", "2024-03-03T00", dtype="datetime64[h]")

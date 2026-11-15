@@ -25,7 +25,6 @@ def test_sizes_follow_the_preset():
 def test_overrides_win_and_a_rejected_one_changes_nothing():
     dm.style.use("report", font_size=12)
     assert mpl.rcParams["font.size"] == 12
-    assert "font.size" not in dm.style.active_preset_rcparams()
     with pytest.raises(ValueError):
         dm.style.use("dark", lines_linewidth="thick")
     assert dm.style.active_presets() == ("report",)
@@ -49,7 +48,7 @@ def test_context_restores_rc_role_colours_and_active_preset():
     with dm.style.context("presentation-kr"):
         assert dm.style.active_presets() == ("presentation-kr",)
         assert _pos() != pos
-        assert dm.style.step_pt() == pytest.approx(2.6)
+        assert dm.fs(1) - dm.fs(0) == pytest.approx(2.6)
     assert dict(mpl.rcParams) == before
     assert (_pos(), dm.style.active_presets()) == (pos, ("report",))
 
@@ -57,8 +56,7 @@ def test_context_restores_rc_role_colours_and_active_preset():
 def test_a_native_reset_drops_the_preset():
     dm.style.use("presentation")
     plt.rcdefaults()
-    assert dm.style.active_preset_rcparams() == {}
-    assert dm.style.step_pt() == 1.0
+    assert dm.fs(1) - dm.fs(0) == pytest.approx(1.0)
 
 
 def test_presentation_is_scientific_times_the_slide_scale():

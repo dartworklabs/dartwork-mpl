@@ -25,8 +25,6 @@ Hex = NewType("Hex", str)
 
 _GAMUT_STEPS = 24
 _GAMUT_TOLERANCE = 1e-6
-# D65 sRGB -> CIE Y, unrounded; WCAG's rounded weights are in ``wcag_luminance``.
-_SRGB_Y = (0.21267287873271212, 0.7151521284847872, 0.07217499278250072)
 
 
 def finite(value: object, what: str) -> float:
@@ -115,11 +113,6 @@ class Rgb:
         """WCAG 2.x relative luminance, with its rounded weights."""
         r, g, b = self.linear()
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-    def relative_y(self) -> float:
-        """Modeled relative CIE Y of nominal D65 sRGB (white is 1.0)."""
-        r, g, b = self.linear()
-        return float(_SRGB_Y[0] * r + _SRGB_Y[1] * g + _SRGB_Y[2] * b)
 
 
 @dataclass(frozen=True)

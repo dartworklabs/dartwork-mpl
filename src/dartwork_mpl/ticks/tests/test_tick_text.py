@@ -49,8 +49,6 @@ ROWS = (
         ("0", "1M", "2M", "3M", "4M")),
     Row("si-signed", "scientific", lambda ax: (ax.plot(np.linspace(0, 10, 100), WAVE), dm.format_axis_si(ax)), "y",
         (f"{M}1.0M", f"{M}0.5M", "0", "0.5M", "1.0M")),
-    Row("millions-bars", "report", lambda ax: (ax.bar(list("ABCD"), [1.2e6, 1.45e6, 1.38e6, 1.62e6]), dm.format_axis_millions(ax)), "y",
-        ("0", "0.2M", "0.4M", "0.6M", "0.8M", "1.0M", "1.2M", "1.4M", "1.6M")),
     # Korean numbers (a Korean title makes the figure Korean).
     Row("kr-man", "report-kr", lambda ax: ax.plot([0, 1, 2], [1.0e6, 1.8e6, 2.6e6]), "y",
         ("100만", "125만", "150만", "175만", "200만", "225만", "250만", "275만")),
@@ -67,8 +65,6 @@ ROWS = (
         ("16", "18", "20", "22", "24")),
     Row("whole-years-4", "report", lambda ax: ax.plot(YEARS, np.arange(10)), "x",
         ("2016", "2018", "2020", "2022", "2024"), config={"tick_years": 4}),
-    Row("kr-years", "report-kr", lambda ax: (ax.plot(YEARS, np.arange(10)), dm.format_axis_year(ax)), "x",
-        ("16년", "18년", "20년", "22년", "24년")),
     Row("monthly-bars", "report", lambda ax: ax.bar(MONTHS, np.arange(12) + 1), "x",
         ("24.01", "24.03", "24.05", "24.07", "24.09", "24.11")),
     # Changed with the concise date style's deletion (was "monthly-concise":

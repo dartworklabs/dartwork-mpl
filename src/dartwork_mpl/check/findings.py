@@ -63,8 +63,8 @@ FIXES: dict[str, str] = {
     "names: fewer categories, a larger canvas or horizontal bars",
     "TICK_CORNER_OVERLAP": "dm.simple_layout(fig) moves one axis' labels "
     "out; pads you set: ax.tick_params(axis='x', pad=...)",
-    "TICK_DECIMAL": "dm.set_decimal(ax, ...) with the decimals the tick step "
-    "needs; dm.format_axis_* print whole numbers bare",
+    "TICK_DECIMAL": "ax.yaxis.set_major_formatter('{x:.1f}') with the decimals the "
+    "tick step needs; dm.format_axis_* print whole numbers bare",
     "MISSING_AXIS_LABEL": "name the quantity and unit: "
     "ax.set_ylabel('Revenue (M USD)')",
     "TEXT_CONTRAST": "a darker ink, or dm.readable_text_color(background)",

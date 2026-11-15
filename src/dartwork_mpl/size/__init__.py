@@ -17,14 +17,14 @@ from ..length import Length
 from . import decide, measure
 from .canvas import CanvasFacts, CanvasRequest, parse_canvas_kind, parse_names
 from .edges import EDGES
-from .model import ASPECTS, STANDARD, Grid, Panels, parse_height
+from .model import STANDARD, Grid, Panels, parse_height
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from .measure import LayerReader
 
-__all__ = ["figsize", "figsize_for", "grid_shape", "list_aspect_tokens"]
+__all__ = ["figsize", "figsize_for", "grid_shape"]
 
 
 def figsize(width: object, aspect: object = STANDARD) -> tuple[float, float]:
@@ -33,7 +33,7 @@ def figsize(width: object, aspect: object = STANDARD) -> tuple[float, float]:
     ``width`` is a unit string (``"13cm"``, ``"5in"``, ``"170mm"``,
     ``"24pt"``) or a :class:`Length` (``dm.cm(13)``, ``dm.col1``); a bare
     number raises ``TypeError``. ``aspect`` is an aspect token (``"wide"``;
-    see :func:`list_aspect_tokens`), a ``"W:H"`` string (``"16:9"``), a
+    ``"square"``, ``"golden"``, ``"tall"``), a ``"W:H"`` string (``"16:9"``), a
     number (``height / width``), or a height as a unit string (``"8cm"``) or
     :class:`Length`. Default ``"standard"`` (4:3)::
 
@@ -85,9 +85,3 @@ def grid_shape(n: int) -> tuple[int, int]:
     """
     grid = decide.grid_for(Panels(n))
     return (grid.nrows, grid.ncols)
-
-
-def list_aspect_tokens() -> dict[str, float]:
-    """Return the aspect tokens as ``{name: height / width}``, tallest first."""
-    ratios = {name: aspect.ratio for name, aspect in ASPECTS.items()}
-    return dict(sorted(ratios.items(), key=lambda item: -item[1]))

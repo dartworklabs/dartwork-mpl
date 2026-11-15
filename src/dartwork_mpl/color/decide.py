@@ -31,7 +31,6 @@ from .family import (
 )
 from .model import (
     Catalog,
-    Categorical,
     DivergingSource,
     Form,
     Gradient,
@@ -40,14 +39,11 @@ from .model import (
     InRgb,
     Lookup,
     Name,
-    Ordered,
-    PaletteRequest,
     Semantic,
     SemanticFacts,
     Space,
     Steps,
     Suggestions,
-    TwoSided,
     Weight,
 )
 
@@ -209,56 +205,3 @@ def semantic(facts: SemanticFacts) -> Semantic:
         ref=catalog.ladder("gray")[6],
         hl=catalog.ladder("violet")[6],
     )
-
-
-# -- make_palette --------------------------------------------------------------
-
-CATEGORICAL = tuple(
-    Name(f"oc.{hue}5")
-    for hue in (
-        "blue",
-        "red",
-        "green",
-        "orange",
-        "purple",
-        "teal",
-        "pink",
-        "yellow",
-    )
-)
-DIVERGING_FEW = tuple(
-    Name(n) for n in ("oc.red6", "oc.red4", "oc.gray5", "oc.blue4", "oc.blue6")
-)
-DIVERGING_MANY = tuple(
-    Name(n)
-    for n in (
-        "oc.red7",
-        "oc.red5",
-        "oc.red3",
-        "oc.gray5",
-        "oc.blue3",
-        "oc.blue5",
-        "oc.blue7",
-    )
-)
-
-
-def palette(request: PaletteRequest) -> tuple[Name, ...]:
-    """``n`` Open Color names for ``kind``, repeating the list when short.
-
-    Up to five sequential or diverging series take the tighter list (blue
-    3..7, or red 6/4, grey, blue 4/6); more take the wider one.
-    """
-    few = request.n <= 5
-    match request.kind:
-        case Categorical():
-            base = CATEGORICAL
-        case Ordered():
-            shades = range(3, 8) if few else range(1, 10)
-            base = tuple(Name(f"oc.blue{i}") for i in shades)
-        case TwoSided():
-            base = DIVERGING_FEW if few else DIVERGING_MANY
-        case _:
-            assert_never(request.kind)
-    repeats = request.n // len(base) + 1
-    return (base * repeats)[: request.n]

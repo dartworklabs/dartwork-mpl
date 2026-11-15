@@ -9,7 +9,6 @@ them by ``n`` steps, so a chart keeps its proportions under every preset.
 
 from __future__ import annotations
 
-import copy
 from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from types import MappingProxyType
@@ -24,7 +23,6 @@ from .model import SLIDE_SCALE, Active, Points, Steps
 __all__ = [
     "SLIDE_SCALE",
     "Tint",
-    "active_preset_rcparams",
     "active_presets",
     "context",
     "fs",
@@ -33,7 +31,6 @@ __all__ = [
     "load_style_dict",
     "lw",
     "presets",
-    "step_pt",
     "use",
 ]
 
@@ -81,20 +78,6 @@ def context(
 def active_presets() -> tuple[str, ...]:
     """The preset names the last :func:`use` (or innermost context) applied."""
     return tuple(p.name for p in apply.STATE[0].presets)
-
-
-def active_preset_rcparams() -> dict[str, object]:
-    """Copies of the values the active preset's layers set, without the
-    keys passed as overrides; ``{}`` when no preset is in force (none
-    applied, or a native ``plt.rcdefaults()`` since)."""
-    values = copy.deepcopy(apply.STATE[0].values)
-    return values if measure.in_force(values) else {}
-
-
-def step_pt() -> float:
-    """Points one ``dm.fs`` / ``dm.lw`` step adds now: 1, or
-    :data:`SLIDE_SCALE` under ``presentation`` / ``presentation-kr``."""
-    return _step().pt
 
 
 def fs(n: float) -> float:

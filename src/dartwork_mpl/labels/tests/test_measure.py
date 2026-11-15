@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl.color import composite_layers
+from dartwork_mpl.colorspace import Rgb, Rgba, composite_layers
 from dartwork_mpl.labels.measure import backdrop_layers
 
 
@@ -20,7 +20,8 @@ def test_folded_layers_match_the_rendered_pixel(alpha: float) -> None:
     ax.set_facecolor((0.9, 0.2, 0.1, alpha))
     fig.canvas.draw()
     shown = np.asarray(fig.canvas.buffer_rgba())[50, 50, :3]  # type: ignore[attr-defined]
-    folded = composite_layers(backdrop_layers([ax]))
+    layers = tuple(Rgba.of(layer) for layer in backdrop_layers([ax]))
+    folded = composite_layers(layers, Rgb.of((1.0, 1.0, 1.0))).channels
     assert [round(c * 255) for c in folded] == pytest.approx(
         [int(v) for v in shown], abs=2
     )
