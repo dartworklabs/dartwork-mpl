@@ -8,7 +8,7 @@ import pytest
 from matplotlib.transforms import Bbox
 
 import dartwork_mpl as dm
-from dartwork_mpl.legend.measure import _drawn_text_box
+from dartwork_mpl.legend.ink import _drawn_text_box
 
 
 def _drawn_extent(fig, artist) -> Bbox:
