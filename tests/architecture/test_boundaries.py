@@ -530,11 +530,6 @@ def test_template_consumers_detector_allows_style_only_paths():
     assert _template_storage_violations(source) == []
 
 
-def test_legend_shim_is_declared_with_annotation_ownership():
-    """The historical nested module is explicitly owned by annotation."""
-    assert checker.SHIMS.get(f"{P}.helpers.labels") == f"{P}.annotation"
-
-
 def test_nested_legend_shim_enforces_all_dependency_paths():
     """Nested shim ownership preserves private, platform, cycle and decision checks."""
     p = "dartwork_mpl"

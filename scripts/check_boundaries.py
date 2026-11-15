@@ -237,12 +237,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "line-end and bar value labels keep their series' colour at a "
         "readable contrast"
     ),
-    ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
-        "legend edge colours require registered shipped colours"
-    ),
-    ("dartwork_mpl.annotation", "dartwork_mpl.config"): (
-        "place_legend reads the project-wide legend fallback and wrap defaults"
-    ),
     ("dartwork_mpl.annotation", "dartwork_mpl.formatting"): (
         "bar value labels print in their axis's tick unit, like the ticks"
     ),
@@ -280,9 +274,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.helpers", "dartwork_mpl._colors"): (
         "historical curated palette imports re-export the color owner's callable"
     ),
-    ("dartwork_mpl.helpers", "dartwork_mpl.annotation"): (
-        "historical legend imports re-export annotation's callable"
-    ),
     ("dartwork_mpl.labels", "dartwork_mpl.annotation"): (
         "the layout's label hooks delegate to the label code until labels is rebuilt"
     ),
@@ -297,9 +288,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.ticks"): (
         "layout writes the library's tick numbers before measuring them and "
         "thins crowded dates at the fitted size"
-    ),
-    ("dartwork_mpl.legend", "dartwork_mpl.annotation"): (
-        "the layout's legend hooks delegate to the legend code until legend is rebuilt"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.config"): (
         "layout follows the user's tick-label font adoption setting"
@@ -463,12 +451,18 @@ SHIMS: Mapping[str, str] = {
     # dm.validate_fixes predates the validate slice's fix modules.
     "dartwork_mpl.validate_fixes": "dartwork_mpl.validate",
     "dartwork_mpl.helpers.colors": "dartwork_mpl._colors",
-    "dartwork_mpl.helpers.labels": "dartwork_mpl.annotation",
     "dartwork_mpl.helpers.data": "dartwork_mpl.validate",
 }
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.legend.decide": (
+        "where a legend goes is decided from measured facts and their "
+        "measuring functions alone"
+    ),
+    "dartwork_mpl.legend.model": (
+        "the legend's geometry and plan types need nothing outside them"
+    ),
     "dartwork_mpl.size.decide": (
         "the canvas is decided from the parsed request and the page alone"
     ),

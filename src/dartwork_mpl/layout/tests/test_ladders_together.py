@@ -90,7 +90,7 @@ def test_turned_ticks_and_an_outside_legend_settle_together(
     dm.simple_layout(fig)
     assert draws["n"] <= 12  # 6-7 measured; the two ladders do not trade
     assert {angle for _text, angle in _ticks(ax)} == {30.0}
-    assert ax.get_legend()._dm_outside_fallback is True
+    assert ax.get_legend()._dm_outside_side is not None
     found = {w.check_id for w in dm.validate_figure(fig, quiet=True)}
     assert not {i for i in found if i.startswith("LEGEND")}
     fig.canvas.draw()
@@ -318,7 +318,7 @@ def test_a_kept_tick_budget_and_an_outside_legend_end_together(
     assert draws["n"] <= 20  # 8-15 measured
     assert ax.yaxis.get_major_locator() is not auto  # the budget is kept
     assert {angle for _text, angle in _ticks(ax)} == {45.0}
-    assert ax.get_legend()._dm_outside_fallback is True
+    assert ax.get_legend()._dm_outside_side is not None
     assert _overlaps(fig) <= _overlaps(bare) == set()
     first = _pixels(fig)
     dm.simple_layout(fig)
@@ -348,7 +348,7 @@ def test_a_thinned_date_axis_under_an_outside_legend_settles_by_the_second_call(
         shots.append((_pixels(fig), ax.get_legend()))
     assert shots[2][0] == shots[1][0]
     assert shots[2][1] is shots[1][1]
-    assert ax.get_legend()._dm_outside_fallback is True
+    assert ax.get_legend()._dm_outside_side is not None
     assert not _overlaps(fig)
 
 

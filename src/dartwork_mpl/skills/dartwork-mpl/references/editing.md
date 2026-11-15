@@ -77,7 +77,7 @@ weight, colour and spacing, so every agent draws the same element.
 |---|---|
 | a title | `ax.set_title("…")`; one title over several panels: `fig.suptitle("…")` |
 | gridlines | `ax.grid(True, axis="y")` (horizontal); `axis="x"` vertical; `"both"` |
-| a legend, no side named | `dm.place_legend(ax)`: inside where it covers no data, otherwise outside by itself (above, or the side that takes clearly less of the plot; never onto another panel); no `loc=` or `ncols=` of your own |
+| a legend, no side named | `dm.place_legend(ax)`: inside where it covers no data, otherwise outside by itself (above, else below, else right; never onto another panel); no `loc=` or `ncols=` of your own |
 | a legend on a named side | `dm.place_legend(ax, loc="above")`, `"below"`, `"right"`, `"left"` |
 | a source or note line | `dm.add_note(fig, "Source: …")`, then `dm.simple_layout(fig)` |
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |

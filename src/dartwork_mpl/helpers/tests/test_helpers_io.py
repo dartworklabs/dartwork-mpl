@@ -33,9 +33,6 @@ class TestRemainingHelpersExported:
     def test_suggest_chart_type_accessible(self) -> None:
         assert hasattr(helpers, "suggest_chart_type")
 
-    def test_optimize_legend_accessible(self) -> None:
-        assert hasattr(helpers, "optimize_legend")
-
 
 class TestRemovedHelpersGone:
     """Deleted names must not exist on ``helpers`` or in ``dm``."""
@@ -65,7 +62,6 @@ class TestDunderAllComplete:
         for name in (
             "check_figure_quality",
             "make_palette",
-            "optimize_legend",
             "suggest_chart_type",
             "validate_data",
         ):

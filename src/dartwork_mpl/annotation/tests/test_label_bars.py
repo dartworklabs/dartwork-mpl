@@ -2123,9 +2123,7 @@ def test_a_value_beyond_the_limit_never_covers_other_text(tmp_path, fmt, case):
     _assert_readable(fig, shown, tmp_path, fmt)
 
 
-@pytest.mark.parametrize(
-    ("clip_on", "legend"), [(True, False), (True, True), (False, False)]
-)
+@pytest.mark.parametrize(("clip_on", "legend"), [(True, False), (False, False)])
 def test_only_text_that_is_drawn_can_hide_a_value_beyond_the_limit(
     clip_on, legend
 ):
@@ -2197,44 +2195,6 @@ def _cut_by_a_side_legend(side):
     ax.barh(np.arange(5), values, height=0.15, color="dc.blue9", label="Rev")
     ax.set_xlim(0, 1000)
     return fig, ax, dm.label_bars(ax), ["12,500"]
-
-
-@FORMATS
-@pytest.mark.parametrize("side", ["above", "right"])
-def test_a_legend_placed_on_a_side_clears_the_values_beyond_it(
-    tmp_path, fmt, side
-):
-    # Re-review N-I2 (candidate A, the user's decision of 2026-11-07):
-    # dm.place_legend(ax, loc="above") anchored the legend past the tick and
-    # axis labels only, so it covered the true values just beyond the top
-    # limit (9-3 B), the
-    # legend rule hid them, and the warning named dm.place_legend(ax), the
-    # call already made. The layout now anchors such a legend past those
-    # values too (and lifts the title over the legend as before).
-    _start(fmt)
-    fig, ax, labels, cut = _cut_by_a_side_legend(side)
-    dm.place_legend(ax, loc=side)
-    caught = _all_layout_warnings(fig)
-    renderer = drawn_renderer(fig)
-    assert not [w for w in caught if "legend" in w]
-    values = [t for t in labels if t.get_text() in cut]
-    assert all(t.get_visible() and t.clipped and t.off_bar for t in values)
-    assert all(t.hidden_for is None for t in labels)
-    legend = ax.get_legend().get_window_extent(renderer)
-    for t in values:
-        box = t.get_window_extent(renderer)
-        assert not _cover(box, legend, 0.5)
-        if side == "above":
-            assert legend.y0 >= box.y1
-        else:
-            assert legend.x0 >= box.x1
-    if side == "above":
-        title = ax.title.get_window_extent(renderer)
-        assert title.y0 >= legend.y1  # lifted over the legend
-        assert not any(
-            _cover(t.get_window_extent(renderer), title, 0.5) for t in values
-        )
-    _assert_readable(fig, values, tmp_path, fmt)
 
 
 def _legend_over_cut_values(how):

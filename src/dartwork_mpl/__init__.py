@@ -66,14 +66,11 @@ from .annotation import (
     annotate_corner,
     annotate_value,
     arrow_axis,
-    figure_legend,
     label_axes,
     label_bars,
     label_hline,
     label_line_ends,
     make_offset,
-    optimize_legend,
-    place_legend,
     wrap_axis_label,
     wrap_axis_labels,
 )
@@ -114,6 +111,7 @@ from .layout import (
     simple_layout,
     tight_crop,
 )
+from .legend import figure_legend, place_legend
 
 # Prompt utilities
 from .prompt import (
@@ -315,7 +313,6 @@ __all__ = [  # noqa: RUF022
     # Helpers (high-level composition utilities)
     "validate_data",
     "make_palette",
-    "optimize_legend",
     "suggest_chart_type",
     "check_figure_quality",
     # Native lint + migration (T4)

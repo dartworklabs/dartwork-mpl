@@ -908,26 +908,19 @@ the plot (the corners, upper and lower centre, then centre right and left) for
 one to three columns and takes the first one no line, marker, bar, filled area
 or text of the Axes (and its twin) comes within 2 pt of; on a polar Axes also
 its circle and the angle and radius labels it draws inside its box. When none
-is free it goes outside, on a side no other panel sits beyond: above by
-default, right or below when that takes at least 10 % and 5 % of the plot less (many short
-names go right), the side the neighbouring panel's legend took when that fits
-as well. Outside, a legend fits when, centred on its Axes and moved in where
-it would cross the canvas edge, it stays on the canvas (its pad from the
-edge) and off the panels of the other columns (right and left: rows), their
-labels and titles. It may be wider (or taller) than its Axes; it then clears
-the tick labels it spans beside the plot, and the layout does not widen the
-figure's margins for that reach. Names are broken at spaces only when the
-legend would otherwise not fit or take more than 60 % of the plot, or, on a
-side you name right or left, when it is wider than 40 % of the Axes; a
-trailing unit in brackets stays whole. A way that fits better always comes
-first; among ways that fit as well, one breaking the names into more lines
-per name is taken only when it leaves the plot at least 5 % of the canvas
-more. `dm.simple_layout` places the legend again at the size it gives the
-Axes it lays out: inward only, and with the rows of an outside legend
-chosen again for the final size and span. A legend you restyle or move through the
-returned `Legend` (its texts and title, frame, a handle's colour, line
-style, width, marker, face or hatch, `set_loc`, `set_bbox_to_anchor`) stays
-as you left it.
+is free it goes outside, on the first side no other panel sits beyond
+that it fits along: above, else below, else right. Outside, a legend fits
+when, centred on its Axes and moved in where it would cross the canvas edge,
+it stays on the canvas (its pad from the edge) and off the panels of the
+other columns (right and left: rows), their labels and titles. It may be
+wider (or taller) than its Axes; it then clears the tick labels it spans
+beside the plot. Names are broken at spaces when the legend would otherwise
+not fit or, on a side you name right or left, when it is wider than 40 % of
+the Axes; a trailing unit in brackets stays whole. `dm.simple_layout` places
+the legend again at the size it gives the Axes it lays out: inward only, and
+with the rows of an outside legend chosen again for the final size and span.
+A legend you move through the returned `Legend` (`set_loc`,
+`set_bbox_to_anchor`) stays where you put it.
 
 ```python
 import matplotlib.pyplot as plt
@@ -942,16 +935,13 @@ for i in range(5):
             label=f"Region {i + 1}")
 legend = dm.place_legend(ax)  # every corner holds a line: outside, above
 dm.simple_layout(fig)
-assert legend._dm_outside_fallback
+assert dm.legend.outside_side(legend) == "above"
 plt.close(fig)
 ```
 
 What you fix stays fixed: a side you name (`loc="right"`), a matplotlib `loc`,
 `ncols=` and a `bbox_to_anchor` (the legend then stays in the spot that covers
-the fewest series). Two project-wide knobs turn rungs off:
-`dm.config.legend_fallback` (`"above"`, `"right"`, `"below"` fix the side;
-`"inside"` never goes outside) and `dm.config.legend_wrap = False` (names stay
-on one line). A legend that still covers data, text, another legend or
+the fewest series). A legend that still covers data, text, another legend or
 another panel is reported as `LEGEND_ON_DATA`; one outside that is more than
 half its plot's size as `LEGEND_OVERFLOW`, and for many lines
 `dm.label_line_ends(ax)` names them at their ends instead.
