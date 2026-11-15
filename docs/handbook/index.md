@@ -13,9 +13,10 @@ orphan: true
 | order | role | file | responsibility | read or update when |
 | --- | --- | --- | --- | --- |
 | 1 | `purpose` | [purpose.md](purpose.md) | 존재 이유, 사용자, 리포 범위, 영역별 진실 소스 | 새 기능·제거·리포 범위 변경, 어떤 파일이 정답인지 모를 때 |
-| 2 | `architecture` | [architecture.md](architecture.md) | slice 구조, 의존 방향, functional core 경계, 불변식, 채택한 리팩터 목표 | 모듈을 만들거나 옮길 때, 의존을 추가할 때, 불변식을 건드릴 때 |
-| 3 | `verification` | [verification.md](verification.md) | 게이트별 측정 대상·적용 조건·명령·합격 기준 | PR 합격 판정, 게이트 추가·완화, baseline 갱신 |
-| 4 | — | [change-flow.md](change-flow.md) | 결정 권한, 설계에서 머지까지의 흐름, 리포 잠금, 릴리스, 용어 | 결정이 누구 몫인지, 잠금·릴리스 절차가 필요할 때 |
+| 2 | — | [philosophy.md](philosophy.md) | 개발 철학: 리포에 두는 것, 타입으로 말하기, slice 독립, skill의 범위, 커밋 원칙 | 무엇을 넣을지·어떻게 짤지·어떻게 커밋할지 판단할 때 |
+| 3 | `architecture` | [architecture.md](architecture.md) | slice 구조, 의존 방향, functional core 경계, 불변식, 채택한 리팩터 목표 | 모듈을 만들거나 옮길 때, 의존을 추가할 때, 불변식을 건드릴 때 |
+| 4 | `verification` | [verification.md](verification.md) | 게이트별 측정 대상·적용 조건·명령·합격 기준 | PR 합격 판정, 게이트 추가·완화, baseline 갱신 |
+| 5 | — | [change-flow.md](change-flow.md) | 결정 권한, 설계에서 머지까지의 흐름, 리포 잠금, 릴리스, 용어 | 결정이 누구 몫인지, 잠금·릴리스 절차가 필요할 때 |
 
 연속으로 읽을 때는 위 순서를 따른다.
 

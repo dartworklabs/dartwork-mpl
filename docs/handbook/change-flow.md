@@ -55,15 +55,12 @@ admin 권한을 가진 다른 계정은 ruleset을 끌 수 있다. 그래서 이
 
 `v*.*.*` 태그를 push하면 `.github/workflows/release.yml`이 실행된다. 이 workflow는 다음 순서로 진행한다.
 
-1. 전체 테스트를 다시 돌린다.
-2. 패키지에 들어가는 색 정본과 동결 색을 대조한다.
-3. sdist와 wheel을 빌드한다.
-4. PyPI trusted publisher로 올린다.
+1. 태그가 `pyproject.toml`의 `version`과 같은지 확인한다.
+2. sdist와 wheel을 빌드한다.
+3. PyPI trusted publisher로 올린다.
+4. GitHub release를 만든다.
 
-태그 전에 할 일은 두 가지다.
-
-- `pyproject.toml`의 `version`과 `CHANGELOG.md`를 맞춘다.
-- 제거한 이름은 제거 registry에 올린다.
+테스트는 다시 돌리지 않는다. `main`은 CI를 통과한 `develop`의 병합만 받기 때문이다. 태그 전에 `pyproject.toml`의 `version`과 `CHANGELOG.md`를 맞춘다.
 
 배포 상태의 정본은 PyPI와 태그다. 이 라이브러리는 서버를 운영하지 않으므로 관찰·복구 절차는 릴리스 되돌리기뿐이다. PyPI는 같은 버전을 다시 올릴 수 없으므로 되돌리기는 다음 patch 릴리스로 한다.
 

@@ -18,6 +18,12 @@ structure and its rules, the invariants, the verification gates and who
 decides what. When your change alters current state, update the matching
 Handbook topic in the same PR.
 
+[`docs/handbook/philosophy.md`](docs/handbook/philosophy.md) is the short version of
+how to work here: only real functionality lives in this repository (examples
+and galleries belong to the hub), code speaks in types (no strings, enums or
+status flags picking behaviour, nothing that silences the type checker),
+slices do not import each other, and a commit holds one finished thing.
+
 ## What is here
 
 A thin layer on top of matplotlib: `Figure` and `Axes` stay native. The
