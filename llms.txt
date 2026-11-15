@@ -33,8 +33,6 @@ bundled in the wheel under `dartwork_mpl/asset/prompt/`.
 
 - [Repository (GitHub)](https://github.com/dartworklabs/dartwork-mpl): source, issues, releases.
 - [Changelog](https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md): release notes.
-- [0.4 design spec](https://dartworklabs.github.io/dartwork-mpl/superpowers/specs/2026-04-29-dartwork-mpl-ai-readiness-design.html): rationale for the 0.4 API surface.
-- [0.5+ roadmap spec](https://dartworklabs.github.io/dartwork-mpl/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.html): plan for closing remaining AI affordance gaps.
 
 ## Installed Python route
 

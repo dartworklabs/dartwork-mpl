@@ -66,8 +66,7 @@ potential color collisions, not observer guarantees.
 
 Everything lives in one `dc.*` namespace and uses one API: `dm.colors(...)` for
 colormaps or designed color lists, `dm.set_colors(...)` to apply colors globally
-or to one Axes, `dm.list_colors(...)` for family metadata, and
-`dm.show_colors(...)` for previews.
+or to one Axes, and `dm.list_colors(...)` for family metadata.
 
 There are four discrete forms: Octave, the searched default cycle for everyday
 charts; 11 hand-tuned curated qualitative sets for muted, tonal, forest, and

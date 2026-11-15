@@ -1,0 +1,417 @@
+"""The color slice's types, and the one place user input becomes them.
+
+User input (``"#a1b2c3"``, ``"rgb(255, 0, 0)"``, ``"oklch(0.7, 0.15, 30)"``,
+a family name, a count, a palette request) is parsed here once; the
+decisions only see these types. The colour values themselves (sRGB, OKLab,
+OKLCH) are in ``space``. A malformed input raises ``TypeError`` or
+``ValueError``.
+"""
+
+from __future__ import annotations
+
+import colorsys
+import math
+import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from enum import Enum
+from typing import NamedTuple, NewType
+
+from .space import Color, Hex, Oklab, Oklch, Rgb, finite
+
+# A matplotlib colour name (``"oc.red5"``, ``"tab:blue"``) or any text.
+Name = NewType("Name", str)
+
+
+def rgb_color(r: object, g: object, b: object) -> Color:
+    """RGB channels as a colour: all in ``[0, 1]``, or all in ``[0, 255]``.
+
+    When any channel exceeds 1 every channel is read as a byte, so ``0`` and
+    ``1`` are byte values there; a fraction among bytes is ambiguous and
+    rejected, as is anything negative or above 255.
+    """
+    values = [
+        finite(v, f"rgb {n}") for n, v in zip("rgb", (r, g, b), strict=True)
+    ]
+    if any(v < 0.0 for v in values):
+        raise ValueError(f"rgb channels must be non-negative, got {values}")
+    if any(v > 1.0 for v in values):
+        if any(v > 255.0 or 0.0 < v < 1.0 for v in values):
+            raise ValueError(
+                f"rgb{tuple(values)} mixes 0-1 and 0-255 channels; pass every "
+                "channel in 0-1 or every channel in 0-255"
+            )
+        values = [v / 255.0 for v in values]
+    return Color(Rgb(*values).oklab())
+
+
+_FUNCTIONAL = re.compile(
+    r"^(?P<func>rgb|oklch|oklab)\s*\(\s*(?P<args>.+?)\s*\)$", re.IGNORECASE
+)
+
+
+def parse_written(text: object) -> Color | Name:
+    """A colour written out (hex or ``rgb()``/``oklch()``/``oklab()``), or
+    the text back as a :data:`Name` for the registry to resolve."""
+    if not isinstance(text, str):
+        raise TypeError(
+            f"a colour must be a str or Color, got {type(text).__name__}"
+        )
+    text = text.strip()
+    if text.startswith("#"):
+        return Color(Rgb.from_hex(text).oklab())
+    match = _FUNCTIONAL.match(text)
+    if match is None:
+        return Name(text)
+    func, raw = match.group("func").lower(), match.group("args")
+    try:
+        nums = [float(part.strip()) for part in raw.split(",")]
+    except ValueError as exc:
+        raise ValueError(
+            f"{func}(...) arguments must be numeric: {raw!r}"
+        ) from exc
+    if len(nums) != 3:
+        raise ValueError(
+            f"{func}(...) expects 3 arguments, got {len(nums)}: {raw!r}"
+        )
+    if func == "rgb":
+        return rgb_color(*nums)
+    if func == "oklch":
+        return Color(Oklch(*nums).lab())
+    return Color(Oklab(*nums))
+
+
+class Kind(Enum):
+    """A colour family's kind; the value is its public label."""
+
+    SEQUENTIAL = "sequential"
+    MULTI_HUE = "multi-hue"
+    DIVERGING = "diverging"
+    CYCLIC = "cyclic"
+    QUALITATIVE = "qualitative"
+
+    @classmethod
+    def parse(cls, text: object) -> Kind:
+        """``"sequential"``... as a kind; ``ValueError`` names the five."""
+        try:
+            return cls(text)
+        except ValueError:
+            expected = ", ".join(k.value for k in cls)
+            raise ValueError(
+                f"Unknown color kind {text!r}; expected one of: {expected}."
+            ) from None
+
+
+# The most stops each kind's designed discrete form has (None: no limit
+# beyond ``Family.size``).
+MOST: dict[Kind, int] = {
+    Kind.SEQUENTIAL: 10,
+    Kind.DIVERGING: 9,
+    Kind.MULTI_HUE: 8,
+    Kind.CYCLIC: 24,
+}
+
+
+@dataclass(frozen=True)
+class Family:
+    """A ``dc.*`` family: its name, kind, and the values its forms draw on.
+
+    ``stops`` is the designed row: the 10-step ladder (sequential), the
+    8-stop canonical row (diverging), or the set (qualitative). ``cmap`` is
+    the 256-step colormap (empty for qualitative). ``picks`` holds the
+    frozen colormap indices of a multi-hue family's forms, by ``n``.
+    """
+
+    name: str
+    kind: Kind
+    stops: tuple[Hex, ...] = ()
+    cmap: tuple[Hex, ...] = ()
+    picks: tuple[tuple[int, ...], ...] = ()
+
+    @property
+    def size(self) -> int | None:
+        """Stops in the designed form; None for multi-hue and cyclic."""
+        if self.kind in (Kind.MULTI_HUE, Kind.CYCLIC):
+            return None
+        return len(self.stops)
+
+    @property
+    def most(self) -> int:
+        """The largest ``n`` the family's discrete form accepts."""
+        return MOST.get(self.kind) or len(self.stops)
+
+
+@dataclass(frozen=True)
+class Count:
+    """How many colours a discrete form has: a whole number, at least 1."""
+
+    n: int
+
+    @classmethod
+    def parse(cls, value: object, family: Family) -> Count:
+        """``value`` as a count ``family``'s form has; else ``ValueError``."""
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"n must be an integer for {family.name!r}")
+        if not 1 <= value <= family.most:
+            raise ValueError(
+                f"{family.name!r} is a {family.kind.value} family with max "
+                f"n={family.most}; got n={value}"
+            )
+        return cls(value)
+
+
+@dataclass(frozen=True)
+class Ratio:
+    """A WCAG contrast ratio, at least 1 (1:1) and at most 21 (black on white)."""
+
+    value: float
+
+    @classmethod
+    def parse(cls, value: object) -> Ratio:
+        """A positive finite ratio; else ``ValueError``."""
+        number = float(value)  # type: ignore[arg-type]
+        if not math.isfinite(number) or number <= 0:
+            raise ValueError("min_ratio must be a positive finite number")
+        return cls(number)
+
+
+@dataclass(frozen=True)
+class Weight:
+    """The share of the first colour in a mix, in ``[0, 1]``."""
+
+    value: float
+
+    @classmethod
+    def parse(cls, value: object) -> Weight:
+        """A share in ``[0, 1]``; else ``ValueError``."""
+        number = float(value)  # type: ignore[arg-type]
+        if not math.isfinite(number) or not 0.0 <= number <= 1.0:
+            raise ValueError(
+                f"alpha must be a finite number in [0, 1], got {value!r}"
+            )
+        return cls(number)
+
+
+@dataclass(frozen=True)
+class Steps:
+    """How many colours a gradient has, ends included."""
+
+    n: int
+
+
+class Space(Enum):
+    """Where a gradient interpolates: OKLCH (the default), OKLab or sRGB."""
+
+    OKLCH = "oklch"
+    OKLAB = "oklab"
+    RGB = "rgb"
+
+    @classmethod
+    def parse(cls, text: object) -> Space:
+        """A space name; ``ValueError`` for anything else."""
+        try:
+            return cls(text)
+        except ValueError:
+            raise ValueError(
+                f"Unsupported color space: {text}. "
+                "Must be 'oklch', 'oklab', or 'rgb'"
+            ) from None
+
+
+class Locale(Enum):
+    """Whose convention the semantic gain/loss colours follow."""
+
+    DEFAULT = "default"
+    KR = "kr"
+
+
+@dataclass(frozen=True)
+class Semantic:
+    """The four role colours: gain, loss, reference, highlight."""
+
+    pos: Hex
+    neg: Hex
+    ref: Hex
+    hl: Hex
+
+    def names(self) -> dict[str, Hex]:
+        """The tokens as matplotlib colour names."""
+        return {
+            "dc.pos": self.pos,
+            "dc.neg": self.neg,
+            "dc.ref": self.ref,
+            "dc.hl": self.hl,
+        }
+
+
+SEMANTIC_NAMES = ("dc.pos", "dc.neg", "dc.ref", "dc.hl")
+
+
+class PaletteKind(Enum):
+    """What ``dm.make_palette`` encodes."""
+
+    CATEGORICAL = "categorical"
+    SEQUENTIAL = "sequential"
+    DIVERGING = "diverging"
+
+    @classmethod
+    def parse(cls, text: object) -> PaletteKind:
+        """A palette kind; ``ValueError`` for anything else."""
+        try:
+            return cls(text)
+        except ValueError:
+            raise ValueError(f"Unknown kind: {text!r}") from None
+
+
+@dataclass(frozen=True)
+class PaletteRequest:
+    """``n`` series of ``kind``; ``highlight`` the series to emphasise."""
+
+    n: int
+    kind: PaletteKind
+    highlight: int | None
+
+    @classmethod
+    def parse(
+        cls, n: object, kind: object, highlight: object
+    ) -> PaletteRequest:
+        """Check ``n`` and ``kind``; drop an out-of-range ``highlight``."""
+        palette_kind = PaletteKind.parse(kind)
+        if not isinstance(n, int) or isinstance(n, bool):
+            raise TypeError(f"n must be an int, got {type(n).__name__}")
+        if n < 0:
+            raise ValueError(
+                "n must be non-negative; use 0 for an empty palette"
+            )
+        index = None
+        if highlight is not None:
+            mark = float(highlight)  # type: ignore[arg-type]
+            if 0 <= mark < n:
+                if mark != int(mark):
+                    raise ValueError(
+                        f"highlight must be a whole number index in 0..{n - 1}; "
+                        f"got {highlight!r}, which would recede every series "
+                        "and emphasise none."
+                    )
+                index = int(mark)
+        return cls(n, palette_kind, index)
+
+
+@dataclass(frozen=True)
+class Lookup:
+    """A colour name to correct, and every registered name."""
+
+    name: Name
+    registry: tuple[Name, ...]
+
+
+@dataclass(frozen=True)
+class Suggestions:
+    """Registered names close to a rejected one, nearest first."""
+
+    names: tuple[Name, ...]
+
+
+class Library(NamedTuple):
+    """One bundled colour library: ``(key, prefix, source, label)``."""
+
+    key: str
+    prefix: str
+    source: str
+    label: str
+
+
+@dataclass(frozen=True)
+class Catalog:
+    """Every shipped colour: libraries, ``dc.*`` families and named values."""
+
+    libraries: tuple[Library, ...]
+    families: Mapping[str, Family]
+    named: Mapping[str, Hex]
+
+    def ladder(self, name: str) -> tuple[Hex, ...]:
+        """The 10-step ladder of the sequential family ``name``."""
+        return self.families[name].stops
+
+
+@dataclass(frozen=True)
+class DivergingSource:
+    """What a diverging family's canonical row is built from."""
+
+    low: tuple[Hex, ...]
+    high: tuple[Hex, ...]
+    curated: tuple[Hex, ...] | None
+
+
+@dataclass(frozen=True)
+class Gradient:
+    """The two OKLCH ends a gradient runs between."""
+
+    start: Oklch
+    end: Oklch
+
+
+@dataclass(frozen=True)
+class ContrastFacts:
+    """A foreground that must reach ``target`` contrast on ``background``."""
+
+    color: Rgb
+    background: Rgb
+    target: Ratio
+
+
+@dataclass(frozen=True)
+class Lift:
+    """A foreground moved in HLS lightness, hue and saturation held."""
+
+    hue: float
+    lightness: float
+    saturation: float
+    lighten: bool
+
+    def rgb(self) -> Rgb:
+        """The moved colour in sRGB."""
+        return Rgb(
+            *colorsys.hls_to_rgb(self.hue, self.lightness, self.saturation)
+        )
+
+
+class Ink(Enum):
+    """Which of two text colours reads better on a background."""
+
+    LIGHT = "light"
+    DARK = "dark"
+
+
+@dataclass(frozen=True)
+class Form:
+    """A request for ``family``'s designed ``n``-colour form."""
+
+    family: Family
+    n: Count
+
+
+@dataclass(frozen=True)
+class SemanticFacts:
+    """The locale the role colours are for, and the ladders they come from."""
+
+    locale: Locale
+    catalog: Catalog
+
+
+_SHADE = re.compile(r"^(.*?)(\d+)$")
+
+
+def shifted(name: Name, steps: int) -> Name:
+    """An Open Color name ``steps`` shades darker (negative: lighter), 0..9."""
+    match = _SHADE.match(name)
+    if match is None:
+        return name
+    shade = max(0, min(9, int(match.group(2)) + steps))
+    return Name(f"{match.group(1)}{shade}")
+
+
+def namespace(name: Name) -> Name | None:
+    """``"dc."`` for ``"dc.blue5"``; None for a name with no dot."""
+    head, dot, _ = name.partition(".")
+    return Name(f"{head}.") if dot else None

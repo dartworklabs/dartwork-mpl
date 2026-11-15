@@ -19,20 +19,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
 
-# Fixtures whose value is a full colour-pipeline compile (~1 min). A test that
-# requests one is a colour-pipeline test whether or not it says so, so it is
-# marked here rather than by hand; see the ``color_pipeline`` marker in
-# pyproject.toml.
-_COLOR_PIPELINE_FIXTURES = frozenset({"candidate_catalog", "comparison_report"})
-
-
-def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Mark tests by the colour-pipeline fixtures they request."""
-    for item in items:
-        fixtures = getattr(item, "fixturenames", ())
-        if _COLOR_PIPELINE_FIXTURES.intersection(fixtures):
-            item.add_marker(pytest.mark.color_pipeline)
-
 
 @pytest.fixture
 def report_preset() -> Iterator[None]:

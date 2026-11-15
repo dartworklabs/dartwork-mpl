@@ -24,8 +24,7 @@ Example
    muted_line = dm.pseudo_alpha("dc.teal3", alpha=0.6)
 
    # Color class — perceptual manipulation
-   color = dm.oklch(0.7, 0.15, 150)
-   color.oklch.C *= 1.2                  # boost chroma
+   color = dm.oklch(0.7, 0.18, 150)
    print(color.to_hex())                 # '#...'
 
    # Interpolation
@@ -58,17 +57,17 @@ API
 Color Manipulation
 ^^^^^^^^^^^^^^^^^^
 
-.. automodule:: dartwork_mpl._colors
+.. autoclass:: dartwork_mpl.Color
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-.. note::
-
-   ``mix_colors`` and ``pseudo_alpha`` are defined in the ``util`` module
-   but re-exported from the top-level ``dartwork_mpl`` namespace for
-   convenience alongside other color helpers.
-
+.. autofunction:: dartwork_mpl.color
+.. autofunction:: dartwork_mpl.oklch
+.. autofunction:: dartwork_mpl.oklab
+.. autofunction:: dartwork_mpl.rgb
+.. autofunction:: dartwork_mpl.hex
+.. autofunction:: dartwork_mpl.ensure_contrast
+.. autofunction:: dartwork_mpl.readable_text_color
+.. autofunction:: dartwork_mpl.make_palette
 .. autofunction:: dartwork_mpl.mix_colors
 .. autofunction:: dartwork_mpl.pseudo_alpha
 
@@ -85,4 +84,3 @@ Model B Color API
 .. autofunction:: colors
 .. autofunction:: set_colors
 .. autofunction:: list_colors
-.. autofunction:: show_colors

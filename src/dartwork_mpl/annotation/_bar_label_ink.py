@@ -22,13 +22,13 @@ from typing import TYPE_CHECKING, TypeAlias
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
-from .._colors.contrast import (
+from .._figure_geometry import backdrop_layers, same_position_axes
+from ..color import (
     composite_layers,
     composite_over,
     ensure_contrast,
     readable_text_color,
 )
-from .._figure_geometry import backdrop_layers, same_position_axes
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes

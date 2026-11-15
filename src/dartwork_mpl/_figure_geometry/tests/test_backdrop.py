@@ -11,8 +11,8 @@ import numpy as np
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl._colors.contrast import composite_layers, composite_over
 from dartwork_mpl._figure_geometry import backdrop_layers
+from dartwork_mpl.color import composite_layers, composite_over
 
 
 def test_composite_over_blends_by_alpha() -> None:

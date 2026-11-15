@@ -76,7 +76,6 @@ plt.close(fig)
   `cmap="dc.aurora"`). Signed values around a centre: a diverging map
   (`dm.list_colors("diverging")`) with symmetric limits.
 - `jet`, `rainbow` and `hsv` get a lint warning; keep them when the user asks.
-- `dm.show_colors("sequential")` draws a swatch figure for choosing.
 
 Construction and validation background lives in `dm.get_prompt("01-policy")`
 (Color section) and the documentation's colour-system pages.

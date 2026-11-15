@@ -1,7 +1,6 @@
 """``dm.review``: one call for save, findings, summary and a neutral baseline diff.
 
-Masterplan stages 3-4 (docs/superpowers/plans/2026-11-04-review-api.md): the
-wrapper adds no check, no fix and no style, keeps every finding, and only
+The wrapper adds no check, no fix and no style, keeps every finding, and only
 lists differences; ``allow=`` marks the ones the caller expected.
 """
 

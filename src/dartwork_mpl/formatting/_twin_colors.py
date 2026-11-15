@@ -84,9 +84,13 @@ from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 from matplotlib.typing import ColorType
 
-from .._colors.contrast import composite_layers, composite_over, ensure_contrast
-from .._colors.model import srgb_to_oklab
 from .._figure_geometry import backdrop_layers, same_position_axes, shared_axes
+from ..color import (
+    composite_layers,
+    composite_over,
+    ensure_contrast,
+    srgb_to_oklab,
+)
 from ..config import config
 
 __all__ = ["apply_twin_colors"]

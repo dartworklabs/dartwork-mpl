@@ -31,27 +31,17 @@ parameter list.
 
 ## Diagnostics & previews (`diagnostics`)
 
-Asset-inspection helpers live in `dartwork_mpl.diagnostics`; `dm.show_colors`
-covers the Model B color-family preview directly. Use them to audit *exactly*
-what your environment has registered — fonts, color libraries, and curated
-colormaps — before you commit to a chart.
+Use these to audit what your environment has registered before you commit
+to a chart.
 
 ```python
 import dartwork_mpl as dm
-from dartwork_mpl import diagnostics
 
-# 1. What Model B families are available?
-dm.show_colors(kind="qualitative")
+# 1. What colour families are available?
+[f["name"] for f in dm.list_colors("qualitative")]
 
-# 2. Which colormaps does dartwork-mpl bundle, by category?
-diagnostics.render_cmap_catalog(group_by_type=True, ncols=4)
-
-# 3. Are my fonts registered? (sanity-check Korean/CJK installs)
+# 2. Are my fonts registered? (sanity-check Korean/CJK installs)
 dm.plot_fonts(font_size=11, ncols=3)
-
-# 4. What category does an arbitrary colormap belong to?
-import matplotlib as mpl
-print(diagnostics.classify_cmap(mpl.colormaps["coolwarm"]))  # → "Diverging"
 ```
 
 :::{note}
@@ -76,7 +66,6 @@ use `dm.list_colors()`; if you need the actual colors, call
 >>> dm.colors("aurora").name
 'dc.aurora'
 
->>> dm.show_colors(names=["blue"], n=5)   # renders a compact preview
 ```
 
 See [API › Visualization Tools](../api/visualization.rst) for full

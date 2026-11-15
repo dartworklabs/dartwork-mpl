@@ -11,7 +11,6 @@ directly:
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterable
 from pathlib import Path
 
 import matplotlib
@@ -29,7 +28,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import dartwork_mpl as dm
-from dartwork_mpl._colors.registry._loader import COLOR_LIBRARIES
+from dartwork_mpl.color import LIBRARIES as COLOR_LIBRARIES
 
 # Sane defaults for how we display things.
 CATEGORY_ORDER = [
@@ -48,7 +47,7 @@ CATEGORY_BLURBS: dict[str, str] = {
     "Categorical": "Distinct steps with little interpolation. Use for discrete classes.",
 }
 
-# Derived from the colour-library SSOT (dartwork_mpl._colors.registry._loader).
+# Derived from the colour-library table (dartwork_mpl.color.LIBRARIES).
 COLOR_LIBRARY_ORDER = [key for key, _p, _f, _lbl in COLOR_LIBRARIES]
 COLOR_LIBRARY_LABELS = {key: label for key, _p, _f, label in COLOR_LIBRARIES}
 
@@ -77,30 +76,27 @@ def _save_svg(fig, path: Path, **savefig_kwargs) -> Path:
 
 
 def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
-    """Bucket the v5 colormap catalog by category.
+    """Bucket the shipped colormaps by their family's kind.
 
-    Sources the names from the authoritative v5 catalog
-    (``dartwork_mpl._colors._generated.CMAPS_256`` + the two registered
-    octave cycles), *not* from a raw ``dc.``-prefix scan. That keeps the docs
-    explorer pinned to the supported catalog even if user code registers
-    additional ``dc.`` maps in the same process.
+    The names come from ``dm.list_colors()`` (every continuous family plus
+    the two octave cycles), *not* from a raw ``dc.``-prefix scan, so user
+    code registering more ``dc.`` maps in the same process changes nothing.
     """
-    from dartwork_mpl._colors._generated import CMAPS_256
-    from dartwork_mpl._colors.diagnostics import classify_cmap
-
-    v5_names = {f"dc.{n}" for n in CMAPS_256} | {"dc.octave", "dc.octave_print"}
-    cmap_list: Iterable[str] = (
-        name for name in mpl.colormaps if str(name) in v5_names
-    )
-    cmaps = [mpl.colormaps[name] for name in cmap_list]
-
+    category_of = {
+        "sequential": "Single-Hue",
+        "multi-hue": "Multi-Hue",
+        "diverging": "Diverging",
+        "cyclic": "Cyclical",
+        "qualitative": "Categorical",
+    }
     categories: dict[str, list[mpl.colors.Colormap]] = {
         category: [] for category in CATEGORY_ORDER
     }
-    for cmap in cmaps:
-        category = classify_cmap(cmap)
-        if category in categories:
-            categories[category].append(cmap)
+    for family in dm.list_colors():
+        name = str(family["name"])
+        if family["continuous"] or name in ("octave", "octave_print"):
+            category = category_of[str(family["kind"])]
+            categories[category].append(mpl.colormaps[f"dc.{name}"])
 
     for values in categories.values():
         values.sort(key=lambda cmap: cmap.name)
@@ -109,6 +105,16 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
 
 
 # ─── HTML/CSS native rendering ─────────────────────────────────────────
+
+
+def _ladders() -> dict[str, list[str]]:
+    """Each sequential family's 10-step ladder, in hue order, gray last."""
+    names = [str(f["name"]) for f in dm.list_colors("sequential")]
+    chromatic = sorted(
+        (n for n in names if n != "gray"),
+        key=lambda n: dm.color(f"dc.{n}5").to_oklch()[2],
+    )
+    return {n: dm.colors(n, n=10) for n in [*chromatic, "gray"]}
 
 
 def _text_color_for_bg(hex_str: str) -> str:
@@ -120,24 +126,22 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
     """Build the dc v5 sheet: one row per generated family, slots in
     numeric step order. Swatches are interactive (hover → name+hex).
     """
-    from dartwork_mpl._colors._generated import PALETTE
-    from dartwork_mpl._colors.construction._recipe import FAMILIES
-
-    order = [*FAMILIES, "gray"]
+    ladders = _ladders()
+    order = list(ladders)
 
     html = [
         '<div class="dm-color-sheet">',
         f'<div class="dm-sheet-title">{label}</div>',
     ]
     for key in order:
-        if key not in PALETTE:
+        if key not in ladders:
             continue
         base = key.lower()
         glabel = f"dc.{base}"
         html.append('<div class="dm-color-group">')
         html.append(f'<span class="dm-group-label">{glabel}</span>')
         html.append('<div class="dm-swatch-row">')
-        for i, fallback in enumerate(PALETTE[key]):
+        for i, fallback in enumerate(ladders[key]):
             cname = f"dc.{base}{i}"
             spec = mapping.get(cname)
             if spec is None:
@@ -162,20 +166,18 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
 def _write_dc_family_sheet(images_dir: Path) -> Path:
     """Build the generative-family sheet: 20 single-hue families, ten
     perceptually-equalized steps each, straight from the shipped palette SSOT
-    (``dartwork_mpl._colors._generated.PALETTE``). Ordered by hue so the sheet
+    (``dm.colors(name, n=10)``). Ordered by hue so the sheet
     reads as one continuous system. Swatches are interactive (hover → name).
     """
-    from dartwork_mpl._colors._generated import PALETTE
-    from dartwork_mpl._colors.construction._recipe import FAMILIES
-
-    order = [*FAMILIES, "gray"]  # hue order, achromatic last
+    ladders = _ladders()
+    order = list(ladders)  # hue order, achromatic last
 
     html = [
         '<div class="dm-color-sheet">',
         '<div class="dm-sheet-title">dartwork Color — families</div>',
     ]
     for fam in order:
-        rows = PALETTE.get(fam)
+        rows = ladders.get(fam)
         if not rows:
             continue
         html.append('<div class="dm-color-group">')
@@ -201,9 +203,6 @@ def _write_dc_family_sheet(images_dir: Path) -> Path:
 
 def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each color library."""
-    from dartwork_mpl._colors.registry._loader import ensure_loaded
-
-    ensure_loaded()
     mapping = mpl.colors.get_named_colors_mapping()
 
     # Prefix → library key mapping (derived from the colour-library SSOT).
@@ -864,7 +863,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
         # Lightness box axes (right column)
         ax_l = fig.add_subplot(gs[lval_row, 1])
         # Visualize each color's L value as grayscale
-        l_values = np.array([c.oklab.L for c in colors])
+        l_values = np.array([c.to_oklab()[0] for c in colors])
         l_gradient = np.stack([l_values, l_values, l_values], axis=1)
         l_gradient = l_gradient[np.newaxis, :, :]
 

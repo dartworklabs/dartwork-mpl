@@ -108,7 +108,7 @@ def label_line_ends(
     """
     import matplotlib.colors as mcolors
 
-    from .._colors.contrast import ensure_contrast
+    from ..color import ensure_contrast
 
     _LABEL_LINE_ENDS_GUARD.check(kw)
     if lines is None:

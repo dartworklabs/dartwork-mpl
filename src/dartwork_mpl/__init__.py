@@ -4,11 +4,6 @@ This package provides enhanced styling, color management, and various
 utility functions for Matplotlib visualizations.
 """
 
-from ._build_entry import run_color_build_if_requested as _run_color_build
-
-_run_color_build(__name__, __file__)
-del _run_color_build
-
 # ruff: noqa: E402
 
 # Underscore-aliased so implementation imports don't leak into the
@@ -36,27 +31,6 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # attribute-style access at the package level.
 from . import font, lint, templates, tokens, validate_fixes  # noqa: F401
 
-# Import color module exports
-from ._colors import (
-    Color,
-    color,
-    colors,
-    cspace,
-    ensure_contrast,
-    hex,
-    list_colors,
-    make_palette,
-    oklab,
-    oklch,
-    readable_text_color,
-    rgb,
-    set_colors,
-    show_colors,
-)
-
-# Color utilities
-from ._colors.blend import mix_colors, pseudo_alpha
-
 # Import bundled agent-onboarding helpers
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
@@ -76,6 +50,25 @@ from .annotation import (
     place_legend,
     wrap_axis_label,
     wrap_axis_labels,
+)
+
+# Colour names and values (importing it registers them with matplotlib)
+from .color import (
+    Color,
+    color,
+    colors,
+    cspace,
+    ensure_contrast,
+    hex,
+    list_colors,
+    make_palette,
+    mix_colors,
+    oklab,
+    oklch,
+    pseudo_alpha,
+    readable_text_color,
+    rgb,
+    set_colors,
 )
 
 # Config (process-wide behaviour-toggle defaults)
@@ -213,7 +206,6 @@ __all__ = [  # noqa: RUF022
     "oklch",
     "rgb",
     "set_colors",
-    "show_colors",
     "ensure_contrast",
     "readable_text_color",
     # Icon module
@@ -315,7 +307,7 @@ __all__ = [  # noqa: RUF022
 # immediately after ``import dartwork_mpl`` — matching the documented
 # contract. This is a one-time ~70 ms cost; the same font-manager work would
 # otherwise run on the first ``dm.style.use(...)`` anyway. Named colors and
-# all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl._colors``
+# all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl.color``
 # import above.
 font.ensure_loaded()
 

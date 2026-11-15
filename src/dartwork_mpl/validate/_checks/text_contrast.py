@@ -29,8 +29,8 @@ import numpy as np
 from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.text import Annotation, Text
 
-from ..._colors.contrast import contrast_ratio as _contrast_ratio
 from ..._figure_geometry import holders_shown, text_window_extent
+from ...color import contrast_ratio as _contrast_ratio
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check

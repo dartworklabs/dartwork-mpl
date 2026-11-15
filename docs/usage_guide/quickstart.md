@@ -372,7 +372,6 @@ import dartwork_mpl as dm
 
 dm.list_colors()[:2]        # → [{'name': 'amber', 'kind': 'sequential', ...}, ...]
 dm.colors("teal", n=5)      # designed 5-color list
-dm.show_colors(names=["teal"], n=5)  # preview swatches and ramps
 ```
 
 See [Colors and Colormaps](colors.md) for the full palette reference,
@@ -461,7 +460,7 @@ Multi-format export + automatic visual quality checks.
 :::
 
 :::{grid-item-card} 🔬 Diagnostics & Templates
-`dm.show_colors()` / `plot_fonts()` for asset audit, plus ready-to-use plot
+`dm.list_colors()` / `plot_fonts()` for asset audit, plus ready-to-use plot
 templates like `plot_diverging_bar`.
 
 → [Extras guide](extras.md)

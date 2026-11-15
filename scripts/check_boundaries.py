@@ -52,9 +52,6 @@ PACKAGE = "dartwork_mpl"
 ENTRY_POINTS = frozenset(
     {
         "dartwork_mpl",
-        "dartwork_mpl._build_entry",
-        # `python -m dartwork_mpl._colors._build`
-        "dartwork_mpl._colors._build",
         "dartwork_mpl.cli",
         # `python -m dartwork_mpl.mcp.server`
         "dartwork_mpl.mcp.server",
@@ -84,20 +81,9 @@ SLICES = frozenset(
         # Removed public names: the one registry of their migration
         # metadata, and the root __getattr__'s rejection.
         "dartwork_mpl._compat",
-        "dartwork_mpl._colors",
-        "dartwork_mpl._colors._curated",
-        "dartwork_mpl._colors._ssot",
-        "dartwork_mpl._colors.blend",
-        "dartwork_mpl._colors.catalog",
-        "dartwork_mpl._colors.construction",
-        "dartwork_mpl._colors.contrast",
-        "dartwork_mpl._colors.diagnostics",
-        "dartwork_mpl._colors.families_api",
-        "dartwork_mpl._colors.model",
-        "dartwork_mpl._colors.registry",
-        "dartwork_mpl._colors.verify",
         "dartwork_mpl.agent",
         "dartwork_mpl.annotation",
+        "dartwork_mpl.color",
         "dartwork_mpl.config",
         "dartwork_mpl.figure_review",
         "dartwork_mpl.font",
@@ -134,82 +120,33 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
+    ("dartwork_mpl.annotation", "dartwork_mpl.color"): (
+        "line-end and bar value labels keep their series' colour at a "
+        "readable contrast"
+    ),
+    ("dartwork_mpl.formatting", "dartwork_mpl.color"): (
+        "twin-axis ticks keep their series' hue at a readable contrast, and "
+        "stay neutral when the series colours are close in OKLab"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.color"): (
+        "the MCP colour tool and resource list the registered colour libraries"
+    ),
+    ("dartwork_mpl.mcp.colors", "dartwork_mpl.color"): (
+        "the mix_colors tool must return exactly what dm.mix_colors blends"
+    ),
+    ("dartwork_mpl.style", "dartwork_mpl.color"): (
+        "a preset switch re-applies the locale's semantic colour tokens"
+    ),
+    ("dartwork_mpl.validate", "dartwork_mpl.color"): (
+        "the text-contrast and grayscale checks judge WCAG contrast and "
+        "compare colours in OKLab and Y"
+    ),
     ("dartwork_mpl.lint", "dartwork_mpl.prompt"): (
         "lint parses the bundled anti-pattern catalog opened by its corpus owner"
     ),
     ("dartwork_mpl.lint", "dartwork_mpl._compat"): (
         "the codemod's hints and the removed-name rules' detectors come from "
         "the removed-name registry"
-    ),
-    ("dartwork_mpl._colors", "dartwork_mpl._colors.construction"): (
-        "the colour build command compiles the candidate catalogue and publishes the generated module"
-    ),
-    ("dartwork_mpl._colors", "dartwork_mpl._colors.contrast"): (
-        "the documented colour package re-exports the contrast ink helpers"
-    ),
-    ("dartwork_mpl._colors", "dartwork_mpl._colors.families_api"): (
-        "the documented colour package re-exports dm.colors and its siblings"
-    ),
-    ("dartwork_mpl._colors", "dartwork_mpl._colors.model"): (
-        "the documented colour package re-exports Color and its views, and its docs-only metrics module computes with the model's conversions"
-    ),
-    ("dartwork_mpl._colors", "dartwork_mpl._colors.registry"): (
-        "importing the colour package registers the shipped colours, colormaps and semantic tokens with matplotlib"
-    ),
-    ("dartwork_mpl._colors", "dartwork_mpl._colors.verify"): (
-        "the colour build command refuses to publish a catalogue that fails the gates or the exact comparison"
-    ),
-    ("dartwork_mpl._colors.blend", "dartwork_mpl._colors.model"): (
-        "blending converts through the colour model's OKLab representation"
-    ),
-    ("dartwork_mpl._colors.catalog", "dartwork_mpl._colors._curated"): (
-        "the family taxonomy and discrete forms include the curated palettes"
-    ),
-    ("dartwork_mpl._colors.catalog", "dartwork_mpl._colors.model"): (
-        "multi-hue discrete forms are chosen by the model's relative Y"
-    ),
-    ("dartwork_mpl._colors.construction", "dartwork_mpl._colors._curated"): (
-        "the curated palettes are construction inputs"
-    ),
-    ("dartwork_mpl._colors.construction", "dartwork_mpl._colors._ssot"): (
-        "construction compiles from the validated v6 authority"
-    ),
-    ("dartwork_mpl._colors.construction", "dartwork_mpl._colors.model"): (
-        "construction computes with the model's conversion and gamut mapping"
-    ),
-    ("dartwork_mpl._colors.contrast", "dartwork_mpl._colors.model"): (
-        "WCAG luminance must linearise sRGB with the model's one definition"
-    ),
-    ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.catalog"): (
-        "the colormap catalogue groups colormaps by shipped family kind"
-    ),
-    ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.contrast"): (
-        "catalogue swatch labels pick their ink by WCAG contrast"
-    ),
-    ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.registry"): (
-        "the colour catalogue draws every registered colour library"
-    ),
-    ("dartwork_mpl._colors.families_api", "dartwork_mpl._colors.catalog"): (
-        "names resolve to the shipped families and their discrete forms"
-    ),
-    ("dartwork_mpl._colors.families_api", "dartwork_mpl._colors.registry"): (
-        "a colormap lookup needs the shipped colormaps registered first"
-    ),
-    ("dartwork_mpl._colors.registry", "dartwork_mpl._colors._curated"): (
-        "the curated palettes are registered as named colours and colormaps"
-    ),
-    ("dartwork_mpl._colors.registry", "dartwork_mpl._colors.catalog"): (
-        "matplotlib registration publishes the shipped catalogue values"
-    ),
-    ("dartwork_mpl._colors.verify", "dartwork_mpl._colors._ssot"): (
-        "the gates read the quality baseline the validated authority pins"
-    ),
-    ("dartwork_mpl.annotation", "dartwork_mpl._colors.contrast"): (
-        "line-end and bar value labels keep their series' colour at a "
-        "readable contrast"
-    ),
-    ("dartwork_mpl.annotation", "dartwork_mpl._colors.registry"): (
-        "legend edge colours require registered shipped colours"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl.config"): (
         "place_legend reads the project-wide legend fallback and wrap defaults"
@@ -225,12 +162,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.figure_review", "dartwork_mpl.validate"): (
         "a review reports validate_figure's findings, unfiltered"
-    ),
-    ("dartwork_mpl.formatting", "dartwork_mpl._colors.contrast"): (
-        "twin-axis tick text keeps its series' hue at a readable contrast"
-    ),
-    ("dartwork_mpl.formatting", "dartwork_mpl._colors.model"): (
-        "twin axes stay neutral when their series colours are close in OKLab"
     ),
     ("dartwork_mpl.formatting", "dartwork_mpl.config"): (
         "default tick text follows the user's tick_years, date_style and "
@@ -262,9 +193,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.ticks", "dartwork_mpl.formatting"): (
         "the layout's tick hooks delegate to formatting until ticks is rebuilt"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl._colors.registry"): (
-        "the MCP colour tool and resource list the registered colour libraries"
     ),
     ("dartwork_mpl.lint", "dartwork_mpl.style"): (
         "the preset autofix only rewrites to a shipped preset name"
@@ -302,9 +230,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.artifacts", "dartwork_mpl.mcp.execution"): (
         "an artifact bundle is the output of one validated plot execution"
     ),
-    ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.blend"): (
-        "the mix_colors tool must return exactly what dm.mix_colors blends"
-    ),
     ("dartwork_mpl.mcp.catalog", "dartwork_mpl.prompt"): (
         "capability discovery lists the prompt owner's live bundled template names"
     ),
@@ -332,9 +257,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.scale", "dartwork_mpl.style"): (
         "the active preset sets how many points one fs / lw step adds (2.6 on slides)"
     ),
-    ("dartwork_mpl.style", "dartwork_mpl._colors.registry"): (
-        "a preset switch re-applies the locale's semantic colour tokens"
-    ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
     ),
@@ -346,12 +268,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.templates", "dartwork_mpl.size"): (
         "a template's default figure size is a physical width and aspect"
-    ),
-    ("dartwork_mpl.validate", "dartwork_mpl._colors.contrast"): (
-        "the text-contrast and grayscale checks judge WCAG contrast"
-    ),
-    ("dartwork_mpl.validate", "dartwork_mpl._colors.model"): (
-        "the grayscale check compares colours in the model's OKLab and Y"
     ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
@@ -377,6 +293,15 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.font.model": (
         "the font table's types need nothing outside it"
+    ),
+    "dartwork_mpl.color.decide": (
+        "colour forms, gradients, mixes and contrast decide from colour values"
+    ),
+    "dartwork_mpl.color.model": (
+        "parsing colour input into colour types needs nothing outside it"
+    ),
+    "dartwork_mpl.color.space": (
+        "sRGB, OKLab and OKLCH arithmetic is closed over its own values"
     ),
     "dartwork_mpl.size.decide": (
         "the canvas is decided from the parsed request and the page alone"
@@ -410,16 +335,7 @@ DECISIONS: Mapping[str, str] = {
 # Modules whose file path is fixed outside their owner's folder, with the
 # unit that owns them. Prefix ownership would give them to the enclosing
 # package; these paths are pinned elsewhere, so the module cannot move.
-PINNED: Mapping[str, str] = {
-    # written by `python -m dartwork_mpl._colors._build` and excluded by
-    # path from ruff; its values are the shipped catalogue
-    "dartwork_mpl._colors._generated": "dartwork_mpl._colors.catalog",
-    # regenerated by scripts/generate_typing.py at this path
-    "dartwork_mpl._colors._typing": "dartwork_mpl._colors.catalog",
-    # the independent quality oracle; its path and SHA-256 are pinned in
-    # asset/color/color_v6_ssot.json and the frozen quality fixture
-    "dartwork_mpl._colors._compatibility_metrics": "dartwork_mpl._colors.verify",
-}
+PINNED: Mapping[str, str] = {}
 
 # Known violations at the start of the refactor (ADR 0005), each with the
 # plan step that removed it. Every one is resolved; the list stays empty

@@ -24,7 +24,6 @@ import conformance  # noqa: E402
 import score  # noqa: E402
 
 REPO = HERE.parents[1]
-PLAN = REPO / "docs" / "superpowers" / "plans" / "2026-10-22-agent-eval.md"
 PYTHON = REPO / ".venv" / "bin" / "python"
 
 CLEAN = """\
@@ -37,12 +36,6 @@ ax.plot([1, 2, 3])
 dm.simple_layout(fig)
 dm.save_formats(fig, "out/figure", formats=("png", "pdf"))
 """
-
-
-def test_preregistered_text_is_the_plan_docs_text():
-    assert compare.PREREGISTERED.strip() in PLAN.read_text(), (
-        "compare.PREREGISTERED and the plan doc must state the same endpoints"
-    )
 
 
 @pytest.mark.parametrize(
