@@ -544,7 +544,7 @@ def check(
 
 def main() -> int:
     """Print violations; exit 1 when there are any, 0 otherwise."""
-    root = Path(__file__).resolve().parents[1] / "src" / PACKAGE
+    root = Path(__file__).resolve().parents[2] / "src" / PACKAGE
     errors = check(root)
     if errors:
         print("\n".join(errors), file=sys.stderr)
