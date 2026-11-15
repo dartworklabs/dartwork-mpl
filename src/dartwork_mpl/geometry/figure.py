@@ -10,7 +10,9 @@ lists here are structural; :func:`drawn_in_tree` picks what is drawn.
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
+from matplotlib.text import Text
 
 from .renderer import BBOX_ERRORS
 
@@ -94,17 +96,15 @@ def iter_figure_level_extents(
     *,
     legends: bool = True,
     subfigures: bool = True,
-) -> Iterator[tuple[Any, Bbox]]:
+) -> Iterator[tuple[Text | Legend, Bbox]]:
     """Yield ``(artist, window_extent)`` for each figure-level artist.
 
-    Figure-level artists — ``fig.suptitle`` / ``fig.supxlabel`` /
-    ``fig.supylabel`` (the private ``_sup*`` attributes), ``fig.text``
-    entries, and ``fig.legend`` legends — live on the Figure, not on any
-    Axes, so per-axes extent walks never see them. The layout's edge
-    reservations and the ``OVERFLOW`` check share this walk.
-
-    matplotlib keeps the sup-title / sup-labels in ``fig.texts`` as well as
-    in the ``_sup*`` attributes; each artist is yielded once.
+    Figure-level artists — ``fig.text`` entries, ``fig.suptitle`` /
+    ``fig.supxlabel`` / ``fig.supylabel`` (which matplotlib makes with
+    ``fig.text``, so they are in ``fig.texts``), and ``fig.legend`` legends
+    — live on the Figure, not on any Axes, so per-axes extent walks never
+    see them. The layout's edge reservations and the ``OVERFLOW`` check
+    share this walk.
 
     The guard, applied to every candidate:
 
@@ -139,16 +139,10 @@ def iter_figure_level_extents(
         Each qualifying artist and its display-space window extent.
     """
     seen: set[int] = set()
-    candidates: list[Any] = []
+    candidates: list[Text | Legend] = []
     for member in figure_tree(fig) if subfigures else [fig]:
-        for art in (
-            getattr(member, "_suptitle", None),
-            getattr(member, "_supxlabel", None),
-            getattr(member, "_supylabel", None),
-            *member.texts,
-            *(member.legends if legends else ()),
-        ):
-            if art is None or id(art) in seen:
+        for art in (*member.texts, *(member.legends if legends else ())):
+            if id(art) in seen:
                 continue
             seen.add(id(art))
             candidates.append(art)
@@ -156,10 +150,9 @@ def iter_figure_level_extents(
     for art in candidates:
         if not drawn_in_tree(art):  # a hidden SubFigure hides its own
             continue
-        # Only text artists carry ``get_text``; legends don't, so they are
-        # never dropped for "empty text".
-        get_text = getattr(art, "get_text", None)
-        if get_text is not None and not get_text().strip():
+        # A legend has no text of its own, so it is never dropped for
+        # "empty text".
+        if isinstance(art, Text) and not art.get_text().strip():
             continue
         try:
             ext = art.get_window_extent(renderer)

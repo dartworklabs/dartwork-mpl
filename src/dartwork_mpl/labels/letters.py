@@ -16,7 +16,7 @@ from ..geometry import record_panel_letters
 from ..style import fs
 from . import decide
 from .measure import drawn_renderer, panel, px_per_pt
-from .model import FromPanel, PanelsFacts, parse_letter_x
+from .model import AtLeft, FromPanel, PanelsFacts, parse_letter_x
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -109,22 +109,24 @@ def label_axes(
     )
     labels = _letters(len(axes)) if labels is None else labels
     size = fs(1) if fontsize is None else fontsize
-    left = parse_letter_x(x)
-    if not isinstance(left, FromPanel):
-        return [
-            ax.text(  # pyright: ignore[reportUnknownMemberType]
-                left,
-                1.05 if y is None else y,
-                label,
-                transform=ax.transAxes,
-                fontsize=size,
-                fontweight=fontweight,
-                va="bottom",
-                ha="left",
-                **kwargs,
-            )
-            for ax, label in zip(axes, labels, strict=False)
-        ]
+    match parse_letter_x(x):
+        case AtLeft(x=left):
+            return [
+                ax.text(  # pyright: ignore[reportUnknownMemberType]
+                    left,
+                    1.05 if y is None else y,
+                    label,
+                    transform=ax.transAxes,
+                    fontsize=size,
+                    fontweight=fontweight,
+                    va="bottom",
+                    ha="left",
+                    **kwargs,
+                )
+                for ax, label in zip(axes, labels, strict=False)
+            ]
+        case FromPanel():
+            pass
     members = [
         (
             ax,

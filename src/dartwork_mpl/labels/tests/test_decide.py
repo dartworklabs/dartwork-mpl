@@ -11,7 +11,9 @@ from dartwork_mpl.labels.model import (
     CrowdFacts,
     Edge,
     HeadroomFacts,
+    Higher,
     Inside,
+    Lower,
     Outside,
     Panel,
     PanelsFacts,
@@ -61,10 +63,10 @@ def test_overlapping_positions_are_hidden_from_the_last():
     ("rooms", "view"),
     [
         ((), None),
-        ((Room(50, 20, 1),), None),  # 50 + 20 inside 100
-        ((Room(95, 10, 1),), Span(0, 1000 / 90 * 9.5)),
-        ((Room(5, 10, -1),), Span(-500 / 90, 100)),
-        ((Room(50, 200, 1),), None),  # longer than the axes: no widening
+        ((Room(50, 20, Higher()),), None),  # 50 + 20 inside 100
+        ((Room(95, 10, Higher()),), Span(0, 1000 / 90 * 9.5)),
+        ((Room(5, 10, Lower()),), Span(-500 / 90, 100)),
+        ((Room(50, 200, Higher()),), None),  # longer than the axes: no widening
     ],
 )
 def test_headroom_grows_only_as_far_as_the_labels_need(rooms, view):

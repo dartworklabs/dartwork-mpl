@@ -2,47 +2,63 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import matplotlib as mpl
 import numpy as np
 from matplotlib.text import Text
 
-from .model import Letter, TitleLoc, Which, X, Y, rectilinear, three_d, which
+from .model import (
+    AxisSide,
+    CentreTitle,
+    Curved,
+    LeftTitle,
+    Letter,
+    Projection,
+    Rectilinear,
+    RightTitle,
+    ThreeD,
+    TitleLoc,
+    Which,
+    X,
+    Y,
+    parse_axis_side,
+    parse_projection,
+    parse_which,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.axis import Axis
 
-# ``ax.title`` is only the centre title. ``ax.set_title(..., loc="left")``
-# and ``loc="right"`` write to these private attributes instead, so a walk
-# over ``ax.title`` alone never sees a left-aligned headline.
-_TITLE_ATTRS: dict[TitleLoc, str] = {
-    "center": "title",
-    "left": "_left_title",
-    "right": "_right_title",
-}
 
+def axes_titles(ax: Axes) -> dict[TitleLoc, Text]:
+    """Return the title Text artists of ``ax``, each under its ``loc``.
 
-def axes_titles(ax: Axes) -> dict[str, Text]:
-    """Return the title Text artists of ``ax`` keyed by ``set_title``'s ``loc``.
-
-    This is the one place that reads matplotlib's private title
-    attributes. Each is read with ``getattr`` and kept only while its text
-    matches the public ``ax.get_title(loc=...)``, so a matplotlib that
-    renames or repurposes them yields fewer titles instead of wrong ones.
+    ``ax.title`` is only the centre title; ``set_title(..., loc="left")``
+    and ``loc="right"`` write two more Text artists that ``ax.texts`` does
+    not list. They are the Axes' other direct Text children
+    (``ax.get_children()``), left before right. Each is kept only while its
+    text matches the public ``ax.get_title(loc=...)``, so a matplotlib that
+    reorders them yields fewer titles instead of wrong ones.
     """
-    titles: dict[str, Text] = {}
-    for loc, attr in _TITLE_ATTRS.items():
-        text = getattr(ax, attr, None)
-        if not isinstance(text, Text):
-            continue
-        try:
-            public = ax.get_title(loc=loc)
-        except (TypeError, ValueError, AttributeError):
-            continue
-        if text.get_text() == public:
-            titles[loc] = text
+    titles: dict[TitleLoc, Text] = {CentreTitle(): ax.title}
+    own = {id(t) for t in ax.texts}
+    loose = [
+        child
+        for child in ax.get_children()
+        if isinstance(child, Text)
+        and child is not ax.title
+        and id(child) not in own
+    ]
+    if len(loose) != 2:
+        return titles
+    sides: tuple[LeftTitle | RightTitle, ...] = (LeftTitle(), RightTitle())
+    titles.update(
+        (loc, text)
+        for loc, text in zip(sides, loose, strict=True)
+        if text.get_text() == ax.get_title(loc=loc.loc)
+    )
     return titles
 
 
@@ -55,14 +71,14 @@ def axis_of(ax: Axes, axis: Which) -> Axis:
             return ax.yaxis
 
 
-def is_rectilinear(ax: Axes) -> bool:
-    """Whether ``ax`` is matplotlib's plain 2D Axes (not polar, 3D, ...)."""
-    return rectilinear(ax.name)
+def projection(ax: Axes) -> Projection:
+    """How ``ax`` projects its data: plain 2D, 3D or another projection."""
+    return parse_projection(ax.name)
 
 
-def is_3d(ax: Axes) -> bool:
-    """Whether ``ax`` is a 3D Axes."""
-    return three_d(getattr(ax, "name", None))
+def label_side(axis: Axis) -> AxisSide:
+    """The side of its Axes ``axis`` draws its label on."""
+    return parse_axis_side(str(axis.get_label_position()))
 
 
 # Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
@@ -74,7 +90,7 @@ _EDGE_RTOL = 1e-10
 _AUTOMARGIN_3D = 0.019965277777777776
 
 
-def draws_axis(ax: Axes, axis: Any) -> bool:
+def draws_axis(ax: Axes, axis: Axis) -> bool:
     """Whether ``ax`` draws ``axis`` at all, as matplotlib decides.
 
     A 2D Axes draws an axis when it is visible, its axes are on
@@ -86,9 +102,12 @@ def draws_axis(ax: Axes, axis: Any) -> bool:
     """
     if not ax.get_visible():
         return False
-    if is_3d(ax):
-        return bool(getattr(ax, "_axis3don", True))
-    return bool(getattr(ax, "axison", True)) and bool(axis.get_visible())
+    match projection(ax):
+        case ThreeD():
+            # No public getter; ``Axes3D`` is untyped, so its name is read.
+            return bool(getattr(ax, "_axis3don", True))
+        case Rectilinear() | Curved():
+            return ax.axison and axis.get_visible()
 
 
 def drawn_tick_labels(
@@ -109,7 +128,7 @@ def drawn_tick_labels(
     colorbar tick a hair past its limit, the ticks of a title-only panel,
     the labels of a hidden axis or a hidden Axes.
     """
-    axis = axis_of(ax, which(letter))
+    axis = axis_of(ax, parse_which(letter))
     if not draws_axis(ax, axis):
         return []
     transform = axis.get_transform()
@@ -118,12 +137,15 @@ def drawn_tick_labels(
     if not locs.size:
         return []
     view_low, view_high = sorted(float(v) for v in axis.get_view_interval())
-    if is_3d(ax) and mpl.rcParams["axes3d.automargin"]:
-        delta = view_high - view_low
-        view_low, view_high = (
-            view_low + delta * _AUTOMARGIN_3D,
-            view_high - delta * _AUTOMARGIN_3D,
-        )
+    match projection(ax):
+        case ThreeD() if mpl.rcParams["axes3d.automargin"]:
+            delta = view_high - view_low
+            view_low, view_high = (
+                view_low + delta * _AUTOMARGIN_3D,
+                view_high - delta * _AUTOMARGIN_3D,
+            )
+        case ThreeD() | Rectilinear() | Curved():
+            pass
     with np.errstate(all="ignore"):
         view = transform.transform(np.asarray([view_low, view_high], float))
         placed = np.ravel(transform.transform(locs))
@@ -153,7 +175,7 @@ def shared_axes(ax: Axes, letter: Letter) -> list[Axes]:
     their limits and tick formatters move together. An Axes the figure no
     longer holds sorts last.
     """
-    match which(letter):
+    match parse_which(letter):
         case X():
             group = ax.get_shared_x_axes()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         case Y():

@@ -12,16 +12,16 @@ from __future__ import annotations
 import datetime
 import math
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 import numpy as np
 import numpy.typing as npt
 
-from .formatters import repeat_two_digits, shown_values
+from .formatters import shown_values
 from .measure import is_quarterly, num2date
-from .model import Digits
+from .model import YearDigits
 
 
 def _date2num(dates: npt.NDArray[np.datetime64]) -> npt.NDArray[np.float64]:
@@ -48,16 +48,17 @@ class PeriodDateFormatter(mdates.ConciseDateFormatter):
         locator: ticker.Locator,
         tz: Any = None,
         *,
-        digits: Digits = 2,
+        digits: YearDigits,
         show_offset: bool = True,
         usetex: bool | None = None,
     ) -> None:
         """Keep the settings this formatter or locator was made with."""
-        self.digits: Digits = digits
+        self.digits: YearDigits = digits
+        self.zone: datetime.tzinfo | str | None = tz
         self._short = self._fill("%y")
         self._long = self._fill("%Y")
         self._corner_shown = False
-        formats, zeros, offsets = self._short if digits == 2 else self._long
+        formats, zeros, offsets = self._long if digits.four(()) else self._short
         super().__init__(  # pyright: ignore[reportUnknownMemberType]
             locator,
             tz=tz,
@@ -76,9 +77,7 @@ class PeriodDateFormatter(mdates.ConciseDateFormatter):
     def format_ticks(self, values: list[float]) -> list[str]:
         """Labels for the ticks; four-digit years if two would repeat."""
         shown = shown_values(self, values)
-        four = self.digits == 4 or repeat_two_digits(
-            [num2date(v, getattr(self, "_tz", None)).year for v in shown]
-        )
+        four = self.digits.four([num2date(v, self.zone).year for v in shown])
         self.formats, self.zero_formats, self.offset_formats = (
             list(g) for g in (self._long if four else self._short)
         )
@@ -100,14 +99,23 @@ LONG_QUARTER_STEPS = (*QUARTER_STEPS, 16, 20, 40, 80, 200, 400)
 
 
 def quarter_words(
-    moments: Sequence[datetime.datetime], digits: Digits
+    moments: Sequence[datetime.datetime], digits: YearDigits
 ) -> list[str]:
     """``23.Q1, 23.Q3``; four-digit years with ``digits=4`` or when two repeat."""
-    four = digits == 4 or repeat_two_digits([m.year for m in moments])
+    four = digits.four([m.year for m in moments])
     return [
         f"{m.year if four else f'{m.year % 100:02d}'}.Q{(m.month - 1) // 3 + 1}"
         for m in moments
     ]
+
+
+@runtime_checkable
+class Localizes(Protocol):
+    """A pytz zone: a naive time becomes local through ``localize``."""
+
+    def localize(self, dt: datetime.datetime) -> datetime.datetime:
+        """``dt`` in this zone, its offset as of that moment."""
+        ...
 
 
 def _quarter_moment(index: int, ends: bool, tz: Any) -> datetime.datetime:
@@ -116,11 +124,8 @@ def _quarter_moment(index: int, ends: bool, tz: Any) -> datetime.datetime:
     naive = datetime.datetime(year, quarter * 3 + 1, 1)
     if ends:
         naive -= datetime.timedelta(days=1)
-    localize = getattr(tz, "localize", None)  # pytz zones
-    if callable(localize):
-        moment = localize(naive)
-        assert isinstance(moment, datetime.datetime)
-        return moment
+    if isinstance(tz, Localizes):  # pytz zones
+        return tz.localize(naive)
     return naive.replace(tzinfo=tz)
 
 
@@ -137,6 +142,10 @@ class QuarterLocator(mdates.DateLocator):
         self.steps = LONG_QUARTER_STEPS
         self.step = self.steps[0]
         self.ends = ends
+
+    def take(self, step: int) -> None:
+        """Tick every ``step``-th quarter from now on."""
+        self.step = step
 
     def __call__(self) -> list[float]:
         """The quarter ticks inside the axis view."""
@@ -166,9 +175,9 @@ class QuarterLocator(mdates.DateLocator):
 class QuarterDateFormatter(ticker.Formatter):
     """Quarter words for the ticks in view; none for ticks outside it."""
 
-    def __init__(self, digits: Digits = 2, tz: Any = None) -> None:
+    def __init__(self, digits: YearDigits, tz: Any = None) -> None:
         """Keep the settings this formatter or locator was made with."""
-        self.digits: Digits = digits
+        self.digits: YearDigits = digits
         self.tz = tz
 
     def format_ticks(self, values: list[float]) -> list[str]:
@@ -209,6 +218,10 @@ class CategoryDateLocator(ticker.Locator):
         self._starts = dict(
             zip(self.steps, starts or [0] * len(steps), strict=True)
         )
+
+    def take(self, step: int) -> None:
+        """Tick every ``step``-th position from now on."""
+        self.step = step
 
     def tick_values(self, vmin: float, vmax: float) -> list[float]:
         """Positions ``start, start + step ... < n`` in ``[vmin, vmax]``."""
@@ -251,10 +264,10 @@ class CategoryDateFormatter(ticker.Formatter):
     """
 
     def __init__(
-        self, dates: npt.NDArray[np.datetime64], digits: Digits
+        self, dates: npt.NDArray[np.datetime64], digits: YearDigits
     ) -> None:
         """Keep the settings this formatter or locator was made with."""
-        self.digits: Digits = digits
+        self.digits: YearDigits = digits
         self.nums = [float(v) for v in _date2num(dates)]
         self.quarters = is_quarterly(self.nums) and bool(
             np.all(np.diff(self.nums) > 0)

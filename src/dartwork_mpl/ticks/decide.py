@@ -30,7 +30,6 @@ from .model import (
     DateAxis,
     Decimals,
     DefaultUnit,
-    Digits,
     FixedUnit,
     Ladder,
     Language,
@@ -45,6 +44,7 @@ from .model import (
     TickValues,
     Unit,
     WholeUnit,
+    YearDigits,
 )
 from .text import fewest_exact_decimals, number_text
 
@@ -141,7 +141,7 @@ def reaches_thousands(facts: AxisFacts) -> bool:
     return not (facts.x and all(low <= v <= high for v in values))
 
 
-def axis_plan(facts: AxisFacts, digits: Digits) -> AxisPlan:
+def axis_plan(facts: AxisFacts, digits: YearDigits) -> AxisPlan:
     """The library's format for one axis nobody formatted."""
     if not facts.own_formatter:
         return Leave()

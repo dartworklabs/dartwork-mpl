@@ -3,7 +3,8 @@
 Display measurements are pixels (:class:`Span`, :class:`Box`); offsets a
 label keeps through a resize are points. ``label_bars``' keywords are parsed
 once here (:func:`parse_bar_options`); a bad one raises ``ValueError`` naming
-it.
+it. The other helpers' keywords and matplotlib's alignment names become
+variants here too; each variant carries the string matplotlib takes for it.
 """
 
 from __future__ import annotations
@@ -13,52 +14,177 @@ import numbers
 import string
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Literal, SupportsFloat, SupportsIndex, TypeAlias, TypeVar
+from typing import (
+    ClassVar,
+    Literal,
+    SupportsFloat,
+    SupportsIndex,
+    TypeAlias,
+    TypeVar,
+)
 
 import numpy as np
 
-Fmt: TypeAlias = str | Callable[[float], object] | None
 Rgba: TypeAlias = tuple[float, float, float, float]
 Colour: TypeAlias = str | Rgba
 """A colour as matplotlib takes it: a name or hex, or an RGBA tuple."""
-Side: TypeAlias = Literal["above", "below", "right", "left"]
-Corner: TypeAlias = Literal[
-    "upper left", "upper right", "lower left", "lower right"
-]
-HAlign: TypeAlias = Literal["left", "center", "right"]
-VAlign: TypeAlias = Literal["bottom", "center", "top"]
-# ``label_hline``: the side of the line, and the drawn line's end or middle.
-LineSide: TypeAlias = Literal["above", "below"]
-LineAnchor: TypeAlias = Literal["left", "center", "right"]
-# +1: the bar grows towards higher display coordinates (up, right).
-Toward: TypeAlias = Literal[1, -1]
 
-SIDES: tuple[Side, ...] = ("above", "below", "right", "left")
-CORNERS: tuple[Corner, ...] = (
-    "upper left",
-    "upper right",
-    "lower left",
-    "lower right",
-)
-LINE_SIDES: tuple[LineSide, ...] = ("above", "below")
-LINE_ANCHORS: tuple[LineAnchor, ...] = ("left", "center", "right")
-LINE_ENDS: tuple[LineAnchor, ...] = ("right", "left")
+
+# ------------------------------------------------------------ alignment
+@dataclass(frozen=True)
+class AlignLeft:
+    """Text starting at its anchor."""
+
+    mpl: ClassVar[Literal["left"]] = "left"
+
+
+@dataclass(frozen=True)
+class AlignCentre:
+    """Text centred on its anchor."""
+
+    mpl: ClassVar[Literal["center"]] = "center"
+
+
+@dataclass(frozen=True)
+class AlignRight:
+    """Text ending at its anchor."""
+
+    mpl: ClassVar[Literal["right"]] = "right"
+
+
+HAlign: TypeAlias = AlignLeft | AlignCentre | AlignRight
+
+
+@dataclass(frozen=True)
+class Bottom:
+    """Text standing on its anchor."""
+
+    mpl: ClassVar[Literal["bottom"]] = "bottom"
+
+
+@dataclass(frozen=True)
+class Top:
+    """Text hanging from its anchor."""
+
+    mpl: ClassVar[Literal["top"]] = "top"
+
+
+@dataclass(frozen=True)
+class VCentre:
+    """Text centred on its anchor, top to bottom."""
+
+    mpl: ClassVar[Literal["center"]] = "center"
+
+
+@dataclass(frozen=True)
+class Baseline:
+    """Text whose baseline runs through its anchor."""
+
+    mpl: ClassVar[Literal["baseline"]] = "baseline"
+
+
+@dataclass(frozen=True)
+class VCentreBaseline:
+    """Text whose baseline is centred on its anchor."""
+
+    mpl: ClassVar[Literal["center_baseline"]] = "center_baseline"
+
+
+VAlign: TypeAlias = Bottom | Top | VCentre | Baseline | VCentreBaseline
+
+
+def parse_valign(name: str) -> VAlign:
+    """``Text.get_verticalalignment()``; ``ValueError`` for another name."""
+    for align in (Bottom(), Top(), VCentre(), Baseline(), VCentreBaseline()):
+        if name == align.mpl:
+            return align
+    raise ValueError(f"not a vertical alignment: {name!r}")
+
+
+# ------------------------------------------------------------ bar ends
+@dataclass(frozen=True)
+class Higher:
+    """Towards higher display coordinates (up, right): text beyond an
+    anchor there stands on it or starts at it."""
+
+    sign: ClassVar[float] = 1.0
+    ha: ClassVar[HAlign] = AlignLeft()
+    va: ClassVar[VAlign] = Bottom()
+
+    @property
+    def flip(self) -> Lower:
+        """The other way."""
+        return Lower()
+
+    def reach(self, low: float, high: float) -> float:
+        """The end of ``[low, high]`` this way."""
+        return high
+
+
+@dataclass(frozen=True)
+class Lower:
+    """Towards lower display coordinates (down, left)."""
+
+    sign: ClassVar[float] = -1.0
+    ha: ClassVar[HAlign] = AlignRight()
+    va: ClassVar[VAlign] = Top()
+
+    @property
+    def flip(self) -> Higher:
+        """The other way."""
+        return Higher()
+
+    def reach(self, low: float, high: float) -> float:
+        """The end of ``[low, high]`` this way."""
+        return low
+
+
+Toward: TypeAlias = Higher | Lower
+"""The way a bar grows on screen, and so the way its end label points."""
 
 
 # ------------------------------------------------------------ bar options
 @dataclass(frozen=True)
 class Outside:
-    """Beyond the bar's end."""
+    """Beyond the bar's end.
+
+    ``centred``: at the bar's middle; ``inset``: inside the bar's end;
+    ``rests_on_bar``: drawn on the bar, where it may lack room.
+    """
+
+    centred: ClassVar[bool] = False
+    inset: ClassVar[bool] = False
+    rests_on_bar: ClassVar[bool] = False
+
+    def on_bar(self, off_bar: bool) -> bool:
+        """Whether the label is drawn on its bar."""
+        return False
 
 
 @dataclass(frozen=True)
 class Inside:
     """Inside the bar at its end, while the bar holds the label."""
 
+    centred: ClassVar[bool] = False
+    inset: ClassVar[bool] = True
+    rests_on_bar: ClassVar[bool] = True
+
+    def on_bar(self, off_bar: bool) -> bool:
+        """On its bar unless the bar could not hold it (``off_bar``)."""
+        return not off_bar
+
 
 @dataclass(frozen=True)
 class Center:
     """At the bar's middle."""
+
+    centred: ClassVar[bool] = True
+    inset: ClassVar[bool] = False
+    rests_on_bar: ClassVar[bool] = True
+
+    def on_bar(self, off_bar: bool) -> bool:
+        """Always on its bar."""
+        return True
 
 
 Placement: TypeAlias = Outside | Inside | Center
@@ -76,17 +202,34 @@ Where: TypeAlias = ByKind | Placement
 
 @dataclass(frozen=True)
 class Edge:
-    """The label of a plain bar."""
+    """The label of a plain bar.
+
+    ``spills``: inside its bar's end, a label the bar cannot hold is drawn
+    beyond the end instead; ``hides_unfit``: on its bar, a label the bar
+    cannot hold is hidden; ``of_stack``: it labels a whole stack.
+    """
+
+    spills: ClassVar[bool] = True
+    hides_unfit: ClassVar[bool] = False
+    of_stack: ClassVar[bool] = False
 
 
 @dataclass(frozen=True)
 class Segment:
     """The label of one bar of a stack."""
 
+    spills: ClassVar[bool] = False
+    hides_unfit: ClassVar[bool] = True
+    of_stack: ClassVar[bool] = False
+
 
 @dataclass(frozen=True)
 class StackTotal:
     """A stack's net, on the bar ending the stack."""
+
+    spills: ClassVar[bool] = False
+    hides_unfit: ClassVar[bool] = False
+    of_stack: ClassVar[bool] = True
 
 
 Kind: TypeAlias = Edge | Segment | StackTotal
@@ -128,10 +271,14 @@ Crowded: TypeAlias = Rotate | Skip
 class TextInk:
     """The preset's text colour."""
 
+    series: ClassVar[bool] = False
+
 
 @dataclass(frozen=True)
 class SeriesInk:
     """``color="series"``: a label off its bar takes the bar's colour."""
+
+    series: ClassVar[bool] = True
 
 
 @dataclass(frozen=True)
@@ -139,9 +286,32 @@ class OwnInk:
     """One colour the call gave."""
 
     rgba: Rgba
+    series: ClassVar[bool] = False
 
 
 LabelInk: TypeAlias = TextInk | SeriesInk | OwnInk
+
+
+@dataclass(frozen=True)
+class TickLike:
+    """``fmt=None``: the value printed like the axis's ticks."""
+
+
+@dataclass(frozen=True)
+class Template:
+    """``fmt="${}B"``: each ``{}`` field holds the number."""
+
+    text: str
+
+
+@dataclass(frozen=True)
+class Call:
+    """``fmt=f``: ``f`` of the value in the tick unit, as text."""
+
+    write: Callable[[float], object]
+
+
+Fmt: TypeAlias = TickLike | Template | Call
 
 
 @dataclass(frozen=True)
@@ -155,14 +325,14 @@ class BarOptions:
     total: Total = TotalsToo()
     crowded: Crowded = Rotate()
     decimals: int | None = None
-    fmt: Fmt = None
+    fmt: Fmt = TickLike()
     color: LabelInk = TextInk()
     plus: bool = False
 
     @property
     def series(self) -> bool:
         """``color="series"``: a label off its bar takes the bar's colour."""
-        return isinstance(self.color, SeriesInk)
+        return self.color.series
 
 
 def template_fields(template: str) -> list[tuple[str, str, str]]:
@@ -217,11 +387,11 @@ def _fmt(fmt: object) -> Fmt:
             raise ValueError(
                 f"fmt must hold a '{{}}' for the number (got {fmt!r})"
             )
-        return fmt
+        return Template(fmt)
     if fmt is None:
-        return None
+        return TickLike()
     if callable(fmt):
-        return fmt
+        return Call(fmt)
     raise ValueError(
         f"fmt must be None, a '{{}}' template or a callable (got {fmt!r})"
     )
@@ -302,62 +472,278 @@ def placement(kind: Kind, where: Where) -> Placement:
 
 
 # ------------------------------------------------------------ notes
-def _among(value: object, options: Sequence[T]) -> T | None:
-    """The option equal to ``value``, if any."""
-    for option in options:
-        if option == value:
-            return option
-    return None
+@dataclass(frozen=True)
+class Above:
+    """Above the point (``side="above"``); for a line, above it."""
+
+    offset: ClassVar[tuple[float, float]] = (0.0, 1.0)
+    ha: ClassVar[HAlign] = AlignCentre()
+    va: ClassVar[VAlign] = Bottom()
+
+    @property
+    def tries(self) -> tuple[Side, ...]:
+        """The one side asked."""
+        return (self,)
 
 
 @dataclass(frozen=True)
-class FirstFree:
-    """``"auto"``: the first place that is free, in the helper's order."""
+class Below:
+    """Below the point; for a line, below it."""
+
+    offset: ClassVar[tuple[float, float]] = (0.0, -1.0)
+    ha: ClassVar[HAlign] = AlignCentre()
+    va: ClassVar[VAlign] = Top()
+
+    @property
+    def tries(self) -> tuple[Side, ...]:
+        """The one side asked."""
+        return (self,)
 
 
-def parse_side(value: object) -> Side | FirstFree:
+@dataclass(frozen=True)
+class Right:
+    """Right of the point."""
+
+    offset: ClassVar[tuple[float, float]] = (1.0, 0.0)
+    ha: ClassVar[HAlign] = AlignLeft()
+    va: ClassVar[VAlign] = VCentre()
+
+    @property
+    def tries(self) -> tuple[Side, ...]:
+        """The one side asked."""
+        return (self,)
+
+
+@dataclass(frozen=True)
+class Left:
+    """Left of the point."""
+
+    offset: ClassVar[tuple[float, float]] = (-1.0, 0.0)
+    ha: ClassVar[HAlign] = AlignRight()
+    va: ClassVar[VAlign] = VCentre()
+
+    @property
+    def tries(self) -> tuple[Side, ...]:
+        """The one side asked."""
+        return (self,)
+
+
+Side: TypeAlias = Above | Below | Right | Left
+"""Where ``annotate_value`` puts a label from its point."""
+
+SIDES: tuple[Side, ...] = (Above(), Below(), Right(), Left())
+
+
+@dataclass(frozen=True)
+class AnySide:
+    """``side="auto"``: the first side that is free, in :data:`SIDES` order."""
+
+    @property
+    def tries(self) -> tuple[Side, ...]:
+        """Every side, in the order tried."""
+        return SIDES
+
+
+SideChoice: TypeAlias = Side | AnySide
+
+
+def parse_side(value: object) -> SideChoice:
     """``annotate_value``'s ``side``; ``ValueError`` otherwise."""
-    if value == "auto":
-        return FirstFree()
-    found = _among(value, SIDES)
-    if found is None:
-        raise ValueError(
-            "side must be 'auto', 'above', 'below', 'left', or 'right'"
-        )
-    return found
+    names: dict[str, SideChoice] = {
+        "auto": AnySide(),
+        "above": Above(),
+        "below": Below(),
+        "right": Right(),
+        "left": Left(),
+    }
+    if isinstance(value, str) and value in names:
+        return names[value]
+    raise ValueError(
+        "side must be 'auto', 'above', 'below', 'left', or 'right'"
+    )
+
+
+@dataclass(frozen=True)
+class UpperLeft:
+    """An Axes' upper left corner; ``inward`` points into the Axes."""
+
+    anchor: ClassVar[tuple[float, float]] = (0.0, 1.0)
+    inward: ClassVar[tuple[float, float]] = (1.0, -1.0)
+    ha: ClassVar[HAlign] = AlignLeft()
+    va: ClassVar[VAlign] = Top()
+
+
+@dataclass(frozen=True)
+class UpperRight:
+    """An Axes' upper right corner."""
+
+    anchor: ClassVar[tuple[float, float]] = (1.0, 1.0)
+    inward: ClassVar[tuple[float, float]] = (-1.0, -1.0)
+    ha: ClassVar[HAlign] = AlignRight()
+    va: ClassVar[VAlign] = Top()
+
+
+@dataclass(frozen=True)
+class LowerLeft:
+    """An Axes' lower left corner."""
+
+    anchor: ClassVar[tuple[float, float]] = (0.0, 0.0)
+    inward: ClassVar[tuple[float, float]] = (1.0, 1.0)
+    ha: ClassVar[HAlign] = AlignLeft()
+    va: ClassVar[VAlign] = Bottom()
+
+
+@dataclass(frozen=True)
+class LowerRight:
+    """An Axes' lower right corner."""
+
+    anchor: ClassVar[tuple[float, float]] = (1.0, 0.0)
+    inward: ClassVar[tuple[float, float]] = (-1.0, 1.0)
+    ha: ClassVar[HAlign] = AlignRight()
+    va: ClassVar[VAlign] = Bottom()
+
+
+Corner: TypeAlias = UpperLeft | UpperRight | LowerLeft | LowerRight
+
+CORNERS: tuple[Corner, ...] = (
+    UpperLeft(),
+    UpperRight(),
+    LowerLeft(),
+    LowerRight(),
+)
 
 
 def parse_corner(value: object) -> Corner:
     """``annotate_corner``'s ``loc``; ``ValueError`` otherwise."""
-    found = _among(value, CORNERS)
-    if found is None:
-        raise ValueError(
-            "loc must be 'upper left', 'upper right', 'lower left', or "
-            "'lower right'"
+    names = dict(
+        zip(
+            ("upper left", "upper right", "lower left", "lower right"),
+            CORNERS,
+            strict=True,
         )
-    return found
+    )
+    if isinstance(value, str) and value in names:
+        return names[value]
+    raise ValueError(
+        "loc must be 'upper left', 'upper right', 'lower left', or "
+        "'lower right'"
+    )
+
+
+def corner_order(first: Corner) -> tuple[Corner, ...]:
+    """``first``, then the other corners in :data:`CORNERS` order."""
+    return (first, *(c for c in CORNERS if c != first))
+
+
+LineSide: TypeAlias = Above | Below
+"""``label_hline``'s side of the line."""
 
 
 def parse_line_side(value: object) -> LineSide:
     """``label_hline``'s ``side``; ``ValueError`` otherwise."""
-    found = _among(value, LINE_SIDES)
-    if found is None:
-        raise ValueError("side must be 'above' or 'below'")
-    return found
+    if value == "above":
+        return Above()
+    if value == "below":
+        return Below()
+    raise ValueError("side must be 'above' or 'below'")
 
 
-def parse_line_x(value: object) -> LineAnchor | float | FirstFree:
+@dataclass(frozen=True)
+class LeftEnd:
+    """The drawn line's left end; the label starts there."""
+
+    ha: ClassVar[HAlign] = AlignLeft()
+
+    def shown(self, left: float, right: float, frame: Span) -> float:
+        """The display x of this place on a line drawn over ``[left, right]``."""
+        return left
+
+    @property
+    def tries(self) -> tuple[LinePlace, ...]:
+        """The one place asked."""
+        return (self,)
+
+
+@dataclass(frozen=True)
+class LineMiddle:
+    """The middle of the drawn line."""
+
+    ha: ClassVar[HAlign] = AlignCentre()
+
+    def shown(self, left: float, right: float, frame: Span) -> float:
+        """The display x of this place on a line drawn over ``[left, right]``."""
+        return (left + right) / 2
+
+    @property
+    def tries(self) -> tuple[LinePlace, ...]:
+        """The one place asked."""
+        return (self,)
+
+
+@dataclass(frozen=True)
+class RightEnd:
+    """The drawn line's right end; the label ends there."""
+
+    ha: ClassVar[HAlign] = AlignRight()
+
+    def shown(self, left: float, right: float, frame: Span) -> float:
+        """The display x of this place on a line drawn over ``[left, right]``."""
+        return right
+
+    @property
+    def tries(self) -> tuple[LinePlace, ...]:
+        """The one place asked."""
+        return (self,)
+
+
+@dataclass(frozen=True)
+class AtFraction:
+    """A fraction of the Axes' width, the label centred on it."""
+
+    fraction: float
+    ha: ClassVar[HAlign] = AlignCentre()
+
+    def shown(self, left: float, right: float, frame: Span) -> float:
+        """The display x of this place in the Axes ``frame``."""
+        return frame.low + frame.width * self.fraction
+
+    @property
+    def tries(self) -> tuple[LinePlace, ...]:
+        """The one place asked."""
+        return (self,)
+
+
+LinePlace: TypeAlias = LeftEnd | LineMiddle | RightEnd | AtFraction
+
+LINE_ENDS: tuple[LinePlace, ...] = (RightEnd(), LeftEnd())
+
+
+@dataclass(frozen=True)
+class EitherEnd:
+    """``x="auto"``: the clearer end of the drawn line, the right first."""
+
+    @property
+    def tries(self) -> tuple[LinePlace, ...]:
+        """Both ends, in the order tried."""
+        return LINE_ENDS
+
+
+LineX: TypeAlias = LinePlace | EitherEnd
+
+
+def parse_line_x(value: object) -> LineX:
     """``label_hline``'s ``x``: an end, the middle, a fraction or ``"auto"``."""
     if not isinstance(value, str):
-        return _number(value)
-    if value == "auto":
-        return FirstFree()
-    found = _among(value, LINE_ANCHORS)
-    if found is None:
-        raise ValueError(
-            "x must be 'auto', 'left', 'center', 'right', or a float"
-        )
-    return found
+        return AtFraction(_number(value))
+    names: dict[str, LineX] = {
+        "auto": EitherEnd(),
+        "left": LeftEnd(),
+        "center": LineMiddle(),
+        "right": RightEnd(),
+    }
+    if value in names:
+        return names[value]
+    raise ValueError("x must be 'auto', 'left', 'center', 'right', or a float")
 
 
 @dataclass(frozen=True)
@@ -365,27 +751,27 @@ class FromPanel:
     """``label_axes(x="auto")``: each letter placed from what its panel draws."""
 
 
-def parse_letter_x(value: object) -> float | FromPanel:
+@dataclass(frozen=True)
+class AtLeft:
+    """``label_axes(x=0.02)``: every letter's left edge at an Axes fraction."""
+
+    x: float
+
+
+LetterX: TypeAlias = FromPanel | AtLeft
+
+
+def parse_letter_x(value: object) -> LetterX:
     """``label_axes``' ``x``: ``"auto"`` or an Axes-relative left edge."""
     if isinstance(value, str):
-        return FromPanel() if value == "auto" else float(value)
-    return _number(value)
+        return FromPanel() if value == "auto" else AtLeft(float(value))
+    return AtLeft(_number(value))
 
 
 def _number(value: object) -> float:
     if isinstance(value, SupportsFloat | SupportsIndex):
         return float(value)
     raise TypeError(f"expected a number, got {value!r}")
-
-
-def left_side(position: str) -> bool:
-    """Whether an axis label position is matplotlib's ``"left"``."""
-    return position == "left"
-
-
-def on_baseline(alignment: str) -> bool:
-    """Whether a vertical alignment is matplotlib's ``"baseline"``."""
-    return alignment == "baseline"
 
 
 # ------------------------------------------------------------ value text
@@ -512,7 +898,7 @@ class Shown:
 @dataclass(frozen=True)
 class Room:
     """A label beyond its bar end: anchor, room it needs to the axes edge it
-    points to (pixels), and which edge."""
+    points to (pixels), and which way that edge is."""
 
     anchor: float
     need: float

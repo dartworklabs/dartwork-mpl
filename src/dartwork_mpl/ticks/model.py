@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
-from typing import Literal, NewType, TypeAlias
+from typing import ClassVar, Literal, NewType, TypeAlias
 
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
@@ -20,10 +20,55 @@ Ems = NewType("Ems", float)
 """A length in ems of the tick font."""
 
 Digits = Literal[2, 4]
-"""Year digits on tick labels: ``24`` or ``2024``."""
+"""Year digits on tick labels, as a caller writes them: ``2`` or ``4``."""
 
-Side = Literal["right", "top"]
+
+def repeat_two_digits(years: Sequence[int]) -> bool:
+    """Whether two distinct years share their last two digits (1965, 2065)."""
+    seen: dict[int, int] = {}
+    return any(seen.setdefault(y % 100, y) != y for y in years)
+
+
+@dataclass(frozen=True)
+class TwoDigits:
+    """Years as ``24``, unless two in view would repeat (1965, 2065)."""
+
+    def four(self, years: Sequence[int]) -> bool:
+        """Whether ``years`` print with four digits."""
+        return repeat_two_digits(years)
+
+
+@dataclass(frozen=True)
+class FourDigits:
+    """Years as ``2024``."""
+
+    def four(self, years: Sequence[int]) -> bool:
+        """Always four digits."""
+        return True
+
+
+YearDigits: TypeAlias = TwoDigits | FourDigits
+"""How many digits a tick year prints."""
+
+
+@dataclass(frozen=True)
+class RightSide:
+    """The right side, where a ``twinx`` draws its y scale."""
+
+    spine: ClassVar[Literal["right"]] = "right"
+
+
+@dataclass(frozen=True)
+class TopSide:
+    """The top side, where a ``twiny`` draws its x scale."""
+
+    spine: ClassVar[Literal["top"]] = "top"
+
+
+TwinSide: TypeAlias = RightSide | TopSide
 """A side whose spine the layout shows for a twin scale."""
+
+TWIN_SIDES: tuple[TwinSide, ...] = (RightSide(), TopSide())
 
 
 @dataclass(frozen=True)
@@ -68,14 +113,102 @@ MYRIAD_LOCALES = {
 LADDERS = {"si": SI, "myriad": MYRIAD, "finance": FINANCE}
 
 
-HAlign: TypeAlias = Literal["left", "center", "right"]
-"""A text's horizontal alignment, as matplotlib names it."""
+HAlignName: TypeAlias = Literal["left", "center", "right"]
+"""``rotate_tick_labels``' ``ha`` as a caller writes it."""
+
+
+@dataclass(frozen=True)
+class AlignLeft:
+    """Text starting at its anchor (``ha="left"``)."""
+
+    mpl: ClassVar[Literal["left"]] = "left"
+
+
+@dataclass(frozen=True)
+class AlignCentre:
+    """Text centred on its anchor (``ha="center"``)."""
+
+    mpl: ClassVar[Literal["center"]] = "center"
+
+
+@dataclass(frozen=True)
+class AlignRight:
+    """Text ending at its anchor (``ha="right"``)."""
+
+    mpl: ClassVar[Literal["right"]] = "right"
+
+
+HAlign: TypeAlias = AlignLeft | AlignCentre | AlignRight
+
+
+def parse_halign(value: object) -> HAlign:
+    """``ha``; ``ValueError`` otherwise."""
+    if value == "left":
+        return AlignLeft()
+    if value == "center":
+        return AlignCentre()
+    if value == "right":
+        return AlignRight()
+    raise ValueError(f"ha must be 'left', 'center' or 'right', got {value!r}")
+
 
 YearLocale: TypeAlias = Literal["ko", "ja", "zh", "en"]
 """The languages ``format_axis_year`` writes a year suffix in."""
 
+YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
+
+
+def year_suffix(locale: object) -> str:
+    """``format_axis_year``'s ``locale`` as its year suffix; ``ValueError``."""
+    if isinstance(locale, str) and locale in YEAR_SUFFIX:
+        return YEAR_SUFFIX[locale]
+    raise ValueError(
+        f"Unknown locale {locale!r}; valid locales: {', '.join(YEAR_SUFFIX)}"
+    )
+
+
+def myriad_ladder(locale: object) -> Ladder:
+    """``format_axis_myriad``'s ``locale`` as its ladder; ``ValueError``."""
+    if isinstance(locale, str) and locale in MYRIAD_LOCALES:
+        return MYRIAD_LOCALES[locale]
+    raise ValueError(
+        f"locale must be one of 'ko', 'zh', or 'ja' (got {locale!r})"
+    )
+
+
 CurrencyPosition: TypeAlias = Literal["prefix", "suffix"]
-"""Where ``format_axis_currency`` writes the symbol."""
+"""Where ``format_axis_currency`` writes the symbol, as a caller says it."""
+
+
+@dataclass(frozen=True)
+class SymbolFirst:
+    """``"prefix"``: the symbol before the number, after the minus (``-$5``)."""
+
+    def parts(self, symbol: str) -> tuple[str, str]:
+        """``(currency, unit label)`` for ``symbol``."""
+        return symbol, ""
+
+
+@dataclass(frozen=True)
+class SymbolLast:
+    """``"suffix"``: the symbol after the number (``5€``)."""
+
+    def parts(self, symbol: str) -> tuple[str, str]:
+        """``(currency, unit label)`` for ``symbol``."""
+        return "", symbol
+
+
+SymbolPlace: TypeAlias = SymbolFirst | SymbolLast
+
+
+def parse_currency_position(value: object) -> SymbolPlace:
+    """``format_axis_currency``'s ``position``; ``ValueError`` otherwise."""
+    if value == "prefix":
+        return SymbolFirst()
+    if value == "suffix":
+        return SymbolLast()
+    raise ValueError(f"position must be 'prefix' or 'suffix', got {value!r}")
+
 
 LadderName: TypeAlias = Literal["auto", "myriad", "finance", "si"]
 """``dm.axis_unit``'s ``ladder``."""
@@ -135,11 +268,6 @@ Language: TypeAlias = ByFigure | Asked
 """What picks the large-number ladder."""
 
 
-def prefixed(position: CurrencyPosition) -> bool:
-    """Whether the currency symbol goes before the number."""
-    return position == "prefix"
-
-
 def unit_template(label: str) -> str:
     """An axis label with ``{unit}`` marking where the unit goes."""
     if "{unit}" in label:
@@ -147,17 +275,12 @@ def unit_template(label: str) -> str:
     return f"{label} ({{unit}})" if label.strip() else "({unit})"
 
 
-def linear_scale(name: str) -> bool:
-    """Whether matplotlib's scale name is the linear scale."""
-    return name == "linear"
-
-
-def parse_digits(value: object, what: str = "years") -> Digits:
+def parse_digits(value: object, what: str = "years") -> YearDigits:
     """``2`` or ``4``; ``ValueError`` naming ``what`` otherwise."""
     if value == 2 and not isinstance(value, bool):
-        return 2
+        return TwoDigits()
     if value == 4 and not isinstance(value, bool):
-        return 4
+        return FourDigits()
     raise ValueError(f"{what} must be 2 or 4, got {value!r}")
 
 
@@ -211,13 +334,8 @@ class ExactZero:
 ZeroText: TypeAlias = BareZero | AffixedZero | ExactZero
 """How a value written alone prints when it rounds to zero."""
 
-TickZero: TypeAlias = Literal["bare", "affixed"]
-"""How tick-like text prints a value that rounds to zero (public)."""
-
-
-def keeps_affixes(zero: TickZero) -> bool:
-    """Whether a value that prints as zero keeps its prefix and suffix."""
-    return zero == "affixed"
+ScaleZero: TypeAlias = BareZero | AffixedZero
+"""How tick-like text prints a value that rounds to zero."""
 
 
 @dataclass(frozen=True)
@@ -346,14 +464,14 @@ class TickScale:
 
     ``prefix``, the value divided by ``factor``, ``suffix``:
     ``TickScale(1e9, "", "G")`` prints ``33e9`` as ``33G``. ``zero``: a value
-    that prints as zero drops the affixes (``"bare"``) or keeps them
-    (``"affixed"``: ``$0``).
+    that prints as zero drops the affixes (:class:`BareZero`) or keeps them
+    (:class:`AffixedZero`: ``$0``).
     """
 
     factor: float = 1.0
     prefix: str = ""
     suffix: str = ""
-    zero: TickZero = "bare"
+    zero: ScaleZero = BareZero()
 
 
 # -- axis formats on axes nobody formatted -------------------------------------
@@ -415,10 +533,10 @@ class TwinFacts:
     there; ``settled`` a layout showed this side's line before.
     """
 
-    draws: frozenset[Side] = frozenset()
-    hides_other: frozenset[Side] = frozenset()
-    twin_draws: frozenset[Side] = frozenset()
-    settled: frozenset[Side] = frozenset()
+    draws: frozenset[TwinSide] = frozenset()
+    hides_other: frozenset[TwinSide] = frozenset()
+    twin_draws: frozenset[TwinSide] = frozenset()
+    settled: frozenset[TwinSide] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -427,7 +545,7 @@ class AxesFacts:
 
     x: AxisFacts
     y: AxisFacts
-    digits: Digits = 2
+    digits: YearDigits = TwoDigits()
     twin: TwinFacts = field(default_factory=TwinFacts)
 
 
@@ -445,14 +563,14 @@ class Numbers:
 class PeriodDates:
     """Whole two-digit dates on the converter's locator: ``24.01``."""
 
-    digits: Digits
+    digits: YearDigits
 
 
 @dataclass(frozen=True)
 class QuarterDates:
     """Quarter ticks and words: ``24.Q1``, on quarter starts or ends."""
 
-    digits: Digits
+    digits: YearDigits
     ends: bool
 
 
@@ -460,7 +578,7 @@ class QuarterDates:
 class YearTicks:
     """Whole-year ticks (if ``locator``) and year words (if ``formatter``)."""
 
-    digits: Digits
+    digits: YearDigits
     locator: bool
     formatter: bool
 
@@ -474,7 +592,7 @@ class AxesPlan:
 
     x: AxisPlan
     y: AxisPlan
-    spines: frozenset[Side] = frozenset()
+    spines: frozenset[TwinSide] = frozenset()
 
 
 # -- thinning crowded date labels after the fit --------------------------------

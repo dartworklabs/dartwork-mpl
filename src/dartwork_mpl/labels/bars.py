@@ -22,7 +22,7 @@ from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
 from ..edgecase import settle
-from ..geometry import Y, bars_along, canvas_renderer, same_position_axes
+from ..geometry import canvas_renderer, same_position_axes
 from ..style import fs, fw
 from . import decide, edges
 from .measure import (
@@ -33,22 +33,24 @@ from .measure import (
     px_per_pt,
     readable_ink,
     series_ink,
+    stands_up,
 )
 from .model import (
+    AlignCentre,
     BarOptions,
-    Center,
-    Edge,
+    Call,
+    Higher,
     Ink,
     InkFacts,
-    Inside,
     Kind,
-    Outside,
+    Lower,
     Placement,
     Rgba,
-    Segment,
-    StackTotal,
+    Template,
+    TickLike,
     Toward,
     ValueFacts,
+    VCentre,
     parse_bar_options,
     placement,
     template_fields,
@@ -96,7 +98,7 @@ class BarLabel(Annotation):
         self.kind: Kind = kind
         self.value, self.stack = value, stack
         self.where: Placement = placement(kind, family.options.where)
-        self.vertical = bars_along(container.orientation) != Y()
+        self.vertical = stands_up(container)
         self.off_bar = False
         self.hidden = False  # hidden by the layout for room
         self.tick_scale: TickScale | None = None
@@ -122,23 +124,17 @@ class BarLabel(Annotation):
     @property
     def centred(self) -> bool:
         """Whether the label sits at its bar's middle."""
-        return isinstance(self.where, Center)
+        return self.where.centred
 
     @property
     def inside(self) -> bool:
         """Whether the label sits inside its bar's end (its bar holds it)."""
-        return isinstance(self.where, Inside) and not self.off_bar
+        return self.where.inset and not self.off_bar
 
     @property
     def on_bar(self) -> bool:
         """Whether the label is drawn on its bar."""
-        match self.where:
-            case Center():
-                return True
-            case Inside():
-                return not self.off_bar
-            case Outside():
-                return False
+        return self.where.on_bar(self.off_bar)
 
     @property
     def beyond_end(self) -> bool:
@@ -147,19 +143,15 @@ class BarLabel(Annotation):
 
     @property
     def outward(self) -> Toward:
-        """+1 when the bar grows towards higher display coordinates."""
+        """The way the bar grows on screen."""
         bar = self.bar
         length = bar.get_height() if self.vertical else bar.get_width()
         grows_up = (length >= 0) != bool(self.value_axis.get_inverted())
-        return 1 if grows_up else -1
+        return Higher() if grows_up else Lower()
 
     def _needs_room(self) -> bool:
         """A segment's label on its bar shows only while the bar holds it."""
-        match self.kind:
-            case Segment():
-                return not isinstance(self.where, Outside)
-            case Edge() | StackTotal():
-                return False
+        return self.kind.hides_unfit and self.where.rests_on_bar
 
     def get_visible(self) -> bool:
         """Visible, its anchor in the view, and (a segment) room on its bar."""
@@ -208,11 +200,7 @@ class BarLabel(Annotation):
         if not along:
             thick = box.width if self.vertical else box.height
             return bool(np.isfinite(thick) and px <= thick + FIT_TOL_PX)
-        inset = (
-            OFFSET_PT * px_per_pt(self)
-            if isinstance(self.where, Inside)
-            else 0.0
-        )
+        inset = OFFSET_PT * px_per_pt(self) if self.where.inset else 0.0
         length = box.height if self.vertical else box.width
         return bool(np.isfinite(length) and length >= px + inset)
 
@@ -220,8 +208,8 @@ class BarLabel(Annotation):
         """Anchor and align the label on its bar."""
         if self.centred:
             self.xy, self.xyann = (0.5, 0.5), (0.0, 0.0)
-            self.set_horizontalalignment("center")
-            self.set_verticalalignment("center")
+            self.set_horizontalalignment(AlignCentre.mpl)
+            self.set_verticalalignment(VCentre.mpl)
             return
         x, y = bar_end(self.bar, self.vertical)
         inside = self.inside
@@ -234,16 +222,16 @@ class BarLabel(Annotation):
             else:
                 end = min(end, max(float(extent.min()), low))
             x, y = (x, end) if self.vertical else (end, y)
-        toward = self.outward * (-1 if inside else 1)
+        toward = self.outward.flip if inside else self.outward
         self.xy = (x, y)
         if self.vertical:
-            self.xyann = (0.0, toward * OFFSET_PT)
-            self.set_horizontalalignment("center")
-            self.set_verticalalignment("bottom" if toward > 0 else "top")
+            self.xyann = (0.0, toward.sign * OFFSET_PT)
+            self.set_horizontalalignment(AlignCentre.mpl)
+            self.set_verticalalignment(toward.va.mpl)
         else:
-            self.xyann = (toward * OFFSET_PT, 0.0)
-            self.set_horizontalalignment("left" if toward > 0 else "right")
-            self.set_verticalalignment("center")
+            self.xyann = (toward.sign * OFFSET_PT, 0.0)
+            self.set_horizontalalignment(toward.ha.mpl)
+            self.set_verticalalignment(VCentre.mpl)
         self.stale = True
 
 
@@ -280,7 +268,7 @@ class BarFamily:
         if tick_scale_of(label.value_axis, label.value) != label.tick_scale:
             self.refresh()
         label.off_bar = False
-        if isinstance(label.kind, Edge) and isinstance(label.where, Inside):
+        if label.kind.spills and label.where.inset:
             along, across = label.extent()
             label.off_bar = not (
                 label.fits(along, along=True)
@@ -329,24 +317,27 @@ def compose(
     """One label's text for a value already divided by ``scale.factor``."""
     from ..ticks import number_text
 
-    if callable(options.fmt):
-        return str(options.fmt(scaled))
     fixed = options.decimals is not None
     facts = ValueFacts(scaled, decimals, fixed, options.plus)
-    text = settle(facts, decide.bar_text(facts), edges.TEXT_EDGES).plan
-    if isinstance(options.fmt, str):
-        number = text.lead + number_text(
-            text.value, text.decimals, fixed=text.fixed
-        )
-        return _template(options.fmt, number, scaled)
-    return text.lead + number_text(
-        text.value,
-        text.decimals,
-        fixed=text.fixed,
-        prefix=scale.prefix,
-        suffix=scale.suffix,
-        zero=scale.zero,
-    )
+    match options.fmt:
+        case Call(write=write):
+            return str(write(scaled))
+        case Template(text=template):
+            text = settle(facts, decide.bar_text(facts), edges.TEXT_EDGES).plan
+            number = text.lead + number_text(
+                text.value, text.decimals, fixed=text.fixed
+            )
+            return _template(template, number, scaled)
+        case TickLike():
+            text = settle(facts, decide.bar_text(facts), edges.TEXT_EDGES).plan
+            return text.lead + number_text(
+                text.value,
+                text.decimals,
+                fixed=text.fixed,
+                prefix=scale.prefix,
+                suffix=scale.suffix,
+                zero=scale.zero,
+            )
 
 
 def _containers(
@@ -417,7 +408,7 @@ def _release(ax: Axes, containers: list[BarContainer]) -> None:
         for family in families:
             for label in list(family.texts):
                 if id(label.container) in taken or (
-                    isinstance(label.kind, StackTotal) and label.stack & taken
+                    label.kind.of_stack and label.stack & taken
                 ):
                     family.texts.remove(label)
                     if label.axes is not None:

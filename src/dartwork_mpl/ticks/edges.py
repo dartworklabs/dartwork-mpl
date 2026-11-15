@@ -29,8 +29,8 @@ from .model import (
     OtherAxis,
     PeriodDates,
     QuarterDates,
-    Side,
     Thinning,
+    TwinSide,
     YearTicks,
 )
 
@@ -106,7 +106,7 @@ def quarter_ticks(facts: AxesFacts, plan: AxesPlan) -> AxesPlan:
     )
 
 
-def _twin_spines(facts: AxesFacts) -> frozenset[Side]:
+def _twin_spines(facts: AxesFacts) -> frozenset[TwinSide]:
     """Sides where the Axes draws a twin scale: the twin's line first."""
     twin = facts.twin
     return frozenset(

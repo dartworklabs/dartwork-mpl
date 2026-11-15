@@ -23,14 +23,14 @@ from .model import (
     AffixedZero,
     AxisText,
     BareZero,
-    Digits,
     ExactZero,
     NumberStyle,
+    ScaleZero,
     TextFacts,
     TickScale,
     TickValues,
-    TickZero,
     Unit,
+    YearDigits,
 )
 from .text import fewest_exact_decimals, number_text, per_tick_text
 
@@ -45,12 +45,6 @@ def shown_values(
     if not isinstance(axis, Axis):
         return [float(v) for v in values]
     return in_view(axis, values)
-
-
-def repeat_two_digits(years: Sequence[int]) -> bool:
-    """Whether two distinct years share their last two digits (1965, 2065)."""
-    seen: dict[int, int] = {}
-    return any(seen.setdefault(y % 100, y) != y for y in years)
 
 
 # -- numbers ---------------------------------------------------------------------
@@ -132,12 +126,12 @@ class AxisUnitFormatter(ticker.Formatter):
         if rules is not None:
             if style.unit is None:
                 return TickScale()
-            zero: TickZero
+            zero: ScaleZero
             match rules.zero:
                 case AffixedZero():
-                    zero = "affixed"
+                    zero = AffixedZero()
                 case BareZero() | ExactZero():
-                    zero = "bare"
+                    zero = BareZero()
             return TickScale(
                 style.unit.factor, style.currency, style.unit.label, zero
             )
@@ -230,6 +224,8 @@ class WholeYearLocator(ticker.MaxNLocator):
     """
 
     asked_nbins: bool = False
+    nbins: int | str = "auto"
+    """The tick-count ceiling (``"auto"``: from the axis length)."""
 
     def __init__(self) -> None:
         """Keep the settings this formatter or locator was made with."""
@@ -244,16 +240,13 @@ class WholeYearLocator(ticker.MaxNLocator):
         """Set MaxNLocator parameters; an ``nbins`` set here is a request."""
         if nbins is not None:
             kwargs["nbins"] = nbins
+            self.nbins = nbins
             self.asked_nbins = True
         super().set_params(**kwargs)  # pyright: ignore[reportUnknownMemberType]
 
-    @property
-    def nbins(self) -> int | str:
-        """The tick-count ceiling (``"auto"``: from the axis length)."""
-        return vars(self)["_nbins"]
-
     def thin(self, nbins: int | str) -> None:
         """The layout's own ``nbins``, not a request."""
+        self.nbins = nbins
         ticker.MaxNLocator.set_params(self, nbins=nbins)  # pyright: ignore[reportUnknownMemberType]
 
 
@@ -265,11 +258,11 @@ class YearTickFormatter(ticker.Formatter):
     prints its value (``2019.2 ... 2019.7``), never a rounded year.
     """
 
-    def __init__(self, digits: Digits, suffix: str = "") -> None:
+    def __init__(self, digits: YearDigits, suffix: str = "") -> None:
         """Keep the settings this formatter or locator was made with."""
-        self.digits: Digits = digits
+        self.digits: YearDigits = digits
         self.suffix = suffix
-        self._four = digits == 4
+        self._four = digits.four(())
         self._decimals: int | None = None
 
     def set_locs(self, locs: list[float]) -> None:
@@ -279,7 +272,7 @@ class YearTickFormatter(ticker.Formatter):
         between = not all(_whole(v) for v in shown)
         self._decimals = fewest_exact_decimals(shown) if between else None
         years = [round(v) for v in shown if _whole(v)]
-        self._four = self.digits == 4 or repeat_two_digits(years)
+        self._four = self.digits.four(years)
 
     def format_ticks(self, values: list[float]) -> list[str]:
         """Every tick under one decision."""

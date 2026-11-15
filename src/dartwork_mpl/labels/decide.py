@@ -22,10 +22,12 @@ from .model import (
     Edge,
     Headroom,
     HeadroomFacts,
+    Higher,
     Ink,
     InkFacts,
     LabelText,
     Letters,
+    Lower,
     OwnInk,
     PanelsFacts,
     SeriesInk,
@@ -97,16 +99,16 @@ def headroom(facts: HeadroomFacts) -> Headroom:
     length = high - low
     if not length > 0:
         return Headroom(None)
-    tops = [
-        (r.anchor, r.need / length)
-        for r in facts.rooms
-        if r.toward > 0 and r.need < length
-    ]
-    downs = [
-        (r.anchor, r.need / length)
-        for r in facts.rooms
-        if r.toward < 0 and r.need < length
-    ]
+    tops: list[tuple[float, float]] = []
+    downs: list[tuple[float, float]] = []
+    for r in facts.rooms:
+        if not r.need < length:
+            continue
+        match r.toward:
+            case Higher():
+                tops.append((r.anchor, r.need / length))
+            case Lower():
+                downs.append((r.anchor, r.need / length))
     top = np.array([(high, 0.0), *tops]).reshape(-1, 2)
     bottom = np.array([(low, 0.0), *downs]).reshape(-1, 2)
     span = length

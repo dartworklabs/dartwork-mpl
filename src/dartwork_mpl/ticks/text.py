@@ -23,11 +23,11 @@ from .model import (
     ExactZero,
     NumberStyle,
     PerTick,
-    TickZero,
+    ScaleZero,
     Unit,
-    keeps_affixes,
 )
 
+BARE = BareZero()
 MAX_DECIMALS = 12  # a 1e-9 log tick needs nine
 _EXACT_ABS_TOL = 1e-6
 _EXACT_REL_TOL = 1e-14
@@ -129,7 +129,7 @@ def number_text(
     fixed: bool = False,
     prefix: str = "",
     suffix: str = "",
-    zero: TickZero = "bare",
+    zero: ScaleZero = BARE,
     unicode_minus: bool | None = None,
 ) -> str:
     """``value`` printed as an axis-wide tick prints it.
@@ -142,7 +142,11 @@ def number_text(
     number = format(abs(value), f",.{decimals}f")
     if float(number.replace(",", "")) == 0:
         digits = f"{0:.{decimals}f}" if fixed else "0"
-        return f"{prefix}{digits}{suffix}" if keeps_affixes(zero) else digits
+        match zero:
+            case AffixedZero():
+                return f"{prefix}{digits}{suffix}"
+            case BareZero():
+                return digits
     sign = minus(_unicode_minus(unicode_minus)) if value < 0 else ""
     return f"{sign}{prefix}{number}{suffix}"
 

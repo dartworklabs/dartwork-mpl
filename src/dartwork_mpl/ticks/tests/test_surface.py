@@ -18,7 +18,7 @@ from dartwork_mpl.ticks import (
     thin_dates,
     tick_scale_of,
 )
-from dartwork_mpl.ticks.model import TickScale
+from dartwork_mpl.ticks.model import AffixedZero, RightSide, TickScale
 
 MONTHS = np.arange("2019-01", "2025-01", dtype="datetime64[M]")
 
@@ -48,7 +48,7 @@ def test_a_twin_scale_gets_its_spine_once(figure):
     dm.simple_layout(figure)
     assert twin.spines["right"].get_visible()
     assert not ax.spines["right"].get_visible()
-    assert settled_twin_spines(twin) == {"right"} and drawn_like_twin(twin)
+    assert settled_twin_spines(twin) == {RightSide()} and drawn_like_twin(twin)
     twin.spines["right"].set_visible(False)  # hidden after a layout: kept
     dm.simple_layout(figure)
     assert not twin.spines["right"].get_visible()
@@ -141,7 +141,9 @@ def test_text_reads_like_the_ticks(figure):
     figure.canvas.draw()
     assert tick_scale_of(ax.yaxis, 3e9) == TickScale(1e9, "", "G")
     dm.format_axis_currency(ax, axis="x")
-    assert tick_scale_of(ax.xaxis, 1.0) == TickScale(1.0, "$", "", "affixed")
+    assert tick_scale_of(ax.xaxis, 1.0) == TickScale(
+        1.0, "$", "", AffixedZero()
+    )
     ax.xaxis.set_major_formatter(mticker.PercentFormatter(1))
     assert tick_scale_of(ax.xaxis, 0.5) == TickScale(0.01, "", "%")
 

@@ -133,7 +133,7 @@ class _ValueAxis:
         anchor = float(label.bar_axes.transData.transform(label.xy)[along])
         toward = label.outward
         lo, hi = (ext.y0, ext.y1) if along else (ext.x0, ext.x1)
-        need = ((hi if toward > 0 else lo) - anchor) * toward
+        need = (toward.reach(lo, hi) - anchor) * toward.sign
         need += OFFSET_PT * px_per_pt(label)
         if not (np.isfinite(anchor) and np.isfinite(need)) or need <= 0:
             return None
