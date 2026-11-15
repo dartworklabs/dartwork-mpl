@@ -21,6 +21,7 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
+from ..align import AlignCentre
 from ..edgecase import settle
 from ..geometry import canvas_renderer, same_position_axes
 from ..style import fs, fw
@@ -36,7 +37,6 @@ from .measure import (
     stands_up,
 )
 from .model import (
-    AlignCentre,
     BarOptions,
     Call,
     Higher,

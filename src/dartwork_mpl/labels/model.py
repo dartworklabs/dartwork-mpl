@@ -26,6 +26,8 @@ from typing import (
 
 import numpy as np
 
+from ..align import AlignCentre, AlignLeft, AlignRight, HAlign, HAlignName
+
 Rgba: TypeAlias = tuple[float, float, float, float]
 Colour: TypeAlias = str | Rgba
 """A colour as matplotlib takes it: a name or hex, or an RGBA tuple."""
@@ -33,7 +35,6 @@ Colour: TypeAlias = str | Rgba
 AnyColour: TypeAlias = str | tuple[float, float, float] | Rgba
 """A colour a caller passes: a name or hex, an RGB or an RGBA tuple."""
 
-HorizontalName: TypeAlias = Literal["left", "center", "right"]
 VerticalName: TypeAlias = Literal[
     "baseline", "bottom", "center", "center_baseline", "top"
 ]
@@ -60,12 +61,12 @@ class LetterStyle(TypedDict, total=False):
     style: FontStyleName
     fontstretch: float | str
     fontvariant: Literal["normal", "small-caps"]
-    horizontalalignment: HorizontalName
-    ha: HorizontalName
+    horizontalalignment: HAlignName
+    ha: HAlignName
     verticalalignment: VerticalName
     va: VerticalName
-    multialignment: HorizontalName
-    ma: HorizontalName
+    multialignment: HAlignName
+    ma: HAlignName
     rotation: float | Literal["vertical", "horizontal"] | None
     rotation_mode: Literal["default", "anchor"] | None
     linespacing: float | None
@@ -110,30 +111,6 @@ class AnnotateStyle(NoteStyle, total=False):
 
 
 # ------------------------------------------------------------ alignment
-@dataclass(frozen=True)
-class AlignLeft:
-    """Text starting at its anchor."""
-
-    mpl: ClassVar[Literal["left"]] = "left"
-
-
-@dataclass(frozen=True)
-class AlignCentre:
-    """Text centred on its anchor."""
-
-    mpl: ClassVar[Literal["center"]] = "center"
-
-
-@dataclass(frozen=True)
-class AlignRight:
-    """Text ending at its anchor."""
-
-    mpl: ClassVar[Literal["right"]] = "right"
-
-
-HAlign: TypeAlias = AlignLeft | AlignCentre | AlignRight
-
-
 @dataclass(frozen=True)
 class Bottom:
     """Text standing on its anchor."""

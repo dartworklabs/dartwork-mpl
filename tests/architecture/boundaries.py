@@ -54,6 +54,9 @@ ENTRY_POINTS = frozenset({"dartwork_mpl"})
 # Units holding business-agnostic mechanism. They import no slice.
 PLATFORM = frozenset(
     {
+        # Horizontal text alignment (labels and ticks align text to an
+        # anchor).
+        "dartwork_mpl.align",
         # The x/y axis and an axis label's side, as pure types (check,
         # labels, layout, ticks and geometry name them).
         "dartwork_mpl.axis",

@@ -22,6 +22,14 @@ import numpy.typing as npt
 from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 
+from ..align import (
+    AlignCentre,
+    AlignLeft,
+    AlignRight,
+    HAlign,
+    HAlignName,
+    parse_halign,
+)
 from ..axis import Letter, Letters, Which, X, Y, parse_axes, parse_which
 from ..geometry import axis_of, shared_axes
 from .apply import figure_ladder, prepare, remember_dates, thin_dates
@@ -39,16 +47,11 @@ from .measure import config_digits, drawn_like_twin, settled_twin_spines
 from .model import (
     SI,
     AffixedZero,
-    AlignCentre,
-    AlignLeft,
-    AlignRight,
     CurrencyPosition,
     DateLike,
     Digits,
     ExactZero,
     FollowFigure,
-    HAlign,
-    HAlignName,
     Ladder,
     LadderName,
     NumberStyle,
@@ -59,7 +62,6 @@ from .model import (
     myriad_ladder,
     parse_currency_position,
     parse_digits,
-    parse_halign,
     parse_ladder_name,
     unit_template,
     year_suffix,

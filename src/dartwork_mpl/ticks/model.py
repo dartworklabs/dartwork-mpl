@@ -134,45 +134,6 @@ MYRIAD_LOCALES = {
 LADDERS = {"si": SI, "myriad": MYRIAD, "finance": FINANCE}
 
 
-HAlignName: TypeAlias = Literal["left", "center", "right"]
-"""``rotate_tick_labels``' ``ha`` as a caller writes it."""
-
-
-@dataclass(frozen=True)
-class AlignLeft:
-    """Text starting at its anchor (``ha="left"``)."""
-
-    mpl: ClassVar[Literal["left"]] = "left"
-
-
-@dataclass(frozen=True)
-class AlignCentre:
-    """Text centred on its anchor (``ha="center"``)."""
-
-    mpl: ClassVar[Literal["center"]] = "center"
-
-
-@dataclass(frozen=True)
-class AlignRight:
-    """Text ending at its anchor (``ha="right"``)."""
-
-    mpl: ClassVar[Literal["right"]] = "right"
-
-
-HAlign: TypeAlias = AlignLeft | AlignCentre | AlignRight
-
-
-def parse_halign(value: object) -> HAlign:
-    """``ha``; ``ValueError`` otherwise."""
-    if value == "left":
-        return AlignLeft()
-    if value == "center":
-        return AlignCentre()
-    if value == "right":
-        return AlignRight()
-    raise ValueError(f"ha must be 'left', 'center' or 'right', got {value!r}")
-
-
 YearLocale: TypeAlias = Literal["ko", "ja", "zh", "en"]
 """The languages ``format_axis_year`` writes a year suffix in."""
 

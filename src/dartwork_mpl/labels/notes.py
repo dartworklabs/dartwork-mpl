@@ -12,6 +12,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
+from ..align import HAlign
 from ..style import fs, fw
 from . import decide
 from .measure import (
@@ -24,7 +25,6 @@ from .measure import (
 )
 from .model import (
     Corner,
-    HAlign,
     LinePlace,
     NoteStyle,
     Side,
