@@ -8,8 +8,8 @@ before it measures; a preset that registers fonts first), a module in
 
     src/dartwork_mpl/compose/<slice>.py    what <slice> needs from the others
 
-C1  A slice importing another slice. Today's imports are the baseline; the
-    list only shrinks, to nothing.
+C1  A slice importing another slice. None does: the baseline is empty, so
+    any such import is a new violator (``boundaries.py`` fails it too).
 C2  A compose module is named after the slice it serves: ``compose/layout.py``
     joins what ``layout`` needs. No other names, no sub-packages.
 C3  A compose module only joins. It may import slice and platform surfaces

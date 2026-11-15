@@ -22,15 +22,14 @@ survives unrelated edits):
                          or of a name its __all__ does not list
   entry point import     a non-entry module importing an entry point (the package
                          root reaches every slice)
-  undeclared dependency  a slice importing another slice's surface without an
-                         ALLOWED entry naming the business reason
+  slice imports slice    a slice importing another slice, its surface included
+                         (slices meet in compose/, an entry point)
   platform reaches slice a platform unit reaching a slice by any import path,
                          through other platform units included
   cycle                  units that reach each other, lazy and TYPE_CHECKING
                          imports and package initializers included
   decision import        a module listed in DECISIONS importing another slice
   unowned module         a production module no unit or entry point owns
-  unused allowance       an ALLOWED entry no import backs
   stale debt             a DEBT entry that no longer occurs (delete it)
 
 Violations listed in DEBT are known and pass; the list only shrinks. Run:
@@ -112,16 +111,13 @@ SLICES = frozenset(
     }
 )
 
-# (from slice, to slice) -> the business fact that requires the dependency.
-# A slice may import another slice's surface only with an entry here.
-ALLOWED: Mapping[tuple[str, str], str] = {}
-
 # Compatibility shims: public module path -> the unit that owns its contents.
 SHIMS: Mapping[str, str] = {}
 
 # Modules holding pure decisions: they import no slice, surfaces included.
-# The platform's vocabulary (geometry's axis variants) is shared by every
-# slice, so a decision may name it.
+# A decision may name the platform's vocabulary (axis, edge, length ...);
+# tests/architecture/test_pure_imports.py checks that doing so loads no
+# matplotlib.
 DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.check.decide": (
         "what is wrong with a figure is decided from its measured facts alone"
@@ -211,7 +207,6 @@ class Layout:
     entry_points: frozenset[str]
     platform: frozenset[str]
     slices: frozenset[str]
-    allowed: Mapping[tuple[str, str], str]
     decisions: Mapping[str, str]
     shims: Mapping[str, str] = field(default_factory=dict)
     pinned: Mapping[str, str] = field(default_factory=dict)
@@ -223,7 +218,7 @@ class Layout:
 
 
 REPOSITORY_LAYOUT = Layout(
-    ENTRY_POINTS, PLATFORM, SLICES, ALLOWED, DECISIONS, SHIMS, PINNED
+    ENTRY_POINTS, PLATFORM, SLICES, DECISIONS, SHIMS, PINNED
 )
 
 
@@ -389,7 +384,6 @@ def violations(
         return unit
 
     graph: dict[str, set[str]] = {}
-    used: set[tuple[str, str]] = set()
     for name, tree in trees.items():
         source_unit = owner(name, layout)
         source_node = node_of(name)
@@ -453,18 +447,10 @@ def violations(
                 errors.add(f"decision import: {name} -> {target_unit}")
             if source_unit in layout.platform:
                 continue
-            if (
-                source_unit in layout.slices
-                and target_unit in layout.slices
-                and is_surface
-            ):
-                pair = (source_unit, target_unit)
-                if pair in layout.allowed:
-                    used.add(pair)
-                else:
-                    errors.add(
-                        f"undeclared dependency: {source_unit} -> {target_unit}"
-                    )
+            if source_unit in layout.slices and target_unit in layout.slices:
+                errors.add(
+                    f"slice imports slice: {source_unit} -> {target_unit}"
+                )
     for platform in sorted(layout.platform):
         reached = {platform: (platform,)}
         pending = [platform]
@@ -481,11 +467,6 @@ def violations(
                     )
     errors.update(
         "cycle: " + ", ".join(component) for component in _cycles(graph)
-    )
-    errors.update(
-        f"unused allowance: {a} -> {b}"
-        for a, b in layout.allowed
-        if (a, b) not in used
     )
     return sorted(errors)
 

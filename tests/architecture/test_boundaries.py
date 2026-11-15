@@ -1,7 +1,7 @@
 """The package respects its slice boundaries (ADR 0005).
 
-``boundaries.py`` holds the rules and the table of slices, allowed
-dependencies and decision modules; this runs it over the real tree.
+``boundaries.py`` holds the rules and the table of entry points, platform
+units, slices and decision modules; this runs it over the real tree.
 """
 
 from pathlib import Path
