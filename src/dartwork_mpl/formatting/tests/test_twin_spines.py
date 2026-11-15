@@ -54,7 +54,7 @@ from matplotlib.figure import Figure
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-import dartwork_mpl.layout._simple_layout as dm_layout
+import dartwork_mpl.formatting as dm_formatting
 
 GOLDEN = Path(__file__).with_name("twin_spines_07_golden.json")
 X = np.arange(6)
@@ -88,7 +88,7 @@ def install_07(target: Any) -> None:
     target.setattr(Axes, "twinx", twinx)
     # No hasattr guard: if the step moves, this raises instead of leaving
     # the step on and quietly comparing 0.7.1 with itself.
-    target.setattr(dm_layout, "_show_twin_spines", lambda fig: None)
+    target.setattr(dm_formatting, "show_twin_spines", lambda fig: 0)
 
 
 # ------------------------------------------------------------ builders

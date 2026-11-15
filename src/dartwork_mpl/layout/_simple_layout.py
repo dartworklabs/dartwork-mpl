@@ -14,6 +14,7 @@ from matplotlib.gridspec import (
     SubplotSpec,
 )
 
+from .. import labels, legend, ticks
 from .._figure_geometry import get_renderer, holders_shown, root_position
 from ..size import Length
 from ._content_extent import _axes_content_extent_px
@@ -38,7 +39,6 @@ from ._margins import (
 )
 from ._orphan_tick_font import _adopt_axis_label_font_core
 from ._reservations import _figure_artist_reservations
-from ._settle import _settle_outside_legends
 from ._subfigure_frames import (
     held_grids,
     place_subfigure_title,
@@ -52,7 +52,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from matplotlib.axes import Axes
-    from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import SubFigure
 
     from ._fit_labels import Edges
@@ -264,7 +263,7 @@ def simple_layout(
     x scale on the top (the same with x and y swapped: the Axes
     ``ax.twiny()`` returns) gets its top spine. Line width and colour stay,
     and a spine you hide after a layout stays hidden. The rule is in the
-    docstring of ``dartwork_mpl.formatting._twin_spines``.
+    docstring of ``dartwork_mpl.formatting._twin_spines`` (run through :func:`dartwork_mpl.ticks.prepare`).
 
     On a ``twinx`` / ``twiny`` pair, a side whose series all draw one
     colour that no series on the other scale shares gets that colour on its
@@ -343,6 +342,7 @@ def simple_layout(
             format_ticks=format_ticks,
             verbose=verbose,
         )
+        labels.warn_hidden(fig, stacklevel=2)
         return
     # A grid named by ``gs`` in a SubFigure is fitted in that SubFigure's box.
     holder = _holder_of(fig, actual_gs)
@@ -395,10 +395,7 @@ def simple_layout(
     # are not number formats, so ``format_ticks=False`` keeps them. Their
     # order between themselves does not change the figure: the colours paint
     # a spine whether it shows or not.
-    if format_ticks:
-        _format_ticks(fig)
-    _show_twin_spines(fig)
-    _color_twins(fig)
+    ticks.prepare(fig, numbers=format_ticks)
     # The root's figure legends past its labels, then the titles the library
     # places above this grid, parents first, each SubFigure's figure legend
     # past its title.
@@ -422,21 +419,19 @@ def simple_layout(
     )
     # The bar labels were settled in each step, so they are reported even
     # when nothing could be measured.
-    _report_hidden_bar_labels(fig)
+    labels.warn_hidden(fig, stacklevel=2)
 
 
 def _place_title_and_legends(fig: Figure, holder: Figure | SubFigure) -> None:
     """``holder``'s title under the text above it, then its figure legends past it.
 
     On one edge the title comes first, then the legend ``dm.figure_legend``
-    placed there (:func:`dartwork_mpl.annotation.settle_figure_legends`),
+    placed there (:func:`dartwork_mpl.legend.place_figure_legends`),
     then the panels, which the reservations keep clear of both. The root
     figure's own title stays where it is; its legends move past it.
     """
-    from ..annotation import settle_figure_legends
-
     place_subfigure_title(fig, holder)
-    settle_figure_legends(fig, holder)
+    legend.place_figure_legends(fig, holder)
 
 
 def _fit_holders(
@@ -471,10 +466,7 @@ def _fit_holders(
     ]
     restore_fitted(fig, [ax for scope in scopes for ax in scope])
     starts = [grid_edges(grid) for _holder, grid in grids]
-    if format_ticks:
-        _format_ticks(fig)
-    _show_twin_spines(fig)
-    _color_twins(fig)
+    ticks.prepare(fig, numbers=format_ticks)
     # The root's figure legends past its labels, then every shown
     # SubFigure's title, parents before children, one that holds only nested
     # SubFigures too, each with its figure legends past it; then the grids.
@@ -500,7 +492,6 @@ def _fit_holders(
             verbose=verbose,
             holder=sub,
         )
-    _report_hidden_bar_labels(fig)
 
 
 def _two_state_cycle(answers: Sequence[_GridEdges]) -> bool:
@@ -704,78 +695,14 @@ def _fit_margins(
         # thin them at the fitted width, then fit once more if they moved.
         if step is None or not format_ticks:
             break
-        from ..formatting import thin_crowded_date_ticks
-
-        if not thin_crowded_date_ticks(fig):
+        if not ticks.thin_dates(fig):
             break
     return step, last
-
-
-def _report_hidden_bar_labels(fig: Figure) -> None:
-    """Warn about bar labels the fitted size left no room for.
-
-    Once, after the fit: the warning speaks of the size laid out, not of a
-    step on the way (:func:`~..annotation.warn_hidden_bar_labels`).
-    """
-    from ..annotation import warn_hidden_bar_labels
-
-    # warn_hidden_bar_labels <- this <- simple_layout <- the caller.
-    warn_hidden_bar_labels(fig, stacklevel=3)
-
-
-def _format_ticks(fig: Figure) -> None:
-    """The library's tick numbers and dates on axes nobody formatted."""
-    from ..formatting import apply_default_tick_format
-
-    apply_default_tick_format(fig)
-
-
-def _show_twin_spines(fig: Figure) -> None:
-    """The right / top spine of each twin scale drawn there."""
-    from ..formatting import show_twin_spines
-
-    show_twin_spines(fig)
-
-
-def _color_twins(fig: Figure) -> None:
-    """Series colours on twin pairs, unless ``dm.config.twin_colors`` is off."""
-    from ..formatting import apply_twin_colors
-
-    apply_twin_colors(fig)
-
-
-def _settle_bar_labels(fig: Figure, renderer: RendererBase) -> bool:
-    """Crowding and headroom of ``dm.label_bars`` labels at the size now.
-
-    Returns whether a view limit moved: the caller redraws before measuring,
-    since tick labels follow the limits only at draw (the bar labels
-    themselves are measured afresh).
-    """
-    from ..annotation import settle_bar_labels
-
-    before = [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
-    if not settle_bar_labels(fig, renderer):
-        return False
-    return before != [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
-
-
-def _settle_panel_labels(fig: Figure, renderer: RendererBase) -> bool:
-    """``dm.label_axes``'s automatic labels from the panels as drawn now."""
-    from ..annotation import settle_panel_labels
-
-    return settle_panel_labels(fig, renderer)
 
 
 def _place_grid(fig: Figure, gs: GridSpec) -> None:
     """Move the Axes of ``gs`` to where its spacing says now."""
     put_back_edges(fig, gs, grid_edges(gs))
-
-
-def _clear_bar_labels(fig: Figure, renderer: RendererBase) -> None:
-    """Hide the bar labels a legend or other text covers, where they are now."""
-    from ..annotation import clear_bar_labels
-
-    clear_bar_labels(fig, renderer)
 
 
 # Most rounds of re-anchoring and title lifting per layout step. Matplotlib
@@ -812,21 +739,23 @@ def _solve_layout_step(
        (so the measurement reflects the post-restyle ticks).
     3. Settles ``dm.label_bars`` labels at the current Axes size
        (crowding, headroom on autoscaled value axes;
-       :func:`_settle_bar_labels`), redrawing when a limit moved. Each
+       :func:`dartwork_mpl.labels.settle_bars`), redrawing when a limit moved. Each
        step starts again from matplotlib's autoscaled limits, so the
        headroom follows the final size without compounding.
     4. Places ``dm.place_legend``'s legends on ``scope`` again at the size
        they have now, re-anchors outside legends (past the bar values
        beyond that limit they would cover too) and lifts titles over
-       legends above their axes (:func:`_settle_outside_legends`),
+       legends above their axes (:func:`dartwork_mpl.legend.settle`), and
+       spaces ``dm.label_line_ends`` names again
+       (:func:`dartwork_mpl.labels.space_line_ends`),
        redrawing after a move.
     5. Places ``dm.label_axes``'s automatic labels from the panels as
-       drawn now (:func:`_settle_panel_labels`), then, with a ``gutter``,
+       drawn now (:func:`dartwork_mpl.labels.settle_panels`), then, with a ``gutter``,
        sets the spacing of ``grid`` so the content of facing panels is
        that far apart (:func:`~._gutter.fit_gutter`), redrawing after a
        move.
     6. Hides the bar labels a legend or other text covers where those are
-       drawn now (:func:`_clear_bar_labels`).
+       drawn now (:func:`dartwork_mpl.labels.hide_covered`).
     7. Measures the content overhang of every Axes in ``scope`` and the
        room figure-level artists reserve.
     8. Hands those measurements to the pure :func:`_solve_edges`.
@@ -841,15 +770,16 @@ def _solve_layout_step(
     if adopt_orphan_tick_font:
         _adopt_axis_label_font_core(fig)
     renderer = get_renderer(fig)
-    if _settle_bar_labels(fig, renderer):
+    if labels.settle_bars(fig, renderer):
         fig.canvas.draw()
         renderer = get_renderer(fig)
     for _round in range(_SETTLE_ROUNDS):
-        if not _settle_outside_legends(fig, renderer, scope):
+        moved = legend.settle(fig, renderer, scope)
+        if not labels.space_line_ends(fig, renderer) and not moved:
             break
         fig.canvas.draw()
         renderer = get_renderer(fig)
-    if _settle_panel_labels(fig, renderer):
+    if labels.settle_panels(fig, renderer):
         fig.canvas.draw()
         renderer = get_renderer(fig)
     spaced = 0.0
@@ -859,10 +789,10 @@ def _solve_layout_step(
             _place_grid(fig, grid)
             fig.canvas.draw()
             renderer = get_renderer(fig)
-            if _settle_panel_labels(fig, renderer):
+            if labels.settle_panels(fig, renderer):
                 fig.canvas.draw()
                 renderer = get_renderer(fig)
-    _clear_bar_labels(fig, renderer)
+    labels.hide_covered(fig, renderer)
     fbox = fig.bbox if holder is None else holder.bbox
     fw_px, fh_px = fbox.width, fbox.height
     # The canvas starts at 0; a SubFigure's box where it sits on it.

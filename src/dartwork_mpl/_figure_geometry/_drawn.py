@@ -51,12 +51,15 @@ if TYPE_CHECKING:
     from matplotlib.text import Text
     from matplotlib.typing import ColorType
 
+# Owners: check, labels, legend.
 #: The region of an artist drawn without a clip: everywhere.
 UNCLIPPED = Bbox.from_extents(-np.inf, -np.inf, np.inf, np.inf)
+# Owners: check, labels, legend (inside clip_region only).
 #: The region of an artist its clip lets draw nowhere: meets nothing.
 NOWHERE = Bbox.from_extents(0.0, 0.0, 0.0, 0.0)
 
 
+# Owners: check.
 class DrawnOutline(NamedTuple):
     """One item a collection draws ink with: its path in display px, the
     half width its own edge is stroked at (0 when it draws no edge) and its
@@ -67,6 +70,7 @@ class DrawnOutline(NamedTuple):
     item: int = 0
 
 
+# Owners: check, legend (inside drawn_collection_outlines only).
 def drawn_collection_paths(coll: Any) -> list[tuple[int, Path]]:
     """Each item's path of ``coll`` where matplotlib draws it, in display px.
 
@@ -104,6 +108,7 @@ def drawn_collection_paths(coll: Any) -> list[tuple[int, Path]]:
     return drawn
 
 
+# Owners: check, legend.
 def drawn_collection_outlines(
     coll: Any, renderer: RendererBase
 ) -> list[DrawnOutline]:
@@ -148,6 +153,7 @@ def drawn_collection_outlines(
     return found
 
 
+# Owners: check.
 def artist_shown(artist: Artist) -> bool:
     """Visible and not at an artist alpha of 0 (one per item: any above 0)."""
     alpha = artist.get_alpha()
@@ -165,6 +171,7 @@ def _intersect(box: Bbox, frame: Bbox) -> Bbox | None:
     return Bbox.from_extents(x0, y0, x1, y1)
 
 
+# Owners: check, labels, legend.
 def clip_region(artist: Artist) -> Bbox:
     """Where ``artist``'s clip lets it draw, in display px.
 
@@ -188,6 +195,7 @@ def clip_region(artist: Artist) -> Bbox:
     return region
 
 
+# Owners: check, legend.
 def clip_path_px(artist: Artist) -> Path | None:
     """``artist``'s clip path in display px, when ``clip_on`` uses one."""
     clip_path = artist.get_clip_path()
@@ -196,6 +204,7 @@ def clip_path_px(artist: Artist) -> Path | None:
     return clip_path.get_fully_transformed_path()
 
 
+# Owners: check.
 def within_clip_path(box: Bbox | None, clip_path: Path | None) -> Bbox | None:
     """``box`` when its clip path (as filled) lets any of it through."""
     if box is None or clip_path is None:
@@ -203,6 +212,7 @@ def within_clip_path(box: Bbox | None, clip_path: Path | None) -> Bbox | None:
     return box if clip_path.intersects_bbox(box, filled=True) else None
 
 
+# Owners: check, legend.
 def drawn_ink_meets(
     path: Path,
     half: float,
@@ -239,6 +249,7 @@ def _alpha(color: ColorType, alpha: float | None = None) -> float:
     return float(to_rgba(color, alpha)[3])
 
 
+# Owners: check, legend.
 def line_draws_stroke(line: Line2D) -> bool:
     """Whether ``line`` strokes its path: shown, with a line style, a width and a colour with alpha."""
     return bool(
@@ -249,6 +260,7 @@ def line_draws_stroke(line: Line2D) -> bool:
     )
 
 
+# Owners: check, legend.
 def line_draws_markers(line: Line2D) -> bool:
     """Whether ``line`` draws markers: shown, a marker of some size with a face or an edge.
 
@@ -283,6 +295,7 @@ def _marker_edge_inks(line: Line2D) -> bool:
     )
 
 
+# Owners: check.
 def patch_inks(patch: Patch) -> bool:
     """A shown patch with a face, an edge (a width, a line style, a colour) or a hatch with a colour.
 
@@ -309,6 +322,7 @@ def _edge_inks(patch: Patch) -> bool:
     )
 
 
+# Owners: check.
 def text_inks(text: Text) -> bool:
     """Whether ``text`` draws: drawn, a non-blank string in a colour with alpha.
 
@@ -323,6 +337,7 @@ def text_inks(text: Text) -> bool:
 
 
 # ------------------------------------------------------- markers as discs
+# Owners: check, legend.
 def marker_radius_pt(line: Line2D) -> float:
     """How far a line's marker reaches from its centre, in points.
 
@@ -338,6 +353,7 @@ def marker_radius_pt(line: Line2D) -> float:
 _EMPTY_DISCS = (np.empty((0, 2)), np.empty(0))
 
 
+# Owners: check, legend.
 def drawn_scatter_discs(
     coll: PathCollection, px_per_pt: float
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -377,6 +393,7 @@ def drawn_scatter_discs(
     return xy[keep], radius[keep]
 
 
+# Owners: check, legend.
 def discs_meet(
     xy: np.ndarray,
     r: np.ndarray,
@@ -405,6 +422,7 @@ def _cut_to_clip(box: Bbox, artist: Artist) -> Bbox | None:
     return within_clip_path(cut, clip_path_px(artist))
 
 
+# Owners: legend.
 def drawn_patch_box(patch: Patch, renderer: RendererBase) -> Bbox | None:
     """Where ``patch`` draws ink, display px; ``None`` when nowhere.
 
@@ -424,6 +442,7 @@ def drawn_patch_box(patch: Patch, renderer: RendererBase) -> Bbox | None:
     return _cut_to_clip(box, patch)
 
 
+# Owners: legend.
 def drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
     """Where an Axes text draws ink, display px; ``None`` when nowhere.
 
