@@ -10,15 +10,24 @@ value axes grow just enough for the labels beyond the bar ends.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..geometry import same_position_axes, shared_axes
+from ..geometry import Which, X, Y, axis_of, same_position_axes, shared_axes
 from . import decide
 from .bars import OFFSET_PT, BarFamily, BarLabel, families_of, format_ticks_now
 from .measure import bar_centres, px_per_pt
-from .model import CrowdFacts, HeadroomFacts, Pixels, Room, Span, Spot
+from .model import (
+    CrowdFacts,
+    HeadroomFacts,
+    Pixels,
+    Room,
+    Rotate,
+    Skip,
+    Span,
+    Spot,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -72,9 +81,12 @@ def _crowd(
         shown = [t for t in labels if t.get_visible()]
         if decide.crowded(CrowdFacts(_spots(shown, renderer), centres, gap)):
             crowded = True
-            if first.vertical and family.options.crowded == "rotate":
-                for t in labels:
-                    t.set_rotation(90.0)
+            match family.options.crowded:
+                case Rotate() if first.vertical:
+                    for t in labels:
+                        t.set_rotation(90.0)
+                case Rotate() | Skip():
+                    pass
     if not crowded:
         return
     shown = [t for _f, labels in calls for t in labels if t.get_visible()]
@@ -90,27 +102,24 @@ class _ValueAxis:
     """The labels whose bars share one value axis's limits."""
 
     axes: Axes
-    name: Literal["x", "y"]
+    which: Which
     labels: list[BarLabel] = field(default_factory=list)
 
     @property
     def autoscaled(self) -> bool:
-        on = (
-            self.axes.get_autoscaley_on
-            if self.name == "y"
-            else self.axes.get_autoscalex_on
-        )
-        return bool(on())
+        match self.which:
+            case X():
+                return bool(self.axes.get_autoscalex_on())
+            case Y():
+                return bool(self.axes.get_autoscaley_on())
 
     def reset(self) -> None:
         """Matplotlib's own limits for the data, and the ticks they give."""
         if self.autoscaled:
             self.axes.autoscale_view(
-                scalex=self.name == "x", scaley=self.name == "y"
+                scalex=self.which.horizontal, scaley=not self.which.horizontal
             )
-        format_ticks_now(
-            self.axes.yaxis if self.name == "y" else self.axes.xaxis
-        )
+        format_ticks_now(axis_of(self.axes, self.which))
 
     def _room(
         self, label: BarLabel, along: int, renderer: RendererBase
@@ -136,7 +145,7 @@ class _ValueAxis:
         one's (``sharey`` panels show the view at other sizes)."""
         if not self.autoscaled:
             return
-        along = 1 if self.name == "y" else 0
+        along = self.which.column
         box = self.axes.get_window_extent(renderer)
         low, high = (box.y0, box.y1) if along else (box.x0, box.x1)
         rooms: list[Room] = []
@@ -173,13 +182,14 @@ class _ValueAxis:
 
 
 def _value_axes(families: list[BarFamily]) -> list[_ValueAxis]:
-    groups: dict[tuple[str, frozenset[int]], _ValueAxis] = {}
+    groups: dict[tuple[Which, frozenset[int]], _ValueAxis] = {}
     for family in families:
         for label in family.texts:
-            name: Literal["x", "y"] = "y" if label.vertical else "x"
-            key = (name, frozenset(map(id, shared_axes(label.bar_axes, name))))
+            which: Which = Y() if label.vertical else X()
+            shared = shared_axes(label.bar_axes, which.letter)
+            key = (which, frozenset(map(id, shared)))
             groups.setdefault(
-                key, _ValueAxis(label.bar_axes, name)
+                key, _ValueAxis(label.bar_axes, which)
             ).labels.append(label)
     return list(groups.values())
 

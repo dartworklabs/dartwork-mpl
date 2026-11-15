@@ -15,7 +15,7 @@ from typing import TypeAlias
 import numpy as np
 import numpy.typing as npt
 
-from .model import Kind, Total
+from .model import Kind, StackTotal, Total
 
 FloatArray: TypeAlias = npt.NDArray[np.float64]
 # Relative slack for "the same position" and "starts at the running end":
@@ -168,7 +168,7 @@ class BarsFacts:
         net = math.fsum(v for _, v, _ in ends)
         side = [e for e in ends if (e[1] >= 0) == (net >= 0)]
         outer = max(side, key=lambda e: e[2] if net >= 0 else -e[2])
-        return Planned(outer[0], index, "total", net, stack)
+        return Planned(outer[0], index, StackTotal(), net, stack)
 
 
 @dataclass(frozen=True)

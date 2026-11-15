@@ -20,12 +20,16 @@ from . import decide
 from .measure import in_view, tick_values
 from .model import (
     PLAIN,
+    AffixedZero,
     AxisText,
+    BareZero,
     Digits,
+    ExactZero,
     NumberStyle,
     TextFacts,
     TickScale,
     TickValues,
+    TickZero,
     Unit,
 )
 from .text import fewest_exact_decimals, number_text, per_tick_text
@@ -128,7 +132,12 @@ class AxisUnitFormatter(ticker.Formatter):
         if rules is not None:
             if style.unit is None:
                 return TickScale()
-            zero = "affixed" if rules.zero == "affixed" else "bare"
+            zero: TickZero
+            match rules.zero:
+                case AffixedZero():
+                    zero = "affixed"
+                case BareZero() | ExactZero():
+                    zero = "bare"
             return TickScale(
                 style.unit.factor, style.currency, style.unit.label, zero
             )
@@ -220,19 +229,23 @@ class WholeYearLocator(ticker.MaxNLocator):
     layout's thinning keeps; :meth:`thin` is the layout's own.
     """
 
-    requested: frozenset[str] = frozenset()
+    asked_nbins: bool = False
 
     def __init__(self) -> None:
         """Keep the settings this formatter or locator was made with."""
         super().__init__(  # pyright: ignore[reportUnknownMemberType]
             nbins="auto", steps=[1, 2, 5, 10], integer=True
         )
-        self.requested = frozenset()
+        self.asked_nbins = False
 
-    def set_params(self, **kwargs: Any) -> None:
-        """Set MaxNLocator parameters; each one set here is a request."""
+    def set_params(
+        self, *, nbins: int | str | None = None, **kwargs: Any
+    ) -> None:
+        """Set MaxNLocator parameters; an ``nbins`` set here is a request."""
+        if nbins is not None:
+            kwargs["nbins"] = nbins
+            self.asked_nbins = True
         super().set_params(**kwargs)  # pyright: ignore[reportUnknownMemberType]
-        self.requested = self.requested | frozenset(kwargs)
 
     @property
     def nbins(self) -> int | str:

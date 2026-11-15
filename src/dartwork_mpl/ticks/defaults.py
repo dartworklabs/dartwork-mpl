@@ -10,7 +10,8 @@ from __future__ import annotations
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, fields
-from typing import Literal
+
+from .model import Digits, NumberLadder
 
 __all__ = ["Config", "config"]
 
@@ -46,8 +47,8 @@ class Config:
         (``with dm.config.override(number_ladder="si"):``, or assign it).
     """
 
-    tick_years: Literal[2, 4] = 2
-    number_ladder: Literal["auto", "si", "myriad"] = "auto"
+    tick_years: Digits = 2
+    number_ladder: NumberLadder = "auto"
 
     @contextmanager
     def override(self, **overrides: object) -> Generator[None]:

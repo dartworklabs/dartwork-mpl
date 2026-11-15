@@ -25,11 +25,14 @@ from ..color import (
 )
 from ..geometry import (
     BBOX_ERRORS,
+    X,
     axes_titles,
+    bars_along,
     get_renderer,
+    is_rectilinear,
     same_position_axes,
 )
-from .model import Ink, Panel, Title, Try
+from .model import Ink, Panel, StackTotal, Title, Try, left_side, on_baseline
 from .stacks import BarRun
 
 if TYPE_CHECKING:
@@ -84,7 +87,7 @@ def bar_run(container: BarContainer) -> BarRun:
         )
         rows.append(
             (x + w / 2, y, h)
-            if container.orientation == "vertical"
+            if bars_along(container.orientation) == X()
             else (y + h / 2, x, w)
         )
     table = np.asarray(rows, dtype=float).reshape(-1, 3)
@@ -164,7 +167,7 @@ def readable_ink(patch: Rectangle, bar_axes: Axes) -> Ink:
 
 def series_ink(patch: Rectangle, bar_axes: Axes, kind: Kind) -> Ink:
     """The bar's colour as drawn, darkened (or lightened) to 4.5:1 text."""
-    if kind == "total":
+    if isinstance(kind, StackTotal):
         return Ink()
     background = _background(bar_axes)
     face = mcolors.to_rgba(patch.get_facecolor())
@@ -289,7 +292,7 @@ def _cell(ax: Axes) -> tuple[tuple[int, int], tuple[int, int]] | None:
 def _ylabel_box(ax: Axes, renderer: RendererBase) -> Bbox | None:
     """The y-axis name of ``ax`` when it is drawn on the left."""
     label = ax.yaxis.label
-    if not _shown(label) or str(ax.yaxis.get_label_position()) != "left":
+    if not _shown(label) or not left_side(str(ax.yaxis.get_label_position())):
         return None
     try:
         return label.get_window_extent(renderer)
@@ -312,7 +315,7 @@ def _ytick_box(ax: Axes, renderer: RendererBase) -> Bbox | None:
 
 def baseline_px(text: Text, renderer: RendererBase) -> float:
     """The baseline of ``text`` in display pixels."""
-    if text.get_verticalalignment() == "baseline":
+    if on_baseline(text.get_verticalalignment()):
         return float(text.get_transform().transform(text.get_position())[1])
     probe = Text(
         0,
@@ -330,7 +333,7 @@ def baseline_px(text: Text, renderer: RendererBase) -> float:
 def _guess_ylabel_x0(ax: Axes, renderer: RendererBase) -> float:
     """Where the outer edge of a y-axis name of ``ax`` would be."""
     x0 = float(ax.transAxes.transform((0.0, 1.0))[0])
-    if ax.name != "rectilinear":
+    if not is_rectilinear(ax):
         return x0
     ticks = _ytick_box(ax, renderer)
     inner = min(x0, ticks.x0) if ticks is not None else x0
@@ -344,7 +347,7 @@ def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
     """What ``ax`` draws around its top-left corner, for its ``letter``."""
     corner = tuple(map(float, ax.transAxes.transform((0.0, 1.0))))
     box = letter.get_window_extent(renderer)
-    ylabel = _ylabel_box(ax, renderer) if ax.name == "rectilinear" else None
+    ylabel = _ylabel_box(ax, renderer) if is_rectilinear(ax) else None
     ticks = _ytick_box(ax, renderer)
     titles = tuple(
         Title(baseline_px(t, renderer))

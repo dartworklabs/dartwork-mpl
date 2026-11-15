@@ -13,31 +13,38 @@ texts someone fixed, twin spines, log axes, crowded dates) are in
 
 from __future__ import annotations
 
+from typing import assert_never
+
 from .model import (
-    MYRIAD,
     PLAIN,
     SI,
+    Asked,
     AxesFacts,
     AxesPlan,
     AxisFacts,
     AxisPlan,
     AxisText,
+    ByFigure,
     Cost,
     Crowding,
+    DateAxis,
     Decimals,
+    DefaultUnit,
     Digits,
-    Kind,
+    FixedUnit,
     Ladder,
-    LadderChoice,
     Language,
     Leave,
+    MaxUnit,
+    NumberAxis,
     Numbers,
+    OtherAxis,
     PeriodDates,
-    Rule,
     TextFacts,
     Thinning,
     TickValues,
     Unit,
+    WholeUnit,
 )
 from .text import fewest_exact_decimals, number_text
 
@@ -49,8 +56,14 @@ YEAR_LIKE = (1_000.0, 2_999.0)  # x ticks all here read 2024, not 2,024
 
 
 def ladder(language: Language) -> Ladder:
-    """The ladder asked for: myriad when asked by name, else SI."""
-    return MYRIAD if language.asked is LadderChoice.MYRIAD else SI
+    """The ladder asked by name; one following the figure starts from SI."""
+    match language:
+        case Asked(ladder=asked):
+            return asked
+        case ByFigure():
+            return SI
+        case _:
+            assert_never(language)
 
 
 def fewest_decimals(ticks: TickValues, unit: Unit) -> Decimals:
@@ -89,17 +102,22 @@ def _cost(facts: TextFacts, unit: Unit) -> Cost:
 def axis_unit(facts: TextFacts) -> Unit:
     """The one unit the axis prints in, by the style's rule."""
     style, ticks = facts.style, facts.ticks
-    if style.rule is Rule.FIXED and style.unit is not None:
-        return style.unit
-    if style.rule is Rule.WHOLE:
-        return min(style.ladder.rungs, key=lambda rung: _cost(facts, rung))
-    unit = max_unit(ticks, style.ladder)
-    if style.rule is Rule.DEFAULT:
-        top = max(abs(v) for v in ticks.values)
-        crowded = fewest_decimals(ticks, unit) > MOST_UNIT_DECIMALS
-        if top < UNIT_FROM * (1 - TOLERANCE) or crowded:
-            return PLAIN
-    return unit
+    match style.rule:
+        case FixedUnit(unit=unit):
+            return unit
+        case WholeUnit():
+            return min(style.ladder.rungs, key=lambda rung: _cost(facts, rung))
+        case MaxUnit():
+            return max_unit(ticks, style.ladder)
+        case DefaultUnit():
+            unit = max_unit(ticks, style.ladder)
+            top = max(abs(v) for v in ticks.values)
+            crowded = fewest_decimals(ticks, unit) > MOST_UNIT_DECIMALS
+            if top < UNIT_FROM * (1 - TOLERANCE) or crowded:
+                return PLAIN
+            return unit
+        case _:
+            assert_never(style.rule)
 
 
 def axis_text(facts: TextFacts) -> AxisText:
@@ -127,11 +145,15 @@ def axis_plan(facts: AxisFacts, digits: Digits) -> AxisPlan:
     """The library's format for one axis nobody formatted."""
     if not facts.own_formatter:
         return Leave()
-    if facts.kind is Kind.DATES:
-        return PeriodDates(digits)
-    if facts.kind is Kind.NUMBERS and reaches_thousands(facts):
-        return Numbers()
-    return Leave()
+    match facts.kind:
+        case DateAxis():
+            return PeriodDates(digits)
+        case NumberAxis():
+            return Numbers() if reaches_thousands(facts) else Leave()
+        case OtherAxis():
+            return Leave()
+        case _:
+            assert_never(facts.kind)
 
 
 def axes_plan(facts: AxesFacts) -> AxesPlan:

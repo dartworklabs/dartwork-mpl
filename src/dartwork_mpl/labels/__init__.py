@@ -3,7 +3,8 @@
 Public: :func:`label_bars`, :func:`annotate_value`, :func:`annotate_corner`,
 :func:`label_hline`, :func:`label_axes`, :func:`label_line_ends`,
 :func:`add_note`. The layout's hooks (:func:`settle_bars`,
-:func:`space_line_ends`, :func:`settle_panels`, :func:`warn_hidden`) settle them at the size ``dm.simple_layout`` fits.
+:func:`space_line_ends`, :func:`settle_panels`, :func:`warn_hidden`) settle them at the size ``dm.simple_layout`` fits;
+``check`` reads the placed letters from ``geometry.panel_letters``.
 """
 
 from __future__ import annotations

@@ -10,7 +10,7 @@ from matplotlib.axes._secondary_axes import SecondaryAxis
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
-from ..geometry import PANEL_LABELS_ATTR, axes_titles, draws_axis, holders_shown
+from ..geometry import axes_titles, draws_axis, holders_shown, panel_letters
 from .model import spatial
 
 if TYPE_CHECKING:
@@ -31,15 +31,10 @@ def drawn_axes(fig: Figure) -> list[tuple[int, Axes]]:
 def panel_labels(fig: Figure | SubFigure) -> list[tuple[Axes, Text]]:
     """The letters ``dm.label_axes`` placed on ``fig``, each with its panel.
 
-    Only the automatic ones (``x="auto"``), which the figure keeps in
-    groups; a letter at a position the caller gave is an ordinary text.
+    Only the automatic ones (``x="auto"``); a letter at a position the
+    caller gave is an ordinary text.
     """
-    root = fig.get_figure(root=True)
-    return [
-        (ax, text)
-        for group in getattr(root, PANEL_LABELS_ATTR, [])
-        for ax, text in group.members
-    ]
+    return [(ax, text) for ax, text in panel_letters(fig)]
 
 
 def reads_as_axes(child: object) -> TypeGuard[Axes]:

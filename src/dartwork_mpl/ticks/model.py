@@ -10,9 +10,8 @@ per axis and the spines to show). Tick text is decided at draw time from
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Literal, NewType
+from dataclasses import dataclass, field, replace
+from typing import Literal, NewType, TypeAlias
 
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
@@ -69,31 +68,88 @@ MYRIAD_LOCALES = {
 LADDERS = {"si": SI, "myriad": MYRIAD, "finance": FINANCE}
 
 
-class LadderChoice(Enum):
-    """``dm.config.number_ladder``: follow the figure's language, or one ladder."""
+HAlign: TypeAlias = Literal["left", "center", "right"]
+"""A text's horizontal alignment, as matplotlib names it."""
 
-    AUTO = "auto"
-    SI = "si"
-    MYRIAD = "myriad"
+YearLocale: TypeAlias = Literal["ko", "ja", "zh", "en"]
+"""The languages ``format_axis_year`` writes a year suffix in."""
 
-    @classmethod
-    def parse(cls, value: object) -> LadderChoice:
-        """The choice ``value`` names; ``ValueError`` naming the config field."""
-        for choice in cls:
-            if choice.value == value:
-                return choice
-        raise ValueError(
-            "config.number_ladder must be 'auto', 'si' or 'myriad', "
-            f"got {value!r}"
-        )
+CurrencyPosition: TypeAlias = Literal["prefix", "suffix"]
+"""Where ``format_axis_currency`` writes the symbol."""
+
+LadderName: TypeAlias = Literal["auto", "myriad", "finance", "si"]
+"""``dm.axis_unit``'s ``ladder``."""
+
+NumberLadder: TypeAlias = Literal["auto", "si", "myriad"]
+"""``dm.config.number_ladder``."""
 
 
 @dataclass(frozen=True)
-class Language:
-    """What picks the large-number ladder: the asked one and the figure's text."""
+class FollowFigure:
+    """``"auto"``: the ladder follows the figure's language."""
 
-    asked: LadderChoice
+
+LadderChoice: TypeAlias = FollowFigure | Ladder
+"""A ladder asked by name, or the one the figure's language picks."""
+
+
+def parse_number_ladder(value: object) -> LadderChoice:
+    """``config.number_ladder``; ``ValueError`` naming the config field."""
+    if value == "auto":
+        return FollowFigure()
+    if value == "si":
+        return SI
+    if value == "myriad":
+        return MYRIAD
+    raise ValueError(
+        f"config.number_ladder must be 'auto', 'si' or 'myriad', got {value!r}"
+    )
+
+
+def parse_ladder_name(value: object) -> LadderChoice:
+    """``dm.axis_unit``'s ``ladder``; ``ValueError`` otherwise."""
+    if value == "auto":
+        return FollowFigure()
+    if isinstance(value, str) and value in LADDERS:
+        return LADDERS[value]
+    raise ValueError(
+        f"ladder must be 'auto', 'myriad', 'finance' or 'si', got {value!r}"
+    )
+
+
+@dataclass(frozen=True)
+class ByFigure:
+    """``"auto"``: the ladder follows the figure; ``korean`` its text is."""
+
     korean: bool
+
+
+@dataclass(frozen=True)
+class Asked:
+    """A ladder asked by name, whatever the figure's language."""
+
+    ladder: Ladder
+
+
+Language: TypeAlias = ByFigure | Asked
+"""What picks the large-number ladder."""
+
+
+def prefixed(position: CurrencyPosition) -> bool:
+    """Whether the currency symbol goes before the number."""
+    return position == "prefix"
+
+
+def unit_template(label: str) -> str:
+    """An axis label with ``{unit}`` marking where the unit goes."""
+    if "{unit}" in label:
+        return label
+    return f"{label} ({{unit}})" if label.strip() else "({unit})"
+
+
+def linear_scale(name: str) -> bool:
+    """Whether matplotlib's scale name is the linear scale."""
+    return name == "linear"
 
 
 def parse_digits(value: object, what: str = "years") -> Digits:
@@ -108,35 +164,73 @@ def parse_digits(value: object, what: str = "years") -> Digits:
 # -- tick text ---------------------------------------------------------------
 
 
-class Rule(Enum):
-    """How an axis picks its unit from a ladder.
+@dataclass(frozen=True)
+class MaxUnit:
+    """The unit of the largest visible ``|tick|``."""
 
-    ``MAX``: the unit of the largest visible ``|tick|``. ``WHOLE``: a unit in
-    which every tick is whole, of those the one with the shortest longest
-    label. ``FIXED``: always the one ladder label asked. ``DEFAULT``: the
-    library's numbers on an axis nobody formatted: plain below one million,
-    the largest tick's unit from there unless that needs over two decimals.
-    """
 
-    MAX = "max"
-    WHOLE = "whole"
-    FIXED = "fixed"
-    DEFAULT = "default"
+@dataclass(frozen=True)
+class WholeUnit:
+    """A unit in which every tick is whole; of those, the shortest longest
+    label."""
+
+
+@dataclass(frozen=True)
+class FixedUnit:
+    """Always the one ladder rung asked."""
+
+    unit: Unit
+
+
+@dataclass(frozen=True)
+class DefaultUnit:
+    """The library's numbers on an axis nobody formatted: plain below one
+    million, the largest tick's unit from there unless that needs over two
+    decimals."""
+
+
+UnitRule: TypeAlias = MaxUnit | WholeUnit | FixedUnit | DefaultUnit
+"""How an axis picks its unit from a ladder."""
+
+
+@dataclass(frozen=True)
+class BareZero:
+    """A value that prints as zero reads ``0.0``, without sign or affixes."""
+
+
+@dataclass(frozen=True)
+class AffixedZero:
+    """A value that prints as zero keeps currency and unit: ``$0``."""
+
+
+@dataclass(frozen=True)
+class ExactZero:
+    """Only an exact zero reads ``0``; a small value keeps its digits."""
+
+
+ZeroText: TypeAlias = BareZero | AffixedZero | ExactZero
+"""How a value written alone prints when it rounds to zero."""
+
+TickZero: TypeAlias = Literal["bare", "affixed"]
+"""How tick-like text prints a value that rounds to zero (public)."""
+
+
+def keeps_affixes(zero: TickZero) -> bool:
+    """Whether a value that prints as zero keeps its prefix and suffix."""
+    return zero == "affixed"
 
 
 @dataclass(frozen=True)
 class PerTick:
     """How a fixed-decimal formatter writes each value alone.
 
-    ``separators``: thousands separators or none. ``zero``: a value that
-    prints as zero reads ``0.0`` bare (``"bare"``), keeps currency and unit
-    (``"affixed"``: ``$0``) or only an exact zero is ``0`` (``"exact"``).
-    ``compact``: trailing zeros go (``1.5억``) and a value under the first
+    ``separators``: thousands separators or none. ``zero``: how a value
+    that prints as zero reads (:data:`ZeroText`). ``compact``: trailing zeros go (``1.5억``) and a value under the first
     rung above one prints whole with no unit (``7,500``).
     """
 
     separators: bool = True
-    zero: Literal["bare", "affixed", "exact"] = "bare"
+    zero: ZeroText = BareZero()
     compact: bool = False
 
 
@@ -145,11 +239,27 @@ class NumberStyle:
     """Everything a number formatter was asked: ladder, rule and fixed parts."""
 
     ladder: Ladder
-    rule: Rule = Rule.MAX
-    unit: Unit | None = None  # the unit of ``Rule.FIXED``
+    rule: UnitRule = MaxUnit()
     decimals: Decimals | None = None
     currency: str = ""
     per_tick: PerTick | None = None
+
+    @property
+    def unit(self) -> Unit | None:
+        """The one unit asked, if the rule fixes it."""
+        match self.rule:
+            case FixedUnit(unit=unit):
+                return unit
+            case MaxUnit() | WholeUnit() | DefaultUnit():
+                return None
+
+    def each_alone(self, per_tick: PerTick) -> NumberStyle:
+        """Fixed decimals under the max rule write each tick alone."""
+        match self.rule:
+            case MaxUnit() if self.decimals is not None:
+                return replace(self, per_tick=per_tick)
+            case MaxUnit() | WholeUnit() | FixedUnit() | DefaultUnit():
+                return self
 
     @classmethod
     def parse(
@@ -172,17 +282,20 @@ class NumberStyle:
         ):
             raise ValueError(f"decimals must be non-negative, got {decimals!r}")
         fixed = ladder.find(unit)
-        if unit in ("max", "whole"):
-            rule = Rule(unit)
+        rule: UnitRule
+        if unit == "max":
+            rule = MaxUnit()
+        elif unit == "whole":
+            rule = WholeUnit()
         elif fixed is not None:
-            rule = Rule.FIXED
+            rule = FixedUnit(fixed)
         else:
             raise ValueError(
                 f"unit must be 'max', 'whole' or one of {ladder.labels()} "
                 f"(got {unit!r})"
             )
         count = None if decimals is None else Decimals(decimals)
-        return cls(ladder, rule, fixed, count, currency, per_tick)
+        return cls(ladder, rule, count, currency, per_tick)
 
 
 @dataclass(frozen=True)
@@ -240,18 +353,39 @@ class TickScale:
     factor: float = 1.0
     prefix: str = ""
     suffix: str = ""
-    zero: Literal["bare", "affixed"] = "bare"
+    zero: TickZero = "bare"
 
 
 # -- axis formats on axes nobody formatted -------------------------------------
 
 
-class Kind(Enum):
-    """What an axis shows, as far as the library's default format goes."""
+@dataclass(frozen=True)
+class NumberAxis:
+    """A linear axis with no unit converter; ``years``: x data that are
+    integer years."""
 
-    NUMBERS = "numbers"  # linear, no unit converter
-    DATES = "dates"  # matplotlib's stock concise date formatter
-    OTHER = "other"  # log, category, a formatter someone set ...
+    years: bool = False
+
+
+@dataclass(frozen=True)
+class DateAxis:
+    """Dates on matplotlib's stock concise formatter.
+
+    ``quarter_ends``: the plotted dates are quarterly, on quarter ends
+    (``True``) or starts and mid-quarter (``False``); ``None``: not
+    quarterly.
+    """
+
+    quarter_ends: bool | None = None
+
+
+@dataclass(frozen=True)
+class OtherAxis:
+    """Log, category, a formatter someone set ..."""
+
+
+AxisKind: TypeAlias = NumberAxis | DateAxis | OtherAxis
+"""What an axis shows, as far as the library's default format goes."""
 
 
 @dataclass(frozen=True)
@@ -260,19 +394,15 @@ class AxisFacts:
 
     ``own_formatter`` / ``own_locator``: still matplotlib's defaults, nobody
     set or configured them. ``fixed_texts``: label texts someone fixed by
-    order (``set_xticklabels``). ``years``: the plotted data along this
-    axis are integer years. ``quarter_ends``: date data that are quarterly
-    (``False``: quarter starts or mid-quarter; ``None``: not quarterly).
+    order (``set_xticklabels``).
     """
 
     x: bool
-    kind: Kind
+    kind: AxisKind
     ticks: TickValues
     own_formatter: bool = True
     own_locator: bool = True
     fixed_texts: bool = False
-    years: bool = False
-    quarter_ends: bool | None = None
 
 
 @dataclass(frozen=True)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -21,14 +22,18 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.lines import Line2D
 
-LINE_ENDS_ATTR = "_dm_line_end_labels"
-
 
 @dataclass(eq=False)
 class _LineEnds:
     labels: list[Annotation]
     ends: list[tuple[float, float]]
     gap_pt: float
+
+
+# The groups of names ``label_line_ends`` placed, by Axes.
+GROUPS: weakref.WeakKeyDictionary[Axes, list[_LineEnds]] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def _space(ax: Axes, group: _LineEnds, renderer: RendererBase) -> bool:
@@ -64,7 +69,7 @@ def space_line_ends(fig: Figure, renderer: RendererBase) -> bool:
     """``dm.label_line_ends`` names spaced again at each Axes' size now; whether one moved."""
     moved = False
     for ax in fig.axes:
-        for group in getattr(ax, LINE_ENDS_ATTR, []):
+        for group in GROUPS.get(ax, []):
             moved = _space(ax, group, renderer) or moved
     return moved
 
@@ -134,8 +139,6 @@ def label_line_ends(
         )
         group.ends.append(end)
     if len(group.labels) >= 2:
-        if not hasattr(ax, LINE_ENDS_ATTR):
-            setattr(ax, LINE_ENDS_ATTR, [])
-        getattr(ax, LINE_ENDS_ATTR).append(group)
+        GROUPS.setdefault(ax, []).append(group)
         _space(ax, group, drawn_renderer(ax))
     return list(group.labels)

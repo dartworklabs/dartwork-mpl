@@ -14,9 +14,19 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from itertools import pairwise
-from typing import Literal
+from typing import SupportsFloat, SupportsIndex
 
-from .model import PLAIN, NumberStyle, PerTick, Unit
+from .model import (
+    PLAIN,
+    AffixedZero,
+    BareZero,
+    ExactZero,
+    NumberStyle,
+    PerTick,
+    TickZero,
+    Unit,
+    keeps_affixes,
+)
 
 MAX_DECIMALS = 12  # a 1e-9 log tick needs nine
 _EXACT_ABS_TOL = 1e-6
@@ -46,8 +56,10 @@ def recommend_tick_decimals(values: Sequence[float]) -> int:
 
 
 def _float(value: object) -> float | None:
+    if not isinstance(value, str | SupportsFloat | SupportsIndex):
+        return None
     try:
-        return float(value)  # type: ignore[arg-type]
+        return float(value)
     except (TypeError, ValueError):
         return None
 
@@ -117,7 +129,7 @@ def number_text(
     fixed: bool = False,
     prefix: str = "",
     suffix: str = "",
-    zero: Literal["bare", "affixed"] = "bare",
+    zero: TickZero = "bare",
     unicode_minus: bool | None = None,
 ) -> str:
     """``value`` printed as an axis-wide tick prints it.
@@ -130,7 +142,7 @@ def number_text(
     number = format(abs(value), f",.{decimals}f")
     if float(number.replace(",", "")) == 0:
         digits = f"{0:.{decimals}f}" if fixed else "0"
-        return f"{prefix}{digits}{suffix}" if zero == "affixed" else digits
+        return f"{prefix}{digits}{suffix}" if keeps_affixes(zero) else digits
     sign = minus(_unicode_minus(unicode_minus)) if value < 0 else ""
     return f"{sign}{prefix}{number}{suffix}"
 
@@ -151,8 +163,6 @@ def per_tick_text(value: float, style: NumberStyle) -> str:
     plain unit and drops trailing zeros.
     """
     rules = style.per_tick or PerTick()
-    if rules.zero == "exact" and value == 0:
-        return "0"
     unit, decimals = _own_unit(abs(value), style, rules), style.decimals or 0
     if rules.compact and unit.factor == 1:
         decimals = 0
@@ -161,10 +171,17 @@ def per_tick_text(value: float, style: NumberStyle) -> str:
     if rules.compact and decimals:
         number = number.rstrip("0").rstrip(".")
     sign = minus(_unicode_minus(None)) if value < 0 else ""
-    if rules.zero != "exact" and float(number.replace(",", "")) == 0:
-        if rules.zero == "bare":
-            return f"{0:.{decimals}f}"
-        sign = ""
+    prints_zero = float(number.replace(",", "")) == 0
+    match rules.zero:
+        case ExactZero():
+            if value == 0:
+                return "0"
+        case BareZero():
+            if prints_zero:
+                return f"{0:.{decimals}f}"
+        case AffixedZero():
+            if prints_zero:
+                sign = ""
     return f"{sign}{style.currency}{number}{unit.label}"
 
 

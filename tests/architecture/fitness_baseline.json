@@ -17,10 +17,14 @@
  "C4_compose_decisions": {},
  "C5_compose_importers": [],
  "R1_module_lines": {
+  "src/dartwork_mpl/labels/bars.py": 524,
+  "src/dartwork_mpl/labels/model.py": 671,
   "src/dartwork_mpl/layout/measure.py": 557,
   "src/dartwork_mpl/layout/model.py": 529,
   "src/dartwork_mpl/legend/apply.py": 525,
-  "src/dartwork_mpl/legend/model.py": 509
+  "src/dartwork_mpl/legend/model.py": 509,
+  "src/dartwork_mpl/ticks/measure.py": 525,
+  "src/dartwork_mpl/ticks/model.py": 504
  },
  "R2_slice_lines": {},
  "R3_underscore_modules": {},
@@ -32,7 +36,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 50
+  "modules": 51
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81
@@ -42,71 +46,34 @@
  "T10_reflection": {
   "src/dartwork_mpl/check/ink.py": 1,
   "src/dartwork_mpl/check/measure.py": 2,
-  "src/dartwork_mpl/check/walk.py": 6,
+  "src/dartwork_mpl/check/walk.py": 5,
   "src/dartwork_mpl/color/space.py": 1,
-  "src/dartwork_mpl/geometry/axes.py": 5,
+  "src/dartwork_mpl/geometry/axes.py": 4,
   "src/dartwork_mpl/geometry/figure.py": 4,
-  "src/dartwork_mpl/geometry/renderer.py": 1,
   "src/dartwork_mpl/guide/model.py": 2,
-  "src/dartwork_mpl/labels/bars.py": 3,
-  "src/dartwork_mpl/labels/ends.py": 4,
-  "src/dartwork_mpl/labels/letters.py": 4,
   "src/dartwork_mpl/labels/measure.py": 1,
   "src/dartwork_mpl/layout/measure.py": 6,
   "src/dartwork_mpl/legend/apply.py": 1,
   "src/dartwork_mpl/size/model.py": 1,
   "src/dartwork_mpl/ticks/__init__.py": 1,
-  "src/dartwork_mpl/ticks/apply.py": 5,
+  "src/dartwork_mpl/ticks/apply.py": 4,
   "src/dartwork_mpl/ticks/dates.py": 2,
   "src/dartwork_mpl/ticks/defaults.py": 3,
-  "src/dartwork_mpl/ticks/measure.py": 6
+  "src/dartwork_mpl/ticks/measure.py": 5
  },
- "T1_casts": {
-  "src/dartwork_mpl/labels/bars.py": 2,
-  "src/dartwork_mpl/labels/edges.py": 3,
-  "src/dartwork_mpl/ticks/apply.py": 1,
-  "src/dartwork_mpl/ticks/dates.py": 1
- },
+ "T1_casts": {},
  "T2_ignores": {
   "src/dartwork_mpl/color/measure.py": 1,
-  "src/dartwork_mpl/font/apply.py": 1,
-  "src/dartwork_mpl/geometry/renderer.py": 2,
-  "src/dartwork_mpl/labels/bars.py": 3,
-  "src/dartwork_mpl/labels/model.py": 6,
-  "src/dartwork_mpl/ticks/text.py": 1
+  "src/dartwork_mpl/font/apply.py": 1
  },
- "T3_domain_isinstance": {
-  "src/dartwork_mpl/ticks/edges.py": 1
- },
- "T4_smuggled_attributes": {
-  "src/dartwork_mpl/geometry/figure.py": 1,
-  "src/dartwork_mpl/labels/bars.py": 1,
-  "src/dartwork_mpl/labels/ends.py": 1,
-  "src/dartwork_mpl/ticks/measure.py": 2
- },
+ "T3_domain_isinstance": {},
+ "T4_smuggled_attributes": {},
  "T5_enum_branches": {
   "src/dartwork_mpl/color/edges.py": 2,
   "src/dartwork_mpl/guide/decide.py": 1,
-  "src/dartwork_mpl/size/edges.py": 2,
-  "src/dartwork_mpl/ticks/decide.py": 6,
-  "src/dartwork_mpl/ticks/edges.py": 2,
-  "src/dartwork_mpl/ticks/measure.py": 3
+  "src/dartwork_mpl/size/edges.py": 2
  },
- "T6_string_branches": {
-  "src/dartwork_mpl/geometry/axes.py": 7,
-  "src/dartwork_mpl/labels/bar_layout.py": 8,
-  "src/dartwork_mpl/labels/bars.py": 15,
-  "src/dartwork_mpl/labels/edges.py": 4,
-  "src/dartwork_mpl/labels/letters.py": 1,
-  "src/dartwork_mpl/labels/measure.py": 6,
-  "src/dartwork_mpl/labels/notes.py": 13,
-  "src/dartwork_mpl/ticks/__init__.py": 22,
-  "src/dartwork_mpl/ticks/apply.py": 5,
-  "src/dartwork_mpl/ticks/defaults.py": 1,
-  "src/dartwork_mpl/ticks/formatters.py": 1,
-  "src/dartwork_mpl/ticks/measure.py": 11,
-  "src/dartwork_mpl/ticks/text.py": 5
- },
+ "T6_string_branches": {},
  "T7_swallowing_matches": {},
  "T8_enums": {
   "src/dartwork_mpl/check/model.py": 3,
@@ -115,8 +82,7 @@
   "src/dartwork_mpl/layout/model.py": 3,
   "src/dartwork_mpl/save/model.py": 1,
   "src/dartwork_mpl/size/model.py": 2,
-  "src/dartwork_mpl/style/model.py": 1,
-  "src/dartwork_mpl/ticks/model.py": 3
+  "src/dartwork_mpl/style/model.py": 1
  },
  "T9_guards": {
   "src/dartwork_mpl/check/walk.py": 1,
