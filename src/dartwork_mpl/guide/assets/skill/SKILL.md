@@ -92,7 +92,7 @@ Call them before `dm.simple_layout`, which makes room for what they add.
 
 ## Look things up
 
-Read only the page the task needs. Without this folder each is `dm.guide.read("guide/layout")` and so on.
+Read only the page the task needs. Without this folder, `python -m dartwork_mpl.guide path` prints where it is.
 
 | Need | Read |
 |---|---|
@@ -103,5 +103,3 @@ Read only the page the task needs. Without this folder each is `dm.guide.read("g
 | Korean text, fonts and number units | `references/korean.md` |
 | what each `dm.check` finding means | `references/review.md` |
 | native matplotlib details: dashes, spines, exact canvas regions | `references/recipes.md` |
-
-A starting script for 18 chart types: `dm.guide.search("grouped bars")` ranks them and `print(dm.guide.read("template/advanced/bar"))` prints one. Adapt it to the point; its data and labels are placeholders.

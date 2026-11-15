@@ -47,8 +47,6 @@ def pure_modules() -> list[str]:
         rel = path.relative_to(PKG_DIR)
         domain = path.name in DOMAIN_FILES or rel.parts[0] == "vocab"
         if domain and not boundaries.is_test(rel):
-            if rel.parts[: len(("guide", "assets"))] == ("guide", "assets"):
-                continue
             found.add(".".join(("dartwork_mpl", *rel.with_suffix("").parts)))
     return sorted(found)
 

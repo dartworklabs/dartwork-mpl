@@ -49,8 +49,6 @@ its own shell (`python plot.py`) and reaches the rest from Python:
 |---|---|
 | `dm.check(fig)` | defects in a drawn figure; changes nothing |
 | `dm.lint_code(code)` | anti-pattern lint; runs nothing |
-| `dm.guide.search(query)` | rank the guide pages and templates for a request |
-| `dm.guide.read(id)` | one guide page or template by id |
 
 ## Developing
 

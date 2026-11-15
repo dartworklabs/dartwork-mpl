@@ -65,11 +65,11 @@ def test_wheel_excludes_colocated_tests_and_keeps_package_modules(tmp_path):
 
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs the uv CLI")
 def test_wheel_ships_the_guide_assets(tmp_path):
-    """The skill, its references, the catalog and every template land in the wheel.
+    """The skill, its references and the catalog land in the wheel.
 
     ``python -m dartwork_mpl.guide install`` links the installed
-    ``dartwork_mpl/guide/assets/skill`` folder, and ``dm.guide.read`` reads
-    the rest of ``assets/``; none of it may be dropped as a test file.
+    ``dartwork_mpl/guide/assets/skill`` folder and the lint reads the catalog;
+    none of it may be dropped as a test file.
     """
     project = tmp_path / "project"
     project.mkdir()
@@ -94,7 +94,6 @@ def test_wheel_ships_the_guide_assets(tmp_path):
         if p.is_file()
     }
     assert "dartwork_mpl/guide/assets/skill/SKILL.md" in expected
-    assert len([m for m in expected if m.endswith(".py")]) == 36
     assert expected <= members
     assert "dartwork_mpl/guide/__main__.py" in members
     assert not any(m.startswith("dartwork_mpl/guide/tests/") for m in members)

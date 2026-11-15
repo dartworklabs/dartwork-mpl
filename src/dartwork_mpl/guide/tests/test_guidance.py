@@ -1,11 +1,10 @@
 """Every piece of guidance runs, names only what exists, and lints clean.
 
-The skill, its references and every template are executed as written: each
-Markdown file's Python blocks in order in one namespace (a later block may use
-an earlier one's figure), each template on its own. Before running, every
-``dm.<name>`` the text mentions (in code or in prose) must exist, and every
-keyword passed to a ``dm`` callable must be one it accepts. Templates must
-have no critical or warning lint finding.
+The skill and its references are executed as written: each Markdown file's
+Python blocks in order in one namespace (a later block may use an earlier
+one's figure). Before running, every ``dm.<name>`` the text mentions (in code
+or in prose) must exist, and every keyword passed to a ``dm`` callable must
+be one it accepts.
 """
 
 from __future__ import annotations
@@ -20,8 +19,13 @@ import pytest
 import dartwork_mpl as dm
 from dartwork_mpl import guide
 
-PAGES = [r.id for r in guide.references() if r.id.startswith("guide/")]
-TEMPLATES = [r.id for r in guide.references() if r.id.startswith("template/")]
+SKILL = guide.skill_path()
+PAGES = [
+    "SKILL.md",
+    *sorted(
+        f"references/{p.name}" for p in (SKILL / "references").glob("*.md")
+    ),
+]
 BLOCK = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 MENTION = re.compile(r"\bdm((?:\.[A-Za-z_]\w*)+)")
 
@@ -71,7 +75,7 @@ def in_tmp(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("ref", PAGES)
 def test_page_names_only_what_exists_and_its_code_runs(ref):
-    text = guide.read(ref)
+    text = (SKILL / ref).read_text(encoding="utf-8")
     for path in MENTION.findall(text):
         resolve(path)
     namespace: dict[str, object] = {}
@@ -79,18 +83,8 @@ def test_page_names_only_what_exists_and_its_code_runs(ref):
         run(block, namespace, f"{ref}#{i}")
 
 
-@pytest.mark.parametrize("ref", TEMPLATES)
-def test_template_runs_and_lints_clean(ref):
-    source = guide.read(ref)
-    for path in MENTION.findall(source):
-        resolve(path)
-    run(source, {"__name__": "__main__"}, ref)
-    found = [f for f in dm.lint_code(source) if str(f.severity) != "info"]
-    assert not found, "\n".join(map(str, found))
-
-
 def test_the_skill_stays_short_and_routes_to_pages_that_exist():
-    skill = guide.read("guide/skill")
+    skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
     assert len(skill.splitlines()) <= 120
     for name in re.findall(r"`references/([a-z-]+)\.md`", skill):
-        guide.read(f"guide/{name}")
+        assert (SKILL / "references" / f"{name}.md").is_file()

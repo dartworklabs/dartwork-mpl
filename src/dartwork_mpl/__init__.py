@@ -64,7 +64,7 @@ from .compose.layout import simple_layout
 from .compose.size import figsize_for
 from .compose.style import join as _join_style
 
-# Agent guidance: the skill, templates and anti-pattern lint
+# Agent guidance: the skill and the anti-pattern lint
 from .guide import lint as lint_code
 from .labels import label_line_ends
 from .legend import figure_legend, place_legend

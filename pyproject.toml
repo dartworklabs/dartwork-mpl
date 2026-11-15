@@ -217,8 +217,7 @@ split-on-trailing-comma = false
 
 [tool.basedpyright]
 # `uv run basedpyright` (no arguments) is the one command, locally and in CI.
-# Product code only: slice-owned tests and the bundled template samples are
-# not package source. Existing findings are grandfathered in
+# Product code only: slice-owned tests are not package source. Existing findings are grandfathered in
 # .basedpyright/baseline.json; new code must be clean. After fixing findings,
 # shrink the baseline with `uv run basedpyright --writebaseline`.
 include = ["src/dartwork_mpl"]
@@ -227,7 +226,6 @@ exclude = [
     "**/tests",
     "**/test_*.py",
     "**/conftest.py",
-    "src/dartwork_mpl/guide/assets/templates",
 ]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"

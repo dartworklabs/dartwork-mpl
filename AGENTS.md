@@ -49,7 +49,7 @@ colours are joined into `dm.style`. `tests/architecture/` enforces all of this.
 
 ## Plotting rules live in the bundled skill
 
-Before writing or reviewing plotting code here (templates, examples, tests),
+Before writing or reviewing plotting code here (skill pages, tests),
 read [`src/dartwork_mpl/guide/assets/skill/SKILL.md`](src/dartwork_mpl/guide/assets/skill/SKILL.md)
 and the `references/` file it routes to. It is the single source of the
 consumer rules: preset by purpose, `dm.figsize`, `dm.simple_layout` (never
@@ -86,7 +86,7 @@ Tests are small on purpose: pure `decide` tables, one test per named edge
 case, a few realistic charts through the public surface. Do not add tests
 that pin implementation details, bytes, prose or tooling.
 
-Bundled templates and every code block in the skill must run and lint clean
+Every code block in the skill must run
 (`src/dartwork_mpl/guide/tests/test_guidance.py`).
 
 ## Design documents and agent work

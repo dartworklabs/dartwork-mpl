@@ -1,11 +1,10 @@
-"""Pure guide decisions: which catalog rules a source breaks, which references a query wants.
+"""Pure guide decisions: which catalog rules a source breaks.
 
 A pattern rule matches the source text; a check rule tests each literal
 colour or colormap name the source uses against matplotlib's registries.
 Matches in prose (strings, comments), registrations made by the source
 itself and the twin-axes condition are the named special cases in
-``edges.py``. A search scores each reference by the query words it shares,
-tags counting twice, templates first on a tie.
+``edges.py``.
 """
 
 from __future__ import annotations
@@ -24,7 +23,6 @@ from .model import (
     Rules,
     Spot,
 )
-from .reference import Query, Reference
 
 
 def is_color(literal: Literal, known: Known) -> bool:
@@ -76,19 +74,3 @@ def findings(facts: LintFacts, rules: Rules) -> Findings:
             ]
     found = (finding(rule, facts, spot) for rule, spot in spots)
     return tuple(sorted(found, key=lambda f: (f.offset, f.rule_id)))
-
-
-def rank(
-    query: Query, references: tuple[Reference, ...]
-) -> tuple[Reference, ...]:
-    """The references that share a word with the query, best first."""
-
-    scored = [
-        (len(query.words & ref.words) + len(query.words & ref.tags), ref)
-        for ref in references
-    ]
-    hits = sorted(
-        (pair for pair in scored if pair[0] > 0),
-        key=lambda pair: (-pair[0], pair[1].kind.tie, pair[1].id),
-    )
-    return tuple(ref for _, ref in hits[: query.limit])

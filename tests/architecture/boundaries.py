@@ -202,10 +202,6 @@ PINNED: Mapping[str, str] = {}
 # (tests/architecture/test_boundaries.py) so a new violation fails outright.
 DEBT: Mapping[str, str] = {}
 
-# Package paths that hold user-facing sample code, not package source: the
-# bundled templates (they import `dartwork_mpl` as any user would).
-EXCLUDED_DIRS = (("guide", "assets"),)
-
 
 @dataclass(frozen=True)
 class Layout:
@@ -242,13 +238,13 @@ def read_sources(root: Path) -> tuple[dict[str, str], set[str]]:
     """Read the production modules under the package root ``root``.
 
     Returns the module sources keyed by dotted name and the set of names that
-    are packages. Colocated tests and ``EXCLUDED_DIRS`` are skipped.
+    are packages. Colocated tests are skipped.
     """
     code: dict[str, str] = {}
     packages: set[str] = set()
     for path in sorted(root.rglob("*.py")):
         rel = path.relative_to(root)
-        if is_test(rel) or any(rel.parts[: len(d)] == d for d in EXCLUDED_DIRS):
+        if is_test(rel):
             continue
         parts = rel.with_suffix("").parts
         if parts[-1] == "__init__":

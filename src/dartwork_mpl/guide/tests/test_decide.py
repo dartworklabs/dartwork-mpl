@@ -1,4 +1,4 @@
-"""The lint rules and the search ranking, decided from text alone."""
+"""The lint rules, decided from text alone."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from dartwork_mpl.guide.model import (
     Literal,
     Rules,
 )
-from dartwork_mpl.guide.reference import Query, Reference, ref_id
 
 KNOWN = Known(
     colors=frozenset({"red", "dc.blue6", "tab:blue"}),
@@ -99,28 +98,3 @@ def test_oversized_source_is_refused():
 def test_a_malformed_catalog_is_refused():
     with pytest.raises(ValueError, match="pattern or a check"):
         Rules.parse("rules:\n  - {id: a, severity: info, message: m}\n")
-
-
-def _template(id: str, tags: str) -> Reference:
-    text = f'"""{id}."""\n# ai-template-meta-start\n# tags: {tags}\n# ai-template-meta-end\n'
-    return Reference.template(id, text)
-
-
-def test_rank_scores_shared_words_and_puts_templates_first():
-    refs = (
-        Reference.guide("guide/colors", "# Colours\n\nBars and lines.\n"),
-        _template("template/bar", "bar, comparison"),
-        _template("template/line", "line, trend"),
-    )
-    hits = decide.rank(Query.parse("compare bars"), refs)
-    assert [r.id for r in hits] == ["template/bar", "guide/colors"]
-    assert decide.rank(Query.parse("nothing shared"), refs) == ()
-    assert len(decide.rank(Query.parse("bars", limit=1), refs)) == 1
-
-
-@pytest.mark.parametrize(
-    "text", ["../etc/passwd", "guide/../x", "template/Bar", "templates/bar", 3]
-)
-def test_a_reference_id_never_names_a_path(text):
-    with pytest.raises(ValueError):
-        ref_id(text)
