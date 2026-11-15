@@ -4,7 +4,8 @@ A core slice keeps its domain in three files (see docs/handbook/architecture.md)
 
 ``model.py``   the slice's types; the one place a primitive gets wrapped
 ``decide.py``  pure decisions for the ordinary figure: facts in, plan out
-``edges.py``   named special cases, appended to ``EDGES``
+``edges.py``   named special cases, appended to ``EDGES`` (or one
+               ``<NAME>_EDGES`` per facts/plan type pair)
 
 D1  ``decide.py`` and ``edges.py`` speak in domain types. A parameter or return
     annotated ``str``, ``int``, ``float``, ``dict``, ``Any`` ... is an error, as
@@ -132,7 +133,8 @@ def edge_cases(source: str) -> tuple[list[dict[str, str]], list[str]]:
     malformed."""
     cases: list[dict[str, str]] = []
     errors: list[str] = []
-    value = None
+    items: list[ast.expr] = []
+    registries = 0
     for node in ast.parse(source).body:
         targets = (
             node.targets
@@ -141,11 +143,17 @@ def edge_cases(source: str) -> tuple[list[dict[str, str]], list[str]]:
             if isinstance(node, ast.AnnAssign)
             else []
         )
-        if any(getattr(t, "id", "") == "EDGES" for t in targets):
-            value = node.value
-    if not isinstance(value, ast.Tuple):
-        return cases, ["EDGES must be a module-level tuple literal"]
-    for item in value.elts:
+        names = [getattr(t, "id", "") for t in targets]
+        if not any(n == "EDGES" or n.endswith("_EDGES") for n in names):
+            continue
+        registries += 1
+        if isinstance(node.value, ast.Tuple):
+            items += node.value.elts
+        else:
+            errors.append(f"{names[0]} must be a module-level tuple literal")
+    if not registries:
+        return cases, ["edges.py must define EDGES or <NAME>_EDGES"]
+    for item in items:
         if not (
             isinstance(item, ast.Call)
             and getattr(item.func, "id", "") == "EdgeCase"

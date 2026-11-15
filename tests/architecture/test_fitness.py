@@ -2,7 +2,8 @@
 
 ``boundaries.py`` judges slice-to-slice imports. These rules judge
 the shape of the whole package: module and function size, slice size, naming,
-import cycles and the purity of decision code. They read source with ``ast``
+import cycles and the purity of decision code. The T rules (``escapes.py``)
+count the ways code slips past the type checker. They read source with ``ast``
 only; nothing is imported.
 
 The contract, shared by every rule: ``fitness_baseline.json`` records today's
@@ -48,6 +49,12 @@ assert _SPEC is not None and _SPEC.loader is not None
 cb = importlib.util.module_from_spec(_SPEC)
 sys.modules[_SPEC.name] = cb  # dataclasses look their module up
 _SPEC.loader.exec_module(cb)
+_ESC = importlib.util.spec_from_file_location(
+    "escapes", Path(__file__).with_name("escapes.py")
+)
+assert _ESC is not None and _ESC.loader is not None
+escapes = importlib.util.module_from_spec(_ESC)
+_ESC.loader.exec_module(escapes)
 
 P = "dartwork_mpl"
 MODULE_CAP = 500  # lines; the well-factored modules already fit
@@ -106,6 +113,8 @@ WHY = {
     "R8_missing_all": "a top-level slice without a literal __all__ has no declared surface",
     "R8_entry_function_lines": f"an entry point function over {ENTRY_FUNCTION_CAP} lines does work instead of wiring",
 }
+KIND.update(dict.fromkeys(escapes.MEASURES, "ceil"))
+WHY.update(escapes.WHY)
 RULES = tuple(KIND)
 # Size rules warn instead of failing: a hard line cap breeds contrived code.
 ADVISORY = frozenset(
@@ -380,6 +389,17 @@ MEASURES: Mapping[str, Callable[[Tree], object]] = {
     "R8_missing_all": r8_missing_all,
     "R8_entry_function_lines": r8_entry_function_lines,
 }
+
+
+def _escape(fn: Callable[[Mapping[str, str]], dict[str, int]]):
+    def measure(tree: Tree) -> dict[str, int]:
+        code, packages = tree
+        return fn({path_of(m, packages): s for m, s in code.items()})
+
+    return measure
+
+
+MEASURES = {**MEASURES, **{k: _escape(f) for k, f in escapes.MEASURES.items()}}
 
 
 def compare(
