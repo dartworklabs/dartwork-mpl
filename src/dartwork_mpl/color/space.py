@@ -168,9 +168,9 @@ class Oklab:
 
     def __post_init__(self) -> None:
         """Hold each coordinate as a finite float."""
-        for what in ("L", "a", "b"):
-            number = finite(getattr(self, what), f"OKLab {what}")
-            object.__setattr__(self, what, number)
+        object.__setattr__(self, "L", finite(self.L, "OKLab L"))
+        object.__setattr__(self, "a", finite(self.a, "OKLab a"))
+        object.__setattr__(self, "b", finite(self.b, "OKLab b"))
 
     def rgb(self) -> Rgb:
         """Encoded sRGB; out of gamut, chroma is bisected at fixed L and h."""

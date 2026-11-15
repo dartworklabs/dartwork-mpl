@@ -9,11 +9,12 @@ have to be guessed at.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import SupportsFloat
 
 import matplotlib.colors as mcolors
 
 from .decide import suggest
-from .model import Lookup, Name
+from .model import Items, Lookup, Name
 from .space import Rgb, Rgba
 
 
@@ -43,12 +44,52 @@ def unknown_name(name: str) -> str:
     )
 
 
+Plain = str | tuple[float, float, float] | tuple[float, float, float, float]
+
+
+def number(part: object, value: object) -> float:
+    """One channel of ``value``; ``ValueError`` as matplotlib raises it."""
+    if isinstance(part, str) or not isinstance(part, SupportsFloat):
+        raise ValueError(f"Invalid RGBA argument: {value!r}")
+    return float(part)
+
+
+def plain(value: object) -> Plain:
+    """A colour string, or three or four channels from any sequence."""
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, Items):
+        raise ValueError(f"Invalid RGBA argument: {value!r}")
+    channels = [number(part, value) for part in value]
+    if len(channels) == 3:
+        r, g, b = channels
+        return (r, g, b)
+    if len(channels) == 4:
+        r, g, b, a = channels
+        return (r, g, b, a)
+    raise ValueError(f"Invalid RGBA argument: {value!r}")
+
+
+def spec(value: object) -> tuple[Plain, float | None]:
+    """``value`` as a colour in a shape matplotlib's ``ColorType`` names,
+    and the alpha that overrides its own (``None``: none).
+
+    The public colour arguments take what matplotlib reads at run time: a
+    string, three or four channels in any sequence (a list, an array), or
+    a colour and an alpha; anything else raises ``ValueError``.
+    """
+    if isinstance(value, Items) and not isinstance(value, str):
+        parts = list(value)
+        if len(parts) == 2 and not isinstance(parts[0], SupportsFloat):
+            return plain(parts[0]), number(parts[1], value)
+    return plain(value), None
+
+
 def rgba(value: object) -> Rgba:
     """``value`` as matplotlib reads it, alpha included."""
     try:
-        # The public colour arguments take what matplotlib reads at run
-        # time (arrays too), wider than its ColorType stub; it validates.
-        return Rgba.of(mcolors.to_rgba(value))  # pyright: ignore[reportArgumentType]
+        colour, alpha = spec(value)
+        return Rgba.of(mcolors.to_rgba(colour, alpha))
     except ValueError as exc:
         if not isinstance(value, str):
             raise

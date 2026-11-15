@@ -31,7 +31,7 @@ def test_lint_code_reads_live_registries():
     found = dm.lint_code(
         'ax.plot(x, color="dc.blue6")\nax.imshow(z, cmap="dc.blu")'
     )
-    assert [(f.rule_id, f.severity, f.line) for f in found] == [
+    assert [(f.rule_id, str(f.severity), f.line) for f in found] == [
         ("invalid-colormap-name", "critical", 2)
     ]
 

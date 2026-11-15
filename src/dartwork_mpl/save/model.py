@@ -8,62 +8,42 @@ writing ``chart.png.png``.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass
-from enum import Enum
-from typing import TypeGuard, assert_never
+from typing import ClassVar, Protocol, runtime_checkable
 
 # Suffixes savefig writes; a stem ending in one of them has it cut off.
 EXTENSIONS = "png pdf svg svgz eps ps jpg jpeg tif tiff webp raw rgba"
 IMAGE_SUFFIXES = frozenset(f".{ext}" for ext in EXTENSIONS.split(" "))
 
 
-class Writer(Enum):
-    """How one format is written."""
+@dataclass(frozen=True)
+class Writer:
+    """How one format is written.
 
-    PLAIN = "plain"
-    PDF = "pdf"
-    SVG = "svg"
-    SVGZ = "svgz"
+    ``value`` is the extension it writes (``"plain"``: any other);
+    ``timestamp_key`` the metadata key that would embed the wall-clock time
+    (PDF writes ``/CreationDate`` and SVG ``<dc:date>`` unless the key is
+    None); ``svg``: writes SVG, whose ids ``svg.hashsalt`` seeds;
+    ``gzipped``: writes SVG gzipped here, with a fixed header time.
+    """
 
-    @property
-    def timestamp_key(self) -> str | None:
-        """The metadata key that would embed the wall-clock time.
+    value: str
+    timestamp_key: str | None = None
+    svg: bool = False
+    gzipped: bool = False
 
-        PDF writes ``/CreationDate`` and SVG ``<dc:date>`` unless the key
-        is None.
-        """
-        match self:
-            case Writer.PDF:
-                return "CreationDate"
-            case Writer.SVG | Writer.SVGZ:
-                return "Date"
-            case Writer.PLAIN:
-                return None
-            case _:
-                assert_never(self)
+    PLAIN: ClassVar[Writer]
+    PDF: ClassVar[Writer]
+    SVG: ClassVar[Writer]
+    SVGZ: ClassVar[Writer]
 
-    @property
-    def svg(self) -> bool:
-        """Writes SVG, whose ids ``svg.hashsalt`` seeds."""
-        match self:
-            case Writer.SVG | Writer.SVGZ:
-                return True
-            case Writer.PLAIN | Writer.PDF:
-                return False
-            case _:
-                assert_never(self)
 
-    @property
-    def gzipped(self) -> bool:
-        """Writes SVG gzipped here, with a fixed header time."""
-        match self:
-            case Writer.SVGZ:
-                return True
-            case Writer.PLAIN | Writer.PDF | Writer.SVG:
-                return False
-            case _:
-                assert_never(self)
+Writer.PLAIN = Writer("plain")
+Writer.PDF = Writer("pdf", timestamp_key="CreationDate")
+Writer.SVG = Writer("svg", timestamp_key="Date", svg=True)
+Writer.SVGZ = Writer("svgz", timestamp_key="Date", svg=True, gzipped=True)
+WRITERS = (Writer.PLAIN, Writer.PDF, Writer.SVG, Writer.SVGZ)
 
 
 @dataclass(frozen=True)
@@ -106,15 +86,17 @@ class Format:
         ext = value.lstrip(".")
         if not ext:
             raise ValueError(f"empty format {value!r}; use e.g. 'png' or 'pdf'")
-        try:
-            writer = Writer(ext.lower())
-        except ValueError:
-            writer = Writer.PLAIN
-        return cls(ext, writer)
+        named = (w for w in WRITERS if w.value == ext.lower())
+        return cls(ext, next(named, Writer.PLAIN))
 
 
-def _mapping(value: object) -> TypeGuard[Mapping[object, object]]:
-    return isinstance(value, Mapping)
+@runtime_checkable
+class Pairs(Protocol):
+    """A mapping, read for its items."""
+
+    def items(self) -> Iterable[tuple[object, object]]:
+        """The key-value pairs, in order."""
+        ...
 
 
 @dataclass(frozen=True)
@@ -128,7 +110,7 @@ class Metadata:
         """The caller's ``metadata`` mapping, or ``None`` when not given."""
         if value is None:
             return None
-        if not _mapping(value):
+        if not isinstance(value, Pairs):
             raise TypeError(
                 f"metadata must be a dict (got {type(value).__name__})"
             )

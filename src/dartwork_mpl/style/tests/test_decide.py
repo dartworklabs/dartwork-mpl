@@ -14,7 +14,7 @@ REGISTRY = apply.REGISTRY
 def test_korean_presets_and_only_they_flip_the_role_colours(name):
     chain = decide.chain(REGISTRY.parse(name))
     korean = Locale.KR if name.endswith("-kr") else Locale.DEFAULT
-    assert chain.locale is korean
+    assert chain.locale == korean
     assert chain.layers[0] == "base"
 
 

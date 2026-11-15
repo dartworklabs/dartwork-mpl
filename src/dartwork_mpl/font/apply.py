@@ -45,7 +45,11 @@ WEIGHT_FILTER = ExpectedWeightMiss()
 
 
 def install(plan: Plan) -> None:
-    """Put the planned table in place; clear matplotlib's lookup cache."""
+    """Put the planned table in place.
+
+    Called right after ``addfont``, which clears matplotlib's lookup cache;
+    nothing looks a font up in between, so no lookup holds the old table.
+    """
     manager = font_manager.fontManager
     old = list(manager.ttflist)
     new: list[font_manager.FontEntry] = []
@@ -58,9 +62,6 @@ def install(plan: Plan) -> None:
     if any(a is not b for a, b in zip(old, new, strict=True)):
         # In place: matplotlib's manager holds this list object.
         manager.ttflist[:] = new
-        # The lookup cache is private and missing from matplotlib's stub;
-        # nothing public clears it.
-        manager._findfont_cached.cache_clear()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 
 
 def register() -> None:

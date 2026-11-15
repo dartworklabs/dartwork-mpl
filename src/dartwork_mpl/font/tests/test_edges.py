@@ -56,6 +56,7 @@ def test_system_font_tie_flips_a_primed_lookup(monkeypatch, tmp_path):
     )
     prop = FontProperties(family="Roboto", size=11.111)
     assert _resolve(prop) == copy  # the earlier system copy wins, and is cached
+    manager.addfont(bundled)  # as ``register`` adds: the cache is cleared
     apply.install(_settle_now())
     assert _resolve(prop) == bundled
 

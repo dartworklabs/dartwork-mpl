@@ -12,13 +12,11 @@ from __future__ import annotations
 
 from ..edgecase import settle
 from . import decide, measure
+from .canvas import CanvasFacts, CanvasKind, CanvasRequest, parse_names
 from .edges import EDGES
 from .model import (
     ASPECTS,
     STANDARD,
-    CanvasFacts,
-    CanvasKind,
-    CanvasRequest,
     Grid,
     Length,
     Panels,
@@ -28,7 +26,6 @@ from .model import (
     inch,
     mm,
     parse_height,
-    parse_names,
     pt,
 )
 

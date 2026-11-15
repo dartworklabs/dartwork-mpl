@@ -1,43 +1,44 @@
 """The shape of the shipped colour tables, checked as they are decoded.
 
-``json.loads`` gives untyped values; each function here takes one part of a
-table and returns it typed, or raises ``ValueError`` naming the part out of
-shape. Nothing here reads a file.
+:func:`decode` reads a table's text; each other function here takes one part
+of a decoded table and returns it typed, or raises ``ValueError`` naming the
+part out of shape. Nothing here reads a file.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+import json
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TypeGuard
 
-from .model import Row
+from .model import Items, Row
 from .space import Hex
 
 
-def _is_object(value: object) -> TypeGuard[Mapping[object, object]]:
-    return isinstance(value, dict)
+class JsonObject(dict[str, object]):
+    """A decoded JSON object: :func:`decode` builds every one."""
 
 
-def _is_array(value: object) -> TypeGuard[Sequence[object]]:
-    return isinstance(value, list)
-
-
-def json_object(value: object, where: str) -> dict[str, object]:
-    """A JSON object with string keys; ``ValueError`` names ``where``."""
-    if not _is_object(value):
-        raise ValueError(f"{where}: expected a JSON object")
-    found: dict[str, object] = {}
-    for key, item in value.items():
-        if not isinstance(key, str):
-            raise ValueError(f"{where}: key {key!r} is not a string")
-        found[key] = item
+def decode(text: str) -> object:
+    """The JSON ``text``, each of its objects a :class:`JsonObject`."""
+    found: object = json.loads(text, object_pairs_hook=JsonObject)
     return found
 
 
+def json_object(value: object, where: str) -> JsonObject:
+    """A decoded JSON object; ``ValueError`` names ``where``."""
+    if not isinstance(value, JsonObject):
+        raise ValueError(f"{where}: expected a JSON object")
+    return value
+
+
 def json_list(value: object, where: str) -> list[object]:
-    """A JSON array; ``ValueError`` names ``where``."""
-    if not _is_array(value):
+    """A decoded JSON array; ``ValueError`` names ``where``.
+
+    Of the values :func:`decode` gives, a string, an object and an array
+    have items; an array is the one that is neither of the others.
+    """
+    if isinstance(value, str | JsonObject) or not isinstance(value, Items):
         raise ValueError(f"{where}: expected a JSON array")
     return list(value)
 

@@ -10,11 +10,10 @@ from __future__ import annotations
 
 import difflib
 import json
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Iterator, Mapping
 from dataclasses import dataclass
-from enum import Enum
 from types import MappingProxyType
-from typing import TypeGuard
+from typing import ClassVar, Protocol, runtime_checkable
 
 #: Slides over a journal column (23.4 cm / 9 cm): the presentation presets
 #: are the scientific ones with every point size times this.
@@ -42,11 +41,21 @@ WEIGHTS: Mapping[str, int] = {
 NORMAL_WEIGHT = 400
 
 
-class Locale(Enum):
-    """Which convention the role colours ``dc.pos`` / ``dc.neg`` follow."""
+@dataclass(frozen=True)
+class Locale:
+    """Which convention the role colours ``dc.pos`` / ``dc.neg`` follow.
 
-    DEFAULT = "default"  # gains green, losses red
-    KR = "kr"  # gains red, losses blue
+    ``value`` is the colour slice's name for it.
+    """
+
+    value: str
+
+    DEFAULT: ClassVar[Locale]
+    KR: ClassVar[Locale]
+
+
+Locale.DEFAULT = Locale("default")  # gains green, losses red
+Locale.KR = Locale("kr")  # gains red, losses blue
 
 
 @dataclass(frozen=True)
@@ -77,8 +86,13 @@ def _closest(name: str, known: Collection[str]) -> str | None:
     return match[0] if match else None
 
 
-def _listed(value: object) -> TypeGuard[list[object]]:
-    return isinstance(value, list)
+@runtime_checkable
+class Items(Protocol):
+    """A value read for its items, in order (a list of preset names)."""
+
+    def __iter__(self) -> Iterator[object]:
+        """The items."""
+        ...
 
 
 @dataclass(frozen=True)
@@ -104,7 +118,12 @@ class Registry:
         presets, with a did-you-mean, for an unknown one.
         """
         names: list[str] = []
-        for name in request if _listed(request) else [request]:
+        listed = (
+            request
+            if isinstance(request, Items) and not isinstance(request, str)
+            else (request,)
+        )
+        for name in listed:
             if not isinstance(name, str):
                 raise TypeError(
                     f"preset name must be str, got {type(name).__name__}"

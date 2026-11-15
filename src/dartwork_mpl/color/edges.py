@@ -14,9 +14,7 @@ from .model import (
     ContrastFacts,
     DivergingSource,
     Form,
-    Kind,
     Lift,
-    Locale,
     Semantic,
     SemanticFacts,
 )
@@ -28,7 +26,7 @@ STEP = 1.0 / 255.0
 
 def is_full_ladder(form: Form, plan: tuple[Hex, ...]) -> bool:
     """A sequential family asked for nine or ten stops."""
-    return form.family.kind is Kind.SEQUENTIAL and form.n.n >= 9
+    return form.family.kind.ladder and form.n.n >= 9
 
 
 def whole_ladder(form: Form, plan: tuple[Hex, ...]) -> tuple[Hex, ...]:
@@ -75,7 +73,7 @@ def step_past_rounding(facts: ContrastFacts, plan: Lift | None) -> Lift | None:
 
 def is_korean(facts: SemanticFacts, plan: Semantic) -> bool:
     """The role colours are for a Korean preset."""
-    return facts.locale is Locale.KR
+    return facts.locale.red_gains
 
 
 def red_gains_blue_losses(facts: SemanticFacts, plan: Semantic) -> Semantic:

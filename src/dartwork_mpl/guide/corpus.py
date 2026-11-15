@@ -14,7 +14,8 @@ from functools import cache
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 
-from .model import Reference, Rules, ref_id
+from .model import Rules
+from .reference import Reference, ref_id
 
 ASSETS = files("dartwork_mpl.guide") / "assets"
 SKILL = ASSETS / "skill"

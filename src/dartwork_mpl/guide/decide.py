@@ -13,19 +13,18 @@ from __future__ import annotations
 from typing import assert_never
 
 from .model import (
-    Check,
+    ColormapName,
+    ColorName,
     Finding,
     Findings,
-    Kind,
     Known,
     LintFacts,
     Literal,
-    Query,
-    Reference,
     Rule,
     Rules,
     Spot,
 )
+from .reference import Query, Reference
 
 
 def is_color(literal: Literal, known: Known) -> bool:
@@ -36,9 +35,9 @@ def is_color(literal: Literal, known: Known) -> bool:
 def broken(literal: Literal, known: Known) -> bool:
     """Whether a literal names nothing matplotlib has registered."""
     match literal.check:
-        case Check.COLORMAP:
+        case ColormapName():
             return literal.value not in known.colormaps
-        case Check.COLOR:
+        case ColorName():
             return not is_color(literal, known)
         case _:
             assert_never(literal.check)
@@ -73,7 +72,7 @@ def findings(facts: LintFacts, rules: Rules) -> Findings:
             spots += [
                 (rule, Spot(lit.offset, lit.value))
                 for lit in facts.code.literals
-                if lit.check is rule.check and broken(lit, facts.known)
+                if lit.check == rule.check and broken(lit, facts.known)
             ]
     found = (finding(rule, facts, spot) for rule, spot in spots)
     return tuple(sorted(found, key=lambda f: (f.offset, f.rule_id)))
@@ -90,10 +89,6 @@ def rank(
     ]
     hits = sorted(
         (pair for pair in scored if pair[0] > 0),
-        key=lambda pair: (
-            -pair[0],
-            pair[1].kind is not Kind.TEMPLATE,
-            pair[1].id,
-        ),
+        key=lambda pair: (-pair[0], pair[1].kind.tie, pair[1].id),
     )
     return tuple(ref for _, ref in hits[: query.limit])

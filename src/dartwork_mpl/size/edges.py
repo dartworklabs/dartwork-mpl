@@ -10,8 +10,16 @@ from itertools import pairwise
 from typing import assert_never
 
 from ..edgecase import EdgeCase
-from .decide import REPORT_TIERS, SLIDE_TIERS, scaled
-from .model import Canvas, CanvasFacts, CanvasKind, Family
+from .canvas import (
+    REPORT_TIERS,
+    Canvas,
+    CanvasFacts,
+    Paper,
+    Poster,
+    Report,
+    Slides,
+)
+from .decide import SLIDE_TIERS, scaled
 
 # Room neighbouring flat names need, in ems of the tick font: the layout's
 # own target, which wraps or turns names that come closer.
@@ -27,12 +35,18 @@ SPACING_SHARE = 0.96
 def has_category_names(facts: CanvasFacts, plan: Canvas) -> bool:
     """Measured category names under a single default or grouped panel."""
     request = facts.request
+    match facts.page.family:
+        case Paper():
+            return False  # a journal's columns, not the names, set the width
+        case Report() | Slides() | Poster():
+            pass
+        case _:
+            assert_never(facts.page.family)
     return (
         facts.names is not None
         and len(facts.names.widths_pt) >= 2
-        and request.kind in (CanvasKind.DEFAULT, CanvasKind.GROUPED)
+        and request.kind.flat_names
         and request.grid.single
-        and facts.page.family is not Family.PAPER
     )
 
 
@@ -43,9 +57,9 @@ def widen_for_names(facts: CanvasFacts, plan: Canvas) -> Canvas:
     widths, size = facts.names.widths_pt, facts.names.size_pt
     need = max((a + b) / 2 for a, b in pairwise(widths)) + CLEARANCE_EM * size
     match facts.page.family:
-        case Family.SLIDES:
+        case Slides():
             tiers = SLIDE_TIERS
-        case Family.REPORT | Family.PAPER | Family.POSTER:
+        case Report() | Paper() | Poster():
             tiers = tuple(scaled(tier, facts.page) for tier in REPORT_TIERS)
         case _:
             assert_never(facts.page.family)

@@ -7,9 +7,9 @@ import matplotlib.colors as mcolors
 
 from dartwork_mpl.color import decide, edges
 from dartwork_mpl.color.catalog import CATALOG
+from dartwork_mpl.color.family import Count
 from dartwork_mpl.color.model import (
     ContrastFacts,
-    Count,
     DivergingSource,
     Form,
     Locale,

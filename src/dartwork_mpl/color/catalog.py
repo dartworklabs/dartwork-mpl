@@ -9,7 +9,6 @@ under their own prefixes.
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from importlib.resources import files
 from types import MappingProxyType
@@ -17,8 +16,9 @@ from types import MappingProxyType
 from ..edgecase import settle
 from .decide import diverging_row
 from .edges import CURATED_ROW
-from .model import Catalog, DivergingSource, Family, Kind, Library, Row, paired
-from .shipped import Shipped, shades
+from .family import Cyclic, Diverging, Family, MultiHue, Qualitative, Sequential
+from .model import Catalog, DivergingSource, Library, Row, paired
+from .shipped import Shipped, decode, shades
 from .space import Hex
 
 __all__ = ["CATALOG", "CURATED"]
@@ -54,7 +54,7 @@ def _library(library: Library) -> dict[str, Hex]:
             key, value = line.split(":", maxsplit=1)
             named[f"{prefix}{key.strip()}"] = Hex(value.strip())
         return named
-    table = shades(json.loads(_read(library.source)), library.source)
+    table = shades(decode(_read(library.source)), library.source)
     return {
         f"{prefix}{name.lower().replace(' ', '')}{weight}": Hex(f"#{value}")
         for name, row in table.items()
@@ -82,20 +82,20 @@ def _families(data: Shipped) -> dict[str, Family]:
     qualitative = {**data.qualitative, **data.cycles}
     families = [
         *(
-            Family(name, Kind.SEQUENTIAL, row, cmaps[name])
+            Family(name, Sequential(), row, cmaps[name])
             for name, row in ladders.items()
         ),
         *(
-            Family(name, Kind.MULTI_HUE, cmap=cmaps[name], picks=picks[name])
+            Family(name, MultiHue(), cmap=cmaps[name], picks=picks[name])
             for name in multi_hue
         ),
         *(
-            Family(name, Kind.DIVERGING, canonical(name), cmaps[name])
+            Family(name, Diverging(), canonical(name), cmaps[name])
             for name in diverging
         ),
-        *(Family(name, Kind.CYCLIC, cmap=cmaps[name]) for name in CYCLIC),
+        *(Family(name, Cyclic(), cmap=cmaps[name]) for name in CYCLIC),
         *(
-            Family(name, Kind.QUALITATIVE, row)
+            Family(name, Qualitative(), row)
             for name, row in qualitative.items()
         ),
     ]
@@ -117,7 +117,7 @@ def _named(families: Mapping[str, Family]) -> dict[str, Hex]:
 
 def load() -> tuple[Catalog, Mapping[str, Row]]:
     """The catalog, and the hand-tuned sets (the hash test freezes them)."""
-    data = Shipped.parse(json.loads(_read("dartwork.json")))
+    data = Shipped.parse(decode(_read("dartwork.json")))
     families = _families(data)
     curated = {**data.qualitative, **data.diverging}
     catalog = Catalog(

@@ -12,28 +12,27 @@ flat are an edge case in ``edges.py``.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
 from typing import assert_never
 
-from .model import (
-    ASPECTS,
-    Aspect,
+from .canvas import (
+    BROAD,
+    MEDIUM,
+    NARROW,
+    WIDEST,
+    ByPositions,
     Canvas,
-    CanvasKind,
     CanvasRequest,
-    Family,
-    FigureSize,
-    Grid,
-    KindSpec,
-    Length,
+    HalfBody,
     Page,
-    Panels,
-    cm,
+    Paper,
+    Poster,
+    Report,
+    Slides,
+    SquareBody,
+    WholeBody,
 )
+from .model import ASPECTS, Aspect, FigureSize, Grid, Length, Panels, cm
 
-# The report tiers: 17 cm is the A4 text width with 2 cm margins.
-NARROW, MEDIUM, BROAD, WIDEST = cm(9), cm(12), cm(14.5), cm(17)
-REPORT_TIERS = (NARROW, MEDIUM, BROAD, WIDEST)
 # Journal columns: one panel in one column, wider content across two.
 COLUMN, TWO_COLUMNS = cm(9), cm(17)
 # The slide less 1 cm side margins, a 2.8 cm title band and a 1 cm bottom
@@ -46,30 +45,6 @@ SLIDE_TIERS = (SLIDE_HALF, SLIDE_TWO_THIRDS, cm(23.4))
 # Most x positions whose labels fit the half and two-thirds widths at the
 # slide's 18.2 pt ticks (six company names fit 15.4 cm with 9 pt to spare).
 SLIDE_HALF_POINTS, SLIDE_TWO_THIRDS_POINTS = 4, 6
-
-KINDS: Mapping[CanvasKind, KindSpec] = {
-    CanvasKind.DEFAULT: KindSpec(MEDIUM, ASPECTS["standard"]),
-    CanvasKind.GROUPED: KindSpec(MEDIUM, ASPECTS["standard"]),
-    CanvasKind.BARH: KindSpec(BROAD, ASPECTS["standard"]),
-    CanvasKind.COMPACT: KindSpec(NARROW, ASPECTS["standard"]),
-    CanvasKind.MATRIX: KindSpec(MEDIUM, ASPECTS["square"], fixed=True),
-    CanvasKind.DENSE: KindSpec(WIDEST, ASPECTS["cinema"], fixed=True),
-    CanvasKind.STRIP: KindSpec(WIDEST, Aspect(0.45), fixed=True),
-    CanvasKind.SLIDE: KindSpec(
-        cm(23.4), Aspect(10.5 / 23.4), fixed=True, absolute=True
-    ),
-    # A 10 in 16:9 slide, 25.4 x 14.29 cm. A larger slide (13.33 in) would
-    # show the same text 25 % smaller on screen.
-    CanvasKind.FULL_SLIDE: KindSpec(
-        cm(25.4), ASPECTS["slide"], fixed=True, absolute=True
-    ),
-}
-# The tallest a grid canvas may be, as a share of its width.
-TALLEST: Mapping[Family, Aspect] = {
-    Family.REPORT: Aspect(1.0),
-    Family.PAPER: Aspect(1.0),
-    Family.POSTER: ASPECTS["slide"],
-}
 
 
 def figure_size(width: Length, height: Aspect | Length) -> FigureSize:
@@ -105,7 +80,7 @@ def scaled(length: Length, page: Page) -> Length:
 
 def density_width(request: CanvasRequest) -> Length:
     """The report tier the kind and density hints pick for one panel."""
-    spec = KINDS[request.kind]
+    spec = request.kind.spec
     points, series = request.n_points, request.n_series
     if spec.fixed:
         return spec.width
@@ -138,23 +113,17 @@ def slide_canvas(request: CanvasRequest) -> Canvas:
     points, series = request.n_points, request.n_series
     if not request.grid.single:
         return SLIDE_BODY
-    match request.kind:
-        case CanvasKind.COMPACT:
+    match request.kind.slide:
+        case HalfBody():
             return Canvas(SLIDE_HALF, height)
-        case CanvasKind.MATRIX:
+        case SquareBody():
             return Canvas(cm(10.5), height)
-        case CanvasKind.DEFAULT | CanvasKind.GROUPED:
+        case ByPositions():
             pass
-        case (
-            CanvasKind.BARH
-            | CanvasKind.DENSE
-            | CanvasKind.STRIP
-            | CanvasKind.SLIDE
-            | CanvasKind.FULL_SLIDE
-        ):
+        case WholeBody():
             return SLIDE_BODY
         case _:
-            assert_never(request.kind)
+            assert_never(request.kind.slide)
     if points is None or request.dual_axis:
         return SLIDE_BODY
     if (series is not None and series >= 4) or points > SLIDE_TWO_THIRDS_POINTS:
@@ -164,31 +133,36 @@ def slide_canvas(request: CanvasRequest) -> Canvas:
     return Canvas(SLIDE_TWO_THIRDS, height)
 
 
-def grid_canvas(request: CanvasRequest, page: Page, width: Length) -> Canvas:
+def grid_canvas(request: CanvasRequest, width: Length, page: Aspect) -> Canvas:
     """A panel grid ``width`` wide: each panel keeps the kind's aspect, and
-    the whole is no taller than the page allows."""
-    grid, aspect = request.grid, KINDS[request.kind].aspect
+    the whole is no taller than ``page`` (a share of the width) allows."""
+    grid, aspect = request.grid, request.kind.spec.aspect
     rows = cm(width.cm / grid.ncols * aspect.ratio * grid.nrows)
-    tallest = cm(width.cm * TALLEST[page.family].ratio)
+    tallest = cm(width.cm * page.ratio)
     return Canvas(width, min(half_cm(rows), half_cm(tallest)))
 
 
 def canvas(request: CanvasRequest, page: Page) -> Canvas:
     """The ordinary default canvas for ``request`` on ``page``."""
-    spec = KINDS[request.kind]
+    spec = request.kind.spec
     if spec.absolute:
         return Canvas(spec.width, spec.aspect)
     single = request.grid.single
+    # The tallest a grid canvas may be, as a share of its width.
+    tallest = Aspect(1.0)
     match page.family:
-        case Family.SLIDES:
+        case Slides():
             return slide_canvas(request)
-        case Family.PAPER:
+        case Paper():
             full = not single or (spec.fixed and spec.width.cm > MEDIUM.cm)
             width = TWO_COLUMNS if full else COLUMN
-        case Family.REPORT | Family.POSTER:
+        case Report():
             width = scaled(density_width(request) if single else WIDEST, page)
+        case Poster():
+            width = scaled(density_width(request) if single else WIDEST, page)
+            tallest = ASPECTS["slide"]
         case _:
             assert_never(page.family)
     if single:
         return Canvas(width, spec.aspect)
-    return grid_canvas(request, page, width)
+    return grid_canvas(request, width, tallest)

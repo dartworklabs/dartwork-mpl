@@ -6,12 +6,13 @@ import pytest
 
 from dartwork_mpl.color import decide
 from dartwork_mpl.color.catalog import CATALOG
+from dartwork_mpl.color.family import Count
 from dartwork_mpl.color.model import (
     ContrastFacts,
-    Count,
+    DarkInk,
     Form,
     Gradient,
-    Ink,
+    LightInk,
     Lookup,
     Name,
     PaletteRequest,
@@ -87,8 +88,8 @@ def test_lift_is_none_for_a_passing_colour_and_darkens_on_white():
 
 def test_readable_picks_the_higher_contrast_ink():
     dark_bg, pale_bg = Rgb.from_hex("#222222"), Rgb.from_hex("#f7f7f7")
-    assert decide.readable(dark_bg, WHITE, BLACK) is Ink.LIGHT
-    assert decide.readable(pale_bg, WHITE, BLACK) is Ink.DARK
+    assert decide.readable(dark_bg, WHITE, BLACK) == LightInk()
+    assert decide.readable(pale_bg, WHITE, BLACK) == DarkInk()
 
 
 def test_mix_weights_the_first_colour():

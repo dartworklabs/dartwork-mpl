@@ -12,9 +12,8 @@ import math
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from enum import Enum
 from itertools import pairwise
-from typing import Literal, TypeVar, assert_never
+from typing import ClassVar, Literal, TypeVar
 
 T = TypeVar("T")
 
@@ -78,93 +77,91 @@ class Box:
         }
 
 
-class Severity(Enum):
+@dataclass(frozen=True)
+class Severity:
     """How bad a finding is: a WARNING spoils the chart, an INFO may."""
 
-    WARNING = "WARNING"
-    INFO = "INFO"
+    value: str
+
+    WARNING: ClassVar[Severity]
+    INFO: ClassVar[Severity]
 
 
-class Role(Enum):
-    """What a text is in its figure."""
-
-    TITLE = "title"
-    AXIS_LABEL = "axis label"
-    TICK = "tick label"
-    TEXT = "text"
-    PANEL_LETTER = "panel letter"
-    FIGURE_TEXT = "figure text"
-
-    @property
-    def free(self) -> bool:
-        """A text the user placed (``ax.text``, an annotation, a value)."""
-        match self:
-            case Role.TEXT:
-                return True
-            case (
-                Role.TITLE
-                | Role.AXIS_LABEL
-                | Role.TICK
-                | Role.PANEL_LETTER
-                | Role.FIGURE_TEXT
-            ):
-                return False
-            case _:
-                assert_never(self)
-
-    @property
-    def tick(self) -> bool:
-        """A tick label."""
-        match self:
-            case Role.TICK:
-                return True
-            case (
-                Role.TITLE
-                | Role.AXIS_LABEL
-                | Role.TEXT
-                | Role.PANEL_LETTER
-                | Role.FIGURE_TEXT
-            ):
-                return False
-            case _:
-                assert_never(self)
-
-    @property
-    def under_legend(self) -> bool:
-        """A text a legend must not cover: title, axis label, tick, figure text."""
-        match self:
-            case Role.TITLE | Role.AXIS_LABEL | Role.TICK | Role.FIGURE_TEXT:
-                return True
-            case Role.TEXT | Role.PANEL_LETTER:
-                return False
-            case _:
-                assert_never(self)
+Severity.WARNING = Severity("WARNING")
+Severity.INFO = Severity("INFO")
 
 
-class Axis(Enum):
-    """An Axes' x or y axis."""
+@dataclass(frozen=True)
+class Role:
+    """What a text is in its figure.
 
-    X = "x"
-    Y = "y"
+    ``free``: a text the user placed (``ax.text``, an annotation, a value);
+    ``tick``: a tick label; ``under_legend``: a text a legend must not cover
+    (title, axis label, tick, figure text).
+    """
+
+    value: str
+    free: bool
+    tick: bool
+    under_legend: bool
+
+    TITLE: ClassVar[Role]
+    AXIS_LABEL: ClassVar[Role]
+    TICK: ClassVar[Role]
+    TEXT: ClassVar[Role]
+    PANEL_LETTER: ClassVar[Role]
+    FIGURE_TEXT: ClassVar[Role]
+
+
+Role.TITLE = Role("title", free=False, tick=False, under_legend=True)
+Role.AXIS_LABEL = Role("axis label", free=False, tick=False, under_legend=True)
+Role.TICK = Role("tick label", free=False, tick=True, under_legend=True)
+Role.TEXT = Role("text", free=True, tick=False, under_legend=False)
+Role.PANEL_LETTER = Role(
+    "panel letter", free=False, tick=False, under_legend=False
+)
+Role.FIGURE_TEXT = Role(
+    "figure text", free=False, tick=False, under_legend=True
+)
+
+
+@dataclass(frozen=True)
+class XAxis:
+    """An Axes' x axis."""
+
+    value: ClassVar[Literal["x"]] = "x"
 
     def pick(self, x: T, y: T) -> T:
-        """``x`` for the x axis, ``y`` for the y axis."""
-        match self:
-            case Axis.X:
-                return x
-            case Axis.Y:
-                return y
-            case _:
-                assert_never(self)
+        """``x``: this is the x axis."""
+        return x
 
     @property
     def mpl(self) -> Literal["x", "y"]:
         """matplotlib's name for the axis (``which=``)."""
-        return self.pick("x", "y")
+        return self.value
 
+
+@dataclass(frozen=True)
+class YAxis:
+    """An Axes' y axis."""
+
+    value: ClassVar[Literal["y"]] = "y"
+
+    def pick(self, x: T, y: T) -> T:
+        """``y``: this is the y axis."""
+        return y
+
+    @property
+    def mpl(self) -> Literal["x", "y"]:
+        """matplotlib's name for the axis (``which=``)."""
+        return self.value
+
+
+#: An Axes' x or y axis.
+Axis = XAxis | YAxis
 
 #: Both axes, x first.
-AXES = (Axis.X, Axis.Y)
+AXES: tuple[Axis, ...] = (XAxis(), YAxis())
 
 
 def flat(projection: str) -> bool:

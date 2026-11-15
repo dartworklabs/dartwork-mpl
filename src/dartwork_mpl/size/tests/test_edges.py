@@ -15,17 +15,18 @@ import dartwork_mpl as dm
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.geometry import drawn_tick_labels, get_renderer
 from dartwork_mpl.size import decide
-from dartwork_mpl.size.edges import EDGES
-from dartwork_mpl.size.model import (
+from dartwork_mpl.size.canvas import (
     CanvasFacts,
     CanvasRequest,
-    Family,
-    Grid,
     NameWidths,
     Page,
+    Paper,
+    Slides,
 )
+from dartwork_mpl.size.edges import EDGES
+from dartwork_mpl.size.model import Grid
 
-REPORT, PAPER, SLIDES = Page(), Page(Family.PAPER), Page(Family.SLIDES)
+REPORT, PAPER, SLIDES = Page(), Page(Paper()), Page(Slides())
 TEMPLATES_WITH_NAMES = (
     "advanced/bar.py",
     "waterfall.py",
