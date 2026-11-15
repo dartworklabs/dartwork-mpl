@@ -142,7 +142,7 @@ dev = [
 # code in src/dartwork_mpl/**/tests/ (ADR 0005). importlib mode lets test
 # modules in different directories share a file name; "." makes the
 # `tests.*` helper modules importable from either tree.
-testpaths = ["tests", "src/dartwork_mpl"]
+testpaths = ["tests", "src/dartwork_mpl", "evals"]
 pythonpath = ["src", "."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
@@ -230,7 +230,8 @@ split-on-trailing-comma = false
     "D106",
     "D107",
 ]
-# Slice-owned tests (ADR 0005) follow the same test-code allowances.
+# Slice-owned tests (ADR 0005) and the eval tests follow the same allowances.
+"evals/tests/**/*.py" = ["D102", "D103", "D104"]
 "src/dartwork_mpl/**/tests/**/*.py" = [
     "RUF059",
     "SIM117",
