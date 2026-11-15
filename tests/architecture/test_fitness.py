@@ -3,7 +3,8 @@
 ``boundaries.py`` judges slice-to-slice imports. These rules judge
 the shape of the whole package: module and function size, slice size, naming,
 import cycles and the purity of decision code. The T rules (``escapes.py``)
-count the ways code slips past the type checker. They read source with ``ast``
+count the ways code slips past the type checker; the C rules
+(``composition.py``) keep slices apart and ``compose/`` free of decisions. They read source with ``ast``
 only; nothing is imported.
 
 The contract, shared by every rule: ``fitness_baseline.json`` records today's
@@ -55,6 +56,12 @@ _ESC = importlib.util.spec_from_file_location(
 assert _ESC is not None and _ESC.loader is not None
 escapes = importlib.util.module_from_spec(_ESC)
 _ESC.loader.exec_module(escapes)
+_COMP = importlib.util.spec_from_file_location(
+    "composition", Path(__file__).with_name("composition.py")
+)
+assert _COMP is not None and _COMP.loader is not None
+composition = importlib.util.module_from_spec(_COMP)
+_COMP.loader.exec_module(composition)
 
 P = "dartwork_mpl"
 MODULE_CAP = 500  # lines; the well-factored modules already fit
@@ -115,6 +122,8 @@ WHY = {
 }
 KIND.update(dict.fromkeys(escapes.MEASURES, "ceil"))
 WHY.update(escapes.WHY)
+KIND.update(composition.KIND)
+WHY.update(composition.WHY)
 RULES = tuple(KIND)
 # Size rules warn instead of failing: a hard line cap breeds contrived code.
 ADVISORY = frozenset(
@@ -400,6 +409,20 @@ def _escape(fn: Callable[[Mapping[str, str]], dict[str, int]]):
 
 
 MEASURES = {**MEASURES, **{k: _escape(f) for k, f in escapes.MEASURES.items()}}
+
+
+def _composition(fn: Callable[..., object]):
+    def measure(tree: Tree) -> object:
+        hard, lazy = edges(tree)
+        return fn(tree[0], hard | lazy, cb.SLICES)
+
+    return measure
+
+
+MEASURES = {
+    **MEASURES,
+    **{k: _composition(f) for k, f in composition.MEASURES.items()},
+}
 
 
 def compare(

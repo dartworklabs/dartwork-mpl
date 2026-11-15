@@ -1,4 +1,21 @@
 {
+ "C1_slice_imports_slice": [
+  "dartwork_mpl.check -> dartwork_mpl.color",
+  "dartwork_mpl.labels -> dartwork_mpl.color",
+  "dartwork_mpl.labels -> dartwork_mpl.style",
+  "dartwork_mpl.labels -> dartwork_mpl.ticks",
+  "dartwork_mpl.layout -> dartwork_mpl.labels",
+  "dartwork_mpl.layout -> dartwork_mpl.legend",
+  "dartwork_mpl.layout -> dartwork_mpl.size",
+  "dartwork_mpl.layout -> dartwork_mpl.ticks",
+  "dartwork_mpl.size -> dartwork_mpl.style",
+  "dartwork_mpl.style -> dartwork_mpl.color",
+  "dartwork_mpl.style -> dartwork_mpl.font"
+ ],
+ "C2_compose_names": [],
+ "C3_compose_reaches": [],
+ "C4_compose_decisions": {},
+ "C5_compose_importers": [],
  "R1_module_lines": {
   "src/dartwork_mpl/layout/measure.py": 509
  },
