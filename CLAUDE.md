@@ -32,10 +32,19 @@ package is eleven small slices under `src/dartwork_mpl/`:
 `style` `size` `color` `font` `layout` `ticks` `labels` `legend` `check`
 `save` `guide`
 
-Each slice keeps the same files: `model.py` (domain types), `decide.py` (pure
-decisions, domain types only), `edges.py` (named edge cases appended to
-`EDGES`), `measure.py` / `apply.py` (thin matplotlib shell), `assets/` (its
-own data files), `tests/`. `tests/architecture/` enforces this.
+Each slice keeps the same files: `model.py` (domain types and the one place
+strings are parsed), `decide.py` (pure decisions, domain types only),
+`edges.py` (named edge cases appended to `EDGES` or `<NAME>_EDGES`),
+`measure.py` / `apply.py` (thin matplotlib shell), modules named after a
+concept when one of those grows, `assets/` (its own data files), `tests/`.
+
+A slice imports no other slice. What two or more slices share lives in a
+platform package (`axis`, `projection`, `align`, `edge`, `length`, `locale`,
+`colorspace`, `number`, `edgecase` are pure; `geometry` measures figures).
+Where one slice needs another, `compose/<slice>.py` joins them with no
+decisions, and only the package root imports it: `dm.style`,
+`dm.simple_layout`, `dm.figsize_for` and the label functions are composed
+there. `tests/architecture/` enforces all of this.
 
 ## Plotting rules live in the bundled skill
 

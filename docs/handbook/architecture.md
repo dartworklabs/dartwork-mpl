@@ -6,7 +6,7 @@ orphan: true
 
 > **한눈에**
 >
-> 패키지는 작은 코어 slice 열한 개다. 각 slice 안에서는 결정을 순수 함수로, matplotlib 객체 변경을 얇은 shell로 나눈다. 반드시 지키는 것은 미감과 "matplotlib을 감싸지 않음"이다. 그 밖의 기능은 의미가 없으면 제거한다.
+> 패키지는 작은 코어 slice 열한 개와 그들이 함께 쓰는 platform 패키지다. slice는 서로를 import하지 않고 `compose/`에서 만난다. 각 slice 안에서는 결정을 순수 함수로, matplotlib 객체 변경을 얇은 shell로 나눈다. 반드시 지키는 것은 미감과 "matplotlib을 감싸지 않음"이다. 그 밖의 기능은 의미가 없으면 제거한다.
 
 ## 코어 slice 열한 개
 
@@ -15,7 +15,7 @@ orphan: true
 | slice | 한 가지 책임 |
 | --- | --- |
 | `style` | preset 적용, 글자·선·무게의 preset 상대값(`fs`, `lw`, `fw`) |
-| `size` | 물리 단위와 그림 크기, 종횡비 |
+| `size` | 그림 크기와 종횡비, preset의 기본 캔버스 |
 | `color` | 색 이름과 값, 팔레트, 대비 |
 | `font` | 번들 폰트 등록과 선택 |
 | `layout` | 내용에 맞춘 결정적 여백(`simple_layout`) |
@@ -26,9 +26,37 @@ orphan: true
 | `save` | 여러 형식으로 저장 |
 | `guide` | 에이전트 지침: skill, 템플릿, 안티패턴 lint |
 
-slice끼리는 선언한 표면(`__init__.py`의 `__all__`)으로만 만난다. 허용된 의존 방향과 그 이유는 [tests/architecture/boundaries.py](../../tests/architecture/boundaries.py)의 `ALLOWED`가 정본이다. 두 slice 이상이 함께 쓰는 측정 코드는 platform 패키지 `geometry`에 있고, platform은 어떤 slice도 import하지 않는다. 한 slice만 쓰는 측정 코드는 그 slice 안에 있다. 공용 `utils/`나 `common/`은 만들지 않는다. 같은 이유로 함께 바뀌는 것이 관찰되기 전에는 중복이 틀린 추상화보다 싸기 때문이다.
+**slice는 다른 slice를 import하지 않는다.** 표면이든 내부 모듈이든 같다. slice가 import하는 것은 platform 패키지뿐이다. 한 기능이 다른 기능을 필요로 하면 `compose/<slice>.py`가 둘을 잇는다. 이름은 그 기능을 쓰는 slice를 따른다. 조립 함수는 slice의 표면을 순서대로 부르고, 한 slice의 함수를 다른 slice에 타입이 있는 인자로 넘길 뿐 아무것도 판단하지 않는다(분기, 반복, 클래스 없음). `compose`를 import하는 것은 패키지 루트뿐이다. 규칙은 [composition.py](../../tests/architecture/composition.py)의 C1..C5와 [boundaries.py](../../tests/architecture/boundaries.py)가 지킨다.
 
-`layout`은 `ticks`, `labels`, `legend`를 정해진 함수로만 부른다. 레이아웃 한 단계 안에서 눈금 글자를 정하고, 라벨과 범례를 자리 잡게 한 뒤, 여백을 잰다.
+| 조립 모듈 | 잇는 것 | 루트가 내보내는 이름 |
+| --- | --- | --- |
+| `compose/style.py` | 번들 폰트 등록, preset, preset의 locale에 맞춘 `color`의 역할 색 | `dm.style`(이 모듈 자체) |
+| `compose/size.py` | `style`의 활성 preset 이름과 레이어 읽기 | `dm.figsize_for` |
+| `compose/labels.py` | `style`의 `fs`·`fw`, `ticks`의 눈금 단위와 숫자 표기 | `dm.label_bars`, `dm.annotate_value`, `dm.annotate_corner`, `dm.label_hline`, `dm.label_axes`, `dm.add_note` |
+| `compose/layout.py` | `ticks`·`labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
+
+`layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 눈금 글자를 먼저 쓰고, 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자를 자리 잡게 한 뒤 여백을 잰다. 여백이 맞으면 날짜 눈금을 솎는다. 픽셀은 이 순서에 달려 있다.
+
+`dm.style`은 slice `dartwork_mpl.style`이 아니라 `compose/style.py`다. 루트가 이 이름에 조립 모듈을 묶는다. `from dartwork_mpl.style import ...`는 여전히 slice를 가리킨다.
+
+## platform
+
+두 slice 이상이 함께 쓰는 것은 platform 패키지에 둔다. platform은 어떤 slice도 import하지 않는다. 한 slice만 쓰는 것은 그 slice 안에 둔다. 패키지 하나가 개념 하나이고 이름은 그 개념이다. `utils`, `common`, `shared`, `core`, `types`, `base`는 만들지 않는다. 순수 타입과 matplotlib 코드는 한 패키지에 두지 않는다. 순수 파일이 platform을 import해도 matplotlib이 끌려오지 않아야 하기 때문이다([test_pure_imports.py](../../tests/architecture/test_pure_imports.py)).
+
+| 패키지 | 개념 | 쓰는 곳 |
+| --- | --- | --- |
+| `axis` | Axes의 x·y 축(`X`, `Y`, `Which`), 축 라벨이 놓이는 쪽 | check, labels, layout, ticks, geometry |
+| `projection` | Axes의 projection(평면, 3D, 그 밖) | check, labels, ticks, geometry |
+| `align` | 글자의 가로·세로 정렬 | labels, ticks |
+| `edge` | 상자의 네 변, figure 범례가 잡는 변(`Reserve`) | layout, legend |
+| `length` | 물리 길이 `Length`와 단위(`dm.cm` 등) | size, layout, 루트 |
+| `locale` | 기본 관례와 한국 관례 | style, color |
+| `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels, check |
+| `number` | 숫자가 찍히는 눈금 단위(`TickScale`) | ticks, labels |
+| `edgecase` | 엣지 케이스 등록 장치 | 모든 slice |
+| `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨 | check, labels, layout, legend, ticks |
+
+`geometry`와 `edgecase` 밖의 platform은 모두 순수하다. 정본과 패키지마다의 이유는 `boundaries.py`의 `PLATFORM`이다.
 
 ## slice 안의 파일 규칙
 
@@ -36,18 +64,21 @@ matplotlib의 `Figure`와 `Axes`는 상태를 바꾸는 객체다. 이 사실은
 
 | 파일 | 역할 | 규칙 |
 | --- | --- | --- |
-| `model.py` | slice의 도메인 타입. primitive를 감싸는 유일한 곳. 입력 파싱 | 순수 |
+| `model.py` | slice의 도메인 타입과 입력 파싱. 문자열 비교와 `Literal`은 여기서만 쓴다 | 순수 |
+| 개념 이름의 타입 모듈 | `model.py`가 커져 개념별로 나온 도메인 타입(예: `labels/places.py`, `legend/plans.py`) | 순수, `boundaries.py`의 `DECISIONS`에 등록 |
 | `decide.py` | 평범한 그림에 대한 결정. 사실을 받아 계획을 돌려준다 | 순수, 도메인 타입만 |
 | `edges.py` | 이름 붙은 엣지 케이스 목록. 항목마다 이유와 예제 | 순수, 도메인 타입만 |
-| `measure.py`, `apply.py` | figure에서 사실을 읽고 계획을 반영하는 shell | matplotlib 사용 |
+| `measure.py`, `apply.py`, 개념 이름의 shell 모듈 | figure에서 사실을 읽고 계획을 반영하는 shell | matplotlib 사용 |
 | `assets/` | 그 slice만 쓰는 데이터 파일 | 다른 slice가 경로로 읽지 않는다 |
 | `__init__.py` | 표면 | 연결만 |
 
+platform의 순수 패키지도 같은 파일 이름 규칙을 따른다(`axis/model.py`, `colorspace/decide.py`, `colorspace/edges.py`).
+
 **도메인 파일은 primitive 타입으로 말하지 않는다.** `decide.py`와 `edges.py`의 함수는 인자와 반환을 도메인 타입으로 적는다. `str`, `int`, `float`, `dict`, `Any` 같은 primitive나 annotation 누락은 오류다. `float` 두 개를 받는 함수는 폭과 높이가 바뀌어도 통과하지만 `Length`와 `Aspect`는 그렇지 않기 때문이다.
 
-**엣지 케이스는 본문 분기가 아니라 목록에 덧붙인다.** 극좌표 축, 한국어 만 단위, 빽빽한 날짜처럼 드문 그림에서만 필요한 처리는 `decide.py`에 분기를 더하지 않는다. `edges.py`의 `EDGES` 끝에 `EdgeCase` 하나를 더한다. 각 항목은 이름, 이유(`why`), 예제(`example`), 적용 조건, 계획을 바꾸는 함수를 갖는다. `settle`이 순서대로 적용하고 어떤 것이 작동했는지 돌려준다. 본 경로는 평범한 경우만 읽으면 되고, 엣지 케이스는 이름으로 세고 지울 수 있다. `check`의 검사 규칙도 같은 방식으로 등록한다. 장치는 [edgecase/\_\_init\_\_.py](../../src/dartwork_mpl/edgecase/__init__.py)에 있다.
+**엣지 케이스는 본문 분기가 아니라 목록에 덧붙인다.** 극좌표 축, 한국어 만 단위, 빽빽한 날짜처럼 드문 그림에서만 필요한 처리는 `decide.py`에 분기를 더하지 않는다. `edges.py`의 목록 끝에 `EdgeCase` 하나를 더한다. 목록은 사실·계획 타입 쌍마다 하나이고 `EDGES` 또는 `<NAME>_EDGES`(`FIT_EDGES`, `LIFT_EDGES` 등)라고 부른다. 각 항목은 이름, 이유(`why`), 예제(`example`), 적용 조건, 계획을 바꾸는 함수를 갖는다. `settle`이 순서대로 적용하고 어떤 것이 작동했는지 돌려준다. 본 경로는 평범한 경우만 읽으면 되고, 엣지 케이스는 이름으로 세고 지울 수 있다. `check`의 검사 규칙도 같은 방식으로 등록한다. 장치는 [edgecase/\_\_init\_\_.py](../../src/dartwork_mpl/edgecase/__init__.py)에 있다.
 
-**엣지 케이스는 이유와 예제가 있어야 존재한다.** `why`는 그 엣지가 없으면 예제에서 무엇이 잘못되는지를 한 문장으로 말한다. 고치는 방법이 아니라 결함을 쓴다. `example`은 slice의 `tests/`에 있는 테스트 하나를 `test_<파일>.py::[클래스::]test_<함수>`로 가리킨다. 그 테스트는 엣지 이름을 적고 단언하며, 실행되는 동안 그 엣지가 실제로 작동해야 한다. 둘 중 하나라도 없으면 테스트가 실패한다. 줄 수에는 상한이 없다. 대신 실제 그림에서 한 번도 작동하지 않는 엣지 케이스는 그 코드, 그것만 쓰던 타입과 측정 코드, 테스트, 지침 문구와 함께 지운다. 실제 그림은 픽셀 장면, 번들 템플릿, robustness 장면이다. `edgecase.tally`에 `Counter`를 넣으면 `settle`이 작동한 이름을 센다. 기본은 꺼져 있다.
+**엣지 케이스는 이유와 예제가 있어야 존재한다.** `why`는 그 엣지가 없으면 예제에서 무엇이 잘못되는지를 한 문장으로 말한다. 고치는 방법이 아니라 결함을 쓴다. `example`은 그 패키지의 `tests/`에 있는 테스트 하나를 `test_<파일>.py::[클래스::]test_<함수>`로 가리킨다. 그 테스트는 엣지 이름을 적고 단언하며, 실행되는 동안 그 엣지가 실제로 작동해야 한다. 둘 중 하나라도 없으면 테스트가 실패한다. 줄 수에는 상한이 없다. 대신 실제 그림에서 한 번도 작동하지 않는 엣지 케이스는 그 코드, 그것만 쓰던 타입과 측정 코드, 테스트, 지침 문구와 함께 지운다. 실제 그림은 픽셀 장면, 번들 템플릿, robustness 장면이다. `edgecase.tally`에 `Counter`를 넣으면 `settle`이 작동한 이름을 센다. 기본은 꺼져 있다.
 
 **자산은 쓰는 slice 안에 둔다.** 스타일 파일은 `style/assets/`, 폰트는 `font/assets/`, 색 표는 `color/assets/`, skill과 템플릿은 `guide/assets/`에 있다. 한 기능을 바꾸거나 지울 때 그 폴더 하나만 보면 되게 하기 위해서다.
 
@@ -62,7 +93,7 @@ matplotlib의 `Figure`와 `Axes`는 상태를 바꾸는 객체다. 이 사실은
 | **크기는 물리 단위, 글자·선은 preset 상대값** | 안티패턴 lint, 지침 테스트 | preset을 바꾸면 그림이 깨진다 |
 | **레이아웃은 결정적이고 다시 적용해도 같다** | 픽셀 baseline | 같은 코드가 실행마다 다른 그림을 낸다 |
 | **`check`는 그림을 바꾸지 않는다** | check slice 테스트 | 검사했더니 그림이 달라진다 |
-| **slice 경계와 파일 규칙** | `tests/architecture/` | 한 기능 변경이 여러 폴더로 번진다 |
+| **slice 경계와 파일 규칙.** slice는 slice를 import하지 않는다 | `tests/architecture/` | 한 기능 변경이 여러 폴더로 번진다 |
 | **호환 층을 두지 않는다.** 재노출 파일, 별칭, 제거된 이름 안내 장치를 만들지 않는다 | 리뷰, fitness의 이름 규칙 | 지운 코드가 다른 모양으로 돌아온다 |
 
 미감 불변식의 출처: [ADR 0001](../adr/0001-oklab-centered-color-construction.md) A1, [ADR 0009](../adr/0009-blueprint.md) 결정 2. 제거 정책의 출처: [ADR 0008](../adr/0008-owner-priority-lock-reset.md) 결정 1·2.

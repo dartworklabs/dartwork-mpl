@@ -55,7 +55,7 @@ slice는 공용 패키지(platform)만 import한다. 한 기능이 다른 기능
 - **공용 패키지는 slice를 import하지 않고, 두 slice 이상이 쓸 때만 존재한다.** `utils`나 `common`은 만들지 않는다.
 - **숨은 의존을 만들지 않는다.** 객체에 속성을 붙여 다른 slice가 읽게 하는 것은 import에 보이지 않는 의존이다.
 
-지키는 장치: `tests/architecture/composition.py`의 C 규칙과 `boundaries.py`. 현재 slice 사이의 import가 남아 있고, 그 목록은 줄어들기만 한다.
+지키는 장치: `tests/architecture/composition.py`의 C 규칙과 `boundaries.py`. slice 사이의 import는 0이고, 하나라도 생기면 테스트가 실패한다.
 
 ## 5. skill은 큰 그림만 잡는다
 
