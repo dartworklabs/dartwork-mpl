@@ -13,13 +13,13 @@ from collections.abc import Mapping
 from importlib.resources import files
 from types import MappingProxyType
 
+from ..colorspace import Hex
 from ..edgecase import settle
 from .decide import diverging_row
 from .edges import CURATED_ROW
 from .family import Cyclic, Diverging, Family, MultiHue, Qualitative, Sequential
 from .model import Catalog, DivergingSource, Library, Row, paired
 from .shipped import Shipped, decode, shades
-from .space import Hex
 
 __all__ = ["CATALOG", "CURATED"]
 

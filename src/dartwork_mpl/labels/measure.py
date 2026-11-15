@@ -18,11 +18,15 @@ from matplotlib.text import Text
 from matplotlib.transforms import Bbox, IdentityTransform
 
 from ..axis import Far, Near, X, Y, bars_along
-from ..color import (
+from ..colorspace import (
+    ContrastFacts,
+    Ratio,
+    Rgb,
+    Rgba,
     composite_layers,
     composite_over,
-    ensure_contrast,
-    readable_text_color,
+    lifted,
+    readable,
 )
 from ..geometry import (
     BBOX_ERRORS,
@@ -56,6 +60,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.patches import Rectangle
+    from matplotlib.typing import ColorType
 
     from .model import Kind
 
@@ -168,23 +173,39 @@ def bar_centres(bar_axes: Axes, vertical: bool) -> tuple[float, ...]:
     return tuple(out)
 
 
-def _background(bar_axes: Axes) -> tuple[float, float, float]:
+#: Text against its background: WCAG's 4.5:1 for body text.
+TEXT_CONTRAST = Ratio(4.5)
+WHITE = Rgb(1.0, 1.0, 1.0)
+
+
+def _rgb(color: ColorType) -> Rgb:
+    """``color`` as matplotlib reads it, alpha dropped."""
+    return Rgb.of(mcolors.to_rgba(color))
+
+
+def readable_on(color: ColorType, background: ColorType) -> str:
+    """``color``, darkened or lightened to 4.5:1 contrast on ``background``
+    when it falls short (as ``dm.ensure_contrast`` does)."""
+    facts = ContrastFacts(_rgb(color), _rgb(background), TEXT_CONTRAST)
+    lift = lifted(facts)
+    if lift is not None:
+        return lift.rgb().hex()
+    return color if isinstance(color, str) else facts.color.hex()
+
+
+def _background(bar_axes: Axes) -> Rgb:
     """What shows behind the bars: the figure, then each visible Axes patch."""
-    return composite_layers(backdrop_layers(same_position_axes(bar_axes)))
+    layers = backdrop_layers(same_position_axes(bar_axes))
+    return composite_layers(tuple(Rgba.of(layer) for layer in layers), WHITE)
 
 
 def readable_ink(patch: Rectangle, bar_axes: Axes) -> Ink:
     """White or the preset text colour, whichever reads better on the bar."""
-    shown = composite_over(
-        mcolors.to_rgba(patch.get_facecolor()), _background(bar_axes)
-    )
-    return Ink(
-        readable_text_color(
-            mcolors.to_hex(shown),
-            light="white",
-            dark=mcolors.to_hex(mpl.rcParams["text.color"]),
-        )
-    )
+    face = Rgba.of(mcolors.to_rgba(patch.get_facecolor()))
+    shown = mcolors.to_hex(composite_over(face, _background(bar_axes)).channels)
+    dark = mcolors.to_hex(mpl.rcParams["text.color"])
+    ink = readable(_rgb(shown), _rgb("white"), _rgb(dark))
+    return Ink(ink.pick("white", dark))
 
 
 def series_ink(patch: Rectangle, bar_axes: Axes, kind: Kind) -> Ink:
@@ -198,8 +219,12 @@ def series_ink(patch: Rectangle, bar_axes: Axes, kind: Kind) -> Ink:
     face = mcolors.to_rgba(patch.get_facecolor())
     if face[3] == 0 and patch.get_linewidth() > 0:
         face = mcolors.to_rgba(patch.get_edgecolor())
-    shown = mcolors.to_hex(composite_over(face, background))
-    return Ink(ensure_contrast(shown, mcolors.to_hex(background)))
+    shown = composite_over(Rgba.of(face), background)
+    return Ink(
+        readable_on(
+            mcolors.to_hex(shown.channels), mcolors.to_hex(background.channels)
+        )
+    )
 
 
 # ------------------------------------------------------------ obstacles
@@ -438,7 +463,7 @@ def backdrop_layers(
     The figure's patch, then its subfigure's (when the Axes sit in one),
     then each Axes' own patch in zorder (stable on the order given); a patch
     that is not drawn adds nothing. Fold them over white with
-    ``composite_layers``. The ``axes`` share one figure.
+    ``colorspace.composite_layers``. The ``axes`` share one figure.
     """
     first = axes[0]
     root = first.get_figure(root=True)

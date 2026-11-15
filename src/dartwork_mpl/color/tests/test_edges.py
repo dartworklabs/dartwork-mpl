@@ -3,19 +3,10 @@ there."""
 
 from __future__ import annotations
 
-import matplotlib.colors as mcolors
-
 from dartwork_mpl.color import decide, edges
 from dartwork_mpl.color.catalog import CATALOG
 from dartwork_mpl.color.family import Count
-from dartwork_mpl.color.model import (
-    ContrastFacts,
-    DivergingSource,
-    Form,
-    Ratio,
-    SemanticFacts,
-)
-from dartwork_mpl.color.space import Rgb
+from dartwork_mpl.color.model import DivergingSource, Form, SemanticFacts
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.locale import DefaultLocale, KoreanLocale
 
@@ -54,20 +45,6 @@ def test_curated_diverging_row():
         red[7],
     )
     assert not fired(derived, plan, edges.CURATED_ROW).fired
-
-
-def test_hex_rounding_shortfall():
-    # dc.amber5's bisected lightness on white rounds to #ab6700, a hair
-    # under 4.5:1; one 8-bit step further (#a96600) passes.
-    white, target = Rgb(1.0, 1.0, 1.0), Ratio(4.5)
-    amber = ContrastFacts(Rgb.of(mcolors.to_rgb("dc.amber5")), white, target)
-    lift = decide.lift(amber)
-    assert lift is not None and lift.rgb().hex() == "#ab6700"
-    settled = fired(amber, lift, edges.HEX_ROUNDING)
-    assert settled.fired == ("hex-rounding-shortfall",)
-    assert settled.plan is not None and settled.plan.rgb().hex() == "#a96600"
-    teal = ContrastFacts(Rgb.of(mcolors.to_rgb("dc.teal4")), white, target)
-    assert not fired(teal, decide.lift(teal), edges.HEX_ROUNDING).fired
 
 
 def test_kr_semantic_tokens():

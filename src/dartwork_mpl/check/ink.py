@@ -29,7 +29,7 @@ from matplotlib.contour import ContourSet
 from matplotlib.text import Text as MplText
 from matplotlib.transforms import Bbox
 
-from ..color import contrast_ratio
+from ..colorspace import Rgb, contrast
 from ..geometry import (
     BBOX_ERRORS,
     UNCLIPPED,
@@ -301,7 +301,7 @@ def text_contrast(fig: Figure, texts: tuple[Text, ...]) -> tuple[Contrast, ...]:
         found.append(
             Contrast(
                 text=t,
-                ratio=float(contrast_ratio(ink[:3], bg)),
+                ratio=contrast(Rgb.of(ink), Rgb.of(bg)).value,
                 large=_large(artist),
                 ink=mcolors.to_hex(ink[:3]),
                 paper=mcolors.to_hex(bg),

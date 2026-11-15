@@ -8,20 +8,9 @@ it.
 
 from __future__ import annotations
 
+from ..colorspace import Hex
 from ..edgecase import EdgeCase
-from .decide import contrast
-from .model import (
-    ContrastFacts,
-    DivergingSource,
-    Form,
-    Lift,
-    Semantic,
-    SemanticFacts,
-)
-from .space import Hex, Rgb
-
-# One 8-bit step of HLS lightness.
-STEP = 1.0 / 255.0
+from .model import DivergingSource, Form, Semantic, SemanticFacts
 
 
 def is_full_ladder(form: Form, plan: tuple[Hex, ...]) -> bool:
@@ -44,31 +33,6 @@ def curated_row(
 ) -> tuple[Hex, ...]:
     """The hand-tuned row in place of the ladder-derived one."""
     return source.curated or plan
-
-
-def short_after_rounding(facts: ContrastFacts, plan: Lift | None) -> bool:
-    """The lifted colour, once rounded to hex, misses the ratio."""
-    if plan is None:
-        return False
-    shown = Rgb.from_hex(plan.rgb().hex())
-    return contrast(shown, facts.background).value < facts.target.value
-
-
-def step_past_rounding(facts: ContrastFacts, plan: Lift | None) -> Lift | None:
-    """Step lightness one 8-bit level at a time until the hex passes."""
-    lift = plan
-    while lift is not None and short_after_rounding(facts, lift):
-        at_pole = (
-            lift.lightness >= 1.0 if lift.lighten else lift.lightness <= 0.0
-        )
-        if at_pole:
-            break
-        if lift.lighten:
-            lightness = min(1.0, lift.lightness + STEP)
-        else:
-            lightness = max(0.0, lift.lightness - STEP)
-        lift = Lift(lift.hue, lightness, lift.saturation, lift.lighten)
-    return lift
 
 
 def is_korean(facts: SemanticFacts, plan: Semantic) -> bool:
@@ -104,14 +68,6 @@ EDGES = (
         adjust=curated_row,
     ),
     EdgeCase(
-        name="hex-rounding-shortfall",
-        why="dc.amber5 lifted for contrast on white rounded to #ab6700, a "
-        "hair under the 4.5:1 it was asked for",
-        example="test_edges.py::test_hex_rounding_shortfall",
-        applies=short_after_rounding,
-        adjust=step_past_rounding,
-    ),
-    EdgeCase(
         name="kr-semantic-tokens",
         why="a Korean chart coloured its gains green, which reads as a loss "
         "in Korean markets",
@@ -120,4 +76,4 @@ EDGES = (
         adjust=red_gains_blue_losses,
     ),
 )
-(FULL_LADDER, CURATED_ROW, HEX_ROUNDING, KR_TOKENS) = EDGES
+(FULL_LADDER, CURATED_ROW, KR_TOKENS) = EDGES

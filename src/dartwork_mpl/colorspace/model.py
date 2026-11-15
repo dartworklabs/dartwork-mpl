@@ -1,4 +1,5 @@
-"""Colour spaces: encoded sRGB, OKLab, OKLCH, and the exact arithmetic between them.
+"""Colour spaces: encoded sRGB, OKLab, OKLCH, and the exact arithmetic between them;
+WCAG contrast and the facts and plans of a contrast lift.
 
 A colour is held as OKLab coordinates (:class:`Color`) and rendered to
 encoded sRGB (:class:`Rgb`) by reducing chroma at fixed lightness and hue
@@ -9,12 +10,15 @@ return the same hex on every machine, so do not "simplify" it.
 
 from __future__ import annotations
 
+import colorsys
 import math
 import re
 from dataclasses import dataclass
-from typing import NewType
+from typing import NewType, TypeVar
 
 import numpy as np
+
+T = TypeVar("T")
 
 # An encoded ``#rrggbb`` string, as shipped in the colour tables.
 Hex = NewType("Hex", str)
@@ -253,3 +257,60 @@ class Color:
         """``Color(oklab=(L, a, b))`` to four places."""
         L, a, b = self.to_oklab()
         return f"Color(oklab=({L:.4f}, {a:.4f}, {b:.4f}))"
+
+
+# -- contrast ------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Ratio:
+    """A WCAG contrast ratio, at least 1 (1:1) and at most 21 (black on white)."""
+
+    value: float
+
+
+@dataclass(frozen=True)
+class ContrastFacts:
+    """A foreground that must reach ``target`` contrast on ``background``."""
+
+    color: Rgb
+    background: Rgb
+    target: Ratio
+
+
+@dataclass(frozen=True)
+class Lift:
+    """A foreground moved in HLS lightness, hue and saturation held."""
+
+    hue: float
+    lightness: float
+    saturation: float
+    lighten: bool
+
+    def rgb(self) -> Rgb:
+        """The moved colour in sRGB."""
+        return Rgb(
+            *colorsys.hls_to_rgb(self.hue, self.lightness, self.saturation)
+        )
+
+
+@dataclass(frozen=True)
+class LightInk:
+    """The light text colour reads better."""
+
+    def pick(self, light: T, dark: T) -> T:
+        """``light``."""
+        return light
+
+
+@dataclass(frozen=True)
+class DarkInk:
+    """The dark text colour reads better."""
+
+    def pick(self, light: T, dark: T) -> T:
+        """``dark``."""
+        return dark
+
+
+#: Which of two text colours reads better on a background.
+Ink = LightInk | DarkInk

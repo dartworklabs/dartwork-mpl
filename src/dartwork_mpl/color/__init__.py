@@ -17,26 +17,36 @@ from typing import TYPE_CHECKING, overload
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
+from .. import colorspace
+from ..colorspace import (
+    Color,
+    ContrastFacts,
+    Oklab,
+    Oklch,
+    Rgb,
+    Rgba,
+    contrast,
+    lifted,
+    readable,
+)
 from ..edgecase import settle
 from ..locale import DefaultLocale, Locale
 from . import apply, decide, measure
 from .catalog import CATALOG
-from .edges import FULL_LADDER, HEX_ROUNDING, KR_TOKENS
+from .edges import FULL_LADDER, KR_TOKENS
 from .family import Count, Family, parse_kind
 from .model import (
-    ContrastFacts,
     Form,
     Name,
     PaletteRequest,
-    Ratio,
     SemanticFacts,
     Steps,
     Weight,
+    parse_ratio,
     parse_space,
     parse_written,
     rgb_color,
 )
-from .space import Color, Oklab, Oklch, Rgb, Rgba
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -165,9 +175,9 @@ def ensure_contrast(
 
         ax.text(x, y, "peak", color=dm.ensure_contrast("dc.amber5", ax.get_facecolor()))
     """
-    target = Ratio.parse(min_ratio)
+    target = parse_ratio(min_ratio)
     facts = ContrastFacts(measure.rgb(color), measure.rgb(background), target)
-    lift = settle(facts, decide.lift(facts), (HEX_ROUNDING,)).plan
+    lift = lifted(facts)
     if lift is not None:
         return lift.rgb().hex()
     return color if isinstance(color, str) else facts.color.hex()
@@ -177,7 +187,7 @@ def readable_text_color(
     background: object, *, light: str = "white", dark: str = "black"
 ) -> str:
     """``light`` or ``dark``, whichever has more contrast on ``background``."""
-    ink = decide.readable(
+    ink = readable(
         measure.rgb(background), measure.rgb(light), measure.rgb(dark)
     )
     return ink.pick(light, dark)
@@ -187,9 +197,7 @@ def contrast_ratio(
     foreground: Sequence[float], background: Sequence[float]
 ) -> float:
     """The WCAG contrast ratio of two sRGB tuples."""
-    return decide.contrast(
-        Rgb.of(tuple(foreground)), Rgb.of(tuple(background))
-    ).value
+    return contrast(Rgb.of(tuple(foreground)), Rgb.of(tuple(background))).value
 
 
 def wcag_luminance(rgb: Sequence[float]) -> float:
@@ -210,7 +218,7 @@ def srgb_to_oklab(rgb: Sequence[float]) -> RGB:
 
 def composite_over(top: Sequence[float], below: Sequence[float]) -> RGB:
     """The RGBA ``top`` painted over the opaque ``below``."""
-    return decide.composite_over(
+    return colorspace.composite_over(
         Rgba.of(tuple(top)), Rgb.of(tuple(below))
     ).channels
 
@@ -220,7 +228,7 @@ def composite_layers(
 ) -> RGB:
     """RGBA ``layers`` painted in order, lowest first, over ``below``."""
     stack = tuple(Rgba.of(tuple(layer)) for layer in layers)
-    return decide.composite_layers(stack, Rgb.of(tuple(below))).channels
+    return colorspace.composite_layers(stack, Rgb.of(tuple(below))).channels
 
 
 # -- families ------------------------------------------------------------------

@@ -13,9 +13,9 @@ from typing import SupportsFloat
 
 import matplotlib.colors as mcolors
 
+from ..colorspace import Rgb, Rgba
 from .decide import suggest
 from .model import Items, Lookup, Name
-from .space import Rgb, Rgba
 
 
 def registry() -> tuple[Name, ...]:

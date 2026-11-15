@@ -14,7 +14,7 @@ from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
 from . import decide
-from .measure import drawn_renderer, px_per_pt
+from .measure import drawn_renderer, px_per_pt, readable_on
 from .model import AnnotateStyle, Column
 
 if TYPE_CHECKING:
@@ -101,8 +101,6 @@ def label_line_ends(
     names that would overlap move apart and keep their order. The legend is
     removed; ``dm.simple_layout`` makes room. Keywords go to the texts.
     """
-    from ..color import ensure_contrast
-
     if lines is None:
         lines = [
             ln
@@ -122,7 +120,7 @@ def label_line_ends(
             continue
         style = (
             AnnotateStyle(
-                color=ensure_contrast(line.get_color(), background),
+                color=readable_on(line.get_color(), background),
                 ha="left",
                 va="center",
                 annotation_clip=False,

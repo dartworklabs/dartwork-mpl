@@ -1,7 +1,5 @@
 {
  "C1_slice_imports_slice": [
-  "dartwork_mpl.check -> dartwork_mpl.color",
-  "dartwork_mpl.labels -> dartwork_mpl.color",
   "dartwork_mpl.labels -> dartwork_mpl.style",
   "dartwork_mpl.labels -> dartwork_mpl.ticks",
   "dartwork_mpl.layout -> dartwork_mpl.labels",
@@ -17,6 +15,7 @@
  "C5_compose_importers": [],
  "R1_module_lines": {
   "src/dartwork_mpl/labels/bars.py": 516,
+  "src/dartwork_mpl/labels/measure.py": 504,
   "src/dartwork_mpl/labels/model.py": 1117,
   "src/dartwork_mpl/layout/measure.py": 592,
   "src/dartwork_mpl/layout/model.py": 527,
@@ -36,7 +35,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 66
+  "modules": 69
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81

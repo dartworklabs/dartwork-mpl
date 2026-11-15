@@ -57,6 +57,9 @@ PLATFORM = frozenset(
         # Horizontal text alignment (labels and ticks align text to an
         # anchor).
         "dartwork_mpl.align",
+        # Colour values and their arithmetic: sRGB, OKLab, compositing,
+        # WCAG contrast (color, labels and check compute with them).
+        "dartwork_mpl.colorspace",
         # The x/y axis and an axis label's side, as pure types (check,
         # labels, layout, ticks and geometry name them).
         "dartwork_mpl.axis",
@@ -98,13 +101,6 @@ SLICES = frozenset(
 ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.style", "dartwork_mpl.color"): (
         "a preset switch re-applies the locale's semantic colour tokens"
-    ),
-    ("dartwork_mpl.check", "dartwork_mpl.color"): (
-        "the text-contrast rule judges ink against paper by WCAG contrast"
-    ),
-    ("dartwork_mpl.labels", "dartwork_mpl.color"): (
-        "a label on its bar, a series-coloured label and a line-end name "
-        "take a readable ink"
     ),
     ("dartwork_mpl.labels", "dartwork_mpl.ticks"): (
         "bar value labels print in their axis's tick unit, like the ticks"
@@ -156,9 +152,6 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.color.model": (
         "parsing colour input into colour types needs nothing outside it"
-    ),
-    "dartwork_mpl.color.space": (
-        "sRGB, OKLab and OKLCH arithmetic is closed over its own values"
     ),
     "dartwork_mpl.ticks.decide": (
         "tick units, decimals and default formats are decided from tick facts alone"

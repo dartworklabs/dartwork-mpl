@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from .space import Hex
+from ..colorspace import Hex
 
 
 @dataclass(frozen=True)

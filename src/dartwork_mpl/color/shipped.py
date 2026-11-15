@@ -11,8 +11,8 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from ..colorspace import Hex
 from .model import Items, Row
-from .space import Hex
 
 
 class JsonObject(dict[str, object]):

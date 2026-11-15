@@ -9,7 +9,6 @@ OKLCH) are in ``space``. A malformed input raises ``TypeError`` or
 
 from __future__ import annotations
 
-import colorsys
 import math
 import re
 from collections.abc import Iterator, Mapping
@@ -25,9 +24,9 @@ from typing import (
     runtime_checkable,
 )
 
+from ..colorspace import Color, Hex, Oklab, Oklch, Ratio, Rgb, finite
 from ..locale import Locale
 from .family import Count, Family
-from .space import Color, Hex, Oklab, Oklch, Rgb, finite
 
 T = TypeVar("T")
 
@@ -112,19 +111,12 @@ def real(value: object) -> float:
     )
 
 
-@dataclass(frozen=True)
-class Ratio:
-    """A WCAG contrast ratio, at least 1 (1:1) and at most 21 (black on white)."""
-
-    value: float
-
-    @classmethod
-    def parse(cls, value: object) -> Ratio:
-        """A positive finite ratio; else ``ValueError``."""
-        number = real(value)
-        if not math.isfinite(number) or number <= 0:
-            raise ValueError("min_ratio must be a positive finite number")
-        return cls(number)
+def parse_ratio(value: object) -> Ratio:
+    """A positive finite contrast ratio; else ``ValueError``."""
+    number = real(value)
+    if not math.isfinite(number) or number <= 0:
+        raise ValueError("min_ratio must be a positive finite number")
+    return Ratio(number)
 
 
 @dataclass(frozen=True)
@@ -313,53 +305,6 @@ class Gradient:
 
     start: Oklch
     end: Oklch
-
-
-@dataclass(frozen=True)
-class ContrastFacts:
-    """A foreground that must reach ``target`` contrast on ``background``."""
-
-    color: Rgb
-    background: Rgb
-    target: Ratio
-
-
-@dataclass(frozen=True)
-class Lift:
-    """A foreground moved in HLS lightness, hue and saturation held."""
-
-    hue: float
-    lightness: float
-    saturation: float
-    lighten: bool
-
-    def rgb(self) -> Rgb:
-        """The moved colour in sRGB."""
-        return Rgb(
-            *colorsys.hls_to_rgb(self.hue, self.lightness, self.saturation)
-        )
-
-
-@dataclass(frozen=True)
-class LightInk:
-    """The light text colour reads better."""
-
-    def pick(self, light: T, dark: T) -> T:
-        """``light``."""
-        return light
-
-
-@dataclass(frozen=True)
-class DarkInk:
-    """The dark text colour reads better."""
-
-    def pick(self, light: T, dark: T) -> T:
-        """``dark``."""
-        return dark
-
-
-#: Which of two text colours reads better on a background.
-Ink = LightInk | DarkInk
 
 
 @dataclass(frozen=True)

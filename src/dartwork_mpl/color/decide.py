@@ -12,7 +12,6 @@ Korean gain/loss colours...) are in ``edges.py``.
 
 from __future__ import annotations
 
-import colorsys
 import difflib
 import math
 from difflib import SequenceMatcher
@@ -20,6 +19,7 @@ from typing import assert_never
 
 import numpy as np
 
+from ..colorspace import Color, Hex, Oklab, Oklch, Rgb
 from .family import (
     Count,
     Cyclic,
@@ -32,22 +32,16 @@ from .family import (
 from .model import (
     Catalog,
     Categorical,
-    ContrastFacts,
-    DarkInk,
     DivergingSource,
     Form,
     Gradient,
-    Ink,
     InOklab,
     InOklch,
     InRgb,
-    Lift,
-    LightInk,
     Lookup,
     Name,
     Ordered,
     PaletteRequest,
-    Ratio,
     Semantic,
     SemanticFacts,
     Space,
@@ -56,11 +50,9 @@ from .model import (
     TwoSided,
     Weight,
 )
-from .space import Color, Hex, Oklab, Oklch, Rgb, Rgba
 
 SUGGESTION_COUNT = 3
 SUGGESTION_CUTOFF = 0.7
-LIGHTNESS_STEPS = 32
 
 
 # -- discrete forms ------------------------------------------------------------
@@ -182,73 +174,6 @@ def mix(first: Color, second: Color, weight: Weight) -> Color:
             w * a.b + (1.0 - w) * b.b,
         )
     )
-
-
-def composite_over(top: Rgba, below: Rgb) -> Rgb:
-    """``top`` painted over the opaque ``below``."""
-    alpha = top.alpha
-    r, g, b = (
-        alpha * t + (1.0 - alpha) * u
-        for t, u in zip(top.rgb.channels, below.channels, strict=True)
-    )
-    return Rgb(r, g, b)
-
-
-def composite_layers(layers: tuple[Rgba, ...], below: Rgb) -> Rgb:
-    """``layers`` painted in order, lowest first, over the opaque ``below``."""
-    for layer in layers:
-        below = composite_over(layer, below)
-    return below
-
-
-# -- contrast ------------------------------------------------------------------
-
-
-def contrast(first: Rgb, second: Rgb) -> Ratio:
-    """The WCAG contrast ratio of two colours, lighter over darker."""
-    hi, lo = sorted(
-        (first.wcag_luminance(), second.wcag_luminance()), reverse=True
-    )
-    return Ratio((hi + 0.05) / (lo + 0.05))
-
-
-def passes(facts: ContrastFacts, color: Rgb) -> bool:
-    """``color`` reaches the target ratio on the background."""
-    return contrast(color, facts.background).value >= facts.target.value
-
-
-def lift(facts: ContrastFacts) -> Lift | None:
-    """The smallest HLS lightness move that reaches the target ratio.
-
-    None when the colour already passes. Otherwise lightness moves toward
-    whichever pole (white or black) contrasts more with the background, by
-    bisection; an unreachable target ends at the pole.
-    """
-    if passes(facts, facts.color):
-        return None
-    hue, lightness, saturation = colorsys.rgb_to_hls(*facts.color.channels)
-    white, black = Rgb(1.0, 1.0, 1.0), Rgb(0.0, 0.0, 0.0)
-    up = (
-        contrast(white, facts.background).value
-        > contrast(black, facts.background).value
-    )
-    lo, hi = (lightness, 1.0) if up else (0.0, lightness)
-    best = 1.0 if up else 0.0
-    for _ in range(LIGHTNESS_STEPS):
-        mid = (lo + hi) / 2.0
-        if passes(facts, Lift(hue, mid, saturation, up).rgb()):
-            best = mid
-            hi, lo = (mid, lo) if up else (hi, mid)
-        else:
-            hi, lo = (hi, mid) if up else (mid, lo)
-    return Lift(hue, best, saturation, up)
-
-
-def readable(background: Rgb, light: Rgb, dark: Rgb) -> Ink:
-    """The ink with the higher contrast on ``background``; light on a tie."""
-    if contrast(light, background).value >= contrast(dark, background).value:
-        return LightInk()
-    return DarkInk()
 
 
 # -- names ---------------------------------------------------------------------
