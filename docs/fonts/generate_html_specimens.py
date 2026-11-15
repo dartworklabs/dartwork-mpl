@@ -12,10 +12,15 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-from dartwork_mpl.font import css_font_face_name
-
 ROOT = Path(__file__).resolve().parents[2]
-FONT_DIR = ROOT / "src" / "dartwork_mpl" / "asset" / "font"
+FONT_DIR = ROOT / "src" / "dartwork_mpl" / "font" / "assets"
+
+
+def css_font_face_name(font_file: str | Path) -> str:
+    """The CSS ``@font-face`` family name for a bundled font file."""
+    return f"dm-{Path(font_file).stem}"
+
+
 OUT_DIR = Path(__file__).parent / "_generated"
 STATIC_FONTS = ROOT / "docs" / "_static" / "fonts"
 

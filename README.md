@@ -122,10 +122,9 @@ dm.place_legend(ax)                 # data/text-aware axes legend
 dm.wrap_axis_label(ax, "y")          # two-line overlong axis label
 dm.arrow_axis(ax, "x", "Cost")      # Low ◄── Cost ──► High
 
-# ── Validate, export, icons ───────────────────────────────────────────
+# ── Validate, export ─────────────────────────────────────────────────
 dm.validate_figure(fig)             # overflow / overlap / tick-crowding / empty
 dm.save_formats(fig, "fig", formats=("png", "svg", "pdf"), dpi=300)
-mdi = dm.icon_font("mdi")           # also "fa-solid" / "fa-regular" / "fa-brands"
 
 # ── Plot templates ────────────────────────────────────────────────────
 from dartwork_mpl.templates import plot_diverging_bar
@@ -254,12 +253,12 @@ src/dartwork_mpl/
 ├── layout.py / annotation.py  # simple_layout, label_axes, arrow_axis
 ├── validate.py / lint.py      # validate_figure · lint + migrate_legacy_code
 ├── io.py / formatting.py      # save_formats, show · format_axis_*
-├── icon.py / font.py / cmap.py / diagnostics/   # fonts, colormaps, viz helpers
+├── font/ / cmap.py             # bundled fonts, colormaps
 ├── templates/ / helpers/      # plot templates · high-level composition helpers
 ├── agent.py / prompt.py       # bundled LLM corpus · prompt guides
 ├── mcp/                       # MCP server (server / resources / tools / prompts)
 ├── ui/                        # interactive FastAPI viewer
-└── asset/                     # bundled styles, colors, fonts, icons, prompts
+└── asset/                     # bundled styles, colors, prompts
 ```
 
 <br/>

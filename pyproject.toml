@@ -118,7 +118,7 @@ build-backend = "hatchling.build"
 # docs/_build, dev-only docs/examples, and similar cruft. ``include``
 # is *additive* on top of hatch's default file discovery, so we use
 # ``only-include`` to make the whitelist authoritative. The bundled
-# fonts (~70 MB) live under src/dartwork_mpl/asset and are picked up
+# fonts (~60 MB) live under src/dartwork_mpl/font/assets and are picked up
 # transitively because src/dartwork_mpl is whitelisted.
 [tool.hatch.build.targets.sdist]
 only-include = [

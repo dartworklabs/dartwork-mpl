@@ -102,79 +102,6 @@ def _save_layout_example(images_dir: Path) -> Path:
 # ── color.rst ──────────────────────────────────────────────────────────
 
 
-# ── icon.rst ───────────────────────────────────────────────────────────
-
-
-def _save_icon_example(images_dir: Path) -> Path:
-    """API icon: MDI icon font rendering on matplotlib axes."""
-    import warnings
-
-    warnings.filterwarnings(
-        "ignore", message=".*missing from font.*Material Design Icons.*"
-    )
-
-    dm.style.use("scientific")
-
-    mdi = dm.icon_font("mdi")
-
-    # A few recognizable MDI codepoints
-    icons = [
-        ("\U000f050f", "Thermometer"),
-        ("\U000f0590", "Weather-sunny"),
-        ("\U000f058e", "Weather-cloudy"),
-        ("\U000f0599", "Weather-windy"),
-        ("\U000f0597", "Weather-snowy"),
-    ]
-
-    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "6cm"))
-    colors = [
-        "tw.teal500",
-        "tw.amber500",
-        "tw.slate400",
-        "tw.sky500",
-        "tw.blue300",
-    ]
-
-    for i, (glyph, label) in enumerate(icons):
-        ax.text(
-            i,
-            0.5,
-            glyph,
-            fontproperties=mdi,
-            fontsize=28,
-            ha="center",
-            va="center",
-            color=colors[i],
-        )
-        ax.text(
-            i,
-            -0.1,
-            label,
-            ha="center",
-            va="top",
-            fontsize=dm.fs(-1),
-            color="#666",
-        )
-
-    ax.set_xlim(-0.7, len(icons) - 0.3)
-    ax.set_ylim(-0.5, 1.0)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    ax.set_title(
-        "Icon Font: Material Design Icons (MDI)",
-        fontsize=dm.fs(1),
-        fontweight="bold",
-    )
-    dm.simple_layout(fig)
-
-    path = images_dir / "icon_example.svg"
-    _save_svg(fig, path, bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
 # ── font.rst ───────────────────────────────────────────────────────────
 
 
@@ -301,7 +228,6 @@ def build_api_assets(base_dir: Path | None = None) -> list[Path]:
 
     generators = [
         ("layout_example", _save_layout_example),
-        ("icon_example", _save_icon_example),
         ("font_example", _save_font_example),
         ("xplot_example", _save_xplot_example),
     ]

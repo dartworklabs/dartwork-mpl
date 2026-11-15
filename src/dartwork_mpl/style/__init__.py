@@ -370,9 +370,8 @@ class Style:
 
         Lists every preset the caller could have used and, when the input
         is a near-miss for one of them, appends a single ``did you mean``
-        hint. Matches the format used by :func:`style_path` and
-        :func:`dartwork_mpl.icon.icon_font_path` so the three "missing
-        style/preset/icon" errors all read the same way.
+        hint. Matches the format used by :func:`style_path` so both
+        "missing style/preset" errors read the same way.
         """
         available = sorted(self.presets)
         hint = _did_you_mean(name, available)

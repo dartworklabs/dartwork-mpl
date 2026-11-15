@@ -1,7 +1,7 @@
 """Tests for the colour diagnostics (colour and colormap catalogue helpers).
 
 They live in ``dartwork_mpl._colors.diagnostics`` and are exercised through
-the canonical public :mod:`dartwork_mpl.diagnostics` import path (the
+the :mod:`dartwork_mpl._colors.diagnostics` import path (the
 legacy ``dartwork_mpl.asset_viz`` path was removed in 0.5.4).
 """
 
@@ -21,7 +21,7 @@ class TestRenderColorCatalog:
 
     def test_returns_list_of_figures(self) -> None:
         """render_color_catalog() returns a non-empty list of Figure."""
-        from dartwork_mpl.diagnostics import render_color_catalog
+        from dartwork_mpl._colors.diagnostics import render_color_catalog
 
         figs = render_color_catalog()
         assert isinstance(figs, list)
@@ -33,7 +33,7 @@ class TestRenderColorCatalog:
 
     def test_custom_dict(self) -> None:
         """render_color_catalog() works with a custom color dict."""
-        from dartwork_mpl.diagnostics import render_color_catalog
+        from dartwork_mpl._colors.diagnostics import render_color_catalog
 
         custom = {
             "oc.red0": "#fff5f5",
@@ -48,7 +48,7 @@ class TestRenderColorCatalog:
 
     def test_show_hex_false(self) -> None:
         """render_color_catalog(show_hex=False) still returns figures."""
-        from dartwork_mpl.diagnostics import render_color_catalog
+        from dartwork_mpl._colors.diagnostics import render_color_catalog
 
         figs = render_color_catalog({"oc.red0": "#fff5f5"}, show_hex=False)
         assert len(figs) > 0
@@ -57,14 +57,14 @@ class TestRenderColorCatalog:
 
     def test_empty_dict_returns_empty(self) -> None:
         """render_color_catalog({}) returns an empty list."""
-        from dartwork_mpl.diagnostics import render_color_catalog
+        from dartwork_mpl._colors.diagnostics import render_color_catalog
 
         figs = render_color_catalog({})
         assert figs == []
 
     def test_sort_colors_false_does_not_crash(self) -> None:
         """render_color_catalog(sort_colors=False) must not raise (regression: #225)."""
-        from dartwork_mpl.diagnostics import render_color_catalog
+        from dartwork_mpl._colors.diagnostics import render_color_catalog
 
         figs = render_color_catalog(
             {"oc.red0": "#fff5f5", "oc.red5": "#ff6b6b"}, sort_colors=False
@@ -109,7 +109,7 @@ class TestRenderCmapCatalog:
 
     def test_returns_list_of_figures(self) -> None:
         """render_cmap_catalog() returns a list of Figure."""
-        from dartwork_mpl.diagnostics import render_cmap_catalog
+        from dartwork_mpl._colors.diagnostics import render_cmap_catalog
 
         figs = render_cmap_catalog()
         assert isinstance(figs, list)
@@ -121,7 +121,7 @@ class TestRenderCmapCatalog:
 
     def test_no_plt_show_called(self) -> None:
         """render_cmap_catalog() must not call plt.show()."""
-        from dartwork_mpl.diagnostics import render_cmap_catalog
+        from dartwork_mpl._colors.diagnostics import render_cmap_catalog
 
         with patch.object(plt, "show") as mock_show:
             figs = render_cmap_catalog(cmap_list=["viridis", "plasma"])
@@ -131,7 +131,7 @@ class TestRenderCmapCatalog:
 
     def test_flat_mode(self) -> None:
         """render_cmap_catalog(group_by_type=False) returns single fig."""
-        from dartwork_mpl.diagnostics import render_cmap_catalog
+        from dartwork_mpl._colors.diagnostics import render_cmap_catalog
 
         figs = render_cmap_catalog(
             cmap_list=["viridis", "plasma"], group_by_type=False
@@ -143,7 +143,7 @@ class TestRenderCmapCatalog:
 
     def test_custom_cmap_list(self) -> None:
         """render_cmap_catalog() works with a custom cmap list."""
-        from dartwork_mpl.diagnostics import render_cmap_catalog
+        from dartwork_mpl._colors.diagnostics import render_cmap_catalog
 
         figs = render_cmap_catalog(cmap_list=["viridis", "coolwarm", "tab10"])
         assert isinstance(figs, list)
@@ -157,7 +157,7 @@ class TestClassifyCmap:
 
     def test_known_categories(self) -> None:
         """Known colormaps should be classified correctly."""
-        from dartwork_mpl.diagnostics import classify_cmap
+        from dartwork_mpl._colors.diagnostics import classify_cmap
 
         # Sequential
         result = classify_cmap(matplotlib.colormaps["viridis"])
@@ -172,7 +172,7 @@ class TestClassifyCmap:
 
     def test_returns_string(self) -> None:
         """classify_cmap always returns a string."""
-        from dartwork_mpl.diagnostics import classify_cmap
+        from dartwork_mpl._colors.diagnostics import classify_cmap
 
         result = classify_cmap(matplotlib.colormaps["viridis"])
         assert isinstance(result, str)
@@ -187,7 +187,7 @@ class TestClassifyCmap:
         """
         import dartwork_mpl  # noqa: F401 — registers the v5 catalog
         from dartwork_mpl._colors._generated import CMAPS_256
-        from dartwork_mpl.diagnostics import classify_cmap
+        from dartwork_mpl._colors.diagnostics import classify_cmap
 
         expected = {
             **dict.fromkeys(
@@ -285,7 +285,7 @@ class TestClassifyCmapAudit:
     def test_spectral_is_not_categorical(self) -> None:
         import matplotlib
 
-        from dartwork_mpl.diagnostics import classify_cmap
+        from dartwork_mpl._colors.diagnostics import classify_cmap
 
         assert classify_cmap(matplotlib.colormaps["Spectral"]) != "Categorical"
 

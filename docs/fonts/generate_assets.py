@@ -110,7 +110,7 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
 
 
 def _get_font_dir() -> Path:
-    return ROOT / "src" / "dartwork_mpl" / "asset" / "font"
+    return ROOT / "src" / "dartwork_mpl" / "font" / "assets"
 
 
 def _collect_fonts() -> dict[str, list[str]]:

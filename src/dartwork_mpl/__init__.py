@@ -34,7 +34,7 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # (validate_fixes is the auto-fix companion to validate). F401 is
 # silenced because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
-from . import font, helpers, icon, lint, templates, tokens, validate_fixes  # noqa: F401
+from . import font, helpers, lint, templates, tokens, validate_fixes  # noqa: F401
 
 # Import color module exports
 from ._colors import (
@@ -81,9 +81,6 @@ from .annotation import (
 # Config (process-wide behaviour-toggle defaults)
 from .config import Config, config
 
-# Import asset-diagnostic visualization helpers.
-from .diagnostics import plot_fonts
-
 # Review loop: save, validate, summarize, compare (masterplan stages 3-4)
 from .figure_review import review
 
@@ -103,9 +100,6 @@ from .formatting import (
     rotate_tick_labels,
     set_decimal,
 )
-
-# Import icon module exports
-from .icon import icon_font, icon_font_path, list_icon_fonts
 
 # I/O
 from .io import save_and_show, save_formats, show
@@ -229,9 +223,6 @@ __all__ = [  # noqa: RUF022
     "ensure_contrast",
     "readable_text_color",
     # Icon module
-    "icon_font",
-    "icon_font_path",
-    "list_icon_fonts",
     # Style module
     "Style",
     "list_styles",
@@ -325,8 +316,6 @@ __all__ = [  # noqa: RUF022
     "migrate_legacy_code",
     # Extended plots
     "plot_diverging_bar",
-    # Asset diagnostics (from diagnostics)
-    "plot_fonts",
 ]
 
 # Eagerly register the bundled fonts on import so that

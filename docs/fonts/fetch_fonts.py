@@ -50,7 +50,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-FONT_DIR = ROOT / "src" / "dartwork_mpl" / "asset" / "font"
+FONT_DIR = ROOT / "src" / "dartwork_mpl" / "font" / "assets"
 LICENSE_DIR = FONT_DIR / "licenses"
 
 STD = [
