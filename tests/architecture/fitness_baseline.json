@@ -46,6 +46,16 @@
  "R8_missing_all": [],
  "T10_reflection": {},
  "T11_untyped": {},
+ "T12_costumed_enums": {
+  "src/dartwork_mpl/check/model.py": 4,
+  "src/dartwork_mpl/color/model.py": 2,
+  "src/dartwork_mpl/guide/model.py": 2,
+  "src/dartwork_mpl/guide/reference.py": 2,
+  "src/dartwork_mpl/legend/model.py": 4,
+  "src/dartwork_mpl/save/model.py": 2,
+  "src/dartwork_mpl/size/canvas.py": 2,
+  "src/dartwork_mpl/style/model.py": 2
+ },
  "T1_casts": {},
  "T2_ignores": {},
  "T3_domain_isinstance": {},

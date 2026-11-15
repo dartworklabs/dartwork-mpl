@@ -25,6 +25,9 @@ T10 ``getattr`` / ``hasattr`` / ``setattr`` / ``delattr``. An attribute
     reached by name is one the checker cannot follow.
 T11 ``Any`` in an annotation, ``vars()`` and ``__dict__``. Each switches the
     checker off for the value it touches.
+T12 An enum in a costume: a class holding two or more constants of its own
+    type, or two or more module-level instances of one class told apart by a
+    string argument. Nothing can check that every one is handled.
 T8  ``Enum`` classes. A flag that picks behaviour in several places wants a
     variant type carrying its own data; each enum left is a place to look.
 """
@@ -265,6 +268,47 @@ def untyped(sources: Sources) -> dict[str, int]:
     return _count(sources, one)
 
 
+def _own_constants(cls: ast.ClassDef) -> int:
+    """Class attributes typed ``ClassVar[<the class itself>]``."""
+    return sum(
+        isinstance(n, ast.AnnAssign)
+        and isinstance(n.annotation, ast.Subscript)
+        and _name(n.annotation.value) == "ClassVar"
+        and cls.name in ast.unparse(n.annotation.slice)
+        for n in cls.body
+    )
+
+
+def costumed_enums(sources: Sources) -> dict[str, int]:
+    def one(_: str, text: str) -> int:
+        tree = ast.parse(text)
+        classes = {
+            n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)
+        }
+        by_class = sum(
+            _own_constants(n) >= 2
+            for n in ast.walk(tree)
+            if isinstance(n, ast.ClassDef)
+        )
+        # NAME = Cls("word") / Cls(value="word"): instances told apart by a string
+        tagged: dict[str, int] = {}
+        for n in tree.body:
+            value = getattr(n, "value", None)
+            if (
+                isinstance(n, ast.Assign | ast.AnnAssign)
+                and isinstance(value, ast.Call)
+                and _name(value.func) in classes
+                and any(
+                    isinstance(a, ast.Constant) and isinstance(a.value, str)
+                    for a in (*value.args, *(k.value for k in value.keywords))
+                )
+            ):
+                tagged[_name(value.func)] = tagged.get(_name(value.func), 0) + 1
+        return by_class + sum(n >= 2 for n in tagged.values())
+
+    return _count(sources, one)
+
+
 MEASURES: Mapping[str, Callable[[Sources], dict[str, int]]] = {
     "T1_casts": casts,
     "T2_ignores": ignores,
@@ -277,6 +321,7 @@ MEASURES: Mapping[str, Callable[[Sources], dict[str, int]]] = {
     "T9_guards": guards,
     "T10_reflection": reflection,
     "T11_untyped": untyped,
+    "T12_costumed_enums": costumed_enums,
 }
 WHY = {
     "T1_casts": "a cast asserts a type nobody checked; parse into the type instead",
@@ -289,5 +334,6 @@ WHY = {
     "T9_guards": "a TypeGuard is a cast with a function around it; parse into the type and return it",
     "T10_reflection": "getattr/hasattr/setattr reach an attribute the checker cannot see; name the type that has it",
     "T11_untyped": "Any, vars() and __dict__ switch the checker off for whatever they touch; give the value its type",
+    "T12_costumed_enums": "one class whose instances differ by a string, or that holds constants of its own type, is an enum in a costume; make one class per variant",
     "T8_enums": "an enum is a status flag; a variant type carries its own data and is matched exhaustively. Adding one is the owner's decision",
 }
