@@ -31,10 +31,8 @@ _OWNERS = {
     "mix_colors": "dartwork_mpl",
     "prompt_path": "dartwork_mpl.prompt",
     "pseudo_alpha": "dartwork_mpl",
-    "save_and_show": "dartwork_mpl.io",
-    "save_formats": "dartwork_mpl.io",
+    "save_formats": "dartwork_mpl.save",
     "set_decimal": "dartwork_mpl.formatting",
-    "show": "dartwork_mpl.io",
     "simple_layout": "dartwork_mpl.layout",
 }
 
@@ -54,10 +52,8 @@ __all__ = [  # noqa: F822
     "mix_colors",
     "prompt_path",
     "pseudo_alpha",
-    "save_and_show",
     "save_formats",
     "set_decimal",
-    "show",
     "simple_layout",
 ]
 

@@ -18,7 +18,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 from matplotlib.figure import Figure
 
-from ...io import save_formats
+from ...save import save_formats
 from ..params import (
     Control,
     InputFailure,

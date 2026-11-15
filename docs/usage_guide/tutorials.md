@@ -22,7 +22,7 @@ preset and bar+line combo.
 
 :::{grid-item-card} Dark Mode Notebook
 Set up a Jupyter workflow with the `dark` preset, retina display, and
-`save_and_show` for interactive exploration.
+`save_formats` for the files.
 
 [Dark mode tutorial](#dark-mode-notebook)
 :::
@@ -71,9 +71,10 @@ ax2.set_ylabel("Magnitude")
 dm.label_axes([ax1, ax2])
 dm.simple_layout(fig, gs=gs)
 
-# 6. Export for submission
+# 6. Check, then export for submission
+dm.validate_figure(fig)
 dm.save_formats(fig, "fig_signal_analysis",
-                formats=("pdf", "svg", "png"), validate=True)
+                formats=("pdf", "svg", "png"))
 ```
 
 **Key points:**
@@ -81,7 +82,7 @@ dm.save_formats(fig, "fig_signal_analysis",
 - `aspect="cinema"` (= 1/2) gives the wide aspect typical of side-by-side panels
 - `dm.fs(0)` uses the preset's base font size; `dm.lw(1)` uses relative line width
 - `dm.label_axes()` adds (a), (b) labels aligned to y-axis labels
-- `validate=True` catches clipped labels before you submit
+- `dm.validate_figure(fig)` catches clipped labels before you submit
 
 ---
 
@@ -166,7 +167,7 @@ ax.set_ylabel("Amplitude")
 ax.legend()
 
 dm.simple_layout(fig)
-dm.save_and_show(fig, "waves_dark")  # save + inline preview
+dm.save_formats(fig, "waves_dark", formats=("png",))
 ```
 
 ```python
@@ -190,7 +191,7 @@ dm.save_formats(fig2, "waves", formats=("svg", "pdf"))
 
 **Key points:**
 - `retina` format makes inline plots crisp on HiDPI displays
-- `save_and_show(fig, "name")` saves multi-format and previews inline
+- `save_formats(fig, "name")` writes every requested format in one call
 - Switch styles mid-notebook to export different versions from the same data
 - Dark preset uses `#1e1e1e` background with subtle gray spines
 

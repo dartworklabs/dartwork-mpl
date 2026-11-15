@@ -95,7 +95,7 @@ def plot_signal(
 # Usage: Easy to modify by changing arguments
 data = np.random.randn(100).cumsum()
 fig, ax = plot_signal(data, color='dc.red2', linewidth=1.2)
-dm.save_and_show(fig)
+dm.save_formats(fig, 'signal')
 ```
 
 **Why this works better with AI:**
@@ -179,7 +179,7 @@ from plotting import plot_comparison
 data1 = np.random.randn(100).cumsum()
 data2 = np.random.randn(100).cumsum() + 5
 fig, ax = plot_comparison(data1, data2, color1='dc.green2', title='Comparison')
-dm.save_and_show(fig)
+dm.save_formats(fig, 'comparison')
 ```
 
 **3. Edit `plotting.py` → re-run cell → see changes immediately.** No kernel

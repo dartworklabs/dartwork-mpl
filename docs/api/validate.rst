@@ -5,8 +5,8 @@ Automatic detection of common rendering issues that are invisible in
 stdout-only environments (e.g. AI agent pipelines).  Every check emits
 structured ``[VISUAL]`` log lines so agents can grep and auto-correct.
 
-``validate_figure`` runs all checks by default and is integrated into
-``save_formats()`` (enabled via ``validate=True``).
+``validate_figure`` runs all checks by default. ``save_formats()`` does not
+validate; call ``validate_figure`` before saving.
 
 Available Checks
 ----------------
@@ -116,8 +116,9 @@ Example
    # Run specific checks only
    warnings = dm.validate_figure(fig, checks=('OVERLAP', 'TICK_CROWD'))
 
-   # Integrated in save_formats (on by default)
-   dm.save_formats(fig, 'output/fig', validate=True)
+   # Check, then save
+   dm.validate_figure(fig)
+   dm.save_formats(fig, 'output/fig')
 
 API
 ---

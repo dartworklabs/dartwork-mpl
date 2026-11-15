@@ -116,7 +116,7 @@ def plot_diverging_bar(
     >>>
     >>> # Minimal setup - uses default sample data
     >>> fig, ax = plot_diverging_bar()
-    >>> dm.save_and_show(fig)
+    >>> dm.save_formats(fig, "diverging_bar")
     >>>
     >>> # Custom data
     >>> labels = [
@@ -138,7 +138,7 @@ def plot_diverging_bar(
     ...     neg_label="Loss",
     ...     pos_label="Gain",
     ... )
-    >>> dm.save_and_show(fig)
+    >>> dm.save_formats(fig, "diverging_bar")
     >>>
     >>> # Customize title and colors without Total row
     >>> fig, ax = plot_diverging_bar(
@@ -149,7 +149,7 @@ def plot_diverging_bar(
     ...     title="Custom Title",
     ...     colors={'neg': 'oc.red5', 'pos': 'oc.green5'}
     ... )
-    >>> dm.save_and_show(fig)
+    >>> dm.save_formats(fig, "diverging_bar")
 
     Notes
     -----

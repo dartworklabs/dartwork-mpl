@@ -240,7 +240,6 @@ def save(fig, name: str, output_dir: Path) -> None:
         bbox_inches="tight",
         pad_inches=0.08,
         transparent=True,
-        validate=False,
     )
     # Matplotlib indents multiline path data with a space before each newline.
     # Strip that serialization-only whitespace so generated assets also pass

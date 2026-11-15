@@ -119,7 +119,6 @@ SLICES = frozenset(
         "dartwork_mpl.formatting",
         "dartwork_mpl.helpers",
         "dartwork_mpl.icon",
-        "dartwork_mpl.io",
         "dartwork_mpl.layout",
         "dartwork_mpl.lint",
         "dartwork_mpl.mcp",
@@ -135,6 +134,7 @@ SLICES = frozenset(
         "dartwork_mpl.mcp.templates",
         "dartwork_mpl.prompt",
         "dartwork_mpl.recommend",
+        "dartwork_mpl.save",
         "dartwork_mpl.scale",
         "dartwork_mpl.size",
         "dartwork_mpl.skills",
@@ -258,7 +258,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
         "the explorer draws the colour and font diagnostics it lists"
     ),
-    ("dartwork_mpl.figure_review", "dartwork_mpl.io"): (
+    ("dartwork_mpl.figure_review", "dartwork_mpl.save"): (
         "a review saves the figure with save_formats, the files a plain save writes"
     ),
     ("dartwork_mpl.figure_review", "dartwork_mpl.validate"): (
@@ -279,15 +279,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.helpers", "dartwork_mpl.annotation"): (
         "historical legend imports re-export annotation's callable"
-    ),
-    ("dartwork_mpl.io", "dartwork_mpl.config"): (
-        "saving applies the user's export defaults from dm.config"
-    ),
-    ("dartwork_mpl.io", "dartwork_mpl.layout"): (
-        "saving finalises axis-label typography before writing files"
-    ),
-    ("dartwork_mpl.io", "dartwork_mpl.validate"): (
-        "saving runs the visual validation the user asked for"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.annotation"): (
         "bar value labels settle crowding and headroom at the size the "
@@ -409,7 +400,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.ui", "dartwork_mpl.ui.state"): (
         "the viewer opens the saved-state store at startup and mounts its routes"
     ),
-    ("dartwork_mpl.ui.render", "dartwork_mpl.io"): (
+    ("dartwork_mpl.ui.render", "dartwork_mpl.save"): (
         "a server image save writes the figure with save_formats, as a user would"
     ),
     ("dartwork_mpl.ui.render", "dartwork_mpl.ui.params"): (
@@ -466,6 +457,12 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.size.model": (
         "parsing user input into size types needs nothing outside it"
+    ),
+    "dartwork_mpl.save.decide": (
+        "which files to write is decided from the parsed request alone"
+    ),
+    "dartwork_mpl.save.model": (
+        "parsing the save arguments needs nothing outside it"
     ),
     "dartwork_mpl.recommend._chart_type": (
         "chart semantics decide solely from caller values"

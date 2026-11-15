@@ -131,8 +131,7 @@ Replay keeps the original owned workspace until it finishes, so source using
 an absolute CSV path needs no rewrite. A fresh Python process executes the exact
 stored bytes with the recorded `figure_var`, checks the CSV digest before/after,
 and reads native artists for `assess`. Replay uses the production export call,
-`dm.save_formats(..., formats=("png", "pdf"), validate=False,
-adopt_orphan_tick_font=False)`, staging both formats in the monitored owned cwd
+`dm.save_formats(..., formats=("png", "pdf"))`, staging both formats in the monitored owned cwd
 and retaining PNG through the byte guard. This happens before cwd cleanup;
 later comparison consumes the recorded replay. Unsupported external IO, network, time or
 unfixed random inputs are marked unchecked. This process replay is separate

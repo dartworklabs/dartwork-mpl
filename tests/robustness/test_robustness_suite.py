@@ -7,7 +7,7 @@ Each entry in scenarios.SCENARIOS is run through the same pipeline:
     2. Run dm.validate_figure pre-layout and check that
        scenario.expect_warnings substrings appear in the warning ids.
     3. Apply dm.simple_layout to give the layout a chance to converge.
-    4. Save to PNG via dm.save_formats(validate=False) so we know the
+    4. Save to PNG via dm.save_formats so we know the
        saved bytes are well-formed.
     5. Re-run dm.validate_figure post-layout and check that
        scenario.forbid_warnings substrings are absent.
@@ -75,7 +75,7 @@ def test_robustness_scenario(
     # non-empty (matplotlib silently writes 0-byte files on certain
     # backend errors).
     out_stem = str(tmp_image_dir / scenario.name)
-    dm.save_formats(fig, out_stem, formats=("png",), validate=False)
+    dm.save_formats(fig, out_stem, formats=("png",))
     out_path = Path(f"{out_stem}.png")
     assert out_path.exists(), f"PNG not written for {scenario.name}"
     assert out_path.stat().st_size > _MIN_PNG_BYTES, (

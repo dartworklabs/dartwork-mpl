@@ -58,13 +58,6 @@ dartwork-mpl-mcp = "dartwork_mpl.cli:main"
 dartwork-mpl-ui = "dartwork_mpl.ui.__main__:main"
 
 [project.optional-dependencies]
-notebook = [
-    # Only ``dm.show()`` (inline SVG display in Jupyter) needs IPython.
-    # It is an optional extra rather than a core dependency so the ~30 MB
-    # of IPython transitive deps (prompt_toolkit, jedi, traitlets, …) are
-    # not forced on every consumer of this matplotlib styling library.
-    "ipython>=8.32.0",
-]
 mcp = [
     # Cap below 4 — 3.x is the latest tested major; 4.x has not been
     # vetted and may rename/remove the introspection APIs we use.
@@ -163,9 +156,9 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 [dependency-groups]
 # `uv sync` installs this group: everything ruff, basedpyright and pytest need.
 dev = [
-    # Every optional extra, so the MCP / notebook / UI code is type-checked
+    # Every optional extra, so the MCP / UI code is type-checked
     # and tested in the default environment.
-    "dartwork-mpl[mcp,notebook,ui]",
+    "dartwork-mpl[mcp,ui]",
     "basedpyright>=1.40",
     # Tests only: date-axis and canvas-label tests take pandas inputs.
     "pandas>=2.2.3",

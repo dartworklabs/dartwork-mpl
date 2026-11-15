@@ -103,7 +103,7 @@ def test_layout_validation_and_exports_match_open_control(
             fig, checks=("OVERFLOW", "CLIPPED_TEXT"), quiet=True
         )
         stem = tmp_path / current
-        dm.save_formats(fig, str(stem), validate=True, validate_quiet=True)
+        dm.save_formats(fig, str(stem))
         assert stem.with_suffix(".pdf").read_bytes().startswith(b"%PDF-")
         results.append(
             (ax.get_position().bounds, imread(stem.with_suffix(".png")))

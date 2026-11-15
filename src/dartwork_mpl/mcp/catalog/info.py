@@ -118,8 +118,7 @@ def info_payload() -> str:
                 ),
                 "save_format": (
                     "Use dm.save_formats(fig, 'name', formats=('png','pdf'), "
-                    "dpi=300) for scripts or dm.save_and_show(fig, 'name') "
-                    "for notebooks. Keep bbox_inches=None (the default) for exact "
+                    "dpi=300). Keep bbox_inches=None (the default) for exact "
                     "physical canvas size; tight crops to content. DPI controls raster "
                     "density; PNG sizes quantize to whole pixels."
                 ),

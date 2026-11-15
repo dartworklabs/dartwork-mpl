@@ -161,9 +161,9 @@ dm.simple_layout(fig)
 dm.simple_layout(fig)
 ```
 
-### Tick labels look different after `simple_layout` / `save_formats`
+### Tick labels look different after `simple_layout`
 
-By default, `simple_layout`, `save_formats`, and `save_and_show` leave tick
+By default, `simple_layout` leaves tick
 fonts untouched. To make tick labels on unlabeled axes adopt that axis's
 label font for visual hierarchy, opt in globally:
 
@@ -225,9 +225,6 @@ dm.save_formats(fig, "output")  # Figure is already cleared!
 # Correct order
 dm.save_formats(fig, "output")  # Save first
 plt.show()                       # Then display
-
-# Or use the combined function
-dm.save_and_show(fig)  # Handles ordering correctly
 ```
 
 ### Saved image has extra whitespace
@@ -245,15 +242,6 @@ Avoid passing `bbox_inches="tight"` with `simple_layout` — they can conflict. 
 ---
 
 ## Jupyter Notebooks
-
-### Figures are too small / too large in notebook output
-
-Control notebook display size with `save_and_show`:
-
-```python
-dm.save_and_show(fig, size=720)  # Display at 720px width
-dm.save_and_show(fig, size=480)  # Smaller preview
-```
 
 ### Inline plots look blurry
 

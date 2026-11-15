@@ -70,8 +70,8 @@ multi-panel layouts. `dm.label_axes()` adds panel labels automatically.
 
 :::{grid-item-card} **4. Export**
 `dm.save_formats(fig, "output/fig", formats=("png", "svg"))` writes
-multiple formats at once. Add `validate=True` to auto-detect overflow,
-overlap, and crowding before saving.
+multiple formats at once. Call `dm.validate_figure(fig)` first to detect
+overflow, overlap, and crowding.
 
 → [Save and Validation](save_export.md)
 :::

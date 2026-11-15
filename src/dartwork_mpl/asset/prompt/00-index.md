@@ -81,7 +81,7 @@ is not a measurement of a particular display, perceived brightness, or OKLab
   container allocations and Axes data/content bounds separately (see recipes).
   For MCP, leave native `fig`
   for `render_plot` to persist. For standalone scripts/notebooks, save with
-  `dm.save_formats(fig, "name")` or `dm.save_and_show(fig, "name")`.
+  `dm.save_formats(fig, "name")`.
 - Never call `tight_layout()`, `plt.style.use()`, raw `figsize=(w, h)`
   tuples, or `dm.subplots` / `dm.figure` — those are lint criticals.
 
@@ -129,7 +129,7 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    for PNG/PDF/source/report/manifest, without execution. The five members last
    seven days on the same configured server/store; MCP URIs are not web links
    or local paths. For standalone Python/notebooks, validate the native Figure
-   as needed and save with `dm.save_formats` or `dm.save_and_show`.
+   as needed and save with `dm.save_formats`.
 
 ## Installed Python route (no MCP or checkout)
 

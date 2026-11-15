@@ -1,6 +1,6 @@
 # Save and Validation
 
-## Save and preview
+## Save
 
 ```python
 import matplotlib.pyplot as plt
@@ -18,10 +18,7 @@ dm.save_formats(
     "output/experiment",
     formats=("png", "svg", "pdf"),
     bbox_inches="tight",
-    validate=True,   # runs visual checks before saving (see below)
 )
-dm.save_and_show(fig, "output/experiment")  # save + inline preview
-dm.show("output/experiment.svg", size=540)  # display a saved file in notebooks
 ```
 
 :::{figure} images/save_scientific.svg
@@ -31,9 +28,7 @@ dm.show("output/experiment.svg", size=540)  # display a saved file in notebooks
 
 **Key points:**
 
-- `save_formats` writes multiple formats in one call, with optional visual validation
-- `save_and_show` saves and displays the figure inline in Jupyter/IPython, closing it by default (`close_figure=True`)
-- `show` displays an existing SVG/PNG for notebooks or reports
+- `save_formats` writes multiple formats in one call; it does not check the figure
 - See [API › Save & Export](../api/io.rst) for argument details
 
 The built-in presets and legacy `dmpl` / `dmpl_light` styles embed
@@ -79,13 +74,12 @@ for w in warnings:
 warnings = dm.validate_figure(fig, checks=("OVERFLOW", "TICK_CROWD"))
 ```
 
-When `validate=True` is passed to `save_formats()`, validation runs before
-saving. If issues are found, they're printed as warnings — the file is still
-saved, but you'll know what to fix.
+`save_formats()` does not validate. Call `dm.validate_figure(fig)` before
+saving; the file is written either way, but you'll know what to fix.
 
 For a complete native Figure → full JSON report → PNG/PDF → actual image
 review → separate-stem revision, use the [installed Python workflow](../ai/installed_python.md).
-`save_formats` returns `None` and saves despite warnings; capture the returned
+`save_formats` returns `None`; capture the returned
 `validate_figure` objects separately, including `detail` and `CHECK_FAILED`.
 Opening the actual image is a separate step from reading the report or filename.
 

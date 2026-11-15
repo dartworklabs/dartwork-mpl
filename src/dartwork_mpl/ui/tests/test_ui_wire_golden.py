@@ -432,7 +432,7 @@ def test_render_export_and_script_downloads(viewer: TestClient) -> None:
     )
     assert response.text.startswith('"""Auto-generated figure script.')
     assert "    count=3,\n" in response.text
-    assert "\nfrom dartwork_mpl.io import save_formats\n" in response.text
+    assert "\nfrom dartwork_mpl import save_formats\n" in response.text
     assert "dartwork_mpl.util" not in response.text
 
 

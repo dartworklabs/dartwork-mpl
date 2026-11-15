@@ -93,7 +93,7 @@ def test_preset_round_trip(preset: str, tmp_path: Path) -> None:
     dm.simple_layout(fig, margin=dm.inch(0.08))
 
     out_stem = str(tmp_path / f"preset_{preset}")
-    dm.save_formats(fig, out_stem, formats=("png", "pdf"), validate=False)
+    dm.save_formats(fig, out_stem, formats=("png", "pdf"))
 
     png_path = Path(f"{out_stem}.png")
     pdf_path = Path(f"{out_stem}.pdf")
@@ -126,7 +126,7 @@ def test_legacy_style_embeds_truetype(style_name: str, tmp_path: Path) -> None:
     ax.set_xlabel("Index")
     dm.simple_layout(fig)
     stem = tmp_path / style_name
-    dm.save_formats(fig, str(stem), formats=("pdf",), validate=False)
+    dm.save_formats(fig, str(stem), formats=("pdf",))
     _assert_embedded_truetype(stem.with_suffix(".pdf"))
     plt.close(fig)
 
@@ -139,9 +139,7 @@ def test_explicit_type3_override_is_respected(tmp_path: Path) -> None:
     ax.set_xlabel("Index")
     dm.simple_layout(fig)
     with plt.rc_context({"pdf.fonttype": 3}):
-        dm.save_formats(
-            fig, str(tmp_path / "type3"), formats=("pdf",), validate=False
-        )
+        dm.save_formats(fig, str(tmp_path / "type3"), formats=("pdf",))
     pdf = (tmp_path / "type3.pdf").read_bytes()
     assert re.search(rb"/Subtype\s*/Type3\b", pdf)
     assert not re.search(rb"/Subtype\s*/CIDFontType2\b", pdf)

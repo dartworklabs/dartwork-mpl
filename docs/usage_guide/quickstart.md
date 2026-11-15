@@ -30,7 +30,7 @@ Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 
 :::{tab-item} ✨ With dartwork-mpl
 
-<!-- snippet: no-run — save_and_show writes files + opens a preview -->
+<!-- snippet: no-run — save_formats writes files -->
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -49,7 +49,7 @@ ax.set_ylabel("Amplitude")
 ax.legend()
 
 dm.simple_layout(fig)           # content-aware margins
-dm.save_and_show(fig, "first")  # save + inline preview
+dm.save_formats(fig, "first")  # writes first.png and first.pdf
 ```
 
 :::
@@ -105,7 +105,7 @@ and `simple_layout`.
 | `dm.figsize("15cm", "wide")`                  | Physical width plus an aspect token, returned as the inches tuple `figsize=` expects. |
 | `dm.fs(0)`                                    | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
 | `dm.simple_layout(fig)`                       | Deterministic content-aware margins (replaces `tight_layout`)                      |
-| `dm.save_and_show(fig, "first")`              | Saves multi-format and previews inline in the notebook                             |
+| `dm.save_formats(fig, "first")`               | Saves PNG and PDF in one call                                                      |
 
 (fs-fallback-table)=
 ### Static reference: `dm.fs(n)` resolved per preset
@@ -413,15 +413,13 @@ dm.save_formats(
     "output/my_figure",
     formats=("png", "svg", "pdf"),
     dpi=300,
-    validate=True,  # auto-check for overflow, overlap, etc.
 )
 ```
 
 ## Catch problems before you export
 
-`validate=True` above runs the same checks as the standalone
-`validate_with_fixes` helper, which can also patch the easy issues
-in-place:
+Saving does not check the figure. `validate_with_fixes` runs the
+visual checks and can also patch the easy issues in-place:
 
 ```python
 warnings, fixes = dm.validate_with_fixes(fig)

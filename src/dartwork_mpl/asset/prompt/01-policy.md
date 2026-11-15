@@ -251,8 +251,6 @@ Apply the preset first, then retained overrides, then local artist edits.
 
 ## Save and display
 
-- Prefer `dm.save_and_show(fig, "name")` for notebooks (saves +
-  inline preview).
 - Prefer `dm.save_formats(fig, "name", formats=("png","pdf"),
   bbox_inches=None)` for scripts (multi-format, no preview). `None` is already
   the default and preserves the requested canvas; `bbox_inches="tight"` crops

@@ -138,8 +138,7 @@ you already know still works.
 :link: api/io
 :link-type: doc
 `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` writes
-all three at the right DPI in a single call — with an optional
-`validate=True` to catch problems before they ship, and byte-identical
+all three at the right DPI in a single call, with byte-identical
 SVG/PDF/SVGZ output when the figure is unchanged.
 :::
 

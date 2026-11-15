@@ -27,7 +27,7 @@ import dartwork_mpl as dm
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 ax.bar(["A", "B"], [1, 2], color="dc.blue6")
 dm.simple_layout(fig)
-dm.save_and_show(fig, "out")
+dm.save_formats(fig, "out")
 """
 
 BAD_FIGSIZE = """
