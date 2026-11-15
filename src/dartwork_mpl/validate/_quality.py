@@ -85,6 +85,3 @@ def check_figure_quality(fig: Figure) -> list[str]:
             issues.append(f"Axes {idx}: No data plotted")
 
     return issues
-
-
-check_figure_quality.__module__ = "dartwork_mpl.helpers.quality"

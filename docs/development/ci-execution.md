@@ -69,9 +69,8 @@ collection, without another full-suite run.
 | Retained input contracts | With prefix `tests.mcp.artifacts.`: `test_input_access`, `test_input_commit_observer`, `test_input_delivery`, `test_input_io`, `test_input_lifecycle`, `test_input_policy`, `test_input_recovery`, `test_input_stdio`, `test_input_store` |
 | Plot-data validation and repair | With prefix `src.dartwork_mpl.mcp.plot_data.tests.`: `test_limits`, `test_properties`, `test_reports`, `test_validators` |
 | MCP slice-owned tests | No prefix: `src.dartwork_mpl.mcp._platform.tests.test_process`, `src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github`, `src.dartwork_mpl.mcp.recommend.tests.test_chart_type_transport` |
-| Optional UI consumers | With prefix `src.dartwork_mpl.ui.`: `tests.test_ui_boundary`, `saving.tests.test_ui_files`, `tests.test_ui_http_security`, `render.tests.test_ui_hardening`, `tests.test_ui_init`, `state.tests.test_ui_viewer_state`, `render.tests.test_ui_render`, `params.tests.test_ui_widget`, `tests.test_ui_wire_golden` |
 
-All 49 modules must contribute a passed executed case. Missing modules,
+All 40 modules must contribute a passed executed case. Missing modules,
 zero-test suites, and modules whose cases all skip fail. Any failure/error in
 a protected module also fails, even alongside a passed case. Class-based
 pytest names are accepted; similarly named sibling modules cannot count.
@@ -83,7 +82,7 @@ one test. An all-extras run must import every optional dependency, so this
 covers case-level importorskips in mixed modules such as `tests.contracts.test_cli`.
 Option-gated skips (`--mpl`) and version-gated skips are not import failures.
 `tests/tools/test_check_integration_junit.py` also requires every test module
-that importorskips FastMCP or FastAPI to be in the explicit list.
+that importorskips FastMCP to be in the explicit list.
 The 0.6.0 owner decision (ADR 0007) removes only the Python 3.10 support cell.
 
 The default guard scope protects all-extras full-suite jobs and remains the

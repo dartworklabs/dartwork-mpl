@@ -133,7 +133,3 @@ def make_palette(
         ]
 
     return colors
-
-
-# Preserve historical imports and protocol-compatible function pickles.
-make_palette.__module__ = "dartwork_mpl.helpers.colors"

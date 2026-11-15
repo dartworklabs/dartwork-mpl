@@ -62,7 +62,6 @@ The core install is intentionally lean — add an extra only when you need it:
 | Extra | Enables | Example |
 |---|---|---|
 | `[mcp]` | the MCP server for AI assistants | `uv add "dartwork-mpl[mcp]"` |
-| `[ui]` | the interactive parameter viewer | `pip install "dartwork-mpl[ui]"` |
 
 ## Plain text install matrix
 

@@ -41,8 +41,6 @@ Additional tools for specialized use cases.
 
    Font Utilities <font>
    Plot Templates <templates>
-   Agent Helper Utilities <helpers>
-   Interactive Viewer <ui>
    Asset Diagnostics (visualization) <visualization>
    Diagnostics (module) <diagnostics>
    Prompt Utilities <prompt>

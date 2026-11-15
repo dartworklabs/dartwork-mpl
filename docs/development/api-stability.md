@@ -30,9 +30,7 @@ their kinds, width tiers, density hints, layouts, the note's placement, the
 labels' spacing and colour, the review summary's fields, the unit ladders,
 label template and unit rules, the bar labels' placement, crowding and
 stacked-total rules, and the figure legend's side rule and the panel
-legends it removes may still change. The
-interactive UI exists as the `dartwork_mpl.ui` subpackage, but it is not
-currently an advertised top-level `dm.ui` attribute.
+legends it removes may still change.
 
 ### Leaving the experimental surface
 
@@ -43,7 +41,7 @@ time, and only if all three hold:
    release waits for the next one.
 2. Its signature and documented defaults are the same as in that release:
    the *Changed* section of `CHANGELOG.md` since that tag does not name it.
-3. An agent smoke round (`evals/smoke/`) run since that release used it, and
+3. An agent eval round (`evals/agentic/`) run since that release used it, and
    no defect from those rounds was filed against it.
 
 The release's `CHANGELOG.md` entry lists each name that left. From then on

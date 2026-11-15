@@ -76,13 +76,6 @@ overflow, overlap, and crowding.
 → [Save and Validation](save_export.md)
 :::
 
-:::{grid-item-card} **5. Interactive UI**
-Launch a local web UI to tweak parameters with sliders, download plots,
-and generate reproducible Python scripts on the fly.
-
-→ [Interactive UI](interactive.md)
-:::
-
 ::::
 
 ```{toctree}
@@ -97,7 +90,6 @@ Recipes <recipes>
 Save and Validation <save_export>
 Global Defaults (dm.config) <config>
 Extended Plots & Diagnostics <extras>
-Interactive UI <interactive>
 Tutorials <tutorials>
 ```
 

@@ -130,7 +130,7 @@ mermaid_init_js = """mermaid.initialize({
     wrap: false
   }
 });"""
-autodoc_mock_imports = ["pydantic", "fastapi"]
+autodoc_mock_imports = ["pydantic"]
 
 nitpick_ignore_regex = [
     (r"py:.*", r"optional"),

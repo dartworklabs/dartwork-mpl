@@ -9,7 +9,7 @@
   "src/dartwork_mpl/_colors/model/_color.py": 1003,
   "src/dartwork_mpl/_colors/verify/_comparison.py": 1849,
   "src/dartwork_mpl/_colors/verify/_gates.py": 1263,
-  "src/dartwork_mpl/_compat.py": 776,
+  "src/dartwork_mpl/_compat.py": 774,
   "src/dartwork_mpl/_figure_geometry/__init__.py": 1502,
   "src/dartwork_mpl/annotation/_bar_label_settle.py": 1088,
   "src/dartwork_mpl/annotation/_bar_labels.py": 860,
@@ -36,24 +36,20 @@
   "src/dartwork_mpl/mcp/plot_data/validators.py": 725,
   "src/dartwork_mpl/mcp/tools.py": 581,
   "src/dartwork_mpl/style/__init__.py": 680,
-  "src/dartwork_mpl/ui/page/_scripts.py": 709,
-  "src/dartwork_mpl/ui/page/_styles.py": 681,
-  "src/dartwork_mpl/ui/state/_language.py": 502,
   "src/dartwork_mpl/validate/_checks/legend_on_data.py": 687,
   "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
  },
  "R2_slice_lines": {
-  "_colors": 15550,
+  "_colors": 15546,
   "_colors/construction": 3025,
   "_colors/model": 2536,
   "_colors/verify": 3227,
-  "annotation": 8271,
+  "annotation": 8267,
   "formatting": 4909,
   "layout": 4020,
   "mcp": 11140,
   "mcp/artifacts": 5316,
-  "ui": 6333,
-  "validate": 7410,
+  "validate": 7403,
   "validate/_checks": 6301
  },
  "R3_underscore_modules": {
@@ -69,7 +65,6 @@
   "mcp": 2,
   "recommend": 1,
   "tokens": 1,
-  "ui": 25,
   "validate": 9
  },
  "R3_underscore_toplevel": [
@@ -80,19 +75,16 @@
   "_rc"
  ],
  "R4_cycles": [
-  "pkg: dartwork_mpl, dartwork_mpl.annotation, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.helpers, dartwork_mpl.lint, dartwork_mpl.validate, dartwork_mpl.validate._checks",
+  "pkg: dartwork_mpl, dartwork_mpl.annotation, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.lint, dartwork_mpl.validate, dartwork_mpl.validate._checks",
   "pkg: dartwork_mpl._colors, dartwork_mpl._colors.catalog, dartwork_mpl._colors.construction, dartwork_mpl._colors.families_api, dartwork_mpl._colors.registry, dartwork_mpl._colors.verify"
  ],
  "R4_lazy_cycle_edges": {
   "top_level_edges": 0
  },
- "R5_dumping_ground": [
-  "dartwork_mpl.helpers",
-  "dartwork_mpl.util"
- ],
+ "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 168
+  "modules": 126
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_colors/_compatibility_metrics.py::_global_extrema": 101,
@@ -159,13 +151,6 @@
   "src/dartwork_mpl/style/__init__.py::Style.context": 82,
   "src/dartwork_mpl/style/__init__.py::Style.use": 89,
   "src/dartwork_mpl/templates/diverging_bar.py::plot_diverging_bar": 338,
-  "src/dartwork_mpl/ui/page/_template.py::get_html": 203,
-  "src/dartwork_mpl/ui/render/_routes.py::routes": 153,
-  "src/dartwork_mpl/ui/script/_generate.py::_generate_script": 92,
-  "src/dartwork_mpl/ui/script/_routes.py::routes": 110,
-  "src/dartwork_mpl/ui/state/_routes.py::routes": 128,
-  "src/dartwork_mpl/ui/ui.py::_create_app": 132,
-  "src/dartwork_mpl/ui/ui.py::run": 90,
   "src/dartwork_mpl/validate/_checks/cross_axes.py::check_cross_axes_overlap": 144,
   "src/dartwork_mpl/validate/_checks/grayscale_safety.py::check_grayscale_safety": 120,
   "src/dartwork_mpl/validate/_checks/legend.py::check_legend_overflow": 166,
@@ -189,12 +174,7 @@
   "src/dartwork_mpl/mcp/artifacts/transport.py::register_artifacts": 197,
   "src/dartwork_mpl/mcp/prompts.py::register_prompts": 42,
   "src/dartwork_mpl/mcp/resources.py::register_resources": 157,
-  "src/dartwork_mpl/mcp/tools.py::register_tools": 563,
-  "src/dartwork_mpl/ui/__main__.py::_interactive_init": 37,
-  "src/dartwork_mpl/ui/__main__.py::_report": 31,
-  "src/dartwork_mpl/ui/__main__.py::main": 41,
-  "src/dartwork_mpl/ui/ui.py::_create_app": 132,
-  "src/dartwork_mpl/ui/ui.py::run": 90
+  "src/dartwork_mpl/mcp/tools.py::register_tools": 563
  },
  "R8_missing_all": []
 }

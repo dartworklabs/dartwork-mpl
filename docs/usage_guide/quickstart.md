@@ -431,23 +431,6 @@ for w in warnings:         # each is a VisualWarning with fix suggestions
 Use it in CI to fail a build when a figure breaks; use it locally to
 get a one-line health check before you `save_formats`.
 
-## Try the interactive UI
-
-If you'd rather see the effect of every parameter before committing
-it to code, dartwork-mpl ships a local web app that wires sliders to
-your render function and exports the resulting Python script:
-
-```bash
-# 1. scaffold a starter viewer (first time only)
-pip install "dartwork-mpl[ui]"
-dartwork-mpl-ui init ./my-viewer --example simple
-
-# 2. run it — opens the viewer in your default browser
-cd my-viewer && python app.py
-```
-
-→ [Interactive UI guide](interactive.md)
-
 ## Next steps
 
 ::::{grid} 1 1 2 3
@@ -475,13 +458,6 @@ Panel labels, arrows, font scaling, and margin optimization.
 Multi-format export + automatic visual quality checks.
 
 → [Export guide](save_export.md)
-:::
-
-:::{grid-item-card} 🛠️ Interactive UI
-Tune fonts, line weights, margins with sliders. Export the exact
-script that reproduces what you see.
-
-→ [Interactive UI](interactive.md)
 :::
 
 :::{grid-item-card} 🔬 Diagnostics & Templates

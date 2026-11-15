@@ -34,7 +34,7 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # (validate_fixes is the auto-fix companion to validate). F401 is
 # silenced because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
-from . import font, helpers, lint, templates, tokens, validate_fixes  # noqa: F401
+from . import font, lint, templates, tokens, validate_fixes  # noqa: F401
 
 # Import color module exports
 from ._colors import (
@@ -171,12 +171,6 @@ EXPERIMENTAL: frozenset[str] = frozenset(
         "review",
     }
 )
-
-# High-level composition helpers (T2 in the AI-readiness roadmap).
-# These wrap the lower-level primitives above so that AI agents and
-# humans alike can reach the most useful workflow utilities through a
-# single ``dm.<name>`` access path. The submodule namespace
-# (``dm.helpers.<name>``) remains available as well.
 
 # Native lint + migration entry points (T4). The ``dm.lint`` name is
 # the module itself (so ``dm.lint.lint(...)`` and

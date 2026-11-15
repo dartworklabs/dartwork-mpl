@@ -1,42 +1,12 @@
-"""Native quality ownership preserves historical aliases and figure diagnostics."""
+"""``check_figure_quality`` figure diagnostics."""
 
-import inspect
-import pickle
 import random
-import typing
 
 import matplotlib as mpl
 from matplotlib.figure import Figure
 
 import dartwork_mpl as dm
-from dartwork_mpl import helpers, validate
-from dartwork_mpl.helpers import quality
-from dartwork_mpl.validate import agent_requirements
-
-
-def test_owner_alias_metadata_and_historical_pickle():
-    """The validate owner is the original typed callable at every historical path."""
-    assert hasattr(validate, "check_figure_quality")
-    f = validate.check_figure_quality
-    assert f is dm.check_figure_quality is helpers.check_figure_quality
-    assert f is quality.check_figure_quality
-    assert f.__module__ == "dartwork_mpl.helpers.quality"
-    assert f.__name__ == f.__qualname__ == "check_figure_quality"
-    assert str(inspect.signature(f)) == "(fig: 'Figure') -> 'list[str]'"
-    assert f.__annotations__ == {"fig": "Figure", "return": "list[str]"}
-    assert typing.get_type_hints(f) == {"fig": Figure, "return": list[str]}
-    assert f.__defaults__ is None
-    old = bytes.fromhex(
-        "80049539000000000000008c1c64617274776f726b5f6d706c2e68656c706572732e7175616c697479948c14636865636b5f6669677572655f7175616c6974799493942e"
-    )
-    assert pickle.loads(old) is f
-    assert pickle.dumps(f, protocol=4) == old
-    assert validate.MIN_RECOMMENDED_DPI == quality.MIN_RECOMMENDED_DPI == 200
-    assert (
-        helpers.MIN_RECOMMENDED_DPI
-        == agent_requirements.MIN_RECOMMENDED_DPI
-        == 200
-    )
+from dartwork_mpl import validate
 
 
 def test_threshold_and_ordered_global_style_diagnostics():
@@ -121,13 +91,11 @@ def test_seeded_diagnostics_leave_figures_unchanged_and_return_fresh_lists():
                 f(fig)
                 for f in (
                     dm.check_figure_quality,
-                    helpers.check_figure_quality,
-                    quality.check_figure_quality,
                     validate.check_figure_quality,
                 )
             ]
             assert all(result == results[0] for result in results)
-            assert len({id(result) for result in results}) == 4
+            assert len({id(result) for result in results}) == 2
             after = (
                 fig.dpi,
                 fig.stale,

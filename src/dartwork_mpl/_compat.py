@@ -192,9 +192,7 @@ _REMOVED_NAMES: Mapping[str, Removal] = MappingProxyType(
             "plt.figure(figsize=dm.figsize('<n>cm', '<aspect>')) with a "
             "separate dm.style.use(...)",
         ),
-        "agent_utils": Removal(
-            "0.4", "dm.helpers (the agent_utils module was renamed to helpers)"
-        ),
+        "agent_utils": Removal("0.4", "dm.lint and dm.validate_figure"),
         "xplot": Removal(
             "0.4", "dm.templates (e.g. dm.templates.plot_diverging_bar)"
         ),
@@ -435,13 +433,13 @@ _CODEMOD_HINTS: tuple[CodemodHint, ...] = (
         ("agent_utils",),
         "import",
         "dm.agent_utils removed; surfaces moved to dm.lint, "
-        "dm.validate_figure, dm.helpers, etc.",
+        "dm.validate_figure, etc.",
     ),
     CodemodHint(
         ("xplot",),
         "reference",
-        "dm.xplot removed; templates now live in dm.templates / "
-        "dm.helpers (see docs/migration.md).",
+        "dm.xplot removed; templates now live in dm.templates "
+        "(see docs/migration.md).",
     ),
     CodemodHint(
         ("auto_layout",),
@@ -704,8 +702,8 @@ _LINT_RULES: tuple[LintRule, ...] = (
         "reference",
         message=(
             "`dm.agent_utils` and `dm.xplot` were REMOVED in 0.4. The\n"
-            "agent_utils surfaces moved to `dm.lint` / `dm.validate_figure` /\n"
-            "`dm.helpers`; the xplot templates now live in `dm.templates`\n"
+            "agent_utils surfaces moved to `dm.lint` / `dm.validate_figure`;\n"
+            "the xplot templates now live in `dm.templates`\n"
             "(e.g. `dm.templates.plot_diverging_bar`). See docs/migration.md."
         ),
         fix_suggestion="see docs/migration.md",

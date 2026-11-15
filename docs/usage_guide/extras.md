@@ -84,7 +84,5 @@ parameter reference of the four diagnostic helpers.
 
 ## See also
 
-- **Next →** [Interactive UI](interactive.md) — launch a local web app to tweak
-  parameters with sliders, export plots, and generate reproducible scripts
 - [API › Extended Plots](../api/templates.rst) for all `templates` function signatures
 - [API › Visualization Tools](../api/visualization.rst) for diagnostic plot functions

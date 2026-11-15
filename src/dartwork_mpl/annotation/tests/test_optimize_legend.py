@@ -1,49 +1,11 @@
-"""Native legend behavior and historical callable compatibility survive ownership moves."""
-
-import inspect
-import pickle
+"""Native legend behavior of ``optimize_legend``."""
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl import annotation, helpers
-from dartwork_mpl.helpers import labels
 from tests.support.mpl_observe import legend_ncols, pinned_legend_corner
-
-# Protocol 4 global reference produced before annotation owned the implementation.
-OLD_PICKLE = (
-    b"\x80\x04\x953\x00\x00\x00\x00\x00\x00\x00"
-    b"\x8c\x1bdartwork_mpl.helpers.labels\x94\x8c\x0foptimize_legend\x94\x93\x94."
-)
-
-
-def test_public_aliases_preserve_signature_and_historical_pickle():
-    """The new owner and three old paths expose one pickle-compatible callable."""
-    assert "optimize_legend" in annotation.__all__
-    f = annotation.optimize_legend
-    assert (
-        f
-        is dm.optimize_legend
-        is helpers.optimize_legend
-        is labels.optimize_legend
-    )
-    assert str(inspect.signature(f)) == (
-        "(ax: 'Axes', preferred_loc: 'str' = 'best', max_cols: 'int' = 3, "
-        "outside: 'bool' = False) -> 'None'"
-    )
-    assert f.__annotations__ == {
-        "ax": "Axes",
-        "preferred_loc": "str",
-        "max_cols": "int",
-        "outside": "bool",
-        "return": "None",
-    }
-    assert f.__module__ == "dartwork_mpl.helpers.labels"
-    assert f.__name__ == f.__qualname__ == "optimize_legend"
-    assert pickle.loads(OLD_PICKLE) is f
-    assert pickle.dumps(f, protocol=4) == OLD_PICKLE
 
 
 @pytest.mark.parametrize(

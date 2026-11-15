@@ -268,39 +268,6 @@ fig, ax = plt.subplots()  # New figure picks up new style
 
 ---
 
-## Interactive UI
-
-### `ImportError` when using `dartwork_mpl.ui`
-
-The interactive UI requires extra dependencies:
-
-```bash
-pip install "dartwork-mpl[ui]"
-# or
-uv add "dartwork-mpl[ui]"
-```
-
-### UI server doesn't start
-
-Check that the port is not already in use:
-
-```bash
-# Default port is 8501
-lsof -i :8501
-```
-
-If something else is bound to 8501, pass a different port directly to
-`run(...)` inside your viewer script:
-
-```python
-from dartwork_mpl.ui import run
-
-if __name__ == "__main__":
-    run(plot_my_chart, port=8502)
-```
-
----
-
 ## Still stuck?
 
 1. Check the [Examples Gallery](examples_gallery/index) for working code patterns
