@@ -16,7 +16,7 @@ from itertools import pairwise
 from typing import TYPE_CHECKING, Literal, TypeAlias, TypedDict
 
 from ..._figure_geometry import drawn_axes
-from ...formatting import recommend_tick_decimals
+from ...ticks import recommend_tick_decimals
 from .._types import Severity, VisualWarning
 from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix

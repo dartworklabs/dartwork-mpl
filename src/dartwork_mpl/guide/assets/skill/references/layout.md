@@ -255,9 +255,9 @@ plt.close(fig)
 - Eight or more lines: `dm.label_line_ends(ax)` names them at their ends;
   `LEGEND_OVERFLOW` reports a legend outside that is more than half the
   plot's size.
-- A twin pair: `dm.simple_layout` colours each side like its one series, so
-  leave the axis colours to it (`with dm.config.override(twin_colors="neutral"):`
-  when neutral axes are asked); one legend for both is `dm.place_legend(ax)`,
+- A twin pair: `dm.simple_layout` shows the twin's right spine; the axis
+  colours stay neutral unless you colour a side like its series
+  (`ax2.tick_params(axis="y", colors=…)`); one legend for both is `dm.place_legend(ax)`,
   never `ax.legend(h1 + h2, l1 + l2)`; it and `dm.label_bars(ax)` put the
   legend and the bar values on the top twin, so the other twin's data is
   never drawn over them.

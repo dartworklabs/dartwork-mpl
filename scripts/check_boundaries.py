@@ -86,7 +86,6 @@ SLICES = frozenset(
         "dartwork_mpl.config",
         "dartwork_mpl.figure_review",
         "dartwork_mpl.font",
-        "dartwork_mpl.formatting",
         "dartwork_mpl.guide",
         "dartwork_mpl.labels",
         "dartwork_mpl.legend",
@@ -136,10 +135,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "line-end and bar value labels keep their series' colour at a "
         "readable contrast"
     ),
-    ("dartwork_mpl.formatting", "dartwork_mpl.color"): (
-        "twin-axis ticks keep their series' hue at a readable contrast, and "
-        "stay neutral when the series colours are close in OKLab"
-    ),
     ("dartwork_mpl.mcp", "dartwork_mpl.color"): (
         "the MCP colour tool and resource list the registered colour libraries"
     ),
@@ -149,6 +144,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.style", "dartwork_mpl.color"): (
         "a preset switch re-applies the locale's semantic colour tokens"
     ),
+    ("dartwork_mpl.validate", "dartwork_mpl.ticks"): (
+        "the tick-decimal check recommends the precision the tick text uses"
+    ),
     ("dartwork_mpl.validate", "dartwork_mpl.color"): (
         "the text-contrast and grayscale checks judge WCAG contrast and "
         "compare colours in OKLab and Y"
@@ -156,7 +154,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.annotation", "dartwork_mpl.config"): (
         "place_legend reads the project-wide legend fallback and wrap defaults"
     ),
-    ("dartwork_mpl.annotation", "dartwork_mpl.formatting"): (
+    ("dartwork_mpl.annotation", "dartwork_mpl.ticks"): (
         "bar value labels print in their axis's tick unit, like the ticks"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
@@ -167,10 +165,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.figure_review", "dartwork_mpl.validate"): (
         "a review reports validate_figure's findings, unfiltered"
-    ),
-    ("dartwork_mpl.formatting", "dartwork_mpl.config"): (
-        "default tick text follows the user's tick_years, date_style and "
-        "number_ladder; twin axes follow twin_colors"
     ),
     ("dartwork_mpl.labels", "dartwork_mpl.annotation"): (
         "the layout's label hooks delegate to the label code until labels is rebuilt"
@@ -196,8 +190,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.size"): (
         "margins are given as physical lengths"
     ),
-    ("dartwork_mpl.ticks", "dartwork_mpl.formatting"): (
-        "the layout's tick hooks delegate to formatting until ticks is rebuilt"
+    ("dartwork_mpl.ticks", "dartwork_mpl.config"): (
+        "default tick text follows the user's tick_years and number_ladder"
     ),
     ("dartwork_mpl.mcp", "dartwork_mpl.mcp.artifacts"): (
         "the server mounts the durable plot-artifact tools and resources"
@@ -238,9 +232,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.size", "dartwork_mpl.style"): (
         "the default canvas follows the active preset's page and font"
     ),
-    ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
-        "the tick-decimal check recommends the precision the formatter uses"
-    ),
     ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
         "the auto-applied validation fix is re-running the content-aware layout"
     ),
@@ -271,6 +262,12 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.color.space": (
         "sRGB, OKLab and OKLCH arithmetic is closed over its own values"
+    ),
+    "dartwork_mpl.ticks.decide": (
+        "tick units, decimals and default formats are decided from tick facts alone"
+    ),
+    "dartwork_mpl.ticks.model": (
+        "the tick types and config parsing need nothing outside them"
     ),
     "dartwork_mpl.size.decide": (
         "the canvas is decided from the parsed request and the page alone"

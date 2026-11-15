@@ -83,8 +83,7 @@ weight, colour and spacing, so every agent draws the same element.
 | a width only | new figure `dm.figsize("20cm")` (4:3); an edit keeps the old height in cm, also after a ratio token: `h = dm.figsize("14cm", "golden")[1] * 2.54`, then `dm.figsize("16cm", f"{h:.2f}cm")` |
 | bigger or smaller text, no amount | one step, `step = dm.fs(1) - dm.fs(0)` (1 pt; 2.6 pt under `presentation`): `t.set_fontsize(t.get_fontsize() + step)`; all text: `dm.style.use(preset, font_size=dm.fs(0) + step)` |
 | a dark background | `dm.style.use("dark")` (Korean text: `"dark-kr"`) |
-| black or neutral twin axes (no series colours) | `dm.config.twin_colors = "neutral"` before `dm.simple_layout`; not `tick_params(colors="black")`, which the first layout cannot tell from the default and paints |
-| one twin axis (or one part of it) in a named colour | set just that part (`ax2.tick_params(axis="y", colors=…)`, `ax2.yaxis.label.set_color(…)`; the left spine you see is `ax2.spines["left"]`); that side is then yours, its other parts keep the preset's colours, the other side keeps its series colour |
+| one twin axis (or one part of it) in its series colour | set just that part (`ax2.tick_params(axis="y", colors=…)`, `ax2.yaxis.label.set_color(…)`, `ax2.spines["right"].set_color(…)`); twin axes are otherwise neutral |
 | values on the bars | `dm.label_bars(ax)`; a named detail is its keyword (`where="inside"`, `decimals=1`, `fmt="{} GWh"` …), see Value labels below |
 | a log axis | `ax.set_yscale("log")` |
 
@@ -108,7 +107,7 @@ above an outside legend and the margins around both.
 | for slides / for a talk (preset switch) | `dm.style.use("presentation")`, canvas `dm.figsize_for(...)` with the same arguments (a grid keeps `nrows=`, `ncols=`; `"full_slide"` only for a whole 16:9 slide); pt values written in the code × 2.6 (`scientific` → `presentation`), unrounded: `markersize=3` → `3 * 2.6`; keep data, labels and limits |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
 | unit in the axis label, plain ticks (`0, 0.2 … 1.0` under `인구 (억명)`) | `dm.axis_unit(ax, "y", label="인구 ({unit}명)")`; `dm.axis_unit_of(ax)` for value labels |
-| four-digit years (`2016`, `2023.01`) / concise date words (`23, May, Sep`) / `k, M` in a Korean figure | `with dm.config.override(tick_years=4):` / `(date_style="concise")` / `(number_ladder="si")` around the code from figure creation to the last `dm.simple_layout`, or the field set on `dm.config` |
+| four-digit years (`2016`, `2023.01`) / `k, M` in a Korean figure | `with dm.config.override(tick_years=4):` / `(number_ladder="si")` around the code from figure creation to the last `dm.simple_layout`, or the field set on `dm.config` |
 | show the values on bars or points | bars `dm.label_bars(ax)`; points and line ends `dm.annotate_value(ax, x, y, text)`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 

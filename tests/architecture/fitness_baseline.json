@@ -9,10 +9,6 @@
   "src/dartwork_mpl/annotation/_panel_labels.py": 597,
   "src/dartwork_mpl/annotation/_point_labels.py": 871,
   "src/dartwork_mpl/figure_review/_summary.py": 602,
-  "src/dartwork_mpl/formatting/__init__.py": 623,
-  "src/dartwork_mpl/formatting/_defaults.py": 1210,
-  "src/dartwork_mpl/formatting/_label_unit.py": 612,
-  "src/dartwork_mpl/formatting/_twin_colors.py": 632,
   "src/dartwork_mpl/layout/_fit_labels.py": 1853,
   "src/dartwork_mpl/layout/_simple_layout.py": 833,
   "src/dartwork_mpl/mcp/artifacts/input_policy.py": 661,
@@ -29,7 +25,6 @@
  },
  "R2_slice_lines": {
   "annotation": 8262,
-  "formatting": 4913,
   "layout": 4020,
   "mcp": 10859,
   "mcp/artifacts": 5316,
@@ -42,7 +37,6 @@
   "_rc": 1,
   "annotation": 22,
   "figure_review": 2,
-  "formatting": 9,
   "layout": 9,
   "mcp": 2,
   "tokens": 1,
@@ -54,7 +48,7 @@
   "_rc"
  ],
  "R4_cycles": [
-  "pkg: dartwork_mpl, dartwork_mpl.annotation, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.validate, dartwork_mpl.validate._checks"
+  "pkg: dartwork_mpl.validate, dartwork_mpl.validate._checks"
  ],
  "R4_lazy_cycle_edges": {
   "top_level_edges": 0
@@ -62,7 +56,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 90
+  "modules": 91
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 86,
@@ -76,7 +70,6 @@
   "src/dartwork_mpl/annotation/_point_labels.py::annotate_value": 138,
   "src/dartwork_mpl/annotation/_point_labels.py::label_hline": 85,
   "src/dartwork_mpl/figure_review/__init__.py::review": 90,
-  "src/dartwork_mpl/formatting/_label_unit.py::axis_unit": 135,
   "src/dartwork_mpl/layout/_content_extent.py::_axes_content_extent_px": 128,
   "src/dartwork_mpl/layout/_crop.py::tight_crop": 136,
   "src/dartwork_mpl/layout/_gutter.py::fit_gutter": 86,

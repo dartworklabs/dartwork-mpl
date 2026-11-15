@@ -13,7 +13,7 @@ draws its own spines and no background). Child Axes from ``ax.inset_axes``
 or ``secondary_xaxis`` are not in ``fig.axes`` and are never inspected. A
 background that is not drawn (invisible patch or frame off) is not compared.
 
-The twin is the twin role of :func:`dartwork_mpl.formatting.drawn_like_twin`,
+The twin is the twin role of :func:`dartwork_mpl.ticks.drawn_like_twin`,
 read from public state: an earlier Axes in the same box shares one axis with
 it and draws that axis. It is not how the Axes was made (matplotlib's private
 twin grouper is not read), so a ``sharex`` overlay with its x axis hidden is
@@ -22,7 +22,7 @@ is skipped whole: its grid and background are not compared either, not only
 its spines.
 
 On an inspected Axes, a right or top spine that ``dm.simple_layout`` settled
-as a twin's scale line (:func:`dartwork_mpl.formatting.settled_twin_spines`)
+as a twin's scale line (:func:`dartwork_mpl.ticks.settled_twin_spines`)
 and that still shows is the library's line and is not reported. That is the
 record's only use. A spine hidden since, or not drawn because the frame is
 off, is compared with the preset like any other spine, and a spine shown
@@ -39,8 +39,8 @@ import matplotlib.colors as mcolors
 from matplotlib.patches import Wedge
 
 from ..._figure_geometry import drawn_axes
-from ...formatting import drawn_like_twin, settled_twin_spines
 from ...style import active_preset_rcparams
+from ...ticks import drawn_like_twin, settled_twin_spines
 from .._types import Severity, VisualWarning
 from ._detail import AXES, SIDES, Axis, Side, choice, wire
 from ._registry import register_check, register_fix
