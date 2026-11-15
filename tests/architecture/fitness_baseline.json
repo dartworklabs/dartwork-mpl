@@ -1,11 +1,7 @@
 {
  "R1_module_lines": {
   "src/dartwork_mpl/_compat.py": 773,
-  "src/dartwork_mpl/_figure_geometry/__init__.py": 1166,
-  "src/dartwork_mpl/annotation/_bar_label_settle.py": 1088,
-  "src/dartwork_mpl/annotation/_bar_labels.py": 860,
-  "src/dartwork_mpl/annotation/_panel_labels.py": 597,
-  "src/dartwork_mpl/annotation/_point_labels.py": 871,
+  "src/dartwork_mpl/_figure_geometry/__init__.py": 1048,
   "src/dartwork_mpl/figure_review/_summary.py": 602,
   "src/dartwork_mpl/layout/_fit_labels.py": 1853,
   "src/dartwork_mpl/layout/_simple_layout.py": 833,
@@ -24,7 +20,6 @@
   "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
  },
  "R2_slice_lines": {
-  "annotation": 5797,
   "layout": 4020,
   "mcp": 10859,
   "mcp/artifacts": 5316,
@@ -35,7 +30,6 @@
   "_compat": 1,
   "_figure_geometry": 3,
   "_rc": 1,
-  "annotation": 15,
   "figure_review": 2,
   "layout": 9,
   "mcp": 2,
@@ -56,17 +50,10 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 93
+  "modules": 96
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 86,
-  "src/dartwork_mpl/annotation/_axis_labels.py::arrow_axis": 156,
-  "src/dartwork_mpl/annotation/_bar_labels.py::label_bars": 261,
-  "src/dartwork_mpl/annotation/_panel_labels.py::_place_group": 134,
-  "src/dartwork_mpl/annotation/_panel_labels.py::label_axes": 153,
-  "src/dartwork_mpl/annotation/_point_labels.py::annotate_corner": 84,
-  "src/dartwork_mpl/annotation/_point_labels.py::annotate_value": 138,
-  "src/dartwork_mpl/annotation/_point_labels.py::label_hline": 85,
   "src/dartwork_mpl/figure_review/__init__.py::review": 90,
   "src/dartwork_mpl/layout/_content_extent.py::_axes_content_extent_px": 128,
   "src/dartwork_mpl/layout/_crop.py::tight_crop": 136,

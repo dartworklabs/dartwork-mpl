@@ -13,7 +13,6 @@ one slice uses moves into that slice when it is rebuilt; ``validate``,
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
@@ -90,6 +89,7 @@ __all__ = [
     "figure_tree",
     "get_renderer",
     "holders_shown",
+    "host_axes",
     "iter_figure_level_extents",
     "label_clearance_px",
     "line_draws_markers",
@@ -100,12 +100,10 @@ __all__ = [
     "pair_gap_px",
     "panel_labels",
     "patch_inks",
-    "respread_line_end_labels",
     "root_position",
     "same_position_axes",
     "secondary_axes",
     "shared_axes",
-    "spread_line_end_labels",
     "text_inks",
     "text_window_extent",
     "tick_label_overlaps",
@@ -947,6 +945,25 @@ def same_position_axes(ax: Axes) -> list[Axes]:
     return [ax, *partners]
 
 
+# Owners: labels, legend.
+def host_axes(ax: Axes) -> Axes:
+    """The Axes drawn last in ``ax``'s box: the top-most twin.
+
+    Matplotlib draws Axes by zorder, then in figure order, so the
+    ``ax.set_zorder(ax2.get_zorder() + 1)`` idiom puts ``ax`` on top.
+    """
+    owners = same_position_axes(ax)
+    parent = ax.get_figure(root=False)
+    order = parent.axes if parent is not None else owners
+    return max(
+        owners,
+        key=lambda member: (
+            member.get_zorder(),
+            order.index(member) if member in order else -1,
+        ),
+    )
+
+
 # Owners: labels, ticks.
 def backdrop_layers(
     axes: Sequence[Axes],
@@ -1027,139 +1044,3 @@ def outside_side(artist: Any) -> OutsideSide | None:
         case "above" | "below" | "right" | "left":
             return side
     return None
-
-
-_LINE_ENDS_ATTR = "_dm_line_end_labels"
-
-
-@dataclass
-class _LineEnds:
-    """Labels :func:`spread_line_end_labels` placed on an Axes, with their ends.
-
-    ``placed`` is the offset this code last gave each label (``None`` before
-    the first spacing); a label whose offset or coordinates changed since was
-    moved by someone else and keeps its place.
-    """
-
-    labels: list[Any]
-    ends: list[tuple[float, float]]
-    gap_pt: float
-    placed: list[tuple[float, float] | None]
-
-
-def _moved_since(label: Any, placed: tuple[float, float] | None) -> bool:
-    """Whether ``label`` left the offset this code last gave it."""
-    if placed is None:
-        return False
-    if getattr(label, "anncoords", "offset points") != "offset points":
-        return True
-    x, y = (float(v) for v in label.xyann)
-    return abs(x - placed[0]) > 0.01 or abs(y - placed[1]) > 0.01
-
-
-def _spread(centres: list[float], height: float) -> list[float]:
-    """Move sorted label centres apart to ``height`` spacing, as little as possible.
-
-    Labels that would overlap are merged into a group centred on their mean;
-    groups that then touch merge again (a 1-D pool-adjacent pass), so the
-    result keeps the order and the average position of each crowded group.
-    """
-    groups: list[list[float]] = []  # [first centre, count, mean of wanted]
-    for c in centres:
-        groups.append([c, 1, c])
-        while len(groups) > 1:
-            first, n, mean = groups[-1]
-            p_first, p_n, p_mean = groups[-2]
-            if p_first + p_n * height <= first + 1e-9:
-                break
-            total = p_n + n
-            merged_mean = (p_mean * p_n + mean * n) / total
-            groups[-2:] = [
-                [merged_mean - (total - 1) * height / 2, total, merged_mean]
-            ]
-    out: list[float] = []
-    for first, n, _mean in groups:
-        out.extend(first + k * height for k in range(int(n)))
-    return out
-
-
-def _apply_line_end_spread(
-    ax: Axes, group: _LineEnds, renderer: RendererBase
-) -> bool:
-    """Offset the group's labels apart at ``ax``'s current size; whether one moved."""
-    root = ax.get_figure(root=True)
-    keep = [
-        (k, label, end)
-        for k, (label, end) in enumerate(
-            zip(group.labels, group.ends, strict=True)
-        )
-        if label.axes is ax
-        and label in ax.texts
-        and not _moved_since(label, group.placed[k])
-    ]
-    if root is None or len(keep) < 2:
-        return False
-    to_pt = 72.0 / root.dpi
-    # Vertical spacing in points: one text line plus a sliver.
-    height = (
-        max(label.get_window_extent(renderer).height for _, label, _ in keep)
-        * to_pt
-        * 1.1
-    )
-    wanted = [ax.transData.transform(end)[1] * to_pt for _, _, end in keep]
-    order = sorted(range(len(keep)), key=lambda i: wanted[i])
-    spread = _spread([wanted[i] for i in order], height)
-    moved = False
-    for i, y_pt in zip(order, spread, strict=True):
-        k, label, _ = keep[i]
-        offset = (group.gap_pt, y_pt - wanted[i])
-        old = tuple(label.xyann)
-        if abs(old[0] - offset[0]) > 0.01 or abs(old[1] - offset[1]) > 0.01:
-            moved = True
-        label.xyann = offset
-        group.placed[k] = offset
-    return moved
-
-
-# Owners: labels.
-def spread_line_end_labels(
-    ax: Axes,
-    labels: list[Any],
-    ends: list[tuple[float, float]],
-    gap_pt: float,
-    renderer: RendererBase,
-) -> bool:
-    """Move line-end labels apart vertically at ``ax``'s current size.
-
-    ``labels`` are annotations ``gap_pt`` right of their line's last point
-    ``ends`` (data coordinates). Labels that would overlap move apart and
-    keep their order. The group is recorded on ``ax`` (next to any earlier
-    group) so :func:`respread_line_end_labels` spaces them again after the
-    Axes is resized (``dm.simple_layout`` shrinking it for a note, say).
-    Returns whether a label moved.
-    """
-    group = _LineEnds(
-        list(labels), list(ends), float(gap_pt), [None] * len(labels)
-    )
-    groups = [
-        g for g in getattr(ax, _LINE_ENDS_ATTR, []) if isinstance(g, _LineEnds)
-    ]
-    setattr(ax, _LINE_ENDS_ATTR, [*groups, group])
-    return _apply_line_end_spread(ax, group, renderer)
-
-
-# Owners: labels (layout runs it through labels.space_line_ends).
-def respread_line_end_labels(ax: Axes, renderer: RendererBase) -> bool:
-    """Space :func:`spread_line_end_labels` labels again at ``ax``'s size now.
-
-    Every group recorded on ``ax`` is spaced on its own; a label someone moved
-    since keeps its place. Returns ``False`` without touching anything when
-    ``ax`` has none.
-    """
-    moved = False
-    for group in getattr(ax, _LINE_ENDS_ATTR, []):
-        if isinstance(group, _LineEnds) and _apply_line_end_spread(
-            ax, group, renderer
-        ):
-            moved = True
-    return moved

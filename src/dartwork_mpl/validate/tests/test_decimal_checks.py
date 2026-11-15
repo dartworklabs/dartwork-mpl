@@ -286,19 +286,6 @@ class TestValueLabelDecimalTinyValues:
     """
 
     @pytest.mark.parametrize(
-        "values", [[1e-14, 1e-13, 1e-12, 45], [1e-14, 1e-13, 1e-12]]
-    )
-    def test_label_bars_on_a_log_axis_with_tiny_values_is_clean(
-        self, values: list[float]
-    ) -> None:
-        fig = _log_bar_fig(values)
-        labels = [t.get_text() for t in fig.axes[0].texts]
-        hits = _hits(fig, "VALUE_LABEL_DECIMAL")
-        plt.close(fig)
-        assert "0.00000000000001" in labels  # the tiny value is printed
-        assert hits == []
-
-    @pytest.mark.parametrize(
         "labels",
         [
             ["0.00000000000001", "0.0000000000001", "0.000000000001"],

@@ -223,47 +223,6 @@ class TestTextContrast:
         plt.close(fig)
 
     @pytest.mark.parametrize(
-        "color", ["dc.blue9", "#1f4e79", "dc.gray9", "#222222"]
-    )
-    def test_bar_values_are_judged_on_what_is_drawn_behind_them(
-        self, color: str
-    ) -> None:
-        # Re-review N-I3: the value of a bar past the limit, too wide for its
-        # bar, sits beyond the limit on the figure in the text colour (13-1).
-        # Read against the unclipped bar it gave a false INFO/WARNING (2.42:1
-        # on #1f4e79). Real faults stay found: that value made white by the
-        # caller (white on white), and a value inside the limit on its bar
-        # made the bar's own colour.
-        dm.style.use("report")
-        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
-        ax.bar([0, 1, 2, 3], [300, 4100, 520, 12500], width=0.3, color=color)
-        ax.bar([5], [5000], width=0.9, color=color)  # holds its number
-        ax.set_ylim(0, 1000)
-        labels = dm.label_bars(ax)
-        dm.simple_layout(fig)
-        cut = [t for t in labels if t.get_text() in ("4,100", "12,500")]
-        assert all(t.get_visible() and t.clipped and t.off_bar for t in cut)
-
-        assert not _warnings_for(fig, "TEXT_CONTRAST")
-
-        cut[0].set_color("white")
-        hits = _warnings_for(fig, "TEXT_CONTRAST")
-        assert [
-            (h.detail["sample"], h.detail["background_color"]) for h in hits
-        ] == [("4,100", "#ffffff")]
-        assert hits[0].severity == Severity.WARNING
-
-        cut[0].set_color("black")
-        on_bar = [t for t in labels if t.get_text() == "5,000"]
-        assert on_bar and on_bar[0].clipped and on_bar[0].on_bar
-        assert not _warnings_for(fig, "TEXT_CONTRAST")  # its ink reads
-        on_bar[0].set_color(color)
-        hits = _warnings_for(fig, "TEXT_CONTRAST")
-        assert [h.detail["sample"] for h in hits] == ["5,000"]
-        assert hits[0].detail["ratio"] == pytest.approx(1.0)
-        plt.close(fig)
-
-    @pytest.mark.parametrize(
         ("ink", "ratio"), [("black", 2.75), ("#505458", 1.0)]
     )
     def test_stack_segment_values_in_the_wrong_ink_stay_found(

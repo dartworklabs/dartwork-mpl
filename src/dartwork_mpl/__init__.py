@@ -31,21 +31,6 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # attribute-style access at the package level.
 from . import font, guide, tokens, validate_fixes
 
-# Axes annotation
-from .annotation import (
-    add_note,
-    annotate_corner,
-    annotate_value,
-    arrow_axis,
-    label_axes,
-    label_bars,
-    label_hline,
-    label_line_ends,
-    make_offset,
-    wrap_axis_label,
-    wrap_axis_labels,
-)
-
 # Colour names and values (importing it registers them with matplotlib)
 from .color import (
     Color,
@@ -73,6 +58,17 @@ from .figure_review import review
 
 # Agent guidance: the skill, templates and anti-pattern lint
 from .guide import lint as lint_code
+
+# Value labels, panel letters, notes
+from .labels import (
+    add_note,
+    annotate_corner,
+    annotate_value,
+    label_axes,
+    label_bars,
+    label_hline,
+    label_line_ends,
+)
 
 # Layout
 from .layout import (
@@ -214,7 +210,6 @@ __all__ = [  # noqa: RUF022
     "list_aspect_tokens",
     "tokens",
     # Point-unit offsets
-    "make_offset",
     # Formatting
     "set_decimal",
     "format_axis_millions",
@@ -239,9 +234,6 @@ __all__ = [  # noqa: RUF022
     "label_line_ends",
     "place_legend",
     "figure_legend",
-    "wrap_axis_label",
-    "wrap_axis_labels",
-    "arrow_axis",
     # Agent guidance
     "guide",
     "lint_code",

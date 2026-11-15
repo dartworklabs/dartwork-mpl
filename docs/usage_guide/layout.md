@@ -572,10 +572,7 @@ requested margin from each figure edge. This means:
 | `place_legend(ax)`            | Puts the legend inside where it covers no data, else outside on the side that costs the plot least; one legend for a twin pair |
 | `place_legend(ax, loc="above")` | Puts the legend outside one side (`above`/`below`/`right`/`left`), past the tick labels, names wrapped only to fit; `simple_layout` keeps titles above it |
 | `figure_legend(fig)`          | One legend for every panel, outside the panels (above, or right when clearly cheaper); removes the panel legends it replaces |
-| `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
-| `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick label decimals with a dynamic formatter; locator and limits stay |
-| `make_offset(x, y, fig)`      | Point-unit offset transform (Figure DPI) for precise text positioning |
 | `get_bounding_box(boxes)`     | Merges multiple axes bounding boxes into one                  |
 
 ## Annotation & Formatting
@@ -753,7 +750,6 @@ dm.annotate_corner(ax, "Screened subset", loc="upper left")
 ax.axhline(baseline, lw=0.5, ls=":")
 dm.label_hline(ax, baseline, "Reference", x="auto")
 dm.place_legend(ax)
-dm.wrap_axis_label(ax, axis="y")
 ```
 
 ### Value labels on bars (`label_bars`)
@@ -788,11 +784,10 @@ bars vertical. Each alternative is one keyword:
 |---|---|
 | labels inside the bar ends, at the middle, beyond the end | `where="inside"`, `"center"`, `"outside"` (default `"auto"`: beyond a plain bar's end, at a segment's middle) |
 | only the stacks' totals, or no totals | `total="only"`, `total=False` (default `"auto"`: segments and totals) |
-| crowded labels: every other one hidden, or inside the bars | `crowded="skip"`, `crowded="inside"` (default `"rotate"`) |
+| crowded labels: every other one hidden | `crowded="skip"` (default `"rotate"`) |
 | a fixed number of decimals | `decimals=1` |
 | a unit or another number format | `fmt="{} GWh"`, `fmt="{:.2f}"`, or a callable |
 | a plus on the rises (waterfall steps, changes) | `sign="+"`: `+30`, `−15`, `+$800` (default `"-"`: only negatives carry a sign) |
-| another size | `size=dm.fs(0)` |
 | another colour; the bar's colour for labels off their bar | `color="dc.gray7"`; `color="series"` (labels on a bar and totals keep theirs) |
 
 A label asked inside its bar stays there only while the bar holds it, as
@@ -817,8 +812,7 @@ decimals are three significant digits on the largest value, then the
 fewest decimals that print every value exactly, one count for the whole
 call: `21.4, 18.0, 21.5`; `120, 135`; never a meaningless `.0`. A
 non-zero value that this count rounds to zero prints the bound it lies
-within (`<0.1M` beside `12.5M`, `>−0.1M`), never `0`; on a log value axis
-each label takes its own count, as the log ticks do (`0.01M`, `45M`). A
+within (`<0.1M` beside `12.5M`, `>−0.1M`), never `0`. A
 formatter's `decimals=n` sizes its ticks, not the labels (`1.25M` beside
 `1.0M`; `decimals=2` on the labels for cents). `fmt` takes a `{}` template
 around that number (`"{} GWh"`), a format-spec field that formats the value
@@ -854,47 +848,24 @@ dm.simple_layout(fig)
 to keep the outside labels and 3 pt inside the axes. Limits you set
 (`ax.set_ylim`, also `ax.set_ybound`; the x ones for `barh`) stay: a label
 that does not fit sits outside the axes, and `dm.simple_layout` keeps room
-for it in the figure. A bar that runs past a limit you set shows its true
-value at that limit: just inside it, on the bar, when the bar holds the
-number (`set_ylim(0, 100)` on a bar of 135 prints `135` under the top edge,
-in white or the text colour, whichever reads on the bar); on a bar too
-narrow (or a part in view too short) for it, just beyond the limit in the
-text colour (the series colour under `color="series"`). Beyond a lower or
-left limit lie the tick labels, above a top limit the title: a value that
-would cover such text is hidden, and `dm.simple_layout` warns; a wider limit
-or wider bars show it. A bar wholly outside the view, or a stack's segments
-and total past the limit, get none. Crowding and the fit of labels inside the bars
-are decided before the axis grows.
+for it in the figure. A bar whose end lies outside the view has no label.
 
 **Overlaps.** Labels that would still overlap are hidden, from the last bar
 on screen (the right end, the top row of `barh`) back. Labels from separate
 calls on one plot area (one `dm.label_bars` per series) are checked
-together, so they do not overlap each other either. Grouped series take
-turns where their labels meet, in reading order on screen (left to right,
-`barh` top to bottom): two series alternate by bar index, three or more
-count down (first, last, …). The turns are used only when they keep every
-label whose turn comes first and as many labels as the plain rule;
-otherwise the plain rule decides, and in thin `barh` rows or dense groups
-one series can lose its labels. Stacks keep the plain rule. `barh` labels
+together, so they do not overlap each other either. `barh` labels
 never turn. When labels are lost for room (not by `crowded="skip"`, which
 asks for it) `dm.simple_layout` warns once, with the count. If the rows are
 thin, make the figure taller (for example `dm.figsize("12cm", "16cm")`
 rather than `"standard"`); for vertical bars, wider. A taller or wider
 figure brings the labels back.
 
-**Legends.** A label that a legend covers is hidden, and `dm.simple_layout`
-warns once with the count and the cure for that legend. `dm.place_legend(ax)`
-puts the legend clear of the labels; on a side (`loc="above"`, `"below"`,
-`"right"`, `"left"`) the layout anchors it past the values beyond that
-limit, so a cut bar keeps its true value. A legend you fix with
-`ax.legend(loc=...)` or `fig.legend` keeps its place: the warning names
-`dm.place_legend(ax)`, or for a legend outside the axes the same side
-through `loc=`.
+**Legends.** `dm.place_legend(ax)` puts the legend clear of the labels.
 
 On a `twinx` / `twiny` pair the labels go on the top axes, the one drawn
-last, so the partner's line is never drawn over them. A later `Text.set_*`
-on a returned label wins over every redraw and layout, and calling
-`dm.label_bars` again on the same bars replaces their labels.
+last, so the partner's line is never drawn over them. Restyle a returned
+label after `dm.simple_layout`; calling `dm.label_bars` again on the same
+bars replaces their labels.
 
 ### Legends (`place_legend`, `figure_legend`)
 
@@ -965,15 +936,6 @@ dm.simple_layout(fig)
 assert fig.legends == [legend] and axs[0, 0].get_legend() is None
 plt.close(fig)
 ```
-
-### Bidirectional arrow axes (`arrow_axis`)
-
-For conceptual or qualitative plots (like "Risk vs Return"), drawing bidirectional label axes manually is surprisingly difficult in matplotlib. `dm.arrow_axis()` handles the positioning, offsets, and arrows automatically.
-
-:::{figure} images/arrow_axis_example.svg
-:alt: Arrow axis example showing Risk vs Expected Return
-:width: 100%
-:::
 
 ## Typography
 

@@ -81,7 +81,6 @@ SLICES = frozenset(
         # Removed public names: the one registry of their migration
         # metadata, and the root __getattr__'s rejection.
         "dartwork_mpl._compat",
-        "dartwork_mpl.annotation",
         "dartwork_mpl.color",
         "dartwork_mpl.config",
         "dartwork_mpl.figure_review",
@@ -131,10 +130,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.templates", "dartwork_mpl.guide"): (
         "template tools and resources read and rank the bundled templates"
     ),
-    ("dartwork_mpl.annotation", "dartwork_mpl.color"): (
-        "line-end and bar value labels keep their series' colour at a "
-        "readable contrast"
-    ),
     ("dartwork_mpl.mcp", "dartwork_mpl.color"): (
         "the MCP colour tool and resource list the registered colour libraries"
     ),
@@ -151,20 +146,21 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "the text-contrast and grayscale checks judge WCAG contrast and "
         "compare colours in OKLab and Y"
     ),
-    ("dartwork_mpl.annotation", "dartwork_mpl.ticks"): (
-        "bar value labels print in their axis's tick unit, like the ticks"
-    ),
-    ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
-        "annotation text defaults to a size relative to the active preset"
-    ),
     ("dartwork_mpl.figure_review", "dartwork_mpl.save"): (
         "a review saves the figure with save_formats, the files a plain save writes"
     ),
     ("dartwork_mpl.figure_review", "dartwork_mpl.validate"): (
         "a review reports validate_figure's findings, unfiltered"
     ),
-    ("dartwork_mpl.labels", "dartwork_mpl.annotation"): (
-        "the layout's label hooks delegate to the label code until labels is rebuilt"
+    ("dartwork_mpl.labels", "dartwork_mpl.color"): (
+        "a label on its bar, a series-coloured label and a line-end name "
+        "take a readable ink"
+    ),
+    ("dartwork_mpl.labels", "dartwork_mpl.ticks"): (
+        "bar value labels print in their axis's tick unit, like the ticks"
+    ),
+    ("dartwork_mpl.labels", "dartwork_mpl.scale"): (
+        "label text is sized and weighted relative to the active preset"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.labels"): (
         "bar labels, line-end names and panel letters settle at the size the "
@@ -275,6 +271,12 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.size.model": (
         "parsing user input into size types needs nothing outside it"
+    ),
+    "dartwork_mpl.labels.decide": (
+        "label placement is decided from measured boxes and parsed options alone"
+    ),
+    "dartwork_mpl.labels.model": (
+        "parsing label_bars' keywords needs nothing outside it"
     ),
     "dartwork_mpl.save.decide": (
         "which files to write is decided from the parsed request alone"

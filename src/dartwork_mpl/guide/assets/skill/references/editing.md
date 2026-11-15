@@ -155,27 +155,23 @@ that keyword. The defaults are that look in the text colour, 3 pt beyond the
 bar end; the number printed like the axis ticks (plain under
 `dm.axis_unit`, with the ticks' `k` under `dm.format_axis_si`), three
 significant digits on the largest value and no meaningless decimals
-(`21.4, 18.0, 21.5`; `120, 135`; a tiny value reads `<0.1M`, not `0`; on a
-log axis each label its own count: `0.01M`, `45M`); stacked bars' segments centred with a
-total; crowded labels on vertical bars turned vertical by
-`dm.simple_layout`; grouped series whose labels meet take turns by bar index
-(two alternate) where that keeps as many labels as the plain rule; a bar
-past a limit you set shows its true value at the limit (on the bar when it
-holds the number, else just beyond); a label a legend covers is hidden.
-Labels lost for room (thin `barh` rows, dense groups) or under a legend make
+(`21.4, 18.0, 21.5`; `120, 135`; a tiny value reads `<0.1M`, not `0`);
+stacked bars' segments centred with a total; crowded labels on vertical bars
+turned vertical by `dm.simple_layout`; a bar ending outside the view has no
+label. Labels still lost for room (thin `barh` rows, dense groups) make
 `dm.simple_layout` warn with the count: if the rows are thin, make the
-figure taller (wider for vertical bars); move a fixed legend with
-`dm.place_legend(ax)`; report the warning if the size is fixed.
+figure taller (wider for vertical bars); report the warning if the size is
+fixed. Restyle a returned label after `dm.simple_layout`.
 
 | Asked | Keyword |
 |---|---|
 | inside the bar ends, at the middle | `where="inside"`, `where="center"` |
 | only the stack totals, no totals | `total="only"`, `total=False` |
-| crowded: every other label, or inside the bars | `crowded="skip"`, `crowded="inside"` |
+| crowded: every other label | `crowded="skip"` |
 | a fixed decimal count | `decimals=1` |
 | a unit or another format on the labels | `fmt="{} GWh"`, `fmt="{:.2f}"`, a callable |
 | a plus on the rises (waterfall steps, changes) | `sign="+"`: `+30`, `−15` |
-| bigger, another colour, the bar's colour | `size=dm.fs(0)`, `color="dc.gray7"`, `color="series"` (labels off their bar) |
+| another colour, the bar's colour | `color="dc.gray7"`, `color="series"` (labels off their bar) |
 
 ```python
 fig, (bar_ax, line_ax) = plt.subplots(
@@ -213,8 +209,7 @@ plt.close(fig)
    - many competing colours: one accent, the rest `dc.gray4`;
    - axis labels stay as written, case and all, and none is added; a label
      that is clipped or overlaps is wrapped, not reworded (the layout wraps
-     one that runs into a neighbouring panel or past the figure;
-     `dm.wrap_axis_labels(fig)` any other);
+     one that runs into a neighbouring panel or past the figure);
    - cramped panels: `dm.simple_layout(fig)` widens the `hspace` / `wspace`
      the script does not set; one it sets (`gridspec_kw`, `subplots_adjust`)
      stays, raised only when the image shows the panels' text colliding.
