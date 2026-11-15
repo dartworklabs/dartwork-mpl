@@ -1,8 +1,9 @@
 """Legend placement: inside where it covers no data, else outside a side.
 
 ``dm.place_legend(ax)`` places an Axes legend, ``dm.figure_legend(fig)`` one
-legend for every panel. ``settle`` and ``outside_side`` are the hooks
-``dm.simple_layout`` calls.
+legend for every panel. ``settle``, ``outside_side`` and ``figure_reserve``
+are the hooks ``dm.simple_layout`` calls; :class:`Side` is the side they
+name.
 """
 
 from __future__ import annotations
@@ -10,14 +11,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from . import apply
-from .apply import outside_side, settle
+from .apply import figure_reserve, outside_side, settle
+from .model import Side
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.legend import Legend
 
-__all__ = ["figure_legend", "outside_side", "place_legend", "settle"]
+__all__ = [
+    "Side",
+    "figure_legend",
+    "figure_reserve",
+    "outside_side",
+    "place_legend",
+    "settle",
+]
 
 
 def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:

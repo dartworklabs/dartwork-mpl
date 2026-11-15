@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import math
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, assert_never
 
 import matplotlib as mpl
 from matplotlib.gridspec import (
@@ -14,7 +14,6 @@ from matplotlib.gridspec import (
     GridSpecFromSubplotSpec,
     SubplotSpec,
 )
-from matplotlib.text import Text
 
 from ..edgecase import settle
 from ..geometry import (
@@ -24,9 +23,10 @@ from ..geometry import (
     iter_figure_level_extents,
     same_position_axes,
 )
-from ..legend import outside_side
+from ..labels import note_gap_pt
+from ..legend import figure_reserve, outside_side
 from . import decide
-from .edges import EDGES
+from .edges import FIT_EDGES
 from .model import (
     CLEARANCE_EM,
     ArtistId,
@@ -39,15 +39,12 @@ from .model import (
     Edge,
     Edges,
     FigureArtist,
-    FigureRole,
-    Fit,
     Gap,
     Line,
     Piece,
     PlotSize,
     Px,
     Reach,
-    Role,
     Share,
     Sides,
     Spacing,
@@ -56,6 +53,10 @@ from .model import (
     TickRow,
     Which,
     Width,
+    authored,
+    centred,
+    edge_of,
+    parse_projection,
 )
 
 if TYPE_CHECKING:
@@ -65,10 +66,13 @@ if TYPE_CHECKING:
     from matplotlib.font_manager import FontProperties
     from matplotlib.transforms import Bbox
 
+    from ..legend import Side
     from .apply import Record
 
-SIDES = {"above": Edge.TOP, "below": Edge.BOTTOM, "left": Edge.LEFT}
-SIDES["right"] = Edge.RIGHT
+
+def _edge(side: Side) -> Edge:
+    """The plot or canvas edge a legend side names."""
+    return edge_of(across=side.across, far=side.far)
 
 
 def root_grid(
@@ -82,8 +86,8 @@ def root_grid(
         found = gs.get_gridspec() if isinstance(gs, SubplotSpec) else gs
     else:
         found = fig.axes[0].get_gridspec()
-    while isinstance(found, GridSpecFromSubplotSpec):
-        found = found._subplot_spec.get_gridspec()  # type: ignore[attr-defined]
+    if isinstance(found, GridSpecFromSubplotSpec):
+        found = found.get_topmost_subplotspec().get_gridspec()
     return found if isinstance(found, GridSpec) else None
 
 
@@ -104,7 +108,7 @@ def grid_axes(fig: Figure, gs: GridSpec) -> list[Axes]:
 def _cartesian(ax: Axes) -> bool:
     """A visible rectilinear Axes with its axes on: the only kind fitted."""
     on = ax.get_visible() and getattr(ax, "axison", True)
-    return bool(on) and ax.name == "rectilinear"
+    return bool(on) and parse_projection(ax.name).flat
 
 
 # -- one step -----------------------------------------------------------------
@@ -142,7 +146,7 @@ def _texts(owner: Axes, renderer: RendererBase) -> list[Piece]:
         except BBOX_ERRORS:
             continue
         if _measurable(ext):
-            pieces.append(Piece(_box(ext), Role.TEXT))
+            pieces.append(Piece(_box(ext)))
     return pieces
 
 
@@ -169,13 +173,13 @@ def _ticks(owner: Axes, renderer: RendererBase) -> list[Piece]:
             if value < vmin - tol or value > vmax + tol:
                 continue
             if _measurable(ext) and _across(owner, value, box, along_x):
-                pieces.append(Piece(_box(ext), Role.TICK))
+                pieces.append(Piece(_box(ext)))
         offset = axis.get_offset_text()
         if offset.get_visible() and offset.get_text().strip():
             with contextlib.suppress(*BBOX_ERRORS):
                 ext = offset.get_window_extent(renderer)
                 if _measurable(ext):
-                    pieces.append(Piece(_box(ext), Role.TICK))
+                    pieces.append(Piece(_box(ext)))
     return pieces
 
 
@@ -190,7 +194,7 @@ def _tight_3d(ax: Axes, renderer: RendererBase) -> tuple[Piece, ...]:
         with contextlib.suppress(*BBOX_ERRORS):
             bb = artist.get_tightbbox(renderer)
             if bb is not None and bb.width > 0 and bb.height > 0:
-                pieces.append(Piece(_box(bb), Role.TICK))
+                pieces.append(Piece(_box(bb)))
     for text in (*axes_titles(ax).values(), *ax.texts):
         if not text.get_visible() or not text.get_text().strip():
             continue
@@ -199,7 +203,7 @@ def _tight_3d(ax: Axes, renderer: RendererBase) -> tuple[Piece, ...]:
         except BBOX_ERRORS:
             continue
         if ext is not None and ext.width > 0 and ext.height > 0:
-            pieces.append(Piece(_box(ext), Role.TEXT))
+            pieces.append(Piece(_box(ext)))
     return tuple(pieces)
 
 
@@ -216,7 +220,7 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
     plot = None
     if window is not None and window.width > 0 and window.height > 0:
         plot = _box(window)
-    if ax.name == "3d":
+    if parse_projection(ax.name).cube:
         if window is None:
             return None
         return AxesContent(plot, position, (), _tight_3d(ax, renderer))
@@ -227,28 +231,30 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
             ext = legend.get_window_extent(renderer)
             if ext.width > 0 and ext.height > 0:
                 side = outside_side(legend)
-                outside = None if side is None else SIDES[side]
-                pieces.append(Piece(_box(ext), Role.LEGEND, outside))
+                outside = None if side is None else _edge(side)
+                pieces.append(Piece(_box(ext), outside))
     return AxesContent(plot, position, tuple(pieces))
 
 
 def _figure_artist(fig: Figure, art: Any, ext: Bbox) -> FigureArtist:
-    roles = {
-        id(getattr(fig, "_suptitle", None)): FigureRole.SUPTITLE,
-        id(getattr(fig, "_supxlabel", None)): FigureRole.SUPXLABEL,
-        id(getattr(fig, "_supylabel", None)): FigureRole.SUPYLABEL,
+    holds = {
+        id(getattr(fig, "_suptitle", None)): Edge.TOP,
+        id(getattr(fig, "_supxlabel", None)): Edge.BOTTOM,
+        id(getattr(fig, "_supylabel", None)): Edge.LEFT,
     }
-    kind = FigureRole.TEXT if isinstance(art, Text) else FigureRole.LEGEND
     rotation = getattr(art, "get_rotation", None)
     vertical = None if rotation is None else 45 <= rotation() % 180 <= 135
-    side = getattr(art, "_dm_figure_side", None)
-    gap = float(getattr(art, "_dm_layout_gap_pt", 0.0)) * fig.dpi / 72.0
+    reserve = figure_reserve(art)
+    if reserve is not None:
+        side, gap_pt = _edge(reserve.side), reserve.gap_pt
+    else:
+        side, gap_pt = None, note_gap_pt(art) or 0.0
     return FigureArtist(
         _box(ext),
-        roles.get(id(art), kind),
+        holds.get(id(art)),
         vertical,
-        SIDES.get(side) if isinstance(side, str) else None,
-        Px(gap),
+        side,
+        Px(gap_pt * fig.dpi / 72.0),
     )
 
 
@@ -282,8 +288,7 @@ def content_boxes(fig: Figure, renderer: RendererBase) -> dict[int, Box]:
             continue
         nil = Sides(0.0, 0.0, 0.0, 0.0)
         facts = ContentFacts((content,), (), canvas(fig), nil, None)
-        fit = settle(facts, decide.fit(facts), EDGES).plan
-        assert isinstance(fit, Fit)
+        fit = settle(facts, decide.fit(facts), FIT_EDGES).plan
         box = decide.content_box(fit.axes[0])
         if box is not None:
             boxes[id(ax)] = box
@@ -334,11 +339,11 @@ def _row(
     if min(gaps) <= 0:
         return None
     turn = record.axis_turns.get(axis)
-    authored = any("\n" in t or "$" in t for t in texts) or (
+    authored_ = any(authored(t) for t in texts) or (
         turn is None
         and (
             {float(t.get_rotation()) for t in labels} != {0.0}
-            or {t.get_horizontalalignment() for t in labels} != {"center"}
+            or not all(centred(t.get_horizontalalignment()) for t in labels)
         )
     )
     font = labels[0].get_fontproperties()
@@ -355,7 +360,7 @@ def _row(
         gaps=tuple(gaps),
         clearance=Px(CLEARANCE_EM * em),
         line_height=Px(float(height)),
-        authored=authored,
+        authored=authored_,
         turned=None if turn is None else turn.angle,
         width=width,
     )
@@ -411,8 +416,7 @@ def _names(
                 or not axis.get_visible()
                 or not label.get_visible()
                 or not text.strip()
-                or "\n" in text
-                or "$" in text
+                or authored(text)
                 or label in record.names
             ):
                 continue
@@ -432,14 +436,42 @@ def _names(
     return names
 
 
+def spacing_of(gs: GridSpec, key: Gap) -> float | None:
+    """The ``wspace`` / ``hspace`` set on ``gs`` (``None``: the figure's)."""
+    match key:
+        case Gap.WSPACE:
+            return gs.wspace
+        case Gap.HSPACE:
+            return gs.hspace
+        case _:
+            assert_never(key)
+
+
+def _figure_default(fig: Figure, key: Gap) -> bool:
+    """The figure's own spacing is still matplotlib's default."""
+    match key:
+        case Gap.WSPACE:
+            now, rc = (
+                fig.subplotpars.wspace,
+                mpl.rcParams["figure.subplot.wspace"],
+            )
+        case Gap.HSPACE:
+            now, rc = (
+                fig.subplotpars.hspace,
+                mpl.rcParams["figure.subplot.hspace"],
+            )
+        case _:
+            assert_never(key)
+    return bool(now == rc)
+
+
 def _free(fig: Figure, gs: GridSpec, key: Gap, record: Record) -> bool:
     """Nobody but this layout set the spacing (``gridspec_kw``,
     ``add_gridspec`` and ``fig.subplots_adjust`` do)."""
-    value = getattr(gs, key.value)
+    value = spacing_of(gs, key)
     if value is not None:
-        return record.gaps.get((gs, key)) == value
-    rc = "figure.subplot." + key.value
-    return bool(getattr(fig.subplotpars, key.value) == mpl.rcParams[rc])  # pyright: ignore[reportArgumentType]
+        return record.gaps_of(gs).get(key) == value
+    return _figure_default(fig, key)
 
 
 def _spacings(
@@ -473,13 +505,29 @@ def _spacings(
     em = Px(float(mpl.rcParams["font.size"]) * fig.dpi / 72.0)
     out: list[Spacing] = []
     for key in free:
-        if key is Gap.WSPACE:
-            gaps = [(lefts[i + 1] - rights[i]) * fw for i in range(ncols - 1)]
-            reaches, total, cells = cols, (rights[-1] - lefts[0]) * fw, ncols
-        else:
-            gaps = [(bottoms[i] - tops[i + 1]) * fh for i in range(nrows - 1)]
-            reaches, total, cells = rows, (tops[0] - bottoms[-1]) * fh, nrows
-        now = Share(float(getattr(params, key.value)))
+        match key:
+            case Gap.WSPACE:
+                gaps = [
+                    (lefts[i + 1] - rights[i]) * fw for i in range(ncols - 1)
+                ]
+                reaches, total, cells = (
+                    cols,
+                    (rights[-1] - lefts[0]) * fw,
+                    ncols,
+                )
+                now = Share(float(params.wspace))
+            case Gap.HSPACE:
+                gaps = [
+                    (bottoms[i] - tops[i + 1]) * fh for i in range(nrows - 1)
+                ]
+                reaches, total, cells = (
+                    rows,
+                    (tops[0] - bottoms[-1]) * fh,
+                    nrows,
+                )
+                now = Share(float(params.hspace))
+            case _:
+                assert_never(key)
         gaps_px = tuple(Px(float(g)) for g in gaps)
         out.append(
             Spacing(

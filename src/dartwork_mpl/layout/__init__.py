@@ -12,9 +12,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
-from ..edgecase import settle
 from . import decide, loop, measure
-from .edges import EDGES
 from .model import MarginInput, Refuse, Request, parse_margins
 
 if TYPE_CHECKING:
@@ -66,7 +64,7 @@ def simple_layout(
     """
     grid = measure.root_grid(fig, gs)
     request = Request(has_axes=bool(fig.axes), has_grid=grid is not None)
-    answer = settle(request, decide.answer(request), EDGES).plan
+    answer = decide.answer(request)
     if isinstance(answer, Refuse):
         if answer.warning is not None:
             warnings.warn(answer.warning, stacklevel=2)

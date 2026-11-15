@@ -11,7 +11,6 @@ from dartwork_mpl.layout.edges import (
     balanced_lines,
     deepest_reach,
     gap_fraction,
-    tokens,
     turn_angle,
     wrap_limit,
     wrap_to,
@@ -27,7 +26,6 @@ from dartwork_mpl.layout.model import (
     Edge,
     Edges,
     FigureArtist,
-    FigureRole,
     Go,
     Line,
     Piece,
@@ -36,10 +34,10 @@ from dartwork_mpl.layout.model import (
     Reach,
     Refuse,
     Request,
-    Role,
     Sides,
     TickRow,
     parse_margins,
+    tokens,
 )
 from dartwork_mpl.size import mm
 
@@ -53,7 +51,7 @@ def axes(plot: Box, *pieces: Piece) -> AxesContent:
 
 
 def text(x0: float, x1: float, y0: float, y1: float, **kw: object) -> Piece:
-    return Piece(Box(x0, x1, y0, y1), Role.TEXT, **kw)  # type: ignore[arg-type]
+    return Piece(Box(x0, x1, y0, y1), **kw)  # type: ignore[arg-type]
 
 
 def content(
@@ -140,26 +138,26 @@ def test_no_content_no_step() -> None:
 
 
 @pytest.mark.parametrize(
-    ("role", "box", "edge"),
+    ("holds", "box", "edge"),
     [
-        (FigureRole.SUPTITLE, Box(400, 600, 470, 495), Edge.TOP),
-        (FigureRole.SUPTITLE, Box(0, 20, 100, 120), Edge.LEFT),  # low: nearest
-        (FigureRole.SUPXLABEL, Box(400, 600, 5, 20), Edge.BOTTOM),
-        (FigureRole.SUPYLABEL, Box(5, 20, 200, 300), Edge.LEFT),
-        (FigureRole.TEXT, Box(950, 990, 200, 300), Edge.RIGHT),
+        (Edge.TOP, Box(400, 600, 470, 495), Edge.TOP),  # suptitle
+        (Edge.TOP, Box(0, 20, 100, 120), Edge.LEFT),  # low: nearest
+        (Edge.BOTTOM, Box(400, 600, 5, 20), Edge.BOTTOM),  # supxlabel
+        (Edge.LEFT, Box(5, 20, 200, 300), Edge.LEFT),  # supylabel
+        (None, Box(950, 990, 200, 300), Edge.RIGHT),  # a text
     ],
 )
 def test_figure_artist_reserves_its_role_edge_else_the_nearest(
-    role: FigureRole, box: Box, edge: Edge
+    holds: Edge | None, box: Box, edge: Edge
 ) -> None:
-    art = FigureArtist(box, role, False, None, Px(0.0))
+    art = FigureArtist(box, holds, False, None, Px(0.0))
     facts = content(artists=[art])
     assert decide.fit(facts).reserves == (edge,)
 
 
 def test_a_reservation_adds_its_reach_and_gap() -> None:
     title = FigureArtist(
-        Box(400, 600, 450, 500), FigureRole.SUPTITLE, False, None, Px(10.0)
+        Box(400, 600, 450, 500), Edge.TOP, False, None, Px(10.0)
     )
     plot = axes(Box(0.0, 1000.0, 0.0, 500.0))
     step = solve(content(plot, artists=[title]))

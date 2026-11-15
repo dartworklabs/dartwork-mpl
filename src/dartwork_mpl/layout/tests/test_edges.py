@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.layout import decide
-from dartwork_mpl.layout.edges import EDGES
+from dartwork_mpl.layout.edges import FIT_EDGES, TEXT_EDGES
 from dartwork_mpl.layout.model import (
     ArtistId,
     AxisName,
@@ -15,13 +15,11 @@ from dartwork_mpl.layout.model import (
     Degrees,
     Edge,
     FigureArtist,
-    FigureRole,
     Gap,
     Line,
     Piece,
     Px,
     Reach,
-    Role,
     Share,
     Spacing,
     TextFacts,
@@ -40,12 +38,12 @@ PLOT = Box(100.0, 900.0, 100.0, 400.0)
 
 
 def fit_of(facts):
-    result = settle(facts, decide.fit(facts), EDGES)
+    result = settle(facts, decide.fit(facts), FIT_EDGES)
     return result.fired, result.plan
 
 
 def text_plan(facts: TextFacts):
-    result = settle(facts, decide.text_plan(facts), EDGES)
+    result = settle(facts, decide.text_plan(facts), TEXT_EDGES)
     return result.fired, result.plan
 
 
@@ -60,7 +58,7 @@ def texts(groups=(), names=(), spacings=(), wrapped_names=None) -> TextFacts:
 
 
 def test_axes_3d_counts_its_tight_boxes() -> None:
-    tight = (Piece(Box(50.0, 950.0, 50.0, 450.0), Role.TICK),)
+    tight = (Piece(Box(50.0, 950.0, 50.0, 450.0)),)
     a = replace(axes(PLOT), tight=tight)
     fired, plan = fit_of(content(a))
     assert fired == ("axes-3d",)
@@ -68,9 +66,7 @@ def test_axes_3d_counts_its_tight_boxes() -> None:
 
 
 def test_outside_legend_along_side_counts_past_the_canvas_only() -> None:
-    above = Piece(
-        Box(50.0, 1020.0, 410.0, 450.0), Role.LEGEND, outside=Edge.TOP
-    )
+    above = Piece(Box(50.0, 1020.0, 410.0, 450.0), outside=Edge.TOP)
     fired, plan = fit_of(content(axes(PLOT, above)))
     assert fired == ("outside-legend-along-side",)
     assert plan.axes[0].pieces[0].box == Box(100.0, 1020.0, 410.0, 450.0)
@@ -78,9 +74,7 @@ def test_outside_legend_along_side_counts_past_the_canvas_only() -> None:
 
 def test_figure_text_edge_band_reserves_by_reading_direction() -> None:
     # A source line in the bottom-left corner is nearer the left edge.
-    note = FigureArtist(
-        Box(5.0, 300.0, 5.0, 20.0), FigureRole.TEXT, False, None, Px(0.0)
-    )
+    note = FigureArtist(Box(5.0, 300.0, 5.0, 20.0), None, False, None, Px(0.0))
     fired, plan = fit_of(content(axes(PLOT), artists=[note]))
     assert fired == ("figure-text-edge-band",)
     assert plan.reserves == (Edge.BOTTOM,)
@@ -88,11 +82,7 @@ def test_figure_text_edge_band_reserves_by_reading_direction() -> None:
 
 def test_figure_legend_side_reserves_its_side() -> None:
     wide = FigureArtist(
-        Box(2.0, 998.0, 200.0, 300.0),
-        FigureRole.LEGEND,
-        None,
-        Edge.TOP,
-        Px(0.0),
+        Box(2.0, 998.0, 200.0, 300.0), None, None, Edge.TOP, Px(0.0)
     )
     fired, plan = fit_of(content(axes(PLOT), artists=[wide]))
     assert fired == ("figure-legend-side",)

@@ -14,9 +14,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import assert_never
 
 from .model import (
     FALLBACK_SIDES,
+    INSIDE_SPOTS,
     TALL_SHARE,
     Anchor,
     AnchorFacts,
@@ -39,14 +41,6 @@ from .model import (
     TitleFacts,
     TitlePad,
 )
-
-#: Where a figure legend's ``loc`` edge sits on its figure, as fractions.
-FIGURE_ANCHORS = {
-    Side.ABOVE: (0.5, 1.0),
-    Side.BELOW: (0.5, 0.0),
-    Side.RIGHT: (1.0, 0.5),
-    Side.LEFT: (0.0, 0.5),
-}
 
 
 @dataclass(frozen=True)
@@ -121,7 +115,7 @@ def inside_spots(
             tall = max(
                 0.0, size.height / max(facts.axes.height, 1.0) - TALL_SHARE
             )
-        for loc in Loc:
+        for loc in INSIDE_SPOTS:
             box = size.placed(loc, facts.parent, facts.pad)
             spots.append(
                 Spot(
@@ -157,11 +151,15 @@ def place(facts: LegendFacts) -> LegendPlan:
     free = first_free(spots)
     if free is not None:
         return free
-    current = facts.current
-    if current is not None:  # placed again: inwards only
-        if isinstance(current, Outside):
-            return outside(facts, current.side, facts.entries)
-        return current
+    match facts.current:  # placed again: inwards only
+        case Outside(side=side):
+            return outside(facts, side, facts.entries)
+        case Inside() as current:
+            return current
+        case None:
+            pass
+        case _:
+            assert_never(facts.current)
     sides = [s for s in FALLBACK_SIDES if s in facts.free_sides]
     if not facts.request.anchored and sides:
         plans = [outside(facts, s, facts.entries) for s in sides]
@@ -195,7 +193,7 @@ def figure_place(facts: FigureFacts) -> FigurePlan:
             fit_along(facts.entries, side, span, facts.columns, facts.size_of)
         )
     plan = next((p for p in plans if p.fits), plans[0])
-    return FigurePlan(plan.side, plan.columns, FIGURE_ANCHORS[plan.side])
+    return FigurePlan(plan.side, plan.columns)
 
 
 def entries(facts: EntryFacts) -> EntryPlan:

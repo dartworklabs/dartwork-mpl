@@ -1,32 +1,45 @@
 """Write the layout's plan into the figure, and undo it on the next call.
 
 What a layout sets (grid edges, wrapped tick labels and names, turned tick
-labels, panel spacing) is kept in one :class:`Record` on the figure. The
-next ``simple_layout`` first puts back whatever is still as it set it, so a
-second call fits the figure as its author left it and draws the same.
+labels, panel spacing) is kept in one :class:`Record` per figure, in this
+module's registry. The next ``simple_layout`` first puts back whatever is
+still as it set it, so a second call fits the figure as its author left it
+and draws the same. The registry and the records hold the figure and its
+artists weakly, so a closed figure is freed.
 """
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, assert_never
 
 from matplotlib.axis import Axis
 from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 from matplotlib.ticker import Formatter
 
-from .measure import grid_axes
-from .model import ArtistId, Degrees, Edges, Gap, Line, Share, TextPlan, Which
+from .measure import grid_axes, spacing_of
+from .model import (
+    TURN_MODE,
+    ArtistId,
+    Degrees,
+    Edges,
+    Gap,
+    Line,
+    Mode,
+    Share,
+    TextPlan,
+    Which,
+    turned_as,
+)
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
-RECORD_ATTR = "_dm_layout_record"
 SIDES = ("left", "right", "bottom", "top")
 Optional4 = tuple[float | None, float | None, float | None, float | None]
-Mode = Literal["default", "anchor", "xtick", "ytick"]
 
 
 class WrappedTickFormatter(Formatter):
@@ -89,24 +102,46 @@ class Named:
     group: tuple[ArtistId, Which]
 
 
+@dataclass(frozen=True)
+class Laid:
+    """The grid a layout fitted: the edges it started from and left."""
+
+    grid: weakref.ref[GridSpec]
+    start: Optional4
+    left: Optional4
+
+
 @dataclass
 class Record:
     """Everything one layout set on a figure, to undo on the next."""
 
-    turned: dict[Text, Turned] = field(default_factory=dict)
-    axis_turns: dict[Axis, Turned] = field(default_factory=dict)
-    names: dict[Text, Named] = field(default_factory=dict)
-    gaps: dict[tuple[GridSpec, Gap], Share] = field(default_factory=dict)
-    laid: tuple[GridSpec, Optional4, Optional4] | None = None
+    turned: weakref.WeakKeyDictionary[Text, Turned] = field(
+        default_factory=weakref.WeakKeyDictionary[Text, Turned]
+    )
+    axis_turns: weakref.WeakKeyDictionary[Axis, Turned] = field(
+        default_factory=weakref.WeakKeyDictionary[Axis, Turned]
+    )
+    names: weakref.WeakKeyDictionary[Text, Named] = field(
+        default_factory=weakref.WeakKeyDictionary[Text, Named]
+    )
+    gaps: weakref.WeakKeyDictionary[GridSpec, dict[Gap, Share]] = field(
+        default_factory=weakref.WeakKeyDictionary[GridSpec, dict[Gap, Share]]
+    )
+    laid: Laid | None = None
+
+    def gaps_of(self, gs: GridSpec) -> dict[Gap, Share]:
+        """The spacing this layout set on ``gs``."""
+        return self.gaps.setdefault(gs, {})
+
+
+_RECORDS: weakref.WeakKeyDictionary[Figure, Record] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def record_of(fig: Figure) -> Record:
     """The record of what this layout set on ``fig``."""
-    record = getattr(fig, RECORD_ATTR, None)
-    if not isinstance(record, Record):
-        record = Record()
-        setattr(fig, RECORD_ATTR, record)
-    return record
+    return _RECORDS.setdefault(fig, Record())
 
 
 def grid_edges(gs: GridSpec) -> Optional4:
@@ -135,7 +170,7 @@ def place(fig: Figure, gs: GridSpec) -> None:
         spec = ax.get_subplotspec()
         if spec is None:
             continue
-        position = spec.get_position(ax.get_figure(root=False))  # type: ignore[arg-type]
+        position = spec.get_position(fig)
         if ax.get_position(original=True).bounds != position.bounds:
             ax.set_subplotspec(spec)
 
@@ -147,11 +182,7 @@ def _unwrap(axis: Axis, wrapper: WrappedTickFormatter) -> None:
 
 def restore(fig: Figure) -> None:
     """Undo what the last layout set, where it is still as set."""
-    record = getattr(fig, RECORD_ATTR, None)
-    if isinstance(record, Record):
-        delattr(fig, RECORD_ATTR)
-    else:
-        record = Record()
+    record = _RECORDS.pop(fig, None) or Record()
     for ax in fig.axes:
         for axis in (ax.xaxis, ax.yaxis):
             fmt = axis.get_major_formatter()
@@ -161,25 +192,27 @@ def restore(fig: Figure) -> None:
             for tick in axis.get_major_ticks():
                 label = tick.label1
                 turn = record.turned.get(label) or first
-                if turn is not None and (
+                if turn is not None and turned_as(
                     float(label.get_rotation()),
                     label.get_rotation_mode(),
-                ) == (turn.angle, "xtick"):
+                    turn.angle,
+                ):
                     label.set_rotation(turn.rotation)
                     label.set_rotation_mode(turn.mode)
     for label, named in record.names.items():
         if label.get_text() == named.after:
             label.set_text(named.before)
     moved: set[GridSpec] = set()
-    if record.laid is not None:
-        gs, start, left = record.laid
-        if grid_edges(gs) == left:
-            gs.update(**dict(zip(SIDES, start, strict=True)))
-            moved.add(gs)
-    for (gs, key), value in record.gaps.items():
-        if getattr(gs, key.value) == value:
-            gs.update(**{key.value: None})
-            moved.add(gs)
+    laid = record.laid
+    gs = None if laid is None else laid.grid()
+    if laid is not None and gs is not None and grid_edges(gs) == laid.left:
+        gs.update(**dict(zip(SIDES, laid.start, strict=True)))
+        moved.add(gs)
+    for gs, set_here in record.gaps.items():
+        for key, value in set_here.items():
+            if spacing_of(gs, key) == value:
+                set_spacing(gs, key, None)
+                moved.add(gs)
     for gs in moved:
         place(fig, gs)
 
@@ -187,7 +220,7 @@ def restore(fig: Figure) -> None:
 def remember(fig: Figure, gs: GridSpec, start: Optional4) -> None:
     """While the edges stay as this layout left them, the next starts from
     ``start`` again: where a fit starts decides its last hundredths of a px."""
-    record_of(fig).laid = (gs, start, grid_edges(gs))
+    record_of(fig).laid = Laid(weakref.ref(gs), start, grid_edges(gs))
 
 
 # -- text ---------------------------------------------------------------------
@@ -229,7 +262,7 @@ def _turn(axis: Axis, angle: Degrees, record: Record) -> Callable[[], None]:
         first = old or Turned(angle, rotation, mode)
         record.turned[label] = Turned(angle, first.rotation, first.mode)
         label.set_rotation(angle)
-        label.set_rotation_mode("xtick")
+        label.set_rotation_mode(TURN_MODE)
     record.axis_turns[axis] = record.turned[labels[0]]
 
     def undo() -> None:
@@ -262,19 +295,30 @@ def _name(
     return undo
 
 
+def set_spacing(gs: GridSpec, key: Gap, value: float | None) -> None:
+    """Set ``gs``'s ``wspace`` / ``hspace`` (``None``: the figure's)."""
+    match key:
+        case Gap.WSPACE:
+            gs.update(wspace=value)
+        case Gap.HSPACE:
+            gs.update(hspace=value)
+        case _:
+            assert_never(key)
+
+
 def _space(
     gs: GridSpec, key: Gap, gap: Share, record: Record
 ) -> Callable[[], None]:
-    before = getattr(gs, key.value)
-    gs.update(**{key.value: gap})
-    record.gaps[(gs, key)] = gap
+    before = spacing_of(gs, key)
+    set_spacing(gs, key, gap)
+    record.gaps_of(gs)[key] = gap
 
     def undo() -> None:
-        gs.update(**{key.value: before})
+        set_spacing(gs, key, before)
         if before is None:
-            record.gaps.pop((gs, key), None)
+            record.gaps_of(gs).pop(key, None)
         else:
-            record.gaps[(gs, key)] = before
+            record.gaps_of(gs)[key] = Share(before)
 
     return undo
 

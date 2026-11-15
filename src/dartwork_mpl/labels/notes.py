@@ -4,6 +4,7 @@ figure's note line."""
 from __future__ import annotations
 
 import itertools
+import weakref
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import matplotlib as mpl
@@ -311,6 +312,14 @@ def add_note(fig: Figure, text: str, **kw: Any) -> Text:
     """
     style: dict[str, Any] = {"ha": "left", "va": "bottom", "fontsize": fs(-1)}
     note = fig.text(0.0, 0.0, text, **{**style, **kw})  # pyright: ignore[reportUnknownMemberType]
-    # simple_layout reserves this gap above the note (the layout reads it).
-    note._dm_layout_gap_pt = float(mpl.rcParams["axes.labelpad"])  # type: ignore[attr-defined]
+    _NOTE_GAPS[note] = float(mpl.rcParams["axes.labelpad"])
     return note
+
+
+#: The gap (pt) ``simple_layout`` reserves above each ``add_note`` line.
+_NOTE_GAPS: weakref.WeakKeyDictionary[Text, float] = weakref.WeakKeyDictionary()
+
+
+def note_gap_pt(artist: object) -> float | None:
+    """The gap (pt) the layout keeps above an ``add_note`` line, else ``None``."""
+    return _NOTE_GAPS.get(artist) if isinstance(artist, Text) else None
