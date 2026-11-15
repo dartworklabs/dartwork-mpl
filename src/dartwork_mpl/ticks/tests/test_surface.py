@@ -11,12 +11,7 @@ import pytest
 from matplotlib.axis import Axis
 
 import dartwork_mpl as dm
-from dartwork_mpl.ticks import (
-    drawn_like_twin,
-    remember_dates,
-    settled_twin_spines,
-    thin_dates,
-)
+from dartwork_mpl.ticks import settled_twin_spines, thin_dates
 from dartwork_mpl.ticks.model import RightSide
 
 MONTHS = np.arange("2019-01", "2025-01", dtype="datetime64[M]")
@@ -47,7 +42,7 @@ def test_a_twin_scale_gets_its_spine_once(figure):
     dm.simple_layout(figure)
     assert twin.spines["right"].get_visible()
     assert not ax.spines["right"].get_visible()
-    assert settled_twin_spines(twin) == {RightSide()} and drawn_like_twin(twin)
+    assert settled_twin_spines(twin) == {RightSide()}
     twin.spines["right"].set_visible(False)  # hidden after a layout: kept
     dm.simple_layout(figure)
     assert not twin.spines["right"].get_visible()
@@ -61,17 +56,13 @@ def test_an_inset_twin_gets_its_spine(figure):
     assert twin.spines["right"].get_visible()
 
 
-def test_crowded_dates_thin_and_are_put_back(figure):
+def test_crowded_dates_thin(figure):
     ax = figure.axes[0]
     ax.plot(MONTHS[48:66], np.arange(18))
     figure.set_size_inches(2.0, 2)
-    put_back = remember_dates(figure)
     dm.simple_layout(figure, margin=0)  # prepare, fit, then thin
     assert _shown(ax.xaxis) == ["23.01", "23.05", "23.09", "24.01", "24.05"]
     assert thin_dates(figure) is False  # thinned already
-    put_back()
-    figure.canvas.draw()
-    assert len(_shown(ax.xaxis)) > 5
 
 
 def test_texts_fixed_by_order_keep_their_ticks(figure):

@@ -13,7 +13,6 @@ from typing import ClassVar, Literal, TypeAlias, TypeVar
 
 T = TypeVar("T")
 
-Letter: TypeAlias = Literal["x", "y"]
 """matplotlib's name for one axis of an Axes, as a caller writes it."""
 
 Letters: TypeAlias = Literal["x", "y", "both"]

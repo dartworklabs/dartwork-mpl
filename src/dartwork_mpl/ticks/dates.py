@@ -16,17 +16,10 @@ from typing import Protocol, runtime_checkable
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
-import numpy as np
-import numpy.typing as npt
 
 from .formatters import shown_values
-from .measure import date_zone, is_quarterly, num2date
+from .measure import date_zone, num2date
 from .model import YearDigits, Zone
-
-
-def _date2num(dates: npt.NDArray[np.datetime64]) -> npt.NDArray[np.float64]:
-    nums = mdates.date2num(dates)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-    return np.asarray(nums, dtype=float)
 
 
 class PeriodDateFormatter(mdates.ConciseDateFormatter):
@@ -233,58 +226,3 @@ class CategoryDateLocator(ticker.Locator):
         if self.axis is None:
             return self.tick_values(-math.inf, math.inf)
         return self.tick_values(*self.axis.get_view_interval())
-
-
-class CategoryDateFormatter(ticker.Formatter):
-    """Position ``i`` reads ``dates[i]`` in the library's date words.
-
-    ``24.01, 24.03 ...``, quarterly dates ``23.Q1, 23.Q3``, worded over the
-    positions in view; positions outside the dates or the view read nothing.
-    """
-
-    def __init__(
-        self, dates: npt.NDArray[np.datetime64], digits: YearDigits
-    ) -> None:
-        """Keep the settings this formatter or locator was made with."""
-        self.digits: YearDigits = digits
-        self.nums = [float(v) for v in _date2num(dates)]
-        self.quarters = is_quarterly(self.nums) and bool(
-            np.all(np.diff(self.nums) > 0)
-        )
-        self._offset = ""
-
-    def format_ticks(self, values: list[float]) -> list[str]:
-        """Words for the positions in view, worded together."""
-        index = [round(float(v)) for v in values]
-        view = self.axis.get_view_interval() if self.axis is not None else None
-        inside = [
-            i
-            for i in index
-            if 0 <= i < len(self.nums) and (view is None or _within(i, *view))
-        ]
-        nums = [self.nums[i] for i in inside]
-        self._offset = ""
-        if not inside:
-            words: list[str] = []
-        elif self.quarters:
-            words = quarter_words([num2date(v) for v in nums], self.digits)
-        else:
-            period = PeriodDateFormatter(
-                mdates.AutoDateLocator(), digits=self.digits
-            )
-            words = period.format_ticks(nums)
-            self._offset = period.get_offset()
-        by_position = dict(zip(inside, words, strict=True))
-        return [by_position.get(i, "") for i in index]
-
-    def __call__(self, x: float, pos: int | None = None) -> str:
-        """One position's word, worded with every position in view."""
-        everything = [float(i) for i in range(len(self.nums))]
-        words = dict(
-            zip(everything, self.format_ticks(everything), strict=True)
-        )
-        return words.get(round(float(x)), "")
-
-    def get_offset(self) -> str:
-        """The corner label of the last ``format_ticks``."""
-        return self._offset

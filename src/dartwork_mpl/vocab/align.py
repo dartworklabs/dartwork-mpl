@@ -37,17 +37,6 @@ class AlignRight:
 HAlign: TypeAlias = AlignLeft | AlignCentre | AlignRight
 
 
-def parse_halign(value: object) -> HAlign:
-    """``ha``; ``ValueError`` otherwise."""
-    if value == "left":
-        return AlignLeft()
-    if value == "center":
-        return AlignCentre()
-    if value == "right":
-        return AlignRight()
-    raise ValueError(f"ha must be 'left', 'center' or 'right', got {value!r}")
-
-
 VAlignName: TypeAlias = Literal[
     "baseline", "bottom", "center", "center_baseline", "top"
 ]

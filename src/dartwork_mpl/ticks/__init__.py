@@ -21,22 +21,20 @@ from matplotlib.axis import Axis
 
 from ..geometry import axis_of
 from ..vocab import Letters, parse_axes
-from .apply import prepare, remember_dates, thin_dates
+from .apply import prepare, thin_dates
 from .defaults import config
 from .formatters import AxisUnitFormatter, tick_scale_of
 from .model import ExactZero, Ladder, NumberStyle, PerTick, Unit, myriad_ladder
 from .text import number_text, recommend_tick_decimals, value_label_decimals
-from .twins import drawn_like_twin, settled_twin_spines
+from .twins import settled_twin_spines
 
 __all__ = [
     "Unit",
     "config",
-    "drawn_like_twin",
     "format_axis_myriad",
     "number_text",
     "prepare",
     "recommend_tick_decimals",
-    "remember_dates",
     "settled_twin_spines",
     "thin_dates",
     "tick_scale_of",

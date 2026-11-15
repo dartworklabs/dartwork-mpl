@@ -7,8 +7,8 @@ import pytest
 from dartwork_mpl.color import decide
 from dartwork_mpl.color.catalog import CATALOG
 from dartwork_mpl.color.family import Count
-from dartwork_mpl.color.model import Form, Gradient, Lookup, Name, Steps, Weight
-from dartwork_mpl.colorspace import Color, Oklch, Rgb
+from dartwork_mpl.color.model import Form, Gradient, Lookup, Name, Steps
+from dartwork_mpl.colorspace import Oklch, Rgb
 
 WHITE, BLACK = Rgb(1.0, 1.0, 1.0), Rgb(0.0, 0.0, 0.0)
 
@@ -56,12 +56,6 @@ def test_multi_hue_cyclic_and_qualitative_forms():
 def test_counts_past_a_form_are_rejected(name, n):
     with pytest.raises(ValueError, match="max n="):
         Count.parse(n, CATALOG.families[name])
-
-
-def test_mix_weights_the_first_colour():
-    red, blue = Color(Rgb(1.0, 0.0, 0.0).oklab()), Color(BLACK.oklab())
-    assert decide.mix(red, blue, Weight(1.0)) == red
-    assert decide.mix(red, blue, Weight(0.0)) == blue
 
 
 def test_sample_runs_the_hue_the_short_way_round():

@@ -243,31 +243,3 @@ def thin_dates(fig: Figure) -> bool:
             for axis in (ax.xaxis, ax.yaxis):
                 changed |= _thin_axis(axis, renderer)
     return changed
-
-
-def remember_dates(fig: Figure) -> Callable[[], None]:
-    """Record the date tick counts :func:`thin_dates` may lower; the call puts them back."""
-    saved: list[tuple[Axis, ticker.Locator, Callable[[], None]]] = []
-    for ax in fig.axes:
-        if not plain(ax):
-            continue
-        for axis in (ax.xaxis, ax.yaxis):
-            locator = axis.get_major_locator()
-            if isinstance(locator, CategoryDateLocator | QuarterLocator):
-                restore = partial(locator.take, locator.step)
-            elif isinstance(locator, WholeYearLocator):
-                restore = partial(locator.thin, locator.nbins)
-            elif type(locator) is mdates.AutoDateLocator:
-                restore = partial(
-                    _ceilings, locator, locator.minticks, _maxticks(locator)
-                )
-            else:
-                continue
-            saved.append((axis, locator, restore))
-
-    def put_back() -> None:
-        for axis, locator, restore in saved:
-            if axis.get_major_locator() is locator:
-                restore()
-
-    return put_back

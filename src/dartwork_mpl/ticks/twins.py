@@ -141,31 +141,6 @@ def axes_facts(
     return AxesFacts(axis_facts(ax, X()), axis_facts(ax, Y()), digits, twin)
 
 
-def drawn_like_twin(ax: Axes) -> bool:
-    """Whether ``ax`` is drawn as a twin is, read from public state.
-
-    An earlier Axes in its box shares exactly one axis with it, and ``ax``
-    hides that axis: ``ax.twinx()`` hides the twin's x, ``twiny`` its y.
-    """
-    fig = ax.get_figure(root=True)
-    if fig is None or not _rectilinear(ax):
-        return False
-    order = with_insets(fig.axes)
-    if ax not in order:
-        return False
-    earlier = [
-        m
-        for m in order[: order.index(ax)]
-        if _rectilinear(m) and ax in same_position_axes(m)
-    ]
-    sx, sy = shared_axes(ax, X()), shared_axes(ax, Y())
-    return any(
-        (m in sx and m not in sy and not ax.xaxis.get_visible())
-        or (m in sy and m not in sx and not ax.yaxis.get_visible())
-        for m in earlier
-    )
-
-
 def settled_twin_spines(ax: Axes) -> frozenset[TwinSide]:
     """The sides of ``ax`` whose twin spine a layout showed (or found showing)."""
     return frozenset(SETTLED.get(ax, ()))

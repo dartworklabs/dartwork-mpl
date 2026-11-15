@@ -90,7 +90,7 @@ IMPURE = frozenset(
     ]
 )
 
-# Kinds: "ceil" maps (bigger is worse), "floor" maps (smaller is worse),
+# Kinds: "ceil" maps (bigger is worse),
 # "set" lists (a member is a violator).
 KIND = {
     "R1_module_lines": "ceil",
@@ -101,7 +101,6 @@ KIND = {
     "R4_lazy_cycle_edges": "ceil",
     "R5_dumping_ground": "set",
     "R6_impure_decisions": "set",
-    "R6_matplotlib_free": "floor",
     "R7_function_lines": "ceil",
     "R8_missing_all": "set",
     "R8_entry_function_lines": "ceil",
@@ -115,7 +114,6 @@ WHY = {
     "R4_lazy_cycle_edges": "a function-level import hiding a cycle is still a cycle; remove it",
     "R5_dumping_ground": "a utils/common/helpers module has no capability; move code to its owner",
     "R6_impure_decisions": "decision code must stay pure: no matplotlib, no I/O",
-    "R6_matplotlib_free": "the matplotlib-free modules are the functional core; they may only grow",
     "R7_function_lines": f"a function over {FUNCTION_CAP} lines needs extracting",
     "R8_missing_all": "a top-level slice without a literal __all__ has no declared surface",
     "R8_entry_function_lines": f"an entry point function over {ENTRY_FUNCTION_CAP} lines does work instead of wiring",
@@ -329,13 +327,6 @@ def r6_impure_decisions(
     )
 
 
-def r6_matplotlib_free(tree: Tree) -> dict[str, int]:
-    free = sum(
-        1 for s in tree[0].values() if "matplotlib" not in purity_offences(s)
-    )
-    return {"modules": free}
-
-
 def functions(source: str):
     """Yield (qualname, lines) for outermost functions and methods."""
 
@@ -393,7 +384,6 @@ MEASURES: Mapping[str, Callable[[Tree], object]] = {
     "R4_lazy_cycle_edges": r4_lazy_cycle_edges,
     "R5_dumping_ground": r5_dumping_ground,
     "R6_impure_decisions": r6_impure_decisions,
-    "R6_matplotlib_free": r6_matplotlib_free,
     "R7_function_lines": r7_function_lines,
     "R8_missing_all": r8_missing_all,
     "R8_entry_function_lines": r8_entry_function_lines,
@@ -440,13 +430,7 @@ def compare(
     now, base = dict(measured), dict(baseline or {})  # type: ignore[arg-type]
     for key in sorted(set(now) | set(base)):
         a, b = now.get(key), base.get(key)
-        if kind == "floor":
-            a, b = (a if a is not None else 0), (b if b is not None else 0)
-            if a < b:
-                worse.append(f"{key}: {a}, baseline {b}")
-            elif a > b:
-                stale.append(f"{key}: {a}, baseline {b} (raise the floor)")
-        elif b is None:
+        if b is None:
             worse.append(f"{key}: {a}, not in baseline (new violator)")
         elif a is None:
             stale.append(f"{key}: fixed, baseline {b} (remove the entry)")

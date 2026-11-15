@@ -44,7 +44,6 @@ from .model import (
     Space,
     Steps,
     Suggestions,
-    Weight,
 )
 
 SUGGESTION_COUNT = 3
@@ -157,18 +156,6 @@ def rgb_line(start: Color, end: Color, steps: Steps) -> tuple[Color, ...]:
     return tuple(
         Color(Rgb(*(float(axis[k]) for axis in axes)).oklab())
         for k in range(steps.n)
-    )
-
-
-def mix(first: Color, second: Color, weight: Weight) -> Color:
-    """``weight`` of ``first`` and the rest of ``second``, linear in OKLab."""
-    w, a, b = weight.value, first.lab, second.lab
-    return Color(
-        Oklab(
-            w * a.L + (1.0 - w) * b.L,
-            w * a.a + (1.0 - w) * b.a,
-            w * a.b + (1.0 - w) * b.b,
-        )
     )
 
 
