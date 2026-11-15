@@ -52,14 +52,8 @@ PACKAGE = "dartwork_mpl"
 ENTRY_POINTS = frozenset(
     {
         "dartwork_mpl",
-        "dartwork_mpl.cli",
-        # `python -m dartwork_mpl.mcp.server`
+        # The MCP server's tool table: wiring onto the mcp slice's shells.
         "dartwork_mpl.mcp.server",
-        # The MCP wiring tables the discovery scanners read (ADR 0001 A1).
-        "dartwork_mpl.mcp.artifacts.transport",
-        "dartwork_mpl.mcp.prompts",
-        "dartwork_mpl.mcp.resources",
-        "dartwork_mpl.mcp.tools",
     }
 )
 
@@ -69,8 +63,6 @@ PLATFORM = frozenset(
         "dartwork_mpl._figure_geometry",
         # The edge-case registry every slice's edges.py appends to.
         "dartwork_mpl.edgecase",
-        # MCP process capture and asset confinement.
-        "dartwork_mpl.mcp._platform",
     }
 )
 
@@ -86,15 +78,6 @@ SLICES = frozenset(
         "dartwork_mpl.legend",
         "dartwork_mpl.layout",
         "dartwork_mpl.mcp",
-        "dartwork_mpl.mcp.artifacts",
-        "dartwork_mpl.mcp.catalog",
-        "dartwork_mpl.mcp.colors",
-        "dartwork_mpl.mcp.docs_fetch",
-        "dartwork_mpl.mcp.execution",
-        "dartwork_mpl.mcp.guides",
-        "dartwork_mpl.mcp.lint",
-        "dartwork_mpl.mcp.plot_data",
-        "dartwork_mpl.mcp.templates",
         "dartwork_mpl.save",
         "dartwork_mpl.size",
         "dartwork_mpl.style",
@@ -106,29 +89,20 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.guides"): (
-        "the resources and prompts tables serve the guides, API index and prompts"
+    ("dartwork_mpl.mcp", "dartwork_mpl.guide"): (
+        "the reading tools serve the skill, references, templates and lint"
     ),
-    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.guide"): (
-        "capability discovery lists the bundled template ids"
-    ),
-    ("dartwork_mpl.mcp.execution", "dartwork_mpl.guide"): (
-        "plot validation lints the source before executing it"
-    ),
-    ("dartwork_mpl.mcp.guides", "dartwork_mpl.guide"): (
-        "the guide resources serve the bundled skill, recipes and catalog"
-    ),
-    ("dartwork_mpl.mcp.lint", "dartwork_mpl.guide"): (
-        "the MCP lint tools expose dm.lint_code"
-    ),
-    ("dartwork_mpl.mcp.templates", "dartwork_mpl.guide"): (
-        "template tools and resources read and rank the bundled templates"
+    ("dartwork_mpl.mcp", "dartwork_mpl.style"): (
+        "presets are searched and returned with their style stack and values"
     ),
     ("dartwork_mpl.mcp", "dartwork_mpl.color"): (
-        "the MCP colour tool and resource list the registered colour libraries"
+        "colour families and names are searched and returned with their values"
     ),
-    ("dartwork_mpl.mcp.colors", "dartwork_mpl.color"): (
-        "the mix_colors tool must return exactly what dm.mix_colors blends"
+    ("dartwork_mpl.mcp", "dartwork_mpl.save"): (
+        "render writes the figure as a plain dm.save_formats save does"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.validate"): (
+        "render's report quotes the figure checker's findings"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.color"): (
         "a preset switch re-applies the locale's semantic colour tokens"
@@ -176,36 +150,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.ticks", "dartwork_mpl.config"): (
         "default tick text follows the user's tick_years and number_ladder"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.artifacts"): (
-        "the server mounts the durable plot-artifact tools and resources"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.catalog"): (
-        "the tables expose the capability summary and the font list"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.colors"): (
-        "the tables expose the colour lookups and the colour palette"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.docs_fetch"): (
-        "the tools table exposes the Raw document fetch as fetch_github_document"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.execution"): (
-        "the tools table exposes plot validation as validate_generated_plot"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.lint"): (
-        "the tools table exposes the anti-pattern linter as tools"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.plot_data"): (
-        "the tools table exposes data validation as validate_plot_data"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.templates"): (
-        "the tools and resources tables expose the bundled templates and styles"
-    ),
-    ("dartwork_mpl.mcp.artifacts", "dartwork_mpl.mcp.execution"): (
-        "an artifact bundle is the output of one validated plot execution"
-    ),
-    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (
-        "the capability summary lists the presets dm.style.use accepts"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
@@ -287,17 +231,11 @@ DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.guide.model": (
         "parsing source, catalog and guidance text needs nothing outside it"
     ),
-    "dartwork_mpl.mcp.artifacts.policy": (
-        "artifact admission, expiry and request parsing decide from values"
+    "dartwork_mpl.mcp.decide": (
+        "search ranks, the saved figure and a run's outcome decide from parsed facts"
     ),
-    "dartwork_mpl.mcp.artifacts.input_policy": (
-        "retained-input revision rules decide from parsed values"
-    ),
-    "dartwork_mpl.mcp.plot_data.repair": (
-        "data-repair reports are built from the submitted payload alone"
-    ),
-    "dartwork_mpl.mcp.plot_data.validators": (
-        "a data-shape verdict is decided from the decoded payload alone"
+    "dartwork_mpl.mcp.model": (
+        "parsing tool arguments and child output needs nothing outside it"
     ),
 }
 

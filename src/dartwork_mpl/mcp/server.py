@@ -1,51 +1,114 @@
-"""FastMCP server for dartwork-mpl.
+"""The five MCP tools, over stdio only.
 
-This module provides the main MCP server instance that exposes
-dartwork-mpl usage guides and documentation through the Model
-Context Protocol.
+Each tool is a few lines of wiring onto :mod:`.library` (reading) or
+:mod:`.render` (running); the docstrings are what the agent sees.
 """
 
-import os
-import sys
+from __future__ import annotations
+
+import json
+from dataclasses import asdict
+from typing import TYPE_CHECKING
 
 from fastmcp import FastMCP
+from fastmcp.utilities.types import Image
+from mcp.types import ContentBlock, TextContent
 
-from .artifacts import (
-    ArtifactRuntime,
-    ConfigurationError,
-    configure_store,
-    register_artifacts,
-)
-from .prompts import register_prompts
-from .resources import register_resources
-from .tools import register_tools
+from . import library
+from .model import Rendered, RenderRequest
+from .render import render as run_render
 
-__all__ = ["mcp"]
+if TYPE_CHECKING:
+    from fastmcp.tools import ToolResult
+else:
+    try:
+        from fastmcp.tools import ToolResult
+    except ImportError:  # fastmcp 2.x keeps it in the tool module
+        from fastmcp.tools.tool import ToolResult
 
-# Create the MCP server instance
-mcp = FastMCP("dartwork-mpl")
+server = FastMCP("dartwork-mpl")
 
-# Register resources, tools, and prompts
-register_resources(mcp)
-register_tools(mcp)
-register_prompts(mcp)
-_store = configure_store(os.environ.get("DARTWORK_MPL_ARTIFACT_DIR"))
-# stdout carries only MCP messages; the operator's reason goes to stderr, and
-# artifact calls still answer with the fixed configuration_error message.
-# `python -m dartwork_mpl.mcp.server` runs this body twice (imported by the
-# package, then as __main__); only the first run reports.
-if isinstance(_store, ConfigurationError) and not (
-    __name__ == "__main__" and "dartwork_mpl.mcp.server" in sys.modules
-):
-    print(
-        "dartwork-mpl: artifact storage disabled: "
-        f"{_store.reason or _store.message}",
-        file=sys.stderr,
-        flush=True,
-    )
-_runtime = ArtifactRuntime(_store, os.environ.get("DARTWORK_MPL_INPUT_POLICY"))
-register_artifacts(mcp, _store, runtime=_runtime)
 
-# Server entry point
-if __name__ == "__main__":
-    mcp.run(show_banner=False)
+@server.tool
+def guide(topic: str | None = None) -> str:
+    """Read the dartwork-mpl rules before writing plotting code.
+
+    No topic: the skill (presets by purpose, sizing, layout, saving, data
+    rules, edits, the review loop) with the list of topics. A topic
+    (``layout``, ``colors``, ``editing``, ``korean``, ``recipes``,
+    ``review``, ``anti-patterns``): that reference page.
+    """
+    return library.guide(topic)
+
+
+@server.tool
+def search_reference(
+    query: str, kind: str | None = None
+) -> list[dict[str, str]]:
+    """Find a starting point: templates, style presets, colour families or lint rules.
+
+    ``search_reference("grouped bar")`` ranks the grouped-bar templates
+    first. ``kind`` narrows to ``template``, ``preset``, ``color`` or
+    ``rule``. Each hit has ``kind``, ``id`` and a one-line ``summary``; pass
+    the kind and id to ``get_reference``.
+    """
+    return library.search(query, kind)
+
+
+@server.tool
+def get_reference(kind: str, id: str) -> str:
+    """Get one reference by the kind and id ``search_reference`` returned.
+
+    ``template``: the runnable script (``bar_grouped``, ``advanced/bar``).
+    ``preset``: its style stack and rcParams. ``color``: a family's designed
+    steps (``dc.teal``) or one colour's hex (``dc.teal4``). ``rule``: a lint
+    rule's message and fix.
+    """
+    return library.get(kind, id)
+
+
+@server.tool
+def lint(code: str) -> list[dict[str, object]]:
+    """Check a script against the anti-pattern catalog without running it.
+
+    Each finding has ``rule_id``, ``severity`` (critical, warning, info),
+    ``line``, ``message`` and ``fix``. Fix every critical one; ``render``
+    refuses to run code that has one.
+    """
+    return [asdict(f) for f in library.lint(code)]
+
+
+@server.tool
+def render(
+    code: str,
+    figure_var: str = "fig",
+    timeout: float = 20.0,
+    out_dir: str | None = None,
+    inputs: list[str] | None = None,
+) -> ToolResult:
+    """Run a plotting script once and return the image, its check report and the bundle.
+
+    The code runs in a fresh Python process with the Agg backend, an empty
+    working directory and no inherited secrets, and is killed after
+    ``timeout`` seconds (at most 120). It is NOT a sandbox: it runs with the
+    server user's rights. A critical lint finding stops it before it runs.
+    The figure bound to ``figure_var`` is saved (else pyplot's current one,
+    noted). ``out_dir`` (default: a new temporary directory) receives
+    ``figure.png``, ``figure.pdf``, ``source.py``, ``report.json`` and
+    ``manifest.json``; ``inputs`` names data files the code reads (absolute
+    paths), hashed into the manifest. Read ``report.findings``: fix WARNING,
+    weigh INFO, then look at the image.
+    """
+    request = RenderRequest.parse(code, figure_var, timeout, out_dir, inputs)
+    bundle, report, manifest = run_render(request, library.lint(request.code))
+    payload = {
+        "out_dir": str(bundle),
+        "report": report.to_json(),
+        "manifest": manifest.to_json(),
+        "source": request.code,
+    }
+    content: list[ContentBlock] = []
+    if isinstance(report.outcome, Rendered):
+        content.append(Image(path=bundle / "figure.png").to_image_content())
+    content.append(TextContent(type="text", text=json.dumps(payload, indent=2)))
+    return ToolResult(content=content, structured_content=payload)

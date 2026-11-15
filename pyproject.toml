@@ -54,7 +54,7 @@ Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
 Changelog = "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md"
 
 [project.scripts]
-dartwork-mpl-mcp = "dartwork_mpl.cli:main"
+dartwork-mpl-mcp = "dartwork_mpl.mcp:main"
 
 [project.optional-dependencies]
 mcp = [
@@ -205,11 +205,6 @@ markers = [
 line-length = 80
 # Python 3.11 is the supported runtime floor (``requires-python``).
 target-version = "py311"
-# The capture script is the exact file whose sha256 `legacy_calls.json` records
-# (docs/development/mcp-wire-recapture.md); reformatting it would orphan them.
-extend-exclude = [
-    "tests/mcp/data_repair/capture/capture_legacy_runtime.py",
-]
 # Apply the excludes above and in [tool.ruff.format] to paths a hook or an
 # editor passes explicitly, not only to files found by directory discovery.
 force-exclude = true
