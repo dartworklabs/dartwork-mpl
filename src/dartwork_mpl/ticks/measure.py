@@ -32,25 +32,27 @@ from ..geometry import (
     shared_axes,
 )
 from ..projection import Curved, Rectilinear, ThreeD
+from .axis_plans import (
+    AxesFacts,
+    AxisFacts,
+    AxisKind,
+    DateAxis,
+    NumberAxis,
+    OtherAxis,
+    TwinFacts,
+)
 from .defaults import config
 from .model import (
     TWIN_SIDES,
     Asked,
-    AxesFacts,
-    AxisFacts,
-    AxisKind,
     ByFigure,
-    DateAxis,
     Ems,
     FollowFigure,
     Ladder,
     Language,
-    NumberAxis,
-    OtherAxis,
     RightSide,
     TickValues,
     TopSide,
-    TwinFacts,
     TwinSide,
     YearDigits,
     Zone,

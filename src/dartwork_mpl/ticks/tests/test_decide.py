@@ -5,23 +5,25 @@ from __future__ import annotations
 import pytest
 
 from dartwork_mpl.number import AffixedZero
+from dartwork_mpl.ticks.axis_plans import (
+    AxisFacts,
+    DateAxis,
+    Leave,
+    NumberAxis,
+    Numbers,
+    OtherAxis,
+    PeriodDates,
+)
 from dartwork_mpl.ticks.decide import axis_plan, axis_text, ladder
 from dartwork_mpl.ticks.model import (
     FINANCE,
     MYRIAD,
     SI,
     Asked,
-    AxisFacts,
     ByFigure,
-    DateAxis,
     DefaultUnit,
     ExactZero,
-    Leave,
-    NumberAxis,
-    Numbers,
     NumberStyle,
-    OtherAxis,
-    PeriodDates,
     PerTick,
     TextFacts,
     TickValues,

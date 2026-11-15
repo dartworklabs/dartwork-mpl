@@ -8,8 +8,7 @@
   "src/dartwork_mpl/layout/measure.py": 605,
   "src/dartwork_mpl/legend/apply.py": 596,
   "src/dartwork_mpl/legend/measure.py": 530,
-  "src/dartwork_mpl/ticks/measure.py": 589,
-  "src/dartwork_mpl/ticks/model.py": 577
+  "src/dartwork_mpl/ticks/measure.py": 591
  },
  "R2_slice_lines": {},
  "R3_underscore_modules": {},
@@ -21,7 +20,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 82
+  "modules": 83
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81

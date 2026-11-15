@@ -21,6 +21,17 @@ from matplotlib.figure import Figure
 from ..edgecase import settle
 from ..geometry import get_renderer
 from . import decide
+from .axis_plans import (
+    AxesPlan,
+    AxisPlan,
+    Candidate,
+    Crowding,
+    Leave,
+    Numbers,
+    PeriodDates,
+    QuarterDates,
+    YearTicks,
+)
 from .dates import (
     CategoryDateLocator,
     PeriodDateFormatter,
@@ -43,21 +54,7 @@ from .measure import (
     settle_twin_spine,
     with_insets,
 )
-from .model import (
-    AxesPlan,
-    AxisPlan,
-    Candidate,
-    Crowding,
-    DefaultUnit,
-    Ladder,
-    Leave,
-    Numbers,
-    NumberStyle,
-    PeriodDates,
-    QuarterDates,
-    TwoDigits,
-    YearTicks,
-)
+from .model import DefaultUnit, Ladder, NumberStyle, TwoDigits
 
 
 def figure_ladder(fig: Figure | None, extra: str = "") -> Ladder:

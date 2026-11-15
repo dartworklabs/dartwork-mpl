@@ -3,29 +3,31 @@
 from __future__ import annotations
 
 from dartwork_mpl.edgecase import settle
+from dartwork_mpl.ticks.axis_plans import (
+    AxesFacts,
+    AxisFacts,
+    Candidate,
+    Crowding,
+    DateAxis,
+    NumberAxis,
+    PeriodDates,
+    QuarterDates,
+    TwinFacts,
+    YearTicks,
+)
 from dartwork_mpl.ticks.decide import axes_plan, ladder, thinning
 from dartwork_mpl.ticks.edges import AXES_EDGES, LADDER_EDGES, THIN_EDGES
 from dartwork_mpl.ticks.model import (
     MYRIAD,
     SI,
     Asked,
-    AxesFacts,
-    AxisFacts,
     ByFigure,
-    Candidate,
-    Crowding,
-    DateAxis,
     Ems,
     FourDigits,
-    NumberAxis,
-    PeriodDates,
-    QuarterDates,
     RightSide,
     TickValues,
     TopSide,
-    TwinFacts,
     TwoDigits,
-    YearTicks,
 )
 
 TICKS = TickValues.of([0, 1, 2])

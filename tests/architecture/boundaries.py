@@ -143,6 +143,9 @@ DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.ticks.model": (
         "the tick types and config parsing need nothing outside them"
     ),
+    "dartwork_mpl.ticks.axis_plans": (
+        "what prepare and thin_dates read and decide are tick types alone"
+    ),
     "dartwork_mpl.legend.decide": (
         "where a legend goes is decided from measured facts and their "
         "measuring functions alone"

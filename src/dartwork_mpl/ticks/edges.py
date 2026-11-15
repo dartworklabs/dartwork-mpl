@@ -10,19 +10,13 @@ from __future__ import annotations
 from dataclasses import replace
 
 from ..edgecase import EdgeCase
-from .model import (
-    MYRIAD,
-    Asked,
+from .axis_plans import (
     AxesFacts,
     AxesPlan,
     AxisFacts,
     AxisPlan,
-    ByFigure,
     Crowding,
     DateAxis,
-    Ems,
-    Ladder,
-    Language,
     Leave,
     NumberAxis,
     Numbers,
@@ -30,9 +24,9 @@ from .model import (
     PeriodDates,
     QuarterDates,
     Thinning,
-    TwinSide,
     YearTicks,
 )
+from .model import MYRIAD, Asked, ByFigure, Ems, Ladder, Language, TwinSide
 
 # Neighbouring date labels keep at least this many ems between them.
 MIN_DATE_GAP = Ems(1.0)
