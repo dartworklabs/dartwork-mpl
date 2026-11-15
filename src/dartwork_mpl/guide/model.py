@@ -13,10 +13,11 @@ from __future__ import annotations
 import ast
 import re
 import tokenize
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import accumulate
-from typing import cast
+from typing import TypeGuard
 
 import yaml
 
@@ -47,6 +48,14 @@ class Check(StrEnum):
     COLOR = "color-name"
 
 
+def _mapping(value: object) -> TypeGuard[Mapping[object, object]]:
+    return isinstance(value, dict)
+
+
+def _listed(value: object) -> TypeGuard[list[object]]:
+    return isinstance(value, list)
+
+
 @dataclass(frozen=True)
 class Rule:
     """One catalog rule: a pattern over the source, or a literal-name check."""
@@ -59,8 +68,10 @@ class Rule:
     check: Check | None
 
     @classmethod
-    def parse(cls, entry: dict[str, object]) -> Rule:
+    def parse(cls, entry: object) -> Rule:
         """One catalog entry; it gives exactly one of ``pattern`` / ``check``."""
+        if not _mapping(entry):
+            raise ValueError(f"a catalog rule must be a mapping: {entry!r}")
         pattern, check, fix = (
             entry.get("pattern"),
             entry.get("check"),
@@ -88,16 +99,10 @@ class Rules:
     def parse(cls, text: str) -> Rules:
         """Parse the YAML catalog; a malformed one raises ``ValueError``."""
         data: object = yaml.safe_load(text)
-        entries = (
-            cast("dict[str, object]", data).get("rules")
-            if isinstance(data, dict)
-            else None
-        )
-        if not isinstance(entries, list):
+        entries = data.get("rules") if _mapping(data) else None
+        if not _listed(entries):
             raise ValueError("the catalog must be a mapping with a rules list")
-        rules = tuple(
-            Rule.parse(e) for e in cast("list[dict[str, object]]", entries)
-        )
+        rules = tuple(Rule.parse(e) for e in entries)
         if len({r.id for r in rules}) != len(rules):
             raise ValueError("rule ids must be unique")
         return cls(rules)
@@ -180,12 +185,31 @@ class Code:
         return any(start <= offset < end for start, end in self.quoted)
 
 
+# A colour matplotlib parses without a name: hex (#rgb, #rgba, #rrggbb,
+# #rrggbbaa), a cycle entry (C0) or a grey level in [0, 1].
+_HEX = re.compile(r"#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
+_CYCLE = re.compile(r"C\d+")
+_GREY = re.compile(r"(?:0(?:\.\d*)?|1(?:\.0*)?|\.\d+)")
+
+
 @dataclass(frozen=True)
 class Known:
     """What matplotlib has registered: colour names (lower case) and colormaps."""
 
     colors: frozenset[str]
     colormaps: frozenset[str]
+
+    def is_color(self, value: str) -> bool:
+        """Whether matplotlib reads ``value`` as a colour: a registered
+        name, ``"none"``, hex, a cycle entry (``C0``) or a grey level."""
+        text = value.strip()
+        return bool(
+            text.lower() in self.colors
+            or text.lower() == "none"
+            or _HEX.fullmatch(text)
+            or _CYCLE.fullmatch(text)
+            or _GREY.fullmatch(text)
+        )
 
 
 @dataclass(frozen=True)
