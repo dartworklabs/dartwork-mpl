@@ -42,20 +42,29 @@ NORMAL_WEIGHT = 400
 
 
 @dataclass(frozen=True)
-class Locale:
-    """Which convention the role colours ``dc.pos`` / ``dc.neg`` follow.
+class DefaultLocale:
+    """``dc.pos`` / ``dc.neg``: gains green, losses red."""
 
-    ``value`` is the colour slice's name for it.
-    """
+    word: ClassVar[str] = "default"
 
-    value: str
-
-    DEFAULT: ClassVar[Locale]
-    KR: ClassVar[Locale]
+    def __str__(self) -> str:
+        """The colour slice's name for it (``dm.apply_semantic``)."""
+        return self.word
 
 
-Locale.DEFAULT = Locale("default")  # gains green, losses red
-Locale.KR = Locale("kr")  # gains red, losses blue
+@dataclass(frozen=True)
+class KoreanLocale:
+    """``dc.pos`` / ``dc.neg``: gains red, losses blue."""
+
+    word: ClassVar[str] = "kr"
+
+    def __str__(self) -> str:
+        """The colour slice's name for it (``dm.apply_semantic``)."""
+        return self.word
+
+
+#: Which convention the role colours ``dc.pos`` / ``dc.neg`` follow.
+Locale = DefaultLocale | KoreanLocale
 
 
 @dataclass(frozen=True)

@@ -4,18 +4,23 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.axes._secondary_axes import SecondaryAxis
 from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
-from ..geometry import axes_titles, draws_axis, holders_shown, panel_letters
-from .model import Axis, spatial
+from ..geometry import (
+    Which,
+    axes_titles,
+    draws_axis,
+    holders_shown,
+    in_view_tick_labels,
+    panel_letters,
+)
+from .model import spatial
 
 if TYPE_CHECKING:
-    from matplotlib.axis import Axis as MplAxis
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
 
@@ -59,49 +64,17 @@ def secondary_texts(axis: SecondaryAxis) -> tuple[list[Text], list[Text]]:
 
     A ``SecondaryAxis`` has no titles and no ``ax.text``; what it draws is
     its axes while they are on and shown: each one's visible label and the
-    visible labels of the ticks in its view (:func:`in_view_labels`).
+    visible labels of the ticks in its view (``geometry.in_view_tick_labels``).
     """
     shown = [
         a for a in (axis.xaxis, axis.yaxis) if axis.axison and a.get_visible()
     ]
     labels = [a.label for a in shown if a.label.get_visible()]
-    ticks = [label for a in shown for label in in_view_labels(a)]
+    ticks = [label for a in shown for label in in_view_tick_labels(a)]
     return labels, ticks
 
 
-# Matplotlib's slack for a tick on the view's edge (Axis._update_ticks).
-EDGE_RTOL = 1e-10
-
-
-def in_view_labels(axis: MplAxis) -> list[Text]:
-    """The visible labels of the major ticks a 2D axis draws.
-
-    ``Axis._update_ticks`` draws a tick when its location lies in the view
-    interval, compared after the axis' scale transform with a 1e-10
-    relative slack; each drawn tick draws its visible ``label1`` and
-    ``label2``.
-    """
-    locs = np.asarray(axis.get_majorticklocs(), dtype=float)
-    if not locs.size:
-        return []
-    transform = axis.get_transform()
-    with np.errstate(all="ignore"):
-        view = np.ravel(transform.transform(np.sort(axis.get_view_interval())))
-        placed = np.ravel(transform.transform(locs))
-    low, high = sorted(float(v) for v in view)
-    slack = EDGE_RTOL * (high - low)
-    return [
-        label
-        for place, tick in zip(
-            placed, axis.get_major_ticks(len(locs)), strict=True
-        )
-        if np.isfinite(place) and low - slack <= place <= high + slack
-        for label in (tick.label1, tick.label2)
-        if label.get_visible()
-    ]
-
-
-def sup_labelled(ax: Axes, which: Axis) -> bool:
+def sup_labelled(ax: Axes, which: Which) -> bool:
     """The figure (or SubFigure) holding ``ax`` names ``which`` axis in a
     shown ``supxlabel`` / ``supylabel``."""
     fig = ax.get_figure(root=False)

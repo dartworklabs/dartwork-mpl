@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from ..edgecase import settle
 from . import decide, measure
-from .canvas import CanvasFacts, CanvasKind, CanvasRequest, parse_names
+from .canvas import CanvasFacts, CanvasRequest, parse_canvas_kind, parse_names
 from .edges import EDGES
 from .model import (
     ASPECTS,
@@ -87,7 +87,7 @@ def figsize_for(
         fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=len(years)))
     """
     request = CanvasRequest(
-        kind=CanvasKind.parse(kind),
+        kind=parse_canvas_kind(kind),
         n_points=n_points,
         n_series=n_series,
         dual_axis=dual_axis,

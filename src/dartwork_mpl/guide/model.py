@@ -33,31 +33,48 @@ OWN_ROOTS = frozenset({"dm", "dartwork_mpl"})
 
 
 @dataclass(frozen=True)
-class Severity:
-    """How much a finding matters: ``critical`` blocks a run, ``info`` hints."""
+class Critical:
+    """A finding that blocks a run: fix it."""
 
-    value: str
-
-    CRITICAL: ClassVar[Severity]
-    WARNING: ClassVar[Severity]
-    INFO: ClassVar[Severity]
+    word: ClassVar[str] = "critical"
 
     def __str__(self) -> str:
         """The catalog's word for it."""
-        return self.value
-
-    @classmethod
-    def parse(cls, text: object) -> Severity:
-        """A catalog severity; ``ValueError`` for anything else."""
-        for severity in (cls.CRITICAL, cls.WARNING, cls.INFO):
-            if severity.value == text:
-                return severity
-        raise ValueError(f"{text!r} is not a severity")
+        return self.word
 
 
-Severity.CRITICAL = Severity("critical")
-Severity.WARNING = Severity("warning")
-Severity.INFO = Severity("info")
+@dataclass(frozen=True)
+class Warn:
+    """A finding to fix unless the user asked for the value."""
+
+    word: ClassVar[str] = "warning"
+
+    def __str__(self) -> str:
+        """The catalog's word for it."""
+        return self.word
+
+
+@dataclass(frozen=True)
+class Info:
+    """A hint."""
+
+    word: ClassVar[str] = "info"
+
+    def __str__(self) -> str:
+        """The catalog's word for it."""
+        return self.word
+
+
+#: How much a finding matters: ``critical`` blocks a run, ``info`` hints.
+Severity = Critical | Warn | Info
+
+
+def parse_severity(text: object) -> Severity:
+    """A catalog severity; ``ValueError`` for anything else."""
+    for severity in (Critical(), Warn(), Info()):
+        if severity.word == text:
+            return severity
+    raise ValueError(f"{text!r} is not a severity")
 
 
 @dataclass(frozen=True)
@@ -136,7 +153,7 @@ class Rule:
             raise ValueError(f"{entry.get('id')}: give a pattern or a check")
         return cls(
             id=str(entry["id"]),
-            severity=Severity.parse(str(entry["severity"])),
+            severity=parse_severity(str(entry["severity"])),
             message=str(entry["message"]).strip(),
             fix=None if fix is None else str(fix),
             pattern=None if pattern is None else re.compile(str(pattern), re.M),

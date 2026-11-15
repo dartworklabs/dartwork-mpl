@@ -4,8 +4,35 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
+from typing import ClassVar
 
-from .model import Severity, Text, panels_of
+from .model import Text, panels_of
+
+
+@dataclass(frozen=True)
+class Warn:
+    """A finding that spoils the chart."""
+
+    word: ClassVar[str] = "WARNING"
+
+    def __str__(self) -> str:
+        """The word a report prints."""
+        return self.word
+
+
+@dataclass(frozen=True)
+class Info:
+    """A finding that may spoil the chart."""
+
+    word: ClassVar[str] = "INFO"
+
+    def __str__(self) -> str:
+        """The word a report prints."""
+        return self.word
+
+
+#: How bad a finding is: a WARNING spoils the chart, an INFO may.
+Severity = Warn | Info
 
 #: The usual remedy each rule names.
 FIXES: dict[str, str] = {
@@ -59,7 +86,7 @@ class Finding:
 
     def __str__(self) -> str:
         """``WARNING OVERLAP: message``."""
-        return f"{self.severity.value} {self.rule}: {self.message}"
+        return f"{self.severity} {self.rule}: {self.message}"
 
 
 @dataclass(frozen=True)

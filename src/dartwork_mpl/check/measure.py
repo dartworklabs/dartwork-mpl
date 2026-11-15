@@ -22,6 +22,7 @@ from matplotlib.transforms import Bbox
 
 from ..geometry import (
     BBOX_ERRORS,
+    Which,
     axes_titles,
     drawn_in_tree,
     drawn_tick_labels,
@@ -33,7 +34,7 @@ from ..geometry import (
     shared_axes,
     text_inks,
 )
-from . import walk
+from . import roles, walk
 from .ink import (
     Ink,
     cut,
@@ -45,14 +46,12 @@ from .ink import (
 )
 from .model import (
     AXES,
-    Axis,
     Box,
     Corner,
     Facts,
     Hit,
     Legend,
     Panel,
-    Role,
     Text,
     TickRow,
     ValueLabel,
@@ -94,7 +93,9 @@ class Reader:
         self.panels = walk.drawn_axes(fig)
         self.letters = {id(t) for _ax, t in walk.panel_labels(fig)}
 
-    def text(self, t: MplText, role: Role, panel: int | None) -> Text | None:
+    def text(
+        self, t: MplText, role: roles.Role, panel: int | None
+    ) -> Text | None:
         """A drawn, non-blank text as a fact; ``None`` when it has no box."""
         if not drawn_in_tree(t) or not t.get_text().strip():
             return None
@@ -131,31 +132,31 @@ class Reader:
             labels = {id(ax.xaxis.label), id(ax.yaxis.label)}
             for t in walk.drawn_axes_texts(ax):
                 role = (
-                    Role.TITLE
+                    roles.Title()
                     if id(t) in titles
-                    else Role.AXIS_LABEL
+                    else roles.AxisLabel()
                     if id(t) in labels
-                    else Role.PANEL_LETTER
+                    else roles.PanelLetter()
                     if id(t) in self.letters
-                    else Role.TEXT
+                    else roles.FreeText()
                 )
                 found.append(self.text(t, role, i))
             if not flat(ax.name):
                 found.extend(
-                    self.text(t, Role.TICK, i)
+                    self.text(t, roles.TickLabel(), i)
                     for axis in AXES
-                    for t in drawn_tick_labels(ax, axis.mpl)
+                    for t in drawn_tick_labels(ax, axis)
                 )
             for secondary in walk.secondary_axes(ax):
                 names, ticks = walk.secondary_texts(secondary)
-                found.extend(self.text(t, Role.AXIS_LABEL, i) for t in names)
-                found.extend(self.text(t, Role.TICK, i) for t in ticks)
+                found.extend(self.text(t, roles.AxisLabel(), i) for t in names)
+                found.extend(self.text(t, roles.TickLabel(), i) for t in ticks)
         return tuple(t for t in found if t is not None)
 
     def figure_texts(self) -> tuple[Text, ...]:
         """Suptitles, sup-labels and ``fig.text``, of SubFigures too."""
         found = [
-            self.text(t, Role.FIGURE_TEXT, None)
+            self.text(t, roles.FigureText(), None)
             for t, _ext in iter_figure_level_extents(
                 self.fig, self.renderer, legends=False
             )
@@ -164,11 +165,11 @@ class Reader:
         return tuple(t for t in found if t is not None)
 
     # ------------------------------------------------------------ ticks
-    def tick_row(self, i: int, ax: Axes, which: Axis) -> TickRow | None:
+    def tick_row(self, i: int, ax: Axes, which: Which) -> TickRow | None:
         """One axis' drawn major labels and what they need along it."""
         axis = which.pick(ax.xaxis, ax.yaxis)
         drawn = [
-            t for t in drawn_tick_labels(ax, which.mpl) if t.get_text().strip()
+            t for t in drawn_tick_labels(ax, which) if t.get_text().strip()
         ]
         first = {id(tick.label1) for tick in axis.get_major_ticks()}
         rows = [
@@ -177,7 +178,9 @@ class Reader:
         ]
         labels = tuple(
             x
-            for x in (self.text(t, Role.TICK, i) for t in rows[0] + rows[1])
+            for x in (
+                self.text(t, roles.TickLabel(), i) for t in rows[0] + rows[1]
+            )
             if x
         )
         if not labels:
@@ -217,7 +220,7 @@ class Reader:
             isinstance(formatter, FuncFormatter)
             and isinstance(axis.get_major_locator(), FixedLocator)
         )
-        twins = [a for a in shared_axes(ax, which.mpl) if a is not ax]
+        twins = [a for a in shared_axes(ax, which) if a is not ax]
         return TickRow(
             handle=ax,
             panel=i,
@@ -259,8 +262,8 @@ class Reader:
             if pairs:
                 deep = max(pairs, key=lambda p: p.depth)
                 x, y = (
-                    self.text(deep.x_label, Role.TICK, i),
-                    self.text(deep.y_label, Role.TICK, i),
+                    self.text(deep.x_label, roles.TickLabel(), i),
+                    self.text(deep.y_label, roles.TickLabel(), i),
                 )
                 if x and y:
                     corners.append(

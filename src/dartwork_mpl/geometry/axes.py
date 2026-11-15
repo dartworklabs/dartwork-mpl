@@ -13,7 +13,6 @@ from .model import (
     CentreTitle,
     Curved,
     LeftTitle,
-    Letter,
     Projection,
     Rectilinear,
     RightTitle,
@@ -24,7 +23,6 @@ from .model import (
     Y,
     parse_axis_side,
     parse_projection,
-    parse_which,
 )
 from .renderer import opens_group
 
@@ -112,7 +110,7 @@ def draws_axis(ax: Axes, axis: Axis) -> bool:
 
 
 def drawn_tick_labels(
-    ax: Axes, letter: Letter, *, minor: bool = False
+    ax: Axes, which: Which, *, minor: bool = False
 ) -> list[Text]:
     """The major (or ``minor``) tick labels matplotlib draws on an axis.
 
@@ -120,33 +118,44 @@ def drawn_tick_labels(
     (:func:`draws_axis`: ``ax.set_visible(False)`` hides all of
     it, the idiom for an empty grid slot; ``ax.axis("off")`` turns a 2D
     Axes' axes off, ``set_axis_off`` a 3D one's), and when its location lies
-    in the view interval, compared after the axis' scale transform with a
-    1e-10 relative slack (a 3D view less ``_AUTOMARGIN_3D`` at each end
-    under ``axes3d.automargin``), as ``Axis._update_ticks`` picks them. Each
-    drawn tick draws its visible ``label1`` (left / bottom) and ``label2``
-    (right / top, with ``labelright`` / ``labeltop``). Every other label
-    stays on the artist tree, visible and positioned, but is never drawn: a
-    colorbar tick a hair past its limit, the ticks of a title-only panel,
-    the labels of a hidden axis or a hidden Axes.
+    in the view (:func:`in_view_tick_labels`; a 3D view less
+    ``_AUTOMARGIN_3D`` at each end under ``axes3d.automargin``). Every other
+    label stays on the artist tree, visible and positioned, but is never
+    drawn: a colorbar tick a hair past its limit, the ticks of a title-only
+    panel, the labels of a hidden axis or a hidden Axes.
     """
-    axis = axis_of(ax, parse_which(letter))
+    axis = axis_of(ax, which)
     if not draws_axis(ax, axis):
         return []
+    match projection(ax):
+        case ThreeD() if mpl.rcParams["axes3d.automargin"]:
+            trim = _AUTOMARGIN_3D
+        case ThreeD() | Rectilinear() | Curved():
+            trim = 0.0
+    return in_view_tick_labels(axis, minor=minor, trim=trim)
+
+
+def in_view_tick_labels(
+    axis: Axis, *, minor: bool = False, trim: float = 0.0
+) -> list[Text]:
+    """The visible labels of the major (or ``minor``) ticks in ``axis``' view.
+
+    ``Axis._update_ticks`` draws a tick when its location lies in the view
+    interval (less ``trim``, a share of the view, at each end), compared
+    after the axis' scale transform with a 1e-10 relative slack. Each drawn
+    tick draws its visible ``label1`` (left / bottom) and ``label2`` (right
+    / top, with ``labelright`` / ``labeltop``). Whether the axis is drawn at
+    all is the caller's question (:func:`draws_axis` for an Axes).
+    """
     transform = axis.get_transform()
     raw = axis.get_minorticklocs() if minor else axis.get_majorticklocs()
     locs = np.asarray(raw, dtype=float)
     if not locs.size:
         return []
     view_low, view_high = sorted(float(v) for v in axis.get_view_interval())
-    match projection(ax):
-        case ThreeD() if mpl.rcParams["axes3d.automargin"]:
-            delta = view_high - view_low
-            view_low, view_high = (
-                view_low + delta * _AUTOMARGIN_3D,
-                view_high - delta * _AUTOMARGIN_3D,
-            )
-        case ThreeD() | Rectilinear() | Curved():
-            pass
+    if trim:
+        delta = view_high - view_low
+        view_low, view_high = view_low + delta * trim, view_high - delta * trim
     with np.errstate(all="ignore"):
         view = transform.transform(np.asarray([view_low, view_high], float))
         placed = np.ravel(transform.transform(locs))
@@ -168,15 +177,15 @@ def drawn_tick_labels(
     return drawn
 
 
-def shared_axes(ax: Axes, letter: Letter) -> list[Axes]:
-    """``ax`` and every Axes sharing its ``letter`` axis, in figure order.
+def shared_axes(ax: Axes, which: Which) -> list[Axes]:
+    """``ax`` and every Axes sharing its ``which`` axis, in figure order.
 
     These are the Axes made with ``sharex`` / ``sharey`` and the partners of
     ``twinx`` (shares x) and ``twiny`` (shares y): they read one scale, so
     their limits and tick formatters move together. An Axes the figure no
     longer holds sorts last.
     """
-    match parse_which(letter):
+    match which:
         case X():
             group = ax.get_shared_x_axes()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         case Y():

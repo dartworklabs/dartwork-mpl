@@ -5,7 +5,14 @@ from __future__ import annotations
 import pytest
 
 from dartwork_mpl.style import apply, decide
-from dartwork_mpl.style.model import Locale, Points, Steps, Weight, override_key
+from dartwork_mpl.style.model import (
+    DefaultLocale,
+    KoreanLocale,
+    Points,
+    Steps,
+    Weight,
+    override_key,
+)
 
 REGISTRY = apply.REGISTRY
 
@@ -13,7 +20,7 @@ REGISTRY = apply.REGISTRY
 @pytest.mark.parametrize("name", sorted(REGISTRY.presets))
 def test_korean_presets_and_only_they_flip_the_role_colours(name):
     chain = decide.chain(REGISTRY.parse(name))
-    korean = Locale.KR if name.endswith("-kr") else Locale.DEFAULT
+    korean = KoreanLocale() if name.endswith("-kr") else DefaultLocale()
     assert chain.locale == korean
     assert chain.layers[0] == "base"
 

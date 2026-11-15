@@ -11,7 +11,9 @@ matplotlib or a caller becomes a variant here and nowhere else.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar, Literal, TypeAlias
+from typing import ClassVar, Literal, TypeAlias, TypeVar
+
+T = TypeVar("T")
 
 Letter: TypeAlias = Literal["x", "y"]
 """matplotlib's name for one axis of an Axes, as a caller writes it."""
@@ -36,6 +38,10 @@ class X:
         """The axis across this one."""
         return Y()
 
+    def pick(self, x: T, y: T) -> T:
+        """``x``: of an ``(x, y)`` pair, the one for this axis."""
+        return x
+
 
 @dataclass(frozen=True)
 class Y:
@@ -49,6 +55,10 @@ class Y:
     def other(self) -> X:
         """The axis across this one."""
         return X()
+
+    def pick(self, x: T, y: T) -> T:
+        """``y``: of an ``(x, y)`` pair, the one for this axis."""
+        return y
 
 
 Which: TypeAlias = X | Y

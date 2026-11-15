@@ -14,6 +14,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Literal, NewType, TypeAlias, assert_never
 
+from ..geometry import Which
 from ..size import Length
 
 Px = NewType("Px", float)
@@ -47,19 +48,6 @@ FIT_ROUNDS = 3
 # Figure text centred in this outer band of the canvas reserves that edge.
 EDGE_BAND = 0.15
 EDGE_BAND_TOL = 1e-9
-
-
-@dataclass(frozen=True)
-class XAxis:
-    """An Axes' horizontal axis."""
-
-
-@dataclass(frozen=True)
-class YAxis:
-    """An Axes' vertical axis."""
-
-
-Which: TypeAlias = XAxis | YAxis
 
 
 @dataclass(frozen=True)

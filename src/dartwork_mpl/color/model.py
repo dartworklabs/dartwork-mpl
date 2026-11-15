@@ -186,26 +186,26 @@ def parse_space(text: object) -> Space:
 
 
 @dataclass(frozen=True)
-class Locale:
-    """Whose convention the semantic gain/loss colours follow.
+class DefaultLocale:
+    """Gains green, losses red."""
 
-    ``red_gains``: gains are red and losses blue (Korea's markets).
-    """
-
-    word: str
-    red_gains: bool
-
-    DEFAULT: ClassVar[Locale]
-    KR: ClassVar[Locale]
-
-    @classmethod
-    def parse(cls, text: str) -> Locale:
-        """``"kr"`` is Korea's convention; anything else the default."""
-        return cls.KR if text == "kr" else cls.DEFAULT
+    red_gains: ClassVar[bool] = False
 
 
-Locale.DEFAULT = Locale("default", red_gains=False)
-Locale.KR = Locale("kr", red_gains=True)
+@dataclass(frozen=True)
+class KoreanLocale:
+    """Korea's markets: gains red, losses blue."""
+
+    red_gains: ClassVar[bool] = True
+
+
+#: Whose convention the semantic gain/loss colours follow.
+Locale = DefaultLocale | KoreanLocale
+
+
+def parse_locale(text: str) -> Locale:
+    """``"kr"`` is Korea's convention; anything else the default."""
+    return KoreanLocale() if text == "kr" else DefaultLocale()
 
 
 @dataclass(frozen=True)

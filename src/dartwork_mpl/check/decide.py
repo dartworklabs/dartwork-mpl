@@ -10,19 +10,11 @@ from __future__ import annotations
 import math
 from itertools import combinations, pairwise
 
-from .findings import Findings
-from .model import (
-    Facts,
-    Number,
-    Role,
-    Severity,
-    Text,
-    TickRow,
-    quote,
-    step_decimals,
-)
+from .findings import Findings, Info, Warn
+from .model import Facts, Number, Text, TickRow, quote, step_decimals
+from .roles import Role
 
-WARN, INFO = Severity.WARNING, Severity.INFO
+WARN, INFO = Warn(), Info()
 
 #: A text further past the canvas edge than this (px) is cut off.
 CUT_PX = 1.0
@@ -109,8 +101,8 @@ def overlap(facts: Facts, found: Findings) -> Findings:
                 found = found.flag(
                     "OVERLAP",
                     WARN,
-                    f"Axes[{panel}]: {a.role.value} {a.short!r} overlaps "
-                    f"{b.role.value} {b.short!r} ({share:.0%} of the smaller)",
+                    f"Axes[{panel}]: {a.role} {a.short!r} overlaps "
+                    f"{b.role} {b.short!r} ({share:.0%} of the smaller)",
                     (a, b),
                 )
     return found
@@ -125,15 +117,15 @@ def cross_axes(facts: Facts, found: Findings) -> Findings:
     for a, b in combinations(texts, 2):
         if a.panel == b.panel or a.box.cover(b.box) < COVER:
             continue
-        one, two = sorted((a, b), key=lambda t: (t.panel or 0, t.role.value))
+        one, two = sorted((a, b), key=lambda t: (t.panel or 0, t.role.word))
         key = (one.panel, two.panel, one.role, two.role)
         if key not in seen:
             seen.add(key)
             found = found.flag(
                 "CROSS_AXES_OVERLAP",
                 WARN,
-                f"axes[{one.panel}] {one.role.value} {one.short!r} overlaps "
-                f"axes[{two.panel}] {two.role.value} {two.short!r}",
+                f"axes[{one.panel}] {one.role} {one.short!r} overlaps "
+                f"axes[{two.panel}] {two.role} {two.short!r}",
                 (one, two),
             )
     return found
@@ -169,7 +161,7 @@ def missing_axis_label(facts: Facts, found: Findings) -> Findings:
             found = found.flag(
                 "MISSING_AXIS_LABEL",
                 INFO,
-                f"Axes[{row.panel}]: the {row.axis.value} axis has numbers "
+                f"Axes[{row.panel}]: the {row.axis.letter} axis has numbers "
                 "but no label naming them",
                 handles=(row.handle,),
                 panels=(row.panel,),
@@ -241,7 +233,7 @@ def legend_overlap(facts: Facts, found: Findings) -> Findings:
             found = found.flag(
                 "LEGEND_OVERLAP",
                 WARN,
-                f"{leg.name} covers {len(texts)} {role.value}(s) of {owner} "
+                f"{leg.name} covers {len(texts)} {role}(s) of {owner} "
                 f"({quote(t.short for t in texts)})",
                 texts,
                 handles=(leg.handle,),
@@ -314,7 +306,7 @@ def tick_overlap(facts: Facts, found: Findings) -> Findings:
             found = found.flag(
                 "TICK_OVERLAP",
                 WARN,
-                f"Axes[{row.panel}] {row.axis.value} axis: {row.overlaps} "
+                f"Axes[{row.panel}] {row.axis.letter} axis: {row.overlaps} "
                 f"pair(s) of tick labels overlap (up to {row.deepest:.1f}px)",
                 handles=(row.handle,),
                 panels=(row.panel,),
@@ -332,7 +324,7 @@ def tick_crowd(facts: Facts, found: Findings) -> Findings:
             found = found.flag(
                 "TICK_CROWD",
                 INFO,
-                f"Axes[{row.panel}] {row.axis.value} axis: {len(row.labels)} "
+                f"Axes[{row.panel}] {row.axis.letter} axis: {len(row.labels)} "
                 f"labels fill {fill:.0%} of it, neighbours "
                 f"{row.closest:.2f} em apart",
                 handles=(row.handle,),
@@ -384,7 +376,7 @@ def _decimal_problem(row: TickRow) -> Findings:
     return Findings().flag(
         "TICK_DECIMAL",
         WARN,
-        f"Axes[{row.panel}] {row.axis.value} axis: {problems[0]}",
+        f"Axes[{row.panel}] {row.axis.letter} axis: {problems[0]}",
         handles=(row.handle,),
         panels=(row.panel,),
     )

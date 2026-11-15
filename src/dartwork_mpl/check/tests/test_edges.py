@@ -16,33 +16,34 @@ from dartwork_mpl.check.model import (
     Hit,
     Legend,
     Panel,
-    Role,
     Text,
     TickRow,
     ValueLabel,
-    XAxis,
 )
+from dartwork_mpl.check.roles import AxisLabel, FreeText, Role, TickLabel, Title
 from dartwork_mpl.edgecase import settle
+from dartwork_mpl.geometry import X
 
 CANVAS = Box(0, 0, 1000, 600)
 PT = 300 / 72
 
 
-def text(
-    s: str, box: Box, role: Role = Role.TEXT, panel: int | None = 0
-) -> Text:
+FREE = FreeText()
+
+
+def text(s: str, box: Box, role: Role = FREE, panel: int | None = 0) -> Text:
     return Text(object(), s, role, panel, box, em=40.0)
 
 
 def row(*labels: str, **kw: object) -> TickRow:
     texts = tuple(
-        text(s, Box(100 + 80 * i, 50, 150 + 80 * i, 80), Role.TICK)
+        text(s, Box(100 + 80 * i, 50, 150 + 80 * i, 80), TickLabel())
         for i, s in enumerate(labels)
     )
     base = {
         "handle": object(),
         "panel": 0,
-        "axis": XAxis(),
+        "axis": X(),
         "labels": texts,
         "span": 800.0,
         "need": 300.0,
@@ -88,7 +89,7 @@ def test_TEXT_AT_EDGE_flush_is_one_info():
         "TEXT_AT_EDGE"
     )
     assert len(found) == 1 and "left: 'a'" in found[0].message
-    assert found[0].severity.value == "INFO"
+    assert str(found[0].severity) == "INFO"
 
 
 def test_OVERLAP_within_one_axes():
@@ -100,12 +101,12 @@ def test_OVERLAP_within_one_axes():
 
 
 def test_OVERLAP_counts_an_axis_name_on_its_tick_labels():
-    name = text("Visitors", Box(140, 40, 200, 90), Role.AXIS_LABEL)
+    name = text("Visitors", Box(140, 40, 200, 90), AxisLabel())
     assert "OVERLAP" in rules(facts(texts=(name,), ticks=(row("10", "20"),)))
 
 
 def test_CROSS_AXES_OVERLAP_title_on_neighbour_ticks():
-    title = text("Lower", Box(100, 60, 200, 90), Role.TITLE, panel=1)
+    title = text("Lower", Box(100, 60, 200, 90), Title(), panel=1)
     assert "CROSS_AXES_OVERLAP" in rules(
         facts(texts=(title,), ticks=(row("1", "2"),))
     )
@@ -144,7 +145,7 @@ def test_LEGEND_OVERFLOW_too_big_or_off_canvas():
 
 
 def test_LEGEND_OVERLAP_over_a_title():
-    title = text("Sales", Box(200, 400, 300, 430), Role.TITLE)
+    title = text("Sales", Box(200, 400, 300, 430), Title())
     legend = _legend(Box(150, 390, 350, 420))
     assert "LEGEND_OVERLAP" in rules(facts(texts=(title,), legends=(legend,)))
 
@@ -187,7 +188,7 @@ def test_TICK_CROWD_needs_both_fill_and_closeness():
 
 
 def test_TICK_CORNER_OVERLAP():
-    x, y = text("-3", INSIDE, Role.TICK), text("-3", INSIDE, Role.TICK)
+    x, y = text("-3", INSIDE, TickLabel()), text("-3", INSIDE, TickLabel())
     corner = Corner(0, 1, 3.0, x, y, "lower left")
     assert "TICK_CORNER_OVERLAP" in rules(facts(corners=(corner,)))
 
@@ -227,7 +228,7 @@ def test_MISSING_AXIS_LABEL_only_for_numbers_named_nowhere():
 def test_TEXT_CONTRAST_grouped_by_colours():
     faint = Contrast(text("note", INSIDE), 1.6, False, "#dddddd", "#ffffff")
     found = settle(facts(contrast=(faint, faint)), Findings(), EDGES).plan
-    assert found.of("TEXT_CONTRAST")[0].severity.value == "WARNING"
+    assert str(found.of("TEXT_CONTRAST")[0].severity) == "WARNING"
     fine = replace(faint, ratio=7.0)
     assert "TEXT_CONTRAST" not in rules(facts(contrast=(fine,)))
 

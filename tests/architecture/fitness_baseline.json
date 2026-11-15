@@ -20,10 +20,10 @@
   "src/dartwork_mpl/labels/bars.py": 516,
   "src/dartwork_mpl/labels/model.py": 1140,
   "src/dartwork_mpl/layout/measure.py": 593,
-  "src/dartwork_mpl/layout/model.py": 556,
-  "src/dartwork_mpl/legend/apply.py": 591,
-  "src/dartwork_mpl/legend/measure.py": 533,
-  "src/dartwork_mpl/legend/model.py": 630,
+  "src/dartwork_mpl/layout/model.py": 544,
+  "src/dartwork_mpl/legend/apply.py": 590,
+  "src/dartwork_mpl/legend/measure.py": 532,
+  "src/dartwork_mpl/legend/model.py": 539,
   "src/dartwork_mpl/ticks/measure.py": 597,
   "src/dartwork_mpl/ticks/model.py": 643
  },
@@ -37,7 +37,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 54
+  "modules": 56
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81
@@ -46,16 +46,7 @@
  "R8_missing_all": [],
  "T10_reflection": {},
  "T11_untyped": {},
- "T12_costumed_enums": {
-  "src/dartwork_mpl/check/model.py": 4,
-  "src/dartwork_mpl/color/model.py": 2,
-  "src/dartwork_mpl/guide/model.py": 2,
-  "src/dartwork_mpl/guide/reference.py": 2,
-  "src/dartwork_mpl/legend/model.py": 4,
-  "src/dartwork_mpl/save/model.py": 2,
-  "src/dartwork_mpl/size/canvas.py": 2,
-  "src/dartwork_mpl/style/model.py": 2
- },
+ "T12_costumed_enums": {},
  "T1_casts": {},
  "T2_ignores": {},
  "T3_domain_isinstance": {},

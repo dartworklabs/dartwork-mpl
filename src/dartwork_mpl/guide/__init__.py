@@ -18,15 +18,18 @@ from ..edgecase import settle
 from . import corpus, decide, measure
 from .edges import EDGES
 from .install import SKILL_DIRS, Installed, install_skill, skill_path
-from .model import Code, Finding, LintFacts, Severity
+from .model import Code, Critical, Finding, Info, LintFacts, Severity, Warn
 from .reference import Query, Reference
 
 __all__ = [
     "SKILL_DIRS",
+    "Critical",
     "Finding",
+    "Info",
     "Installed",
     "Reference",
     "Severity",
+    "Warn",
     "install_skill",
     "lint",
     "read",

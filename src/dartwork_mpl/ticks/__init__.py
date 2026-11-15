@@ -393,9 +393,7 @@ def _sharing(axis: Axis) -> list[Axis]:
     """The other axes sharing ``axis``'s ticker (``sharex`` / ``sharey``)."""
     ax = axis.axes
     which: Which = X() if axis is ax.xaxis else Y()
-    axes: list[Axis] = [
-        axis_of(m, which) for m in shared_axes(ax, which.letter)
-    ]
+    axes: list[Axis] = [axis_of(m, which) for m in shared_axes(ax, which)]
     return [a for a in axes if a is not axis and a.major is axis.major]
 
 

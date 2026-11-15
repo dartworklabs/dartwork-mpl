@@ -14,8 +14,8 @@ import numpy as np
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
-from ..geometry import BBOX_ERRORS, drawn_tick_labels
-from .model import AXES, Axis
+from ..geometry import BBOX_ERRORS, Which, drawn_tick_labels
+from .model import AXES
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -84,7 +84,7 @@ def _half_reach(corners: np.ndarray, normal: np.ndarray) -> float:
 
 
 def pair_clearance_px(
-    a: Text, b: Text, renderer: RendererBase, which: Axis
+    a: Text, b: Text, renderer: RendererBase, which: Which
 ) -> float:
     """How far apart along the x or y axis the centres of ``a`` and ``b`` must be.
 
@@ -115,7 +115,7 @@ def pair_clearance_px(
 
 
 def label_clearance_px(
-    label: Text, renderer: RendererBase, which: Axis
+    label: Text, renderer: RendererBase, which: Which
 ) -> float:
     """How far along the x or y axis a copy of ``label`` must move to clear it.
 
@@ -167,7 +167,7 @@ def _overlap_px(p: np.ndarray, q: np.ndarray) -> float:
 
 
 def tick_label_overlaps(
-    ax: Axes, which: Axis, renderer: RendererBase
+    ax: Axes, which: Which, renderer: RendererBase
 ) -> TickOverlaps:
     """Neighbouring drawn tick labels of one axis of ``ax`` that overlap.
 
@@ -181,8 +181,8 @@ def tick_label_overlaps(
     # Major and minor labels share the line: a minor label can run into a
     # major one as easily as into another minor one.
     drawn = [
-        *drawn_tick_labels(ax, which.mpl),
-        *drawn_tick_labels(ax, which.mpl, minor=True),
+        *drawn_tick_labels(ax, which),
+        *drawn_tick_labels(ax, which, minor=True),
     ]
     first_side = {
         id(tick.label1)
@@ -276,7 +276,7 @@ def corner_tick_overlaps(
             which.pick(xs, ys).extend(
                 (ax, label, minor)
                 for minor in (False, True)
-                for label in drawn_tick_labels(ax, which.mpl, minor=minor)
+                for label in drawn_tick_labels(ax, which, minor=minor)
                 if label.get_text().strip() and _ink_alpha(label) > 0
             )
     found: list[CornerOverlap] = []

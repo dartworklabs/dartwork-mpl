@@ -47,7 +47,6 @@ from ..geometry import (
 )
 from .model import (
     CLEARANCE_PT,
-    FALLBACK_SIDES,
     AnchorFacts,
     Box,
     Columns,
@@ -63,13 +62,13 @@ from .model import (
     LocName,
     Owner,
     Request,
-    Side,
     Size,
     Span,
     TitleBox,
     TitleFacts,
     trial_keywords,
 )
+from .sides import FALLBACK_SIDES, Side
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist

@@ -219,7 +219,7 @@ def plotted(
     """
     column = which.column
     chunks: list[npt.NDArray[np.float64]] = []
-    for member in shared_axes(ax, which.letter):
+    for member in shared_axes(ax, which):
         data = member.transData
         for line in member.lines:
             if all(line.get_transform().contains_branch_seperately(data)):
@@ -453,8 +453,8 @@ def boxes(fig: Figure) -> dict[Axes, list[Axes]]:
 
 def _owns(ax: Axes, group: Sequence[Axes], scale: Which) -> bool:
     """``ax`` shows its ``scale`` axis, which no box member shares while the other is shared."""
-    shared_other = shared_axes(ax, scale.other.letter)
-    shared_scale = shared_axes(ax, scale.letter)
+    shared_other = shared_axes(ax, scale.other)
+    shared_scale = shared_axes(ax, scale)
     return axis_of(ax, scale).get_visible() and any(
         m is not ax and m in shared_other and m not in shared_scale
         for m in group
@@ -539,7 +539,7 @@ def drawn_like_twin(ax: Axes) -> bool:
         for m in order[: order.index(ax)]
         if _rectilinear(m) and ax in same_position_axes(m)
     ]
-    sx, sy = shared_axes(ax, X.letter), shared_axes(ax, Y.letter)
+    sx, sy = shared_axes(ax, X()), shared_axes(ax, Y())
     return any(
         (m in sx and m not in sy and not ax.xaxis.get_visible())
         or (m in sy and m not in sx and not ax.yaxis.get_visible())

@@ -13,9 +13,9 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import pairwise
-from typing import ClassVar, Literal, TypeVar
 
-T = TypeVar("T")
+from ..geometry import Which, X, Y
+from .roles import Role
 
 #: Contact up to this (points) is a touch, not a cover.
 TOUCH_PT = 0.5
@@ -77,91 +77,8 @@ class Box:
         }
 
 
-@dataclass(frozen=True)
-class Severity:
-    """How bad a finding is: a WARNING spoils the chart, an INFO may."""
-
-    value: str
-
-    WARNING: ClassVar[Severity]
-    INFO: ClassVar[Severity]
-
-
-Severity.WARNING = Severity("WARNING")
-Severity.INFO = Severity("INFO")
-
-
-@dataclass(frozen=True)
-class Role:
-    """What a text is in its figure.
-
-    ``free``: a text the user placed (``ax.text``, an annotation, a value);
-    ``tick``: a tick label; ``under_legend``: a text a legend must not cover
-    (title, axis label, tick, figure text).
-    """
-
-    value: str
-    free: bool
-    tick: bool
-    under_legend: bool
-
-    TITLE: ClassVar[Role]
-    AXIS_LABEL: ClassVar[Role]
-    TICK: ClassVar[Role]
-    TEXT: ClassVar[Role]
-    PANEL_LETTER: ClassVar[Role]
-    FIGURE_TEXT: ClassVar[Role]
-
-
-Role.TITLE = Role("title", free=False, tick=False, under_legend=True)
-Role.AXIS_LABEL = Role("axis label", free=False, tick=False, under_legend=True)
-Role.TICK = Role("tick label", free=False, tick=True, under_legend=True)
-Role.TEXT = Role("text", free=True, tick=False, under_legend=False)
-Role.PANEL_LETTER = Role(
-    "panel letter", free=False, tick=False, under_legend=False
-)
-Role.FIGURE_TEXT = Role(
-    "figure text", free=False, tick=False, under_legend=True
-)
-
-
-@dataclass(frozen=True)
-class XAxis:
-    """An Axes' x axis."""
-
-    value: ClassVar[Literal["x"]] = "x"
-
-    def pick(self, x: T, y: T) -> T:
-        """``x``: this is the x axis."""
-        return x
-
-    @property
-    def mpl(self) -> Literal["x", "y"]:
-        """matplotlib's name for the axis (``which=``)."""
-        return self.value
-
-
-@dataclass(frozen=True)
-class YAxis:
-    """An Axes' y axis."""
-
-    value: ClassVar[Literal["y"]] = "y"
-
-    def pick(self, x: T, y: T) -> T:
-        """``y``: this is the y axis."""
-        return y
-
-    @property
-    def mpl(self) -> Literal["x", "y"]:
-        """matplotlib's name for the axis (``which=``)."""
-        return self.value
-
-
-#: An Axes' x or y axis.
-Axis = XAxis | YAxis
-
 #: Both axes, x first.
-AXES: tuple[Axis, ...] = (XAxis(), YAxis())
+AXES: tuple[Which, ...] = (X(), Y())
 
 
 def flat(projection: str) -> bool:
@@ -278,7 +195,7 @@ class TickRow:
 
     handle: object
     panel: int
-    axis: Axis
+    axis: Which
     labels: tuple[Text, ...]
     span: float
     need: float | None

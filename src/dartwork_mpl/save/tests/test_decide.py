@@ -7,7 +7,14 @@ import pytest
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.save import decide
 from dartwork_mpl.save.edges import EDGES
-from dartwork_mpl.save.model import Metadata, SaveRequest, Writer
+from dartwork_mpl.save.model import (
+    Metadata,
+    PdfWriter,
+    PlainWriter,
+    SaveRequest,
+    SvgWriter,
+    SvgzWriter,
+)
 
 
 def _plan(stem="out/chart", formats=("png", "pdf"), metadata=None, salt=False):
@@ -33,11 +40,11 @@ def test_a_trailing_image_suffix_is_cut(stem, path, cut):
 def test_each_format_gets_its_writer_and_path():
     writes = _plan(formats=("png", ".pdf", "svg", "svgz", "eps")).plan.writes
     assert [(w.path, w.writer) for w in writes] == [
-        ("out/chart.png", Writer.PLAIN),
-        ("out/chart.pdf", Writer.PDF),
-        ("out/chart.svg", Writer.SVG),
-        ("out/chart.svgz", Writer.SVGZ),
-        ("out/chart.eps", Writer.PLAIN),
+        ("out/chart.png", PlainWriter()),
+        ("out/chart.pdf", PdfWriter()),
+        ("out/chart.svg", SvgWriter()),
+        ("out/chart.svgz", SvgzWriter()),
+        ("out/chart.eps", PlainWriter()),
     ]
 
 

@@ -17,8 +17,6 @@ from dataclasses import dataclass
 from typing import assert_never
 
 from .model import (
-    FALLBACK_SIDES,
-    INSIDE_SPOTS,
     TALL_SHARE,
     Anchor,
     AnchorFacts,
@@ -33,14 +31,13 @@ from .model import (
     Inside,
     LegendFacts,
     LegendPlan,
-    Loc,
     Outside,
-    Side,
     Size,
     Span,
     TitleFacts,
     TitlePad,
 )
+from .sides import FALLBACK_SIDES, INSIDE_SPOTS, Above, Right, Side, UpperRight
 
 
 @dataclass(frozen=True)
@@ -137,7 +134,7 @@ def first_free(spots: tuple[Spot, ...]) -> Inside | None:
 def least_covering(spots: tuple[Spot, ...]) -> Inside:
     """The spot meeting the fewest artists (then the least overflow)."""
     if not spots:
-        return Inside(Loc.UPPER_RIGHT, Columns(1), free=False)
+        return Inside(UpperRight(), Columns(1), free=False)
     best = min(spots, key=lambda spot: (spot.hits, spot.overflow, spot.tall))
     return Inside(best.plan.loc, best.plan.columns, free=False)
 
@@ -182,9 +179,7 @@ def title_pad(facts: TitleFacts) -> TitlePad:
 
 def figure_place(facts: FigureFacts) -> FigurePlan:
     """The figure legend above (else right of) the panels, or the side named."""
-    sides = (
-        (facts.side,) if facts.side is not None else (Side.ABOVE, Side.RIGHT)
-    )
+    sides = (facts.side,) if facts.side is not None else (Above(), Right())
     plans: list[Outside] = []
     for side in sides:
         length = facts.figure.width if side.across else facts.figure.height

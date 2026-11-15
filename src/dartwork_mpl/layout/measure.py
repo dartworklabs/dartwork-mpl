@@ -21,6 +21,8 @@ from matplotlib.text import Text
 from ..edgecase import settle
 from ..geometry import (
     BBOX_ERRORS,
+    X,
+    Y,
     axes_titles,
     drawn_tick_labels,
     iter_figure_level_extents,
@@ -60,8 +62,6 @@ from .model import (
     Top,
     Width,
     WSpace,
-    XAxis,
-    YAxis,
     authored,
     centred,
     edge_of,
@@ -353,7 +353,7 @@ def _row(
     bottom = {id(t.label1) for t in axis.get_major_ticks()}
     labels = [
         t
-        for t in drawn_tick_labels(ax, "x")
+        for t in drawn_tick_labels(ax, X())
         if id(t) in bottom and t.get_text().strip()
     ]
     if len(labels) < 2:
@@ -443,8 +443,8 @@ def _names(
             continue
         frame = ax.get_window_extent(renderer)
         for which, axis, span in (
-            (XAxis(), ax.xaxis, frame.width),
-            (YAxis(), ax.yaxis, frame.height),
+            (X(), ax.xaxis, frame.width),
+            (Y(), ax.yaxis, frame.height),
         ):
             label, text = axis.label, axis.label.get_text()
             if (

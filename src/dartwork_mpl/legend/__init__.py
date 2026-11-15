@@ -2,8 +2,8 @@
 
 ``dm.place_legend(ax)`` places an Axes legend, ``dm.figure_legend(fig)`` one
 legend for every panel. ``settle``, ``outside_side`` and ``figure_reserve``
-are the hooks ``dm.simple_layout`` calls; :class:`Side` is the side they
-name.
+are the hooks ``dm.simple_layout`` calls; :data:`Side` (:class:`Above`,
+:class:`Below`, :class:`Right`, :class:`Left`) is the side they name.
 """
 
 from __future__ import annotations
@@ -12,7 +12,8 @@ from typing import TYPE_CHECKING, Unpack
 
 from . import apply
 from .apply import figure_reserve, outside_side, settle
-from .model import AskedLoc, Side, parse_columns
+from .model import AskedLoc, parse_columns
+from .sides import Above, Below, Left, Right, Side
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -22,6 +23,10 @@ if TYPE_CHECKING:
     from .measure import LegendKeywords
 
 __all__ = [
+    "Above",
+    "Below",
+    "Left",
+    "Right",
     "Side",
     "figure_legend",
     "figure_reserve",

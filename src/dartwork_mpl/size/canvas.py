@@ -64,89 +64,135 @@ SlideFit = HalfBody | SquareBody | ByPositions | WholeBody
 
 
 @dataclass(frozen=True)
-class CanvasKind:
-    """What a chart draws, as far as its default canvas cares.
+class DefaultCanvas:
+    """Lines, bars, areas, scatter, distributions."""
 
-    ``word`` is how a caller names it (``kind="barh"``); ``spec`` its report
-    width and aspect; ``slide`` how it sits under a slide title;
-    ``flat_names``: its category names are widened to stand flat.
-    """
-
-    word: str
-    spec: KindSpec
-    slide: SlideFit
-    flat_names: bool = False
-
-    DEFAULT: ClassVar[CanvasKind]
-    GROUPED: ClassVar[CanvasKind]
-    BARH: ClassVar[CanvasKind]
-    COMPACT: ClassVar[CanvasKind]
-    MATRIX: ClassVar[CanvasKind]
-    DENSE: ClassVar[CanvasKind]
-    STRIP: ClassVar[CanvasKind]
-    SLIDE: ClassVar[CanvasKind]
-    FULL_SLIDE: ClassVar[CanvasKind]
-
-    @classmethod
-    def parse(cls, value: object) -> CanvasKind:
-        """The kind named ``value``; ``ValueError`` listing the kinds if none."""
-        for kind in CANVAS_KINDS:
-            if kind.word == value:
-                return kind
-        known = ", ".join(sorted(k.word for k in CANVAS_KINDS))
-        raise ValueError(f"unknown canvas kind {value!r}; use one of: {known}")
+    word: ClassVar[str] = "default"
+    spec: ClassVar[KindSpec] = KindSpec(MEDIUM, STANDARD)
+    slide: ClassVar[SlideFit] = ByPositions()
+    flat_names: ClassVar[bool] = True
 
 
-# Lines, bars, areas, scatter, distributions.
-CanvasKind.DEFAULT = CanvasKind(
-    "default", KindSpec(MEDIUM, STANDARD), ByPositions(), flat_names=True
+@dataclass(frozen=True)
+class GroupedCanvas:
+    """``n_series`` bars side by side in each of ``n_points`` groups."""
+
+    word: ClassVar[str] = "grouped"
+    spec: ClassVar[KindSpec] = KindSpec(MEDIUM, STANDARD)
+    slide: ClassVar[SlideFit] = ByPositions()
+    flat_names: ClassVar[bool] = True
+
+
+@dataclass(frozen=True)
+class BarhCanvas:
+    """Horizontal bars: room for long category names."""
+
+    word: ClassVar[str] = "barh"
+    spec: ClassVar[KindSpec] = KindSpec(BROAD, STANDARD)
+    slide: ClassVar[SlideFit] = WholeBody()
+    flat_names: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class CompactCanvas:
+    """Insets, half-width panels."""
+
+    word: ClassVar[str] = "compact"
+    spec: ClassVar[KindSpec] = KindSpec(NARROW, STANDARD)
+    slide: ClassVar[SlideFit] = HalfBody()
+    flat_names: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class MatrixCanvas:
+    """Heatmaps, correlation matrices."""
+
+    word: ClassVar[str] = "matrix"
+    spec: ClassVar[KindSpec] = KindSpec(MEDIUM, ASPECTS["square"], fixed=True)
+    slide: ClassVar[SlideFit] = SquareBody()
+    flat_names: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class DenseCanvas:
+    """Long dense timelines."""
+
+    word: ClassVar[str] = "dense"
+    spec: ClassVar[KindSpec] = KindSpec(WIDEST, ASPECTS["cinema"], fixed=True)
+    slide: ClassVar[SlideFit] = WholeBody()
+    flat_names: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class StripCanvas:
+    """A full-width strip, e.g. one dashboard row."""
+
+    word: ClassVar[str] = "strip"
+    spec: ClassVar[KindSpec] = KindSpec(WIDEST, Aspect(0.45), fixed=True)
+    slide: ClassVar[SlideFit] = WholeBody()
+    flat_names: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class SlideCanvas:
+    """The body of a 16:9 slide under its title."""
+
+    word: ClassVar[str] = "slide"
+    spec: ClassVar[KindSpec] = KindSpec(
+        cm(23.4), Aspect(10.5 / 23.4), fixed=True, absolute=True
+    )
+    slide: ClassVar[SlideFit] = WholeBody()
+    flat_names: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class FullSlideCanvas:
+    """A whole 10 in 16:9 slide, 25.4 x 14.29 cm. A larger slide (13.33 in)
+    would show the same text 25 % smaller on screen."""
+
+    word: ClassVar[str] = "full_slide"
+    spec: ClassVar[KindSpec] = KindSpec(
+        cm(25.4), ASPECTS["slide"], fixed=True, absolute=True
+    )
+    slide: ClassVar[SlideFit] = WholeBody()
+    flat_names: ClassVar[bool] = False
+
+
+#: What a chart draws, as far as its default canvas cares. ``word`` is how
+#: a caller names it (``kind="barh"``); ``spec`` its report width and aspect;
+#: ``slide`` how it sits under a slide title; ``flat_names``: its category
+#: names are widened to stand flat.
+CanvasKind = (
+    DefaultCanvas
+    | GroupedCanvas
+    | BarhCanvas
+    | CompactCanvas
+    | MatrixCanvas
+    | DenseCanvas
+    | StripCanvas
+    | SlideCanvas
+    | FullSlideCanvas
 )
-# n_series bars side by side in each of n_points groups.
-CanvasKind.GROUPED = CanvasKind(
-    "grouped", KindSpec(MEDIUM, STANDARD), ByPositions(), flat_names=True
+CANVAS_KINDS: tuple[CanvasKind, ...] = (
+    DefaultCanvas(),
+    GroupedCanvas(),
+    BarhCanvas(),
+    CompactCanvas(),
+    MatrixCanvas(),
+    DenseCanvas(),
+    StripCanvas(),
+    SlideCanvas(),
+    FullSlideCanvas(),
 )
-# Horizontal bars: room for long category names.
-CanvasKind.BARH = CanvasKind("barh", KindSpec(BROAD, STANDARD), WholeBody())
-# Insets, half-width panels.
-CanvasKind.COMPACT = CanvasKind(
-    "compact", KindSpec(NARROW, STANDARD), HalfBody()
-)
-# Heatmaps, correlation matrices.
-CanvasKind.MATRIX = CanvasKind(
-    "matrix", KindSpec(MEDIUM, ASPECTS["square"], fixed=True), SquareBody()
-)
-# Long dense timelines.
-CanvasKind.DENSE = CanvasKind(
-    "dense", KindSpec(WIDEST, ASPECTS["cinema"], fixed=True), WholeBody()
-)
-# A full-width strip, e.g. one dashboard row.
-CanvasKind.STRIP = CanvasKind(
-    "strip", KindSpec(WIDEST, Aspect(0.45), fixed=True), WholeBody()
-)
-# The body of a 16:9 slide under its title.
-CanvasKind.SLIDE = CanvasKind(
-    "slide",
-    KindSpec(cm(23.4), Aspect(10.5 / 23.4), fixed=True, absolute=True),
-    WholeBody(),
-)
-# A whole 10 in 16:9 slide, 25.4 x 14.29 cm. A larger slide (13.33 in) would
-# show the same text 25 % smaller on screen.
-CanvasKind.FULL_SLIDE = CanvasKind(
-    "full_slide",
-    KindSpec(cm(25.4), ASPECTS["slide"], fixed=True, absolute=True),
-    WholeBody(),
-)
-CANVAS_KINDS = (
-    CanvasKind.DEFAULT,
-    CanvasKind.GROUPED,
-    CanvasKind.BARH,
-    CanvasKind.COMPACT,
-    CanvasKind.MATRIX,
-    CanvasKind.DENSE,
-    CanvasKind.STRIP,
-    CanvasKind.SLIDE,
-    CanvasKind.FULL_SLIDE,
-)
+
+
+def parse_canvas_kind(value: object) -> CanvasKind:
+    """The kind named ``value``; ``ValueError`` listing the kinds if none."""
+    for kind in CANVAS_KINDS:
+        if kind.word == value:
+            return kind
+    known = ", ".join(sorted(k.word for k in CANVAS_KINDS))
+    raise ValueError(f"unknown canvas kind {value!r}; use one of: {known}")
 
 
 @runtime_checkable
@@ -188,7 +234,7 @@ def parse_names(labels: object) -> tuple[str, ...]:
 class CanvasRequest:
     """A request for a default canvas: the chart's kind and density hints."""
 
-    kind: CanvasKind = CanvasKind.DEFAULT
+    kind: CanvasKind = field(default_factory=DefaultCanvas)
     n_points: int | None = None
     n_series: int | None = None
     dual_axis: bool = False

@@ -10,9 +10,10 @@ from dartwork_mpl.color.catalog import CATALOG
 from dartwork_mpl.color.family import Count
 from dartwork_mpl.color.model import (
     ContrastFacts,
+    DefaultLocale,
     DivergingSource,
     Form,
-    Locale,
+    KoreanLocale,
     Ratio,
     SemanticFacts,
 )
@@ -71,12 +72,12 @@ def test_hex_rounding_shortfall():
 
 
 def test_kr_semantic_tokens():
-    kr = SemanticFacts(Locale.KR, CATALOG)
+    kr = SemanticFacts(KoreanLocale(), CATALOG)
     settled = fired(kr, decide.semantic(kr), edges.KR_TOKENS)
     assert settled.fired == ("kr-semantic-tokens",)
     assert settled.plan.pos == CATALOG.ladder("red")[5]
     assert settled.plan.neg == CATALOG.ladder("blue")[6]
-    default = SemanticFacts(Locale.DEFAULT, CATALOG)
+    default = SemanticFacts(DefaultLocale(), CATALOG)
     plan = decide.semantic(default)
     assert plan.pos == CATALOG.ladder("green")[6]
     assert not fired(default, plan, edges.KR_TOKENS).fired

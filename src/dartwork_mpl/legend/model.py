@@ -12,7 +12,9 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import ClassVar, Generic, Literal, TypedDict, TypeVar
+from typing import Generic, Literal, TypedDict, TypeVar
+
+from .sides import SIDES, Loc, Side, middle
 
 #: Room kept between a legend box and the nearest data ink, in points.
 CLEARANCE_PT = 2.0
@@ -47,6 +49,7 @@ LocName = Literal[
 ]
 """A ``loc`` matplotlib names (``"outside ..."``: figure legends only)."""
 
+
 #: Every :data:`LocName`, to read a caller's string against.
 LOC_NAMES: tuple[LocName, ...] = (
     "best",
@@ -76,100 +79,6 @@ LOC_NAMES: tuple[LocName, ...] = (
 
 MatplotlibLoc = LocName | tuple[float, float] | int
 """A ``loc`` as matplotlib takes it: a name, an anchor point or a code."""
-
-
-@dataclass(frozen=True)
-class Loc:
-    """An inside spot: matplotlib's ``loc`` for it and where it sits.
-
-    ``x`` and ``y`` place the spot in its container, as fractions. The
-    spots, in the order they are tried, are :data:`INSIDE_SPOTS`.
-    """
-
-    code: LocName
-    x: float
-    y: float
-
-    UPPER_RIGHT: ClassVar[Loc]
-    UPPER_LEFT: ClassVar[Loc]
-    LOWER_LEFT: ClassVar[Loc]
-    LOWER_RIGHT: ClassVar[Loc]
-    UPPER_CENTER: ClassVar[Loc]
-    LOWER_CENTER: ClassVar[Loc]
-    CENTER_RIGHT: ClassVar[Loc]
-    CENTER_LEFT: ClassVar[Loc]
-
-    @property
-    def anchor(self) -> tuple[float, float]:
-        """Where the spot sits in its container, as fractions (x, y)."""
-        return self.x, self.y
-
-
-Loc.UPPER_RIGHT = Loc("upper right", 1.0, 1.0)
-Loc.UPPER_LEFT = Loc("upper left", 0.0, 1.0)
-Loc.LOWER_LEFT = Loc("lower left", 0.0, 0.0)
-Loc.LOWER_RIGHT = Loc("lower right", 1.0, 0.0)
-Loc.UPPER_CENTER = Loc("upper center", 0.5, 1.0)
-Loc.LOWER_CENTER = Loc("lower center", 0.5, 0.0)
-Loc.CENTER_RIGHT = Loc("center right", 1.0, 0.5)
-Loc.CENTER_LEFT = Loc("center left", 0.0, 0.5)
-
-#: Every inside spot, in the order it is tried.
-INSIDE_SPOTS = (
-    Loc.UPPER_RIGHT,
-    Loc.UPPER_LEFT,
-    Loc.LOWER_LEFT,
-    Loc.LOWER_RIGHT,
-    Loc.UPPER_CENTER,
-    Loc.LOWER_CENTER,
-    Loc.CENTER_RIGHT,
-    Loc.CENTER_LEFT,
-)
-
-
-@dataclass(frozen=True)
-class Side:
-    """A side of an Axes or figure a legend sits outside of.
-
-    ``word`` is how a caller names it (``loc="above"``); ``across``: the
-    legend lies across the width (above, below); ``far``: the side is the
-    high end of its axis (above, right). ``legend_loc`` is the legend's own
-    edge that faces the Axes, ``figure_loc`` a figure legend's edge that
-    faces the figure's edge; that spot is also the middle of the side.
-    """
-
-    word: str
-    across: bool
-    far: bool
-    legend_loc: Loc
-    figure_loc: Loc
-
-    ABOVE: ClassVar[Side]
-    BELOW: ClassVar[Side]
-    RIGHT: ClassVar[Side]
-    LEFT: ClassVar[Side]
-
-    @property
-    def middle(self) -> tuple[float, float]:
-        """The middle of the side, as fractions of its container."""
-        return self.figure_loc.anchor
-
-    @property
-    def outward(self) -> tuple[float, float]:
-        """The unit step away from the container, past the side."""
-        step = 1.0 if self.far else -1.0
-        return (0.0, step) if self.across else (step, 0.0)
-
-
-Side.ABOVE = Side("above", True, True, Loc.LOWER_CENTER, Loc.UPPER_CENTER)
-Side.BELOW = Side("below", True, False, Loc.UPPER_CENTER, Loc.LOWER_CENTER)
-Side.RIGHT = Side("right", False, True, Loc.CENTER_LEFT, Loc.CENTER_RIGHT)
-Side.LEFT = Side("left", False, False, Loc.CENTER_RIGHT, Loc.CENTER_LEFT)
-
-SIDES = (Side.ABOVE, Side.BELOW, Side.RIGHT, Side.LEFT)
-
-#: Where a legend may go when no inside spot is free, in order.
-FALLBACK_SIDES = (Side.ABOVE, Side.BELOW, Side.RIGHT)
 
 
 @dataclass(frozen=True)
@@ -522,7 +431,7 @@ class FigurePlan:
     @property
     def anchor(self) -> tuple[float, float]:
         """Where its ``loc`` edge sits on the figure, as fractions."""
-        return self.side.middle
+        return middle(self.side)
 
 
 @dataclass(frozen=True)

@@ -26,20 +26,20 @@ def test_only_the_ticks_in_view_draw_their_labels() -> None:
     ax.set_xticks([0, 2, 4, 6, 8, 10])
     ax.set_xlim(0.5, 9.5)
     fig.canvas.draw()
-    texts = [t.get_text() for t in g.drawn_tick_labels(ax, "x")]
+    texts = [t.get_text() for t in g.drawn_tick_labels(ax, g.X())]
     assert texts == ["2", "4", "6", "8"]
     ax.xaxis.set_visible(False)
-    assert g.drawn_tick_labels(ax, "x") == []
+    assert g.drawn_tick_labels(ax, g.X()) == []
     ax.xaxis.set_visible(True)
     ax.axis("off")
-    assert g.drawn_tick_labels(ax, "x") == []
+    assert g.drawn_tick_labels(ax, g.X()) == []
 
 
 def test_twinx_and_twiny_share_one_axis_each_in_one_box() -> None:
     _fig, ax = plt.subplots()
     right, top = ax.twinx(), ax.twiny()
-    assert g.shared_axes(ax, "x") == [ax, right]
-    assert g.shared_axes(ax, "y") == [ax, top]
+    assert g.shared_axes(ax, g.X()) == [ax, right]
+    assert g.shared_axes(ax, g.Y()) == [ax, top]
     assert g.same_position_axes(ax) == [ax, right, top]
 
 
@@ -47,7 +47,7 @@ def test_one_box_and_one_scale_are_separate_questions() -> None:
     fig = plt.figure()
     first, second = fig.add_axes(BOX), fig.add_axes(BOX)
     assert g.same_position_axes(first) == [first, second]
-    assert g.shared_axes(first, "x") == [first]
+    assert g.shared_axes(first, g.X()) == [first]
     second.set_visible(False)
     assert g.same_position_axes(first) == [first]
 
@@ -55,12 +55,12 @@ def test_one_box_and_one_scale_are_separate_questions() -> None:
 def test_shared_panels_are_in_figure_order_each_in_its_own_box() -> None:
     _fig, axs = plt.subplots(2, 2, sharex=True, sharey=True)
     flat = list(axs.flat)
-    assert g.shared_axes(flat[3], "x") == flat
+    assert g.shared_axes(flat[3], g.X()) == flat
     assert all(g.same_position_axes(ax) == [ax] for ax in flat)
 
 
 def test_an_inset_stands_alone() -> None:
     _fig, ax = plt.subplots()
     inset = ax.inset_axes((0.5, 0.5, 0.4, 0.4))
-    assert g.shared_axes(inset, "x") == [inset]
+    assert g.shared_axes(inset, g.X()) == [inset]
     assert g.same_position_axes(ax) == [ax]

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.check.findings import Finding, Findings
-from dartwork_mpl.check.model import Box, Number, Severity, step_decimals
+from dartwork_mpl.check.findings import Finding, Findings, Warn
+from dartwork_mpl.check.model import Box, Number, step_decimals
 
 
 @pytest.mark.parametrize(
@@ -63,7 +63,7 @@ def test_box_cover_gap_and_margins():
 def test_report_lists_findings_fixes_and_what_did_not_run():
     clean = Findings()
     assert not clean and clean.report() == "dm.check: no defects found."
-    f = Finding("OVERLAP", Severity.WARNING, "A overlaps B", "move one")
+    f = Finding("OVERLAP", Warn(), "A overlaps B", "move one")
     found = Findings((f,), skipped=("TICK_*",))
     assert found.report().splitlines() == [
         "dm.check: 1 finding",

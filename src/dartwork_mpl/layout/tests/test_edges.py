@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from dartwork_mpl.edgecase import settle
+from dartwork_mpl.geometry import Y
 from dartwork_mpl.layout import decide
 from dartwork_mpl.layout.edges import FIT_EDGES, TEXT_EDGES
 from dartwork_mpl.layout.model import (
@@ -25,7 +26,6 @@ from dartwork_mpl.layout.model import (
     TickGroup,
     Top,
     WSpace,
-    YAxis,
 )
 from dartwork_mpl.layout.tests.test_decide import (
     CANVAS,
@@ -91,7 +91,7 @@ def test_figure_legend_side_reserves_its_side() -> None:
 
 
 def name(label: int, text_: str, box: Box, span: float = 300.0) -> AxisName:
-    group = (ArtistId(7), YAxis())
+    group = (ArtistId(7), Y())
     return AxisName(
         ArtistId(label),
         Line(text_),

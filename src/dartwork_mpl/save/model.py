@@ -18,32 +18,56 @@ IMAGE_SUFFIXES = frozenset(f".{ext}" for ext in EXTENSIONS.split(" "))
 
 
 @dataclass(frozen=True)
-class Writer:
-    """How one format is written.
+class PlainWriter:
+    """Any format but the three below, written by savefig as it is."""
 
-    ``value`` is the extension it writes (``"plain"``: any other);
-    ``timestamp_key`` the metadata key that would embed the wall-clock time
-    (PDF writes ``/CreationDate`` and SVG ``<dc:date>`` unless the key is
-    None); ``svg``: writes SVG, whose ids ``svg.hashsalt`` seeds;
-    ``gzipped``: writes SVG gzipped here, with a fixed header time.
-    """
-
-    value: str
-    timestamp_key: str | None = None
-    svg: bool = False
-    gzipped: bool = False
-
-    PLAIN: ClassVar[Writer]
-    PDF: ClassVar[Writer]
-    SVG: ClassVar[Writer]
-    SVGZ: ClassVar[Writer]
+    timestamp_key: ClassVar[str | None] = None
+    svg: ClassVar[bool] = False
+    gzipped: ClassVar[bool] = False
 
 
-Writer.PLAIN = Writer("plain")
-Writer.PDF = Writer("pdf", timestamp_key="CreationDate")
-Writer.SVG = Writer("svg", timestamp_key="Date", svg=True)
-Writer.SVGZ = Writer("svgz", timestamp_key="Date", svg=True, gzipped=True)
-WRITERS = (Writer.PLAIN, Writer.PDF, Writer.SVG, Writer.SVGZ)
+@dataclass(frozen=True)
+class PdfWriter:
+    """PDF, which embeds the wall-clock time as ``/CreationDate``."""
+
+    ext: ClassVar[str] = "pdf"
+    timestamp_key: ClassVar[str | None] = "CreationDate"
+    svg: ClassVar[bool] = False
+    gzipped: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class SvgWriter:
+    """SVG: embeds the time as ``<dc:date>``; ``svg.hashsalt`` seeds its ids."""
+
+    ext: ClassVar[str] = "svg"
+    timestamp_key: ClassVar[str | None] = "Date"
+    svg: ClassVar[bool] = True
+    gzipped: ClassVar[bool] = False
+
+
+@dataclass(frozen=True)
+class SvgzWriter:
+    """SVG gzipped here, with a fixed header time."""
+
+    ext: ClassVar[str] = "svgz"
+    timestamp_key: ClassVar[str | None] = "Date"
+    svg: ClassVar[bool] = True
+    gzipped: ClassVar[bool] = True
+
+
+#: How one format is written. ``timestamp_key``: the metadata key that would
+#: embed the wall-clock time (None: the format embeds none); ``svg``: writes
+#: SVG, whose ids ``svg.hashsalt`` seeds; ``gzipped``: SVG gzipped here.
+Writer = PlainWriter | PdfWriter | SvgWriter | SvgzWriter
+
+
+def parse_writer(ext: str) -> Writer:
+    """The writer for an extension; :class:`PlainWriter` for any other."""
+    named = (
+        w for w in (PdfWriter(), SvgWriter(), SvgzWriter()) if w.ext == ext
+    )
+    return next(named, PlainWriter())
 
 
 # matplotlib's colour forms for ``facecolor`` / ``edgecolor`` (its
@@ -116,8 +140,7 @@ class Format:
         ext = value.lstrip(".")
         if not ext:
             raise ValueError(f"empty format {value!r}; use e.g. 'png' or 'pdf'")
-        named = (w for w in WRITERS if w.value == ext.lower())
-        return cls(ext, next(named, Writer.PLAIN))
+        return cls(ext, parse_writer(ext.lower()))
 
 
 @runtime_checkable

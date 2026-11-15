@@ -13,7 +13,7 @@ import pytest
 
 import dartwork_mpl as dm
 from dartwork_mpl.edgecase import settle
-from dartwork_mpl.geometry import drawn_tick_labels, get_renderer
+from dartwork_mpl.geometry import X, drawn_tick_labels, get_renderer
 from dartwork_mpl.size import decide
 from dartwork_mpl.size.canvas import (
     CanvasFacts,
@@ -90,7 +90,7 @@ class TestFlatCategoryNames:
         dm.simple_layout(fig)
         fig.canvas.draw()
         labels = [
-            t for t in drawn_tick_labels(fig.axes[0], "x") if t.get_text()
+            t for t in drawn_tick_labels(fig.axes[0], X()) if t.get_text()
         ]
         renderer = get_renderer(fig)
         boxes = sorted(

@@ -6,12 +6,13 @@ import pytest
 
 from dartwork_mpl.size import decide
 from dartwork_mpl.size.canvas import (
-    CanvasKind,
     CanvasRequest,
+    DefaultCanvas,
     Page,
     Paper,
     Poster,
     Slides,
+    parse_canvas_kind,
 )
 from dartwork_mpl.size.model import Grid, Panels, cm
 
@@ -25,11 +26,11 @@ def _cm(request: CanvasRequest, page: Page) -> tuple[float, float]:
 
 
 def _ask(kind: str = "default", **hints: object) -> CanvasRequest:
-    return CanvasRequest(kind=CanvasKind.parse(kind), **hints)  # type: ignore[arg-type]
+    return CanvasRequest(kind=parse_canvas_kind(kind), **hints)  # type: ignore[arg-type]
 
 
 def test_figure_size_takes_a_share_or_a_height() -> None:
-    share = decide.figure_size(cm(13), CanvasKind.DEFAULT.spec.aspect)
+    share = decide.figure_size(cm(13), DefaultCanvas.spec.aspect)
     assert (share.width.cm, share.height.cm) == pytest.approx((13.0, 9.75))
     height = decide.figure_size(cm(13), cm(8))
     assert height.height == cm(8)

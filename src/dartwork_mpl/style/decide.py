@@ -6,7 +6,8 @@ from .model import (
     KOREAN_LAYER,
     Active,
     Chain,
-    Locale,
+    DefaultLocale,
+    KoreanLocale,
     Points,
     Preset,
     Steps,
@@ -21,7 +22,7 @@ WEIGHT_STEP = 100
 def chain(presets: tuple[Preset, ...]) -> Chain:
     """The presets' layers in order; Korean if any layer is ``lang-kr``."""
     layers = tuple(layer for preset in presets for layer in preset.layers)
-    locale = Locale.KR if KOREAN_LAYER in layers else Locale.DEFAULT
+    locale = KoreanLocale() if KOREAN_LAYER in layers else DefaultLocale()
     return Chain(presets, layers, locale)
 
 

@@ -9,21 +9,31 @@ from typing import ClassVar
 
 
 @dataclass(frozen=True)
-class Kind:
-    """A guide page (prose) or a plot template (a runnable script).
+class Guide:
+    """A guide page (prose). ``tie``: its order on an equal score."""
 
-    ``tie``: the order of the two on an equal score (templates first).
-    """
+    word: ClassVar[str] = "guide"
+    tie: ClassVar[int] = 1
 
-    value: str
-    tie: int
-
-    GUIDE: ClassVar[Kind]
-    TEMPLATE: ClassVar[Kind]
+    def __str__(self) -> str:
+        """The word an id starts with."""
+        return self.word
 
 
-Kind.GUIDE = Kind("guide", tie=1)
-Kind.TEMPLATE = Kind("template", tie=0)
+@dataclass(frozen=True)
+class Template:
+    """A plot template (a runnable script); ranked first on an equal score."""
+
+    word: ClassVar[str] = "template"
+    tie: ClassVar[int] = 0
+
+    def __str__(self) -> str:
+        """The word an id starts with."""
+        return self.word
+
+
+#: A guide page or a plot template.
+Kind = Guide | Template
 
 
 _REF_ID = re.compile(r"guide/[a-z0-9-]+|template/(?:advanced/)?[a-z0-9_]+")
@@ -82,7 +92,7 @@ class Reference:
         tags = words(id.removeprefix("guide/"))
         return cls(
             id,
-            Kind.GUIDE,
+            Guide(),
             title,
             summary,
             tags,
@@ -101,7 +111,7 @@ class Reference:
         tags = words(meta.get("tags", ""))
         return cls(
             id,
-            Kind.TEMPLATE,
+            Template(),
             title,
             summary,
             tags,

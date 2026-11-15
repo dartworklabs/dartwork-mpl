@@ -46,16 +46,15 @@ from .model import (
     Inside,
     Keywords,
     LegendPlan,
-    Loc,
     MatplotlibLoc,
     Outside,
     Passed,
     Request,
     Reserve,
-    Side,
     parse_keywords,
     parse_loc,
 )
+from .sides import Above, Below, Left, Loc, Right, Side, middle, outward
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
@@ -226,9 +225,9 @@ def anchor_outside(
         and abs(previous.clearance - plan.clearance) <= 0.01
     ):
         return False
-    (dx, dy), out = side.outward, plan.clearance / 72.0
+    (dx, dy), out = outward(side), plan.clearance / 72.0
     offset = ScaledTranslation(dx * out, dy * out, root.dpi_scale_trans)
-    legend.set_bbox_to_anchor(side.middle, ax.transAxes + offset)
+    legend.set_bbox_to_anchor(middle(side), ax.transAxes + offset)
     record.anchor, record.outside = plan, side
     _remember(legend, record)
     return True
@@ -379,7 +378,7 @@ def place_legend(
             )
         case Best():
             request = Request(None, columns, anchored)
-        case Side():
+        case Above() | Below() | Right() | Left():
             request = Request(placement, columns, anchored)
         case _:
             assert_never(placement)
@@ -534,7 +533,7 @@ def figure_legend(
             legend = _placed_figure_legend(
                 fig, handles, labels, None, loc, columns, kw
             )
-        case Side():
+        case Above() | Below() | Right() | Left():
             legend = _placed_figure_legend(
                 fig, handles, labels, placement, loc, columns, kw
             )

@@ -20,6 +20,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 from matplotlib.ticker import Formatter
 
+from ..geometry import Which
 from .measure import TextArtists, grid_axes, spacing_of
 from .model import (
     TURN_MODE,
@@ -32,7 +33,6 @@ from .model import (
     Mode,
     Share,
     TextPlan,
-    Which,
     WSpace,
     turned_as,
 )

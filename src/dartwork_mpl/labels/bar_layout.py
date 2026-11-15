@@ -186,7 +186,7 @@ def _value_axes(families: list[BarFamily]) -> list[_ValueAxis]:
     for family in families:
         for label in family.texts:
             which: Which = Y() if label.vertical else X()
-            shared = shared_axes(label.bar_axes, which.letter)
+            shared = shared_axes(label.bar_axes, which)
             key = (which, frozenset(map(id, shared)))
             groups.setdefault(
                 key, _ValueAxis(label.bar_axes, which)

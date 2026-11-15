@@ -15,7 +15,7 @@ from matplotlib import RcParams
 from ..color import apply_semantic
 from ..font import ensure_loaded
 from . import decide, measure
-from .model import Chain, Locale, Preset, override_key
+from .model import Chain, DefaultLocale, Locale, Preset, override_key
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class State:
 
     presets: tuple[Preset, ...] = ()
     values: dict[str, object] = field(default_factory=dict[str, object])
-    locale: Locale = Locale.DEFAULT
+    locale: Locale = field(default_factory=DefaultLocale)
 
 
 REGISTRY = measure.registry()
@@ -44,7 +44,7 @@ def use(request: object, overrides: dict[str, object]) -> None:
     ensure_loaded()
     with LOCK:
         write(chain, validated)
-        apply_semantic(chain.locale.value)
+        apply_semantic(str(chain.locale))
 
 
 def write(chain: Chain, overrides: RcParams) -> None:
@@ -82,4 +82,4 @@ def context(request: object, overrides: dict[str, object]) -> Generator[None]:
             yield
         finally:
             STATE[0] = saved
-            apply_semantic(saved.locale.value)
+            apply_semantic(str(saved.locale))

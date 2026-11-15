@@ -25,13 +25,13 @@ from .family import Count, Family, parse_kind
 from .model import (
     ContrastFacts,
     Form,
-    Locale,
     Name,
     PaletteRequest,
     Ratio,
     SemanticFacts,
     Steps,
     Weight,
+    parse_locale,
     parse_space,
     parse_written,
     rgb_color,
@@ -342,7 +342,7 @@ def make_palette(n: int, kind: str = "categorical") -> list[str]:
 def apply_semantic(locale: str) -> None:
     """Bind the role colours ``dc.pos``/``neg``/``ref``/``hl`` for ``locale``
     (``"kr"``: gains red, losses blue; anything else: gains green)."""
-    facts = SemanticFacts(Locale.parse(locale), CATALOG)
+    facts = SemanticFacts(parse_locale(locale), CATALOG)
     tokens = settle(facts, decide.semantic(facts), (KR_TOKENS,)).plan
     apply.apply_semantic(tokens)
 
