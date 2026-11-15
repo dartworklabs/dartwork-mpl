@@ -40,7 +40,6 @@ Additional tools for specialized use cases.
    :titlesonly:
 
    Font Utilities <font>
-   Icon Font System <icon>
    Plot Templates <templates>
    Agent Helper Utilities <helpers>
    Interactive Viewer <ui>

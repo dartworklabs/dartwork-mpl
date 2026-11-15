@@ -86,7 +86,7 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
     additional ``dc.`` maps in the same process.
     """
     from dartwork_mpl._colors._generated import CMAPS_256
-    from dartwork_mpl.diagnostics import classify_cmap
+    from dartwork_mpl._colors.diagnostics import classify_cmap
 
     v5_names = {f"dc.{n}" for n in CMAPS_256} | {"dc.octave", "dc.octave_print"}
     cmap_list: Iterable[str] = (

@@ -1,7 +1,6 @@
 """Color-library diagnostics — render named color libraries as swatch grids.
 
-Part of the :mod:`dartwork_mpl.diagnostics` package; the public entry
-points are re-exported from its ``__init__``.
+Part of :mod:`dartwork_mpl._colors.diagnostics`.
 """
 
 from __future__ import annotations

@@ -5,7 +5,7 @@
   "src/dartwork_mpl/_colors/construction/_catalog.py": 1487,
   "src/dartwork_mpl/_colors/construction/_cmaps.py": 517,
   "src/dartwork_mpl/_colors/construction/_tone.py": 527,
-  "src/dartwork_mpl/_colors/diagnostics/_colors.py": 525,
+  "src/dartwork_mpl/_colors/diagnostics/_colors.py": 524,
   "src/dartwork_mpl/_colors/model/_color.py": 1003,
   "src/dartwork_mpl/_colors/verify/_comparison.py": 1849,
   "src/dartwork_mpl/_colors/verify/_gates.py": 1263,
@@ -18,7 +18,6 @@
   "src/dartwork_mpl/annotation/_panel_labels.py": 597,
   "src/dartwork_mpl/annotation/_point_labels.py": 871,
   "src/dartwork_mpl/figure_review/_summary.py": 602,
-  "src/dartwork_mpl/font/__init__.py": 842,
   "src/dartwork_mpl/formatting/__init__.py": 623,
   "src/dartwork_mpl/formatting/_defaults.py": 1210,
   "src/dartwork_mpl/formatting/_label_unit.py": 612,
@@ -36,7 +35,7 @@
   "src/dartwork_mpl/mcp/plot_data/repair.py": 675,
   "src/dartwork_mpl/mcp/plot_data/validators.py": 725,
   "src/dartwork_mpl/mcp/tools.py": 581,
-  "src/dartwork_mpl/style/__init__.py": 681,
+  "src/dartwork_mpl/style/__init__.py": 680,
   "src/dartwork_mpl/ui/page/_scripts.py": 709,
   "src/dartwork_mpl/ui/page/_styles.py": 681,
   "src/dartwork_mpl/ui/state/_language.py": 502,
@@ -44,7 +43,7 @@
   "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
  },
  "R2_slice_lines": {
-  "_colors": 15552,
+  "_colors": 15550,
   "_colors/construction": 3025,
   "_colors/model": 2536,
   "_colors/verify": 3227,
@@ -64,7 +63,6 @@
   "_figure_geometry": 3,
   "_rc": 1,
   "annotation": 22,
-  "diagnostics": 1,
   "figure_review": 2,
   "formatting": 9,
   "layout": 9,
@@ -94,7 +92,7 @@
  ],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 165
+  "modules": 168
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_colors/_compatibility_metrics.py::_global_extrema": 101,
@@ -130,7 +128,6 @@
   "src/dartwork_mpl/annotation/_point_labels.py::annotate_corner": 84,
   "src/dartwork_mpl/annotation/_point_labels.py::annotate_value": 138,
   "src/dartwork_mpl/annotation/_point_labels.py::label_hline": 85,
-  "src/dartwork_mpl/diagnostics/_fonts.py::plot_fonts": 232,
   "src/dartwork_mpl/figure_review/__init__.py::review": 90,
   "src/dartwork_mpl/formatting/_label_unit.py::axis_unit": 135,
   "src/dartwork_mpl/layout/_content_extent.py::_axes_content_extent_px": 128,

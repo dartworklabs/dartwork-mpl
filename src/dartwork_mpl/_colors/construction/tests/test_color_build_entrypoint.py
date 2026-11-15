@@ -255,7 +255,6 @@ def test_ordinary_import_preserves_eager_inventory_and_reload(
         modules = {
             "font",
             "helpers",
-            "icon",
             "lint",
             "templates",
             "tokens",

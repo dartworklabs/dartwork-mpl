@@ -437,7 +437,7 @@ def copy_fonts_to_static(app):
     import shutil
 
     font_src = (
-        Path(app.srcdir).parent / "src" / "dartwork_mpl" / "asset" / "font"
+        Path(app.srcdir).parent / "src" / "dartwork_mpl" / "font" / "assets"
     )
     font_dst = Path(app.srcdir) / "_static" / "fonts"
     font_dst.mkdir(parents=True, exist_ok=True)

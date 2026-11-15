@@ -29,16 +29,16 @@ primary = [4.2, 4.8, 5.1, 5.5, 5.9, 6.3]
 secondary = [38, 41, 39, 43, 45, 44]
 
 # Resolve absolute path to bundled font directory.
-_FONT_DIR = os.path.join(os.path.dirname(dm.__file__), "asset", "font")
+_FONT_DIR = os.path.join(os.path.dirname(dm.__file__), "font", "assets")
 
 # (display name, font filename for weight-300 / Light variant)
 fonts = [
     ("Roboto", "Roboto-Light.ttf"),
     ("Inter", "Inter-Light.ttf"),
-    ("Noto Sans", "NotoSans-Light.ttf"),
-    ("Noto Sans Condensed", "NotoSans_Condensed-Light.ttf"),
+    ("Pretendard", "Pretendard-Light.otf"),
+    ("JetBrains Mono", "JetBrainsMono-Light.ttf"),
     ("Paperlogy", "Paperlogy-3Light.ttf"),
-    ("Noto Sans SemiCondensed", "NotoSans_SemiCondensed-Light.ttf"),
+    ("IBM Plex Mono", "IBMPlexMono-Light.ttf"),
 ]
 
 # Single figure, 2x3 grid — one subplot per typeface.

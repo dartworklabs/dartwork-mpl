@@ -112,13 +112,11 @@ SLICES = frozenset(
         "dartwork_mpl.agent",
         "dartwork_mpl.annotation",
         "dartwork_mpl.config",
-        "dartwork_mpl.diagnostics",
         "dartwork_mpl.explore",
         "dartwork_mpl.figure_review",
         "dartwork_mpl.font",
         "dartwork_mpl.formatting",
         "dartwork_mpl.helpers",
-        "dartwork_mpl.icon",
         "dartwork_mpl.labels",
         "dartwork_mpl.legend",
         "dartwork_mpl.layout",
@@ -249,17 +247,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
     ),
-    ("dartwork_mpl.diagnostics", "dartwork_mpl._colors.diagnostics"): (
-        "the public diagnostics entry re-exports the colour diagnostics"
-    ),
-    ("dartwork_mpl.diagnostics", "dartwork_mpl.font"): (
-        "the font diagnostic draws the bundled font files"
-    ),
     ("dartwork_mpl.explore", "dartwork_mpl._colors"): (
         "the explorer browses the shipped colour families"
-    ),
-    ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
-        "the explorer draws the colour and font diagnostics it lists"
     ),
     ("dartwork_mpl.figure_review", "dartwork_mpl.save"): (
         "a review saves the figure with save_formats, the files a plain save writes"
@@ -469,6 +458,12 @@ SHIMS: Mapping[str, str] = {
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.font.decide": (
+        "which font-table fixes apply is decided from faces alone"
+    ),
+    "dartwork_mpl.font.model": (
+        "the font table's types need nothing outside it"
+    ),
     "dartwork_mpl.size.decide": (
         "the canvas is decided from the parsed request and the page alone"
     ),
