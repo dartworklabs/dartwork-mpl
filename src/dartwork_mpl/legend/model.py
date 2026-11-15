@@ -435,14 +435,6 @@ class FigurePlan:
 
 
 @dataclass(frozen=True)
-class Reserve:
-    """The figure edge a figure legend holds and the room it keeps, pt."""
-
-    side: Side
-    gap_pt: float
-
-
-@dataclass(frozen=True)
 class EntryPlan:
     """Which Axes holds the legend and which entries it shows.
 

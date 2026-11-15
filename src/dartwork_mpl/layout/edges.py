@@ -12,6 +12,7 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 
+from ..edge import Bottom, Edge, Left, Right, Top
 from ..edgecase import EdgeCase
 from . import decide
 from .model import (
@@ -25,31 +26,25 @@ from .model import (
     ArtistId,
     AxesContent,
     AxisName,
-    Bottom,
     Box,
     Canvas,
     ContentFacts,
     Count,
     Degrees,
-    Edge,
     FigureArtist,
     Fit,
     Gap,
-    Left,
     Line,
     Piece,
     Px,
     Reach,
-    Right,
     Share,
     Spacing,
     TextFacts,
     TextPlan,
     TickGroup,
     TickRow,
-    Top,
     Width,
-    lies_across,
     tokens,
 )
 
@@ -76,7 +71,7 @@ def _along_plot(piece: Piece, plot: Box | None, canvas: Canvas) -> Piece:
     if piece.outside is None or plot is None:
         return piece
     x0, x1, y0, y1 = piece.box.x0, piece.box.x1, piece.box.y0, piece.box.y1
-    if lies_across(piece.outside):
+    if piece.outside.across:
         x0 = x0 if x0 < 0.0 else max(x0, plot.x0)
         x1 = x1 if x1 > canvas.width else min(x1, plot.x1)
     else:

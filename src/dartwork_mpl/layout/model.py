@@ -12,9 +12,10 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Literal, NewType, TypeAlias, assert_never
+from typing import Literal, NewType, TypeAlias
 
 from ..axis import Which
+from ..edge import Edge
 from ..length import Length
 
 Px = NewType("Px", float)
@@ -61,50 +62,6 @@ class HSpace:
 
 
 Gap: TypeAlias = WSpace | HSpace
-
-
-@dataclass(frozen=True)
-class Left:
-    """The left edge of the canvas or of a plot."""
-
-
-@dataclass(frozen=True)
-class Right:
-    """The right edge of the canvas or of a plot."""
-
-
-@dataclass(frozen=True)
-class Bottom:
-    """The bottom edge of the canvas or of a plot."""
-
-
-@dataclass(frozen=True)
-class Top:
-    """The top edge of the canvas or of a plot."""
-
-
-Edge: TypeAlias = Left | Right | Bottom | Top
-#: Every edge, in the order :class:`Sides` lists them.
-ALL_EDGES: tuple[Edge, ...] = (Left(), Right(), Bottom(), Top())
-
-
-def lies_across(edge: Edge) -> bool:
-    """Top and bottom lie across the width; left and right along the height."""
-    match edge:
-        case Top() | Bottom():
-            return True
-        case Left() | Right():
-            return False
-        case _:
-            assert_never(edge)
-
-
-def edge_of(*, across: bool, far: bool) -> Edge:
-    """The edge across (top, bottom) or along the height, at the far end
-    (top, right) or the near one."""
-    if across:
-        return Top() if far else Bottom()
-    return Right() if far else Left()
 
 
 # -- what matplotlib writes, read once ----------------------------------------

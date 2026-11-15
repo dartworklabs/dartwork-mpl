@@ -1,9 +1,11 @@
 """Legend placement: inside where it covers no data, else outside a side.
 
 ``dm.place_legend(ax)`` places an Axes legend, ``dm.figure_legend(fig)`` one
-legend for every panel. ``settle``, ``outside_side`` and ``figure_reserve``
-are the hooks ``dm.simple_layout`` calls; :data:`Side` (:class:`Above`,
-:class:`Below`, :class:`Right`, :class:`Left`) is the side they name.
+legend for every panel. ``settle``, ``outside_edge`` and ``figure_reserve``
+are what ``dm.simple_layout`` is given (``compose.layout``): the first places
+legends at the fitted size, the others name the edge a legend sits outside
+of or holds. :data:`Side` (:class:`Above`, :class:`Below`, :class:`Right`,
+:class:`Left`) is the side a caller asks for.
 """
 
 from __future__ import annotations
@@ -11,7 +13,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Unpack
 
 from . import apply
-from .apply import figure_reserve, outside_side, settle
+from .apply import figure_reserve, outside_edge, settle
 from .model import AskedLoc, parse_columns
 from .sides import Above, Below, Left, Right, Side
 
@@ -30,7 +32,7 @@ __all__ = [
     "Side",
     "figure_legend",
     "figure_reserve",
-    "outside_side",
+    "outside_edge",
     "place_legend",
     "settle",
 ]

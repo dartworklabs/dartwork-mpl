@@ -69,6 +69,9 @@ PLATFORM = frozenset(
         # Colour values and their arithmetic: sRGB, OKLab, compositing,
         # WCAG contrast (color, labels and check compute with them).
         "dartwork_mpl.colorspace",
+        # A box's four edges and the figure edge a figure legend reserves
+        # (legend names them, layout keeps the margins clear of them).
+        "dartwork_mpl.edge",
         # The x/y axis and an axis label's side, as pure types (check,
         # labels, layout, ticks and geometry name them).
         "dartwork_mpl.axis",

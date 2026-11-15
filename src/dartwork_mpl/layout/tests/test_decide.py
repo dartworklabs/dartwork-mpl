@@ -6,6 +6,7 @@ import math
 
 import pytest
 
+from dartwork_mpl.edge import Bottom, Edge, Left, Right, Top
 from dartwork_mpl.layout import decide
 from dartwork_mpl.layout.edges import (
     balanced_lines,
@@ -18,17 +19,14 @@ from dartwork_mpl.layout.edges import (
 from dartwork_mpl.layout.model import (
     ArtistId,
     AxesContent,
-    Bottom,
     Box,
     Canvas,
     ContentFacts,
     Count,
     Degrees,
-    Edge,
     Edges,
     FigureArtist,
     Go,
-    Left,
     Line,
     Piece,
     PlotSize,
@@ -36,10 +34,8 @@ from dartwork_mpl.layout.model import (
     Reach,
     Refuse,
     Request,
-    Right,
     Sides,
     TickRow,
-    Top,
     parse_margins,
     tokens,
 )

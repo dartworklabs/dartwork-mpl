@@ -16,33 +16,28 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import assert_never
 
+from ..edge import EDGES, Bottom, Edge, Left, Right, Top
 from .model import (
-    ALL_EDGES,
     EDGE_EPSILON,
     MIN_PLOT_SHARE,
     Answer,
     ArtistId,
     AxesContent,
-    Bottom,
     Box,
     Canvas,
     ContentFacts,
-    Edge,
     Edges,
     FigureArtist,
     Fit,
     Go,
-    Left,
     PlotSize,
     Px,
     Refuse,
     Request,
-    Right,
     Sides,
     Step,
     TextFacts,
     TextPlan,
-    Top,
 )
 
 NO_GRID = (
@@ -134,7 +129,7 @@ def content_box(axes: AxesContent) -> Box | None:
 def reserved(facts: ContentFacts, fit: Fit) -> Sides:
     """The share of each edge figure-level artists keep, gap included."""
     width, height = facts.canvas.width, facts.canvas.height
-    res = dict.fromkeys(ALL_EDGES, 0.0)
+    res = dict.fromkeys(EDGES, 0.0)
     for art, edge in zip(facts.artists, fit.reserves, strict=True):
         b = art.box
         gx, gy = art.gap / width, art.gap / height

@@ -25,6 +25,7 @@ from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.transforms import Bbox, ScaledTranslation
 
+from ..edge import Edge, Reserve, edge_of
 from ..edgecase import settle as settle_edges
 from ..geometry import (
     BBOX_ERRORS,
@@ -50,7 +51,6 @@ from .model import (
     Outside,
     Passed,
     Request,
-    Reserve,
     parse_keywords,
     parse_loc,
 )
@@ -486,6 +486,13 @@ def outside_side(legend: Legend | None) -> Side | None:
     return None if record is None else record.outside
 
 
+def outside_edge(legend: Legend) -> Edge | None:
+    """The edge of its Axes the library anchored ``legend`` outside of, or
+    ``None``: what the layout keeps the margins clear of."""
+    side = outside_side(legend)
+    return None if side is None else edge_of(across=side.across, far=side.far)
+
+
 def figure_reserve(artist: Artist) -> Reserve | None:
     """The edge a ``figure_legend`` legend holds and its gap, else ``None``."""
     return _RESERVES.get(artist) if isinstance(artist, Legend) else None
@@ -578,7 +585,9 @@ def _placed_figure_legend(
     )
     # simple_layout keeps this gap between the legend and the panels.
     gap = float(legend.borderaxespad) * float(legend.prop.get_size_in_points())
-    _RESERVES[legend] = Reserve(plan.side, gap)
+    _RESERVES[legend] = Reserve(
+        edge_of(across=plan.side.across, far=plan.side.far), gap
+    )
     return legend
 
 

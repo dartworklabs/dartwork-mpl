@@ -19,6 +19,7 @@ from matplotlib.gridspec import (
 from matplotlib.text import Text
 
 from ..axis import X, Y
+from ..edge import Bottom, Edge, Left, Top
 from ..edgecase import settle
 from ..geometry import (
     BBOX_ERRORS,
@@ -29,7 +30,7 @@ from ..geometry import (
     same_position_axes,
 )
 from ..labels import note_gap_pt
-from ..legend import figure_reserve, outside_side
+from ..legend import figure_reserve, outside_edge
 from . import decide
 from .edges import FIT_EDGES
 from .model import (
@@ -37,17 +38,14 @@ from .model import (
     ArtistId,
     AxesContent,
     AxisName,
-    Bottom,
     Box,
     Canvas,
     ContentFacts,
     Count,
-    Edge,
     Edges,
     FigureArtist,
     Gap,
     HSpace,
-    Left,
     Line,
     Piece,
     PlotSize,
@@ -59,12 +57,10 @@ from .model import (
     TextFacts,
     TickGroup,
     TickRow,
-    Top,
     Width,
     WSpace,
     authored,
     centred,
-    edge_of,
 )
 
 if TYPE_CHECKING:
@@ -75,13 +71,7 @@ if TYPE_CHECKING:
     from matplotlib.font_manager import FontProperties
     from matplotlib.transforms import Bbox
 
-    from ..legend import Side
     from .apply import Record
-
-
-def _edge(side: Side) -> Edge:
-    """The plot or canvas edge a legend side names."""
-    return edge_of(across=side.across, far=side.far)
 
 
 def root_grid(
@@ -239,9 +229,7 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
         with contextlib.suppress(*BBOX_ERRORS):
             ext = legend.get_window_extent(renderer)
             if ext.width > 0 and ext.height > 0:
-                side = outside_side(legend)
-                outside = None if side is None else _edge(side)
-                pieces.append(Piece(_box(ext), outside))
+                pieces.append(Piece(_box(ext), outside_edge(legend)))
     return AxesContent(plot, position, tuple(pieces))
 
 
@@ -272,7 +260,7 @@ def _figure_artist(
     )
     reserve = figure_reserve(art)
     if reserve is not None:
-        side, gap_pt = _edge(reserve.side), reserve.gap_pt
+        side, gap_pt = reserve.edge, reserve.gap_pt
     else:
         side, gap_pt = None, note_gap_pt(art) or 0.0
     return FigureArtist(
