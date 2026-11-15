@@ -14,7 +14,7 @@ from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
-from typing import cast
+from typing import TypeGuard
 
 #: Slides over a journal column (23.4 cm / 9 cm): the presentation presets
 #: are the scientific ones with every point size times this.
@@ -77,6 +77,10 @@ def _closest(name: str, known: Collection[str]) -> str | None:
     return match[0] if match else None
 
 
+def _listed(value: object) -> TypeGuard[list[object]]:
+    return isinstance(value, list)
+
+
 @dataclass(frozen=True)
 class Registry:
     """The shipped presets by name."""
@@ -99,9 +103,8 @@ class Registry:
         ``TypeError`` for a name that is not a string; ``KeyError`` naming the
         presets, with a did-you-mean, for an unknown one.
         """
-        items = cast("list[object]", request)
         names: list[str] = []
-        for name in items if isinstance(request, list) else [request]:
+        for name in request if _listed(request) else [request]:
             if not isinstance(name, str):
                 raise TypeError(
                     f"preset name must be str, got {type(name).__name__}"

@@ -8,7 +8,7 @@ from pathlib import Path
 import matplotlib as mpl
 from matplotlib import font_manager
 
-from .model import Expected, Face, Table, Weight
+from .model import Expected, Face, Table, Weight, math_sets
 
 SUFFIXES = (".ttf", ".otf")
 # File-name prefix of the fonts matplotlib ships for each mathtext font set.
@@ -62,14 +62,10 @@ def math_families() -> frozenset[str]:
     (Computer Modern included) fall back to STIX; every set takes its
     extensible symbols from ``cmex10``.
     """
-    fontset = mpl.rcParams["mathtext.fontset"]
-    sets = (
-        {mpl.rcParams["mathtext.fallback"]}
-        if fontset == "custom"
-        else {fontset, "stix"}
+    sets = math_sets(
+        str(mpl.rcParams["mathtext.fontset"]),
+        str(mpl.rcParams["mathtext.fallback"]),
     )
-    if "cm" in sets:
-        sets.add("stix")
     prefixes = ("cmex10", *(MATH_PREFIX[s] for s in sets if s in MATH_PREFIX))
     data = Path(mpl.get_data_path()).resolve()
     return frozenset(

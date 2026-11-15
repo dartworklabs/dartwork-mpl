@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 from importlib.resources import files
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypeGuard
 
 import matplotlib as mpl
 from matplotlib import RcParams
@@ -68,6 +68,18 @@ def edits(values: Mapping[str, object]) -> dict[str, object]:
     return found
 
 
+def known(key: str) -> TypeGuard[RcKeyType]:
+    """``key`` names an rcParam matplotlib has."""
+    return key in mpl.rcParamsDefault
+
+
+def rc_key(key: str) -> RcKeyType:
+    """``key`` as an rcParam name; ``KeyError`` for one matplotlib lacks."""
+    if known(key):
+        return key
+    raise KeyError(f"{key!r} is not a matplotlib rcParam")
+
+
 def in_force(values: Mapping[str, object]) -> bool:
     """Whether the live rcParams still hold a preset that wrote ``values``.
 
@@ -76,17 +88,13 @@ def in_force(values: Mapping[str, object]) -> bool:
     (``plt.rcdefaults()``, ``plt.style.use("default")``).
     """
     defaults = mpl.rcParamsDefault
-    changed = [
-        key
-        for key, value in values.items()
-        if key in defaults and differs(value, defaults[cast("RcKeyType", key)])
-    ]
+    changed: list[RcKeyType] = []
+    for key, value in values.items():
+        if known(key) and differs(value, defaults[key]):
+            changed.append(key)
     if not changed:
         return bool(values)
-    return not all(
-        differs(mpl.rcParams[cast("RcKeyType", key)], values[key])
-        for key in changed
-    )
+    return not all(differs(mpl.rcParams[key], values[key]) for key in changed)
 
 
 def font_size() -> Points:

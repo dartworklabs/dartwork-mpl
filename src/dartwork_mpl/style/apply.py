@@ -7,7 +7,6 @@ import threading
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, cast
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -17,9 +16,6 @@ from ..color import apply_semantic
 from ..font import ensure_loaded
 from . import decide, measure
 from .model import Chain, Locale, Preset, override_key
-
-if TYPE_CHECKING:
-    from matplotlib.typing import RcKeyType
 
 
 @dataclass(frozen=True)
@@ -65,9 +61,9 @@ def write(chain: Chain, overrides: RcParams) -> None:
         declared.update(measure.load_style_dict(layer))
     for key, value in edits.items():
         if key not in declared:
-            plt.rcParams[cast("RcKeyType", key)] = value
+            plt.rcParams[measure.rc_key(key)] = value
     values = {
-        key: copy.deepcopy(plt.rcParams[cast("RcKeyType", key)])
+        key: copy.deepcopy(plt.rcParams[measure.rc_key(key)])
         for key in declared
         if key not in overrides
     }
