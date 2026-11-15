@@ -19,12 +19,12 @@
  "R1_module_lines": {
   "src/dartwork_mpl/labels/bars.py": 516,
   "src/dartwork_mpl/labels/model.py": 1140,
-  "src/dartwork_mpl/layout/measure.py": 593,
+  "src/dartwork_mpl/layout/measure.py": 592,
   "src/dartwork_mpl/layout/model.py": 544,
   "src/dartwork_mpl/legend/apply.py": 590,
   "src/dartwork_mpl/legend/measure.py": 532,
   "src/dartwork_mpl/legend/model.py": 539,
-  "src/dartwork_mpl/ticks/measure.py": 597,
+  "src/dartwork_mpl/ticks/measure.py": 591,
   "src/dartwork_mpl/ticks/model.py": 643
  },
  "R2_slice_lines": {},
@@ -37,7 +37,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 56
+  "modules": 58
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81

@@ -17,6 +17,7 @@ from matplotlib.container import BarContainer
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox, IdentityTransform
 
+from ..axis import Far, Near, X, Y, bars_along
 from ..color import (
     composite_layers,
     composite_over,
@@ -26,14 +27,9 @@ from ..color import (
 from ..geometry import (
     BBOX_ERRORS,
     Curved,
-    Far,
-    Near,
     Rectilinear,
     ThreeD,
-    X,
-    Y,
     axes_titles,
-    bars_along,
     get_renderer,
     label_side,
     projection,

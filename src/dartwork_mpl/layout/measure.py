@@ -18,11 +18,10 @@ from matplotlib.gridspec import (
 )
 from matplotlib.text import Text
 
+from ..axis import X, Y
 from ..edgecase import settle
 from ..geometry import (
     BBOX_ERRORS,
-    X,
-    Y,
     axes_titles,
     drawn_tick_labels,
     iter_figure_level_extents,

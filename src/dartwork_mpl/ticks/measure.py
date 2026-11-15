@@ -22,20 +22,14 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 from matplotlib.transforms import IdentityTransform, Transform
 
+from ..axis import Far, Near, Which, X, Y, bars_along, parse_which
 from ..geometry import (
     Curved,
-    Far,
-    Near,
     Rectilinear,
     ThreeD,
-    Which,
-    X,
-    Y,
     axes_titles,
     axis_of,
-    bars_along,
     label_side,
-    parse_which,
     projection,
     same_position_axes,
     shared_axes,

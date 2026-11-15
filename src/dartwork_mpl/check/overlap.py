@@ -14,7 +14,8 @@ import numpy as np
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
-from ..geometry import BBOX_ERRORS, Which, drawn_tick_labels
+from ..axis import Which
+from ..geometry import BBOX_ERRORS, drawn_tick_labels
 from .model import AXES
 
 if TYPE_CHECKING:

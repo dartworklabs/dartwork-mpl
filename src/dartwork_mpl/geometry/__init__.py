@@ -4,7 +4,7 @@ Platform code: it knows matplotlib's renderer and artist extents and nothing
 about any capability, and it imports no slice. A calculation one slice alone
 uses lives in that slice.
 
-- :mod:`.model`: matplotlib's names (axes, titles, projections) as types;
+- :mod:`.model`: matplotlib's names for titles and projections as types;
 - :mod:`.renderer`: a measurement renderer and the errors measuring raises;
 - :mod:`.figure`: what a (Sub)Figure holds and its figure-level artists;
 - :mod:`.axes`: an Axes' titles and drawn tick labels, its twins and shares;
@@ -49,50 +49,30 @@ from .ink import (
     within_clip_path,
 )
 from .model import (
-    AxisSide,
     CentreTitle,
     Curved,
-    Far,
     LeftTitle,
-    Letter,
-    Letters,
-    Near,
     Projection,
     Rectilinear,
     RightTitle,
     ThreeD,
     TitleLoc,
-    Which,
-    X,
-    Y,
-    bars_along,
-    parse_axes,
-    parse_which,
 )
 from .renderer import BBOX_ERRORS, canvas_renderer, get_renderer
 
 __all__ = [
     "BBOX_ERRORS",
     "UNCLIPPED",
-    "AxisSide",
     "CentreTitle",
     "Curved",
-    "Far",
     "LeftTitle",
-    "Letter",
-    "Letters",
-    "Near",
     "Projection",
     "Rectilinear",
     "RightTitle",
     "ThreeD",
     "TitleLoc",
-    "Which",
-    "X",
-    "Y",
     "axes_titles",
     "axis_of",
-    "bars_along",
     "canvas_renderer",
     "clip_path_px",
     "clip_region",
@@ -116,8 +96,6 @@ __all__ = [
     "line_draws_stroke",
     "marker_radius_pt",
     "panel_letters",
-    "parse_axes",
-    "parse_which",
     "patch_inks",
     "projection",
     "record_panel_letters",

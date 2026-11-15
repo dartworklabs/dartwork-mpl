@@ -20,9 +20,9 @@ from matplotlib.text import Text as MplText
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
 from matplotlib.transforms import Bbox
 
+from ..axis import Which
 from ..geometry import (
     BBOX_ERRORS,
-    Which,
     axes_titles,
     drawn_in_tree,
     drawn_tick_labels,

@@ -6,6 +6,7 @@ from dataclasses import replace
 
 import pytest
 
+from dartwork_mpl.axis import X
 from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
@@ -22,7 +23,6 @@ from dartwork_mpl.check.model import (
 )
 from dartwork_mpl.check.roles import AxisLabel, FreeText, Role, TickLabel, Title
 from dartwork_mpl.edgecase import settle
-from dartwork_mpl.geometry import X
 
 CANVAS = Box(0, 0, 1000, 600)
 PT = 300 / 72

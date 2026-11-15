@@ -10,8 +10,8 @@ from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
+from ..axis import Which
 from ..geometry import (
-    Which,
     axes_titles,
     draws_axis,
     holders_shown,

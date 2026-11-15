@@ -8,8 +8,8 @@ import matplotlib as mpl
 import numpy as np
 from matplotlib.text import Text
 
+from ..axis import AxisSide, Which, X, Y, parse_axis_side
 from .model import (
-    AxisSide,
     CentreTitle,
     Curved,
     LeftTitle,
@@ -18,10 +18,6 @@ from .model import (
     RightTitle,
     ThreeD,
     TitleLoc,
-    Which,
-    X,
-    Y,
-    parse_axis_side,
     parse_projection,
 )
 from .renderer import opens_group

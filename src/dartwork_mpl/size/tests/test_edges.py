@@ -12,8 +12,9 @@ import matplotlib.pyplot as plt
 import pytest
 
 import dartwork_mpl as dm
+from dartwork_mpl.axis import X
 from dartwork_mpl.edgecase import settle
-from dartwork_mpl.geometry import X, drawn_tick_labels, get_renderer
+from dartwork_mpl.geometry import drawn_tick_labels, get_renderer
 from dartwork_mpl.size import decide
 from dartwork_mpl.size.canvas import (
     CanvasFacts,

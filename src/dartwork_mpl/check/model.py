@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import pairwise
 
-from ..geometry import Which, X, Y
+from ..axis import Which, X, Y
 from .roles import Role
 
 #: Contact up to this (points) is a touch, not a cover.
