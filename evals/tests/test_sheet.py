@@ -16,9 +16,9 @@ PNG = bytes.fromhex(
 def fake_run(tmp_path: Path) -> Path:
     run = tmp_path / "20260101-000000"
     for case, arm, verdict in [
-        ("bar", "mcp", "OK"),
+        ("bar", "bare", "OK"),
         ("bar", "skill", "DEFECT"),
-        ("line", "mcp", "NO_FIGURE"),
+        ("line", "bare", "NO_FIGURE"),
     ]:
         out = run / case / arm
         out.mkdir(parents=True)
@@ -30,7 +30,7 @@ def fake_run(tmp_path: Path) -> Path:
             if verdict == "DEFECT"
             else [],
             "prompt": f"draw {case}",
-            "tools": ["mcp__dartwork-mpl__render", "mcp__dartwork-mpl__render"],
+            "tools": ["Bash", "Bash"],
             "seconds": 10,
             "turns": 4,
             "cost_usd": 0.25,
@@ -46,19 +46,17 @@ def fake_run(tmp_path: Path) -> Path:
         if record["image"]:
             (out / "figure.png").write_bytes(PNG)
     (run / "run.json").write_text(
-        json.dumps({"cases": ["bar", "line"], "arms": ["bare", "skill", "mcp"]})
+        json.dumps({"cases": ["bar", "line"], "arms": ["bare", "skill"]})
     )
     return run
 
 
 def test_summary_marks_missing_runs_notrun(tmp_path: Path):
     run = fake_run(tmp_path)
-    data = sheet.summary(
-        sheet.load(run), ["bar", "line"], ["bare", "skill", "mcp"]
-    )
+    data = sheet.summary(sheet.load(run), ["bar", "line"], ["bare", "skill"])
     assert data["verdicts"] == {
-        "bar": {"bare": "NOTRUN", "skill": "DEFECT", "mcp": "OK"},
-        "line": {"bare": "NOTRUN", "skill": "NOTRUN", "mcp": "NO_FIGURE"},
+        "bar": {"bare": "OK", "skill": "DEFECT"},
+        "line": {"bare": "NO_FIGURE", "skill": "NOTRUN"},
     }
     assert data["cost_usd"] == 0.75
 
@@ -70,9 +68,9 @@ def test_report_writes_a_self_contained_page(tmp_path: Path):
     page = (run / "index.html").read_text()
     assert page.count("data:image/png;base64,") == 2
     assert "&lt;b&gt;x&lt;/b&gt;" in page  # findings are escaped
-    assert "render x2" in page
+    assert "Bash x2" in page
     assert 'href="bar/skill/source.py"' in page
     assert (
-        json.loads((run / "summary.json").read_text())["totals"]["mcp"]["OK"]
+        json.loads((run / "summary.json").read_text())["totals"]["bare"]["OK"]
         == 1
     )

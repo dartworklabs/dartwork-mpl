@@ -6,8 +6,8 @@ mirrored in [`AGENTS.md`](AGENTS.md).
 
 ## The one criterion
 
-A user turns on the skill and the MCP server, says "draw this", and a
-beautiful chart comes out. Code, tools, docs and tests exist only as far as
+A user turns on the skill, says "draw this", and a beautiful chart comes
+out. Code, tools, docs and tests exist only as far as
 they serve that. What does not is removed.
 
 ## Read the Handbook first
@@ -21,10 +21,10 @@ Handbook topic in the same PR.
 ## What is here
 
 A thin layer on top of matplotlib: `Figure` and `Axes` stay native. The
-package is twelve small slices under `src/dartwork_mpl/`:
+package is eleven small slices under `src/dartwork_mpl/`:
 
 `style` `size` `color` `font` `layout` `ticks` `labels` `legend` `check`
-`save` `guide` `mcp`
+`save` `guide`
 
 Each slice keeps the same files: `model.py` (domain types), `decide.py` (pure
 decisions, domain types only), `edges.py` (named edge cases appended to
@@ -43,16 +43,7 @@ first. `python -m dartwork_mpl.guide install` links the skill into a project.
 
 The anti-pattern catalog is
 [`src/dartwork_mpl/guide/assets/anti-patterns.yaml`](src/dartwork_mpl/guide/assets/anti-patterns.yaml);
-`dm.lint_code(code)` or the MCP tool `lint` runs it.
-
-## MCP server
-
-`dartwork-mpl-mcp` (stdio only) exposes five tools and nothing else:
-`guide`, `search_reference`, `get_reference`, `lint`, `render`. `render`
-runs caller code once in a child process and writes a bundle (`figure.png`,
-`figure.pdf`, `source.py`, `report.json`, `manifest.json`). It is not a
-sandbox. Storage and sharing belong to the separate hub repository, not to
-this library.
+`dm.lint_code(code)` runs it.
 
 ## What is held
 

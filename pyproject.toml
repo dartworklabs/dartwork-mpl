@@ -52,41 +52,6 @@ Repository = "https://github.com/dartworklabs/dartwork-mpl"
 Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
 Changelog = "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md"
 
-[project.scripts]
-dartwork-mpl-mcp = "dartwork_mpl.mcp:main"
-
-[project.optional-dependencies]
-mcp = [
-    # Cap below 4 — 3.x is the latest tested major; 4.x has not been
-    # vetted and may rename/remove the introspection APIs we use.
-    # GHSA-7xgj-8392-5q4r affects 3.0–3.4.9. PEP 440 has no OR, so
-    # exclude those prefixes (including post releases) while retaining 2.x.
-    # 2.13.3 pins MCP SDK <1.23, conflicting with the patched SDK >=1.30;
-    # 2.14.7 admits it. 2.13.3 remains legacy source/API test coverage only.
-    # 3.x pins fastmcp-slim to the same version; never add slim directly:
-    # installing it alongside 2.x would overlap the fastmcp namespace.
-    "fastmcp>=2.14.7,<4,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.0.*,!=3.4.1.*,!=3.4.2.*,!=3.4.3.*,!=3.4.4.*,!=3.4.5.*,!=3.4.6.*,!=3.4.7.*,!=3.4.8.*,!=3.4.9.*",
-    # These are transitive security minima, declared in wheel extras because
-    # uv.lock is not consulted by pip installing a published wheel (ADR 0007).
-    "anyio>=4.14.2",
-    "authlib>=1.9.1",
-    "cryptography>=50.0.0",
-    "dnspython>=2.9.0",
-    "joserfc>=1.7.6",
-    "mcp>=1.30.0,<2",
-    "opentelemetry-api>=1.45.1",
-    "pydantic-settings>=2.14.2",
-    # Exact 2.15.1 wheel controls pass; GHSA-gvp8-978c-rx2q still omits
-    # a patched-version field upstream. Do not infer general remediation.
-    "pyjwt>=2.15.1",
-    "starlette>=1.3.1",
-    # jsonschema-path -> requests also reaches urllib3 in MCP installations.
-    "urllib3>=2.8.0",
-    "httpx>=0.27.0",
-    # HTTPX Raw GitHub fetches need a bundle without compromised emSign roots.
-    "certifi>=2026.10.19",
-]
-
 [build-system]
 # Pin below the next major so a future hatchling 2.x can't silently
 # change sdist/wheel file-selection (force-include, only-include)
@@ -123,9 +88,6 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 [dependency-groups]
 # `uv sync` installs this group: everything ruff, basedpyright and pytest need.
 dev = [
-    # The MCP extra, so its code is type-checked and tested in the
-    # default environment.
-    "dartwork-mpl[mcp]",
     "basedpyright>=1.40",
     # Tests only: date-axis and canvas-label tests take pandas inputs.
     "pandas>=2.2.3",
@@ -169,7 +131,7 @@ force-exclude = true
 [tool.ruff.format]
 # Ruff 0.16+ formats the Python code blocks of Markdown files by default.
 # Adopting that is a separate decision: it would rewrite the shipped prompt
-# guidance and the MCP resource bytes together.
+# guidance.
 exclude = ["*.md"]
 quote-style = "double"
 indent-style = "space"

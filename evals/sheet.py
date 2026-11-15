@@ -98,8 +98,7 @@ def _cell(run: Path, rec: dict[str, Any] | None) -> str:
     info_html = "".join(f"<li>{i}</li>" for i in info)
     tools: dict[str, int] = {}
     for t in rec.get("tools") or []:
-        name = t.removeprefix("mcp__dartwork-mpl__")
-        tools[name] = tools.get(name, 0) + 1
+        tools[t] = tools.get(t, 0) + 1
     calls = ", ".join(f"{k} x{v}" for k, v in tools.items()) or "none"
     links = [f'<a href="{base}/stream.jsonl">transcript</a>']
     if rec.get("source"):

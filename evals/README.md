@@ -1,29 +1,28 @@
 # Agent evals
 
-The repository's one criterion: a user turns on the skill and the MCP server,
-says "draw this", and a beautiful chart comes out. This folder measures it by
+The repository's one criterion: a user turns on the skill, says "draw this",
+and a beautiful chart comes out. This folder measures it by
 putting a real agent (`claude -p`) in exactly that situation.
 
 ```bash
-uv run python -m evals run                       # every case, arms bare,skill,mcp
-uv run python -m evals run --cases grouped_bar --arms mcp --model claude-sonnet-5-5 --jobs 3
+uv run python -m evals run                       # every case, arms bare,skill
+uv run python -m evals run --cases grouped_bar --arms skill --model claude-sonnet-5-5 --jobs 3
 uv run python -m evals report evals/runs/<stamp> # rebuild index.html + summary.json
 uv run python -m evals rejudge evals/runs/<stamp> # judge recorded runs again, no claude call
 ```
 
 Everything a run writes goes to `evals/runs/<stamp>/` (git-ignored): per case
 and arm the transcript (`stream.jsonl`), the final `figure.png`, `source.py`,
-the `render` bundle (mcp arm), the agent's project files and `result.json`;
+the agent's project files and `result.json`;
 `summary.json` and the contact sheet `index.html` at the top. Open
 `index.html`: beauty is decided by looking at it.
 
 ## Arms
 
-| arm | skill | MCP server | built-in tools |
-|---|---|---|---|
-| `mcp` | yes | `dartwork-mpl-mcp` from this checkout | Read, Skill |
-| `skill` | yes | none | Bash, Read, Write, Edit, Skill |
-| `bare` | no | none | Bash, Read, Write, Edit (control: plain matplotlib) |
+| arm | skill | built-in tools |
+|---|---|---|
+| `skill` | yes | Bash, Read, Write, Edit, Skill |
+| `bare` | no | Bash, Read, Write, Edit (control: plain matplotlib) |
 
 ## Isolation
 
@@ -33,7 +32,7 @@ installed by `python -m dartwork_mpl.guide install`, which links
 environment, `--setting-sources project`, `--strict-mcp-config`,
 `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1`, the two remaining built-in skills set
 to `off` and the built-in plugins disabled. The run's init event must list
-exactly the arm's tools, our server (or none) and our skill (or none), and no
+exactly the arm's tools and our skill (or none), and no MCP servers or
 plugins; anything else makes the run `INVALID`.
 
 `--bare` is not used: it removes the Skill tool, so the model never sees a
@@ -63,8 +62,8 @@ and `[expect]`. Add a case by adding a file.
 
 ## Cost
 
-One full matrix (11 cases x 3 arms, Sonnet 5.5, `--jobs 3`) took about 3
-minutes and reported $1.08 on 2026-11-15; it spends real Claude usage (the
+A run costs about $0.03 (Sonnet 5.5: 33 runs at `--jobs 3` took about 3
+minutes and reported $1.08 on 2026-11-15); it spends real Claude usage (the
 summary prints the cost the stream reports). Run single cases while
 iterating, and `rejudge` after changing the judge instead of re-running.
 

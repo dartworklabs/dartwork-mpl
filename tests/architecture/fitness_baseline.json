@@ -12,13 +12,11 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 55
+  "modules": 48
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81
  },
- "R8_entry_function_lines": {
-  "src/dartwork_mpl/mcp/server.py::render": 33
- },
+ "R8_entry_function_lines": {},
  "R8_missing_all": []
 }

@@ -4,14 +4,13 @@ A thin layer on top of matplotlib for publication-quality figures. `Figure`
 and `Axes` stay native: you keep writing matplotlib, and dartwork-mpl adds a
 style preset, physical sizes, deterministic margins and a figure checker.
 
-It is built for one thing: turn on the bundled skill and the MCP server in
-your coding agent, say "draw this", and get a beautiful chart.
+It is built for one thing: turn on the bundled skill in your coding agent,
+say "draw this", and get a beautiful chart.
 
 ## Install
 
 ```bash
-pip install dartwork-mpl            # the library
-pip install "dartwork-mpl[mcp]"     # plus the MCP server
+pip install dartwork-mpl
 ```
 
 Python 3.11 or later, matplotlib 3.11.2 or later.
@@ -43,19 +42,15 @@ figure survives a change of preset.
 python -m dartwork_mpl.guide install    # link the skill into your project
 ```
 
-The skill is the single source of the plotting rules. The MCP server
-(`dartwork-mpl-mcp`, stdio) exposes five tools:
+The skill is the single source of the plotting rules. The agent draws with
+its own shell (`python plot.py`) and reaches the rest from Python:
 
-| Tool | Does |
+| Call | Does |
 |---|---|
-| `guide` | the skill, or one reference page |
-| `search_reference` | find templates, presets, colours, lint rules |
-| `get_reference` | a template's source, a preset's or colour's values |
-| `lint` | anti-pattern lint; runs nothing |
-| `render` | run the code once, return the image, source, check report and manifest |
-
-`render` executes the code it is given with your user's rights. It is not a
-sandbox.
+| `dm.check(fig)` | defects in a drawn figure; changes nothing |
+| `dm.lint_code(code)` | anti-pattern lint; runs nothing |
+| `dm.guide.search(query)` | rank the guide pages and templates for a request |
+| `dm.guide.read(id)` | one guide page or template by id |
 
 ## Developing
 

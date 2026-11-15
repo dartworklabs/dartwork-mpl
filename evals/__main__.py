@@ -1,4 +1,4 @@
-"""``python -m evals run [--cases a,b] [--arms mcp,skill,bare] [--model M] [--jobs N]`` / ``report DIR``."""
+"""``python -m evals run [--cases a,b] [--arms skill,bare] [--model M] [--jobs N]`` / ``report DIR``."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument(
         "--cases", help="comma-separated case names (default: all)"
     )
-    run.add_argument("--arms", default="bare,skill,mcp")
+    run.add_argument("--arms", default="bare,skill")
     run.add_argument("--model", default=harness.DEFAULT_MODEL)
     run.add_argument("--jobs", type=int, default=3)
     for name, help_text in [

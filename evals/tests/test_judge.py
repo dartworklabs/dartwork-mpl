@@ -6,23 +6,23 @@ import json
 
 from evals import judge
 
-MCP = judge.ARM_SPECS["mcp"]
+SKILL = judge.ARM_SPECS["skill"]
 
 
 def init(**over: object) -> dict[str, object]:
     event: dict[str, object] = {
         "type": "system",
         "subtype": "init",
-        "tools": ["Read", "Skill", *judge.MCP_TOOLS],
-        "mcp_servers": [{"name": "dartwork-mpl", "status": "connected"}],
+        "tools": list(SKILL.tools),
+        "mcp_servers": [],
         "skills": ["dartwork-mpl"],
         "plugins": [],
     }
     return event | over
 
 
-def test_isolated_mcp_session_has_no_problems():
-    assert judge.isolation_problems(init(), MCP) == []
+def test_isolated_skill_session_has_no_problems():
+    assert judge.isolation_problems(init(), SKILL) == []
 
 
 def test_extra_skill_plugin_or_server_breaks_isolation():
@@ -30,75 +30,43 @@ def test_extra_skill_plugin_or_server_breaks_isolation():
         init(
             skills=["dartwork-mpl", "dataviz"],
             plugins=[{"name": "superpowers"}],
-            mcp_servers=[
-                {"name": "dartwork-mpl", "status": "connected"},
-                {"name": "github", "status": "connected"},
-            ],
+            mcp_servers=[{"name": "github", "status": "connected"}],
         ),
-        MCP,
+        SKILL,
     )
     assert len(problems) == 3
 
 
-def test_failed_server_and_missing_tool_break_isolation():
+def test_missing_tool_breaks_isolation():
     problems = judge.isolation_problems(
-        init(
-            mcp_servers=[{"name": "dartwork-mpl", "status": "failed"}],
-            tools=["Read", "Skill", "Bash"],
-        ),
-        MCP,
+        init(tools=["Bash", "Read", "Write", "Edit"]), SKILL
     )
-    assert any("mcp_servers" in p for p in problems)
-    assert any("extra ['Bash']" in p for p in problems)
+    assert problems == ["tools differ: extra [], missing ['Skill']"]
 
 
 def test_bare_arm_expects_no_skill():
     bare = judge.ARM_SPECS["bare"]
-    event = init(
-        tools=list(bare.tools), mcp_servers=[], skills=["dartwork-mpl"]
-    )
+    event = init(tools=list(bare.tools))
     assert judge.isolation_problems(event, bare) == [
         "skills ['dartwork-mpl'], expected []"
     ]
 
 
-def test_parse_stream_finds_the_last_rendered_figure():
-    payload = {"out_dir": "/tmp/b", "report": {"status": "rendered"}}
-    failed = {"out_dir": "/tmp/a", "report": {"status": "error"}}
+def test_parse_stream_collects_calls_results_and_the_result():
+    use = {"type": "tool_use", "id": "1", "name": "Bash", "input": {}}
+    done = {"type": "tool_result", "tool_use_id": "1", "content": "ok"}
     lines = [
         json.dumps(init()),
         "not json",
-        *(
-            json.dumps(e)
-            for e in [
-                tool_use("1", "print(1)"),
-                tool_result("1", failed),
-                tool_use("2", "fig = 1"),
-                tool_result("2", payload),
-                {"type": "result", "num_turns": 3, "total_cost_usd": 0.1},
-            ]
-        ),
+        json.dumps({"type": "assistant", "message": {"content": [use]}}),
+        json.dumps({"type": "user", "message": {"content": [done]}}),
+        json.dumps({"type": "result", "num_turns": 3}),
     ]
     trace = judge.parse_stream(lines)
-    assert trace.tool_names == [judge.RENDER, judge.RENDER]
-    assert trace.result is not None
-    assert judge.last_rendered(trace) == ("fig = 1", payload)
-
-
-def tool_use(i: str, code: str) -> dict[str, object]:
-    block = {
-        "type": "tool_use",
-        "id": i,
-        "name": judge.RENDER,
-        "input": {"code": code},
-    }
-    return {"type": "assistant", "message": {"content": [block]}}
-
-
-def tool_result(i: str, payload: dict[str, object]) -> dict[str, object]:
-    content = [{"type": "image"}, {"type": "text", "text": json.dumps(payload)}]
-    block = {"type": "tool_result", "tool_use_id": i, "content": content}
-    return {"type": "user", "message": {"content": [block]}}
+    assert trace.init is not None
+    assert trace.tool_names == ["Bash"]
+    assert trace.results["1"] == done
+    assert trace.result == {"type": "result", "num_turns": 3}
 
 
 FIGURE = {

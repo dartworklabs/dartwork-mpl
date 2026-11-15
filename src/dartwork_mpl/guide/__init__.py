@@ -1,8 +1,7 @@
 """Everything an agent reads or runs to draw a good chart on the first try.
 
 The bundled skill (``SKILL.md`` and its references), the plot templates and
-the anti-pattern lint, read through one small API that the MCP server serves
-unchanged:
+the anti-pattern lint, read through one small API:
 
 - :func:`references` lists every guide page and template with an id, a title
   and a summary; :func:`search` ranks them for a free-text query;

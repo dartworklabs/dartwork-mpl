@@ -167,24 +167,6 @@
                     "lineCount": 1
                 }
             }
-        ],
-        "./src/dartwork_mpl/mcp/library.py": [
-            {
-                "code": "reportCallIssue",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 48,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportArgumentType",
-                "range": {
-                    "startColumn": 26,
-                    "endColumn": 47,
-                    "lineCount": 1
-                }
-            }
         ]
     }
 }

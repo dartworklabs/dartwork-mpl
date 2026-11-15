@@ -28,7 +28,6 @@ orphan: true
 | `src/dartwork_mpl/edgecase/` | 엣지 케이스 등록 장치 | architecture |
 | `src/dartwork_mpl/geometry/` | 두 slice 이상이 쓰는 측정 코드(platform) | architecture |
 | `src/dartwork_mpl/guide/assets/` | skill, 템플릿, 안티패턴 목록. 에이전트가 읽는 전부 | purpose, verification(지침 게이트) |
-| `src/dartwork_mpl/mcp/` | MCP 도구 다섯 개와 산출물 형식 | architecture |
 | `src/dartwork_mpl/color/assets/`, `tests/test_shipped_colors_hash.py` | 출하 색 값과 그 고정점 | architecture(미감 불변식), verification |
 | `tests/visual/` | 픽셀 장면과 기준 이미지 | verification |
 | `tests/architecture/` | 경계, 도메인 파일 규칙, fitness | architecture, verification |

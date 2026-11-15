@@ -4,23 +4,19 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased] — 0.8.0
 
-The package was rebuilt around one criterion: turn on the skill and the MCP
-server, say "draw this", get a beautiful chart. Colour values and the rendered
-look are unchanged; almost everything else is smaller. No compatibility layer
-is kept: removed names simply no longer exist.
+The package was rebuilt around one criterion: turn on the skill, say "draw
+this", get a beautiful chart. Colour values and the rendered look are
+unchanged; almost everything else is smaller. No compatibility layer is kept:
+removed names simply no longer exist.
 
 ### Changed
 
-- The package is twelve slices: `style`, `size`, `color`, `font`, `layout`,
-  `ticks`, `labels`, `legend`, `check`, `save`, `guide`, `mcp`.
+- The package is eleven slices: `style`, `size`, `color`, `font`, `layout`,
+  `ticks`, `labels`, `legend`, `check`, `save`, `guide`.
 - `dm.simple_layout` keeps 1 mm between the content and the canvas edge by
   default (was 0). Pass `margin=0` for the old flush layout.
 - `dm.check(fig)` replaces `dm.validate_figure` and `dm.review`. It returns
   typed findings and never changes the figure. Saving no longer validates.
-- The MCP server exposes five tools and nothing else: `guide`,
-  `search_reference`, `get_reference`, `lint`, `render`. `render` writes a
-  bundle (`figure.png`, `figure.pdf`, `source.py`, `report.json`,
-  `manifest.json`); there is no artifact store.
 - The skill is installed with `python -m dartwork_mpl.guide install`.
 - Type checking uses basedpyright.
 
