@@ -17,11 +17,13 @@ from collections.abc import Mapping
 from typing import assert_never
 
 from .model import (
+    ALL_EDGES,
     EDGE_EPSILON,
     MIN_PLOT_SHARE,
     Answer,
     ArtistId,
     AxesContent,
+    Bottom,
     Box,
     Canvas,
     ContentFacts,
@@ -30,14 +32,17 @@ from .model import (
     FigureArtist,
     Fit,
     Go,
+    Left,
     PlotSize,
     Px,
     Refuse,
     Request,
+    Right,
     Sides,
     Step,
     TextFacts,
     TextPlan,
+    Top,
 )
 
 NO_GRID = (
@@ -64,13 +69,13 @@ def on_half(edge: Edge, box: Box, canvas: Canvas) -> bool:
     xc = (box.x0 + box.x1) / 2 / canvas.width
     yc = (box.y0 + box.y1) / 2 / canvas.height
     match edge:
-        case Edge.TOP:
+        case Top():
             return yc >= 0.5
-        case Edge.BOTTOM:
+        case Bottom():
             return yc < 0.5
-        case Edge.LEFT:
+        case Left():
             return xc < 0.5
-        case Edge.RIGHT:
+        case Right():
             return xc >= 0.5
         case _:
             assert_never(edge)
@@ -88,10 +93,10 @@ def nearest_edge(artist: FigureArtist, canvas: Canvas) -> Edge:
     """The canvas edge nearest the artist."""
     box = artist.box
     distances = {
-        Edge.LEFT: box.x0 / canvas.width,
-        Edge.RIGHT: 1.0 - box.x1 / canvas.width,
-        Edge.BOTTOM: box.y0 / canvas.height,
-        Edge.TOP: 1.0 - box.y1 / canvas.height,
+        Left(): box.x0 / canvas.width,
+        Right(): 1.0 - box.x1 / canvas.width,
+        Bottom(): box.y0 / canvas.height,
+        Top(): 1.0 - box.y1 / canvas.height,
     }
     return min(distances, key=lambda e: distances[e])
 
@@ -129,20 +134,18 @@ def content_box(axes: AxesContent) -> Box | None:
 def reserved(facts: ContentFacts, fit: Fit) -> Sides:
     """The share of each edge figure-level artists keep, gap included."""
     width, height = facts.canvas.width, facts.canvas.height
-    res = dict.fromkeys(Edge, 0.0)
+    res = dict.fromkeys(ALL_EDGES, 0.0)
     for art, edge in zip(facts.artists, fit.reserves, strict=True):
         b = art.box
         gx, gy = art.gap / width, art.gap / height
         reach = {
-            Edge.LEFT: b.x1 / width + gx,
-            Edge.RIGHT: 1.0 - b.x0 / width + gx,
-            Edge.BOTTOM: b.y1 / height + gy,
-            Edge.TOP: 1.0 - b.y0 / height + gy,
+            Left(): b.x1 / width + gx,
+            Right(): 1.0 - b.x0 / width + gx,
+            Bottom(): b.y1 / height + gy,
+            Top(): 1.0 - b.y0 / height + gy,
         }[edge]
         res[edge] = max(res[edge], reach)
-    return Sides(
-        res[Edge.LEFT], res[Edge.RIGHT], res[Edge.BOTTOM], res[Edge.TOP]
-    )
+    return Sides(res[Left()], res[Right()], res[Bottom()], res[Top()])
 
 
 def solve(facts: ContentFacts, fit: Fit) -> Step | None:

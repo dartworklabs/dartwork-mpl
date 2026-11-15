@@ -18,6 +18,7 @@ from dartwork_mpl.layout.edges import (
 from dartwork_mpl.layout.model import (
     ArtistId,
     AxesContent,
+    Bottom,
     Box,
     Canvas,
     ContentFacts,
@@ -27,6 +28,7 @@ from dartwork_mpl.layout.model import (
     Edges,
     FigureArtist,
     Go,
+    Left,
     Line,
     Piece,
     PlotSize,
@@ -34,8 +36,10 @@ from dartwork_mpl.layout.model import (
     Reach,
     Refuse,
     Request,
+    Right,
     Sides,
     TickRow,
+    Top,
     parse_margins,
     tokens,
 )
@@ -140,11 +144,11 @@ def test_no_content_no_step() -> None:
 @pytest.mark.parametrize(
     ("holds", "box", "edge"),
     [
-        (Edge.TOP, Box(400, 600, 470, 495), Edge.TOP),  # suptitle
-        (Edge.TOP, Box(0, 20, 100, 120), Edge.LEFT),  # low: nearest
-        (Edge.BOTTOM, Box(400, 600, 5, 20), Edge.BOTTOM),  # supxlabel
-        (Edge.LEFT, Box(5, 20, 200, 300), Edge.LEFT),  # supylabel
-        (None, Box(950, 990, 200, 300), Edge.RIGHT),  # a text
+        (Top(), Box(400, 600, 470, 495), Top()),  # suptitle
+        (Top(), Box(0, 20, 100, 120), Left()),  # low: nearest
+        (Bottom(), Box(400, 600, 5, 20), Bottom()),  # supxlabel
+        (Left(), Box(5, 20, 200, 300), Left()),  # supylabel
+        (None, Box(950, 990, 200, 300), Right()),  # a text
     ],
 )
 def test_figure_artist_reserves_its_role_edge_else_the_nearest(
@@ -156,9 +160,7 @@ def test_figure_artist_reserves_its_role_edge_else_the_nearest(
 
 
 def test_a_reservation_adds_its_reach_and_gap() -> None:
-    title = FigureArtist(
-        Box(400, 600, 450, 500), Edge.TOP, False, None, Px(10.0)
-    )
+    title = FigureArtist(Box(400, 600, 450, 500), Top(), False, None, Px(10.0))
     plot = axes(Box(0.0, 1000.0, 0.0, 500.0))
     step = solve(content(plot, artists=[title]))
     assert step is not None and step.edges.top == pytest.approx(1 - 60 / 500)

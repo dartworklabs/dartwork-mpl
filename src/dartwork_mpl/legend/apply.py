@@ -20,9 +20,10 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, assert_never
 
 import matplotlib as mpl
+import numpy as np
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
-from matplotlib.transforms import ScaledTranslation
+from matplotlib.transforms import Bbox, ScaledTranslation
 
 from ..edgecase import settle as settle_edges
 from ..geometry import (
@@ -42,6 +43,7 @@ from .model import (
     Inside,
     Keywords,
     LegendPlan,
+    Loc,
     Outside,
     Passed,
     Request,
@@ -56,6 +58,11 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
+    from matplotlib.transforms import BboxBase
+
+
+#: How far (px) a legend may sit from its spot and still be where it was put.
+SPOT_PX = 0.01
 
 
 @dataclass
@@ -63,8 +70,8 @@ class Record:
     """What a ``place_legend`` legend was placed from, and where it was put.
 
     ``plan`` is ``None`` for a matplotlib ``loc`` passed through; ``size``
-    the Axes size (half px) and span it was last decided at; ``at`` the
-    legend's ``loc`` code and anchor box the library set; ``outside`` the
+    the Axes size (half px) and span it was last decided at; ``box`` the
+    anchor box the library left the legend on; ``outside`` the
     side the library anchored it outside of. ``handles`` are the ``id`` of
     each handle, in entry order: a record holding the artists themselves
     would keep its legend, and with it the figure, alive.
@@ -77,7 +84,7 @@ class Record:
     plan: LegendPlan | None
     size: tuple[int, ...] = ()
     pad: float = 0.0
-    at: tuple[Any, Any] = (None, None)
+    box: BboxBase | None = None
     anchor: Anchor | None = None
     outside: Side | None = None
 
@@ -120,16 +127,56 @@ _RESERVES: weakref.WeakKeyDictionary[Legend, Reserve] = (
 )
 
 
-def record_of(legend: Legend | None) -> Record | None:
+def record_of(legend: Legend | None, renderer: RendererBase) -> Record | None:
     """The record of a legend the library placed and the caller has not moved."""
     record = None if legend is None else _RECORDS.get(legend)
     if legend is None or record is None:
         return None
-    return record if _still_at(legend, record.at) else None
+    return record if _still_at(legend, record, renderer) else None
+
+
+def _spot(plan: LegendPlan) -> Loc:
+    """The spot of its anchor box a plan puts the legend at."""
+    match plan:
+        case Inside(loc=spot):
+            return spot
+        case Outside(side=side):
+            return side.legend_loc
+        case _:
+            assert_never(plan)
+
+
+def _still_at(legend: Legend, record: Record, renderer: RendererBase) -> bool:
+    """Whether ``legend`` keeps the anchor box and spot the library gave it.
+
+    A caller's ``set_loc``, ``set_bbox_to_anchor`` or drag moves it off
+    the spot, which is read from where it draws: matplotlib keeps the
+    ``loc`` itself private. A ``loc`` passed through is followed by its
+    anchor box only.
+    """
+    box = legend.get_bbox_to_anchor()
+    if box is not record.box:
+        return False
+    if record.plan is None:
+        return True
+    # The stub types ``points_to_pixels`` as any array; it scales a number.
+    size_px = np.asarray(
+        renderer.points_to_pixels(legend.prop.get_size_in_points()),
+        dtype=np.float64,
+    )
+    pad = legend.borderaxespad * float(size_px)
+    drawn = legend.get_window_extent(renderer)
+    spot = Bbox.from_bounds(0.0, 0.0, drawn.width, drawn.height).anchored(
+        _spot(record.plan).anchor, container=box.padded(-pad)
+    )
+    return (
+        abs(drawn.x0 - spot.x0) <= SPOT_PX
+        and abs(drawn.y0 - spot.y0) <= SPOT_PX
+    )
 
 
 def _remember(legend: Legend, record: Record) -> Legend:
-    record.at = _at(legend)
+    record.box = legend.get_bbox_to_anchor()
     _RECORDS[legend] = record
     return legend
 
@@ -362,7 +409,7 @@ def _again(
     new = decide_for(ax, record, handles, renderer, current=plan)
     if _same_place(new, plan):
         return False
-    rebuilt = record_of(draw(ax, record, handles, new, renderer))
+    rebuilt = record_of(draw(ax, record, handles, new, renderer), renderer)
     if rebuilt is not None:
         rebuilt.size = _half_px(ax, renderer, new, record.pad)
     return True
@@ -395,7 +442,7 @@ def settle(
     moved = False
     for ax in list(fig.axes if axes is None else axes):
         legend = ax.get_legend()
-        record = record_of(legend)
+        record = record_of(legend, renderer)
         if (
             legend is not None
             and record is not None
@@ -408,7 +455,7 @@ def settle(
         if (
             legend is not None
             and side is not None
-            and record_of(legend) is not None
+            and record_of(legend, renderer) is not None
             and anchor_outside(legend, ax, side, renderer)
         ):
             moved = True
@@ -509,16 +556,3 @@ def _names(legend: Legend) -> tuple[str, ...]:
     if record is not None:
         return record.entries.labels
     return tuple(t.get_text() for t in legend.get_texts())
-
-
-def _at(legend: Legend) -> tuple[Any, Any]:
-    """A legend's ``loc`` code and anchor box, which a caller's move changes."""
-    return (getattr(legend, "_loc", None), legend.get_bbox_to_anchor())
-
-
-def _still_at(legend: Legend, at: tuple[Any, Any] | None) -> bool:
-    """Whether ``legend`` keeps the ``loc`` and anchor box recorded in ``at``."""
-    if at is None:
-        return False
-    loc, box = _at(legend)
-    return loc == at[0] and box is at[1]

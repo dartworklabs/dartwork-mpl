@@ -27,11 +27,13 @@ from .model import (
     Degrees,
     Edges,
     Gap,
+    HSpace,
     Line,
     Mode,
     Share,
     TextPlan,
     Which,
+    WSpace,
     turned_as,
 )
 
@@ -298,9 +300,9 @@ def _name(
 def set_spacing(gs: GridSpec, key: Gap, value: float | None) -> None:
     """Set ``gs``'s ``wspace`` / ``hspace`` (``None``: the figure's)."""
     match key:
-        case Gap.WSPACE:
+        case WSpace():
             gs.update(wspace=value)
-        case Gap.HSPACE:
+        case HSpace():
             gs.update(hspace=value)
         case _:
             assert_never(key)

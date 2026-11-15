@@ -25,6 +25,7 @@ from .model import (
     ArtistId,
     AxesContent,
     AxisName,
+    Bottom,
     Box,
     Canvas,
     ContentFacts,
@@ -34,16 +35,19 @@ from .model import (
     FigureArtist,
     Fit,
     Gap,
+    Left,
     Line,
     Piece,
     Px,
     Reach,
+    Right,
     Share,
     Spacing,
     TextFacts,
     TextPlan,
     TickGroup,
     TickRow,
+    Top,
     Width,
     lies_across,
     tokens,
@@ -105,9 +109,9 @@ def _band_edge(art: FigureArtist, canvas: Canvas) -> Edge | None:
     else:
         centre = (box.y0 + box.y1) / 2 / canvas.height
     if centre <= EDGE_BAND + EDGE_BAND_TOL:
-        return Edge.LEFT if art.vertical else Edge.BOTTOM
+        return Left() if art.vertical else Bottom()
     if centre >= 1.0 - EDGE_BAND - EDGE_BAND_TOL:
-        return Edge.RIGHT if art.vertical else Edge.TOP
+        return Right() if art.vertical else Top()
     return None
 
 
