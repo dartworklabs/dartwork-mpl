@@ -29,8 +29,6 @@ from ..geometry import (
     projection,
     same_position_axes,
 )
-from ..labels import note_gap_pt
-from ..legend import figure_reserve, outside_edge
 from . import decide
 from .edges import FIT_EDGES
 from .model import (
@@ -72,6 +70,7 @@ if TYPE_CHECKING:
     from matplotlib.transforms import Bbox
 
     from .apply import Record
+    from .given import Neighbours
 
 
 def root_grid(
@@ -206,7 +205,9 @@ def _tight_3d(ax: Axes, renderer: RendererBase) -> tuple[Piece, ...]:
     return tuple(pieces)
 
 
-def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
+def axes_content(
+    ax: Axes, renderer: RendererBase, given: Neighbours
+) -> AxesContent | None:
     """What of ``ax`` must stay on the canvas; ``None`` for a hidden Axes."""
     if not ax.get_visible():
         return None
@@ -229,7 +230,7 @@ def axes_content(ax: Axes, renderer: RendererBase) -> AxesContent | None:
         with contextlib.suppress(*BBOX_ERRORS):
             ext = legend.get_window_extent(renderer)
             if ext.width > 0 and ext.height > 0:
-                pieces.append(Piece(_box(ext), outside_edge(legend)))
+                pieces.append(Piece(_box(ext), given.outside_edge(legend)))
     return AxesContent(plot, position, tuple(pieces))
 
 
@@ -253,16 +254,20 @@ def _roles(fig: Figure) -> dict[int, Edge]:
 
 
 def _figure_artist(
-    fig: Figure, roles: dict[int, Edge], art: Artist, ext: Bbox
+    fig: Figure,
+    roles: dict[int, Edge],
+    art: Artist,
+    ext: Bbox,
+    given: Neighbours,
 ) -> FigureArtist:
     vertical = (
         45 <= art.get_rotation() % 180 <= 135 if isinstance(art, Text) else None
     )
-    reserve = figure_reserve(art)
+    reserve = given.figure_reserve(art)
     if reserve is not None:
         side, gap_pt = reserve.edge, reserve.gap_pt
     else:
-        side, gap_pt = None, note_gap_pt(art) or 0.0
+        side, gap_pt = None, given.note_gap_pt(art) or 0.0
     return FigureArtist(
         _box(ext),
         roles.get(id(art)),
@@ -278,13 +283,17 @@ def canvas(fig: Figure) -> Canvas:
 
 
 def content_facts(
-    fig: Figure, renderer: RendererBase, margins: Sides, last: Edges | None
+    fig: Figure,
+    renderer: RendererBase,
+    margins: Sides,
+    last: Edges | None,
+    given: Neighbours,
 ) -> ContentFacts:
     """Every Axes' content and the figure-level artists, as drawn now."""
-    contents = [axes_content(ax, renderer) for ax in fig.axes]
+    contents = [axes_content(ax, renderer, given) for ax in fig.axes]
     roles = _roles(fig)
     artists = tuple(
-        _figure_artist(fig, roles, art, ext)
+        _figure_artist(fig, roles, art, ext, given)
         for art, ext in iter_figure_level_extents(
             fig, renderer, subfigures=False
         )
@@ -294,11 +303,13 @@ def content_facts(
     return ContentFacts(axes, artists, canvas(fig), margins, last)
 
 
-def content_boxes(fig: Figure, renderer: RendererBase) -> dict[int, Box]:
+def content_boxes(
+    fig: Figure, renderer: RendererBase, given: Neighbours
+) -> dict[int, Box]:
     """Each visible Axes' content as the margins see it (``id(ax)`` keys)."""
     boxes: dict[int, Box] = {}
     for ax in fig.axes:
-        content = axes_content(ax, renderer)
+        content = axes_content(ax, renderer, given)
         if content is None:
             continue
         nil = Sides(0.0, 0.0, 0.0, 0.0)
@@ -419,7 +430,11 @@ def _groups(
 
 
 def _names(
-    fig: Figure, renderer: RendererBase, record: Record, objects: TextArtists
+    fig: Figure,
+    renderer: RendererBase,
+    record: Record,
+    objects: TextArtists,
+    given: Neighbours,
 ) -> list[AxisName]:
     """One-line names without mathtext that this layout has not wrapped."""
     boxes: dict[int, Box] | None = None
@@ -443,7 +458,9 @@ def _names(
                 or label in record.names
             ):
                 continue
-            boxes = content_boxes(fig, renderer) if boxes is None else boxes
+            boxes = (
+                content_boxes(fig, renderer, given) if boxes is None else boxes
+            )
             here = {id(a) for a in same_position_axes(ax)} | {id(ax)}
             objects.labels[id(label)] = label
             name = AxisName(
@@ -498,7 +515,11 @@ def _free(fig: Figure, gs: GridSpec, key: Gap, record: Record) -> bool:
 
 
 def _spacings(
-    fig: Figure, gs: GridSpec, renderer: RendererBase, record: Record
+    fig: Figure,
+    gs: GridSpec,
+    renderer: RendererBase,
+    record: Record,
+    given: Neighbours,
 ) -> list[Spacing]:
     nrows, ncols = gs.get_geometry()
     free = [
@@ -510,7 +531,7 @@ def _spacings(
         return []
     bottoms, tops, lefts, rights = gs.get_grid_positions(fig)
     fw, fh = fig.bbox.width, fig.bbox.height
-    boxes = content_boxes(fig, renderer)
+    boxes = content_boxes(fig, renderer, given)
     cols: list[Reach] = []
     rows: list[Reach] = []
     for ax in grid_axes(fig, gs):
@@ -561,18 +582,22 @@ def _spacings(
 
 
 def text_facts(
-    fig: Figure, gs: GridSpec, renderer: RendererBase, record: Record
+    fig: Figure,
+    gs: GridSpec,
+    renderer: RendererBase,
+    record: Record,
+    given: Neighbours,
 ) -> tuple[TextFacts, TextArtists]:
     """What text fitting reads, and the artists its ids name."""
     objects = TextArtists({}, {})
     groups = _groups(fig, renderer, record, objects)
-    names = _names(fig, renderer, record, objects)
+    names = _names(fig, renderer, record, objects, given)
     wrapped = {
         (n.group, Line(n.before)): Line(n.after)
         for label, n in record.names.items()
         if label.get_text() == n.after
     }
-    spacings = _spacings(fig, gs, renderer, record)
+    spacings = _spacings(fig, gs, renderer, record, given)
     facts = TextFacts(
         tuple(groups), tuple(names), wrapped, tuple(spacings), canvas(fig)
     )

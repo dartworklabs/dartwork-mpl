@@ -59,15 +59,15 @@ from .compose.labels import (
     label_hline,
 )
 
+# Layout, with what the other slices settle at the fitted size
+from .compose.layout import simple_layout
+
 # Figure size, and the active preset's canvas
 from .compose.size import figsize_for
 
 # Agent guidance: the skill, templates and anti-pattern lint
 from .guide import lint as lint_code
 from .labels import label_line_ends
-
-# Layout
-from .layout import simple_layout
 from .legend import figure_legend, place_legend
 from .length import Length, cm, col1, col2, inch, mm, pt
 

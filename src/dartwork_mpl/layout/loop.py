@@ -1,7 +1,8 @@
 """The fit: measure, decide, write the edges; again until they hold.
 
 Each step draws the figure, lets the slices that place things at the Axes
-size settle them (bar labels, legends, line-end names, panel letters),
+size settle them (bar labels, legends, line-end names, panel letters, each
+given as a function in :class:`~.given.Neighbours`),
 measures and solves. After the margins hold, date ticks are thinned (one
 more fit if they changed) and crowded text is fitted, each round followed
 by a fresh fit and undone if it crushed a plot.
@@ -12,11 +13,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .. import labels, legend, ticks
 from ..edgecase import settle
 from ..geometry import get_renderer
 from . import apply, decide, measure
 from .edges import FIT_EDGES, TEXT_EDGES
+from .given import Neighbours
 from .model import FIT_ROUNDS, MAX_STEPS, Edges, Sides, Step
 
 if TYPE_CHECKING:
@@ -34,19 +35,21 @@ def _redraw(fig: Figure) -> RendererBase:
     return get_renderer(fig)
 
 
-def one_step(fig: Figure, margins: Sides, last: Edges | None) -> Step | None:
+def one_step(
+    fig: Figure, margins: Sides, last: Edges | None, given: Neighbours
+) -> Step | None:
     """Draw, settle what sits at the Axes size, measure and solve once."""
     renderer = _redraw(fig)
-    if labels.settle_bars(fig, renderer):
+    if given.settle_bars(fig, renderer):
         renderer = _redraw(fig)
     for _round in range(SETTLE_ROUNDS):
-        moved = legend.settle(fig, renderer, fig.axes)
-        if not labels.space_line_ends(fig, renderer) and not moved:
+        moved = given.settle_legends(fig, renderer, fig.axes)
+        if not given.space_line_ends(fig, renderer) and not moved:
             break
         renderer = _redraw(fig)
-    if labels.settle_panels(fig, renderer):
+    if given.settle_panels(fig, renderer):
         renderer = _redraw(fig)
-    facts = measure.content_facts(fig, renderer, margins, last)
+    facts = measure.content_facts(fig, renderer, margins, last, given)
     fit = settle(facts, decide.fit(facts), FIT_EDGES).plan
     return decide.solve(facts, fit)
 
@@ -58,6 +61,7 @@ class Fitter:
     fig: Figure
     gs: GridSpec
     margins: Sides
+    given: Neighbours
     last: Edges | None = None
 
     def fit(self) -> Step | None:
@@ -66,14 +70,14 @@ class Fitter:
         step: Step | None = None
         for _ in range(2):
             for _ in range(MAX_STEPS):
-                step = one_step(self.fig, self.margins, self.last)
+                step = one_step(self.fig, self.margins, self.last, self.given)
                 if step is None:
                     break
                 apply.write_edges(self.fig, self.gs, step.edges)
                 self.last = step.edges
                 if step.converged:
                     break
-            if step is None or not ticks.thin_dates(self.fig):
+            if step is None or not self.given.thin_dates(self.fig):
                 break
         return step
 
@@ -85,7 +89,7 @@ class Fitter:
         for _round in range(FIT_ROUNDS):
             renderer = get_renderer(self.fig)
             facts, objects = measure.text_facts(
-                self.fig, self.gs, renderer, record
+                self.fig, self.gs, renderer, record, self.given
             )
             plan = settle(facts, decide.text_plan(facts), TEXT_EDGES).plan
             if plan.empty:
@@ -108,12 +112,14 @@ class Fitter:
             return
 
 
-def run(fig: Figure, gs: GridSpec, margins: Sides, fit_text: bool) -> None:
+def run(
+    fig: Figure, gs: GridSpec, margins: Sides, fit_text: bool, given: Neighbours
+) -> None:
     """Lay out ``fig`` on ``gs`` from the figure as its author left it."""
     apply.restore(fig)
     start = apply.grid_edges(gs)
-    ticks.prepare(fig)
-    fitter = Fitter(fig, gs, margins)
+    given.prepare_ticks(fig)
+    fitter = Fitter(fig, gs, margins, given)
     step = fitter.fit()
     if fit_text and step is not None and step.converged:
         fitter.fit_text(start)

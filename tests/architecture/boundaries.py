@@ -55,6 +55,7 @@ ENTRY_POINTS = frozenset(
         "dartwork_mpl",
         "dartwork_mpl.compose",
         "dartwork_mpl.compose.labels",
+        "dartwork_mpl.compose.layout",
         "dartwork_mpl.compose.size",
         "dartwork_mpl.compose.style",
     }
@@ -113,20 +114,7 @@ SLICES = frozenset(
 
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
-ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl.layout", "dartwork_mpl.labels"): (
-        "bar labels, line-end names and panel letters settle at the size the "
-        "layout fits, before it measures the margins"
-    ),
-    ("dartwork_mpl.layout", "dartwork_mpl.legend"): (
-        "legends settle at the size the layout fits; an outside legend's "
-        "side bounds what the margins measure of it"
-    ),
-    ("dartwork_mpl.layout", "dartwork_mpl.ticks"): (
-        "layout writes the library's tick numbers before measuring them and "
-        "thins crowded dates at the fitted size"
-    ),
-}
+ALLOWED: Mapping[tuple[str, str], str] = {}
 
 # Compatibility shims: public module path -> the unit that owns its contents.
 SHIMS: Mapping[str, str] = {}
