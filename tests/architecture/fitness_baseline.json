@@ -5,7 +5,6 @@
  "C4_compose_decisions": {},
  "C5_compose_importers": [],
  "R1_module_lines": {
-  "src/dartwork_mpl/layout/measure.py": 605,
   "src/dartwork_mpl/legend/apply.py": 596,
   "src/dartwork_mpl/legend/measure.py": 530,
   "src/dartwork_mpl/ticks/measure.py": 591

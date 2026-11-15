@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from ..edgecase import settle
 from ..geometry import get_renderer
-from . import apply, decide, measure
+from . import apply, decide, measure, text
 from .edges import FIT_EDGES, TEXT_EDGES
 from .given import Neighbours
 from .model import FIT_ROUNDS, MAX_STEPS, Edges, Sides, Step
@@ -88,7 +88,7 @@ class Fitter:
         kept = False
         for _round in range(FIT_ROUNDS):
             renderer = get_renderer(self.fig)
-            facts, objects = measure.text_facts(
+            facts, objects = text.text_facts(
                 self.fig, self.gs, renderer, record, self.given
             )
             plan = settle(facts, decide.text_plan(facts), TEXT_EDGES).plan

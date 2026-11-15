@@ -21,7 +21,7 @@ from matplotlib.text import Text
 from matplotlib.ticker import Formatter
 
 from ..axis import Which
-from .measure import TextArtists, grid_axes, spacing_of
+from .measure import grid_axes
 from .model import (
     TURN_MODE,
     ArtistId,
@@ -36,6 +36,7 @@ from .model import (
     WSpace,
     turned_as,
 )
+from .text import TextArtists, spacing_of
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
