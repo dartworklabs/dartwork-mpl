@@ -104,9 +104,9 @@ def find(
     return hits
 
 
-#: Where the wheel ships the skill that ``python -m dartwork_mpl.skills install``
+#: Where the wheel ships the skill that ``python -m dartwork_mpl.guide install``
 #: links into a project.
-WHEEL_SKILL = "dartwork_mpl/skills/dartwork-mpl/"
+WHEEL_SKILL = "dartwork_mpl/guide/assets/skill/"
 
 
 def find_in_wheel(wheel: Path, **kwargs: object) -> list[dict[str, str]]:

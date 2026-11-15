@@ -34,7 +34,7 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # (validate_fixes is the auto-fix companion to validate). F401 is
 # silenced because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
-from . import font, helpers, icon, lint, templates, tokens, validate_fixes  # noqa: F401
+from . import font, guide, helpers, icon, tokens, validate_fixes  # noqa: F401
 
 # Import color module exports
 from ._colors import (
@@ -56,9 +56,6 @@ from ._colors import (
 
 # Color utilities
 from ._colors.blend import mix_colors, pseudo_alpha
-
-# Import bundled agent-onboarding helpers
-from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
 from .annotation import (
@@ -104,6 +101,9 @@ from .formatting import (
     set_decimal,
 )
 
+# Agent guidance: the skill, templates and anti-pattern lint
+from .guide import lint as lint_code
+
 # Import icon module exports
 from .icon import icon_font, icon_font_path, list_icon_fonts
 
@@ -118,18 +118,7 @@ from .layout import (
     tight_crop,
 )
 
-# Prompt utilities
-from .prompt import (
-    copy_prompt,
-    find_template,
-    get_prompt,
-    list_prompts,
-    prompt_path,
-)
-
-# --- Explicit imports from split modules (formerly in util.py) ---
 # Scaling helpers
-from .recommend import suggest_chart_type
 from .scale import dpi, fs, fw, lw
 
 # Physical units and figure size
@@ -149,9 +138,6 @@ from .size import (
 
 # Import style module exports
 from .style import Style, list_styles, load_style_dict, style, style_path
-
-# Extended plot functions (from templates, formerly xplot)
-from .templates import plot_diverging_bar
 
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
@@ -177,21 +163,6 @@ EXPERIMENTAL: frozenset[str] = frozenset(
         "review",
     }
 )
-
-# High-level composition helpers (T2 in the AI-readiness roadmap).
-# These wrap the lower-level primitives above so that AI agents and
-# humans alike can reach the most useful workflow utilities through a
-# single ``dm.<name>`` access path. The submodule namespace
-# (``dm.helpers.<name>``) remains available as well.
-
-# Native lint + migration entry points (T4). The ``dm.lint`` name is
-# the module itself (so ``dm.lint.lint(...)`` and
-# ``dm.lint.migrate_legacy_code(...)`` already work). These aliases
-# expose the two most common functions at the top level under
-# unambiguous names so an offline agent can call ``dm.lint_code(...)``
-# without spinning up the MCP server.
-from .lint import lint as lint_code
-from .lint import migrate_legacy_code
 
 # Validation entry points
 from .validate import (
@@ -238,10 +209,6 @@ __all__ = [  # noqa: RUF022
     "load_style_dict",
     "style",
     "style_path",
-    # Bundled agent-onboarding helpers
-    "AGENT_DOCS",
-    "agent_doc_path",
-    "get_agent_doc",
     # Scaling helpers
     "dpi",
     "fs",
@@ -301,12 +268,9 @@ __all__ = [  # noqa: RUF022
     "wrap_axis_label",
     "wrap_axis_labels",
     "arrow_axis",
-    # Prompt utilities
-    "prompt_path",
-    "get_prompt",
-    "list_prompts",
-    "copy_prompt",
-    "find_template",
+    # Agent guidance
+    "guide",
+    "lint_code",
     # Validation
     "DataPolicyError",
     "DataPolicyWarning",
@@ -318,13 +282,7 @@ __all__ = [  # noqa: RUF022
     "validate_data",
     "make_palette",
     "optimize_legend",
-    "suggest_chart_type",
     "check_figure_quality",
-    # Native lint + migration (T4)
-    "lint_code",
-    "migrate_legacy_code",
-    # Extended plots
-    "plot_diverging_bar",
     # Asset diagnostics (from diagnostics)
     "plot_fonts",
 ]

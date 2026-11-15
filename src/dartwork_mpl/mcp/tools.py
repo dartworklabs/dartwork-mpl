@@ -9,7 +9,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from . import catalog, colors, docs_fetch, lint, recommend, templates
+from . import catalog, colors, docs_fetch, lint, templates
 from .plot_data import validate_data
 
 __all__ = ["register_tools"]
@@ -118,27 +118,13 @@ def register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def lint_dartwork_mpl_code(code: str) -> str:
-        """Analyze Python code against the dartwork-mpl anti-pattern
-        catalog (asset/prompt/02-anti-patterns.yaml).
+        """Lint Python source against the dartwork-mpl anti-pattern catalog.
 
-        Returns a newline-separated list of
-        ``[SEVERITY] rule-id (line N): message`` entries, or a success
-        line.
-
-        Literal cmap/color names in conventional ax/plt plotting calls
-        (and imported pyplot aliases) are checked against live matplotlib
-        registries without executing source. Discover valid colormaps via
-        ``sorted(matplotlib.colormaps)`` and named colors via
-        ``matplotlib.colors.get_named_colors_mapping()``; existing tools
-        ``get_color_value`` and ``list_color_families`` help inspect colors.
-        The resource ``dartwork-mpl://palette/colors`` lists exact package
-        color names and values.
-        For example, ``cmap="coolwarm"`` and ``color="dc.blue6"`` are valid.
-        Dynamic expressions and unknown receivers are left unchecked;
-        live custom names and explicit inline literal registrations are
-        accepted. Implicit/dynamic inline map registration defers map checks.
-        Direct named-color mapping updates and dynamic assignment keys
-        similarly defer color checks, while map checks still run.
+        Returns one ``[severity] rule-id (line N): message → fix`` line per
+        finding, or ``No issues found.``. The source is never executed;
+        literal ``cmap=`` and colour names are checked against matplotlib's
+        registries (``sorted(matplotlib.colormaps)``,
+        ``matplotlib.colors.get_named_colors_mapping()``).
 
         Parameters
         ----------
@@ -161,8 +147,7 @@ def register_tools(mcp: FastMCP) -> None:
 
         - ``rule_id``: str (e.g. ``"figsize-direct"``)
         - ``severity``: ``"critical" | "warning" | "info"``
-        - ``line``: int (1-based) or ``None``
-        - ``column``: int (absolute zero-based Python character offset within source) or ``None``
+        - ``line``: int (1-based)
         - ``message``: str
         - ``fix_suggestion``: str | ``None``
 
@@ -192,12 +177,9 @@ def register_tools(mcp: FastMCP) -> None:
     ) -> list[dict[str, Any]]:
         """Rank the bundled AI plot templates against a free-text intent.
 
-        Thin MCP wrapper over :func:`dartwork_mpl.prompt.find_template`.
-        Each template ships with a metadata block (use_case, difficulty,
-        data_shape, tags, narrative) generated into
-        ``asset/prompt/05-templates/_index.json`` at build time. The
-        function tokenises ``intent`` and counts how many tokens appear
-        in each template's metadata text.
+        Thin MCP wrapper over :func:`dartwork_mpl.guide.search`, which
+        scores each template's title, use case, data shape and tags by the
+        words it shares with ``intent``.
 
         Parameters
         ----------
@@ -206,51 +188,16 @@ def register_tools(mcp: FastMCP) -> None:
         top_k : int, optional
             Maximum number of matches to return, by default 5.
         tier : str | None, optional
-            ``"basic"`` searches the 18 tier-1 minimal templates;
-            ``"advanced"`` searches the 18 tier-2 narrative templates
-            (real-feeling data, reference lines, annotation overlays);
-            ``"all"`` searches both. ``None`` (default) keeps the
-            original behaviour: basic tier only, no ``tier`` field on
-            each result. When ``tier`` is non-``None`` each result
-            carries ``"tier"`` so callers using ``"all"`` can
-            distinguish hits.
+            ``"basic"`` (or ``None``, the default) searches the 18 minimal
+            templates, ``"advanced"`` the 18 narrative ones, ``"all"`` both.
 
         Returns
         -------
         list[dict]
-            ``{"template_id", "score", **metadata}`` per match (plus
-            ``"tier"`` when ``tier`` is non-``None``). Empty list when
-            ``intent`` is blank or no template overlaps.
+            ``{"template_id", "tier", "id", "title", "use_case"}`` per match,
+            best first; ``id`` is the ``dm.guide.read`` reference id.
         """
         return templates.find(intent, top_k, tier)
-
-    @mcp.tool()
-    def apply_lint_fixes(code: str) -> dict[str, Any]:
-        """Apply safe identifier-level rewrites for a curated subset
-        of lint rules, then return the fixed source plus the diff
-        between before/after lint runs.
-
-        Wraps :func:`dartwork_mpl.lint.apply_lint_fixes`. Currently
-        rewrites ``plt.style.use → dm.style.use`` and the no-arg
-        ``plt.tight_layout() / fig.tight_layout()`` calls →
-        ``dm.simple_layout(fig)``. Context-dependent rules (e.g.
-        ``figsize-direct`` — which needs the agent to choose a width
-        and aspect token) are left untouched and surfaced in
-        ``unfixed`` so the agent knows what's still pending.
-
-        Parameters
-        ----------
-        code : str
-            Python source.
-
-        Returns
-        -------
-        dict
-            ``{"fixed_code": str, "applied": list[Issue],
-            "unfixed": list[Issue]}``. Each Issue is a dict shaped
-            like :func:`lint_dartwork_mpl_code_json` entries.
-        """
-        return lint.fix_code(code)
 
     @mcp.tool()
     def render_template(
@@ -288,40 +235,6 @@ def register_tools(mcp: FastMCP) -> None:
             "png_path": str|None, "stderr": str}``.
         """
         return templates.render_basic(plot_type, return_format, timeout_seconds)
-
-    @mcp.tool()
-    def migrate_legacy_code(code: str) -> str:
-        """Rewrite 0.3-era dartwork-mpl source toward the 0.4 idioms.
-
-        Two passes are applied:
-
-        1. **Safe substitutions**: ``dm.cm2in`` → ``dm.cm``,
-           ``plt.style.use`` → ``dm.style.use``.
-        2. **Hint comments** are inserted above lines using the
-           context-dependent patterns the agent must rewrite by hand —
-           the deprecated width tokens (``dm.SW``/``MW``/``TW``/``DW``,
-           ``dm.FS_*``, ``dm.WIDTHS[...]``), the removed
-           ``dm.subplots`` / ``dm.figure`` calls, bare
-           ``figsize=(w, h)`` tuples, ``tight_layout()`` calls, and the
-           removed ``dm.agent_utils`` / ``dm.xplot`` namespaces.
-
-        The output is always returned (never raises). Run
-        :func:`lint_dartwork_mpl_code_json` on the result to confirm no
-        critical issues remain after the agent applies the manual hints.
-
-        Parameters
-        ----------
-        code : str
-            0.3-era Python source.
-
-        Returns
-        -------
-        str
-            Rewritten source with ``# TODO(dm-migrate): …`` comments
-            above the lines that need agent attention. Inputs without
-            matching patterns are returned unchanged.
-        """
-        return lint.migrate_code(code)
 
     # ── Figure Validation Tool (execute + validate) ──────────────────
 
@@ -439,48 +352,6 @@ def register_tools(mcp: FastMCP) -> None:
     # ── Chart Recommendation & Composition ───────────────────────────
 
     @mcp.tool()
-    def suggest_chart_type(
-        x_type: str,
-        y_type: str | None = None,
-        n_points: int = 50,
-        n_series: int = 1,
-    ) -> dict[str, Any]:
-        """Recommend a chart type from data characteristics.
-
-        Thin MCP wrapper over :func:`dartwork_mpl.suggest_chart_type`
-        that also returns pointers to the matching template (both basic
-        and advanced tiers) so the agent can pull the canonical example
-        directly.
-
-        Parameters
-        ----------
-        x_type : str
-            ``"continuous"``, ``"categorical"``, or ``"temporal"``.
-        y_type : str | None, optional
-            ``"continuous"``, ``"categorical"``, ``"count"``, or
-            ``None`` (e.g. for a histogram of a single variable).
-        n_points : int, optional
-            Total number of data points. Influences density-aware picks
-            (scatter vs. heatmap). Default 50.
-        n_series : int, optional
-            Number of series being compared. Default 1.
-
-        Returns
-        -------
-        dict
-            ``{"recommended": str, "basic_template_uri": str,
-            "advanced_template_uri": str | None, "rationale": str}``.
-            ``recommended`` is a canonical template stem (normalized via
-            ``_SUGGEST_TO_TEMPLATE``), so it always resolves through
-            ``render_template`` / ``find_template``; when the raw
-            recommender label differed (e.g. ``scatter_density``), the
-            semantic label is preserved in ``rationale``.
-            ``advanced_template_uri`` is ``None`` when no tier-2 version
-            exists yet for the recommended plot type.
-        """
-        return recommend.suggest(x_type, y_type, n_points, n_series)
-
-    @mcp.tool()
     def compose_layered_plot(
         plot_type: str, layers: list[str] | None = None, tier: str = "advanced"
     ) -> dict[str, Any]:
@@ -573,8 +444,7 @@ def register_tools(mcp: FastMCP) -> None:
         """Get a summary of dartwork-mpl capabilities and available MCP features.
 
         Returns a structured overview of all available resources, tools,
-        and design system rules for quick reference. Aligned with the
-        design-language SSOT in ``asset/prompt/`` (00-index, 01-policy,
-        02-anti-patterns, 03-recipes, 05-templates).
+        and design system rules for quick reference, aligned with the
+        bundled skill that ``dm.guide`` reads.
         """
         return catalog.info_payload()

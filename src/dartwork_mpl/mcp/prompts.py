@@ -2,13 +2,12 @@
 
 This module defines interactive prompts that guide users through
 creating and reviewing dartwork-mpl plots. The wording is aligned
-with the SSOT in ``asset/prompt/`` (00-index, 01-policy,
-02-anti-patterns, 03-recipes, 05-templates).
+with the bundled skill and catalog that ``dm.guide`` reads.
 
 The prompt strings deliberately *describe* forbidden patterns
 without spelling out their literal call form, so that the prompt
 text itself does not trigger the dartwork-mpl lint engine. Each
-rule reference cites the lint rule id from ``02-anti-patterns.yaml``.
+rule reference cites the lint rule id from the anti-pattern catalog.
 """
 
 from fastmcp import FastMCP

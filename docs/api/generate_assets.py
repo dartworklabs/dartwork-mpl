@@ -232,30 +232,6 @@ def _save_font_example(images_dir: Path) -> Path:
     return path
 
 
-# ── xplot.rst ──────────────────────────────────────────────────────────
-
-
-def _save_xplot_example(images_dir: Path) -> Path:
-    """API xplot/templates: diverging bar chart."""
-    dm.style.use("scientific")
-    from dartwork_mpl.templates import plot_diverging_bar
-
-    fig, _ax = plot_diverging_bar(
-        labels=["Category A", "Category B", "Category C"],
-        neg_values=np.array([-30, -15, -25]),
-        pos_values=np.array([40, 55, 35]),
-        neg_label="Decrease",
-        pos_label="Increase",
-        add_total=False,
-        figsize=dm.figsize("15cm", "10cm"),
-    )
-
-    path = images_dir / "xplot_example.svg"
-    _save_svg(fig, path, bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
 # ── visualization.rst ──────────────────────────────────────────────────
 
 
@@ -303,7 +279,6 @@ def build_api_assets(base_dir: Path | None = None) -> list[Path]:
         ("layout_example", _save_layout_example),
         ("icon_example", _save_icon_example),
         ("font_example", _save_font_example),
-        ("xplot_example", _save_xplot_example),
     ]
 
     paths: list[Path] = []

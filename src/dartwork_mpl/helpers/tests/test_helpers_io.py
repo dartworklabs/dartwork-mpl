@@ -30,9 +30,6 @@ class TestRemainingHelpersExported:
     def test_validate_data_accessible(self) -> None:
         assert hasattr(helpers, "validate_data")
 
-    def test_suggest_chart_type_accessible(self) -> None:
-        assert hasattr(helpers, "suggest_chart_type")
-
     def test_optimize_legend_accessible(self) -> None:
         assert hasattr(helpers, "optimize_legend")
 
@@ -66,7 +63,6 @@ class TestDunderAllComplete:
             "check_figure_quality",
             "make_palette",
             "optimize_legend",
-            "suggest_chart_type",
             "validate_data",
         ):
             assert name in helpers.__all__, f"{name} missing from __all__"

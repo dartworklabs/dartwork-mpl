@@ -255,8 +255,6 @@ sphinx_gallery_conf = {
         "examples_source/06_chart_recipes",
         "examples_source/07_real_world_dashboards",
         "examples_source/08_creative_visualizations",
-        "examples_source/09_ai_templates",
-        "examples_source/09_ai_templates_advanced",
     ],
     "gallery_dirs": [
         "examples_gallery/01_styling_and_themes",
@@ -267,8 +265,6 @@ sphinx_gallery_conf = {
         "examples_gallery/06_chart_recipes",
         "examples_gallery/07_real_world_dashboards",
         "examples_gallery/08_creative_visualizations",
-        "examples_gallery/09_ai_templates",
-        "examples_gallery/09_ai_templates_advanced",
     ],
     "filename_pattern": "/plot_",
     "nested_sections": False,
@@ -323,8 +319,6 @@ from build_hooks import (  # noqa: E402
     copy_fonts_to_static,
     create_placeholder_index,
     generate_gallery_assets,
-    generate_llms_full_txt,
-    generate_template_index,
     purge_stale_gallery_artifacts,
     write_manual_indices,
 )
@@ -334,8 +328,7 @@ def setup(app):
     """Register the build-time asset hooks with Sphinx.
 
     On ``builder-inited`` it cleans stale gallery output first, then writes a
-    placeholder index and gallery assets, copies fonts and writes
-    ``llms-full.txt`` and the template index; manual indices are written before
+    placeholder index and gallery assets, and copies fonts; manual indices are written before
     docs are read. Declares the extension safe for parallel reading.
     """
     # Cleanup runs first so sphinx-gallery starts from a clean slate
@@ -345,7 +338,5 @@ def setup(app):
     app.connect("builder-inited", create_placeholder_index)
     app.connect("builder-inited", generate_gallery_assets)
     app.connect("builder-inited", copy_fonts_to_static)
-    app.connect("builder-inited", generate_llms_full_txt)
-    app.connect("builder-inited", generate_template_index)
     app.connect("env-before-read-docs", write_manual_indices)
     return {"parallel_read_safe": True}

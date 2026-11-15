@@ -254,10 +254,9 @@ def test_ordinary_import_preserves_eager_inventory_and_reload(
         }
         modules = {
             "font",
+            "guide",
             "helpers",
             "icon",
-            "lint",
-            "templates",
             "tokens",
             "validate_fixes",
         }

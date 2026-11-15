@@ -1,9 +1,9 @@
 """Hold anti-patterns in the repository's own plotting code to a count that only goes down.
 
 The examples, docs scripts and bundled templates are what users and AI agents
-copy, so they should follow ``02-anti-patterns.yaml`` like any user code. They
+copy, so they should follow the anti-pattern catalog like any user code. They
 don't yet. Instead of fixing every file at once, this test lints each tracked
-file with :func:`dartwork_mpl.lint.lint` and compares its count of critical and
+file with :func:`dartwork_mpl.lint_code` and compares its count of critical and
 warning issues with ``antipattern_baseline.json``:
 
 * a file with more issues than its baseline fails — new code must be clean;
@@ -14,7 +14,7 @@ warning issues with ``antipattern_baseline.json``:
 ``info`` rules (``plt-show-only`` and friends) are hints, not violations, and
 are not counted. ``tests/`` and ``evals/`` show anti-patterns on purpose, and library code in
 ``src/dartwork_mpl/`` is not user plotting code, so both are out of scope —
-except the bundled prompt templates under ``asset/prompt/``.
+except the bundled templates under ``guide/assets/``.
 
 After fixing issues, lower the baseline with::
 
@@ -31,7 +31,7 @@ import sys
 from collections.abc import Mapping
 from pathlib import Path
 
-from dartwork_mpl.lint import lint
+from dartwork_mpl import lint_code
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = Path(__file__).with_name("antipattern_baseline.json")
@@ -45,7 +45,7 @@ def in_scope(path: str) -> bool:
     if path.startswith(("tests/", "evals/")):
         return False
     if path.startswith("src/dartwork_mpl/"):
-        return path.startswith("src/dartwork_mpl/asset/prompt/")
+        return path.startswith("src/dartwork_mpl/guide/assets/")
     return True
 
 
@@ -74,7 +74,7 @@ def issue_counts() -> dict[str, int]:
     counts = {}
     for path in tracked_files():
         source = (ROOT / path).read_text(encoding="utf-8")
-        n = sum(1 for i in lint(source) if i.severity in COUNTED)
+        n = sum(1 for i in lint_code(source) if i.severity in COUNTED)
         if n:
             counts[path] = n
     return counts
@@ -90,7 +90,7 @@ def compare(
         if now > base:
             out.append(
                 f"{path}: {now} issues, baseline {base} — fix the new ones "
-                "(`dartwork_mpl.lint.lint` lists them)"
+                "(`dartwork_mpl.lint_code` lists them)"
             )
         elif now < base:
             out.append(

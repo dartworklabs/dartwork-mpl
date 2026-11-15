@@ -217,7 +217,7 @@ uv run python evals/agentic/sheet.py ~/scratch/dartwork-mpl-evals/baseline-$(dat
 
 # 4. Skill A/B. Same wheel; both arms in one run; seeded random order; repetitions;
 #    sandbox required. --ab-skill-install runs the wheel's own installer in the
-#    project (python -m dartwork_mpl.skills install); --ab-skill DIR copies a folder.
+#    project (python -m dartwork_mpl.guide install); --ab-skill DIR copies a folder.
 cc-swap job --prefer quota -- uv run python evals/agentic/run.py --run-id skill-ab-$(date +%Y%m%d) \
     --jobs 4 --reps 2 --hide-grading --claude-model sonnet \
     --wheel PATH/TO/SAME.whl --ab-skill-install

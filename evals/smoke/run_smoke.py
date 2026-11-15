@@ -762,14 +762,14 @@ def one(case, host, wheel, run, timeout):
             )
             (unit / "skill-help.txt").write_text(
                 command(
-                    [py, "-m", "dartwork_mpl.skills", "install", "--help"],
+                    [py, "-m", "dartwork_mpl.guide", "install", "--help"],
                     project,
                     env,
                 )
             )
             (unit / "skill-install.txt").write_text(
                 command(
-                    [py, "-m", "dartwork_mpl.skills", "install", "--copy"],
+                    [py, "-m", "dartwork_mpl.guide", "install", "--copy"],
                     project,
                     env,
                 )

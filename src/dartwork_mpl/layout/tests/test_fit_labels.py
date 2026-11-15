@@ -686,11 +686,8 @@ def test_a_name_whose_lines_would_crush_the_plot_stays() -> None:
 def _template_figure(name: str, preset: str, width: str | None):
     """A shipped template drawn up to its layout, at another preset and
     size (``None``: its own)."""
-    from pathlib import Path
 
-    source = (
-        Path(dm.__file__).parent / "asset/prompt/05-templates" / name
-    ).read_text(encoding="utf-8")
+    source = dm.guide.read("template/" + name.removesuffix(".py"))
     source = source[: source.index("dm.simple_layout(fig")]
     source = source.replace(
         'dm.style.use("scientific")', f'dm.style.use("{preset}")'

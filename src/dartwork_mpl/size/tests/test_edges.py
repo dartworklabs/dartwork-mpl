@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import warnings
 from itertools import pairwise
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -126,8 +125,7 @@ class TestFlatCategoryNames:
     ) -> None:
         """Without the names, these turned or wrapped their labels on a slide
         (0.38, 0.25, -0.78 and -0.88 em apart flat)."""
-        root = Path(dm.__file__).parent / "asset/prompt/05-templates"
-        source = (root / name).read_text(encoding="utf-8")
+        source = dm.guide.read("template/" + name.removesuffix(".py"))
         ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
         source = source[: min(source.find(e) % (len(source) + 1) for e in ends)]
         source = source.replace(

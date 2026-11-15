@@ -3,42 +3,8 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
-import pytest
 
-from dartwork_mpl.helpers.quality import (
-    check_figure_quality,
-    suggest_chart_type,
-)
-
-
-class TestSuggestChartType:
-    """Happy-path coverage for the chart-type heuristic."""
-
-    @pytest.mark.parametrize(
-        "x_type, y_type, n_points, n_series, expected",
-        [
-            ("categorical", "continuous", 5, 1, "bar"),
-            ("categorical", "continuous", 5, 3, "grouped_bar"),
-            ("temporal", "continuous", 10, 1, "bar_line"),
-            ("temporal", "continuous", 100, 1, "line"),
-            ("temporal", "continuous", 50, 3, "multi_line"),
-            ("continuous", "continuous", 30, 1, "scatter"),
-            ("continuous", "continuous", 200, 1, "scatter_density"),
-            ("continuous", "continuous", 1000, 1, "hexbin"),
-            ("continuous", None, 50, 1, "histogram"),
-            ("categorical", None, 5, 1, "count_bar"),
-        ],
-    )
-    def test_returns_expected_type(
-        self,
-        x_type: str,
-        y_type: str | None,
-        n_points: int,
-        n_series: int,
-        expected: str,
-    ) -> None:
-        result = suggest_chart_type(x_type, y_type, n_points, n_series)
-        assert result == expected
+from dartwork_mpl.helpers.quality import check_figure_quality
 
 
 class TestCheckFigureQuality:
@@ -150,59 +116,3 @@ class TestCheckFigureQuality:
         issues = check_figure_quality(fig)
         assert any("Too many x-ticks" in i for i in issues)
         assert any("Too many y-ticks" in i for i in issues)
-
-
-class TestSuggestChartTypeEdgeCases:
-    """Branches not covered by parametrized happy paths."""
-
-    def test_unknown_x_type_with_y_is_rejected(self) -> None:
-        """An unrecognized ``x_type`` is named, not answered with a default.
-
-        This replaces a test that pinned the fall-through to ``scatter``:
-        a typo used to come back as a confident recommendation (#501 task 8).
-        """
-        with pytest.raises(ValueError, match="x_type must be one of"):
-            suggest_chart_type("weird", "continuous", 10, 1)
-
-    def test_unknown_x_type_no_y_is_rejected(self) -> None:
-        """``y_type=None`` does not excuse an unrecognized ``x_type`` either."""
-        with pytest.raises(ValueError, match="x_type must be one of"):
-            suggest_chart_type("weird", None, 10, 1)
-
-    def test_categorical_with_categorical_y_returns_bar(self) -> None:
-        """Categorical x + non-continuous y still routes via ``n_series``."""
-        # Single series -> bar (regardless of y_type categorical/count).
-        assert suggest_chart_type("categorical", "count", 5, 1) == "bar"
-        # Multi series -> grouped_bar.
-        assert suggest_chart_type("categorical", "count", 5, 4) == "grouped_bar"
-
-    def test_continuous_x_count_y_routes_to_line(self) -> None:
-        """``y_type != 'continuous'`` with continuous x falls to the
-        line branch (line 67)."""
-        result = suggest_chart_type("continuous", "count", 10, 1)
-        assert result == "line"
-
-    def test_temporal_boundary_19_vs_20(self) -> None:
-        """Boundary at ``n_points < 20`` for temporal single-series."""
-        # 19 -> bar_line.
-        assert suggest_chart_type("temporal", "continuous", 19, 1) == "bar_line"
-        # 20 -> line.
-        assert suggest_chart_type("temporal", "continuous", 20, 1) == "line"
-
-    def test_continuous_continuous_boundaries(self) -> None:
-        """Boundaries at 50 (scatter -> scatter_density) and 500
-        (scatter_density -> hexbin)."""
-        assert (
-            suggest_chart_type("continuous", "continuous", 49, 1) == "scatter"
-        )
-        assert (
-            suggest_chart_type("continuous", "continuous", 50, 1)
-            == "scatter_density"
-        )
-        assert (
-            suggest_chart_type("continuous", "continuous", 499, 1)
-            == "scatter_density"
-        )
-        assert (
-            suggest_chart_type("continuous", "continuous", 500, 1) == "hexbin"
-        )

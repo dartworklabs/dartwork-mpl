@@ -252,7 +252,7 @@ def _run(
     from contextlib import suppress
     from tempfile import TemporaryDirectory
 
-    from dartwork_mpl.lint import lint as _lint
+    from dartwork_mpl.guide import lint as _lint
 
     from .._platform import run_child
 
@@ -279,9 +279,7 @@ def _run(
         with suppress(SyntaxError, ValueError, UnicodeError):
             ast.parse(code)
         lint_issues = tuple(
-            LintRecord(
-                i.rule_id, i.severity, i.line, i.message, i.fix_suggestion
-            )
+            LintRecord(i.rule_id, str(i.severity), i.line, i.message, i.fix)
             for i in _lint(code)
         )
     except (MemoryError, RecursionError) as exc:

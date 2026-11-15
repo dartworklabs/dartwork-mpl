@@ -264,7 +264,6 @@ templates remain standalone Python examples.
 | **Agent skill** | Agents load the rules on demand | `python -m dartwork_mpl.skills install` |
 | **MCP server** | Live doc access + lint inside the chat | `dartwork-mpl-mcp` console script ([setup](../integrations/mcp_server.md)) |
 | **Prompt corpus** (4 guides + templates) | Anti-patterns, style rules, recipes — paste-able | `dm.list_prompts()` → `["00-index", "01-policy", "02-anti-patterns", "03-recipes"]`; `dm.get_prompt("02-anti-patterns")` |
-| **18 plot templates** | Drop-in patterns for bar / line / scatter / heatmap / dashboards | [AI Plot Templates gallery](../examples_gallery/09_ai_templates/index.rst) |
 | **Consumer entry** | One-screen onboarding for any LLM; points to the skill | `dm.get_agent_doc("AGENTS")` |
 | **`llms.txt`** | Lightweight index (≈ 4 KB) — fits in any system prompt | Repo root, `dm.get_agent_doc("llms")` |
 | **`llms-full.txt`** | Concatenated full reference (≈ 109 KB) — for tools that read whole files | Repo root, `dm.get_agent_doc("llms-full")` |
@@ -301,5 +300,4 @@ AI-Assisted Development <../integrations/ai_assisted>
 MCP Server <../integrations/mcp_server>
 Agent Plot Evaluation <../integrations/agent_plot_evaluation>
 Designed for AI Agents (philosophy) <../philosophy/ai_native>
-AI Plot Templates (gallery) <../examples_gallery/09_ai_templates/index>
 ```

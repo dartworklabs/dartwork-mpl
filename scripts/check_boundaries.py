@@ -109,7 +109,6 @@ SLICES = frozenset(
         "dartwork_mpl._colors.model",
         "dartwork_mpl._colors.registry",
         "dartwork_mpl._colors.verify",
-        "dartwork_mpl.agent",
         "dartwork_mpl.annotation",
         "dartwork_mpl.config",
         "dartwork_mpl.diagnostics",
@@ -117,11 +116,11 @@ SLICES = frozenset(
         "dartwork_mpl.figure_review",
         "dartwork_mpl.font",
         "dartwork_mpl.formatting",
+        "dartwork_mpl.guide",
         "dartwork_mpl.helpers",
         "dartwork_mpl.icon",
         "dartwork_mpl.io",
         "dartwork_mpl.layout",
-        "dartwork_mpl.lint",
         "dartwork_mpl.mcp",
         "dartwork_mpl.mcp.artifacts",
         "dartwork_mpl.mcp.catalog",
@@ -131,15 +130,10 @@ SLICES = frozenset(
         "dartwork_mpl.mcp.guides",
         "dartwork_mpl.mcp.lint",
         "dartwork_mpl.mcp.plot_data",
-        "dartwork_mpl.mcp.recommend",
         "dartwork_mpl.mcp.templates",
-        "dartwork_mpl.prompt",
-        "dartwork_mpl.recommend",
         "dartwork_mpl.scale",
         "dartwork_mpl.size",
-        "dartwork_mpl.skills",
         "dartwork_mpl.style",
-        "dartwork_mpl.templates",
         "dartwork_mpl.tokens",
         "dartwork_mpl.ui",
         # The viewer's sub-slices (ADR 0005, audit ui-cli §4).
@@ -157,16 +151,6 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl.helpers", "dartwork_mpl.recommend"): (
-        "historical recommendation aliases expose the native callable"
-    ),
-    ("dartwork_mpl.lint", "dartwork_mpl.prompt"): (
-        "lint parses the bundled anti-pattern catalog opened by its corpus owner"
-    ),
-    ("dartwork_mpl.lint", "dartwork_mpl._compat"): (
-        "the codemod's hints and the removed-name rules' detectors come from "
-        "the removed-name registry"
-    ),
     ("dartwork_mpl._colors", "dartwork_mpl._colors.construction"): (
         "the colour build command compiles the candidate catalogue and publishes the generated module"
     ),
@@ -305,9 +289,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp", "dartwork_mpl._colors.registry"): (
         "the MCP colour tool and resource list the registered colour libraries"
     ),
-    ("dartwork_mpl.lint", "dartwork_mpl.style"): (
-        "the preset autofix only rewrites to a shipped preset name"
-    ),
     ("dartwork_mpl.mcp", "dartwork_mpl.mcp.artifacts"): (
         "the server mounts the durable plot-artifact tools and resources"
     ),
@@ -332,11 +313,23 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp", "dartwork_mpl.mcp.plot_data"): (
         "the tools table exposes data validation as validate_plot_data"
     ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.recommend"): (
-        "the tools table exposes chart recommendation as suggest_chart_type"
-    ),
     ("dartwork_mpl.mcp", "dartwork_mpl.mcp.templates"): (
         "the tools and resources tables expose the bundled templates and styles"
+    ),
+    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.guide"): (
+        "capability discovery lists the bundled template ids"
+    ),
+    ("dartwork_mpl.mcp.execution", "dartwork_mpl.guide"): (
+        "plot validation lints the source before executing it"
+    ),
+    ("dartwork_mpl.mcp.guides", "dartwork_mpl.guide"): (
+        "the guide resources serve the bundled skill, recipes and catalog"
+    ),
+    ("dartwork_mpl.mcp.lint", "dartwork_mpl.guide"): (
+        "the MCP lint tools expose dm.lint_code"
+    ),
+    ("dartwork_mpl.mcp.templates", "dartwork_mpl.guide"): (
+        "template tools and resources read and rank the bundled templates"
     ),
     ("dartwork_mpl.mcp.artifacts", "dartwork_mpl.mcp.execution"): (
         "an artifact bundle is the output of one validated plot execution"
@@ -344,29 +337,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.blend"): (
         "the mix_colors tool must return exactly what dm.mix_colors blends"
     ),
-    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.prompt"): (
-        "capability discovery lists the prompt owner's live bundled template names"
-    ),
     ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (
         "the capability summary lists the presets dm.style.use accepts"
-    ),
-    ("dartwork_mpl.mcp.execution", "dartwork_mpl.lint"): (
-        "plot validation lints the source before executing it"
-    ),
-    ("dartwork_mpl.mcp.guides", "dartwork_mpl.prompt"): (
-        "the guide resources serve the bundled prompt corpus"
-    ),
-    ("dartwork_mpl.mcp.lint", "dartwork_mpl.lint"): (
-        "the MCP lint tools expose dm.lint's anti-pattern linter"
-    ),
-    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.recommend"): (
-        "the suggest_chart_type tool wraps dm.suggest_chart_type's heuristic"
-    ),
-    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.mcp.templates"): (
-        "a recommendation links only templates that exist, closing the recommend -> pull-template loop"
-    ),
-    ("dartwork_mpl.mcp.templates", "dartwork_mpl.prompt"): (
-        "template workflows consume prompt corpus names, confined files and existence; find_template ranks its index"
     ),
     ("dartwork_mpl.scale", "dartwork_mpl.style"): (
         "the active preset sets how many points one fs / lw step adds (2.6 on slides)"
@@ -379,12 +351,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.size", "dartwork_mpl.style"): (
         "the default canvas follows the active preset's page and font"
-    ),
-    ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
-        "a template sizes its text relative to the active preset"
-    ),
-    ("dartwork_mpl.templates", "dartwork_mpl.size"): (
-        "a template's default figure size is a physical width and aspect"
     ),
     ("dartwork_mpl.ui", "dartwork_mpl.ui.page"): (
         "the viewer app serves the page that renders its controls"
@@ -467,8 +433,11 @@ DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.size.model": (
         "parsing user input into size types needs nothing outside it"
     ),
-    "dartwork_mpl.recommend._chart_type": (
-        "chart semantics decide solely from caller values"
+    "dartwork_mpl.guide.decide": (
+        "findings and search ranks are decided from the parsed source, catalog and references"
+    ),
+    "dartwork_mpl.guide.model": (
+        "parsing source, catalog and guidance text needs nothing outside it"
     ),
     "dartwork_mpl.mcp.artifacts.policy": (
         "artifact admission, expiry and request parsing decide from values"
@@ -506,7 +475,11 @@ DEBT: Mapping[str, str] = {}
 # Package paths that hold user-facing sample code, not package source: the
 # bundled prompt templates and the UI scaffold templates copied into user
 # projects (they import `dartwork_mpl` as any user would).
-EXCLUDED_DIRS = (("asset",), ("ui", "scaffold", "templates"))
+EXCLUDED_DIRS = (
+    ("asset",),
+    ("guide", "assets"),
+    ("ui", "scaffold", "templates"),
+)
 
 
 @dataclass(frozen=True)

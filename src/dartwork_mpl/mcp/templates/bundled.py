@@ -1,18 +1,15 @@
 """The bundled plot templates and style files: lookup and the resource replies.
 
-Templates live in ``asset/prompt/05-templates/{plot_type}.py`` (tier 2 in
-``advanced/``) and styles in ``asset/mplstyle/*.mplstyle``; IDs are resolved
-through prompt's corpus operations and the platform's style lookup.
+Templates are read through ``dartwork_mpl.guide`` by reference id
+(``template/<id>``, ``template/advanced/<id>``); styles live in
+``asset/mplstyle/*.mplstyle`` and are resolved through the platform's style
+lookup.
 """
 
 import json
 from pathlib import Path
 
-from dartwork_mpl.prompt import (
-    list_template_names,
-    resolve_template_path,
-    template_exists,
-)
+from dartwork_mpl import guide
 
 from .._platform import resolve_style_path
 
@@ -20,47 +17,52 @@ _ASSET_DIR = Path(__file__).parents[2] / "asset"
 _MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
 
 
-def _resolve_template_path(
-    plot_type: str, *, advanced: bool = False
-) -> Path | None:
-    """Delegate template lookup to the prompt owner's confined corpus boundary.
+def _prefix(advanced: bool) -> str:
+    return "template/advanced/" if advanced else "template/"
 
-    Preserve the private compatibility surface while returning the resolved
-    regular file checked by that boundary, or None for invalid/missing IDs.
-    """
-    return resolve_template_path(plot_type, advanced=advanced)
+
+def names(*, advanced: bool = False) -> list[str]:
+    """The template ids of one tier, sorted."""
+    prefix = _prefix(advanced)
+    return sorted(
+        ref.id.removeprefix(prefix)
+        for ref in guide.references()
+        if ref.id.startswith(prefix) and "/" not in ref.id.removeprefix(prefix)
+    )
+
+
+def source(plot_type: str, *, advanced: bool = False) -> str | None:
+    """A template's source by case-insensitive id, or None for an unknown id."""
+    try:
+        return guide.read(_prefix(advanced) + plot_type.lower())
+    except ValueError:
+        return None
 
 
 def exists(stem: str, *, advanced: bool = False) -> bool:
-    """Whether a bundled template file named exactly ``stem`` exists in the tier."""
-    return template_exists(stem, advanced=advanced)
+    """Whether a bundled template named exactly ``stem`` exists in the tier."""
+    return stem in names(advanced=advanced)
 
 
 def template_list() -> str:
     """JSON array of the basic template stems (``dartwork-mpl://templates/list``)."""
-    names = list_template_names()
-    return json.dumps(names, indent=2)
+    return json.dumps(names(), indent=2)
 
 
 def template_source(plot_type: str) -> str:
     """A basic template's source by case-insensitive bare ID, or not-found text."""
-    path = resolve_template_path(plot_type)
-    if path is None:
-        available = list_template_names()
-        return f"No template for {plot_type!r}. Available: {available}"
-    return path.read_text(encoding="utf-8")
+    found = source(plot_type)
+    if found is None:
+        return f"No template for {plot_type!r}. Available: {names()}"
+    return found
 
 
 def advanced_template_source(plot_type: str) -> str:
     """An advanced template's source, else the basic one's, else not-found text."""
-    advanced = resolve_template_path(plot_type, advanced=True)
-    if advanced is not None:
-        return advanced.read_text(encoding="utf-8")
-    basic = resolve_template_path(plot_type)
-    if basic is not None:
-        return basic.read_text(encoding="utf-8")
-    available = list_template_names()
-    return f"No template for {plot_type!r}. Available: {available}"
+    found = source(plot_type, advanced=True) or source(plot_type)
+    if found is None:
+        return f"No template for {plot_type!r}. Available: {names()}"
+    return found
 
 
 def style_list() -> str:

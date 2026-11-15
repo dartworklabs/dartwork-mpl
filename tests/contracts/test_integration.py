@@ -5,9 +5,6 @@ Catches regressions that unit tests miss:
 - :class:`TestMcpSurfaceContract`: every advertised MCP tool and
   resource must list **and** respond. Adding/removing a tool requires
   updating the expected set here, so silent API drift is loud.
-- :class:`TestAgentDocAccess`: every name in
-  :data:`dartwork_mpl.AGENT_DOCS` must resolve to a non-empty file in
-  either the wheel-bundled location or the repo-root fallback.
 
 These tests are the canonical guardrails for the *integration surface*
 that ships to PyPI / GitHub Raw consumers.
@@ -19,8 +16,6 @@ import asyncio
 import json
 
 import pytest
-
-import dartwork_mpl as dm
 
 fastmcp = pytest.importorskip("fastmcp")
 
@@ -37,13 +32,10 @@ EXPECTED_MCP_TOOLS: frozenset[str] = frozenset(
         "list_color_families",
         "lint_dartwork_mpl_code",
         "lint_dartwork_mpl_code_json",
-        "apply_lint_fixes",
-        "migrate_legacy_code",
         "find_template",
         "render_template",
         "validate_plot_data",
         "validate_generated_plot",
-        "suggest_chart_type",
         "compose_layered_plot",
         "render_template_advanced",
         "dartwork_mpl_info",
@@ -56,10 +48,8 @@ EXPECTED_MCP_TOOLS: frozenset[str] = frozenset(
 EXPECTED_MCP_RESOURCE_URIS: frozenset[str] = frozenset(
     {
         "dartwork-mpl://guide/agent-entry",
-        "dartwork-mpl://guide/policy",
         "dartwork-mpl://guide/anti-patterns",
         "dartwork-mpl://guide/recipes",
-        "dartwork-mpl://guide/migration",
         "dartwork-mpl://api/index",
         "dartwork-mpl://palette/colors",
         "dartwork-mpl://palette/fonts",
@@ -190,7 +180,7 @@ class TestMcpSurfaceContract:
 
     @pytest.mark.parametrize("plot_type", _discover_plot_templates())
     def test_every_bundled_template_renders(self, plot_type: str) -> None:
-        """Every bundled ``05-templates/*.py`` (18 basic + the advanced tier)
+        """Every bundled template (18 basic + the advanced tier)
         ships in the wheel and is served over MCP, but only ``bar`` was
         execution-tested — a template could regress at *runtime* while lint
         and the separate docs-gallery copy stayed green. Render each tier."""
@@ -206,8 +196,8 @@ class TestMcpSurfaceContract:
             assert payload["png_base64"] and len(payload["png_base64"]) > 1000
 
     def test_advanced_template_uri_resolves(self) -> None:
-        """The advanced-tier template URI — emitted by suggest_chart_type and
-        the create_plot prompt — was unregistered (only ``templates/{name}``
+        """The advanced-tier template URI — emitted by the create_plot
+        prompt — was unregistered (only ``templates/{name}``
         existed), so it resolved to nothing. It must resolve now."""
         body = (
             self._run(
@@ -217,32 +207,6 @@ class TestMcpSurfaceContract:
             .content
         )
         assert body and len(body) > 5 and "No template" not in body
-
-    def test_suggest_chart_type_uris_resolve(self) -> None:
-        """suggest_chart_type used to emit singular ``template/{name}`` URIs
-        that matched no registered resource; both emitted tiers must resolve."""
-        payload = json.loads(
-            self._run(
-                self.mcp.call_tool(
-                    "suggest_chart_type",
-                    {
-                        "x_type": "categorical",
-                        "y_type": "continuous",
-                        "n_points": 5,
-                    },
-                )
-            )
-            .content[0]
-            .text
-        )
-        for key in ("basic_template_uri", "advanced_template_uri"):
-            uri = payload.get(key)
-            if not uri:
-                continue
-            body = self._run(self.mcp.read_resource(uri)).contents[0].content
-            assert body and len(body) > 5 and "No template" not in body, (
-                f"{key}={uri} did not resolve"
-            )
 
     def test_validate_generated_plot_lint_blocks_critical(self) -> None:
         """``validate_generated_plot`` must short-circuit on critical
@@ -260,60 +224,3 @@ class TestMcpSurfaceContract:
         rule_ids = {i["rule_id"] for i in payload["lint"]}
         assert "figsize-direct" in rule_ids
         assert "tight-layout" in rule_ids
-
-    def test_apply_lint_fixes_round_trip(self) -> None:
-        """Live MCP serialization retains safe style and Figure rewrites."""
-        bad = (
-            "import matplotlib.pyplot as plt\n"
-            "import dartwork_mpl as dm\n"
-            "plt.style.use('scientific')\n"
-            "fig = plt.figure()\n"
-            "fig.tight_layout()\n"
-        )
-        result = self._run(
-            self.mcp.call_tool("apply_lint_fixes", {"code": bad})
-        )
-        payload = json.loads(result.content[0].text)
-        assert "dm.style.use" in payload["fixed_code"]
-        assert "dm.simple_layout" in payload["fixed_code"]
-        applied_ids = {i["rule_id"] for i in payload["applied"]}
-        assert {"plt-style-use", "tight-layout"} <= applied_ids
-
-    def test_apply_lint_fixes_preserves_unsupported_source(self) -> None:
-        """Live MCP preserves unsupported style and unproven layout source."""
-        code = (
-            "import matplotlib.pyplot as plt\n"
-            "plt.style.use('ggplot')\n"
-            "plt.tight_layout()\n"
-        )
-        result = self._run(
-            self.mcp.call_tool("apply_lint_fixes", {"code": code})
-        )
-        payload = json.loads(result.content[0].text)
-        assert payload["fixed_code"] == code
-        assert payload["applied"] == []
-        assert {issue["rule_id"] for issue in payload["unfixed"]} == {
-            "plt-style-use",
-            "tight-layout",
-        }
-
-
-class TestAgentDocAccess:
-    """Every bundled onboarding doc must be reachable through
-    :func:`dartwork_mpl.get_agent_doc` and :func:`agent_doc_path`.
-    """
-
-    @pytest.mark.parametrize("name", dm.AGENT_DOCS)
-    def test_get_agent_doc_returns_non_empty(self, name: str) -> None:
-        body = dm.get_agent_doc(name)
-        assert body
-        assert len(body) > 100
-
-    @pytest.mark.parametrize("name", dm.AGENT_DOCS)
-    def test_agent_doc_path_exists(self, name: str) -> None:
-        p = dm.agent_doc_path(name)
-        assert p.exists()
-
-    def test_unknown_doc_raises_value_error(self) -> None:
-        with pytest.raises(ValueError):
-            dm.get_agent_doc("not-a-real-doc")

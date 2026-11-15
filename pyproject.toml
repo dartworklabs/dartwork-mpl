@@ -131,8 +131,6 @@ only-include = [
     # docs/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.md).
     "CLAUDE.md",
     "AGENTS.md",
-    "llms.txt",
-    "llms-full.txt",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -141,24 +139,6 @@ packages = ["src/dartwork_mpl"]
 # tests/architecture/test_packaging.py builds the wheel and checks this.
 exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 
-# The llms index files are bundled inside the wheel under
-# ``dartwork_mpl/asset/agent/`` so installations from PyPI can read
-# them via ``importlib.resources``. The repo-root copies remain the
-# canonical source for GitHub-raw fetches. The consumer agent entry
-# (``dm.get_agent_doc("AGENTS")`` / ``("CLAUDE")``) is ordinary package data
-# at src/dartwork_mpl/asset/agent/{AGENTS,CLAUDE}.md, and the agent skill
-# ships from src/dartwork_mpl/skills/; the repo-root AGENTS.md / CLAUDE.md
-# are contributor documents and stay out of the wheel.
-#
-# Destinations are package-relative — Hatch does NOT strip ``src/``
-# for ``force-include`` the way it does for the ``packages = [...]``
-# entries above. Writing ``src/dartwork_mpl/...`` here would land the
-# files outside the importable package tree at install time, so
-# ``importlib.resources`` couldn't reach them under
-# ``dartwork_mpl.asset.agent``.
-[tool.hatch.build.targets.wheel.force-include]
-"llms.txt" = "dartwork_mpl/asset/agent/llms.txt"
-"llms-full.txt" = "dartwork_mpl/asset/agent/llms-full.txt"
 
 [dependency-groups]
 # `uv sync` installs this group: everything ruff, basedpyright and pytest need.
@@ -261,7 +241,7 @@ force-exclude = true
 [tool.ruff.format]
 # Ruff 0.16+ formats the Python code blocks of Markdown files by default.
 # Adopting that is a separate decision: it would rewrite the shipped prompt
-# corpus, `llms-full.txt` and the MCP resource bytes together.
+# guidance and the MCP resource bytes together.
 exclude = ["*.md"]
 quote-style = "double"
 indent-style = "space"
@@ -383,7 +363,7 @@ exclude = [
     "**/tests",
     "**/test_*.py",
     "**/conftest.py",
-    "src/dartwork_mpl/asset/prompt/05-templates",
+    "src/dartwork_mpl/guide/assets/templates",
     "src/dartwork_mpl/_colors/_generated.py",
 ]
 pythonVersion = "3.11"

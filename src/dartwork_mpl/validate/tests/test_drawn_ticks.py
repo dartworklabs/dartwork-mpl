@@ -268,11 +268,8 @@ def test_a_polar_theta_ring_is_not_a_row_of_labels(name: str) -> None:
     theta labels around a polar plot have none. On the shipped polar
     templates in presentation TICK_CROWD measured "8 ticks in 0.00in", and
     counting every drawn theta label added TICK_ROTATION."""
-    from pathlib import Path
 
-    source = (
-        Path(dm.__file__).parent / "asset/prompt/05-templates" / name
-    ).read_text(encoding="utf-8")
+    source = dm.guide.read("template/" + name.removesuffix(".py"))
     ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
     source = source[: min(i for e in ends if (i := source.find(e)) >= 0)]
     source = source.replace(
