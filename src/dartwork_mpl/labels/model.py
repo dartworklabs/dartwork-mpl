@@ -60,18 +60,6 @@ class BarOptions:
         """``color="series"``: a label off its bar takes the bar's colour."""
         return isinstance(self.color, str) and self.color == "series"
 
-    @property
-    def precise(self) -> bool:
-        """Whether the call fixed how the number prints: ``decimals=``, a
-        ``fmt`` callable, or a template field with a format spec."""
-        if self.decimals is not None or callable(self.fmt):
-            return True
-        if isinstance(self.fmt, str):
-            return any(
-                spec or conv for _, spec, conv in template_fields(self.fmt)
-            )
-        return False
-
 
 def template_fields(template: str) -> list[tuple[str, str, str]]:
     """``(literal, spec, conversion)`` of each ``{}`` field of ``template``."""
@@ -173,7 +161,6 @@ class ValueFacts:
     scaled: float
     decimals: int
     fixed: bool
-    precise: bool
     sign: Sign
 
 
@@ -181,8 +168,7 @@ class ValueFacts:
 class LabelText:
     """What a label prints: ``lead``, then ``value`` at ``decimals`` places.
 
-    ``lead`` is ``""``, ``"+"`` or a bound relation (``"<"`` / ``">"``);
-    ``fixed`` keeps a zero's decimals (``0.00``).
+    ``lead`` is ``""`` or ``"+"``; ``fixed`` keeps a zero's decimals (``0.00``).
     """
 
     value: float
@@ -313,22 +299,6 @@ class Headroom:
     view: Span | None
 
 
-@dataclass(frozen=True)
-class HiddenFacts:
-    """Bar labels hidden for room over the figure, by orientation."""
-
-    labels: int
-    hidden_columns: int
-    hidden_rows: int
-
-
-@dataclass(frozen=True)
-class Notice:
-    """A warning to give once the layout settled, or none."""
-
-    text: str | None = None
-
-
 # ------------------------------------------------------------ ink
 @dataclass(frozen=True)
 class Ink:
@@ -400,11 +370,8 @@ class Choice:
 # ------------------------------------------------------------ panel letters
 @dataclass(frozen=True)
 class Title:
-    """A shown title of a panel: its slot, extent across and baseline (px)."""
+    """A shown title of a panel: its baseline (px)."""
 
-    loc: str
-    x0: float
-    x1: float
     baseline: float
 
 
@@ -412,25 +379,18 @@ class Title:
 class Panel:
     """What one panel draws around its top-left corner, in display pixels.
 
-    ``cell`` / ``outer_cell`` are the (row, column) keys of its own grid cell
-    and of the top-level cell it sits in (they differ inside a colour bar's
-    nested grid). ``ylabel_x0`` is the outer edge of its left y-axis name,
-    ``guess_x0`` where one would be. ``bare``: nothing left of its spine;
-    ``neighbour_x1``: the right end of what the panels left of it draw.
-    ``top``: its top decoration; ``decos``: y name and tick boxes as
+    ``cell`` is the (row, column) key of its own grid cell. ``ylabel_x0``
+    is the outer edge of its left y-axis name, ``guess_x0`` where one would
+    be. ``top``: its top decoration; ``decos``: y name and tick boxes as
     ``(x0, x1, y1)``.
     """
 
     corner: tuple[float, float]
     width: float
     descent: float
-    gap: float
     cell: tuple[tuple[int, int], tuple[int, int]] | None
-    outer_cell: tuple[tuple[int, int], tuple[int, int]] | None
     ylabel_x0: float | None
     guess_x0: float
-    bare: bool
-    neighbour_x1: float | None
     titles: tuple[Title, ...]
     top: float
     decos: tuple[tuple[float, float, float], ...]

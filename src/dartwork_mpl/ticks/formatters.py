@@ -16,9 +16,7 @@ from typing import Any
 import matplotlib.ticker as ticker
 from matplotlib.axis import Axis
 
-from ..edgecase import settle
 from . import decide
-from .edges import TEXT_EDGES
 from .measure import in_view, tick_values
 from .model import (
     PLAIN,
@@ -68,9 +66,8 @@ class AxisUnitFormatter(ticker.Formatter):
         self._text: AxisText | None = None
 
     def decide(self, ticks: TickValues) -> AxisText:
-        """The unit and decimals for these ticks (log axes: per tick)."""
-        facts = TextFacts(ticks, self.style)
-        return settle(facts, decide.axis_text(facts), TEXT_EDGES).plan
+        """The unit and decimals for these ticks."""
+        return decide.axis_text(TextFacts(ticks, self.style))
 
     def set_locs(self, locs: list[float]) -> None:
         """Record the ticks and settle this axis's unit and decimals."""
@@ -86,7 +83,7 @@ class AxisUnitFormatter(ticker.Formatter):
             else TickValues.of(values)
         )
         if not ticks.values:  # none in view: every tick votes
-            ticks = TickValues.of(values, linear=ticks.linear)
+            ticks = TickValues.of(values)
         self._text = self.decide(ticks)
 
     def format_ticks(self, values: list[float]) -> list[str]:
@@ -97,9 +94,7 @@ class AxisUnitFormatter(ticker.Formatter):
     def _decision(self, value: float) -> tuple[Unit, int | None]:
         text = self._text
         if text is None:
-            axis = self.axis
-            linear = not isinstance(axis, Axis) or axis.get_scale() == "linear"
-            text = self.decide(TickValues.of([value], linear=linear))
+            text = self.decide(TickValues.of([value]))
         unit = text.unit or decide.max_unit(
             TickValues((value,)), self.style.ladder
         )

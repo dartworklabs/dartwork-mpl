@@ -173,7 +173,6 @@ class Request:
 
     has_axes: bool
     has_grid: bool
-    has_subfigures: bool
 
 
 @dataclass(frozen=True)
@@ -228,16 +227,12 @@ class Role(Enum):
 class Piece:
     """One drawn thing of an Axes that must stay on the canvas.
 
-    ``anchor_x``: where a text is anchored (px), ``None`` when unknown.
     ``outside``: the side of the plot the library anchored a legend outside.
-    ``secondary``: it belongs to a ``secondary_xaxis`` / ``secondary_yaxis``.
     """
 
     box: Box
     role: Role
-    anchor_x: float | None = None
     outside: Edge | None = None
-    secondary: bool = False
 
 
 @dataclass(frozen=True)
@@ -328,22 +323,6 @@ class Step:
     def converged(self) -> bool:
         """No edge moved by ``CONVERGE_PX``."""
         return self.delta < CONVERGE_PX
-
-
-@dataclass(frozen=True)
-class History:
-    """Every step's edges so far, the last step's move."""
-
-    answers: tuple[Edges, ...]
-    delta: Px
-
-
-@dataclass(frozen=True)
-class Next:
-    """The edges to write; ``trial``: try them and keep them if they hold."""
-
-    edges: Edges
-    trial: bool = False
 
 
 # -- fitting text once the margins hold ---------------------------------------
@@ -484,5 +463,5 @@ class TextPlan:
         return not (self.wraps or self.turns or self.names or self.spacing)
 
 
-Facts: TypeAlias = Request | ContentFacts | History | TextFacts
-Plan: TypeAlias = Answer | Fit | Next | TextPlan
+Facts: TypeAlias = Request | ContentFacts | TextFacts
+Plan: TypeAlias = Answer | Fit | TextPlan

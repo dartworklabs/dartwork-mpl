@@ -13,7 +13,11 @@ Tests that *intentionally* depend on a specific style should call
 
 from __future__ import annotations
 
+import importlib
+from collections import Counter
 from collections.abc import Iterator
+from functools import cache
+from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -73,3 +77,55 @@ def _matplotlib_state_isolation() -> Iterator[None]:
     from dartwork_mpl.style import apply as _style_apply
 
     _style_apply.STATE[0] = _style_apply.State()
+
+
+SLICES = Path(__file__).parent / "src" / "dartwork_mpl"
+
+
+@cache
+def _examples() -> dict[tuple[str, str], list[str]]:
+    """Edge names by their example: (``<slice>/tests/<file>``, ``[Class::]fn``)."""
+    found: dict[tuple[str, str], list[str]] = {}
+    for edges_file in sorted(SLICES.glob("*/edges.py")):
+        slice_ = edges_file.parent.name
+        module = importlib.import_module(f"dartwork_mpl.{slice_}.edges")
+        for edge in module.EDGES:
+            file, _, function = edge.example.partition("::")
+            key = (f"{slice_}/tests/{file}", function)
+            found.setdefault(key, []).append(edge.name)
+    return found
+
+
+@pytest.fixture(autouse=True)
+def _example_fires_its_edge(request: pytest.FixtureRequest) -> Iterator[None]:
+    """An edge case's example test must make it fire (``EdgeCase.example``).
+
+    The architecture rule checks the example exists, names the edge and
+    asserts; this checks, while it runs, that ``settle`` applied the edge.
+    """
+    path = Path(str(request.node.path)).as_posix()
+    cls = request.node.cls
+    function = getattr(request.node, "originalname", request.node.name)
+    if cls is not None:
+        function = f"{cls.__name__}::{function}"
+    names = next(
+        (
+            names
+            for (file, fn), names in _examples().items()
+            if fn == function and path.endswith(file)
+        ),
+        None,
+    )
+    if names is None:
+        yield
+        return
+    import dartwork_mpl.edgecase as edgecase
+
+    before, edgecase.tally = edgecase.tally, Counter()
+    try:
+        yield
+        fired = edgecase.tally
+    finally:
+        edgecase.tally = before
+    missing = [n for n in names if not fired[n]]
+    assert not missing, f"{request.node.nodeid} did not fire {missing}"

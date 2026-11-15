@@ -2,8 +2,8 @@
 
 ``EDGES`` holds them all; each stage settles its own slice of it, typed by
 what it decides: the ladder (:data:`LADDER_EDGES`), the format of an Axes
-nobody formatted (:data:`AXES_EDGES`), a number axis's text at draw time
-(:data:`TEXT_EDGES`) and the date ticks after the fit (:data:`THIN_EDGES`).
+nobody formatted (:data:`AXES_EDGES`) and the date ticks after the fit
+(:data:`THIN_EDGES`).
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from .model import (
     AxesPlan,
     AxisFacts,
     AxisPlan,
-    AxisText,
     Crowding,
     Ems,
     Kind,
@@ -25,10 +24,8 @@ from .model import (
     LadderChoice,
     Language,
     PeriodDates,
-    PinTicks,
     QuarterDates,
     Side,
-    TextFacts,
     Thinning,
     YearTicks,
 )
@@ -45,27 +42,6 @@ def korean_auto(facts: Language, plan: Ladder) -> bool:
 def myriad(facts: Language, plan: Ladder) -> Ladder:
     """만/억/조/경."""
     return MYRIAD
-
-
-def _pinnable(axis: AxisFacts) -> bool:
-    return (
-        axis.kind is Kind.NUMBERS
-        and axis.fixed_texts
-        and axis.pinnable
-        and axis.own_locator
-    )
-
-
-def has_pinnable_texts(facts: AxesFacts, plan: AxesPlan) -> bool:
-    """Texts someone fixed by order under matplotlib's own locator."""
-    return _pinnable(facts.x) or _pinnable(facts.y)
-
-
-def pin_ticks(facts: AxesFacts, plan: AxesPlan) -> AxesPlan:
-    """The fixed texts' axes keep the ticks they were made for."""
-    x: AxisPlan = PinTicks() if _pinnable(facts.x) else plan.x
-    y: AxisPlan = PinTicks() if _pinnable(facts.y) else plan.y
-    return replace(plan, x=x, y=y)
 
 
 def has_year_data(facts: AxesFacts, plan: AxesPlan) -> bool:
@@ -128,16 +104,6 @@ def show_twin_spines(facts: AxesFacts, plan: AxesPlan) -> AxesPlan:
     return replace(plan, spines=plan.spines | _twin_spines(facts))
 
 
-def nonlinear(facts: TextFacts, plan: AxisText) -> bool:
-    """Log and other non-linear scales span decades."""
-    return not facts.ticks.linear and bool(facts.ticks.values)
-
-
-def per_tick(facts: TextFacts, plan: AxisText) -> AxisText:
-    """Each tick its own unit and decimals, unless the style fixed them."""
-    return AxisText(facts.style.unit, facts.style.decimals)
-
-
 def crowded(facts: Crowding, plan: Thinning) -> bool:
     """Neighbouring date labels closer than one em at the fitted size."""
     return facts.gap < MIN_DATE_GAP
@@ -152,49 +118,44 @@ def first_uncrowded(facts: Crowding, plan: Thinning) -> Thinning:
 EDGES = (
     EdgeCase(
         name="korean-myriad",
-        why="a Korean figure reads large numbers in 만/억/조, not k/M/G",
+        why="a Korean figure read its large numbers in k/M/G, which Korean "
+        "readers count in 만/억/조",
+        example="test_edges.py::test_korean_myriad",
         applies=korean_auto,
         adjust=myriad,
     ),
     EdgeCase(
         name="year-axis-x",
-        why="annual x data ticked by matplotlib reads 2007.5 and 2,010",
+        why="annual x data ticked by matplotlib read 2007.5 and 2,010",
+        example="test_edges.py::test_year_axis_x",
         applies=has_year_data,
         adjust=year_ticks,
     ),
     EdgeCase(
         name="quarterly-dates",
-        why="quarterly data on month ticks reads 24.01, 24.04 and loses Q1",
+        why="quarterly data on month ticks read 24.01, 24.04 and lost Q1",
+        example="test_edges.py::test_quarterly_dates",
         applies=has_quarterly_dates,
         adjust=quarter_ticks,
     ),
     EdgeCase(
-        name="author-fixed-tick-texts",
-        why="texts fixed by order land on other ticks once the refit moves them",
-        applies=has_pinnable_texts,
-        adjust=pin_ticks,
-    ),
-    EdgeCase(
         name="twin-scale-spine",
-        why="the presets hide the right and top spines, so a twin scale has none",
+        why="the presets hide the right and top spines, so a twin scale "
+        "had no axis line",
+        example="test_edges.py::test_twin_scale_spine",
         applies=draws_twin_scale,
         adjust=show_twin_spines,
     ),
     EdgeCase(
-        name="log-per-tick-unit",
-        why="ticks spanning decades cannot share one unit (0.000001k, 1,000k)",
-        applies=nonlinear,
-        adjust=per_tick,
-    ),
-    EdgeCase(
         name="crowded-dates-thin",
-        why="matplotlib picks date ticks from the range alone, so narrow axes collide",
+        why="matplotlib picks date ticks from the range alone, so labels on "
+        "a narrow axis collided",
+        example="test_edges.py::test_crowded_dates_thin",
         applies=crowded,
         adjust=first_uncrowded,
     ),
 )
 
 LADDER_EDGES = EDGES[:1]
-AXES_EDGES = EDGES[1:5]
-TEXT_EDGES = EDGES[5:6]
-THIN_EDGES = EDGES[6:]
+AXES_EDGES = EDGES[1:4]
+THIN_EDGES = EDGES[4:]

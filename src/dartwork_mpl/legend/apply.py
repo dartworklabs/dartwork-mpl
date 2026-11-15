@@ -8,7 +8,6 @@ the caller moved (``set_loc``, ``set_bbox_to_anchor``) is the caller's.
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, cast
@@ -118,29 +117,21 @@ def anchor_outside(
     if root is None:
         return False
     try:
-        facts = measure.anchor_facts(legend, ax, side, renderer)
+        facts = measure.anchor_facts(ax, side, renderer)
     except BBOX_ERRORS:
         return False
-    plan = settle_edges(facts, decide.anchor(facts), EDGES).plan
-    assert isinstance(plan, Anchor)
-    to_pt = 72.0 / root.dpi
-    plan = Anchor(plan.clearance * to_pt, plan.shift * to_pt)
+    plan = Anchor(decide.anchor(facts).clearance * 72.0 / root.dpi)
     record = getattr(legend, "_dm_legend", None)
     previous = record.anchor if isinstance(record, Record) else None
     if (
         previous is not None
         and getattr(legend, "_dm_outside_side", None) == side.value
         and abs(previous.clearance - plan.clearance) <= 0.01
-        and abs(previous.shift - plan.shift) <= 0.01
     ):
         return False
     (x, y), (dx, dy) = _ANCHORS[side]
-    out, along = plan.clearance / 72.0, plan.shift / 72.0
-    offset = ScaledTranslation(
-        dx * out + abs(dy) * along,
-        dy * out + abs(dx) * along,
-        root.dpi_scale_trans,
-    )
+    out = plan.clearance / 72.0
+    offset = ScaledTranslation(dx * out, dy * out, root.dpi_scale_trans)
     legend.set_bbox_to_anchor((x, y), ax.transAxes + offset)
     legend._dm_outside_side = side.value  # type: ignore[attr-defined]
     if isinstance(record, Record):
@@ -242,43 +233,12 @@ def _kept_settings(legend: Legend | None) -> dict[str, Any]:
     return kept
 
 
-def _leave(legend: Legend, loc: str, kw: dict[str, Any]) -> Legend:
-    """Follow a matplotlib ``loc`` / ``bbox_to_anchor`` on a caller's legend."""
-    if parse_side(loc) is not None:
-        warnings.warn(
-            f"place_legend(loc={loc!r}) needs to rebuild the legend, but it is "
-            "not what the artists draw (tuple handles, a custom handler or "
-            "explicit labels); the legend is left as it is",
-            UserWarning,
-            stacklevel=3,
-        )
-        return legend
-    ignored = sorted(k for k in kw if k not in _CALLER_ANCHOR)
-    if ignored:
-        warnings.warn(
-            f"place_legend left an explicit legend untouched; ignored {ignored}",
-            UserWarning,
-            stacklevel=3,
-        )
-    if loc != "best":
-        legend.set_loc(cast("LegendLocType", loc))
-    if "bbox_to_anchor" in kw:
-        legend.set_bbox_to_anchor(
-            kw["bbox_to_anchor"], kw.get("bbox_transform")
-        )
-    return legend
-
-
 def place_legend(ax: Axes, loc: str, kw: dict[str, Any]) -> Legend | None:
     """Place the legend of ``ax`` (:func:`dartwork_mpl.legend.place_legend`)."""
     owners = same_position_axes(ax)
     facts, handles = measure.entry_facts(owners, ax)
     plan = settle_edges(facts, decide.entries(facts), EDGES).plan
     assert isinstance(plan, EntryPlan)
-    if plan.leave is not None:
-        legend = owners[plan.leave].get_legend()
-        assert legend is not None
-        return _leave(legend, loc, kw)
     host = owners[plan.host]
     old = host.get_legend()
     if not plan.picks:
@@ -481,27 +441,6 @@ def _names(legend: Legend) -> tuple[str, ...]:
     if isinstance(record, Record):
         return record.entries.labels
     return tuple(t.get_text() for t in legend.get_texts())
-
-
-def place_figure_legends(fig: Figure, holder: Figure | SubFigure) -> None:
-    """``dm.figure_legend``'s legends of ``holder`` past its labels as they are now."""
-    renderer = get_renderer(fig)
-    for legend in holder.legends:
-        plan = getattr(legend, "_dm_figure_plan", None)
-        if not isinstance(plan, FigurePlan) or not legend.get_visible():
-            continue
-        if not _still_at(legend, getattr(legend, "_dm_figure_at", None)):
-            continue  # the caller moved it
-        facts = measure.label_facts(holder, plan, renderer)
-        start = replace(plan, anchor=decide.FIGURE_ANCHORS[plan.side])
-        new = settle_edges(facts, start, EDGES).plan
-        assert isinstance(new, FigurePlan)
-        moved = zip(new.anchor, plan.anchor, strict=True)
-        if max(abs(a - b) for a, b in moved) > 1e-9:
-            legend.set_bbox_to_anchor(
-                new.anchor, transform=holder.transSubfigure
-            )
-            _set_figure_plan(legend, new)
 
 
 def _at(legend: Legend) -> tuple[Any, Any]:

@@ -11,17 +11,13 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 #: Room kept between a legend box and the nearest data ink, in points.
 CLEARANCE_PT = 2.0
 #: A one-column legend taller than this share of the Axes is tried last.
 TALL_SHARE = 0.55
-#: A legend on a side the caller named right or left wraps its names when it
-#: is wider than this share of the Axes; it wraps to this share of the canvas.
-WIDE_SHARE = 0.4
-SIDE_WRAP_SHARE = 0.25
 
 
 class Loc(Enum):
@@ -284,10 +280,9 @@ LegendPlan = Inside | Outside
 
 @dataclass(frozen=True)
 class Anchor:
-    """How far an outside legend sits past its side, and off its middle, px."""
+    """How far an outside legend sits past its side, px."""
 
     clearance: float
-    shift: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -311,14 +306,12 @@ class EntryPlan:
     """Which Axes holds the legend and which entries it shows.
 
     ``picks`` are (owner, entry) indices into the facts' owners; ``remove``
-    the owners whose own legends go; ``leave`` an owner whose legend is the
-    caller's and stays untouched.
+    the owners whose own legends go.
     """
 
     host: int
     picks: tuple[tuple[int, int], ...]
     remove: tuple[int, ...] = ()
-    leave: int | None = None
 
 
 # ------------------------------------------------------------------- facts
@@ -327,10 +320,8 @@ class LegendFacts:
     """Everything one legend placement reads from the figure.
 
     ``size_of`` builds a trial legend (nothing drawn); ``meets`` counts the
-    artists whose data ink comes within the clearance of a box; ``frame``
-    does the same for a polar Axes' frame and tick labels (``None`` on a
-    rectilinear one); ``span_of`` is where a legend outside a side may lie;
-    ``wrap`` breaks names at spaces to a width. ``current`` is the plan the
+    artists whose data ink comes within the clearance of a box; ``span_of``
+    is where a legend outside a side may lie. ``current`` is the plan the
     legend has, when the layout places it again.
     """
 
@@ -339,14 +330,10 @@ class LegendFacts:
     axes: Box
     parent: Box
     pad: float
-    canvas_width: float
-    overhead: float
     free_sides: tuple[Side, ...]
     size_of: Callable[[Entries, Columns], Size]
     meets: Callable[[Box], Hits]
     span_of: Callable[[Side], Span]
-    wrap: Callable[[Entries, Width], Entries]
-    frame: Callable[[Box], Hits] | None = None
     current: LegendPlan | None = None
 
 
@@ -356,8 +343,6 @@ class AnchorFacts:
 
     side: Side
     axes: Box
-    legend: Size
-    span: Span
     decorations: tuple[Box, ...]
 
 
@@ -381,11 +366,7 @@ class TitleFacts:
 
 @dataclass(frozen=True)
 class FigureFacts:
-    """A figure legend: its entries, the figure, and the figure's own labels.
-
-    ``label_edges`` holds, per side, where the figure's own label there
-    (suptitle, supxlabel, supylabel) ends, as a fraction of the figure.
-    """
+    """A figure legend: its entries and the figure."""
 
     side: Side | None
     columns: Columns | None
@@ -393,7 +374,6 @@ class FigureFacts:
     figure: Box
     pad: float
     size_of: Callable[[Entries, Columns], Size]
-    label_edges: Mapping[Side, float] = field(default_factory=dict[Side, float])
 
 
 @dataclass(frozen=True)
@@ -401,13 +381,12 @@ class Owner:
     """One Axes drawn in the legend's box (the Axes itself or a twin).
 
     ``rank`` is the draw order (zorder, figure index); ``legend`` the texts
-    of its current legend, ``ours`` whether ``place_legend`` built it.
+    of its current legend.
     """
 
     entries: Entries
     rank: tuple[float, int]
     legend: Entries | None = None
-    ours: bool = False
 
 
 @dataclass(frozen=True)

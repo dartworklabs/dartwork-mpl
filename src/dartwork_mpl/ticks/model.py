@@ -187,16 +187,15 @@ class NumberStyle:
 
 @dataclass(frozen=True)
 class TickValues:
-    """The tick values an axis shows, and whether its scale is linear."""
+    """The tick values an axis shows."""
 
     values: tuple[float, ...]
-    linear: bool = True
 
     @classmethod
-    def of(cls, values: Sequence[float], *, linear: bool = True) -> TickValues:
+    def of(cls, values: Sequence[float]) -> TickValues:
         """The finite values, as floats."""
         finite = tuple(float(v) for v in values if abs(float(v)) < float("inf"))
-        return cls(finite, linear)
+        return cls(finite)
 
 
 @dataclass(frozen=True)
@@ -261,8 +260,7 @@ class AxisFacts:
 
     ``own_formatter`` / ``own_locator``: still matplotlib's defaults, nobody
     set or configured them. ``fixed_texts``: label texts someone fixed by
-    order (``set_xticklabels``); ``pinnable`` when the locator gives as many
-    ticks now as there are texts. ``years``: the plotted data along this
+    order (``set_xticklabels``). ``years``: the plotted data along this
     axis are integer years. ``quarter_ends``: date data that are quarterly
     (``False``: quarter starts or mid-quarter; ``None``: not quarterly).
     """
@@ -273,7 +271,6 @@ class AxisFacts:
     own_formatter: bool = True
     own_locator: bool = True
     fixed_texts: bool = False
-    pinnable: bool = False
     years: bool = False
     quarter_ends: bool | None = None
 
@@ -338,12 +335,7 @@ class YearTicks:
     formatter: bool
 
 
-@dataclass(frozen=True)
-class PinTicks:
-    """Keep the ticks under fixed texts where they are now."""
-
-
-AxisPlan = Leave | Numbers | PeriodDates | QuarterDates | YearTicks | PinTicks
+AxisPlan = Leave | Numbers | PeriodDates | QuarterDates | YearTicks
 
 
 @dataclass(frozen=True)

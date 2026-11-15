@@ -12,7 +12,6 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
-from .. import labels
 from ..edgecase import settle
 from . import decide, loop, measure
 from .edges import EDGES
@@ -61,16 +60,12 @@ def simple_layout(
 
     Calling it again first undoes what the last call set where it is
     still as set, so it draws the same figure. A figure with no Axes is
-    left alone; one without a GridSpec (``fig.add_axes``) or with
-    SubFigures is left alone with a warning. A margin that is not finite
+    left alone; one without a GridSpec (``fig.add_axes``) is left alone
+    with a warning. A margin that is not finite
     raises ``ValueError``.
     """
     grid = measure.root_grid(fig, gs)
-    request = Request(
-        has_axes=bool(fig.axes),
-        has_grid=grid is not None,
-        has_subfigures=bool(fig.subfigs),
-    )
+    request = Request(has_axes=bool(fig.axes), has_grid=grid is not None)
     answer = settle(request, decide.answer(request), EDGES).plan
     if isinstance(answer, Refuse):
         if answer.warning is not None:
@@ -82,4 +77,3 @@ def simple_layout(
         margin, (ml, mr, mt, mb), (float(size[0]), float(size[1]))
     )
     loop.run(fig, grid, margins, fit_labels)
-    labels.warn_hidden(fig, stacklevel=2)

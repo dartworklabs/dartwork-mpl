@@ -7,26 +7,33 @@ slice's ``edges.py`` as one more :class:`EdgeCase` at the end of ``EDGES``::
 
     EDGES: tuple[EdgeCase[Facts, Plan], ...] = (
         EdgeCase(
-            name="hidden-subfigure",
-            why="a hidden SubFigure draws nothing, so it takes no margin",
-            applies=has_hidden_subfigure,
-            adjust=drop_hidden_subfigures,
+            name="crowded-ticks-wrap",
+            why="long category names ran into each other on a narrow axis",
+            example="test_edges.py::test_crowded_ticks_wrap_at_spaces",
+            applies=has_wrappable_ticks,
+            adjust=wrap_ticks,
         ),
     )
 
 ``settle(facts, plan, EDGES)`` applies them in order and reports which fired,
-so the main path stays readable and every special case has a name, a reason
-and a test that mentions the name.
+so the main path stays readable. Every edge case has a name, a reason (what
+goes wrong without it) and an example: the test in the slice's ``tests/``
+that makes it fire. One that fires on no real figure is deleted.
 """
 
+from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-__all__ = ["EdgeCase", "Settled", "settle"]
+__all__ = ["EdgeCase", "Settled", "settle", "tally"]
 
 F = TypeVar("F")
 P = TypeVar("P")
+
+#: Set to a ``Counter`` to count every edge that fires; ``None`` (the default)
+#: counts nothing. Measures which edge cases real figures use.
+tally: Counter[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -35,6 +42,8 @@ class EdgeCase(Generic[F, P]):
 
     name: str
     why: str
+    example: str
+    """``<test file>::<test function>`` in the slice's ``tests/``."""
     applies: Callable[[F, P], bool]
     adjust: Callable[[F, P], P]
 
@@ -54,4 +63,6 @@ def settle(facts: F, plan: P, edges: Sequence[EdgeCase[F, P]]) -> Settled[P]:
         if edge.applies(facts, plan):
             plan = edge.adjust(facts, plan)
             fired.append(edge.name)
+    if tally is not None:
+        tally.update(fired)
     return Settled(plan=plan, fired=tuple(fired))

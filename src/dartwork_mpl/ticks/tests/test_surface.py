@@ -110,15 +110,6 @@ def test_formatters_someone_set_are_kept(figure):
     assert type(ax.xaxis.get_major_formatter()) is mticker.ScalarFormatter
 
 
-def test_log_axis_ticks_take_their_own_unit(figure):
-    ax = figure.axes[0]
-    ax.plot([1, 2, 3], [1, 1e3, 1e6])
-    ax.set_yscale("log")
-    dm.format_axis_si(ax)
-    dm.simple_layout(figure)
-    assert {"1", "1k", "1M"} <= set(_shown(ax.yaxis))
-
-
 def test_unit_in_shared_labels_and_a_later_label_is_yours():
     dm.style.use("report")
     fig, (top, bottom) = plt.subplots(

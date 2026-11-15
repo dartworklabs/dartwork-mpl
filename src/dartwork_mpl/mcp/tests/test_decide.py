@@ -85,24 +85,24 @@ def test_the_named_figure_is_saved_and_nothing_is_guessed() -> None:
     assert decide.choose_figure(FigureFacts(False, 0)).pick is Pick.NONE
 
 
-@pytest.mark.parametrize(
-    ("open_", "fired", "note"),
-    [
-        (1, ("figure-var-unbound",), "current figure"),
-        (3, ("several-figures-unbound",), "the last of 3 open"),
-        (0, (), None),
-    ],
-)
-def test_an_unbound_figure_var_falls_back_to_the_current_figure(
-    open_, fired, note
-) -> None:
+def _unbound(open_: int):
     facts = FigureFacts(False, open_)
-    settled = settle(facts, decide.choose_figure(facts), EDGES)
-    assert settled.fired == fired
-    assert (settled.plan.note is None) is (note is None)
-    if note:
-        assert settled.plan.pick is Pick.CURRENT
-        assert note in str(settled.plan.note)
+    return settle(facts, decide.choose_figure(facts), EDGES)
+
+
+def test_figure_var_unbound_saves_the_one_open_figure() -> None:
+    settled = _unbound(1)
+    assert settled.fired == ("figure-var-unbound",)
+    assert settled.plan.pick is Pick.CURRENT
+    assert "current figure" in str(settled.plan.note)
+    assert _unbound(0).fired == ()
+
+
+def test_several_figures_unbound_saves_the_last_and_says_so() -> None:
+    settled = _unbound(3)
+    assert settled.fired == ("several-figures-unbound",)
+    assert settled.plan.pick is Pick.CURRENT
+    assert "the last of 3 open" in str(settled.plan.note)
 
 
 @pytest.mark.parametrize(

@@ -15,7 +15,6 @@ from ..edgecase import EdgeCase
 from . import decide
 from .model import (
     ANGLES,
-    CONVERGE_PX,
     EDGE_BAND,
     EDGE_BAND_TOL,
     MAX_GAP_FRACTION,
@@ -35,16 +34,11 @@ from .model import (
     FigureArtist,
     Fit,
     Gap,
-    History,
     Line,
-    Next,
     Piece,
     Plan,
     Px,
     Reach,
-    Refuse,
-    Request,
-    Role,
     Share,
     Spacing,
     TextFacts,
@@ -53,23 +47,6 @@ from .model import (
     TickRow,
     Width,
 )
-
-SUBFIGURES = (
-    "simple_layout: the figure has SubFigures, which it does not lay out; "
-    "layout unchanged. Use matplotlib's layout='constrained', or put the "
-    "panels on one GridSpec."
-)
-
-
-def _has_subfigures(facts: Facts, plan: Plan) -> bool:
-    return (
-        isinstance(facts, Request) and facts.has_subfigures and facts.has_axes
-    )
-
-
-def _refuse_subfigures(facts: Facts, plan: Plan) -> Plan:
-    return Refuse(SUBFIGURES)
-
 
 # -- one step: what counts as content -----------------------------------------
 
@@ -88,54 +65,6 @@ def _has_3d(facts: Facts, plan: Plan) -> bool:
 def _tight_3d(facts: Facts, plan: Plan) -> Plan:
     return _each_axes(
         plan, lambda a: a if a.tight is None else replace(a, pieces=a.tight)
-    )
-
-
-def _has_secondaries(facts: Facts, plan: Plan) -> bool:
-    return isinstance(facts, ContentFacts) and any(
-        p.secondary for a in facts.axes for p in a.pieces
-    )
-
-
-def _count_secondaries(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, ContentFacts) and isinstance(plan, Fit)
-    more = [tuple(p for p in a.pieces if p.secondary) for a in facts.axes]
-    pairs = zip(plan.axes, more, strict=True)
-    axes = tuple(replace(a, pieces=a.pieces + m) for a, m in pairs)
-    return replace(plan, axes=axes)
-
-
-def _pinned(piece: Piece, plot: Box | None, canvas: Canvas) -> Piece:
-    """Text anchored at an edge of the plot keeps only what moves with the
-    other edge; text wider than the canvas only what lies over the plot."""
-    box = piece.box
-    if piece.role is not Role.TEXT or plot is None:
-        return piece
-    x0, x1, anchor = box.x0, box.x1, piece.anchor_x
-    if box.width > canvas.width:
-        x0, x1 = max(x0, plot.x0), min(x1, plot.x1)
-    elif anchor is not None and anchor <= plot.x0 + 0.5:
-        x1 = min(x1, plot.x1)
-    elif anchor is not None and anchor >= plot.x1 - 0.5:
-        x0 = max(x0, plot.x0)
-    return replace(piece, box=Box(x0, x1, box.y0, box.y1))
-
-
-def _has_pinned_text(facts: Facts, plan: Plan) -> bool:
-    if not isinstance(facts, ContentFacts) or not isinstance(plan, Fit):
-        return False
-    pieces = ((p, a.plot) for a in plan.axes for p in a.pieces)
-    return any(_pinned(p, plot, facts.canvas) != p for p, plot in pieces)
-
-
-def _drop_pinned_overhang(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, ContentFacts)
-    canvas = facts.canvas
-    return _each_axes(
-        plan,
-        lambda a: replace(
-            a, pieces=tuple(_pinned(p, a.plot, canvas) for p in a.pieces)
-        ),
     )
 
 
@@ -210,24 +139,6 @@ def _reserve_legend_side(facts: Facts, plan: Plan) -> Plan:
     assert isinstance(facts, ContentFacts) and isinstance(plan, Fit)
     pairs = zip(facts.artists, plan.reserves, strict=True)
     return replace(plan, reserves=tuple(art.side or e for art, e in pairs))
-
-
-# -- the iteration ------------------------------------------------------------
-
-
-def _is_flip_flop(facts: Facts, plan: Plan) -> bool:
-    """The last four answers are A, B, A, B with A unlike B, still moving."""
-    if not isinstance(facts, History) or facts.delta < CONVERGE_PX:
-        return False
-    if len(facts.answers) < 4:
-        return False
-    a, b, c, d = facts.answers[-4:]
-    return a == c and b == d and a != b
-
-
-def _try_the_inner(facts: Facts, plan: Plan) -> Plan:
-    assert isinstance(facts, History)
-    return Next(decide.inner(facts.answers[-1], facts.answers[-2]), trial=True)
 
 
 # -- text: pure helpers -------------------------------------------------------
@@ -511,74 +422,68 @@ def _turn_ticks(facts: Facts, plan: Plan) -> Plan:
 
 EDGES: tuple[EdgeCase[Facts, Plan], ...] = (
     EdgeCase(
-        name="subfigures-left-alone",
-        why="each SubFigure is its own box; fitting them is not worth its code",
-        applies=_has_subfigures,
-        adjust=_refuse_subfigures,
-    ),
-    EdgeCase(
         name="axes-3d",
-        why="mplot3d leaves stale tick labels thousands of px off the canvas",
+        why="a 3-D plot's stale tick labels sit thousands of px off the "
+        "canvas, so the margins squeezed the cube to a sliver",
+        example="test_edges.py::test_axes_3d_counts_its_tight_boxes",
         applies=_has_3d,
         adjust=_tight_3d,
     ),
     EdgeCase(
-        name="secondary-axis-children",
-        why="a secondary axis is not in fig.axes but its labels sit on ours",
-        applies=_has_secondaries,
-        adjust=_count_secondaries,
-    ),
-    EdgeCase(
-        name="pinned-text-overhang",
-        why="text pinned to one plot edge would shrink the plot to nothing",
-        applies=_has_pinned_text,
-        adjust=_drop_pinned_overhang,
-    ),
-    EdgeCase(
         name="outside-legend-along-side",
-        why="the legend slice keeps it on the canvas along its side",
+        why="a legend above a polar plot, wider than the plot, pushed both "
+        "side margins in though the legend slice keeps it on the canvas",
+        example="test_edges.py::"
+        "test_outside_legend_along_side_counts_past_the_canvas_only",
         applies=_has_outside_legend,
         adjust=_cut_legend_to_plot,
     ),
     EdgeCase(
         name="figure-text-edge-band",
-        why="a source line near a corner belongs to the bottom, not the side",
+        why="a dm.add_note source line in the bottom-left corner reserved "
+        "the left edge it is nearer to and sat over the plot",
+        example="test_edges.py::"
+        "test_figure_text_edge_band_reserves_by_reading_direction",
         applies=_has_band_text,
         adjust=_reserve_by_reading,
     ),
     EdgeCase(
         name="figure-legend-side",
-        why="a wide figure legend is nearer a side edge than the one it is on",
+        why="a wide figure legend above the panels reserved a side edge it "
+        "is nearer to, and the panels lost their width instead of a row",
+        example="test_edges.py::test_figure_legend_side_reserves_its_side",
         applies=_has_sided_legend,
         adjust=_reserve_legend_side,
     ),
     EdgeCase(
-        name="locator-flip-flop",
-        why="AutoLocator picks wider labels at one width than at the other",
-        applies=_is_flip_flop,
-        adjust=_try_the_inner,
-    ),
-    EdgeCase(
         name="overlong-axis-name",
-        why="a name longer than its plot pushes the margins or a neighbour",
+        why="an axis name longer than its panel ran into the next panel or "
+        "off the canvas",
+        example="test_edges.py::"
+        "test_overlong_axis_name_wraps_and_its_twin_follows",
         applies=_has_overlong_name,
         adjust=_wrap_names,
     ),
     EdgeCase(
         name="colliding-panels",
-        why="matplotlib's default spacing does not know the panels' text",
+        why="tick labels of neighbouring panels ran into each other at "
+        "matplotlib's default spacing",
+        example="test_edges.py::test_colliding_panels_part_by_half_an_em",
         applies=_has_colliding_panels,
         adjust=_part_panels,
     ),
     EdgeCase(
         name="crowded-ticks-wrap",
-        why="long category names run into each other on a narrow axis",
+        why="long category names ran into each other on a narrow axis",
+        example="test_edges.py::test_crowded_ticks_wrap_at_spaces",
         applies=_has_wrappable_ticks,
         adjust=_wrap_ticks,
     ),
     EdgeCase(
         name="crowded-ticks-rotate",
-        why="a name with no space to break, or a number, can only turn",
+        why="crowded numbers or names with no space to break overlapped "
+        "flat, since they cannot wrap",
+        example="test_edges.py::test_crowded_ticks_rotate_when_they_cannot_wrap",
         applies=_has_unwrappable_ticks,
         adjust=_turn_ticks,
     ),

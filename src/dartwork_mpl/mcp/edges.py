@@ -33,15 +33,19 @@ def take_current(facts: FigureFacts, plan: FigureChoice) -> FigureChoice:
 EDGES: tuple[EdgeCase[FigureFacts, FigureChoice], ...] = (
     EdgeCase(
         name="figure-var-unbound",
-        why="agents unpack plt.subplots() into other names or none; the one"
-        " open figure is unambiguously the chart",
+        why="a script that unpacked plt.subplots() into other names rendered "
+        "nothing, though its one open figure was the chart",
+        example="test_decide.py::"
+        "test_figure_var_unbound_saves_the_one_open_figure",
         applies=one_unnamed,
         adjust=take_current,
     ),
     EdgeCase(
         name="several-figures-unbound",
-        why="a script that opens several figures without naming one most"
-        " likely drew the chart last; the note tells the caller to name it",
+        why="a script that opened several figures without naming one "
+        "rendered nothing, though it most likely drew the chart last",
+        example="test_decide.py::"
+        "test_several_figures_unbound_saves_the_last_and_says_so",
         applies=several_unnamed,
         adjust=take_current,
     ),

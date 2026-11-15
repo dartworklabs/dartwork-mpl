@@ -4,7 +4,6 @@ import shutil
 from dataclasses import replace
 from pathlib import Path
 
-import pytest
 from matplotlib import font_manager
 from matplotlib.font_manager import FontProperties
 
@@ -21,8 +20,8 @@ THIN = Face("Paperlogy-1Thin.ttf", "Paperlogy", Weight(250), True)
 EXTRA_LIGHT = Face("Paperlogy-2ExtraLight.ttf", "Paperlogy", Weight(250), True)
 
 
-def _settle(*faces, files=100):
-    table = Table(faces, files)
+def _settle(*faces):
+    table = Table(faces)
     return settle(table, table_plan(table), EDGES)
 
 
@@ -38,18 +37,6 @@ def test_paperlogy_weight_250_gets_the_weight_its_name_says():
     assert settled.fired == ("paperlogy-weight-250",)
     assert settled.plan.weights == (Weight(100), Weight(200))
     assert _settle(replace(THIN, bundled=False)).fired == ()
-
-
-def test_emptied_bundle_warns_once():
-    settled = _settle(BUNDLED, files=1)
-    assert settled.fired == ("emptied-bundle",)
-    assert "only 1 bundled font file" in (settled.plan.warning or "")
-    with (
-        pytest.warns(UserWarning, match="bundled font"),
-        pytest.MonkeyPatch.context() as mp,
-    ):
-        mp.setattr(measure, "bundled_files", lambda: [])
-        apply.register()
 
 
 def _resolve(prop: FontProperties) -> Path:
@@ -74,5 +61,5 @@ def test_system_font_tie_flips_a_primed_lookup(monkeypatch, tmp_path):
 
 
 def _settle_now():
-    facts = measure.table(len(measure.bundled_files()))
+    facts = measure.table()
     return settle(facts, table_plan(facts), EDGES).plan

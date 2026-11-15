@@ -16,7 +16,7 @@ PR은 아래 게이트로 합격을 판정한다. 실행하지 않은 게이트�
 | 출하 색 해시 | 미감: 색 값 | 전체 테스트에 포함 (`tests/test_shipped_colors_hash.py`) | 통과. digest를 다시 만들어 통과시키지 않는다 |
 | 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 20개 각각 RMS ≤ 0.5 |
 | slice 경계 | import 방향과 표면 | 전체 테스트에 포함 (`tests/architecture/test_boundaries.py`) | 위반 0 |
-| 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스 형식과 테스트 | 전체 테스트에 포함 (`test_domain_rules.py`) | 위반 0. baseline 없음 |
+| 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스의 이유와 예제 | 전체 테스트에 포함 (`test_domain_rules.py`, 예제 실행 중 작동 확인은 루트 `conftest.py`) | 위반 0. baseline 없음 |
 | fitness | 언더바 이름, import 순환, 잡동사니 이름, 표면 선언 | 전체 테스트에 포함 (`test_fitness.py`) | baseline보다 나빠지지 않음 |
 | 지침 | skill·템플릿의 코드가 실행되고 거기 나오는 `dm.*` 이름이 존재 | 전체 테스트에 포함 (`guide/tests/test_guidance.py`) | 통과 |
 | 안티패턴 ratchet | 예제·문서 스크립트·템플릿의 lint 수 | 전체 테스트에 포함 | 파일별 수가 baseline 이하 |
@@ -36,7 +36,7 @@ CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인�
 테스트는 작게 둔다. slice 테스트는 slice 코드의 절반을 넘지 않는 것이 기준이다.
 
 - **대부분은 순수 결정 테스트다.** `decide.py`의 함수에 값을 넣고 결과를 표로 확인한다. 그림을 그리지 않는다.
-- **이름 붙은 엣지 케이스마다 테스트 하나.** 그 이름을 테스트에 적는다.
+- **이름 붙은 엣지 케이스마다 테스트 하나.** 그 테스트가 엣지의 `example`이다. 이름을 적고, 단언하고, 실행 중 엣지를 작동시킨다.
 - **공개 함수로 실제 차트를 그려 보는 테스트는 slice당 5~15개.**
 - **쓰지 않는 테스트:** 내부 구현 고정, 바이트·응답 형태 고정, 문서 문구나 도구 설정 검사, 조합만 늘린 반복.
 

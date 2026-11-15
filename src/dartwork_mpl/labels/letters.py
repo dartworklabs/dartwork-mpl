@@ -12,9 +12,8 @@ from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
 from .._figure_geometry import PANEL_LABELS_ATTR
-from ..edgecase import settle
 from ..style import fs
-from . import decide, edges
+from . import decide
 from .measure import drawn_renderer, panel, px_per_pt
 from .model import PanelsFacts
 
@@ -55,9 +54,7 @@ def _place_letters(group: LetterGroup, renderer: RendererBase) -> bool:
     facts = PanelsFacts(
         tuple(panel(ax, t, renderer) for ax, t in live), k, group.fixed_y
     )
-    facts = settle(facts, facts, edges.CELLS).plan
-    lefts = settle(facts, decide.letter_lefts(facts), edges.LEFTS).plan
-    letters = decide.align_letters(facts, lefts)
+    letters = decide.align_letters(facts, decide.letter_lefts(facts))
     moved = False
     for (_ax, text), p, left, base in zip(
         live, facts.panels, letters.lefts, letters.baselines, strict=True
@@ -93,8 +90,7 @@ def label_axes(
     ``x="auto"`` (default) places each letter from what its panel draws:
     its left edge on the outer edge of the panel's y-axis name (a grid
     column takes its leftmost), its baseline on the panel's title baseline
-    (untitled: 4 pt above the top decoration, level with its row); a title
-    in the way keeps the letter half a letter size before it.
+    (untitled: 4 pt above the top decoration, level with its row).
     ``dm.simple_layout`` places them again at the size it settles on. A
     number is an Axes-relative left edge; ``y`` an Axes-relative bottom.
     ``fontsize`` defaults to ``dm.fs(1)``; keywords go to the texts.

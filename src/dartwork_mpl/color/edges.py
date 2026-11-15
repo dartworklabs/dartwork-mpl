@@ -9,33 +9,21 @@ it.
 from __future__ import annotations
 
 from ..edgecase import EdgeCase
-from .decide import contrast, suggest
+from .decide import contrast
 from .model import (
     ContrastFacts,
     DivergingSource,
     Form,
-    Gradient,
     Kind,
     Lift,
     Locale,
-    Lookup,
-    Name,
-    PaletteRequest,
     Semantic,
     SemanticFacts,
-    Suggestions,
-    namespace,
-    shifted,
 )
-from .space import Hex, Oklch, Rgb
+from .space import Hex, Rgb
 
-# Below this OKLCH chroma a colour is grey and its hue is noise.
-ACHROMATIC = 1e-4
 # One 8-bit step of HLS lightness.
 STEP = 1.0 / 255.0
-# Open Color shades ``make_palette`` darkens the highlighted series by, and
-# lightens the rest by.
-EMPHASIS = 2
 
 
 def is_full_ladder(form: Form, plan: tuple[Hex, ...]) -> bool:
@@ -58,19 +46,6 @@ def curated_row(
 ) -> tuple[Hex, ...]:
     """The hand-tuned row in place of the ladder-derived one."""
     return source.curated or plan
-
-
-def one_end_grey(ends: Gradient, plan: Gradient) -> bool:
-    """Exactly one end of the gradient is grey."""
-    return (plan.start.C < ACHROMATIC) != (plan.end.C < ACHROMATIC)
-
-
-def borrow_hue(ends: Gradient, plan: Gradient) -> Gradient:
-    """The grey end takes the coloured end's hue."""
-    start, end = plan.start, plan.end
-    if start.C < ACHROMATIC:
-        return Gradient(Oklch(start.L, start.C, end.h), end)
-    return Gradient(start, Oklch(end.L, end.C, start.h))
 
 
 def short_after_rounding(facts: ContrastFacts, plan: Lift | None) -> bool:
@@ -113,93 +88,38 @@ def red_gains_blue_losses(facts: SemanticFacts, plan: Semantic) -> Semantic:
     )
 
 
-def has_known_namespace(lookup: Lookup, plan: Suggestions) -> bool:
-    """The rejected name's ``prefix.`` is a registered namespace."""
-    prefix = namespace(lookup.name)
-    return prefix is not None and any(
-        name.startswith(prefix) for name in lookup.registry
-    )
-
-
-def within_namespace(lookup: Lookup, plan: Suggestions) -> Suggestions:
-    """Suggestions drawn from that namespace only."""
-    prefix = namespace(lookup.name) or ""
-    same = tuple(name for name in lookup.registry if name.startswith(prefix))
-    return suggest(Lookup(lookup.name, same))
-
-
-def has_highlight(request: PaletteRequest, plan: tuple[Name, ...]) -> bool:
-    """The request names a series to emphasise."""
-    return request.highlight is not None
-
-
-def emphasise(
-    request: PaletteRequest, plan: tuple[Name, ...]
-) -> tuple[Name, ...]:
-    """The highlighted series two shades darker, the rest two lighter."""
-    return tuple(
-        shifted(name, EMPHASIS if i == request.highlight else -EMPHASIS)
-        for i, name in enumerate(plan)
-    )
-
-
 EDGES = (
     EdgeCase(
         name="sequential-full-ladder",
-        why="nine or ten stops cannot spread over stops 1..8 without "
-        "repeating one; they take the ladder from its lightest stop",
+        why="nine or ten stops spread over stops 1..8 repeat one colour; "
+        "they take the ladder from its lightest stop",
+        example="test_edges.py::test_sequential_full_ladder",
         applies=is_full_ladder,
         adjust=whole_ladder,
     ),
     EdgeCase(
         name="curated-diverging-row",
-        why="blue_red, blue_orange, teal_amber and green_purple ship a "
-        "hand-tuned row whose sides balance better than the ladder stops",
+        why="the ladder-derived blue_red row is lopsided: its two sides do "
+        "not balance as the hand-tuned row shipped with the family does",
+        example="test_edges.py::test_curated_diverging_row",
         applies=has_curated_row,
         adjust=curated_row,
     ),
     EdgeCase(
-        name="grey-gradient-end",
-        why="a grey end's hue is noise; white to teal swung through violet "
-        "before reaching teal",
-        applies=one_end_grey,
-        adjust=borrow_hue,
-    ),
-    EdgeCase(
         name="hex-rounding-shortfall",
-        why="the bisected lightness meets the ratio exactly, and rounding to "
-        "#rrggbb can land a hair under it; step one 8-bit level further",
+        why="dc.amber5 lifted for contrast on white rounded to #ab6700, a "
+        "hair under the 4.5:1 it was asked for",
+        example="test_edges.py::test_hex_rounding_shortfall",
         applies=short_after_rounding,
         adjust=step_past_rounding,
     ),
     EdgeCase(
         name="kr-semantic-tokens",
-        why="Korean markets colour gains red and losses blue; a green gain "
-        "reads as a loss there",
+        why="a Korean chart coloured its gains green, which reads as a loss "
+        "in Korean markets",
+        example="test_edges.py::test_kr_semantic_tokens",
         applies=is_korean,
         adjust=red_gains_blue_losses,
     ),
-    EdgeCase(
-        name="same-namespace-suggestions",
-        why="someone who typed 'dc.' wants a dc. name; 'oc.blue5' is a "
-        "different palette, not a correction of 'dc.blue55'",
-        applies=has_known_namespace,
-        adjust=within_namespace,
-    ),
-    EdgeCase(
-        name="highlight-series",
-        why="one series in focus reads at once when it is darker and the "
-        "rest recede, instead of every series shouting equally",
-        applies=has_highlight,
-        adjust=emphasise,
-    ),
 )
-(
-    FULL_LADDER,
-    CURATED_ROW,
-    GREY_END,
-    HEX_ROUNDING,
-    KR_TOKENS,
-    SAME_NAMESPACE,
-    HIGHLIGHT,
-) = EDGES
+(FULL_LADDER, CURATED_ROW, HEX_ROUNDING, KR_TOKENS) = EDGES

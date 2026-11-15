@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import threading
-import warnings
 from dataclasses import replace
 
 from matplotlib import font_manager
@@ -64,18 +63,15 @@ def install(plan: Plan) -> None:
 
 def register() -> None:
     """Add every bundled file, then fix the table (see ``edges.py``)."""
-    found = measure.bundled_files()
-    for path in found:
+    for path in measure.bundled_files():
         font_manager.fontManager.addfont(path)  # pyright: ignore[reportUnknownMemberType]
-    facts = measure.table(len(found))
+    facts = measure.table()
     settled = settle(facts, table_plan(facts), EDGES)
     install(settled.plan)
     WEIGHT_FILTER.single_weight = facts.single_weight_families()
     logger = logging.getLogger("matplotlib.font_manager")
     if WEIGHT_FILTER not in logger.filters:
         logger.addFilter(WEIGHT_FILTER)
-    if settled.plan.warning:
-        warnings.warn(settled.plan.warning, UserWarning, stacklevel=2)
 
 
 _lock = threading.Lock()

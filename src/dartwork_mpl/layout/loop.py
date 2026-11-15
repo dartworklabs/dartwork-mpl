@@ -17,18 +17,7 @@ from .._figure_geometry import get_renderer
 from ..edgecase import settle
 from . import apply, decide, measure
 from .edges import EDGES
-from .model import (
-    FIT_ROUNDS,
-    MAX_STEPS,
-    Edges,
-    Fit,
-    History,
-    Next,
-    Px,
-    Sides,
-    Step,
-    TextPlan,
-)
+from .model import FIT_ROUNDS, MAX_STEPS, Edges, Fit, Sides, Step, TextPlan
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -75,30 +64,14 @@ class Fitter:
     def fit(self) -> Step | None:
         """Fit until the edges move under half a pixel (``None``: nothing
         to measure); then once more if thinning date ticks changed them."""
-        answers: list[Edges] = []
         step: Step | None = None
         for _ in range(2):
             for _ in range(MAX_STEPS):
                 step = one_step(self.fig, self.margins, self.last)
                 if step is None:
                     break
-                answers.append(step.edges)
-                history = History(tuple(answers), step.delta)
-                nxt = settle(history, decide.next_edges(history), EDGES).plan
-                assert isinstance(nxt, Next)
-                new = step.edges
-                if nxt.trial:
-                    apply.write_edges(self.fig, self.gs, nxt.edges)
-                    trial = one_step(self.fig, self.margins, nxt.edges)
-                    if trial is not None and decide.holds(
-                        trial.edges, nxt.edges
-                    ):
-                        new, step = nxt.edges, Step(nxt.edges, Px(0.0))
-                    elif trial is not None:
-                        new, step = trial.edges, trial
-                        answers.append(trial.edges)
-                apply.write_edges(self.fig, self.gs, new)
-                self.last = new
+                apply.write_edges(self.fig, self.gs, step.edges)
+                self.last = step.edges
                 if step.converged:
                     break
             if step is None or not ticks.thin_dates(self.fig):
@@ -142,7 +115,6 @@ def run(fig: Figure, gs: GridSpec, margins: Sides, fit_text: bool) -> None:
     apply.restore(fig)
     start = apply.grid_edges(gs)
     ticks.prepare(fig)
-    legend.place_figure_legends(fig, fig)
     fitter = Fitter(fig, gs, margins)
     step = fitter.fit()
     if fit_text and step is not None and step.converged:

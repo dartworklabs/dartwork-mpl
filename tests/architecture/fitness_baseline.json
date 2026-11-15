@@ -1,10 +1,7 @@
 {
  "R1_module_lines": {
   "src/dartwork_mpl/_figure_geometry/__init__.py": 1031,
-  "src/dartwork_mpl/layout/edges.py": 586,
-  "src/dartwork_mpl/layout/measure.py": 525,
-  "src/dartwork_mpl/legend/apply.py": 523,
-  "src/dartwork_mpl/legend/measure.py": 554
+  "src/dartwork_mpl/layout/measure.py": 509
  },
  "R2_slice_lines": {},
  "R3_underscore_modules": {

@@ -39,7 +39,7 @@ def inside(entry: font_manager.FontEntry, folder: Path) -> bool:
         return False
 
 
-def table(bundled_count: int) -> Table:
+def table() -> Table:
     """Matplotlib's font table as faces."""
     bundle = font_dir()
     return Table(
@@ -51,8 +51,7 @@ def table(bundled_count: int) -> Table:
                 bundled=inside(entry, bundle),
             )
             for entry in font_manager.fontManager.ttflist
-        ),
-        bundled_files=bundled_count,
+        )
     )
 
 

@@ -5,8 +5,8 @@ few points and series take the narrow 9 cm report tier, many (or a second y
 axis) the 14.5 cm one. The active page then maps it: a journal sets one panel
 in one 9 cm column and everything wider in two (17 cm); a slide draws under
 its title in a 10.5 cm tall body; a poster scales the report tiers with its
-font. Panel grids take the widest tier. Special cases (grouped bars' value
-labels, category names, stacked panels, slide grids) are in ``edges.py``.
+font. Panel grids take the widest tier. Category names that would not stand
+flat are an edge case in ``edges.py``.
 """
 
 from __future__ import annotations
@@ -35,9 +35,6 @@ NARROW, MEDIUM, BROAD, WIDEST = cm(9), cm(12), cm(14.5), cm(17)
 REPORT_TIERS = (NARROW, MEDIUM, BROAD, WIDEST)
 # Journal columns: one panel in one column, wider content across two.
 COLUMN, TWO_COLUMNS = cm(9), cm(17)
-# A 10 in 16:9 slide, 25.4 x 14.29 cm. A larger slide (13.33 in) would show
-# the same text 25 % smaller on screen.
-SLIDE = Canvas(cm(25.4), ASPECTS["slide"])
 # The slide less 1 cm side margins, a 2.8 cm title band and a 1 cm bottom
 # margin: what a chart fills under a slide title.
 SLIDE_BODY = Canvas(cm(23.4), cm(10.5))
@@ -60,6 +57,8 @@ KINDS: Mapping[CanvasKind, KindSpec] = {
     CanvasKind.SLIDE: KindSpec(
         cm(23.4), Aspect(10.5 / 23.4), fixed=True, absolute=True
     ),
+    # A 10 in 16:9 slide, 25.4 x 14.29 cm. A larger slide (13.33 in) would
+    # show the same text 25 % smaller on screen.
     CanvasKind.FULL_SLIDE: KindSpec(
         cm(25.4), ASPECTS["slide"], fixed=True, absolute=True
     ),

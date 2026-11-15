@@ -69,9 +69,9 @@ def solve(facts: ContentFacts):
 @pytest.mark.parametrize(
     ("request_", "expected"),
     [
-        (Request(False, False, False), Refuse(None)),
-        (Request(True, False, False), Refuse(decide.NO_GRID)),
-        (Request(True, True, False), Go()),
+        (Request(False, False), Refuse(None)),
+        (Request(True, False), Refuse(decide.NO_GRID)),
+        (Request(True, True), Go()),
     ],
 )
 def test_answer(request_: Request, expected: object) -> None:
@@ -164,14 +164,6 @@ def test_a_reservation_adds_its_reach_and_gap() -> None:
     plot = axes(Box(0.0, 1000.0, 0.0, 500.0))
     step = solve(content(plot, artists=[title]))
     assert step is not None and step.edges.top == pytest.approx(1 - 60 / 500)
-
-
-def test_inner_and_holds() -> None:
-    a, b = Edges(0.1, 0.9, 0.1, 0.9), Edges(0.12, 0.92, 0.08, 0.88)
-    inner = decide.inner(a, b)
-    assert inner == Edges(0.12, 0.9, 0.1, 0.88)
-    assert decide.holds(Edges(0.11, 0.91, 0.1, 0.9), inner)
-    assert not decide.holds(Edges(0.13, 0.9, 0.1, 0.88), inner)
 
 
 def test_crushed_below_thirty_percent() -> None:

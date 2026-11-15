@@ -98,8 +98,8 @@ size (72 pt per inch) against the request and report any mismatch.
 GridSpec ratios split the space inside the margins and gaps, so a 7:3 grid is
 not 70 % / 30 % of the canvas. For exact regions that include their own labels,
 use SubFigures with zero gaps and local margins in centimetres, and do not call
-`dm.simple_layout` (it leaves a figure with SubFigures alone; the local
-margins here are the layout):
+`dm.simple_layout` (it does not lay out SubFigures; the local margins here
+are the layout):
 
 ```python
 fig = plt.figure(figsize=dm.figsize("20cm", "16cm"))

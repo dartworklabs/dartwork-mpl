@@ -88,14 +88,6 @@ def test_a_twin_pair_gets_one_legend_on_the_top_twin():
     assert [t.get_text() for t in legend.get_texts()] == ["Rain", "Temp"]
 
 
-def test_an_explicit_legend_is_left_and_a_side_warns():
-    fig, ax = _lines()
-    legend = ax.legend(["first", "second"])
-    with pytest.warns(UserWarning, match="left as it is"):
-        assert dm.place_legend(ax, loc="above") is legend
-    assert dm.place_legend(ax, loc="lower left") is legend
-
-
 def test_a_rebuilt_legend_keeps_its_title_and_follows_the_artists():
     fig, ax = _lines()
     ax.legend(title="Runs", frameon=False)
@@ -137,19 +129,18 @@ def test_a_caller_anchor_with_a_side_raises():
         dm.place_legend(ax, loc="right", bbox_to_anchor=(1, 0.5))
 
 
-def test_one_figure_legend_under_the_suptitle_replaces_the_panel_legends():
+def test_one_figure_legend_replaces_the_panel_legends():
     fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
     for ax in axes:
         ax.plot([0, 1], [0, 1], label="A")
         ax.plot([0, 1], [1, 0], label="B")
         ax.legend()
-    fig.suptitle("Two panels")
     legend = dm.figure_legend(fig)
     dm.simple_layout(fig)
     assert all(ax.get_legend() is None for ax in axes)
     assert [t.get_text() for t in legend.get_texts()] == ["A", "B"]
     own = _box(fig, legend)
-    assert own.y1 <= _box(fig, fig._suptitle).y0 + 0.5  # type: ignore[attr-defined]
+    assert own.y1 <= fig.bbox.height + 0.5
     assert own.y0 >= max(_box(fig, ax).y1 for ax in axes)
 
 
