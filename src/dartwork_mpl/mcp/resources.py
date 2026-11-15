@@ -62,8 +62,7 @@ def register_resources(mcp: FastMCP) -> None:
         The full migration guide lives at ``docs/migration.md`` and is
         rendered at the GitHub Pages URL below. The bundled stub that
         used to back this resource was removed in T5 of the AI-readiness
-        roadmap (see ``docs/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.md``)
-        so that the prompt corpus has a single source of truth in the
+        roadmap so that the prompt corpus has a single source of truth in the
         rendered docs rather than a stub-and-fallback split.
         """
         return guides.migration_pointer()
@@ -105,9 +104,9 @@ def register_resources(mcp: FastMCP) -> None:
         sRGB; it is not a measurement of a particular display, perceived
         brightness, or OKLab `L`.
         """
-        from .._colors.registry import COLOR_LIBRARIES
+        from ..color import LIBRARIES
 
-        return colors.palette(COLOR_LIBRARIES)
+        return colors.palette(LIBRARIES)
 
     @mcp.resource("dartwork-mpl://palette/fonts")
     def palette_fonts() -> str:

@@ -645,7 +645,7 @@ def test_nested_legend_shim_enforces_all_dependency_paths():
 
 def test_palette_shim_is_declared_with_color_ownership():
     """Historical palette imports explicitly belong to the existing color owner."""
-    assert checker.SHIMS.get(f"{P}.helpers.colors") == f"{P}._colors"
+    assert checker.SHIMS.get(f"{P}.helpers.colors") == f"{P}.color"
 
 
 def test_nested_palette_shim_enforces_dependency_paths():

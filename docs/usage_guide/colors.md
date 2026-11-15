@@ -306,15 +306,8 @@ print(families[:2])  # [{'name': 'amber', 'kind': 'sequential', ...}, ...]
 cmap = dm.colors("aurora")
 cols = dm.colors("blue_red", n=5)
 
-# Preview specific families
-dm.show_colors(names=["blue", "blue_red"], n=5)
-
-# Classify a colormap by type (takes a Colormap object)
-import matplotlib as mpl
-from dartwork_mpl.diagnostics import classify_cmap
-
-cmap_type = classify_cmap(mpl.colormaps['dc.aurora'])
-print(cmap_type)  # 'Multi-Hue'
+# A family's kind is in its record
+print([f["kind"] for f in families if f["name"] == "aurora"])  # ['multi-hue']
 ```
 
 ## Colormaps
@@ -330,11 +323,10 @@ finished-output diagnostics. They work like any matplotlib colormap:
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
-from dartwork_mpl.diagnostics import classify_cmap
 
 cmap = plt.colormaps["dc.aurora"]
 print(cmap.name)                       # 'dc.aurora'
-print(classify_cmap(cmap))             # 'Multi-Hue' (tells you the type)
+print(dm.list_colors("multi-hue")[0])  # the family's kind and form size
 ```
 
 Add `_r` to reverse any colormap (e.g., `dc.aurora_r`). Browse all available

@@ -55,7 +55,7 @@ SLICE_CAP = 4000  # lines per top-level slice
 SUBPACKAGE_CAP = 2000  # lines per sub-package one level down
 FUNCTION_CAP = 80  # lines per function or method
 ENTRY_FUNCTION_CAP = 30  # entry points only wire
-GENERATED = frozenset({f"{P}._colors._generated", f"{P}._colors._typing"})
+GENERATED: frozenset[str] = frozenset()
 DUMPING = frozenset(
     ["utils", "util", "common", "helpers", "misc", "shared", "base"]
 )

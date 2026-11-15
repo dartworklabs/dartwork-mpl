@@ -251,8 +251,7 @@ at the time of an older run; keep historical flags and raw records intact.
 Final-freeze provenance is separate from that declaration.
 
 For the final comparison, follow the
-[final A/B plan](../../docs/superpowers/plans/2026-11-04-agentic-final-ab.md)
-and `preregister.py freeze/verify/command` CLI. Its frozen primary40/320-unit
+`preregister.py freeze/verify/command` CLI. Its frozen primary40/320-unit
 and descriptive supplemental10/80-unit populations stay separate; this
 report qualification changes neither membership nor endpoint calculations.
 

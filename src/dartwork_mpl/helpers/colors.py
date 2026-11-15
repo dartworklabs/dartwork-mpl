@@ -15,6 +15,6 @@ Renamed from ``auto_select_colors`` in 0.5 (``#156`` Round 5):
   cycle application in ``dm.set_colors(...)``.
 """
 
-from .._colors import make_palette as make_palette
+from ..color import make_palette as make_palette
 
 __all__ = ["make_palette"]

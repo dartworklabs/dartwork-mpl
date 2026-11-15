@@ -42,10 +42,6 @@ class TestDiagnosticsExports:
         import dartwork_mpl as dm
         from dartwork_mpl import diagnostics
 
-        assert not hasattr(dm, "classify_cmap")
-        assert callable(diagnostics.classify_cmap)
-        assert callable(diagnostics.render_cmap_catalog)
-        assert callable(diagnostics.render_color_catalog)
         assert dm.plot_fonts is diagnostics.plot_fonts
 
     def test_explore_keeps_font_preview(self) -> None:

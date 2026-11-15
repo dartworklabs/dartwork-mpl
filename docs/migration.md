@@ -113,7 +113,7 @@ coming from:
 | `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
 | `dm.auto_layout(fig)`                 | `dm.simple_layout(fig, margin=...)`                  |
 | old named-color helper                | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
-| `from dartwork_mpl.color import ...`  | `from dartwork_mpl._colors import ...` (submodule renamed) |
+| `from dartwork_mpl.color import ...`  | `from dartwork_mpl import Color, color, colors, ...` (package root) |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dm.install_llm_txt()`                | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` (or MCP `dartwork-mpl://guide/*`) |
@@ -144,9 +144,9 @@ values and catalog contents may differ.
 | `dm.cycle_cycler` | `dm.set_colors(..., styles=True)` sets color and line-style cycles; it does not return a cycler. |
 | `dm.list_palettes` | `dm.list_colors()` lists color families and metadata. |
 | `dm.list_colormaps` | `dm.list_colors()` lists families; `matplotlib.colormaps` lists registered colormaps. |
-| `dm.plot_colors` | `dm.show_colors()` previews color families. |
-| `dm.plot_colormaps` | `dm.show_colors()` previews color families. |
-| `dm.show_palette` | `dm.show_colors(names=[...])` previews selected families. |
+| `dm.plot_colors` | `dm.list_colors()` lists the colour families. |
+| `dm.plot_colormaps` | `dm.list_colors()` lists the colour families. |
+| `dm.show_palette` | `dm.colors(name, n=...)` returns a family's colours. |
 | `dm.classify_colormap` | Inspect `dm.list_colors()` metadata; it is not a general classifier for arbitrary colormaps. |
 | `dm.DartworkColor` | Type against the accepted inputs of the relevant API, such as color names, hex strings and RGB(A) tuples; no public equivalent literal alias is provided. |
 | `dm.DartworkColormap` | Use `matplotlib.colors.Colormap` for colormap objects; it is not the former catalog-name literal. |
@@ -437,13 +437,8 @@ red = dm.color("oklch(0.7 0.2 30)")     # oklch function string
 red = dm.color("oklab(0.7 0.1 0.1)")    # oklab function string
 ```
 
-The submodule was also renamed `color` → `colors`. Anywhere you used
-`from dartwork_mpl.color import ...` swap to:
+Import the colour names from the package root:
 
 ```python
-# Before
-from dartwork_mpl.color import Color
-
-# Now
-from dartwork_mpl._colors import Color
+from dartwork_mpl import Color
 ```

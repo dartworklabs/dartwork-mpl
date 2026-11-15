@@ -110,9 +110,9 @@ def register_tools(mcp: FastMCP) -> None:
         Returns a JSON object grouping colors by prefix
         (dc.*, tw.*, oc.*, etc.) with counts and examples.
         """
-        from .._colors.registry import COLOR_LIBRARIES
+        from ..color import LIBRARIES
 
-        return colors.list_families(COLOR_LIBRARIES)
+        return colors.list_families(LIBRARIES)
 
     # ── Code Linting Tool ────────────────────────────────────────────
 

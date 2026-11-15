@@ -36,7 +36,7 @@ import pytest
 
 import dartwork_mpl as dm
 from dartwork_mpl import style
-from dartwork_mpl._colors._curated import CURATED
+from dartwork_mpl.color.catalog import CURATED
 
 # Prefixes under which dartwork-mpl registers colors into matplotlib.
 _DM_PREFIXES = ("ad.", "cu.", "dc.", "md.", "oc.", "pr.", "tw.")

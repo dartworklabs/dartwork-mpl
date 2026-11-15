@@ -1,15 +1,6 @@
 {
  "R1_module_lines": {
-  "src/dartwork_mpl/_colors/_compatibility_metrics.py": 2221,
-  "src/dartwork_mpl/_colors/_ssot.py": 1225,
-  "src/dartwork_mpl/_colors/construction/_catalog.py": 1487,
-  "src/dartwork_mpl/_colors/construction/_cmaps.py": 517,
-  "src/dartwork_mpl/_colors/construction/_tone.py": 527,
-  "src/dartwork_mpl/_colors/diagnostics/_colors.py": 525,
-  "src/dartwork_mpl/_colors/model/_color.py": 1003,
-  "src/dartwork_mpl/_colors/verify/_comparison.py": 1849,
-  "src/dartwork_mpl/_colors/verify/_gates.py": 1263,
-  "src/dartwork_mpl/_compat.py": 747,
+  "src/dartwork_mpl/_compat.py": 776,
   "src/dartwork_mpl/_figure_geometry/__init__.py": 1462,
   "src/dartwork_mpl/annotation/_bar_label_settle.py": 1088,
   "src/dartwork_mpl/annotation/_bar_labels.py": 860,
@@ -22,7 +13,7 @@
   "src/dartwork_mpl/formatting/__init__.py": 623,
   "src/dartwork_mpl/formatting/_defaults.py": 1210,
   "src/dartwork_mpl/formatting/_label_unit.py": 612,
-  "src/dartwork_mpl/formatting/_twin_colors.py": 628,
+  "src/dartwork_mpl/formatting/_twin_colors.py": 632,
   "src/dartwork_mpl/io/__init__.py": 574,
   "src/dartwork_mpl/layout/_fit_labels.py": 1853,
   "src/dartwork_mpl/layout/_simple_layout.py": 903,
@@ -45,22 +36,16 @@
   "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
  },
  "R2_slice_lines": {
-  "_colors": 15552,
-  "_colors/construction": 3025,
-  "_colors/model": 2536,
-  "_colors/verify": 3227,
-  "annotation": 8271,
-  "formatting": 4909,
+  "annotation": 8266,
+  "formatting": 4913,
   "layout": 4235,
-  "mcp": 11141,
+  "mcp": 11140,
   "mcp/artifacts": 5316,
   "ui": 6333,
   "validate": 7410,
   "validate/_checks": 6301
  },
  "R3_underscore_modules": {
-  "_build_entry": 1,
-  "_colors": 31,
   "_compat": 1,
   "_figure_geometry": 3,
   "_rc": 1,
@@ -76,15 +61,12 @@
   "validate": 9
  },
  "R3_underscore_toplevel": [
-  "_build_entry",
-  "_colors",
   "_compat",
   "_figure_geometry",
   "_rc"
  ],
  "R4_cycles": [
-  "pkg: dartwork_mpl, dartwork_mpl.annotation, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.helpers, dartwork_mpl.lint, dartwork_mpl.validate, dartwork_mpl.validate._checks",
-  "pkg: dartwork_mpl._colors, dartwork_mpl._colors.catalog, dartwork_mpl._colors.construction, dartwork_mpl._colors.families_api, dartwork_mpl._colors.registry, dartwork_mpl._colors.verify"
+  "pkg: dartwork_mpl, dartwork_mpl.annotation, dartwork_mpl.figure_review, dartwork_mpl.formatting, dartwork_mpl.helpers, dartwork_mpl.lint, dartwork_mpl.validate, dartwork_mpl.validate._checks"
  ],
  "R4_lazy_cycle_edges": {
   "top_level_edges": 0
@@ -95,32 +77,9 @@
  ],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 159
+  "modules": 131
  },
  "R7_function_lines": {
-  "src/dartwork_mpl/_colors/_compatibility_metrics.py::_global_extrema": 101,
-  "src/dartwork_mpl/_colors/_compatibility_metrics.py::_validate_ordered_metric": 122,
-  "src/dartwork_mpl/_colors/_compatibility_metrics.py::compute_catalog_quality": 85,
-  "src/dartwork_mpl/_colors/_compatibility_metrics.py::reference_payload": 128,
-  "src/dartwork_mpl/_colors/_compatibility_metrics.py::validate_quality_payload": 188,
-  "src/dartwork_mpl/_colors/_palette.py::make_palette": 128,
-  "src/dartwork_mpl/_colors/_ssot.py::_parse_policies": 136,
-  "src/dartwork_mpl/_colors/_ssot.py::_parse_recipe": 166,
-  "src/dartwork_mpl/_colors/_ssot.py::_parse_row_contracts": 103,
-  "src/dartwork_mpl/_colors/construction/_catalog.py::CatalogSnapshot.__post_init__": 98,
-  "src/dartwork_mpl/_colors/construction/_catalog.py::CatalogSnapshot.from_payload": 164,
-  "src/dartwork_mpl/_colors/construction/_cmaps.py::compile_cmaps": 197,
-  "src/dartwork_mpl/_colors/contrast/_contrast.py::ensure_contrast": 93,
-  "src/dartwork_mpl/_colors/diagnostics/_colormaps.py::_plot_category": 83,
-  "src/dartwork_mpl/_colors/diagnostics/_colormaps.py::classify_cmap": 144,
-  "src/dartwork_mpl/_colors/diagnostics/_colors.py::_plot_single_library": 277,
-  "src/dartwork_mpl/_colors/model/_color.py::cspace": 149,
-  "src/dartwork_mpl/_colors/verify/_comparison.py::_cmap_panel": 118,
-  "src/dartwork_mpl/_colors/verify/_gates.py::_compare_cyclic_record": 111,
-  "src/dartwork_mpl/_colors/verify/_gates.py::_compare_ordered_record": 118,
-  "src/dartwork_mpl/_colors/verify/_gates.py::_evaluate_row_contracts": 82,
-  "src/dartwork_mpl/_colors/verify/_gates.py::check_all": 101,
-  "src/dartwork_mpl/_colors/verify/_gates.py::evaluate_quality_metrics": 96,
   "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 86,
   "src/dartwork_mpl/annotation/_axis_labels.py::arrow_axis": 156,
   "src/dartwork_mpl/annotation/_bar_labels.py::label_bars": 261,
@@ -158,7 +117,7 @@
   "src/dartwork_mpl/mcp/guides/prompts.py::style_review_text": 104,
   "src/dartwork_mpl/mcp/plot_data/repair.py::_wire": 88,
   "src/dartwork_mpl/mcp/plot_data/validators.py::_grouped_samples_issues": 92,
-  "src/dartwork_mpl/mcp/resources.py::register_resources": 157,
+  "src/dartwork_mpl/mcp/resources.py::register_resources": 156,
   "src/dartwork_mpl/mcp/tools.py::register_tools": 563,
   "src/dartwork_mpl/prompt/__init__.py::find_template": 111,
   "src/dartwork_mpl/skills/__init__.py::install_skill": 107,
@@ -187,14 +146,11 @@
   "src/dartwork_mpl/validate/fixes.py::validate_with_fixes": 83
  },
  "R8_entry_function_lines": {
-  "src/dartwork_mpl/_build_entry.py::is_color_build_invocation": 37,
-  "src/dartwork_mpl/_build_entry.py::run_color_build_if_requested": 37,
-  "src/dartwork_mpl/_colors/_build.py::main": 33,
   "src/dartwork_mpl/mcp/artifacts/transport.py::_failure_metadata": 41,
   "src/dartwork_mpl/mcp/artifacts/transport.py::_result": 66,
   "src/dartwork_mpl/mcp/artifacts/transport.py::register_artifacts": 197,
   "src/dartwork_mpl/mcp/prompts.py::register_prompts": 42,
-  "src/dartwork_mpl/mcp/resources.py::register_resources": 157,
+  "src/dartwork_mpl/mcp/resources.py::register_resources": 156,
   "src/dartwork_mpl/mcp/tools.py::register_tools": 563,
   "src/dartwork_mpl/ui/__main__.py::_interactive_init": 37,
   "src/dartwork_mpl/ui/__main__.py::_report": 31,

@@ -316,17 +316,16 @@ _REMOVED_NAMES: Mapping[str, Removal] = MappingProxyType(
             "dm.list_colors() or matplotlib.colormaps; see docs/color_system",
         ),
         "plot_colors": Removal(
-            "0.6.0", "dm.show_colors(); see docs/color_system"
+            "0.6.0", "dm.list_colors(); see docs/color_system"
         ),
         "plot_colormaps": Removal(
-            "0.6.0", "dm.show_colors(); see docs/color_system"
+            "0.6.0", "dm.list_colors(); see docs/color_system"
         ),
         "show_palette": Removal(
-            "0.6.0", "dm.show_colors(names=[...]); see docs/color_system"
+            "0.6.0", "dm.colors(name, n=...); see docs/color_system"
         ),
         "classify_colormap": Removal(
-            "0.6.0",
-            "dm.list_colors() metadata and dm.show_colors(); see docs/color_system",
+            "0.6.0", "dm.list_colors() metadata; see docs/color_system"
         ),
         "DartworkColor": Removal(
             "0.6.0",
@@ -562,7 +561,7 @@ _CODEMOD_HINTS: tuple[CodemodHint, ...] = (
         _MODEL_B_COLOR_NAMES,
         "reference",
         "Version 0.6.0 removed this color API vocabulary; use dm.colors(...), "
-        "dm.set_colors(...), dm.list_colors(), or dm.show_colors().",
+        "dm.set_colors(...), or dm.list_colors().",
     ),
     CodemodHint(
         ("set_palette_version",),
@@ -685,7 +684,7 @@ _LINT_RULES: tuple[LintRule, ...] = (
             "Version 0.6.0 removed the old palette, cycle, diagnostic,\n"
             "and color-class vocabulary; there is no palette-version switch.\n"
             "For current color operations use `dm.colors(...)`,\n"
-            "`dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`."
+            "`dm.set_colors(...)`, or `dm.list_colors()`."
         ),
         fix_suggestion='dm.colors("blue", n=5)',
         # The catalog bytes main published (MCP anti-patterns resource): a

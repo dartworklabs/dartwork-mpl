@@ -436,7 +436,7 @@ class Style:
             # use() both get locale semantics. KR is detected from the STYLE
             # names (they carry "lang-kr" for Korean presets). Under the lock
             # for the same reason the rcParams mutation above is.
-            from .._colors.registry import apply_semantic
+            from ..color import apply_semantic
 
             apply_semantic(_locale_of_styles(style_names))
 
@@ -579,7 +579,7 @@ class Style:
 
         import matplotlib.colors as mcolors
 
-        from .._colors.registry import SEMANTIC_TOKEN_NAMES, apply_semantic
+        from ..color import SEMANTIC_TOKEN_NAMES, apply_semantic
 
         mapping = mcolors.get_named_colors_mapping()
         saved = {t: mapping.get(t) for t in SEMANTIC_TOKEN_NAMES}

@@ -31,7 +31,7 @@ from matplotlib.text import Text
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-from dartwork_mpl._colors.contrast import contrast_ratio
+from dartwork_mpl.color import contrast_ratio
 from tests.support.mpl_observe import drawn_renderer
 
 MINUS = "\N{MINUS SIGN}"

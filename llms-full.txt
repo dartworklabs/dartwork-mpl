@@ -386,7 +386,6 @@ import dartwork_mpl as dm
 
 dm.list_colors()[:2]        # → [{'name': 'amber', 'kind': 'sequential', ...}, ...]
 dm.colors("teal", n=5)      # designed 5-color list
-dm.show_colors(names=["teal"], n=5)  # preview swatches and ramps
 ```
 
 See [Colors and Colormaps](colors.md) for the full palette reference,
@@ -501,7 +500,7 @@ script that reproduces what you see.
 :::
 
 :::{grid-item-card} 🔬 Diagnostics & Templates
-`dm.show_colors()` / `plot_fonts()` for asset audit, plus ready-to-use plot
+`dm.list_colors()` / `plot_fonts()` for asset audit, plus ready-to-use plot
 templates like `plot_diverging_bar`.
 
 → [Extras guide](extras.md)
@@ -1641,7 +1640,7 @@ coming from:
 | `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
 | `dm.auto_layout(fig)`                 | `dm.simple_layout(fig, margin=...)`                  |
 | old named-color helper                | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
-| `from dartwork_mpl.color import ...`  | `from dartwork_mpl._colors import ...` (submodule renamed) |
+| `from dartwork_mpl.color import ...`  | `from dartwork_mpl import Color, color, colors, ...` (package root) |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dm.install_llm_txt()`                | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` (or MCP `dartwork-mpl://guide/*`) |
@@ -1672,9 +1671,9 @@ values and catalog contents may differ.
 | `dm.cycle_cycler` | `dm.set_colors(..., styles=True)` sets color and line-style cycles; it does not return a cycler. |
 | `dm.list_palettes` | `dm.list_colors()` lists color families and metadata. |
 | `dm.list_colormaps` | `dm.list_colors()` lists families; `matplotlib.colormaps` lists registered colormaps. |
-| `dm.plot_colors` | `dm.show_colors()` previews color families. |
-| `dm.plot_colormaps` | `dm.show_colors()` previews color families. |
-| `dm.show_palette` | `dm.show_colors(names=[...])` previews selected families. |
+| `dm.plot_colors` | `dm.list_colors()` lists the colour families. |
+| `dm.plot_colormaps` | `dm.list_colors()` lists the colour families. |
+| `dm.show_palette` | `dm.colors(name, n=...)` returns a family's colours. |
 | `dm.classify_colormap` | Inspect `dm.list_colors()` metadata; it is not a general classifier for arbitrary colormaps. |
 | `dm.DartworkColor` | Type against the accepted inputs of the relevant API, such as color names, hex strings and RGB(A) tuples; no public equivalent literal alias is provided. |
 | `dm.DartworkColormap` | Use `matplotlib.colors.Colormap` for colormap objects; it is not the former catalog-name literal. |
@@ -1965,15 +1964,10 @@ red = dm.color("oklch(0.7 0.2 30)")     # oklch function string
 red = dm.color("oklab(0.7 0.1 0.1)")    # oklab function string
 ```
 
-The submodule was also renamed `color` → `colors`. Anywhere you used
-`from dartwork_mpl.color import ...` swap to:
+Import the colour names from the package root:
 
 ```python
-# Before
-from dartwork_mpl.color import Color
-
-# Now
-from dartwork_mpl._colors import Color
+from dartwork_mpl import Color
 ```
 
 
@@ -2250,7 +2244,7 @@ rules:
       Version 0.6.0 removed the old palette, cycle, diagnostic,
       and color-class vocabulary; there is no palette-version switch.
       For current color operations use `dm.colors(...)`,
-      `dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`.
+      `dm.set_colors(...)`, or `dm.list_colors()`.
     fix_suggestion: 'dm.colors("blue", n=5)'
 
   - id: dm-removed-namespaces
