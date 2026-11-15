@@ -16,7 +16,7 @@ PR은 아래 게이트로 합격을 판정한다. 실행하지 않은 게이트�
 | 출하 색 해시 | 미감: 색 값 | 전체 테스트에 포함 (`tests/test_shipped_colors_hash.py`) | 통과. digest를 다시 만들어 통과시키지 않는다 |
 | 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 20개 각각 RMS ≤ 0.5 |
 | slice 경계 | import 방향과 표면 | 전체 테스트에 포함 (`tests/architecture/test_boundaries.py`) | 위반 0 |
-| 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스의 이유와 예제 | 전체 테스트에 포함 (`test_domain_rules.py`, 예제 실행 중 작동 확인은 루트 `conftest.py`) | 위반 0. baseline 없음 |
+| 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스의 이유와 예제 | 전체 테스트에 포함 (`test_domain_rules.py`, 예제 실행 중 작동 확인은 `tests/fixtures.py`) | 위반 0. baseline 없음 |
 | fitness | 언더바 이름, import 순환, 잡동사니 이름, 표면 선언 | 전체 테스트에 포함 (`test_fitness.py`) | baseline보다 나빠지지 않음 |
 | 리포 무게 | 바이너리는 폰트 자산과 픽셀 기준 이미지에만, 크기 상한 | 전체 테스트에 포함 (`test_repo_weight.py`) | 위반 0 |
 | 지침 | skill·템플릿의 코드가 실행되고, lint에 걸리지 않고, 거기 나오는 `dm.*` 이름이 존재 | 전체 테스트에 포함 (`guide/tests/test_guidance.py`) | 통과 |
