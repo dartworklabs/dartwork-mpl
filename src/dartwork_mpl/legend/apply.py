@@ -36,24 +36,21 @@ from ..geometry import (
     same_position_axes,
 )
 from . import decide, measure
+from .boxes import Entries
 from .edges import ENTRY_EDGES, TITLE_EDGES
 from .measure import LegendKeywords
 from .model import (
-    Anchor,
     AskedLoc,
     Best,
     Columns,
-    Entries,
-    Inside,
     Keywords,
-    LegendPlan,
     MatplotlibLoc,
-    Outside,
     Passed,
     Request,
     parse_keywords,
     parse_loc,
 )
+from .plans import Anchor, Inside, LegendPlan, Outside
 from .sides import Above, Below, Left, Loc, Right, Side, middle, outward
 
 if TYPE_CHECKING:

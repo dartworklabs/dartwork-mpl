@@ -16,24 +16,19 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import assert_never
 
-from .model import (
-    TALL_SHARE,
+from .boxes import Box, Entries, Hits, Size, Span
+from .model import TALL_SHARE, Columns
+from .plans import (
     Anchor,
     AnchorFacts,
-    Box,
-    Columns,
-    Entries,
     EntryFacts,
     EntryPlan,
     FigureFacts,
     FigurePlan,
-    Hits,
     Inside,
     LegendFacts,
     LegendPlan,
     Outside,
-    Size,
-    Span,
     TitleFacts,
     TitlePad,
 )

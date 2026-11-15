@@ -148,7 +148,13 @@ DECISIONS: Mapping[str, str] = {
         "measuring functions alone"
     ),
     "dartwork_mpl.legend.model": (
-        "the legend's geometry and plan types need nothing outside them"
+        "parsing a caller's loc and keywords needs nothing outside it"
+    ),
+    "dartwork_mpl.legend.boxes": (
+        "a legend's boxes and sizes are display pixels alone"
+    ),
+    "dartwork_mpl.legend.plans": (
+        "a legend's plans and facts carry their measuring functions as values"
     ),
     "dartwork_mpl.layout.decide": (
         "grid edges are decided from measured content and margins alone"

@@ -6,9 +6,8 @@
  "C5_compose_importers": [],
  "R1_module_lines": {
   "src/dartwork_mpl/layout/measure.py": 605,
-  "src/dartwork_mpl/legend/apply.py": 599,
-  "src/dartwork_mpl/legend/measure.py": 532,
-  "src/dartwork_mpl/legend/model.py": 531,
+  "src/dartwork_mpl/legend/apply.py": 596,
+  "src/dartwork_mpl/legend/measure.py": 530,
   "src/dartwork_mpl/ticks/measure.py": 589,
   "src/dartwork_mpl/ticks/model.py": 577
  },
@@ -22,7 +21,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 80
+  "modules": 82
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81

@@ -8,7 +8,7 @@ pad of the Axes titles.
 from __future__ import annotations
 
 from ..edgecase import EdgeCase
-from .model import EntryFacts, EntryPlan, TitleFacts, TitlePad
+from .plans import EntryFacts, EntryPlan, TitleFacts, TitlePad
 
 
 def has_twins(facts: EntryFacts, plan: EntryPlan) -> bool:

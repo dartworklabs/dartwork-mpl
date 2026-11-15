@@ -6,10 +6,9 @@ from dataclasses import replace
 
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.legend import decide
+from dartwork_mpl.legend.boxes import Box, Entries
 from dartwork_mpl.legend.edges import ENTRY_EDGES, TITLE_EDGES
-from dartwork_mpl.legend.model import (
-    Box,
-    Entries,
+from dartwork_mpl.legend.plans import (
     EntryFacts,
     EntryPlan,
     Owner,

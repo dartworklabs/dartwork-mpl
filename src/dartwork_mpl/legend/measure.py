@@ -45,28 +45,26 @@ from ..geometry import (
     same_position_axes,
     text_inks,
 )
+from .boxes import Box, Entries, Hits, Size, Span
 from .model import (
     CLEARANCE_PT,
-    AnchorFacts,
-    Box,
     Columns,
-    Entries,
-    EntryFacts,
-    FigureFacts,
-    Hits,
     Inherit,
     LabelColourWord,
-    LegendFacts,
-    LegendPlan,
     LegendStyle,
     LocName,
-    Owner,
     Request,
-    Size,
-    Span,
+    trial_keywords,
+)
+from .plans import (
+    AnchorFacts,
+    EntryFacts,
+    FigureFacts,
+    LegendFacts,
+    LegendPlan,
+    Owner,
     TitleBox,
     TitleFacts,
-    trial_keywords,
 )
 from .sides import FALLBACK_SIDES, Side
 

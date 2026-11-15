@@ -7,21 +7,16 @@ from dataclasses import replace
 import pytest
 
 from dartwork_mpl.legend import decide
-from dartwork_mpl.legend.model import (
+from dartwork_mpl.legend.boxes import Box, Entries, Hits, Size, Span
+from dartwork_mpl.legend.model import Columns, Request
+from dartwork_mpl.legend.plans import (
     AnchorFacts,
-    Box,
-    Columns,
-    Entries,
     EntryFacts,
     FigureFacts,
-    Hits,
     Inside,
     LegendFacts,
     Outside,
     Owner,
-    Request,
-    Size,
-    Span,
 )
 from dartwork_mpl.legend.sides import (
     FALLBACK_SIDES,
