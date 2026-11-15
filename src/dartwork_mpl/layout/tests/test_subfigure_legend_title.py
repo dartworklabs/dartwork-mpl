@@ -124,8 +124,7 @@ def _pad_px(fig, holder) -> float:
 
 
 def _kinds(fig) -> list[str]:
-    found = dm.validate_figure(fig, checks=("LEGEND_OVERLAP",), quiet=True)
-    return [w.check_id for w in found]
+    return [w.rule for w in dm.check(fig).of("LEGEND_OVERLAP")]
 
 
 @pytest.mark.parametrize("name", ["title_after", "under_root_title", "nested"])

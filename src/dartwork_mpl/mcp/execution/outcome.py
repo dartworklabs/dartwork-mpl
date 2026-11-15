@@ -53,7 +53,7 @@ class LintRecord:
 
 @dataclass(frozen=True)
 class VisualRecord:
-    """One ``validate_figure`` warning recorded by the child; ``detail`` is its JSON object."""
+    """One ``dm.check`` finding recorded by the child; ``detail`` is its JSON object."""
 
     severity: str
     check_id: str

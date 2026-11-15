@@ -2,7 +2,7 @@
 
 Matplotlib keeps a secondary axis in its parent's ``child_axes``, not in
 ``fig.axes``, so the layout never measured its tick labels or axis label and
-pushed them off the canvas (follow-up F2); ``dm.validate_figure`` did not see
+pushed them off the canvas (follow-up F2); the checker did not see
 them either. Both now treat them as the parent's own decorations.
 """
 
@@ -84,11 +84,9 @@ def _past_canvas_px(fig, texts) -> list[tuple[str, float]]:
 
 
 def _edge_findings(fig) -> list[tuple[str, str]]:
-    """``(check id, text)`` of each OVERFLOW / CLIPPED_TEXT finding."""
-    found = dm.validate_figure(
-        fig, checks=("OVERFLOW", "CLIPPED_TEXT"), quiet=True
-    )
-    return [(w.check_id, str(w.detail.get("text", ""))) for w in found]
+    """``(rule, text)`` of each text an OVERFLOW finding names."""
+    found = dm.check(fig).of("OVERFLOW")
+    return [(w.rule, a.get_text()) for w in found for a in w.artists]
 
 
 @pytest.mark.parametrize(("orientation", "location"), SIDES, ids=_IDS)
@@ -148,9 +146,7 @@ def test_top_and_right_secondaries_together():
 
 
 @pytest.mark.parametrize(("orientation", "location"), SIDES, ids=_IDS)
-def test_validate_figure_sees_secondary_text_past_the_canvas(
-    orientation, location
-):
+def test_check_sees_secondary_text_past_the_canvas(orientation, location):
     """Margins too small for the secondary: the checks report its text."""
     fig, _ax, secondary = _figure(orientation, location)
     flush = 0.0 if location in ("left", "bottom") else 1.0
@@ -159,10 +155,9 @@ def test_validate_figure_sees_secondary_text_past_the_canvas(
     assert _past_canvas_px(fig, texts), "the figure must push text off"
     words = {t.get_text() for t in texts}
     findings = _edge_findings(fig)
-    assert {check for check, text in findings if text in words} == {
-        "OVERFLOW",
-        "CLIPPED_TEXT",
-    }, findings
+    assert {rule for rule, text in findings if text in words} == {"OVERFLOW"}, (
+        findings
+    )
 
 
 def _one_over(x):

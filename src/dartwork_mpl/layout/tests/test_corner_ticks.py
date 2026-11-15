@@ -228,7 +228,7 @@ def test_a_pad_you_set_stays() -> None:
     dm.simple_layout(fig)
     assert _pads(ax) == (2, 1)  # both yours: left for the author
     assert _worst(fig) > 0.5
-    found = [w.check_id for w in dm.validate_figure(fig, quiet=True)]
+    found = [w.rule for w in dm.check(fig)]
     assert "TICK_CORNER_OVERLAP" in found
 
 

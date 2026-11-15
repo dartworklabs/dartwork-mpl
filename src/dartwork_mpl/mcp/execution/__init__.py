@@ -333,24 +333,19 @@ def _run(
                 from matplotlib.figure import Figure
                 if output_stem is not None and not isinstance(fig, Figure):
                     raise TypeError("Selected value is not a matplotlib Figure")
-                from dartwork_mpl import validate_figure
+                from dartwork_mpl import check
 
-                warnings = validate_figure(fig, quiet=True)
-                payload["failed_checks"] = [
-                    w.detail["check_id"] for w in warnings
-                    if w.check_id == "CHECK_FAILED"
-                ]
+                warnings = check(fig)
+                payload["failed_checks"] = list(warnings.skipped)
                 # Keep the checkpoint incomplete until all processing finishes.
                 # Preserve acquired failures even if later processing fails.
                 _write_result()
                 payload["visual_warnings"] = [
                     {{
-                        "severity": w.severity.name
-                        if hasattr(w.severity, "name")
-                        else str(w.severity),
-                        "check_id": w.check_id,
+                        "severity": w.severity.name,
+                        "check_id": w.rule,
                         "message": w.message,
-                        "detail": w.detail,
+                        "detail": {{"fix": w.fix, "panels": list(w.panels)}},
                     }}
                     for w in warnings
                 ]

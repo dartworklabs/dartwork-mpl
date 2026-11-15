@@ -41,11 +41,11 @@ def _outside_canvas(fig, artist) -> bool:
 
 
 def _flagged(fig, text: str) -> bool:
-    """Whether validate_figure names ``text`` in an overflow finding."""
-    found = dm.validate_figure(
-        fig, checks=("OVERFLOW", "CLIPPED_TEXT"), quiet=True
+    """Whether dm.check names ``text`` in an overflow finding."""
+    found = dm.check(fig).of("OVERFLOW")
+    return any(
+        getattr(a, "get_text", str)() == text for w in found for a in w.artists
     )
-    return any(w.detail.get("text") == text for w in found)
 
 
 def _line_figure(width: str = "13cm"):

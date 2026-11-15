@@ -25,11 +25,11 @@ try:
 except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
     __version__ = "0.0.0+unknown"
 
-# Import submodules so they are accessible under ``dm.<submodule>``
-# (validate_fixes is the auto-fix companion to validate). F401 is
-# silenced because ruff's "unused-import" check can't see
-# attribute-style access at the package level.
-from . import font, guide, tokens, validate_fixes
+# Import submodules so they are accessible under ``dm.<submodule>``.
+from . import font, guide, tokens
+
+# Defects of a drawn figure
+from .check import check
 
 # Colour names and values (importing it registers them with matplotlib)
 from .color import (
@@ -52,9 +52,6 @@ from .color import (
 
 # Config (process-wide behaviour-toggle defaults)
 from .config import Config, config
-
-# Review loop: save, validate, summarize, compare (masterplan stages 3-4)
-from .figure_review import review
 
 # Agent guidance: the skill, templates and anti-pattern lint
 from .guide import lint as lint_code
@@ -123,7 +120,6 @@ from .ticks import (
 # canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
 # ``add_note`` (a source line in the preset's note style) its placement;
 # ``label_line_ends`` (line names instead of a legend) its spacing and colour;
-# ``review`` (save, findings, summary, baseline diff) its summary fields;
 # ``axis_unit`` / ``axis_unit_of`` (the axis unit in its label) their ladders,
 # label template rules and unit rules; ``label_bars`` (value labels on bars)
 # its placement, crowding and stacked-total rules; ``figure_legend`` (one
@@ -138,19 +134,8 @@ EXPERIMENTAL: frozenset[str] = frozenset(
         "grid_shape",
         "label_bars",
         "label_line_ends",
-        "review",
     }
 )
-
-# Validation entry points
-from .validate import (
-    DataPolicyError,
-    DataPolicyWarning,
-    check_figure_quality,
-    validate_data,
-    validate_figure,
-)
-from .validate_fixes import validate_with_fixes
 
 # Define __all__ for explicit exports. The order is intentionally
 # grouped by module/concern (Color → Icon → Style → …), not
@@ -237,17 +222,9 @@ __all__ = [  # noqa: RUF022
     # Agent guidance
     "guide",
     "lint_code",
-    # Validation
-    "DataPolicyError",
-    "DataPolicyWarning",
-    "validate_figure",
-    "validate_with_fixes",
-    "review",
-    "validate_fixes",
-    # Helpers (high-level composition utilities)
-    "validate_data",
+    # Defects of a drawn figure
+    "check",
     "make_palette",
-    "check_figure_quality",
 ]
 
 # Eagerly register the bundled fonts on import so that

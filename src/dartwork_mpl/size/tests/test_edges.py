@@ -126,7 +126,7 @@ class TestFlatCategoryNames:
         """Without the names, these turned or wrapped their labels on a slide
         (0.38, 0.25, -0.78 and -0.88 em apart flat)."""
         source = dm.guide.read("template/" + name.removesuffix(".py"))
-        ends = ("dm.validate_with_fixes(fig)", "dm.save_formats(")
+        ends = ("dm.check(fig)", "dm.save_formats(")
         source = source[: min(source.find(e) % (len(source) + 1) for e in ends)]
         source = source.replace(
             'dm.style.use("scientific")', 'dm.style.use("presentation")'

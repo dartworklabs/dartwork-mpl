@@ -67,11 +67,7 @@ def _widths_cm(fig, axes) -> list[float]:
 
 def _warnings(fig) -> set[str]:
     """The WARNING ids the validator reports for ``fig``."""
-    return {
-        w.check_id
-        for w in dm.validate_figure(fig, quiet=True)
-        if w.severity.value == "WARNING"
-    }
+    return {w.rule for w in dm.check(fig) if w.severity.value == "WARNING"}
 
 
 def test_a_gap_that_cannot_part_the_titles_is_put_back() -> None:

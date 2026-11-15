@@ -65,8 +65,7 @@ def info_payload() -> str:
                     " - the preset's panel-grid canvas"
                 ),
                 "accessibility": (
-                    "dm.validate_figure now includes TEXT_CONTRAST / MIN_FONT_SIZE / "
-                    "GRAYSCALE_SAFETY checks"
+                    "dm.check(fig) includes the TEXT_CONTRAST check"
                 ),
             },
             "design_rules": {

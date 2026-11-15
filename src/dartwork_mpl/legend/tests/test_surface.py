@@ -38,7 +38,7 @@ def test_a_legend_inside_keeps_clear_of_a_rising_line():
     legend = dm.place_legend(ax)
     dm.simple_layout(fig)
     assert legend is ax.get_legend()
-    assert not dm.validate_figure(fig, checks=("LEGEND_ON_DATA",), quiet=True)
+    assert not dm.check(fig).of("LEGEND_ON_DATA")
     plot = _box(fig, ax)
     assert _box(fig, legend).x0 < (plot.x0 + plot.x1) / 2  # upper left
 

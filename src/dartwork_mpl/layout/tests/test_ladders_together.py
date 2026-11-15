@@ -22,7 +22,6 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 import dartwork_mpl as dm
 from dartwork_mpl._figure_geometry import get_renderer
-from dartwork_mpl.validate._checks.tick_overlap import check_tick_overlap
 
 _ONE_WORD = [
     "Thermoregulation",
@@ -91,10 +90,9 @@ def test_turned_ticks_and_an_outside_legend_settle_together(
     assert draws["n"] <= 12  # 6-7 measured; the two ladders do not trade
     assert {angle for _text, angle in _ticks(ax)} == {30.0}
     assert ax.get_legend()._dm_outside_side is not None
-    found = {w.check_id for w in dm.validate_figure(fig, quiet=True)}
+    found = {w.rule for w in dm.check(fig)}
     assert not {i for i in found if i.startswith("LEGEND")}
-    fig.canvas.draw()
-    assert check_tick_overlap(fig, get_renderer(fig)) == []
+    assert dm.check(fig).of("TICK_OVERLAP") == ()
 
 
 @pytest.mark.parametrize(("width", "n_series"), [("9cm", 6), ("12cm", 10)])
@@ -256,9 +254,9 @@ def _grouped(width: str, top: float, legend: bool = True):
 
 def _overlaps(fig) -> set[str]:
     return {
-        w.check_id
-        for w in dm.validate_figure(fig, quiet=True)
-        if w.check_id.startswith(("LEGEND", "TICK_OVERLAP", "OVERLAP", "CROSS"))
+        w.rule
+        for w in dm.check(fig)
+        if w.rule.startswith(("LEGEND", "TICK_OVERLAP", "OVERLAP", "CROSS"))
     }
 
 
@@ -437,7 +435,7 @@ def test_closed_figures_with_placed_legends_are_collectible() -> None:
         fig = build()
         dm.simple_layout(fig)
         dm.simple_layout(fig)
-        dm.validate_figure(fig, quiet=True)
+        dm.check(fig)
         refs.append(weakref.ref(fig))
         plt.close(fig)
     del fig

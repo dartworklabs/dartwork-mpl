@@ -166,8 +166,8 @@ it does not guarantee equal perceived steps. Match tick formatters such as
 `dm.format_axis_si` or `dm.format_axis_currency` to the actual unit. Use
 `dm.label_axes(axes_list, fontsize=dm.fs(-1))` for panel IDs and adjust
 `simple_layout` margins for labels. Add reference lines/callouts only when
-supported by the data. `dm.validate_with_fixes(fig)` is an optional response to
-layout problems; inspect its edits. MCP `render_plot` already returns validation.
+supported by the data. `print(dm.check(fig))` lists the defects to fix; MCP
+`render_plot` already returns them.
 
 ## Hairline policy (important)
 

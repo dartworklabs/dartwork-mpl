@@ -97,9 +97,7 @@ def test_closed_figure_matches_open_layout_without_reopening(kind):
                     assert box.x0 >= -0.5 and box.y0 >= -0.5
                     assert box.x1 <= fig.bbox.x1 + 0.5
                     assert box.y1 <= fig.bbox.y1 + 0.5
-                assert not dm.validate_figure(
-                    fig, checks=("OVERFLOW", "CLIPPED_TEXT"), quiet=True
-                )
+                assert not dm.check(fig).of("OVERFLOW")
         finally:
             plt.close(fig)
     np.testing.assert_allclose(results[1], results[0], atol=1e-12, rtol=0)
@@ -114,9 +112,7 @@ def test_figure_without_a_pyplot_manager_fits_explicit_label_sizes():
     fig.canvas.draw()
     assert plt.get_fignums() == before
     assert axes[0].figure is fig
-    assert not dm.validate_figure(
-        fig, checks=("OVERFLOW", "CLIPPED_TEXT"), quiet=True
-    )
+    assert not dm.check(fig).of("OVERFLOW")
     control, control_axes = _figure("simple")
     try:
         _enlarge(control_axes)

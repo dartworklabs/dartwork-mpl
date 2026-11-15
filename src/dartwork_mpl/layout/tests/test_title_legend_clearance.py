@@ -81,7 +81,7 @@ class TestTitleOverLegend:
         assert title.get_fontsize() == size
         assert title.get_fontweight() == weight
         assert fig.bbox.y1 + TOL_PX >= title_box.y1
-        ids = {w.check_id for w in dm.validate_figure(fig, quiet=True)}
+        ids = {w.rule for w in dm.check(fig)}
         assert not ids & {"LEGEND_OVERLAP", "OVERLAP", "OVERFLOW"}
         plt.close(fig)
 
@@ -185,7 +185,7 @@ class TestSuptitleOverLegend:
         assert _clear(sup_box, top.title.get_window_extent(renderer))
         if with_title:
             assert _clear(top.title.get_window_extent(renderer), legend_box)
-        ids = {w.check_id for w in dm.validate_figure(fig, quiet=True)}
+        ids = {w.rule for w in dm.check(fig)}
         assert "LEGEND_OVERLAP" not in ids
         plt.close(fig)
 
@@ -220,6 +220,6 @@ class TestBottomSourceNote:
                 assert _clear(note_box, tick.get_window_extent(renderer))
         if legend is not None:
             assert _clear(note_box, ax.get_legend().get_window_extent(renderer))
-        ids = {w.check_id for w in dm.validate_figure(fig, quiet=True)}
+        ids = {w.rule for w in dm.check(fig)}
         assert not ids & {"LEGEND_OVERLAP", "OVERLAP", "OVERFLOW"}
         plt.close(fig)

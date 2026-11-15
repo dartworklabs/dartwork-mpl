@@ -7,8 +7,7 @@ Run standalone or via Sphinx build hooks.
 Every figure here is drawn on a paper canvas (9-19 cm), so it uses a paper
 preset (``scientific``); ``presentation`` is ``scientific`` with every size
 x 2.6 and belongs on a slide canvas (``dm.figsize_for("slide")``). A docs
-build checks each figure with ``dm.validate_figure``
-(``tests/docs/test_docs_figures_validate.py``).
+build checks each figure with ``dm.check``.
 
     python docs/usage_guide/generate_assets.py
 """

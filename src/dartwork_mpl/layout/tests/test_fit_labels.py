@@ -33,7 +33,6 @@ from dartwork_mpl.layout._fit_labels import (
     wrap_limit,
     wrap_to,
 )
-from dartwork_mpl.validate._checks.tick_overlap import check_tick_overlap
 
 
 @pytest.fixture(autouse=True)
@@ -144,7 +143,7 @@ def _bars(labels: list[str], width: str = "9cm", preset: str = "report"):
 
 def _overlaps(fig) -> int:
     fig.canvas.draw()
-    return len(check_tick_overlap(fig, get_renderer(fig)))
+    return len(dm.check(fig).of("TICK_OVERLAP"))
 
 
 def _pixels(fig) -> bytes:
@@ -392,10 +391,7 @@ def test_spacing_you_passed_stays_and_free_spacing_grows() -> None:
     fig, axs = panels()
     dm.simple_layout(fig)
     assert axs[0].get_gridspec().hspace > fig.subplotpars.hspace
-    assert (
-        dm.validate_figure(fig, checks=("CROSS_AXES_OVERLAP",), quiet=True)
-        == []
-    )
+    assert dm.check(fig).of("CROSS_AXES_OVERLAP") == ()
     dm.simple_layout(fig, fit_labels=False)
     assert axs[0].get_gridspec().hspace is None
 
@@ -701,10 +697,7 @@ def _template_figure(name: str, preset: str, width: str | None):
 
 
 def _warned_axes(fig) -> set[str]:
-    fig.canvas.draw()
-    return {
-        w.detail["axis"] for w in check_tick_overlap(fig, get_renderer(fig))
-    }
+    return {w.message.split()[1] for w in dm.check(fig).of("TICK_OVERLAP")}
 
 
 def test_a_turn_that_would_crush_the_plot_is_taken_back() -> None:

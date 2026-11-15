@@ -246,7 +246,7 @@ def register_tools(mcp: FastMCP) -> None:
         chart_type_hint: str | None = None,
     ) -> dict[str, Any]:
         """Execute a dartwork-mpl script in an isolated subprocess and
-        return the structured ``dm.validate_figure`` report, plus
+        return the structured ``dm.check`` report, plus
         optional semantic checks against an expected chart type.
 
         This closes the loop between *"agent generated some plot code"*

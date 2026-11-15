@@ -1,8 +1,8 @@
 {
  "R1_module_lines": {
   "src/dartwork_mpl/_compat.py": 773,
-  "src/dartwork_mpl/_figure_geometry/__init__.py": 1048,
-  "src/dartwork_mpl/figure_review/_summary.py": 602,
+  "src/dartwork_mpl/_figure_geometry/__init__.py": 1047,
+  "src/dartwork_mpl/check/decide.py": 527,
   "src/dartwork_mpl/layout/_fit_labels.py": 1853,
   "src/dartwork_mpl/layout/_simple_layout.py": 833,
   "src/dartwork_mpl/legend/apply.py": 523,
@@ -12,49 +12,39 @@
   "src/dartwork_mpl/mcp/artifacts/policy.py": 511,
   "src/dartwork_mpl/mcp/artifacts/store.py": 991,
   "src/dartwork_mpl/mcp/artifacts/transport.py": 513,
-  "src/dartwork_mpl/mcp/execution/__init__.py": 502,
   "src/dartwork_mpl/mcp/plot_data/repair.py": 675,
   "src/dartwork_mpl/mcp/plot_data/validators.py": 725,
-  "src/dartwork_mpl/style/__init__.py": 680,
-  "src/dartwork_mpl/validate/_checks/legend_on_data.py": 687,
-  "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
+  "src/dartwork_mpl/style/__init__.py": 680
  },
  "R2_slice_lines": {
   "layout": 4020,
-  "mcp": 10859,
-  "mcp/artifacts": 5316,
-  "validate": 7403,
-  "validate/_checks": 6301
+  "mcp": 10853,
+  "mcp/artifacts": 5316
  },
  "R3_underscore_modules": {
   "_compat": 1,
   "_figure_geometry": 3,
   "_rc": 1,
-  "figure_review": 2,
   "layout": 9,
   "mcp": 2,
-  "tokens": 1,
-  "validate": 9
+  "tokens": 1
  },
  "R3_underscore_toplevel": [
   "_compat",
   "_figure_geometry",
   "_rc"
  ],
- "R4_cycles": [
-  "pkg: dartwork_mpl.validate, dartwork_mpl.validate._checks"
- ],
+ "R4_cycles": [],
  "R4_lazy_cycle_edges": {
   "top_level_edges": 0
  },
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 96
+  "modules": 90
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 86,
-  "src/dartwork_mpl/figure_review/__init__.py::review": 90,
   "src/dartwork_mpl/layout/_content_extent.py::_axes_content_extent_px": 128,
   "src/dartwork_mpl/layout/_crop.py::tight_crop": 136,
   "src/dartwork_mpl/layout/_gutter.py::fit_gutter": 86,
@@ -67,9 +57,9 @@
   "src/dartwork_mpl/mcp/artifacts/store.py::ArtifactStore.publish": 123,
   "src/dartwork_mpl/mcp/artifacts/store.py::configure_store": 83,
   "src/dartwork_mpl/mcp/artifacts/transport.py::register_artifacts": 197,
-  "src/dartwork_mpl/mcp/catalog/info.py::info_payload": 120,
+  "src/dartwork_mpl/mcp/catalog/info.py::info_payload": 119,
   "src/dartwork_mpl/mcp/docs_fetch/raw_github.py::fetch": 92,
-  "src/dartwork_mpl/mcp/execution/__init__.py::_run": 276,
+  "src/dartwork_mpl/mcp/execution/__init__.py::_run": 271,
   "src/dartwork_mpl/mcp/guides/prompts.py::create_plot_text": 248,
   "src/dartwork_mpl/mcp/guides/prompts.py::style_review_text": 104,
   "src/dartwork_mpl/mcp/plot_data/repair.py::_wire": 88,
@@ -77,20 +67,7 @@
   "src/dartwork_mpl/mcp/resources.py::register_resources": 136,
   "src/dartwork_mpl/mcp/tools.py::register_tools": 433,
   "src/dartwork_mpl/style/__init__.py::Style.context": 82,
-  "src/dartwork_mpl/style/__init__.py::Style.use": 89,
-  "src/dartwork_mpl/validate/_checks/cross_axes.py::check_cross_axes_overlap": 144,
-  "src/dartwork_mpl/validate/_checks/grayscale_safety.py::check_grayscale_safety": 120,
-  "src/dartwork_mpl/validate/_checks/legend.py::check_legend_overflow": 166,
-  "src/dartwork_mpl/validate/_checks/margin.py::check_margin_asymmetry": 98,
-  "src/dartwork_mpl/validate/_checks/overflow.py::check_overflow": 148,
-  "src/dartwork_mpl/validate/_checks/text_contrast.py::check_text_contrast": 89,
-  "src/dartwork_mpl/validate/_checks/tick_crowd.py::check_tick_crowding": 105,
-  "src/dartwork_mpl/validate/_checks/tick_decimal.py::_axis_warnings": 101,
-  "src/dartwork_mpl/validate/_checks/tick_rotation.py::check_tick_rotation": 100,
-  "src/dartwork_mpl/validate/_data.py::_explicit_data_policy": 117,
-  "src/dartwork_mpl/validate/_data.py::validate_data": 111,
-  "src/dartwork_mpl/validate/_orchestrator.py::validate_figure": 92,
-  "src/dartwork_mpl/validate/fixes.py::validate_with_fixes": 83
+  "src/dartwork_mpl/style/__init__.py::Style.use": 89
  },
  "R8_entry_function_lines": {
   "src/dartwork_mpl/mcp/artifacts/transport.py::_failure_metadata": 41,
