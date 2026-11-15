@@ -16,6 +16,8 @@ from typing import ClassVar, Literal, NewType, TypeAlias, TypedDict
 
 import numpy as np
 
+from ..number import AffixedZero, BareZero
+
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
 
@@ -299,25 +301,12 @@ UnitRule: TypeAlias = MaxUnit | WholeUnit | FixedUnit | DefaultUnit
 
 
 @dataclass(frozen=True)
-class BareZero:
-    """A value that prints as zero reads ``0.0``, without sign or affixes."""
-
-
-@dataclass(frozen=True)
-class AffixedZero:
-    """A value that prints as zero keeps currency and unit: ``$0``."""
-
-
-@dataclass(frozen=True)
 class ExactZero:
     """Only an exact zero reads ``0``; a small value keeps its digits."""
 
 
 ZeroText: TypeAlias = BareZero | AffixedZero | ExactZero
 """How a value written alone prints when it rounds to zero."""
-
-ScaleZero: TypeAlias = BareZero | AffixedZero
-"""How tick-like text prints a value that rounds to zero."""
 
 
 @dataclass(frozen=True)
@@ -330,7 +319,7 @@ class PerTick:
     """
 
     separators: bool = True
-    zero: ZeroText = BareZero()
+    zero: ZeroText = field(default_factory=BareZero)
     compact: bool = False
 
 
@@ -438,22 +427,6 @@ class Cost:
     decimals: int
     longest: int
     factor: float
-
-
-@dataclass(frozen=True)
-class TickScale:
-    """How an axis's ticks print a number, for text that should read alike.
-
-    ``prefix``, the value divided by ``factor``, ``suffix``:
-    ``TickScale(1e9, "", "G")`` prints ``33e9`` as ``33G``. ``zero``: a value
-    that prints as zero drops the affixes (:class:`BareZero`) or keeps them
-    (:class:`AffixedZero`: ``$0``).
-    """
-
-    factor: float = 1.0
-    prefix: str = ""
-    suffix: str = ""
-    zero: ScaleZero = BareZero()
 
 
 # -- axis formats on axes nobody formatted -------------------------------------

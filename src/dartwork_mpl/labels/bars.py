@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.typing import ColorType
 
-    from ..ticks import TickScale
+    from ..number import TickScale
 
 # Between a bar end and its label, in points.
 OFFSET_PT = 3.0

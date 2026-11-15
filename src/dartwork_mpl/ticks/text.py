@@ -16,16 +16,8 @@ from collections.abc import Sequence
 from itertools import pairwise
 from typing import SupportsFloat, SupportsIndex
 
-from .model import (
-    PLAIN,
-    AffixedZero,
-    BareZero,
-    ExactZero,
-    NumberStyle,
-    PerTick,
-    ScaleZero,
-    Unit,
-)
+from ..number import AffixedZero, BareZero, ScaleZero
+from .model import PLAIN, ExactZero, NumberStyle, PerTick, Unit
 
 BARE = BareZero()
 MAX_DECIMALS = 12  # a 1e-9 log tick needs nine

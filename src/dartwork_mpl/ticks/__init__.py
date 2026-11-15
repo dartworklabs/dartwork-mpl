@@ -32,6 +32,7 @@ from ..align import (
 )
 from ..axis import Letter, Letters, Which, X, Y, parse_axes, parse_which
 from ..geometry import axis_of, shared_axes
+from ..number import AffixedZero, TickScale
 from .apply import figure_ladder, prepare, remember_dates, thin_dates
 from .dates import CategoryDateFormatter, category_locator
 from .defaults import config
@@ -46,7 +47,6 @@ from .formatters import (
 from .measure import config_digits, drawn_like_twin, settled_twin_spines
 from .model import (
     SI,
-    AffixedZero,
     CurrencyPosition,
     DateLike,
     Digits,
@@ -56,7 +56,6 @@ from .model import (
     LadderName,
     NumberStyle,
     PerTick,
-    TickScale,
     Unit,
     YearLocale,
     myriad_ladder,

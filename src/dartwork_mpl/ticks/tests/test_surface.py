@@ -11,6 +11,7 @@ import pytest
 from matplotlib.axis import Axis
 
 import dartwork_mpl as dm
+from dartwork_mpl.number import AffixedZero, TickScale
 from dartwork_mpl.ticks import (
     drawn_like_twin,
     remember_dates,
@@ -18,7 +19,7 @@ from dartwork_mpl.ticks import (
     thin_dates,
     tick_scale_of,
 )
-from dartwork_mpl.ticks.model import AffixedZero, RightSide, TickScale
+from dartwork_mpl.ticks.model import RightSide
 
 MONTHS = np.arange("2019-01", "2025-01", dtype="datetime64[M]")
 

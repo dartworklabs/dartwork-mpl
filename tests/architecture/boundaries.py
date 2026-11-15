@@ -71,6 +71,9 @@ PLATFORM = frozenset(
         # The x/y axis and an axis label's side, as pure types (check,
         # labels, layout, ticks and geometry name them).
         "dartwork_mpl.axis",
+        # The scale a number prints in (ticks reports an axis's, labels prints
+        # bar values in it).
+        "dartwork_mpl.number",
         # An Axes' projection as a pure type (check, layout, labels, ticks
         # and geometry ask it).
         "dartwork_mpl.projection",

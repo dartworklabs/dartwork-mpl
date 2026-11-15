@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from dartwork_mpl.number import AffixedZero
 from dartwork_mpl.ticks.decide import axis_plan, axis_text, ladder
 from dartwork_mpl.ticks.model import (
     FINANCE,
     MYRIAD,
     SI,
-    AffixedZero,
     Asked,
     AxisFacts,
     ByFigure,
