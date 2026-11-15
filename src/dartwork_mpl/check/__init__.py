@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING
 
 from ..edgecase import settle
 from .edges import EDGES
+from .findings import Finding, Findings
 from .measure import measure
-from .model import Finding, Findings, Severity
+from .model import Severity
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure

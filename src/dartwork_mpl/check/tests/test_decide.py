@@ -4,14 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.check.model import (
-    Box,
-    Finding,
-    Findings,
-    Number,
-    Severity,
-    step_decimals,
-)
+from dartwork_mpl.check.findings import Finding, Findings
+from dartwork_mpl.check.model import Box, Number, Severity, step_decimals
 
 
 @pytest.mark.parametrize(

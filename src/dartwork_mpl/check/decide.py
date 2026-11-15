@@ -1,7 +1,7 @@
 """The rules: what in the measured facts makes a chart ugly or unreadable.
 
 Each rule reads :class:`Facts` and appends its findings (the fix each rule
-names is ``model.FIXES``). They are listed, named and ordered in
+names is ``findings.FIXES``). They are listed, named and ordered in
 ``edges.py``; nothing here touches a figure.
 """
 
@@ -10,9 +10,9 @@ from __future__ import annotations
 import math
 from itertools import combinations, pairwise
 
+from .findings import Findings
 from .model import (
     Facts,
-    Findings,
     Number,
     Role,
     Severity,

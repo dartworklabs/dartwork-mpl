@@ -17,17 +17,8 @@ from types import MappingProxyType
 from ..edgecase import settle
 from .decide import diverging_row
 from .edges import CURATED_ROW
-from .model import (
-    Catalog,
-    DivergingSource,
-    Family,
-    Kind,
-    Library,
-    Row,
-    Shipped,
-    paired,
-    shades,
-)
+from .model import Catalog, DivergingSource, Family, Kind, Library, Row, paired
+from .shipped import Shipped, shades
 from .space import Hex
 
 __all__ = ["CATALOG", "CURATED"]

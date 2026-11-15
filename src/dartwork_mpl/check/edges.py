@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from ..edgecase import EdgeCase
 from . import decide
-from .model import Facts, Findings
+from .findings import Findings
+from .model import Facts
 
 
 def has_texts(facts: Facts, found: Findings) -> bool:

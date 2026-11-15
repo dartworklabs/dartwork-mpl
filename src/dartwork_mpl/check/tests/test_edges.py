@@ -7,13 +7,13 @@ from dataclasses import replace
 import pytest
 
 from dartwork_mpl.check.edges import EDGES
+from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Axis,
     Box,
     Contrast,
     Corner,
     Facts,
-    Findings,
     Hit,
     Legend,
     Panel,
