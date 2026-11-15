@@ -97,11 +97,8 @@ and size you used and invite correction instead of blocking.
   - a unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`,
     `"24pt"`
   - a `Length` value: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`,
-    `dm.pt(24)` (these return a `Length` instance with multi-unit
-    views; `dm.cm(9) * 2` preserves the `Length` tag and round-trips
-    through `parse_width`)
-  - a parsed unit string via `dm.length("13cm")` (mirrors
-    `dm.hex("#abc")` for colors)
+    `dm.pt(24)` (these return a `Length` with `.cm` / `.mm` / `.inch` /
+    `.pt` views)
   - the academic sugar constants `dm.col1` (= 9 cm) or `dm.col2`
     (= 17 cm).
 - **Enforced.** Bare `int` / `float` widths are rejected (lint
@@ -161,9 +158,10 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   use `ml`, `mr`, `mt`, `mb` — each accepts the same forms as `margin`.
 - `dm.auto_layout(fig)` was removed in 0.5.4 — call `simple_layout`
   directly (the legacy `padding` inches arg maps to `margin`).
-- `dm.figsize_grid` computes a whole-figure size estimate from panel/gap
-  inputs; it does not set GridSpec spacing or guarantee exact Axes sizes or
-  cm gaps. Render and measure final bounds (see `03-recipes`).
+- `dm.figsize_for(nrows=, ncols=)` is the preset's canvas for a panel grid
+  (`dm.grid_shape(n)` picks the shape); it does not set GridSpec spacing or
+  guarantee exact Axes sizes. Render and measure final bounds (see
+  `03-recipes`).
 - MCP `compose_layered_plot` supplies template source/comments and a lexical
   annotation checklist, not execution, panel allocation or spacing repair.
   #209's bounded margin/convergence correction is separate: `simple_layout`

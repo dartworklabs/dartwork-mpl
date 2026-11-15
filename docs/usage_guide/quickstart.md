@@ -303,7 +303,7 @@ fig, ax = plt.subplots(figsize=dm.figsize(dm.col2, "cinema"))  # 17 cm
 - A unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`,
   `"24pt"`
 - A `Length` value: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`,
-  `dm.pt(24)`, or `dm.length("13cm")` (string parser)
+  `dm.pt(24)`
 - The sugar constants `dm.col1` (9 cm) and `dm.col2` (17 cm)
 
 Bare `int` / `float` are rejected — the unit must always be explicit.

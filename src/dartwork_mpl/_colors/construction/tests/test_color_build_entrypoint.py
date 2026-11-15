@@ -12,7 +12,7 @@ from typing import Literal
 import pytest
 
 from dartwork_mpl._build_entry import is_color_build_invocation
-from tests.support.approved_inputs import read_approved_bytes
+from tests.support.repo_files import read_repo_bytes
 
 _REPO_ROOT = Path(__file__).resolve().parents[5]
 _PACKAGE_SOURCE = _REPO_ROOT / "src" / "dartwork_mpl"
@@ -41,9 +41,8 @@ def _link_or_copy(source: str, target: str) -> str:
 def _isolated_checkout(tmp_path: Path) -> Path:
     """Copy only the source and the two frozen baselines the real build reads.
 
-    Each baseline is written from bytes the approved-input reader returned
-    after its existing pin check, so the copy is a file this test owns, never
-    a hard link back to the checked-in input.
+    Each baseline is written from the checked-in bytes, so the copy is a file
+    this test owns, never a hard link back to the checked-in input.
     """
     checkout = tmp_path / "checkout"
     shutil.copytree(
@@ -55,7 +54,7 @@ def _isolated_checkout(tmp_path: Path) -> Path:
     for relative in _BASELINE_INPUTS:
         target = checkout / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(read_approved_bytes(relative))
+        target.write_bytes(read_repo_bytes(relative))
     return checkout
 
 
@@ -118,7 +117,6 @@ def _run_build(
     )
 
 
-@pytest.mark.approved_input
 def test_isolated_checkout_holds_owned_copies_of_only_the_two_baselines(
     checkout: Path,
 ) -> None:
@@ -132,13 +130,12 @@ def test_isolated_checkout_holds_owned_copies_of_only_the_two_baselines(
     assert copied == sorted(_BASELINE_INPUTS)
     for relative in _BASELINE_INPUTS:
         copy = checkout / relative
-        assert copy.read_bytes() == read_approved_bytes(relative)
+        assert copy.read_bytes() == read_repo_bytes(relative)
         assert copy.stat().st_ino != (_REPO_ROOT / relative).stat().st_ino
 
 
 @pytest.mark.parametrize("state", ["missing", "syntax-broken"])
 @pytest.mark.color_pipeline
-@pytest.mark.approved_input
 def test_module_build_check_reaches_coordinator_without_repairing_default(
     state: _BuildArtifactState, checkout: Path, mpl_cache: Path
 ) -> None:
@@ -157,7 +154,6 @@ def test_module_build_check_reaches_coordinator_without_repairing_default(
 
 @pytest.mark.parametrize("state", ["missing", "syntax-broken"])
 @pytest.mark.color_pipeline
-@pytest.mark.approved_input
 def test_module_build_regenerates_default_before_normal_eager_import(
     state: _BuildArtifactState, checkout: Path, mpl_cache: Path
 ) -> None:
@@ -192,7 +188,6 @@ def test_module_build_regenerates_default_before_normal_eager_import(
 
 
 @pytest.mark.color_pipeline
-@pytest.mark.approved_input
 def test_module_build_honors_custom_output_while_default_is_missing(
     checkout: Path, mpl_cache: Path
 ) -> None:
@@ -236,7 +231,6 @@ def test_build_guard_accepts_only_exact_module_mode() -> None:
     )
 
 
-@pytest.mark.approved_input
 def test_ordinary_import_preserves_eager_inventory_and_reload(
     checkout: Path, mpl_cache: Path
 ) -> None:

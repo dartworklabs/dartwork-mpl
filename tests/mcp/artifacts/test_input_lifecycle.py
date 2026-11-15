@@ -612,8 +612,6 @@ def test_stdio_shipped_global_runtime_and_repeated_process_ownership(
         "from dartwork_mpl.mcp.server import mcp\nmcp.run(show_banner=False)\n"
     )
     env = {
-        # Preserve conftest's source/metadata bootstrap through the SDK env filter.
-        "PYTHONPATH": os.environ["PYTHONPATH"],
         "DARTWORK_MPL_INPUT_POLICY": str(path),
         "DARTWORK_MPL_ARTIFACT_DIR": str(owned_input_root / "artifacts"),
     }
@@ -1057,8 +1055,6 @@ def test_stdio_disconnect_joins_blocked_export_before_lock_release(
         "from dartwork_mpl.mcp.server import mcp\nmcp.run(show_banner=False)\n"
     )
     env = {
-        # Preserve conftest's source/metadata bootstrap through the SDK env filter.
-        "PYTHONPATH": os.environ["PYTHONPATH"],
         "DARTWORK_MPL_INPUT_POLICY": str(path),
         "DARTWORK_MPL_ARTIFACT_DIR": str(owned_input_root / "artifacts"),
     }

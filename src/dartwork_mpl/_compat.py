@@ -342,6 +342,16 @@ _REMOVED_NAMES: Mapping[str, Removal] = MappingProxyType(
             "the current color catalog (no palette-version switch exists); "
             "see docs/color_system",
         ),
+        "length": Removal(
+            "0.8",
+            "a unit string where a length is taken ('13cm'), dm.cm(...), or "
+            "dm.Length.parse('13cm')",
+        ),
+        "figsize_grid": Removal(
+            "0.8",
+            "dm.figsize_for(nrows=..., ncols=...) for the preset's grid "
+            "canvas, or dm.figsize('<w>cm', '<h>cm') for an exact size",
+        ),
     }
 )
 
@@ -560,6 +570,13 @@ _CODEMOD_HINTS: tuple[CodemodHint, ...] = (
         "dm.set_palette_version was removed in 0.6.0; there is no palette-version "
         "switch. Review the current color catalog and docs/migration.md.",
     ),
+    CodemodHint(
+        ("length", "figsize_grid"),
+        "reference",
+        "dm.length / dm.figsize_grid were removed in 0.8; pass the unit string "
+        "('13cm') or dm.cm(...), and size a grid with "
+        "dm.figsize_for(nrows=..., ncols=...) or dm.figsize(width, height).",
+    ),
 )
 
 # In catalog order. A message or why keeps its catalog line breaks.
@@ -719,6 +736,18 @@ _LINT_RULES: tuple[LintRule, ...] = (
         # The published pattern has always used a capturing group;
         # load_rules() returns it to callers as ``detector_value``.
         capturing=True,
+    ),
+    LintRule(
+        "dm-size-helpers-removed",
+        ("length", "figsize_grid"),
+        "reference",
+        message=(
+            "`dm.length` and `dm.figsize_grid` were REMOVED. Pass the unit\n"
+            'string (`"13cm"`) or `dm.cm(...)` where a length is taken,\n'
+            "and size a panel grid with `dm.figsize_for(nrows=..., ncols=...)`\n"
+            "or an exact `dm.figsize(width, height)`."
+        ),
+        fix_suggestion="dm.figsize_for(nrows=2, ncols=3)",
     ),
 )
 

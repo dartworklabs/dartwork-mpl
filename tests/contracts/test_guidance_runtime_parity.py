@@ -459,7 +459,6 @@ def test_literal_arguments_of_pure_dm_helpers_evaluate() -> None:
     pure = {
         "figsize",
         "figsize_for",
-        "figsize_grid",
         "grid_shape",
         "get_agent_doc",
         "get_prompt",
@@ -556,8 +555,8 @@ def test_validate_check_ids_in_guidance_are_reported_by_the_runtime(
 def _known_kebab_words() -> set[str]:
     """Hyphenated words that are not lint rules: presets, prompt ids, the
     console scripts ``pyproject.toml`` declares."""
-    # pyproject.toml, not installed metadata: the test bootstrap installs a
-    # metadata stub without entry points (tests/architecture/test_test_bootstrap).
+    # pyproject.toml, not installed metadata, so a stale install cannot hide
+    # a renamed entry point.
     pyproject = tomllib.loads(
         (Path(__file__).resolve().parents[2] / "pyproject.toml").read_text(
             "utf-8"

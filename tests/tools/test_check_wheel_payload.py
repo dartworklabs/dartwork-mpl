@@ -8,7 +8,6 @@ import zipfile
 from pathlib import Path
 
 import pytest
-import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_wheel_payload.py"
@@ -89,16 +88,9 @@ def test_actual_release_shell_accepts_legitimate_built_payload(
     if CHECKER.exists():
         (project / "scripts").mkdir()
         shutil.copy2(CHECKER, project / "scripts" / CHECKER.name)
-    workflow = yaml.safe_load(
-        (ROOT / ".github/workflows/release.yml").read_text()
-    )
-    step = next(
-        step
-        for step in workflow["jobs"]["build"]["steps"]
-        if step.get("name") == "Wheel ↔ git-tracked tree parity"
-    )
     result = subprocess.run(
-        ["bash", "-e", "-c", step["run"]],
+        "python3 scripts/check_wheel_payload.py dist/*.whl",
+        shell=True,
         cwd=project,
         text=True,
         capture_output=True,

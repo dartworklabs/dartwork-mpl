@@ -1117,7 +1117,7 @@ class BlockFastMCP(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, BlockFastMCP())
 code = pytest.main([
-    "--collect-only", "--no-cov", "-q",
+    "--collect-only",
     "tests/mcp/artifacts/test_artifact_policy.py",
     "tests/mcp/artifacts/test_artifact_store.py",
 ])

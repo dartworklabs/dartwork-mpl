@@ -14,8 +14,6 @@ import runpy
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from dartwork_mpl._colors import _curated, _generated
 
 _REPO = Path(__file__).resolve().parents[5]
@@ -108,7 +106,6 @@ def test_no_legacy_js_data_file() -> None:
     assert not (_SCRIPTS / "categorical_explorer_data.js").exists()
 
 
-@pytest.mark.approved_input
 def test_builder_family_lists_match_palette_ssot() -> None:
     """The categorical explorer no longer carries sequential family ramps."""
     builder = runpy.run_path(str(_BUILDER))
@@ -124,7 +121,6 @@ def test_builder_family_lists_match_palette_ssot() -> None:
     }
 
 
-@pytest.mark.approved_input
 def test_curated_ssot_splits_qualitative_rail_from_absorbed_diverging() -> None:
     """Absorbed diverging forms stay registered but leave the qualitative rail."""
     builder = runpy.run_path(str(_BUILDER))
@@ -157,7 +153,6 @@ def test_curated_ssot_splits_qualitative_rail_from_absorbed_diverging() -> None:
     assert not set(_ABSORBED_DIVERGING) & set(payload["order"])
 
 
-@pytest.mark.approved_input
 def test_builder_rail_groups_use_qualitative_taxonomy() -> None:
     """Cycle, trustworthy, vivid, and neon are one qualitative rail."""
     builder = runpy.run_path(str(_BUILDER))
@@ -192,7 +187,6 @@ def test_builder_rail_groups_use_qualitative_taxonomy() -> None:
         assert payload["palettes"][key]["group"] == "Qualitative"
 
 
-@pytest.mark.approved_input
 def test_builder_presentation_names_are_title_case_without_code_key_drift() -> (
     None
 ):
@@ -209,7 +203,6 @@ def test_builder_presentation_names_are_title_case_without_code_key_drift() -> (
     assert "warm_gray" not in palettes
 
 
-@pytest.mark.approved_input
 def test_builder_family_intents_are_substantive_layout_copy() -> None:
     """Qualitative copy fills the reserved detail-panel space with guidance."""
     builder = runpy.run_path(str(_BUILDER))
@@ -308,7 +301,6 @@ def test_explorer_detail_presentation_order_and_eyebrow_copy() -> None:
     assert positions == sorted(positions)
 
 
-@pytest.mark.approved_input
 def test_categorical_demo_library_defaults_and_coverage_self_check() -> None:
     """The categorical explorer ships 15 selectable demos and a 3x3 default."""
     builder = runpy.run_path(str(_BUILDER))
@@ -457,7 +449,6 @@ def test_explorer_title_row_chips_replace_badge_readout() -> None:
         assert glyph not in readout
 
 
-@pytest.mark.approved_input
 def test_cycle_payload_includes_cvd_metrics_from_ssot() -> None:
     """Cycles carry validation metrics plus per-deficiency model provenance."""
     builder = runpy.run_path(str(_BUILDER))
@@ -472,7 +463,6 @@ def test_cycle_payload_includes_cvd_metrics_from_ssot() -> None:
     assert "models_by_deficiency" in source
 
 
-@pytest.mark.approved_input
 def test_categorical_builder_check_is_byte_stable_and_never_writes(
     tmp_path: Path,
 ) -> None:

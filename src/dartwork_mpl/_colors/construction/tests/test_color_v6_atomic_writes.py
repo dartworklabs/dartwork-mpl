@@ -13,13 +13,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 SCRIPT_PATHS = {
-    "build_color_v6_ssot": REPO_ROOT / "scripts/build_color_v6_ssot.py",
-    "freeze_color_v5_compatibility": (
-        REPO_ROOT / "scripts/freeze_color_v5_compatibility.py"
-    ),
-    "freeze_color_v5_quality": (
-        REPO_ROOT / "scripts/freeze_color_v5_quality.py"
-    ),
+    "build_color_v6_ssot": REPO_ROOT / "scripts/build_color_v6_ssot.py"
 }
 SCRIPT_NAMES = tuple(SCRIPT_PATHS)
 WRITER_NAMES = (*SCRIPT_NAMES, "runtime_color_build")

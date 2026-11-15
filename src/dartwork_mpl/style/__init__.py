@@ -16,18 +16,15 @@ import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
 from .._rc import rc_lock
-from ._canvas import CANVAS_KINDS, SLIDE_SCALE, figsize_for, grid_shape
 
 if TYPE_CHECKING:
     from matplotlib.typing import RcKeyType
 
 __all__ = [
-    "CANVAS_KINDS",
     "SLIDE_SCALE",
     "Style",
     "active_preset_rcparams",
-    "figsize_for",
-    "grid_shape",
+    "active_presets",
     "list_styles",
     "load_style_dict",
     "step_pt",
@@ -39,10 +36,14 @@ __all__ = [
 # Deep copies of normalized values written by the last successful preset stack.
 # Contexts merge temporary preset writes and restore the immediate outer copy.
 _dm_preset_values: dict[str, object] = {}
-# Preset names of the last successful use() (or the innermost context()); the
-# default canvas (figsize_for) and the step size (step_pt) follow them. A bare
-# stack() names no preset and clears them.
+# Preset names of the last use() / innermost context(); a bare stack() clears.
 _active_preset: list[str] = []
+SLIDE_SCALE: float = 2.6  #: slides over a journal column: 23.4 cm / 9 cm
+
+
+def active_presets() -> tuple[str, ...]:
+    """The preset names the last ``use`` / innermost ``context`` applied."""
+    return tuple(_active_preset)
 
 
 def _did_you_mean(value: str, candidates: list[str]) -> str | None:

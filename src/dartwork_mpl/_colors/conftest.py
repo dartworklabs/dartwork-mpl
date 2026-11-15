@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.support.approved_inputs import read_approved_text
+from tests.support.repo_files import read_repo_text
 
 if TYPE_CHECKING:
     from dartwork_mpl._colors.construction._catalog import CatalogSnapshot
@@ -27,12 +27,8 @@ _SSOT_INPUT = (
 
 @pytest.fixture(scope="session")
 def v5_ssot() -> dict:
-    """설계 확정 SSOT (스펙 §7 — 구현이 이 값을 재생산해야 함).
-
-    Read through the approved-input reader, which checks the raw bytes
-    against the existing ``_ssot._PINNED_BASELINES["recipe"]`` pin first.
-    """
-    return json.loads(read_approved_text(_SSOT_INPUT))
+    """설계 확정 SSOT (스펙 §7 — 구현이 이 값을 재생산해야 함)."""
+    return json.loads(read_repo_text(_SSOT_INPUT))
 
 
 @pytest.fixture(scope="session")

@@ -25,9 +25,7 @@ observations = [
     172_000_000,
 ]
 
-fig, axes = plt.subplots(
-    ncols=2, figsize=dm.figsize_grid("7cm", "standard", ncols=2, gap="1cm")
-)
+fig, axes = plt.subplots(ncols=2, figsize=dm.figsize("15cm", "5.25cm"))
 
 panels = [
     (axes[0], "ko", "Korean myriad labels"),

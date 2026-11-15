@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import importlib.util
 import re
 from pathlib import Path
 
 import pytest
 from markdown_it import MarkdownIt
 
-from tests.support.approved_inputs import read_approved_text
 from tests.support.excluded_dirs import walk_files, watch_access
+from tests.support.repo_files import read_repo_text
 
 ROOT = Path(__file__).resolve().parents[2]
 STATIC = ROOT / "docs" / "_static"
@@ -169,10 +168,9 @@ def test_historical_plan_check_accepts_visible_preface_and_rejects_hidden(
         )
 
 
-@pytest.mark.approved_input
 def test_recovered_accuracy_plan_is_marked_as_historical() -> None:
     """Do not present one damaged-worktree recovery plan as current steps."""
-    plan = read_approved_text(
+    plan = read_repo_text(
         "docs/superpowers/plans/2026-07-21-color-rationale-accuracy.md"
     )
     _assert_historical_plan_is_visibly_inactive(plan)
@@ -208,10 +206,9 @@ def test_recovered_accuracy_plan_is_marked_as_historical() -> None:
         _assert_historical_plan_is_visibly_inactive(html_hidden)
 
 
-@pytest.mark.approved_input
 def test_recovered_beginner_plan_is_marked_as_historical() -> None:
     """Seal the recovered plan without making stale commands executable."""
-    plan = read_approved_text(
+    plan = read_repo_text(
         "docs/superpowers/plans/2026-07-17-beginner-friendly-color-docs.md"
     )
     kwargs = {
@@ -262,36 +259,6 @@ def test_validation_describes_live_unlocked_oklch_diagnostics() -> None:
     assert "all 43 continuous-map rows" in normalized
     assert "explanatory, non-normative, and never a gate input" in normalized
     assert "until that compiler path is introduced" not in normalized
-
-
-def load_brute_check_docs_module():
-    spec = importlib.util.spec_from_file_location(
-        "brute_check_docs", ROOT / "scripts" / "brute_check_docs.py"
-    )
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def test_brute_docs_audit_skips_downloaded_html_fragments(
-    tmp_path: Path,
-) -> None:
-    html_root = tmp_path / "html"
-    (html_root / "_downloads" / "hash").mkdir(parents=True)
-    (html_root / "_static").mkdir()
-    (html_root / "index.html").write_text("<html></html>", encoding="utf-8")
-    (html_root / "_downloads" / "hash" / "fragment.html").write_text(
-        "<style>.fragment{}</style><div>download</div>", encoding="utf-8"
-    )
-    (html_root / "_static" / "poc.html").write_text(
-        "<html></html>", encoding="utf-8"
-    )
-
-    module = load_brute_check_docs_module()
-
-    assert module.list_pages(html_root) == ["index.html"]
 
 
 def test_typography_role_tokens_exist() -> None:
@@ -527,9 +494,6 @@ def test_generated_tabs_expose_shadcn_tab_aliases() -> None:
     palette_generator = (
         ROOT / "docs" / "color_system" / "generate_assets.py"
     ).read_text(encoding="utf-8")
-    compare_generator = (ROOT / "scripts" / "compare_widget.py").read_text(
-        encoding="utf-8"
-    )
     design_css = read_static("dartwork-design.css")
     custom_css = read_static("custom.css")
 
@@ -550,14 +514,6 @@ def test_generated_tabs_expose_shadcn_tab_aliases() -> None:
     for legacy in ('classList.toggle("active"', 'style="display:'):
         assert legacy not in palette_generator
 
-    assert "dmc-tabs dm-tabs" in compare_generator
-    assert "dmc-tab dm-tab dmc-tab-after" in compare_generator
-    assert "dmc-tab dm-tab dmc-tab-before" in compare_generator
-    assert "var(--dm-i-active-line" in compare_generator
-    assert "var(--dm-danger-9" in compare_generator
-    assert "var(--dm-i-thumb" in compare_generator
-    assert "#0d9488" not in compare_generator
-    assert "rgba(13, 148, 136" not in compare_generator
     assert ".dm-pc-tab.is-active" in design_css
     assert '.dm-pc-tab[aria-selected="true"]' in design_css
     assert "dm-pc-tab-active" not in palette_generator

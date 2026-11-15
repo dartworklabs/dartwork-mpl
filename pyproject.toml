@@ -161,27 +161,26 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 "llms-full.txt" = "dartwork_mpl/asset/agent/llms-full.txt"
 
 [dependency-groups]
+# `uv sync` installs this group: everything ruff, basedpyright and pytest need.
 dev = [
-    # Every optional extra, so a plain `uv sync` gives the environment CI
-    # type-checks and tests in (`uv sync --all-extras --dev`): `uv run mypy`
-    # then means the same thing on every machine.
+    # Every optional extra, so the MCP / notebook / UI code is type-checked
+    # and tested in the default environment.
     "dartwork-mpl[mcp,notebook,ui]",
-    # Docs example scripts only (KDE/Voronoi/MCMC galleries). Nothing
-    # under src/ imports scipy.
+    "basedpyright>=1.40",
+    # Tests only: date-axis and canvas-label tests take pandas inputs.
+    "pandas>=2.2.3",
+    "pytest>=8.0.0",
+    "pytest-mpl>=0.17",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.4.0",
+    # Gallery examples (KDE / Voronoi), which tests/docs executes.
     "scipy>=1.15.2",
+]
+# Documentation site only (`uv sync --group docs`); never needed to test.
+docs = [
     # Enables sphinx-gallery's parallel example execution (conf.py
     # `parallel`), which speeds up cache-miss docs builds.
     "joblib>=1.3.0",
-    "mypy>=1.20",
-    # PyYAML type stubs so `import yaml` type-checks identically on
-    # every mypy version. Without the stubs installed, whether
-    # ``ignore_missing_imports`` suppresses the ``import-untyped``
-    # error depends on the mypy release — CI (lockfile mypy) errored
-    # while a newer local mypy passed, and a `# type: ignore` comment
-    # can't satisfy both (unused-ignore on one side, needed on the
-    # other). Installing the stubs makes yaml genuinely typed and the
-    # question moot.
-    "types-PyYAML>=6.0",
     "myst-parser>=4.0.1",
     "notebook>=7.6.3",
     # Security floors for the developer-only Jupyter/docs graph. Notebook
@@ -198,15 +197,6 @@ dev = [
     "urllib3>=2.8.0",
     "virtualenv>=21.14.13",
     "openpyxl>=3.1.5",
-    "pandas>=2.2.3",
-    "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-mpl>=0.17",
-    # CI runs the suite with `-n auto`; local runs stay serial unless you
-    # pass -n yourself (never put -n in addopts: scripts/test_id_map.py
-    # runs its own --collect-only).
-    "pytest-xdist>=3.8.0",
-    "ruff>=0.4.0",
     "shibuya>=2025.11.10",
     "sphinx>=8.1.3",
     "sphinx-copybutton>=0.5.2",
@@ -218,24 +208,18 @@ dev = [
     # Mingrammer Diagrams — system architecture as code. Used by
     # docs/internals/scripts/build_architecture_diagram.py to emit
     # docs/_static/diagrams/architecture_overview.svg before sphinx-build.
-    # Like sphinx.ext.graphviz, this shells out to the `dot` binary
-    # (apt/brew install graphviz). CI installs it explicitly; locally
-    # the build skips the regen step if dot is absent (committed SVG
-    # remains the displayed asset).
+    # Shells out to the `dot` binary (apt/brew install graphviz).
     "diagrams>=0.24.4",
 ]
 
-# The developer environment needs Python 3.11.5 or later; the package itself
+# The docs environment needs Python 3.11.5 or later; the package itself
 # still installs on every Python >=3.11. Each patched soupsieve (3.0.2 and
 # later) requires 3.11.5, so a lock that also covers 3.11.0-3.11.4 keeps the
 # vulnerable 2.10 for those interpreters.
 [tool.uv.dependency-groups]
-dev = { requires-python = ">=3.11.5" }
+docs = { requires-python = ">=3.11.5" }
 
-# Test configuration and commands
-# Run tests with: uv run pytest
-# Run specific test: uv run pytest src/dartwork_mpl/_colors/model/tests/test_color_view.py
-# Run with coverage: uv run pytest --cov=src/dartwork_mpl --cov-report=html
+# Run tests with: uv run pytest -n auto
 
 [tool.pytest.ini_options]
 # Cross-cutting suites live in tests/; slice-owned tests live next to their
@@ -248,15 +232,13 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "-v",
     "--strict-markers",
     "--tb=short",
     "--import-mode=importlib",
 ]
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
-    "color_pipeline: slow colour build/regeneration/byte-identity checks; interpreter-independent, so CI runs them on 3.12 only",
-    "approved_input: reads an exact docs/superpowers file listed in tests/support/approved_inputs.json; the approved-inputs CI job runs these with only those files checked out",
+    "color_pipeline: slow colour build/regeneration/byte-identity checks; deselect locally with -m 'not color_pipeline'",
 ]
 
 [tool.ruff]
@@ -335,10 +317,6 @@ split-on-trailing-comma = false
 "evals/agentic/preregister.py" = ["UP017"]
 "evals/agentic/test_regressions.py" = ["UP017"]
 "docs/fonts/generate_assets.py" = ["E402"]
-# These SVG generators set the matplotlib backend + a deterministic
-# ``svg.hashsalt`` before importing pyplot, so imports follow module-level
-# setup statements by design.
-"scripts/build_palette_demos.py" = ["E402"]
 # BLE001: these asset generators run a best-effort batch loop that must
 # continue past any individual failure (one broken example shouldn't abort
 # the whole build). The blind-except pattern is intentional.
@@ -393,81 +371,20 @@ split-on-trailing-comma = false
 # class has a docstring, functions are described by their names.
 "evals/**/*.py" = ["D102", "D103", "D104", "D105", "D106", "D107"]
 
-[tool.mypy]
-# `uv run mypy` (no arguments) is the one command, locally and in CI. Every
-# module under src/dartwork_mpl is checked strictly; a new module is checked
-# without being listed.
-files = ["src/dartwork_mpl"]
-python_version = "3.11"
-strict = true
-# == between types that cannot overlap is an error (stated again so it
-# stays on independently of `strict`).
-strict_equality = true
-# A `match` over a closed union that misses a case is an error (ADR 0005).
-enable_error_code = ["exhaustive-match"]
+[tool.basedpyright]
+# `uv run basedpyright` (no arguments) is the one command, locally and in CI.
+# Product code only: slice-owned tests and the bundled template samples are
+# not package source. Existing findings are grandfathered in
+# .basedpyright/baseline.json; new code must be clean. After fixing findings,
+# shrink the baseline with `uv run basedpyright --writebaseline`.
+include = ["src/dartwork_mpl"]
 exclude = [
-    # asset/prompt/05-templates/*.py are bundled documentation samples,
-    # not package source. They are intentionally untyped scripts.
-    'asset/prompt/05-templates/.*\.py$',
-    # Slice-owned tests (ADR 0005) are tests, not package source.
-    '^src/dartwork_mpl/(?:.*/)?(?:tests/|test_[^/]*\.py$|conftest\.py$)',
+    "**/__pycache__",
+    "**/tests",
+    "**/test_*.py",
+    "**/conftest.py",
+    "src/dartwork_mpl/asset/prompt/05-templates",
+    "src/dartwork_mpl/_colors/_generated.py",
 ]
-
-# Third-party gaps, each scoped to the one module that has it.
-#
-# fontTools ships no type information.
-[[tool.mypy.overrides]]
-module = ["fontTools.*"]
-ignore_missing_imports = true
-
-# matplotlib's mplot3d toolkit ships no type information; the text checks
-# project a 3D axes' text with its public proj3d.proj_transform.
-[[tool.mypy.overrides]]
-module = ["mpl_toolkits.mplot3d.proj3d"]
-ignore_missing_imports = true
-
-# InquirerPy's `inquirer` submodule exposes `text` and `select` via
-# dynamic attribute access; they are not listed in `__all__`, so mypy
-# strict raises attr-defined on every access. Skipping follow_imports
-# for the InquirerPy namespace suppresses those false positives
-# without touching the call sites.
-[[tool.mypy.overrides]]
-module = ["InquirerPy.*"]
-ignore_missing_imports = true
-follow_imports = "skip"
-
-# `fastmcp.tools.tool` is a real module on FastMCP 2 but a runtime alias on
-# FastMCP 3 (both are supported, see the CI artifact matrix), so mypy cannot
-# resolve it and `ToolResult` is `Any`; the one class that subclasses it to
-# keep structured errors on both majors is the only place that needs this.
-[[tool.mypy.overrides]]
-module = ["fastmcp.tools.tool"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["dartwork_mpl.mcp.artifacts.transport"]
-disallow_subclassing_any = false
-
-[tool.coverage.run]
-source = ["src/dartwork_mpl"]
-# mcp/ is the agentic core and is exercised by tests/contracts/test_mcp.py +
-# tests/contracts/test_integration.py, so it stays in the report (omitting it
-# hid the agentic surface behind an inflated headline number). ui/ is
-# the optional `dartwork-mpl-ui` viewer (FastAPI app + a 1.5k-line HTML
-# template) whose web layer is not unit-tested; it is omitted so the
-# core fail-under threshold reflects covered code, not the viewer.
-omit = ["*/ui/*", "*/tests/*", "*/test_*.py", "*/conftest.py"]
-
-[tool.coverage.report]
-show_missing = true
-skip_empty = true
-# Regression gate: the suite currently sits at ~86% with mcp/ included.
-# 80 leaves a little headroom for incidental churn while still failing
-# the build if a substantial chunk of new code ships untested (the prior
-# state had no gate at all, so coverage could silently regress to zero).
-fail_under = 80
-exclude_lines = [
-    "pragma: no cover",
-    "if __name__ == .__main__.",
-    "if TYPE_CHECKING:",
-]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"

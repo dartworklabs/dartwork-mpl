@@ -132,34 +132,26 @@ from .prompt import (
 from .recommend import suggest_chart_type
 from .scale import dpi, fs, fw, lw
 
-# Import style module exports
-from .style import (
-    Style,
-    figsize_for,
-    grid_shape,
-    list_styles,
-    load_style_dict,
-    style,
-    style_path,
-)
-
-# Extended plot functions (from templates, formerly xplot)
-from .templates import plot_diverging_bar
-
-# Unit helpers (0.4+: free-form width input)
-from .units import (
+# Physical units and figure size
+from .size import (
     Length,
     cm,
     col1,
     col2,
     figsize,
-    figsize_grid,
+    figsize_for,
+    grid_shape,
     inch,
-    length,
     list_aspect_tokens,
     mm,
     pt,
 )
+
+# Import style module exports
+from .style import Style, list_styles, load_style_dict, style, style_path
+
+# Extended plot functions (from templates, formerly xplot)
+from .templates import plot_diverging_bar
 
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
@@ -263,18 +255,16 @@ __all__ = [  # noqa: RUF022
     # Color utilities
     "mix_colors",
     "pseudo_alpha",
-    # Units (0.4+)
+    # Physical units and figure size
     "cm",
     "inch",
     "mm",
     "pt",
-    "length",
     "col1",
     "col2",
     "Length",
     "figsize",
     "figsize_for",
-    "figsize_grid",
     "grid_shape",
     "list_aspect_tokens",
     "tokens",

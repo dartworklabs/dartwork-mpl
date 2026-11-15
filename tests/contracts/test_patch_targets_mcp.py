@@ -5,11 +5,8 @@ The artifact tests (``test_artifact_store.py``, ``test_input_commit_observer.py`
 filesystem primitives among them live in ``_store_fs``; the patch still
 reaches the store methods below, which read them from store's globals.
 
-These rows need FastMCP, so the module skips as a whole without it. That
-keeps the all-extras JUnit gate honest: ``scripts/check_integration_junit.py``
-requires this module to contribute a passed case, rejects a module whose cases
-all skip, and rejects an import skip, so the rows cannot silently drop out of
-the full run. A namespace check only; see ``test_patch_targets`` for its limit.
+These rows need FastMCP, so the module skips as a whole without it. A
+namespace check only; see ``test_patch_targets`` for its limit.
 """
 
 from __future__ import annotations

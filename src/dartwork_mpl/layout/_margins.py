@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypeAlias
 
-from ..units import Length
+from ..size import Length
 
 # Minimum slack between opposing GridSpec edges, in figure-fraction.
 # Keeps left < right and bottom < top so the GridSpec rectangle stays
@@ -57,7 +57,7 @@ def _parse_margin(value: Length | str | float | int) -> _Margin:
         s = value.strip()
         if s.endswith("%"):
             return _PercentMargin(float(s[:-1]))
-        return _PhysicalMargin(Length(s))
+        return _PhysicalMargin(Length.parse(s, "margin"))
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return _FractionMargin(float(value))
     raise TypeError(

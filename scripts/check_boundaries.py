@@ -76,6 +76,8 @@ PLATFORM = frozenset(
     {
         "dartwork_mpl._figure_geometry",
         "dartwork_mpl._rc",
+        # The edge-case registry every slice's edges.py appends to.
+        "dartwork_mpl.edgecase",
         # MCP process capture and asset confinement.
         "dartwork_mpl.mcp._platform",
         # The viewer's loopback access checks, directory handles, HTTP body
@@ -134,6 +136,7 @@ SLICES = frozenset(
         "dartwork_mpl.prompt",
         "dartwork_mpl.recommend",
         "dartwork_mpl.scale",
+        "dartwork_mpl.size",
         "dartwork_mpl.skills",
         "dartwork_mpl.style",
         "dartwork_mpl.templates",
@@ -147,7 +150,6 @@ SLICES = frozenset(
         "dartwork_mpl.ui.scaffold",
         "dartwork_mpl.ui.script",
         "dartwork_mpl.ui.state",
-        "dartwork_mpl.units",
         "dartwork_mpl.validate",
     }
 )
@@ -218,9 +220,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl._colors.families_api", "dartwork_mpl._colors.registry"): (
         "a colormap lookup needs the shipped colormaps registered first"
-    ),
-    ("dartwork_mpl._colors.families_api", "dartwork_mpl.units"): (
-        "show_colors sizes its swatch figure with the physical-width API"
     ),
     ("dartwork_mpl._colors.registry", "dartwork_mpl._colors._curated"): (
         "the curated palettes are registered as named colours and colormaps"
@@ -300,7 +299,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.formatting"): (
         "layout writes the library's tick numbers before measuring them"
     ),
-    ("dartwork_mpl.layout", "dartwork_mpl.units"): (
+    ("dartwork_mpl.layout", "dartwork_mpl.size"): (
         "margins are given as physical lengths"
     ),
     ("dartwork_mpl.mcp", "dartwork_mpl._colors.registry"): (
@@ -378,13 +377,13 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
     ),
-    ("dartwork_mpl.style", "dartwork_mpl.units"): (
-        "a preset's default canvas is a physical width and aspect"
+    ("dartwork_mpl.size", "dartwork_mpl.style"): (
+        "the default canvas follows the active preset's page and font"
     ),
     ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
         "a template sizes its text relative to the active preset"
     ),
-    ("dartwork_mpl.templates", "dartwork_mpl.units"): (
+    ("dartwork_mpl.templates", "dartwork_mpl.size"): (
         "a template's default figure size is a physical width and aspect"
     ),
     ("dartwork_mpl.ui", "dartwork_mpl.ui.page"): (
@@ -462,6 +461,12 @@ SHIMS: Mapping[str, str] = {
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.size.decide": (
+        "the canvas is decided from the parsed request and the page alone"
+    ),
+    "dartwork_mpl.size.model": (
+        "parsing user input into size types needs nothing outside it"
+    ),
     "dartwork_mpl.recommend._chart_type": (
         "chart semantics decide solely from caller values"
     ),

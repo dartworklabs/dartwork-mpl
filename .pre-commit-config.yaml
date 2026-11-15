@@ -1,22 +1,19 @@
-# See https://pre-commit.com for more information
+# Local convenience only; CI's `lint` job is the authority (ruff check,
+# ruff format --check, basedpyright).
 repos:
-  # Generic hygiene. Generated/binary asset trees are excluded so the
-  # hooks only touch hand-edited source.
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: '^(docs/_build/|src/dartwork_mpl/asset/|src/dartwork_mpl/_colors/_generated\.py$|docs/[^/]+/images/|.*\.svg$)'
+        exclude: '^(src/dartwork_mpl/asset/|src/dartwork_mpl/_colors/_generated\.py$|docs/[^/]+/images/|.*\.svg$)'
       - id: end-of-file-fixer
-        exclude: '^(docs/_build/|src/dartwork_mpl/asset/|src/dartwork_mpl/_colors/_generated\.py$|docs/[^/]+/images/|.*\.svg$)'
+        exclude: '^(src/dartwork_mpl/asset/|src/dartwork_mpl/_colors/_generated\.py$|docs/[^/]+/images/|.*\.svg$)'
       - id: check-merge-conflict
-      - id: check-case-conflict
       - id: check-toml
       - id: check-yaml
         args: [--allow-multiple-documents]
 
-  # Pinned to the ruff version in uv.lock / CI (`uv run ruff`) so the
-  # pre-commit hook and CI never disagree on lint/format results.
+  # Keep in step with the ruff version in uv.lock.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.4
     hooks:
@@ -24,18 +21,13 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  # Use the project's uv-managed venv so mypy sees the same matplotlib,
-  # numpy, IPython, fastmcp, fastapi, and pydantic versions as CI does.
-  # `mirrors-mypy` runs in an isolated env where missing optional deps
-  # silently change strict-mode results (unused-ignore, type-var,
-  # no-any-return divergence between local and CI).
-  # `--frozen` installs from the existing lockfile but never rewrites `uv.lock`, so this hook can't
-  # trip pre-commit's "files were modified by this hook" failure on the required check.
+  # ~5 s on the whole package; uses the project venv so it sees the same
+  # dependencies as CI. `--frozen` never rewrites uv.lock.
   - repo: local
     hooks:
-      - id: mypy
-        name: mypy
-        entry: uv run --frozen mypy
+      - id: basedpyright
+        name: basedpyright
+        entry: uv run --frozen basedpyright
         language: system
         types: [python]
         pass_filenames: false

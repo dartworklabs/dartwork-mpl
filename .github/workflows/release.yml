@@ -1,309 +1,49 @@
 name: Publish to PyPI
 
-# Triggered by tags matching v*.*.*. Builds sdist + wheel and uploads
-# them via the PyPI Trusted Publisher (OIDC) flow — no API token is
-# stored in repo secrets. Set up the trusted publisher once on PyPI:
-#
-#   https://pypi.org/manage/project/dartwork-mpl/settings/publishing/
-#
-# with:
-#   Owner: dartworklabs
-#   Repository: dartwork-mpl
-#   Workflow file: release.yml
-#   Environment: (none — matches the publisher registered without one)
-#
-# Manual dispatch is also allowed for dry runs.
+# A v*.*.* tag (cut on main) builds and publishes. main only receives merges
+# from develop that already passed CI, so nothing is re-tested here.
+# PyPI trusted publishing: no token; the publisher is registered on PyPI for
+# this repository and this workflow file name.
 
 on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
 
 permissions:
   contents: read
 
-# Single concurrent publish per ref; cancel stale runs.
-concurrency:
-  group: publish-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  # Gate the release on a green test suite. Without this, `publish` only
-  # depends on `build` (version-check + `uv build` + sdist-scope guard),
-  # so a tag on a commit whose tests fail — or never ran — would still
-  # publish to PyPI. `build`/`publish` now transitively require `test`.
-  # Every job is GitHub-hosted, like ci.yml (public repository: hosted
-  # minutes are free; the shared self-hosted runner is not used, #716).
-  test:
-    name: Test before release
-    env:
-      UV_PYTHON: "3.12"
-      # The bar-label readability tests read the saved PDF through
-      # Ghostscript; here a missing gs fails them instead of skipping.
-      DARTWORK_MPL_REQUIRE_GHOSTSCRIPT: "1"
-    runs-on: ubuntu-24.04
-    steps:
-      # The quality-oracle regression test resolves and archives the frozen
-      # baseline commit, which is absent from a depth-one checkout.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - name: Isolate release matplotlib font discovery
-        shell: bash
-        run: |
-          set -euo pipefail
-          release_mplconfig=$(mktemp -d "$RUNNER_TEMP/matplotlib-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
-          printf 'MPLCONFIGDIR=%s\n' "$release_mplconfig" >> "$GITHUB_ENV"
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "uv.lock"
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-      # Ubuntu runners ship without Ghostscript (see the test job in ci.yml).
-      - name: Install Ghostscript
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y ghostscript
-      - name: Verify Ghostscript (gs for the PDF readability tests)
-        run: gs --version
-      - name: Record release test interpreter
-        shell: bash
-        run: |
-          set -euo pipefail
-          uv run --no-sync python -c 'import sys; print(sys.version); print(sys.executable); assert sys.version_info[:2] == (3, 12)' \
-            | tee "$RUNNER_TEMP/python-runtime.txt"
-      - name: Record release font runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          uv run --no-sync python - <<'PY' | tee "$RUNNER_TEMP/font-runtime.json"
-          import json
-          from pathlib import Path
-
-          import matplotlib
-          from matplotlib import font_manager
-
-          fallback_faces = [
-              {"family": entry.name, "file": Path(entry.fname).name,
-               "exists": Path(entry.fname).is_file()}
-              for entry in sorted(
-                  font_manager.fontManager.ttflist,
-                  key=lambda entry: (entry.name, entry.fname),
-              )
-              if entry.name.startswith("STIX") or entry.name == "cmex10"
-          ]
-          print(json.dumps({
-              "matplotlib": matplotlib.__version__,
-              "cache_dir": matplotlib.get_cachedir(),
-              "data_path": matplotlib.get_data_path(),
-              "fontlist_version": font_manager.FontManager.__version__,
-              "ttf_count": len(font_manager.fontManager.ttflist),
-              "fallback_face_count": len(fallback_faces),
-              "fallback_faces": fallback_faces[:64],
-          }, indent=2))
-          PY
-      - name: Verify packaged color authorities
-        run: |
-          set -euo pipefail
-          uv run python scripts/build_color_v6_ssot.py \
-            --baseline-commit 12d16bac22dee790bd0696ca92a814a797dc728b \
-            --output /tmp/dartwork-color-v6-ssot.json
-          cmp /tmp/dartwork-color-v6-ssot.json src/dartwork_mpl/asset/color/color_v6_ssot.json
-          uv run python -m dartwork_mpl._colors._build --check
-      - name: Compare frozen and live color systems
-        run: uv run python scripts/compare_color_systems.py --output build/color-system-comparison --check
-      - name: Verify generated color documentation assets
-        env:
-          MPLBACKEND: Agg
-        run: |
-          set -euo pipefail
-          uv run python docs/_static/scripts/build_categorical_explorer.py --check
-          uv run python docs/_static/scripts/build_colormap_explorer.py --check
-          uv run python docs/color_system/generate_theory_figures.py --check
-      - name: Upload color-system comparison
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: color-system-comparison
-          path: build/color-system-comparison
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Run test suite
-        shell: bash
-        run: |
-          set -euo pipefail
-          # CI already runs this complete suite in parallel. Keep every case
-          # and the JUnit guard while avoiding a serial release gate.
-          uv run pytest -q -n 4 --dist worksteal -rs --durations=30 \
-            --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
-      - name: Assert MCP / integration tests actually ran
-        run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
-      - name: Preserve release test evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: release-pytest-python-3.12
-          path: |
-            ${{ runner.temp }}/pytest-full.xml
-            ${{ runner.temp }}/pytest-summary.txt
-            ${{ runner.temp }}/python-runtime.txt
-            ${{ runner.temp }}/font-runtime.json
-          if-no-files-found: warn
-          retention-days: 7
-
-  build:
-    name: Build sdist + wheel
-    env:
-      UV_PYTHON: "3.12"
-    needs: test
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      # Guard against a tag/pyproject version mismatch (e.g. tagging
-      # v0.4.1 while pyproject still says 0.4.0). Tag pushes only; the
-      # dry-run dispatch has no tag to check.
-      - name: Verify tag matches pyproject version
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          PROJ="$(uv version --short)"
-          echo "tag=$TAG  pyproject=$PROJ"
-          if [ "$TAG" != "$PROJ" ]; then
-            echo "::error::Tag v$TAG != pyproject $PROJ — bump pyproject or fix the tag."
-            exit 1
-          fi
-
-      - name: Record release build interpreter
-        run: uv run --no-project python -c 'import sys; print(sys.version); print(sys.executable); assert sys.version_info[:2] == (3, 12)'
-
-      - name: Build distributions
-        run: uv build --python "$UV_PYTHON"
-
-      - name: Wheel ↔ git-tracked tree parity
-        # Positive packaging gate: the wheel's package payload must equal
-        # the git-tracked src/dartwork_mpl tree minus declared test
-        # exclusions, plus the two force-included llms indexes. Consumer
-        # AGENTS/CLAUDE are ordinary tracked files and remain checked.
-        # Catches the empirically-proven hatchling hazard where a
-        # .gitignore *pattern* (e.g. a global `*.csv`) silently drops a
-        # git-tracked package file from the wheel — the negative
-        # sdist-scope grep below only catches over-inclusion.
-        run: |
-          set -euo pipefail
-          wheel=$(ls dist/*.whl)
-          python3 scripts/check_wheel_payload.py "$wheel"
-
-      - name: Sanity-check sdist scope
-        # Fails the build if dev-only paths sneak into the tarball
-        # (regression guard for the hatch ``include`` vs ``only-include``
-        # gotcha we hit pre-0.4.0).
-        run: |
-          set -euo pipefail
-          tarball=$(ls dist/*.tar.gz)
-          unwanted=$(tar tzf "$tarball" | awk -F/ '{print $2}' | sort -u | grep -E '^(\.claude|docs|tests|examples|scripts|\.github|\.venv|uv\.lock)$' || true)
-          if [ -n "$unwanted" ]; then
-            echo "::error ::sdist contains dev-only paths: $unwanted"
-            exit 1
-          fi
-
-      - name: Upload distributions
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
-
   publish:
-    name: Publish to PyPI
-    needs: build
     runs-on: ubuntu-24.04
-    # Header says workflow_dispatch is for dry runs (build only) — guard
-    # the publish step so an accidental "Run workflow" click can't upload
-    # an untagged build to production PyPI. The build job still runs on
-    # dispatch, preserving the dry-run sanity check.
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
-      # Required for OIDC-based PyPI publishing (no API tokens).
       id-token: write
-    steps:
-      - name: Download distributions
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: dist
-          path: dist/
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
-        with:
-          # Skip (don't fail) if this version is already on PyPI — e.g.
-          # a manual local ``uv publish`` beat the tag, or the tag run
-          # is re-triggered. Lets tag-driven OIDC publishing and local
-          # publishes coexist safely.
-          skip-existing: true
-
-  github_release:
-    name: Create / update GitHub Release
-    needs: publish
-    runs-on: ubuntu-24.04
-    # Tag pushes only — workflow_dispatch is a dry run and never publishes.
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    permissions:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 
-      # CHANGELOG.md hard-wraps paragraphs at ~72 chars (Keep a Changelog
-      # convention). GitHub Releases render single newlines as soft
-      # breaks, so pasting the raw section makes the release page use
-      # only half the column width. ``scripts/extract_release_notes.py``
-      # cuts the section for this tag's version and reflows each list
-      # item onto a single line so the page flows full-width.
-      - name: Extract + reflow release notes from CHANGELOG.md
+      - name: Tag must match the pyproject version
         run: |
-          set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          python3 scripts/extract_release_notes.py CHANGELOG.md "$VERSION" \
-            > release-notes.md
-          echo "::group::release-notes.md preview"
-          head -40 release-notes.md
-          echo "::endgroup::"
+          TAG="${GITHUB_REF_NAME#v}"
+          PROJ="$(uv version --short)"
+          [ "$TAG" = "$PROJ" ] || { echo "::error::tag v$TAG != pyproject $PROJ"; exit 1; }
 
-      # ``--clobber`` overwrites the body if a release already exists
-      # (manual ``gh release create`` beat the tag run, or the tag is
-      # re-triggered after CHANGELOG edits) — same idempotency story as
-      # PyPI's ``skip-existing``.
-      - name: Create / update GitHub Release
+      - run: uv build
+
+      # A .gitignore pattern can silently drop a tracked package file (assets
+      # live inside slices), so the wheel is compared with the tracked tree.
+      - name: Wheel holds every tracked package file
+        run: python3 scripts/check_wheel_payload.py dist/*.whl
+
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          skip-existing: true
+
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
-          TITLE="$TAG"
-          if gh release view "$TAG" --json tagName >/dev/null 2>&1; then
-            gh release edit "$TAG" \
-              --notes-file release-notes.md \
-              --title "$TITLE"
-          else
-            gh release create "$TAG" \
-              --title "$TITLE" \
-              --notes-file release-notes.md \
-              --verify-tag
-          fi
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag

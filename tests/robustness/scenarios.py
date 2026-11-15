@@ -654,7 +654,7 @@ def _build_donut_wide_wrong_pctdistance() -> Figure:
 # wrappers remain after the #159/#160 redesign). test_catalog_alignment.py
 # and test_robustness_suite.py still route entries through small
 # defensive helpers. The type hint is left at bare ``list`` because the
-# file isn't in the ``mypy --strict`` CI scope (CI only checks
+# file isn't in the type checker's scope (basedpyright only checks
 # ``src/dartwork_mpl/``).
 SCENARIOS: list = [
     # A. Tick label stress

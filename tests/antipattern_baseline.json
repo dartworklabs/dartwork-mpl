@@ -1,0 +1,13 @@
+{
+  "docs/color_system/generate_assets.py": 3,
+  "docs/color_system/generate_theory_figures.py": 2,
+  "docs/examples_source/02_color_system/plot_blue_orange_centered_bins.py": 1,
+  "docs/fonts/generate_comparison_assets.py": 1,
+  "docs/usage_guide/generate_assets.py": 4,
+  "docs/usage_guide/generate_preset_compare.py": 1,
+  "examples/plot_donut_composition_kr.py": 1,
+  "examples/plot_histogram_normal_fit.py": 1,
+  "examples/plot_histogram_normal_fit_kr.py": 1,
+  "examples/plot_line_signals.py": 2,
+  "examples/plot_line_signals_kr.py": 2
+}

@@ -5,9 +5,6 @@ import colorsys
 import hashlib
 import json
 import math
-import os
-import subprocess
-import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
@@ -15,7 +12,6 @@ from typing import cast
 import pytest
 
 from dartwork_mpl._colors import _compatibility_metrics as oracle
-from dartwork_mpl._colors.verify._comparison import matches_recorded_quality
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 ORACLE_PATH = REPO_ROOT / "src/dartwork_mpl/_colors/_compatibility_metrics.py"
@@ -29,7 +25,6 @@ QUALITY_PATH = (
     / "color_v5_quality.json"
 )
 COMPAT_PATH = QUALITY_PATH.with_name("color_v5_compatibility.json")
-GENERATOR_PATH = REPO_ROOT / "scripts/freeze_color_v5_quality.py"
 
 BASELINE_COMMIT = "12d16bac22dee790bd0696ca92a814a797dc728b"
 COMPAT_SHA256 = (
@@ -331,7 +326,6 @@ def test_ordered_quality_marks_one_zero_among_numeric_steps_degenerate() -> (
     assert math.isfinite(quality["step_cv"])
 
 
-@pytest.mark.approved_input
 def test_quality_validator_allows_numeric_cv_with_one_degenerate_step() -> None:
     """Represent one isolated zero step without conflating it with a zero row."""
     payload = _load_quality()
@@ -356,7 +350,6 @@ def test_quality_validator_allows_numeric_cv_with_one_degenerate_step() -> None:
     assert isinstance(validated_amber["step_cv"], float)
 
 
-@pytest.mark.approved_input
 def test_tangerine_records_local_round_to_even_y_quantization_margin() -> None:
     """Pin the worst full-LUT pair to its two local 8-bit sRGB cells."""
     compatibility = json.loads(COMPAT_PATH.read_text(encoding="utf-8"))
@@ -379,7 +372,6 @@ def test_tangerine_records_local_round_to_even_y_quantization_margin() -> None:
     }
 
 
-@pytest.mark.approved_input
 def test_diverging_and_cyclic_topology_preserve_full_baseline_contract() -> (
     None
 ):
@@ -415,7 +407,6 @@ def test_gate_decisions_use_raw_values_not_display_rounding() -> None:
     assert oracle.meets_minimum(9.999999, 10.0) is False
 
 
-@pytest.mark.approved_input
 def test_quality_policy_distinguishes_step_cv_by_sampling_and_taxonomy() -> (
     None
 ):
@@ -434,7 +425,6 @@ def test_quality_policy_distinguishes_step_cv_by_sampling_and_taxonomy() -> (
     assert "ordered_step_cv" not in gate_rules
 
 
-@pytest.mark.approved_input
 def test_quality_fixture_is_pinned_finite_and_validated() -> None:
     """Pin both immutable bytes and validate embedded source provenance."""
     assert hashlib.sha256(COMPAT_PATH.read_bytes()).hexdigest() == COMPAT_SHA256
@@ -453,7 +443,6 @@ def test_quality_fixture_is_pinned_finite_and_validated() -> None:
     assert validated["schema"] == "dartwork-mpl.color-quality/v2"
 
 
-@pytest.mark.approved_input
 def test_vendor_surface_provenance_does_not_change_quality_metric_values() -> (
     None
 ):
@@ -468,7 +457,6 @@ def test_vendor_surface_provenance_does_not_change_quality_metric_values() -> (
     )
 
 
-@pytest.mark.approved_input
 def test_quality_v2_preserves_every_legacy_metric_outside_declared_changes() -> (
     None
 ):
@@ -661,7 +649,6 @@ def test_quality_loader_rejects_source_and_payload_tampering(
 @pytest.mark.parametrize(
     "mutation", ["empty_palette", "bad_summary", "bad_count", "empty_extrema"]
 )
-@pytest.mark.approved_input
 def test_quality_validator_rejects_malformed_metric_contracts(
     mutation: str,
 ) -> None:
@@ -686,7 +673,6 @@ def test_quality_validator_rejects_malformed_metric_contracts(
         )
 
 
-@pytest.mark.approved_input
 def test_quality_computation_rejects_singleton_ordered_luts_cleanly() -> None:
     """Reject empty ordered profiles with the oracle's domain exception."""
     compatibility = json.loads(COMPAT_PATH.read_text(encoding="utf-8"))
@@ -704,7 +690,6 @@ def test_quality_computation_rejects_singleton_ordered_luts_cleanly() -> None:
         oracle.compute_catalog_quality(compatibility, previews)
 
 
-@pytest.mark.approved_input
 def test_quality_sanity_values_match_the_immutable_v5_baseline() -> None:
     """Pin representative raw extrema used by the migration gates."""
     quality = _load_quality()
@@ -765,7 +750,6 @@ def test_quality_sanity_values_match_the_immutable_v5_baseline() -> None:
     assert dark["tritan_min_delta_e00"] == pytest.approx(11.010755633433755)
 
 
-@pytest.mark.approved_input
 def test_every_discrete_form_has_quality_and_singletons_use_null() -> None:
     """Measure every frozen discrete row without serializing NaN."""
     quality = _load_quality()
@@ -779,77 +763,3 @@ def test_every_discrete_form_has_quality_and_singletons_use_null() -> None:
         singleton = _object_map(forms["1"])
         assert singleton["normal_delta_e00"] is None
         assert singleton["normal_delta_e_ok"] is None
-
-
-# Not ``approved_input``: the generator reads its listed baseline files
-# (``BASELINE_PREVIEW_INPUTS``) by exact path from the accepted commit, so it
-# needs full Git history and runs in the full-history ``test`` job only. Every
-# output, including the baseline files it extracts, stays below ``tmp_path``.
-@pytest.mark.color_pipeline
-def test_generator_is_byte_identical_and_uses_archived_baseline(
-    tmp_path: Path,
-) -> None:
-    """Regenerate from pinned literals twice without touching candidate code."""
-    first = tmp_path / "first.json"
-    second = tmp_path / "second.json"
-    owned_temporary = tmp_path / "generator-tmp"
-    owned_temporary.mkdir()
-    command = [
-        sys.executable,
-        str(GENERATOR_PATH),
-        "--baseline-commit",
-        BASELINE_COMMIT,
-    ]
-    import_trap = tmp_path / "import-trap" / "dartwork_mpl"
-    import_trap.mkdir(parents=True)
-    (import_trap / "__init__.py").write_text(
-        "raise RuntimeError('candidate package import is forbidden')\n",
-        encoding="utf-8",
-    )
-    owned = {**os.environ, "TMPDIR": str(owned_temporary)}
-    environment = {**owned, "PYTHONPATH": str(import_trap.parent)}
-    subprocess.run(
-        [*command, "--output", str(first)],
-        cwd=REPO_ROOT,
-        env=environment,
-        check=True,
-    )
-    subprocess.run(
-        [*command, "--output", str(second)],
-        cwd=REPO_ROOT,
-        env=owned,
-        check=True,
-    )
-    # The extracted baseline inputs lived in a temporary directory below the
-    # owned TMPDIR and are gone once each run finishes.
-    assert list(owned_temporary.iterdir()) == []
-    # The generator must be byte-identical to itself: same inputs, same run,
-    # same bytes. That is exact.
-    assert first.read_bytes() == second.read_bytes()
-
-    # Against the archived baseline the comparison is by content. The fixture
-    # holds ~44,000 doubles derived from the frozen hex, and it was recorded on
-    # a different machine than this may run on; last-bit differences in FMA
-    # contraction move the bytes without moving the catalog. Structure, keys,
-    # hashes and every non-numeric leaf are still matched exactly.
-    assert matches_recorded_quality(
-        json.loads(first.read_text(encoding="utf-8")),
-        json.loads(QUALITY_PATH.read_text(encoding="utf-8")),
-    )
-
-    result = subprocess.run(
-        [
-            *command[:-1],
-            f"{BASELINE_COMMIT}^",
-            "--output",
-            str(tmp_path / "bad.json"),
-        ],
-        cwd=REPO_ROOT,
-        env=owned,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 2
-    assert "baseline commit" in result.stderr.lower()
-    assert not (tmp_path / "bad.json").exists()

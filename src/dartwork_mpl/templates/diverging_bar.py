@@ -16,7 +16,7 @@ from matplotlib.figure import Figure
 from matplotlib.transforms import blended_transform_factory
 
 from ..scale import fs, fw
-from ..units import figsize as _figsize
+from ..size import figsize as _figsize
 
 
 def plot_diverging_bar(

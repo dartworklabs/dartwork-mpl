@@ -9,9 +9,7 @@ fastmcp = pytest.importorskip("fastmcp")
 from dartwork_mpl._colors.construction import _catalog  # noqa: E402
 from dartwork_mpl.mcp.server import mcp  # noqa: E402
 
-# Every test here compares against the pinned v5 compatibility snapshot, an
-# exact input in tests/support/approved_inputs.json.
-pytestmark = pytest.mark.approved_input
+# Every test here compares against the pinned v5 compatibility snapshot.
 
 ADDITIONS = {
     "tool_names": ("render_plot", "get_plot_artifact", "delete_plot_inputs"),

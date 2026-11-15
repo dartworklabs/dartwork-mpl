@@ -308,6 +308,18 @@ rules:
       `figsize=dm.figsize("<n>cm", "<aspect>")`, or `dm.col1`/`dm.col2`
       for academic columns.
 
+  - id: dm-size-helpers-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:length|figsize_grid)\b'
+    message: |
+      `dm.length` and `dm.figsize_grid` were REMOVED. Pass the unit
+      string (`"13cm"`) or `dm.cm(...)` where a length is taken,
+      and size a panel grid with `dm.figsize_for(nrows=..., ncols=...)`
+      or an exact `dm.figsize(width, height)`.
+    fix_suggestion: 'dm.figsize_for(nrows=2, ncols=3)'
+
   - id: raw-width-number
     severity: critical
     detector:

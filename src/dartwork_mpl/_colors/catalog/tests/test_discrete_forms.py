@@ -32,7 +32,7 @@ from dartwork_mpl._colors.catalog._families import (
     SEQUENTIAL,
 )
 from dartwork_mpl._colors.verify._comparison import matches_recorded_quality
-from tests.support.approved_inputs import read_approved_text
+from tests.support.repo_files import read_repo_text
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 COMPATIBILITY_INPUT = (
@@ -78,14 +78,14 @@ def _load_json(path: Path) -> dict[str, object]:
 def _compatibility() -> dict[str, object]:
     """Load the pinned v5 compatibility input on first use."""
     return _json_object(
-        read_approved_text(COMPATIBILITY_INPUT), COMPATIBILITY_INPUT
+        read_repo_text(COMPATIBILITY_INPUT), COMPATIBILITY_INPUT
     )
 
 
 @functools.cache
 def _quality() -> dict[str, object]:
     """Load the pinned v5 quality input on first use."""
-    return _json_object(read_approved_text(QUALITY_INPUT), QUALITY_INPUT)
+    return _json_object(read_repo_text(QUALITY_INPUT), QUALITY_INPUT)
 
 
 V6_SSOT = _load_json(V6_SSOT_PATH)
@@ -125,7 +125,6 @@ def _case_id(index: int) -> str:
     return f"case{index:03d}"
 
 
-@pytest.mark.approved_input
 def test_frozen_discrete_case_inventory_is_complete() -> None:
     """Cover 547 forward/reverse forms and all 72 multi-hue rows."""
     assert (
@@ -184,7 +183,6 @@ def test_generated_diverging_tokens_are_registered_in_low_high_order(
         assert named[f"dc.{name}{i}"] == hex_value
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_v6_multi_hue_manifest_matches_every_frozen_index_row(
     index: int,
@@ -197,7 +195,6 @@ def test_v6_multi_hue_manifest_matches_every_frozen_index_row(
     assert tuple(manifest[name][str(n)]) == expected_indices, (name, n)
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_generated_module_exposes_every_frozen_multi_hue_index_row(
     index: int,
@@ -214,7 +211,6 @@ def test_generated_module_exposes_multi_hue_discrete_manifest() -> None:
     assert hasattr(_generated, "MULTI_HUE_DISCRETE_INDICES")
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_multi_hue_indices_select_the_exact_shipped_hex(index: int) -> None:
     name, n, expected_indices, expected_hex = _multi_hue_cases()[index]
@@ -225,7 +221,6 @@ def test_multi_hue_indices_select_the_exact_shipped_hex(index: int) -> None:
     assert selected == expected_hex, (name, n)
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_multi_hue_index_rows_increase_and_select_unique_hex(
     index: int,
@@ -237,7 +232,6 @@ def test_multi_hue_index_rows_increase_and_select_unique_hex(
     assert len(set(expected_hex)) == n
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize("index", range(MULTI_HUE_FORM_COUNT), ids=_case_id)
 def test_multi_hue_raw_quality_matches_the_independent_frozen_oracle(
     index: int,
@@ -310,7 +304,6 @@ def test_reverse_returns_reversed_copy() -> None:
     )
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize("index", range(DISCRETE_FORM_COUNT), ids=_case_id)
 def test_every_forward_discrete_form_matches_the_frozen_public_contract(
     index: int,
@@ -320,7 +313,6 @@ def test_every_forward_discrete_form_matches_the_frozen_public_contract(
     assert tuple(discrete_colors(name, n)) == expected, (name, n)
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize("index", range(DISCRETE_FORM_COUNT), ids=_case_id)
 def test_every_reverse_discrete_form_matches_the_frozen_public_contract(
     index: int,

@@ -9,6 +9,15 @@ clients (Codex, Aider, Continue, etc.) can pick it up.
 A machine-readable index is in [`llms.txt`](llms.txt) and a single-file
 concatenated dump in [`llms-full.txt`](llms-full.txt).
 
+## System Handbook (read first)
+
+Before changing code, read only the topics you need from
+[`docs/handbook/index.md`](docs/handbook/index.md). It owns the
+project's purpose, structure, invariants (aesthetics are held; other
+features may be removed when meaningless), verification gates and who
+decides what. When your change alters current state, update the
+matching Handbook topic in the same PR.
+
 ## What is dartwork-mpl
 
 A thin utility layer on top of matplotlib that gives you a free-form
@@ -90,6 +99,13 @@ a test fix.
 The visual style is also held: fonts, weights, spines, grids, preset looks
 and colour values do not change outside a bug fix whose before/after the
 user has seen.
+
+The anti-pattern ratchet: `tests/test_antipattern_ratchet.py` lints every
+tracked example, docs script and bundled template and holds each file's
+critical/warning count to `tests/antipattern_baseline.json`. New code must be
+clean. When you fix issues, lower the baseline with
+`uv run python tests/test_antipattern_ratchet.py --update` — never run it to
+let a count go up.
 
 ## Skills and limits for agent work
 

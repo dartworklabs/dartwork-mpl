@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from ..units import Length
+from ..size import Length
 from ._content_extent import _axes_content_extent_px
 from ._fit_labels import MAX_GAP_FRACTION, gap_fraction, record_spacing
 
@@ -25,7 +25,7 @@ def parse_gutter(value: Length | str | float | None) -> float | None:
     if isinstance(value, Length):
         points = value.pt
     elif isinstance(value, str):
-        points = Length(value.strip()).pt
+        points = Length.parse(value.strip(), "gutter").pt
     elif isinstance(value, (int, float)) and not isinstance(value, bool):
         points = float(value)
     else:

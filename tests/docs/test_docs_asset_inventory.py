@@ -12,27 +12,6 @@ from dartwork_mpl._colors.catalog._families import QUALITATIVE
 from dartwork_mpl._colors.registry._loader import COLOR_LIBRARIES
 
 _REPO = Path(__file__).resolve().parents[2]
-_WORKFLOWS = tuple(
-    _REPO / ".github" / "workflows" / name
-    for name in ("ci.yml", "docs.yml", "release.yml")
-)
-_VALIDATION = _REPO / "docs" / "color_system" / "validation.md"
-_COMPARISON_ARTIFACT = "color-system-comparison"
-_V6_AUTHORITY = "src/dartwork_mpl/asset/color/color_v6_ssot.json"
-_LOCAL_CHECK_COMMANDS = (
-    "uv run python -m dartwork_mpl._colors._build --check",
-    (
-        "uv run python scripts/compare_color_systems.py "
-        "--output build/color-system-comparison --check"
-    ),
-    (
-        "uv run python "
-        "docs/_static/scripts/build_categorical_explorer.py --check"
-    ),
-    ("uv run python docs/_static/scripts/build_colormap_explorer.py --check"),
-    ("uv run python docs/color_system/generate_theory_figures.py --check"),
-)
-_SHELL_FENCE = re.compile(r"```(?:bash|sh|shell)\s*\n(.*?)```", re.DOTALL)
 
 
 def _read_doc(*parts: str) -> str:
@@ -41,12 +20,6 @@ def _read_doc(*parts: str) -> str:
 
 def _squash_ws(text: str) -> str:
     return " ".join(text.split())
-
-
-def _documented_shell(text: str) -> str:
-    """Flatten executable fenced examples without admitting prose matches."""
-    blocks = _SHELL_FENCE.findall(text)
-    return _squash_ws("\n".join(block.replace("\\\n", " ") for block in blocks))
 
 
 def _font_file_count() -> int:
@@ -112,41 +85,6 @@ def test_color_api_intro_names_every_registered_library_prefix() -> None:
     for _key, prefix, _source, label in COLOR_LIBRARIES:
         assert prefix in text, f"{prefix} prefix missing from color API docs"
         assert label in text, f"{label} label missing from color API docs"
-
-
-def test_workflows_have_no_obsolete_dc_palette_reference() -> None:
-    """Remove the retired generated-palette filename from CI examples."""
-    offenders = [
-        str(path.relative_to(_REPO))
-        for path in _WORKFLOWS
-        if "dc_palettes.json" in path.read_text(encoding="utf-8")
-    ]
-
-    assert not offenders, f"obsolete CI palette references: {offenders}"
-
-
-def test_validation_docs_publish_the_complete_drift_check_contract() -> None:
-    """Document executable local checks and the inspectable CI artifact."""
-    text = _VALIDATION.read_text(encoding="utf-8")
-    prose = _squash_ws(text)
-    shell = _documented_shell(text)
-    missing = [
-        command for command in _LOCAL_CHECK_COMMANDS if command not in shell
-    ]
-
-    assert not missing, f"validation.md local checks missing: {missing}"
-    assert "scripts/build_color_v6_ssot.py" in shell
-    assert _V6_AUTHORITY in shell
-    assert re.search(r"(?:^|\s)cmp(?:\s|$)", shell)
-    assert "`report.json` is the machine-readable gate record" in prose
-    assert (
-        "use the comparator process exit code to decide whether the step "
-        "passed" in prose
-    )
-    assert f"CI artifact `{_COMPARISON_ARTIFACT}`" in prose
-    assert not re.search(r"\]\([^)]*build/color-system-comparison", text), (
-        "ignored local comparison output must not be a repository link"
-    )
 
 
 def test_installed_skill_names_every_live_colour_family() -> None:

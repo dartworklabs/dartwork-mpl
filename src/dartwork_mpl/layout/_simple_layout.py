@@ -15,7 +15,7 @@ from matplotlib.gridspec import (
 )
 
 from .._figure_geometry import get_renderer, holders_shown, root_position
-from ..units import Length
+from ..size import Length
 from ._content_extent import _axes_content_extent_px
 from ._fit_labels import (
     _all_in,

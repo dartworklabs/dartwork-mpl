@@ -1,0 +1,67 @@
+---
+orphan: true
+---
+
+# 목적과 진실 소스
+
+## 단 하나의 판단 기준
+
+> **핵심**
+>
+> 사용자가 skill과 MCP를 켜고 "그려줘"라고 하면 예쁜 차트가 나와야 한다. 이 리포의 모든 코드·도구·문서·테스트는 이 결과에 기여할 때만 의미가 있다. 기여하지 않는 것은 제거 대상이다.
+
+소유자가 2026-11-15에 정한 기준이다. 기능을 넣을지, 남길지, 지울지 판단이 갈리면 이 문장으로 정한다. 구조 규칙, 검증 게이트, 문서도 이 기준을 빨리 안전하게 달성하기 위한 수단일 뿐이다.
+
+## 왜 존재하는가
+
+dartwork-mpl은 matplotlib 위의 얇은 유틸리티 층이다. 논문·보고서·발표에 바로 넣을 수 있는 그림을 사람과 AI 에이전트가 같은 규칙으로 만들게 한다. 줄이려는 비용은 세 가지다.
+
+1. 그림마다 크기·글자·여백을 손으로 맞추는 반복 작업.
+2. 같은 데이터인데 사람·에이전트·매체마다 모양이 달라지는 불일치.
+3. 에이전트가 그럴듯하지만 겹치고 잘린 그림을 내놓고 아무도 모르는 실패.
+
+이 라이브러리는 matplotlib을 새 API로 감싸지 않는다. 사용자는 계속 matplotlib의 `Figure`와 `Axes`를 직접 쓴다. dartwork-mpl은 물리 단위 크기, preset 상대 글자·선 크기, 색 체계, 결정적 레이아웃, 검증을 그 옆에 얹을 뿐이다. 그래서 dartwork-mpl을 빼도 사용자의 matplotlib 지식은 그대로 유효하다.
+
+> **핵심**
+>
+> 판단 기준은 "matplotlib 사용자가 이것을 소유하고 이해할 수 있는가"다. 사용자가 matplotlib 대신 dartwork-mpl의 개념을 배워야 하는 기능은 이 라이브러리의 방향이 아니다.
+
+## 누가 쓰는가
+
+| 사용자 | 쓰는 방식 | 이 리포가 주는 것 |
+| --- | --- | --- |
+| 연구자·엔지니어 | Python에서 `import dartwork_mpl as dm` | preset, `dm.figsize`, `dm.simple_layout`, 색, 검증 |
+| AI 코딩 에이전트 | 동봉된 skill·prompt 코퍼스, MCP 서버 | 지침, lint, 렌더와 검증 결과 |
+
+## 채택한 목표: 렌더링 도구이자 시각화 허브
+
+소유자가 2026-11-15에 정한 방향이다. 아직 반영되지 않았다.
+
+dartwork-mpl은 좋은 그림을 만드는 도구이면서, 사용자들이 시각화를 공유하고 서로 레퍼런스로 삼는 허브의 바탕이 된다. 역할은 다음처럼 나눈다.
+
+- **이 리포**는 결정적 렌더와 산출물 형식을 계약으로 제공한다. 산출물은 이미지, 원본 코드, 데이터, manifest의 묶음이다.
+- **허브 서비스**는 별도 사이트 리포가 소유한다. 공유·검색·저장·사용자 관리가 여기에 속한다. 허브 기능을 이 라이브러리에 넣지 않는 이유는 둘이다. 라이브러리 설치에 서버 의존성이 따라오지 않게 하고, 다중 사용자 보안 문제를 라이브러리 코드 밖에 두기 위해서다.
+- **이 리포의 `docs/`**에는 개발 문서만 남긴다. 브랜딩, 사용자 문서, 예제 갤러리는 사이트 리포로 옮긴다.
+
+현재는 사용자 문서와 갤러리가 아직 `docs/`에 있다. 이 문서들은 테스트 입력으로도 쓰이므로, 옮기는 단계에서 어떤 검사가 함께 이동하는지 정해야 한다.
+
+## 영역별 진실 소스
+
+Handbook은 모든 영역의 정본이 아니다. 아래 표는 각 영역에서 무엇이 현재 정답인지 가리킨다.
+
+| 영역 | 정본 | Handbook의 역할 |
+| --- | --- | --- |
+| 라이브러리 동작 | `src/dartwork_mpl/` 코드 | 의도와 불변식만 설명 |
+| 공개 API 표면 | `dm.__all__`, 각 slice의 `__all__`, [api-stability.md](../development/api-stability.md) | 표면이 바뀌는 조건을 설명 ([architecture.md](architecture.md)) |
+| slice 경계와 허용 의존 | [scripts/check_boundaries.py](../../scripts/check_boundaries.py)의 `ENTRY_POINTS`·`PLATFORM`·`SLICES`·`ALLOWED`·`DECISIONS`·`DEBT` | 규칙의 이유를 설명 |
+| 출하 색 값 | [tests/test_shipped_colors_hash.py](../../tests/test_shipped_colors_hash.py)의 digest와 `_colors` 생성 코드 | 미감 불변식으로 설명 |
+| 시각 스타일 | `src/dartwork_mpl/asset/`의 preset·폰트와 [tests/visual/baseline/](../../tests/visual/baseline/) | 미감 불변식으로 설명 |
+| 에이전트 지침과 안티패턴 | [src/dartwork_mpl/asset/prompt/](../../src/dartwork_mpl/asset/prompt/), 특히 `02-anti-patterns.yaml` | 위치만 가리킴 |
+| 검증 절차와 합격 기준 | [verification.md](verification.md)와 `.github/workflows/` | Handbook이 직접 소유 |
+| 결정 권한과 변경 흐름 | [change-flow.md](change-flow.md) | Handbook이 직접 소유 |
+| 릴리스 버전 | `pyproject.toml`의 `version`, `v*.*.*` 태그, PyPI | 절차를 설명 ([change-flow.md](change-flow.md)) |
+| 설계의 이유와 대안 비교 | 이 Handbook의 본문. 당시 맥락은 [docs/adr/](../adr/index.md) | ADR은 출처일 뿐 현재값의 정본이 아니다 |
+
+> **주의**
+>
+> 문서와 코드가 다르면 코드가 현재 실재다. 다만 불변식과 다른 코드는 버그다. 어느 쪽을 고칠지는 [change-flow.md](change-flow.md)의 결정 권한을 따른다.

@@ -177,7 +177,7 @@ class Color:
     (:meth:`__hash__`).
 
     .. note::
-       Unlike :class:`~dartwork_mpl.units.Length`, ``Color`` is
+       Unlike :class:`~dartwork_mpl.size.Length`, ``Color`` is
        currently **mutable**: the ``oklab`` / ``oklch`` / ``rgb`` views
        write back to the underlying store in place (hence :meth:`copy`).
        Because it is both mutable and value-hashable, do **not** mutate

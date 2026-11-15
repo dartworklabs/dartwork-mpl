@@ -2,648 +2,80 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
 
-# Cancel superseded PR validation; push runs keep their existing behavior.
+# A newer push to the same PR or branch cancels the run it supersedes.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
-  # uv gives a download 30 s by default. A stalled connection ran past it
-  # and `uv sync` failed before any test ran.
+  # uv gives a download 30 s by default; a stalled connection ran past it.
   UV_HTTP_TIMEOUT: "120"
+  UV_PYTHON: "3.12"
 
-# Every job runs on a disposable GitHub-hosted machine, for pull requests and
-# for pushes to main. The repository is public, so hosted minutes are free.
-# Until 2026-11-14 pushes ran on a self-hosted runner shared with other
-# repositories; under its load main went red whatever the merged change was
-# (#716), and runs queued for hours.
-#
-# uv cache: a hosted machine starts empty, so setup-uv restores a pruned
-# cache from GitHub and prunes it again when the job ends.
 jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
           prune-cache: true
           cache-dependency-glob: "uv.lock"
+      - run: uv sync --frozen
+      - run: uv run --no-sync ruff check
+      - run: uv run --no-sync ruff format --check
+      - run: uv run --no-sync basedpyright
+      # A plain `pip install dartwork-mpl` (no extras) must import and draw.
+      - name: No-extras smoke
+        env:
+          MPLBACKEND: Agg
+        run: |
+          uv sync --frozen --no-dev
+          uv run --no-sync python -c "
+          import importlib.util as u, matplotlib.pyplot as plt, dartwork_mpl as dm
+          assert u.find_spec('fastmcp') is None and u.find_spec('IPython') is None
+          dm.style.use('scientific')
+          fig, ax = plt.subplots(figsize=dm.figsize('8cm', 'wide'))
+          ax.plot([0, 1, 2], [1, 3, 2])
+          dm.simple_layout(fig)
+          fig.savefig('/tmp/smoke.png')
+          "
 
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      # Required pre-commit checks own all-files Ruff lint and formatting.
-      # Keep package typing in the locked all-extras environment here.
-      - name: Type check (mypy)
-        run: uv run mypy
-
+  # The whole suite, including the two aesthetic gates: the shipped-colour
+  # digests (tests/test_shipped_colors_hash.py) and the pixel baselines
+  # (tests/visual, compared only under --mpl).
   test:
     runs-on: ubuntu-24.04
-    # Override the repository's 3.11 pin so each matrix job tests its interpreter.
     env:
-      UV_PYTHON: ${{ matrix.python-version }}
+      MPLBACKEND: Agg
       # The bar-label readability tests read the saved PDF through
       # Ghostscript; here a missing gs fails them instead of skipping.
       DARTWORK_MPL_REQUIRE_GHOSTSCRIPT: "1"
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
     steps:
-      # Full history: src/dartwork_mpl/_colors/verify/tests/test_color_v6_quality_oracle.py runs
-      # scripts/freeze_color_v5_quality.py, and
-      # src/dartwork_mpl/_colors/verify/tests/test_color_v5_compatibility_generator.py runs
-      # scripts/freeze_color_v5_compatibility.py. Both resolve the frozen
-      # colour baseline with `git rev-parse --quiet --verify <sha>^{commit}`
-      # and read its listed files from that commit. A shallow checkout has
-      # only the merge commit, so that lookup finds no such commit and the
-      # generator exits 2 ("does not resolve to a commit").
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Isolate matplotlib font discovery
-        shell: bash
-        run: |
-          printf 'MPLCONFIGDIR=%s/matplotlib-%s\n' "$RUNNER_TEMP" "$UV_PYTHON" >> "$GITHUB_ENV"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
           prune-cache: true
           cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      # The bar-label readability tests (annotation/tests/test_label_bars.py)
-      # rasterise the saved PDF with Ghostscript. Ubuntu runners ship without
-      # it.
       - name: Install Ghostscript
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y ghostscript
-
-      - name: Verify Ghostscript (gs for the PDF readability tests)
-        run: gs --version
-
-      # Keep the coverage gate on one representative interpreter. The
-      # remaining matrix jobs still run the test suite for version
-      # compatibility (minus color_pipeline, see below), but skip coverage
-      # instrumentation.
-      # `-n auto` uses the hosted runner's vCPUs;
-      # the serial run took 16-30 min per job. Keep -n here, not in addopts,
-      # so local runs and scripts/test_id_map.py stay serial by default.
-      # `--dist worksteal` lets idle workers take queued tests, so a module's
-      # back-to-back 30-60 s colour subprocess tests do not hold one worker
-      # (docs/development/ci-execution.md). It needs xdist, so it lives here
-      # with -n rather than in addopts.
-      - name: Run tests with coverage
-        if: matrix.python-version == '3.12'
-        env:
-          MPLBACKEND: Agg
-          # Python 3.12 supports sys.monitoring for this line-only gate.
-          # Recheck compatibility before adding branches or dynamic contexts.
-          COVERAGE_CORE: sysmon
-          COVERAGE_DEBUG: core
-        shell: bash
-        run: |
-          set -euo pipefail
-          uv run pytest -v -n auto --dist worksteal --cov --cov-report=term-missing --durations=30 \
-            --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
-
-      # `color_pipeline` tests (colour build, regeneration, comparison,
-      # typing parity, quality oracle) prove byte identity and the colour
-      # freeze. Their result does not depend on the interpreter and they are
-      # the slowest part of the suite, so they run once, in the 3.12 job
-      # above, which still runs everything.
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y ghostscript
+      - run: uv sync --frozen
       - name: Run tests
-        if: matrix.python-version != '3.12'
-        env:
-          MPLBACKEND: Agg
-        shell: bash
-        run: |
-          set -euo pipefail
-          uv run pytest -v -n auto --dist worksteal -m "not color_pipeline" --no-cov --durations=30 \
-            --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
-
-      # Prove every protected module contributed a passing executed case in
-      # the same full-suite run, and that no case anywhere was skipped for a
-      # failed import. Every matrix job syncs all extras, so each is checked
-      # (no protected module is color_pipeline-only). A missing optional
-      # extra must not silently skip a whole module or a single case.
-      # Pytest's own nonzero status still fails the job.
-      - name: Assert MCP / integration tests actually ran
-        run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
-
-      - name: Preserve test execution evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: pytest-python-${{ matrix.python-version }}
-          path: |
-            ${{ runner.temp }}/pytest-full.xml
-            ${{ runner.temp }}/pytest-summary.txt
-          if-no-files-found: warn
-          retention-days: 7
-
-  # Exercise secure FastMCP 2.x/3.x plus legacy 2.13.3 source/API coverage.
-  # The legacy overlay uses its old vulnerable SDK and is not a secure install.
-  # The existing full-suite Python 3.12 guard remains the primary repo gate.
-  #
-  # What each cell guards (tests/architecture/test_mcp_ci_matrix.py pins it):
-  #   2.13.3  legacy source/API overlay, below the supported range
-  #   2.14.7  lowest admitted 2.x, and the last 2.x release
-  #   3.4.10  lowest admitted 3.x: the first release outside GHSA-7xgj-8392-5q4r
-  # The locked FastMCP is no cell: every `test` job runs the whole suite on it.
-  # Do not move a cell to the lock version when the lock moves; that would
-  # drop the floor the pyproject range still admits. Each cell also runs the
-  # data-repair wire contract, which reads its golden by fastmcp.__version__,
-  # so a cell version needs an entry in legacy_calls.json.
-  test-mcp-artifacts:
-    runs-on: ubuntu-24.04
-    env:
-      UV_PYTHON: "3.12"
-      MPLBACKEND: Agg
-    strategy:
-      matrix:
-        fastmcp: ["2.13.3", "2.14.7", "3.4.10"]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "uv.lock"
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Install locked all-extras dependencies
-        run: uv sync --frozen --all-extras --dev
-      - name: Run artifact contracts and prove same-run execution
-        shell: bash
-        run: |
-          set -euo pipefail
-          unset DARTWORK_MPL_INPUT_POLICY
-          task_store=$(mktemp -d "$RUNNER_TEMP/input-contracts.XXXXXX")
-          trap 'rm -rf -- "$task_store"' EXIT
-          export DARTWORK_MPL_ARTIFACT_DIR="$task_store/artifacts"
-          export MPLCONFIGDIR="$task_store/matplotlib"
-          if [[ '${{ matrix.fastmcp }}' == '2.13.3' ]]; then
-            # Legacy source/API coverage only: this overlay deliberately uses
-            # the old SDK <1.23 and cannot satisfy the current wheel requirements.
-            runtime=(uv run --no-sync --with 'fastmcp==2.13.3' --with 'pydantic==2.14.1')
-          else
-            # Install the real project requirements with the selected secure
-            # runtime. Remove both overlapping 3.x distributions before 2.x;
-            # an overlay can silently ignore the published project's bounds.
-            uv pip uninstall fastmcp fastmcp-slim
-            uv pip install '.[mcp,notebook,ui]' 'fastmcp==${{ matrix.fastmcp }}'
-            uv pip check
-            runtime=(uv run --no-sync)
-            "${runtime[@]}" python -c 'from importlib.metadata import version; from packaging.version import Version; assert Version(version("mcp")) >= Version("1.30.0")'
-          fi
-          "${runtime[@]}" python -c 'import json, sys; from importlib.metadata import version; assert sys.version_info[:2] == (3, 12); assert version("fastmcp") == "${{ matrix.fastmcp }}"; print(json.dumps({"python": sys.version, "fastmcp": version("fastmcp"), "mcp": version("mcp")}))' | tee "$RUNNER_TEMP/artifact-runtime.json"
-          "${runtime[@]}" pytest tests/mcp/artifacts \
-            tests/contracts/test_mcp_data_repair_contract.py -q --no-cov \
-            --junitxml="$RUNNER_TEMP/pytest-artifacts.xml" 2>&1 | tee "$RUNNER_TEMP/artifact-summary.txt"
-          uv run --no-sync python scripts/check_integration_junit.py \
-            "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts
-      - name: Preserve artifact runtime evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: mcp-artifacts-${{ matrix.fastmcp }}
-          path: |
-            ${{ runner.temp }}/artifact-runtime.json
-            ${{ runner.temp }}/pytest-artifacts.xml
-            ${{ runner.temp }}/artifact-summary.txt
-          if-no-files-found: warn
-          retention-days: 7
-
-  # Sanity check: the *base* install (no [mcp] extra) must still
-  # import, render, and save. Catches regressions where a
-  # core module accidentally requires fastmcp at import time.
-  test-no-extras:
-    env:
-      UV_PYTHON: "3.12"
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "uv.lock"
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Install with NO extras
-        run: uv sync --no-dev
-      - name: Base-install smoke (import + exercise core, no extras/dev)
-        run: |
-          uv run --no-sync python -c "
-          from importlib.util import find_spec
-
-          # Prove uv did not sync default dev dependencies back into this
-          # environment, and that optional extras remain optional.
-          for module in ('pytest', 'sphinx', 'pandas', 'fastmcp', 'IPython', 'fastapi'):
-              assert find_spec(module) is None, f'{module} unexpectedly installed'
-
-          import matplotlib
-          matplotlib.use('Agg')
-          import os
-          import tempfile
-
-          import matplotlib.pyplot as plt
-
-          import dartwork_mpl as dm
-
-          # A pure attribute check can't catch a hard import (pandas /
-          # fastmcp) that fires at *call* time, so exercise the core render
-          # path end to end on the bare (no extras, no dev) install.
-          assert callable(dm.figsize)
-          assert callable(dm.simple_layout)
-          assert callable(dm.get_agent_doc)
-          assert callable(dm.agent_doc_path)
-          assert dm.AGENT_DOCS
-          dm.style.use('scientific')
-          fig, ax = plt.subplots(figsize=dm.figsize('8cm', 'wide'))
-          ax.plot([0, 1, 2], [1, 3, 2], color=dm.colors('blue', n=3)[0], lw=dm.lw(0))
-          ax.set_xlabel('x', fontsize=dm.fs(0))
-          dm.simple_layout(fig)
-          with tempfile.TemporaryDirectory() as d:
-              dm.save_formats(fig, os.path.join(d, 'smoke'), formats=('png',))
-              assert os.path.exists(os.path.join(d, 'smoke.png'))
-          print('OK: base install imports + renders cleanly')
-          "
-
-  # Approved-input route (tests/support/approved_inputs.json, user approval
-  # 2026-11-08). The checkout leaves out docs/superpowers except the exact
-  # files the manifest lists, and the blob-less sparse checkout fetches no
-  # other blob. The next step removes the promisor remote, so no later Git
-  # command can fetch a missing blob, whatever the Git version; a synthetic
-  # partial clone in tests/architecture/test_approved_inputs.py shows that
-  # removal is what stops the fetch. The job then runs the manifest contract
-  # and every `approved_input` test, so one of those tests that reads any
-  # other docs/superpowers file fails here with a missing file. This is
-  # evidence for the working-tree inputs of the tests this job runs: it does
-  # not show that the runner's object store holds no other blob, nor confine
-  # the rest of the suite; the full `test` job still runs everything.
-  approved-inputs:
-    runs-on: ubuntu-24.04
-    env:
-      UV_PYTHON: "3.12"
-      MPLBACKEND: Agg
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          # tests/architecture/test_approved_inputs.py pins this list to the
-          # manifest: the two lines that exclude docs/superpowers, then one
-          # exact file per manifest entry, in manifest order.
-          sparse-checkout: |
-            /*
-            !/docs/superpowers/
-            /docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/color_v5_compatibility.json
-            /docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/color_v5_quality.json
-            /docs/superpowers/specs/assets/2026-07-03-color-system-v5/color_v5_ssot.json
-            /docs/superpowers/plans/2026-07-21-color-rationale-accuracy.md
-            /docs/superpowers/plans/2026-07-17-beginner-friendly-color-docs.md
-            /docs/superpowers/plans/2026-07-14-oklab-centered-color-system.md
-            /docs/superpowers/specs/2026-07-14-oklab-centered-color-system-design.md
-            /docs/superpowers/specs/2026-07-17-beginner-friendly-color-docs-design.md
-            /docs/superpowers/specs/2026-07-21-color-rationale-accuracy-design.md
-            /docs/superpowers/specs/assets/2026-07-17-beginner-friendly-color-docs/claim-inventory.md
-      # Right after checkout: drop the promisor remote so a missing blob can
-      # never be fetched lazily, independent of GIT_NO_LAZY_FETCH support.
-      - name: Remove the promisor remote
-        shell: bash
-        run: |
-          set -euo pipefail
-          git remote remove origin
-          test -z "$(git remote)"
-      - name: Isolate matplotlib font discovery
-        shell: bash
-        run: |
-          printf 'MPLCONFIGDIR=%s/matplotlib-approved-inputs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "uv.lock"
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Install locked all-extras dependencies
-        run: uv sync --frozen --all-extras --dev
-      # Each listed input must be checked out as a regular file, and no remote
-      # may remain; the sparse list itself is recorded as evidence.
-      - name: Verify the sparse approved-input checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -z "$(git remote)"
-          git sparse-checkout list | tee "$RUNNER_TEMP/approved-sparse-checkout.txt"
-          mapfile -t inputs < <(jq -r '.inputs[].path' tests/support/approved_inputs.json)
-          for path in "${inputs[@]}"; do
-            test "$(git ls-files -t -- "$path")" = "H $path"
-            test -f "$path"
-            test ! -L "$path"
-          done
-      - name: Run the manifest contract and approved-input tests
-        env:
-          # An extra guard only; the removed remote is what blocks a fetch.
-          GIT_NO_LAZY_FETCH: "1"
-        shell: bash
-        run: |
-          set -euo pipefail
-          uv run pytest tests/architecture/test_approved_inputs.py -q --no-cov \
-            --junitxml="$RUNNER_TEMP/pytest-approved-manifest.xml" 2>&1 | tee "$RUNNER_TEMP/approved-manifest-summary.txt"
-          uv run pytest -m approved_input -n auto --dist worksteal -q --no-cov --durations=20 \
-            --junitxml="$RUNNER_TEMP/pytest-approved-inputs.xml" 2>&1 | tee "$RUNNER_TEMP/approved-inputs-summary.txt"
-      - name: Preserve approved-input evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: approved-inputs
-          path: |
-            ${{ runner.temp }}/approved-sparse-checkout.txt
-            ${{ runner.temp }}/pytest-approved-manifest.xml
-            ${{ runner.temp }}/approved-manifest-summary.txt
-            ${{ runner.temp }}/pytest-approved-inputs.xml
-            ${{ runner.temp }}/approved-inputs-summary.txt
-          if-no-files-found: warn
-          retention-days: 7
-
-  test-matplotlib:
-    # A lock-only job cannot prove the published dependency range. Resolve
-    # the actual project with the oldest supported Python and the declared
-    # floors (minimum: Python 3.11, matplotlib 3.11.2, numpy 1.26.0, no
-    # extras), and with the newest versions pyproject allows (latest-deps),
-    # which also runs the UI, formatting and font slices against NumPy /
-    # FastAPI / Starlette releases newer than uv.lock. Every pin must be the
-    # installed version. The locked Matplotlib itself is covered by the
-    # visual job.
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - label: minimum
-            python-version: "3.11"
-            project: "."
-            pins: "matplotlib==3.11.2 numpy==1.26.0"
-            extra-tests: "src/dartwork_mpl/_colors/model/tests/test_color_conversion.py src/dartwork_mpl/font src/dartwork_mpl/io src/dartwork_mpl/formatting"
-          - label: latest-deps
-            python-version: "3.13"
-            project: ".[mcp,ui]"
-            pins: ""
-            extra-tests: "src/dartwork_mpl/ui src/dartwork_mpl/formatting src/dartwork_mpl/font"
-    name: test-matplotlib (${{ matrix.label }})
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "pyproject.toml"
-      - name: Set up Python
-        run: uv python install "$UV_PYTHON"
-      - name: Resolve project and verify frozen appearance
-        shell: bash
-        env:
-          MPLBACKEND: Agg
-          PINS: ${{ matrix.pins }}
-          EXTRA_TESTS: ${{ matrix.extra-tests }}
-        run: |
-          set -euo pipefail
-          task_store=$(mktemp -d "$RUNNER_TEMP/dmpl-matplotlib.XXXXXX")
-          trap 'rm -rf "$task_store"' EXIT
-          export MPLCONFIGDIR="$task_store/matplotlib"
-          uv venv --python "$UV_PYTHON" "$task_store/venv"
-          task_python="$task_store/venv/bin/python"
-          read -r -a pins <<< "$PINS"
-          uv pip install --python "$task_python" --resolution highest \
-            "${{ matrix.project }}" "${pins[@]}" pytest pytest-cov pytest-mpl pytest-xdist
-          uv pip check --python "$task_python"
-          # A pin the resolver could not honour must not pass as tested.
-          for pin in "${pins[@]}"; do
-            name=${pin%%==*}
-            want=${pin#*==}
-            installed=$("$task_python" -I -c 'import sys; from importlib.metadata import version; print(version(sys.argv[1]))' "$name")
-            echo "$name $installed (pinned $want)"
-            if [ "$installed" != "$want" ]; then
-              echo "::error::$name resolved to $installed, not $want"
-              exit 1
-            fi
-          done
-          # Every cell must resolve at or above the Matplotlib 3.11 floor the
-          # pixel baselines are made on.
-          "$task_python" -I -c 'import sys, matplotlib, numpy, PIL; print(sys.version); print(matplotlib.__version__, numpy.__version__, PIL.__version__); assert tuple(map(int, matplotlib.__version__.split(".")[:2])) >= (3, 11)'
-          "$task_python" -m pytest tests/visual/test_visual_pixels.py \
-            tests/test_shipped_colors_hash.py tests/docs/test_font_invariants.py \
-            --mpl -v --no-cov \
-            --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}.xml"
-          if [ -n "$EXTRA_TESTS" ]; then
-            # shellcheck disable=SC2086
-            "$task_python" -m pytest $EXTRA_TESTS -n auto --dist worksteal -q --no-cov \
-              --junitxml="$RUNNER_TEMP/matplotlib-${{ matrix.label }}-slices.xml"
-          fi
-          if [ "${{ matrix.label }}" = "minimum" ]; then
-            # This cell installs no extras: IPython must be absent and the
-            # no-notebook IO contract must have run here (not skipped).
-            "$task_python" -I - "$RUNNER_TEMP/matplotlib-minimum-slices.xml" <<'PY'
-          import sys
-          import xml.etree.ElementTree as ET
-          from importlib.util import find_spec
-
-          assert find_spec("IPython") is None, "IPython present in no-extras cell"
-          name = "test_show_without_notebook_extra_names_the_install_command"
-          cases = [c for c in ET.parse(sys.argv[1]).iter("testcase") if c.get("name") == name]
-          assert len(cases) == 1, cases
-          assert not list(cases[0]), "no-extras IO test skipped or failed"
-          print("OK: no-extras IO contract ran")
-          PY
-          fi
-      - name: Preserve supported Matplotlib test evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: matplotlib-${{ matrix.label }}
-          path: ${{ runner.temp }}/matplotlib-${{ matrix.label }}*.xml
-          if-no-files-found: error
-          retention-days: 7
-
-  visual:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Visual regression (pixel baselines)
-        env:
-          MPLBACKEND: Agg
-        run: uv run pytest tests/visual/test_visual_pixels.py --mpl -v --no-cov
-
-      - name: Upload diff images on failure
+        run: uv run --no-sync pytest -q -n auto --dist worksteal --mpl --mpl-results-path="$RUNNER_TEMP/mpl-results"
+      - name: Upload pixel diffs on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: visual-diffs
-          path: /tmp/pytest-mpl-*/**
-
-  # Build the docs on every PR (the deploy workflow only runs on main, so
-  # without this a doc-breaking change isn't caught until after merge).
-  # Two gates: (1) -W turns Sphinx warnings into build failures; (2) the
-  # ``builder-inited`` hook rejects stale generated authorities before deploy.
-  docs:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    # Pin the docs build to a single modern interpreter. Without this,
-    # `uv sync` otherwise follows the repository's 3.11 pin. The docs are
-    # interpreter-agnostic (build-only job); retain the known-good 3.12 build.
-    env:
-      UV_PYTHON: "3.12"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      # Caches the incremental-build state: Sphinx doctrees (skip re-parsing
-      # unchanged pages) and the matplotlib font cache (skip the cold-start
-      # font scan). Key invalidates when any docs/package Python source OR
-      # asset *data* (color authority, mplstyle, colormaps, prompt corpus)
-      # changes — a data-only change alters rendered output, so it must bust
-      # the cache too.
-      - name: Cache Sphinx doctrees + matplotlib font cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            docs/_build/doctrees
-            ~/.cache/matplotlib
-          key: docs-${{ runner.os }}-${{ hashFiles('docs/**/*.py', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'uv.lock') }}
-          restore-keys: |
-            docs-${{ runner.os }}-
-
-      # Cache the generated sphinx-gallery tree (rst + images + the
-      # per-example ``.py.md5`` stamps). sphinx-gallery re-executes an
-      # example only when its source ``.py`` md5 changes, and the
-      # purge_stale_gallery_artifacts hook drops only orphaned outputs —
-      # so restoring this tree lets an unchanged-example build skip the
-      # 70+ example executions that dominate the docs build (~9 min → ~1).
-      # The key folds in the example sources, the package source AND its
-      # asset data (examples import dartwork_mpl and render with its
-      # palettes/styles, so a data-only color-authority change must regenerate
-      # images), conf, the build hooks, and the
-      # lockfile; any change forces a fresh full rebuild. No restore-keys on
-      # purpose: a partial (prefix) restore could serve stale images for an
-      # unchanged example whose library-side output actually changed.
-      - name: Cache sphinx-gallery output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: docs/examples_gallery
-          key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
-
-      # The diagrams PoC page (docs/internals/diagrams_poc.md) uses
-      # sphinx.ext.graphviz to render the auto-extracted module dependency
-      # graph (and its Diagrams-Python architecture script also shells out
-      # to the same `dot` binary). Ubuntu runners ship without it.
-      - name: Install Graphviz
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y graphviz
-
-      - name: Verify Graphviz (dot binary for sphinx.ext.graphviz)
-        run: dot -V
-
-      - name: Verify packaged color authorities
-        run: |
-          set -euo pipefail
-          uv run python scripts/build_color_v6_ssot.py \
-            --baseline-commit 12d16bac22dee790bd0696ca92a814a797dc728b \
-            --output /tmp/dartwork-color-v6-ssot.json
-          cmp /tmp/dartwork-color-v6-ssot.json src/dartwork_mpl/asset/color/color_v6_ssot.json
-          uv run python -m dartwork_mpl._colors._build --check
-
-      - name: Compare frozen and live color systems
-        run: uv run python scripts/compare_color_systems.py --output build/color-system-comparison --check
-
-      - name: Verify generated color documentation assets
-        env:
-          MPLBACKEND: Agg
-        run: |
-          set -euo pipefail
-          uv run python docs/_static/scripts/build_categorical_explorer.py --check
-          uv run python docs/_static/scripts/build_colormap_explorer.py --check
-          uv run python docs/color_system/generate_theory_figures.py --check
-
-      - name: Upload color-system comparison
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: color-system-comparison
-          path: build/color-system-comparison
-          if-no-files-found: warn
-
-      - name: Build documentation (warnings = errors)
-        env:
-          MPLBACKEND: Agg
-        run: uv run sphinx-build -b html -W --keep-going -d docs/_build/doctrees docs docs/_build/html
-
-      # The Sphinx hook rejects a stale llms-full.txt without rewriting it.
-      # Keep this diff guard as a defense against any accidental tracked write
-      # introduced by a future build extension.
-      - name: Assert docs build left llms-full.txt untouched
-        run: |
-          if ! git diff --quiet -- llms-full.txt; then
-            echo "::error::The docs build mutated llms-full.txt. Authority hooks must verify without writing. Regenerate explicitly before CI."
-            git --no-pager diff -- llms-full.txt | head -60
-            exit 1
-          fi
+          path: ${{ runner.temp }}/mpl-results
+          if-no-files-found: ignore
+          retention-days: 7

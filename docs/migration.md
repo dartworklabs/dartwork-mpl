@@ -423,7 +423,7 @@ overhaul) into a single lookup. Shade indices are preserved
 ## color parsing (old named-color helper → `dm.color`)
 
 The old named-color helper is gone. The replacement is `dm.color`, a single string-parser
-entry point that mirrors `dm.length`:
+entry point:
 
 ```python
 # Before

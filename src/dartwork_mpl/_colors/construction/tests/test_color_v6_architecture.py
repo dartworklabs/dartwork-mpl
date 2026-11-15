@@ -236,7 +236,6 @@ def test_v6_section_hashes_cover_every_authoritative_section(
     }
 
 
-@pytest.mark.approved_input
 def test_v6_baseline_provenance_pins_all_four_raw_sources(
     v6_ssot: dict[str, object],
 ) -> None:
@@ -299,7 +298,6 @@ def test_v6_coordinate_and_migration_provenance_is_explicit(
     }
 
 
-@pytest.mark.approved_input
 def test_v6_named_policies_pin_construction_and_cvd_models(
     v6_ssot: dict[str, object], quality: dict[str, object]
 ) -> None:
@@ -370,7 +368,6 @@ def test_manifest_numeric_policies_equal_runtime_policy_objects(
     } == {key: tone[key] for key in tone if key != "strategy"}
 
 
-@pytest.mark.approved_input
 def test_v6_copies_exact_and_quality_authority_without_candidate_metrics(
     v6_ssot: dict[str, object],
     compatibility: dict[str, object],
@@ -397,7 +394,6 @@ def test_v6_copies_exact_and_quality_authority_without_candidate_metrics(
     assert forbidden_candidate_sections.isdisjoint(_mapping_keys(baselines))
 
 
-@pytest.mark.approved_input
 def test_v6_uses_the_frozen_multi_hue_indices(
     v6_ssot: dict[str, object], compatibility: dict[str, object]
 ) -> None:
@@ -545,7 +541,6 @@ def _max_run_length(row: Sequence[str]) -> int:
     return longest
 
 
-@pytest.mark.approved_input
 def test_every_v6_row_contract_matches_frozen_literals(
     v6_ssot: dict[str, object], compatibility: dict[str, object]
 ) -> None:
@@ -573,7 +568,6 @@ def test_every_v6_row_contract_matches_frozen_literals(
     assert contracts == expected
 
 
-@pytest.mark.approved_input
 def test_v6_ssot_generator_is_byte_reproducible(tmp_path: Path) -> None:
     """Emit the packaged authority identically on repeated pinned input."""
     first = tmp_path / "first.json"
@@ -603,7 +597,6 @@ def test_v6_ssot_generator_is_byte_reproducible(tmp_path: Path) -> None:
     "path_name",
     ["V5_RECIPE_PATH", "COMPATIBILITY_PATH", "QUALITY_PATH", "ORACLE_PATH"],
 )
-@pytest.mark.approved_input
 def test_v6_builder_rejects_raw_source_drift(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path_name: str
 ) -> None:
@@ -788,7 +781,6 @@ def test_validated_accessor_rejects_out_of_range_tone(tmp_path: Path) -> None:
         _ssot._load_color_v6_ssot(changed)
 
 
-@pytest.mark.approved_input
 def test_validated_accessor_rejects_pinned_provenance_drift(
     tmp_path: Path,
 ) -> None:
@@ -906,7 +898,6 @@ def test_validated_accessor_rejects_self_consistent_malformed_authority(
         ("oracle", "raw_sha256"),
     ],
 )
-@pytest.mark.approved_input
 def test_validated_accessor_rejects_missing_baseline_authority(
     tmp_path: Path, path: tuple[str, str]
 ) -> None:

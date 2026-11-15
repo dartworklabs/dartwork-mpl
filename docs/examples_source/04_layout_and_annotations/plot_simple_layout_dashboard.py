@@ -10,7 +10,7 @@ the GridSpec so the union extent sits at the requested ``margin``
 from each figure edge. Long labels expand the margins automatically
 without wasting whitespace on the simpler panels.
 
-``margin`` accepts a :class:`~dartwork_mpl.units.Length`
+``margin`` accepts a :class:`~dartwork_mpl.size.Length`
 (``dm.inch(0.08)`` here), a unit string (``"5mm"``), a percentage
 string (``"2%"``), or a bare figure-fraction.
 """

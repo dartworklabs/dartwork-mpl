@@ -10,7 +10,7 @@ calculation, so multi-line titles and wide y-labels stop clipping
 without bleeding excess whitespace.
 
 Pass ``gs=`` for a custom GridSpec (spans, nested grids, attached
-colorbars); pass ``margin=`` (a :class:`~dartwork_mpl.units.Length`, a
+colorbars); pass ``margin=`` (a :class:`~dartwork_mpl.size.Length`, a
 percentage string, or per-side ``ml`` / ``mr`` / ``mt`` / ``mb``) to add
 a uniform buffer instead of a flush fit.
 """

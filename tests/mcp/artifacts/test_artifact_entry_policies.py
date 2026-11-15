@@ -105,7 +105,6 @@ def assert_constructors(sources):
                 }, (name, target)
 
 
-@pytest.mark.approved_input
 def test_registered_entries_have_explicit_policy_or_named_identity_gap():
     """Discover actual tools/resources/templates/prompts against exact decisions."""
 
@@ -131,7 +130,6 @@ def test_registered_entries_have_explicit_policy_or_named_identity_gap():
     )
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize(
     "route", ["undeclared_tool", "dartwork-mpl://undeclared/{id}"]
 )

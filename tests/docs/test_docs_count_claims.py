@@ -274,9 +274,9 @@ def _n_mcp_prompts() -> int:
 
 
 def _n_aspect_tokens() -> int:
-    from dartwork_mpl.units import ASPECT_TOKENS
+    from dartwork_mpl import list_aspect_tokens
 
-    return len(ASPECT_TOKENS)
+    return len(list_aspect_tokens())
 
 
 def _n_prompt_guides() -> int:
@@ -702,7 +702,6 @@ def test_color_and_discovery_contract_counts_are_exact() -> None:
     }
 
 
-@pytest.mark.approved_input
 def test_public_color_list_order_values_and_signatures_remain_frozen() -> None:
     """Task-9 prose/comment edits must not alter the public Model-B surface."""
     import dartwork_mpl as dm

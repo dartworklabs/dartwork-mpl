@@ -184,7 +184,7 @@ def test_development_requirements_and_lock_exclude_captured_vulnerabilities(
     """Reject the captured vulnerable ranges both on fresh sync and in CI's lock."""
     project = tomllib.loads((_ROOT / "pyproject.toml").read_text())
     requirements = [
-        Requirement(raw) for raw in project["dependency-groups"]["dev"]
+        Requirement(raw) for raw in project["dependency-groups"]["docs"]
     ]
     for version in vulnerable:
         assert not _accepts(requirements, package, version), (package, version)

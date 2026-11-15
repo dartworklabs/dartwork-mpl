@@ -112,11 +112,10 @@ def _observe(fig, kwargs):
 _NONFINITE = [
     {"margin": value}
     for number in (float("nan"), float("inf"), float("-inf"))
-    for value in (number, f"{number}%", dm.cm(1) * number)
+    for value in (number, f"{number}%")
 ] + [
     {"margin": 0.02, "ml": float("nan")},
     {"margin": 0.02, "mr": "inf%"},
-    {"margin": 0.02, "mt": dm.cm(1) * -float("inf")},
     {"margin": 0.02, "mb": float("inf")},
     {"margin": float("nan"), "ml": 0.02},
 ]
@@ -167,7 +166,7 @@ def test_full_finite_overrides_preserve_layout():
             {
                 "ml": left,
                 "mr": f"{right * 100}%",
-                "mt": dm.cm(1) * top,
+                "mt": dm.cm(abs(top) + 0.01),  # a Length is positive
                 "mb": bottom,
             }
         )

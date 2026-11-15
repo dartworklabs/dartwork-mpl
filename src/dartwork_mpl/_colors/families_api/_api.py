@@ -271,11 +271,11 @@ def show_colors(
     if not selected_names:
         raise ValueError("No color families match the requested preview.")
 
-    from ...units import figsize, inch
-
     row_count = len(selected_names)
     fig_height = max(1.2, 0.42 * row_count + 0.4)
-    fig, ax = plt.subplots(figsize=figsize("16cm", inch(fig_height)))
+    # 16 cm wide, in inches. Not dm.figsize: the size slice reads the active
+    # preset, whose switch re-applies this package's semantic colours.
+    fig, ax = plt.subplots(figsize=(16 / 2.54, fig_height))
     ax.set_xlim(-0.24, 1.0)
     ax.set_ylim(0, row_count)
     ax.axis("off")

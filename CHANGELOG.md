@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Physical units and figure size are one slice, `dartwork_mpl.size`.**
+  `dm.figsize`, `dm.figsize_for`, `dm.grid_shape`, `dm.cm` / `dm.inch` /
+  `dm.mm` / `dm.pt`, `dm.col1` / `dm.col2` and `dm.list_aspect_tokens` give
+  the same results as before. `dm.Length` is a frozen value: build it with
+  `dm.cm(...)` (or `dm.Length(inch=...)`) and parse a string with
+  `dm.Length.parse("13cm")`; it no longer supports arithmetic, and
+  `dm.Length("13cm")` raises `TypeError`. The `dartwork_mpl.units` module,
+  `dm.style.figsize_for` / `dm.style.grid_shape` / `dm.style.CANVAS_KINDS`
+  and the internal `parse_width` / `parse_aspect` / `ASPECT_TOKENS` are gone.
+
+### Removed
+
+- **`dm.length`**: write the unit string (`"13cm"`), `dm.cm(13)`, or
+  `dm.Length.parse("13cm")`.
+- **`dm.figsize_grid`**: use `dm.figsize_for(nrows=..., ncols=...)` for the
+  preset's grid canvas, or `dm.figsize(width, height)` for an exact size.
+
 ## [0.7.1] - 2026-11-14
 
 ### Added

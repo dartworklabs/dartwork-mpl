@@ -61,8 +61,8 @@ def info_payload() -> str:
                     "dm.format_axis_dates (date words for bars, thinned to fit)"
                 ),
                 "grid_sizing": (
-                    "dm.figsize_grid(panel_width, aspect, ncols=, nrows=, gap=)"
-                    " - per-panel physical sizing"
+                    "dm.figsize_for(nrows=, ncols=) + dm.grid_shape(n)"
+                    " - the preset's panel-grid canvas"
                 ),
                 "accessibility": (
                     "dm.validate_figure now includes TEXT_CONTRAST / MIN_FONT_SIZE / "

@@ -256,15 +256,15 @@ x = np.linspace(0, 12, 121)
 fig = plt.figure(figsize=dm.figsize("20cm", "16cm"))
 ```
 
-### Whole-figure estimate, template guidance and margin correction
+### Whole-figure size, template guidance and margin correction
 
-`dm.figsize_grid("6cm", "standard", ncols=3, nrows=2, gap="0.6cm")`
-returns a whole-figure size: width `3 * 6 + 2 * 0.6 = 19.2cm` and height
-`2 * (6 * 0.75) + 0.6 = 9.6cm`. It does not create Axes or set GridSpec
-spacing. The requested panel width and gap are inputs to that arithmetic;
-labels, outer margins and native `wspace`/`hspace` determine the final Axes
-rectangles and gaps. Neither exact 6cm Axes nor exact 0.6cm rendered gaps
-are guaranteed. Render and measure the bounds below when those matter.
+For panels of a given physical size, size the whole figure: three 6 cm 4:3
+panels in two rows with 0.6 cm gaps are `dm.figsize("19.2cm", "9.6cm")`
+(width `3 * 6 + 2 * 0.6`, height `2 * (6 * 0.75) + 0.6`). That does not
+create Axes or set GridSpec spacing; labels, outer margins and native
+`wspace`/`hspace` determine the final Axes rectangles and gaps. Neither
+exact 6cm Axes nor exact 0.6cm rendered gaps are guaranteed. Render and
+measure the bounds below when those matter.
 
 MCP `compose_layered_plot` returns a starting template (including its example
 comments) and an annotation-layer checklist for the agent to adapt. Its

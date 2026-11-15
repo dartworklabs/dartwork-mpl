@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.support.approved_inputs import read_approved_text
+from tests.support.repo_files import read_repo_text
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,8 +29,7 @@ PUBLIC_COLOR_LANGUAGE_PATHS = (
     "src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml",
 )
 
-# The approved design specs under the same claim check; they are read only
-# through the approved-input reader (tests/support/approved_inputs.json).
+# The approved design specs under the same claim check.
 APPROVED_COLOR_LANGUAGE_SPECS = (
     "docs/superpowers/specs/2026-07-14-oklab-centered-color-system-design.md",
     "docs/superpowers/specs/2026-07-17-beginner-friendly-color-docs-design.md",
@@ -124,7 +123,7 @@ def _page(relpath: str) -> str:
 
 def _approved_page(relpath: str) -> str:
     """Read one approved input with whitespace normalized, as ``_page`` does."""
-    return _normalized(read_approved_text(relpath))
+    return _normalized(read_repo_text(relpath))
 
 
 def _bare_claim_destinations(inventory: str) -> tuple[int, list[str]]:
@@ -193,10 +192,9 @@ def test_claim_destination_check_flags_bare_files_on_synthetic_rows() -> None:
     )
 
 
-@pytest.mark.approved_input
 def test_claim_inventory_uses_descriptive_destinations_for_all_rows() -> None:
     """Require a stable anchor or section description for every claim group."""
-    inventory = read_approved_text(
+    inventory = read_repo_text(
         "docs/superpowers/specs/assets/2026-07-17-beginner-friendly-color-docs/"
         "claim-inventory.md"
     )
@@ -235,12 +233,11 @@ def test_current_color_language_rejects_unqualified_output_claims() -> None:
     assert not findings, findings
 
 
-@pytest.mark.approved_input
 def test_approved_color_specs_reject_unqualified_output_claims() -> None:
     """Apply the same claim check to the three approved design specs."""
     findings: list[str] = []
     for relpath in APPROVED_COLOR_LANGUAGE_SPECS:
-        text = read_approved_text(relpath)
+        text = read_repo_text(relpath)
         findings.extend(
             f"{relpath}:{finding}"
             for finding in _unqualified_language_claims(text)
@@ -293,7 +290,6 @@ def test_stale_authority_check_sees_claims_wrapped_across_lines() -> None:
     ]
 
 
-@pytest.mark.approved_input
 @pytest.mark.parametrize(
     "relpath",
     (

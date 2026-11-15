@@ -14,7 +14,7 @@ margins are shown as two separate figures rather than two panels.)
 arithmetically places the GridSpec so the content union sits at the
 requested distance from each figure edge — see
 :doc:`/usage_guide/layout` for the full margin API
-(:class:`~dartwork_mpl.units.Length`, percentage strings, per-side
+(:class:`~dartwork_mpl.size.Length`, percentage strings, per-side
 ``ml`` / ``mr`` / ``mt`` / ``mb``).
 """
 
