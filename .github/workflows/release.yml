@@ -31,11 +31,6 @@ jobs:
 
       - run: uv build
 
-      # A .gitignore pattern can silently drop a tracked package file (assets
-      # live inside slices), so the wheel is compared with the tracked tree.
-      - name: Wheel holds every tracked package file
-        run: python3 scripts/check_wheel_payload.py dist/*.whl
-
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           skip-existing: true

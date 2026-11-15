@@ -34,7 +34,7 @@ survives unrelated edits):
   stale debt             a DEBT entry that no longer occurs (delete it)
 
 Violations listed in DEBT are known and pass; the list only shrinks. Run:
-``uv run python scripts/check_boundaries.py`` (exit 1 on any violation).
+``uv run python tests/architecture/boundaries.py`` (exit 1 on any violation).
 """
 
 from __future__ import annotations

@@ -22,10 +22,15 @@ from matplotlib.transforms import Bbox, TransformedBbox
 
 import dartwork_mpl as dm
 from dartwork_mpl import _figure_geometry as fg
-from tests.support.mpl_observe import drawn_renderer
 
 GRAY = "oc.gray7"
 SLACK_PX = 2.0  # antialiasing at each side of a drawn extent
+
+
+def drawn_renderer(fig):
+    """Draw ``fig`` and return its canvas renderer."""
+    fig.canvas.draw()
+    return fig.canvas.get_renderer()
 
 
 @pytest.fixture(autouse=True)

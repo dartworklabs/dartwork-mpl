@@ -79,10 +79,8 @@ Tests are small on purpose: pure `decide` tables, one test per named edge
 case, a few realistic charts through the public surface. Do not add tests
 that pin implementation details, bytes, prose or tooling.
 
-The anti-pattern ratchet (`tests/test_antipattern_ratchet.py`) holds each
-example's and template's lint count to `tests/antipattern_baseline.json`. New
-code must be clean; lower the baseline with
-`uv run python tests/test_antipattern_ratchet.py --update` after fixing.
+Bundled templates and every code block in the skill must run and lint clean
+(`src/dartwork_mpl/guide/tests/test_guidance.py`).
 
 ## Design documents and agent work
 

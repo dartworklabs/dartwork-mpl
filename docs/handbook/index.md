@@ -31,6 +31,6 @@ orphan: true
 | `src/dartwork_mpl/mcp/` | MCP 도구 다섯 개와 산출물 형식 | architecture |
 | `src/dartwork_mpl/color/assets/`, `tests/test_shipped_colors_hash.py` | 출하 색 값과 그 고정점 | architecture(미감 불변식), verification |
 | `tests/visual/` | 픽셀 장면과 기준 이미지 | verification |
-| `tests/architecture/`, `scripts/check_boundaries.py` | 경계, 도메인 파일 규칙, fitness | architecture, verification |
+| `tests/architecture/` | 경계, 도메인 파일 규칙, fitness | architecture, verification |
 | `docs/adr/` | 결정 기록과 index | change-flow |
 | `.github/workflows/` | CI(`lint`, `test`)와 릴리스 | verification, change-flow |

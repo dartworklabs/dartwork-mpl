@@ -27,7 +27,7 @@ orphan: true
 | `guide` | 에이전트 지침: skill, 템플릿, 안티패턴 lint |
 | `mcp` | 위 slice를 에이전트에 연결하는 얇은 진입점. 도구 다섯 개 |
 
-slice끼리는 선언한 표면(`__init__.py`의 `__all__`)으로만 만난다. 허용된 의존 방향과 그 이유는 [scripts/check_boundaries.py](../../scripts/check_boundaries.py)의 `ALLOWED`가 정본이다. 여러 slice가 함께 쓰는 측정 코드는 platform 모듈 `_figure_geometry`에 있고, platform은 어떤 slice도 import하지 않는다. 공용 `utils/`나 `common/`은 만들지 않는다. 같은 이유로 함께 바뀌는 것이 관찰되기 전에는 중복이 틀린 추상화보다 싸기 때문이다.
+slice끼리는 선언한 표면(`__init__.py`의 `__all__`)으로만 만난다. 허용된 의존 방향과 그 이유는 [tests/architecture/boundaries.py](../../tests/architecture/boundaries.py)의 `ALLOWED`가 정본이다. 여러 slice가 함께 쓰는 측정 코드는 platform 모듈 `_figure_geometry`에 있고, platform은 어떤 slice도 import하지 않는다. 공용 `utils/`나 `common/`은 만들지 않는다. 같은 이유로 함께 바뀌는 것이 관찰되기 전에는 중복이 틀린 추상화보다 싸기 때문이다.
 
 `layout`은 `ticks`, `labels`, `legend`를 정해진 함수로만 부른다. 레이아웃 한 단계 안에서 눈금 글자를 정하고, 라벨과 범례를 자리 잡게 한 뒤, 여백을 잰다.
 
@@ -58,7 +58,7 @@ matplotlib의 `Figure`와 `Axes`는 상태를 바꾸는 객체다. 이 사실은
 | --- | --- | --- |
 | **미감 유지.** 출하 색 값, 폰트, 글자 무게, spine, grid, preset의 모양은 바뀌지 않는다 | 색 해시 테스트, 픽셀 baseline(RMS 0.5) | 사용자 그림이 조용히 달라진다. 소유자가 before/after를 보고 승인해야만 바꾼다 |
 | **matplotlib을 감싸지 않는다.** dm 함수는 native `Figure`·`Axes`를 받고 돌려준다. `dm.style.use`는 rcParams만 바꾼다 | 리뷰 | 사용자가 dartwork-mpl 전용 개념을 배워야 한다 |
-| **크기는 물리 단위, 글자·선은 preset 상대값** | 안티패턴 lint와 ratchet | preset을 바꾸면 그림이 깨진다 |
+| **크기는 물리 단위, 글자·선은 preset 상대값** | 안티패턴 lint, 지침 테스트 | preset을 바꾸면 그림이 깨진다 |
 | **레이아웃은 결정적이고 다시 적용해도 같다** | 픽셀 baseline | 같은 코드가 실행마다 다른 그림을 낸다 |
 | **`check`는 그림을 바꾸지 않는다** | check slice 테스트 | 검사했더니 그림이 달라진다 |
 | **slice 경계와 파일 규칙** | `tests/architecture/` | 한 기능 변경이 여러 폴더로 번진다 |

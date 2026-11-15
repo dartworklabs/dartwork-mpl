@@ -18,8 +18,8 @@ PR은 아래 게이트로 합격을 판정한다. 실행하지 않은 게이트�
 | slice 경계 | import 방향과 표면 | 전체 테스트에 포함 (`tests/architecture/test_boundaries.py`) | 위반 0 |
 | 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스 형식과 테스트 | 전체 테스트에 포함 (`test_domain_rules.py`) | 위반 0. baseline 없음 |
 | fitness | 언더바 이름, import 순환, 잡동사니 이름, 표면 선언 | 전체 테스트에 포함 (`test_fitness.py`) | baseline보다 나빠지지 않음 |
-| 지침 | skill·템플릿의 코드가 실행되고 거기 나오는 `dm.*` 이름이 존재 | 전체 테스트에 포함 (`guide/tests/test_guidance.py`) | 통과 |
-| 안티패턴 ratchet | 예제·문서 스크립트·템플릿의 lint 수 | 전체 테스트에 포함 | 파일별 수가 baseline 이하 |
+| 리포 무게 | 바이너리는 폰트 자산과 픽셀 기준 이미지에만, 크기 상한 | 전체 테스트에 포함 (`test_repo_weight.py`) | 위반 0 |
+| 지침 | skill·템플릿의 코드가 실행되고, lint에 걸리지 않고, 거기 나오는 `dm.*` 이름이 존재 | 전체 테스트에 포함 (`guide/tests/test_guidance.py`) | 통과 |
 
 CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인을 돌린다. `test`는 Python 3.12에서 전체 테스트를 `--mpl`과 함께 돌린다. `develop`과 `main`의 브랜치 보호가 이 둘을 필수로 건다.
 
@@ -48,7 +48,7 @@ CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인�
 
 **색 해시.** 출하하는 모든 색 값을 digest로 고정한다. 실패는 출하 색이 움직였다는 뜻이고, 소유자가 결정할 일이다. 색 표는 생성기 없이 `color/assets/`의 JSON으로 들고 있으므로 이 테스트가 유일한 방어선이다.
 
-**ratchet baseline** (`tests/antipattern_baseline.json`, `tests/architecture/fitness_baseline.json`). 고쳐서 수가 줄면 `--update`로 낮춘다. 올리는 것은 소유자만 한다.
+**fitness baseline** (`tests/architecture/fitness_baseline.json`). 고쳐서 수가 줄면 `--update`로 낮춘다. 올리는 것은 소유자만 한다.
 
 ## 알려진 공백
 

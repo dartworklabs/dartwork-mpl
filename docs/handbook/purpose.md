@@ -53,7 +53,7 @@ Handbook은 모든 영역의 정본이 아니다. 아래 표는 각 영역에서
 | --- | --- | --- |
 | 라이브러리 동작 | `src/dartwork_mpl/` 코드 | 의도와 불변식만 설명 |
 | 공개 API 표면 | `dm.__all__`과 각 slice의 `__all__` | 표면이 바뀌는 조건을 설명 ([architecture.md](architecture.md)) |
-| slice 경계와 허용 의존 | [scripts/check_boundaries.py](../../scripts/check_boundaries.py) | 규칙의 이유를 설명 |
+| slice 경계와 허용 의존 | [tests/architecture/boundaries.py](../../tests/architecture/boundaries.py) | 규칙의 이유를 설명 |
 | 출하 색 값 | `src/dartwork_mpl/color/assets/`의 색 표와 [tests/test_shipped_colors_hash.py](../../tests/test_shipped_colors_hash.py)의 digest | 미감 불변식으로 설명 |
 | 시각 스타일 | `src/dartwork_mpl/style/assets/`의 preset, `font/assets/`의 폰트, [tests/visual/baseline/](../../tests/visual/baseline/) | 미감 불변식으로 설명 |
 | 에이전트 지침과 안티패턴 | [src/dartwork_mpl/guide/assets/](../../src/dartwork_mpl/guide/assets/)의 skill, 템플릿, `anti-patterns.yaml` | 위치만 가리킴 |

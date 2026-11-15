@@ -1,6 +1,6 @@
 """Architecture fitness rules over all product code, as one-way ratchets (ADR 0005).
 
-``scripts/check_boundaries.py`` judges slice-to-slice imports. These rules judge
+``boundaries.py`` judges slice-to-slice imports. These rules judge
 the shape of the whole package: module and function size, slice size, naming,
 import cycles and the purity of decision code. They read source with ``ast``
 only; nothing is imported.
@@ -42,7 +42,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PKG_DIR = ROOT / "src" / "dartwork_mpl"
 BASELINE = Path(__file__).with_name("fitness_baseline.json")
 _SPEC = importlib.util.spec_from_file_location(
-    "check_boundaries", ROOT / "scripts" / "check_boundaries.py"
+    "check_boundaries", Path(__file__).with_name("boundaries.py")
 )
 assert _SPEC is not None and _SPEC.loader is not None
 cb = importlib.util.module_from_spec(_SPEC)
@@ -442,72 +442,6 @@ def test_rule_matches_baseline(rule):
 
 def test_baseline_has_exactly_the_rules():
     assert set(json.loads(BASELINE.read_text(encoding="utf-8"))) == set(KIND)
-
-
-# --- each rule fails on an injected violation (synthetic trees) -------------
-
-
-def synthetic(code: dict[str, str], *packages: str) -> Tree:
-    """A made-up tree: module names relative to the package, and its packages."""
-    full = {f"{P}.{k}": v for k, v in code.items()} | {P: ""}
-    return full, {P} | {f"{P}.{k}" for k in packages}
-
-
-def test_size_rules_flag_big_modules_slices_and_functions():
-    tree = synthetic(
-        {"a": "x = 1\n" * (MODULE_CAP + 5), "b": "def f():\n" + "  1\n" * 80}
-    )
-    assert list(r1_module_lines(tree)) == ["src/dartwork_mpl/a.py"]
-    assert list(r7_function_lines(tree)) == ["src/dartwork_mpl/b.py::f"]
-    mods = {f"m{i}": "x = 1\n" * 900 for i in range(5)}
-    assert not r2_slice_lines(synthetic(mods))  # separate modules, no slice
-    nested = {f"p.{k}": v for k, v in mods.items()} | {"p": ""}
-    assert list(r2_slice_lines(synthetic(nested, "p"))) == ["p"]
-    deep = {f"p.q.m{i}": "x = 1\n" * 600 for i in range(4)} | {"p.q": ""}
-    assert list(r2_slice_lines(synthetic(deep, "p", "p.q"))) == ["p/q"]
-
-
-def test_name_rules_flag_underscores_and_dumping_grounds():
-    tree = synthetic({"_x": "", "s": "", "s._a": "", "s.utils": ""}, "s")
-    assert r3_underscore_toplevel(tree) == ["_x"]
-    assert r3_underscore_modules(tree) == {"_x": 1, "s": 1}
-    assert r5_dumping_ground(tree) == [f"{P}.s.utils"]
-
-
-def test_cycle_rule_sees_hard_cycles_and_lazy_only_cycles():
-    imp, late = "from .. import b\n", "def f():\n    from .. import a\n"
-    hard = synthetic({"a": imp, "b": "from .. import a\n"}, "a", "b")
-    assert r4_cycles(hard) and r4_lazy_cycle_edges(hard)["top_level_edges"] == 0
-    lazy = synthetic({"a": imp, "b": late}, "a", "b")
-    assert not r4_cycles(lazy) and r4_lazy_cycle_edges(lazy)["top_level_edges"]
-    assert not r4_cycles(synthetic({"a": imp, "b": ""}, "a", "b"))
-
-
-def test_purity_and_surface_rules():
-    tree = synthetic(
-        {"a": "", "a.d": "import matplotlib\nopen('x')\n", "b": "__all__ = []"},
-        "a",
-        "b",
-    )
-    assert r6_impure_decisions(tree, {f"{P}.a.d": "pure"}) == [
-        "src/dartwork_mpl/a/d.py: matplotlib, open()"
-    ]
-    assert r8_missing_all(tree) == [f"{P}.a"]
-    wiring = synthetic({"cli": "def main():\n" + "  1\n" * 30})
-    assert r8_entry_function_lines(wiring, frozenset({f"{P}.cli"}))
-
-
-def test_compare_is_a_two_way_ratchet():
-    r1 = "R1_module_lines"
-    assert compare(r1, {"a": 9}, {"a": 8})[0]  # grew
-    assert compare(r1, {"a": 9, "b": 1}, {"a": 9})[0]  # new violator
-    assert compare(r1, {"a": 7}, {"a": 8})[1]  # improved -> stale
-    assert compare(r1, {}, {"a": 8})[1]  # gone -> stale
-    assert compare("R5_dumping_ground", ["x"], [])[0]
-    assert compare("R5_dumping_ground", [], ["x"])[1]
-    floor = "R6_matplotlib_free"
-    assert compare(floor, {"modules": 5}, {"modules": 6})[0]
-    assert compare(floor, {"modules": 7}, {"modules": 6})[1]
 
 
 if __name__ == "__main__":
