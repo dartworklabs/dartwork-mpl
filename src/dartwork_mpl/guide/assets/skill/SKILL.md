@@ -109,7 +109,7 @@ value labels larger than `dm.fs(-1)` drop to it and, with no weight written, tak
 18 chart types ship as `basic` and `advanced` scripts: `dm.guide.search("grouped bars")` ranks them,
 `print(dm.guide.read("template/advanced/bar"))` prints one; the user's data, labels and preset replace every
 placeholder (recount `figsize_for`'s counts, new `save_formats` stem). Without this folder each reference
-below is `dm.guide.read("guide/layout")` and so on (`dm.guide.references()` lists the ids).
+below is `dm.guide.read("guide/layout")` and so on (`dm.guide.references()` lists the ids). Over MCP the same reads are `guide(topic)`, `search_reference(query)`, `get_reference(kind, id)` and `lint(code)`; `render(code)` runs it once, returns the PNG and findings.
 
 | Need | Read |
 |---|---|
