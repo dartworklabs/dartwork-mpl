@@ -22,14 +22,12 @@ from . import apply, decide, measure
 from .catalog import CATALOG
 from .edges import FULL_LADDER, HEX_ROUNDING, KR_TOKENS
 from .model import (
-    SEMANTIC_NAMES,
     ContrastFacts,
     Count,
     Family,
     Form,
     Ink,
     Kind,
-    Library,
     Locale,
     Name,
     PaletteRequest,
@@ -47,8 +45,6 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
 __all__ = [
-    "LIBRARIES",
-    "SEMANTIC_TOKEN_NAMES",
     "Color",
     "apply_semantic",
     "color",
@@ -74,8 +70,6 @@ __all__ = [
 ]
 
 # For other slices (validation, labels): tuples in, numbers out.
-LIBRARIES: tuple[Library, ...] = CATALOG.libraries
-SEMANTIC_TOKEN_NAMES = SEMANTIC_NAMES
 
 RGB = tuple[float, float, float]
 RGBA = tuple[float, float, float, float]

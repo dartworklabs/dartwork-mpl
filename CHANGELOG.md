@@ -22,6 +22,8 @@ removed names simply no longer exist.
 
 ### Removed
 
+- The MCP server (`dartwork-mpl-mcp`, the `mcp` extra). Agents use the
+  bundled skill and run the code in their own shell.
 - The local viewer (`dartwork-mpl-ui`, the `ui` and `notebook` extras),
   `dm.show`, `dm.save_and_show`.
 - Colour build and verification tooling, `dm.show_colors`, colormap catalog
