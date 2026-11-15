@@ -1,23 +1,22 @@
 """The guide slice's types, and the one place text becomes them.
 
-The lint side: a :class:`Rule` from the anti-pattern catalog, the
-:class:`Code` it is checked against (the source, its quoted spans and the
-literal colour and colormap names it passes) and the :class:`Finding` a match
-makes. The reading side: a :class:`Reference` (a guide page or a template)
-with the words a :class:`Query` is ranked against. Everything parses here
-once; the decisions only see these types.
+A :class:`Rule` from the anti-pattern catalog, the :class:`Code` it is
+checked against (the source, its quoted spans and the literal colour and
+colormap names it passes) and the :class:`Finding` a match makes. The
+reading side is in ``reference``. Everything parses here once; the
+decisions only see these types.
 """
 
 from __future__ import annotations
 
 import ast
 import re
+import token
 import tokenize
-from collections.abc import Mapping
+from collections.abc import Iterator
 from dataclasses import dataclass
-from enum import StrEnum
 from itertools import accumulate
-from typing import TypeGuard
+from typing import ClassVar, Protocol, runtime_checkable
 
 import yaml
 
@@ -33,27 +32,83 @@ COLOR_KEYWORDS = frozenset(
 OWN_ROOTS = frozenset({"dm", "dartwork_mpl"})
 
 
-class Severity(StrEnum):
+@dataclass(frozen=True)
+class Severity:
     """How much a finding matters: ``critical`` blocks a run, ``info`` hints."""
 
-    CRITICAL = "critical"
-    WARNING = "warning"
-    INFO = "info"
+    value: str
+
+    CRITICAL: ClassVar[Severity]
+    WARNING: ClassVar[Severity]
+    INFO: ClassVar[Severity]
+
+    def __str__(self) -> str:
+        """The catalog's word for it."""
+        return self.value
+
+    @classmethod
+    def parse(cls, text: object) -> Severity:
+        """A catalog severity; ``ValueError`` for anything else."""
+        for severity in (cls.CRITICAL, cls.WARNING, cls.INFO):
+            if severity.value == text:
+                return severity
+        raise ValueError(f"{text!r} is not a severity")
 
 
-class Check(StrEnum):
-    """A catalog rule detected from literal names instead of a pattern."""
-
-    COLORMAP = "colormap-name"
-    COLOR = "color-name"
+Severity.CRITICAL = Severity("critical")
+Severity.WARNING = Severity("warning")
+Severity.INFO = Severity("info")
 
 
-def _mapping(value: object) -> TypeGuard[Mapping[object, object]]:
-    return isinstance(value, dict)
+@dataclass(frozen=True)
+class ColormapName:
+    """A literal colormap name (``cmap="..."``) must be registered."""
+
+    value: ClassVar[str] = "colormap-name"
+    rule: ClassVar[str] = "invalid-colormap-name"
 
 
-def _listed(value: object) -> TypeGuard[list[object]]:
-    return isinstance(value, list)
+@dataclass(frozen=True)
+class ColorName:
+    """A literal colour (``color="..."``) must be one matplotlib reads."""
+
+    value: ClassVar[str] = "color-name"
+    rule: ClassVar[str] = "invalid-color-name"
+
+
+#: A catalog rule detected from literal names instead of a pattern; ``rule``
+#: is the id of the catalog rule it backs.
+Check = ColormapName | ColorName
+
+
+def parse_check(text: object) -> Check:
+    """A catalog check; ``ValueError`` for anything else."""
+    for check in (ColormapName(), ColorName()):
+        if check.value == text:
+            return check
+    raise ValueError(f"{text!r} is not a check")
+
+
+@runtime_checkable
+class Table(Protocol):
+    """A YAML mapping, read by key."""
+
+    def get(self, key: str, /) -> object:
+        """The value at ``key``, ``None`` if absent."""
+        ...
+
+    def __getitem__(self, key: str, /) -> object:
+        """The value at ``key``."""
+        ...
+
+
+@runtime_checkable
+class Items(Protocol):
+    """A YAML sequence, read for its items."""
+
+    def __iter__(self) -> Iterator[object]:
+        """The items."""
+        ...
 
 
 @dataclass(frozen=True)
@@ -70,7 +125,7 @@ class Rule:
     @classmethod
     def parse(cls, entry: object) -> Rule:
         """One catalog entry; it gives exactly one of ``pattern`` / ``check``."""
-        if not _mapping(entry):
+        if not isinstance(entry, Table):
             raise ValueError(f"a catalog rule must be a mapping: {entry!r}")
         pattern, check, fix = (
             entry.get("pattern"),
@@ -81,11 +136,11 @@ class Rule:
             raise ValueError(f"{entry.get('id')}: give a pattern or a check")
         return cls(
             id=str(entry["id"]),
-            severity=Severity(str(entry["severity"])),
+            severity=Severity.parse(str(entry["severity"])),
             message=str(entry["message"]).strip(),
             fix=None if fix is None else str(fix),
             pattern=None if pattern is None else re.compile(str(pattern), re.M),
-            check=None if check is None else Check(str(check)),
+            check=None if check is None else parse_check(str(check)),
         )
 
 
@@ -99,8 +154,8 @@ class Rules:
     def parse(cls, text: str) -> Rules:
         """Parse the YAML catalog; a malformed one raises ``ValueError``."""
         data: object = yaml.safe_load(text)
-        entries = data.get("rules") if _mapping(data) else None
-        if not _listed(entries):
+        entries = data.get("rules") if isinstance(data, Table) else None
+        if isinstance(entries, str | Table) or not isinstance(entries, Items):
             raise ValueError("the catalog must be a mapping with a rules list")
         rules = tuple(Rule.parse(e) for e in entries)
         if len({r.id for r in rules}) != len(rules):
@@ -241,135 +296,13 @@ class Finding:
 Findings = tuple[Finding, ...]
 
 
-# -- reading ----------------------------------------------------------------
-
-
-class Kind(StrEnum):
-    """A guide page (prose) or a plot template (a runnable script)."""
-
-    GUIDE = "guide"
-    TEMPLATE = "template"
-
-
-_REF_ID = re.compile(r"guide/[a-z0-9-]+|template/(?:advanced/)?[a-z0-9_]+")
-_WORD = re.compile(r"[a-z0-9]+")
-
-
-def ref_id(text: object) -> str:
-    """``text`` as a reference id; anything else raises ``ValueError``.
-
-    An id (``guide/layout``, ``template/bar``, ``template/advanced/bar``)
-    never names a path.
-    """
-    if not isinstance(text, str) or not _REF_ID.fullmatch(text):
-        raise ValueError(
-            f"{text!r} is not a reference id like 'guide/layout', 'template/bar'"
-            " or 'template/advanced/bar'; dm.guide.references() lists them"
-        )
-    return text
-
-
-def words(text: str) -> frozenset[str]:
-    """The lower-case words of ``text``, a plural ``s`` dropped (bars → bar)."""
-    return frozenset(
-        w[:-1] if len(w) > 3 and w.endswith("s") else w
-        for w in _WORD.findall(text.lower())
-    )
-
-
-@dataclass(frozen=True)
-class Reference:
-    """A guide page or template: its id, a title and summary, and its words."""
-
-    id: str
-    kind: Kind
-    title: str
-    summary: str
-    tags: frozenset[str]
-    words: frozenset[str]
-
-    @classmethod
-    def guide(cls, id: str, text: str) -> Reference:
-        """A Markdown page: its first heading, first paragraph and every heading."""
-        headings = [
-            ln.lstrip("#").strip()
-            for ln in text.splitlines()
-            if ln.startswith("#")
-        ]
-        title = headings[0] if headings else id
-        prose = [
-            " ".join(p.split())
-            for p in text.split("\n\n")
-            if p.strip()
-            and not p.lstrip().startswith(("#", "```", "|", "---", "-"))
-        ]
-        summary = prose[0] if prose else title
-        tags = words(id.removeprefix("guide/"))
-        return cls(
-            id,
-            Kind.GUIDE,
-            title,
-            summary,
-            tags,
-            words(" ".join([*headings, summary])),
-        )
-
-    @classmethod
-    def template(cls, id: str, text: str) -> Reference:
-        """A template script: its docstring's first line and its meta block."""
-        meta = template_meta(text)
-        docstring = text.lstrip().removeprefix('"""').split('"""', 1)[0].strip()
-        title = docstring.splitlines()[0] if docstring else id
-        summary = meta.get("use_case", title)
-        if "data_shape" in meta:
-            summary += f". Data: {meta['data_shape']}"
-        tags = words(meta.get("tags", ""))
-        return cls(
-            id,
-            Kind.TEMPLATE,
-            title,
-            summary,
-            tags,
-            words(" ".join([title, *meta.values()])),
-        )
-
-
-def template_meta(text: str) -> dict[str, str]:
-    """The ``key: value`` lines between ``# ai-template-meta-start`` and ``-end``."""
-    block = text.partition("# ai-template-meta-start")[2]
-    block = block.partition("# ai-template-meta-end")[0]
-    pairs = (
-        line.removeprefix("#").partition(":") for line in block.splitlines()
-    )
-    return {k.strip(): v.strip() for k, sep, v in pairs if sep and k.strip()}
-
-
-@dataclass(frozen=True)
-class Query:
-    """What a search asks for, and how many references to return."""
-
-    words: frozenset[str]
-    limit: int
-
-    @classmethod
-    def parse(cls, text: object, limit: object = 5) -> Query:
-        """A free-text query and a positive ``limit``."""
-        if not isinstance(text, str):
-            raise TypeError(f"query must be a str (got {type(text).__name__})")
-        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
-            raise ValueError(f"limit must be a positive int (got {limit!r})")
-        return cls(words(text), limit)
-
-
 # -- reading a source -------------------------------------------------------
 
 # Strings and comments; on Python 3.12+ also the text of an f-string.
 _QUOTED = frozenset(
-    {
-        tokenize.STRING,
-        tokenize.COMMENT,
-        getattr(tokenize, "FSTRING_MIDDLE", tokenize.STRING),
-    }
+    kind
+    for kind, name in token.tok_name.items()
+    if name in {"STRING", "COMMENT", "FSTRING_MIDDLE"}
 )
 
 
@@ -401,11 +334,9 @@ def _called(node: ast.AST) -> str:
     if not isinstance(node, ast.Call):
         return ""
     func = node.func
-    return (
-        func.attr
-        if isinstance(func, ast.Attribute)
-        else getattr(func, "id", "")
-    )
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return func.id if isinstance(func, ast.Name) else ""
 
 
 def _root(node: ast.expr) -> str:
@@ -431,7 +362,7 @@ def _literals(
             continue
         for kw in call.keywords:
             value = _string(kw.value)
-            check = Check.COLORMAP if kw.arg == "cmap" else Check.COLOR
+            check = ColormapName() if kw.arg == "cmap" else ColorName()
             if value is not None and (
                 kw.arg == "cmap" or kw.arg in COLOR_KEYWORDS
             ):
@@ -439,7 +370,7 @@ def _literals(
         first = call.args[0] if call.args else None
         if _called(call) == "get_cmap" and (value := _string(first)):
             found.append(
-                Literal(Check.COLORMAP, value, _offset(call, lines, starts))
+                Literal(ColormapName(), value, _offset(call, lines, starts))
             )
     return found
 

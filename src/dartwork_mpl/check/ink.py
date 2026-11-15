@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 import matplotlib.colors as mcolors
 import numpy as np
@@ -57,9 +57,17 @@ if TYPE_CHECKING:
     from matplotlib.path import Path
 
 
-def name_of(artist: object, unnamed: str = "") -> str:
+class Named(Protocol):
+    """An artist or container: it has a legend label."""
+
+    def get_label(self) -> object:
+        """The legend label."""
+        ...
+
+
+def name_of(artist: Named, unnamed: str = "") -> str:
     """The artist's legend label, ``unnamed`` for a ``_``-label."""
-    label = str(getattr(artist, "get_label", lambda: "")() or "")
+    label = str(artist.get_label() or "")
     return unnamed if not label or label.startswith("_") else label
 
 

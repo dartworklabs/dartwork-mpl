@@ -21,20 +21,18 @@ from ..edgecase import settle
 from . import apply, decide, measure
 from .catalog import CATALOG
 from .edges import FULL_LADDER, HEX_ROUNDING, KR_TOKENS
+from .family import Count, Family, parse_kind
 from .model import (
     ContrastFacts,
-    Count,
-    Family,
     Form,
-    Kind,
     Locale,
     Name,
     PaletteRequest,
     Ratio,
     SemanticFacts,
-    Space,
     Steps,
     Weight,
+    parse_space,
     parse_written,
     rgb_color,
 )
@@ -128,7 +126,7 @@ def cspace(
 
         bar_colors = [c.to_hex() for c in dm.cspace("dc.teal5", "dc.teal1", 5)]
     """
-    first, last, where = color(start), color(end), Space.parse(space)
+    first, last, where = color(start), color(end), parse_space(space)
     return list(decide.gradient(first, last, Steps(n), where))
 
 
@@ -287,7 +285,7 @@ def list_colors(kind: str | None = None) -> list[dict[str, object]]:
     Each record has ``name``, ``kind``, ``continuous`` and ``discrete_size``
     (None when any ``n`` up to the limit is designed).
     """
-    wanted = None if kind is None else Kind.parse(kind)
+    wanted = None if kind is None else parse_kind(kind)
     return [
         {
             "name": found.name,
@@ -296,7 +294,7 @@ def list_colors(kind: str | None = None) -> list[dict[str, object]]:
             "discrete_size": found.size,
         }
         for found in CATALOG.families.values()
-        if wanted is None or found.kind is wanted
+        if wanted is None or found.kind == wanted
     ]
 
 

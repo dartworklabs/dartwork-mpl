@@ -14,17 +14,17 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 
 from ..style import active_presets, load_style_dict
-from .model import Family, NameWidths, Page
+from .canvas import Family, NameWidths, Page, Paper, Poster, Report, Slides
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
 
 REPORT_FONT_PT = 8.0
-FAMILIES = {
-    "scientific": Family.PAPER,
-    "presentation": Family.SLIDES,
-    "poster": Family.POSTER,
-    **dict.fromkeys(("report", "web", "minimal", "dark"), Family.REPORT),
+FAMILIES: dict[str, Family] = {
+    "scientific": Paper(),
+    "presentation": Slides(),
+    "poster": Poster(),
+    **dict.fromkeys(("report", "web", "minimal", "dark"), Report()),
 }
 
 
@@ -37,10 +37,10 @@ def active_page() -> Page:
         match family:
             case None:
                 continue
-            case Family.POSTER:
+            case Poster():
                 font_pt = float(load_style_dict(f"font-{base}")["font.size"])
                 return Page(family, font_pt / REPORT_FONT_PT)
-            case Family.REPORT | Family.PAPER | Family.SLIDES:
+            case Report() | Paper() | Slides():
                 return Page(family)
             case _:
                 assert_never(family)

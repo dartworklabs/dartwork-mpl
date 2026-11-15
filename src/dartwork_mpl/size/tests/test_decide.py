@@ -5,18 +5,18 @@ from __future__ import annotations
 import pytest
 
 from dartwork_mpl.size import decide
-from dartwork_mpl.size.model import (
+from dartwork_mpl.size.canvas import (
     CanvasKind,
     CanvasRequest,
-    Family,
-    Grid,
     Page,
-    Panels,
-    cm,
+    Paper,
+    Poster,
+    Slides,
 )
+from dartwork_mpl.size.model import Grid, Panels, cm
 
-REPORT, PAPER, SLIDES = Page(), Page(Family.PAPER), Page(Family.SLIDES)
-POSTER = Page(Family.POSTER, 1.5)
+REPORT, PAPER, SLIDES = Page(), Page(Paper()), Page(Slides())
+POSTER = Page(Poster(), 1.5)
 
 
 def _cm(request: CanvasRequest, page: Page) -> tuple[float, float]:
@@ -25,11 +25,11 @@ def _cm(request: CanvasRequest, page: Page) -> tuple[float, float]:
 
 
 def _ask(kind: str = "default", **hints: object) -> CanvasRequest:
-    return CanvasRequest(kind=CanvasKind(kind), **hints)  # type: ignore[arg-type]
+    return CanvasRequest(kind=CanvasKind.parse(kind), **hints)  # type: ignore[arg-type]
 
 
 def test_figure_size_takes_a_share_or_a_height() -> None:
-    share = decide.figure_size(cm(13), decide.KINDS[CanvasKind.DEFAULT].aspect)
+    share = decide.figure_size(cm(13), CanvasKind.DEFAULT.spec.aspect)
     assert (share.width.cm, share.height.cm) == pytest.approx((13.0, 9.75))
     height = decide.figure_size(cm(13), cm(8))
     assert height.height == cm(8)

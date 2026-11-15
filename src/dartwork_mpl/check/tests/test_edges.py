@@ -9,7 +9,6 @@ import pytest
 from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
-    Axis,
     Box,
     Contrast,
     Corner,
@@ -21,6 +20,7 @@ from dartwork_mpl.check.model import (
     Text,
     TickRow,
     ValueLabel,
+    XAxis,
 )
 from dartwork_mpl.edgecase import settle
 
@@ -42,7 +42,7 @@ def row(*labels: str, **kw: object) -> TickRow:
     base = {
         "handle": object(),
         "panel": 0,
-        "axis": Axis.X,
+        "axis": XAxis(),
         "labels": texts,
         "span": 800.0,
         "need": 300.0,

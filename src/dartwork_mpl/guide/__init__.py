@@ -18,7 +18,8 @@ from ..edgecase import settle
 from . import corpus, decide, measure
 from .edges import EDGES
 from .install import SKILL_DIRS, Installed, install_skill, skill_path
-from .model import Code, Finding, LintFacts, Query, Reference, Severity
+from .model import Code, Finding, LintFacts, Severity
+from .reference import Query, Reference
 
 __all__ = [
     "SKILL_DIRS",

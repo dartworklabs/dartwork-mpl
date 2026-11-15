@@ -85,7 +85,7 @@ def test_template_runs_and_lints_clean(ref):
     for path in MENTION.findall(source):
         resolve(path)
     run(source, {"__name__": "__main__"}, ref)
-    found = [f for f in dm.lint_code(source) if f.severity != "info"]
+    found = [f for f in dm.lint_code(source) if str(f.severity) != "info"]
     assert not found, "\n".join(map(str, found))
 
 

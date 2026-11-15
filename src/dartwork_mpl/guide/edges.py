@@ -9,13 +9,17 @@ from __future__ import annotations
 from typing import assert_never
 
 from ..edgecase import EdgeCase
-from .model import Check, Code, Findings, LintFacts, Registered
+from .model import (
+    Check,
+    Code,
+    ColormapName,
+    ColorName,
+    Findings,
+    LintFacts,
+    Registered,
+)
 
 HAND_MERGE = "twin-legend-hand-merge"
-RULES_BY_CHECK = {
-    Check.COLORMAP: "invalid-colormap-name",
-    Check.COLOR: "invalid-color-name",
-}
 
 
 def quotes_a_pattern(facts: LintFacts, plan: Findings) -> bool:
@@ -40,9 +44,9 @@ def drop_hand_merge(facts: LintFacts, plan: Findings) -> Findings:
 
 def _registered_by(code: Code, check: Check) -> Registered:
     match check:
-        case Check.COLORMAP:
+        case ColormapName():
             return code.colormaps
-        case Check.COLOR:
+        case ColorName():
             return code.colors
         case _:
             assert_never(check)
@@ -56,30 +60,30 @@ def _self_registered(
     return tuple(
         f
         for f in plan
-        if f.rule_id == RULES_BY_CHECK[check]
+        if f.rule_id == check.rule
         and (registered.dynamic or f.name in registered.names)
     )
 
 
 def registers_a_colormap(facts: LintFacts, plan: Findings) -> bool:
     """A colormap finding names a map the source registers (or names one dynamically)."""
-    return bool(_self_registered(facts, plan, Check.COLORMAP))
+    return bool(_self_registered(facts, plan, ColormapName()))
 
 
 def drop_registered_colormaps(facts: LintFacts, plan: Findings) -> Findings:
     """Keep the colormap findings the source's own registrations do not answer."""
-    mine = set(_self_registered(facts, plan, Check.COLORMAP))
+    mine = set(_self_registered(facts, plan, ColormapName()))
     return tuple(f for f in plan if f not in mine)
 
 
 def registers_a_color(facts: LintFacts, plan: Findings) -> bool:
     """A colour finding names a colour the source adds to matplotlib's mapping."""
-    return bool(_self_registered(facts, plan, Check.COLOR))
+    return bool(_self_registered(facts, plan, ColorName()))
 
 
 def drop_registered_colors(facts: LintFacts, plan: Findings) -> Findings:
     """Keep the colour findings the source's own registrations do not answer."""
-    mine = set(_self_registered(facts, plan, Check.COLOR))
+    mine = set(_self_registered(facts, plan, ColorName()))
     return tuple(f for f in plan if f not in mine)
 
 

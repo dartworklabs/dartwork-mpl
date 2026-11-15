@@ -36,7 +36,7 @@
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 51
+  "modules": 54
  },
  "R7_function_lines": {
   "src/dartwork_mpl/check/measure.py::Reader.legends": 81
@@ -44,18 +44,11 @@
  "R8_entry_function_lines": {},
  "R8_missing_all": [],
  "T10_reflection": {
-  "src/dartwork_mpl/check/ink.py": 1,
-  "src/dartwork_mpl/check/measure.py": 2,
-  "src/dartwork_mpl/check/walk.py": 5,
-  "src/dartwork_mpl/color/space.py": 1,
-  "src/dartwork_mpl/geometry/axes.py": 1,
-  "src/dartwork_mpl/guide/model.py": 2,
-  "src/dartwork_mpl/size/model.py": 1
+  "src/dartwork_mpl/geometry/axes.py": 1
  },
  "T11_untyped": {
   "src/dartwork_mpl/check/ink.py": 4,
   "src/dartwork_mpl/check/measure.py": 3,
-  "src/dartwork_mpl/check/walk.py": 1,
   "src/dartwork_mpl/geometry/ink.py": 2,
   "src/dartwork_mpl/labels/bars.py": 2,
   "src/dartwork_mpl/labels/ends.py": 2,
@@ -76,34 +69,12 @@
   "src/dartwork_mpl/ticks/measure.py": 7
  },
  "T1_casts": {},
- "T2_ignores": {
-  "src/dartwork_mpl/color/measure.py": 1,
-  "src/dartwork_mpl/font/apply.py": 1
- },
+ "T2_ignores": {},
  "T3_domain_isinstance": {},
  "T4_smuggled_attributes": {},
- "T5_enum_branches": {
-  "src/dartwork_mpl/color/edges.py": 2,
-  "src/dartwork_mpl/guide/decide.py": 1,
-  "src/dartwork_mpl/size/edges.py": 2
- },
+ "T5_enum_branches": {},
  "T6_string_branches": {},
  "T7_swallowing_matches": {},
- "T8_enums": {
-  "src/dartwork_mpl/check/model.py": 3,
-  "src/dartwork_mpl/color/model.py": 5,
-  "src/dartwork_mpl/guide/model.py": 3,
-  "src/dartwork_mpl/save/model.py": 1,
-  "src/dartwork_mpl/size/model.py": 2,
-  "src/dartwork_mpl/style/model.py": 1
- },
- "T9_guards": {
-  "src/dartwork_mpl/check/walk.py": 1,
-  "src/dartwork_mpl/color/shipped.py": 2,
-  "src/dartwork_mpl/guide/model.py": 2,
-  "src/dartwork_mpl/save/model.py": 1,
-  "src/dartwork_mpl/size/model.py": 1,
-  "src/dartwork_mpl/style/measure.py": 1,
-  "src/dartwork_mpl/style/model.py": 1
- }
+ "T8_enums": {},
+ "T9_guards": {}
 }

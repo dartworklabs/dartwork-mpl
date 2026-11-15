@@ -12,18 +12,20 @@ from __future__ import annotations
 import colorsys
 import math
 import re
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
-from enum import Enum
 from typing import (
+    ClassVar,
     NamedTuple,
     NewType,
+    Protocol,
     SupportsFloat,
     SupportsIndex,
     TypeVar,
-    assert_never,
+    runtime_checkable,
 )
 
+from .family import Count, Family
 from .space import Color, Hex, Oklab, Oklch, Rgb, finite
 
 T = TypeVar("T")
@@ -90,107 +92,13 @@ def parse_written(text: object) -> Color | Name:
     return Color(Oklab(*nums))
 
 
-class Kind(Enum):
-    """A colour family's kind; the value is its public label."""
+@runtime_checkable
+class Items(Protocol):
+    """A value read for its items, in order (a list, a tuple, an array)."""
 
-    SEQUENTIAL = "sequential"
-    MULTI_HUE = "multi-hue"
-    DIVERGING = "diverging"
-    CYCLIC = "cyclic"
-    QUALITATIVE = "qualitative"
-
-    @classmethod
-    def parse(cls, text: object) -> Kind:
-        """``"sequential"``... as a kind; ``ValueError`` names the five."""
-        try:
-            return cls(text)
-        except ValueError:
-            expected = ", ".join(k.value for k in cls)
-            raise ValueError(
-                f"Unknown color kind {text!r}; expected one of: {expected}."
-            ) from None
-
-    @property
-    def continuous(self) -> bool:
-        """The family has a 256-step colormap (all but qualitative)."""
-        match self:
-            case Kind.QUALITATIVE:
-                return False
-            case (
-                Kind.SEQUENTIAL | Kind.MULTI_HUE | Kind.DIVERGING | Kind.CYCLIC
-            ):
-                return True
-            case _:
-                assert_never(self)
-
-    @property
-    def open_ended(self) -> bool:
-        """Any ``n`` up to the limit is designed (multi-hue, cyclic)."""
-        match self:
-            case Kind.MULTI_HUE | Kind.CYCLIC:
-                return True
-            case Kind.SEQUENTIAL | Kind.DIVERGING | Kind.QUALITATIVE:
-                return False
-            case _:
-                assert_never(self)
-
-
-# The most stops each kind's designed discrete form has (None: no limit
-# beyond ``Family.size``).
-MOST: dict[Kind, int] = {
-    Kind.SEQUENTIAL: 10,
-    Kind.DIVERGING: 9,
-    Kind.MULTI_HUE: 8,
-    Kind.CYCLIC: 24,
-}
-
-
-@dataclass(frozen=True)
-class Family:
-    """A ``dc.*`` family: its name, kind, and the values its forms draw on.
-
-    ``stops`` is the designed row: the 10-step ladder (sequential), the
-    8-stop canonical row (diverging), or the set (qualitative). ``cmap`` is
-    the 256-step colormap (empty for qualitative). ``picks`` holds the
-    frozen colormap indices of a multi-hue family's forms, by ``n``.
-    """
-
-    name: str
-    kind: Kind
-    stops: tuple[Hex, ...] = ()
-    cmap: tuple[Hex, ...] = ()
-    picks: tuple[tuple[int, ...], ...] = ()
-
-    @property
-    def size(self) -> int | None:
-        """Stops in the designed form; None for multi-hue and cyclic."""
-        if self.kind.open_ended:
-            return None
-        return len(self.stops)
-
-    @property
-    def most(self) -> int:
-        """The largest ``n`` the family's discrete form accepts."""
-        return MOST.get(self.kind) or len(self.stops)
-
-
-@dataclass(frozen=True)
-class Count:
-    """How many colours a discrete form has: a whole number, at least 1."""
-
-    n: int
-
-    @classmethod
-    def parse(cls, value: object, family: Family) -> Count:
-        """``value`` as a count ``family``'s form has; else ``ValueError``."""
-        if isinstance(value, bool) or not isinstance(value, int):
-            raise ValueError(f"n must be an integer for {family.name!r}")
-        if not 1 <= value <= family.most:
-            raise ValueError(
-                f"{family.name!r} is a {family.kind.value} family with max "
-                f"n={family.most}; got n={value}"
-            )
-        return cls(value)
+    def __iter__(self) -> Iterator[object]:
+        """The items."""
+        ...
 
 
 def real(value: object) -> float:
@@ -242,35 +150,62 @@ class Steps:
     n: int
 
 
-class Space(Enum):
-    """Where a gradient interpolates: OKLCH (the default), OKLab or sRGB."""
+@dataclass(frozen=True)
+class InOklch:
+    """A gradient through OKLCH, the hue the short way round (the default)."""
 
-    OKLCH = "oklch"
-    OKLAB = "oklab"
-    RGB = "rgb"
-
-    @classmethod
-    def parse(cls, text: object) -> Space:
-        """A space name; ``ValueError`` for anything else."""
-        try:
-            return cls(text)
-        except ValueError:
-            raise ValueError(
-                f"Unsupported color space: {text}. "
-                "Must be 'oklch', 'oklab', or 'rgb'"
-            ) from None
+    value: ClassVar[str] = "oklch"
 
 
-class Locale(Enum):
-    """Whose convention the semantic gain/loss colours follow."""
+@dataclass(frozen=True)
+class InOklab:
+    """A gradient along the straight OKLab line."""
 
-    DEFAULT = "default"
-    KR = "kr"
+    value: ClassVar[str] = "oklab"
+
+
+@dataclass(frozen=True)
+class InRgb:
+    """A gradient along the straight sRGB line."""
+
+    value: ClassVar[str] = "rgb"
+
+
+#: Where a gradient interpolates.
+Space = InOklch | InOklab | InRgb
+
+
+def parse_space(text: object) -> Space:
+    """A space name; ``ValueError`` for anything else."""
+    for space in (InOklch(), InOklab(), InRgb()):
+        if text == space.value:
+            return space
+    raise ValueError(
+        f"Unsupported color space: {text}. Must be 'oklch', 'oklab', or 'rgb'"
+    )
+
+
+@dataclass(frozen=True)
+class Locale:
+    """Whose convention the semantic gain/loss colours follow.
+
+    ``red_gains``: gains are red and losses blue (Korea's markets).
+    """
+
+    word: str
+    red_gains: bool
+
+    DEFAULT: ClassVar[Locale]
+    KR: ClassVar[Locale]
 
     @classmethod
     def parse(cls, text: str) -> Locale:
         """``"kr"`` is Korea's convention; anything else the default."""
         return cls.KR if text == "kr" else cls.DEFAULT
+
+
+Locale.DEFAULT = Locale("default", red_gains=False)
+Locale.KR = Locale("kr", red_gains=True)
 
 
 @dataclass(frozen=True)
@@ -295,20 +230,37 @@ class Semantic:
 SEMANTIC_NAMES = ("dc.pos", "dc.neg", "dc.ref", "dc.hl")
 
 
-class PaletteKind(Enum):
-    """What ``dm.make_palette`` encodes."""
+@dataclass(frozen=True)
+class Categorical:
+    """Unordered series: distinct hues."""
 
-    CATEGORICAL = "categorical"
-    SEQUENTIAL = "sequential"
-    DIVERGING = "diverging"
+    value: ClassVar[str] = "categorical"
 
-    @classmethod
-    def parse(cls, text: object) -> PaletteKind:
-        """A palette kind; ``ValueError`` for anything else."""
-        try:
-            return cls(text)
-        except ValueError:
-            raise ValueError(f"Unknown kind: {text!r}") from None
+
+@dataclass(frozen=True)
+class Ordered:
+    """Series in order: one hue, light to dark."""
+
+    value: ClassVar[str] = "sequential"
+
+
+@dataclass(frozen=True)
+class TwoSided:
+    """Series either side of a midpoint: two hues and a grey."""
+
+    value: ClassVar[str] = "diverging"
+
+
+#: What ``dm.make_palette`` encodes.
+PaletteKind = Categorical | Ordered | TwoSided
+
+
+def parse_palette_kind(text: object) -> PaletteKind:
+    """A palette kind; ``ValueError`` for anything else."""
+    for kind in (Categorical(), Ordered(), TwoSided()):
+        if text == kind.value:
+            return kind
+    raise ValueError(f"Unknown kind: {text!r}")
 
 
 @dataclass(frozen=True)
@@ -321,7 +273,7 @@ class PaletteRequest:
     @classmethod
     def parse(cls, n: object, kind: object) -> PaletteRequest:
         """Check ``n`` and ``kind``."""
-        palette_kind = PaletteKind.parse(kind)
+        palette_kind = parse_palette_kind(kind)
         if not isinstance(n, int) or isinstance(n, bool):
             raise TypeError(f"n must be an int, got {type(n).__name__}")
         if n < 0:
@@ -410,21 +362,26 @@ class Lift:
         )
 
 
-class Ink(Enum):
-    """Which of two text colours reads better on a background."""
-
-    LIGHT = "light"
-    DARK = "dark"
+@dataclass(frozen=True)
+class LightInk:
+    """The light text colour reads better."""
 
     def pick(self, light: T, dark: T) -> T:
-        """``light`` for the light ink, ``dark`` for the dark one."""
-        match self:
-            case Ink.LIGHT:
-                return light
-            case Ink.DARK:
-                return dark
-            case _:
-                assert_never(self)
+        """``light``."""
+        return light
+
+
+@dataclass(frozen=True)
+class DarkInk:
+    """The dark text colour reads better."""
+
+    def pick(self, light: T, dark: T) -> T:
+        """``dark``."""
+        return dark
+
+
+#: Which of two text colours reads better on a background.
+Ink = LightInk | DarkInk
 
 
 @dataclass(frozen=True)

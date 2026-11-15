@@ -6,16 +6,14 @@ import pytest
 
 from dartwork_mpl.guide import corpus, decide
 from dartwork_mpl.guide.model import (
-    Check,
     Code,
+    ColorName,
     Known,
     LintFacts,
     Literal,
-    Query,
-    Reference,
     Rules,
-    ref_id,
 )
+from dartwork_mpl.guide.reference import Query, Reference, ref_id
 
 KNOWN = Known(
     colors=frozenset({"red", "dc.blue6", "tab:blue"}),
@@ -90,7 +88,7 @@ def test_unparsable_source_still_gets_the_pattern_rules():
      ("#ggg", False), ("1.5", False), ("dc.blue66", False)],
 )  # fmt: skip
 def test_is_color(value, ok):
-    assert decide.is_color(Literal(Check.COLOR, value, 0), KNOWN) is ok
+    assert decide.is_color(Literal(ColorName(), value, 0), KNOWN) is ok
 
 
 def test_oversized_source_is_refused():

@@ -12,8 +12,10 @@ from itertools import pairwise
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.category import StrCategoryFormatter
 from matplotlib.text import Annotation
+from matplotlib.text import Text as MplText
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
 from matplotlib.transforms import Bbox
 
@@ -62,10 +64,8 @@ from .overlap import (
     pair_gap_px,
     tick_label_overlaps,
 )
-from .walk import reads_as_axes
 
 if TYPE_CHECKING:
-    from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend as MplLegend
@@ -84,7 +84,9 @@ class Reader:
     def __init__(self, fig: Figure) -> None:
         """Draw ``fig`` once so every position is current."""
         self.fig = fig
-        fig.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
+        with walk.recording() as drawn:
+            fig.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
+        self.drawn = drawn
         self.renderer: RendererBase = get_renderer(fig)
         self.pt = fig.dpi / 72.0
         self.skipped: list[str] = []
@@ -99,7 +101,7 @@ class Reader:
             if isinstance(t, Annotation):
                 bb = words_box(t, self.renderer)
             else:
-                bb = walk.text_window_extent(t, self.renderer)
+                bb = self.drawn.extent(t, self.renderer)
         except BBOX_ERRORS:
             return None
         if bb is None or not np.isfinite(bb.extents).all():
@@ -115,26 +117,29 @@ class Reader:
         and a polar or 3D Axes' tick labels too: they have no tick row)."""
         found: list[Text | None] = []
         for i, ax in self.panels:
-            for owner in (ax, *walk.secondary_axes(ax)):
-                titles = {id(t) for t in axes_titles(owner).values()}
-                labels = {id(owner.xaxis.label), id(owner.yaxis.label)}
-                for t in walk.drawn_axes_texts(owner):
-                    role = (
-                        Role.TITLE
-                        if id(t) in titles
-                        else Role.AXIS_LABEL
-                        if id(t) in labels
-                        else Role.PANEL_LETTER
-                        if id(t) in self.letters
-                        else Role.TEXT
-                    )
-                    found.append(self.text(t, role, i))
-                if not flat(owner.name) or owner is not ax:
-                    found.extend(
-                        self.text(t, Role.TICK, i)
-                        for axis in AXES
-                        for t in drawn_tick_labels(owner, axis.mpl)
-                    )
+            titles = {id(t) for t in axes_titles(ax).values()}
+            labels = {id(ax.xaxis.label), id(ax.yaxis.label)}
+            for t in walk.drawn_axes_texts(ax):
+                role = (
+                    Role.TITLE
+                    if id(t) in titles
+                    else Role.AXIS_LABEL
+                    if id(t) in labels
+                    else Role.PANEL_LETTER
+                    if id(t) in self.letters
+                    else Role.TEXT
+                )
+                found.append(self.text(t, role, i))
+            if not flat(ax.name):
+                found.extend(
+                    self.text(t, Role.TICK, i)
+                    for axis in AXES
+                    for t in drawn_tick_labels(ax, axis.mpl)
+                )
+            for secondary in walk.secondary_axes(ax):
+                names, ticks = walk.secondary_texts(secondary, self.drawn)
+                found.extend(self.text(t, Role.AXIS_LABEL, i) for t in names)
+                found.extend(self.text(t, Role.TICK, i) for t in ticks)
         return tuple(t for t in found if t is not None)
 
     def figure_texts(self) -> tuple[Text, ...]:
@@ -148,13 +153,6 @@ class Reader:
         return tuple(t for t in found if t is not None)
 
     # ------------------------------------------------------------ ticks
-    def _sup_label(self, ax: Axes, which: Axis) -> bool:
-        fig = ax.get_figure(root=False)
-        sup = getattr(fig, which.pick("_supxlabel", "_supylabel"), None)
-        return bool(
-            sup is not None and sup.get_visible() and sup.get_text().strip()
-        )
-
     def tick_row(self, i: int, ax: Axes, which: Axis) -> TickRow | None:
         """One axis' drawn major labels and what they need along it."""
         axis = which.pick(ax.xaxis, ax.yaxis)
@@ -223,7 +221,7 @@ class Reader:
             labelled=bool(
                 axis.label.get_visible() and axis.label.get_text().strip()
             ),
-            labelled_elsewhere=self._sup_label(ax, which)
+            labelled_elsewhere=walk.sup_labelled(ax, which)
             or any(
                 which.pick(a.xaxis, a.yaxis).label.get_text().strip()
                 for a in twins
@@ -270,7 +268,7 @@ class Reader:
             if drawn_in_tree(ax):
                 found.append((i, ax))
                 for child in ax.child_axes:
-                    if reads_as_axes(child):
+                    if isinstance(child, Axes):
                         walk(i, child)
 
         for i, ax in enumerate(self.fig.axes):
@@ -380,8 +378,15 @@ class Reader:
         for t in texts:
             if not t.role.free or t.number is None or t.panel is None:
                 continue
-            ax = getattr(t.handle, "axes", None)
-            if ax is None or not flat(ax.name) or not plain_label(t.handle, ax):
+            handle = t.handle
+            if not isinstance(handle, MplText):
+                continue
+            ax = handle.axes
+            if (
+                not isinstance(ax, Axes)
+                or not flat(ax.name)
+                or not plain_label(handle, ax)
+            ):
                 continue
             if id(ax) not in inks:
                 frame = ax.get_window_extent(self.renderer)

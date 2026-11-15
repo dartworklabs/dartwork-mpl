@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Mapping
 from importlib.resources import files
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TYPE_CHECKING
 
 import matplotlib as mpl
 from matplotlib import RcParams
@@ -12,8 +13,6 @@ from matplotlib import RcParams
 from .model import Points, Registry, Weight
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from matplotlib.typing import RcKeyType
 
 ASSETS = files(__package__ or __name__) / "assets"
@@ -68,16 +67,16 @@ def edits(values: Mapping[str, object]) -> dict[str, object]:
     return found
 
 
-def known(key: str) -> TypeGuard[RcKeyType]:
-    """``key`` names an rcParam matplotlib has."""
-    return key in mpl.rcParamsDefault
+#: Every rcParam name matplotlib has, by its text.
+RC_KEYS: Mapping[str, RcKeyType] = {key: key for key in mpl.rcParamsDefault}
 
 
 def rc_key(key: str) -> RcKeyType:
     """``key`` as an rcParam name; ``KeyError`` for one matplotlib lacks."""
-    if known(key):
-        return key
-    raise KeyError(f"{key!r} is not a matplotlib rcParam")
+    found = RC_KEYS.get(key)
+    if found is None:
+        raise KeyError(f"{key!r} is not a matplotlib rcParam")
+    return found
 
 
 def in_force(values: Mapping[str, object]) -> bool:
@@ -90,8 +89,9 @@ def in_force(values: Mapping[str, object]) -> bool:
     defaults = mpl.rcParamsDefault
     changed: list[RcKeyType] = []
     for key, value in values.items():
-        if known(key) and differs(value, defaults[key]):
-            changed.append(key)
+        rc = RC_KEYS.get(key)
+        if rc is not None and differs(value, defaults[rc]):
+            changed.append(rc)
     if not changed:
         return bool(values)
     return not all(differs(mpl.rcParams[key], values[key]) for key in changed)

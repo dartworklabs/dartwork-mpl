@@ -20,20 +20,32 @@ from typing import assert_never
 
 import numpy as np
 
+from .family import (
+    Count,
+    Cyclic,
+    Diverging,
+    Family,
+    MultiHue,
+    Qualitative,
+    Sequential,
+)
 from .model import (
     Catalog,
+    Categorical,
     ContrastFacts,
-    Count,
+    DarkInk,
     DivergingSource,
-    Family,
     Form,
     Gradient,
     Ink,
-    Kind,
+    InOklab,
+    InOklch,
+    InRgb,
     Lift,
+    LightInk,
     Lookup,
     Name,
-    PaletteKind,
+    Ordered,
     PaletteRequest,
     Ratio,
     Semantic,
@@ -41,6 +53,7 @@ from .model import (
     Space,
     Steps,
     Suggestions,
+    TwoSided,
     Weight,
 )
 from .space import Color, Hex, Oklab, Oklch, Rgb, Rgba
@@ -73,20 +86,22 @@ def discrete(form: Form) -> tuple[Hex, ...]:
     """The designed ``n``-colour form of a family, lightest or first first."""
     family, n = form.family, form.n
     match family.kind:
-        case Kind.SEQUENTIAL:
+        case Sequential():
             colours = sequential(family, n)
-        case Kind.DIVERGING:
+        case Diverging():
             colours = diverging(family, n)
-        case Kind.MULTI_HUE:
+        case MultiHue():
             colours = tuple(family.cmap[i] for i in family.picks[n.n - 1])
-        case Kind.CYCLIC:
+        case Cyclic():
             size = len(family.cmap)
             colours = tuple(
                 family.cmap[min(int(i * size / n.n), size - 1)]
                 for i in range(n.n)
             )
-        case Kind.QUALITATIVE:
+        case Qualitative():
             colours = family.stops[: n.n]
+        case _:
+            assert_never(family.kind)
     return colours
 
 
@@ -128,11 +143,11 @@ def gradient(
     """``steps`` colours from ``start`` to ``end`` in ``space``: OKLCH the
     hue the short way round, OKLab or sRGB the straight line."""
     match space:
-        case Space.OKLCH:
+        case InOklch():
             return sample(ends(start, end), steps)
-        case Space.OKLAB:
+        case InOklab():
             return oklab_line(start, end, steps)
-        case Space.RGB:
+        case InRgb():
             return rgb_line(start, end, steps)
         case _:
             assert_never(space)
@@ -232,8 +247,8 @@ def lift(facts: ContrastFacts) -> Lift | None:
 def readable(background: Rgb, light: Rgb, dark: Rgb) -> Ink:
     """The ink with the higher contrast on ``background``; light on a tie."""
     if contrast(light, background).value >= contrast(dark, background).value:
-        return Ink.LIGHT
-    return Ink.DARK
+        return LightInk()
+    return DarkInk()
 
 
 # -- names ---------------------------------------------------------------------
@@ -311,12 +326,14 @@ def palette(request: PaletteRequest) -> tuple[Name, ...]:
     """
     few = request.n <= 5
     match request.kind:
-        case PaletteKind.CATEGORICAL:
+        case Categorical():
             base = CATEGORICAL
-        case PaletteKind.SEQUENTIAL:
+        case Ordered():
             shades = range(3, 8) if few else range(1, 10)
             base = tuple(Name(f"oc.blue{i}") for i in shades)
-        case PaletteKind.DIVERGING:
+        case TwoSided():
             base = DIVERGING_FEW if few else DIVERGING_MANY
+        case _:
+            assert_never(request.kind)
     repeats = request.n // len(base) + 1
     return (base * repeats)[: request.n]
