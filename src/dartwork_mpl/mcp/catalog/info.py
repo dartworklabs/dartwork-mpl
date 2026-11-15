@@ -41,9 +41,9 @@ def info_payload() -> str:
     """
     # The style slice's preset registry, so this stays in sync with the
     # presets ``dm.style.use`` accepts.
-    from ...style import style as shipped_style
+    from ...style import presets
 
-    composite_presets = sorted(shipped_style.presets_dict())
+    composite_presets = sorted(presets)
 
     return json.dumps(
         {
@@ -51,9 +51,9 @@ def info_payload() -> str:
             "version_surface": _version_surface(),
             "description": "Publication-quality matplotlib design system",
             "design_system_apis": {
-                "semantic_tokens": (
-                    "dm.tokens.fs_*/lw_*/space/scatter_size + as_dict()/version()"
-                    " - preset-tracking design tokens"
+                "preset_relative_sizes": (
+                    "dm.fs(n) / dm.lw(n) / dm.fw(n) - the preset's font size, "
+                    "line width and weight moved by n steps"
                 ),
                 "locale_formatters": (
                     "dm.format_axis_myriad (East-Asian 10^4 labels), "

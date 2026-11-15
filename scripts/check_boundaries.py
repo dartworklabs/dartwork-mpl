@@ -67,7 +67,6 @@ ENTRY_POINTS = frozenset(
 PLATFORM = frozenset(
     {
         "dartwork_mpl._figure_geometry",
-        "dartwork_mpl._rc",
         # The edge-case registry every slice's edges.py appends to.
         "dartwork_mpl.edgecase",
         # MCP process capture and asset confinement.
@@ -78,9 +77,6 @@ PLATFORM = frozenset(
 # Units holding one capability each.
 SLICES = frozenset(
     {
-        # Removed public names: the one registry of their migration
-        # metadata, and the root __getattr__'s rejection.
-        "dartwork_mpl._compat",
         "dartwork_mpl.color",
         "dartwork_mpl.config",
         "dartwork_mpl.figure_review",
@@ -100,11 +96,9 @@ SLICES = frozenset(
         "dartwork_mpl.mcp.plot_data",
         "dartwork_mpl.mcp.templates",
         "dartwork_mpl.save",
-        "dartwork_mpl.scale",
         "dartwork_mpl.size",
         "dartwork_mpl.style",
         "dartwork_mpl.ticks",
-        "dartwork_mpl.tokens",
         "dartwork_mpl.validate",
     }
 )
@@ -159,7 +153,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.labels", "dartwork_mpl.ticks"): (
         "bar value labels print in their axis's tick unit, like the ticks"
     ),
-    ("dartwork_mpl.labels", "dartwork_mpl.scale"): (
+    ("dartwork_mpl.labels", "dartwork_mpl.style"): (
         "label text is sized and weighted relative to the active preset"
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.labels"): (
@@ -212,9 +206,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (
         "the capability summary lists the presets dm.style.use accepts"
-    ),
-    ("dartwork_mpl.scale", "dartwork_mpl.style"): (
-        "the active preset sets how many points one fs / lw step adds (2.6 on slides)"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
@@ -278,6 +269,12 @@ DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.labels.model": (
         "parsing label_bars' keywords needs nothing outside it"
     ),
+    "dartwork_mpl.style.decide": (
+        "which layers apply and what a step is worth decide from presets alone"
+    ),
+    "dartwork_mpl.style.model": (
+        "parsing a preset request needs nothing outside it"
+    ),
     "dartwork_mpl.save.decide": (
         "which files to write is decided from the parsed request alone"
     ),
@@ -316,7 +313,7 @@ DEBT: Mapping[str, str] = {}
 
 # Package paths that hold user-facing sample code, not package source: the
 # bundled templates (they import `dartwork_mpl` as any user would).
-EXCLUDED_DIRS = (("asset",), ("guide", "assets"))
+EXCLUDED_DIRS = (("guide", "assets"),)
 
 
 @dataclass(frozen=True)

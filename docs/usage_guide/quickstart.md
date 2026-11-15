@@ -127,7 +127,7 @@ weight and stroke width.
 | `poster`       | 12.0                  | 14.0                    |
 | `minimal`      | 7.5                   | 9.5                     |
 
-Source of truth: `src/dartwork_mpl/asset/mplstyle/font-*.mplstyle`. If
+Source of truth: `src/dartwork_mpl/style/assets/font-*.mplstyle`. If
 those values change, regenerate this table.
 
 ## Choosing a purpose and canvas
@@ -289,8 +289,8 @@ fig, ax = plt.subplots(figsize=dm.figsize(dm.cm(11.3), "square"))
 dm.style.use("scientific")
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 
-# Stacked styles
-dm.style.stack(["font-report", "theme-dark"])
+# Several presets in order
+dm.style.use(["report", "dark"])
 fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
 
 # Academic-column shortcuts

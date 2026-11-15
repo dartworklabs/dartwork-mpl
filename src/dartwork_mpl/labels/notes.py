@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
-from ..scale import fs, fw
+from ..style import fs, fw
 from . import decide
 from .measure import (
     drawn_renderer,

@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from cycler import Cycler, cycler
 from matplotlib.axes import Axes
 
-from .._rc import rc_lock
 from .model import Catalog, Kind, Semantic
 
 LINESTYLES = ("-", "--", ":")
@@ -64,9 +63,8 @@ def color_cycle(colours: Sequence[str], styles: bool) -> Cycler[str, str]:
 
 
 def set_cycle(cycle: Cycler[str, str], ax: Axes | None) -> None:
-    """Set ``cycle`` on ``ax``, or as the global default under the rc lock."""
+    """Set ``cycle`` on ``ax``, or as the global default."""
     if ax is not None:
         ax.set_prop_cycle(cycle)  # pyright: ignore[reportUnknownMemberType]
         return
-    with rc_lock:
-        plt.rcParams["axes.prop_cycle"] = cycle
+    plt.rcParams["axes.prop_cycle"] = cycle

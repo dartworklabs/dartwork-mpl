@@ -13,7 +13,7 @@ from matplotlib.text import Annotation, Text
 
 from .._figure_geometry import PANEL_LABELS_ATTR
 from ..edgecase import settle
-from ..scale import fs
+from ..style import fs
 from . import decide, edges
 from .measure import drawn_renderer, panel, px_per_pt
 from .model import PanelsFacts

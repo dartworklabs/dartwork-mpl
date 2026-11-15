@@ -1,8 +1,8 @@
 """
-Myriad Labels with Tokens and Grid Sizing
-=========================================
+Myriad Labels with Grid Sizing
+==============================
 
-This example combines per-panel physical sizing, semantic design tokens, and
+This example combines per-panel physical sizing, the preset's sizes, and
 East-Asian myriad axis labels. The same cumulative observation count series is
 shown with Korean and Japanese 10^4 labels so large counts remain compact
 without changing the underlying data.
@@ -33,9 +33,9 @@ panels = [
 ]
 
 for ax, locale, title in panels:
-    ax.plot(years, observations, linewidth=dm.tokens.lw_trend())
-    ax.scatter(years, observations, s=dm.tokens.scatter_size())
-    ax.set_title(title, fontsize=dm.tokens.fs_title())
+    ax.plot(years, observations)
+    ax.scatter(years, observations)
+    ax.set_title(title)
     ax.set_xlabel("Year")
     ax.set_ylabel("Cumulative observations")
     dm.format_axis_myriad(ax, axis="y", locale=locale)

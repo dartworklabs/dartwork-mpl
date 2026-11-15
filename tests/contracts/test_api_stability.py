@@ -7,12 +7,6 @@ import inspect
 import dartwork_mpl as dm
 
 
-def test_removed_names_are_not_advertised() -> None:
-    from dartwork_mpl._compat import _REMOVED_NAMES
-
-    assert set(_REMOVED_NAMES) & set(dm.__all__) == set()
-
-
 def test_all_public_names_are_importable() -> None:
     for name in dm.__all__:
         getattr(dm, name)

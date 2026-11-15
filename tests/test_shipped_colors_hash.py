@@ -78,8 +78,8 @@ def _colormap_surface() -> list[str]:
 def _preset_declared_keys(preset: str) -> set[str]:
     """rcParam keys the preset's bundled .mplstyle chain sets."""
     keys: set[str] = set()
-    for style_name in style.presets_dict()[preset]:
-        keys.update(dm.load_style_dict(style_name))
+    for style_name in style.presets[preset]:
+        keys.update(style.load_style_dict(style_name))
     return keys
 
 
@@ -90,7 +90,7 @@ def _preset_surface() -> list[str]:
     # grid.minor.color) without dartwork-mpl shipping anything different.
     rows = []
     with mpl.rc_context():
-        for preset in sorted(style.presets_dict()):
+        for preset in sorted(style.presets):
             declared = _preset_declared_keys(preset)
             style.use(preset)
             cycle = ",".join(

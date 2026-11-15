@@ -123,7 +123,7 @@ After installation, verify that **dartwork-mpl** is properly installed and acces
 import dartwork_mpl as dm
 
 print(dm.__version__)     # Current installed version
-print(dm.list_styles())   # Available style presets
+print(sorted(dm.style.presets))   # Available style presets
 ```
 
 If these commands run without errors, you're all set! 🎉

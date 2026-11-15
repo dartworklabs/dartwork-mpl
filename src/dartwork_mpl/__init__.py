@@ -11,7 +11,6 @@ utility functions for Matplotlib visualizations.
 # ``dm.PackageNotFoundError`` used to resolve).
 from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
 from importlib.metadata import version as _metadata_version
-from typing import NoReturn as _NoReturn
 
 # Derive the version from the installed distribution metadata so there
 # is a single source of truth. For a built/released wheel this always
@@ -29,7 +28,7 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # (validate_fixes is the auto-fix companion to validate). F401 is
 # silenced because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
-from . import font, guide, tokens, validate_fixes
+from . import font, guide, style, validate_fixes
 
 # Colour names and values (importing it registers them with matplotlib)
 from .color import (
@@ -79,10 +78,8 @@ from .layout import (
 )
 from .legend import figure_legend, place_legend
 
-# Scaling helpers
 # Saving
 from .save import save_formats
-from .scale import dpi, fs, fw, lw
 
 # Physical units and figure size
 from .size import (
@@ -99,8 +96,8 @@ from .size import (
     pt,
 )
 
-# Import style module exports
-from .style import Style, list_styles, load_style_dict, style, style_path
+# Presets and preset-relative sizes
+from .style import fs, fw, lw
 
 # Tick text
 from .ticks import (
@@ -177,14 +174,8 @@ __all__ = [  # noqa: RUF022
     "ensure_contrast",
     "readable_text_color",
     # Icon module
-    # Style module
-    "Style",
-    "list_styles",
-    "load_style_dict",
+    # Presets and preset-relative sizes
     "style",
-    "style_path",
-    # Scaling helpers
-    "dpi",
     "fs",
     "fw",
     "lw",
@@ -208,7 +199,6 @@ __all__ = [  # noqa: RUF022
     "figsize_for",
     "grid_shape",
     "list_aspect_tokens",
-    "tokens",
     # Point-unit offsets
     # Formatting
     "set_decimal",
@@ -258,17 +248,3 @@ __all__ = [  # noqa: RUF022
 # all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl.color``
 # import above.
 font.ensure_loaded()
-
-
-from ._compat import missing_attribute as _missing_attribute
-
-
-def __getattr__(name: str) -> _NoReturn:
-    """Surface removed-name migration hints.
-
-    Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.subplots`` /
-    ``dm.install_llm_txt`` / ``dm.FS_SINGLE`` would raise Python's
-    default ``AttributeError`` with no pointer to the replacement. See
-    docs/migration.md for the full mapping.
-    """
-    _missing_attribute(name)

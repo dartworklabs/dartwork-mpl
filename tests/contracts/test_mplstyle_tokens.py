@@ -23,8 +23,8 @@ _MPLSTYLE_DIR = (
     Path(__file__).resolve().parents[2]
     / "src"
     / "dartwork_mpl"
-    / "asset"
-    / "mplstyle"
+    / "style"
+    / "assets"
 )
 
 # rc keys whose ``dc.*``-prefixed value names a *colormap* (registered in

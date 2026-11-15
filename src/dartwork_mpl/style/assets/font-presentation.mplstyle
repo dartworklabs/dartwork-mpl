@@ -4,10 +4,9 @@
 # so a chart drawn here looks like a column figure enlarged as a vector to
 # the slide: text, lines, markers, tick lengths and pads all grow together.
 # Every slide chart uses the same factor, whatever its width.
-# style/tests/test_presentation_scale.py checks each value below against
-# scientific x 2.6, so change the scientific values and these together.
-# dm.fs / dm.lw take 2.6 pt steps under this preset
-# (dartwork_mpl.style.step_pt).
+# style/tests/test_surface.py checks the sizes below against scientific
+# x 2.6, so change the scientific values and these together.
+# dm.fs / dm.lw take 2.6 pt steps under this preset (the slide-step edge).
 
 font.weight:  light
 font.size:    19.5
