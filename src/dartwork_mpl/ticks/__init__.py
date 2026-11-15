@@ -32,7 +32,7 @@ from ..align import (
 )
 from ..axis import Letter, Letters, Which, X, Y, parse_axes, parse_which
 from ..geometry import axis_of, shared_axes
-from ..number import AffixedZero, TickScale
+from ..number import AffixedZero
 from .apply import figure_ladder, prepare, remember_dates, thin_dates
 from .dates import CategoryDateFormatter, category_locator
 from .defaults import config
@@ -69,7 +69,6 @@ from .text import number_text, recommend_tick_decimals, value_label_decimals
 from .twins import drawn_like_twin, settled_twin_spines
 
 __all__ = [
-    "TickScale",
     "Unit",
     "axis_unit",
     "axis_unit_of",

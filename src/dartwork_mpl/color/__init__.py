@@ -52,7 +52,6 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
 __all__ = [
-    "Color",
     "apply_semantic",
     "color",
     "colors",

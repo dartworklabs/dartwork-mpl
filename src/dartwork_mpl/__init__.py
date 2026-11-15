@@ -31,7 +31,6 @@ from .check import check
 
 # Colour names and values (importing it registers them with matplotlib)
 from .color import (
-    Color,
     color,
     colors,
     cspace,
@@ -47,6 +46,9 @@ from .color import (
     rgb,
     set_colors,
 )
+
+# Colour values
+from .colorspace import Color
 from .compose import style
 
 # Value labels, panel letters, notes (sized by the active preset)
