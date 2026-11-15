@@ -1,4 +1,4 @@
-# Render, inspect, revise
+# Render, check, inspect, revise
 
 Run this loop for every figure and again for every revision. A figure is
 done when you have looked at the saved PNG, not when the script ran.
@@ -17,18 +17,16 @@ ax.set(xlabel="Time (s)", ylabel="Signal")
 dm.place_legend(ax)
 dm.simple_layout(fig)
 
-r = dm.review(fig, "output/figure-v1")  # PNG + PDF, every finding, a summary
-for finding in r.findings:
-    print(finding.severity.value, finding.check_id, finding.message)
-plt.close(fig)
+found = dm.check(fig)  # changes nothing in the figure
+print(found)           # one line per defect, its fix under it
+dm.save_formats(fig, "output/figure-v1")
 ```
 
-`dm.review` saves with `dm.save_formats`, runs every `dm.validate_figure` check
-on the saved figure and keeps the findings as they are, and writes
-`output/figure-v1.review.json` with a summary of what the figure shows (titles,
-axis labels, ranges, tick labels, series, legend, text outside the canvas).
-It fixes nothing. `r.complete` is `False` when a check could not run
-(`CHECK_FAILED`); `True` is not a pass, only "every check ran".
+`dm.check` measures the drawn figure and reports what makes it ugly or
+unreadable; it fixes nothing. Each finding has `rule`, `severity`,
+`message`, `fix`, and the `artists` and `panels` involved;
+`found.of("OVERLAP")` picks one rule. `NOT RUN` in the report means a rule
+could not measure this figure: it is not proven clean, say so.
 
 ## Look at the image
 
@@ -38,13 +36,8 @@ Open `output/figure-v1.png` with your image-viewing tool. Check that:
   readable at the printed size;
 - nothing overlaps: text on text, legend on data, labels between panels;
 - the plotted data matches the input (count, gaps, order, units);
-- tick and value labels carry no meaningless decimals: `200`, `0`, `1k, 2k`,
-  not `200.0`, `0.0`, `1.0k, 2.0k`; non-integer values get the decimals the
-  data need, the same count along an axis (`17.5, 20.0, 22.5` is fine);
-- one axis uses one unit (`0.5M, 1.0M`, not `500k, 1M`). The SI, myriad,
-  millions and billions formatters choose decimals and the SI and myriad
-  ones the largest tick's unit by default; an explicit `decimals=` or
-  `unit=` is used exactly, so set it to what the values need;
+- tick and value labels carry no meaningless decimals (`200`, `1k`, not
+  `200.0`, `1.0k`) and one axis uses one unit;
 - no glyph boxes: every Korean, Japanese or other non-Latin character shows;
 - panel sizes and empty space look intended.
 
@@ -53,56 +46,32 @@ figure was reviewed.
 
 ## Read the findings
 
-WARNING findings are defects to fix or explain; INFO findings are hints.
+Fix every WARNING; weigh each INFO. The fix line names the usual remedy.
 
-| check_id | Means | Usual fix |
-|---|---|---|
-| `OVERFLOW`, `CLIPPED_TEXT` | text outside the canvas or axes | `dm.simple_layout(fig)` after the last artist; `margin=` |
-| `OVERLAP`, `CROSS_AXES_OVERLAP` | text collides | `dm.simple_layout(fig)` (it widens `hspace`/`wspace` nobody set); a spacing you set: raise it |
-| `TICK_OVERLAP` | neighbouring tick labels overlap after the layout | a rotation you set: remove it and lay out again; else a horizontal bar chart or a wider canvas (the user's call: report it) |
-| `TICK_CORNER_OVERLAP` | an x tick label on a y tick label at a corner | the `fig.axes[i].tick_params(axis=..., which=..., pad=...)` the fix names (a twin's Axes, minor ticks when theirs collide); never move the limits or hide a label |
-| `LEGEND_OVERFLOW` | legend too large, off the canvas, or outside at over half the plot's size | many lines: `dm.label_line_ends(ax)`; else fewer columns, shorter names |
-| `LEGEND_OVERLAP` | legend covers a title, axis or tick label | `dm.place_legend(ax)` (the side the user named, if any), then `simple_layout` |
-| `LEGEND_ON_DATA` | legend covers data, a text, another legend or panel | `dm.place_legend(ax)`, then `simple_layout`; panels sharing series: `dm.figure_legend(fig)`; many lines: `dm.label_line_ends(ax)` |
-| `TICK_CROWD`, `TICK_ROTATION` (INFO) | crowded or rotated tick labels | numbers: `MaxNLocator(nbins=5)`; category names: leave wrapping and turning to `dm.simple_layout` |
-| `TICK_DECIMAL`, `UNIT_DUP` | odd precision, unit repeated | `dm.set_decimal(ax, yn=1)`, unit in the axis label only |
-| `VALUE_LABEL_ON_DATA` | a value label sits on a bar, line or marker | bars: `dm.label_bars(ax)`; points: `dm.annotate_value(ax, x, y, text)` |
-| `MIN_FONT_SIZE`, `TEXT_CONTRAST` | text too small or faint | `dm.fs(0)` or larger, darker colour |
-| `MARGIN_ASYMMETRY`, `EMPTY_AXES` | lopsided margins, empty panel | rerun `simple_layout`, remove the panel |
-| `GRAYSCALE_SAFETY` (INFO) | similar grey values | mention it; change colours only when asked |
-| `PRESET_OVERRIDE` (INFO) | grid, spines or background differ from the preset | keep the change only if the user asked; else delete the call |
-| `SLIDE_OVERSIZE` | a slide-preset figure is larger than a slide, so its text shrinks when placed | redraw at `dm.figsize_for("full_slide")` (25.4 × 14.29 cm) or `dm.figsize_for("slide")` under a title |
-| `CHECK_FAILED` | a check could not run | the check is incomplete; say so |
+| rule | Means |
+|---|---|
+| `OVERFLOW` | text cut off by the canvas edge |
+| `TEXT_AT_EDGE` (INFO) | text flush with the canvas edge: `dm.simple_layout(fig, margin="1mm")` |
+| `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels |
+| `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
+| `LEGEND_OVERFLOW`, `LEGEND_OVERLAP`, `LEGEND_ON_DATA` | legend too big, over a title or label, over data |
+| `VALUE_LABEL_ON_DATA`, `VALUE_LABEL_DECIMAL` | a value label hides data, or prints `120.0` |
+| `TICK_OVERLAP`, `TICK_CROWD`, `TICK_CORNER_OVERLAP` | tick labels collide or crowd |
+| `TICK_DECIMAL` | ticks print `2.0`, mixed or repeated decimals |
+| `MISSING_AXIS_LABEL` (INFO) | numbers on an axis nothing names |
+| `TEXT_CONTRAST` | text too faint on its background |
+| `EMPTY_AXES` (INFO), `MARGIN_ASYMMETRY` | an empty panel, one wide empty margin |
 
-A twin-axes pair can report `CROSS_AXES_OVERLAP` for its shared x ticks;
-that one is a false positive.
+An "only X" edit keeps the warnings the original already had: report them,
+do not fix them.
 
 ## Revise
 
 1. Change only what the image, a WARNING or the user asked for.
-2. Review under the next stem against v1 and keep v1. If the user named an
+2. Save under the next stem (`figure-v2`) and keep v1. If the user named an
    output path, write the final version there too.
-3. Look at the new PNG again.
-4. Report what changed, which warnings remain and why.
-
-```python
-fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
-ax.plot(x, np.sin(x), label="Measured")
-ax.plot(x, np.cos(x), label="Model")
-ax.set(xlabel="Time (s)", ylabel="Signal (V)")  # the asked change
-dm.place_legend(ax)
-dm.simple_layout(fig)
-r2 = dm.review(fig, "output/figure-v2", baseline="output/figure-v1",
-               allow=["axes[0].ylabel.*"])
-print([(c.path, c.before, c.after) for c in r2.unexpected])
-plt.close(fig)
-```
-
-`r2.changes` lists every summary entry that differs from v1 by path
-(`axes[0].ylabel.text`, `axes[0].series[1].color`, `figure.size_in`, a
-series' `data` digest …); `allow=` names the paths you meant to change (`*`
-is the only wildcard) and `r2.unexpected` is the rest. The list judges
-nothing: explain or undo each unexpected change.
+3. `dm.check` again and look at the new PNG.
+4. Report what changed, which findings remain and why.
 
 Lint a script before running it: `dm.lint_code(Path("plot.py").read_text())`
 returns findings with `rule_id`, `severity`, `line`, `message` and `fix`; fix

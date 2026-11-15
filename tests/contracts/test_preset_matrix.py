@@ -6,7 +6,7 @@ labels), save PNG+PDF to a temporary directory, and assert that:
 
     1. ``dm.style.use(preset)`` does not raise.
     2. ``dm.save_formats`` writes both files with > 1 KB each.
-    3. ``dm.validate_figure`` reports no WARNING-level findings on
+    3. ``dm.check`` reports no WARNING-level findings on
        the trivially clean chart (INFO findings — e.g. EMPTY_AXES on
        a zero-data axes — are not emitted here because the chart has
        data).
@@ -14,7 +14,7 @@ labels), save PNG+PDF to a temporary directory, and assert that:
 
 Why a separate file: ``src/dartwork_mpl/style/tests`` covers
 preset *loading* but not the round-trip through ``save_formats`` and
-``validate_figure``. This matrix proves that every advertised preset
+``dm.check``. This matrix proves that every advertised preset
 actually produces a savable, validation-clean figure end-to-end.
 """
 
@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl.validate import Severity
+from dartwork_mpl.check import Severity
 
 _MIN_FILE_BYTES: int = 1024
 
@@ -107,11 +107,10 @@ def test_preset_round_trip(preset: str, tmp_path: Path) -> None:
     )
     _assert_embedded_truetype(pdf_path)
 
-    warnings = dm.validate_figure(fig, quiet=True)
-    severe = [w for w in warnings if w.severity == Severity.WARNING]
+    severe = [w for w in dm.check(fig) if w.severity == Severity.WARNING]
     assert severe == [], (
         f"{preset}: WARNING-level findings on a trivial chart — "
-        f"{[(w.check_id, w.message) for w in severe]}"
+        f"{[(w.rule, w.message) for w in severe]}"
     )
 
     plt.close(fig)

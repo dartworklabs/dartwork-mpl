@@ -4,12 +4,12 @@
 Each entry in scenarios.SCENARIOS is run through the same pipeline:
 
     1. Build the figure via the scenario's builder function.
-    2. Run dm.validate_figure pre-layout and check that
+    2. Run dm.check pre-layout and check that
        scenario.expect_warnings substrings appear in the warning ids.
     3. Apply dm.simple_layout to give the layout a chance to converge.
     4. Save to PNG via dm.save_formats so we know the
        saved bytes are well-formed.
-    5. Re-run dm.validate_figure post-layout and check that
+    5. Re-run dm.check post-layout and check that
        scenario.forbid_warnings substrings are absent.
     6. Apply each scenario.pixel_checks against the post-save figure.
 
@@ -55,8 +55,7 @@ def test_robustness_scenario(
     fig = scenario.build()
 
     # Stage 1: pre-layout validation.
-    pre_warnings = dm.validate_figure(fig, quiet=True)
-    pre_ids = {w.check_id for w in pre_warnings}
+    pre_ids = {w.rule for w in dm.check(fig)}
     for must_have in scenario.expect_warnings:
         assert any(must_have in cid for cid in pre_ids), (
             f"{scenario.name}: expected pre-layout check "
@@ -84,8 +83,7 @@ def test_robustness_scenario(
     )
 
     # Stage 4: post-layout validation — forbidden warnings must not appear.
-    post_warnings = dm.validate_figure(fig, quiet=True)
-    post_ids = {w.check_id for w in post_warnings}
+    post_ids = {w.rule for w in dm.check(fig)}
     for forbidden in scenario.forbid_warnings:
         assert all(forbidden not in cid for cid in post_ids), (
             f"{scenario.name}: post-layout still has forbidden "

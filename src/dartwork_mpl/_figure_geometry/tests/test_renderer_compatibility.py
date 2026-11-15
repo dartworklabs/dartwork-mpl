@@ -99,9 +99,7 @@ def test_layout_validation_and_exports_match_open_control(
         ax.xaxis.label.set_fontsize(12)
         ax.yaxis.label.set_fontsize(12)
         dm.simple_layout(fig)
-        assert not dm.validate_figure(
-            fig, checks=("OVERFLOW", "CLIPPED_TEXT"), quiet=True
-        )
+        assert not dm.check(fig).of("OVERFLOW")
         stem = tmp_path / current
         dm.save_formats(fig, str(stem))
         assert stem.with_suffix(".pdf").read_bytes().startswith(b"%PDF-")

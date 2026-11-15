@@ -12,13 +12,9 @@ Two kinds of request:
 
 Either way: keep the original script and its outputs, write the revision as
 a new script (`plot-v2.py`) with a new output stem (`figure-v2`), render it
-and look at the PNG before you answer. `dm.review(fig, "output/figure-v2",
-baseline="output/figure-v1", allow=[...])` lists every summary entry that
-differs from the original (`axes[0].ylabel.size`, `axes[0].series[1].color`,
-`figure.size_in`, a series' `data` digest …). `allow=` names the paths you
-meant to change (`*` is the only wildcard: `axes[*].position`), and
-`r.unexpected` is everything else: for an "only X" edit it should be empty or
-explained. The list judges nothing; you do.
+and look at the PNG before you answer. Put the two PNGs side by side: for an
+"only X" edit nothing but X may differ. `dm.check(fig)` on the original and on
+the revision says which defects the change added or removed.
 
 ## Find the target with getters
 
@@ -45,7 +41,8 @@ left.legend()
 right.plot(x, np.sin(x) * 0.1)
 right.set(title="Error", xlabel="Time (s)")
 dm.simple_layout(fig)
-original = dm.review(fig, "output/figure-v1")  # the original's files, findings, summary
+before = dm.check(fig)  # the original's defects, before any change
+dm.save_formats(fig, "output/figure-v1")
 
 # A panel by its title; titles have three slots: loc="center", "left", "right".
 error_ax = next(a for a in fig.axes if a.get_title() == "Error")
@@ -118,16 +115,13 @@ for t in (panel_a.xaxis.label, panel_a.yaxis.label):
 model.set_linewidth(model.get_linewidth() + 0.5)
 error_ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
 dm.simple_layout(fig)            # text grew: refit with the script's own arguments
-r = dm.review(fig, "output/figure-v2", baseline="output/figure-v1", allow=[
-    "axes[0].xlabel.size", "axes[0].ylabel.size",  # the asked label step
-    "axes[0].series[1].width", "axes[1].yticks.*",  # the line, the ticks
-    "axes[*].position",                             # the refit
-])
-print([c.path for c in r.unexpected])  # anything else that moved
+after = dm.check(fig)
+print(set(after.rules) - set(before.rules))  # defects the change added
+dm.save_formats(fig, "output/figure-v2")
 plt.close(fig)
 ```
 
-Validate the original before the change. A WARNING it already has is not
+Check the original before the change. A WARNING it already has is not
 the change's: it stays and goes in the report (an "only X" edit fixes
 nothing else). When the asked change itself makes a legend cover text,
 its own panel's or another's (a `LEGEND_OVERLAP` WARNING the original did

@@ -30,16 +30,17 @@ if TYPE_CHECKING:
 
 
 def check_figure(fig: Figure) -> list[dict[str, str]]:
-    """The figure checker the report quotes: the one adapter to repoint.
-
-    Wraps ``dm.validate_figure`` today; when the check slice lands as
-    ``dm.check(fig)``, only this body changes.
-    """
-    from ..validate import validate_figure
+    """What ``dm.check`` finds in the figure, as the report's plain rows."""
+    from ..check import check
 
     return [
-        {"id": w.check_id, "severity": w.severity.value, "message": w.message}
-        for w in validate_figure(fig, quiet=True)
+        {
+            "id": f.rule,
+            "severity": f.severity.value,
+            "message": f.message,
+            "fix": f.fix,
+        }
+        for f in check(fig)
     ]
 
 

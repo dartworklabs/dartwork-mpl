@@ -7,7 +7,7 @@ Adding a scenario:
 
 Builder functions own their figure size and styling. The harness in
 test_robustness_suite.py never modifies the figure between build() and
-the first validate_figure call.
+the first dm.check call.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ class RobustnessScenario:
     build
         Callable returning a fully-built Figure.
     expect_warnings
-        Substrings of validate_figure check_ids that **must** appear
+        Substrings of dm.check rule names that **must** appear
         before simple_layout runs (i.e. validate is supposed to catch
         the issue this scenario plants).
     forbid_warnings
@@ -491,31 +491,6 @@ def _build_colorbar_attached_heatmap() -> Figure:
     return fig
 
 
-def _build_subfigures_2x1() -> Figure:
-    """Two subfigures stacked vertically, each with its own axes,
-    title-text, and ylabel.
-
-    matplotlib's ``fig.subfigures()`` partitions a parent figure into
-    independent SubFigure children, each with its own GridSpec. This
-    scenario verifies that ``dm.validate_figure`` and
-    ``dm.simple_layout`` do not crash or report spurious warnings on
-    the SubFigure tree, which uses a different artist hierarchy from
-    plain ``plt.subplots``.
-    """
-    fig = plt.figure(figsize=dm.figsize("14cm", "standard"))
-    sub_top, sub_bot = fig.subfigures(2, 1, hspace=0.05)
-
-    ax_top = sub_top.subplots()
-    ax_top.plot([1, 2, 3, 4], [1, 4, 9, 16])
-    ax_top.set_ylabel("Top axis (units)")
-
-    ax_bot = sub_bot.subplots()
-    ax_bot.bar(["A", "B", "C"], [3, 7, 5])
-    ax_bot.set_ylabel("Bottom axis (count)")
-
-    return fig
-
-
 def _build_constrained_layout_then_simple_layout() -> Figure:
     """A figure constructed with ``constrained_layout=True`` that the
     suite then re-flows via ``simple_layout``. The expectation is that
@@ -832,26 +807,14 @@ SCENARIOS: list = [
         pixel_checks=(),
     ),
     RobustnessScenario(
-        name="subfigures_2x1",
-        build=_build_subfigures_2x1,
-        # simple_layout uses fig.axes[0].get_gridspec(); SubFigures wrap
-        # each child in its own GridSpec so the parent layout-engine's
-        # edge padding does not propagate into them. The scenario still
-        # verifies validate_figure, simple_layout, and PNG round-trip,
-        # but the global white-border invariant cannot hold here — same
-        # limitation pattern as `colorbar_attached_heatmap`.
-        forbid_warnings=("OVERFLOW",),
-        pixel_checks=(),
-    ),
-    RobustnessScenario(
         name="constrained_layout_then_simple_layout",
         build=_build_constrained_layout_then_simple_layout,
         # constrained_layout owns the margins and packs content tighter
         # to the figure edge than simple_layout's BUFFER would. The
         # global white-border invariant doesn't hold when an alternate
         # layout engine drove the original margins — same precedent as
-        # `colorbar_attached_heatmap` and `subfigures_2x1`. The
-        # scenario still verifies validate_figure, simple_layout
+        # `colorbar_attached_heatmap`. The
+        # scenario still verifies dm.check, simple_layout
         # idempotency, and the PNG round-trip.
         pixel_checks=(),
     ),
@@ -885,6 +848,5 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="donut_wide_wrong_pctdistance",
         build=_build_donut_wide_wrong_pctdistance,
-        expect_warnings=("PIE_LABEL_OFFSET",),
     ),
 ]

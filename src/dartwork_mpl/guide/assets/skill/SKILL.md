@@ -98,11 +98,11 @@ value labels larger than `dm.fs(-1)` drop to it and, with no weight written, tak
 
 ## Review loop (every figure and revision; findings: `references/review.md`)
 
-1. `r = dm.review(fig, "output/figure-v1")`: PNG + PDF, every finding, a summary (a path the user names gets the final version).
+1. `print(dm.check(fig))`: every defect, each with its fix; then `dm.save_formats(fig, "output/figure-v1")` (a path the user names gets the final version).
 2. Open the PNG with your image-viewing tool: clipped or overlapping text, legend over data,
    crowded ticks, wasted space, wrong data. No image tool: say it was not visually reviewed.
-3. Read `r.findings` (an edit: on the original first; "only X" keeps its warnings, reported): fix WARNING, weigh INFO; `CHECK_FAILED` (`r.complete` False): incomplete.
-4. Change only what is needed; `dm.review(fig, "output/figure-v2", baseline="output/figure-v1", allow=[paths you meant])`, keep v1; `r.unexpected`: every other change, explain or undo; look again; report changes, warnings.
+3. Fix every WARNING, weigh INFO (an edit: check the original first; "only X" keeps its warnings, reported); `NOT RUN` in the report: the check is incomplete, say so.
+4. Change only what is needed, save as `figure-v2` (keep v1), `dm.check` again and look again; report the changes and the findings left.
 
 ## Templates and references
 

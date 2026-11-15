@@ -1,53 +1,30 @@
 {
  "R1_module_lines": {
   "src/dartwork_mpl/_figure_geometry/__init__.py": 1031,
-  "src/dartwork_mpl/figure_review/_summary.py": 602,
   "src/dartwork_mpl/layout/edges.py": 586,
   "src/dartwork_mpl/layout/measure.py": 525,
   "src/dartwork_mpl/legend/apply.py": 523,
-  "src/dartwork_mpl/legend/measure.py": 554,
-  "src/dartwork_mpl/validate/_checks/legend_on_data.py": 687,
-  "src/dartwork_mpl/validate/_checks/value_label_on_data.py": 1024
+  "src/dartwork_mpl/legend/measure.py": 554
  },
- "R2_slice_lines": {
-  "validate": 7403,
-  "validate/_checks": 6301
- },
+ "R2_slice_lines": {},
  "R3_underscore_modules": {
-  "_figure_geometry": 3,
-  "figure_review": 2,
-  "validate": 9
+  "_figure_geometry": 3
  },
  "R3_underscore_toplevel": [
   "_figure_geometry"
  ],
- "R4_cycles": [
-  "pkg: dartwork_mpl.validate, dartwork_mpl.validate._checks"
- ],
+ "R4_cycles": [],
  "R4_lazy_cycle_edges": {
   "top_level_edges": 0
  },
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
  "R6_matplotlib_free": {
-  "modules": 60
+  "modules": 54
  },
  "R7_function_lines": {
   "src/dartwork_mpl/_figure_geometry/__init__.py::iter_figure_level_extents": 83,
-  "src/dartwork_mpl/figure_review/__init__.py::review": 90,
-  "src/dartwork_mpl/validate/_checks/cross_axes.py::check_cross_axes_overlap": 144,
-  "src/dartwork_mpl/validate/_checks/grayscale_safety.py::check_grayscale_safety": 120,
-  "src/dartwork_mpl/validate/_checks/legend.py::check_legend_overflow": 166,
-  "src/dartwork_mpl/validate/_checks/margin.py::check_margin_asymmetry": 98,
-  "src/dartwork_mpl/validate/_checks/overflow.py::check_overflow": 148,
-  "src/dartwork_mpl/validate/_checks/text_contrast.py::check_text_contrast": 89,
-  "src/dartwork_mpl/validate/_checks/tick_crowd.py::check_tick_crowding": 105,
-  "src/dartwork_mpl/validate/_checks/tick_decimal.py::_axis_warnings": 101,
-  "src/dartwork_mpl/validate/_checks/tick_rotation.py::check_tick_rotation": 100,
-  "src/dartwork_mpl/validate/_data.py::_explicit_data_policy": 117,
-  "src/dartwork_mpl/validate/_data.py::validate_data": 111,
-  "src/dartwork_mpl/validate/_orchestrator.py::validate_figure": 92,
-  "src/dartwork_mpl/validate/fixes.py::validate_with_fixes": 83
+  "src/dartwork_mpl/check/measure.py::Reader.legends": 81
  },
  "R8_entry_function_lines": {
   "src/dartwork_mpl/mcp/server.py::render": 33

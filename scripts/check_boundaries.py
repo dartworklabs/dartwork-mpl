@@ -69,9 +69,9 @@ PLATFORM = frozenset(
 # Units holding one capability each.
 SLICES = frozenset(
     {
+        "dartwork_mpl.check",
         "dartwork_mpl.color",
         "dartwork_mpl.config",
-        "dartwork_mpl.figure_review",
         "dartwork_mpl.font",
         "dartwork_mpl.guide",
         "dartwork_mpl.labels",
@@ -82,7 +82,6 @@ SLICES = frozenset(
         "dartwork_mpl.size",
         "dartwork_mpl.style",
         "dartwork_mpl.ticks",
-        "dartwork_mpl.validate",
     }
 )
 
@@ -101,24 +100,14 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp", "dartwork_mpl.save"): (
         "render writes the figure as a plain dm.save_formats save does"
     ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.validate"): (
+    ("dartwork_mpl.mcp", "dartwork_mpl.check"): (
         "render's report quotes the figure checker's findings"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.color"): (
         "a preset switch re-applies the locale's semantic colour tokens"
     ),
-    ("dartwork_mpl.validate", "dartwork_mpl.ticks"): (
-        "the tick-decimal check recommends the precision the tick text uses"
-    ),
-    ("dartwork_mpl.validate", "dartwork_mpl.color"): (
-        "the text-contrast and grayscale checks judge WCAG contrast and "
-        "compare colours in OKLab and Y"
-    ),
-    ("dartwork_mpl.figure_review", "dartwork_mpl.save"): (
-        "a review saves the figure with save_formats, the files a plain save writes"
-    ),
-    ("dartwork_mpl.figure_review", "dartwork_mpl.validate"): (
-        "a review reports validate_figure's findings, unfiltered"
+    ("dartwork_mpl.check", "dartwork_mpl.color"): (
+        "the text-contrast rule judges ink against paper by WCAG contrast"
     ),
     ("dartwork_mpl.labels", "dartwork_mpl.color"): (
         "a label on its bar, a series-coloured label and a line-end name "
@@ -154,22 +143,19 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.size", "dartwork_mpl.style"): (
         "the default canvas follows the active preset's page and font"
     ),
-    ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
-        "the auto-applied validation fix is re-running the content-aware layout"
-    ),
-    ("dartwork_mpl.validate", "dartwork_mpl.style"): (
-        "the preset-override check compares a figure with the active preset"
-    ),
 }
 
 # Compatibility shims: public module path -> the unit that owns its contents.
-SHIMS: Mapping[str, str] = {
-    # dm.validate_fixes predates the validate slice's fix modules.
-    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate"
-}
+SHIMS: Mapping[str, str] = {}
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.check.decide": (
+        "what is wrong with a figure is decided from its measured facts alone"
+    ),
+    "dartwork_mpl.check.model": (
+        "the facts, findings and label parsing need nothing outside them"
+    ),
     "dartwork_mpl.font.decide": (
         "which font-table fixes apply is decided from faces alone"
     ),
