@@ -48,8 +48,11 @@ from pathlib import Path
 PACKAGE = "dartwork_mpl"
 
 # Modules that only wire: they may import any unit's surface. The package
-# root runs on every `import dartwork_mpl`, so no unit may import it.
-ENTRY_POINTS = frozenset({"dartwork_mpl"})
+# root runs on every `import dartwork_mpl`, so no unit may import it; the
+# compose modules join slices for the root (composition.py rules C2..C5).
+ENTRY_POINTS = frozenset(
+    {"dartwork_mpl", "dartwork_mpl.compose", "dartwork_mpl.compose.style"}
+)
 
 # Units holding business-agnostic mechanism. They import no slice.
 PLATFORM = frozenset(
@@ -99,9 +102,6 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl.style", "dartwork_mpl.color"): (
-        "a preset switch re-applies the locale's semantic colour tokens"
-    ),
     ("dartwork_mpl.labels", "dartwork_mpl.ticks"): (
         "bar value labels print in their axis's tick unit, like the ticks"
     ),
@@ -119,9 +119,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.ticks"): (
         "layout writes the library's tick numbers before measuring them and "
         "thins crowded dates at the fitted size"
-    ),
-    ("dartwork_mpl.style", "dartwork_mpl.font"): (
-        "a preset may name bundled fonts, which must be registered first"
     ),
     ("dartwork_mpl.size", "dartwork_mpl.style"): (
         "the default canvas follows the active preset's page and font"

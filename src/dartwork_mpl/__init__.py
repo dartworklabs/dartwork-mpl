@@ -22,8 +22,9 @@ try:
 except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
     __version__ = "0.0.0+unknown"
 
-# Submodules reachable as ``dm.<submodule>``.
-from . import font, guide, style
+# Submodules reachable as ``dm.<submodule>``. ``dm.style`` is the preset
+# slice joined with fonts and role colours (``compose.style``).
+from . import font, guide
 
 # Defects of a drawn figure
 from .check import check
@@ -46,6 +47,7 @@ from .color import (
     rgb,
     set_colors,
 )
+from .compose import style
 
 # Agent guidance: the skill, templates and anti-pattern lint
 from .guide import lint as lint_code
@@ -72,7 +74,7 @@ from .save import save_formats
 # Physical units and figure size
 from .size import figsize, figsize_for, grid_shape, list_aspect_tokens
 
-# Presets and preset-relative sizes
+# Preset-relative sizes
 from .style import fs, fw, lw
 
 # Tick text

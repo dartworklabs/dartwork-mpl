@@ -1,7 +1,8 @@
 """Presets, and sizes relative to the active one.
 
-``dm.style.use("report")`` sets matplotlib's rcParams to a shipped preset;
-``dm.style.context(...)`` does it for one block. ``dm.fs(n)``, ``dm.lw(n)``
+:func:`use` sets matplotlib's rcParams to a shipped preset and
+:func:`context` does it for one block; each hands the preset's locale to a
+function the caller passes (``dm.style`` passes the colour slice's). ``dm.fs(n)``, ``dm.lw(n)``
 and ``dm.fw(n)`` read the preset's font size, line width and weight and move
 them by ``n`` steps, so a chart keeps its proportions under every preset.
 """
@@ -15,12 +16,14 @@ from types import MappingProxyType
 
 from ..edgecase import settle
 from . import apply, decide, measure
+from .apply import Tint
 from .edges import EDGES
 from .measure import load_style_dict
 from .model import SLIDE_SCALE, Active, Points, Steps
 
 __all__ = [
     "SLIDE_SCALE",
+    "Tint",
     "active_preset_rcparams",
     "active_presets",
     "context",
@@ -39,30 +42,22 @@ presets: Mapping[str, tuple[str, ...]] = MappingProxyType(
 )
 
 
-def use(preset: str | list[str], **rc: object) -> None:
-    """Apply a preset, or several in order, then ``rc`` overrides.
+def use(preset: str | list[str], rc: dict[str, object], tint: Tint) -> None:
+    """Apply ``preset`` (a name or several, in order), then the ``rc``
+    overrides, then hand the preset's locale to ``tint``.
 
-    Presets: ``scientific`` (papers), ``report`` (documents, dashboards),
-    ``minimal``, ``presentation`` (slides), ``poster``, ``web``, ``dark``,
-    and a Korean ``-kr`` twin of each. rcParams start from matplotlib's
-    defaults: nothing of an earlier preset is left, but your own rcParams
-    edits on keys the preset does not set are kept.
-    Overrides take ``font_size=12`` or ``**{"font.size": 12}``. ``TypeError``
-    for a name that is not a string, ``KeyError`` for an unknown preset or
-    rcParam, ``ValueError`` for an invalid value; a rejected call changes
-    nothing::
-
-        dm.style.use("report")
-        dm.style.use("presentation-kr", font_size=16)
+    ``dm.style.use`` is this joined with the bundled fonts and the colour
+    slice's role colours (``compose.style``).
     """
-    apply.use(preset, rc)
+    apply.use(preset, rc, tint)
 
 
 def context(
-    preset: str | list[str], **rc: object
+    preset: str | list[str], rc: dict[str, object], tint: Tint
 ) -> AbstractContextManager[None]:
-    """:func:`use` for one ``with`` block; everything is restored after."""
-    return apply.context(preset, rc)
+    """:func:`use` for one ``with`` block; everything is restored after,
+    ``tint`` given the earlier preset's locale again."""
+    return apply.context(preset, rc, tint)
 
 
 def active_presets() -> tuple[str, ...]:

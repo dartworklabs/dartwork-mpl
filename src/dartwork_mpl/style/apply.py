@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 import threading
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 
@@ -12,8 +12,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
-from ..color import apply_semantic
-from ..font import ensure_loaded
 from ..locale import DefaultLocale, Locale
 from . import decide, measure
 from .model import Chain, Preset, override_key
@@ -34,18 +32,23 @@ LOCK = threading.Lock()
 STATE = [State()]  # one slot, replaced whole
 
 
-def use(request: object, overrides: dict[str, object]) -> None:
+#: What a preset's locale is handed to once it is applied: the colour
+#: slice's role colours, joined in by ``compose.style``.
+Tint = Callable[[Locale], None]
+
+
+def use(request: object, overrides: dict[str, object], tint: Tint) -> None:
     """Clear the last preset's values, apply the request's layers, then
-    ``overrides``. A rejected name or override changes nothing."""
+    ``overrides``, then ``tint`` the preset's locale. A rejected name or
+    override changes nothing."""
     chain = decide.chain(REGISTRY.parse(request))
     known = list(mpl.rcParams)
     validated = RcParams(
         {override_key(k, known): v for k, v in overrides.items()}
     )
-    ensure_loaded()
     with LOCK:
         write(chain, validated)
-        apply_semantic(chain.locale)
+        tint(chain.locale)
 
 
 def write(chain: Chain, overrides: RcParams) -> None:
@@ -73,14 +76,16 @@ def write(chain: Chain, overrides: RcParams) -> None:
 
 
 @contextmanager
-def context(request: object, overrides: dict[str, object]) -> Generator[None]:
-    """:func:`use` for one block; rcParams, role colours and the active
-    preset come back on exit."""
+def context(
+    request: object, overrides: dict[str, object], tint: Tint
+) -> Generator[None]:
+    """:func:`use` for one block; rcParams, the active preset and what
+    ``tint`` set for its locale come back on exit."""
     saved = replace(STATE[0])
     with mpl.rc_context():  # pyright: ignore[reportUnknownMemberType]
-        use(request, overrides)
+        use(request, overrides, tint)
         try:
             yield
         finally:
             STATE[0] = saved
-            apply_semantic(saved.locale)
+            tint(saved.locale)
