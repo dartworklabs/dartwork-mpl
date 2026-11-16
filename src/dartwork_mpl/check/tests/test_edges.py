@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
@@ -14,6 +16,7 @@ from dartwork_mpl.check.model import (
     Panel,
     Text,
     TickRow,
+    TickValues,
 )
 from dartwork_mpl.check.roles import AxisLabel, FreeText, Role, TickLabel, Title
 from dartwork_mpl.colorspace import Hex, Ratio
@@ -106,9 +109,10 @@ def test_EMPTY_AXES():
 
 def test_MISSING_AXIS_LABEL():
     numbers = row("1", "2", numbers=True)
-    assert found(Facts(CANVAS, PT, ticks=(numbers,))).rules == (
-        "MISSING_AXIS_LABEL",
-    )
+    (f,) = found(Facts(CANVAS, PT, ticks=(numbers,)))
+    assert f.rule == "MISSING_AXIS_LABEL" and "ax.set_xlabel(" in f.fix
+    years = replace(numbers, at=TickValues((2019.0, 2020.0), linear=True))
+    assert not found(Facts(CANVAS, PT, ticks=(years,)))
     assert not found(Facts(CANVAS, PT, ticks=(row("Mon", "Tue"),)))
     blank = Facts(CANVAS, PT, ticks=(numbers,), empty=(Panel(object(), 0),))
     assert found(blank).rules == ("EMPTY_AXES",)

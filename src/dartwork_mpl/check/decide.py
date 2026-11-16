@@ -8,10 +8,12 @@ names is ``findings.FIXES``). They are listed, named and ordered in
 from __future__ import annotations
 
 from itertools import combinations
+from typing import assert_never
 
 from ..colorspace import Ratio
+from ..vocab import Which, X, Y
 from .findings import Findings
-from .model import Facts, Hit, Inked, OnData, Text, margins, quote
+from .model import Facts, Hit, Inked, OnData, Text, TickValues, margins, quote
 
 #: A text further past the canvas edge than this (px) is cut off.
 CUT_PX = 1.0
@@ -21,6 +23,10 @@ COVER = 0.05
 PHRASE_GAP_EM = 1.0
 #: Text fainter than this on what is behind it disappears (WCAG large text).
 MIN_CONTRAST = Ratio(3.0)
+#: Whole-number x ticks all within these years read as years, not a quantity.
+YEARS = (1800.0, 2100.0)
+#: A tick this close to a whole number is one (locator rounding).
+WHOLE = 1e-9
 
 
 def overflow(facts: Facts, found: Findings) -> Findings:
@@ -171,17 +177,50 @@ def empty_axes(facts: Facts, found: Findings) -> Findings:
     return found
 
 
+def reads_as_years(ticks: TickValues, axis: Which) -> bool:
+    """A linear x axis whose ticks are all whole numbers within
+    :data:`YEARS` (``2019, 2020, 2021``): its ticks name themselves.
+
+    A y axis never does: years run along x, and a y axis of whole numbers
+    near 2,000 is far more often a quantity than a year.
+    """
+    low, high = YEARS
+    years = (
+        ticks.linear
+        and bool(ticks.values)
+        and all(
+            abs(v - round(v)) < WHOLE and low <= v <= high for v in ticks.values
+        )
+    )
+    match axis:
+        case X():
+            return years
+        case Y():
+            return False
+        case _:
+            assert_never(axis)
+
+
 def missing_axis_label(facts: Facts, found: Findings) -> Findings:
-    """An axis of numbers that nothing names, on a panel that draws."""
+    """An axis of numbers that nothing names, on a panel that draws; an x
+    axis of years names itself."""
     empty = {p.index for p in facts.empty}
     for row in facts.ticks:
-        if row.numbers and not row.named and row.panel not in empty:
+        if (
+            row.numbers
+            and not row.named
+            and row.panel not in empty
+            and not reads_as_years(row.at, row.axis)
+        ):
             found = found.flag(
                 "MISSING_AXIS_LABEL",
                 f"Axes[{row.panel}]: the {row.axis.letter} axis prints "
                 "numbers but nothing names them",
                 handles=(row.handle,),
                 panels=(row.panel,),
+                fix="name the quantity and its unit: "
+                f'ax.set_{row.axis.letter}label("Revenue (M USD)"); '
+                "a colorbar: cbar.set_label(...)",
             )
     return found
 

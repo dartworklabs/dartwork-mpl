@@ -62,7 +62,7 @@ not, the `try` line names what usually helps.
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
-| `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates and names need none; one label per grid row or column is enough) |
+| `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
 | `EMPTY_AXES` | a framed panel that draws nothing, left over from a grid |
 
 An "only X" edit keeps the warnings the original already had: report them,
