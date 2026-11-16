@@ -15,9 +15,8 @@ from typing import TYPE_CHECKING
 
 from ..hidden import axes_name
 from ..vocab import Which, X, Y
-from .apply import WrappedTickFormatter
+from .apply import WrappedTickFormatter, turned
 from .measure import cartesian, grid_axes
-from .model import turned_here
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -46,12 +45,7 @@ class Text:
 
 def _turn(ax: Axes) -> float:
     """The angle a layout turned ``ax``'s bottom tick labels to (0: none)."""
-    ticks = ax.xaxis.get_major_ticks()
-    if not ticks:
-        return 0.0
-    label = ticks[0].label1
-    rotation = float(label.get_rotation())
-    return rotation if turned_here(rotation, label.get_rotation_mode()) else 0.0
+    return turned(ax.xaxis) or 0.0
 
 
 def _wrap(ax: Axes) -> Mapping[str, str]:

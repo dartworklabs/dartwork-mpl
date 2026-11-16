@@ -67,13 +67,6 @@ Gap: TypeAlias = WSpace | HSpace
 TURN_MODE: Literal["xtick"] = "xtick"
 
 
-def turned_here(rotation: float, mode: str) -> bool:
-    """A tick label as a layout turned it: one of ``ANGLES``, ``TURN_MODE``
-    (``ax.tick_params(rotation=...)`` and ``autofmt_xdate`` keep matplotlib's
-    default mode)."""
-    return mode == TURN_MODE and rotation in ANGLES
-
-
 #: A rectilinear Axes' spine, as ``ax.spines`` names it.
 Spine: TypeAlias = Literal["left", "right", "bottom", "top"]
 FACING: Mapping[Spine, Spine] = {

@@ -86,6 +86,20 @@ def test_crowded_numbers_turn() -> None:
     assert {t.get_rotation() for t in ax.get_xticklabels()} == {90.0}
 
 
+@pytest.mark.parametrize("angle", [30.0, 45.0, 90.0])
+def test_tick_labels_the_caller_turned_stay_turned(angle: float) -> None:
+    # #749: labels turned by hand with rotation_mode="xtick" read as the
+    # layout's own turn, and the layout laid them flat again.
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.bar(["North", "South", "East", "West"], [1, 2, 3, 4])
+    ax.tick_params(axis="x", rotation=angle, rotation_mode="xtick")
+    dm.simple_layout(fig)
+    dm.simple_layout(fig)
+    assert {
+        (t.get_rotation(), t.get_rotation_mode()) for t in ax.get_xticklabels()
+    } == {(angle, "xtick")}
+
+
 def test_suptitle_and_note_keep_their_edges() -> None:
     fig = line_chart()
     fig.suptitle("Quarterly signups")
