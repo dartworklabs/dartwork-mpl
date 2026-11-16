@@ -82,6 +82,18 @@ def test_a_tight_grid_collides_across_panels():
     assert "CROSS_AXES_OVERLAP" in dm.check(fig).rules
 
 
+def test_a_title_under_its_colorbar_is_found():
+    fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
+    im = ax.imshow(np.arange(36).reshape(6, 6))
+    ax.set_title(
+        "Stocks and REITs moved together most closely of all six assets (0.72)"
+    )
+    cbar = fig.colorbar(im, ax=ax)
+    dm.simple_layout(fig)
+    found = _of(dm.check(fig), "CROSS_AXES_OVERLAP")
+    assert found and cbar.ax in found[0].artists
+
+
 def test_a_value_against_a_line_end_name_is_crowded():
     from tests.visual.scenarios import all_scenarios
 

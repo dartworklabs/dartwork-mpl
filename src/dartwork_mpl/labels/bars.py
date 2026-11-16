@@ -26,11 +26,13 @@ from . import decide, edges
 from .bar_geometry import Higher, Kind, Lower, Toward
 from .given import PresetText, TickText
 from .measure import bar_run, label_anchor, readable_ink, stands_up
+from .model import Chosen, choose_bars
 from .stacks import BarsFacts
 
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.patches import Rectangle
 
     from ..vocab import TickScale
 
@@ -202,20 +204,24 @@ class BarFamily:
         label.place()
 
 
-def _containers(
-    ax: Axes, bars: BarContainer | Iterable[BarContainer] | None
-) -> list[BarContainer]:
-    if isinstance(bars, BarContainer):
-        return [bars]
-    if bars is not None:
-        return list(bars)
-    found = [c for c in ax.containers if isinstance(c, BarContainer)]
-    if not found:
-        raise ValueError(
-            "ax has no bars to label: dm.label_bars labels what ax.bar / "
-            "ax.barh / ax.hist drew on this Axes"
-        )
-    return found
+def _chosen(ax: Axes, bars: object) -> tuple[Chosen[BarContainer], ...]:
+    """The bars to label: ``bars=`` among the figure's, or all of ``ax``'s."""
+    if bars is None:
+        here = [c for c in ax.containers if isinstance(c, BarContainer)]
+        if not here:
+            raise ValueError(
+                "ax has no bars to label: dm.label_bars labels what ax.bar / "
+                "ax.barh / ax.hist drew on this Axes"
+            )
+        return choose_bars(here, here)
+    fig = ax.get_figure(root=True)
+    drawn = [
+        c
+        for a in (fig.axes if fig is not None else [ax])
+        for c in a.containers
+        if isinstance(c, BarContainer)
+    ]
+    return choose_bars(bars, drawn)
 
 
 # The ``label_bars`` calls on each Axes, oldest first.
@@ -236,19 +242,25 @@ def format_ticks_now(axis: Axis) -> None:
 
 def label_bars(
     ax: Axes,
-    bars: BarContainer | Iterable[BarContainer] | None = None,
+    bars: BarContainer
+    | Iterable[BarContainer]
+    | Iterable[Rectangle]
+    | None = None,
     *,
     preset: PresetText,
     ticks: TickText,
 ) -> list[Text]:
     """``dm.label_bars``: text sized by ``preset``, values printed as ``ticks`` print them."""
-    containers = _containers(ax, bars)
+    chosen = _chosen(ax, bars)
+    containers = [c.bars for c in chosen]
     facts = BarsFacts(tuple(bar_run(c) for c in containers))
     plan = settle(
         facts, decide.plain_labels(facts), edges.BARS_EDGES, log=LOG
     ).plan
     family = BarFamily(preset, ticks)
     for p in plan.labels:
+        if p.index not in chosen[p.run].indices:
+            continue
         container = containers[p.run]
         if not isinstance(container.patches[p.index].axes, Axes):
             continue

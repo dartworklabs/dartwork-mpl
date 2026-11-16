@@ -30,6 +30,7 @@ from ..hidden import axes_name
 from ..vocab import Edge, edge_of
 from . import decide, measure
 from .ink import box_of, data_ink, px
+from .measure import Given, Handle
 from .model import (
     INSIDE,
     Above,
@@ -49,7 +50,6 @@ from .model import (
 )
 
 if TYPE_CHECKING:
-    from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
@@ -60,7 +60,8 @@ if TYPE_CHECKING:
 class Placed:
     """What a ``place_legend`` legend was placed from, and where it went.
 
-    ``box`` is the anchor box the library left it on, ``size`` the Axes
+    ``given`` holds the entries the caller passed. ``box`` is the anchor
+    box the library left it on, ``size`` the Axes
     size (half px) an outside legend was last fitted at. ``chosen`` is the
     spot ``place_legend`` gave an inside legend, ``spot`` the one it has
     now; ``lift`` how far a layout last raised the titles (pt).
@@ -68,6 +69,7 @@ class Placed:
 
     where: Best | Side
     asked: Columns | None
+    given: Given
     kw: dict[str, object]
     box: BboxBase
     size: tuple[int, int] = (0, 0)
@@ -122,12 +124,16 @@ def _kept(legend: Legend | None) -> dict[str, object]:
 
 
 def place_legend(
-    ax: Axes, loc: str, asked: Columns | None, kw: dict[str, object]
+    ax: Axes,
+    loc: str,
+    asked: Columns | None,
+    given: Given,
+    kw: dict[str, object],
 ) -> Legend | None:
     """Place the legend of ``ax`` (:func:`dartwork_mpl.legend.place_legend`)."""
     where = parse_loc(loc)
     refuse_anchor(where, kw)
-    host, handles, labels = measure.entries(ax)
+    host, handles, labels = measure.entries(ax, given)
     olds = [o.get_legend() for o in same_position_axes(ax)]
     kept = _kept(host.get_legend() or next((o for o in olds if o), None))
     for old in olds:
@@ -140,7 +146,7 @@ def place_legend(
         raise ValueError("place_legend needs an Axes on a Figure")
     root.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
     renderer = get_renderer(root)
-    placed = Placed(where, asked, kept | kw, host.bbox)
+    placed = Placed(where, asked, given, kept | kw, host.bbox)
     legend = _draw(host, handles, labels, placed, renderer)
     placed.chosen = placed.spot
     _say_gathered(host)
@@ -170,7 +176,7 @@ def _say_gathered(host: Axes) -> None:
 
 def _draw(
     ax: Axes,
-    handles: Sequence[Artist],
+    handles: Sequence[Handle],
     labels: Sequence[str],
     placed: Placed,
     renderer: RendererBase,
@@ -308,7 +314,7 @@ def _again(
         case Above() | Below() | Right() | Left() as side:
             if _size_key(ax, renderer) == placed.size:
                 return _anchor(legend, ax, side, placed, renderer)
-            host, handles, labels = measure.entries(ax)
+            host, handles, labels = measure.entries(ax, placed.given)
             if host is not ax or not handles:
                 return False
             before = (placed.columns, placed.clearance)
