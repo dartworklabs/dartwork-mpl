@@ -7,6 +7,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.transforms import ScaledTranslation
 
 import dartwork_mpl as dm
 from dartwork_mpl.geometry import get_renderer
@@ -172,6 +173,19 @@ def test_an_outside_legend_the_caller_moved_stays_where_they_put_it() -> None:
     middle = (_box(fig, ax).x0 + _box(fig, ax).x1) / 2
     assert ax.get_legend() is legend
     assert _box(fig, legend).x0 > middle  # centred, it would straddle it
+
+
+def test_a_title_the_caller_moved_stays_where_they_put_it() -> None:
+    # #749: a title raised over a legend above and given another transform
+    # by the caller was raised again by the next layout.
+    fig, ax = _lines(3)
+    ax.set_title("Three series")
+    dm.place_legend(ax, loc="above")
+    dm.simple_layout(fig)
+    mine = ax.transAxes + ScaledTranslation(0.0, 4 / 72, fig.dpi_scale_trans)
+    ax.title.set_transform(mine)
+    dm.simple_layout(fig)
+    assert ax.title.get_transform() is mine
 
 
 def test_a_figure_title_a_legend_above_and_panel_titles_stack():
