@@ -46,9 +46,9 @@ def links_into(dest: Path) -> bool:
 
 def _ours(target: Path) -> bool:
     """A skill this installer put there: a link into a dartwork_mpl package,
-    or a copied folder whose ``SKILL.md`` names this skill."""
-    if target.is_symlink():
-        return PACKAGE in str(target.readlink())
+    or a folder (or a link to one) whose ``SKILL.md`` names this skill."""
+    if target.is_symlink() and PACKAGE in str(target.readlink()):
+        return True  # even dangling: uvx's cache was cleaned under it
     head = target / "SKILL.md"
     return head.is_file() and f"name: {SKILL_NAME}\n" in head.read_text(
         encoding="utf-8"

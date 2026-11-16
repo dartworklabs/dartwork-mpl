@@ -53,7 +53,7 @@ def _install(args: argparse.Namespace) -> int:
         print(f"{item.action}: {item.path}")
     if not args.copy and not links_into(Path(args.dest)):
         print(
-            f"copied, not linked: the package at {skill_path().parent.parent.parent} "
+            f"copied, not linked: the package at {Path(__file__).resolve().parents[1]} "
             "lives outside this project (uvx's cache or a global install), so a "
             "link would break; run this again after upgrading to refresh the copy"
         )

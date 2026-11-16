@@ -32,7 +32,8 @@ orphan: true
 | `src/dartwork_mpl/geometry/` | 두 slice 이상이 쓰는 figure 측정 코드(platform, matplotlib) | architecture |
 | `src/dartwork_mpl/edgecase/` | 엣지 케이스 등록 장치(platform) | architecture |
 | `src/dartwork_mpl/hidden/` | 자동 동작의 보고. 도구가 스스로 바꾼 것을 한 줄씩 stderr에 쓴다(`dm.quiet()`로 끈다) | philosophy(7절), architecture |
-| `src/dartwork_mpl/guide/assets/` | skill과 안티패턴 목록. 에이전트가 읽는 전부 | purpose, verification(지침 게이트) |
+| `skills/dartwork-mpl/` | skill의 단 하나의 원본. `npx skills add`가 여기서 읽고, 패키지는 `src/dartwork_mpl/guide/assets/skill` 링크로 같은 폴더를 싣는다 | purpose, verification(지침 게이트) |
+| `src/dartwork_mpl/guide/assets/` | 안티패턴 목록과 skill 링크. 에이전트가 읽는 전부 | purpose, verification(지침 게이트) |
 | `src/dartwork_mpl/color/assets/`, `tests/test_shipped_colors_hash.py` | 출하 색 값과 그 고정점 | architecture(미감 불변식), verification |
 | `tests/visual/` | 픽셀 장면과 기준 이미지 | verification |
 | `tests/corpus/` | 개발용 코퍼스. 현실적인 차트 스크립트(`charts/`)와 대충 그린 것(`rough/`), 증거를 세는 `tally.py`. 기능을 지우거나 더할 때의 근거다 | philosophy(1절), verification |

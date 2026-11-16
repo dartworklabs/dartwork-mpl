@@ -73,6 +73,8 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.sdist]
 only-include = [
     "src/dartwork_mpl",
+    # The skill's one source; `npx skills add` finds it here.
+    "skills/dartwork-mpl",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
