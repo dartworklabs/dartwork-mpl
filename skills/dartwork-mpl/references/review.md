@@ -55,14 +55,14 @@ not, the `try` line names what usually helps.
 | rule | Means |
 |---|---|
 | `OVERFLOW` | text cut off by the canvas edge |
-| `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels |
+| `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels; a title or axis text running into another panel's plot (a colorbar) |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
 | `LEGEND_ON_DATA` | a legend over data, a title or other text, or another legend |
 | `TEXT_CONTRAST` | a text you placed, under 3:1 against the bar, cell or background behind it |
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
-| `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates and names need none; one label per grid row or column is enough) |
+| `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
 | `EMPTY_AXES` | a framed panel that draws nothing, left over from a grid |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
 
@@ -72,8 +72,9 @@ do not fix them.
 ## Revise
 
 1. Change only what the image, a finding or the user asked for.
-2. Save under the next stem (`figure-v2`) and keep v1. If the user named an
-   output path, write the final version there too.
+2. Save under the next stem (`figure-v2`) and keep v1, but only when nobody
+   named a path. If the user or caller named an output path or format, the
+   final version goes to exactly that path, with no `-vN` and no extra files.
 3. `dm.check` again and look at the new PNG.
 4. Report what changed, which findings remain and why.
 

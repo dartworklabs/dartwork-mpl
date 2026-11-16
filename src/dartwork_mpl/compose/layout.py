@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from dartwork_mpl import layout, ticks
 from dartwork_mpl.labels import (
     note_gap_pt,
+    place_notes,
     report_bars,
     settle_bars,
     settle_panels,
@@ -36,6 +37,7 @@ def prepare_ticks(fig: Figure) -> None:
 
 NEIGHBOURS = layout.Neighbours(
     prepare_ticks=prepare_ticks,
+    place_notes=place_notes,
     settle_bars=settle_bars,
     settle_legends=settle,
     space_line_ends=space_line_ends,
@@ -57,7 +59,8 @@ def simple_layout(
     with the canvas edge are cut. ``margin=0`` puts the content flush with
     the edge, for a figure placed inside another document. Every Axes on the first Axes' GridSpec is
     placed; a suptitle, ``fig.text`` note or figure legend keeps its edge
-    clear.
+    clear. A ``dm.add_note`` line moves to ``margin`` from the left and
+    bottom edges, unless you moved it.
 
     ``dm.label_bars`` values, ``dm.place_legend`` legends,
     ``dm.label_line_ends`` names and ``dm.label_axes`` letters settle at the

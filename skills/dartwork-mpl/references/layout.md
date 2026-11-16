@@ -101,6 +101,8 @@ labels that still overlap are reported as `TICK_OVERLAP`, text over another
 panel's text as `CROSS_AXES_OVERLAP`.
 
 - `margin="3mm"` (or `dm.mm(3)`) sets the buffer on every side; the default is `"1mm"`.
+  A `dm.add_note` line sits that buffer from the left and bottom edges,
+  with the plot above it, unless you moved it.
   `margin=0` puts the content flush with the canvas edge, for a figure that
   sits inside another document's frame.
 - It fits the GridSpec of the first Axes (nested `subgridspec` included).

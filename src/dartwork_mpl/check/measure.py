@@ -21,7 +21,7 @@ from matplotlib.patches import Patch
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Bbox, IdentityTransform
 
 from ..colorspace import Rgb, Rgba, composite_over, contrast
 from ..geometry import (
@@ -53,6 +53,7 @@ from .model import (
     Panel,
     Text,
     TickRow,
+    TickValues,
 )
 from .overlap import tick_label_overlaps
 
@@ -161,13 +162,9 @@ class Reader:
 
     def tick_row(self, i: int, ax: Axes, which: Which) -> TickRow | None:
         """One axis' drawn major labels and how many neighbours collide."""
+        drawn = drawn_tick_labels(ax, which)
         labels = tuple(
-            x
-            for x in (
-                self.text(t, roles.TickLabel(), i)
-                for t in drawn_tick_labels(ax, which)
-            )
-            if x
+            x for x in (self.text(t, roles.TickLabel(), i) for t in drawn) if x
         )
         if not labels:
             return None
@@ -184,6 +181,18 @@ class Reader:
             and isinstance(locator, FixedLocator)
         )  # set_xticks(ticks, labels) prints names
         numbers = not names and not isinstance(locator, DateLocator)
+        at = TickValues(
+            tuple(
+                float(loc)
+                for loc, tick in zip(
+                    axis.get_majorticklocs(),
+                    axis.get_major_ticks(),
+                    strict=False,
+                )
+                if tick.label1 in drawn or tick.label2 in drawn
+            ),
+            linear=isinstance(axis.get_transform(), IdentityTransform),
+        )
         return TickRow(
             ax,
             i,
@@ -193,6 +202,7 @@ class Reader:
             float(deepest),
             numbers=numbers and any(t.value for t in labels),
             named=named(ax, which),
+            at=at,
         )
 
     def ticks(self) -> tuple[TickRow, ...]:
@@ -277,19 +287,21 @@ class Reader:
                 )
         return tuple(found)
 
+    def frames(self) -> tuple[Frame, ...]:
+        """The plot areas a text of another Axes must keep off: Axes that
+        draw something or a frame."""
+        return tuple(
+            Frame(ax, i, box_of(ax.get_window_extent(self.renderer)))
+            for i, ax in self.panels
+            if draws(ax) or (ax.axison and ax.get_frame_on())
+        )
+
     def empty(self) -> tuple[Panel, ...]:
         """Framed Axes where nothing is drawn, nor in a twin sharing the box."""
         return tuple(
             Panel(ax, i)
             for i, ax in self.panels
             if ax.axison and not any(map(draws, same_position_axes(ax)))
-        )
-
-    def frames(self) -> tuple[Frame, ...]:
-        """The plot area of every flat Axes."""
-        return tuple(
-            Frame(ax, i, box_of(ax.get_window_extent(self.renderer)))
-            for i, ax in self.panels
         )
 
 
@@ -392,6 +404,6 @@ def measure(fig: Figure) -> Facts:
         empty=r.empty(),
         values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
-        frames=r.attempt(r.frames, (), "SMALL_PANEL"),
+        frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         skipped=tuple(r.skipped),
     )

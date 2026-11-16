@@ -31,7 +31,8 @@ class Neighbours:
     """The other slices' steps and records, in the order the layout uses them.
 
     Before the fit: ``prepare_ticks`` writes the preset's large numbers on
-    axes nobody formatted. At each step, after a draw: ``settle_bars`` (bar value labels), then
+    axes nobody formatted, and ``place_notes`` puts note lines at the left
+    and bottom margins (figure fractions). At each step, after a draw: ``settle_bars`` (bar value labels), then
     rounds of ``settle_legends`` and ``space_line_ends``, then
     ``settle_panels`` (panel letters).
 
@@ -43,6 +44,7 @@ class Neighbours:
     """
 
     prepare_ticks: Callable[[Figure], None]
+    place_notes: Callable[[Figure, float, float], None]
     settle_bars: Settle
     settle_legends: Callable[[Figure, RendererBase, Sequence[Axes]], bool]
     space_line_ends: Settle

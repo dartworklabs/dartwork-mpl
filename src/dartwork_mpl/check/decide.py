@@ -8,8 +8,10 @@ names is ``findings.FIXES``). They are listed, named and ordered in
 from __future__ import annotations
 
 from itertools import combinations
+from typing import assert_never
 
 from ..colorspace import Ratio
+from ..vocab import Which, X, Y
 from .findings import Findings
 from .model import (
     AXES,
@@ -20,6 +22,7 @@ from .model import (
     OnData,
     Text,
     TickRow,
+    TickValues,
     margins,
     quote,
 )
@@ -32,6 +35,12 @@ COVER = 0.05
 PHRASE_GAP_EM = 1.0
 #: Text fainter than this on what is behind it disappears (WCAG large text).
 MIN_CONTRAST = Ratio(3.0)
+#: Whole-number x ticks all within these years read as years, not a quantity.
+YEARS = (1800.0, 2100.0)
+#: A text this far (em) into another Axes' plot, both ways, is drawn on it.
+INTO_EM = 0.5
+#: A tick this close to a whole number is one (locator rounding).
+WHOLE = 1e-9
 #: A largest plot whose shorter side holds fewer tick labels (em) than this
 #: is too small for its text: the corpus' good charts hold 13.1 or more, a
 #: report grid moved to slide text 5.0.
@@ -75,10 +84,12 @@ def overlap(facts: Facts, found: Findings) -> Findings:
 
 
 def cross_axes(facts: Facts, found: Findings) -> Findings:
-    """Titles, axis labels, letters and ticks of different Axes colliding."""
+    """Titles, axis labels, letters and ticks of different Axes colliding,
+    with each other or with another Axes' plot (a colorbar beside it)."""
     texts = [
         t for group in facts.by_panel.values() for t in group if not t.role.free
     ]
+    found = into_plots(texts, facts.frames, found)
     seen: set[tuple[object, ...]] = set()
     for a, b in combinations(texts, 2):
         if a.panel == b.panel or a.box.cover(b.box) < COVER:
@@ -92,6 +103,37 @@ def cross_axes(facts: Facts, found: Findings) -> Findings:
                 f"axes[{one.panel}] {one.role} {one.short!r} overlaps "
                 f"axes[{two.panel}] {two.role} {two.short!r}",
                 (one, two),
+            )
+    return found
+
+
+def into_plots(
+    texts: list[Text], frames: tuple[Frame, ...], found: Findings
+) -> Findings:
+    """Texts drawn into the plot of another Axes; not of a twin or an inset
+    (a plot sharing area with the text's own)."""
+    own = {f.index: f.box for f in frames}
+    seen: set[tuple[object, ...]] = set()
+    for t in texts:
+        home = own.get(t.panel) if t.panel is not None else None
+        for f in frames:
+            if f.index == t.panel or (home and home.overlaps(f.box)):
+                continue
+            into = t.box.overlap(f.box)
+            deep = INTO_EM * t.em
+            key = (t.panel, f.index, t.role)
+            if into.width < deep or into.height < deep or key in seen:
+                continue
+            seen.add(key)
+            found = found.flag(
+                "CROSS_AXES_OVERLAP",
+                f"axes[{t.panel}] {t.role} {t.short!r} runs into the plot "
+                f"of axes[{f.index}]",
+                (t,),
+                handles=(f.handle,),
+                panels=tuple(sorted({f.index, t.panel or 0})),
+                fix="shorten or wrap the text, or move the plots apart "
+                "(a colorbar: fig.colorbar(..., pad=...))",
             )
     return found
 
@@ -186,17 +228,50 @@ def empty_axes(facts: Facts, found: Findings) -> Findings:
     return found
 
 
+def reads_as_years(ticks: TickValues, axis: Which) -> bool:
+    """A linear x axis whose ticks are all whole numbers within
+    :data:`YEARS` (``2019, 2020, 2021``): its ticks name themselves.
+
+    A y axis never does: years run along x, and a y axis of whole numbers
+    near 2,000 is far more often a quantity than a year.
+    """
+    low, high = YEARS
+    years = (
+        ticks.linear
+        and bool(ticks.values)
+        and all(
+            abs(v - round(v)) < WHOLE and low <= v <= high for v in ticks.values
+        )
+    )
+    match axis:
+        case X():
+            return years
+        case Y():
+            return False
+        case _:
+            assert_never(axis)
+
+
 def missing_axis_label(facts: Facts, found: Findings) -> Findings:
-    """An axis of numbers that nothing names, on a panel that draws."""
+    """An axis of numbers that nothing names, on a panel that draws; an x
+    axis of years names itself."""
     empty = {p.index for p in facts.empty}
     for row in facts.ticks:
-        if row.numbers and not row.named and row.panel not in empty:
+        if (
+            row.numbers
+            and not row.named
+            and row.panel not in empty
+            and not reads_as_years(row.at, row.axis)
+        ):
             found = found.flag(
                 "MISSING_AXIS_LABEL",
                 f"Axes[{row.panel}]: the {row.axis.letter} axis prints "
                 "numbers but nothing names them",
                 handles=(row.handle,),
                 panels=(row.panel,),
+                fix="name the quantity and its unit: "
+                f'ax.set_{row.axis.letter}label("Revenue (M USD)"); '
+                "a colorbar: cbar.set_label(...)",
             )
     return found
 

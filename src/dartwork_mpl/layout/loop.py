@@ -83,10 +83,12 @@ def run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
 
 
 def _run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
-    """The spines its scales tick on, margins, then rounds of text fitting."""
+    """The spines its scales tick on, notes in the margin, margins, then
+    rounds of text fitting."""
     apply.unturn(fig)
     apply.show_scale_spines(fig)
     given.prepare_ticks(fig)
+    given.place_notes(fig, margins.left, margins.bottom)
     step = fit(fig, gs, margins, given, None)
     for _round in range(FIT_ROUNDS):
         if step is None or not step.converged:

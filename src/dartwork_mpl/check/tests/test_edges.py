@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
@@ -15,6 +17,7 @@ from dartwork_mpl.check.model import (
     Panel,
     Text,
     TickRow,
+    TickValues,
 )
 from dartwork_mpl.check.roles import AxisLabel, FreeText, Role, TickLabel, Title
 from dartwork_mpl.colorspace import Hex, Ratio
@@ -67,6 +70,18 @@ def test_CROSS_AXES_OVERLAP_title_on_neighbour_ticks():
     title = text("Lower", Box(100, 60, 200, 90), Title(), panel=1)
     facts = Facts(CANVAS, PT, texts=(title,), ticks=(row("1", "2"),))
     assert "CROSS_AXES_OVERLAP" in found(facts).rules
+    wide = text("A title wider than its plot", Box(10, 500, 520, 540), Title())
+    plot, bar = (
+        Frame(object(), 0, Box(20, 50, 450, 480)),
+        Box(470, 30, 500, 560),
+    )
+    beside = Facts(
+        CANVAS, PT, texts=(wide,), frames=(plot, Frame(None, 1, bar))
+    )
+    (f,) = found(beside)
+    assert "runs into the plot of axes[1]" in f.message and f.panels == (0, 1)
+    twin = Frame(object(), 1, plot.box)
+    assert not found(Facts(CANVAS, PT, texts=(wide,), frames=(plot, twin)))
 
 
 def test_TEXT_CROWD_value_beside_a_name():
@@ -107,9 +122,10 @@ def test_EMPTY_AXES():
 
 def test_MISSING_AXIS_LABEL():
     numbers = row("1", "2", numbers=True)
-    assert found(Facts(CANVAS, PT, ticks=(numbers,))).rules == (
-        "MISSING_AXIS_LABEL",
-    )
+    (f,) = found(Facts(CANVAS, PT, ticks=(numbers,)))
+    assert f.rule == "MISSING_AXIS_LABEL" and "ax.set_xlabel(" in f.fix
+    years = replace(numbers, at=TickValues((2019.0, 2020.0), linear=True))
+    assert not found(Facts(CANVAS, PT, ticks=(years,)))
     assert not found(Facts(CANVAS, PT, ticks=(row("Mon", "Tue"),)))
     blank = Facts(CANVAS, PT, ticks=(numbers,), empty=(Panel(object(), 0),))
     assert found(blank).rules == ("EMPTY_AXES",)
