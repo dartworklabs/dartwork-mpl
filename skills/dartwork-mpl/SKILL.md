@@ -56,7 +56,7 @@ Generic output looks like this. When the request leaves a choice open, do not sp
 - a legend box for two or three lines, where end labels would do
 - a different colour on every bar when the bars are one series
 - a title that repeats the axis labels
-- a number on every bar and every point, so no number stands out
+- a number on every bar and point while the axis says the same, so no number stands out
 - two y axes, which invent a relationship from the choice of scales
 - rotated tick labels, where horizontal bars or a wider canvas would read flat
 - a grid, a border and markers on every point competing with the data

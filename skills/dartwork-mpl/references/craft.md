@@ -37,8 +37,9 @@ panel with two y axes.
   One mark is read. Five are skipped.
 - **Order.** Categories go by value, largest first, unless they have their own
   order (time, age bands, a survey scale).
-- **Numbers on marks.** Label bars (`dm.label_bars(ax)`) when the reader needs
-  the exact values and there are few of them. Otherwise the axis is enough.
+- **Numbers on marks.** Every bar gets its number only when the exact values
+  are the point, and then the value axis goes; when one value is the point,
+  only that bar or series gets one. "Numbers on bars" below.
 
 ```python
 import matplotlib.pyplot as plt
@@ -65,6 +66,34 @@ dm.annotate_value(ax, years[-1], regions["South"][-1], "63")
 dm.simple_layout(fig)
 print(dm.check(fig))
 dm.save_formats(fig, "output/regions-v1", formats=("png",))
+plt.close(fig)
+```
+
+## Numbers on bars
+
+A number on a bar says what the value axis already says. Let the bars or the
+axis carry the values, not both.
+
+| The point is | Label | The value axis |
+|---|---|---|
+| the exact values, and there are few bars (up to about eight) | every bar: `dm.label_bars(ax)` | goes: `ax.set_yticks([])` takes the ticks and their gridlines, `ax.spines["left"].set_visible(False)` the line; the axis label stays and carries the unit |
+| one series, or one bar | only those: `dm.label_bars(ax, bars=actual)` with what that `ax.bar` call returned; one bar in a series `dm.annotate_value(ax, x, y, text)` | stays |
+| the ranking or the shape, or there are many bars | none | stays |
+
+Horizontal bars lose `ax.set_xticks([])` and the bottom spine instead. A paper
+figure keeps the unit in the axis label; a report figure may move it into the
+title ("Revenue by region (USD m)") and drop the label.
+
+```python
+regions, revenue = ["South", "North", "West", "East"], [63.4, 52.1, 46.0, 39.5]
+fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=4, n_series=1, labels=regions))
+ax.bar(regions, revenue)
+dm.label_bars(ax)                         # the four values are the point
+ax.set_yticks([])                         # so the axis does not repeat them
+ax.spines["left"].set_visible(False)
+ax.set_ylabel("Revenue (USD m)")          # the unit stays
+dm.simple_layout(fig)
+print(dm.check(fig))
 plt.close(fig)
 ```
 

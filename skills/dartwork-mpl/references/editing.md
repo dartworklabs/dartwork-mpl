@@ -97,8 +97,10 @@ Stacked bars get centred segment labels and a total. Labels that have no room
 are hidden, so count them in the image: make the figure larger, or report
 them when the size is fixed.
 
-Pass `bars` (what `ax.bar` returns) to label only those. For another text,
-label with matplotlib instead:
+Pass `bars` (what one `ax.bar` call returns, not a slice of it) to label only
+that series; one bar is `dm.annotate_value`. Whether to label all, some or
+none, and what the value axis does then: `references/craft.md`, "Numbers on
+bars". For another text, label with matplotlib instead:
 
 | Asked | Instead of `dm.label_bars` |
 |---|---|
