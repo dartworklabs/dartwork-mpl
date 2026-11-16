@@ -16,7 +16,7 @@ ytick.major.width:   0.5
 
 lines.linewidth:     1.5
 
-legend.fontsize:      9.0
+legend.fontsize:      9.75
 
 figure.titlesize:   14.0
 figure.titleweight: medium

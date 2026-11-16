@@ -34,7 +34,7 @@ ytick.minor.width:   0.52
 ytick.major.pad:     2.6
 ytick.minor.pad:     2.6
 
-legend.fontsize:      15.6
+legend.fontsize:      16.9
 
 figure.titlesize:   22.1   # size of the figure title
 figure.titleweight: normal # weight of the figure title
