@@ -90,7 +90,8 @@ drawing; call it again after a later change. Where text still collides it fits t
 runs into another panel or past the figure edge wraps at its spaces
 (the same name on the same axis of that grid then wraps the same way),
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
-(up to 1.5 cells), and bottom tick labels that collide or sit closer
+(while each plot keeps two ems; a canvas too small for that is left as it
+is, so give it more room), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
 degrees. Nothing is shortened or made smaller. What you set

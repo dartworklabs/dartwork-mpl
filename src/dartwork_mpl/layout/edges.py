@@ -14,9 +14,9 @@ from ..edgecase import EdgeCase
 from ..vocab import Which
 from .model import (
     ANGLES,
-    MAX_GAP_FRACTION,
     MAX_NAME_LINES,
     MAX_TICK_LINES,
+    MIN_CELL_EM,
     TOUCH_PX,
     ArtistId,
     AxisName,
@@ -125,6 +125,11 @@ def gap_fraction(need: Px, total: Px, cells: Count) -> Share | None:
     return None if room <= 0 else Share(need * cells / room)
 
 
+def cell_after(gap: Share, total: Px, cells: Count) -> Px:
+    """A cell's side once the spacing is ``gap``."""
+    return Px(total / (cells + gap * (cells - 1)))
+
+
 def deepest_reach(reaches: Sequence[Reach], gaps: Sequence[Px]) -> Px:
     """The widest gap two facing panels' content asks for (0: none meet)."""
     need = 0.0
@@ -182,12 +187,16 @@ def _wrap_names(facts: TextFacts, plan: TextPlan) -> TextPlan:
 
 
 def _parted(space: Spacing) -> Share | None:
-    """The spacing that parts the panels by half an em, if it grows."""
+    """The spacing that parts the panels by half an em, if it grows and
+    each panel keeps ``MIN_CELL_EM``: past that the canvas is too small for
+    its text, and parting would only take the plots away."""
     need = deepest_reach(space.reaches, space.gaps)
     if need <= 0:
         return None
     gap = gap_fraction(Px(need + 0.5 * space.em), space.total, space.cells)
-    if gap is None or gap > MAX_GAP_FRACTION or gap <= space.now + 1e-6:
+    if gap is None or gap <= space.now + 1e-6:
+        return None
+    if cell_after(gap, space.total, space.cells) < MIN_CELL_EM * space.em:
         return None
     return gap
 

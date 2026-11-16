@@ -122,6 +122,27 @@ def test_grid_with_colorbar_and_shared_axes() -> None:
     assert x1 <= fig.bbox.width + 0.5 and y1 <= fig.bbox.height + 0.5
 
 
+def test_grid_rows_part_for_their_tick_labels_and_titles() -> None:
+    # #787: a slide grid needs hspace 1.99; the rows stayed at 0.2.
+    dm.style.use("presentation")
+    fig, axes = plt.subplots(2, 2, figsize=dm.figsize_for(nrows=2, ncols=2))
+    for ax in axes.flat:
+        ax.plot(range(1, 13), range(12))
+        ax.set(title="Returns", xlabel="Month", ylabel="Sales (units)")
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    for ax in fig.axes:
+        texts = [*ax.get_xticklabels(), ax.xaxis.label]
+        for other in fig.axes:
+            frame = other.get_window_extent(renderer)
+            assert other is ax or not any(
+                t.get_window_extent(renderer).overlaps(frame) for t in texts
+            )
+    plot_mm = min(ax.get_window_extent(renderer).height for ax in fig.axes)
+    assert plot_mm / fig.dpi * 25.4 > 15.0
+
+
 def test_left_alone() -> None:
     empty = plt.figure()
     dm.simple_layout(empty)  # no Axes: nothing to do, no warning

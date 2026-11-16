@@ -12,6 +12,7 @@ from dartwork_mpl.layout.model import (
     Canvas,
     Count,
     Degrees,
+    HSpace,
     Line,
     Px,
     Reach,
@@ -91,6 +92,24 @@ def test_colliding_panels_part_by_half_an_em() -> None:
     fired, plan = text_plan(texts(spacings=[space]))
     assert fired == ("colliding-panels",)
     assert plan.spacing[WSpace()] == 75.0 * 2 / (800.0 - 75.0)
+
+
+def test_panels_too_short_for_their_text_stay() -> None:
+    # Parting by 400 px leaves 800 px cells 200 px, under two 120 px ems.
+    reaches = (
+        Reach((0, 1), (0, 1), Px(0.0), Px(340.0)),
+        Reach((1, 2), (0, 1), Px(0.0), Px(0.0)),
+    )
+    space = Spacing(
+        HSpace(),
+        reaches,
+        (Px(20.0),),
+        Px(800.0),
+        Count(2),
+        Share(0.2),
+        Px(120.0),
+    )
+    assert text_plan(texts(spacings=[space]))[0] == ()
 
 
 def test_crowded_ticks_wrap_at_spaces() -> None:

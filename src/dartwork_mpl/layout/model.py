@@ -36,11 +36,12 @@ MAX_STEPS = 10
 TOUCH_PX = 0.5
 # Room a fitted label keeps from its neighbours, in ems of its own size.
 CLEARANCE_EM = 0.5
+# Least a parted panel keeps along the spacing, in ems of the body text: two
+# tick labels, the fewest that show a scale.
+MIN_CELL_EM = 2.0
 ANGLES = (Degrees(30.0), Degrees(45.0), Degrees(90.0))
 MAX_TICK_LINES = 3
 MAX_NAME_LINES = 4
-# Largest wspace / hspace the panel spacing grows to (share of a cell).
-MAX_GAP_FRACTION = 1.5
 FIT_ROUNDS = 3
 # Figure text centred in this outer band of the canvas reserves that edge.
 EDGE_BAND = 0.15
