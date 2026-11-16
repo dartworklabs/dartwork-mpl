@@ -14,7 +14,7 @@ Write the takeaway sentence first. Its verb picks the form.
 | is larger than, ranks | bars sorted by value | horizontal when names are long |
 | is made of | stacked bars | one stack per period; a pie only for two or three parts of one whole |
 | is related to | scatter | a fitted line only when the fit is the point |
-| is spread, is typical | histogram, box or violin | box for comparing many groups |
+| is spread, is typical | histogram, box or violin | "Comparing distributions" below |
 | differs across two dimensions | heatmap | ordered rows and columns, a colormap with meaning |
 | the same pattern in many groups | small multiples | shared axes, one panel per group |
 
@@ -92,6 +92,52 @@ dm.label_bars(ax)                         # the four values are the point
 ax.set_yticks([])                         # so the axis does not repeat them
 ax.spines["left"].set_visible(False)
 ax.set_ylabel("Revenue (USD m)")          # the unit stays
+dm.simple_layout(fig)
+print(dm.check(fig))
+plt.close(fig)
+```
+
+## Comparing distributions
+
+| Groups | Form |
+|---|---|
+| two | overlaid histograms on one set of bin edges; `ax.ecdf(values)` when percentiles are the point |
+| three to about eight | a box per group with the raw points over it, ordered by median |
+| more, or thousands of points per group | boxes alone (`showfliers=True`); a violin only when the shape (two peaks) is the point |
+
+- **One set of bin edges.** `bins = np.histogram_bin_edges(np.concatenate([a, b]), bins=20)`
+  passed to every `ax.hist`. Bins of their own make the bars incomparable.
+- **Density when the groups differ in size.** `density=True` and the y label
+  says so (`Share per min`); counts only for equal groups or when totals
+  matter. Say each group's n, in the legend or the tick label.
+- **Overlap.** The subject `histtype="stepfilled", alpha=0.4`, the other
+  `histtype="step", color="dc.gray5"`. Two opaque fills hide each other.
+- **Raw points.** Jittered sideways, small (`s=6`, `linewidths=0`), drawn
+  before the box, and `showfliers=False` so outliers are not drawn twice.
+- **Say what the box is.** Matplotlib's box spans the middle half, its
+  whiskers reach the furthest point within 1.5 × IQR. Say it in the caption
+  or `dm.add_note(fig, text)`.
+- **The typical value.** The box's median line; on a histogram an
+  `ax.axvline(np.median(values))` in the group's colour, named with
+  `dm.annotate_value`. A mean is `showmeans=True` and said in the note.
+- **Colour.** The group the sentence is about keeps its colour, the rest
+  `"dc.gray4"`; box lines in one dark grey for all groups.
+
+```python
+rng = np.random.default_rng(7)
+waits = {"North": rng.normal(40, 8, 60), "South": rng.normal(31, 6, 45),
+         "East": rng.normal(44, 10, 80), "West": rng.normal(42, 7, 30)}
+order = sorted(waits, key=lambda k: np.median(waits[k]))
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+for i, name in enumerate(order, start=1):
+    ax.scatter(i + rng.uniform(-0.15, 0.15, len(waits[name])), waits[name], s=6,
+               linewidths=0, color=None if name == "South" else "dc.gray4")
+box = ax.boxplot([waits[k] for k in order], widths=0.5, showfliers=False)
+for part in ("boxes", "whiskers", "caps", "medians"):
+    plt.setp(box[part], color="dc.gray8")
+ax.set_xticks(range(1, len(order) + 1), [f"{k}\nn={len(waits[k])}" for k in order])
+ax.set(ylabel="Wait time (min)", title="South has the shortest waits")
+dm.add_note(fig, "Box: middle half; line: median; whiskers: furthest point within 1.5 × IQR.")
 dm.simple_layout(fig)
 print(dm.check(fig))
 plt.close(fig)
