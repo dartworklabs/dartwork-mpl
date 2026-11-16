@@ -150,6 +150,30 @@ def test_a_note_sits_under_the_plot():
     assert note.get_fontsize() == pytest.approx(dm.fs(-1))
 
 
+@pytest.mark.parametrize("margin", ["1mm", "3mm"])
+def test_a_note_keeps_the_layout_margin_from_the_corner(margin):
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot([2019, 2020, 2021, 2022, 2023], [542, 512, 644, 684, 632])
+    ax.set(xlabel="Year", ylabel="Exports (USD bn)")
+    note = dm.add_note(fig, "Source: Statistics agency")
+    dm.simple_layout(fig, margin=margin)
+    (box,) = _boxes(fig, [note])
+    mm = 25.4 / fig.dpi
+    want = dm.Length.parse(margin).mm
+    assert box.x0 * mm == pytest.approx(want, abs=0.05)
+    assert box.y0 * mm == pytest.approx(want, abs=0.05)
+    assert box.y1 < ax.xaxis.get_tightbbox(fig.canvas.get_renderer()).y0
+
+
+def test_a_note_the_caller_moved_stays_where_they_put_it():
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [0, 1])
+    note = dm.add_note(fig, "Source: test")
+    note.set_position((0.3, 0.02))
+    dm.simple_layout(fig)
+    assert tuple(note.get_position()) == (0.3, 0.02)
+
+
 def test_a_value_label_the_caller_hid_or_turned_stays_so() -> None:
     fig, ax = plt.subplots(figsize=dm.figsize("6cm", "wide"))
     ax.bar([str(i) for i in range(12)], [1000 * i + 12345 for i in range(12)])
@@ -182,3 +206,14 @@ def test_a_line_name_the_caller_moved_stays_where_they_put_it() -> None:
     names[0].xyann = (20.0, -10.0)
     dm.simple_layout(fig)
     assert tuple(names[0].xyann) == (20.0, -10.0)
+
+
+def test_a_note_added_after_the_layout_sits_in_its_margin_and_says_so(capsys):
+    dm.verbose()
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot([0, 1], [0, 1])
+    dm.simple_layout(fig, margin="2mm")
+    note = dm.add_note(fig, "Source: test")
+    (box,) = _boxes(fig, [note])
+    assert box.x0 * 25.4 / fig.dpi == pytest.approx(2.0, abs=0.05)
+    assert "call dm.simple_layout(fig) again" in capsys.readouterr().err
