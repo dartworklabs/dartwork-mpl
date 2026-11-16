@@ -34,6 +34,7 @@ from .color import (
     colors,
     ensure_contrast,
     hex,
+    list_color_libraries,
     list_colors,
     oklab,
     oklch,
@@ -66,7 +67,7 @@ from .length import Length, cm, col1, col2, inch, mm, pt
 
 # Saving
 from .save import save_formats
-from .size import figsize
+from .size import figsize, list_aspects
 
 # Preset-relative sizes
 from .style import fs, fw, lw
@@ -87,6 +88,7 @@ __all__ = [  # noqa: RUF022
     "colors",
     "hex",
     "list_colors",
+    "list_color_libraries",
     "oklab",
     "oklch",
     "rgb",
@@ -111,6 +113,7 @@ __all__ = [  # noqa: RUF022
     "Length",
     "figsize",
     "figsize_for",
+    "list_aspects",
     # Point-unit offsets
     # Formatting
     "format_axis_myriad",

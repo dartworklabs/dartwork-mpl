@@ -85,6 +85,16 @@ def test_families_forms_and_colormaps():
         dm.list_colors("pastel")
 
 
+def test_listed_libraries_are_the_registered_prefixes():
+    named = mcolors.get_named_colors_mapping()
+    prefixes = [lib["prefix"] for lib in dm.list_color_libraries()]
+    assert prefixes[0] == "dc."
+    for prefix in prefixes:
+        assert any(name.startswith(prefix) for name in named)
+    dotted = {name[: name.index(".") + 1] for name in named if "." in name}
+    assert dotted == set(prefixes)
+
+
 def test_annotation_ink_stays_readable_on_any_face():
     fig, ax = plt.subplots()
     ink = dm.ensure_contrast("dc.amber5", ax.get_facecolor())

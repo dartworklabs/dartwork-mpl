@@ -8,6 +8,9 @@ Entries before 0.8.0 are in the git history of this file.
 
 - `dm.lint_rules()` lists the rules `dm.lint_code` checks: `id`, `severity`,
   `message` and `fix`, read from the same catalog.
+- `dm.list_aspects()` lists the aspect tokens `dm.figsize` reads, each with
+  its height-over-width `ratio`, and `dm.list_color_libraries()` the colour
+  libraries registered with matplotlib (`prefix`, `label`).
 
 ## 0.8.0 — 2026-11-16
 
