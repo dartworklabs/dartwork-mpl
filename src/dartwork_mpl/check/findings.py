@@ -8,7 +8,8 @@ from typing import ClassVar
 
 from .model import Text, panels_of
 
-#: What usually helps, for each rule. A finding may be what the author meant.
+#: What usually helps, for each rule that does not name its own fix. A
+#: finding may be what the author meant.
 FIXES: dict[str, str] = {
     "OVERFLOW": "dm.simple_layout(fig) makes room for axis text; move a "
     "fig.text or annotation placed past the plot inward",
@@ -22,8 +23,6 @@ FIXES: dict[str, str] = {
     "LEGEND_ON_DATA": "dm.place_legend(ax) picks the place that covers "
     'least; no free place: dm.place_legend(ax, loc="above"); panels '
     "sharing series: dm.figure_legend(fig)",
-    "MISSING_AXIS_LABEL": "name the quantity and its unit: "
-    'ax.set_ylabel("Revenue (M USD)"); a colorbar: cbar.set_label(...)',
     "EMPTY_AXES": "ax.remove() the panel the data does not fill, or make "
     "the grid as large as the data",
     "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
@@ -84,16 +83,19 @@ class Findings:
         *,
         handles: tuple[object, ...] = (),
         panels: tuple[int, ...] | None = None,
+        fix: str | None = None,
     ) -> Findings:
         """These findings and one more of ``rule``, with its fix.
 
         The finding names ``handles`` and the texts' artists; its panels
-        are ``panels``, else the texts'.
+        are ``panels``, else the texts'; its fix is ``fix``, else the rule's
+        in :data:`FIXES`.
         """
         texts = tuple(texts)
         artists = (*handles, *(t.handle for t in texts))
         where = panels_of(texts) if panels is None else panels
-        found = Finding(rule, message, FIXES[rule], artists, where)
+        tried = FIXES[rule] if fix is None else fix
+        found = Finding(rule, message, tried, artists, where)
         return Findings((*self.items, found), self.skipped)
 
     @property
