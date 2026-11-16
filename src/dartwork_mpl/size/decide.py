@@ -7,8 +7,8 @@ in one 9 cm column and everything wider in two (17 cm); a slide draws under
 its title in a 10.5 cm tall body, and a grid of two or more rows fills the
 whole slide; a poster scales the report tiers with its font. Panel grids
 take the widest tier, each row as tall as its cell's aspect, with room for
-its text on top once the cells are narrow. Category names that would not
-stand flat are an edge case in ``edges.py``.
+its text on top once the plots would be too small to share it. Category
+names that would not stand flat are an edge case in ``edges.py``.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from .canvas import (
     SquareBody,
     WholeBody,
 )
-from .model import ASPECTS, Aspect, FigureSize
+from .model import ASPECTS, Aspect, FigureSize, Grid
 
 # Journal columns: one panel in one column, wider content across two.
 COLUMN, TWO_COLUMNS = cm(9), cm(17)
@@ -52,12 +52,14 @@ SLIDE_TIERS = (SLIDE_HALF, SLIDE_TWO_THIRDS, cm(23.4))
 # Most x positions whose labels fit the half and two-thirds widths at the
 # slide's 18.2 pt ticks (six company names fit 15.4 cm with 9 pt to spare).
 SLIDE_HALF_POINTS, SLIDE_TWO_THIRDS_POINTS = 4, 6
-# What one row of panels spends on its title, tick labels and axis names
-# at report text (measured: a 4.5 cm report row draws a 3.0 cm plot). Once
-# a row's cell aspect would leave its plot under two thirds of the row (a
-# cell aspect under three times this), the plot keeps the aspect and the
-# text goes on top.
-ROW_TEXT = cm(1.5)
+# What a grid spends on its text at report text, measured with shared axes:
+# the first row 1.5 cm on its title, tick labels and axis names (a 4.5 cm
+# report row draws a 3.0 cm plot), each further row half that on its titles
+# and gap, the x tick labels and name being shared under the bottom row.
+ROW_TEXT, FURTHER_ROW_TEXT = cm(1.5), cm(0.75)
+# The least plot a grid's cells keep at their aspect: what a 4.5 cm row
+# draws. Below it the plot keeps the aspect and each row adds its text.
+LEAST_PLOT = cm(3.0)
 
 
 def figure_size(width: Length, height: Aspect | Length) -> FigureSize:
@@ -137,28 +139,30 @@ def slide_canvas(request: CanvasRequest) -> Canvas:
     return Canvas(SLIDE_TWO_THIRDS, height)
 
 
-def row_height(cell: Length, aspect: Aspect, page: Page) -> Length:
-    """One grid row over a ``cell`` wide column: the cell keeps ``aspect``.
+def grid_height(grid: Grid, cell: Length, aspect: Aspect, page: Page) -> Length:
+    """A grid's rows over ``cell`` wide columns: each cell keeps ``aspect``.
 
-    Where that would leave the plot under two thirds of the row, the plot
-    keeps the aspect and the row adds the text (``ROW_TEXT``, scaled with
-    the page's font) on top, at least three times the text.
+    Where the grid's text (``ROW_TEXT`` once, ``FURTHER_ROW_TEXT`` per
+    further row, scaled with the page's font) would leave each plot under
+    ``LEAST_PLOT``, the plot keeps the aspect instead and each row adds
+    ``ROW_TEXT`` on top, at least ``LEAST_PLOT`` plus that text.
     """
-    text = ROW_TEXT.cm * page.scale
+    rows, text = grid.nrows, ROW_TEXT.cm * page.scale
     kept = cell.cm * aspect.ratio
-    if kept >= 3 * text:
-        return cm(kept)
-    return cm(max(kept + text, 3 * text))
+    spent = text + (rows - 1) * FURTHER_ROW_TEXT.cm * page.scale
+    least = LEAST_PLOT.cm * page.scale
+    if (rows * kept - spent) / rows >= least:
+        return cm(rows * kept)
+    return cm(rows * max(kept + text, least + text))
 
 
 def grid_canvas(
     request: CanvasRequest, width: Length, page: Page, tallest: Aspect
 ) -> Canvas:
-    """A panel grid ``width`` wide, rows as :func:`row_height` gives, the
+    """A panel grid ``width`` wide, as tall as :func:`grid_height` gives, the
     whole no taller than ``tallest`` (a share of the width) allows."""
     grid, aspect = request.grid, request.kind.spec.aspect
-    row = row_height(cm(width.cm / grid.ncols), aspect, page)
-    rows = cm(row.cm * grid.nrows)
+    rows = grid_height(grid, cm(width.cm / grid.ncols), aspect, page)
     most = cm(width.cm * tallest.ratio)
     return Canvas(width, min(half_cm(rows), half_cm(most)))
 
