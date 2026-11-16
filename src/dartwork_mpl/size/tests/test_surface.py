@@ -36,6 +36,16 @@ class TestFigsize:
     ) -> None:
         assert _cm(dm.figsize("13cm", aspect)) == (13.0, height_cm)
 
+    def test_listed_aspects_are_the_tokens_figsize_reads(self) -> None:
+        listed = dm.list_aspects()
+        for aspect in listed:
+            assert dm.figsize("13cm", aspect["name"]) == dm.figsize(
+                "13cm", aspect["ratio"]
+            )
+        with pytest.raises(ValueError) as unknown:
+            dm.figsize("13cm", "nope")
+        assert all(repr(a["name"]) in str(unknown.value) for a in listed)
+
     @pytest.mark.parametrize("width", ["13cm", "130mm", dm.cm(13), " 13 cm "])
     def test_width_forms_agree(self, width: object) -> None:
         assert dm.figsize(width) == pytest.approx(dm.figsize("13cm"))

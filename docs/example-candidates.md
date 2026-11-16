@@ -45,7 +45,7 @@
 | `ensure_contrast` | 대비가 모자란 색을 조정한다 | `color/__init__.py:164` | 0/10/0 | 색 위의 글자가 읽히는 대비(4.5:1) 확인과 보정 |남김 |
 | `list_colors` | `dc.*` 계열 목록을 돌려준다 | `color/__init__.py:288` | 2/0/0 | 예시가 아니라 허브의 색 표 페이지가 대신한다 |남김 |
 | `grid_shape` | 패널 `n`개의 행과 열 수를 정한다 | `size/__init__.py:78` | 2/2/0 | small multiples의 행과 열 고르기, 빈 칸 처리 |지움 |
-| `list_aspect_tokens` | 비율 이름 목록을 돌려준다 | `size/__init__.py:90` | 1/0/0 | 예시가 아니라 skill의 표가 대신한다 |지움 |
+| `list_aspect_tokens` | 비율 이름 목록을 돌려준다 | `size/__init__.py:90` | 1/0/0 | 허브가 skill 문장을 정규식으로 읽어야 했다(#736) |`dm.list_aspects`로 되살림 |
 
 남긴 것은 셋이다.
 

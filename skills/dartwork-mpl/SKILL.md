@@ -110,3 +110,4 @@ Read only the page the task needs. Without this folder, `uv run dartwork-mpl pat
 | Korean text, fonts and number units | `references/korean.md` |
 | what each `dm.check` finding means | `references/review.md` |
 | native matplotlib details: dashes, spines, exact canvas regions | `references/recipes.md` |
+| every aspect token, colour library or lint rule | `dm.list_aspects()`, `dm.list_color_libraries()`, `dm.lint_rules()` |
