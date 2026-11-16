@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.style import apply, decide
-from dartwork_mpl.style.model import Points, Steps, Weight, override_key
+from dartwork_mpl.edgecase import settle
+from dartwork_mpl.style import apply, decide, load_style_dict
+from dartwork_mpl.style.edges import EDGES
+from dartwork_mpl.style.model import Active, Points, Steps, Weight, override_key
 from dartwork_mpl.vocab import DefaultLocale, KoreanLocale
 
 REGISTRY = apply.REGISTRY
@@ -37,6 +39,38 @@ def test_a_list_applies_every_preset_layer_in_order():
 def test_offset_moves_the_base_by_whole_steps(base, n, size, expected):
     moved = decide.offset(Points(base), Steps(n), Points(size))
     assert moved.pt == pytest.approx(expected)
+
+
+def _line_width_and_step(name):
+    presets = REGISTRY.parse(name)
+    base = 1.0
+    for layer in decide.chain(presets).layers:
+        base = float(load_style_dict(layer).get("lines.linewidth", base))
+    active = Active(presets, in_force=True)
+    return Points(base), settle(active, decide.step(active), EDGES).plan
+
+
+@pytest.mark.parametrize("name", sorted(REGISTRY.presets))
+def test_every_line_width_step_draws_a_line(name):
+    base, size = _line_width_and_step(name)
+    widths = [decide.thinner(base, Steps(n), size).pt for n in range(-3, 4)]
+    assert widths[3] == base.pt
+    assert all(w > 0 for w in widths)
+    assert widths == sorted(widths)
+    above = [decide.offset(base, Steps(n), size).pt for n in range(4)]
+    assert widths[3:] == pytest.approx(above)
+
+
+@pytest.mark.parametrize(
+    ("base", "size", "expected"),
+    [(1.0, 1.0, [0.125, 0.25, 0.5]), (1.5, 1.0, [0.125, 0.25, 0.5])],
+)
+def test_below_half_a_step_each_line_step_halves(base, size, expected):
+    widths = [
+        decide.thinner(Points(base), Steps(n), Points(size)).pt
+        for n in (-3, -2, -1)
+    ]
+    assert widths == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(

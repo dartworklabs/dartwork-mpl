@@ -95,8 +95,12 @@ def fs(n: float) -> float:
 
 
 def lw(n: float) -> float:
-    """The preset's line width plus ``n`` steps (1 pt, 2.6 pt on slides)."""
-    width = decide.offset(measure.line_width(), Steps(float(n)), _step())
+    """The preset's line width plus ``n`` steps (1 pt, 2.6 pt on slides).
+
+    Below the base a step takes off one step while half a step is left,
+    and halves the width after that: ``dm.lw(-1)`` is 0.5 pt on ``report``.
+    """
+    width = decide.thinner(measure.line_width(), Steps(float(n)), _step())
     return width.pt
 
 
