@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import weakref
 from typing import TYPE_CHECKING
 
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
     from matplotlib.text import Annotation
+
+LOG = logging.getLogger("dartwork_mpl.labels")
 
 # Between the point and its label, in points.
 OFFSET_PT = 3.0
@@ -71,16 +74,56 @@ def annotate_value(
 
 
 def add_note(fig: Figure, text: str, *, preset: PresetText) -> Text:
-    """``dm.add_note``, its text sized by ``preset``."""
+    """``dm.add_note``, its text sized by ``preset``.
+
+    It starts at the canvas corner, or at the corner the last
+    :func:`place_notes` gave ``fig``: a note added after
+    ``dm.simple_layout`` sits in its margin, but the layout made no room
+    for it, which is said.
+    """
+    corner = _CORNERS.get(fig)
+    x, y = corner or (0.0, 0.0)
     note = fig.text(  # pyright: ignore[reportUnknownMemberType]
-        0.0, 0.0, text, ha="left", va="bottom", fontsize=preset.size(-1)
+        x, y, text, ha="left", va="bottom", fontsize=preset.size(-1)
     )
     _NOTE_GAPS[note] = float(mpl.rcParams["axes.labelpad"])
+    _PLACED[note] = (x, y)
+    if corner is not None:
+        LOG.info(
+            'added the note "%s" after dm.simple_layout: it sits in the '
+            "margin, but nothing made room above it; call "
+            "dm.simple_layout(fig) again so the plot clears it",
+            text,
+        )
     return note
+
+
+def place_notes(fig: Figure, left: float, bottom: float) -> None:
+    """Put each ``add_note`` line of ``fig`` at ``(left, bottom)`` (figure
+    fractions): ``dm.simple_layout`` gives its margins. A note moved since
+    the slice last placed it stays where the caller put it."""
+    _CORNERS[fig] = (left, bottom)
+    for note in fig.texts:
+        last = _PLACED.get(note)
+        if last is None or tuple(note.get_position()) != last:
+            continue
+        note.set_position((left, bottom))
+        _PLACED[note] = (left, bottom)
 
 
 #: The gap (pt) ``simple_layout`` reserves above each ``add_note`` line.
 _NOTE_GAPS: weakref.WeakKeyDictionary[Text, float] = weakref.WeakKeyDictionary()
+
+#: Where the slice last put each note (figure fractions); one whose
+#: position differs was moved by the caller and stays where they put it.
+_PLACED: weakref.WeakKeyDictionary[Text, tuple[float, float]] = (
+    weakref.WeakKeyDictionary()
+)
+
+#: The corner the last ``place_notes`` gave each figure's notes.
+_CORNERS: weakref.WeakKeyDictionary[Figure, tuple[float, float]] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def note_gap_pt(artist: object) -> float | None:
