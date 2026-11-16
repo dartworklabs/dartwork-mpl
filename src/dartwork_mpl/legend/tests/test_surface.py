@@ -158,6 +158,22 @@ def test_a_legend_the_caller_moved_stays_where_they_put_it() -> None:
     assert box.y0 - frame.y0 < frame.height / 4
 
 
+def test_an_outside_legend_the_caller_moved_stays_where_they_put_it() -> None:
+    # #749: a legend above moved with set_loc was rebuilt at the centre by
+    # the next layout at another size.
+    fig, ax = _lines(3)
+    dm.place_legend(ax, loc="above")
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend.set_loc("lower left")
+    fig.set_size_inches(4.0, 3.0)
+    dm.simple_layout(fig)
+    middle = (_box(fig, ax).x0 + _box(fig, ax).x1) / 2
+    assert ax.get_legend() is legend
+    assert _box(fig, legend).x0 > middle  # centred, it would straddle it
+
+
 def test_a_figure_title_a_legend_above_and_panel_titles_stack():
     # #785: the legend was drawn on the suptitle, and below it the suptitle
     # sat flush on the panel titles.
