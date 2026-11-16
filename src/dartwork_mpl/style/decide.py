@@ -10,6 +10,8 @@ from .model import KOREAN_LAYER, Active, Chain, Points, Preset, Steps, Weight
 #: One ``dm.fs`` / ``dm.lw`` step on paper, reports and the web.
 POINT = Points(1.0)
 WEIGHT_STEP = 100
+#: The weights matplotlib draws: 0 falls back, below or above 900 fails.
+LIGHTEST, HEAVIEST = 100, 900
 
 
 def chain(presets: tuple[Preset, ...]) -> Chain:
@@ -44,6 +46,21 @@ def thinner(base: Points, n: Steps, size: Points) -> Points:
     return Points(last * 2.0 ** (n.n + ladder))
 
 
+def smaller(base: Points, n: Steps, size: Points) -> Points:
+    """A font size ``n`` steps of ``size`` from ``base``, never zero.
+
+    As :func:`offset` while that is above zero; past it, the smallest whole
+    step above zero (``report``: 1 pt, ``scientific``: 0.5 pt).
+    """
+    moved = offset(base, n, size)
+    if moved.pt > 0:
+        return moved
+    floor = base.pt - (math.ceil(base.pt / size.pt) - 1) * size.pt
+    return Points(floor)
+
+
 def bolder(base: Weight, n: Steps) -> Weight:
-    """``base`` moved by ``n`` steps of 100, rounded to a whole weight."""
-    return Weight(round(base.value + WEIGHT_STEP * n.n))
+    """``base`` moved by ``n`` steps of 100, rounded to a whole weight and
+    held within 100-900."""
+    moved = round(base.value + WEIGHT_STEP * n.n)
+    return Weight(min(HEAVIEST, max(LIGHTEST, moved)))
