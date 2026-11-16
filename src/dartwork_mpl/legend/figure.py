@@ -7,12 +7,14 @@ keeps from it. The registry holds its legends weakly.
 
 from __future__ import annotations
 
+import logging
 import weakref
 from typing import TYPE_CHECKING
 
 from matplotlib.legend import Legend
 
 from ..geometry import figure_axes, figure_legends, get_renderer
+from ..hidden import axes_name
 from ..vocab import Reserve, edge_of
 from .apply import fit, pad_px, size_of
 from .model import Above, Best, Columns, Size, parse_loc, refuse_anchor
@@ -21,6 +23,8 @@ if TYPE_CHECKING:
     from matplotlib.artist import Artist
     from matplotlib.figure import Figure, SubFigure
 
+
+LOG = logging.getLogger("dartwork_mpl.legend")
 
 _RESERVES: weakref.WeakKeyDictionary[Legend, Reserve] = (
     weakref.WeakKeyDictionary()
@@ -54,6 +58,11 @@ def figure_legend(
         names = {t.get_text() for t in legend.get_texts()} if legend else None
         if legend is not None and names is not None and names <= set(labels):
             legend.remove()
+            LOG.info(
+                "removed the legend of %s: the figure legend shows the same "
+                "entries; call ax.legend() after dm.figure_legend to keep it",
+                axes_name(ax),
+            )
     for legend in figure_legends(fig):
         if legend in _RESERVES:
             legend.remove()

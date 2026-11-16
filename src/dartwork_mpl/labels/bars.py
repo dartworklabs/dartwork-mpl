@@ -7,6 +7,7 @@ settles the labels at the size ``dm.simple_layout`` fits.
 
 from __future__ import annotations
 
+import logging
 import weakref
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
 
     from ..vocab import TickScale
+
+LOG = logging.getLogger("dartwork_mpl.labels")
 
 # Between a bar end and its label, in points.
 OFFSET_PT = 3.0
@@ -65,6 +68,7 @@ class BarLabel(Annotation):
         self.value = value
         self.vertical = stands_up(container)
         self.hidden = False  # hidden by the layout for room
+        self.turned = 0.0  # the rotation the layout last gave it
         self.tick_scale: TickScale | None = None
         self._measuring = False
         super().__init__(  # pyright: ignore[reportUnknownMemberType]
@@ -92,6 +96,20 @@ class BarLabel(Annotation):
         length = bar.get_height() if self.vertical else bar.get_width()
         grows_up = (length >= 0) != bool(self.value_axis.get_inverted())
         return Higher() if grows_up else Lower()
+
+    def arrange(self, angle: float, shown: bool) -> None:
+        """Turn and show or hide the label for room, as the layout's own."""
+        self.set_rotation(angle)
+        self.turned = angle
+        self.set_visible(shown)
+        self.hidden = not shown
+
+    @property
+    def authored(self) -> bool:
+        """The caller turned or hid it since the layout last arranged it:
+        it stays as they left it."""
+        turned = float(self.get_rotation()) != self.turned
+        return turned or not (super().get_visible() or self.hidden)
 
     def get_visible(self) -> bool:
         """Visible and, a segment's label, held by its bar."""
@@ -226,7 +244,9 @@ def label_bars(
     """``dm.label_bars``: text sized by ``preset``, values printed as ``ticks`` print them."""
     containers = _containers(ax, bars)
     facts = BarsFacts(tuple(bar_run(c) for c in containers))
-    plan = settle(facts, decide.plain_labels(facts), edges.BARS_EDGES).plan
+    plan = settle(
+        facts, decide.plain_labels(facts), edges.BARS_EDGES, log=LOG
+    ).plan
     family = BarFamily(preset, ticks)
     for p in plan.labels:
         container = containers[p.run]

@@ -1,4 +1,4 @@
-"""What is wrong with a figure: each rule's findings, its fix, and the report."""
+"""Where to look in a figure: each rule's findings, what to try, and the report."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import ClassVar
 
 from .model import Text, panels_of
 
-#: The usual remedy each rule names.
+#: What usually helps, for each rule. A finding may be what the author meant.
 FIXES: dict[str, str] = {
     "OVERFLOW": "dm.simple_layout(fig) makes room for axis text; move a "
     "fig.text or annotation placed past the plot inward",
@@ -19,8 +19,9 @@ FIXES: dict[str, str] = {
     "TEXT_CROWD": "put the value on the other side of its point "
     "(dm.annotate_value picks a free side) or a line apart",
     "VALUE_LABEL_DECIMAL": 'print whole numbers whole: fmt="%d" or "{:,.0f}"',
-    "LEGEND_ON_DATA": "dm.place_legend(ax) moves it where it covers nothing, "
-    "else outside; panels sharing series: dm.figure_legend(fig)",
+    "LEGEND_ON_DATA": "dm.place_legend(ax) picks the place that covers "
+    'least; no free place: dm.place_legend(ax, loc="above"); panels '
+    "sharing series: dm.figure_legend(fig)",
     "MISSING_AXIS_LABEL": "name the quantity and its unit: "
     'ax.set_ylabel("Revenue (M USD)"); a colorbar: cbar.set_label(...)',
     "EMPTY_AXES": "ax.remove() the panel the data does not fill, or make "
@@ -39,9 +40,10 @@ FIXES: dict[str, str] = {
 
 @dataclass(frozen=True)
 class Finding:
-    """One defect: the rule that found it, what, and how to fix it."""
+    """One place to look: the rule that points at it, what it saw, and what
+    usually helps (``fix``)."""
 
-    #: How bad: every rule reports a defect that spoils the chart.
+    #: Every rule points at something a reader would stumble on.
     severity: ClassVar[str] = "WARNING"
 
     rule: str
@@ -51,8 +53,8 @@ class Finding:
     panels: tuple[int, ...] = ()
 
     def __str__(self) -> str:
-        """``WARNING OVERLAP: message``."""
-        return f"{self.severity} {self.rule}: {self.message}"
+        """``OVERLAP: message``."""
+        return f"{self.rule}: {self.message}"
 
 
 @dataclass(frozen=True)
@@ -100,18 +102,18 @@ class Findings:
         return tuple(dict.fromkeys(f.rule for f in self.items))
 
     def report(self) -> str:
-        """A compact text report: one line per finding, its fix indented."""
+        """A compact text report: one line per finding, what to try indented."""
         if not self:
-            return "dm.check: no defects found."
+            return "dm.check: nothing stands out."
         n = len(self.items)
-        lines = [f"dm.check: {n} finding{'s' * (n != 1)}"]
+        lines = [f"dm.check: {n} place{'s' * (n != 1)} to look at"]
         for f in self.items:
             lines.append(str(f))
-            lines.append(f"  fix: {f.fix}")
+            lines.append(f"  try: {f.fix}")
         if self.skipped:
             lines.append(
-                f"NOT RUN: {', '.join(self.skipped)} (could not measure; "
-                "the figure is not proven clean)"
+                f"NOT RUN: {', '.join(self.skipped)} (could not measure "
+                "this figure, so look at it yourself)"
             )
         return "\n".join(lines)
 

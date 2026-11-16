@@ -49,7 +49,7 @@ def test_a_laid_out_chart_is_clean_and_unchanged():
     found = dm.check(fig)
     assert not found, found.report()
     assert _png(fig) == before
-    assert str(found) == "dm.check: no defects found."
+    assert str(found) == "dm.check: nothing stands out."
 
 
 def test_a_legend_on_the_points_is_found():

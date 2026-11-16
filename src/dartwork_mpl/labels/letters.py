@@ -37,6 +37,18 @@ GROUPS: weakref.WeakKeyDictionary[Figure, list[LetterGroup]] = (
 )
 
 
+#: The offset (pt) the slice last gave each letter; one that differs was
+#: moved by the caller and stays where they put it.
+OFFSETS: weakref.WeakKeyDictionary[Annotation, tuple[float, float]] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def _moved(text: Annotation) -> bool:
+    last = OFFSETS.get(text)
+    return last is not None and tuple(text.xyann) != last
+
+
 def _letters(n: int) -> list[str]:
     """a, b, ..., z, aa, ab, ..."""
     out: list[str] = []
@@ -52,7 +64,9 @@ def _letters(n: int) -> list[str]:
 def _place_letters(group: LetterGroup, renderer: RendererBase) -> bool:
     """Put each letter of ``group`` where the rule says; whether one moved."""
     live = [
-        (ax, t) for ax, t in group.members if t.axes is ax and t in ax.texts
+        (ax, t)
+        for ax, t in group.members
+        if t.axes is ax and t in ax.texts and not _moved(t)
     ]
     if not live:
         return False
@@ -68,6 +82,7 @@ def _place_letters(group: LetterGroup, renderer: RendererBase) -> bool:
         old = text.xyann
         if abs(old[0] - dx) > 1e-3 or abs(old[1] - dy) > 1e-3:
             text.xyann = (dx, dy)
+            OFFSETS[text] = (dx, dy)
             moved = True
     return moved
 

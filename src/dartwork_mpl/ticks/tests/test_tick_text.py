@@ -63,3 +63,27 @@ def test_a_locale_outside_the_ladders_is_refused() -> None:
     _, ax = plt.subplots()
     with pytest.raises(ValueError, match="locale must be"):
         dm.format_axis_myriad(ax, locale="en")
+
+
+def test_large_numbers_leave_an_axis_told_how_to_write_alone() -> None:
+    fig, (told, free) = plt.subplots(1, 2)
+    for ax in (told, free):
+        ax.plot([0, 1], [0, 5e6])
+    told.ticklabel_format(axis="y", style="plain")
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert "1000000" in {t.get_text() for t in told.get_yticklabels()}
+    assert "1M" in {t.get_text() for t in free.get_yticklabels()}
+    plt.close(fig)
+
+
+def test_myriad_leaves_a_category_axis_its_names():
+    fig, ax = plt.subplots()
+    ax.barh(["서울", "부산"], [12.5e8, 8.2e8])
+    dm.format_axis_myriad(ax)  # y: the names
+    dm.format_axis_myriad(ax, axis="x")
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert [t.get_text() for t in ax.get_yticklabels()] == ["서울", "부산"]
+    assert ax.get_xticklabels()[1].get_text().endswith("억")
+    plt.close(fig)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import threading
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
@@ -25,6 +26,8 @@ class State:
     values: dict[str, object] = field(default_factory=dict[str, object])
     locale: Locale = field(default_factory=DefaultLocale)
 
+
+LOG = logging.getLogger("dartwork_mpl.style")
 
 REGISTRY = measure.registry()
 # Serializes this slice's multi-key rcParams writes across threads.
@@ -67,6 +70,9 @@ def write(chain: Chain, overrides: RcParams) -> None:
     on keys the incoming layers do not set.
     """
     edits = measure.edits(STATE[0].values)
+    # Edits off a preset no longer in force (plt.rc_context restored the
+    # defaults) are matplotlib's values, not the caller's.
+    yours = not STATE[0].values or measure.in_force(STATE[0].values)
     plt.rcParams.update(mpl.rcParamsDefault)
     plt.style.use([measure.layer_path(layer) for layer in chain.layers])
     declared: set[str] = set()
@@ -75,6 +81,16 @@ def write(chain: Chain, overrides: RcParams) -> None:
     for key, value in edits.items():
         if key not in declared:
             plt.rcParams[measure.rc_key(key)] = value
+        elif yours and key not in overrides:
+            LOG.info(
+                'replaced your rcParams["%s"] = %r with the preset\'s %r: '
+                "the preset sets that key; pass it to dm.style.use as an "
+                'override (**{"%s": ...}) to keep yours',
+                key,
+                value,
+                plt.rcParams[measure.rc_key(key)],
+                key,
+            )
     values = {
         key: copy.deepcopy(plt.rcParams[measure.rc_key(key)])
         for key in declared

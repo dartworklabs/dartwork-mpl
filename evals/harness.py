@@ -280,7 +280,7 @@ def lint(source: str) -> list[dict[str, Any]]:
     return [
         {
             "rule": f.rule_id,
-            "severity": f.severity.value,
+            "severity": str(f.severity),
             "line": f.line,
             "message": f.message,
         }

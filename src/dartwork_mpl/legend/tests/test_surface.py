@@ -129,3 +129,18 @@ def test_a_polar_legend_below_stays_off_the_circle():
         legend = dm.place_legend(ax, loc="below")
         dm.simple_layout(fig)
     assert _box(fig, legend).y1 <= _box(fig, ax).y0
+
+
+def test_a_legend_the_caller_moved_stays_where_they_put_it() -> None:
+    fig, ax = plt.subplots()
+    x = np.linspace(0, 1, 20)
+    ax.plot(x, x, label="up")
+    ax.plot(x, 1 - x, label="down")
+    legend = dm.place_legend(ax)
+    assert legend is not None
+    legend.set_loc("lower left")
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    box, frame = legend.get_window_extent(), ax.get_window_extent()
+    assert box.x0 - frame.x0 < frame.width / 4
+    assert box.y0 - frame.y0 < frame.height / 4

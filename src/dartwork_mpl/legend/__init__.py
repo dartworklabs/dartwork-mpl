@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from . import apply, figure
-from .apply import outside_edge, settle
+from .apply import outside_edge, report_legends, settle
 from .figure import figure_reserve
 from .model import AskedLoc, parse_columns
 
@@ -26,6 +26,7 @@ __all__ = [
     "figure_reserve",
     "outside_edge",
     "place_legend",
+    "report_legends",
     "settle",
 ]
 

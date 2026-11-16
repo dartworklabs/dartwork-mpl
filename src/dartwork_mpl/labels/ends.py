@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 import weakref
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import matplotlib as mpl
+import matplotlib.colors as mcolors
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
+from ..hidden import axes_name
 from . import decide
 from .measure import backdrop, drawn_renderer, px_per_pt, readable_on
 from .model import Column
@@ -19,6 +22,9 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.lines import Line2D
+
+
+LOG = logging.getLogger("dartwork_mpl.labels")
 
 
 @dataclass(eq=False)
@@ -34,12 +40,24 @@ GROUPS: weakref.WeakKeyDictionary[Axes, list[_LineEnds]] = (
 )
 
 
+#: The offset (pt) the slice last gave each name; one that differs was
+#: moved by the caller and stays where they put it.
+OFFSETS: weakref.WeakKeyDictionary[Annotation, tuple[float, float]] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def _moved(text: Annotation) -> bool:
+    last = OFFSETS.get(text)
+    return last is not None and tuple(text.xyann) != last
+
+
 def _space(ax: Axes, group: _LineEnds, renderer: RendererBase) -> bool:
     """Spread the group's labels one line apart at ``ax``'s size now."""
     keep = [
         (t, end)
         for t, end in zip(group.labels, group.ends, strict=True)
-        if t.axes is ax and t in ax.texts
+        if t.axes is ax and t in ax.texts and not _moved(t)
     ]
     if len(keep) < 2:
         return False
@@ -60,6 +78,7 @@ def _space(ax: Axes, group: _LineEnds, renderer: RendererBase) -> bool:
         if abs(old[0] - offset[0]) > 0.01 or abs(old[1] - offset[1]) > 0.01:
             moved = True
         label.xyann = offset
+        OFFSETS[label] = offset
     return moved
 
 
@@ -97,6 +116,11 @@ def label_line_ends(ax: Axes) -> list[Text]:
     background = backdrop(ax)
     if (legend := ax.get_legend()) is not None:
         legend.remove()
+        LOG.info(
+            "removed the legend of %s: dm.label_line_ends names its lines "
+            "at their ends instead; call ax.legend() after it to have both",
+            axes_name(ax),
+        )
     group = _LineEnds([], [], gap)
     for line in ax.get_lines():
         end = _last_point(line)
@@ -106,6 +130,18 @@ def label_line_ends(ax: Axes) -> list[Text]:
             or str(line.get_label()).startswith("_")
         ):
             continue
+        ink = readable_on(line.get_color(), background)
+        if mcolors.to_hex(ink) != mcolors.to_hex(line.get_color()):
+            LOG.info(
+                'wrote the name "%s" on %s in %s, not its line\'s %s: the '
+                "line's colour reads under 4.5:1 on the background; set the "
+                "name's colour yourself afterwards (text.set_color) to keep "
+                "the line's",
+                line.get_label(),
+                axes_name(ax),
+                mcolors.to_hex(ink),
+                mcolors.to_hex(line.get_color()),
+            )
         group.labels.append(
             ax.annotate(  # pyright: ignore[reportUnknownMemberType]
                 str(line.get_label()),
@@ -113,7 +149,7 @@ def label_line_ends(ax: Axes) -> list[Text]:
                 xycoords="data",
                 xytext=(gap, 0.0),
                 textcoords="offset points",
-                color=readable_on(line.get_color(), background),
+                color=ink,
                 ha="left",
                 va="center",
                 annotation_clip=False,

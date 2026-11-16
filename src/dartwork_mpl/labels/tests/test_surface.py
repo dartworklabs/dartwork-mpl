@@ -148,3 +148,37 @@ def test_a_note_sits_under_the_plot():
     (box,) = _boxes(fig, [note])
     assert box.y1 < ax.xaxis.get_tightbbox(fig.canvas.get_renderer()).y0
     assert note.get_fontsize() == pytest.approx(dm.fs(-1))
+
+
+def test_a_value_label_the_caller_hid_or_turned_stays_so() -> None:
+    fig, ax = plt.subplots(figsize=dm.figsize("6cm", "wide"))
+    ax.bar([str(i) for i in range(12)], [1000 * i + 12345 for i in range(12)])
+    labels = dm.label_bars(ax)
+    dm.simple_layout(fig)
+    shown = [t for t in labels if t.get_visible()]
+    shown[0].set_visible(False)
+    shown[1].set_rotation(45)
+    dm.simple_layout(fig)
+    assert not shown[0].get_visible()
+    assert shown[1].get_rotation() == 45
+
+
+def test_a_panel_letter_the_caller_moved_stays_where_they_put_it() -> None:
+    fig, axes = plt.subplots(1, 2)
+    letters = dm.label_axes(axes)
+    dm.simple_layout(fig)
+    letters[0].xyann = (5.0, 5.0)
+    dm.simple_layout(fig)
+    assert tuple(letters[0].xyann) == (5.0, 5.0)
+
+
+def test_a_line_name_the_caller_moved_stays_where_they_put_it() -> None:
+    fig, ax = plt.subplots()
+    x = np.linspace(0, 1, 10)
+    ax.plot(x, x, label="up")
+    ax.plot(x, x + 0.01, label="close")
+    names = dm.label_line_ends(ax)
+    dm.simple_layout(fig)
+    names[0].xyann = (20.0, -10.0)
+    dm.simple_layout(fig)
+    assert tuple(names[0].xyann) == (20.0, -10.0)

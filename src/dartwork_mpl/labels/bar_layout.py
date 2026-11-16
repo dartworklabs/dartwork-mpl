@@ -9,12 +9,15 @@ value axes grow just enough for the labels beyond the bar ends.
 
 from __future__ import annotations
 
+import logging
+import weakref
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from ..geometry import axis_of, shared_axes
+from ..hidden import axes_name
 from ..vocab import Span, Which, X, Y
 from . import decide
 from .bar_geometry import CrowdFacts, HeadroomFacts, Pixels, Room, Spot
@@ -28,6 +31,14 @@ if TYPE_CHECKING:
 
 # Clear space between neighbouring bar labels, in points.
 GAP_PT = 1.5
+
+LOG = logging.getLogger("dartwork_mpl.labels")
+
+#: The value limits the last ``settle_bars`` grew: matplotlib's, then ours.
+Limits = tuple[float, float]
+GROWN: weakref.WeakKeyDictionary[Axes, dict[Which, tuple[Limits, Limits]]] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def _live(fig: Figure) -> list[BarFamily]:
@@ -73,15 +84,14 @@ def _crowd(calls: list[list[BarLabel]], renderer: RendererBase) -> None:
             crowded = True
             if first.vertical:
                 for t in labels:
-                    t.set_rotation(90.0)
+                    t.arrange(90.0, shown=True)
     if not crowded:
         return
     shown = [t for labels in calls for t in labels if t.get_visible()]
     keep = decide.keep_apart(CrowdFacts(_spots(shown, renderer), centres, gap))
     for t, kept in zip(shown, keep.flags, strict=True):
         if not kept:
-            t.set_visible(False)
-            t.hidden = True
+            t.arrange(t.turned, shown=False)
 
 
 @dataclass(eq=False)
@@ -165,7 +175,13 @@ class _ValueAxis:
                 limits[side] = current[side]
         if np.all(np.isfinite(limits)):
             set_lim = self.axes.set_ylim if along else self.axes.set_xlim
-            set_lim(float(limits[0]), float(limits[1]), auto=None)
+            low_new, high_new = float(limits[0]), float(limits[1])
+            set_lim(low_new, high_new, auto=None)
+            old = (float(current[0]), float(current[1]))
+            GROWN.setdefault(self.axes, {})[self.which] = (
+                old,
+                (low_new, high_new),
+            )
 
 
 def _value_axes(families: list[BarFamily]) -> list[_ValueAxis]:
@@ -187,17 +203,22 @@ def settle_bars(fig: Figure, renderer: RendererBase) -> bool:
     if not families:
         return False
     before = [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
-    for label in (t for f in families for t in f.texts):
-        label.set_rotation(0.0)
-        label.set_visible(True)
-        label.hidden = False
+    for ax in fig.axes:
+        GROWN.pop(ax, None)
+    ours = {id(t) for f in families for t in f.texts if not t.authored}
+    for label in (t for f in families for t in f.texts if id(t) in ours):
+        label.arrange(0.0, shown=True)
     value_axes = _value_axes(families)
     for value_axis in value_axes:
         value_axis.reset()
     areas: dict[tuple[int, bool], list[list[BarLabel]]] = {}
     for family in families:
         for vertical in (True, False):
-            mine = [t for t in family.texts if t.vertical is vertical]
+            mine = [
+                t
+                for t in family.texts
+                if t.vertical is vertical and id(t) in ours
+            ]
             if mine:
                 key = (id(mine[0].bar_axes), vertical)
                 areas.setdefault(key, []).append(mine)
@@ -206,3 +227,54 @@ def settle_bars(fig: Figure, renderer: RendererBase) -> bool:
     for value_axis in value_axes:
         value_axis.grow(renderer)
     return before != [(ax.get_xlim(), ax.get_ylim()) for ax in fig.axes]
+
+
+def report_bars(fig: Figure) -> None:
+    """Say what the last ``settle_bars`` did to the labels of ``fig``:
+    labels turned or hidden for room, value limits grown."""
+    if not LOG.isEnabledFor(logging.INFO):
+        return
+    by_axes: dict[Axes, list[BarLabel]] = {}
+    for family in _live(fig):
+        for label in family.texts:
+            by_axes.setdefault(label.bar_axes, []).append(label)
+    for ax, labels in by_axes.items():
+        name = axes_name(ax)
+        if any(t.turned == 90.0 and not t.authored for t in labels):
+            LOG.info(
+                "turned the value labels of %s vertical: side by side they "
+                "ran into each other; widen the figure or label fewer bars "
+                "to keep them flat",
+                name,
+            )
+        hidden = sum(t.hidden for t in labels)
+        if hidden:
+            LOG.info(
+                "hid %d of %d value labels of %s: they still ran into their "
+                "neighbours; widen the figure or label fewer bars "
+                "(dm.label_bars(ax, bars)) to show them all",
+                hidden,
+                len(labels),
+                name,
+            )
+        held = [t for t in labels if t.kind.centred and not t.hidden]
+        cut = sum(not t.get_visible() for t in held)
+        if cut:
+            LOG.info(
+                "left out %d segment labels of %s: their segments are "
+                "shorter than the text; make the figure larger to show them",
+                cut,
+                name,
+            )
+    for ax in fig.axes:
+        for which, (old, new) in GROWN.get(ax, {}).items():
+            LOG.info(
+                "grew the %s limits of %s from %.4g..%.4g to %.4g..%.4g: "
+                "the value labels beyond the bar ends did not fit; set the "
+                "limits yourself (ax.set_%slim) to keep matplotlib's",
+                which.letter,
+                axes_name(ax),
+                *old,
+                *new,
+                which.letter,
+            )

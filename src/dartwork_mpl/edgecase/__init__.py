@@ -16,11 +16,16 @@ slice's ``edges.py`` as one more :class:`EdgeCase` at the end of ``EDGES``::
     )
 
 ``settle(facts, plan, EDGES)`` applies them in order and reports which fired,
-so the main path stays readable. Every edge case has a name, a reason (what
+so the main path stays readable. Given a ``log``, it says so: one INFO line
+per edge case that fires and changes the plan, its name and ``why``. A slice passes its logger
+when an edge case changes what the caller gets and no line of its own says
+so already; ``check`` and the lint, whose edge cases are findings, pass
+none. Every edge case has a name, a reason (what
 goes wrong without it) and an example: the test in the slice's ``tests/``
 that makes it fire. One that fires on no real figure is deleted.
 """
 
+import logging
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -34,6 +39,10 @@ P = TypeVar("P")
 #: Set to a ``Counter`` to count every edge that fires; ``None`` (the default)
 #: counts nothing. Measures which edge cases real figures use.
 tally: Counter[str] | None = None
+
+
+#: The line ``settle`` writes for an edge case that fired: its name, its why.
+SAID = 'applied the edge case "%s": without it, %s'
 
 
 @dataclass(frozen=True)
@@ -56,13 +65,23 @@ class Settled(Generic[P]):
     fired: tuple[str, ...]
 
 
-def settle(facts: F, plan: P, edges: Sequence[EdgeCase[F, P]]) -> Settled[P]:
-    """Apply each edge case that applies, in order, to the main-path plan."""
+def settle(
+    facts: F,
+    plan: P,
+    edges: Sequence[EdgeCase[F, P]],
+    *,
+    log: logging.Logger | None = None,
+) -> Settled[P]:
+    """Apply each edge case that applies, in order, to the main-path plan;
+    ``log`` reports each one that fired and changed the plan."""
     fired: list[str] = []
     for edge in edges:
         if edge.applies(facts, plan):
-            plan = edge.adjust(facts, plan)
+            adjusted = edge.adjust(facts, plan)
             fired.append(edge.name)
+            if log is not None and adjusted != plan:
+                log.info(SAID, edge.name, edge.why)
+            plan = adjusted
     if tally is not None:
         tally.update(fired)
     return Settled(plan=plan, fired=tuple(fired))

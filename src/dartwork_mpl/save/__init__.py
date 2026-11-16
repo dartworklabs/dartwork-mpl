@@ -57,4 +57,4 @@ def save_formats(
             UserWarning,
             stacklevel=2,
         )
-    apply.write(fig, plan, bbox_inches, kwargs)
+    apply.write(fig, plan, bbox_inches, kwargs, request.metadata_keys)

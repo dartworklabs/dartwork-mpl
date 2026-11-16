@@ -10,7 +10,7 @@ Public: :func:`label_bars`, :func:`annotate_value`, :func:`label_axes`, :func:`l
 
 from __future__ import annotations
 
-from .bar_layout import settle_bars
+from .bar_layout import report_bars, settle_bars
 from .bars import label_bars
 from .ends import label_line_ends, space_line_ends
 from .given import PresetText, TickText
@@ -26,6 +26,7 @@ __all__ = [
     "label_bars",
     "label_line_ends",
     "note_gap_pt",
+    "report_bars",
     "settle_bars",
     "settle_panels",
     "space_line_ends",

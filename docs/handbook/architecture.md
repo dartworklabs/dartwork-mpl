@@ -48,10 +48,11 @@ orphan: true
 | `vocab` | slice들이 함께 쓰는 낱말. 모듈 하나가 어휘 하나다: `axis`(x·y 축과 라벨이 놓이는 쪽), `align`(글자 정렬), `box`(픽셀 사각형 `Box`와 구간 `Span`), `edge`(상자의 네 변, figure 범례가 잡는 변), `projection`(평면, 3D, 그 밖), `number`(숫자가 찍히는 눈금 단위), `locale`(기본 관례와 한국 관례) | 모든 slice, geometry |
 | `length` | 물리 길이 `Length`와 단위(`dm.cm` 등) | size, layout, 루트 |
 | `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels |
-| `edgecase` | 엣지 케이스 등록 장치 | 모든 slice |
+| `edgecase` | 엣지 케이스 등록 장치. 로거를 받으면, 작동해서 계획을 바꾼 엣지 케이스마다 이름과 이유를 한 줄 보고한다 | 모든 slice |
+| `hidden` | 자동 동작의 보고. slice마다 `dartwork_mpl.<slice>` 로거에 INFO 한 줄을 쓰고, 그것이 기본으로 stderr에 `dartwork-mpl:`을 붙여 출력된다. `dm.quiet()`이 끄고 `dm.verbose()`가 다시 켠다. import 때의 등록은 DEBUG라 출력되지 않는다. Axes를 이름으로 부르는 `axes_name` | color, font, labels, layout, legend, save, size, style, ticks, 루트 |
 | `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨 | check, labels, layout, legend, ticks |
 
-`geometry`와 `edgecase` 밖의 platform은 모두 순수하다. 정본과 패키지마다의 이유는 `boundaries.py`의 `PLATFORM`이다.
+`geometry`, `edgecase`, `hidden` 밖의 platform은 모두 순수하다. 정본과 패키지마다의 이유는 `boundaries.py`의 `PLATFORM`이다.
 
 ## slice 안의 파일 규칙
 
@@ -71,7 +72,7 @@ platform의 순수 패키지도 같은 파일 이름 규칙을 따른다(`length
 
 **도메인 파일은 primitive 타입으로 말하지 않는다.** `decide.py`와 `edges.py`의 함수는 인자와 반환을 도메인 타입으로 적는다. `str`, `int`, `float`, `dict`, `Any` 같은 primitive나 annotation 누락은 오류다. `float` 두 개를 받는 함수는 폭과 높이가 바뀌어도 통과하지만 `Length`와 `Aspect`는 그렇지 않기 때문이다.
 
-**엣지 케이스는 본문 분기가 아니라 목록에 덧붙인다.** 극좌표 축, 3D 축, 겹치는 눈금 글자처럼 드문 그림에서만 필요한 처리는 `decide.py`에 분기를 더하지 않는다. `edges.py`의 목록 끝에 `EdgeCase` 하나를 더한다. 목록은 사실·계획 타입 쌍마다 하나이고 `EDGES` 또는 `<NAME>_EDGES`(`TEXT_EDGES`, `LIFT_EDGES` 등)라고 부른다. 각 항목은 이름, 이유(`why`), 예제(`example`), 적용 조건, 계획을 바꾸는 함수를 갖는다. `settle`이 순서대로 적용하고 어떤 것이 작동했는지 돌려준다. 본 경로는 평범한 경우만 읽으면 되고, 엣지 케이스는 이름으로 세고 지울 수 있다. `check`의 검사 규칙도 같은 방식으로 등록한다. 장치는 [edgecase/\_\_init\_\_.py](../../src/dartwork_mpl/edgecase/__init__.py)에 있다.
+**엣지 케이스는 본문 분기가 아니라 목록에 덧붙인다.** 극좌표 축, 3D 축, 겹치는 눈금 글자처럼 드문 그림에서만 필요한 처리는 `decide.py`에 분기를 더하지 않는다. `edges.py`의 목록 끝에 `EdgeCase` 하나를 더한다. 목록은 사실·계획 타입 쌍마다 하나이고 `EDGES` 또는 `<NAME>_EDGES`(`TEXT_EDGES`, `LIFT_EDGES` 등)라고 부른다. 각 항목은 이름, 이유(`why`), 예제(`example`), 적용 조건, 계획을 바꾸는 함수를 갖는다. `settle`이 순서대로 적용하고 어떤 것이 작동했는지 돌려준다. 그림이나 사용자가 받는 값을 바꾸는 목록은 `settle`에 slice의 로거를 넘겨 작동한 것을 보고하게 한다. 같은 동작을 Axes 이름까지 넣어 shell이 이미 보고하는 목록(`layout`의 `TEXT_EDGES`)과, 동작이 아니라 발견을 등록하는 `check`와 lint는 넘기지 않는다. 본 경로는 평범한 경우만 읽으면 되고, 엣지 케이스는 이름으로 세고 지울 수 있다. `check`의 검사 규칙도 같은 방식으로 등록한다. 장치는 [edgecase/\_\_init\_\_.py](../../src/dartwork_mpl/edgecase/__init__.py)에 있다.
 
 **엣지 케이스는 이유와 예제가 있어야 존재한다.** `why`는 그 엣지가 없으면 예제에서 무엇이 잘못되는지를 한 문장으로 말한다. 고치는 방법이 아니라 결함을 쓴다. `example`은 그 패키지의 `tests/`에 있는 테스트 하나를 `test_<파일>.py::[클래스::]test_<함수>`로 가리킨다. 그 테스트는 엣지 이름을 적고 단언하며, 실행되는 동안 그 엣지가 실제로 작동해야 한다. 둘 중 하나라도 없으면 테스트가 실패한다. 줄 수에는 상한이 없다. 대신 실제 그림에서 한 번도 작동하지 않는 엣지 케이스는 그 코드, 그것만 쓰던 타입과 측정 코드, 테스트, 지침 문구와 함께 지운다. 실제 그림은 픽셀 장면, 번들 템플릿, robustness 장면이다. `edgecase.tally`에 `Counter`를 넣으면 `settle`이 작동한 이름을 센다. 기본은 꺼져 있다.
 
@@ -87,6 +88,7 @@ platform의 순수 패키지도 같은 파일 이름 규칙을 따른다(`length
 | **matplotlib을 감싸지 않는다.** dm 함수는 native `Figure`·`Axes`를 받고 돌려준다. `dm.style.use`는 rcParams만 바꾼다 | 리뷰 | 사용자가 dartwork-mpl 전용 개념을 배워야 한다 |
 | **크기는 물리 단위, 글자·선은 preset 상대값** | 안티패턴 lint, 지침 테스트 | preset을 바꾸면 그림이 깨진다 |
 | **레이아웃은 결정적이고 다시 적용해도 같다** | 픽셀 baseline | 같은 코드가 실행마다 다른 그림을 낸다 |
+| **숨은 동작은 보고한다.** 사용자가 부르지 않은 것을 바꾸는 동작은 그 자리에서 `dartwork_mpl.<slice>` 로거에 한 줄을 쓰고, 사용자가 정하거나 되돌린 것은 다시 바꾸지 않는다 | `tests/test_verbose.py`, slice별 surface 테스트, 리뷰 | 사용자가 왜 그림이 바뀌었는지 알 수 없다 |
 | **`check`는 그림을 바꾸지 않는다** | check slice 테스트 | 검사했더니 그림이 달라진다 |
 | **slice 경계와 파일 규칙.** slice는 slice를 import하지 않는다 | `tests/architecture/` | 한 기능 변경이 여러 폴더로 번진다 |
 | **호환 층을 두지 않는다.** 재노출 파일, 별칭, 제거된 이름 안내 장치를 만들지 않는다 | 리뷰, fitness의 이름 규칙 | 지운 코드가 다른 모양으로 돌아온다 |

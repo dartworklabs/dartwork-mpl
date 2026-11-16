@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from ..edgecase import settle
 from ..geometry import get_renderer
-from . import apply, decide, measure, text
+from . import apply, decide, measure, report, text
 from .edges import TEXT_EDGES
 from .given import Neighbours
 from .model import FIT_ROUNDS, MAX_STEPS, Sides, Step
@@ -73,8 +73,17 @@ def fit(
 
 
 def run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
-    """Lay out ``fig`` on ``gs``: the spines its scales tick on, margins,
-    then rounds of text fitting."""
+    """Lay out ``fig`` on ``gs`` and say what it changed besides the margins."""
+    before = report.look(fig, gs) if report.on() else None
+    _run(fig, gs, margins, given)
+    if before is not None:
+        report.changes(before, report.look(fig, gs))
+    given.report_bars(fig)
+    given.report_legends(fig)
+
+
+def _run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
+    """The spines its scales tick on, margins, then rounds of text fitting."""
     apply.unturn(fig)
     apply.show_scale_spines(fig)
     given.prepare_ticks(fig)

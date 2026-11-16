@@ -8,12 +8,15 @@ the author's.
 
 from __future__ import annotations
 
+import logging
+import weakref
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, assert_never
 
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import Formatter
 
+from ..hidden import axes_name
 from .measure import cartesian, grid_axes
 from .model import (
     FACING,
@@ -27,11 +30,18 @@ from .model import (
 )
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from matplotlib.axis import Axis
     from matplotlib.figure import Figure
 
     from .model import Degrees, Gap, Line, Share
     from .text import TextArtists
+
+LOG = logging.getLogger("dartwork_mpl.layout")
+
+#: The Axes whose scale spines a layout has seen to: shown once, they are
+#: the caller's to hide again.
+SPINES_SEEN: weakref.WeakSet[Axes] = weakref.WeakSet()
 
 
 class WrappedTickFormatter(Formatter):
@@ -111,16 +121,31 @@ def show_scale_spines(fig: Figure) -> None:
     """Show the hidden spine an axis ticks on while the facing one shows:
     a ``twinx`` draws its scale on the right, which the presets hide, and
     without the spine its tick marks read as minus signs. An Axes with no
-    frame on that axis (a colorbar, the minimal look) stays as it is."""
+    frame on that axis (a colorbar, the minimal look) stays as it is. Once
+    per Axes: a spine hidden after the first layout stays hidden."""
     for ax in fig.axes:
-        if not cartesian(ax):
+        if not cartesian(ax) or ax in SPINES_SEEN:
             continue
+        SPINES_SEEN.add(ax)
         for axis in (ax.xaxis, ax.yaxis):
             side = tick_spine(axis.get_ticks_position())
             if side is None or not axis.get_visible():
                 continue
-            if ax.spines[FACING[side]].get_visible():
-                ax.spines[side].set_visible(True)
+            spine = ax.spines[side]
+            if (
+                ax.spines[FACING[side]].get_visible()
+                and not spine.get_visible()
+            ):
+                spine.set_visible(True)
+                LOG.info(
+                    "showed the %s spine of %s: its %s axis ticks on that "
+                    "side, and without the spine its tick marks read as minus "
+                    'signs; hide it again with ax.spines["%s"].set_visible(False)',
+                    side,
+                    axes_name(ax),
+                    "x" if axis is ax.xaxis else "y",
+                    side,
+                )
 
 
 def unturn(fig: Figure) -> None:

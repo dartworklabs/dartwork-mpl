@@ -40,6 +40,22 @@ def tick_values(axis: Axis, values: Sequence[float]) -> TickValues:
     return TickValues.of([float(v) for v in values if low <= float(v) <= high])
 
 
+def untouched(axis: Axis) -> bool:
+    """Nobody formatted ``axis``: matplotlib's own formatter, writing its
+    ticks as a new one would (``ax.ticklabel_format(style="plain")`` keeps
+    the formatter but changes what it writes)."""
+    fmt = axis.get_major_formatter()
+    if not (axis.isDefault_majfmt and isinstance(fmt, ticker.ScalarFormatter)):
+        return False
+    locs = list(axis.get_majorticklocs())
+    fresh = ticker.ScalarFormatter()
+    fresh.set_axis(axis)
+    return (
+        fresh.format_ticks(locs) == fmt.format_ticks(locs)
+        and fresh.get_offset() == fmt.get_offset()
+    )
+
+
 class AxisUnitFormatter(ticker.Formatter):
     """One unit and one decimal count per axis, settled from the ticks in view.
 

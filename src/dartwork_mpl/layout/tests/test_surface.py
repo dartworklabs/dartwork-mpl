@@ -143,3 +143,13 @@ def test_a_twin_shows_the_spine_its_scale_ticks_on() -> None:
     assert not ax.spines["right"].get_visible()
     sides = ("left", "right", "bottom", "top")
     assert not any(bar.ax.spines[s].get_visible() for s in sides)
+
+
+def test_a_spine_hidden_after_the_layout_stays_hidden() -> None:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    twin = ax.twinx()
+    dm.simple_layout(fig)
+    twin.spines["right"].set_visible(False)
+    dm.simple_layout(fig)
+    assert not twin.spines["right"].get_visible()

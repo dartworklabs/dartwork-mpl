@@ -9,6 +9,7 @@ hands back plain inches.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from ..edgecase import settle
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
     from .measure import LayerReader
 
 __all__ = ["figsize", "figsize_for"]
+
+LOG = logging.getLogger("dartwork_mpl.size")
 
 
 def figsize(width: object, aspect: object = STANDARD) -> tuple[float, float]:
@@ -71,4 +74,4 @@ def figsize_for(
     page = measure.active_page(presets, layer)
     facts = CanvasFacts(request, page, measure.name_widths(request.names))
     plan = decide.canvas(request, page)
-    return settle(facts, plan, EDGES).plan.size().inches
+    return settle(facts, plan, EDGES, log=LOG).plan.size().inches

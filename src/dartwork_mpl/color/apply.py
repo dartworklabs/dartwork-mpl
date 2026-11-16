@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
 from .model import Catalog, Semantic
+
+LOG = logging.getLogger("dartwork_mpl.color")
 
 
 def colormaps(catalog: Catalog) -> list[mcolors.ListedColormap]:
@@ -55,8 +58,27 @@ def register(catalog: Catalog) -> None:
             )
     for cmap in missing:
         mpl.colormaps.register(cmap)
+    if missing:
+        LOG.debug(
+            "registered %d colour names (dc.*, tw.*, md.* and other "
+            "prefixed libraries) and %d dc.* colormaps with matplotlib, so "
+            "the presets and your code can name them; none replaces a "
+            "matplotlib name",
+            len(catalog.named),
+            len(missing),
+        )
 
 
 def apply_semantic(tokens: Semantic) -> None:
     """Bind ``dc.pos``/``neg``/``ref``/``hl`` in matplotlib's named colours."""
-    bind(tokens.names())
+    named = mcolors.get_named_colors_mapping()
+    wanted = tokens.names()
+    moved = [k for k, v in wanted.items() if k in named and named[k] != v]
+    bind(wanted)
+    if moved:
+        LOG.info(
+            "rebound the role colours %s for the preset's locale (a Korean "
+            "preset shows gains in red and losses in blue); name a colour "
+            "such as dc.red5 instead of a role to keep one",
+            ", ".join(moved),
+        )

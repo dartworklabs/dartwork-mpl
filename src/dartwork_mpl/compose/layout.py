@@ -13,11 +13,12 @@ from typing import TYPE_CHECKING
 from dartwork_mpl import layout, ticks
 from dartwork_mpl.labels import (
     note_gap_pt,
+    report_bars,
     settle_bars,
     settle_panels,
     space_line_ends,
 )
-from dartwork_mpl.legend import figure_reserve, settle
+from dartwork_mpl.legend import figure_reserve, report_legends, settle
 from dartwork_mpl.style import active_locale
 
 if TYPE_CHECKING:
@@ -41,6 +42,8 @@ NEIGHBOURS = layout.Neighbours(
     settle_panels=settle_panels,
     figure_reserve=figure_reserve,
     note_gap_pt=note_gap_pt,
+    report_bars=report_bars,
+    report_legends=report_legends,
 )
 
 

@@ -31,14 +31,14 @@ def test_a_value_label_prints_one_number(label: str, value: bool):
 
 def test_report_lists_findings_fixes_and_what_did_not_run():
     clean = Findings()
-    assert not clean and clean.report() == "dm.check: no defects found."
+    assert not clean and clean.report() == "dm.check: nothing stands out."
     f = Finding("OVERLAP", "A overlaps B", "move one")
     found = Findings((f,), skipped=("TICK_OVERLAP",))
     assert found.report().splitlines() == [
-        "dm.check: 1 finding",
-        "WARNING OVERLAP: A overlaps B",
-        "  fix: move one",
-        "NOT RUN: TICK_OVERLAP (could not measure; the figure is not proven "
-        "clean)",
+        "dm.check: 1 place to look at",
+        "OVERLAP: A overlaps B",
+        "  try: move one",
+        "NOT RUN: TICK_OVERLAP (could not measure this figure, so look at "
+        "it yourself)",
     ]
-    assert found.rules == ("OVERLAP",) and str(f.severity) == "WARNING"
+    assert found.rules == ("OVERLAP",)

@@ -52,7 +52,8 @@ def label_bars(
     turns crowded labels vertical (vertical bars), hides those that still
     meet and segment labels their bar cannot hold, and grows an autoscaled
     value axis to hold them. ``bars``: only these containers (what
-    ``ax.bar`` returns). Restyle a label after ``dm.simple_layout``.
+    ``ax.bar`` returns). A label you turn or hide yourself stays as you
+    left it.
     """
     return labels_slice.label_bars(
         ax, bars, preset=PRESET_TEXT, ticks=TICK_TEXT

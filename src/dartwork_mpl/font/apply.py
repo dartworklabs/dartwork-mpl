@@ -12,7 +12,9 @@ from ..edgecase import settle
 from . import measure
 from .decide import is_expected, table_plan
 from .edges import EDGES
-from .model import Plan, Weight, WeightMiss
+from .model import Plan, Table, Weight, WeightMiss
+
+LOG = logging.getLogger("dartwork_mpl.font")
 
 WEIGHT_MISS = "findfont: Failed to find font weight %s for %s, now using %s."
 
@@ -66,15 +68,47 @@ def install(plan: Plan) -> None:
 
 def register() -> None:
     """Add every bundled file, then fix the table (see ``edges.py``)."""
-    for path in measure.bundled_files():
+    files = measure.bundled_files()
+    for path in files:
         font_manager.fontManager.addfont(path)  # pyright: ignore[reportUnknownMemberType]
+    LOG.debug(
+        "registered %d bundled font files with matplotlib, so the presets' "
+        "font families resolve without installing them",
+        len(files),
+    )
     facts = measure.table()
     settled = settle(facts, table_plan(facts), EDGES)
     install(settled.plan)
+    _say_shadowed(facts)
     WEIGHT_FILTER.single_weight = facts.single_weight_families()
     logger = logging.getLogger("matplotlib.font_manager")
     if WEIGHT_FILTER not in logger.filters:
         logger.addFilter(WEIGHT_FILTER)
+        LOG.debug(
+            'quieted matplotlib\'s "Failed to find font weight" notice for '
+            "the one-weight families the presets name at a weight they "
+            "lack; every other notice still shows"
+        )
+
+
+def _say_shadowed(table: Table) -> None:
+    """Name the families this system also has, now found bundled first.
+
+    The font edge cases are settled without a logger: they fire on every
+    import (the Paperlogy weights are the package's own files, any system
+    font sits before the bundled ones), and only a family installed twice
+    changes what a name resolves to.
+    """
+    ours = {face.family for face in table.faces if face.bundled}
+    theirs = {face.family for face in table.faces if not face.bundled}
+    shadowed = sorted(ours & theirs)
+    if shadowed:
+        LOG.debug(
+            "put the bundled %s ahead of the copies installed on this "
+            "system: matplotlib took whichever it found first; name a "
+            "family the package does not bundle to use your own",
+            ", ".join(shadowed),
+        )
 
 
 _lock = threading.Lock()

@@ -77,6 +77,9 @@ PLATFORM = frozenset(
         "dartwork_mpl.geometry",
         # The edge-case registry every slice's edges.py appends to.
         "dartwork_mpl.edgecase",
+        # The one-line reports of what slices change on their own, and
+        # dm.quiet() / dm.verbose() that silence and restore them.
+        "dartwork_mpl.hidden",
     }
 )
 

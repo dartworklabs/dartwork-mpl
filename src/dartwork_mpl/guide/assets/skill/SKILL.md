@@ -71,11 +71,13 @@ Text on the figure follows the document it goes into. Unknown: follow the langua
 
 A figure is finished when you have looked at it, not when the script ran.
 
-1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Fix every finding. `NOT RUN` means a rule could not measure, so say so.
+1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a place to look, with a line on what to try; act on the ones that are not what you meant. `NOT RUN` means a rule could not measure, so say so.
 2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
 3. Fix what you saw, save as the next version (`-v2`, keep v1) and say what changed. If you cannot view images, say the figure was not visually reviewed.
 
 `dm.check` finds the mechanical defects. Whether the chart says anything is up to you.
+
+The library says what it changed on its own: each automatic change (tick labels turned, a name wrapped, a value label gone, a legend moved, `1M` on an axis) prints one `dartwork-mpl:` line on stderr with what, on which Axes, why, and what to try. Read those lines after a run and tell the user what they say before you work around one. `dm.quiet()` turns them off.
 
 ## Tools for the craft
 

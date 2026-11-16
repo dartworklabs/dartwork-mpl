@@ -9,6 +9,7 @@ caller's. The registry holds its legends weakly.
 
 from __future__ import annotations
 
+import logging
 import weakref
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ from ..geometry import (
     get_renderer,
     same_position_axes,
 )
+from ..hidden import axes_name
 from ..vocab import Edge, edge_of
 from . import decide, measure
 from .ink import box_of, data_ink, px
@@ -59,7 +61,9 @@ class Placed:
     """What a ``place_legend`` legend was placed from, and where it went.
 
     ``box`` is the anchor box the library left it on, ``size`` the Axes
-    size (half px) an outside legend was last fitted at.
+    size (half px) an outside legend was last fitted at. ``chosen`` is the
+    spot ``place_legend`` gave an inside legend, ``spot`` the one it has
+    now; ``lift`` how far a layout last raised the titles (pt).
     """
 
     where: Best | Side
@@ -69,7 +73,12 @@ class Placed:
     size: tuple[int, int] = (0, 0)
     columns: Columns | None = None
     clearance: Clearance | None = None
+    chosen: Spot | None = None
+    spot: Spot | None = None
+    lift: float | None = None
 
+
+LOG = logging.getLogger("dartwork_mpl.legend")
 
 _PLACED: weakref.WeakKeyDictionary[Legend, Placed] = weakref.WeakKeyDictionary()
 
@@ -132,7 +141,31 @@ def place_legend(
     root.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
     renderer = get_renderer(root)
     placed = Placed(where, asked, kept | kw, host.bbox)
-    return _draw(host, handles, labels, placed, renderer)
+    legend = _draw(host, handles, labels, placed, renderer)
+    placed.chosen = placed.spot
+    _say_gathered(host)
+    return legend
+
+
+def _say_gathered(host: Axes) -> None:
+    """Say so when the legend took the entries of more than one twin."""
+    if not LOG.isEnabledFor(logging.INFO):
+        return
+    twins = same_position_axes(host)
+    parent = host.get_figure(root=False)
+    order = list(parent.axes) if parent is not None else twins
+    owners = [
+        o for o in order if o in twins and o.get_legend_handles_labels()[1]
+    ]
+    if len(owners) < 2:
+        return
+    LOG.info(
+        "gathered the entries of %s into one legend on %s: twins share one "
+        "box, and a legend on the lower twin is drawn under the other's "
+        "data; call ax.legend() on each twin to keep one legend each",
+        " and ".join(axes_name(o) for o in owners),
+        axes_name(host),
+    )
 
 
 def _draw(
@@ -152,7 +185,7 @@ def _draw(
     match placed.where:
         case Best():
             legend = build(INSIDE[0], placed.asked or Columns(1))
-            _settle_inside(ax, legend, renderer)
+            _settle_inside(ax, legend, placed, renderer)
         case Above() | Below() | Right() | Left() as side:
             columns = fit(
                 lambda c: size_of(build(side.legend_loc, c), renderer),
@@ -183,7 +216,9 @@ def _size_key(ax: Axes, renderer: RendererBase) -> tuple[int, int]:
     return (round(box.width * 2), round(box.height * 2))
 
 
-def _settle_inside(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
+def _settle_inside(
+    ax: Axes, legend: Legend, placed: Placed, renderer: RendererBase
+) -> bool:
     """Put ``legend`` at the first spot clear of the data; whether it moved."""
     before = legend.get_window_extent(renderer)
     facts = InsideFacts(
@@ -193,7 +228,8 @@ def _settle_inside(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
         pad=pad_px(legend, renderer),
         meets=data_ink(ax, renderer).meets,
     )
-    legend.set_loc(decide.inside(facts).code)
+    placed.spot = decide.inside(facts)
+    legend.set_loc(placed.spot.code)
     after = legend.get_window_extent(renderer)
     return abs(after.x0 - before.x0) + abs(after.y0 - before.y0) > 0.01
 
@@ -229,7 +265,20 @@ def _anchor(
     return True
 
 
-def _lift_titles(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
+def _left_there(legend: Legend, spot: Spot, renderer: RendererBase) -> bool:
+    """Whether ``legend`` sits at ``spot`` in its anchor box, where matplotlib
+    puts a ``loc`` of that name: not moved since (``set_loc``)."""
+    box = legend.get_window_extent(renderer)
+    container = legend.get_bbox_to_anchor().padded(-pad_px(legend, renderer))
+    fx, fy = spot.anchor
+    x0 = container.x0 + fx * (container.width - box.width)
+    y0 = container.y0 + fy * (container.height - box.height)
+    return abs(box.x0 - x0) + abs(box.y0 - y0) < 1.0
+
+
+def _lift_titles(
+    ax: Axes, legend: Legend, placed: Placed, renderer: RendererBase
+) -> bool:
     """Raise the titles of ``ax`` over a legend above it; whether they moved."""
     root = ax.get_figure(root=True)
     facts = measure.titles(ax, renderer)
@@ -238,6 +287,7 @@ def _lift_titles(ax: Axes, legend: Legend, renderer: RendererBase) -> bool:
     lift = decide.title_lift(box_of(legend.get_window_extent(renderer)), facts)
     if lift is None:
         return False
+    placed.lift = lift.px * 72.0 / root.dpi
     offset = ScaledTranslation(0.0, lift.px / root.dpi, root.dpi_scale_trans)
     for title in axes_titles(ax).values():
         title.set_transform(ax.transAxes + offset)
@@ -250,7 +300,11 @@ def _again(
     """Place ``legend`` again at the size ``ax`` has now; whether it moved."""
     match placed.where:
         case Best():
-            return _settle_inside(ax, legend, renderer)
+            if placed.spot is not None and not _left_there(
+                legend, placed.spot, renderer
+            ):
+                return False  # the caller moved it (set_loc)
+            return _settle_inside(ax, legend, placed, renderer)
         case Above() | Below() | Right() | Left() as side:
             if _size_key(ax, renderer) == placed.size:
                 return _anchor(legend, ax, side, placed, renderer)
@@ -284,8 +338,38 @@ def settle(
         moved = _again(ax, legend, placed, renderer) or moved
         legend = ax.get_legend()
         if legend is not None and isinstance(placed.where, Above):
-            moved = _lift_titles(ax, legend, renderer) or moved
+            moved = _lift_titles(ax, legend, placed, renderer) or moved
     return moved
+
+
+def report_legends(fig: Figure) -> None:
+    """Say what the last :func:`settle` changed: an inside legend on another
+    spot than ``place_legend`` chose, titles raised over a legend above."""
+    if not LOG.isEnabledFor(logging.INFO):
+        return
+    for ax in fig.axes:
+        legend = ax.get_legend()
+        placed = None if legend is None else _PLACED.get(legend)
+        if placed is None:
+            continue
+        if placed.spot != placed.chosen:
+            LOG.info(
+                "moved the legend of %s from the %s to the %s: at the size "
+                "the layout gave the Axes it covered data there; place it "
+                "with ax.legend(loc=...) instead of dm.place_legend to keep "
+                "it where you put it",
+                axes_name(ax),
+                placed.chosen.code if placed.chosen else "-",
+                placed.spot.code if placed.spot else "-",
+            )
+        if placed.lift is not None:
+            LOG.info(
+                "raised the titles of %s %.1f pt over its legend above: the "
+                'legend sat on them; use loc="below" or a figure legend to '
+                "keep the titles where they are",
+                axes_name(ax),
+                placed.lift,
+            )
 
 
 def outside_edge(legend: Legend) -> Edge | None:

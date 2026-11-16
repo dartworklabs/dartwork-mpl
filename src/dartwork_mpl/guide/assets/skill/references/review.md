@@ -22,11 +22,11 @@ print(found)           # one line per defect, its fix under it
 dm.save_formats(fig, "output/figure-v1")
 ```
 
-`dm.check` measures the drawn figure and reports what makes it ugly or
-unreadable; it fixes nothing. Each finding has `rule`, `message`, `fix`,
+`dm.check` measures the drawn figure and points at what a reader would
+stumble on; it changes nothing and it does not judge. Each finding has `rule`, `message`, `fix`,
 and the `artists` and `panels` involved; `found.rules` lists the rules that
 found something. `NOT RUN` in the report means a rule could not measure
-this figure: it is not proven clean, say so.
+this figure: look at it yourself and say so.
 
 ## Look at the image
 
@@ -49,7 +49,8 @@ figure was reviewed.
 
 ## Read the findings
 
-Fix every finding. The fix line names the usual remedy.
+Look at every finding in the image. It may be what you meant; when it is
+not, the `try` line names what usually helps.
 
 | rule | Means |
 |---|---|

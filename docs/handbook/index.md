@@ -31,9 +31,13 @@ orphan: true
 | `src/dartwork_mpl/length/`, `colorspace/` | 두 slice 이상이 쓰는 순수 타입과 산술(platform) | architecture |
 | `src/dartwork_mpl/geometry/` | 두 slice 이상이 쓰는 figure 측정 코드(platform, matplotlib) | architecture |
 | `src/dartwork_mpl/edgecase/` | 엣지 케이스 등록 장치(platform) | architecture |
-| `src/dartwork_mpl/guide/assets/` | skill, 템플릿, 안티패턴 목록. 에이전트가 읽는 전부 | purpose, verification(지침 게이트) |
+| `src/dartwork_mpl/hidden/` | 자동 동작의 보고. 도구가 스스로 바꾼 것을 한 줄씩 stderr에 쓴다(`dm.quiet()`로 끈다) | philosophy(7절), architecture |
+| `src/dartwork_mpl/guide/assets/` | skill과 안티패턴 목록. 에이전트가 읽는 전부 | purpose, verification(지침 게이트) |
 | `src/dartwork_mpl/color/assets/`, `tests/test_shipped_colors_hash.py` | 출하 색 값과 그 고정점 | architecture(미감 불변식), verification |
 | `tests/visual/` | 픽셀 장면과 기준 이미지 | verification |
+| `tests/corpus/` | 개발용 코퍼스. 현실적인 차트 스크립트(`charts/`)와 대충 그린 것(`rough/`), 증거를 세는 `tally.py`. 기능을 지우거나 더할 때의 근거다 | philosophy(1절), verification |
 | `tests/architecture/` | 경계(`boundaries.py`), 조립 규칙(`composition.py`), 도메인 파일 규칙, 순수 import, fitness | architecture, verification |
 | `docs/adr/` | 결정 기록과 index | change-flow |
+| `docs/hub-contract.md` | 허브(`mpl.dartwork.io`)와 약속한 것 | purpose |
+| `docs/example-candidates.md` | 재구성하며 지운 기능의 기록과 원본을 읽는 커밋 | philosophy(1절) |
 | `.github/workflows/` | CI(`lint`, `test`)와 릴리스 | verification, change-flow |
