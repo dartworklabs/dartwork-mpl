@@ -178,6 +178,40 @@ plt.close(fig)
 
 ## Small multiples
 
-Panels share axes so heights compare, each panel is named by a short title,
-and one legend serves all (`dm.figure_legend(fig)`). Panel letters
-(`dm.label_axes(axes)`) are for paper figures that the caption refers to.
+One panel per group, on the same axes, so heights compare across panels.
+
+- **Share the axes.** `plt.subplots(2, 3, sharex=True, sharey=True)` drops
+  the inner tick labels. Name y on the first column only (`axes[:, 0]`) and
+  x on the bottom row only (`axes[-1]`); a name on every panel takes width
+  from the plots and says nothing new.
+- **Titles.** Each panel gets a short name (`ax.set_title("North")`); the
+  point goes in one figure title, `fig.suptitle(...)`, in a report or slide
+  figure. Both stay centred as the preset draws them. `x=0` does not align
+  the figure title with the first panel; it puts it on the canvas edge.
+- **One legend.** `dm.figure_legend(fig)` collects every panel's series.
+  With a figure title pass `loc="below"`: the default place above the
+  panels is where the title is. Two or three lines can instead be named at
+  their ends in the last panel, `dm.label_line_ends(axes.flat[-1])`.
+- Panel letters (`dm.label_axes(axes)`) are for paper figures that the
+  caption refers to.
+
+```python
+months = np.arange(1, 13)
+fig, axes = plt.subplots(2, 3, figsize=dm.figsize_for(nrows=2, ncols=3),
+                         sharex=True, sharey=True)
+for i, (ax, name) in enumerate(zip(axes.flat, ["North", "South", "East",
+                                               "West", "Central", "Islands"])):
+    ax.plot(months, 40 + 2 * i + months, label="Actual")
+    ax.plot(months, 43 + 2 * i + 0.5 * months, label="Plan", color="dc.gray4")
+    ax.set_title(name)
+for ax in axes[:, 0]:
+    ax.set_ylabel("Revenue (USD m)")
+for ax in axes[-1]:
+    ax.set_xlabel("Month")
+axes[0, 0].set_xticks([3, 6, 9, 12])        # shared: sets every panel
+fig.suptitle("Every region beat plan from July on")
+dm.figure_legend(fig, loc="below")
+dm.simple_layout(fig)
+print(dm.check(fig))
+plt.close(fig)
+```

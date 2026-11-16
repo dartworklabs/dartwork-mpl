@@ -113,7 +113,8 @@ panel's text as `CROSS_AXES_OVERLAP`.
 fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True)
 for i, ax in enumerate(axes.flat):
     ax.plot(x, np.sin(x + i))
-    ax.set_ylabel("Response")
+for ax in axes[:, 0]:
+    ax.set_ylabel("Response")    # one name per row
 for ax in axes[-1]:
     ax.set_xlabel("Time (s)")
 dm.label_axes(axes)              # a, b, c, d; labels=["(a)", ...] for others
@@ -194,7 +195,8 @@ plt.close(fig)
 ```
 
 - One legend for panels that share their series: `dm.figure_legend(fig)`
-  (above the panels; `loc="below"` under everything), then
+  (above the panels; `loc="below"` under everything, and always with a
+  `fig.suptitle`, which sits above the panels), then
   `dm.simple_layout(fig)`; it removes the panel legends it replaces.
 - Legend inside, away from the data: `dm.place_legend(ax)`.
   `dm.simple_layout(fig)` places it again at the laid-out size. When
