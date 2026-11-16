@@ -2,7 +2,8 @@
 
 At draw time a myriad axis reads the ticks it shows and takes one unit from
 its ladder and the fewest decimals that print every tick exactly
-(:func:`axis_text`).
+(:func:`axis_text`). Before the layout, an x axis whose data are years ticks
+at whole numbers only (:func:`reads_as_years`).
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from typing import assert_never
 from ..vocab import Which, X, Y
 from .model import (
     PLAIN,
+    AxisData,
     AxisText,
     Cost,
     Decimals,
@@ -32,6 +34,29 @@ SEPARATORS_FROM = 1_000.0
 UNIT_FROM = 1_000_000.0
 MOST_UNIT_DECIMALS = 2  # past this a default axis keeps plain numbers
 YEAR_LIKE = (1_000.0, 2_999.0)  # ticks across all here read 2024, not 2,024
+YEARS = (1_800.0, 2_100.0)  # whole numbers along x all in here are years
+WHOLE = 1e-9  # a value this close to a whole number is one
+
+
+def reads_as_years(data: AxisData, which: Which) -> bool:
+    """Whether an axis's data are years: along x, every value a whole number
+    within :data:`YEARS` (``2019, 2020, 2021``), so a tick between two
+    (``2019.5``) names no year.
+
+    A y axis never is: years run along x, and whole numbers near 2,000 up
+    the side are far more often a quantity than a year.
+    """
+    low, high = YEARS
+    years = bool(data.values) and all(
+        abs(v - round(v)) < WHOLE and low <= v <= high for v in data.values
+    )
+    match which:
+        case X():
+            return years
+        case Y():
+            return False
+        case _:
+            assert_never(which)
 
 
 def reads_large(ticks: TickValues, which: Which) -> bool:

@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib import ticker
 from matplotlib.axes import Axes
 
 import dartwork_mpl as dm
@@ -86,4 +87,54 @@ def test_myriad_leaves_a_category_axis_its_names():
     fig.canvas.draw()
     assert [t.get_text() for t in ax.get_yticklabels()] == ["서울", "부산"]
     assert ax.get_xticklabels()[1].get_text().endswith("억")
+    plt.close(fig)
+
+
+YEARS = [2019, 2020, 2021, 2022, 2023]
+
+
+def _x_ticks(ax: Axes) -> list[str]:
+    lo, hi = sorted(ax.get_xlim())
+    return [
+        t.get_text()
+        for t in ax.get_xticklabels()
+        if lo <= t.get_position()[0] <= hi
+    ]
+
+
+def test_a_year_axis_ticks_at_whole_years(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot(YEARS, [542, 512, 644, 684, 632])
+    ax.axhline(600)  # spans the Axes, not the years
+    ax.set(ylabel="Exports (USD bn)")
+    with caplog.at_level("INFO", logger="dartwork_mpl.ticks"):
+        dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert _x_ticks(ax) == ["2019", "2020", "2021", "2022", "2023"]
+    assert "whole numbers only" in caplog.text
+    plt.close(fig)
+
+
+@pytest.mark.parametrize(
+    "setting",
+    [
+        lambda ax: ax.set_xticks([2019, 2019.5, 2020]),
+        lambda ax: ax.xaxis.set_major_locator(ticker.MultipleLocator(0.5)),
+        lambda ax: ax.xaxis.set_major_formatter(
+            ticker.FormatStrFormatter("%.1f")
+        ),
+    ],
+    ids=["ticks", "locator", "formatter"],
+)
+def test_a_year_axis_keeps_ticks_someone_set(setting) -> None:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot(YEARS, [542, 512, 644, 684, 632])
+    setting(ax)
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert "2019.5" in _x_ticks(ax)
     plt.close(fig)
