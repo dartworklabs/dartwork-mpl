@@ -187,6 +187,18 @@ ax2.set_ylabel("Temperature (°C)")
 dm.simple_layout(fig)
 plt.close(fig)
 
+fig, ax1 = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
+ax2, ax3 = ax1.twinx(), ax1.twinx()  # a third y axis: twinx twice
+ax3.spines["right"].set_position(("outward", 40))  # pt, past ax2's labels
+ax1.plot(range(6), [3, 4, 6, 5, 4, 2], color="dc.blue5")
+ax2.plot(range(6), [9, 12, 17, 21, 19, 14], color="dc.red5")
+ax3.plot(range(6), [0.8e6, 1.4e6, 1.1e6, 2.3e6, 1.9e6, 1.0e6], color="dc.green5")
+ax1.set(xlabel="Month", ylabel="Rain (mm)")
+ax2.set_ylabel("Temperature (°C)")
+ax3.set_ylabel("Visitors")
+dm.simple_layout(fig)
+plt.close(fig)
+
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 for i in range(3):
     ax.plot(x, np.sin(x + i), label=f"Run {i + 1}")
@@ -221,5 +233,8 @@ plt.close(fig)
   never `ax.legend(h1 + h2, l1 + l2)`; it and `dm.label_bars(ax)` put the
   legend and the bar values on the top twin, so the other twin's data is
   never drawn over them.
+- A third y axis is `ax.twinx()` twice with the second twin's spine moved
+  out, as above. `mpl_toolkits`' `host_subplot` parasites do not move with
+  their host, so `dm.simple_layout` leaves such a figure as it was.
 - A twin pair may report `CROSS_AXES_OVERLAP` for its shared x ticks; that
   finding is a false positive for twins.

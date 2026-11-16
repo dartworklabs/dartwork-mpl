@@ -155,6 +155,26 @@ def test_grid_rows_part_for_their_tick_labels_and_titles() -> None:
     assert plot_mm / fig.dpi * 25.4 > 15.0
 
 
+def test_a_figure_with_parasite_axes_is_left_as_it_was(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # #750: parasite axes stay where they were made while the host moves,
+    # so each step shrank the plot again, to 0.001 of the canvas.
+    from mpl_toolkits.axes_grid1 import host_subplot
+
+    fig = plt.figure(figsize=dm.figsize("13cm", "standard"))
+    host = host_subplot(111)
+    twin = host.twinx()
+    host.plot([1, 2, 3], [1, 2, 3])
+    twin.plot([1, 2, 3], [10, 30, 20])
+    twin.set_ylabel("Temperature (°C)")
+    before = host.get_position().bounds
+    with caplog.at_level("INFO", logger="dartwork_mpl.layout"):
+        dm.simple_layout(fig)
+    assert host.get_position().bounds == pytest.approx(before)
+    assert "use ax.twinx() instead" in caplog.text
+
+
 def test_left_alone() -> None:
     empty = plt.figure()
     dm.simple_layout(empty)  # no Axes: nothing to do, no warning
