@@ -106,7 +106,7 @@ Read only the page the task needs. Without this folder, `uv run dartwork-mpl pat
 | choosing the form, emphasis, annotation, titles | `references/craft.md` |
 | canvas sizes, margins, grids, twin axes, legends outside, colorbars | `references/layout.md` |
 | changing an existing figure, value labels | `references/editing.md` |
-| colour names, palettes, colormaps | `references/colors.md` |
+| colour names, palettes, colormaps, a ramp between two colours | `references/colors.md` |
 | Korean text, fonts and number units | `references/korean.md` |
 | what each `dm.check` finding means | `references/review.md` |
 | native matplotlib details: dashes, spines, exact canvas regions | `references/recipes.md` |
