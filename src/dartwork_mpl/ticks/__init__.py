@@ -6,6 +6,8 @@ every tick exactly (``0.25억 … 1.75억``). Every other tick text is
 matplotlib's, under the preset's ``axes.formatter.*`` and
 ``date.autoformatter.*``. Text that should read like the ticks (bar value
 labels) asks :func:`tick_scale_of` and prints with :func:`number_text`.
+Before the layout, :func:`prepare` ticks an x axis of years at whole numbers
+and writes large numbers in the preset's units.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from ..hidden import axes_name
 from ..vocab import Letters, Locale, Rectilinear, X, Y, parse_axes
 from . import decide
 from .formatters import AxisUnitFormatter, tick_scale_of, tick_values, untouched
+from .measure import data_along, default_locator, whole_number_locator
 from .model import DefaultUnit, NumberStyle, myriad_ladder, preset_ladder
 from .text import number_text, value_label_decimals
 
@@ -71,7 +74,12 @@ def format_axis_myriad(
 
 
 def prepare(fig: Figure, locale: Locale) -> None:
-    """Large numbers on axes nobody formatted, before the layout measures.
+    """Year ticks and large numbers on axes nobody set, before the layout
+    measures.
+
+    An x axis whose lines and points all sit at whole numbers from 1800 to
+    2100 ticks at whole numbers only (``2019, 2020``, not ``2019.0, 2019.5``)
+    unless someone placed its ticks or set its formatter.
 
     A plain number axis whose ticks reach 1,000 prints thousands separators
     and, from one million, one unit for the axis: ``1M`` or, under a Korean
@@ -86,6 +94,22 @@ def prepare(fig: Figure, locale: Locale) -> None:
             continue
         for which in (X(), Y()):
             axis = axis_of(ax, which)
+            if (
+                default_locator(axis)
+                and untouched(axis)
+                and decide.reads_as_years(data_along(ax, which), which)
+            ):
+                axis.set_major_locator(whole_number_locator())
+                LOG.info(
+                    "put the %s ticks of %s on whole numbers only: its data "
+                    "are whole numbers that read as years, and a tick "
+                    "between two years (2019.5) names none; set your own "
+                    "locator (ax.%saxis.set_major_locator) to keep "
+                    "matplotlib's",
+                    which.letter,
+                    axes_name(ax),
+                    which.letter,
+                )
             ticks = tick_values(axis, list(axis.get_majorticklocs()))
             if decide.reads_large(ticks, which) and untouched(axis):
                 axis.set_major_formatter(AxisUnitFormatter(style))
