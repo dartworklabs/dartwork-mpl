@@ -71,8 +71,9 @@ do not fix them.
 ## Revise
 
 1. Change only what the image, a finding or the user asked for.
-2. Save under the next stem (`figure-v2`) and keep v1. If the user named an
-   output path, write the final version there too.
+2. Save under the next stem (`figure-v2`) and keep v1, but only when nobody
+   named a path. If the user or caller named an output path or format, the
+   final version goes to exactly that path, with no `-vN` and no extra files.
 3. `dm.check` again and look at the new PNG.
 4. Report what changed, which findings remain and why.
 
