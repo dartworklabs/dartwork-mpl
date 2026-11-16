@@ -9,6 +9,7 @@ from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Box,
     Facts,
+    Frame,
     Hit,
     Inked,
     Legend,
@@ -69,6 +70,18 @@ def test_CROSS_AXES_OVERLAP_title_on_neighbour_ticks():
     title = text("Lower", Box(100, 60, 200, 90), Title(), panel=1)
     facts = Facts(CANVAS, PT, texts=(title,), ticks=(row("1", "2"),))
     assert "CROSS_AXES_OVERLAP" in found(facts).rules
+    wide = text("A title wider than its plot", Box(10, 500, 520, 540), Title())
+    plot, bar = (
+        Frame(object(), 0, Box(20, 50, 450, 480)),
+        Box(470, 30, 500, 560),
+    )
+    beside = Facts(
+        CANVAS, PT, texts=(wide,), frames=(plot, Frame(None, 1, bar))
+    )
+    (f,) = found(beside)
+    assert "runs into the plot of axes[1]" in f.message and f.panels == (0, 1)
+    twin = Frame(object(), 1, plot.box)
+    assert not found(Facts(CANVAS, PT, texts=(wide,), frames=(plot, twin)))
 
 
 def test_TEXT_CROWD_value_beside_a_name():
