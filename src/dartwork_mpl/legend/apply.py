@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, assert_never
 import matplotlib as mpl
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
-from matplotlib.transforms import ScaledTranslation
+from matplotlib.text import Text
+from matplotlib.transforms import ScaledTranslation, Transform
 
 from ..geometry import (
     BBOX_ERRORS,
@@ -84,6 +85,11 @@ class Placed:
 LOG = logging.getLogger("dartwork_mpl.legend")
 
 _PLACED: weakref.WeakKeyDictionary[Legend, Placed] = weakref.WeakKeyDictionary()
+
+#: The transform a lift last gave each title, to tell it from the caller's.
+_LIFTED: weakref.WeakKeyDictionary[Text, Transform] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def pad_px(legend: Legend, renderer: RendererBase) -> float:
@@ -295,11 +301,28 @@ def _lift_titles(
     lift = decide.title_lift(box_of(legend.get_window_extent(renderer)), facts)
     if lift is None:
         return False
-    placed.lift = lift.px * 72.0 / root.dpi
     offset = ScaledTranslation(0.0, lift.px / root.dpi, root.dpi_scale_trans)
+    moved = False
     for title in axes_titles(ax).values():
-        title.set_transform(ax.transAxes + offset)
-    return True
+        if not _ours(ax, title, root):
+            continue  # the caller gave it another transform
+        raised = ax.transAxes + offset
+        title.set_transform(raised)
+        _LIFTED[title] = raised
+        moved = True
+    if moved:
+        placed.lift = lift.px * 72.0 / root.dpi
+    return moved
+
+
+def _ours(ax: Axes, title: Text, root: Figure) -> bool:
+    """Whether ``title`` has the transform a lift last gave it, or the one
+    ``ax.set_title`` gives at the preset's pad: one the caller did not set
+    (``set_transform``, ``set_title(pad=...)``)."""
+    now = title.get_transform()
+    pad = float(mpl.rcParams["axes.titlepad"]) / 72.0
+    unset = ax.transAxes + ScaledTranslation(0.0, pad, root.dpi_scale_trans)
+    return now is _LIFTED.get(title) or now == unset
 
 
 def _again(

@@ -60,7 +60,7 @@ def place_legend(
     ``dm.simple_layout`` places it again at the size it gives the Axes, and
     raises the titles over a legend above. A legend the caller anchored
     (``set_bbox_to_anchor``) or moved (``set_loc``) since stays where it
-    is.
+    is, and so does a title the caller gave another transform.
 
     A ``twinx`` / ``twiny`` pair gets one legend with every twin's entries,
     on the twin drawn last. ``handles`` and ``labels`` are shown as given,
