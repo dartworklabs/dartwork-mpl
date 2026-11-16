@@ -77,6 +77,43 @@ def _let_it_pass(facts: ContentFacts, counted: ContentFacts) -> ContentFacts:
     return replace(counted, axes=axes)
 
 
+def _height_room(facts: ContentFacts) -> Px:
+    """The height (px) between the margins and what figure artists keep."""
+    res, m = decide.reserved(facts, decide.reserves(facts)), facts.margins
+    share = 1.0 - res.bottom - res.top - m.bottom - m.top
+    return Px(share * facts.canvas.height)
+
+
+def _too_tall(axes: AxesContent, room: Px) -> bool:
+    """Taller than the room, and only because of its y name: the name runs
+    past the rest of its content, and no plot height takes it in."""
+    box, narrow = axes.box, axes.narrow
+    return box.y1 - box.y0 > room and (narrow.y0 > box.y0 or narrow.y1 < box.y1)
+
+
+def _has_name_taller_than_the_room(
+    facts: ContentFacts, counted: ContentFacts
+) -> bool:
+    room = _height_room(counted)
+    return any(_too_tall(a, room) for a in counted.axes)
+
+
+def _let_the_name_pass(
+    facts: ContentFacts, counted: ContentFacts
+) -> ContentFacts:
+    """Count such an Axes' y name one pixel tall, as its titles are one
+    pixel wide when too wide: it is centred on the plot, so shrinking the
+    plot never brings it in. Once the margins hold, the text fit wraps it."""
+    room = _height_room(counted)
+    axes = tuple(
+        replace(a, box=Box(a.box.x0, a.narrow.y0, a.box.x1, a.narrow.y1))
+        if _too_tall(a, room)
+        else a
+        for a in counted.axes
+    )
+    return replace(counted, axes=axes)
+
+
 def _over_panel_titles(art: FigureArtist, counted: ContentFacts) -> bool:
     """A figure title (a text across the top band) over titled panels."""
     return (
@@ -117,6 +154,15 @@ EDGES: tuple[EdgeCase[ContentFacts, ContentFacts], ...] = (
         example="test_edges.py::test_text_wider_than_the_room_keeps_the_plot",
         applies=_has_text_wider_than_the_room,
         adjust=_let_it_pass,
+    ),
+    EdgeCase(
+        name="name-taller-than-the-room",
+        why="a y name taller than the room under a figure legend (with its "
+        "panel letter on top) shrank its plot by its excess at every step, "
+        "so the fit never settled and the name was never wrapped",
+        example="test_edges.py::test_name_taller_than_the_room_keeps_the_plot",
+        applies=_has_name_taller_than_the_room,
+        adjust=_let_the_name_pass,
     ),
     EdgeCase(
         name="figure-title-on-panel-titles",

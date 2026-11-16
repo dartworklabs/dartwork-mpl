@@ -1,4 +1,4 @@
-"""A report's 2 x 2 grid moved to a slide by switching only the preset: titles, axis names and panel letters leave each plot about 3 cm tall."""
+"""A report's 2 x 2 grid moved to a slide by switching only the preset: titles, axis names and panel letters leave each plot about 3.7 cm tall on the whole slide, still SMALL_PANEL."""
 
 import matplotlib.pyplot as plt
 import numpy as np

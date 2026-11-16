@@ -12,7 +12,7 @@ canvas, so the same request gets the same size whoever draws it:
 |---|---|
 | `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
 | `scientific` | one panel 9 cm (a column), grids and `dense`/`strip` 17 cm |
-| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title |
+| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title; a grid of two or more rows takes the whole slide, 25.4 × 14.29 cm |
 | `poster` | report widths × font size / 8 pt |
 
 Pass what you know and it picks from that table.
@@ -22,7 +22,7 @@ Pass what you know and it picks from that table.
 | `n_points=`, `n_series=` | sparse charts get the narrow canvas, dense ones the wide |
 | `labels=names` | wide enough for category names to stand flat |
 | `dual_axis=True` | room for a second y axis |
-| `nrows=`, `ncols=` | a grid of panels |
+| `nrows=`, `ncols=` | a grid of panels: each row a 4:3 cell, or, where that leaves plots under 3 cm once titles, ticks and names are spent (one row of three, or four columns), a 4:3 plot and 1.5 cm for that text per row |
 | kind `"barh"`, `"grouped"`, `"matrix"`, `"compact"`, `"dense"`, `"strip"` | horizontal bars, grouped bars, a square heatmap, a small figure, wide time series |
 | kind `"slide"`, `"full_slide"` | the body under a 16:9 slide's title (23.4 × 10.5 cm), the whole slide (25.4 × 14.29 cm) |
 
@@ -43,11 +43,14 @@ dm.figsize_for("grouped", n_points=9, n_series=3)  # 12 cm, like "default"
 dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
 dm.figsize_for("slide")  # 23.4 x 10.5 cm, under a slide title
 dm.figsize_for("full_slide")  # 25.4 x 14.29 cm, the whole 16:9 slide
+dm.figsize_for(nrows=2, ncols=2)  # 17 x 13 cm
 dm.figsize_for(nrows=2, ncols=3)  # 17 x 8.5 cm
+dm.figsize_for(nrows=1, ncols=3)  # 17 x 6 cm, a row carries its text alone
+dm.figsize_for(nrows=1, ncols=4)  # 17 x 4.5 cm, 3 cm plots
 dm.style.use("presentation")
 dm.figsize_for(n_points=len(quarters), n_series=series)  # 11.4 x 10.5 cm
 dm.figsize_for(nrows=1, ncols=3)  # 23.4 x 10.5 cm, one row under the title
-dm.figsize_for("full_slide")  # 25.4 x 14.29 cm: a grid of two rows
+dm.figsize_for(nrows=2, ncols=2)  # 25.4 x 14.29 cm, the whole slide
 ```
 
 A size the user names goes to `dm.figsize(width, second)`, which returns the
@@ -116,8 +119,16 @@ the panels sits between the two.
 
 ## Equal grid with panel labels
 
+A grid shares its axes unless the panels measure different things:
+`sharex=True, sharey=True`, y named on the first column and x on the bottom
+row (`references/craft.md`, "Small multiples"). The default canvas is sized
+for that; a name on every panel takes the room of the plots, and on a slide
+grid `dm.check` reports `SMALL_PANEL`.
+
 ```python
-fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True)
+fig, axes = plt.subplots(
+    2, 2, figsize=dm.figsize_for(nrows=2, ncols=2), sharex=True, sharey=True
+)
 for i, ax in enumerate(axes.flat):
     ax.plot(x, np.sin(x + i))
 for ax in axes[:, 0]:
