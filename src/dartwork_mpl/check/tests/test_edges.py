@@ -7,6 +7,7 @@ from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Box,
     Facts,
+    Frame,
     Hit,
     Inked,
     Legend,
@@ -18,7 +19,7 @@ from dartwork_mpl.check.model import (
 from dartwork_mpl.check.roles import AxisLabel, FreeText, Role, TickLabel, Title
 from dartwork_mpl.colorspace import Hex, Ratio
 from dartwork_mpl.edgecase import settle
-from dartwork_mpl.vocab import X
+from dartwork_mpl.vocab import X, Y
 
 CANVAS = Box(0, 0, 1000, 600)
 PT = 300 / 72
@@ -141,3 +142,22 @@ def test_VALUE_LABEL_DECIMAL():
     )
     mixed = (counts[0], text("31.5", Box(300, 100, 350, 140)))
     assert not found(Facts(CANVAS, PT, texts=mixed))
+
+
+def test_SMALL_PANEL():
+    def ticks(panel: int, *axes: X | Y) -> tuple[TickRow, ...]:
+        label = (text("10", Box(0, 0, 20, 10), TickLabel(), panel),)
+        return tuple(
+            TickRow(object(), panel, w, label, 0, 0.0, True, True) for w in axes
+        )
+
+    # em 40 px: 7 tick labels are 280 px
+    small = Frame(object(), 0, Box(0, 0, 400, 200))
+    (f,) = found(Facts(CANVAS, PT, ticks=ticks(0, X(), Y()), frames=(small,)))
+    assert f.rule == "SMALL_PANEL" and f.panels == (0,)
+    roomy = Frame(object(), 1, Box(0, 0, 600, 300))
+    both = ticks(0, X(), Y()) + ticks(1, X(), Y())
+    largest = Facts(CANVAS, PT, ticks=both, frames=(small, roomy))
+    assert "SMALL_PANEL" not in found(largest).rules
+    colorbar = Facts(CANVAS, PT, ticks=ticks(0, Y()), frames=(small,))
+    assert not found(colorbar)

@@ -44,6 +44,11 @@ def has_ticks(facts: Facts, found: Findings) -> bool:
     return bool(facts.ticks)
 
 
+def has_frames(facts: Facts, found: Findings) -> bool:
+    """Any flat Axes with tick labels."""
+    return bool(facts.frames and facts.ticks)
+
+
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
     EdgeCase(
         name="OVERFLOW",
@@ -143,5 +148,15 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_MISSING_AXIS_LABEL",
         applies=has_ticks,
         adjust=decide.missing_axis_label,
+    ),
+    EdgeCase(
+        name="SMALL_PANEL",
+        why=(
+            "a report's 2 x 2 grid moved to slide text left each plot 5 "
+            "tick labels tall, and nothing else stood out"
+        ),
+        example="test_edges.py::test_SMALL_PANEL",
+        applies=has_frames,
+        adjust=decide.small_panel,
     ),
 )

@@ -178,6 +178,15 @@ class Panel:
 
 
 @dataclass(frozen=True)
+class Frame:
+    """The plot area of a flat Axes: its handle, ``fig.axes`` index and box."""
+
+    handle: object
+    index: int
+    box: Box
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -192,6 +201,7 @@ class Facts:
     values: tuple[OnData, ...] = ()
     inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
+    frames: tuple[Frame, ...] = ()
 
     @property
     def touch(self) -> float:

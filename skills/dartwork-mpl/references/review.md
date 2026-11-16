@@ -64,6 +64,7 @@ not, the `try` line names what usually helps.
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates and names need none; one label per grid row or column is enough) |
 | `EMPTY_AXES` | a framed panel that draws nothing, left over from a grid |
+| `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
 
 An "only X" edit keeps the warnings the original already had: report them,
 do not fix them.

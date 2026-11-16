@@ -11,7 +11,18 @@ from itertools import combinations
 
 from ..colorspace import Ratio
 from .findings import Findings
-from .model import Facts, Hit, Inked, OnData, Text, margins, quote
+from .model import (
+    AXES,
+    Facts,
+    Frame,
+    Hit,
+    Inked,
+    OnData,
+    Text,
+    TickRow,
+    margins,
+    quote,
+)
 
 #: A text further past the canvas edge than this (px) is cut off.
 CUT_PX = 1.0
@@ -21,6 +32,10 @@ COVER = 0.05
 PHRASE_GAP_EM = 1.0
 #: Text fainter than this on what is behind it disappears (WCAG large text).
 MIN_CONTRAST = Ratio(3.0)
+#: A largest plot whose shorter side holds fewer tick labels (em) than this
+#: is too small for its text: the corpus' good charts hold 13.1 or more, a
+#: report grid moved to slide text 5.0.
+MIN_PANEL_EM = 7.0
 
 
 def overflow(facts: Facts, found: Findings) -> Findings:
@@ -216,5 +231,35 @@ def text_contrast(facts: Facts, found: Findings) -> Findings:
             f"behind them, worst {w.ink} on {w.paper} at "
             f"{w.ratio.value:.2f}:1 ({quote(c.text.short for c in faint)})",
             [c.text for c in faint],
+        )
+    return found
+
+
+def small_panel(facts: Facts, found: Findings) -> Findings:
+    """The largest plot is short for its tick labels: the text takes the
+    canvas. A plot is a frame with tick labels on both axes (a colorbar
+    has them on one); an inset or a side panel is never the largest."""
+    rows: dict[int, list[TickRow]] = {}
+    for row in facts.ticks:
+        rows.setdefault(row.panel, []).append(row)
+    plots: list[tuple[Frame, list[TickRow]]] = [
+        (f, rows[f.index])
+        for f in facts.frames
+        if len({r.axis for r in rows.get(f.index, [])}) == len(AXES)
+    ]
+    if not plots:
+        return found
+    frame, ticks = max(plots, key=lambda p: p[0].box.area)
+    em = max(t.em for r in ticks for t in r.labels)
+    side = min(frame.box.width, frame.box.height)
+    if side < MIN_PANEL_EM * em:
+        cm = side / facts.px_per_pt / 72 * 2.54
+        found = found.flag(
+            "SMALL_PANEL",
+            f"Axes[{frame.index}]: the largest plot is {cm:.1f} cm, "
+            f"{side / em:.1f} tick labels, on its shorter side: the text "
+            "takes the canvas",
+            handles=(frame.handle,),
+            panels=(frame.index,),
         )
     return found
