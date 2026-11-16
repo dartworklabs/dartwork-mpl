@@ -1,0 +1,16 @@
+prompt = "Draw a heatmap of the correlation matrix in corr.csv, with the coefficient written in each cell."
+
+[files]
+"corr.csv" = """
+,price,demand,supply,margin,returns
+price,1.00,-0.62,0.35,0.71,-0.18
+demand,-0.62,1.00,-0.21,-0.44,0.27
+supply,0.35,-0.21,1.00,0.12,-0.05
+margin,0.71,-0.44,0.12,1.00,-0.33
+returns,-0.18,0.27,-0.05,-0.33,1.00
+"""
+
+[expect]
+panels = 1
+marks = ["image"]
+texts = ["price", "demand", "returns", "0.71"]

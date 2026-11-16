@@ -183,7 +183,6 @@ def _build_line_signals() -> Figure:
 
     ax.plot(x, y1, label="Signal A", color=palette[0], linewidth=dm.lw(0))
     ax.plot(x, y2, label="Signal B", color=palette[1], linewidth=dm.lw(0))
-    dm.format_axis_si(ax, axis="y")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.grid(
@@ -215,7 +214,6 @@ def _build_bar_value_labels() -> Figure:
     palette = _blue_colors(4)
 
     bars = ax.bar(categories, values, color=palette)
-    dm.format_axis_millions(ax, axis="y")
     for bar, value in zip(bars, values, strict=True):
         height = bar.get_height()
         ax.text(
@@ -383,6 +381,7 @@ def _build_dual_axis_timeseries() -> Figure:
     ax.tick_params(axis="y", labelcolor=ink[0])
 
     ax2 = ax.twinx()
+    ax2.spines["right"].set_visible(True)  # the presets hide it
     ax2.plot(
         dates,
         secondary,
@@ -474,6 +473,152 @@ def _build_kr_math_labels() -> Figure:
         fontsize=dm.fs(-1),
     )
     ax.grid(True, alpha=0.18, linewidth=0.5)
+    dm.simple_layout(fig)
+    return fig
+
+
+def _build_labelled_bars() -> Figure:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+    regions = ["North", "South", "East", "West", "Central"]
+    revenue = [42.5, 37.1, 51.8, 29.4, 46.0]
+    ax.bar(regions, revenue)
+    dm.label_bars(ax)
+    ax.set_xlabel("Region")
+    ax.set_ylabel("Revenue (million USD)")
+    dm.simple_layout(fig)
+    return fig
+
+
+def _build_stacked_totals_legend() -> Figure:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+    quarters = ["Q1", "Q2", "Q3", "Q4"]
+    channels = (
+        ("Online", np.array([18, 22, 27, 31])),
+        ("Retail", np.array([24, 23, 21, 22])),
+        ("Partner", np.array([9, 11, 12, 15])),
+    )
+    bottom = np.zeros(len(quarters))
+    for name, values in channels:
+        ax.bar(quarters, values, bottom=bottom, label=name)
+        bottom += values
+    dm.label_bars(ax)
+    ax.set_xlabel("Quarter")
+    ax.set_ylabel("Orders (thousands)")
+    ax.set_title("Orders by channel")
+    dm.place_legend(ax, loc="above")
+    dm.simple_layout(fig)
+    return fig
+
+
+def _build_panel_grid_figure_legend() -> Figure:
+    dm.style.use("scientific")
+    fig, axes = plt.subplots(
+        2, 2, figsize=dm.figsize(dm.col2, "standard"), sharex=True
+    )
+    t = np.linspace(0, 10, 120)
+    sites = ("Site A", "Site B")
+    for k, ax in enumerate(axes.flat):
+        for j, site in enumerate(sites):
+            ax.plot(
+                t,
+                np.exp(-t / (4 + 2 * j)) * np.cos((1 + k * 0.4) * t + j),
+                label=site,
+            )
+        ax.set_ylabel("Response")
+    for ax in axes[1]:
+        ax.set_xlabel("Time (s)")
+    dm.label_axes(axes)
+    dm.figure_legend(fig)
+    dm.simple_layout(fig)
+    return fig
+
+
+def _build_line_ends_annotated() -> Figure:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+    years = np.arange(2015, 2025)
+    series = (
+        (
+            "Solar",
+            np.array([2.1, 2.9, 3.8, 5.0, 6.4, 8.1, 10.2, 12.9, 15.8, 19.4]),
+        ),
+        (
+            "Wind",
+            np.array([6.0, 6.8, 7.5, 8.1, 8.9, 9.6, 10.4, 11.0, 11.9, 12.6]),
+        ),
+        (
+            "Hydro",
+            np.array([10.5, 10.4, 10.6, 10.2, 10.3, 10.1, 9.9, 9.8, 9.9, 9.7]),
+        ),
+        (
+            "Nuclear",
+            np.array([8.9, 9.1, 8.8, 8.6, 8.7, 8.4, 8.5, 8.2, 8.0, 8.1]),
+        ),
+    )
+    for name, values in series:
+        ax.plot(years, values, label=name)
+    dm.label_line_ends(ax)
+    dm.annotate_value(ax, 2024, 19.4, "19.4 TWh")
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Generation (TWh)")
+    dm.simple_layout(fig)
+    return fig
+
+
+def _build_long_category_ticks() -> Figure:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+    departments = [
+        "Customer Support",
+        "Product Engineering",
+        "Sales Operations",
+        "Human Resources",
+        "Finance and Legal",
+        "Marketing Analytics",
+    ]
+    ax.bar(departments, [34, 58, 41, 17, 22, 29])
+    ax.set_xlabel("Department")
+    ax.set_ylabel("Open positions")
+    dm.simple_layout(fig)
+    return fig
+
+
+def _build_kr_myriad_dates() -> Figure:
+    dm.style.use("report-kr")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+    months = np.arange("2023-01", "2024-07", dtype="datetime64[M]")
+    visitors = (
+        1_000_000
+        + np.array(
+            [
+                12,
+                9,
+                15,
+                21,
+                28,
+                34,
+                47,
+                52,
+                38,
+                30,
+                24,
+                33,
+                19,
+                17,
+                26,
+                35,
+                41,
+                50,
+            ]
+        )
+        * 30_000
+    )
+    ax.plot(months, visitors, marker="o")
+    ax.set_xlabel("월")
+    ax.set_ylabel("방문객 수")
+    ax.set_title("월별 방문객 추이")
     dm.simple_layout(fig)
     return fig
 
@@ -582,5 +727,35 @@ def all_scenarios() -> list[Scenario]:
                 texts_contain=("한글", _SPECIAL_CHARS),
                 palette=_blue_colors(1),
             ),
+        ),
+        Scenario(
+            "labelled_bars",
+            _build_labelled_bars,
+            Expectations(min_patches=5, texts_contain=("51.8",)),
+        ),
+        Scenario(
+            "stacked_totals_legend",
+            _build_stacked_totals_legend,
+            Expectations(min_patches=12, texts_contain=("Online", "Q4")),
+        ),
+        Scenario(
+            "panel_grid_figure_legend",
+            _build_panel_grid_figure_legend,
+            Expectations(n_axes=4, min_lines=8, texts_contain=("Site A",)),
+        ),
+        Scenario(
+            "line_ends_annotated",
+            _build_line_ends_annotated,
+            Expectations(min_lines=4, texts_contain=("Solar", "19.4 TWh")),
+        ),
+        Scenario(
+            "long_category_ticks",
+            _build_long_category_ticks,
+            Expectations(min_patches=6, texts_contain=("Customer",)),
+        ),
+        Scenario(
+            "kr_myriad_dates",
+            _build_kr_myriad_dates,
+            Expectations(min_lines=1, texts_contain=("방문객 수",)),
         ),
     ]
