@@ -238,10 +238,10 @@ One panel per group, on the same axes, so heights compare across panels.
   point goes in one figure title, `fig.suptitle(...)`, in a report or slide
   figure. Both stay centred as the preset draws them. `x=0` does not align
   the figure title with the first panel; it puts it on the canvas edge.
-- **One legend.** `dm.figure_legend(fig)` collects every panel's series.
-  With a figure title pass `loc="below"`: the default place above the
-  panels is where the title is. Two or three lines can instead be named at
-  their ends in the last panel, `dm.label_line_ends(axes.flat[-1])`.
+- **One legend.** `dm.figure_legend(fig)` collects every panel's series and
+  sits under the figure title, above the panel titles. Two or three lines
+  can instead be named at their ends in the last panel,
+  `dm.label_line_ends(axes.flat[-1])`.
 - Panel letters (`dm.label_axes(axes)`) are for paper figures that the
   caption refers to.
 
@@ -260,7 +260,7 @@ for ax in axes[-1]:
     ax.set_xlabel("Month")
 axes[0, 0].set_xticks([3, 6, 9, 12])        # shared: sets every panel
 fig.suptitle("Every region beat plan from July on")
-dm.figure_legend(fig, loc="below")
+dm.figure_legend(fig)
 dm.simple_layout(fig)
 print(dm.check(fig))
 plt.close(fig)

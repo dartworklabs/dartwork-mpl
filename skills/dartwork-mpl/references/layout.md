@@ -202,8 +202,8 @@ plt.close(fig)
 ```
 
 - One legend for panels that share their series: `dm.figure_legend(fig)`
-  (above the panels; `loc="below"` under everything, and always with a
-  `fig.suptitle`, which sits above the panels), then
+  (above the panels, under a `fig.suptitle`; `loc="below"` puts it under
+  everything), then
   `dm.simple_layout(fig)`; it removes the panel legends it replaces.
 - Legend inside, away from the data: `dm.place_legend(ax)`.
   `dm.simple_layout(fig)` places it again at the laid-out size. When
