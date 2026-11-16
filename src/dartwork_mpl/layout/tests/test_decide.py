@@ -49,7 +49,7 @@ def axes(plot: Box, *texts: Box) -> AxesContent:
         max(b.x1 for b in boxes),
         max(b.y1 for b in boxes),
     )
-    return AxesContent(pos, box)
+    return AxesContent(pos, box, Px(0.0), box, False)
 
 
 def text(x0: float, x1: float, y0: float, y1: float) -> Box:
@@ -59,7 +59,9 @@ def text(x0: float, x1: float, y0: float, y1: float) -> Box:
 def content(
     *a: AxesContent, artists=(), margins=NONE, last=None
 ) -> ContentFacts:
-    return ContentFacts(tuple(a), tuple(artists), CANVAS, margins, last)
+    return ContentFacts(
+        tuple(a), tuple(artists), CANVAS, margins, last, Px(0.0)
+    )
 
 
 def solve(facts: ContentFacts):

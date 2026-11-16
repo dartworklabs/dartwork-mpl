@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.container import BarContainer
     from matplotlib.figure import Figure
+    from matplotlib.patches import Rectangle
     from matplotlib.text import Text
 
 __all__ = ["add_note", "annotate_value", "label_axes", "label_bars"]
@@ -33,7 +34,11 @@ TICK_TEXT = labels_slice.TickText(
 
 
 def label_bars(
-    ax: Axes, bars: BarContainer | Iterable[BarContainer] | None = None
+    ax: Axes,
+    bars: BarContainer
+    | Iterable[BarContainer]
+    | Iterable[Rectangle]
+    | None = None,
 ) -> list[Text]:
     """Label each bar with its value, printed like the axis's ticks.
 
@@ -51,9 +56,9 @@ def label_bars(
     whichever reads, and the stack's net beyond its end. ``dm.simple_layout``
     turns crowded labels vertical (vertical bars), hides those that still
     meet and segment labels their bar cannot hold, and grows an autoscaled
-    value axis to hold them. ``bars``: only these containers (what
-    ``ax.bar`` returns). A label you turn or hide yourself stays as you
-    left it.
+    value axis to hold them. ``bars``: only these: what ``ax.bar``
+    returns, a list of those, or some of its bars (``bars[:1]``). A label
+    you turn or hide yourself stays as you left it.
     """
     return labels_slice.label_bars(
         ax, bars, preset=PRESET_TEXT, ticks=TICK_TEXT

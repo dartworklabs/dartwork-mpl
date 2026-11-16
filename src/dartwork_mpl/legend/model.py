@@ -127,6 +127,12 @@ def parse_loc(loc: str) -> Best | Side:
     return found
 
 
+def listed(label: object) -> bool:
+    """Whether an artist of this label may take a legend entry: matplotlib
+    leaves out ``"_nolegend_"`` (a bar's patches) even when names are given."""
+    return label != "_nolegend_"
+
+
 @dataclass(frozen=True)
 class Columns:
     """A legend's column count, at least one."""

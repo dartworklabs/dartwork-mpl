@@ -36,11 +36,12 @@ MAX_STEPS = 10
 TOUCH_PX = 0.5
 # Room a fitted label keeps from its neighbours, in ems of its own size.
 CLEARANCE_EM = 0.5
+# Least a parted panel keeps along the spacing, in ems of the body text: two
+# tick labels, the fewest that show a scale.
+MIN_CELL_EM = 2.0
 ANGLES = (Degrees(30.0), Degrees(45.0), Degrees(90.0))
 MAX_TICK_LINES = 3
 MAX_NAME_LINES = 4
-# Largest wspace / hspace the panel spacing grows to (share of a cell).
-MAX_GAP_FRACTION = 1.5
 FIT_ROUNDS = 3
 # Figure text centred in this outer band of the canvas reserves that edge.
 EDGE_BAND = 0.15
@@ -156,10 +157,19 @@ def parse_margin(
 
 @dataclass(frozen=True)
 class AxesContent:
-    """An Axes' position (figure fractions) and its drawn content box."""
+    """An Axes' position (figure fractions) and its drawn content box.
+
+    ``widest``: its widest title or x name (px), text centred on the plot
+    whose width no plot width changes; ``narrow``: the content with those
+    texts one pixel wide, as matplotlib's own layouts count them;
+    ``titled``: it shows a title.
+    """
 
     position: Sides
     box: Box
+    widest: Px
+    narrow: Box
+    titled: bool
 
 
 @dataclass(frozen=True)
@@ -185,13 +195,18 @@ class Canvas:
 
 @dataclass(frozen=True)
 class ContentFacts:
-    """What one step measures, and the edges it starts from."""
+    """What one step measures, and the edges it starts from.
+
+    ``title_pad``: the preset's room between a title and what it titles
+    (``axes.titlepad``, px).
+    """
 
     axes: tuple[AxesContent, ...]
     artists: tuple[FigureArtist, ...]
     canvas: Canvas
     margins: Sides
     last: Sides | None
+    title_pad: Px
 
 
 Reserves: TypeAlias = tuple[Edge, ...]

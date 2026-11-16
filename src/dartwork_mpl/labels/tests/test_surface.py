@@ -57,6 +57,47 @@ def test_negative_bars_and_barh_put_labels_past_the_end():
         assert box.x0 > bar.get_window_extent().x1
 
 
+def _labelled(fig, labels, bars, vertical):
+    """Which bars the labels sit on: the bar whose middle each one shares."""
+    middles = [
+        (b.x0 + b.x1) / 2 if vertical else (b.y0 + b.y1) / 2
+        for b in (bar.get_window_extent() for bar in bars)
+    ]
+    return [
+        min(
+            range(len(middles)),
+            key=lambda i: abs(
+                middles[i]
+                - ((t.x0 + t.x1) / 2 if vertical else (t.y0 + t.y1) / 2)
+            ),
+        )
+        for t in _boxes(fig, labels)
+    ]
+
+
+def test_a_slice_of_bars_labels_only_those():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    bars = ax.bar(list("abc"), [3, 5, 4])
+    labels = dm.label_bars(ax, bars=bars[:1])
+    dm.simple_layout(fig)
+    assert [t.get_text() for t in labels] == ["3"]
+    assert _labelled(fig, labels, bars, vertical=True) == [0]
+    with pytest.raises(TypeError, match="bars= takes"):
+        dm.label_bars(ax, bars=[bars[0], *ax.plot([0], [1])])
+
+
+def test_some_barh_bars_are_labelled_at_their_ends():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    bars = ax.barh(list("abc"), [120, -35, 90])
+    labels = dm.label_bars(ax, bars=[bars[2], bars[1]])
+    dm.simple_layout(fig)
+    assert [t.get_text() for t in labels] == ["\N{MINUS SIGN}35", "90"]
+    assert _labelled(fig, labels, bars, vertical=False) == [1, 2]
+    neg, pos = _boxes(fig, labels)
+    assert neg.x1 < bars[1].get_window_extent().x0  # past the negative end
+    assert pos.x0 > bars[2].get_window_extent().x1
+
+
 @pytest.mark.parametrize(
     ("format_axis", "values", "texts"),
     [
@@ -150,6 +191,30 @@ def test_a_note_sits_under_the_plot():
     assert note.get_fontsize() == pytest.approx(dm.fs(-1))
 
 
+@pytest.mark.parametrize("margin", ["1mm", "3mm"])
+def test_a_note_keeps_the_layout_margin_from_the_corner(margin):
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot([2019, 2020, 2021, 2022, 2023], [542, 512, 644, 684, 632])
+    ax.set(xlabel="Year", ylabel="Exports (USD bn)")
+    note = dm.add_note(fig, "Source: Statistics agency")
+    dm.simple_layout(fig, margin=margin)
+    (box,) = _boxes(fig, [note])
+    mm = 25.4 / fig.dpi
+    want = dm.Length.parse(margin).mm
+    assert box.x0 * mm == pytest.approx(want, abs=0.05)
+    assert box.y0 * mm == pytest.approx(want, abs=0.05)
+    assert box.y1 < ax.xaxis.get_tightbbox(fig.canvas.get_renderer()).y0
+
+
+def test_a_note_the_caller_moved_stays_where_they_put_it():
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [0, 1])
+    note = dm.add_note(fig, "Source: test")
+    note.set_position((0.3, 0.02))
+    dm.simple_layout(fig)
+    assert tuple(note.get_position()) == (0.3, 0.02)
+
+
 def test_a_value_label_the_caller_hid_or_turned_stays_so() -> None:
     fig, ax = plt.subplots(figsize=dm.figsize("6cm", "wide"))
     ax.bar([str(i) for i in range(12)], [1000 * i + 12345 for i in range(12)])
@@ -182,3 +247,14 @@ def test_a_line_name_the_caller_moved_stays_where_they_put_it() -> None:
     names[0].xyann = (20.0, -10.0)
     dm.simple_layout(fig)
     assert tuple(names[0].xyann) == (20.0, -10.0)
+
+
+def test_a_note_added_after_the_layout_sits_in_its_margin_and_says_so(capsys):
+    dm.verbose()
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot([0, 1], [0, 1])
+    dm.simple_layout(fig, margin="2mm")
+    note = dm.add_note(fig, "Source: test")
+    (box,) = _boxes(fig, [note])
+    assert box.x0 * 25.4 / fig.dpi == pytest.approx(2.0, abs=0.05)
+    assert "call dm.simple_layout(fig) again" in capsys.readouterr().err

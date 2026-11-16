@@ -90,7 +90,8 @@ drawing; call it again after a later change. Where text still collides it fits t
 runs into another panel or past the figure edge wraps at its spaces
 (the same name on the same axis of that grid then wraps the same way),
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
-(up to 1.5 cells), and bottom tick labels that collide or sit closer
+(while each plot keeps two ems; a canvas too small for that is left as it
+is, so give it more room), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
 degrees. Nothing is shortened or made smaller. What you set
@@ -98,9 +99,15 @@ stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
 when it is too small, and labels you rotate or break yourself are left as
 they are, so leave them out unless the user asks. Tick
 labels that still overlap are reported as `TICK_OVERLAP`, text over another
-panel's text as `CROSS_AXES_OVERLAP`.
+panel's text as `CROSS_AXES_OVERLAP`. A title wider than the canvas keeps
+its plot: it runs past both edges and `dm.check` reports `OVERFLOW`, so
+shorten it or break it with `"\n"`. A `fig.suptitle` keeps the
+title pad from the panel titles under it, and a `dm.figure_legend` above
+the panels sits between the two.
 
 - `margin="3mm"` (or `dm.mm(3)`) sets the buffer on every side; the default is `"1mm"`.
+  A `dm.add_note` line sits that buffer from the left and bottom edges,
+  with the plot above it, unless you moved it.
   `margin=0` puts the content flush with the canvas edge, for a figure that
   sits inside another document's frame.
 - It fits the GridSpec of the first Axes (nested `subgridspec` included).
