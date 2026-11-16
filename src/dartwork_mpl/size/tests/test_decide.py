@@ -98,6 +98,22 @@ def test_busy_slide_charts_fill_the_body(request_: CanvasRequest) -> None:
     assert _cm(request_, SLIDES) == (23.4, 10.5)
 
 
+@pytest.mark.parametrize(
+    ("grid", "expected"),
+    [
+        (Grid(1, 2), (23.4, 10.5)),
+        (Grid(1, 4), (23.4, 10.5)),  # one row: under the slide title
+        (Grid(2, 1), (25.4, 14.29)),
+        (Grid(2, 2), (25.4, 14.29)),  # two rows or more: the whole slide
+        (Grid(3, 4), (25.4, 14.29)),
+    ],
+)
+def test_a_slide_grid_of_rows_fills_the_slide(
+    grid: Grid, expected: tuple[float, float]
+) -> None:
+    assert _cm(_ask(grid=grid), SLIDES) == expected
+
+
 def test_slide_half_and_square() -> None:
     assert _cm(_ask("compact"), SLIDES) == (11.4, 10.5)
     assert _cm(_ask("matrix"), SLIDES) == (10.5, 10.5)
@@ -110,15 +126,41 @@ def test_a_poster_scales_the_tiers_with_its_font() -> None:
 @pytest.mark.parametrize(
     ("kind", "grid", "page", "expected"),
     [
-        ("default", Grid(2, 3), REPORT, (17.0, 8.5)),
         ("default", Grid(2, 2), REPORT, (17.0, 13.0)),
         ("matrix", Grid(2, 2), REPORT, (17.0, 17.0)),
-        ("default", Grid(1, 3), REPORT, (17.0, 4.5)),
+        ("default", Grid(1, 2), REPORT, (17.0, 6.5)),
         ("default", Grid(3, 2), REPORT, (17.0, 17.0)),  # no taller than wide
         ("default", Grid(3, 1), POSTER, (25.5, 14.5)),  # 16:9 on a poster
     ],
 )
 def test_a_grid_takes_the_widest_tier_and_keeps_its_panels(
+    kind: str, grid: Grid, page: Page, expected: tuple[float, float]
+) -> None:
+    assert _cm(_ask(kind, grid=grid), page) == expected
+
+
+@pytest.mark.parametrize(
+    ("kind", "grid", "page", "expected"),
+    [
+        # A 4:3 cell under 4.5 cm: the plot keeps 4:3, 1.5 cm of text on top.
+        (
+            "default",
+            Grid(1, 3),
+            REPORT,
+            (17.0, 6.0),
+        ),  # 4.25 + 1.5, to half a cm
+        ("default", Grid(1, 4), REPORT, (17.0, 4.5)),  # 3.19 + 1.5
+        ("default", Grid(1, 4), PAPER, (17.0, 4.5)),
+        ("default", Grid(2, 3), REPORT, (17.0, 11.5)),
+        ("default", Grid(2, 4), REPORT, (17.0, 9.5)),
+        ("default", Grid(3, 4), REPORT, (17.0, 14.0)),
+        ("default", Grid(3, 3), REPORT, (17.0, 17.0)),  # no taller than wide
+        ("default", Grid(1, 6), REPORT, (17.0, 4.5)),  # at least 3 x text
+        ("matrix", Grid(1, 4), REPORT, (17.0, 6.0)),  # 4.25 + 1.5
+        ("default", Grid(1, 4), POSTER, (25.5, 7.0)),  # text x 1.5
+    ],
+)
+def test_narrow_grid_cells_add_their_text_on_top(
     kind: str, grid: Grid, page: Page, expected: tuple[float, float]
 ) -> None:
     assert _cm(_ask(kind, grid=grid), page) == expected

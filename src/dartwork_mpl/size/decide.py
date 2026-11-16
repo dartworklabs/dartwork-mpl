@@ -4,9 +4,11 @@ A default canvas starts from the chart's kind and is moved by its density:
 few points and series take the narrow 9 cm report tier, many (or a second y
 axis) the 14.5 cm one. The active page then maps it: a journal sets one panel
 in one 9 cm column and everything wider in two (17 cm); a slide draws under
-its title in a 10.5 cm tall body; a poster scales the report tiers with its
-font. Panel grids take the widest tier. Category names that would not stand
-flat are an edge case in ``edges.py``.
+its title in a 10.5 cm tall body, and a grid of two or more rows fills the
+whole slide; a poster scales the report tiers with its font. Panel grids
+take the widest tier, each row as tall as its cell's aspect, with room for
+its text on top once the cells are narrow. Category names that would not
+stand flat are an edge case in ``edges.py``.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from .canvas import (
     ByPositions,
     Canvas,
     CanvasRequest,
+    FullSlideCanvas,
     HalfBody,
     Page,
     Paper,
@@ -39,6 +42,9 @@ COLUMN, TWO_COLUMNS = cm(9), cm(17)
 # The slide less 1 cm side margins, a 2.8 cm title band and a 1 cm bottom
 # margin: what a chart fills under a slide title.
 SLIDE_BODY = Canvas(cm(23.4), cm(10.5))
+# The whole slide: a grid of two or more rows under a slide title leaves
+# each plot a 1.8 cm band, so it takes the title's room too.
+FULL_SLIDE = Canvas(FullSlideCanvas.spec.width, FullSlideCanvas.spec.aspect)
 # Half the body, 0.6 cm apart (two charts side by side), and two of three
 # 7.4 cm columns with their gutter (a chart beside a text column).
 SLIDE_HALF, SLIDE_TWO_THIRDS = cm(11.4), cm(15.4)
@@ -46,6 +52,12 @@ SLIDE_TIERS = (SLIDE_HALF, SLIDE_TWO_THIRDS, cm(23.4))
 # Most x positions whose labels fit the half and two-thirds widths at the
 # slide's 18.2 pt ticks (six company names fit 15.4 cm with 9 pt to spare).
 SLIDE_HALF_POINTS, SLIDE_TWO_THIRDS_POINTS = 4, 6
+# What one row of panels spends on its title, tick labels and axis names
+# at report text (measured: a 4.5 cm report row draws a 3.0 cm plot). Once
+# a row's cell aspect would leave its plot under two thirds of the row (a
+# cell aspect under three times this), the plot keeps the aspect and the
+# text goes on top.
+ROW_TEXT = cm(1.5)
 
 
 def figure_size(width: Length, height: Aspect | Length) -> FigureSize:
@@ -96,10 +108,13 @@ def slide_canvas(request: CanvasRequest) -> Canvas:
     ``"compact"`` takes half the body and ``"matrix"`` a 10.5 cm square. A
     default chart takes half the body up to 4 x positions and two thirds up
     to 6; more positions, unknown positions (point clouds), 4 or more series,
-    a second y axis, any other kind and any grid take the full body.
+    a second y axis, any other kind and a one-row grid take the full body;
+    a grid of two or more rows takes the whole slide.
     """
     height = SLIDE_BODY.height
     points, series = request.n_points, request.n_series
+    if request.grid.nrows > 1:
+        return FULL_SLIDE
     if not request.grid.single:
         return SLIDE_BODY
     match request.kind.slide:
@@ -122,13 +137,30 @@ def slide_canvas(request: CanvasRequest) -> Canvas:
     return Canvas(SLIDE_TWO_THIRDS, height)
 
 
-def grid_canvas(request: CanvasRequest, width: Length, page: Aspect) -> Canvas:
-    """A panel grid ``width`` wide: each panel keeps the kind's aspect, and
-    the whole is no taller than ``page`` (a share of the width) allows."""
+def row_height(cell: Length, aspect: Aspect, page: Page) -> Length:
+    """One grid row over a ``cell`` wide column: the cell keeps ``aspect``.
+
+    Where that would leave the plot under two thirds of the row, the plot
+    keeps the aspect and the row adds the text (``ROW_TEXT``, scaled with
+    the page's font) on top, at least three times the text.
+    """
+    text = ROW_TEXT.cm * page.scale
+    kept = cell.cm * aspect.ratio
+    if kept >= 3 * text:
+        return cm(kept)
+    return cm(max(kept + text, 3 * text))
+
+
+def grid_canvas(
+    request: CanvasRequest, width: Length, page: Page, tallest: Aspect
+) -> Canvas:
+    """A panel grid ``width`` wide, rows as :func:`row_height` gives, the
+    whole no taller than ``tallest`` (a share of the width) allows."""
     grid, aspect = request.grid, request.kind.spec.aspect
-    rows = cm(width.cm / grid.ncols * aspect.ratio * grid.nrows)
-    tallest = cm(width.cm * page.ratio)
-    return Canvas(width, min(half_cm(rows), half_cm(tallest)))
+    row = row_height(cm(width.cm / grid.ncols), aspect, page)
+    rows = cm(row.cm * grid.nrows)
+    most = cm(width.cm * tallest.ratio)
+    return Canvas(width, min(half_cm(rows), half_cm(most)))
 
 
 def canvas(request: CanvasRequest, page: Page) -> Canvas:
@@ -154,4 +186,4 @@ def canvas(request: CanvasRequest, page: Page) -> Canvas:
             assert_never(page.family)
     if single:
         return Canvas(width, spec.aspect)
-    return grid_canvas(request, width, tallest)
+    return grid_canvas(request, width, page, tallest)
