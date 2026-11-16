@@ -21,6 +21,22 @@ def test_lint_code_reads_live_registries():
     ]
 
 
+def test_lint_rules_are_what_lint_code_reports():
+    rules = {r["id"]: r for r in dm.lint_rules()}
+    assert len(rules) == len(dm.lint_rules())
+    found = dm.lint_code(
+        "fig, ax = plt.subplots(figsize=(6, 4))\nfig.tight_layout()"
+    )
+    assert len(found) == 2
+    for f in found:
+        assert rules[f.rule_id] == {
+            "id": f.rule_id,
+            "severity": str(f.severity),
+            "message": f.message,
+            "fix": f.fix,
+        }
+
+
 def test_install_copies_from_outside_the_project_and_refreshes(tmp_path):
     """uvx and global installs live outside the project: a link would break."""
     done = guide.install_skill(tmp_path)

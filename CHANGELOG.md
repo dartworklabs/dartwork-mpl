@@ -2,6 +2,13 @@
 
 Entries before 0.8.0 are in the git history of this file.
 
+## [Unreleased]
+
+### Added
+
+- `dm.lint_rules()` lists the rules `dm.lint_code` checks: `id`, `severity`,
+  `message` and `fix`, read from the same catalog.
+
 ## 0.8.0 — 2026-11-16
 
 The package was rebuilt around one criterion: turn on the skill, say "draw
