@@ -103,7 +103,7 @@ Read only the page the task needs. Without this folder, `uv run dartwork-mpl pat
 
 | Need | Read |
 |---|---|
-| choosing the form, emphasis, annotation, titles | `references/craft.md` |
+| choosing the form, emphasis, annotation, titles; numbers on bars, distributions, heatmaps, small multiples | `references/craft.md` |
 | canvas sizes, margins, grids, twin axes, legends outside, colorbars | `references/layout.md` |
 | changing an existing figure, value labels | `references/editing.md` |
 | colour names, palettes, colormaps | `references/colors.md` |

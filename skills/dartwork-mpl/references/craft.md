@@ -15,7 +15,7 @@ Write the takeaway sentence first. Its verb picks the form.
 | is made of | stacked bars | one stack per period; a pie only for two or three parts of one whole |
 | is related to | scatter | a fitted line only when the fit is the point |
 | is spread, is typical | histogram, box or violin | "Comparing distributions" below |
-| differs across two dimensions | heatmap | ordered rows and columns, a colormap with meaning |
+| differs across two dimensions | heatmap | "Heatmaps" below |
 | the same pattern in many groups | small multiples | shared axes, one panel per group |
 
 Sometimes the answer is not a chart: two numbers are a sentence, and twelve
@@ -138,6 +138,56 @@ for part in ("boxes", "whiskers", "caps", "medians"):
 ax.set_xticks(range(1, len(order) + 1), [f"{k}\nn={len(waits[k])}" for k in order])
 ax.set(ylabel="Wait time (min)", title="South has the shortest waits")
 dm.add_note(fig, "Box: middle half; line: median; whiskers: furthest point within 1.5 × IQR.")
+dm.simple_layout(fig)
+print(dm.check(fig))
+plt.close(fig)
+```
+
+## Heatmaps
+
+- **Size and order.** A square table such as a correlation matrix takes
+  `dm.figsize_for("matrix")`; under `presentation` that is 10.5 cm, so the
+  point goes in the slide's title, not over the matrix. Rows and columns go
+  in their own order (time, a scale) or grouped so similar ones sit together.
+- **Scale.** Magnitudes take a sequential map. Signed values around a
+  centre (correlations, anomalies) take a diverging map with symmetric
+  limits, `cmap="dc.blue_red", vmin=-1, vmax=1`, so zero is the pale middle.
+- **One triangle.** A symmetric matrix shows each pair once and drops the
+  diagonal of 1s: rows from the second, columns to the second-last.
+- **Values in cells** when the reader will quote them and there are few
+  cells (up to about 10 × 10): `dm.fs(-1)`, the fewest decimals that tell
+  cells apart (`.2f` for a correlation), and per cell the text colour that
+  reads, `dm.readable_text_color(im.cmap(im.norm(v)))`. `dm.check` reports
+  a cell text under 3:1 as `TEXT_CONTRAST`.
+- **Colorbar.** None when every cell carries its number: the numbers are
+  the scale. Otherwise one beside the matrix, named with the quantity and
+  unit, `fig.colorbar(im, ax=ax, label="Anomaly (°C)")`, and `aspect="auto"`
+  on `imshow` so the cells fill the axes and the bar matches their height.
+  Square cells with a side colorbar leave empty bands above and below, and a
+  long title can run under the bar: look at the PNG.
+- No frame or tick marks around the cells: `ax.spines[:].set_visible(False)`,
+  `ax.tick_params(length=0)`.
+
+```python
+assets = ["Stocks", "REITs", "Bonds", "Gold", "Oil", "Cash"]
+returns = np.random.default_rng(3).normal(size=(200, 6))
+returns[:, 1] += 1.4 * returns[:, 0]
+returns[:, 2] -= 0.5 * returns[:, 0]
+corr = np.corrcoef(returns, rowvar=False)
+n = len(assets)
+lower = np.ma.masked_array(corr, mask=np.triu(np.ones((n, n), dtype=bool)))[1:, :-1]
+fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
+im = ax.imshow(lower, cmap="dc.blue_red", vmin=-1, vmax=1)
+ax.set_xticks(range(n - 1), assets[:-1])
+ax.set_yticks(range(n - 1), assets[1:])
+for i in range(n - 1):
+    for j in range(i + 1):                         # the shown triangle only
+        v = lower[i, j]
+        ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=dm.fs(-1),
+                color=dm.readable_text_color(im.cmap(im.norm(v))))
+ax.spines[:].set_visible(False)
+ax.tick_params(length=0)
+ax.set_title("Stocks and REITs moved together most")
 dm.simple_layout(fig)
 print(dm.check(fig))
 plt.close(fig)
