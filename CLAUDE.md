@@ -55,7 +55,7 @@ and the `references/` file it routes to. It is the single source of the
 consumer rules: preset by purpose, `dm.figsize`, `dm.simple_layout` (never
 `plt.tight_layout()`), `dm.save_formats`, `dm.fs` / `dm.lw` / `dm.fw`, colour
 names, and the draw → `dm.check` → fix loop. Change a consumer rule there
-first. `python -m dartwork_mpl.guide install` links the skill into a project.
+first. `uv run dartwork-mpl install` links the skill into a project.
 
 The anti-pattern catalog is
 [`src/dartwork_mpl/guide/assets/anti-patterns.yaml`](src/dartwork_mpl/guide/assets/anti-patterns.yaml);

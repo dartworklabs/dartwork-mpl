@@ -69,7 +69,7 @@ Text on the figure follows the document it goes into. Unknown: follow the langua
 
 ## Check, then look
 
-A figure is finished when you have looked at it, not when the script ran.
+A figure is finished when you have looked at it, not when the script ran. Run the script with `uv run python plot.py` in a uv project (one with `pyproject.toml` or `uv.lock`); elsewhere `uv run --with dartwork-mpl python plot.py` runs it without installing anything.
 
 1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a place to look, with a line on what to try; act on the ones that are not what you meant. `NOT RUN` means a rule could not measure, so say so.
 2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
@@ -95,7 +95,7 @@ Call them before `dm.simple_layout`, which makes room for what they add.
 
 ## Look things up
 
-Read only the page the task needs. Without this folder, `python -m dartwork_mpl.guide path` prints where it is.
+Read only the page the task needs. Without this folder, `uv run dartwork-mpl path` (or `dartwork-mpl path`) prints where it is.
 
 | Need | Read |
 |---|---|

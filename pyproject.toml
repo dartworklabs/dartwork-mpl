@@ -46,8 +46,12 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.scripts]
+dartwork-mpl = "dartwork_mpl.guide.__main__:main"
+
 [project.urls]
-Homepage = "https://dartworklabs.github.io/dartwork-mpl/"
+Homepage = "https://mpl.dartwork.io"
+Documentation = "https://mpl.dartwork.io"
 Repository = "https://github.com/dartworklabs/dartwork-mpl"
 Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
 Changelog = "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md"
