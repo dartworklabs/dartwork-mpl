@@ -19,7 +19,7 @@
 ## 허브가 이 리포에 기대해도 되는 것
 
 - **공개 API**: `import dartwork_mpl as dm`으로 쓰는 이름은 `dm.__all__`이 정본이다. 정식 릴리스 전까지는 예고 없이 바뀔 수 있다. 바뀐 내용은 릴리스 노트에 적는다.
-- **skill**: `dartwork-mpl install`이 설치하는 폴더가 플로팅 규칙의 정본이다. 허브의 예시는 그 규칙대로 쓴다: preset을 고르고(`dm.style.use`), 크기를 정하고(`dm.figsize`), 다 그린 뒤 여백을 맞추고(`dm.simple_layout`), 저장한다(`dm.save_formats`).
+- **skill**: 리포의 `skills/dartwork-mpl/`이 플로팅 규칙의 정본이다. 설치는 `npx skills add dartworklabs/dartwork-mpl#v<버전>`이나 `uvx dartwork-mpl install`로 하고, 둘은 같은 폴더를 준다. `SKILL.md`의 `metadata.version`이 그 skill이 맞는 버전이다. 허브의 예시는 그 규칙대로 쓴다: preset을 고르고(`dm.style.use`), 크기를 정하고(`dm.figsize`), 다 그린 뒤 여백을 맞추고(`dm.simple_layout`), 저장한다(`dm.save_formats`).
 - **검사 도구**: `dm.check(fig)`는 그려진 그림의 결함을 보고하고, `dm.lint_code(source)`는 스크립트의 안티패턴을 보고한다. 허브는 예시를 올리기 전에 둘을 돌려 볼 수 있다.
 - **개발용 코퍼스**: `tests/corpus/`의 스크립트는 허브가 가져다 예시의 출발점으로 써도 된다. 차트 종류별 현실적인 스크립트(`charts/`)와 일부러 대충 그린 것(`rough/`)이 있다. 뒤쪽은 결함 검사의 증거용이므로 갤러리에 그대로 올릴 것이 아니다.
 

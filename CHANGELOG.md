@@ -17,6 +17,10 @@ removed names simply no longer exist.
   otherwise, so a skill installed from uvx's cache survives `uv cache clean`;
   running it again refreshes a copy. `--copy` replaces an existing link.
   `python -m dartwork_mpl.guide` still runs the same.
+- The skill's one source is `skills/dartwork-mpl/` at the repository root, so
+  `npx skills add dartworklabs/dartwork-mpl` finds it; the package carries the
+  same folder. `SKILL.md` names the version it was written for, and an agent
+  checks it against `dm.__version__`.
 - The package is eleven slices: `style`, `size`, `color`, `font`, `layout`,
   `ticks`, `labels`, `legend`, `check`, `save`, `guide`.
 - `dm.simple_layout` keeps 1 mm between the content and the canvas edge by

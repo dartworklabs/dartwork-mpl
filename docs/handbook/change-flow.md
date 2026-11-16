@@ -62,7 +62,7 @@ PyPI에 무엇이 있는지는 태그만 본다. `main`은 PyPI와 같지 않다
 3. PyPI trusted publisher로 올린다.
 4. GitHub release를 만든다.
 
-테스트는 다시 돌리지 않는다. `develop`과 `main`의 커밋은 모두 CI를 통과한 PR로 들어오기 때문이다. 태그 전에 `pyproject.toml`의 `version`과 `CHANGELOG.md`를 맞춘다.
+테스트는 다시 돌리지 않는다. `develop`과 `main`의 커밋은 모두 CI를 통과한 PR로 들어오기 때문이다. 태그 전에 `pyproject.toml`의 `version`, `skills/dartwork-mpl/SKILL.md`의 `metadata.version`과 첫 줄의 버전, `CHANGELOG.md`를 맞춘다. 앞의 둘이 다르면 `test_guidance.py`가 실패한다.
 
 배포 상태의 정본은 PyPI와 태그다. 이 라이브러리는 서버를 운영하지 않으므로 관찰·복구 절차는 릴리스 되돌리기뿐이다. PyPI는 같은 버전을 다시 올릴 수 없으므로 되돌리기는 다음 patch 릴리스로 한다.
 

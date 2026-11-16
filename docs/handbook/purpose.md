@@ -40,7 +40,7 @@ dartwork-mpl은 matplotlib 위의 얇은 유틸리티 층이다. 논문·보고�
 | 층 | 무엇인가 | 어디에 있는가 |
 | --- | --- | --- |
 | **도구** | 좋은 그림을 그리기 위한 라이브러리 | 이 리포의 slice |
-| **skill** | 좋은 차트가 일반적으로 갖는 특성과, 도구를 다루는 법 | `guide/assets/skill/` |
+| **skill** | 좋은 차트가 일반적으로 갖는 특성과, 도구를 다루는 법 | `skills/dartwork-mpl/` |
 | **레퍼런스** | 많은 실제 사례. 사용자들이 공유하고 서로 참고한다 | 허브(별도 사이트 리포) |
 
 - **skill은 큰 그림만 잡는다.** 사람들이 어떻게 쓸지 알 수 없으므로 모든 경우에 답하려 하지 않는다. 한 케이스에만 맞는 규칙은 넣지 않는다. 기계적으로 판정할 수 있는 것은 `dm.check`와 lint가 맡고, skill은 관점과 판단 기준을 준다.
@@ -61,7 +61,7 @@ Handbook은 모든 영역의 정본이 아니다. 아래 표는 각 영역에서
 | slice 경계, platform, 조립 모듈 | [tests/architecture/boundaries.py](../../tests/architecture/boundaries.py), [composition.py](../../tests/architecture/composition.py) | 규칙의 이유를 설명 |
 | 출하 색 값 | `src/dartwork_mpl/color/assets/`의 색 표와 [tests/test_shipped_colors_hash.py](../../tests/test_shipped_colors_hash.py)의 digest | 미감 불변식으로 설명 |
 | 시각 스타일 | `src/dartwork_mpl/style/assets/`의 preset, `font/assets/`의 폰트, [tests/visual/baseline/](../../tests/visual/baseline/) | 미감 불변식으로 설명 |
-| 에이전트 지침과 안티패턴 | [src/dartwork_mpl/guide/assets/](../../src/dartwork_mpl/guide/assets/)의 skill, 템플릿, `anti-patterns.yaml` | 위치만 가리킴 |
+| 에이전트 지침과 안티패턴 | [skills/dartwork-mpl/](../../skills/dartwork-mpl/)의 skill, [src/dartwork_mpl/guide/assets/](../../src/dartwork_mpl/guide/assets/)의 `anti-patterns.yaml` | 위치만 가리킴 |
 | 검증 절차와 합격 기준 | [verification.md](verification.md)와 `.github/workflows/` | Handbook이 직접 소유 |
 | 결정 권한과 변경 흐름 | [change-flow.md](change-flow.md) | Handbook이 직접 소유 |
 | 릴리스 버전 | `pyproject.toml`의 `version`, `v*.*.*` 태그, PyPI | 절차를 설명 ([change-flow.md](change-flow.md)) |
