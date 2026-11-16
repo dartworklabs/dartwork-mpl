@@ -34,7 +34,8 @@ class Neighbours:
     axes nobody formatted, and ``place_notes`` puts note lines at the left
     and bottom margins (figure fractions). At each step, after a draw: ``settle_bars`` (bar value labels), then
     rounds of ``settle_legends`` and ``space_line_ends``, then
-    ``settle_panels`` (panel letters).
+    ``settle_panels`` (panel letters), then ``stack_figure_legends``
+    (a figure legend in from its edge past the figure texts there).
 
     While measuring: ``figure_reserve`` the room a figure legend keeps
     from the panels, ``note_gap_pt`` the gap kept above a note line.
@@ -49,6 +50,7 @@ class Neighbours:
     settle_legends: Callable[[Figure, RendererBase, Sequence[Axes]], bool]
     space_line_ends: Settle
     settle_panels: Settle
+    stack_figure_legends: Settle
     figure_reserve: Callable[[Artist], Reserve | None]
     note_gap_pt: Callable[[Artist], float | None]
     report_bars: Callable[[Figure], None]

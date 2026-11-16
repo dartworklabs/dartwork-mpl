@@ -13,21 +13,32 @@ from typing import TYPE_CHECKING
 
 from matplotlib.legend import Legend
 
-from ..geometry import figure_axes, figure_legends, get_renderer
+from ..geometry import (
+    figure_axes,
+    figure_legends,
+    get_renderer,
+    iter_figure_level_extents,
+)
 from ..hidden import axes_name
-from ..vocab import Reserve, edge_of
+from ..vocab import Box, Reserve, edge_of
 from .apply import fit, pad_px, size_of
+from .decide import past_texts
 from .measure import Given, gather
 from .model import Above, Best, Columns, Size, parse_loc, refuse_anchor
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
+    from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
 
 
 LOG = logging.getLogger("dartwork_mpl.legend")
 
 _RESERVES: weakref.WeakKeyDictionary[Legend, Reserve] = (
+    weakref.WeakKeyDictionary()
+)
+#: Where each of those legends is anchored at its edge (figure fractions).
+_ANCHORS: weakref.WeakKeyDictionary[Legend, tuple[float, float]] = (
     weakref.WeakKeyDictionary()
 )
 
@@ -93,4 +104,36 @@ def figure_legend(
     # simple_layout keeps this gap between the legend and the panels.
     gap = float(legend.borderaxespad) * float(legend.prop.get_size_in_points())
     _RESERVES[legend] = Reserve(edge_of(across=side.across, far=side.far), gap)
+    _ANCHORS[legend] = side.figure_loc.anchor
     return legend
+
+
+def stack_under_texts(fig: Figure, renderer: RendererBase) -> bool:
+    """Move each figure legend in from its edge past the figure texts it
+    meets there (a suptitle over a legend above); whether one moved.
+
+    It starts from its own place at the edge each time, so a moved title
+    or a second layout gives the same answer.
+    """
+    texts = tuple(
+        Box(float(e.x0), float(e.y0), float(e.x1), float(e.y1))
+        for _art, e in iter_figure_level_extents(
+            fig, renderer, legends=False, subfigures=False
+        )
+    )
+    moved = False
+    for legend in figure_legends(fig):
+        reserve = _RESERVES.get(legend)
+        if reserve is None or legend.figure is not fig:
+            continue
+        x, y = _ANCHORS[legend]
+        legend.set_bbox_to_anchor((x, y), fig.transSubfigure)
+        e = legend.get_window_extent(renderer)
+        at_edge = Box(float(e.x0), float(e.y0), float(e.x1), float(e.y1))
+        placed = past_texts(reserve.edge, at_edge, texts)
+        dx = (placed.x0 - at_edge.x0) / fig.bbox.width
+        dy = (placed.y0 - at_edge.y0) / fig.bbox.height
+        if dx or dy:
+            legend.set_bbox_to_anchor((x + dx, y + dy), fig.transSubfigure)
+            moved = True
+    return moved
