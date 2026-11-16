@@ -1,9 +1,12 @@
 """Put the bundled skill where agents look for it.
 
-``install_skill`` links the skill folder into every project skill folder in
-:data:`SKILL_DIRS`, or copies it where links are not possible. A link to a
-dartwork-mpl skill (this one or an older install's) is replaced; anything
-else already there is kept unless ``force`` is set.
+``install_skill`` puts the skill folder into every project skill folder in
+:data:`SKILL_DIRS`. It links when the package is installed inside the
+destination (the project's own ``.venv`` after ``uv add``), so an upgrade
+reaches the skill. Anywhere else (``uvx``'s cache, a global install) a link
+would break when that environment goes, so it copies, and running it again
+after an upgrade refreshes the copy. A dartwork-mpl skill already there
+(linked or copied) is replaced; anything else is kept unless ``force`` is set.
 """
 
 from __future__ import annotations
@@ -36,9 +39,20 @@ def skill_path() -> Path:
     return Path(str(SKILL)).resolve()
 
 
+def links_into(dest: Path) -> bool:
+    """Whether a link from ``dest`` lasts: the package lives inside ``dest``."""
+    return skill_path().is_relative_to(dest.expanduser().resolve())
+
+
 def _ours(target: Path) -> bool:
-    """A link this installer made: it points into a dartwork_mpl package."""
-    return target.is_symlink() and PACKAGE in str(target.readlink())
+    """A skill this installer put there: a link into a dartwork_mpl package,
+    or a copied folder whose ``SKILL.md`` names this skill."""
+    if target.is_symlink():
+        return PACKAGE in str(target.readlink())
+    head = target / "SKILL.md"
+    return head.is_file() and f"name: {SKILL_NAME}\n" in head.read_text(
+        encoding="utf-8"
+    )
 
 
 def _targets(dest: Path) -> list[Path]:
@@ -53,19 +67,18 @@ def _targets(dest: Path) -> list[Path]:
 def install_skill(
     dest: str | Path = ".", *, copy: bool = False, force: bool = False
 ) -> list[Installed]:
-    """Link (or ``copy``) the skill into ``dest``'s skill folders.
+    """Link or copy the skill into ``dest``'s skill folders.
 
-    Every destination is checked first: one that holds something else raises
-    ``FileExistsError`` before anything is written, unless ``force`` replaces it.
+    It copies when ``copy`` is set or when :func:`links_into` says a link
+    would not last. Every destination is checked first: one that holds
+    something else raises ``FileExistsError`` before anything is written,
+    unless ``force`` replaces it.
     """
     source = skill_path()
+    link = not copy and links_into(Path(dest))
     targets = _targets(Path(dest))
     blocked = [
-        t
-        for t in targets
-        if (t.exists() or t.is_symlink())
-        and t.resolve() != source
-        and not _ours(t)
+        t for t in targets if (t.exists() or t.is_symlink()) and not _ours(t)
     ]
     if blocked and not force:
         raise FileExistsError(
@@ -73,7 +86,7 @@ def install_skill(
         )
     done: list[Installed] = []
     for target in targets:
-        if target.resolve() == source:
+        if link and target.is_symlink() and target.resolve() == source:
             done.append(Installed(target, "unchanged"))
             continue
         if target.is_symlink() or target.is_file():
@@ -81,7 +94,7 @@ def install_skill(
         elif target.is_dir():
             shutil.rmtree(target)
         target.parent.mkdir(parents=True, exist_ok=True)
-        if not copy:
+        if link:
             try:
                 target.symlink_to(source, target_is_directory=True)
                 done.append(Installed(target, "linked"))

@@ -5,8 +5,8 @@ lint:
 
 - :func:`skill_path` is the folder the skill and its pages are read from.
 - :func:`lint` (``dm.lint_code``) checks a script against the catalog.
-- :func:`install_skill` (``python -m dartwork_mpl.guide install``) links the
-  skill into ``.claude/skills`` and ``.agents/skills``.
+- :func:`install_skill` (``dartwork-mpl install``) puts the skill into
+  ``.claude/skills`` and ``.agents/skills``.
 """
 
 from __future__ import annotations
