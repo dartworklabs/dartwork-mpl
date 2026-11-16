@@ -54,6 +54,21 @@ def test_text_wider_than_the_room_keeps_the_plot() -> None:
     assert (step.edges.left, step.edges.right) == (0.0, 1.0)
 
 
+def test_name_taller_than_the_room_keeps_the_plot() -> None:
+    # A 600 px y name centred on a 300 px plot of a 500 px canvas.
+    plot = Box(100.0, 100.0, 900.0, 400.0)
+    named = Box(60.0, -50.0, 900.0, 550.0)
+    axes = AxesContent(Sides(0.1, 0.9, 0.2, 0.8), named, Px(80.0), plot, False)
+    facts = ContentFacts((axes,), (), CANVAS, NO_MARGIN, None, Px(0.0))
+    plain = decide.solve(facts, decide.reserves(facts))
+    settled = settle(facts, facts, EDGES)
+    assert settled.fired == ("name-taller-than-the-room",)
+    assert plain is not None and plain.edges.top - plain.edges.bottom < 0.4
+    step = decide.solve(settled.plan, decide.reserves(settled.plan))
+    assert step is not None
+    assert (step.edges.bottom, step.edges.top) == (0.0, 1.0)
+
+
 def test_figure_title_on_panel_titles_keeps_the_pad() -> None:
     # A suptitle 20 px tall at the top of a 500 px canvas, panels titled.
     plot = Box(100.0, 100.0, 900.0, 400.0)
