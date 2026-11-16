@@ -1,0 +1,15 @@
+prompt = "show this data"
+
+[files]
+"signups.csv" = """
+month,free,pro,team
+2026-01,340,52,8
+2026-02,365,58,9
+2026-03,410,61,12
+2026-04,398,66,14
+2026-05,452,73,15
+2026-06,480,79,19
+"""
+
+[expect]
+texts = ["free", "pro", "team"]

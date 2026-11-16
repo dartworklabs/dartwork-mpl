@@ -1,0 +1,34 @@
+{
+ "C1_slice_imports_slice": [],
+ "C2_compose_names": [],
+ "C3_compose_reaches": [],
+ "C4_compose_decisions": {},
+ "C5_compose_importers": [],
+ "R1_module_lines": {},
+ "R2_slice_lines": {},
+ "R3_underscore_modules": {},
+ "R3_underscore_toplevel": [],
+ "R4_cycles": [],
+ "R4_lazy_cycle_edges": {
+  "top_level_edges": 0
+ },
+ "R5_dumping_ground": [],
+ "R6_impure_decisions": [],
+ "R7_function_lines": {},
+ "R8_entry_function_lines": {
+  "src/dartwork_mpl/compose/size.py::figsize_for": 36
+ },
+ "R8_missing_all": [],
+ "T10_reflection": {},
+ "T11_untyped": {},
+ "T12_costumed_enums": {},
+ "T1_casts": {},
+ "T2_ignores": {},
+ "T3_domain_isinstance": {},
+ "T4_smuggled_attributes": {},
+ "T5_enum_branches": {},
+ "T6_string_branches": {},
+ "T7_swallowing_matches": {},
+ "T8_enums": {},
+ "T9_guards": {}
+}

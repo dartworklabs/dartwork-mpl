@@ -1,0 +1,17 @@
+prompt = "energy.csv is electricity generation by source (TWh) per year. Make a stacked bar chart by year with the total written above each bar and a legend for the sources."
+
+[files]
+"energy.csv" = """
+year,Coal,Gas,Wind,Solar
+2020,210,150,40,22
+2021,198,158,48,30
+2022,180,162,57,41
+2023,165,160,66,55
+2024,150,155,74,70
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Coal", "Gas", "Wind", "Solar"]
+legend = true

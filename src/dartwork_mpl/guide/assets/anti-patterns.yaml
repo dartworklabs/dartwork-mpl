@@ -1,0 +1,99 @@
+# The anti-pattern catalog `dm.lint_code` checks a script against.
+#
+# Each rule has an `id`, a `severity` (critical | warning | info), a short
+# `message`, an optional one-line `fix`, and one detector:
+#   pattern   a Python regular expression (MULTILINE) over the source, or
+#   check     colormap-name | color-name: a literal checked against the names
+#             matplotlib has registered.
+# A match that starts inside a string or a comment is not code and is skipped.
+# Explicit user values win: a warning on a value the user asked for is
+# reported, not "fixed".
+
+rules:
+  - id: invalid-colormap-name
+    severity: critical
+    check: colormap-name
+    message: This literal colormap name is not registered with matplotlib.
+    fix: Choose an exact name from sorted(matplotlib.colormaps).
+
+  - id: invalid-color-name
+    severity: critical
+    check: color-name
+    message: This literal colour is not a matplotlib colour (name, hex, grey level or C0).
+    fix: Choose a name from matplotlib.colors.get_named_colors_mapping(), such as "dc.blue6".
+
+  - id: figsize-direct
+    severity: critical
+    pattern: '\bfigsize\s*=\s*\('
+    message: A raw figsize=(w, h) tuple has no unit. Name a physical width and an aspect.
+    fix: figsize=dm.figsize("13cm", "standard")
+
+  - id: raw-width-number
+    severity: critical
+    pattern: '\bdm\.figsize\s*\(\s*-?\d+(?:\.\d+)?\s*[,)]'
+    message: dm.figsize rejects a bare number, which carries no unit.
+    fix: dm.figsize("13cm", "standard")
+
+  - id: tight-layout
+    severity: critical
+    pattern: '\btight_layout\s*\('
+    message: tight_layout() fights the preset's spines and legends. Lay out with dm.simple_layout(fig).
+    fix: dm.simple_layout(fig)
+
+  - id: dpi-arg
+    severity: critical
+    pattern: '\bplt\.(?:subplots|figure)\s*\((?:[^()]|\([^()]*\))*\bdpi\s*='
+    message: The preset sets the dpi; do not set it per figure.
+
+  - id: plt-style-use
+    severity: warning
+    pattern: '\bplt\.style\.use\s*\('
+    message: plt.style.use loads none of the preset's fonts and colours. Use dm.style.use(...).
+    fix: dm.style.use("report")
+
+  - id: savefig-direct
+    severity: warning
+    pattern: '\b(?:fig|plt)\.savefig\s*\('
+    message: A bare savefig skips the preset's formats and metadata.
+    fix: dm.save_formats(fig, "name")
+
+  - id: fontsize-literal
+    severity: warning
+    pattern: '\bfontsize\s*=\s*\d+(?:\.\d+)?'
+    message: A literal font size ignores the preset. Keep it only when the user asked for it.
+    fix: fontsize=dm.fs(n)
+
+  - id: linewidth-literal
+    severity: warning
+    # 1 pt and more only: hairlines (0.3) and no border (0) stay literal.
+    pattern: '\b(?:linewidth|lw)\s*=\s*[1-9]\d*(?:\.\d+)?'
+    message: A literal line width of 1 pt or more ignores the preset. Keep it only when the user asked for it.
+    fix: linewidth=dm.lw(n)
+
+  - id: jet-cmap
+    severity: warning
+    pattern: 'cmap\s*=\s*["''](?:jet|hsv|gist_rainbow|gist_ncar|nipy_spectral|rainbow)["'']'
+    message: A rainbow colormap distorts the order of values. Keep it only when the user asked for it.
+    fix: cmap="viridis"
+
+  - id: oversize-width
+    severity: warning
+    pattern: '(?:width\s*=\s*|\bdm\.figsize\s*\(\s*)["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
+    message: Wider than a 17 cm page (dm.col2). Keep a width the user or the venue asked for.
+
+  - id: raw-hex-color
+    severity: info
+    pattern: '\b(?:color|c)\s*=\s*["'']#[0-9a-fA-F]{3,8}["'']'
+    message: A named colour (dc.blue6, oc.blue6, tw.sky500) follows the palette; keep a hex the user gave.
+
+  - id: plt-show-only
+    severity: info
+    pattern: '\bplt\.show\s*\(\)'
+    message: Save the figure too, so it ships as a file.
+    fix: dm.save_formats(fig, "name")
+
+  - id: twin-legend-hand-merge
+    severity: info
+    pattern: '\.legend\s*\(\s*\w+\s*\+\s*\w+\s*,\s*\w+\s*\+\s*\w+'
+    message: A hand-merged twin legend loses the legend's settings and may cover the twin's data.
+    fix: dm.place_legend(ax)

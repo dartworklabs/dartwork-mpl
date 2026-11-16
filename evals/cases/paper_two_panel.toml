@@ -1,0 +1,21 @@
+prompt = "For my paper (one column wide), draw a two-panel figure from training.csv: (a) training and validation loss over epochs, (b) validation accuracy over epochs."
+
+[files]
+"training.csv" = """
+epoch,train_loss,val_loss,val_accuracy
+1,1.92,1.98,0.41
+2,1.41,1.52,0.55
+3,1.10,1.25,0.63
+4,0.91,1.09,0.69
+5,0.78,0.99,0.72
+6,0.69,0.94,0.75
+7,0.62,0.92,0.76
+8,0.57,0.91,0.77
+9,0.53,0.92,0.77
+10,0.50,0.94,0.78
+"""
+
+[expect]
+panels = 2
+marks = ["line"]
+texts = ["Epoch", "loss", "accuracy"]

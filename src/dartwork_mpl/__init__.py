@@ -4,19 +4,11 @@ This package provides enhanced styling, color management, and various
 utility functions for Matplotlib visualizations.
 """
 
-from ._build_entry import run_color_build_if_requested as _run_color_build
-
-_run_color_build(__name__, __file__)
-del _run_color_build
-
-# ruff: noqa: E402
-
 # Underscore-aliased so implementation imports don't leak into the
 # public namespace (``dm.version`` / ``dm.Any`` /
 # ``dm.PackageNotFoundError`` used to resolve).
 from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
 from importlib.metadata import version as _metadata_version
-from typing import NoReturn as _NoReturn
 
 # Derive the version from the installed distribution metadata so there
 # is a single source of truth. For a built/released wheel this always
@@ -30,186 +22,56 @@ try:
 except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
     __version__ = "0.0.0+unknown"
 
-# Import submodules so they are accessible under ``dm.<submodule>``
-# (validate_fixes is the auto-fix companion to validate). F401 is
-# silenced because ruff's "unused-import" check can't see
-# attribute-style access at the package level.
-from . import font, helpers, icon, lint, templates, tokens, validate_fixes  # noqa: F401
+# Submodules reachable as ``dm.<submodule>``.
+from . import font, guide, style
 
-# Import color module exports
-from ._colors import (
-    Color,
+# Defects of a drawn figure
+from .check import check
+
+# Colour names and values (importing it registers them with matplotlib)
+from .color import (
     color,
     colors,
-    cspace,
     ensure_contrast,
     hex,
     list_colors,
-    make_palette,
     oklab,
     oklch,
     readable_text_color,
     rgb,
-    set_colors,
-    show_colors,
 )
 
-# Color utilities
-from ._colors.blend import mix_colors, pseudo_alpha
+# Colour values
+from .colorspace import Color
 
-# Import bundled agent-onboarding helpers
-from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
+# Value labels, panel letters, notes (sized by the active preset)
+from .compose.labels import add_note, annotate_value, label_axes, label_bars
 
-# Axes annotation
-from .annotation import (
-    add_note,
-    annotate_corner,
-    annotate_value,
-    arrow_axis,
-    figure_legend,
-    label_axes,
-    label_bars,
-    label_hline,
-    label_line_ends,
-    make_offset,
-    optimize_legend,
-    place_legend,
-    wrap_axis_label,
-    wrap_axis_labels,
-)
+# Layout, with what the other slices settle at the fitted size
+from .compose.layout import simple_layout
 
-# Config (process-wide behaviour-toggle defaults)
-from .config import Config, config
+# Figure size, and the active preset's canvas
+from .compose.size import figsize_for
+from .compose.style import join as _join_style
 
-# Import asset-diagnostic visualization helpers.
-from .diagnostics import plot_fonts
+# Agent guidance: the skill and the anti-pattern lint
+from .guide import lint as lint_code
 
-# Review loop: save, validate, summarize, compare (masterplan stages 3-4)
-from .figure_review import review
+# What the library changed on its own, printed
+from .hidden import quiet, verbose
+from .labels import label_line_ends
+from .legend import figure_legend, place_legend
+from .length import Length, cm, col1, col2, inch, mm, pt
 
-# Formatting utilities
-from .formatting import (
-    avoid_tick_overlap,
-    axis_unit,
-    axis_unit_of,
-    format_axis_billions,
-    format_axis_currency,
-    format_axis_dates,
-    format_axis_millions,
-    format_axis_myriad,
-    format_axis_si,
-    format_axis_year,
-    recommend_tick_decimals,
-    rotate_tick_labels,
-    set_decimal,
-)
+# Saving
+from .save import save_formats
+from .size import figsize
 
-# Import icon module exports
-from .icon import icon_font, icon_font_path, list_icon_fonts
+# Preset-relative sizes
+from .style import fs, fw, lw
 
-# I/O
-from .io import save_and_show, save_formats, show
-
-# Layout
-from .layout import (
-    adopt_axis_label_font,
-    get_bounding_box,
-    simple_layout,
-    tight_crop,
-)
-
-# Prompt utilities
-from .prompt import (
-    copy_prompt,
-    find_template,
-    get_prompt,
-    list_prompts,
-    prompt_path,
-)
-
-# --- Explicit imports from split modules (formerly in util.py) ---
-# Scaling helpers
-from .recommend import suggest_chart_type
-from .scale import dpi, fs, fw, lw
-
-# Import style module exports
-from .style import (
-    Style,
-    figsize_for,
-    grid_shape,
-    list_styles,
-    load_style_dict,
-    style,
-    style_path,
-)
-
-# Extended plot functions (from templates, formerly xplot)
-from .templates import plot_diverging_bar
-
-# Unit helpers (0.4+: free-form width input)
-from .units import (
-    Length,
-    cm,
-    col1,
-    col2,
-    figsize,
-    figsize_grid,
-    inch,
-    length,
-    list_aspect_tokens,
-    mm,
-    pt,
-)
-
-# Public surfaces that are provisional -- shape may change in a minor
-# release without a full deprecation cycle. Documented in
-# docs/development/api-stability.md. ``figsize_for`` (the preset's default
-# canvas) and ``grid_shape`` may still change their kinds, tiers and layouts;
-# ``add_note`` (a source line in the preset's note style) its placement;
-# ``label_line_ends`` (line names instead of a legend) its spacing and colour;
-# ``review`` (save, findings, summary, baseline diff) its summary fields;
-# ``axis_unit`` / ``axis_unit_of`` (the axis unit in its label) their ladders,
-# label template rules and unit rules; ``label_bars`` (value labels on bars)
-# its placement, crowding and stacked-total rules; ``figure_legend`` (one
-# legend for every panel) its side rule and which panel legends it removes.
-EXPERIMENTAL: frozenset[str] = frozenset(
-    {
-        "add_note",
-        "axis_unit",
-        "axis_unit_of",
-        "figsize_for",
-        "figure_legend",
-        "grid_shape",
-        "label_bars",
-        "label_line_ends",
-        "review",
-    }
-)
-
-# High-level composition helpers (T2 in the AI-readiness roadmap).
-# These wrap the lower-level primitives above so that AI agents and
-# humans alike can reach the most useful workflow utilities through a
-# single ``dm.<name>`` access path. The submodule namespace
-# (``dm.helpers.<name>``) remains available as well.
-
-# Native lint + migration entry points (T4). The ``dm.lint`` name is
-# the module itself (so ``dm.lint.lint(...)`` and
-# ``dm.lint.migrate_legacy_code(...)`` already work). These aliases
-# expose the two most common functions at the top level under
-# unambiguous names so an offline agent can call ``dm.lint_code(...)``
-# without spinning up the MCP server.
-from .lint import lint as lint_code
-from .lint import migrate_legacy_code
-
-# Validation entry points
-from .validate import (
-    DataPolicyError,
-    DataPolicyWarning,
-    check_figure_quality,
-    validate_data,
-    validate_figure,
-)
-from .validate_fixes import validate_with_fixes
+# Tick text
+from .ticks import format_axis_myriad
 
 # Define __all__ for explicit exports. The order is intentionally
 # grouped by module/concern (Color → Icon → Style → …), not
@@ -218,125 +80,57 @@ from .validate_fixes import validate_with_fixes
 
 __all__ = [  # noqa: RUF022
     # API stability markers
-    "EXPERIMENTAL",
-    # Config
-    "Config",
-    "config",
     # Color module
     "Color",
     "color",
     "colors",
-    "cspace",
     "hex",
     "list_colors",
     "oklab",
     "oklch",
     "rgb",
-    "set_colors",
-    "show_colors",
     "ensure_contrast",
     "readable_text_color",
     # Icon module
-    "icon_font",
-    "icon_font_path",
-    "list_icon_fonts",
-    # Style module
-    "Style",
-    "list_styles",
-    "load_style_dict",
+    # Presets and preset-relative sizes
     "style",
-    "style_path",
-    # Bundled agent-onboarding helpers
-    "AGENT_DOCS",
-    "agent_doc_path",
-    "get_agent_doc",
-    # Scaling helpers
-    "dpi",
     "fs",
     "fw",
     "lw",
     # Layout
-    "adopt_axis_label_font",
     "simple_layout",
-    "tight_crop",
-    "get_bounding_box",
     # Color utilities
-    "mix_colors",
-    "pseudo_alpha",
-    # Units (0.4+)
+    # Physical units and figure size
     "cm",
     "inch",
     "mm",
     "pt",
-    "length",
     "col1",
     "col2",
     "Length",
     "figsize",
     "figsize_for",
-    "figsize_grid",
-    "grid_shape",
-    "list_aspect_tokens",
-    "tokens",
     # Point-unit offsets
-    "make_offset",
     # Formatting
-    "set_decimal",
-    "format_axis_millions",
     "format_axis_myriad",
-    "format_axis_year",
-    "format_axis_dates",
-    "format_axis_billions",
-    "format_axis_currency",
-    "format_axis_si",
-    "axis_unit",
-    "axis_unit_of",
-    "recommend_tick_decimals",
-    "rotate_tick_labels",
-    "avoid_tick_overlap",
-    # I/O
+    # Saving
     "save_formats",
-    "save_and_show",
-    "show",
     # Axes annotation
     "annotate_value",
     "add_note",
-    "annotate_corner",
     "label_axes",
     "label_bars",
-    "label_hline",
     "label_line_ends",
     "place_legend",
     "figure_legend",
-    "wrap_axis_label",
-    "wrap_axis_labels",
-    "arrow_axis",
-    # Prompt utilities
-    "prompt_path",
-    "get_prompt",
-    "list_prompts",
-    "copy_prompt",
-    "find_template",
-    # Validation
-    "DataPolicyError",
-    "DataPolicyWarning",
-    "validate_figure",
-    "validate_with_fixes",
-    "review",
-    "validate_fixes",
-    # Helpers (high-level composition utilities)
-    "validate_data",
-    "make_palette",
-    "optimize_legend",
-    "suggest_chart_type",
-    "check_figure_quality",
-    # Native lint + migration (T4)
+    # Agent guidance
+    "guide",
     "lint_code",
-    "migrate_legacy_code",
-    # Extended plots
-    "plot_diverging_bar",
-    # Asset diagnostics (from diagnostics)
-    "plot_fonts",
+    # Defects of a drawn figure
+    "check",
+    # What the library changed on its own
+    "quiet",
+    "verbose",
 ]
 
 # Eagerly register the bundled fonts on import so that
@@ -344,20 +138,9 @@ __all__ = [  # noqa: RUF022
 # immediately after ``import dartwork_mpl`` — matching the documented
 # contract. This is a one-time ~70 ms cost; the same font-manager work would
 # otherwise run on the first ``dm.style.use(...)`` anyway. Named colors and
-# all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl._colors``
+# all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl.color``
 # import above.
 font.ensure_loaded()
 
-
-from ._compat import missing_attribute as _missing_attribute
-
-
-def __getattr__(name: str) -> _NoReturn:
-    """Surface removed-name migration hints.
-
-    Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.subplots`` /
-    ``dm.install_llm_txt`` / ``dm.FS_SINGLE`` would raise Python's
-    default ``AttributeError`` with no pointer to the replacement. See
-    docs/migration.md for the full mapping.
-    """
-    _missing_attribute(name)
+# A preset's locale picks the role colours from here on.
+_join_style()

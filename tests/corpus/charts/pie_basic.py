@@ -1,0 +1,18 @@
+"""Four shares of one whole as a pie with percentages."""
+
+import matplotlib.pyplot as plt
+
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+
+labels = ["A", "B", "C", "D"]
+sizes = [35, 25, 25, 15]
+colors = ["dc.teal2", "dc.green2", "dc.orange2", "dc.red2"]
+
+fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
+ax.pie(sizes, labels=labels, colors=colors, autopct="%1.0f%%", startangle=90)
+ax.set_aspect("equal")
+
+dm.simple_layout(fig)
+dm.save_formats(fig, "output/pie_basic", formats=("png",))

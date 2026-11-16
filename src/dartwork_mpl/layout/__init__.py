@@ -1,22 +1,49 @@
-"""Layout utilities for Matplotlib figures.
+"""Content-aware margins: :func:`simple_layout`, ``dm.simple_layout`` once
+``compose.layout`` gives it the other slices' steps.
 
-Provides ``simple_layout`` — a deterministic, content-aware GridSpec
-layout. It measures the union extent of every visible artist on each
-axes (texts, title, axis labels, view-limited tick labels, axis
-offset text, legend) and arithmetically computes GridSpec edges that
-place that union extent at the requested distance from each figure
-edge. No optimizer is involved.
+The root GridSpec's edges are set so the drawn content of every Axes (tick
+labels, axis names, titles, texts, legends) sits ``margin`` from the canvas
+edge, past what figure-level text and legends reserve, measured again until
+no edge moves by half a pixel. No optimiser: the same figure gives the same
+layout every time.
 """
 
 from __future__ import annotations
 
-__all__ = [
-    "adopt_axis_label_font",
-    "get_bounding_box",
-    "simple_layout",
-    "tight_crop",
-]
+import warnings
+from typing import TYPE_CHECKING
 
-from ._crop import get_bounding_box, tight_crop
-from ._orphan_tick_font import adopt_axis_label_font
-from ._simple_layout import simple_layout
+from . import loop
+from .given import Neighbours
+from .measure import grid_of
+from .model import Flush, parse_margin
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
+    from ..length import Length
+
+__all__ = ["Flush", "Neighbours", "simple_layout"]
+
+NO_GRID = (
+    "simple_layout: no GridSpec found (figure uses fig.add_axes or "
+    "manually placed axes); layout unchanged. Build axes via "
+    "plt.subplots / fig.add_gridspec to use content-aware margins."
+)
+
+
+def simple_layout(
+    fig: Figure, *, margin: Length | str | Flush, given: Neighbours
+) -> None:
+    """``dm.simple_layout`` (``compose.layout``), the other slices' steps and
+    records ``given``. A figure with no Axes is left alone, one whose first
+    Axes is on no GridSpec with a warning."""
+    if not fig.axes:
+        return
+    grid = grid_of(fig.axes[0])
+    if grid is None:
+        warnings.warn(NO_GRID, stacklevel=3)
+        return
+    size = fig.get_size_inches()
+    margins = parse_margin(margin, (float(size[0]), float(size[1])))
+    loop.run(fig, grid, margins, given)
