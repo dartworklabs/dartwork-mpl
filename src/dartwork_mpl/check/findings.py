@@ -18,8 +18,19 @@ FIXES: dict[str, str] = {
     "spacing you set (hspace, wspace): raise it",
     "TEXT_CROWD": "put the value on the other side of its point "
     "(dm.annotate_value picks a free side) or a line apart",
+    "VALUE_LABEL_DECIMAL": 'print whole numbers whole: fmt="%d" or "{:,.0f}"',
     "LEGEND_ON_DATA": "dm.place_legend(ax) moves it where it covers nothing, "
     "else outside; panels sharing series: dm.figure_legend(fig)",
+    "MISSING_AXIS_LABEL": "name the quantity and its unit: "
+    'ax.set_ylabel("Revenue (M USD)"); a colorbar: cbar.set_label(...)',
+    "EMPTY_AXES": "ax.remove() the panel the data does not fill, or make "
+    "the grid as large as the data",
+    "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
+    "the error bar (ax.bar_label(bars, padding=...)), or dm.annotate_value "
+    "for a point on a line",
+    "TEXT_CONTRAST": "colour each label for what is behind it: "
+    "color=dm.readable_text_color(bar_colour), or "
+    "dm.ensure_contrast(colour, background)",
     "TICK_OVERLAP": "dm.simple_layout(fig) wraps, then turns, crowded "
     "labels (drop a rotation you set); many long names: horizontal bars; "
     "a y axis: a taller canvas",

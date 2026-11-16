@@ -1,16 +1,16 @@
 """Where a plot's data ink is drawn, to find what a legend covers.
 
-Read by the drawn rules the legend slice also uses (``geometry.ink``):
-lines at their width, markers and scatter points as discs, bars by their
-drawn boxes, filled areas by their outlines, each only where its clip lets
-it draw. A dashed line counts as solid and every vertex of a marked line as
-a marker: both can only add a cover.
+Gathered by ``geometry.DataInk``, as the legend slice gathers it: lines at
+their width, markers and scatter points as discs, bars by their drawn
+boxes, filled areas by their outlines, each only where its clip lets it
+draw. What counts here: data in data coordinates (not an ``axhline``),
+named by kind and label for the finding.
 """
 
 from __future__ import annotations
 
 from contextlib import suppress
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
@@ -27,16 +27,10 @@ from matplotlib.transforms import Bbox
 from ..geometry import (
     BBOX_ERRORS,
     UNCLIPPED,
+    DataInk,
     clip_path_px,
     clip_region,
-    discs_meet,
-    drawn_collection_outlines,
-    drawn_ink_meets,
     drawn_patch_box,
-    drawn_scatter_discs,
-    line_draws_markers,
-    line_draws_stroke,
-    marker_radius_pt,
     patch_inks,
     text_inks,
     within_clip_path,
@@ -48,8 +42,6 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.legend import Legend as MplLegend
-    from matplotlib.lines import Line2D
-    from matplotlib.path import Path
 
 
 class Named(Protocol):
@@ -82,69 +74,28 @@ def cut(box: Bbox, frame: Bbox) -> Bbox | None:
     return Bbox.from_extents(x0, y0, x1, y1) if x1 > x0 and y1 > y0 else None
 
 
-@dataclass
+@dataclass(frozen=True)
 class Ink:
     """The data ink of one plot box (an Axes and its twins), by artist."""
 
     frame: Bbox
-    bars: list[tuple[Hit, Bbox]] = field(default_factory=list)
-    strokes: list[tuple[Hit, Path, float, Bbox, Path | None]] = field(
-        default_factory=list
-    )
-    discs: list[tuple[Hit, np.ndarray, np.ndarray, Bbox, Path | None]] = field(
-        default_factory=list
-    )
+    drawn: DataInk[Hit]
 
     def meets(self, box: Bbox, touch: float) -> list[Hit]:
         """What ``box`` covers by more than ``touch`` inside the plot box."""
         inner = cut(box.padded(-touch), self.frame)
-        if inner is None:
-            return []
-        found = [hit for hit, bar in self.bars if cut(inner, bar) is not None]
-        for hit, path, half, region, clip in self.strokes:
-            if drawn_ink_meets(path, half, inner, region, clip):
-                found.append(hit)
-        for hit, xy, r, region, clip in self.discs:
-            if discs_meet(xy, np.maximum(r - touch, 0.0), inner, region, clip):
-                found.append(hit)
-        return list(dict.fromkeys(found))
+        return [] if inner is None else self.drawn.meets(inner, touch)
 
 
-def _line(ink: Ink, line: Line2D, px_per_pt: float) -> None:
-    stroke, marks = line_draws_stroke(line), line_draws_markers(line)
-    if not (stroke or marks):
-        return
-    path = line.get_transform().transform_path(line.get_path())
-    region, clip = clip_region(line), clip_path_px(line)
-    hit = Hit("line", name_of(line))
-    if stroke:
-        half = line.get_linewidth() * px_per_pt / 2
-        ink.strokes.append((hit, path, half, region, clip))
-    if marks:
-        xy = np.asarray(path.vertices, dtype=float).reshape(-1, 2)
-        xy = xy[np.isfinite(xy).all(axis=1)]
-        r = np.full(len(xy), marker_radius_pt(line) * px_per_pt)
-        ink.discs.append((Hit("marker", name_of(line)), xy, r, region, clip))
-
-
-def _collection(
-    ink: Ink, coll: Collection, renderer: RendererBase, px_per_pt: float
-) -> None:
-    region, clip = clip_region(coll), clip_path_px(coll)
-    if isinstance(coll, PathCollection) and len(coll.get_sizes()):
-        xy, r = drawn_scatter_discs(coll, px_per_pt)
-        if len(xy):
-            ink.discs.append(
-                (Hit("marker", name_of(coll)), xy, r, region, clip)
-            )
-    elif isinstance(coll, PolyCollection):
-        hit = Hit("area", name_of(coll, "filled area"))
-        for o in drawn_collection_outlines(coll, renderer):
-            ink.strokes.append((hit, o.path, o.half, region, clip))
-    elif isinstance(coll, LineCollection):
-        hit = Hit("line", name_of(coll))
-        for o in drawn_collection_outlines(coll, renderer):
-            ink.strokes.append((hit, o.path, o.half, region, clip))
+def _hit(coll: Collection) -> Hit | None:
+    """How a collection is named when covered (``None``: not counted)."""
+    if isinstance(coll, PathCollection):
+        return Hit("marker", name_of(coll)) if len(coll.get_sizes()) else None
+    if isinstance(coll, PolyCollection):
+        return Hit("area", name_of(coll, "filled area"))
+    if isinstance(coll, LineCollection):
+        return Hit("line", name_of(coll))
+    return None
 
 
 def data_ink(
@@ -152,27 +103,37 @@ def data_ink(
 ) -> Ink:
     """Bars, data lines, markers, scatter points, filled areas and data line
     collections of one plot box."""
-    ink = Ink(frame)
+    drawn: DataInk[Hit] = DataInk()
+
+    def to_px(points: float) -> float:
+        return points * px_per_pt
+
     for ax in owners:
         for line in ax.get_lines():
             if line.get_visible() and in_data_coords(line, ax):
-                with suppress(*BBOX_ERRORS):
-                    _line(ink, line, px_per_pt)
+                name = name_of(line)
+                drawn.add_line(
+                    line, to_px, Hit("line", name), Hit("marker", name)
+                )
         for coll in ax.collections:
             if (coll.get_visible() and in_data_coords(coll, ax)) or (
                 isinstance(coll, PathCollection) and coll.get_visible()
             ):
-                with suppress(*BBOX_ERRORS):
-                    _collection(ink, coll, renderer, px_per_pt)
+                hit = _hit(coll)
+                if hit is not None:
+                    drawn.add_collection(
+                        coll, renderer, to_px, hit, filled=False
+                    )
         for container in ax.containers:
             if not isinstance(container, BarContainer):
                 continue
             for patch in container.patches:
                 with suppress(*BBOX_ERRORS):
-                    box = drawn_patch_box(patch, renderer)
-                    if box is not None and box.width > 0 and box.height > 0:
-                        ink.bars.append((Hit("bar", name_of(container)), box))
-    return ink
+                    drawn.add_box(
+                        Hit("bar", name_of(container)),
+                        drawn_patch_box(patch, renderer),
+                    )
+    return Ink(frame, drawn)
 
 
 def words_box(text: MplText, renderer: RendererBase) -> Bbox | None:

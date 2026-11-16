@@ -1,41 +1,30 @@
 """The layout's named special cases, applied after the ``decide`` functions.
 
-Each decision has its own facts and plan types and its own registry:
-``FIT_EDGES`` for what one step counts as content, ``TEXT_EDGES`` for the
-text fitted once the margins hold; the loop fits the margins again after
-those and undoes a round that crushed a plot.
+``TEXT_EDGES`` fits the text that still collides once the margins hold;
+the loop fits the margins again after each round of those.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
 from ..edgecase import EdgeCase
-from ..vocab import Bottom, Edge, Left, Right, Top
-from . import decide
+from ..vocab import Which
 from .model import (
     ANGLES,
-    EDGE_BAND,
-    EDGE_BAND_TOL,
     MAX_GAP_FRACTION,
     MAX_NAME_LINES,
     MAX_TICK_LINES,
     TOUCH_PX,
     ArtistId,
-    AxesContent,
     AxisName,
-    Box,
     Canvas,
-    ContentFacts,
     Count,
     Degrees,
-    FigureArtist,
-    Fit,
     Gap,
     Line,
-    Piece,
     Px,
     Reach,
     Share,
@@ -47,89 +36,6 @@ from .model import (
     Width,
     tokens,
 )
-
-# -- one step: what counts as content -----------------------------------------
-
-
-def _each_axes(plan: Fit, change: Callable[[AxesContent], AxesContent]) -> Fit:
-    return replace(plan, axes=tuple(change(a) for a in plan.axes))
-
-
-def _has_3d(facts: ContentFacts, plan: Fit) -> bool:
-    return any(a.tight is not None for a in facts.axes)
-
-
-def _tight_3d(facts: ContentFacts, plan: Fit) -> Fit:
-    return _each_axes(
-        plan, lambda a: a if a.tight is None else replace(a, pieces=a.tight)
-    )
-
-
-def _along_plot(piece: Piece, plot: Box | None, canvas: Canvas) -> Piece:
-    """Along its side an outside legend counts only past the plot and off
-    the canvas (the legend slice keeps it on the canvas there)."""
-    if piece.outside is None or plot is None:
-        return piece
-    x0, x1, y0, y1 = piece.box.x0, piece.box.x1, piece.box.y0, piece.box.y1
-    if piece.outside.across:
-        x0 = x0 if x0 < 0.0 else max(x0, plot.x0)
-        x1 = x1 if x1 > canvas.width else min(x1, plot.x1)
-    else:
-        y0 = y0 if y0 < 0.0 else max(y0, plot.y0)
-        y1 = y1 if y1 > canvas.height else min(y1, plot.y1)
-    return replace(piece, box=Box(x0, y0, x1, y1))
-
-
-def _has_outside_legend(facts: ContentFacts, plan: Fit) -> bool:
-    return any(p.outside is not None for a in plan.axes for p in a.pieces)
-
-
-def _cut_legend_to_plot(facts: ContentFacts, plan: Fit) -> Fit:
-    canvas = facts.canvas
-    return _each_axes(
-        plan,
-        lambda a: replace(
-            a, pieces=tuple(_along_plot(p, a.plot, canvas) for p in a.pieces)
-        ),
-    )
-
-
-def _band_edge(art: FigureArtist, canvas: Canvas) -> Edge | None:
-    """The edge of the outer band a figure text sits in, by reading direction."""
-    if art.vertical is None or decide.role_edge(art, canvas) is not None:
-        return None
-    box = art.box
-    if art.vertical:
-        centre = (box.x0 + box.x1) / 2 / canvas.width
-    else:
-        centre = (box.y0 + box.y1) / 2 / canvas.height
-    if centre <= EDGE_BAND + EDGE_BAND_TOL:
-        return Left() if art.vertical else Bottom()
-    if centre >= 1.0 - EDGE_BAND - EDGE_BAND_TOL:
-        return Right() if art.vertical else Top()
-    return None
-
-
-def _has_band_text(facts: ContentFacts, plan: Fit) -> bool:
-    return any(
-        _band_edge(art, facts.canvas) is not None for art in facts.artists
-    )
-
-
-def _reserve_by_reading(facts: ContentFacts, plan: Fit) -> Fit:
-    pairs = zip(facts.artists, plan.reserves, strict=True)
-    edges = tuple(_band_edge(art, facts.canvas) or e for art, e in pairs)
-    return replace(plan, reserves=edges)
-
-
-def _has_sided_legend(facts: ContentFacts, plan: Fit) -> bool:
-    return any(a.side is not None for a in facts.artists)
-
-
-def _reserve_legend_side(facts: ContentFacts, plan: Fit) -> Fit:
-    pairs = zip(facts.artists, plan.reserves, strict=True)
-    return replace(plan, reserves=tuple(art.side or e for art, e in pairs))
-
 
 # -- text: pure helpers -------------------------------------------------------
 
@@ -188,30 +94,28 @@ def wrap_limit(i: Count, row: TickRow) -> Px:
     return Px(limit)
 
 
-def smallest_angle(row: TickRow, start: Degrees) -> Degrees | None:
-    """The smallest of ``ANGLES`` from ``start`` at which neighbours clear:
-    labels ``spacing`` apart sit ``spacing * sin(angle)`` apart across."""
+def smallest_angle(row: TickRow) -> Degrees | None:
+    """The smallest of ``ANGLES`` at which neighbours clear: labels
+    ``spacing`` apart sit ``spacing * sin(angle)`` apart across."""
     spacing = min(row.gaps)
     for angle in ANGLES:
         across = spacing * math.sin(math.radians(angle))
-        if angle >= start and across >= row.line_height + row.clearance:
+        if across >= row.line_height + row.clearance:
             return angle
     return None
 
 
 def turn_angle(row: TickRow) -> Degrees | None:
-    """The angle ``row`` turns to now, or ``None`` (it stays)."""
-    if row.turned is None and (row.authored or not row.crowded):
+    """The angle a crowded ``row`` turns to, or ``None`` (it stays)."""
+    if row.authored or not row.crowded:
         return None
-    angle = smallest_angle(row, row.turned or Degrees(0.0))
-    if angle is None:
-        # Upright only when it leaves neighbours overlapping less than flat.
-        if row.line_height - min(row.gaps) >= row.worst_overlap:
-            return None
-        angle = Degrees(90.0)
-    if row.turned is not None and angle <= row.turned:
+    angle = smallest_angle(row)
+    if angle is not None:
+        return angle
+    # Upright only when it leaves neighbours overlapping less than flat.
+    if row.line_height - min(row.gaps) >= row.worst_overlap:
         return None
-    return angle
+    return Degrees(90.0)
 
 
 def gap_fraction(need: Px, total: Px, cells: Count) -> Share | None:
@@ -239,12 +143,12 @@ def deepest_reach(reaches: Sequence[Reach], gaps: Sequence[Px]) -> Px:
 # -- text: the edge cases -----------------------------------------------------
 
 
-def _overlong(name: AxisName, facts: TextFacts) -> bool:
+def _overlong(name: AxisName, canvas: Canvas) -> bool:
     """Longer than its side and past the canvas or into another panel."""
     if name.span <= 0 or name.width(name.text) <= name.span:
         return False
-    b, c = name.box, facts.canvas
-    off = max(-b.x0, b.x1 - c.width, -b.y0, b.y1 - c.height)
+    b = name.box
+    off = max(-b.x0, b.x1 - canvas.width, -b.y0, b.y1 - canvas.height)
     return off > TOUCH_PX or any(-b.gap(o) > TOUCH_PX for o in name.others)
 
 
@@ -259,15 +163,15 @@ def _name_lines(name: AxisName) -> Line | None:
 
 
 def _has_overlong_name(facts: TextFacts, plan: TextPlan) -> bool:
-    return any(_overlong(n, facts) for n in facts.names)
+    return any(_overlong(n, facts.canvas) for n in facts.names)
 
 
 def _wrap_names(facts: TextFacts, plan: TextPlan) -> TextPlan:
     """The same name on the same axis of a grid takes the same lines."""
     names: dict[ArtistId, Line] = dict(plan.names)
-    forms = dict(facts.wrapped_names)
+    forms: dict[tuple[tuple[ArtistId, Which], Line], Line] = {}
     for name in facts.names:
-        if _overlong(name, facts) and (lines := _name_lines(name)):
+        if _overlong(name, facts.canvas) and (lines := _name_lines(name)):
             names[name.label] = lines
             forms.setdefault((name.group, name.text), lines)
     for name in facts.names:
@@ -330,7 +234,7 @@ def _wraps(group: TickGroup) -> Mapping[Line, Line] | None:
     rows = group.rows
     if (
         not rows
-        or any(r.turned is not None or r.authored for r in rows)
+        or any(r.authored for r in rows)
         or not (group.wrapped or any(r.crowded for r in rows))
     ):
         return None
@@ -379,43 +283,6 @@ def _turn_ticks(facts: TextFacts, plan: TextPlan) -> TextPlan:
                 turns[row.axis] = angle
     return replace(plan, wraps=wraps, turns=turns)
 
-
-FIT_EDGES: tuple[EdgeCase[ContentFacts, Fit], ...] = (
-    EdgeCase(
-        name="axes-3d",
-        why="a 3-D plot's stale tick labels sit thousands of px off the "
-        "canvas, so the margins squeezed the cube to a sliver",
-        example="test_edges.py::test_axes_3d_counts_its_tight_boxes",
-        applies=_has_3d,
-        adjust=_tight_3d,
-    ),
-    EdgeCase(
-        name="outside-legend-along-side",
-        why="a legend above a polar plot, wider than the plot, pushed both "
-        "side margins in though the legend slice keeps it on the canvas",
-        example="test_edges.py::"
-        "test_outside_legend_along_side_counts_past_the_canvas_only",
-        applies=_has_outside_legend,
-        adjust=_cut_legend_to_plot,
-    ),
-    EdgeCase(
-        name="figure-text-edge-band",
-        why="a dm.add_note source line in the bottom-left corner reserved "
-        "the left edge it is nearer to and sat over the plot",
-        example="test_edges.py::"
-        "test_figure_text_edge_band_reserves_by_reading_direction",
-        applies=_has_band_text,
-        adjust=_reserve_by_reading,
-    ),
-    EdgeCase(
-        name="figure-legend-side",
-        why="a wide figure legend above the panels reserved a side edge it "
-        "is nearer to, and the panels lost their width instead of a row",
-        example="test_edges.py::test_figure_legend_side_reserves_its_side",
-        applies=_has_sided_legend,
-        adjust=_reserve_legend_side,
-    ),
-)
 
 TEXT_EDGES: tuple[EdgeCase[TextFacts, TextPlan], ...] = (
     EdgeCase(

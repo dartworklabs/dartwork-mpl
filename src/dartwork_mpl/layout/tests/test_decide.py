@@ -23,19 +23,13 @@ from dartwork_mpl.layout.model import (
     ContentFacts,
     Count,
     Degrees,
-    Edges,
     FigureArtist,
-    Go,
     Line,
-    Piece,
-    PlotSize,
     Px,
     Reach,
-    Refuse,
-    Request,
     Sides,
     TickRow,
-    parse_margins,
+    parse_margin,
     tokens,
 )
 from dartwork_mpl.length import mm
@@ -45,13 +39,21 @@ CANVAS = Canvas(Px(1000.0), Px(500.0))
 NONE = Sides(0.0, 0.0, 0.0, 0.0)
 
 
-def axes(plot: Box, *pieces: Piece) -> AxesContent:
+def axes(plot: Box, *texts: Box) -> AxesContent:
+    """An Axes at ``plot`` whose content also covers ``texts``."""
     pos = Sides(plot.x0 / 1000, plot.x1 / 1000, plot.y0 / 500, plot.y1 / 500)
-    return AxesContent(plot, pos, pieces)
+    boxes = (plot, *texts)
+    box = Box(
+        min(b.x0 for b in boxes),
+        min(b.y0 for b in boxes),
+        max(b.x1 for b in boxes),
+        max(b.y1 for b in boxes),
+    )
+    return AxesContent(pos, box)
 
 
-def text(x0: float, x1: float, y0: float, y1: float, **kw: object) -> Piece:
-    return Piece(Box(x0, y0, x1, y1), **kw)  # type: ignore[arg-type]
+def text(x0: float, x1: float, y0: float, y1: float) -> Box:
+    return Box(x0, y0, x1, y1)
 
 
 def content(
@@ -61,47 +63,29 @@ def content(
 
 
 def solve(facts: ContentFacts):
-    return decide.solve(facts, decide.fit(facts))
+    return decide.solve(facts, decide.reserves(facts))
 
 
 @pytest.mark.parametrize(
-    ("request_", "expected"),
+    ("margin", "expected"),
     [
-        (Request(False, False), Refuse(None)),
-        (Request(True, False), Refuse(decide.NO_GRID)),
-        (Request(True, True), Go()),
+        ("1in", Sides(0.25, 0.25, 0.5, 0.5)),
+        (mm(25.4), Sides(0.25, 0.25, 0.5, 0.5)),
     ],
 )
-def test_answer(request_: Request, expected: object) -> None:
-    assert decide.answer(request_) == expected
-
-
-@pytest.mark.parametrize(
-    ("margin", "sides", "expected"),
-    [
-        (0, (None,) * 4, Sides(0.0, 0.0, 0.0, 0.0)),
-        ("5%", (None,) * 4, Sides(0.05, 0.05, 0.05, 0.05)),
-        (0.1, (None, "1in", None, None), Sides(0.1, 0.25, 0.1, 0.1)),
-        (mm(25.4), (None, None, 0.0, None), Sides(0.25, 0.25, 0.5, 0.0)),
-    ],
-)
-def test_margins_become_figure_fractions(margin, sides, expected) -> None:
-    assert parse_margins(margin, sides, (4.0, 2.0)) == expected
+def test_a_margin_becomes_figure_fractions(margin, expected) -> None:
+    assert parse_margin(margin, (4.0, 2.0)) == expected
 
 
 @pytest.mark.parametrize(
     ("margin", "error"),
-    [
-        (float("nan"), ValueError),
-        ("inf%", ValueError),
-        ("5", ValueError),
-        (None, TypeError),
-        (True, TypeError),
-    ],
+    [("5", ValueError), ("5%", ValueError), (0.02, TypeError)],
 )
-def test_bad_margins_raise(margin: object, error: type[Exception]) -> None:
+def test_a_margin_names_its_unit(
+    margin: object, error: type[Exception]
+) -> None:
     with pytest.raises(error):
-        parse_margins(margin, (None,) * 4, (4.0, 2.0))  # type: ignore[arg-type]
+        parse_margin(margin, (4.0, 2.0))  # type: ignore[arg-type]
 
 
 def test_edges_put_the_content_at_the_margin() -> None:
@@ -118,7 +102,7 @@ def test_edges_put_the_content_at_the_margin() -> None:
 
 def test_delta_is_the_largest_edge_move_in_pixels() -> None:
     plot = Box(0.0, 0.0, 1000.0, 500.0)
-    last = Edges(0.0, 1.0, 0.0, 0.99)
+    last = Sides(0.0, 1.0, 0.0, 0.99)
     step = solve(content(axes(plot), last=last))
     assert step is not None and step.delta == pytest.approx(5.0)
     assert not step.converged
@@ -133,41 +117,31 @@ def test_edges_stay_a_valid_rectangle() -> None:
 
 
 def test_no_content_no_step() -> None:
-    hollow = AxesContent(None, NONE, ())
-    assert solve(content(hollow)) is None
+    assert solve(content()) is None
 
 
 @pytest.mark.parametrize(
-    ("holds", "box", "edge"),
+    ("vertical", "box", "edge"),
     [
-        (Top(), Box(400, 470, 600, 495), Top()),  # suptitle
-        (Top(), Box(0, 100, 20, 120), Left()),  # low: nearest
-        (Bottom(), Box(400, 5, 600, 20), Bottom()),  # supxlabel
-        (Left(), Box(5, 200, 20, 300), Left()),  # supylabel
-        (None, Box(950, 200, 990, 300), Right()),  # a text
+        (False, Box(5, 470, 990, 495), Top()),  # a wide suptitle
+        (False, Box(5, 5, 300, 20), Bottom()),  # a source line in a corner
+        (True, Box(5, 200, 20, 300), Left()),  # supylabel
+        (False, Box(950, 200, 990, 300), Right()),  # mid-height: nearest
+        (None, Box(2, 200, 998, 300), Left()),  # a legend: nearest
     ],
 )
-def test_figure_artist_reserves_its_role_edge_else_the_nearest(
-    holds: Edge | None, box: Box, edge: Edge
+def test_figure_artist_reserves_its_band_edge_else_the_nearest(
+    vertical: bool | None, box: Box, edge: Edge
 ) -> None:
-    art = FigureArtist(box, holds, False, None, Px(0.0))
-    facts = content(artists=[art])
-    assert decide.fit(facts).reserves == (edge,)
+    art = FigureArtist(box, vertical, Px(0.0))
+    assert decide.reserves(content(artists=[art])) == (edge,)
 
 
 def test_a_reservation_adds_its_reach_and_gap() -> None:
-    title = FigureArtist(Box(400, 450, 600, 500), Top(), False, None, Px(10.0))
+    title = FigureArtist(Box(400, 450, 600, 500), False, Px(10.0))
     plot = axes(Box(0.0, 0.0, 1000.0, 500.0))
     step = solve(content(plot, artists=[title]))
     assert step is not None and step.edges.top == pytest.approx(1 - 60 / 500)
-
-
-def test_crushed_below_thirty_percent() -> None:
-    before = {ArtistId(1): PlotSize(Px(100.0), Px(100.0))}
-    assert not decide.crushed(
-        before, {ArtistId(1): PlotSize(Px(31.0), Px(100.0))}
-    )
-    assert decide.crushed(before, {ArtistId(1): PlotSize(Px(100.0), Px(29.0))})
 
 
 # -- text helpers -------------------------------------------------------------
@@ -177,9 +151,7 @@ def chars(line: Line) -> Px:
     return Px(float(len(line)))
 
 
-def row(
-    texts, gaps, turned=None, authored=False, clearance=2.0, height=10.0
-) -> TickRow:
+def row(texts, gaps, authored=False, clearance=2.0, height=10.0) -> TickRow:
     return TickRow(
         axis=ArtistId(1),
         texts=tuple(Line(t) for t in texts),
@@ -188,7 +160,6 @@ def row(
         clearance=Px(clearance),
         line_height=Px(height),
         authored=authored,
-        turned=turned,
         width=chars,
     )
 
@@ -235,7 +206,6 @@ def test_wrap_limit_lets_a_long_label_use_short_neighbours_room() -> None:
         (row(["ab", "cd"], [3.0]), None),  # upright overlaps more than flat
         (row(["ab", "cd"], [40.0]), None),  # not crowded
         (row(["ab", "cd"], [3.0], authored=True), None),
-        (row(["abcdefgh"] * 3, [20.0, 20.0], turned=Degrees(45.0)), None),
     ],
 )
 def test_turn_angle(r: TickRow, angle: Degrees | None) -> None:

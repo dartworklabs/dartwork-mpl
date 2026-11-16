@@ -85,7 +85,7 @@
 | 분기 라벨 | 3개월 간격 날짜를 `24.Q1`로, 분기말 날짜면 분기말에 눈금 | `ticks/edges.py:88`, `ticks/dates.py:127`, `:171` | `MonthLocator(bymonth=(1, 4, 7, 10))`와 분기를 계산하는 `FuncFormatter` |지움 |
 | 짧은 날짜 | 모든 눈금을 `24.01`, `24.01.15`로, 시간 축은 `09:00`과 모서리 날짜 | `ticks/dates.py:25` | preset의 `date.autoformatter.*`가 대부분 대신한다(아래). 시간 축의 날짜를 모서리에 한 번만 쓰려면 `ConciseDateFormatter`의 `formats`·`zero_formats`·`offset_formats` |지움 |
 | 날짜 솎기 | 여백을 맞춘 뒤 날짜 라벨 사이가 1 em보다 좁으면 눈금을 줄인다 | `ticks/apply.py:172`, `:237` | `AutoDateLocator(maxticks=…)` 또는 `MonthLocator(interval=…)`. 그림 너비에 맞춰 간격을 고르는 법 |지움 |
-| 트윈 축의 spine | preset이 숨긴 오른쪽·위 spine을 `twinx`·`twiny`의 눈금 쪽에서 켠다 | `ticks/edges.py:118`, `ticks/twins.py:110` | `ax2.spines["right"].set_visible(True)` 한 줄. skill의 `references/layout.md`에 있다 |지움 |
+| 트윈 축의 spine | preset이 숨긴 오른쪽·위 spine을 `twinx`·`twiny`의 눈금 쪽에서 켠다 | `ticks/edges.py:118`, `ticks/twins.py:110` | `ax2.spines["right"].set_visible(True)` 한 줄. skill의 `references/layout.md`에 있다 | 되살림 (`layout`이 Axes마다 한 번 켠다) |
 
 토큰이 대신하는 것과 못 하는 것:
 
@@ -148,6 +148,8 @@
 
 ## check
 
+"되살림"은 코퍼스(`tests/corpus/`)에서 실제 결함을 잡는 것이 확인되어 좁힌 형태로 다시 넣은 규칙이다. 범례가 제목이나 다른 범례를 덮는 경우도 `LEGEND_ON_DATA`에 다시 들어갔다.
+
 `dm.check`의 규칙 18개 중 12개와 그것만 쓰던 측정을 지웠다(2026-11-16). 남은 규칙은 `OVERFLOW`, `OVERLAP`, `CROSS_AXES_OVERLAP`, `TEXT_CROWD`, `LEGEND_ON_DATA`, `TICK_OVERLAP`이다. 지운 규칙은 마지막 평가(`20261115-214430`)에서 그림을 낸 스크립트 19개, 픽셀 장면 20개, robustness 장면 51개(layout 전후)에서 한 번도 작동하지 않았거나, 작동한 곳이 모두 사람이 보기에 결함이 아니었거나, `dm.simple_layout`을 부른 뒤에는 한 번도 작동하지 않았다. 대부분 그림을 보면 알 수 있는 것이라 skill의 `references/review.md` "Look at the image" 목록이 맡는다. 예시는 그 판단을 그림 한 쌍(나쁜 것, 고친 것)으로 보여주면 된다.
 
 원본은 `git show 183b1b59:src/dartwork_mpl/check/<파일>`로 읽는다.
@@ -156,17 +158,34 @@
 | --- | --- | --- | --- | --- |
 | `TEXT_AT_EDGE` | 캔버스 가장자리 1 pt 안에 붙은 글자(INFO) | `decide.py:52` | `fig.text(0, …)` 대신 `x`에 여백을 두거나 `dm.simple_layout(fig, margin="2mm")` | 지움 |
 | `MARGIN_ASYMMETRY` | 한쪽 여백이 반대쪽의 3배를 넘음 | `decide.py:74` | 손으로 `subplots_adjust`한 그림과 `dm.simple_layout` 뒤의 그림 | 지움 |
-| `MISSING_AXIS_LABEL` | 이름도 단위도 없는 숫자 축(INFO). 날짜 축에도 떠서 소음이었다 | `decide.py:157` | `ax.set_ylabel("Revenue (M USD)")`처럼 양과 단위를 쓰는 법, 날짜·범주 축은 생략해도 되는 이유 | 지움 |
-| `TEXT_CONTRAST` | 글자와 그 아래 색의 WCAG 대비가 4.5:1(큰 글자 3:1) 미만. 그림을 Agg로 한 번 더 그려 픽셀을 읽었다 | `decide.py:172`, `ink.py:266` | 진한 색 위의 값 라벨에 `dm.readable_text_color(배경)`. 히트맵 주석이 대표 사례 | 지움 |
+| `MISSING_AXIS_LABEL` | 이름도 단위도 없는 숫자 축(INFO). 날짜 축에도 떠서 소음이었다 | `decide.py:157` | `ax.set_ylabel("Revenue (M USD)")`처럼 양과 단위를 쓰는 법, 날짜·범주 축은 생략해도 되는 이유 | 되살림 |
+| `TEXT_CONTRAST` | 글자와 그 아래 색의 WCAG 대비가 4.5:1(큰 글자 3:1) 미만. 그림을 Agg로 한 번 더 그려 픽셀을 읽었다 | `decide.py:172`, `ink.py:266` | 진한 색 위의 값 라벨에 `dm.readable_text_color(배경)`. 히트맵 주석이 대표 사례 | 되살림 |
 | `LEGEND_OVERFLOW` | 범례가 plot의 30 %(밖이면 50 %)보다 크거나 캔버스 밖으로 나감 | `decide.py:195` | 캔버스 밖으로 잘리는 범례는 이제 `OVERFLOW`가 범례 글자로 잡는다. 선이 많으면 `dm.label_line_ends(ax)` | 지움 |
 | `LEGEND_OVERLAP` | 범례가 제목·축 이름·눈금 글자를 덮음 | `decide.py:222` | `bbox_to_anchor`로 위에 올린 범례와 제목이 부딪히는 경우, `dm.place_legend(ax, loc="above")` | 지움 |
-| `VALUE_LABEL_ON_DATA` | 값 라벨이 선·막대·점 위에 그려짐 | `decide.py:261` | 선 위의 점 값은 `dm.annotate_value`, 막대는 `dm.label_bars` | 지움 |
-| `VALUE_LABEL_DECIMAL` | 정수인 값 라벨이 `120.0`처럼 소수를 찍음 | `decide.py:281` | `f"{v:,.0f}"` | 지움 |
+| `VALUE_LABEL_ON_DATA` | 값 라벨이 선·막대·점 위에 그려짐 | `decide.py:261` | 선 위의 점 값은 `dm.annotate_value`, 막대는 `dm.label_bars` | 되살림 |
+| `VALUE_LABEL_DECIMAL` | 정수인 값 라벨이 `120.0`처럼 소수를 찍음 | `decide.py:281` | `f"{v:,.0f}"` | 되살림 |
 | `TICK_CROWD` | 눈금 글자 사이가 0.5 em 미만(INFO). 작동한 곳은 모두 `TICK_OVERLAP`도 작동했다 | `decide.py:317`, `overlap.py:87` | `ax.locator_params(nbins=5)`, 범주가 많으면 가로 막대 | 지움 |
 | `TICK_CORNER_OVERLAP` | x와 y의 첫 눈금 글자가 모서리에서 겹침(-3..3 정사각형) | `decide.py:336`, `overlap.py:254` | `ax.tick_params(pad=…)`를 0으로 줄였을 때의 모서리 | 지움 |
 | `TICK_DECIMAL` | 눈금이 `2.0`, 섞인 자릿수, 같은 글자 두 번, 과한 자릿수를 찍음 | `decide.py:350` | `ax.yaxis.set_major_formatter("{x:.1f}")`로 간격에 맞춘 자릿수 | 지움 |
-| `EMPTY_AXES` | 아무것도 그리지 않는 Axes(INFO). `twiny` 축에도 떠서 소음이었다 | `decide.py:394` | 격자보다 패널이 적을 때 `ax.remove()` | 지움 |
+| `EMPTY_AXES` | 아무것도 그리지 않는 Axes(INFO). `twiny` 축에도 떠서 소음이었다 | `decide.py:394` | 격자보다 패널이 적을 때 `ax.remove()` | 되살림 |
 
 측정에서 지운 것:
 
 - 3D Axes의 `ax.text` 위치(`walk.py:140`, 투영하며 그리는 자리를 읽던 렌더러), `secondary_xaxis`·`secondary_yaxis`의 글자(`walk.py:61`), 극좌표·3D Axes의 눈금 글자, inset Axes의 범례. 근거의 그림에 하나도 없다. 이제 직교 좌표 Axes의 글자만 읽는다.
+
+## layout
+
+`dm.simple_layout`에서 지운 인자와 동작이다(2026-11-16). 여백 맞추기와 글자 맞추기(축 이름 줄바꿈, 패널 간격, 눈금 글자 줄바꿈·회전)는 기능으로 남았다. 이제 호출은 `dm.simple_layout(fig)`이고 인자는 `margin`(`Length` 또는 `"3mm"` 같은 단위 문자열, 모든 변에 같은 값) 하나다.
+
+기준 커밋은 `183b1b59`이다. 원본은 `git show 183b1b59:src/dartwork_mpl/<구현 경로>`로 읽고, 동작의 세부는 같은 커밋의 `layout/tests/test_surface.py`, `test_decide.py`에 있다. 평가 스크립트 10개는 모두 인자 없이 불렀다.
+
+| 동작 | 하던 일 | 구현 | 예시가 보여줘야 할 것 | 상태 |
+| --- | --- | --- | --- | --- |
+| 변마다 다른 여백 `ml`·`mr`·`mt`·`mb` | 한 변에만 여백을 더 둔다(`mr="1cm"`로 오른쪽 메모 자리) | `layout/model.py:174`, `compose/layout.py:52` | `dm.simple_layout(fig)` 뒤에 `gs = ax.get_gridspec(); gs.update(right=gs.right - 0.05)`. `fig.text` 메모는 이미 자기 변을 비우므로 대개 필요 없다는 점 |지움 |
+| 비율·figure 분수 여백 | `margin="2%"`, `margin=0.02` (`margin=0`은 되살렸다) | `layout/model.py:124`, `:146` | 길이로 쓰는 법(`dm.mm(2)`). 0 여백은 글자 끝이 잘리므로 쓰지 않는 이유 |지움 |
+| `gs=` | 첫 Axes가 아닌 GridSpec(또는 `SubplotSpec`)을 맞출 grid로 고른다 | `layout/measure.py:52` | 맞출 grid의 Axes를 먼저 만들거나, 둘째 grid는 `fig.subplots_adjust`로 직접 두는 법 |지움 |
+| `fit_labels=False` | 여백만 맞추고 글자 맞추기(줄바꿈·회전·간격)를 끈다 | `layout/__init__.py:36`, `layout/loop.py:80` | 직접 정한 것은 그대로 둔다: `ax.tick_params(axis="x", rotation=45)`, `gridspec_kw={"wspace": 0.4}`, 줄바꿈한 라벨 |지움 |
+| 납작해진 그림 되돌리기 | 글자를 맞춘 결과 plot이 너비·높이의 30 % 밑으로 줄면 그 라운드를 되돌린다 | `layout/decide.py:196`, `layout/loop.py:80` | 좁은 그림에 끊을 데 없는 긴 이름: 이름을 줄이거나 `barh`로 바꾸는 법. 되돌려도 겹친 글자가 남았다 |지움 |
+| 두 번째 호출의 되돌리기 기록 | 앞 호출이 줄바꿈한 축 이름과 넓힌 패널 간격을 다음 호출 전에 되돌린다 | `layout/apply.py:187`, `:224` | 이제 둘째 호출은 앞 호출이 돌린 눈금 글자만 세우고, 줄바꿈한 축 이름과 간격은 그대로 둔다. 처음부터 다시 맞추려면 그림을 새로 만든다 |지움 |
+
+그림이 바뀌지 않아 예시가 필요 없는 것: 3D Axes 전용 측정, 바깥 범례를 plot 폭으로 자르던 처리, figure 범례가 자기 변을 잡던 처리, suptitle·supxlabel·supylabel의 역할 변. Axes의 내용은 이제 matplotlib의 tight box 하나로 잰다. 기준 이미지 21장과 평가 스크립트 10개의 그림이 그대로이고, robustness 51개 중에서는 `mpl_toolkits`의 `host_subplot`으로 만든 기생 축(`triple_axis_parasite`)만 나빠진다(기생 축이 host를 따라 움직이지 않아 plot이 납작해진다. 전에도 오른쪽 축이 잘렸다). 손으로 재던 때 빠지던 `secondary_xaxis`·`secondary_yaxis`의 눈금이 이제 여백에 들어간다.

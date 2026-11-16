@@ -12,6 +12,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from ..colorspace import Hex, Ratio
 from ..vocab import Box, Which, X, Y
 from .roles import Role
 
@@ -37,23 +38,26 @@ def margins(box: Box, outer: Box) -> dict[str, float]:
     }
 
 
-def prints_a_value(text: str) -> bool:
-    """A short label printing one number (``19.4 TWh``, ``$3.5``), not prose,
-    math or a token like ``Q1``."""
+def printed_value(text: str) -> str | None:
+    """The one number a short label prints (``19.4 TWh``, ``$3.5``); ``None``
+    for prose, math or a token like ``Q1``."""
     s = _THOUSANDS.sub(
         "", " ".join(text.strip().replace("\u2212", "-").split())
     )
     if not s or "\\" in s or "\n" in text.strip():
-        return False
+        return None
     if len(s) > 1 and s.startswith("$") and s.endswith("$"):
-        return False
+        return None
     found = list(_NUMBER.finditer(s))
     if len(found) != 1:
-        return False
+        return None
     prefix, suffix = s[: found[0].start()], s[found[0].end() :]
     if prefix and prefix[-1].isalpha():
-        return False
-    return len(prefix.strip()) <= MAX_AFFIX and len(suffix.strip()) <= MAX_AFFIX
+        return None
+    short = (
+        len(prefix.strip()) <= MAX_AFFIX and len(suffix.strip()) <= MAX_AFFIX
+    )
+    return found[0].group() if short else None
 
 
 @dataclass(frozen=True)
@@ -75,7 +79,13 @@ class Text:
     @property
     def value(self) -> bool:
         """The text prints one number: a value label."""
-        return prints_a_value(self.text)
+        return printed_value(self.text) is not None
+
+    @property
+    def needless_decimals(self) -> bool:
+        """A value label printing a whole number with decimals (``12.0``)."""
+        n = printed_value(self.text) or ""
+        return "." in n and "e" not in n.lower() and float(n).is_integer()
 
 
 @dataclass(frozen=True)
@@ -83,7 +93,9 @@ class TickRow:
     """The drawn labels of one axis and how many neighbours collide.
 
     ``overlaps`` the neighbour pairs that collide and ``deepest`` the worst
-    overlap in px.
+    overlap in px. ``numbers``: the labels print quantities (not names,
+    categories or dates); ``named``: a label names the axis, on this panel,
+    one sharing the axis, its grid row (y) or column (x), or the figure.
     """
 
     handle: object
@@ -92,6 +104,8 @@ class TickRow:
     labels: tuple[Text, ...]
     overlaps: int
     deepest: float
+    numbers: bool
+    named: bool
 
 
 @dataclass(frozen=True)
@@ -101,16 +115,22 @@ class Hit:
     kind: str
     name: str
 
+    @property
+    def stroke(self) -> bool:
+        """A line, an error bar or a marker: not a bar or an area's edge."""
+        return self.kind in ("line", "marker")
+
 
 @dataclass(frozen=True)
 class Legend:
-    """A drawn legend: its owner panel (``None``: a figure legend) and what
-    its box covers."""
+    """A drawn legend: its owner panel (``None``: a figure legend), its box
+    and the data that box covers."""
 
     handle: object
     panel: int | None
     labels: tuple[str, ...]
     covers: tuple[Hit, ...]
+    box: Box
 
     @property
     def panels(self) -> tuple[int, ...]:
@@ -132,6 +152,32 @@ class Legend:
 
 
 @dataclass(frozen=True)
+class OnData:
+    """A value label and the lines, markers or error bars under it."""
+
+    text: Text
+    covers: tuple[Hit, ...]
+
+
+@dataclass(frozen=True)
+class Inked:
+    """A text the user placed, its colour and what is drawn behind it."""
+
+    text: Text
+    ink: Hex
+    paper: Hex
+    ratio: Ratio
+
+
+@dataclass(frozen=True)
+class Panel:
+    """A drawn Axes: its handle and ``fig.axes`` index."""
+
+    handle: object
+    index: int
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -139,8 +185,12 @@ class Facts:
     px_per_pt: float
     texts: tuple[Text, ...] = ()
     figure_texts: tuple[Text, ...] = ()
+    legend_texts: tuple[Text, ...] = ()
     ticks: tuple[TickRow, ...] = ()
     legends: tuple[Legend, ...] = ()
+    empty: tuple[Panel, ...] = ()
+    values: tuple[OnData, ...] = ()
+    inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
 
     @property
@@ -159,7 +209,12 @@ class Facts:
 
     @property
     def all_texts(self) -> tuple[Text, ...]:
-        """Axes texts, tick labels and figure texts."""
+        """Axes texts, tick labels, figure texts and legend entries."""
+        return self.under_legends + self.legend_texts
+
+    @property
+    def under_legends(self) -> tuple[Text, ...]:
+        """The texts a legend can cover: all but legend entries."""
         ticks = tuple(t for row in self.ticks for t in row.labels)
         return self.texts + ticks + self.figure_texts
 

@@ -16,7 +16,6 @@
  "R6_impure_decisions": [],
  "R7_function_lines": {},
  "R8_entry_function_lines": {
-  "src/dartwork_mpl/compose/layout.py::simple_layout": 50,
   "src/dartwork_mpl/compose/size.py::figsize_for": 36
  },
  "R8_missing_all": [],

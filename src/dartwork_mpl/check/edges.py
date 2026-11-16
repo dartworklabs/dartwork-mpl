@@ -29,6 +29,16 @@ def has_legends(facts: Facts, found: Findings) -> bool:
     return bool(facts.legends)
 
 
+def has_empty(facts: Facts, found: Findings) -> bool:
+    """Any framed Axes that draws nothing."""
+    return bool(facts.empty)
+
+
+def has_values_on_data(facts: Facts, found: Findings) -> bool:
+    """Any value label drawn on a line, marker or error bar."""
+    return bool(facts.values)
+
+
 def has_ticks(facts: Facts, found: Findings) -> bool:
     """Any drawn tick labels."""
     return bool(facts.ticks)
@@ -71,11 +81,41 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         adjust=decide.phrase,
     ),
     EdgeCase(
+        name="VALUE_LABEL_DECIMAL",
+        why="respondent counts labelled '12.0, 31.0' carry decimals that say nothing",
+        example="test_edges.py::test_VALUE_LABEL_DECIMAL",
+        applies=has_panel_texts,
+        adjust=decide.value_label_decimal,
+    ),
+    EdgeCase(
         name="LEGEND_ON_DATA",
-        why="a legend on the lines hides the data it explains",
+        why=(
+            "a legend on the lines hides the data it explains; one anchored "
+            "above the plot was drawn over the title"
+        ),
         example="test_edges.py::test_LEGEND_ON_DATA_reports_what_it_covers",
         applies=has_legends,
         adjust=decide.legend_on_data,
+    ),
+    EdgeCase(
+        name="VALUE_LABEL_ON_DATA",
+        why=(
+            "bar values were printed on their error bars, the line "
+            "striking through each number"
+        ),
+        example="test_edges.py::test_VALUE_LABEL_ON_DATA",
+        applies=has_values_on_data,
+        adjust=decide.value_label_on_data,
+    ),
+    EdgeCase(
+        name="TEXT_CONTRAST",
+        why=(
+            "white values centred in pale yellow bars read at 1.39:1 and "
+            "disappeared"
+        ),
+        example="test_edges.py::test_TEXT_CONTRAST",
+        applies=has_panel_texts,
+        adjust=decide.text_contrast,
     ),
     EdgeCase(
         name="TICK_OVERLAP",
@@ -83,5 +123,25 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_TICK_OVERLAP",
         applies=has_ticks,
         adjust=decide.tick_overlap,
+    ),
+    EdgeCase(
+        name="EMPTY_AXES",
+        why=(
+            "five groups drawn in a 2 x 3 grid left a sixth panel as an "
+            "empty 0-1 frame"
+        ),
+        example="test_edges.py::test_EMPTY_AXES",
+        applies=has_empty,
+        adjust=decide.empty_axes,
+    ),
+    EdgeCase(
+        name="MISSING_AXIS_LABEL",
+        why=(
+            "a scatter of engine size against fuel economy named neither "
+            "axis: its numbers could not be read"
+        ),
+        example="test_edges.py::test_MISSING_AXIS_LABEL",
+        applies=has_ticks,
+        adjust=decide.missing_axis_label,
     ),
 )

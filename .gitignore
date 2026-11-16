@@ -14,3 +14,6 @@ dist/
 
 # Agent-eval runs: rendered figures and transcripts never go into git.
 evals/runs/
+
+# Corpus and skill scripts save to output/ next to where they run.
+output/

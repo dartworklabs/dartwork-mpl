@@ -65,7 +65,7 @@ class RobustnessScenario:
     expect_warnings: tuple[str, ...] = ()
     forbid_warnings: tuple[str, ...] = ("OVERFLOW",)
     pixel_checks: tuple[str, ...] = ("assert_minimum_white_border",)
-    layout_padding: float | tuple[float, float, float, float] = 0.08
+    layout_padding: float = 0.08
     category: str = "visual-only"
 
 

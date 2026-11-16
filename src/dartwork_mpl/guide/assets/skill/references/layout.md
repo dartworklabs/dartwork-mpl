@@ -85,26 +85,25 @@ convert: 1920 × 1080 px at 200 DPI is
 ## Margins: `dm.simple_layout`
 
 It measures tick labels, axis labels, titles, legends and colorbars, then
-sets the outer margins so content sits 1 mm from the canvas edge. Call it once, after
-drawing. Where text still collides it fits the labels: an axis name that
+sets the outer margins so content sits 1 mm from the canvas edge. Call it after
+drawing; call it again after a later change. Where text still collides it fits the labels: an axis name that
 runs into another panel or past the figure edge wraps at its spaces
 (the same name on the same axis of that grid then wraps the same way),
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
 (up to 1.5 cells), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
-degrees; a change that would leave a plot under 30 % of its width or height
-is taken back. Nothing is shortened or made smaller. What you set
+degrees. Nothing is shortened or made smaller. What you set
 stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
 when it is too small, and labels you rotate or break yourself are left as
-they are, so leave them out unless the user asks.
-`fit_labels=False` turns the fitting off; tick
+they are, so leave them out unless the user asks. Tick
 labels that still overlap are reported as `TICK_OVERLAP`, text over another
 panel's text as `CROSS_AXES_OVERLAP`.
 
-- `margin="3mm"` (or `"2%"`, `dm.mm(3)`) sets the buffer; the default is `"1mm"`, `0` is flush.
-- `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.
-- With one main GridSpec pass it: `dm.simple_layout(fig, gs=gs)`.
+- `margin="3mm"` (or `dm.mm(3)`) sets the buffer on every side; the default is `"1mm"`.
+  `margin=0` puts the content flush with the canvas edge, for a figure that
+  sits inside another document's frame.
+- It fits the GridSpec of the first Axes (nested `subgridspec` included).
 - It does not lay out SubFigures: put the panels on one GridSpec (nested
   `subgridspec` is fine) instead.
 
@@ -160,7 +159,7 @@ inner = gs[1].subgridspec(2, 1, hspace=0.6)
 top, bottom = fig.add_subplot(inner[0]), fig.add_subplot(inner[1])
 for ax in (left, top, bottom):
     ax.plot(x, np.sin(x))
-dm.simple_layout(fig, gs=gs)     # outer margins from the root grid
+dm.simple_layout(fig)            # outer margins from the root grid
 plt.close(fig)
 ```
 
@@ -173,7 +172,6 @@ needs `fig.subfigures` with local margins instead of `simple_layout`:
 ```python
 fig, ax1 = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 ax2 = ax1.twinx()
-ax2.spines["right"].set_visible(True)  # the presets hide it
 ax1.bar(range(6), [3, 4, 6, 5, 4, 2], color="dc.blue3")
 ax2.plot(range(6), [12, 15, 21, 19, 14, 9], color="dc.red5", marker="o")
 ax1.set(xlabel="Month", ylabel="Rain (mm)")
@@ -207,7 +205,8 @@ plt.close(fig)
   `dm.simple_layout(fig)` keeps a title above it. A fixed spot of your
   own is `ax.legend(loc="upper left")`, which the library leaves alone.
 - Eight or more lines: `dm.label_line_ends(ax)` names them at their ends.
-- A twin pair: show the twin's right spine yourself, as above; the axis
+- A twin pair: `dm.simple_layout` shows the spine each twin draws its
+  scale on (the presets hide the right one); the axis
   colours stay neutral unless you colour a side like its series
   (`ax2.tick_params(axis="y", colors=…)`); one legend for both is `dm.place_legend(ax)`,
   never `ax.legend(h1 + h2, l1 + l2)`; it and `dm.label_bars(ax)` put the

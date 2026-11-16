@@ -1,7 +1,7 @@
-"""The layout's types, and the one place ``simple_layout``'s margins are parsed.
+"""The layout's types, and the one place ``simple_layout``'s margin is parsed.
 
 Two kinds of number cross this slice. A :data:`Px` is a display pixel, as
-matplotlib measures a drawn artist; a :class:`Sides` / :class:`Edges` value is
+matplotlib measures a drawn artist; a :class:`Sides` / :class:`Sides` value is
 a share of the figure's width (left, right) or height (bottom, top), as a
 GridSpec takes it. Every measured fact arrives as one of the types below; the
 decisions never see a matplotlib object.
@@ -9,12 +9,11 @@ decisions never see a matplotlib object.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Literal, NewType, TypeAlias
 
-from ..length import Length
+from ..length import Length, written_zero
 from ..vocab import Box, Edge, Which
 
 Px = NewType("Px", float)
@@ -42,8 +41,6 @@ MAX_TICK_LINES = 3
 MAX_NAME_LINES = 4
 # Largest wspace / hspace the panel spacing grows to (share of a cell).
 MAX_GAP_FRACTION = 1.5
-# Least share of its width and height a plot keeps when text is fitted.
-MIN_PLOT_SHARE = 0.3
 FIT_ROUNDS = 3
 # Figure text centred in this outer band of the canvas reserves that edge.
 EDGE_BAND = 0.15
@@ -65,15 +62,31 @@ Gap: TypeAlias = WSpace | HSpace
 
 # -- what matplotlib writes, read once ----------------------------------------
 
-#: How matplotlib anchors a rotated tick label (``Text.set_rotation_mode``).
-Mode: TypeAlias = Literal["default", "anchor", "xtick", "ytick"]
 #: The mode a layout turns tick labels with: their ends stay at their ticks.
-TURN_MODE: Mode = "xtick"
+TURN_MODE: Literal["xtick"] = "xtick"
 
 
-def turned_as(rotation: float, mode: Mode, angle: Degrees) -> bool:
-    """A label still at the ``angle`` and mode a layout turned it to."""
-    return rotation == angle and mode == TURN_MODE
+def turned_here(rotation: float, mode: str) -> bool:
+    """A tick label as a layout turned it: one of ``ANGLES``, ``TURN_MODE``
+    (``ax.tick_params(rotation=...)`` and ``autofmt_xdate`` keep matplotlib's
+    default mode)."""
+    return mode == TURN_MODE and rotation in ANGLES
+
+
+#: A rectilinear Axes' spine, as ``ax.spines`` names it.
+Spine: TypeAlias = Literal["left", "right", "bottom", "top"]
+FACING: Mapping[Spine, Spine] = {
+    "left": "right",
+    "right": "left",
+    "bottom": "top",
+    "top": "bottom",
+}
+
+
+def tick_spine(position: str) -> Spine | None:
+    """The one side an axis ticks on (``Axis.get_ticks_position``);
+    ``None`` for both, neither or unknown."""
+    return next((side for side in FACING if side == position), None)
 
 
 def authored(text: str) -> bool:
@@ -112,7 +125,8 @@ def tokens(text: Line) -> tuple[Line, ...]:
 
 @dataclass(frozen=True)
 class Sides:
-    """One figure fraction per edge: a margin, a reservation or an overhang."""
+    """One figure fraction per edge: a margin, a reservation, an Axes'
+    position or a GridSpec's ``left, right, bottom, top``."""
 
     left: float
     right: float
@@ -120,155 +134,44 @@ class Sides:
     top: float
 
 
-@dataclass(frozen=True)
-class Percent:
-    """A margin written ``"5%"``."""
-
-    percent: float
+#: ``margin=0``: the content flush with the canvas edge.
+Flush: TypeAlias = Literal[0]
 
 
-@dataclass(frozen=True)
-class Physical:
-    """A margin given as a length."""
-
-    length: Length
-
-
-@dataclass(frozen=True)
-class Fraction:
-    """A margin given as a bare number: a figure fraction."""
-
-    fraction: float
-
-
-Margin: TypeAlias = Percent | Physical | Fraction
-MarginInput: TypeAlias = Length | str | float
-
-
-def parse_margin(value: object) -> Margin:
-    """``"5%"``, a unit string or :class:`Length`, or a bare figure fraction."""
-    if isinstance(value, Length):
-        return Physical(value)
-    if isinstance(value, str):
-        text = value.strip()
-        if text.endswith("%"):
-            return Percent(float(text[:-1]))
-        return Physical(Length.parse(text, "margin"))
-    if isinstance(value, int | float) and not isinstance(value, bool):
-        return Fraction(float(value))
-    raise TypeError(
-        f"margin must be Length, str, or number; got {type(value).__name__}"
-    )
-
-
-def _fraction(margin: Margin, extent_in: float) -> float:
-    match margin:
-        case Percent(percent=percent):
-            return percent / 100.0
-        case Physical(length=length):
-            return length.inch / extent_in
-        case Fraction(fraction=fraction):
-            return fraction
-
-
-def parse_margins(
-    margin: MarginInput,
-    sides: tuple[MarginInput | None, ...],
-    size_in: tuple[float, float],
+def parse_margin(
+    margin: Length | str | Flush, size_in: tuple[float, float]
 ) -> Sides:
-    """The margin of each edge (``ml, mr, mt, mb``, else ``margin``) as fractions.
-
-    Raises ``ValueError`` when one is not finite.
-    """
-    base = parse_margin(margin)
-    left, right, top, bottom = (
-        base if value is None else parse_margin(value) for value in sides
-    )
+    """``margin`` (a :class:`Length`, a unit string or zero) as figure
+    fractions."""
+    if written_zero(margin):
+        return Sides(left=0.0, right=0.0, bottom=0.0, top=0.0)
+    length = Length.parse(margin, "margin")
     width, height = size_in
-    out = Sides(
-        left=_fraction(left, width),
-        right=_fraction(right, width),
-        bottom=_fraction(bottom, height),
-        top=_fraction(top, height),
-    )
-    if not all(
-        math.isfinite(v) for v in (out.left, out.right, out.bottom, out.top)
-    ):
-        raise ValueError("margin must resolve to finite figure fractions")
-    return out
-
-
-# -- the call -----------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class Request:
-    """What the figure offers before anything is measured."""
-
-    has_axes: bool
-    has_grid: bool
-
-
-@dataclass(frozen=True)
-class Go:
-    """Lay the figure out."""
-
-
-@dataclass(frozen=True)
-class Refuse:
-    """Leave the figure as it is; ``warning`` (when set) says why."""
-
-    warning: str | None
-
-
-Answer: TypeAlias = Go | Refuse
+    x, y = length.inch / width, length.inch / height
+    return Sides(left=x, right=x, bottom=y, top=y)
 
 
 # -- one measuring step -------------------------------------------------------
 
 
 @dataclass(frozen=True)
-class Piece:
-    """One drawn thing of an Axes that must stay on the canvas: a text,
-    title, axis name, tick label in view, offset text or legend.
-
-    ``outside``: the side of the plot the library anchored a legend outside.
-    """
-
-    box: Box
-    outside: Edge | None = None
-
-
-@dataclass(frozen=True)
 class AxesContent:
-    """An Axes: its plot box (``None``: empty), position and drawn pieces.
+    """An Axes' position (figure fractions) and its drawn content box."""
 
-    ``position`` is the Axes box as figure fractions. ``tight`` is set for a
-    3-D Axes only: its pieces as matplotlib's tight boxes read them.
-    """
-
-    plot: Box | None
     position: Sides
-    pieces: tuple[Piece, ...]
-    tight: tuple[Piece, ...] | None = None
+    box: Box
 
 
 @dataclass(frozen=True)
 class FigureArtist:
     """A figure-level text or legend: it reserves one edge of the canvas.
 
-    ``holds``: the edge its role holds while it sits on that half (a
-    suptitle the top, a supxlabel the bottom, a supylabel the left);
-    ``None`` for any other text or legend. ``vertical`` is ``None`` for an
-    artist without a rotation (a legend); ``side`` the edge
-    ``dm.figure_legend`` placed it on; ``gap`` the room it keeps from the
-    panels (px).
+    ``vertical`` is ``None`` for an artist without a rotation (a legend);
+    ``gap`` the room it keeps from the panels (px).
     """
 
     box: Box
-    holds: Edge | None
     vertical: bool | None
-    side: Edge | None
     gap: Px
 
 
@@ -281,16 +184,6 @@ class Canvas:
 
 
 @dataclass(frozen=True)
-class Edges:
-    """A GridSpec's ``left, right, bottom, top`` (figure fractions)."""
-
-    left: float
-    right: float
-    bottom: float
-    top: float
-
-
-@dataclass(frozen=True)
 class ContentFacts:
     """What one step measures, and the edges it starts from."""
 
@@ -298,22 +191,18 @@ class ContentFacts:
     artists: tuple[FigureArtist, ...]
     canvas: Canvas
     margins: Sides
-    last: Edges | None
+    last: Sides | None
 
 
-@dataclass(frozen=True)
-class Fit:
-    """What one step fits: each Axes' pieces, each figure artist's edge."""
-
-    axes: tuple[AxesContent, ...]
-    reserves: tuple[Edge, ...]
+Reserves: TypeAlias = tuple[Edge, ...]
+"""The canvas edge each figure artist reserves, in order."""
 
 
 @dataclass(frozen=True)
 class Step:
     """New grid edges and the largest edge move since the last step (px)."""
 
-    edges: Edges
+    edges: Sides
     delta: Px
 
     @property
@@ -335,8 +224,7 @@ class TickRow:
 
     ``texts`` as the axis' formatter writes them (before any wrap of ours),
     ``widths`` one line each, ``gaps`` between neighbouring centres.
-    ``authored``: rotated (not by this layout), not centred, multi-line or
-    mathtext; ``turned``: the angle this layout gave them.
+    ``authored``: rotated, not centred, multi-line or mathtext.
     """
 
     axis: ArtistId
@@ -346,7 +234,6 @@ class TickRow:
     clearance: Px
     line_height: Px
     authored: bool
-    turned: Degrees | None
     width: Width
 
     def _apart(self) -> list[float]:
@@ -378,19 +265,20 @@ class TickGroup:
 
 @dataclass(frozen=True)
 class AxisName:
-    """An axis name that may wrap: one line, no mathtext, not wrapped by us.
+    """An axis name that may wrap: one line, no mathtext.
 
-    ``group``: the grid and axis (x / y) it names, for one form per name;
-    ``others``: the content boxes of the other panels.
+    ``span``: its plot's side (px); ``group``: the grid and axis (x / y) it
+    names, for one form per name; ``box`` where it is drawn; ``others``
+    the content of the panels not at its position.
     """
 
     label: ArtistId
     text: Line
     span: Px
-    box: Box
     group: tuple[ArtistId, Which]
-    others: tuple[Box, ...]
     width: Width
+    box: Box
+    others: tuple[Box, ...]
 
 
 @dataclass(frozen=True)
@@ -409,7 +297,7 @@ class Reach:
 
 @dataclass(frozen=True)
 class Spacing:
-    """One spacing (``wspace`` / ``hspace``) nobody but us set, of a grid of
+    """One spacing (``wspace`` / ``hspace``) nobody set, of a grid of
     ``cells > 1``: the reaches across it, the gaps (px), its extent."""
 
     key: Gap
@@ -423,21 +311,12 @@ class Spacing:
 
 @dataclass(frozen=True)
 class TextFacts:
-    """``wrapped_names``: names this layout wrapped, by group and text."""
+    """What text fitting reads from the drawn figure."""
 
     groups: tuple[TickGroup, ...]
     names: tuple[AxisName, ...]
-    wrapped_names: Mapping[tuple[tuple[ArtistId, Which], Line], Line]
     spacings: tuple[Spacing, ...]
     canvas: Canvas
-
-
-@dataclass(frozen=True)
-class PlotSize:
-    """A plot box's size (px)."""
-
-    width: Px
-    height: Px
 
 
 @dataclass(frozen=True)

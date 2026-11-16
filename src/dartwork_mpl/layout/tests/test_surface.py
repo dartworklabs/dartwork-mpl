@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -43,7 +41,9 @@ def line_chart(**kw) -> Figure:
     return fig
 
 
-@pytest.mark.parametrize(("margin", "mm"), [(0, 0.0), ("5mm", 5.0)])
+@pytest.mark.parametrize(
+    ("margin", "mm"), [(0, 0.0), ("0mm", 0.0), ("0.1mm", 0.1), ("5mm", 5.0)]
+)
 def test_content_sits_the_margin_from_every_edge(margin, mm) -> None:
     fig = line_chart()
     dm.simple_layout(fig, margin=margin)
@@ -70,16 +70,13 @@ def test_a_second_call_draws_the_same() -> None:
     ) == first
 
 
-def test_crowded_category_names_wrap_and_come_back() -> None:
+def test_crowded_category_names_wrap() -> None:
     dm.style.use("report")
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
     ax.bar(DEPARTMENTS, [34, 58, 41, 17, 22, 29])
     dm.simple_layout(fig)
     fig.canvas.draw()
     assert any("\n" in t.get_text() for t in ax.get_xticklabels())
-    dm.simple_layout(fig, fit_labels=False)
-    fig.canvas.draw()
-    assert [t.get_text() for t in ax.get_xticklabels()] == DEPARTMENTS
 
 
 def test_crowded_numbers_turn() -> None:
@@ -87,16 +84,6 @@ def test_crowded_numbers_turn() -> None:
     ax.bar([f"{v:,}" for v in range(100_000, 1_300_000, 100_000)], range(12))
     dm.simple_layout(fig)
     assert {t.get_rotation() for t in ax.get_xticklabels()} == {90.0}
-
-
-def test_a_turn_that_crushes_the_plot_is_undone() -> None:
-    fig, ax = plt.subplots(figsize=dm.figsize("4cm", "wide"))
-    ax.bar(
-        ["Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" + str(k) for k in range(4)],
-        range(4),
-    )
-    dm.simple_layout(fig)
-    assert {t.get_rotation() for t in ax.get_xticklabels()} == {0.0}
 
 
 def test_suptitle_and_note_keep_their_edges() -> None:
@@ -145,9 +132,14 @@ def test_left_alone() -> None:
         dm.simple_layout(manual)
 
 
-def test_a_margin_that_is_not_finite_raises_before_drawing() -> None:
-    fig = line_chart()
-    before = fig.axes[0].get_position().bounds
-    with warnings.catch_warnings(), pytest.raises(ValueError, match="finite"):
-        dm.simple_layout(fig, margin=float("inf"))
-    assert fig.axes[0].get_position().bounds == before
+def test_a_twin_shows_the_spine_its_scale_ticks_on() -> None:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    twin = ax.twinx()
+    im = ax.imshow(np.eye(3))
+    bar = fig.colorbar(im, ax=ax)
+    dm.simple_layout(fig)
+    assert twin.spines["right"].get_visible()
+    assert not ax.spines["right"].get_visible()
+    sides = ("left", "right", "bottom", "top")
+    assert not any(bar.ax.spines[s].get_visible() for s in sides)

@@ -4,20 +4,19 @@ Each step draws the figure, lets the slices that place things at the Axes
 size settle them (bar labels, legends, line-end names, panel letters, each
 given as a function in :class:`~.given.Neighbours`),
 measures and solves. After the margins hold, crowded text is fitted, each
-round followed by a fresh fit and undone if it crushed a plot.
+round followed by a fresh fit.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ..edgecase import settle
 from ..geometry import get_renderer
 from . import apply, decide, measure, text
-from .edges import FIT_EDGES, TEXT_EDGES
+from .edges import TEXT_EDGES
 from .given import Neighbours
-from .model import FIT_ROUNDS, MAX_STEPS, Edges, Sides, Step
+from .model import FIT_ROUNDS, MAX_STEPS, Sides, Step
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -35,7 +34,7 @@ def _redraw(fig: Figure) -> RendererBase:
 
 
 def one_step(
-    fig: Figure, margins: Sides, last: Edges | None, given: Neighbours
+    fig: Figure, margins: Sides, last: Sides | None, given: Neighbours
 ) -> Step | None:
     """Draw, settle what sits at the Axes size, measure and solve once."""
     renderer = _redraw(fig)
@@ -49,74 +48,43 @@ def one_step(
     if given.settle_panels(fig, renderer):
         renderer = _redraw(fig)
     facts = measure.content_facts(fig, renderer, margins, last, given)
-    fit = settle(facts, decide.fit(facts), FIT_EDGES).plan
-    return decide.solve(facts, fit)
+    return decide.solve(facts, decide.reserves(facts))
 
 
-@dataclass
-class Fitter:
-    """The margin fit of one grid, continuing from the edges it last wrote."""
-
-    fig: Figure
-    gs: GridSpec
-    margins: Sides
-    given: Neighbours
-    last: Edges | None = None
-
-    def fit(self) -> Step | None:
-        """Fit until the edges move under half a pixel (``None``: nothing
-        to measure)."""
-        step: Step | None = None
-        for _ in range(MAX_STEPS):
-            step = one_step(self.fig, self.margins, self.last, self.given)
-            if step is None:
-                break
-            apply.write_edges(self.fig, self.gs, step.edges)
-            self.last = step.edges
-            if step.converged:
-                break
-        return step
-
-    def fit_text(self, start: apply.Optional4) -> None:
-        """Rounds of wraps, turns and spacing, each kept unless it crushed a
-        plot; a figure whose only round was undone fits as without them."""
-        record = apply.record_of(self.fig)
-        kept = False
-        for _round in range(FIT_ROUNDS):
-            renderer = get_renderer(self.fig)
-            facts, objects = text.text_facts(
-                self.fig, self.gs, renderer, record, self.given
-            )
-            plan = settle(facts, decide.text_plan(facts), TEXT_EDGES).plan
-            if plan.empty:
-                return
-            before = measure.plot_sizes(self.fig, renderer)
-            edges = apply.grid_edges(self.gs)
-            groups = {n.label: n.group for n in facts.names}
-            undo = apply.text(self.gs, plan, objects, groups, record)
-            if self.fit() is None:
-                return
-            after = measure.plot_sizes(self.fig, get_renderer(self.fig))
-            if not decide.crushed(before, after):
-                kept = True
-                continue
-            undo()
-            apply.write_edges(self.fig, self.gs, edges if kept else start)
-            if not kept:
-                self.last = None
-            self.fit()
-            return
+def fit(
+    fig: Figure,
+    gs: GridSpec,
+    margins: Sides,
+    given: Neighbours,
+    last: Sides | None,
+) -> Step | None:
+    """Fit from ``last`` until the edges move under half a pixel (``None``:
+    nothing to measure)."""
+    step: Step | None = None
+    for _ in range(MAX_STEPS):
+        step = one_step(fig, margins, last, given)
+        if step is None:
+            break
+        apply.write_edges(fig, gs, step.edges)
+        last = step.edges
+        if step.converged:
+            break
+    return step
 
 
-def run(
-    fig: Figure, gs: GridSpec, margins: Sides, fit_text: bool, given: Neighbours
-) -> None:
-    """Lay out ``fig`` on ``gs`` from the figure as its author left it."""
-    apply.restore(fig)
-    start = apply.grid_edges(gs)
+def run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
+    """Lay out ``fig`` on ``gs``: the spines its scales tick on, margins,
+    then rounds of text fitting."""
+    apply.unturn(fig)
+    apply.show_scale_spines(fig)
     given.prepare_ticks(fig)
-    fitter = Fitter(fig, gs, margins, given)
-    step = fitter.fit()
-    if fit_text and step is not None and step.converged:
-        fitter.fit_text(start)
-    apply.remember(fig, gs, start)
+    step = fit(fig, gs, margins, given, None)
+    for _round in range(FIT_ROUNDS):
+        if step is None or not step.converged:
+            return
+        facts, objects = text.text_facts(fig, gs, get_renderer(fig))
+        plan = settle(facts, decide.text_plan(facts), TEXT_EDGES).plan
+        if plan.empty:
+            return
+        apply.text(gs, plan, objects)
+        step = fit(fig, gs, margins, given, step.edges)

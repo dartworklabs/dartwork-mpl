@@ -14,14 +14,13 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..vocab import Edge, Reserve
+from ..vocab import Reserve
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
-    from matplotlib.legend import Legend
 
     #: Places what it owns at the drawn size; whether anything moved.
     Settle = Callable[[Figure, RendererBase], bool]
@@ -36,9 +35,8 @@ class Neighbours:
     rounds of ``settle_legends`` and ``space_line_ends``, then
     ``settle_panels`` (panel letters).
 
-    While measuring: ``outside_edge`` is the edge of its Axes a legend sits
-    outside of, ``figure_reserve`` the figure edge a figure legend holds,
-    ``note_gap_pt`` the gap kept above a note line.
+    While measuring: ``figure_reserve`` the room a figure legend keeps
+    from the panels, ``note_gap_pt`` the gap kept above a note line.
     """
 
     prepare_ticks: Callable[[Figure], None]
@@ -46,6 +44,5 @@ class Neighbours:
     settle_legends: Callable[[Figure, RendererBase, Sequence[Axes]], bool]
     space_line_ends: Settle
     settle_panels: Settle
-    outside_edge: Callable[[Legend], Edge | None]
     figure_reserve: Callable[[Artist], Reserve | None]
     note_gap_pt: Callable[[Artist], float | None]

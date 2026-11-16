@@ -2,20 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.layout import decide
-from dartwork_mpl.layout.edges import FIT_EDGES, TEXT_EDGES
+from dartwork_mpl.layout.edges import TEXT_EDGES
 from dartwork_mpl.layout.model import (
     ArtistId,
     AxisName,
     Box,
+    Canvas,
     Count,
     Degrees,
-    FigureArtist,
     Line,
-    Piece,
     Px,
     Reach,
     Share,
@@ -24,21 +21,12 @@ from dartwork_mpl.layout.model import (
     TickGroup,
     WSpace,
 )
-from dartwork_mpl.layout.tests.test_decide import (
-    CANVAS,
-    axes,
-    chars,
-    content,
-    row,
-)
-from dartwork_mpl.vocab import Bottom, Top, Y
+from dartwork_mpl.layout.tests.test_decide import chars, row
+from dartwork_mpl.vocab import Y
 
 PLOT = Box(100.0, 100.0, 900.0, 400.0)
-
-
-def fit_of(facts):
-    result = settle(facts, decide.fit(facts), FIT_EDGES)
-    return result.fired, result.plan
+CANVAS = Canvas(Px(1000.0), Px(500.0))
+CLEAR = Box(10.0, 100.0, 30.0, 400.0)  # a y name on the canvas, alone
 
 
 def text_plan(facts: TextFacts):
@@ -46,69 +34,44 @@ def text_plan(facts: TextFacts):
     return result.fired, result.plan
 
 
-def texts(groups=(), names=(), spacings=(), wrapped_names=None) -> TextFacts:
-    return TextFacts(
-        tuple(groups),
-        tuple(names),
-        wrapped_names or {},
-        tuple(spacings),
-        CANVAS,
-    )
+def texts(groups=(), names=(), spacings=()) -> TextFacts:
+    return TextFacts(tuple(groups), tuple(names), tuple(spacings), CANVAS)
 
 
-def test_axes_3d_counts_its_tight_boxes() -> None:
-    tight = (Piece(Box(50.0, 50.0, 950.0, 450.0)),)
-    a = replace(axes(PLOT), tight=tight)
-    fired, plan = fit_of(content(a))
-    assert fired == ("axes-3d",)
-    assert plan.axes[0].pieces == tight
-
-
-def test_outside_legend_along_side_counts_past_the_canvas_only() -> None:
-    above = Piece(Box(50.0, 410.0, 1020.0, 450.0), outside=Top())
-    fired, plan = fit_of(content(axes(PLOT, above)))
-    assert fired == ("outside-legend-along-side",)
-    assert plan.axes[0].pieces[0].box == Box(100.0, 410.0, 1020.0, 450.0)
-
-
-def test_figure_text_edge_band_reserves_by_reading_direction() -> None:
-    # A source line in the bottom-left corner is nearer the left edge.
-    note = FigureArtist(Box(5.0, 5.0, 300.0, 20.0), None, False, None, Px(0.0))
-    fired, plan = fit_of(content(axes(PLOT), artists=[note]))
-    assert fired == ("figure-text-edge-band",)
-    assert plan.reserves == (Bottom(),)
-
-
-def test_figure_legend_side_reserves_its_side() -> None:
-    wide = FigureArtist(
-        Box(2.0, 200.0, 998.0, 300.0), None, None, Top(), Px(0.0)
-    )
-    fired, plan = fit_of(content(axes(PLOT), artists=[wide]))
-    assert fired == ("figure-legend-side",)
-    assert plan.reserves == (Top(),)
-
-
-def name(label: int, text_: str, box: Box, span: float = 300.0) -> AxisName:
-    group = (ArtistId(7), Y())
+def name(
+    label: int,
+    text_: str,
+    span: float = 300.0,
+    box: Box = CLEAR,
+    others: tuple[Box, ...] = (),
+) -> AxisName:
     return AxisName(
         ArtistId(label),
         Line(text_),
         Px(span),
-        box,
-        group,
-        (Box(0.0, 100.0, 50.0, 200.0),),
+        (ArtistId(7), Y()),
         chars,
+        box,
+        others,
     )
 
 
 def test_overlong_axis_name_wraps_and_its_twin_follows() -> None:
     long = "x" * 200 + " " + "y" * 200  # 401 chars over a 300 px side
-    blocked = name(1, long, Box(10.0, 0.0, 30.0, 600.0))  # past the top
-    clear = name(2, long, Box(500.0, 100.0, 520.0, 400.0))
-    fired, plan = text_plan(texts(names=[blocked, clear]))
+    off_canvas = Box(10.0, -50.0, 30.0, 551.0)
+    short_side = name(1, long, box=off_canvas)
+    twin = name(2, long, span=1000.0)  # fits its own side, takes the form
+    fired, plan = text_plan(texts(names=[short_side, twin]))
     assert fired == ("overlong-axis-name",)
     wrapped = Line("x" * 200 + "\n" + "y" * 200)
     assert plan.names == {ArtistId(1): wrapped, ArtistId(2): wrapped}
+
+
+def test_a_name_longer_than_its_side_that_meets_nothing_stays() -> None:
+    long = "x" * 200 + " " + "y" * 200
+    assert text_plan(texts(names=[name(1, long)]))[0] == ()
+    into = name(1, long, others=(Box(20.0, 300.0, 200.0, 450.0),))
+    assert text_plan(texts(names=[into]))[0] == ("overlong-axis-name",)
 
 
 def test_colliding_panels_part_by_half_an_em() -> None:

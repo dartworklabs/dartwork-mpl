@@ -1,41 +1,28 @@
 """What an Axes draws as data, for a legend to keep clear of.
 
-An :class:`Ink` holds the boxes, lines, discs and clip regions of what
-each artist actually draws, in display pixels, and answers whether a box
-meets it.
+``geometry.DataInk`` gathers, as the check slice gathers it, what each
+artist of the plot actually draws, in display pixels; here every line,
+collection (not a mesh), patch and text of the Axes and its twins counts,
+and a box meets it within the legend's clearance.
 """
 
 from __future__ import annotations
 
 from contextlib import suppress
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
-from matplotlib.collections import (
-    Collection,
-    LineCollection,
-    PathCollection,
-    QuadMesh,
-)
+from matplotlib.collections import LineCollection, QuadMesh
 from matplotlib.contour import ContourSet
 from matplotlib.transforms import Bbox, BboxBase
 
 from ..geometry import (
     BBOX_ERRORS,
-    UNCLIPPED,
-    clip_path_px,
-    clip_region,
+    DataInk,
     cut_to_clip,
-    discs_meet,
-    drawn_collection_outlines,
     drawn_in_tree,
-    drawn_ink_meets,
     drawn_patch_box,
-    drawn_scatter_discs,
-    line_draws_markers,
-    line_draws_stroke,
-    marker_radius_pt,
     same_position_axes,
     text_inks,
 )
@@ -43,89 +30,23 @@ from ..vocab import Box
 from .model import CLEARANCE_PT, Hits
 
 if TYPE_CHECKING:
-    from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
-    from matplotlib.lines import Line2D
-    from matplotlib.path import Path
     from matplotlib.text import Text
 
 
-@dataclass
+@dataclass(frozen=True)
 class Ink:
     """Data ink of one plot box, keyed by the artist that drew it."""
 
     clearance: float
-    boxes: list[tuple[int, Bbox]] = field(default_factory=list)
-    strokes: list[tuple[int, Path, float, bool]] = field(default_factory=list)
-    discs: list[tuple[int, np.ndarray, np.ndarray]] = field(
-        default_factory=list
-    )
-    clips: dict[int, tuple[Bbox, Path | None]] = field(default_factory=dict)
-
-    def clip(self, artist: Artist) -> None:
-        """Record where ``artist``'s clip lets it draw, if anything clips it."""
-        region, path = clip_region(artist), clip_path_px(artist)
-        if region is not UNCLIPPED or path is not None:
-            self.clips[id(artist)] = (region, path)
+    drawn: DataInk[int]
 
     def meets(self, box: Box) -> Hits:
         """The artists whose ink comes within the clearance of ``box``."""
         g = box.padded(self.clearance)
         grown = Bbox.from_extents(g.x0, g.y0, g.x1, g.y1)
-        found = {k for k, bb in self.boxes if box_of(bb).overlaps(g)}
-        for key, path, half, filled in self.strokes:
-            region, cp = self.clips.get(key, (UNCLIPPED, None))
-            if key not in found and drawn_ink_meets(
-                path, half, grown, region, cp, filled=filled
-            ):
-                found.add(key)
-        for key, xy, r in self.discs:
-            region, cp = self.clips.get(key, (UNCLIPPED, None))
-            if key not in found and discs_meet(xy, r, grown, region, cp):
-                found.add(key)
-        return Hits(len(found))
-
-
-def _add_box(ink: Ink, artist: Artist, bb: Bbox | None) -> None:
-    if bb is not None and bb.width > 0 and bb.height > 0:
-        ink.boxes.append((id(artist), bb))
-
-
-def _add_line(ink: Ink, line: Line2D, renderer: RendererBase) -> None:
-    stroke, markers = line_draws_stroke(line), line_draws_markers(line)
-    if not (stroke or markers):
-        return
-    try:
-        path = line.get_transform().transform_path(line.get_path())
-        ink.clip(line)
-    except BBOX_ERRORS:
-        return
-    if stroke:
-        half = px(renderer, line.get_linewidth()) / 2
-        ink.strokes.append((id(line), path, half, False))
-    if markers:
-        xy = np.asarray(path.vertices, dtype=float).reshape(-1, 2)
-        xy = xy[np.isfinite(xy).all(axis=1)]
-        r = px(renderer, marker_radius_pt(line))
-        ink.discs.append((id(line), xy, np.full(len(xy), r)))
-
-
-def _add_collection(ink: Ink, coll: Collection, renderer: RendererBase) -> None:
-    try:
-        if isinstance(coll, PathCollection) and len(coll.get_sizes()):
-            xy, r = drawn_scatter_discs(coll, px(renderer, 1.0))
-            if len(xy):
-                ink.discs.append((id(coll), xy, r))
-        else:
-            stroked = isinstance(coll, LineCollection) or (
-                isinstance(coll, ContourSet) and not coll.filled
-            )
-            for o in drawn_collection_outlines(coll, renderer):
-                ink.strokes.append((id(coll), o.path, o.half, not stroked))
-        ink.clip(coll)
-    except BBOX_ERRORS:
-        return
+        return Hits(len(self.drawn.meets(grown)))
 
 
 def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
@@ -155,20 +76,29 @@ def _drawn_text_box(text: Text, renderer: RendererBase) -> Bbox | None:
 
 def data_ink(ax: Axes, renderer: RendererBase) -> Ink:
     """Lines, patches, collections (not meshes) and texts of ``ax`` and twins."""
-    ink = Ink(px(renderer, CLEARANCE_PT))
+    drawn: DataInk[int] = DataInk()
+
+    def to_px(points: float) -> float:
+        return px(renderer, points)
+
     for owner in same_position_axes(ax):
         for line in owner.get_lines():
-            _add_line(ink, line, renderer)
+            drawn.add_line(line, to_px, id(line), id(line))
         for coll in owner.collections:
             if coll.get_visible() and not isinstance(coll, QuadMesh):
-                _add_collection(ink, coll, renderer)
+                stroked = isinstance(coll, LineCollection) or (
+                    isinstance(coll, ContourSet) and not coll.filled
+                )
+                drawn.add_collection(
+                    coll, renderer, to_px, id(coll), filled=not stroked
+                )
         for patch in owner.patches:
             with suppress(*BBOX_ERRORS):
-                _add_box(ink, patch, drawn_patch_box(patch, renderer))
+                drawn.add_box(id(patch), drawn_patch_box(patch, renderer))
         for text in owner.texts:
             with suppress(*BBOX_ERRORS):
-                _add_box(ink, text, _drawn_text_box(text, renderer))
-    return ink
+                drawn.add_box(id(text), _drawn_text_box(text, renderer))
+    return Ink(px(renderer, CLEARANCE_PT), drawn)
 
 
 def box_of(bb: BboxBase) -> Box:

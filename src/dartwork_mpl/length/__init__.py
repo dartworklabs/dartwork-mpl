@@ -15,6 +15,7 @@ from .model import (
     pixel_hint,
     pt,
     written_length,
+    written_zero,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "pixel_hint",
     "pt",
     "written_length",
+    "written_zero",
 ]

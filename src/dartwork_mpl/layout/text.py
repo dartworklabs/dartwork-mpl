@@ -17,6 +17,7 @@ from matplotlib.text import Text
 
 from ..geometry import drawn_tick_labels, same_position_axes
 from ..vocab import X, Y
+from .apply import WrappedTickFormatter
 from .measure import (
     box_of,
     canvas,
@@ -29,7 +30,6 @@ from .model import (
     CLEARANCE_EM,
     ArtistId,
     AxisName,
-    Box,
     Count,
     Gap,
     HSpace,
@@ -53,9 +53,6 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.font_manager import FontProperties
 
-    from .apply import Record
-    from .given import Neighbours
-
 
 def _width_of(renderer: RendererBase, prop: FontProperties) -> Width:
     def width(line: Line) -> Px:
@@ -66,7 +63,7 @@ def _width_of(renderer: RendererBase, prop: FontProperties) -> Width:
 
 
 def _row(
-    ax: Axes, renderer: RendererBase, unwrap: dict[str, str], record: Record
+    ax: Axes, renderer: RendererBase, unwrap: dict[str, str]
 ) -> TickRow | None:
     """The bottom tick labels of ``ax`` drawn now, as they read unwrapped."""
     axis = ax.xaxis
@@ -86,13 +83,10 @@ def _row(
     gaps = [Px(centres[b] - centres[a]) for a, b in pairwise(order)]
     if min(gaps) <= 0:
         return None
-    turn = record.axis_turns.get(axis)
-    authored_ = any(authored(t) for t in texts) or (
-        turn is None
-        and (
-            {float(t.get_rotation()) for t in labels} != {0.0}
-            or not all(centred(t.get_horizontalalignment()) for t in labels)
-        )
+    authored_ = (
+        any(authored(t) for t in texts)
+        or {float(t.get_rotation()) for t in labels} != {0.0}
+        or not all(centred(t.get_horizontalalignment()) for t in labels)
     )
     font = labels[0].get_fontproperties()
     width = _width_of(renderer, font)
@@ -109,7 +103,6 @@ def _row(
         clearance=Px(CLEARANCE_EM * em),
         line_height=Px(float(height)),
         authored=authored_,
-        turned=None if turn is None else turn.angle,
         width=width,
     )
 
@@ -123,11 +116,9 @@ class TextArtists:
 
 
 def _groups(
-    fig: Figure, renderer: RendererBase, record: Record, objects: TextArtists
+    fig: Figure, renderer: RendererBase, objects: TextArtists
 ) -> list[TickGroup]:
     """The fitted Axes by shared x axis (one formatter, so one wrap)."""
-    from .apply import WrappedTickFormatter
-
     fitted = [ax for ax in fig.axes if cartesian(ax)]
     seen: set[int] = set()
     groups: list[TickGroup] = []
@@ -144,7 +135,7 @@ def _groups(
         rows: list[TickRow] = []
         for member in members:
             objects.axes[id(member.xaxis)] = member.xaxis
-            if (row := _row(member, renderer, unwrap, record)) is not None:
+            if (row := _row(member, renderer, unwrap)) is not None:
                 rows.append(row)
         wrapped = {Line(k): Line(v) for k, v in lines.items()}
         groups.append(TickGroup(ArtistId(id(axis)), tuple(rows), wrapped))
@@ -152,15 +143,11 @@ def _groups(
 
 
 def _names(
-    fig: Figure,
-    renderer: RendererBase,
-    record: Record,
-    objects: TextArtists,
-    given: Neighbours,
+    fig: Figure, renderer: RendererBase, objects: TextArtists
 ) -> list[AxisName]:
-    """One-line names without mathtext that this layout has not wrapped."""
-    boxes: dict[int, Box] | None = None
+    """Visible one-line names without mathtext."""
     names: list[AxisName] = []
+    boxes = content_boxes(fig, renderer)
     for ax in fig.axes:
         gs = grid_of(ax)
         if gs is None or not cartesian(ax):
@@ -177,22 +164,18 @@ def _names(
                 or not label.get_visible()
                 or not text.strip()
                 or authored(text)
-                or label in record.names
             ):
                 continue
-            boxes = (
-                content_boxes(fig, renderer, given) if boxes is None else boxes
-            )
-            here = {id(a) for a in same_position_axes(ax)} | {id(ax)}
             objects.labels[id(label)] = label
+            here = {id(a) for a in same_position_axes(ax)} | {id(ax)}
             name = AxisName(
                 label=ArtistId(id(label)),
                 text=Line(text),
                 span=Px(float(span)),
-                box=box_of(label.get_window_extent(renderer)),
                 group=(ArtistId(id(gs)), which),
-                others=tuple(b for k, b in boxes.items() if k not in here),
                 width=_width_of(renderer, label.get_fontproperties()),
+                box=box_of(label.get_window_extent(renderer)),
+                others=tuple(b for k, b in boxes.items() if k not in here),
             )
             names.append(name)
     return names
@@ -227,33 +210,26 @@ def _figure_default(fig: Figure, key: Gap) -> bool:
     return bool(now == rc)
 
 
-def _free(fig: Figure, gs: GridSpec, key: Gap, record: Record) -> bool:
-    """Nobody but this layout set the spacing (``gridspec_kw``,
-    ``add_gridspec`` and ``fig.subplots_adjust`` do)."""
-    value = spacing_of(gs, key)
-    if value is not None:
-        return record.gaps_of(gs).get(key) == value
-    return _figure_default(fig, key)
+def _free(fig: Figure, gs: GridSpec, key: Gap) -> bool:
+    """Nobody set the spacing (``gridspec_kw``, ``add_gridspec`` and
+    ``fig.subplots_adjust`` do; so does an earlier layout)."""
+    return spacing_of(gs, key) is None and _figure_default(fig, key)
 
 
 def _spacings(
-    fig: Figure,
-    gs: GridSpec,
-    renderer: RendererBase,
-    record: Record,
-    given: Neighbours,
+    fig: Figure, gs: GridSpec, renderer: RendererBase
 ) -> list[Spacing]:
     nrows, ncols = gs.get_geometry()
     free = [
         key
         for key, n in ((WSpace(), ncols), (HSpace(), nrows))
-        if n > 1 and _free(fig, gs, key, record)
+        if n > 1 and _free(fig, gs, key)
     ]
     if not free:
         return []
     bottoms, tops, lefts, rights = gs.get_grid_positions(fig)
     fw, fh = fig.bbox.width, fig.bbox.height
-    boxes = content_boxes(fig, renderer, given)
+    boxes = content_boxes(fig, renderer)
     cols: list[Reach] = []
     rows: list[Reach] = []
     for ax in grid_axes(fig, gs):
@@ -304,23 +280,14 @@ def _spacings(
 
 
 def text_facts(
-    fig: Figure,
-    gs: GridSpec,
-    renderer: RendererBase,
-    record: Record,
-    given: Neighbours,
+    fig: Figure, gs: GridSpec, renderer: RendererBase
 ) -> tuple[TextFacts, TextArtists]:
     """What text fitting reads, and the artists its ids name."""
     objects = TextArtists({}, {})
-    groups = _groups(fig, renderer, record, objects)
-    names = _names(fig, renderer, record, objects, given)
-    wrapped = {
-        (n.group, Line(n.before)): Line(n.after)
-        for label, n in record.names.items()
-        if label.get_text() == n.after
-    }
-    spacings = _spacings(fig, gs, renderer, record, given)
     facts = TextFacts(
-        tuple(groups), tuple(names), wrapped, tuple(spacings), canvas(fig)
+        tuple(_groups(fig, renderer, objects)),
+        tuple(_names(fig, renderer, objects)),
+        tuple(_spacings(fig, gs, renderer)),
+        canvas(fig),
     )
     return facts, objects

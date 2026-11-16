@@ -88,3 +88,48 @@ def test_a_value_against_a_line_end_name_is_crowded():
     built = {s.name: s for s in all_scenarios()}
     ends = dm.check(built["line_ends_annotated"].build())
     assert "'19.4 TWh'" in _of(ends, "TEXT_CROWD")[0].message
+
+
+def test_an_empty_grid_cell_is_found_but_not_a_twin():
+    fig, axes = plt.subplots(1, 3, figsize=dm.figsize("15cm", "5cm"))
+    axes[0].plot([0, 1], [0, 1])
+    axes[0].twiny().set_xlabel("Second scale")
+    axes[1].set_axis_off()  # hidden on purpose: no frame, no defect
+    found = _of(dm.check(fig), "EMPTY_AXES")
+    assert [f.panels for f in found] == [(2,)]
+
+
+def test_an_axis_of_numbers_needs_a_name_but_not_dates_or_a_named_row():
+    fig, axes = plt.subplots(1, 2, figsize=dm.figsize("15cm", "6cm"))
+    days = np.arange("2026-01-01", "2026-03-01", dtype="datetime64[D]")
+    for ax in axes:
+        ax.plot(days, np.arange(days.size))
+    axes[0].set_ylabel("Orders")
+    assert "MISSING_AXIS_LABEL" not in dm.check(fig).rules
+    axes[0].set_ylabel("")
+    found = _of(dm.check(fig), "MISSING_AXIS_LABEL")
+    assert [f.panels for f in found] == [(0,), (1,)]
+
+
+def test_a_value_on_its_error_bar_is_found():
+    fig, ax = plt.subplots(figsize=dm.figsize("10cm", "standard"))
+    bars = ax.bar(["A", "B"], [3.1, 4.6], yerr=[0.4, 0.7], capsize=4)
+    ax.bar_label(bars, fmt="%.1f")
+    ax.set_ylabel("Yield (t/ha)")
+    assert "VALUE_LABEL_ON_DATA" in dm.check(fig).rules
+
+
+@pytest.mark.parametrize("image", [False, True])
+def test_white_text_on_a_pale_fill_is_found(image: bool):
+    fig, ax = plt.subplots(figsize=dm.figsize("10cm", "standard"))
+    if image:
+        ax.imshow([[0.0, 1.0]], cmap="YlGnBu")
+        ax.text(0, 0, "12", ha="center", va="center", color="white")
+    else:
+        bars = ax.bar(["A", "B"], [4.6, 3.9], color="dc.yellow3")
+        ax.bar_label(bars, fmt="%.1f", label_type="center", color="white")
+    found = _of(dm.check(fig), "TEXT_CONTRAST")
+    assert found and found[0].panels == (0,)
+    for t in ax.texts:
+        t.set_color("black")
+    assert "TEXT_CONTRAST" not in dm.check(fig).rules

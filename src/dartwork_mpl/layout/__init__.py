@@ -13,43 +13,37 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
-from . import decide, loop, measure
+from . import loop
 from .given import Neighbours
-from .model import MarginInput, Refuse, Request, parse_margins
+from .measure import grid_of
+from .model import Flush, parse_margin
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
-    from matplotlib.gridspec import GridSpecBase, SubplotSpec
 
-__all__ = ["MarginInput", "Neighbours", "simple_layout"]
+    from ..length import Length
+
+__all__ = ["Flush", "Neighbours", "simple_layout"]
+
+NO_GRID = (
+    "simple_layout: no GridSpec found (figure uses fig.add_axes or "
+    "manually placed axes); layout unchanged. Build axes via "
+    "plt.subplots / fig.add_gridspec to use content-aware margins."
+)
 
 
 def simple_layout(
-    fig: Figure,
-    gs: GridSpecBase | SubplotSpec | None = None,
-    *,
-    margin: MarginInput = "1mm",
-    ml: MarginInput | None = None,
-    mr: MarginInput | None = None,
-    mt: MarginInput | None = None,
-    mb: MarginInput | None = None,
-    fit_labels: bool = True,
-    given: Neighbours,
+    fig: Figure, *, margin: Length | str | Flush, given: Neighbours
 ) -> None:
     """``dm.simple_layout`` (``compose.layout``), the other slices' steps and
-    records ``given``. A figure with no Axes is left alone, one without a
-    GridSpec with a warning; a margin that is not finite raises
-    ``ValueError``."""
-    grid = measure.root_grid(fig, gs)
-    request = Request(has_axes=bool(fig.axes), has_grid=grid is not None)
-    answer = decide.answer(request)
-    if isinstance(answer, Refuse):
-        if answer.warning is not None:
-            warnings.warn(answer.warning, stacklevel=3)
+    records ``given``. A figure with no Axes is left alone, one whose first
+    Axes is on no GridSpec with a warning."""
+    if not fig.axes:
         return
-    assert grid is not None
+    grid = grid_of(fig.axes[0])
+    if grid is None:
+        warnings.warn(NO_GRID, stacklevel=3)
+        return
     size = fig.get_size_inches()
-    margins = parse_margins(
-        margin, (ml, mr, mt, mb), (float(size[0]), float(size[1]))
-    )
-    loop.run(fig, grid, margins, fit_labels, given)
+    margins = parse_margin(margin, (float(size[0]), float(size[1])))
+    loop.run(fig, grid, margins, given)

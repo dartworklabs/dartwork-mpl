@@ -67,8 +67,7 @@ def test_robustness_scenario(
     # :class:`~dartwork_mpl.Length` so the new ``simple_layout`` keeps
     # the same physical margin. ``simple_layout_max_iter`` no longer
     # has an effect — direct-calc converges deterministically.
-    margin = dm.inch(scenario.layout_padding) if scenario.layout_padding else 0
-    dm.simple_layout(fig, margin=margin)
+    dm.simple_layout(fig, margin=dm.inch(scenario.layout_padding))
 
     # Stage 3: save round-trip — must not crash, and the file must be
     # non-empty (matplotlib silently writes 0-byte files on certain

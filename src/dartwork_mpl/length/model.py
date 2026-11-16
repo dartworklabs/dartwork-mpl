@@ -183,6 +183,20 @@ def _unit_hint(text: str) -> str:
     return f" Did you mean {unit!r}-style, e.g. '{number}{unit}'?"
 
 
+def written_zero(value: object) -> bool:
+    """Whether ``value`` is zero written as a length: ``0``, ``"0"`` or
+    ``"0mm"``. Zero is the one length a bare number states (0 cm is 0 in);
+    a :class:`Length` is never zero."""
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int | float):
+        return value == 0
+    match = (
+        _NUMBER_UNIT.match(_unquote(value)) if isinstance(value, str) else None
+    )
+    return match is not None and float(match["value"]) == 0
+
+
 def written_length(text: str) -> bool:
     """Whether ``text`` is a number with a unit (``"8cm"``), not a token."""
     match = _NUMBER_UNIT.match(_unquote(text))

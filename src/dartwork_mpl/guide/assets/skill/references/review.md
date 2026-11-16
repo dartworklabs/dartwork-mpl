@@ -56,8 +56,13 @@ Fix every finding. The fix line names the usual remedy.
 | `OVERFLOW` | text cut off by the canvas edge |
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
-| `LEGEND_ON_DATA` | a legend over data, text or another panel |
+| `LEGEND_ON_DATA` | a legend over data, a title or other text, or another legend |
+| `TEXT_CONTRAST` | a text you placed, under 3:1 against the bar, cell or background behind it |
+| `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
+| `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
+| `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates and names need none; one label per grid row or column is enough) |
+| `EMPTY_AXES` | a framed panel that draws nothing, left over from a grid |
 
 An "only X" edit keeps the warnings the original already had: report them,
 do not fix them.

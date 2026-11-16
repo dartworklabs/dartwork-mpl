@@ -1,0 +1,26 @@
+"""Five category values as horizontal bars, largest first."""
+
+import matplotlib.pyplot as plt
+
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+
+categories = [
+    "Category A",
+    "Category B",
+    "Category C",
+    "Category D",
+    "Category E",
+]
+values = [23, 45, 56, 78, 33]
+
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for("barh", n_points=len(categories), n_series=1)
+)
+ax.barh(categories, values, color="dc.teal2", edgecolor="white", linewidth=0.3)
+ax.set_xlabel("Value")
+ax.invert_yaxis()
+
+dm.simple_layout(fig)
+dm.save_formats(fig, "output/bar_horizontal_basic", formats=("png",))

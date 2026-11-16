@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from dartwork_mpl.check.findings import Finding, Findings
-from dartwork_mpl.check.model import prints_a_value
+from dartwork_mpl.check.model import printed_value
 
 
 @pytest.mark.parametrize(
@@ -26,7 +26,7 @@ from dartwork_mpl.check.model import prints_a_value
     ],
 )
 def test_a_value_label_prints_one_number(label: str, value: bool):
-    assert prints_a_value(label) is value
+    assert (printed_value(label) is not None) is value
 
 
 def test_report_lists_findings_fixes_and_what_did_not_run():

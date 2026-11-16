@@ -8,7 +8,8 @@ uses lives in that slice.
 - :mod:`.renderer`: a measurement renderer and the errors measuring raises;
 - :mod:`.figure`: what a (Sub)Figure holds and its figure-level artists;
 - :mod:`.axes`: an Axes' titles and drawn tick labels, its twins and shares;
-- :mod:`.ink`: what an artist actually draws, where its clip lets it.
+- :mod:`.ink`: what an artist actually draws, where its clip lets it;
+- :mod:`.data_ink`: a plot's data ink by key, and what a box meets.
 """
 
 from .axes import (
@@ -22,6 +23,7 @@ from .axes import (
     same_position_axes,
     shared_axes,
 )
+from .data_ink import DataInk, ToPx
 from .figure import (
     drawn_in_tree,
     figure_axes,
@@ -55,9 +57,11 @@ __all__ = [
     "BBOX_ERRORS",
     "UNCLIPPED",
     "CentreTitle",
+    "DataInk",
     "LeftTitle",
     "RightTitle",
     "TitleLoc",
+    "ToPx",
     "axes_titles",
     "axis_of",
     "canvas_renderer",
