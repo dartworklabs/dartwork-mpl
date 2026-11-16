@@ -150,3 +150,16 @@ def changes(before: Text, after: Text) -> None:
     _wraps(before, after)
     _names(before, after)
     _spacing(before, after)
+
+
+def unlisted_twins(hosts: list[Axes]) -> None:
+    """Say the layout left a figure with twins it cannot move alone."""
+    LOG.info(
+        "left the margins of the figure as they were: %s has twin axes the "
+        "figure does not list (mpl_toolkits host_subplot), which stay where "
+        "they were made while the layout moves the plot, so fitting would "
+        "squeeze it; use ax.twinx() instead, twice for a third y axis with "
+        'the second twin\'s spine moved out: spines["right"].set_position('
+        '("outward", 40))',
+        " and ".join(axes_name(ax) for ax in hosts),
+    )

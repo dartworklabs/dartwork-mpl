@@ -80,6 +80,8 @@ def simple_layout(
     spacing you set, are left alone.
 
     A figure with no Axes is left alone; one without a GridSpec
-    (``fig.add_axes``) is left alone with a warning.
+    (``fig.add_axes``) is left alone with a warning, and one with
+    ``mpl_toolkits`` parasite axes (``host_subplot``), which do not move with
+    their host, is left alone and says so.
     """
     layout.simple_layout(fig, margin=margin, given=NEIGHBOURS)

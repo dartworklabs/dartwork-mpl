@@ -12,7 +12,13 @@ import matplotlib as mpl
 from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 
-from ..geometry import axes_titles, iter_figure_level_extents, projection
+from ..geometry import (
+    axes_titles,
+    iter_figure_level_extents,
+    projection,
+    shared_axes,
+)
+from ..vocab import X, Y
 from .model import (
     AxesContent,
     Box,
@@ -45,6 +51,35 @@ def grid_of(ax: Axes) -> GridSpec | None:
 def grid_axes(fig: Figure, gs: GridSpec) -> list[Axes]:
     """Every Axes of ``fig`` on the root GridSpec ``gs``."""
     return [ax for ax in fig.axes if grid_of(ax) is gs]
+
+
+def unlisted_twin_hosts(fig: Figure) -> list[Axes]:
+    """The Axes of ``fig`` with a twin the figure does not list.
+
+    An ``mpl_toolkits`` host (``host_subplot``) keeps its ``twinx`` there,
+    as a parasite: it shares an axis and the box, but stays where it was
+    made when the host moves, and the host's content box measures it there.
+    """
+    return [
+        ax
+        for ax in fig.axes
+        if any(
+            other not in fig.axes
+            and other.get_visible()
+            and _same_box(other, ax)
+            for which in (X(), Y())
+            for other in shared_axes(ax, which)
+        )
+    ]
+
+
+def _same_box(a: Axes, b: Axes) -> bool:
+    return all(
+        abs(p - q) <= 1e-9
+        for p, q in zip(
+            a.get_position().bounds, b.get_position().bounds, strict=True
+        )
+    )
 
 
 def cartesian(ax: Axes) -> bool:
