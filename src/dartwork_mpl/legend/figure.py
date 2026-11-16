@@ -17,6 +17,7 @@ from ..geometry import figure_axes, figure_legends, get_renderer
 from ..hidden import axes_name
 from ..vocab import Reserve, edge_of
 from .apply import fit, pad_px, size_of
+from .measure import Given, gather
 from .model import Above, Best, Columns, Size, parse_loc, refuse_anchor
 
 if TYPE_CHECKING:
@@ -40,19 +41,14 @@ def figure_legend(
     fig: Figure | SubFigure,
     loc: str,
     asked: Columns | None,
+    given: Given,
     kw: dict[str, object],
 ) -> Legend | None:
     """One legend for ``fig``'s panels (:func:`dartwork_mpl.legend.figure_legend`)."""
     where = parse_loc(loc)
     refuse_anchor(where, kw)
     side = Above() if isinstance(where, Best) else where
-    handles: list[Artist] = []
-    labels: list[str] = []
-    for ax in figure_axes(fig):
-        for handle, label in zip(*ax.get_legend_handles_labels(), strict=True):
-            if label not in labels:
-                handles.append(handle)
-                labels.append(label)
+    handles, labels = gather(figure_axes(fig), given)
     for ax in figure_axes(fig):
         legend = ax.get_legend()
         names = {t.get_text() for t in legend.get_texts()} if legend else None
@@ -71,8 +67,8 @@ def figure_legend(
 
     def build(columns: Columns) -> Legend:
         return fig.legend(  # pyright: ignore[reportUnknownMemberType]
-            handles,
-            labels,
+            handles=handles,
+            labels=labels,
             loc=side.figure_loc.code,
             ncols=columns.n,
             bbox_to_anchor=side.figure_loc.anchor,
