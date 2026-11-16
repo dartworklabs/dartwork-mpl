@@ -40,5 +40,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
+          # A pre-release tag (v0.8.0a1, v0.8.0rc1) must not become "latest".
+          case "$GITHUB_REF_NAME" in
+            *a[0-9]*|*b[0-9]*|*rc[0-9]*) PRE="--prerelease" ;;
+            *) PRE="" ;;
+          esac
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
+            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag $PRE

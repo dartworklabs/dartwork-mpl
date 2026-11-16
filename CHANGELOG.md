@@ -2,7 +2,7 @@
 
 Entries before 0.8.0 are in the git history of this file.
 
-## [Unreleased] — 0.8.0
+## 0.8.0 — 2026-11-16
 
 The package was rebuilt around one criterion: turn on the skill, say "draw
 this", get a beautiful chart. Colour values and the rendered look are
@@ -11,13 +11,23 @@ removed names simply no longer exist.
 
 ### Changed
 
+- uv first. `dartwork-mpl install` is a console script: `uv run dartwork-mpl
+  install` in a project, `uvx dartwork-mpl install` without one. It links the
+  skill when the package is inside the project (after `uv add`) and copies it
+  otherwise, so a skill installed from uvx's cache survives `uv cache clean`;
+  running it again refreshes a copy. `--copy` replaces an existing link.
+  `python -m dartwork_mpl.guide` still runs the same.
+- The skill's one source is `skills/dartwork-mpl/` at the repository root, so
+  `npx skills add dartworklabs/dartwork-mpl` finds it; the package carries the
+  same folder. `SKILL.md` names the version it was written for, and an agent
+  checks it against `dm.__version__`.
 - The package is eleven slices: `style`, `size`, `color`, `font`, `layout`,
   `ticks`, `labels`, `legend`, `check`, `save`, `guide`.
 - `dm.simple_layout` keeps 1 mm between the content and the canvas edge by
   default (was 0). Pass `margin=0` for the old flush layout.
 - `dm.check(fig)` replaces `dm.validate_figure` and `dm.review`. It returns
   typed findings and never changes the figure. Saving no longer validates.
-- The skill is installed with `python -m dartwork_mpl.guide install`.
+
 - Type checking uses basedpyright.
 
 ### Removed

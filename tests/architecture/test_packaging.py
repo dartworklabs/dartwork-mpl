@@ -67,7 +67,7 @@ def test_wheel_excludes_colocated_tests_and_keeps_package_modules(tmp_path):
 def test_wheel_ships_the_guide_assets(tmp_path):
     """The skill, its references and the catalog land in the wheel.
 
-    ``python -m dartwork_mpl.guide install`` links the installed
+    ``dartwork-mpl install`` puts the installed
     ``dartwork_mpl/guide/assets/skill`` folder and the lint reads the catalog;
     none of it may be dropped as a test file.
     """
@@ -88,9 +88,15 @@ def test_wheel_ships_the_guide_assets(tmp_path):
     members = set(_wheel_members(project, tmp_path / "dist"))
 
     assets = source / "guide" / "assets"
+    # ``assets/skill`` links to ``skills/dartwork-mpl``; walk the real folder.
+    skill = (assets / "skill").resolve()
     expected = {
         f"dartwork_mpl/guide/assets/{p.relative_to(assets).as_posix()}"
         for p in assets.rglob("*")
+        if p.is_file()
+    } | {
+        f"dartwork_mpl/guide/assets/skill/{p.relative_to(skill).as_posix()}"
+        for p in skill.rglob("*")
         if p.is_file()
     }
     assert "dartwork_mpl/guide/assets/skill/SKILL.md" in expected

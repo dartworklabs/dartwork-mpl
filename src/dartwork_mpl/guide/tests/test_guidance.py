@@ -88,3 +88,14 @@ def test_the_skill_stays_short_and_routes_to_pages_that_exist():
     assert len(skill.splitlines()) <= 120
     for name in re.findall(r"`references/([a-z-]+)\.md`", skill):
         assert (SKILL / "references" / f"{name}.md").is_file()
+
+
+def test_skill_names_the_version_it_was_written_for():
+    """``npx skills add`` can fetch a skill of another release; the skill
+    states its version so an agent can tell. A release bumps it with
+    ``pyproject.toml``."""
+    from importlib.metadata import version
+
+    head = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    assert f"  version: {version('dartwork-mpl')}\n" in head
+    assert f"for dartwork-mpl {version('dartwork-mpl')}.**" in head

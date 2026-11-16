@@ -27,7 +27,7 @@ the agent's project files and `result.json`;
 ## Isolation
 
 Each run gets a fresh temp project (the case's data files, plus the skill
-installed by `python -m dartwork_mpl.guide install`, which links
+installed by `dartwork-mpl install`, which links
 `.claude/skills/dartwork-mpl`), an empty `CLAUDE_CONFIG_DIR`, a scrubbed
 environment, `--setting-sources project`, `--strict-mcp-config`,
 `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1`, the two remaining built-in skills set

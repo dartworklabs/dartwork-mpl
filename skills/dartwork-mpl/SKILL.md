@@ -2,11 +2,15 @@
 name: dartwork-mpl
 description: Static charts with matplotlib and dartwork-mpl (import dartwork_mpl as dm) - plot, chart, figure, graph, 그래프, 그림, 플롯, 차트. Use whenever Python code creates, edits, restyles, resizes, saves or reviews a figure for a paper, report, document, dashboard or slides in a project where dartwork-mpl is installed. Gives the four-call skeleton, what makes a chart good, and the draw, check, look loop. Not for interactive web charts (Plotly, D3, Altair).
 license: MIT
+metadata:
+  version: 0.8.0
 ---
 
 # dartwork-mpl
 
 A thin layer over matplotlib. `Figure` and `Axes` stay native, so everything you know about matplotlib still works. The library owns typography, line weights, spines, colour and margins. You own the message.
+
+**This skill is for dartwork-mpl 0.8.0.** Check once per project: `uv run python -c "import dartwork_mpl as dm; print(dm.__version__)"` (no uv: `python -c ...`). If it prints another version, tell the user, because the calls below may not exist there. `uv run dartwork-mpl install` puts in the skill of the installed version; an older dartwork-mpl without that command needs `uv add dartwork-mpl@latest` first.
 
 This is guidance, not a rulebook. Requests differ. Where it does not cover yours, do what serves the reader of the figure.
 
@@ -69,7 +73,7 @@ Text on the figure follows the document it goes into. Unknown: follow the langua
 
 ## Check, then look
 
-A figure is finished when you have looked at it, not when the script ran.
+A figure is finished when you have looked at it, not when the script ran. Run the script with `uv run python plot.py` in a uv project (one with `pyproject.toml` or `uv.lock`); elsewhere `uv run --with dartwork-mpl python plot.py` runs it without installing anything.
 
 1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a place to look, with a line on what to try; act on the ones that are not what you meant. `NOT RUN` means a rule could not measure, so say so.
 2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
@@ -95,7 +99,7 @@ Call them before `dm.simple_layout`, which makes room for what they add.
 
 ## Look things up
 
-Read only the page the task needs. Without this folder, `python -m dartwork_mpl.guide path` prints where it is.
+Read only the page the task needs. Without this folder, `uv run dartwork-mpl path` (or `dartwork-mpl path`) prints where it is.
 
 | Need | Read |
 |---|---|

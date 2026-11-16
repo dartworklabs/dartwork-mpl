@@ -47,16 +47,11 @@ PyPI에 무엇이 있는지는 태그만 본다. `main`은 PyPI와 같지 않다
 
 허브가 이 리포의 어떤 버전을 쓰는지는 [../hub-contract.md](../hub-contract.md)에 있다.
 
-## 리포 잠금 (현재)
+## 리포 잠금
 
-리팩터 기간 동안 소유자 계정(`Sangwon91`)만 쓸 수 있다. GitHub ruleset 두 개가 막는다.
+지금은 잠금이 없다. 리팩터 기간에 소유자 계정만 쓰게 하던 ruleset 두 개는 소유자가 2026-11-16에 풀었다. `develop`과 `main`의 브랜치 보호(PR, CI 통과, force-push와 삭제 금지)는 그대로다.
 
-| ruleset | 대상 | 막는 것 |
-| --- | --- | --- |
-| `freeze-refactor-sangwon91-only` | 모든 브랜치 | 생성, push, 삭제, force-push. PR 머지 포함 |
-| `freeze-refactor-tags-sangwon91-only` | 모든 태그 | 생성, 수정, 삭제 |
-
-admin 권한을 가진 다른 계정은 ruleset을 끌 수 있다. 그래서 이 잠금은 기술적 강제이면서 합의이기도 하다. 해제는 소유자가 정한다. 해제하려면 ruleset을 삭제한다(`gh api -X DELETE repos/dartworklabs/dartwork-mpl/rulesets/<id>`).
+태그는 보호되지 않는다. 쓰기 권한이 있는 사람이 `v*.*.*` 태그를 push하면 PyPI에 올라가므로, 릴리스는 소유자가 정한다는 규칙을 사람이 지킨다.
 
 ## 릴리스
 
@@ -67,7 +62,7 @@ admin 권한을 가진 다른 계정은 ruleset을 끌 수 있다. 그래서 이
 3. PyPI trusted publisher로 올린다.
 4. GitHub release를 만든다.
 
-테스트는 다시 돌리지 않는다. `develop`과 `main`의 커밋은 모두 CI를 통과한 PR로 들어오기 때문이다. 태그 전에 `pyproject.toml`의 `version`과 `CHANGELOG.md`를 맞춘다.
+테스트는 다시 돌리지 않는다. `develop`과 `main`의 커밋은 모두 CI를 통과한 PR로 들어오기 때문이다. 태그 전에 `pyproject.toml`의 `version`, `skills/dartwork-mpl/SKILL.md`의 `metadata.version`과 첫 줄의 버전, `CHANGELOG.md`를 맞춘다. 앞의 둘이 다르면 `test_guidance.py`가 실패한다.
 
 배포 상태의 정본은 PyPI와 태그다. 이 라이브러리는 서버를 운영하지 않으므로 관찰·복구 절차는 릴리스 되돌리기뿐이다. PyPI는 같은 버전을 다시 올릴 수 없으므로 되돌리기는 다음 patch 릴리스로 한다.
 

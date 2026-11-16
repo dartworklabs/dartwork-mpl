@@ -50,12 +50,16 @@ colours are joined into `dm.style`. `tests/architecture/` enforces all of this.
 ## Plotting rules live in the bundled skill
 
 Before writing or reviewing plotting code here (skill pages, tests),
-read [`src/dartwork_mpl/guide/assets/skill/SKILL.md`](src/dartwork_mpl/guide/assets/skill/SKILL.md)
+read [`skills/dartwork-mpl/SKILL.md`](skills/dartwork-mpl/SKILL.md)
 and the `references/` file it routes to. It is the single source of the
 consumer rules: preset by purpose, `dm.figsize`, `dm.simple_layout` (never
 `plt.tight_layout()`), `dm.save_formats`, `dm.fs` / `dm.lw` / `dm.fw`, colour
 names, and the draw → `dm.check` → fix loop. Change a consumer rule there
-first. `python -m dartwork_mpl.guide install` links the skill into a project.
+first. The folder is the skill's one source: `npx skills add
+dartworklabs/dartwork-mpl` reads it there, and the package carries it
+(`src/dartwork_mpl/guide/assets/skill` is a link to it), so
+`uv run dartwork-mpl install` installs the skill of the installed version.
+A release bumps `metadata.version` in `SKILL.md` with `pyproject.toml`.
 
 The anti-pattern catalog is
 [`src/dartwork_mpl/guide/assets/anti-patterns.yaml`](src/dartwork_mpl/guide/assets/anti-patterns.yaml);
