@@ -145,3 +145,19 @@ def test_white_text_on_a_pale_fill_is_found(image: bool):
     for t in ax.texts:
         t.set_color("black")
     assert "TEXT_CONTRAST" not in dm.check(fig).rules
+
+
+def test_a_report_grid_on_slide_text_is_too_small_but_a_colorbar_is_not():
+    dm.style.use("presentation")
+    fig, axes = plt.subplots(2, 2, figsize=dm.figsize_for(nrows=2, ncols=2))
+    for ax in axes.flat:
+        ax.plot(np.arange(12), np.arange(12))
+        ax.set(title="North", xlabel="Month", ylabel="Sales (units)")
+    dm.simple_layout(fig)
+    assert "SMALL_PANEL" in dm.check(fig).rules
+    surface = plt.figure(figsize=dm.figsize("12cm", "9cm"))
+    ax3 = surface.add_subplot(projection="3d")
+    grid = np.linspace(-2, 2, 20)
+    xx, yy = np.meshgrid(grid, grid)
+    surface.colorbar(ax3.plot_surface(xx, yy, xx * yy), shrink=0.4)
+    assert "SMALL_PANEL" not in dm.check(surface).rules

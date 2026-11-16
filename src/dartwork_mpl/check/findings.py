@@ -34,6 +34,9 @@ FIXES: dict[str, str] = {
     "TICK_OVERLAP": "dm.simple_layout(fig) wraps, then turns, crowded "
     "labels (drop a rotation you set); many long names: horizontal bars; "
     "a y axis: a taller canvas",
+    "SMALL_PANEL": "fewer panels per figure (one row, or split it into "
+    'figures); a grid on a slide: dm.figsize_for("full_slide") and one '
+    "axis name per row or column (sharex=True, sharey=True)",
 }
 
 
