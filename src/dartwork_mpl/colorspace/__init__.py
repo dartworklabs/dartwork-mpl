@@ -7,7 +7,7 @@ matplotlib gives stays with each shell (``matplotlib.colors``).
 """
 
 from ..edgecase import settle
-from .decide import composite_layers, composite_over, contrast, lift, readable
+from .decide import composite_over, contrast, lift, readable
 from .edges import LIFT_EDGES
 from .model import (
     Color,
@@ -38,7 +38,6 @@ __all__ = [
     "Ratio",
     "Rgb",
     "Rgba",
-    "composite_layers",
     "composite_over",
     "contrast",
     "finite",

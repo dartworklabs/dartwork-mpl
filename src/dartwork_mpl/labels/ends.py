@@ -3,20 +3,17 @@
 from __future__ import annotations
 
 import weakref
-from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Unpack
+from typing import TYPE_CHECKING
 
 import matplotlib as mpl
-import matplotlib.colors as mcolors
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Annotation, Text
 
 from . import decide
-from .measure import drawn_renderer, px_per_pt, readable_on
-from .model import AnnotateStyle
-from .panels import Column
+from .measure import backdrop, drawn_renderer, px_per_pt, readable_on
+from .model import Column
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -88,46 +85,27 @@ def _last_point(line: Line2D) -> tuple[float, float] | None:
     )
 
 
-def label_line_ends(
-    ax: Axes,
-    lines: Iterable[Line2D] | None = None,
-    *,
-    gap_pt: float | None = None,
-    **kw: Unpack[AnnotateStyle],
-) -> list[Text]:
-    """Name each line at its last point instead of a legend.
+def label_line_ends(ax: Axes) -> list[Text]:
+    """Name each labelled line at its last point instead of a legend.
 
-    The line's label, ``gap_pt`` (default ``axes.labelpad``) right of its last
-    finite point, in the line's colour made readable on the background;
-    names that would overlap move apart and keep their order. The legend is
-    removed; ``dm.simple_layout`` makes room. Keywords go to the texts.
+    The line's label, ``axes.labelpad`` right of its last finite point, in
+    the line's colour made readable on the background; names that would
+    overlap move apart and keep their order. The legend is removed;
+    ``dm.simple_layout`` makes room.
     """
-    if lines is None:
-        lines = [
-            ln
-            for ln in ax.get_lines()
-            if ln.get_visible() and not str(ln.get_label()).startswith("_")
-        ]
-    gap = float(mpl.rcParams["axes.labelpad"] if gap_pt is None else gap_pt)
-    background = mcolors.to_rgba(ax.patch.get_facecolor())
-    if not ax.patch.get_visible() or background[3] == 0:
-        background = mcolors.to_rgba(ax.figure.get_facecolor())
+    gap = float(mpl.rcParams["axes.labelpad"])
+    background = backdrop(ax)
     if (legend := ax.get_legend()) is not None:
         legend.remove()
     group = _LineEnds([], [], gap)
-    for line in lines:
+    for line in ax.get_lines():
         end = _last_point(line)
-        if end is None:
+        if (
+            end is None
+            or not line.get_visible()
+            or str(line.get_label()).startswith("_")
+        ):
             continue
-        style = (
-            AnnotateStyle(
-                color=readable_on(line.get_color(), background),
-                ha="left",
-                va="center",
-                annotation_clip=False,
-            )
-            | kw
-        )
         group.labels.append(
             ax.annotate(  # pyright: ignore[reportUnknownMemberType]
                 str(line.get_label()),
@@ -135,7 +113,10 @@ def label_line_ends(
                 xycoords="data",
                 xytext=(gap, 0.0),
                 textcoords="offset points",
-                **style,
+                color=readable_on(line.get_color(), background),
+                ha="left",
+                va="center",
+                annotation_clip=False,
             )
         )
         group.ends.append(end)

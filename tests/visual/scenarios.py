@@ -503,7 +503,7 @@ def _build_stacked_totals_legend() -> Figure:
     for name, values in channels:
         ax.bar(quarters, values, bottom=bottom, label=name)
         bottom += values
-    dm.label_bars(ax, where="center")
+    dm.label_bars(ax)
     ax.set_xlabel("Quarter")
     ax.set_ylabel("Orders (thousands)")
     ax.set_title("Orders by channel")

@@ -10,7 +10,6 @@ import pytest
 
 import dartwork_mpl as dm
 from dartwork_mpl.geometry import get_renderer
-from dartwork_mpl.vocab import Top
 
 
 @pytest.fixture(autouse=True)
@@ -39,22 +38,9 @@ def test_a_legend_inside_keeps_clear_of_a_rising_line():
     legend = dm.place_legend(ax)
     dm.simple_layout(fig)
     assert legend is ax.get_legend()
-    assert not dm.check(fig).of("LEGEND_ON_DATA")
+    assert "LEGEND_ON_DATA" not in dm.check(fig).rules
     plot = _box(fig, ax)
     assert _box(fig, legend).x0 < (plot.x0 + plot.x1) / 2  # upper left
-
-
-def test_a_full_plot_sends_the_legend_above_and_the_title_over_it():
-    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
-    rng = np.random.default_rng(1)
-    ax.scatter(rng.uniform(0, 1, 4000), rng.uniform(0, 1, 4000), label="Cloud")
-    ax.margins(0)
-    ax.set_title("Measurements")
-    legend = dm.place_legend(ax)
-    dm.simple_layout(fig)
-    assert dm.legend.outside_edge(legend) == Top()
-    assert _box(fig, legend).y0 >= _box(fig, ax).y1
-    assert _box(fig, ax.title).y0 >= _box(fig, legend).y1
 
 
 @pytest.mark.parametrize("side", ["above", "below", "right", "left"])
@@ -99,18 +85,6 @@ def test_a_rebuilt_legend_keeps_its_title_and_follows_the_artists():
     assert dm.place_legend(ax) is None and ax.get_legend() is None
 
 
-def test_a_legend_the_caller_moved_stays_where_they_put_it():
-    fig, ax = _lines()
-    legend = dm.place_legend(ax)
-    legend.set_loc("lower right")  # on the data: the caller's choice
-    fig.set_size_inches(*dm.figsize("17cm", "standard"))
-    dm.simple_layout(fig)
-    assert ax.get_legend() is legend
-    own, plot = _box(fig, legend), _box(fig, ax)
-    middle = ((plot.x0 + plot.x1) / 2, (plot.y0 + plot.y1) / 2)
-    assert own.x0 > middle[0] and own.y1 < middle[1]
-
-
 def test_repeated_layouts_keep_the_same_legends():
     fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "12cm"))
     for ax in axes.flat:
@@ -126,7 +100,7 @@ def test_repeated_layouts_keep_the_same_legends():
 
 def test_a_caller_anchor_with_a_side_raises():
     fig, ax = _lines()
-    with pytest.raises(ValueError, match="anchors the legend itself"):
+    with pytest.raises(ValueError, match="anchors itself"):
         dm.place_legend(ax, loc="right", bbox_to_anchor=(1, 0.5))
 
 

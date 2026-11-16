@@ -8,26 +8,14 @@ keeps from it. The registry holds its legends weakly.
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, assert_never
+from typing import TYPE_CHECKING
 
 from matplotlib.legend import Legend
 
 from ..geometry import figure_axes, figure_legends, get_renderer
 from ..vocab import Reserve, edge_of
-from . import decide, measure
-from .apply import entry_names, new_legend, refuse_anchor
-from .boxes import Entries
-from .measure import LegendKeywords
-from .model import (
-    AskedLoc,
-    Best,
-    Columns,
-    Passed,
-    Request,
-    parse_keywords,
-    parse_loc,
-)
-from .sides import Above, Below, Left, Right, Side
+from .apply import fit, pad_px, size_of
+from .model import Above, Best, Columns, Size, parse_loc, refuse_anchor
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
@@ -46,11 +34,14 @@ def figure_reserve(artist: Artist) -> Reserve | None:
 
 def figure_legend(
     fig: Figure | SubFigure,
-    loc: AskedLoc,
-    columns: Columns | None,
-    kw: LegendKeywords,
+    loc: str,
+    asked: Columns | None,
+    kw: dict[str, object],
 ) -> Legend | None:
     """One legend for ``fig``'s panels (:func:`dartwork_mpl.legend.figure_legend`)."""
+    where = parse_loc(loc)
+    refuse_anchor(where, kw)
+    side = Above() if isinstance(where, Best) else where
     handles: list[Artist] = []
     labels: list[str] = []
     for ax in figure_axes(fig):
@@ -58,79 +49,43 @@ def figure_legend(
             if label not in labels:
                 handles.append(handle)
                 labels.append(label)
-    names = set(labels)
-    replaced = [
-        legend
-        for ax in figure_axes(fig)
-        if (legend := ax.get_legend()) is not None
-        and set(entry_names(legend)) <= names
-    ]
-    replaced += [lg for lg in figure_legends(fig) if lg in _RESERVES]
-    if not handles:
-        for legend in replaced:
+    for ax in figure_axes(fig):
+        legend = ax.get_legend()
+        names = {t.get_text() for t in legend.get_texts()} if legend else None
+        if legend is not None and names is not None and names <= set(labels):
             legend.remove()
+    for legend in figure_legends(fig):
+        if legend in _RESERVES:
+            legend.remove()
+    if not handles:
         return None
-    placement = parse_loc(loc)
-    match placement:
-        case Passed(loc=raw):
-            legend = new_legend(
-                fig,
-                handles,
-                labels,
-                loc=raw,
-                ncols=1 if columns is None else columns.n,
-                **kw,
-            )
-        case Best():
-            legend = _placed_figure_legend(
-                fig, handles, labels, None, loc, columns, kw
-            )
-        case Above() | Below() | Right() | Left():
-            legend = _placed_figure_legend(
-                fig, handles, labels, placement, loc, columns, kw
-            )
-        case _:
-            assert_never(placement)
-    for old in replaced:
-        old.remove()
-    return legend
 
+    def build(columns: Columns) -> Legend:
+        return fig.legend(  # pyright: ignore[reportUnknownMemberType]
+            handles,
+            labels,
+            loc=side.figure_loc.code,
+            ncols=columns.n,
+            bbox_to_anchor=side.figure_loc.anchor,
+            bbox_transform=fig.transSubfigure,
+            **kw,
+        )
 
-def _placed_figure_legend(
-    fig: Figure | SubFigure,
-    handles: list[Artist],
-    labels: list[str],
-    side: Side | None,
-    loc: AskedLoc,
-    columns: Columns | None,
-    kw: LegendKeywords,
-) -> Legend:
-    """The figure legend on ``side`` (``None``: the side that fits)."""
-    keywords = parse_keywords(kw, LegendKeywords(), columns)
-    refuse_anchor("figure_legend", loc, keywords)
     renderer = get_renderer(fig)
-    entries = Entries(tuple(labels))
-    request = Request(side, keywords.columns)
-    facts = measure.figure_facts(
-        fig, handles, entries, request, keywords.rest, renderer
-    )
-    plan = decide.figure_place(facts)
-    legend = new_legend(
-        fig,
-        handles,
-        labels,
-        loc=plan.side.figure_loc.code,
-        ncols=plan.columns.n,
-        **(
-            keywords.rest
-            | LegendKeywords(
-                bbox_to_anchor=plan.anchor, bbox_transform=fig.transSubfigure
-            )
-        ),
-    )
+
+    def trial(columns: Columns) -> Size:
+        legend = build(columns)
+        size = size_of(legend, renderer)
+        legend.remove()
+        return size
+
+    first = build(Columns(1))
+    pad = pad_px(first, renderer)
+    first.remove()
+    length = (fig.bbox.width if side.across else fig.bbox.height) - 2 * pad
+    columns = fit(trial, side, len(labels), length, asked)
+    legend = build(columns)
     # simple_layout keeps this gap between the legend and the panels.
     gap = float(legend.borderaxespad) * float(legend.prop.get_size_in_points())
-    _RESERVES[legend] = Reserve(
-        edge_of(across=plan.side.across, far=plan.side.far), gap
-    )
+    _RESERVES[legend] = Reserve(edge_of(across=side.across, far=side.far), gap)
     return legend

@@ -40,8 +40,7 @@ from ..geometry import (
     text_inks,
 )
 from ..vocab import Box
-from .boxes import Hits
-from .model import CLEARANCE_PT
+from .model import CLEARANCE_PT, Hits
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist

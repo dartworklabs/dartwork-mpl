@@ -9,9 +9,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar, Literal, TypeAlias
 
-HAlignName: TypeAlias = Literal["left", "center", "right"]
-"""A horizontal alignment as a caller or matplotlib writes it."""
-
 
 @dataclass(frozen=True)
 class AlignLeft:
@@ -35,12 +32,6 @@ class AlignRight:
 
 
 HAlign: TypeAlias = AlignLeft | AlignCentre | AlignRight
-
-
-VAlignName: TypeAlias = Literal[
-    "baseline", "bottom", "center", "center_baseline", "top"
-]
-"""A vertical alignment as a caller or matplotlib writes it."""
 
 
 @dataclass(frozen=True)

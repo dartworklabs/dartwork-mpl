@@ -1,8 +1,8 @@
 """Facts the label decisions read from a drawn figure.
 
-Bars as runs of positions and lengths, the boxes a point label must stay
-clear of, the colours a bar label can take, and what each panel draws
-around its top-left corner.
+Bars as runs of positions and lengths, the colour a label on a bar or at a
+line's end takes, the boxes a point label must stay clear of, and what each
+panel draws around its top-left corner.
 """
 
 from __future__ import annotations
@@ -22,7 +22,6 @@ from ..colorspace import (
     Ratio,
     Rgb,
     Rgba,
-    composite_layers,
     composite_over,
     lifted,
     readable,
@@ -33,7 +32,6 @@ from ..geometry import (
     get_renderer,
     label_side,
     projection,
-    same_position_axes,
 )
 from ..vocab import (
     AlignBottom,
@@ -51,20 +49,14 @@ from ..vocab import (
     bars_along,
     parse_valign,
 )
-from .bar_options import Edge, Ink, Segment, StackTotal
-from .panels import Panel, Title
-from .places import Try
+from .model import Panel, Title, Try
 from .stacks import BarRun
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.patches import Rectangle
     from matplotlib.typing import ColorType
-
-    from .bar_options import Kind
 
 FloatArray = np.ndarray
 
@@ -97,6 +89,33 @@ def bar_end(bar: Rectangle, vertical: bool) -> tuple[float, float]:
     x, y = float(bar.get_x()), float(bar.get_y())
     w, h = float(bar.get_width()), float(bar.get_height())
     return (x + w / 2, y + h) if vertical else (x + w, y + h / 2)
+
+
+def label_anchor(
+    container: BarContainer, index: int, vertical: bool
+) -> tuple[float, float]:
+    """Where bar ``index``'s label hangs: the middle of its end, or the far
+    tip of its error bar when it has one (a value on the whisker is unread)."""
+    bar = container.patches[index]
+    x, y = bar_end(bar, vertical)
+    errorbar = container.errorbar
+    if errorbar is None:
+        return x, y
+    along = 1 if vertical else 0
+    grows = (bar.get_height() if vertical else bar.get_width()) >= 0
+    end = y if vertical else x
+    for collection in errorbar.lines[2]:
+        segments = collection.get_segments()
+        if index >= len(segments):
+            continue
+        tips = np.asarray(segments[index], dtype=float)
+        if tips.shape != (2, 2) or tips[0, 1 - along] != tips[1, 1 - along]:
+            continue  # the error bar across the value axis
+        reach = tips[:, along][np.isfinite(tips[:, along])]
+        if reach.size:
+            tip = float(reach.max() if grows else reach.min())
+            end = max(end, tip) if grows else min(end, tip)
+    return (x, end) if vertical else (end, y)
 
 
 def stands_up(container: BarContainer) -> bool:
@@ -134,50 +153,22 @@ def bar_run(container: BarContainer) -> BarRun:
     )
 
 
-def error_extent(
-    container: BarContainer, index: int, vertical: bool
-) -> FloatArray | None:
-    """The bar's error bar along its value axis, as data values, if any."""
-    errorbar = container.errorbar
-    if errorbar is None:
-        return None
-    along = 1 if vertical else 0
-    for collection in errorbar.lines[2]:
-        segments = collection.get_segments()
-        if index >= len(segments):
-            continue
-        segment = np.asarray(segments[index], dtype=float)
-        if (
-            segment.shape != (2, 2)
-            or segment[0, 1 - along] != segment[1, 1 - along]
-        ):
-            continue  # the error bar across the value axis
-        extent = segment[:, along][np.isfinite(segment[:, along])]
-        return extent if extent.size else None
-    return None
-
-
 def bar_centres(bar_axes: Axes, vertical: bool) -> tuple[float, ...]:
-    """The middle across the bars, on screen, of every bar in the plot area."""
-    out: list[float] = []
-    for member in same_position_axes(bar_axes):
-        for container in member.containers:
-            if not isinstance(container, BarContainer):
-                continue
-            for patch in container.patches:
-                if patch.get_visible():
-                    box = patch.get_window_extent()
-                    out.append(
-                        (box.x0 + box.x1) / 2
-                        if vertical
-                        else (box.y0 + box.y1) / 2
-                    )
-    return tuple(out)
+    """The middle across the bars, on screen, of every bar of ``bar_axes``."""
+    boxes = [
+        patch.get_window_extent()
+        for container in bar_axes.containers
+        if isinstance(container, BarContainer)
+        for patch in container.patches
+        if patch.get_visible()
+    ]
+    return tuple(
+        (b.x0 + b.x1) / 2 if vertical else (b.y0 + b.y1) / 2 for b in boxes
+    )
 
 
 #: Text against its background: WCAG's 4.5:1 for body text.
 TEXT_CONTRAST = Ratio(4.5)
-WHITE = Rgb(1.0, 1.0, 1.0)
 
 
 def _rgb(color: ColorType) -> Rgb:
@@ -195,38 +186,20 @@ def readable_on(color: ColorType, background: ColorType) -> str:
     return color if isinstance(color, str) else facts.color.hex()
 
 
-def _background(bar_axes: Axes) -> Rgb:
-    """What shows behind the bars: the figure, then each visible Axes patch."""
-    layers = backdrop_layers(same_position_axes(bar_axes))
-    return composite_layers(tuple(Rgba.of(layer) for layer in layers), WHITE)
+def backdrop(ax: Axes) -> tuple[float, float, float, float]:
+    """What shows behind ``ax``'s data: its patch, else the figure's."""
+    face = mcolors.to_rgba(ax.patch.get_facecolor())
+    if not ax.patch.get_visible() or face[3] == 0:
+        face = mcolors.to_rgba(ax.figure.get_facecolor())
+    return face
 
 
-def readable_ink(patch: Rectangle, bar_axes: Axes) -> Ink:
+def readable_ink(patch: Rectangle, bar_axes: Axes) -> str:
     """White or the preset text colour, whichever reads better on the bar."""
     face = Rgba.of(mcolors.to_rgba(patch.get_facecolor()))
-    shown = mcolors.to_hex(composite_over(face, _background(bar_axes)).channels)
+    shown = composite_over(face, Rgba.of(backdrop(bar_axes)).rgb)
     dark = mcolors.to_hex(mpl.rcParams["text.color"])
-    ink = readable(_rgb(shown), _rgb("white"), _rgb(dark))
-    return Ink(ink.pick("white", dark))
-
-
-def series_ink(patch: Rectangle, bar_axes: Axes, kind: Kind) -> Ink:
-    """The bar's colour as drawn, darkened (or lightened) to 4.5:1 text."""
-    match kind:
-        case StackTotal():
-            return Ink()
-        case Edge() | Segment():
-            pass
-    background = _background(bar_axes)
-    face = mcolors.to_rgba(patch.get_facecolor())
-    if face[3] == 0 and patch.get_linewidth() > 0:
-        face = mcolors.to_rgba(patch.get_edgecolor())
-    shown = composite_over(Rgba.of(face), background)
-    return Ink(
-        readable_on(
-            mcolors.to_hex(shown.channels), mcolors.to_hex(background.channels)
-        )
-    )
+    return readable(shown, _rgb("white"), _rgb(dark)).pick("white", dark)
 
 
 # ------------------------------------------------------------ obstacles
@@ -439,51 +412,6 @@ def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
     )
 
 
-def host_axes(ax: Axes) -> Axes:
-    """The Axes drawn last in ``ax``'s box: the top-most twin.
-
-    Matplotlib draws Axes by zorder, then in figure order, so the
-    ``ax.set_zorder(ax2.get_zorder() + 1)`` idiom puts ``ax`` on top.
-    """
-    owners = same_position_axes(ax)
-    parent = ax.get_figure(root=False)
-    order = parent.axes if parent is not None else owners
-    return max(
-        owners,
-        key=lambda member: (
-            member.get_zorder(),
-            order.index(member) if member in order else -1,
-        ),
-    )
-
-
-def backdrop_layers(
-    axes: Sequence[Axes],
-) -> list[tuple[float, float, float, float]]:
-    """The patch colours that show behind ``axes``' data, lowest first.
-
-    The figure's patch, then its subfigure's (when the Axes sit in one),
-    then each Axes' own patch in zorder (stable on the order given); a patch
-    that is not drawn adds nothing. Fold them over white with
-    ``colorspace.composite_layers``. The ``axes`` share one figure.
-    """
-    first = axes[0]
-    root = first.get_figure(root=True)
-    parent = first.get_figure(root=False)
-    containers = (root, parent if parent is not root else None)
-    layers = [
-        mcolors.to_rgba(container.get_facecolor())
-        for container in containers
-        if container is not None and container.patch.get_visible()
-    ]
-    layers.extend(
-        mcolors.to_rgba(member.get_facecolor())
-        for member in sorted(axes, key=lambda m: m.get_zorder())
-        if _frame_on(member) and member.patch.get_visible()
-    )
-    return layers
-
-
 def _plain(ax: Axes) -> bool:
     """Whether ``ax`` is matplotlib's plain 2D Axes."""
     match projection(ax):
@@ -491,15 +419,3 @@ def _plain(ax: Axes) -> bool:
             return True
         case ThreeD() | Curved():
             return False
-
-
-def _frame_on(ax: Axes) -> bool:
-    """Whether ``ax`` draws its patch; a 3D Axes has no frame switch.
-
-    ``Axes3D`` sets ``get_frame_on`` to ``None`` and always draws its patch.
-    """
-    match projection(ax):
-        case ThreeD():
-            return True
-        case Rectilinear() | Curved():
-            return ax.get_frame_on()

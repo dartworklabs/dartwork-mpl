@@ -7,14 +7,11 @@ settles the labels at the size ``dm.simple_layout`` fits.
 
 from __future__ import annotations
 
-import string
 import weakref
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
-import matplotlib as mpl
-import matplotlib.colors as mcolors
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
@@ -22,61 +19,30 @@ from matplotlib.text import Annotation, Text
 from matplotlib.transforms import IdentityTransform
 
 from ..edgecase import settle
-from ..geometry import canvas_renderer, same_position_axes
-from ..vocab import AlignCentre, TickScale, VCentre
+from ..geometry import canvas_renderer
+from ..vocab import AlignCentre, VCentre
 from . import decide, edges
-from .bar_options import (
-    BarOptions,
-    Call,
-    Higher,
-    Ink,
-    InkFacts,
-    Kind,
-    Lower,
-    Placement,
-    Rgba,
-    Template,
-    TickLike,
-    Toward,
-    ValueFacts,
-    placement,
-)
-from .given import NumberText, PresetText, TickText
-from .measure import (
-    bar_end,
-    bar_run,
-    error_extent,
-    host_axes,
-    px_per_pt,
-    readable_ink,
-    series_ink,
-    stands_up,
-)
-from .model import parse_bar_options, template_fields
+from .bar_geometry import Higher, Kind, Lower, Toward
+from .given import PresetText, TickText
+from .measure import bar_run, label_anchor, readable_ink, stands_up
 from .stacks import BarsFacts
 
 if TYPE_CHECKING:
     from matplotlib.axis import Axis
     from matplotlib.backend_bases import RendererBase
-    from matplotlib.typing import ColorType
 
     from ..vocab import TickScale
 
 # Between a bar end and its label, in points.
 OFFSET_PT = 3.0
-# How far (px) an anchor may sit past the view and still show.
-EDGE_TOL_PX = 1.0
-# How far (px) a label on its bar may reach past the bar's sides.
-FIT_TOL_PX = 0.5
 
 
 class BarLabel(Annotation):
     """One bar's value label, rewritten in its axis's tick unit at each draw.
 
-    ``kind``: a plain bar, one bar of a stack or the stack's net (on the
-    bar ending the stack); ``stack``: the ids of its stack's containers.
-    ``off_bar``: an ``"inside"`` label its bar does not hold, drawn beyond
-    the end instead.
+    ``kind``: beyond the bar's end (a plain bar, a stack's net) or at the
+    middle of a stack's segment, in white or the text colour, whichever
+    reads on the bar.
     """
 
     def __init__(
@@ -86,59 +52,38 @@ class BarLabel(Annotation):
         index: int,
         kind: Kind,
         value: float,
-        stack: frozenset[int],
     ) -> None:
         """A label for bar ``index`` of ``container``, not yet added."""
-        self.family, self.container, self.index = family, container, index
+        self.family = family
+        self.container = container
+        self.index = index
         self.bar = container.patches[index]
         bar_axes = self.bar.axes
         assert isinstance(bar_axes, Axes)  # label_bars labels drawn bars only
         self.bar_axes: Axes = bar_axes
         self.kind: Kind = kind
-        self.value, self.stack = value, stack
-        self.where: Placement = placement(kind, family.options.where)
+        self.value = value
         self.vertical = stands_up(container)
-        self.off_bar = False
         self.hidden = False  # hidden by the layout for room
         self.tick_scale: TickScale | None = None
-        self.inked_for: bool | None = None
-        self.text_ink = mcolors.to_rgba(mpl.rcParams["text.color"])
         self._measuring = False
         super().__init__(  # pyright: ignore[reportUnknownMemberType]
             "",
             (0.0, 0.0),
             xytext=(0.0, 0.0),
-            xycoords=self.bar if self.centred else "data",
+            xycoords=self.bar if kind.centred else "data",
             textcoords="offset points",
             annotation_clip=False,
             fontsize=family.preset.size(-1),
             fontweight=family.preset.weight(1),
         )
+        if kind.centred:
+            self.set_color(readable_ink(self.bar, bar_axes))
 
     @property
     def value_axis(self) -> Axis:
         """The axis the bar's value runs along."""
         return self.bar_axes.yaxis if self.vertical else self.bar_axes.xaxis
-
-    @property
-    def centred(self) -> bool:
-        """Whether the label sits at its bar's middle."""
-        return self.where.centred
-
-    @property
-    def inside(self) -> bool:
-        """Whether the label sits inside its bar's end (its bar holds it)."""
-        return self.where.inset and not self.off_bar
-
-    @property
-    def on_bar(self) -> bool:
-        """Whether the label is drawn on its bar."""
-        return self.where.on_bar(self.off_bar)
-
-    @property
-    def beyond_end(self) -> bool:
-        """Beyond its own bar's end, in the room the value axis gives."""
-        return not self.on_bar
 
     @property
     def outward(self) -> Toward:
@@ -148,20 +93,16 @@ class BarLabel(Annotation):
         grows_up = (length >= 0) != bool(self.value_axis.get_inverted())
         return Higher() if grows_up else Lower()
 
-    def _needs_room(self) -> bool:
-        """A segment's label on its bar shows only while the bar holds it."""
-        return self.kind.hides_unfit and self.where.rests_on_bar
-
     def get_visible(self) -> bool:
-        """Visible, its anchor in the view, and (a segment) room on its bar."""
-        if not (super().get_visible() and self._in_view()):
+        """Visible and, a segment's label, held by its bar."""
+        if not super().get_visible():
             return False
-        if self._measuring or not self._needs_room():
+        if self._measuring or not self.kind.centred:
             return True
         self._measuring = True
         try:
             self.family.follow(self)
-            return self.fits(self.extent()[0], along=True)
+            return self._fits()
         finally:
             self._measuring = False
 
@@ -170,59 +111,28 @@ class BarLabel(Annotation):
         self.family.follow(self)
         super().update_positions(renderer)
 
-    def _in_view(self) -> bool:
-        if self.centred:
-            box = self.bar.get_window_extent()
-            shown = np.array([(box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2])
-        else:
-            shown = self.bar_axes.transData.transform(
-                bar_end(self.bar, self.vertical)
-            )
-        box = self.bar_axes.get_window_extent()
-        return bool(
-            np.all(np.isfinite(shown))
-            and box.x0 - EDGE_TOL_PX <= shown[0] <= box.x1 + EDGE_TOL_PX
-            and box.y0 - EDGE_TOL_PX <= shown[1] <= box.y1 + EDGE_TOL_PX
-        )
-
-    def extent(self) -> tuple[float, float]:
-        """The text's extent (along, across) its bar, display pixels."""
+    def _fits(self) -> bool:
+        """Whether the bar is as long as the text along it."""
         fig = self.get_figure(root=True)
         renderer = canvas_renderer(fig) if fig is not None else None
-        box = Text.get_window_extent(self, renderer)
-        w, h = float(box.width), float(box.height)
-        return (h, w) if self.vertical else (w, h)
-
-    def fits(self, px: float, *, along: bool) -> bool:
-        """Whether ``px`` of text fits along (plus the inset) or across."""
-        box = self.bar.get_window_extent()
-        if not along:
-            thick = box.width if self.vertical else box.height
-            return bool(np.isfinite(thick) and px <= thick + FIT_TOL_PX)
-        inset = OFFSET_PT * px_per_pt(self) if self.where.inset else 0.0
-        length = box.height if self.vertical else box.width
-        return bool(np.isfinite(length) and length >= px + inset)
+        text = Text.get_window_extent(self, renderer)
+        bar = self.bar.get_window_extent()
+        along, length = (
+            (text.height, bar.height)
+            if self.vertical
+            else (text.width, bar.width)
+        )
+        return bool(np.isfinite(length) and length >= along)
 
     def place(self) -> None:
         """Anchor and align the label on its bar."""
-        if self.centred:
+        if self.kind.centred:
             self.xy, self.xyann = (0.5, 0.5), (0.0, 0.0)
             self.set_horizontalalignment(AlignCentre.mpl)
             self.set_verticalalignment(VCentre.mpl)
             return
-        x, y = bar_end(self.bar, self.vertical)
-        inside = self.inside
-        extent = error_extent(self.container, self.index, self.vertical)
-        if not inside and extent is not None:  # past the cap, in the view
-            low, high = sorted(map(float, self.value_axis.get_view_interval()))
-            end = y if self.vertical else x
-            if self.value >= 0:
-                end = max(end, min(float(extent.max()), high))
-            else:
-                end = min(end, max(float(extent.min()), low))
-            x, y = (x, end) if self.vertical else (end, y)
-        toward = self.outward.flip if inside else self.outward
-        self.xy = (x, y)
+        toward = self.outward
+        self.xy = label_anchor(self.container, self.index, self.vertical)
         if self.vertical:
             self.xyann = (0.0, toward.sign * OFFSET_PT)
             self.set_horizontalalignment(AlignCentre.mpl)
@@ -236,155 +146,58 @@ class BarLabel(Annotation):
 
 @dataclass(eq=False)
 class BarFamily:
-    """One ``label_bars`` call: its labels, its bars, its options."""
+    """One ``label_bars`` call: its labels and how they print."""
 
-    containers: list[BarContainer]
-    options: BarOptions
     preset: PresetText
     ticks: TickText
     texts: list[BarLabel] = field(default_factory=list)
 
     def refresh(self) -> None:
         """Every label's text in its axis's tick unit now, one decimal count
-        for the call unless ``decimals=`` fixed it."""
+        for the call."""
         scales = [
             self.ticks.scale_of(t.value_axis, t.value) for t in self.texts
         ]
         scaled = [
             t.value / s.factor for t, s in zip(self.texts, scales, strict=True)
         ]
-        count = self.options.decimals
-        if count is None:
-            count = self.ticks.decimals(scaled)
+        count = self.ticks.decimals(scaled)
         for label, scale, value in zip(self.texts, scales, scaled, strict=True):
             label.tick_scale = scale
             label.set_text(
-                compose(value, scale, count, self.options, self.ticks.number)
+                self.ticks.number(
+                    value,
+                    count,
+                    prefix=scale.prefix,
+                    suffix=scale.suffix,
+                    zero=scale.zero,
+                )
             )
 
     def follow(self, label: BarLabel) -> None:
-        """Follow the tick unit, the bar's room and the ink for where it sits."""
+        """Follow the tick unit and the bar."""
         if (
             self.ticks.scale_of(label.value_axis, label.value)
             != label.tick_scale
         ):
             self.refresh()
-        label.off_bar = False
-        if label.kind.spills and label.where.inset:
-            along, across = label.extent()
-            label.off_bar = not (
-                label.fits(along, along=True)
-                and label.fits(across, along=False)
-            )
         label.place()
-        if label.on_bar == label.inked_for:
-            return
-        label.inked_for = label.on_bar
-        bar, axes = label.bar, label.bar_axes
-        series = self.options.series and not label.on_bar
-        facts = InkFacts(
-            self.options,
-            label.kind,
-            label.on_bar,
-            readable_ink(bar, axes) if label.on_bar else Ink(),
-            series_ink(bar, axes, label.kind) if series else Ink(),
-        )
-        color = settle(facts, decide.ink(facts), edges.INK_EDGES).plan.color
-        label.set_color(label.text_ink if color is None else color)
-
-
-def _template(fmt: str, number: str, value: float) -> str:
-    """``fmt`` with each ``{}`` replaced by ``number``; a field with a
-    format spec formats ``value`` itself, with matplotlib's minus."""
-    f = string.Formatter()
-    out: list[str] = []
-    for literal, spec, conversion in template_fields(fmt):
-        out.append(literal)
-        if spec or conversion:
-            text = f.format_field(
-                f.convert_field(value, conversion or None), spec
-            )
-            if mpl.rcParams["axes.unicode_minus"]:
-                text = text.replace("-", "\N{MINUS SIGN}")
-            out.append(text)
-        else:
-            out.append(number)
-    tail = list(f.parse(fmt))[-1]
-    return "".join(out) + (tail[0] if tail[1] is None else "")
-
-
-def compose(
-    scaled: float,
-    scale: TickScale,
-    decimals: int,
-    options: BarOptions,
-    number_text: NumberText,
-) -> str:
-    """One label's text for a value already divided by ``scale.factor``."""
-    fixed = options.decimals is not None
-    facts = ValueFacts(scaled, decimals, fixed, options.plus)
-    match options.fmt:
-        case Call(write=write):
-            return str(write(scaled))
-        case Template(text=template):
-            text = settle(facts, decide.bar_text(facts), edges.TEXT_EDGES).plan
-            number = text.lead + number_text(
-                text.value, text.decimals, fixed=text.fixed
-            )
-            return _template(template, number, scaled)
-        case TickLike():
-            text = settle(facts, decide.bar_text(facts), edges.TEXT_EDGES).plan
-            return text.lead + number_text(
-                text.value,
-                text.decimals,
-                fixed=text.fixed,
-                prefix=scale.prefix,
-                suffix=scale.suffix,
-                zero=scale.zero,
-            )
 
 
 def _containers(
-    ax: Axes, bars: BarContainer | Iterable[object] | None
+    ax: Axes, bars: BarContainer | Iterable[BarContainer] | None
 ) -> list[BarContainer]:
-    if bars is None:
-        found = [c for c in ax.containers if isinstance(c, BarContainer)]
-        if not found:
-            raise ValueError(
-                "ax has no bars to label: dm.label_bars labels what ax.bar / "
-                "ax.barh / ax.hist drew on this Axes (bars on a twin? pass "
-                "that Axes)"
-            )
-        return found
-    items: list[object] = (
-        [bars] if isinstance(bars, BarContainer) else _items(bars)
-    )
-    containers: list[BarContainer] = [
-        c for c in items if isinstance(c, BarContainer)
-    ]
-    if len(containers) != len(items):
-        raise TypeError(
-            "bars must be a BarContainer (what ax.bar / ax.barh return) or a "
-            f"list of them (got {type(bars).__name__})"
-        )
-    box = same_position_axes(ax)
-    for container in containers:
-        drawn = {p.axes for p in container.patches} - {None}
-        if container.datavalues is None or not drawn <= set(box):
-            raise ValueError(
-                f"bars must come from ax.bar / ax.barh / ax.hist on {ax!r} or "
-                "a twin of it: pass the Axes that drew them"
-            )
-    return containers
-
-
-def _items(bars: Iterable[object]) -> list[object]:
-    """The caller's bars as a list; a non-iterable stands alone (and is
-    refused by the caller)."""
-    try:
-        return list(bars)
-    except TypeError:
+    if isinstance(bars, BarContainer):
         return [bars]
+    if bars is not None:
+        return list(bars)
+    found = [c for c in ax.containers if isinstance(c, BarContainer)]
+    if not found:
+        raise ValueError(
+            "ax has no bars to label: dm.label_bars labels what ax.bar / "
+            "ax.barh / ax.hist drew on this Axes"
+        )
+    return found
 
 
 # The ``label_bars`` calls on each Axes, oldest first.
@@ -403,87 +216,28 @@ def format_ticks_now(axis: Axis) -> None:
     axis.get_major_formatter().format_ticks(list(axis.get_majorticklocs()))
 
 
-def _release(ax: Axes, containers: list[BarContainer]) -> None:
-    """Earlier calls give up their labels on ``containers`` (and the totals
-    of the stacks holding them)."""
-    taken = {id(c) for c in containers}
-    for member in same_position_axes(ax):
-        families = families_of(member)
-        for family in families:
-            for label in list(family.texts):
-                if id(label.container) in taken or (
-                    label.kind.of_stack and label.stack & taken
-                ):
-                    family.texts.remove(label)
-                    if label.axes is not None:
-                        label.remove()
-        families[:] = [f for f in families if f.texts]
-
-
-def _add(family: BarFamily, label: BarLabel) -> None:
-    """Add ``label`` unclipped to the Axes drawn last in its bars' box."""
-    host = host_axes(label.bar_axes)
-    if not label.centred:
-        label.xycoords = (
-            "data" if host is label.bar_axes else label.bar_axes.transData
-        )
-    label.set_transform(IdentityTransform())
-    host.add_artist(label)
-    label.set_clip_box(None)
-    label.set_clip_path(None)
-    family.texts.append(label)
-
-
-def _rgba(color: ColorType) -> Rgba:
-    """A matplotlib colour as RGBA; ``ValueError`` for anything else."""
-    return mcolors.to_rgba(color)
-
-
 def label_bars(
     ax: Axes,
     bars: BarContainer | Iterable[BarContainer] | None = None,
     *,
-    where: str = "auto",
-    total: str | Literal[False] = "auto",
-    crowded: str = "rotate",
-    decimals: int | None = None,
-    fmt: str | Callable[[float], object] | None = None,
-    color: ColorType | None = None,
-    sign: str = "-",
     preset: PresetText,
     ticks: TickText,
 ) -> list[Text]:
     """``dm.label_bars``: text sized by ``preset``, values printed as ``ticks`` print them."""
-    options = parse_bar_options(
-        where=where,
-        total=total,
-        crowded=crowded,
-        decimals=decimals,
-        fmt=fmt,
-        color=color,
-        sign=sign,
-        to_rgba=_rgba,
-    )
     containers = _containers(ax, bars)
-    if not containers:
-        return []
-    _release(ax, containers)
-    facts = BarsFacts(tuple(bar_run(c) for c in containers), options.total)
+    facts = BarsFacts(tuple(bar_run(c) for c in containers))
     plan = settle(facts, decide.plain_labels(facts), edges.BARS_EDGES).plan
-    stacks: dict[int | None, frozenset[int]] = {}
-    for p in plan.labels:
-        stacks[p.stack] = stacks.get(p.stack, frozenset()) | {
-            id(containers[p.run])
-        }
-    stacks[None] = frozenset()
-    family = BarFamily(containers, options, preset, ticks)
+    family = BarFamily(preset, ticks)
     for p in plan.labels:
         container = containers[p.run]
-        if isinstance(container.patches[p.index].axes, Axes):
-            label = BarLabel(
-                family, container, p.index, p.kind, p.value, stacks[p.stack]
-            )
-            _add(family, label)
+        if not isinstance(container.patches[p.index].axes, Axes):
+            continue
+        label = BarLabel(family, container, p.index, p.kind, p.value)
+        label.set_transform(IdentityTransform())
+        label.bar_axes.add_artist(label)
+        label.set_clip_box(None)
+        label.set_clip_path(None)
+        family.texts.append(label)
     for axis in dict.fromkeys(t.value_axis for t in family.texts):
         format_ticks_now(axis)
     family.refresh()

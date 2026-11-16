@@ -97,13 +97,13 @@ Stacked bars get centred segment labels and a total. Labels that have no room
 are hidden, so count them in the image: make the figure larger, or report
 them when the size is fixed.
 
-| Asked | Keyword |
+Pass `bars` (what `ax.bar` returns) to label only those. For another text,
+label with matplotlib instead:
+
+| Asked | Instead of `dm.label_bars` |
 |---|---|
-| inside the bar, at the middle | `where="inside"`, `where="center"` |
-| only the stack totals, no totals | `total="only"`, `total=False` |
-| a fixed decimal count; a unit or format | `decimals=1`; `fmt="{} GWh"` |
-| a plus on rises | `sign="+"` |
-| every other label when crowded | `crowded="skip"` |
+| a unit, fixed decimals, a plus on rises | `ax.bar_label(bars, fmt="{:+.1f} GWh", padding=3, fontsize=dm.fs(-1))` |
+| inside the bar | `ax.bar_label(bars, label_type="center", color="white", fontsize=dm.fs(-1))` |
 
 ```python
 fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))

@@ -35,7 +35,6 @@ class NumberText(Protocol):
         value: float,
         decimals: int,
         *,
-        fixed: bool = False,
         prefix: str = "",
         suffix: str = "",
         zero: ScaleZero = BareZero(),  # noqa: B008  (frozen, never mutated)

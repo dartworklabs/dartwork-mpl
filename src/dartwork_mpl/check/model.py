@@ -8,17 +8,23 @@ came from, opaque here, so a finding can name what to fix.
 
 from __future__ import annotations
 
-import math
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from itertools import pairwise
 
 from ..vocab import Box, Which, X, Y
 from .roles import Role
 
 #: Contact up to this (points) is a touch, not a cover.
 TOUCH_PT = 0.5
+
+#: Both axes, x first.
+AXES: tuple[Which, ...] = (X(), Y())
+
+_NUMBER = re.compile(r"[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?")
+_THOUSANDS = re.compile(r"(?<=\d),(?=\d{3}(?:\D|$))")
+#: Longest prefix or suffix a value label may carry ("Total: ", " MWh").
+MAX_AFFIX = 12
 
 
 def margins(box: Box, outer: Box) -> dict[str, float]:
@@ -31,77 +37,23 @@ def margins(box: Box, outer: Box) -> dict[str, float]:
     }
 
 
-#: Both axes, x first.
-AXES: tuple[Which, ...] = (X(), Y())
-
-
-def lies_across(orientation: str | None) -> bool:
-    """A bar container's ``orientation`` draws horizontal bars."""
-    return orientation == "horizontal"
-
-
-_NUMBER = re.compile(r"[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?")
-_THOUSANDS = re.compile(r"(?<=\d),(?=\d{3}(?:\D|$))")
-#: Longest prefix or suffix a value label may carry ("Total: ", " MWh").
-MAX_AFFIX = 12
-
-
-@dataclass(frozen=True)
-class Number:
-    """A short label that prints one number, split into its parts."""
-
-    prefix: str
-    digits: str
-    suffix: str
-
-    @property
-    def value(self) -> float:
-        """The printed number."""
-        return float(self.digits)
-
-    @property
-    def decimals(self) -> int:
-        """Decimal places printed."""
-        mantissa = self.digits.lower().split("e", 1)[0]
-        return len(mantissa.split(".", 1)[1]) if "." in mantissa else 0
-
-    @property
-    def whole(self) -> bool:
-        """A whole number (float noise aside); a printed tiny value is not."""
-        v, n = self.value, round(self.value)
-        if abs(v - n) > 1e-9 * max(1.0, abs(v)):
-            return False
-        return not (n == 0 and v != 0 and not self.scientific)
-
-    @property
-    def scientific(self) -> bool:
-        """Printed with an exponent (``1e-3``)."""
-        return "e" in self.digits.lower()
-
-    @property
-    def bare_zero(self) -> bool:
-        """A plain ``0``: no unit, no decimals."""
-        return self.value == 0 and self.decimals == 0 and not self.suffix
-
-    @classmethod
-    def parse(cls, text: str) -> Number | None:
-        """One number with optional affixes; ``None`` for prose, math, ``Q1``."""
-        s = " ".join(text.strip().replace("\u2212", "-").split())
-        s = _THOUSANDS.sub("", s)
-        if not s or "\\" in s or "\n" in text.strip():
-            return None
-        if len(s) > 1 and s.startswith("$") and s.endswith("$"):
-            return None
-        found = list(_NUMBER.finditer(s))
-        if len(found) != 1:
-            return None
-        m = found[0]
-        prefix, digits, suffix = s[: m.start()], m.group(0), s[m.end() :]
-        if prefix and prefix[-1].isalpha():
-            return None  # "Q1", "v2.0": a token, not a value
-        if len(prefix.strip()) > MAX_AFFIX or len(suffix.strip()) > MAX_AFFIX:
-            return None
-        return cls(prefix, digits, suffix.strip())
+def prints_a_value(text: str) -> bool:
+    """A short label printing one number (``19.4 TWh``, ``$3.5``), not prose,
+    math or a token like ``Q1``."""
+    s = _THOUSANDS.sub(
+        "", " ".join(text.strip().replace("\u2212", "-").split())
+    )
+    if not s or "\\" in s or "\n" in text.strip():
+        return False
+    if len(s) > 1 and s.startswith("$") and s.endswith("$"):
+        return False
+    found = list(_NUMBER.finditer(s))
+    if len(found) != 1:
+        return False
+    prefix, suffix = s[: found[0].start()], s[found[0].end() :]
+    if prefix and prefix[-1].isalpha():
+        return False
+    return len(prefix.strip()) <= MAX_AFFIX and len(suffix.strip()) <= MAX_AFFIX
 
 
 @dataclass(frozen=True)
@@ -121,46 +73,25 @@ class Text:
         return " ".join(self.text.split())[:30]
 
     @property
-    def number(self) -> Number | None:
-        """The number the text prints, when it is a short value label."""
-        return Number.parse(self.text)
+    def value(self) -> bool:
+        """The text prints one number: a value label."""
+        return prints_a_value(self.text)
 
 
 @dataclass(frozen=True)
 class TickRow:
-    """The drawn labels of one axis and what the layout measured of them.
+    """The drawn labels of one axis and how many neighbours collide.
 
-    ``need`` is the length the labels need along the axis to clear each
-    other (``None``: not measurable); ``closest`` the least gap between
-    neighbours in ems; ``overlaps`` the neighbour pairs that collide and
-    ``deepest`` the worst overlap in px. ``names`` when the labels belong
-    to their positions (categories) rather than to a formatter.
+    ``overlaps`` the neighbour pairs that collide and ``deepest`` the worst
+    overlap in px.
     """
 
     handle: object
     panel: int
     axis: Which
     labels: tuple[Text, ...]
-    span: float
-    need: float | None
-    closest: float | None
     overlaps: int
     deepest: float
-    names: bool
-    labelled: bool
-    labelled_elsewhere: bool
-
-
-@dataclass(frozen=True)
-class Corner:
-    """x and y tick labels of one plot box that meet at a corner."""
-
-    panel: int
-    pairs: int
-    depth: float
-    x_label: Text
-    y_label: Text
-    corner: str
 
 
 @dataclass(frozen=True)
@@ -173,28 +104,18 @@ class Hit:
 
 @dataclass(frozen=True)
 class Legend:
-    """A drawn legend: its box, owner Axes box and what its box covers.
-
-    ``panel`` is ``None`` for a figure legend; ``plot`` is its Axes' plot
-    box, or the summed panel area as a box of that area for a figure legend.
-    """
+    """A drawn legend: its owner panel (``None``: a figure legend) and what
+    its box covers."""
 
     handle: object
     panel: int | None
-    box: Box
     labels: tuple[str, ...]
-    plot: Box | None
-    panels_area: float
     covers: tuple[Hit, ...]
 
     @property
     def panels(self) -> tuple[int, ...]:
         """The legend's Axes, none for a figure legend."""
         return () if self.panel is None else (self.panel,)
-
-    def spill(self, canvas: Box) -> float:
-        """How far the legend runs past the canvas (negative: inside)."""
-        return -min(margins(self.box, canvas).values())
 
     @property
     def name(self) -> str:
@@ -211,35 +132,6 @@ class Legend:
 
 
 @dataclass(frozen=True)
-class ValueLabel:
-    """A value label inside an Axes and the data its ink covers."""
-
-    text: Text
-    covers: tuple[Hit, ...]
-
-
-@dataclass(frozen=True)
-class Contrast:
-    """A text's ink against the background it is drawn on (WCAG ratio)."""
-
-    text: Text
-    ratio: float
-    large: bool
-    ink: str
-    paper: str
-
-
-@dataclass(frozen=True)
-class Panel:
-    """A drawn Axes: its plot box and whether it draws anything."""
-
-    handle: object
-    index: int
-    box: Box
-    empty: bool
-
-
-@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -248,29 +140,13 @@ class Facts:
     texts: tuple[Text, ...] = ()
     figure_texts: tuple[Text, ...] = ()
     ticks: tuple[TickRow, ...] = ()
-    corners: tuple[Corner, ...] = ()
     legends: tuple[Legend, ...] = ()
-    values: tuple[ValueLabel, ...] = ()
-    contrast: tuple[Contrast, ...] = ()
-    panels: tuple[Panel, ...] = ()
-    content: Box | None = None
     skipped: tuple[str, ...] = ()
 
     @property
     def touch(self) -> float:
         """:data:`TOUCH_PT` in px."""
         return TOUCH_PT * self.px_per_pt
-
-    def edge_groups(self, low: float, high: float) -> dict[str, list[Text]]:
-        """Texts whose room to their nearest canvas edge is in [low, high)."""
-        groups: dict[str, list[Text]] = {}
-        for t in self.all_texts:
-            side, room = min(
-                margins(t.box, self.canvas).items(), key=lambda s: s[1]
-            )
-            if low <= room < high:
-                groups.setdefault(side, []).append(t)
-        return groups
 
     @property
     def by_panel(self) -> dict[int, list[Text]]:
@@ -298,12 +174,3 @@ def quote(texts: Iterable[str], most: int = 3) -> str:
 def panels_of(texts: Iterable[Text]) -> tuple[int, ...]:
     """The panels the texts belong to, sorted."""
     return tuple(sorted({t.panel for t in texts if t.panel is not None}))
-
-
-def step_decimals(values: Iterable[float]) -> int:
-    """Decimals the smallest step between the values needs, at most four."""
-    finite = sorted({v for v in values if math.isfinite(v)})
-    steps = [b - a for a, b in pairwise(finite) if b - a > 0]
-    if not steps:
-        return 0
-    return min(4, max(0, math.ceil(-math.log10(min(steps)) - 1e-9)))

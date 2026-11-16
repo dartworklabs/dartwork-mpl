@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -99,29 +97,6 @@ def test_crowded_labels_turn_and_what_still_meets_is_hidden():
     assert {t.get_rotation() for t in labels} == {90.0}
     shown = [t for t in labels if t.get_visible()]
     assert labels[-1] in shown and 0 < len(shown) < len(labels)
-
-
-def test_skip_hides_without_a_warning_and_relabelling_replaces():
-    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-    bars = ax.bar(range(30), np.linspace(1000, 9999, 30))
-    dm.label_bars(ax, bars)
-    labels = dm.label_bars(ax, bars, crowded="skip", fmt="{} u")
-    assert len(ax.texts) == len(labels) == 30
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        dm.simple_layout(fig)
-    assert not [w for w in caught if "dm.label_bars" in str(w.message)]
-    assert {t.get_rotation() for t in labels} == {0.0}
-    assert labels[0].get_text() == "1,000 u"
-
-
-def test_twin_bars_put_their_labels_on_the_axes_drawn_last():
-    fig, ax = plt.subplots()
-    ax.bar(list("ABC"), [3, 4, 5])
-    twin = ax.twinx()
-    twin.plot([0, 1, 2], [9, 1, 5])
-    labels = dm.label_bars(ax)
-    assert all(t.axes is twin for t in labels)
 
 
 def test_a_value_label_takes_the_first_free_side():

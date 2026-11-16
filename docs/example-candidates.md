@@ -1,31 +1,21 @@
-# 예시로 옮길 기능 후보
+# 지운 기능의 기록
 
 > **한눈에**
 >
-> 이 리포에서 지운 공개 함수 19개와 눈금 자동 표기 9가지, 그리고 예시가 그 자리를 채울 때 보여줘야 할 내용의 목록이다. 허브가 이 목록을 가져가 예시를 만든다. 번들 템플릿 36개도 지웠고, 그것들은 예시의 출발점으로 쓸 수 있다.
+> 재구성하면서 이 리포에서 지운 공개 함수, 인자, 자동 동작, 검사 규칙의 기록이다. 각 항목에 무엇을 했는지, 원본을 어디서 읽는지, 같은 일을 예시로 하려면 무엇을 보여줘야 하는지를 적었다. 허브가 예시 소재를 찾을 때 참고하는 기록이고, 만들어야 할 목록이 아니다. 허브와 약속된 것은 [hub-contract.md](hub-contract.md)에 있다.
 
-기준은 [handbook/philosophy.md](handbook/philosophy.md) 1절의 "무엇이 기능이 되는가"다. 기준 커밋은 `3e50748d`(`refactor/foundation`)이고, 아래 파일 경로와 줄 번호는 그 커밋의 것이다.
+기준은 [handbook/philosophy.md](handbook/philosophy.md) 1절의 "무엇이 기능이 되는가"다. 첫 표들의 기준 커밋은 `3e50748d`(`refactor/foundation`)이고, 파일 경로와 줄 번호는 그 커밋의 것이다. 뒤쪽 절은 절마다 기준 커밋을 적었다.
 
 ## 순서
 
 소유자가 정한 순서다(2026-11-16).
 
-1. 이 리포의 코드 정리가 끝난다.
-2. 허브(`mpl.dartwork.io`) 담당자가 이 리포의 유산 가운데 쓸 만한 것을 허브로 옮긴다. 아래 표의 지운 함수, 지운 템플릿 36개, 과거 커밋의 예제와 문서가 대상이다.
-3. 옮기기가 끝나면 이 리포의 git 히스토리를 정리해 용량을 줄인다. 히스토리는 약 600 MB이고 대부분 과거에 커밋된 그림이다. 과거 히스토리는 잃어도 된다.
+1. 허브 담당자가 이 리포의 유산 가운데 쓸 만한 것을 허브(`mpl.dartwork.io`)로 옮긴다. 아래 표의 지운 것들, 지운 템플릿 36개, 과거 커밋의 예제와 문서가 대상이다. 이 리포의 코드 정리와 나란히 진행한다.
+2. 옮기기가 끝나면 허브 담당자가 이 리포의 git 히스토리를 정리해 용량을 줄인다. `.git`은 약 610 MB이고 대부분 과거에 커밋된 그림이다. 과거 히스토리는 잃어도 된다. 허브 담당자가 옮기기가 끝났다고 확인해 주면 소유자가 대신 진행할 수도 있다.
 
-3번을 하면 아래의 `git show <커밋>:...` 명령이 더는 동작하지 않는다. 그래서 2번이 먼저다. 3번은 `develop`과 `main`을 다시 쓰는 일이므로 소유자의 확인을 받고 한다.
+2번을 하면 아래의 `git show <커밋>:...` 명령이 더는 동작하지 않는다. 그래서 1번이 먼저다.
 
-허브에는 예시를 하나씩 지정해 연결하지 않고 검색을 둔다. skill은 허브가 준비된 뒤에 그 검색을 가리키도록 고친다.
-
-## 허브가 할 일
-
-후보 하나마다 예시 하나를 만든다.
-
-1. 아래 표의 "구현" 위치에서 함수와 docstring을 읽는다. 동작의 세부는 같은 slice의 `tests/test_surface.py`와 `tests/test_edges.py`에 있다.
-2. 그 함수 없이 같은 결과를 내는 코드를 쓴다. matplotlib과 남는 dm 기능(`dm.style`, `dm.figsize`, `dm.simple_layout`, `dm.save_formats`, 색 이름, `dm.fs`·`dm.lw`·`dm.fw`)만 쓴다.
-3. "예시가 보여줘야 할 것"을 그림에서 확인할 수 있게 한다. 표에 적힌 함정은 함수가 대신 처리해 주던 것이므로 예시 코드에 드러나야 한다.
-4. 예시가 생기면 이 표의 "상태" 칸에 허브의 주소를 적는 PR을 이 리포에 연다.
+## 읽는 법
 
 "상태"가 "지움"인 함수는 이 리포에서 지웠다. 원본은 기준 커밋에서 읽는다(`git show 3e50748d:src/dartwork_mpl/<구현 경로>`). "남김"은 기능으로 남긴 것이고 이유는 아래에 있다.
 
@@ -59,7 +49,7 @@
 
 남긴 것은 셋이다.
 
-- `ensure_contrast`, `readable_text_color`: `dm.check`의 `TEXT_CONTRAST`가 고치는 방법으로 안내한다. WCAG 대비 식을 예시마다 풀어 쓰면 길고 틀리기 쉽다.
+- `ensure_contrast`, `readable_text_color`: 예시가 널리 쓰는 색 산술이다(지운 템플릿 36개 중 10개가 썼다). WCAG 대비 식을 예시마다 풀어 쓰면 길고 틀리기 쉽다.
 - `list_colors`: 어떤 색 계열이 있는지 묻는 토큰 조회다. 색 digest 테스트가 이것으로 계열을 센다.
 
 ## B. 얽힘을 먼저 확인해야 하는 것
@@ -121,3 +111,62 @@
 ## 정하지 않은 것
 
 - 길이 단위의 공개 이름(`dm.cm`, `dm.mm`, `dm.pt`, `dm.inch`, `dm.col1`, `dm.col2`): `dm.figsize("13cm")`처럼 문자열로도 쓸 수 있어 겹친다. 예시의 문제는 아니다.
+
+## legend
+
+`dm.place_legend`과 `dm.figure_legend`에서 지운 동작이다. 측정으로 자리를 고르는 일(안쪽의 빈 자리, 바깥 변의 행 수와 눈금 라벨 너머 거리, 위 범례 위로 올리는 제목)은 기능으로 남았다. 기준 커밋은 `183b1b59`이고 원본은 `git show 183b1b59:src/dartwork_mpl/legend/<파일>`로 읽는다. 실제 차트 10개(선, 띠, 산점도, 묶은 막대, twin, 히스토그램 등)와 바깥 배치 11개에서 지우기 전후 그림이 픽셀 단위로 같았다.
+
+| 동작 | 하던 일 | 구현 | 예시가 보여줘야 할 것 | 상태 |
+| --- | --- | --- | --- | --- |
+| 빈 자리가 없을 때 바깥으로 | 안쪽 여덟 자리가 모두 데이터를 덮으면 다른 패널이 없는 쪽(위, 아래, 오른쪽)으로 옮긴다 | `decide.py:138`, `measure.py:158` | `dm.check`가 `LEGEND_ON_DATA`를 내면 `dm.place_legend(ax, loc="above")`로 바꾸는 흐름. `margins(0)`로 꽉 찬 산점도가 예다 |지움 |
+| 안쪽 1–3열 시도 | 한 열이 안 들어가면 두세 열로 다시 재고, Axes 높이의 55 %가 넘는 한 열 범례는 마지막에 둔다 | `decide.py:90`, `:124` | `dm.place_legend(ax, ncols=3)`. 위쪽에 낮은 띠가 빌 때 여러 열이 맞는 차트 |지움 |
+| matplotlib `loc` 통과 | `place_legend(ax, loc="upper left")`와 figure의 `"outside ..."`를 그대로 matplotlib에 넘긴다 | `model.py:129`, `apply.py:357`, `figure.py:75` | 고정 자리는 `ax.legend(loc="upper left")`. twin이면 위 twin에서 `ax2.legend(h1 + h2, l1 + l2, loc=...)`와 그때 잃는 것 |지움 |
+| 캔버스 폭까지 넓은 바깥 범례 | 위·아래 범례의 행 수를 Axes가 아니라 캔버스 폭(옆 패널 앞까지)에 맞춘다 | `measure.py:211` | `ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.02), ncols=n)`. 이제는 Axes 폭에 맞춰 행이 늘 수 있다 |지움 |
+| figure 범례가 위에 안 맞으면 오른쪽 | `figure_legend(fig)`가 위에 한 열도 안 들어가면 오른쪽으로 | `decide.py:176` | `dm.figure_legend(fig, loc="right")` |지움 |
+| 호출자가 옮긴 범례 존중 | `legend.set_loc(...)`로 옮긴 범례를 `simple_layout`이 다시 옮기지 않는다 | `apply.py:144` | 직접 고른 자리는 `ax.legend(loc=...)`로 새로 만든다. `set_bbox_to_anchor`로 옮긴 범례는 지금도 그대로 둔다 |지움 |
+| 다시 만들 때 handler 유지 | 범례를 다시 만들 때 사용자 `handler_map`을 옮긴다. 제목, 테두리, 글자 크기는 지금도 옮긴다 | `apply.py:298` | `dm.place_legend(ax, handler_map={...})` |지움 |
+
+## labels
+
+`dm.label_bars`, `dm.annotate_value`, `dm.label_axes`, `dm.label_line_ends`, `dm.add_note`는 남았고, 키워드와 일부 자동 동작을 지웠다. 마지막 평가(`20261115-214430`)의 스크립트는 다섯 함수 모두 키워드 없이 불렀다. 기준 커밋은 `183b1b59`이고, 원본은 `git show 183b1b59:src/dartwork_mpl/<구현 경로>`로 읽는다. 동작의 세부는 같은 커밋의 `labels/tests/`에 있다. matplotlib의 `ax.bar_label`이 막대 라벨의 대부분을 한 줄로 대신한다.
+
+| 지운 것 | 하던 일 | 구현 | 예시가 보여줘야 할 것 | 상태 |
+| --- | --- | --- | --- | --- |
+| `label_bars(where=)` | `"inside"`는 막대 끝 안쪽(안 들어가면 바깥), `"center"`는 막대 가운데 | `labels/bar_options.py:86`, `labels/bar_options.py:259` | `ax.bar_label(bars, label_type="center")`. 막대 위 글자의 흰색·검은색 고르기 |지움 |
+| `label_bars(total=)` | 누적 막대에서 합계만 또는 조각만 | `labels/edges.py:54` | 합계만: 맨 위 container에 `ax.bar_label(top, labels=[...])`로 합을 쓴다 |지움 |
+| `label_bars(decimals=, fmt=)` | 고정 소수 자릿수, `"${}B"` 같은 틀이나 함수로 쓰기 | `labels/model.py:175`, `labels/bars.py:296` | `ax.bar_label(bars, fmt="{:.1f} GWh")`. 축 눈금의 단위(만·억, %)와 맞추는 법 |지움 |
+| `label_bars(sign="+")` | 오른 값에 `+`를 붙인다(폭포 차트) | `labels/edges.py:44` | `ax.bar_label(bars, fmt="{:+g}")`. 0에는 부호를 붙이지 않는 점 |지움 |
+| `label_bars(color=)` | 라벨 색 하나, 또는 `"series"`: 막대 밖 라벨을 막대 색으로(대비 4.5:1로 어둡게) | `labels/edges.py:105`, `labels/measure.py:213` | 폭포 차트의 오름·내림을 라벨 색으로 말하기, `dm.ensure_contrast`로 글자 대비 맞추기 |지움 |
+| `label_bars(crowded="skip")` | 빽빽할 때 라벨을 세우지 않고 하나 걸러 숨긴다 | `labels/bar_layout.py:64` | 기본 동작(세우고 그래도 겹치면 숨김)을 쓰지 않을 때 `bar_label` 뒤 라벨을 골라 `set_visible(False)` |지움 |
+| 트윈 축 위에 라벨 그리기 | 막대 라벨을 맨 위에 그려지는 트윈 Axes에 붙인다 | `labels/measure.py:442` | `ax.set_zorder(ax2.get_zorder() + 1)`과 `ax.patch.set_visible(False)` |지움 |
+| 다시 부르면 바꾸기 | 같은 막대에 `label_bars`를 다시 부르면 앞의 라벨을 지운다 | `labels/bars.py:406` | 스크립트를 처음부터 다시 실행한다 |지움 |
+| 뷰 밖 막대의 라벨 숨김 | 막대 끝이 축 범위 밖이면 라벨을 숨긴다 | `labels/bars.py:173` | `set_ylim`으로 자른 막대에 라벨을 붙이지 않는다 |지움 |
+| `annotate_value(side=, offset_pt=, fontsize=, **kw)` | 놓을 쪽과 거리, 크기, 그 밖의 `annotate` 인자 | `labels/model.py:256`, `labels/notes.py:62` | 쪽을 정하려면 `ax.annotate(text, (x, y), xytext=(0, 3), textcoords="offset points", ha="center", va="bottom")` |지움 |
+| `label_axes(fontsize=, fontweight=, x=, y=, **kw)` | 크기·무게, 축 비율로 고정한 자리, 그 밖의 글자 인자 | `labels/model.py:272`, `labels/letters.py:108` | 고정 자리는 `ax.text(-0.1, 1.05, "a", transform=ax.transAxes)`. 돌려받은 글자에 `set_fontweight("bold")` |지움 |
+| `label_line_ends(lines=, gap_pt=, **kw)` | 이름 붙일 선 고르기, 간격, 글자 인자 | `labels/ends.py:91` | 이름을 붙이지 않을 선은 `label="_hidden"`. 돌려받은 글자를 고친다 |지움 |
+| `add_note(**kw)` | 글자 인자 | `labels/notes.py:117` | 돌려받은 글자에 `set_color`, `set_fontsize` |지움 |
+
+## check
+
+`dm.check`의 규칙 18개 중 12개와 그것만 쓰던 측정을 지웠다(2026-11-16). 남은 규칙은 `OVERFLOW`, `OVERLAP`, `CROSS_AXES_OVERLAP`, `TEXT_CROWD`, `LEGEND_ON_DATA`, `TICK_OVERLAP`이다. 지운 규칙은 마지막 평가(`20261115-214430`)에서 그림을 낸 스크립트 19개, 픽셀 장면 20개, robustness 장면 51개(layout 전후)에서 한 번도 작동하지 않았거나, 작동한 곳이 모두 사람이 보기에 결함이 아니었거나, `dm.simple_layout`을 부른 뒤에는 한 번도 작동하지 않았다. 대부분 그림을 보면 알 수 있는 것이라 skill의 `references/review.md` "Look at the image" 목록이 맡는다. 예시는 그 판단을 그림 한 쌍(나쁜 것, 고친 것)으로 보여주면 된다.
+
+원본은 `git show 183b1b59:src/dartwork_mpl/check/<파일>`로 읽는다.
+
+| 규칙 | 하던 일 | 구현 | 예시가 보여줘야 할 것 | 상태 |
+| --- | --- | --- | --- | --- |
+| `TEXT_AT_EDGE` | 캔버스 가장자리 1 pt 안에 붙은 글자(INFO) | `decide.py:52` | `fig.text(0, …)` 대신 `x`에 여백을 두거나 `dm.simple_layout(fig, margin="2mm")` | 지움 |
+| `MARGIN_ASYMMETRY` | 한쪽 여백이 반대쪽의 3배를 넘음 | `decide.py:74` | 손으로 `subplots_adjust`한 그림과 `dm.simple_layout` 뒤의 그림 | 지움 |
+| `MISSING_AXIS_LABEL` | 이름도 단위도 없는 숫자 축(INFO). 날짜 축에도 떠서 소음이었다 | `decide.py:157` | `ax.set_ylabel("Revenue (M USD)")`처럼 양과 단위를 쓰는 법, 날짜·범주 축은 생략해도 되는 이유 | 지움 |
+| `TEXT_CONTRAST` | 글자와 그 아래 색의 WCAG 대비가 4.5:1(큰 글자 3:1) 미만. 그림을 Agg로 한 번 더 그려 픽셀을 읽었다 | `decide.py:172`, `ink.py:266` | 진한 색 위의 값 라벨에 `dm.readable_text_color(배경)`. 히트맵 주석이 대표 사례 | 지움 |
+| `LEGEND_OVERFLOW` | 범례가 plot의 30 %(밖이면 50 %)보다 크거나 캔버스 밖으로 나감 | `decide.py:195` | 캔버스 밖으로 잘리는 범례는 이제 `OVERFLOW`가 범례 글자로 잡는다. 선이 많으면 `dm.label_line_ends(ax)` | 지움 |
+| `LEGEND_OVERLAP` | 범례가 제목·축 이름·눈금 글자를 덮음 | `decide.py:222` | `bbox_to_anchor`로 위에 올린 범례와 제목이 부딪히는 경우, `dm.place_legend(ax, loc="above")` | 지움 |
+| `VALUE_LABEL_ON_DATA` | 값 라벨이 선·막대·점 위에 그려짐 | `decide.py:261` | 선 위의 점 값은 `dm.annotate_value`, 막대는 `dm.label_bars` | 지움 |
+| `VALUE_LABEL_DECIMAL` | 정수인 값 라벨이 `120.0`처럼 소수를 찍음 | `decide.py:281` | `f"{v:,.0f}"` | 지움 |
+| `TICK_CROWD` | 눈금 글자 사이가 0.5 em 미만(INFO). 작동한 곳은 모두 `TICK_OVERLAP`도 작동했다 | `decide.py:317`, `overlap.py:87` | `ax.locator_params(nbins=5)`, 범주가 많으면 가로 막대 | 지움 |
+| `TICK_CORNER_OVERLAP` | x와 y의 첫 눈금 글자가 모서리에서 겹침(-3..3 정사각형) | `decide.py:336`, `overlap.py:254` | `ax.tick_params(pad=…)`를 0으로 줄였을 때의 모서리 | 지움 |
+| `TICK_DECIMAL` | 눈금이 `2.0`, 섞인 자릿수, 같은 글자 두 번, 과한 자릿수를 찍음 | `decide.py:350` | `ax.yaxis.set_major_formatter("{x:.1f}")`로 간격에 맞춘 자릿수 | 지움 |
+| `EMPTY_AXES` | 아무것도 그리지 않는 Axes(INFO). `twiny` 축에도 떠서 소음이었다 | `decide.py:394` | 격자보다 패널이 적을 때 `ax.remove()` | 지움 |
+
+측정에서 지운 것:
+
+- 3D Axes의 `ax.text` 위치(`walk.py:140`, 투영하며 그리는 자리를 읽던 렌더러), `secondary_xaxis`·`secondary_yaxis`의 글자(`walk.py:61`), 극좌표·3D Axes의 눈금 글자, inset Axes의 범례. 근거의 그림에 하나도 없다. 이제 직교 좌표 Axes의 글자만 읽는다.

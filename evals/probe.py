@@ -76,7 +76,7 @@ def describe(fig: Figure) -> dict[str, Any]:
         "check": [
             {
                 "rule": f.rule,
-                "severity": f.severity.value,
+                "severity": str(f.severity),
                 "message": f.message,
                 "fix": f.fix,
             }

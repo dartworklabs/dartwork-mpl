@@ -39,8 +39,6 @@ def test_readable_picks_the_higher_contrast_ink():
     assert decide.readable(pale_bg, WHITE, BLACK) == DarkInk()
 
 
-def test_composite_paints_layers_in_order():
+def test_composite_paints_over():
     half_red = Rgba(Rgb(1.0, 0.0, 0.0), 0.5)
     assert decide.composite_over(half_red, WHITE).channels == (1.0, 0.5, 0.5)
-    opaque = Rgba(BLACK, 1.0)
-    assert decide.composite_layers((half_red, opaque), WHITE) == BLACK

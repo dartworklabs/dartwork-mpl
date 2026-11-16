@@ -23,10 +23,10 @@ dm.save_formats(fig, "output/figure-v1")
 ```
 
 `dm.check` measures the drawn figure and reports what makes it ugly or
-unreadable; it fixes nothing. Each finding has `rule`, `severity`,
-`message`, `fix`, and the `artists` and `panels` involved;
-`found.of("OVERLAP")` picks one rule. `NOT RUN` in the report means a rule
-could not measure this figure: it is not proven clean, say so.
+unreadable; it fixes nothing. Each finding has `rule`, `message`, `fix`,
+and the `artists` and `panels` involved; `found.rules` lists the rules that
+found something. `NOT RUN` in the report means a rule could not measure
+this figure: it is not proven clean, say so.
 
 ## Look at the image
 
@@ -39,6 +39,8 @@ reader would. First: does the point land in five seconds? Then check that:
 - the plotted data matches the input (count, gaps, order, units);
 - tick and value labels carry no meaningless decimals (`200`, `1k`, not
   `200.0`, `1.0k`) and one axis uses one unit;
+- every axis of numbers says what they count, and text on a coloured fill
+  stays readable;
 - no glyph boxes: every Korean, Japanese or other non-Latin character shows;
 - panel sizes and empty space look intended.
 
@@ -47,28 +49,22 @@ figure was reviewed.
 
 ## Read the findings
 
-Fix every WARNING; weigh each INFO. The fix line names the usual remedy.
+Fix every finding. The fix line names the usual remedy.
 
 | rule | Means |
 |---|---|
 | `OVERFLOW` | text cut off by the canvas edge |
-| `TEXT_AT_EDGE` (INFO) | text flush with the canvas edge: leave `dm.simple_layout`'s default margin, or raise it |
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
-| `LEGEND_OVERFLOW`, `LEGEND_OVERLAP`, `LEGEND_ON_DATA` | legend too big, over a title or label, over data |
-| `VALUE_LABEL_ON_DATA`, `VALUE_LABEL_DECIMAL` | a value label hides data, or prints `120.0` |
-| `TICK_OVERLAP`, `TICK_CROWD`, `TICK_CORNER_OVERLAP` | tick labels collide or crowd |
-| `TICK_DECIMAL` | ticks print `2.0`, mixed or repeated decimals |
-| `MISSING_AXIS_LABEL` (INFO) | numbers on an axis nothing names |
-| `TEXT_CONTRAST` | text too faint on its background |
-| `EMPTY_AXES` (INFO), `MARGIN_ASYMMETRY` | an empty panel, one wide empty margin |
+| `LEGEND_ON_DATA` | a legend over data, text or another panel |
+| `TICK_OVERLAP` | neighbouring tick labels collide |
 
 An "only X" edit keeps the warnings the original already had: report them,
 do not fix them.
 
 ## Revise
 
-1. Change only what the image, a WARNING or the user asked for.
+1. Change only what the image, a finding or the user asked for.
 2. Save under the next stem (`figure-v2`) and keep v1. If the user named an
    output path, write the final version there too.
 3. `dm.check` again and look at the new PNG.

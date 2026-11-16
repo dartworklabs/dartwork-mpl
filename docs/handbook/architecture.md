@@ -47,7 +47,7 @@ orphan: true
 | --- | --- | --- |
 | `vocab` | slice들이 함께 쓰는 낱말. 모듈 하나가 어휘 하나다: `axis`(x·y 축과 라벨이 놓이는 쪽), `align`(글자 정렬), `box`(픽셀 사각형 `Box`와 구간 `Span`), `edge`(상자의 네 변, figure 범례가 잡는 변), `projection`(평면, 3D, 그 밖), `number`(숫자가 찍히는 눈금 단위), `locale`(기본 관례와 한국 관례) | 모든 slice, geometry |
 | `length` | 물리 길이 `Length`와 단위(`dm.cm` 등) | size, layout, 루트 |
-| `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels, check |
+| `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels |
 | `edgecase` | 엣지 케이스 등록 장치 | 모든 slice |
 | `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨 | check, labels, layout, legend, ticks |
 
@@ -60,7 +60,7 @@ matplotlib의 `Figure`와 `Axes`는 상태를 바꾸는 객체다. 이 사실은
 | 파일 | 역할 | 규칙 |
 | --- | --- | --- |
 | `model.py` | slice의 도메인 타입과 입력 파싱. 문자열 비교와 `Literal`은 여기서만 쓴다 | 순수 |
-| 개념 이름의 타입 모듈 | `model.py`가 커져 개념별로 나온 도메인 타입(예: `labels/places.py`, `legend/plans.py`) | 순수, `boundaries.py`의 `DECISIONS`에 등록 |
+| 개념 이름의 타입 모듈 | `model.py`가 커져 개념별로 나온 도메인 타입(예: `labels/bar_geometry.py`) | 순수, `boundaries.py`의 `DECISIONS`에 등록 |
 | `decide.py` | 평범한 그림에 대한 결정. 사실을 받아 계획을 돌려준다 | 순수, 도메인 타입만 |
 | `edges.py` | 이름 붙은 엣지 케이스 목록. 항목마다 이유와 예제 | 순수, 도메인 타입만 |
 | `measure.py`, `apply.py`, 개념 이름의 shell 모듈 | figure에서 사실을 읽고 계획을 반영하는 shell | matplotlib 사용 |

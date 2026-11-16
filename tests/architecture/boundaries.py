@@ -64,7 +64,7 @@ ENTRY_POINTS = frozenset(
 PLATFORM = frozenset(
     {
         # Colour values and their arithmetic: sRGB, OKLab, compositing,
-        # WCAG contrast (color, labels and check compute with them).
+        # WCAG contrast (color and labels compute with them).
         "dartwork_mpl.colorspace",
         # A physical length and its units (size measures canvases in it,
         # layout margins).
@@ -109,7 +109,7 @@ DECISIONS: Mapping[str, str] = {
         "what is wrong with a figure is decided from its measured facts alone"
     ),
     "dartwork_mpl.check.model": (
-        "the facts, findings and label parsing need nothing outside them"
+        "the facts, findings and value-label test need nothing outside them"
     ),
     "dartwork_mpl.font.decide": (
         "which font-table fixes apply is decided from faces alone"
@@ -134,13 +134,7 @@ DECISIONS: Mapping[str, str] = {
         "measuring functions alone"
     ),
     "dartwork_mpl.legend.model": (
-        "parsing a caller's loc and keywords needs nothing outside it"
-    ),
-    "dartwork_mpl.legend.boxes": (
-        "a legend's boxes and sizes are display pixels alone"
-    ),
-    "dartwork_mpl.legend.plans": (
-        "a legend's plans and facts carry their measuring functions as values"
+        "parsing a caller's loc and the legend's sizes need nothing outside it"
     ),
     "dartwork_mpl.layout.decide": (
         "grid edges are decided from measured content and margins alone"
@@ -152,22 +146,15 @@ DECISIONS: Mapping[str, str] = {
         "parsing user input into size types needs nothing outside it"
     ),
     "dartwork_mpl.labels.decide": (
-        "label placement is decided from measured boxes and parsed options alone"
+        "label placement is decided from measured boxes alone"
     ),
     "dartwork_mpl.labels.model": (
-        "parsing label_bars' keywords needs nothing outside it"
-    ),
-    "dartwork_mpl.labels.bar_options": (
-        "a bar label's options, kinds and ink are types over their own values"
+        "a point label's sides, panel letters and line-end columns are "
+        "measured boxes alone"
     ),
     "dartwork_mpl.labels.bar_geometry": (
-        "a bar label's spans, crowding and headroom are measured numbers alone"
-    ),
-    "dartwork_mpl.labels.places": (
-        "a short label's sides, corners and line places carry their own offsets"
-    ),
-    "dartwork_mpl.labels.panels": (
-        "panel letters and line-end columns are measured boxes alone"
+        "a bar label's kinds, spans, crowding and headroom are measured "
+        "numbers alone"
     ),
     "dartwork_mpl.style.decide": (
         "which layers apply and what a step is worth decide from presets alone"

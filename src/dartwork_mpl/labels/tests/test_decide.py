@@ -6,28 +6,23 @@ import pytest
 
 from dartwork_mpl.labels import decide
 from dartwork_mpl.labels.bar_geometry import (
+    BeyondEnd,
     CrowdFacts,
     HeadroomFacts,
+    Higher,
+    Lower,
     Pixels,
     Room,
     Spot,
 )
-from dartwork_mpl.labels.bar_options import (
-    Center,
-    Edge,
-    Higher,
-    Inside,
-    Lower,
-    Outside,
-    Segment,
-    StackTotal,
-    TotalsToo,
-    ValueFacts,
-    placement,
+from dartwork_mpl.labels.model import (
+    Column,
+    Panel,
+    PanelsFacts,
+    Title,
+    Tries,
+    Try,
 )
-from dartwork_mpl.labels.model import parse_bar_options
-from dartwork_mpl.labels.panels import Column, Panel, PanelsFacts, Title
-from dartwork_mpl.labels.places import Tries, Try
 from dartwork_mpl.labels.stacks import BarRun, BarsFacts
 from dartwork_mpl.vocab import Span
 
@@ -76,19 +71,6 @@ def test_headroom_grows_only_as_far_as_the_labels_need(rooms, view):
         assert (grown.low, grown.high) == pytest.approx((view.low, view.high))
 
 
-@pytest.mark.parametrize(
-    ("value", "decimals", "fixed"), [(21.4, 1, False), (0.0, 2, True)]
-)
-def test_bar_text_is_the_value_at_the_call_decimals(value, decimals, fixed):
-    text = decide.bar_text(ValueFacts(value, decimals, fixed))
-    assert (text.value, text.decimals, text.fixed, text.lead) == (
-        value,
-        decimals,
-        fixed,
-        "",
-    )
-
-
 def test_every_finite_bar_gets_a_plain_label():
     run = BarRun(
         (0, 1, 2),
@@ -97,10 +79,10 @@ def test_every_finite_bar_gets_a_plain_label():
         (3, float("nan"), 5),
         ("ax", "vertical"),
     )
-    plan = decide.plain_labels(BarsFacts((run,), TotalsToo()))
+    plan = decide.plain_labels(BarsFacts((run,)))
     assert [(p.index, p.kind, p.value) for p in plan.labels] == [
-        (0, Edge(), 3),
-        (2, Edge(), 5),
+        (0, BeyondEnd(), 3),
+        (2, BeyondEnd(), 5),
     ]
 
 
@@ -120,11 +102,6 @@ def _tries(*pairs: tuple[float, float]) -> Tries:
 )
 def test_value_side_takes_the_first_free_side(pairs, side):
     assert decide.value_side(_tries(*pairs)).index == side
-
-
-def test_first_free_falls_back_to_the_least_covered():
-    assert decide.first_free(_tries((0, 4), (0, 0))).index == 1
-    assert decide.first_free(_tries((0, 4), (2, 1))).index == 1
 
 
 def _panel(x: float, *, cell=None, ylabel=None, title=None, top=100.0) -> Panel:
@@ -148,7 +125,7 @@ def test_letters_take_the_column_s_outer_name_and_the_title_baseline():
         _panel(100, cell=((1, 1), (1, 0)), ylabel=60),
         _panel(300, cell=((1, 0), (1, 1))),
     )
-    facts = PanelsFacts(panels, 1.0, False)
+    facts = PanelsFacts(panels, 1.0)
     letters = decide.align_letters(facts, decide.letter_lefts(facts))
     # A column takes its leftmost name; an unnamed panel keeps its row's
     # spine distance; an untitled letter rises to its row's baseline.
@@ -157,51 +134,10 @@ def test_letters_take_the_column_s_outer_name_and_the_title_baseline():
 
 
 def test_letters_without_any_name_go_where_a_name_would_be():
-    facts = PanelsFacts((_panel(100),), 1.0, False)
+    facts = PanelsFacts((_panel(100),), 1.0)
     assert decide.letter_lefts(facts).lefts == (70,)
 
 
 def test_spread_keeps_order_and_the_mean_of_a_crowded_group():
     out = decide.spread(Column((10.0, 11.0, 40.0), 6.0)).centres
     assert out == pytest.approx((7.5, 13.5, 40.0))
-
-
-def _no_colour(value: object) -> tuple[float, float, float, float]:
-    raise ValueError(value)
-
-
-def test_options_parse_once_and_name_a_bad_keyword():
-    options = parse_bar_options(
-        where="auto",
-        total="auto",
-        crowded="rotate",
-        decimals=None,
-        fmt="{:.1f} GWh",
-        color="series",
-        sign="+",
-        to_rgba=_no_colour,
-    )
-    assert options.series
-    assert options.plus
-    assert placement(Segment(), options.where) == Center()
-    assert placement(StackTotal(), Inside()) == Outside()
-    for bad in (
-        {"where": "top"},
-        {"decimals": -1},
-        {"fmt": "GWh"},
-        {"color": "nope"},
-    ):
-        kw = {
-            **{
-                "where": "auto",
-                "total": "auto",
-                "crowded": "rotate",
-                "decimals": None,
-                "fmt": None,
-                "color": None,
-                "sign": "-",
-            },
-            **bad,
-        }
-        with pytest.raises(ValueError, match=next(iter(bad))):
-            parse_bar_options(**kw, to_rgba=_no_colour)

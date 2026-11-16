@@ -24,13 +24,6 @@ def composite_over(top: Rgba, below: Rgb) -> Rgb:
     return Rgb(r, g, b)
 
 
-def composite_layers(layers: tuple[Rgba, ...], below: Rgb) -> Rgb:
-    """``layers`` painted in order, lowest first, over the opaque ``below``."""
-    for layer in layers:
-        below = composite_over(layer, below)
-    return below
-
-
 # -- contrast ------------------------------------------------------------------
 
 

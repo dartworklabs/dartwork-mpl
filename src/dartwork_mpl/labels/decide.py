@@ -16,21 +16,16 @@ import math
 import numpy as np
 
 from ..vocab import Span
-from .bar_geometry import CrowdFacts, Headroom, HeadroomFacts, Shown
-from .bar_options import (
-    Edge,
+from .bar_geometry import (
+    BeyondEnd,
+    CrowdFacts,
+    Headroom,
+    HeadroomFacts,
     Higher,
-    Ink,
-    InkFacts,
-    LabelText,
     Lower,
-    OwnInk,
-    SeriesInk,
-    TextInk,
-    ValueFacts,
+    Shown,
 )
-from .panels import Column, Letters, PanelsFacts
-from .places import Choice, Tries
+from .model import Choice, Column, Letters, PanelsFacts, Tries
 from .stacks import BarsFacts, BarsPlan, Planned
 
 # Above the top decoration of a panel without a title, and between a letter
@@ -38,18 +33,12 @@ from .stacks import BarsFacts, BarsPlan, Planned
 TOP_GAP_PT, CLEARANCE_PT = 4.0, 2.0
 
 
-# ------------------------------------------------------------ bar text
-def bar_text(facts: ValueFacts) -> LabelText:
-    """The value at the call's decimals, as the ticks print it."""
-    return LabelText(facts.scaled, facts.decimals, fixed=facts.fixed)
-
-
 # ------------------------------------------------------------ which bars
 def plain_labels(facts: BarsFacts) -> BarsPlan:
     """One label per drawn bar (finite value), containers in order."""
     return BarsPlan(
         tuple(
-            Planned(run, index, Edge(), value)
+            Planned(run, index, BeyondEnd(), value)
             for run, bars in enumerate(facts.runs)
             for index, value in enumerate(bars.values)
             if math.isfinite(value)
@@ -123,29 +112,21 @@ def headroom(facts: HeadroomFacts) -> Headroom:
     return Headroom(Span(new_low, new_high))
 
 
-# ------------------------------------------------------------ ink
-def ink(facts: InkFacts) -> Ink:
-    """The call's colour when it gave one, else the preset text colour."""
-    match facts.options.color:
-        case OwnInk(rgba=rgba):
-            return Ink(rgba)
-        case TextInk() | SeriesInk():
-            return Ink()
-
-
 # ------------------------------------------------------------ point labels
 def value_side(tries: Tries) -> Choice:
     """``annotate_value``'s side among above, below, right, left (in that
     order): the first free one; else the least covered one inside the axes;
     else the least outside and covered. A label that leaves the axes above
     its point moves sideways, never flips below."""
-    candidates = [0, 2, 3] if tries.tries[0].outside > 0 else [0, 1, 2, 3]
-    return Choice(tries.pick(candidates, inside_first=True))
-
-
-def first_free(tries: Tries) -> Choice:
-    """The first free candidate, else the least outside and covered."""
-    return Choice(tries.pick(range(len(tries.tries)), inside_first=False))
+    t = tries.tries
+    candidates = [0, 2, 3] if t[0].outside > 0 else [0, 1, 2, 3]
+    first = next((i for i in candidates if t[i].clear), None)
+    if first is not None:
+        return Choice(first)
+    inside = [i for i in candidates if t[i].outside <= 0]
+    if inside:
+        return Choice(min(inside, key=lambda i: t[i].collision))
+    return Choice(min(candidates, key=lambda i: t[i].outside + t[i].collision))
 
 
 # ------------------------------------------------------------ panel letters

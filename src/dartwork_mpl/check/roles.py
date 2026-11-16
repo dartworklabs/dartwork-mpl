@@ -1,7 +1,7 @@
 """What a text is in its figure: a title, an axis label, a tick label ...
 
-Each role says whether the user placed it (``free``), whether it is a tick
-label (``tick``) and whether a legend must not cover it (``under_legend``).
+Each role says whether the user placed it (``free``) and whether it is a
+tick label (``tick``).
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ class Title:
     word: ClassVar[str] = "title"
     free: ClassVar[bool] = False
     tick: ClassVar[bool] = False
-    under_legend: ClassVar[bool] = True
 
     def __str__(self) -> str:
         """The words a finding names it by."""
@@ -31,7 +30,6 @@ class AxisLabel:
     word: ClassVar[str] = "axis label"
     free: ClassVar[bool] = False
     tick: ClassVar[bool] = False
-    under_legend: ClassVar[bool] = True
 
     def __str__(self) -> str:
         """The words a finding names it by."""
@@ -45,7 +43,6 @@ class TickLabel:
     word: ClassVar[str] = "tick label"
     free: ClassVar[bool] = False
     tick: ClassVar[bool] = True
-    under_legend: ClassVar[bool] = True
 
     def __str__(self) -> str:
         """The words a finding names it by."""
@@ -59,7 +56,6 @@ class FreeText:
     word: ClassVar[str] = "text"
     free: ClassVar[bool] = True
     tick: ClassVar[bool] = False
-    under_legend: ClassVar[bool] = False
 
     def __str__(self) -> str:
         """The words a finding names it by."""
@@ -73,7 +69,6 @@ class PanelLetter:
     word: ClassVar[str] = "panel letter"
     free: ClassVar[bool] = False
     tick: ClassVar[bool] = False
-    under_legend: ClassVar[bool] = False
 
     def __str__(self) -> str:
         """The words a finding names it by."""
@@ -82,12 +77,12 @@ class PanelLetter:
 
 @dataclass(frozen=True)
 class FigureText:
-    """A figure-level text: a suptitle, ``fig.text``."""
+    """A text judged only against the canvas: a suptitle, ``fig.text``, a
+    legend entry."""
 
     word: ClassVar[str] = "figure text"
     free: ClassVar[bool] = False
     tick: ClassVar[bool] = False
-    under_legend: ClassVar[bool] = True
 
     def __str__(self) -> str:
         """The words a finding names it by."""
@@ -95,6 +90,5 @@ class FigureText:
 
 
 #: What a text is in its figure. ``free``: a text the user placed;
-#: ``tick``: a tick label; ``under_legend``: a text a legend must not cover
-#: (title, axis label, tick, figure text).
+#: ``tick``: a tick label.
 Role = Title | AxisLabel | TickLabel | FreeText | PanelLetter | FigureText

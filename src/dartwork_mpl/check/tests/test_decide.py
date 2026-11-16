@@ -1,75 +1,44 @@
-"""The pure pieces the rules stand on: label parsing, boxes, the report."""
+"""The pure pieces the rules stand on: value labels and the report."""
 
 from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.check.findings import Finding, Findings, Warn
-from dartwork_mpl.check.model import Number, margins, step_decimals
-from dartwork_mpl.vocab import Box
+from dartwork_mpl.check.findings import Finding, Findings
+from dartwork_mpl.check.model import prints_a_value
 
 
 @pytest.mark.parametrize(
-    ("label", "parts"),
+    ("label", "value"),
     [
-        ("1,200 MWh", ("", "1200", "MWh")),
-        ("45.0%", ("", "45.0", "%")),
-        ("$3.5", ("$", "3.5", "")),
-        ("\u22122.0", ("", "-2.0", "")),
-        ("260만", ("", "260", "만")),
-        ("Total: 12", ("Total: ", "12", "")),
-        ("Q1", None),
-        ("v2.0", None),
-        ("24 months of data collected", None),
-        ("1 to 2", None),
-        ("$\\alpha$", None),
-        ("", None),
+        ("1,200 MWh", True),
+        ("45.0%", True),
+        ("$3.5", True),
+        ("\u22122.0", True),
+        ("260만", True),
+        ("Total: 12", True),
+        ("Q1", False),
+        ("v2.0", False),
+        ("24 months of data collected", False),
+        ("1 to 2", False),
+        ("$\\alpha$", False),
+        ("", False),
     ],
 )
-def test_number_parse(label: str, parts: tuple[str, str, str] | None):
-    n = Number.parse(label)
-    assert (None if n is None else (n.prefix, n.digits, n.suffix)) == parts
-
-
-@pytest.mark.parametrize(
-    ("digits", "decimals", "whole"),
-    [
-        ("2.0", 1, True),
-        ("2.5", 1, False),
-        ("45.00000000000001", 14, True),
-        ("0.00000000000001", 14, False),
-        ("5.6e-17", 1, True),
-    ],
-)
-def test_number_decimals_and_whole(digits: str, decimals: int, whole: bool):
-    n = Number("", digits, "")
-    assert (n.decimals, n.whole) == (decimals, whole)
-
-
-@pytest.mark.parametrize(
-    ("values", "need"),
-    [((0.0, 0.5, 1.0), 1), ((0, 10, 20), 0), ((0.01, 0.02), 2), ((1.0,), 0)],
-)
-def test_step_decimals(values: tuple[float, ...], need: int):
-    assert step_decimals(values) == need
-
-
-def test_box_cover_gap_and_margins():
-    a, b = Box(0, 0, 10, 10), Box(5, 5, 25, 25)
-    assert a.cover(b) == pytest.approx(0.25)
-    assert a.gap(Box(13, 0, 20, 10)) == 3
-    assert margins(Box(-2, 1, 5, 5), a)["left"] == -2
+def test_a_value_label_prints_one_number(label: str, value: bool):
+    assert prints_a_value(label) is value
 
 
 def test_report_lists_findings_fixes_and_what_did_not_run():
     clean = Findings()
     assert not clean and clean.report() == "dm.check: no defects found."
-    f = Finding("OVERLAP", Warn(), "A overlaps B", "move one")
-    found = Findings((f,), skipped=("TICK_*",))
+    f = Finding("OVERLAP", "A overlaps B", "move one")
+    found = Findings((f,), skipped=("TICK_OVERLAP",))
     assert found.report().splitlines() == [
         "dm.check: 1 finding",
         "WARNING OVERLAP: A overlaps B",
         "  fix: move one",
-        "NOT RUN: TICK_* (could not measure; the figure is not proven clean)",
+        "NOT RUN: TICK_OVERLAP (could not measure; the figure is not proven "
+        "clean)",
     ]
-    assert found.of("OVERLAP") == (f,) and found.rules == ("OVERLAP",)
+    assert found.rules == ("OVERLAP",) and str(f.severity) == "WARNING"

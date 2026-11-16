@@ -71,7 +71,7 @@ Text on the figure follows the document it goes into. Unknown: follow the langua
 
 A figure is finished when you have looked at it, not when the script ran.
 
-1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlaps, a legend on data, crowded ticks, meaningless decimals. Fix every WARNING and weigh each INFO. `NOT RUN` means a rule could not measure, so say so.
+1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Fix every finding. `NOT RUN` means a rule could not measure, so say so.
 2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
 3. Fix what you saw, save as the next version (`-v2`, keep v1) and say what changed. If you cannot view images, say the figure was not visually reviewed.
 

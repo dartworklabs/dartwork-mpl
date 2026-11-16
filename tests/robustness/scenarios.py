@@ -247,11 +247,6 @@ def _build_triple_twinx_offset_spine() -> Figure:
 
 
 def _build_extreme_left_squeeze() -> Figure:
-    # left=0.05 would push content to the canvas edge so left_margin
-    # falls below the 30 px MIN_MARGIN_PX threshold in _check_margin_asymmetry
-    # and the check skips the comparison. left=0.10 gives ~113 px left
-    # margin, well above the threshold, while right margin stays ~1300 px
-    # (ratio ~11x), reliably triggering MARGIN_ASYMMETRY.
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.barh([0, 1, 2], [1, 2, 3])
     fig.subplots_adjust(left=0.10, right=0.35)
@@ -675,7 +670,7 @@ def _build_source_note() -> Figure:
 
 
 def _build_waterfall_report() -> Figure:
-    """The waterfall template's calls on a report page, with rises."""
+    """The waterfall template's calls on a report page."""
     dm.style.use("report")
     names = ["Opening stock", "New orders", "Returns", "Write-offs", "Closing"]
     steps = [120.0, 45.0, -20.0, -15.0]
@@ -685,7 +680,7 @@ def _build_waterfall_report() -> Figure:
     level = [0.0, 120.0, 165.0, 145.0]
     bars = ax.bar(range(4), steps, bottom=[0.0, *level[1:]])
     total = ax.bar([4], [sum(steps)])
-    dm.label_bars(ax, bars, sign="+")
+    dm.label_bars(ax, bars)
     dm.label_bars(ax, total)
     ax.set_xticks(range(5), names)
     ax.set_ylabel("Units")
@@ -724,10 +719,9 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="dense_xticks_50_categories",
         build=_build_dense_xticks_50_categories,
-        # 50 ticks in 13 cm guarantees a TICK_CROWD info. After
-        # simple_layout we still have 50 ticks; the info is informational
-        # and OVERFLOW must remain absent.
-        expect_warnings=("TICK_CROWD",),
+        # 50 ticks in 13 cm overlap. After simple_layout we still have 50
+        # ticks; OVERFLOW must remain absent.
+        expect_warnings=("TICK_OVERLAP",),
     ),
     RobustnessScenario(
         name="unicode_korean_xticks", build=_build_unicode_korean_xticks
@@ -772,21 +766,14 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="extreme_left_squeeze",
         build=_build_extreme_left_squeeze,
-        # MARGIN_ASYMMETRY is the whole point — must be flagged before
-        # simple_layout. simple_layout's deterministic direct-calc computes
-        # all four margins simultaneously, so it incidentally rebalances the
-        # squeeze without a dedicated symmetry pass.
-        expect_warnings=("MARGIN_ASYMMETRY",),
+        # simple_layout computes all four margins at once, so it rebalances
+        # the squeeze.
     ),
     RobustnessScenario(
-        name="extreme_right_squeeze",
-        build=_build_extreme_right_squeeze,
-        expect_warnings=("MARGIN_ASYMMETRY",),
+        name="extreme_right_squeeze", build=_build_extreme_right_squeeze
     ),
     RobustnessScenario(
-        name="extreme_bottom_squeeze",
-        build=_build_extreme_bottom_squeeze,
-        expect_warnings=("MARGIN_ASYMMETRY",),
+        name="extreme_bottom_squeeze", build=_build_extreme_bottom_squeeze
     ),
     RobustnessScenario(
         name="outside_axes_annotation",
@@ -840,8 +827,8 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="tiny_figure_2_5cm",
         build=_build_tiny_figure_2_5cm,
-        # 2.5 cm canvas can't fit ylabel + 4 ticks; expect TICK_CROWD
-        # but we still want save_formats to succeed.
+        # 2.5 cm canvas can't fit ylabel + 4 ticks, but we still want
+        # save_formats to succeed.
         forbid_warnings=(),  # Tolerate any post-layout warnings.
         # Canvas too small to satisfy the 4-px white-border invariant.
         pixel_checks=(),
@@ -854,7 +841,7 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="square_aspect_with_long_legend",
         build=_build_square_aspect_with_long_legend,
-        expect_warnings=("LEGEND_OVERFLOW",),
+        expect_warnings=("LEGEND_ON_DATA",),
     ),
     # G. Multi-axes layout
     RobustnessScenario(

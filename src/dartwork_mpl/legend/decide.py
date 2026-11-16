@@ -1,198 +1,73 @@
-"""Pure legend decisions for the ordinary figure: facts in, plan out.
+"""Pure legend decisions: facts in, plan out.
 
-``loc="best"``: the first inside spot, for one to three columns, that keeps
-the clearance from the data (a one-column legend taller than 55 % of the
-Axes last); none free, the first side of above / right / below that no
-other panel sits beyond and the legend fits along; no such side, the inside
-spot that meets the fewest artists. Placed again at the Axes' final size, a
-legend only moves in: to a spot free now, or it keeps its side. A named
-side takes the fewest rows (above, below) or columns (right, left) that fit
-along it. Special cases are in ``edges.py``.
+Inside, a legend takes the first spot that keeps the clearance from the
+data and stays in its Axes, else the spot meeting the fewest artists.
+Outside a side it takes the fewest rows (above, below) or columns (right,
+left) that fit along its Axes, and sits past the labels beyond that side.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
-from typing import assert_never
-
-from ..vocab import Box, Span
-from .boxes import Entries, Hits, Size, reach_past
-from .model import TALL_SHARE, Columns
-from .plans import (
-    Anchor,
-    AnchorFacts,
-    EntryFacts,
-    EntryPlan,
-    FigureFacts,
-    FigurePlan,
-    Inside,
-    LegendFacts,
-    LegendPlan,
-    Outside,
+from ..vocab import Box
+from .model import (
+    INSIDE,
+    Clearance,
+    Columns,
+    InsideFacts,
+    Side,
+    SideFacts,
+    Spot,
     TitleFacts,
-    TitlePad,
 )
-from .sides import FALLBACK_SIDES, INSIDE_SPOTS, Above, Right, Side, UpperRight
 
 
-@dataclass(frozen=True)
-class Spot:
-    """An inside spot tried: the artists it meets, its overflow and height."""
-
-    plan: Inside
-    hits: int
-    overflow: float
-    tall: float
-
-    @property
-    def free(self) -> bool:
-        """Meets no ink and stays inside the Axes."""
-        return self.hits == 0 and self.overflow <= 1e-3
+def inside(facts: InsideFacts) -> Spot:
+    """The first free inside spot, else the one meeting the fewest artists."""
+    tried: list[tuple[int, bool, Spot]] = []
+    for spot in INSIDE:
+        box = facts.size.placed(spot, facts.parent, facts.pad)
+        hits = facts.meets(box).n
+        spills = box.outside_share(facts.axes) > 1e-3
+        if hits == 0 and not spills:
+            return spot
+        tried.append((hits, spills, spot))
+    return min(tried, key=lambda t: (t[0], t[1]))[2]
 
 
-def column_steps(
-    entries: Entries, side: Side, asked: Columns | None
-) -> tuple[Columns, ...]:
-    """Column counts to try: fewest rows first across, fewest columns along."""
-    if asked is not None:
-        return (asked,)
-    n = max(entries.count, 1)
-    if side.across:
-        counts = dict.fromkeys(-(-n // rows) for rows in range(1, n + 1))
-        return tuple(Columns(k) for k in counts)
-    return tuple(Columns(k) for k in range(1, n + 1))
+def columns(facts: SideFacts) -> Columns:
+    """The first column count whose legend fits along the side, else the last."""
+    if facts.asked is not None:
+        return facts.asked
+    n = max(facts.count, 1)
+    if facts.side.across:  # fewest rows first
+        steps = list(dict.fromkeys(-(-n // rows) for rows in range(1, n + 1)))
+    else:  # fewest columns first
+        steps = list(range(1, n + 1))
+    for k in steps:
+        if facts.size_of(Columns(k)).along(facts.side) <= facts.length + 0.5:
+            return Columns(k)
+    return Columns(steps[-1])
 
 
-def fit_along(
-    entries: Entries,
-    side: Side,
-    span: Span,
-    asked: Columns | None,
-    size_of: Callable[[Entries, Columns], Size],
-) -> Outside:
-    """The first column count whose legend fits along ``side`` (else the last)."""
-    steps = column_steps(entries, side, asked)
-    for columns in steps:
-        size = size_of(entries, columns)
-        if size.along(side) <= span.length + 0.5:
-            return Outside(side, columns, entries, size, fits=True)
-    last = steps[-1]
-    return Outside(side, last, entries, size_of(entries, last), fits=False)
+def clearance(axes: Box, side: Side, labels: tuple[Box, ...]) -> Clearance:
+    """How far the labels whose centre lies past ``side`` reach beyond it."""
+    across = side.across
+    low, high = (axes.y0, axes.y1) if across else (axes.x0, axes.x1)
+    reach = [0.0]
+    for box in labels:
+        b0, b1 = (box.y0, box.y1) if across else (box.x0, box.x1)
+        centre = (b0 + b1) / 2
+        if side.far and centre > high + 0.5:
+            reach.append(b1 - high)
+        elif not side.far and centre < low - 0.5:
+            reach.append(low - b0)
+    return Clearance(max(reach))
 
 
-def outside(facts: LegendFacts, side: Side, entries: Entries) -> Outside:
-    """The legend outside ``side`` of its Axes."""
-    span = facts.span_of(side)
-    return fit_along(entries, side, span, facts.request.columns, facts.size_of)
+def title_lift(legend: Box, title: TitleFacts) -> Clearance | None:
+    """How far above the Axes top the titles go to clear a legend above it.
 
-
-def inside_spots(
-    facts: LegendFacts, meets: Callable[[Box], Hits]
-) -> tuple[Spot, ...]:
-    """Every inside spot for one to three columns, in the order tried."""
-    asked = facts.request.columns
-    most = min(3, max(facts.entries.count, 1))
-    counts = (
-        (asked,)
-        if asked is not None
-        else tuple(Columns(k) for k in range(1, most + 1))
-    )
-    spots: list[Spot] = []
-    for columns in counts:
-        size = facts.size_of(facts.entries, columns)
-        if not size.finite:
-            continue
-        tall = 0.0
-        if columns.n == 1:
-            tall = max(
-                0.0, size.height / max(facts.axes.height, 1.0) - TALL_SHARE
-            )
-        for loc in INSIDE_SPOTS:
-            box = size.placed(loc, facts.parent, facts.pad)
-            spots.append(
-                Spot(
-                    Inside(loc, columns),
-                    meets(box).n,
-                    box.outside_share(facts.axes),
-                    tall,
-                )
-            )
-    return tuple(spots)
-
-
-def first_free(spots: tuple[Spot, ...]) -> Inside | None:
-    """The first free spot, a tall one-column legend after the others."""
-    free = [spot for spot in spots if spot.free]
-    return min(free, key=lambda spot: spot.tall).plan if free else None
-
-
-def least_covering(spots: tuple[Spot, ...]) -> Inside:
-    """The spot meeting the fewest artists (then the least overflow)."""
-    if not spots:
-        return Inside(UpperRight(), Columns(1), free=False)
-    best = min(spots, key=lambda spot: (spot.hits, spot.overflow, spot.tall))
-    return Inside(best.plan.loc, best.plan.columns, free=False)
-
-
-def place(facts: LegendFacts) -> LegendPlan:
-    """Where the legend goes, or goes again at the size the Axes has now."""
-    side = facts.request.side
-    if side is not None:
-        return outside(facts, side, facts.entries)
-    spots = inside_spots(facts, facts.meets)
-    free = first_free(spots)
-    if free is not None:
-        return free
-    match facts.current:  # placed again: inwards only
-        case Outside(side=side):
-            return outside(facts, side, facts.entries)
-        case Inside() as current:
-            return current
-        case None:
-            pass
-        case _:
-            assert_never(facts.current)
-    sides = [s for s in FALLBACK_SIDES if s in facts.free_sides]
-    if not facts.request.anchored and sides:
-        plans = [outside(facts, s, facts.entries) for s in sides]
-        return next((plan for plan in plans if plan.fits), plans[0])
-    return least_covering(spots)
-
-
-def anchor(facts: AnchorFacts) -> Anchor:
-    """Past the decorations beyond the side, centred on the Axes."""
-    reach = [
-        reach_past(facts.axes, facts.side, box) for box in facts.decorations
-    ]
-    return Anchor(clearance=max([0.0, *reach]))
-
-
-def title_pad(facts: TitleFacts) -> TitlePad:
-    """Titles keep their pad; a legend above them is an edge case."""
-    return TitlePad()
-
-
-def figure_place(facts: FigureFacts) -> FigurePlan:
-    """The figure legend above (else right of) the panels, or the side named."""
-    sides = (facts.side,) if facts.side is not None else (Above(), Right())
-    plans: list[Outside] = []
-    for side in sides:
-        length = facts.figure.width if side.across else facts.figure.height
-        span = Span(0.0, length - 2 * facts.pad)
-        plans.append(
-            fit_along(facts.entries, side, span, facts.columns, facts.size_of)
-        )
-    plan = next((p for p in plans if p.fits), plans[0])
-    return FigurePlan(plan.side, plan.columns)
-
-
-def entries(facts: EntryFacts) -> EntryPlan:
-    """The Axes' own labelled artists, each name once, on the Axes itself."""
-    seen: set[str] = set()
-    picks: list[tuple[int, int]] = []
-    for index, label in enumerate(facts.owners[facts.focus].entries.labels):
-        if label not in seen:
-            seen.add(label)
-            picks.append((facts.focus, index))
-    return EntryPlan(host=facts.focus, picks=tuple(picks))
+    ``None`` when their own pad already clears it.
+    """
+    needed = legend.y1 + title.gap - title.base
+    return Clearance(needed) if needed > title.pad + 0.5 else None

@@ -124,8 +124,8 @@ def iter_figure_level_extents(
     renderer : matplotlib.backend_bases.RendererBase
         Renderer used to measure extents (from :func:`get_renderer`).
     legends : bool, optional
-        Include ``fig.legends``. The OVERFLOW check passes ``False`` —
-        figure legends are the LEGEND_OVERFLOW check's responsibility.
+        Include ``fig.legends``. The OVERFLOW check passes ``False``: it
+        reads the legends' entry texts itself.
         Default ``True``.
     subfigures : bool, optional
         Also walk each SubFigure nested in ``fig`` (:func:`figure_tree`),

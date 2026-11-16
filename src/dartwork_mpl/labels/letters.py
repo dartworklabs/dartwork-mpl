@@ -6,7 +6,7 @@ import string
 import weakref
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Unpack
+from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -16,9 +16,7 @@ from ..geometry import record_panel_letters
 from . import decide
 from .given import PresetText
 from .measure import drawn_renderer, panel, px_per_pt
-from .model import LetterStyle, parse_letter_x
-from .panels import PanelsFacts
-from .places import AtLeft, FromPanel
+from .model import PanelsFacts
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -31,7 +29,6 @@ class LetterGroup:
     with its letter, read by ``check``)."""
 
     members: list[tuple[Axes, Annotation]]
-    fixed_y: bool
 
 
 # The groups of letters ``label_axes`` placed, by root Figure.
@@ -60,16 +57,14 @@ def _place_letters(group: LetterGroup, renderer: RendererBase) -> bool:
     if not live:
         return False
     k = px_per_pt(live[0][0])
-    facts = PanelsFacts(
-        tuple(panel(ax, t, renderer) for ax, t in live), k, group.fixed_y
-    )
+    facts = PanelsFacts(tuple(panel(ax, t, renderer) for ax, t in live), k)
     letters = decide.align_letters(facts, decide.letter_lefts(facts))
     moved = False
     for (_ax, text), p, left, base in zip(
         live, facts.panels, letters.lefts, letters.baselines, strict=True
     ):
         dx = (left - p.corner[0]) / k
-        dy = 0.0 if group.fixed_y else (base - p.corner[1]) / k
+        dy = (base - p.corner[1]) / k
         old = text.xyann
         if abs(old[0] - dx) > 1e-3 or abs(old[1] - dy) > 1e-3:
             text.xyann = (dx, dy)
@@ -88,13 +83,8 @@ def settle_panels(fig: Figure, renderer: RendererBase) -> bool:
 def label_axes(
     axes: Iterable[Axes] | np.ndarray,
     labels: list[str] | None = None,
-    fontsize: float | None = None,
-    fontweight: str = "normal",
-    x: float | str = "auto",
-    y: float | None = None,
     *,
     preset: PresetText,
-    **kwargs: Unpack[LetterStyle],
 ) -> list[Text]:
     """``dm.label_axes``, its letters sized by ``preset``."""
     axes = (
@@ -103,42 +93,20 @@ def label_axes(
         else list(axes)
     )
     labels = _letters(len(axes)) if labels is None else labels
-    size = preset.size(1) if fontsize is None else fontsize
-    match parse_letter_x(x):
-        case AtLeft(x=left):
-            return [
-                ax.text(  # pyright: ignore[reportUnknownMemberType]
-                    left,
-                    1.05 if y is None else y,
-                    label,
-                    transform=ax.transAxes,
-                    fontsize=size,
-                    fontweight=fontweight,
-                    **(LetterStyle(va="bottom", ha="left") | kwargs),
-                )
-                for ax, label in zip(axes, labels, strict=False)
-            ]
-        case FromPanel():
-            pass
     members = [
         (
             ax,
             ax.annotate(  # pyright: ignore[reportUnknownMemberType]
                 label,
-                xy=(0.0, 1.0 if y is None else y),
+                xy=(0.0, 1.0),
                 xycoords="axes fraction",
                 xytext=(0.0, 0.0),
                 textcoords="offset points",
                 annotation_clip=False,
-                fontsize=size,
-                fontweight=fontweight,
-                **(
-                    LetterStyle(
-                        verticalalignment="baseline" if y is None else "bottom",
-                        horizontalalignment="left",
-                    )
-                    | kwargs
-                ),
+                fontsize=preset.size(1),
+                fontweight="normal",
+                verticalalignment="baseline",
+                horizontalalignment="left",
             ),
         )
         for ax, label in zip(axes, labels, strict=False)
@@ -148,7 +116,7 @@ def label_axes(
     fig = members[0][0].get_figure(root=True)
     if fig is None:
         return [t for _ax, t in members]
-    group = LetterGroup(members, fixed_y=y is not None)
+    group = LetterGroup(members)
     GROUPS.setdefault(fig, []).append(group)
     record_panel_letters(fig, group.members)
     renderer = drawn_renderer(members[0][0])

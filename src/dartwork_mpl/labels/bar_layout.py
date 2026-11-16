@@ -14,11 +14,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..geometry import axis_of, same_position_axes, shared_axes
+from ..geometry import axis_of, shared_axes
 from ..vocab import Span, Which, X, Y
 from . import decide
 from .bar_geometry import CrowdFacts, HeadroomFacts, Pixels, Room, Spot
-from .bar_options import Rotate, Skip
 from .bars import OFFSET_PT, BarFamily, BarLabel, families_of, format_ticks_now
 from .measure import bar_centres, px_per_pt
 
@@ -61,28 +60,23 @@ def _spots(labels: list[BarLabel], renderer: RendererBase) -> tuple[Spot, ...]:
     return tuple(out)
 
 
-def _crowd(
-    calls: list[tuple[BarFamily, list[BarLabel]]], renderer: RendererBase
-) -> None:
+def _crowd(calls: list[list[BarLabel]], renderer: RendererBase) -> None:
     """Turn each crowded call's labels (vertical bars); then, once one call
     is crowded, hide the positions that still meet over every call here."""
-    first = calls[0][1][0]
+    first = calls[0][0]
     centres = bar_centres(first.bar_axes, first.vertical)
     gap = Pixels(GAP_PT * px_per_pt(first))
     crowded = False
-    for family, labels in calls:
+    for labels in calls:
         shown = [t for t in labels if t.get_visible()]
         if decide.crowded(CrowdFacts(_spots(shown, renderer), centres, gap)):
             crowded = True
-            match family.options.crowded:
-                case Rotate() if first.vertical:
-                    for t in labels:
-                        t.set_rotation(90.0)
-                case Rotate() | Skip():
-                    pass
+            if first.vertical:
+                for t in labels:
+                    t.set_rotation(90.0)
     if not crowded:
         return
-    shown = [t for _f, labels in calls for t in labels if t.get_visible()]
+    shown = [t for labels in calls for t in labels if t.get_visible()]
     keep = decide.keep_apart(CrowdFacts(_spots(shown, renderer), centres, gap))
     for t, kept in zip(shown, keep.flags, strict=True):
         if not kept:
@@ -121,7 +115,7 @@ class _ValueAxis:
         if not label.get_visible():
             return None
         ext = label.get_window_extent(renderer)  # places it
-        if not label.beyond_end:
+        if label.kind.centred:
             return None
         anchor = float(label.bar_axes.transData.transform(label.xy)[along])
         toward = label.outward
@@ -200,15 +194,13 @@ def settle_bars(fig: Figure, renderer: RendererBase) -> bool:
     value_axes = _value_axes(families)
     for value_axis in value_axes:
         value_axis.reset()
-    areas: dict[
-        tuple[frozenset[int], bool], list[tuple[BarFamily, list[BarLabel]]]
-    ] = {}
+    areas: dict[tuple[int, bool], list[list[BarLabel]]] = {}
     for family in families:
         for vertical in (True, False):
             mine = [t for t in family.texts if t.vertical is vertical]
             if mine:
-                box = frozenset(map(id, same_position_axes(mine[0].bar_axes)))
-                areas.setdefault((box, vertical), []).append((family, mine))
+                key = (id(mine[0].bar_axes), vertical)
+                areas.setdefault(key, []).append(mine)
     for calls in areas.values():
         _crowd(calls, renderer)
     for value_axis in value_axes:

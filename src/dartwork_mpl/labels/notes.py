@@ -1,16 +1,13 @@
-"""Short labels at a point, in a corner or on a horizontal line, and the
-figure's note line."""
+"""A short label at a data point, and the figure's note line."""
 
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, Unpack
+from typing import TYPE_CHECKING
 
 import matplotlib as mpl
-from matplotlib.axes import Axes
-from matplotlib.text import Annotation, Text
+from matplotlib.text import Text
 
-from ..vocab import HAlign, VAlign
 from . import decide
 from .given import PresetText
 from .measure import (
@@ -21,105 +18,63 @@ from .measure import (
     point_boxes,
     text_boxes,
 )
-from .model import NoteStyle, TextStyle, parse_side
-from .places import Side, Tries, Try
+from .model import SIDES, Side, Tries, Try
 
 if TYPE_CHECKING:
-    from matplotlib.backend_bases import RendererBase
+    from matplotlib.axes import Axes
     from matplotlib.figure import Figure
-    from matplotlib.transforms import Bbox
+    from matplotlib.text import Annotation
+
+# Between the point and its label, in points.
+OFFSET_PT = 3.0
 
 
-def _side_offset(side: Side, offset_pt: float) -> tuple[float, float]:
+def _put(ann: Annotation, side: Side) -> None:
     dx, dy = side.offset
-    return dx * offset_pt, dy * offset_pt
-
-
-def _put(
-    ann: Annotation,
-    xyann: tuple[float, float],
-    ha: HAlign,
-    va: VAlign | None = None,
-) -> None:
-    ann.xyann = xyann
-    ann.set_horizontalalignment(ha.mpl)
-    if va is not None:
-        ann.set_verticalalignment(va.mpl)
-
-
-def _obstacles(
-    ax: Axes, texts: list[Text], renderer: RendererBase, lines: bool = True
-) -> list[Bbox]:
-    found = line_boxes(ax) if lines else []
-    return [
-        *found,
-        *patch_boxes(ax),
-        *point_boxes(ax),
-        *text_boxes(texts, renderer),
-    ]
+    ann.xyann = (dx * OFFSET_PT, dy * OFFSET_PT)
+    ann.set_horizontalalignment(side.ha.mpl)
+    ann.set_verticalalignment(side.va.mpl)
 
 
 def annotate_value(
-    ax: Axes,
-    x: float,
-    y: float,
-    text: str,
-    *,
-    side: str = "auto",
-    offset_pt: float = 3.0,
-    fontsize: float | None = None,
-    preset: PresetText,
-    **kw: Unpack[NoteStyle],
+    ax: Axes, x: float, y: float, text: str, *, preset: PresetText
 ) -> Text:
     """``dm.annotate_value``, its text sized by ``preset``."""
-    sides = parse_side(side).tries
     existing = list(ax.texts)
-    first = sides[0]
-    style = (
-        NoteStyle(
-            ha=first.ha.mpl,
-            va=first.va.mpl,
-            annotation_clip=False,
-            fontweight=kw.pop("weight", preset.weight(1)),
-        )
-        | kw
-    )
     ann = ax.annotate(  # pyright: ignore[reportUnknownMemberType]
         text,
         xy=(x, y),
         xycoords="data",
-        xytext=_side_offset(first, float(offset_pt)),
+        xytext=(0.0, OFFSET_PT),
         textcoords="offset points",
-        fontsize=preset.size(-1) if fontsize is None else fontsize,
-        **style,
+        annotation_clip=False,
+        fontsize=preset.size(-1),
+        fontweight=preset.weight(1),
     )
-    if len(sides) < 2:
-        return ann
+    _put(ann, SIDES[0])
     renderer = drawn_renderer(ax)
     frame = ax.get_window_extent(renderer)
-    obstacles = _obstacles(ax, existing, renderer)
+    obstacles = [
+        *line_boxes(ax),
+        *patch_boxes(ax),
+        *point_boxes(ax),
+        *text_boxes(existing, renderer),
+    ]
     tries: list[Try] = []
-    for candidate in sides:
-        _put(
-            ann,
-            _side_offset(candidate, float(offset_pt)),
-            candidate.ha,
-            candidate.va,
-        )
+    for side in SIDES:
+        _put(ann, side)
         tries.append(
             measure_try(ann.get_window_extent(renderer), frame, obstacles)
         )
-    chosen = sides[decide.value_side(Tries(tuple(tries))).index]
-    _put(ann, _side_offset(chosen, float(offset_pt)), chosen.ha, chosen.va)
+    _put(ann, SIDES[decide.value_side(Tries(tuple(tries))).index])
     return ann
 
 
-def add_note(
-    fig: Figure, text: str, *, preset: PresetText, **kw: Unpack[TextStyle]
-) -> Text:
+def add_note(fig: Figure, text: str, *, preset: PresetText) -> Text:
     """``dm.add_note``, its text sized by ``preset``."""
-    style = TextStyle(ha="left", va="bottom", fontsize=preset.size(-1)) | kw
-    note = fig.text(0.0, 0.0, text, **style)  # pyright: ignore[reportUnknownMemberType]
+    note = fig.text(  # pyright: ignore[reportUnknownMemberType]
+        0.0, 0.0, text, ha="left", va="bottom", fontsize=preset.size(-1)
+    )
     _NOTE_GAPS[note] = float(mpl.rcParams["axes.labelpad"])
     return note
 

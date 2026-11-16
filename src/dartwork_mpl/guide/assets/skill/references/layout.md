@@ -99,9 +99,8 @@ stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
 when it is too small, and labels you rotate or break yourself are left as
 they are, so leave them out unless the user asks.
 `fit_labels=False` turns the fitting off; tick
-labels that still overlap are reported as `TICK_OVERLAP`, an x label on a
-y label at a corner as `TICK_CORNER_OVERLAP`, text over another panel's
-text as `CROSS_AXES_OVERLAP`.
+labels that still overlap are reported as `TICK_OVERLAP`, text over another
+panel's text as `CROSS_AXES_OVERLAP`.
 
 - `margin="3mm"` (or `"2%"`, `dm.mm(3)`) sets the buffer; the default is `"1mm"`, `0` is flush.
 - `ml`, `mr`, `mt`, `mb` set one side: `mr="1cm"` for right-side notes.
@@ -197,24 +196,17 @@ plt.close(fig)
 ```
 
 - One legend for panels that share their series: `dm.figure_legend(fig)`
-  (above the panels, right when it does not fit above; `loc="below"` under
-  everything), then `dm.simple_layout(fig)`; it removes the panel legends
-  it replaces.
-- Legend inside, away from the data: `dm.place_legend(ax)`; when every
-  inside spot covers data it goes outside by itself: above, else below,
-  else right, never onto another panel. `dm.simple_layout(fig)` places it
-  again at the laid-out size.
+  (above the panels; `loc="below"` under everything), then
+  `dm.simple_layout(fig)`; it removes the panel legends it replaces.
+- Legend inside, away from the data: `dm.place_legend(ax)`.
+  `dm.simple_layout(fig)` places it again at the laid-out size. When
+  `dm.check` still reports `LEGEND_ON_DATA`, put it on a side.
 - Legend outside one side ("legend above the plot"):
-  `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows and
-  the clearance of tick labels; the legend may be wider than its Axes as
-  long as it stays on the canvas and off the other columns' panels. It
-  breaks names at spaces that would not fit so or (right, left) are wider
-  than 40 % of the Axes, and `dm.simple_layout(fig)` keeps a title above
-  it. A legend you then move through the returned `Legend` (`set_loc`,
-  `set_bbox_to_anchor`) stays where you put it.
-- Eight or more lines: `dm.label_line_ends(ax)` names them at their ends;
-  `LEGEND_OVERFLOW` reports a legend outside that is more than half the
-  plot's size.
+  `dm.place_legend(ax, loc="above")`; the library sets the gap, the rows
+  that fit along the plot and the clearance of tick labels, and
+  `dm.simple_layout(fig)` keeps a title above it. A fixed spot of your
+  own is `ax.legend(loc="upper left")`, which the library leaves alone.
+- Eight or more lines: `dm.label_line_ends(ax)` names them at their ends.
 - A twin pair: show the twin's right spine yourself, as above; the axis
   colours stay neutral unless you colour a side like its series
   (`ax2.tick_params(axis="y", colors=…)`); one legend for both is `dm.place_legend(ax)`,

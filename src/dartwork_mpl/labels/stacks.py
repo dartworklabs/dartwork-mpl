@@ -15,7 +15,7 @@ from typing import TypeAlias
 import numpy as np
 import numpy.typing as npt
 
-from .bar_options import Kind, StackTotal, Total
+from .bar_geometry import BeyondEnd, Kind
 
 FloatArray: TypeAlias = npt.NDArray[np.float64]
 # Relative slack for "the same position" and "starts at the running end":
@@ -64,7 +64,9 @@ class Pile:
     low: FloatArray
     together: npt.NDArray[np.int_]
     members: list[int] = field(default_factory=list)
-    zeros: list[npt.NDArray[np.bool_]] = field(default_factory=list)
+    zeros: list[npt.NDArray[np.bool_]] = field(
+        default_factory=list[npt.NDArray[np.bool_]]
+    )
 
     @property
     def stacked(self) -> bool:
@@ -101,7 +103,8 @@ class Pile:
         self.zeros.append(standing & (lengths == 0))
 
     def padding(self) -> set[tuple[int, int]]:
-        """Zero bars beside a non-zero bar (or an earlier zero) there."""
+        """Zero bars beside a non-zero bar (or an earlier zero) at their
+        position: they pad a series drawn as two containers."""
         out: set[tuple[int, int]] = set()
         seen = self.together > 0
         for i, zero in zip(self.members, self.zeros, strict=True):
@@ -118,15 +121,13 @@ class Planned:
     index: int
     kind: Kind
     value: float
-    stack: int | None = None
 
 
 @dataclass(frozen=True)
 class BarsFacts:
-    """A ``label_bars`` call's containers and what it asked for."""
+    """A ``label_bars`` call's containers."""
 
     runs: tuple[BarRun, ...]
-    total: Total
 
     def piles(self) -> list[Pile]:
         """Each container joins the first pile it starts on, or starts one."""
@@ -149,9 +150,7 @@ class BarsFacts:
             pile.add(i, run)
         return piles
 
-    def total_at(
-        self, members: list[int], index: int, stack: int
-    ) -> Planned | None:
+    def total_at(self, members: list[int], index: int) -> Planned | None:
         """The stack's net at ``index``, on the container whose bar ends the
         stack on the side the net points to (``None``: no bar there)."""
         ends: list[tuple[int, float, float]] = []
@@ -168,7 +167,7 @@ class BarsFacts:
         net = math.fsum(v for _, v, _ in ends)
         side = [e for e in ends if (e[1] >= 0) == (net >= 0)]
         outer = max(side, key=lambda e: e[2] if net >= 0 else -e[2])
-        return Planned(outer[0], index, StackTotal(), net, stack)
+        return Planned(outer[0], index, BeyondEnd(), net)
 
 
 @dataclass(frozen=True)

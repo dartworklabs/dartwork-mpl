@@ -1,10 +1,9 @@
 """Find what makes a drawn chart ugly or unreadable, without changing it.
 
 ``dm.check(fig)`` draws the figure once, measures it and returns
-:class:`Findings`: each :class:`Finding` names its rule, severity, message,
-a fix and the artists and panels involved; ``print(found)`` is a compact
-report an agent can read. The rules, in report order, are ``EDGES`` in
-``edges.py``.
+:class:`Findings`: each :class:`Finding` names its rule, message, a fix and
+the artists and panels involved; ``print(found)`` is a compact report an
+agent can read. The rules, in report order, are ``EDGES`` in ``edges.py``.
 """
 
 from __future__ import annotations
@@ -13,13 +12,13 @@ from typing import TYPE_CHECKING
 
 from ..edgecase import settle
 from .edges import EDGES
-from .findings import Finding, Findings, Info, Severity, Warn
+from .findings import Finding, Findings
 from .measure import measure
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
-__all__ = ["Finding", "Findings", "Info", "Severity", "Warn", "check", "rules"]
+__all__ = ["Finding", "Findings", "check"]
 
 
 def check(fig: Figure) -> Findings:
@@ -31,8 +30,3 @@ def check(fig: Figure) -> Findings:
     """
     facts = measure(fig)
     return settle(facts, Findings(skipped=facts.skipped), EDGES).plan
-
-
-def rules() -> tuple[str, ...]:
-    """The rule names, in report order."""
-    return tuple(edge.name for edge in EDGES)

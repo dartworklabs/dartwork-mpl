@@ -4,9 +4,7 @@
  "C3_compose_reaches": [],
  "C4_compose_decisions": {},
  "C5_compose_importers": [],
- "R1_module_lines": {
-  "src/dartwork_mpl/labels/measure.py": 506
- },
+ "R1_module_lines": {},
  "R2_slice_lines": {},
  "R3_underscore_modules": {},
  "R3_underscore_toplevel": [],
@@ -16,11 +14,8 @@
  },
  "R5_dumping_ground": [],
  "R6_impure_decisions": [],
- "R7_function_lines": {
-  "src/dartwork_mpl/check/measure.py::Reader.legends": 81
- },
+ "R7_function_lines": {},
  "R8_entry_function_lines": {
-  "src/dartwork_mpl/compose/labels.py::label_bars": 52,
   "src/dartwork_mpl/compose/layout.py::simple_layout": 50,
   "src/dartwork_mpl/compose/size.py::figsize_for": 36
  },
