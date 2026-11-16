@@ -7,6 +7,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.transforms import ScaledTranslation
 
 import dartwork_mpl as dm
 from dartwork_mpl.geometry import get_renderer
@@ -156,6 +157,35 @@ def test_a_legend_the_caller_moved_stays_where_they_put_it() -> None:
     box, frame = legend.get_window_extent(), ax.get_window_extent()
     assert box.x0 - frame.x0 < frame.width / 4
     assert box.y0 - frame.y0 < frame.height / 4
+
+
+def test_an_outside_legend_the_caller_moved_stays_where_they_put_it() -> None:
+    # #749: a legend above moved with set_loc was rebuilt at the centre by
+    # the next layout at another size.
+    fig, ax = _lines(3)
+    dm.place_legend(ax, loc="above")
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend.set_loc("lower left")
+    fig.set_size_inches(4.0, 3.0)
+    dm.simple_layout(fig)
+    middle = (_box(fig, ax).x0 + _box(fig, ax).x1) / 2
+    assert ax.get_legend() is legend
+    assert _box(fig, legend).x0 > middle  # centred, it would straddle it
+
+
+def test_a_title_the_caller_moved_stays_where_they_put_it() -> None:
+    # #749: a title raised over a legend above and given another transform
+    # by the caller was raised again by the next layout.
+    fig, ax = _lines(3)
+    ax.set_title("Three series")
+    dm.place_legend(ax, loc="above")
+    dm.simple_layout(fig)
+    mine = ax.transAxes + ScaledTranslation(0.0, 4 / 72, fig.dpi_scale_trans)
+    ax.title.set_transform(mine)
+    dm.simple_layout(fig)
+    assert ax.title.get_transform() is mine
 
 
 def test_a_figure_title_a_legend_above_and_panel_titles_stack():

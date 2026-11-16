@@ -2,9 +2,9 @@
 
 A legend ``place_legend`` built has a :class:`Placed` in this module's
 registry. The layout places it again at the size it settles on while it
-keeps the anchor box the library gave it; a legend the caller anchored
-elsewhere (``set_bbox_to_anchor``) or rebuilt (``ax.legend``) is the
-caller's. The registry holds its legends weakly.
+keeps the anchor box and the spot the library gave it; a legend the caller
+anchored elsewhere (``set_bbox_to_anchor``), moved (``set_loc``) or rebuilt
+(``ax.legend``) is the caller's. The registry holds its legends weakly.
 """
 
 from __future__ import annotations
@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, assert_never
 import matplotlib as mpl
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
-from matplotlib.transforms import ScaledTranslation
+from matplotlib.text import Text
+from matplotlib.transforms import ScaledTranslation, Transform
 
 from ..geometry import (
     BBOX_ERRORS,
@@ -63,8 +64,9 @@ class Placed:
     ``given`` holds the entries the caller passed. ``box`` is the anchor
     box the library left it on, ``size`` the Axes
     size (half px) an outside legend was last fitted at. ``chosen`` is the
-    spot ``place_legend`` gave an inside legend, ``spot`` the one it has
-    now; ``lift`` how far a layout last raised the titles (pt).
+    spot ``place_legend`` gave the legend, ``spot`` the one the library
+    left it on (an outside legend: its edge facing the Axes); ``lift`` how
+    far a layout last raised the titles (pt).
     """
 
     where: Best | Side
@@ -83,6 +85,11 @@ class Placed:
 LOG = logging.getLogger("dartwork_mpl.legend")
 
 _PLACED: weakref.WeakKeyDictionary[Legend, Placed] = weakref.WeakKeyDictionary()
+
+#: The transform a lift last gave each title, to tell it from the caller's.
+_LIFTED: weakref.WeakKeyDictionary[Text, Transform] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def pad_px(legend: Legend, renderer: RendererBase) -> float:
@@ -202,6 +209,7 @@ def _draw(
             )
             legend = build(side.legend_loc, columns)
             placed.columns = columns
+            placed.spot = side.legend_loc
             placed.size = _size_key(ax, renderer)
             placed.clearance = None
             _anchor(legend, ax, side, placed, renderer)
@@ -293,11 +301,28 @@ def _lift_titles(
     lift = decide.title_lift(box_of(legend.get_window_extent(renderer)), facts)
     if lift is None:
         return False
-    placed.lift = lift.px * 72.0 / root.dpi
     offset = ScaledTranslation(0.0, lift.px / root.dpi, root.dpi_scale_trans)
+    moved = False
     for title in axes_titles(ax).values():
-        title.set_transform(ax.transAxes + offset)
-    return True
+        if not _ours(ax, title, root):
+            continue  # the caller gave it another transform
+        raised = ax.transAxes + offset
+        title.set_transform(raised)
+        _LIFTED[title] = raised
+        moved = True
+    if moved:
+        placed.lift = lift.px * 72.0 / root.dpi
+    return moved
+
+
+def _ours(ax: Axes, title: Text, root: Figure) -> bool:
+    """Whether ``title`` has the transform a lift last gave it, or the one
+    ``ax.set_title`` gives at the preset's pad: one the caller did not set
+    (``set_transform``, ``set_title(pad=...)``)."""
+    now = title.get_transform()
+    pad = float(mpl.rcParams["axes.titlepad"]) / 72.0
+    unset = ax.transAxes + ScaledTranslation(0.0, pad, root.dpi_scale_trans)
+    return now is _LIFTED.get(title) or now == unset
 
 
 def _again(
@@ -306,10 +331,6 @@ def _again(
     """Place ``legend`` again at the size ``ax`` has now; whether it moved."""
     match placed.where:
         case Best():
-            if placed.spot is not None and not _left_there(
-                legend, placed.spot, renderer
-            ):
-                return False  # the caller moved it (set_loc)
             return _settle_inside(ax, legend, placed, renderer)
         case Above() | Below() | Right() | Left() as side:
             if _size_key(ax, renderer) == placed.size:
@@ -341,6 +362,10 @@ def settle(
             continue
         if legend.get_bbox_to_anchor() is not placed.box:
             continue  # the caller anchored it elsewhere
+        if placed.spot is not None and not _left_there(
+            legend, placed.spot, renderer
+        ):
+            continue  # the caller moved it (set_loc)
         moved = _again(ax, legend, placed, renderer) or moved
         legend = ax.get_legend()
         if legend is not None and isinstance(placed.where, Above):
