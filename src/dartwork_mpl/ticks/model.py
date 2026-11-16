@@ -184,6 +184,19 @@ class TickValues:
 
 
 @dataclass(frozen=True)
+class AxisData:
+    """Where an axis's lines and points sit along it, in data units."""
+
+    values: tuple[float, ...]
+
+    @classmethod
+    def of(cls, values: Sequence[float]) -> AxisData:
+        """The finite values, as floats."""
+        finite = tuple(float(v) for v in values if abs(float(v)) < float("inf"))
+        return cls(finite)
+
+
+@dataclass(frozen=True)
 class TextFacts:
     """What a number formatter decides from at each draw."""
 

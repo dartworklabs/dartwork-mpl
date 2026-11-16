@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.ticks.decide import axis_text
+from dartwork_mpl.ticks.decide import axis_text, reads_as_years
 from dartwork_mpl.ticks.model import (
     MYRIAD_LOCALES,
+    AxisData,
     NumberStyle,
     TextFacts,
     TickValues,
@@ -17,7 +18,7 @@ from dartwork_mpl.ticks.text import (
     number_text,
     value_label_decimals,
 )
-from dartwork_mpl.vocab import AffixedZero
+from dartwork_mpl.vocab import AffixedZero, X, Y
 
 M = "\N{MINUS SIGN}"
 KO = MYRIAD_LOCALES["ko"]
@@ -93,3 +94,22 @@ def test_fixed_decimals_write_each_value_alone(value, expected):
 def test_value_label_decimals():
     assert value_label_decimals([21.4, 18.0, 21.5]) == 1
     assert value_label_decimals([120, 135]) == 0
+
+
+@pytest.mark.parametrize(
+    ("data", "which", "years"),
+    [
+        (range(2019, 2024), X(), True),
+        (range(1990, 2031), X(), True),
+        ((2020, 2021), X(), True),
+        ((1800, 2100), X(), True),
+        (range(11), X(), False),  # a count, not a year
+        (range(1500, 1701, 50), X(), False),  # sample sizes
+        ((2019.25, 2019.75, 2020.75), X(), False),
+        ((2019, 2019.5, 2020), X(), False),
+        (range(1995, 2006), Y(), False),  # a quantity up the side
+        ((), X(), False),
+    ],
+)
+def test_whole_numbers_from_1800_to_2100_along_x_are_years(data, which, years):
+    assert reads_as_years(AxisData.of(list(data)), which) is years
