@@ -75,3 +75,30 @@ plt.close(fig)
   `cmap="dc.aurora"`). Signed values around a centre: a diverging map
   (`dm.list_colors("diverging")`) with symmetric limits.
 - `jet`, `rainbow` and `hsv` get a lint warning; keep them when the user asks.
+
+## A ramp between two colours
+
+Ordered data of one hue: take a family (`dm.colors("dc.teal", n=6)`,
+`cmap="dc.teal"`); its steps are already designed. Two given colours (two
+brand colours, a hue pair no family has): interpolate in OKLab, not with
+`LinearSegmentedColormap.from_list`, which mixes in sRGB and spaces the
+lightness steps unevenly.
+
+```python
+from matplotlib.colors import LinearSegmentedColormap
+
+lo = np.array(dm.color("oc.indigo8").to_oklab())
+hi = np.array(dm.color("oc.teal4").to_oklab())
+ramp = [dm.oklab(*(lo + (hi - lo) * t)).to_hex() for t in np.linspace(0, 1, 10)]
+cmap = LinearSegmentedColormap.from_list("indigo_teal", ramp)   # continuous
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "7cm"))
+ax.imshow(np.abs(z), cmap=cmap)
+dm.simple_layout(fig)
+plt.close(fig)
+```
+
+Use `ramp` as a list of discrete colours, `cmap` for an image. Two colours
+of opposite hue (indigo and orange) meet in grey in any space; for values
+around a centre take a diverging map. Do not interpolate in OKLCH: between
+far hues it passes through others (indigo to orange runs through magenta),
+and between near ones it asks for chroma sRGB cannot show and is cut.
