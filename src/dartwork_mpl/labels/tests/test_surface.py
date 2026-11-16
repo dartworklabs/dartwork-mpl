@@ -57,6 +57,47 @@ def test_negative_bars_and_barh_put_labels_past_the_end():
         assert box.x0 > bar.get_window_extent().x1
 
 
+def _labelled(fig, labels, bars, vertical):
+    """Which bars the labels sit on: the bar whose middle each one shares."""
+    middles = [
+        (b.x0 + b.x1) / 2 if vertical else (b.y0 + b.y1) / 2
+        for b in (bar.get_window_extent() for bar in bars)
+    ]
+    return [
+        min(
+            range(len(middles)),
+            key=lambda i: abs(
+                middles[i]
+                - ((t.x0 + t.x1) / 2 if vertical else (t.y0 + t.y1) / 2)
+            ),
+        )
+        for t in _boxes(fig, labels)
+    ]
+
+
+def test_a_slice_of_bars_labels_only_those():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    bars = ax.bar(list("abc"), [3, 5, 4])
+    labels = dm.label_bars(ax, bars=bars[:1])
+    dm.simple_layout(fig)
+    assert [t.get_text() for t in labels] == ["3"]
+    assert _labelled(fig, labels, bars, vertical=True) == [0]
+    with pytest.raises(TypeError, match="bars= takes"):
+        dm.label_bars(ax, bars=[bars[0], *ax.plot([0], [1])])
+
+
+def test_some_barh_bars_are_labelled_at_their_ends():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    bars = ax.barh(list("abc"), [120, -35, 90])
+    labels = dm.label_bars(ax, bars=[bars[2], bars[1]])
+    dm.simple_layout(fig)
+    assert [t.get_text() for t in labels] == ["\N{MINUS SIGN}35", "90"]
+    assert _labelled(fig, labels, bars, vertical=False) == [1, 2]
+    neg, pos = _boxes(fig, labels)
+    assert neg.x1 < bars[1].get_window_extent().x0  # past the negative end
+    assert pos.x0 > bars[2].get_window_extent().x1
+
+
 @pytest.mark.parametrize(
     ("format_axis", "values", "texts"),
     [
