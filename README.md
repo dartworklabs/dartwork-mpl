@@ -23,7 +23,7 @@ No project? `uvx --prerelease allow dartwork-mpl install` copies the skill into
 the current folder. With pip: `pip install --pre dartwork-mpl`, then
 `dartwork-mpl install`. (`--prerelease allow` / `--pre` until 0.8.0 is out.)
 `npx skills add` takes the skill from GitHub; pin it to your version with
-`dartworklabs/dartwork-mpl#v0.8.0a2`. The skill tells the agent when the two
+`dartworklabs/dartwork-mpl#v0.8.0a3`. The skill tells the agent when the two
 differ.
 
 ## Developing
