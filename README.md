@@ -12,18 +12,17 @@ chart. A thin layer on matplotlib: `Figure` and `Axes` stay native.
 ## Start
 
 ```bash
-uv add --prerelease allow dartwork-mpl    # add it to your project
+uv add dartwork-mpl                       # add it to your project
 npx skills add dartworklabs/dartwork-mpl  # the skill, with Node
 uv run dartwork-mpl install               # or the same skill, without Node
 ```
 
 Then ask your agent for a chart.
 
-No project? `uvx --prerelease allow dartwork-mpl install` copies the skill into
-the current folder. With pip: `pip install --pre dartwork-mpl`, then
-`dartwork-mpl install`. (`--prerelease allow` / `--pre` until 0.8.0 is out.)
+No project? `uvx dartwork-mpl install` copies the skill into the current
+folder. With pip: `pip install dartwork-mpl`, then `dartwork-mpl install`.
 `npx skills add` takes the skill from GitHub; pin it to your version with
-`dartworklabs/dartwork-mpl#v0.8.0a3`. The skill tells the agent when the two
+`dartworklabs/dartwork-mpl#v0.8.0`. The skill tells the agent when the two
 differ.
 
 ## Developing

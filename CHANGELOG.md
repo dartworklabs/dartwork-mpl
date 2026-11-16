@@ -2,7 +2,7 @@
 
 Entries before 0.8.0 are in the git history of this file.
 
-## [Unreleased] — 0.8.0
+## 0.8.0 — 2026-11-16
 
 The package was rebuilt around one criterion: turn on the skill, say "draw
 this", get a beautiful chart. Colour values and the rendered look are
