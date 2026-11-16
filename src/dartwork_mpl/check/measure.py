@@ -45,6 +45,7 @@ from .model import (
     AXES,
     Box,
     Facts,
+    Frame,
     Hit,
     Inked,
     Legend,
@@ -286,6 +287,15 @@ class Reader:
                 )
         return tuple(found)
 
+    def frames(self) -> tuple[Frame, ...]:
+        """The plot areas a text of another Axes must keep off: Axes that
+        draw something or a frame."""
+        return tuple(
+            Frame(ax, i, box_of(ax.get_window_extent(self.renderer)))
+            for i, ax in self.panels
+            if draws(ax) or (ax.axison and ax.get_frame_on())
+        )
+
     def empty(self) -> tuple[Panel, ...]:
         """Framed Axes where nothing is drawn, nor in a twin sharing the box."""
         return tuple(
@@ -394,5 +404,6 @@ def measure(fig: Figure) -> Facts:
         empty=r.empty(),
         values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
+        frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP"),
         skipped=tuple(r.skipped),
     )
