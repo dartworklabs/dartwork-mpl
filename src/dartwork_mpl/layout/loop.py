@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from ..edgecase import settle
 from ..geometry import get_renderer
 from . import apply, decide, measure, report, text
-from .edges import TEXT_EDGES
+from .edges import EDGES, TEXT_EDGES
 from .given import Neighbours
 from .model import FIT_ROUNDS, MAX_STEPS, Sides, Step
 
@@ -47,8 +47,11 @@ def one_step(
         renderer = _redraw(fig)
     if given.settle_panels(fig, renderer):
         renderer = _redraw(fig)
+    if given.stack_figure_legends(fig, renderer):
+        renderer = _redraw(fig)
     facts = measure.content_facts(fig, renderer, margins, last, given)
-    return decide.solve(facts, decide.reserves(facts))
+    counted = settle(facts, facts, EDGES).plan
+    return decide.solve(counted, decide.reserves(counted))
 
 
 def fit(

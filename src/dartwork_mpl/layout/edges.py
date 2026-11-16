@@ -1,7 +1,8 @@
 """The layout's named special cases, applied after the ``decide`` functions.
 
-``TEXT_EDGES`` fits the text that still collides once the margins hold;
-the loop fits the margins again after each round of those.
+``EDGES`` amends one step of the margin fit; ``TEXT_EDGES`` fits the text
+that still collides once the margins hold; the loop fits the margins again
+after each round of those.
 """
 
 from __future__ import annotations
@@ -11,18 +12,23 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
 from ..edgecase import EdgeCase
-from ..vocab import Which
+from ..vocab import Top, Which
+from . import decide
 from .model import (
     ANGLES,
-    MAX_GAP_FRACTION,
     MAX_NAME_LINES,
     MAX_TICK_LINES,
+    MIN_CELL_EM,
     TOUCH_PX,
     ArtistId,
+    AxesContent,
     AxisName,
+    Box,
     Canvas,
+    ContentFacts,
     Count,
     Degrees,
+    FigureArtist,
     Gap,
     Line,
     Px,
@@ -36,6 +42,92 @@ from .model import (
     Width,
     tokens,
 )
+
+# -- the margin fit ------------------------------------------------------------
+
+
+def _room(facts: ContentFacts) -> Px:
+    """The width (px) between the margins and what figure artists keep."""
+    res, m = decide.reserved(facts, decide.reserves(facts)), facts.margins
+    share = 1.0 - res.left - res.right - m.left - m.right
+    return Px(share * facts.canvas.width)
+
+
+def _too_wide(axes: AxesContent, room: Px) -> bool:
+    return axes.widest > room
+
+
+def _has_text_wider_than_the_room(
+    facts: ContentFacts, counted: ContentFacts
+) -> bool:
+    room = _room(counted)
+    return any(_too_wide(a, room) for a in counted.axes)
+
+
+def _let_it_pass(facts: ContentFacts, counted: ContentFacts) -> ContentFacts:
+    """Count such an Axes' titles and x name one pixel wide: no plot width
+    takes them in, since they are centred on the plot."""
+    room = _room(counted)
+    axes = tuple(
+        replace(a, box=Box(a.narrow.x0, a.box.y0, a.narrow.x1, a.box.y1))
+        if _too_wide(a, room)
+        else a
+        for a in counted.axes
+    )
+    return replace(counted, axes=axes)
+
+
+def _over_panel_titles(art: FigureArtist, counted: ContentFacts) -> bool:
+    """A figure title (a text across the top band) over titled panels."""
+    return (
+        art.vertical is False
+        and decide.band_edge(art, counted.canvas) == Top()
+        and any(a.titled for a in counted.axes)
+        and art.gap < counted.title_pad
+    )
+
+
+def _has_figure_title_on_panel_titles(
+    facts: ContentFacts, counted: ContentFacts
+) -> bool:
+    return any(_over_panel_titles(a, counted) for a in counted.artists)
+
+
+def _part_the_titles(
+    facts: ContentFacts, counted: ContentFacts
+) -> ContentFacts:
+    """The figure title keeps the title pad from the panels' titles, as
+    each of those keeps it from its plot."""
+    artists = tuple(
+        replace(a, gap=counted.title_pad)
+        if _over_panel_titles(a, counted)
+        else a
+        for a in counted.artists
+    )
+    return replace(counted, artists=artists)
+
+
+#: What one step of the margin fit counts: each edge case amends the facts
+#: ``decide.solve`` reads.
+EDGES: tuple[EdgeCase[ContentFacts, ContentFacts], ...] = (
+    EdgeCase(
+        name="text-wider-than-the-room",
+        why="a title wider than the canvas shrank its plot by its excess "
+        "at every step until the plot was gone",
+        example="test_edges.py::test_text_wider_than_the_room_keeps_the_plot",
+        applies=_has_text_wider_than_the_room,
+        adjust=_let_it_pass,
+    ),
+    EdgeCase(
+        name="figure-title-on-panel-titles",
+        why="a figure title sat flush on the first row's panel titles and "
+        "the two read as one two-line title",
+        example="test_edges.py::test_figure_title_on_panel_titles_keeps_the_pad",
+        applies=_has_figure_title_on_panel_titles,
+        adjust=_part_the_titles,
+    ),
+)
+
 
 # -- text: pure helpers -------------------------------------------------------
 
@@ -125,6 +217,11 @@ def gap_fraction(need: Px, total: Px, cells: Count) -> Share | None:
     return None if room <= 0 else Share(need * cells / room)
 
 
+def cell_after(gap: Share, total: Px, cells: Count) -> Px:
+    """A cell's side once the spacing is ``gap``."""
+    return Px(total / (cells + gap * (cells - 1)))
+
+
 def deepest_reach(reaches: Sequence[Reach], gaps: Sequence[Px]) -> Px:
     """The widest gap two facing panels' content asks for (0: none meet)."""
     need = 0.0
@@ -182,12 +279,16 @@ def _wrap_names(facts: TextFacts, plan: TextPlan) -> TextPlan:
 
 
 def _parted(space: Spacing) -> Share | None:
-    """The spacing that parts the panels by half an em, if it grows."""
+    """The spacing that parts the panels by half an em, if it grows and
+    each panel keeps ``MIN_CELL_EM``: past that the canvas is too small for
+    its text, and parting would only take the plots away."""
     need = deepest_reach(space.reaches, space.gaps)
     if need <= 0:
         return None
     gap = gap_fraction(Px(need + 0.5 * space.em), space.total, space.cells)
-    if gap is None or gap > MAX_GAP_FRACTION or gap <= space.now + 1e-6:
+    if gap is None or gap <= space.now + 1e-6:
+        return None
+    if cell_after(gap, space.total, space.cells) < MIN_CELL_EM * space.em:
         return None
     return gap
 

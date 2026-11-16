@@ -2,20 +2,27 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.layout import decide
-from dartwork_mpl.layout.edges import TEXT_EDGES
+from dartwork_mpl.layout.edges import EDGES, TEXT_EDGES
 from dartwork_mpl.layout.model import (
     ArtistId,
+    AxesContent,
     AxisName,
     Box,
     Canvas,
+    ContentFacts,
     Count,
     Degrees,
+    FigureArtist,
+    HSpace,
     Line,
     Px,
     Reach,
     Share,
+    Sides,
     Spacing,
     TextFacts,
     TickGroup,
@@ -24,9 +31,44 @@ from dartwork_mpl.layout.model import (
 from dartwork_mpl.layout.tests.test_decide import chars, row
 from dartwork_mpl.vocab import Y
 
+NO_MARGIN = Sides(0.0, 0.0, 0.0, 0.0)
 PLOT = Box(100.0, 100.0, 900.0, 400.0)
 CANVAS = Canvas(Px(1000.0), Px(500.0))
 CLEAR = Box(10.0, 100.0, 30.0, 400.0)  # a y name on the canvas, alone
+
+
+def test_text_wider_than_the_room_keeps_the_plot() -> None:
+    # A 1300 px title centred on an 800 px plot of a 1000 px canvas.
+    plot = Box(100.0, 100.0, 900.0, 400.0)
+    titled = Box(-150.0, 100.0, 1150.0, 450.0)
+    axes = AxesContent(
+        Sides(0.1, 0.9, 0.2, 0.8), titled, Px(1300.0), plot, True
+    )
+    facts = ContentFacts((axes,), (), CANVAS, NO_MARGIN, None, Px(0.0))
+    plain = decide.solve(facts, decide.reserves(facts))
+    settled = settle(facts, facts, EDGES)
+    assert settled.fired == ("text-wider-than-the-room",)
+    assert plain is not None and plain.edges.right - plain.edges.left < 0.6
+    step = decide.solve(settled.plan, decide.reserves(settled.plan))
+    assert step is not None
+    assert (step.edges.left, step.edges.right) == (0.0, 1.0)
+
+
+def test_figure_title_on_panel_titles_keeps_the_pad() -> None:
+    # A suptitle 20 px tall at the top of a 500 px canvas, panels titled.
+    plot = Box(100.0, 100.0, 900.0, 400.0)
+    titled = Box(100.0, 100.0, 900.0, 430.0)
+    axes = AxesContent(Sides(0.1, 0.9, 0.2, 0.8), titled, Px(80.0), plot, True)
+    title = FigureArtist(Box(400.0, 475.0, 600.0, 495.0), False, Px(0.0))
+    facts = ContentFacts((axes,), (title,), CANVAS, NO_MARGIN, None, Px(8.0))
+    settled = settle(facts, facts, EDGES)
+    assert settled.fired == ("figure-title-on-panel-titles",)
+    step = decide.solve(settled.plan, decide.reserves(settled.plan))
+    assert step is not None
+    # The panel titles end 8 px under the suptitle's 475 px bottom.
+    assert step.edges.top * 500.0 + 30.0 == 475.0 - 8.0
+    untitled = replace(facts, axes=(replace(axes, titled=False),))
+    assert settle(untitled, untitled, EDGES).fired == ()
 
 
 def text_plan(facts: TextFacts):
@@ -91,6 +133,24 @@ def test_colliding_panels_part_by_half_an_em() -> None:
     fired, plan = text_plan(texts(spacings=[space]))
     assert fired == ("colliding-panels",)
     assert plan.spacing[WSpace()] == 75.0 * 2 / (800.0 - 75.0)
+
+
+def test_panels_too_short_for_their_text_stay() -> None:
+    # Parting by 400 px leaves 800 px cells 200 px, under two 120 px ems.
+    reaches = (
+        Reach((0, 1), (0, 1), Px(0.0), Px(340.0)),
+        Reach((1, 2), (0, 1), Px(0.0), Px(0.0)),
+    )
+    space = Spacing(
+        HSpace(),
+        reaches,
+        (Px(20.0),),
+        Px(800.0),
+        Count(2),
+        Share(0.2),
+        Px(120.0),
+    )
+    assert text_plan(texts(spacings=[space]))[0] == ()
 
 
 def test_crowded_ticks_wrap_at_spaces() -> None:

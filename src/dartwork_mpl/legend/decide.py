@@ -8,7 +8,7 @@ left) that fit along its Axes, and sits past the labels beyond that side.
 
 from __future__ import annotations
 
-from ..vocab import Box
+from ..vocab import Box, Edge
 from .model import (
     INSIDE,
     Clearance,
@@ -71,3 +71,28 @@ def title_lift(legend: Box, title: TitleFacts) -> Clearance | None:
     """
     needed = legend.y1 + title.gap - title.base
     return Clearance(needed) if needed > title.pad + 0.5 else None
+
+
+def past_texts(edge: Edge, legend: Box, texts: tuple[Box, ...]) -> Box:
+    """``legend`` moved in from ``edge`` until it meets none of ``texts``:
+    a figure title on the edge stays outermost, the legend under it."""
+    moved = legend
+    for _ in texts:
+        hits = [t for t in texts if t.overlaps(moved)]
+        if not hits:
+            break
+        if edge.across:
+            dy = (
+                min(t.y0 for t in hits) - moved.y1
+                if edge.far
+                else max(t.y1 for t in hits) - moved.y0
+            )
+            moved = Box(moved.x0, moved.y0 + dy, moved.x1, moved.y1 + dy)
+        else:
+            dx = (
+                min(t.x0 for t in hits) - moved.x1
+                if edge.far
+                else max(t.x1 for t in hits) - moved.x0
+            )
+            moved = Box(moved.x0 + dx, moved.y0, moved.x1 + dx, moved.y1)
+    return moved

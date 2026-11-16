@@ -19,7 +19,12 @@ from dartwork_mpl.labels import (
     settle_panels,
     space_line_ends,
 )
-from dartwork_mpl.legend import figure_reserve, report_legends, settle
+from dartwork_mpl.legend import (
+    figure_reserve,
+    report_legends,
+    settle,
+    stack_under_texts,
+)
 from dartwork_mpl.style import active_locale
 
 if TYPE_CHECKING:
@@ -42,6 +47,7 @@ NEIGHBOURS = layout.Neighbours(
     settle_legends=settle,
     space_line_ends=space_line_ends,
     settle_panels=settle_panels,
+    stack_figure_legends=stack_under_texts,
     figure_reserve=figure_reserve,
     note_gap_pt=note_gap_pt,
     report_bars=report_bars,
