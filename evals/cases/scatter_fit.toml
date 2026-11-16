@@ -1,0 +1,25 @@
+prompt = "Scatter plot of weight against height from people.csv, with a linear fit line. It goes in a report."
+
+[files]
+"people.csv" = """
+height_cm,weight_kg
+152,48
+158,55
+160,53
+163,60
+165,58
+168,66
+170,64
+172,70
+175,72
+177,71
+180,79
+183,82
+185,80
+188,88
+"""
+
+[expect]
+panels = 1
+marks = ["scatter", "line"]
+texts = ["Height", "Weight"]

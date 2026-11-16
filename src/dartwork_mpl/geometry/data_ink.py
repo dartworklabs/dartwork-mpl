@@ -1,0 +1,124 @@
+"""A plot's data ink: what its artists draw, gathered by the rules of
+:mod:`.ink`, each piece under its caller's key.
+
+``dm.place_legend`` and ``dm.check`` both ask "which artists' ink does
+this box meet"; they pick which artists count and how a hit is named, and
+this records and answers the same way for both.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Generic, TypeVar
+
+import numpy as np
+from matplotlib.collections import PathCollection
+
+from .ink import (
+    clip_path_px,
+    clip_region,
+    discs_meet,
+    drawn_collection_outlines,
+    drawn_ink_meets,
+    drawn_scatter_discs,
+    line_draws_markers,
+    line_draws_stroke,
+    marker_radius_pt,
+)
+from .renderer import BBOX_ERRORS
+
+if TYPE_CHECKING:
+    from matplotlib.backend_bases import RendererBase
+    from matplotlib.collections import Collection
+    from matplotlib.lines import Line2D
+    from matplotlib.path import Path
+    from matplotlib.transforms import Bbox
+
+K = TypeVar("K")
+
+
+def _overlaps(a: Bbox, b: Bbox) -> bool:
+    """The boxes share some area."""
+    return min(a.x1, b.x1) > max(a.x0, b.x0) and min(a.y1, b.y1) > max(
+        a.y0, b.y0
+    )
+
+
+#: Points to display px for the figure being measured.
+ToPx = Callable[[float], float]
+
+
+@dataclass
+class DataInk(Generic[K]):
+    """The data ink of one plot, each piece under the key it was added with:
+    boxes (bars, patches, texts), paths stroked at a half width (filled
+    when ``True``) and discs (markers, scatter points), each with where its
+    clip lets it draw. Which artists count is the caller's choice."""
+
+    boxes: list[tuple[K, Bbox]] = field(default_factory=list)
+    strokes: list[tuple[K, Path, float, bool, Bbox, Path | None]] = field(
+        default_factory=list
+    )
+    discs: list[tuple[K, np.ndarray, np.ndarray, Bbox, Path | None]] = field(
+        default_factory=list
+    )
+
+    def add_box(self, key: K, box: Bbox | None) -> None:
+        """A box of ink (none for an empty one)."""
+        if box is not None and box.width > 0 and box.height > 0:
+            self.boxes.append((key, box))
+
+    def add_line(self, line: Line2D, to_px: ToPx, stroke: K, marker: K) -> None:
+        """A line's stroke at its width and every vertex as a marker disc
+        (a dashed line counts as solid)."""
+        stroked, marks = line_draws_stroke(line), line_draws_markers(line)
+        if not (stroked or marks):
+            return
+        try:
+            path = line.get_transform().transform_path(line.get_path())
+            region, clip = clip_region(line), clip_path_px(line)
+        except BBOX_ERRORS:
+            return
+        if stroked:
+            half = to_px(line.get_linewidth()) / 2
+            self.strokes.append((stroke, path, half, False, region, clip))
+        if marks:
+            xy = np.asarray(path.vertices, dtype=float).reshape(-1, 2)
+            xy = xy[np.isfinite(xy).all(axis=1)]
+            r = np.full(len(xy), to_px(marker_radius_pt(line)))
+            self.discs.append((marker, xy, r, region, clip))
+
+    def add_collection(
+        self,
+        coll: Collection,
+        renderer: RendererBase,
+        to_px: ToPx,
+        key: K,
+        *,
+        filled: bool,
+    ) -> None:
+        """Scatter points as discs; any other collection by its outlines."""
+        try:
+            region, clip = clip_region(coll), clip_path_px(coll)
+            if isinstance(coll, PathCollection) and len(coll.get_sizes()):
+                xy, r = drawn_scatter_discs(coll, to_px(1.0))
+                if len(xy):
+                    self.discs.append((key, xy, r, region, clip))
+                return
+            for o in drawn_collection_outlines(coll, renderer):
+                self.strokes.append((key, o.path, o.half, filled, region, clip))
+        except BBOX_ERRORS:
+            return
+
+    def meets(self, box: Bbox, shrink: float = 0.0) -> list[K]:
+        """The keys whose ink lies in ``box``, each once in the order added;
+        discs count ``shrink`` px smaller."""
+        found = [k for k, b in self.boxes if _overlaps(box, b)]
+        for key, path, half, filled, region, clip in self.strokes:
+            if drawn_ink_meets(path, half, box, region, clip, filled=filled):
+                found.append(key)
+        for key, xy, r, region, clip in self.discs:
+            if discs_meet(xy, np.maximum(r - shrink, 0.0), box, region, clip):
+                found.append(key)
+        return list(dict.fromkeys(found))

@@ -1,0 +1,58 @@
+"""Eight metro indices ranked, the leader highlighted and the median marked."""
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+
+# Synthetic top-8 metro indices, sorted descending.
+data = [
+    ("SF", 412),
+    ("SEA", 348),
+    ("BOS", 301),
+    ("DEN", 287),
+    ("AUS", 265),
+    ("CHI", 198),
+    ("PHX", 182),
+    ("DET", 128),
+]
+data.sort(key=lambda r: r[1], reverse=True)
+categories = [r[0] for r in data]
+values = np.array([r[1] for r in data])
+median = float(np.median(values))
+
+# Color rule — top-1 gets the accent, the rest a uniform muted blue.
+accent = dm.color("dc.amber5").to_hex()
+default = dm.color("dc.teal3").to_hex()
+colors = [accent if v == values.max() else default for v in values]
+
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for("barh", n_points=len(categories), n_series=1)
+)
+
+ax.barh(categories, values, color=colors, edgecolor="white", linewidth=0.3)
+ax.invert_yaxis()  # rank 1 at top
+
+# End-of-bar value labels; the axis grows just enough to keep them inside.
+dm.label_bars(ax)
+
+# Median axvline reference.
+ax.axvline(median, color="oc.gray5", linewidth=0.5, linestyle="--", zorder=1)
+ax.text(
+    median + 4,
+    -0.4,
+    f"Median = {median:.0f}",
+    fontsize=dm.fs(-1),
+    color=dm.ensure_contrast("oc.gray6", ax.get_facecolor()),  # 4.5:1 text
+    fontstyle="italic",
+    ha="left",
+    va="bottom",
+)
+
+ax.set_xlabel("Index value")
+
+dm.simple_layout(fig)
+
+dm.save_formats(fig, "output/bar_horizontal_advanced", formats=("png",))

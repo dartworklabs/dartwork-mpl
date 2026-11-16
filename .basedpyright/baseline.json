@@ -1,0 +1,50 @@
+{
+    "files": {
+        "./src/dartwork_mpl/geometry/axes.py": [
+            {
+                "code": "reportUnknownMemberType",
+                "range": {
+                    "startColumn": 31,
+                    "endColumn": 49,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnknownArgumentType",
+                "range": {
+                    "startColumn": 31,
+                    "endColumn": 53,
+                    "lineCount": 1
+                }
+            }
+        ],
+        "./src/dartwork_mpl/geometry/figure.py": [
+            {
+                "code": "reportUnnecessaryComparison",
+                "range": {
+                    "startColumn": 7,
+                    "endColumn": 19,
+                    "lineCount": 1
+                }
+            }
+        ],
+        "./src/dartwork_mpl/geometry/ink.py": [
+            {
+                "code": "reportUnknownMemberType",
+                "range": {
+                    "startColumn": 17,
+                    "endColumn": 67,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnnecessaryComparison",
+                "range": {
+                    "startColumn": 7,
+                    "endColumn": 21,
+                    "lineCount": 1
+                }
+            }
+        ]
+    }
+}

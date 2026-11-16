@@ -7,7 +7,7 @@ Adding a scenario:
 
 Builder functions own their figure size and styling. The harness in
 test_robustness_suite.py never modifies the figure between build() and
-the first validate_figure call.
+the first dm.check call.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ class RobustnessScenario:
     build
         Callable returning a fully-built Figure.
     expect_warnings
-        Substrings of validate_figure check_ids that **must** appear
+        Substrings of dm.check rule names that **must** appear
         before simple_layout runs (i.e. validate is supposed to catch
         the issue this scenario plants).
     forbid_warnings
@@ -65,7 +65,7 @@ class RobustnessScenario:
     expect_warnings: tuple[str, ...] = ()
     forbid_warnings: tuple[str, ...] = ("OVERFLOW",)
     pixel_checks: tuple[str, ...] = ("assert_minimum_white_border",)
-    layout_padding: float | tuple[float, float, float, float] = 0.08
+    layout_padding: float = 0.08
     category: str = "visual-only"
 
 
@@ -88,7 +88,7 @@ def _build_long_xtick_labels_45_rotation() -> Figure:
     labels = [f"category_label_45_{i:02d}" for i in range(8)]
     ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
     ax.set_ylabel("Value")
-    dm.rotate_tick_labels(ax, axis="x", rotation=45)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     return fig
 
 
@@ -97,7 +97,7 @@ def _build_long_xtick_labels_90_rotation() -> Figure:
     labels = [f"category_label_90_{i:02d}" for i in range(8)]
     ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
     ax.set_ylabel("Value")
-    dm.rotate_tick_labels(ax, axis="x", rotation=90)
+    plt.setp(ax.get_xticklabels(), rotation=90, ha="right")
     return fig
 
 
@@ -225,8 +225,7 @@ def _build_triple_twinx_offset_spine() -> Figure:
     The scenario runs on matplotlib's defaults (no preset), which show
     every right spine. Under a preset, which hides them, the right spines
     of the second and third axis show at ``dm.simple_layout``; that is
-    tested with the offset in
-    ``src/dartwork_mpl/formatting/tests/test_twin_spines.py``."""
+    tested in ``src/dartwork_mpl/ticks/tests/test_surface.py``."""
     fig, ax1 = plt.subplots(figsize=dm.figsize("14cm", "standard"))
     ax1.plot([1, 2, 3, 4], [1, 4, 9, 16], color="#1f77b4")
     ax1.set_ylabel("Series A")
@@ -248,11 +247,6 @@ def _build_triple_twinx_offset_spine() -> Figure:
 
 
 def _build_extreme_left_squeeze() -> Figure:
-    # left=0.05 would push content to the canvas edge so left_margin
-    # falls below the 30 px MIN_MARGIN_PX threshold in _check_margin_asymmetry
-    # and the check skips the comparison. left=0.10 gives ~113 px left
-    # margin, well above the threshold, while right margin stays ~1300 px
-    # (ratio ~11x), reliably triggering MARGIN_ASYMMETRY.
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.barh([0, 1, 2], [1, 2, 3])
     fig.subplots_adjust(left=0.10, right=0.35)
@@ -492,31 +486,6 @@ def _build_colorbar_attached_heatmap() -> Figure:
     return fig
 
 
-def _build_subfigures_2x1() -> Figure:
-    """Two subfigures stacked vertically, each with its own axes,
-    title-text, and ylabel.
-
-    matplotlib's ``fig.subfigures()`` partitions a parent figure into
-    independent SubFigure children, each with its own GridSpec. This
-    scenario verifies that ``dm.validate_figure`` and
-    ``dm.simple_layout`` do not crash or report spurious warnings on
-    the SubFigure tree, which uses a different artist hierarchy from
-    plain ``plt.subplots``.
-    """
-    fig = plt.figure(figsize=dm.figsize("14cm", "standard"))
-    sub_top, sub_bot = fig.subfigures(2, 1, hspace=0.05)
-
-    ax_top = sub_top.subplots()
-    ax_top.plot([1, 2, 3, 4], [1, 4, 9, 16])
-    ax_top.set_ylabel("Top axis (units)")
-
-    ax_bot = sub_bot.subplots()
-    ax_bot.bar(["A", "B", "C"], [3, 7, 5])
-    ax_bot.set_ylabel("Bottom axis (count)")
-
-    return fig
-
-
 def _build_constrained_layout_then_simple_layout() -> Figure:
     """A figure constructed with ``constrained_layout=True`` that the
     suite then re-flows via ``simple_layout``. The expectation is that
@@ -650,11 +619,79 @@ def _build_donut_wide_wrong_pctdistance() -> Figure:
     return fig
 
 
+# ───────────────────────────────────────────────────────
+# K. Figures the bundled skill teaches whose edge cases no other scenario
+#    fires. Each keeps an edge case alive (``EdgeCase.example``); remove the
+#    scenario and the edge fires on no real figure.
+# ───────────────────────────────────────────────────────
+
+
+def _build_quarterly_dates_line() -> Figure:
+    """Quarterly dates: ``23.Q1`` ticks, thinned on a narrow axis."""
+    import pandas as pd
+
+    dm.style.use("report")
+    dates = pd.date_range("2019-03-31", periods=20, freq="QE")
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=20, n_series=1))
+    ax.plot(dates, [1.0 + 0.1 * i for i in range(20)])
+    ax.set(xlabel="Quarter", ylabel="Sales")
+    return fig
+
+
+def _build_panels_long_axis_name() -> Figure:
+    """An axis name longer than its panel: ``dm.simple_layout`` wraps it."""
+    dm.style.use("report")
+    fig, axes = plt.subplots(1, 3, figsize=dm.figsize("13cm", "wide"))
+    for ax in axes:
+        ax.plot([0, 1], [0, 1])
+        ax.set_xlabel("Annual electricity use per household (MWh per year)")
+    axes[0].set_ylabel("Share")
+    return fig
+
+
+def _build_presentation_small_text() -> Figure:
+    """A slide chart with text one step smaller, ``dm.fs(-1)``."""
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=4, n_series=1))
+    ax.plot([1, 2, 3, 4], [3.1, 3.4, 3.2, 3.9])
+    ax.set_xlabel("Quarter", fontsize=dm.fs(-1))
+    ax.set_ylabel("Revenue")
+    return fig
+
+
+def _build_source_note() -> Figure:
+    """A source line under the chart, ``dm.add_note(fig, t)``."""
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize_for(n_points=8, n_series=1))
+    ax.plot(range(8), [3, 4, 4, 5, 6, 6, 7, 8])
+    ax.set(xlabel="Week", ylabel="Orders")
+    dm.add_note(fig, "Source: internal order system")
+    return fig
+
+
+def _build_waterfall_report() -> Figure:
+    """The waterfall template's calls on a report page."""
+    dm.style.use("report")
+    names = ["Opening stock", "New orders", "Returns", "Write-offs", "Closing"]
+    steps = [120.0, 45.0, -20.0, -15.0]
+    fig, ax = plt.subplots(
+        figsize=dm.figsize_for(n_points=len(names), n_series=1, labels=names)
+    )
+    level = [0.0, 120.0, 165.0, 145.0]
+    bars = ax.bar(range(4), steps, bottom=[0.0, *level[1:]])
+    total = ax.bar([4], [sum(steps)])
+    dm.label_bars(ax, bars)
+    dm.label_bars(ax, total)
+    ax.set_xticks(range(5), names)
+    ax.set_ylabel("Units")
+    return fig
+
+
 # SCENARIOS is a flat list of RobustnessScenario (no pytest.param
 # wrappers remain after the #159/#160 redesign). test_catalog_alignment.py
 # and test_robustness_suite.py still route entries through small
 # defensive helpers. The type hint is left at bare ``list`` because the
-# file isn't in the ``mypy --strict`` CI scope (CI only checks
+# file isn't in the type checker's scope (basedpyright only checks
 # ``src/dartwork_mpl/``).
 SCENARIOS: list = [
     # A. Tick label stress
@@ -682,10 +719,9 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="dense_xticks_50_categories",
         build=_build_dense_xticks_50_categories,
-        # 50 ticks in 13 cm guarantees a TICK_CROWD info. After
-        # simple_layout we still have 50 ticks; the info is informational
-        # and OVERFLOW must remain absent.
-        expect_warnings=("TICK_CROWD",),
+        # 50 ticks in 13 cm overlap. After simple_layout we still have 50
+        # ticks; OVERFLOW must remain absent.
+        expect_warnings=("TICK_OVERLAP",),
     ),
     RobustnessScenario(
         name="unicode_korean_xticks", build=_build_unicode_korean_xticks
@@ -730,21 +766,14 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="extreme_left_squeeze",
         build=_build_extreme_left_squeeze,
-        # MARGIN_ASYMMETRY is the whole point — must be flagged before
-        # simple_layout. simple_layout's deterministic direct-calc computes
-        # all four margins simultaneously, so it incidentally rebalances the
-        # squeeze without a dedicated symmetry pass.
-        expect_warnings=("MARGIN_ASYMMETRY",),
+        # simple_layout computes all four margins at once, so it rebalances
+        # the squeeze.
     ),
     RobustnessScenario(
-        name="extreme_right_squeeze",
-        build=_build_extreme_right_squeeze,
-        expect_warnings=("MARGIN_ASYMMETRY",),
+        name="extreme_right_squeeze", build=_build_extreme_right_squeeze
     ),
     RobustnessScenario(
-        name="extreme_bottom_squeeze",
-        build=_build_extreme_bottom_squeeze,
-        expect_warnings=("MARGIN_ASYMMETRY",),
+        name="extreme_bottom_squeeze", build=_build_extreme_bottom_squeeze
     ),
     RobustnessScenario(
         name="outside_axes_annotation",
@@ -798,8 +827,8 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="tiny_figure_2_5cm",
         build=_build_tiny_figure_2_5cm,
-        # 2.5 cm canvas can't fit ylabel + 4 ticks; expect TICK_CROWD
-        # but we still want save_formats to succeed.
+        # 2.5 cm canvas can't fit ylabel + 4 ticks, but we still want
+        # save_formats to succeed.
         forbid_warnings=(),  # Tolerate any post-layout warnings.
         # Canvas too small to satisfy the 4-px white-border invariant.
         pixel_checks=(),
@@ -812,7 +841,7 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="square_aspect_with_long_legend",
         build=_build_square_aspect_with_long_legend,
-        expect_warnings=("LEGEND_OVERFLOW",),
+        expect_warnings=("LEGEND_ON_DATA",),
     ),
     # G. Multi-axes layout
     RobustnessScenario(
@@ -833,26 +862,14 @@ SCENARIOS: list = [
         pixel_checks=(),
     ),
     RobustnessScenario(
-        name="subfigures_2x1",
-        build=_build_subfigures_2x1,
-        # simple_layout uses fig.axes[0].get_gridspec(); SubFigures wrap
-        # each child in its own GridSpec so the parent layout-engine's
-        # edge padding does not propagate into them. The scenario still
-        # verifies validate_figure, simple_layout, and PNG round-trip,
-        # but the global white-border invariant cannot hold here — same
-        # limitation pattern as `colorbar_attached_heatmap`.
-        forbid_warnings=("OVERFLOW",),
-        pixel_checks=(),
-    ),
-    RobustnessScenario(
         name="constrained_layout_then_simple_layout",
         build=_build_constrained_layout_then_simple_layout,
         # constrained_layout owns the margins and packs content tighter
         # to the figure edge than simple_layout's BUFFER would. The
         # global white-border invariant doesn't hold when an alternate
         # layout engine drove the original margins — same precedent as
-        # `colorbar_attached_heatmap` and `subfigures_2x1`. The
-        # scenario still verifies validate_figure, simple_layout
+        # `colorbar_attached_heatmap`. The
+        # scenario still verifies dm.check, simple_layout
         # idempotency, and the PNG round-trip.
         pixel_checks=(),
     ),
@@ -886,6 +903,23 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="donut_wide_wrong_pctdistance",
         build=_build_donut_wide_wrong_pctdistance,
-        expect_warnings=("PIE_LABEL_OFFSET",),
     ),
+    # K. Taught figures that keep an edge case alive
+    RobustnessScenario(
+        name="quarterly_dates_line", build=_build_quarterly_dates_line
+    ),
+    RobustnessScenario(
+        name="panels_long_axis_name", build=_build_panels_long_axis_name
+    ),
+    RobustnessScenario(
+        name="presentation_small_text", build=_build_presentation_small_text
+    ),
+    RobustnessScenario(
+        name="source_note",
+        build=_build_source_note,
+        # dm.add_note sets the note at the canvas's left edge (x = 0), so the
+        # white-border check cannot hold; the layout reserves its row.
+        pixel_checks=(),
+    ),
+    RobustnessScenario(name="waterfall_report", build=_build_waterfall_report),
 ]

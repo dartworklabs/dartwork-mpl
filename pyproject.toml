@@ -27,8 +27,7 @@ classifiers = [
 ]
 # Runtime dependencies of ``import dartwork_mpl`` only. Audit note
 # (2026-07): ``palettable`` and the superseded ``colorspacious`` palette
-# generator had no live imports and were dropped; ``scipy`` remains in the
-# dev group for docs examples only. ``cycler`` is imported directly by the Model B
+# generator had no live imports and were dropped. ``cycler`` is imported directly by the Model B
 # color-cycle API, so it is declared here instead of being relied on as a
 # matplotlib transitive.
 dependencies = [
@@ -53,59 +52,6 @@ Repository = "https://github.com/dartworklabs/dartwork-mpl"
 Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
 Changelog = "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md"
 
-[project.scripts]
-dartwork-mpl-mcp = "dartwork_mpl.cli:main"
-dartwork-mpl-ui = "dartwork_mpl.ui.__main__:main"
-
-[project.optional-dependencies]
-notebook = [
-    # Only ``dm.show()`` (inline SVG display in Jupyter) needs IPython.
-    # It is an optional extra rather than a core dependency so the ~30 MB
-    # of IPython transitive deps (prompt_toolkit, jedi, traitlets, …) are
-    # not forced on every consumer of this matplotlib styling library.
-    "ipython>=8.32.0",
-]
-mcp = [
-    # Cap below 4 — 3.x is the latest tested major; 4.x has not been
-    # vetted and may rename/remove the introspection APIs we use.
-    # GHSA-7xgj-8392-5q4r affects 3.0–3.4.9. PEP 440 has no OR, so
-    # exclude those prefixes (including post releases) while retaining 2.x.
-    # 2.13.3 pins MCP SDK <1.23, conflicting with the patched SDK >=1.30;
-    # 2.14.7 admits it. 2.13.3 remains legacy source/API test coverage only.
-    # 3.x pins fastmcp-slim to the same version; never add slim directly:
-    # installing it alongside 2.x would overlap the fastmcp namespace.
-    "fastmcp>=2.14.7,<4,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.0.*,!=3.4.1.*,!=3.4.2.*,!=3.4.3.*,!=3.4.4.*,!=3.4.5.*,!=3.4.6.*,!=3.4.7.*,!=3.4.8.*,!=3.4.9.*",
-    # These are transitive security minima, declared in wheel extras because
-    # uv.lock is not consulted by pip installing a published wheel (ADR 0007).
-    "anyio>=4.14.2",
-    "authlib>=1.9.1",
-    "cryptography>=50.0.0",
-    "dnspython>=2.9.0",
-    "joserfc>=1.7.6",
-    "mcp>=1.30.0,<2",
-    "opentelemetry-api>=1.45.1",
-    "pydantic-settings>=2.14.2",
-    # Exact 2.15.1 wheel controls pass; GHSA-gvp8-978c-rx2q still omits
-    # a patched-version field upstream. Do not infer general remediation.
-    "pyjwt>=2.15.1",
-    "starlette>=1.3.1",
-    # jsonschema-path -> requests also reaches urllib3 in MCP installations.
-    "urllib3>=2.8.0",
-    "httpx>=0.27.0",
-    # HTTPX Raw GitHub fetches need a bundle without compromised emSign roots.
-    "certifi>=2026.10.19",
-]
-ui = [
-    # FastAPI's dependency minima alone still admit recorded vulnerable
-    # Starlette/AnyIO releases; carry the security floors in this extra too.
-    "anyio>=4.14.2",
-    "starlette>=1.3.1",
-    "fastapi>=0.110.0",
-    "pydantic>=2.0.0",
-    "uvicorn[standard]>=0.27.0",
-    "InquirerPy>=0.3.4",
-]
-
 [build-system]
 # Pin below the next major so a future hatchling 2.x can't silently
 # change sdist/wheel file-selection (force-include, only-include)
@@ -115,10 +61,10 @@ build-backend = "hatchling.build"
 
 # Explicit sdist whitelist. Without this, hatch defaults to "everything
 # not in .gitignore", which sweeps in worktree caches (`.claude/`),
-# docs/_build, dev-only docs/examples, and similar cruft. ``include``
+# and similar cruft. ``include``
 # is *additive* on top of hatch's default file discovery, so we use
 # ``only-include`` to make the whitelist authoritative. The bundled
-# fonts (~70 MB) live under src/dartwork_mpl/asset and are picked up
+# fonts (~60 MB) live under src/dartwork_mpl/font/assets and are picked up
 # transitively because src/dartwork_mpl is whitelisted.
 [tool.hatch.build.targets.sdist]
 only-include = [
@@ -127,12 +73,9 @@ only-include = [
     "README.md",
     "CHANGELOG.md",
     "pyproject.toml",
-    # Agent entry-point files (T1; see
-    # docs/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.md).
+    # Agent entry-point files.
     "CLAUDE.md",
     "AGENTS.md",
-    "llms.txt",
-    "llms-full.txt",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -141,137 +84,46 @@ packages = ["src/dartwork_mpl"]
 # tests/architecture/test_packaging.py builds the wheel and checks this.
 exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 
-# The llms index files are bundled inside the wheel under
-# ``dartwork_mpl/asset/agent/`` so installations from PyPI can read
-# them via ``importlib.resources``. The repo-root copies remain the
-# canonical source for GitHub-raw fetches. The consumer agent entry
-# (``dm.get_agent_doc("AGENTS")`` / ``("CLAUDE")``) is ordinary package data
-# at src/dartwork_mpl/asset/agent/{AGENTS,CLAUDE}.md, and the agent skill
-# ships from src/dartwork_mpl/skills/; the repo-root AGENTS.md / CLAUDE.md
-# are contributor documents and stay out of the wheel.
-#
-# Destinations are package-relative — Hatch does NOT strip ``src/``
-# for ``force-include`` the way it does for the ``packages = [...]``
-# entries above. Writing ``src/dartwork_mpl/...`` here would land the
-# files outside the importable package tree at install time, so
-# ``importlib.resources`` couldn't reach them under
-# ``dartwork_mpl.asset.agent``.
-[tool.hatch.build.targets.wheel.force-include]
-"llms.txt" = "dartwork_mpl/asset/agent/llms.txt"
-"llms-full.txt" = "dartwork_mpl/asset/agent/llms-full.txt"
 
 [dependency-groups]
+# `uv sync` installs this group: everything ruff, basedpyright and pytest need.
 dev = [
-    # Every optional extra, so a plain `uv sync` gives the environment CI
-    # type-checks and tests in (`uv sync --all-extras --dev`): `uv run mypy`
-    # then means the same thing on every machine.
-    "dartwork-mpl[mcp,notebook,ui]",
-    # Docs example scripts only (KDE/Voronoi/MCMC galleries). Nothing
-    # under src/ imports scipy.
-    "scipy>=1.15.2",
-    # Enables sphinx-gallery's parallel example execution (conf.py
-    # `parallel`), which speeds up cache-miss docs builds.
-    "joblib>=1.3.0",
-    "mypy>=1.20",
-    # PyYAML type stubs so `import yaml` type-checks identically on
-    # every mypy version. Without the stubs installed, whether
-    # ``ignore_missing_imports`` suppresses the ``import-untyped``
-    # error depends on the mypy release — CI (lockfile mypy) errored
-    # while a newer local mypy passed, and a `# type: ignore` comment
-    # can't satisfy both (unused-ignore on one side, needed on the
-    # other). Installing the stubs makes yaml genuinely typed and the
-    # question moot.
-    "types-PyYAML>=6.0",
-    "myst-parser>=4.0.1",
-    "notebook>=7.6.3",
-    # Security floors for the developer-only Jupyter/docs graph. Notebook
-    # 7.6.3 also forces JupyterLab >=4.6.4,<4.7 and jupyter-builder.
-    "bleach>=6.4.0",
-    "filelock>=4.2.1",
-    "jupyter-server>=2.20.0",
-    "jupyterlab>=4.6.4,<4.7",
-    "mistune>=3.3.3",
-    "nbconvert>=7.17.2",
-    "setuptools>=84.1.0",
-    "soupsieve>=4.0.0",
-    "tornado>=6.6.1",
-    "urllib3>=2.8.0",
-    "virtualenv>=21.14.13",
-    "openpyxl>=3.1.5",
+    "basedpyright>=1.40",
+    # Tests only: date-axis and canvas-label tests take pandas inputs.
     "pandas>=2.2.3",
     "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
     "pytest-mpl>=0.17",
-    # CI runs the suite with `-n auto`; local runs stay serial unless you
-    # pass -n yourself (never put -n in addopts: scripts/test_id_map.py
-    # runs its own --collect-only).
     "pytest-xdist>=3.8.0",
     "ruff>=0.4.0",
-    "shibuya>=2025.11.10",
-    "sphinx>=8.1.3",
-    "sphinx-copybutton>=0.5.2",
-    "sphinx-design>=0.6.1",
-    "sphinx-gallery>=0.19.0",
-    "sphinx-markdown-builder>=0.6.8",
-    "sphinx-tabs>=3.4.7",
-    "sphinxcontrib-mermaid>=1.0.0",
-    # Mingrammer Diagrams — system architecture as code. Used by
-    # docs/internals/scripts/build_architecture_diagram.py to emit
-    # docs/_static/diagrams/architecture_overview.svg before sphinx-build.
-    # Like sphinx.ext.graphviz, this shells out to the `dot` binary
-    # (apt/brew install graphviz). CI installs it explicitly; locally
-    # the build skips the regen step if dot is absent (committed SVG
-    # remains the displayed asset).
-    "diagrams>=0.24.4",
 ]
 
-# The developer environment needs Python 3.11.5 or later; the package itself
-# still installs on every Python >=3.11. Each patched soupsieve (3.0.2 and
-# later) requires 3.11.5, so a lock that also covers 3.11.0-3.11.4 keeps the
-# vulnerable 2.10 for those interpreters.
-[tool.uv.dependency-groups]
-dev = { requires-python = ">=3.11.5" }
-
-# Test configuration and commands
-# Run tests with: uv run pytest
-# Run specific test: uv run pytest src/dartwork_mpl/_colors/model/tests/test_color_view.py
-# Run with coverage: uv run pytest --cov=src/dartwork_mpl --cov-report=html
+# Run tests with: uv run pytest -n auto
 
 [tool.pytest.ini_options]
 # Cross-cutting suites live in tests/; slice-owned tests live next to their
 # code in src/dartwork_mpl/**/tests/ (ADR 0005). importlib mode lets test
 # modules in different directories share a file name; "." makes the
 # `tests.*` helper modules importable from either tree.
-testpaths = ["tests", "src/dartwork_mpl"]
+testpaths = ["tests", "src/dartwork_mpl", "evals"]
 pythonpath = ["src", "."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "-v",
     "--strict-markers",
     "--tb=short",
     "--import-mode=importlib",
+    "-p",
+    "tests.fixtures",
 ]
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
-    "color_pipeline: slow colour build/regeneration/byte-identity checks; interpreter-independent, so CI runs them on 3.12 only",
-    "approved_input: reads an exact docs/superpowers file listed in tests/support/approved_inputs.json; the approved-inputs CI job runs these with only those files checked out",
 ]
 
 [tool.ruff]
 line-length = 80
 # Python 3.11 is the supported runtime floor (``requires-python``).
 target-version = "py311"
-# Deterministic build artifact: rows are one hex tuple per line (256 hex
-# per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
-# and break `test_rebuild_is_byte_identical`. Never hand-edited.
-# The capture script is the exact file whose sha256 `legacy_calls.json` records
-# (docs/development/mcp-wire-recapture.md); reformatting it would orphan them.
-extend-exclude = [
-    "src/dartwork_mpl/_colors/_generated.py",
-    "tests/mcp/data_repair/capture/capture_legacy_runtime.py",
-]
 # Apply the excludes above and in [tool.ruff.format] to paths a hook or an
 # editor passes explicitly, not only to files found by directory discovery.
 force-exclude = true
@@ -279,7 +131,7 @@ force-exclude = true
 [tool.ruff.format]
 # Ruff 0.16+ formats the Python code blocks of Markdown files by default.
 # Adopting that is a separate decision: it would rewrite the shipped prompt
-# corpus, `llms-full.txt` and the MCP resource bytes together.
+# guidance.
 exclude = ["*.md"]
 quote-style = "double"
 indent-style = "space"
@@ -318,32 +170,6 @@ known-first-party = ["dartwork_mpl"]
 split-on-trailing-comma = false
 
 [tool.ruff.lint.per-file-ignores]
-# RUF001/002/003 (ambiguous unicode in strings/docstrings/comments):
-# documentation and examples intentionally use mathematical and Greek
-# characters (×, σ, α, γ, ∪, ℝ, −, ∨, –) as content. They are not
-# confusable identifiers, and the rule adds noise without value here.
-"docs/**/*.py" = ["RUF001", "RUF002", "RUF003"]
-"examples/**/*.py" = ["RUF001", "RUF002", "RUF003"]
-# E402: these scripts intentionally modify sys.path before importing.
-# W293: docs/color_system/generate_assets.py embeds a JavaScript
-# template string whose blank lines carry whitespace as part of the
-# rendered HTML output, not Python source style.
-"docs/color_system/generate_assets.py" = ["E402", "W293"]
-# UP017 (datetime.UTC alias): the pre-registered evaluation plan keeps these
-# two files byte-identical to the frozen protocol (9134d36c); evals are owned
-# by the evaluation track, so no automatic modernisation applies to them.
-"evals/agentic/preregister.py" = ["UP017"]
-"evals/agentic/test_regressions.py" = ["UP017"]
-"docs/fonts/generate_assets.py" = ["E402"]
-# These SVG generators set the matplotlib backend + a deterministic
-# ``svg.hashsalt`` before importing pyplot, so imports follow module-level
-# setup statements by design.
-"scripts/build_palette_demos.py" = ["E402"]
-# BLE001: these asset generators run a best-effort batch loop that must
-# continue past any individual failure (one broken example shouldn't abort
-# the whole build). The blind-except pattern is intentional.
-"docs/api/generate_assets.py" = ["BLE001"]
-"docs/usage_guide/generate_assets.py" = ["BLE001"]
 # Tests legitimately use unused unpacked variables (e.g. fig, ax tuples
 # where only one is asserted), nested context managers, manual list
 # comprehensions, blind excepts in cleanup code, ambiguous unicode in
@@ -368,7 +194,8 @@ split-on-trailing-comma = false
     "D106",
     "D107",
 ]
-# Slice-owned tests (ADR 0005) follow the same test-code allowances.
+# Slice-owned tests (ADR 0005) and the eval tests follow the same allowances.
+"evals/tests/**/*.py" = ["D102", "D103", "D104"]
 "src/dartwork_mpl/**/tests/**/*.py" = [
     "RUF059",
     "SIM117",
@@ -388,86 +215,17 @@ split-on-trailing-comma = false
     "D107",
 ]
 
-# The agent-eval harness (evals/, outside the package; the default pytest
-# and CI do not collect it) follows the test-code rule: every module and
-# class has a docstring, functions are described by their names.
-"evals/**/*.py" = ["D102", "D103", "D104", "D105", "D106", "D107"]
-
-[tool.mypy]
-# `uv run mypy` (no arguments) is the one command, locally and in CI. Every
-# module under src/dartwork_mpl is checked strictly; a new module is checked
-# without being listed.
-files = ["src/dartwork_mpl"]
-python_version = "3.11"
-strict = true
-# == between types that cannot overlap is an error (stated again so it
-# stays on independently of `strict`).
-strict_equality = true
-# A `match` over a closed union that misses a case is an error (ADR 0005).
-enable_error_code = ["exhaustive-match"]
+[tool.basedpyright]
+# `uv run basedpyright` (no arguments) is the one command, locally and in CI.
+# Product code only: slice-owned tests are not package source. Existing findings are grandfathered in
+# .basedpyright/baseline.json; new code must be clean. After fixing findings,
+# shrink the baseline with `uv run basedpyright --writebaseline`.
+include = ["src/dartwork_mpl"]
 exclude = [
-    # asset/prompt/05-templates/*.py are bundled documentation samples,
-    # not package source. They are intentionally untyped scripts.
-    'asset/prompt/05-templates/.*\.py$',
-    # Slice-owned tests (ADR 0005) are tests, not package source.
-    '^src/dartwork_mpl/(?:.*/)?(?:tests/|test_[^/]*\.py$|conftest\.py$)',
+    "**/__pycache__",
+    "**/tests",
+    "**/test_*.py",
+    "**/conftest.py",
 ]
-
-# Third-party gaps, each scoped to the one module that has it.
-#
-# fontTools ships no type information.
-[[tool.mypy.overrides]]
-module = ["fontTools.*"]
-ignore_missing_imports = true
-
-# matplotlib's mplot3d toolkit ships no type information; the text checks
-# project a 3D axes' text with its public proj3d.proj_transform.
-[[tool.mypy.overrides]]
-module = ["mpl_toolkits.mplot3d.proj3d"]
-ignore_missing_imports = true
-
-# InquirerPy's `inquirer` submodule exposes `text` and `select` via
-# dynamic attribute access; they are not listed in `__all__`, so mypy
-# strict raises attr-defined on every access. Skipping follow_imports
-# for the InquirerPy namespace suppresses those false positives
-# without touching the call sites.
-[[tool.mypy.overrides]]
-module = ["InquirerPy.*"]
-ignore_missing_imports = true
-follow_imports = "skip"
-
-# `fastmcp.tools.tool` is a real module on FastMCP 2 but a runtime alias on
-# FastMCP 3 (both are supported, see the CI artifact matrix), so mypy cannot
-# resolve it and `ToolResult` is `Any`; the one class that subclasses it to
-# keep structured errors on both majors is the only place that needs this.
-[[tool.mypy.overrides]]
-module = ["fastmcp.tools.tool"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["dartwork_mpl.mcp.artifacts.transport"]
-disallow_subclassing_any = false
-
-[tool.coverage.run]
-source = ["src/dartwork_mpl"]
-# mcp/ is the agentic core and is exercised by tests/contracts/test_mcp.py +
-# tests/contracts/test_integration.py, so it stays in the report (omitting it
-# hid the agentic surface behind an inflated headline number). ui/ is
-# the optional `dartwork-mpl-ui` viewer (FastAPI app + a 1.5k-line HTML
-# template) whose web layer is not unit-tested; it is omitted so the
-# core fail-under threshold reflects covered code, not the viewer.
-omit = ["*/ui/*", "*/tests/*", "*/test_*.py", "*/conftest.py"]
-
-[tool.coverage.report]
-show_missing = true
-skip_empty = true
-# Regression gate: the suite currently sits at ~86% with mcp/ included.
-# 80 leaves a little headroom for incidental churn while still failing
-# the build if a substantial chunk of new code ships untested (the prior
-# state had no gate at all, so coverage could silently regress to zero).
-fail_under = 80
-exclude_lines = [
-    "pragma: no cover",
-    "if __name__ == .__main__.",
-    "if TYPE_CHECKING:",
-]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"

@@ -1,0 +1,15 @@
+prompt = "sales.csv has quarterly revenue by region. Make a grouped bar chart comparing the regions in each quarter, for our quarterly report."
+
+[files]
+"sales.csv" = """
+quarter,North,South,East
+Q1,120,95,70
+Q2,135,102,88
+Q3,128,110,93
+Q4,150,118,101
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["North", "South", "East", "Q1", "Q4"]

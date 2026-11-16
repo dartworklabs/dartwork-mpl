@@ -1,0 +1,28 @@
+"""Three clusters of points in a 3D scatter."""
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+
+rng = np.random.default_rng(42)
+n_per_cluster = 60
+centers = [(0, 0, 0), (3, 3, 2), (4, 1, 4)]
+colors = ["dc.teal2", "dc.green2", "dc.orange2"]
+
+fig, ax = plt.subplots(
+    figsize=dm.figsize_for("matrix"), subplot_kw={"projection": "3d"}
+)
+for (cx, cy, cz), color in zip(centers, colors, strict=False):
+    xs = rng.normal(cx, 0.7, n_per_cluster)
+    ys = rng.normal(cy, 0.7, n_per_cluster)
+    zs = rng.normal(cz, 0.7, n_per_cluster)
+    ax.scatter(xs, ys, zs, color=color, edgecolor="white", linewidth=0.3, s=20)
+ax.set_xlabel("X axis")
+ax.set_ylabel("Y axis")
+ax.set_zlabel("Z axis")
+
+dm.simple_layout(fig)
+dm.save_formats(fig, "output/plot_3d_basic", formats=("png",))
