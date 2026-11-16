@@ -77,7 +77,7 @@ axis carry the values, not both.
 | The point is | Label | The value axis |
 |---|---|---|
 | the exact values, and there are few bars (up to about eight) | every bar: `dm.label_bars(ax)` | goes: `ax.set_yticks([])` takes the ticks and their gridlines, `ax.spines["left"].set_visible(False)` the line; the axis label stays and carries the unit |
-| one series, or one bar | only those: `dm.label_bars(ax, bars=actual)` with what that `ax.bar` call returned; one bar in a series `dm.annotate_value(ax, x, y, text)` | stays |
+| one series, or one or a few bars | only those: `dm.label_bars(ax, bars=actual)` for the series an `ax.bar` call returned, `bars[:1]` or `[bars[2]]` for some of its bars | stays |
 | the ranking or the shape, or there are many bars | none | stays |
 
 Horizontal bars lose `ax.set_xticks([])` and the bottom spine instead. A paper
