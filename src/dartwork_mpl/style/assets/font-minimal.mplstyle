@@ -9,7 +9,7 @@ axes.labelweight:   400
 xtick.labelsize:     7
 ytick.labelsize:     7
 
-legend.fontsize:      5.5
+legend.fontsize:      6.0
 
 figure.titleweight: normal
 figure.labelsize:   7.5
