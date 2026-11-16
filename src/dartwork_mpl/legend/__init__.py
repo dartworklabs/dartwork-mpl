@@ -1,10 +1,11 @@
 """Legend placement: inside where it covers no data, or outside a side.
 
 ``dm.place_legend(ax)`` places an Axes legend, ``dm.figure_legend(fig)`` one
-legend for every panel. ``settle``, ``outside_edge`` and ``figure_reserve``
-are what ``dm.simple_layout`` is given (``compose.layout``): the first places
-legends again at the fitted size, the others name the edge a legend sits
-outside of or holds.
+legend for every panel. ``settle``, ``stack_under_texts``, ``outside_edge`` and
+``figure_reserve`` are what ``dm.simple_layout`` is given
+(``compose.layout``): the first two place legends again at the fitted size
+(a figure legend under a figure title), the others name the edge a legend
+sits outside of or holds.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from typing import TYPE_CHECKING
 
 from . import apply, figure
 from .apply import outside_edge, report_legends, settle
-from .figure import figure_reserve
+from .figure import figure_reserve, stack_under_texts
 from .model import AskedLoc, parse_columns
 
 if TYPE_CHECKING:
@@ -28,6 +29,7 @@ __all__ = [
     "place_legend",
     "report_legends",
     "settle",
+    "stack_under_texts",
 ]
 
 
@@ -75,7 +77,7 @@ def figure_legend(
     The entries are every Axes' labelled artists, each name once, in figure
     order; the panel legends holding only those entries, and one an earlier
     call drew, are removed. ``loc="best"`` and ``"above"`` put it above the
-    panels; ``"below"``, ``"right"`` or ``"left"`` that side, with the
+    panels, under a figure title (``dm.simple_layout`` stacks the two); ``"below"``, ``"right"`` or ``"left"`` that side, with the
     fewest rows (columns) that fit the figure. ``dm.simple_layout`` keeps
     the panels clear of it. Returns ``None`` when no Axes has a labelled
     artist.

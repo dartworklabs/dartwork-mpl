@@ -12,7 +12,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
 from ..edgecase import EdgeCase
-from ..vocab import Which
+from ..vocab import Top, Which
 from . import decide
 from .model import (
     ANGLES,
@@ -28,6 +28,7 @@ from .model import (
     ContentFacts,
     Count,
     Degrees,
+    FigureArtist,
     Gap,
     Line,
     Px,
@@ -76,6 +77,36 @@ def _let_it_pass(facts: ContentFacts, counted: ContentFacts) -> ContentFacts:
     return replace(counted, axes=axes)
 
 
+def _over_panel_titles(art: FigureArtist, counted: ContentFacts) -> bool:
+    """A figure title (a text across the top band) over titled panels."""
+    return (
+        art.vertical is False
+        and decide.band_edge(art, counted.canvas) == Top()
+        and any(a.titled for a in counted.axes)
+        and art.gap < counted.title_pad
+    )
+
+
+def _has_figure_title_on_panel_titles(
+    facts: ContentFacts, counted: ContentFacts
+) -> bool:
+    return any(_over_panel_titles(a, counted) for a in counted.artists)
+
+
+def _part_the_titles(
+    facts: ContentFacts, counted: ContentFacts
+) -> ContentFacts:
+    """The figure title keeps the title pad from the panels' titles, as
+    each of those keeps it from its plot."""
+    artists = tuple(
+        replace(a, gap=counted.title_pad)
+        if _over_panel_titles(a, counted)
+        else a
+        for a in counted.artists
+    )
+    return replace(counted, artists=artists)
+
+
 #: What one step of the margin fit counts: each edge case amends the facts
 #: ``decide.solve`` reads.
 EDGES: tuple[EdgeCase[ContentFacts, ContentFacts], ...] = (
@@ -86,6 +117,14 @@ EDGES: tuple[EdgeCase[ContentFacts, ContentFacts], ...] = (
         example="test_edges.py::test_text_wider_than_the_room_keeps_the_plot",
         applies=_has_text_wider_than_the_room,
         adjust=_let_it_pass,
+    ),
+    EdgeCase(
+        name="figure-title-on-panel-titles",
+        why="a figure title sat flush on the first row's panel titles and "
+        "the two read as one two-line title",
+        example="test_edges.py::test_figure_title_on_panel_titles_keeps_the_pad",
+        applies=_has_figure_title_on_panel_titles,
+        adjust=_part_the_titles,
     ),
 )
 

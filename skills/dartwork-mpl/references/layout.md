@@ -101,7 +101,9 @@ they are, so leave them out unless the user asks. Tick
 labels that still overlap are reported as `TICK_OVERLAP`, text over another
 panel's text as `CROSS_AXES_OVERLAP`. A title wider than the canvas keeps
 its plot: it runs past both edges and `dm.check` reports `OVERFLOW`, so
-shorten it or break it with `"\n"`.
+shorten it or break it with `"\n"`. A `fig.suptitle` keeps the
+title pad from the panel titles under it, and a `dm.figure_legend` above
+the panels sits between the two.
 
 - `margin="3mm"` (or `dm.mm(3)`) sets the buffer on every side; the default is `"1mm"`.
   `margin=0` puts the content flush with the canvas edge, for a figure that

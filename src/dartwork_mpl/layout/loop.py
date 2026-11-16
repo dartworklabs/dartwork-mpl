@@ -47,6 +47,8 @@ def one_step(
         renderer = _redraw(fig)
     if given.settle_panels(fig, renderer):
         renderer = _redraw(fig)
+    if given.stack_figure_legends(fig, renderer):
+        renderer = _redraw(fig)
     facts = measure.content_facts(fig, renderer, margins, last, given)
     counted = settle(facts, facts, EDGES).plan
     return decide.solve(counted, decide.reserves(counted))

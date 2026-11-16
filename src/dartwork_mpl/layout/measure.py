@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import matplotlib as mpl
 from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 
@@ -116,7 +117,11 @@ def content_facts(
             position = Sides(float(p.x0), float(p.x1), float(p.y0), float(p.y1))
             widest = widest_text(ax, renderer)
             narrow = narrow_box(ax, renderer) or box
-            axes.append(AxesContent(position, box, widest, narrow))
+            titled = any(
+                t.get_visible() and t.get_text()
+                for t in axes_titles(ax).values()
+            )
+            axes.append(AxesContent(position, box, widest, narrow, titled))
     artists = tuple(
         _figure_artist(fig, art, ext, given)
         for art, ext in iter_figure_level_extents(
@@ -124,7 +129,8 @@ def content_facts(
         )
         if art.get_in_layout()
     )
-    return ContentFacts(tuple(axes), artists, canvas(fig), margins, last)
+    pad = Px(float(mpl.rcParams["axes.titlepad"]) * fig.dpi / 72.0)
+    return ContentFacts(tuple(axes), artists, canvas(fig), margins, last, pad)
 
 
 def content_boxes(fig: Figure, renderer: RendererBase) -> dict[int, Box]:

@@ -161,13 +161,15 @@ class AxesContent:
 
     ``widest``: its widest title or x name (px), text centred on the plot
     whose width no plot width changes; ``narrow``: the content with those
-    texts one pixel wide, as matplotlib's own layouts count them.
+    texts one pixel wide, as matplotlib's own layouts count them;
+    ``titled``: it shows a title.
     """
 
     position: Sides
     box: Box
     widest: Px
     narrow: Box
+    titled: bool
 
 
 @dataclass(frozen=True)
@@ -193,13 +195,18 @@ class Canvas:
 
 @dataclass(frozen=True)
 class ContentFacts:
-    """What one step measures, and the edges it starts from."""
+    """What one step measures, and the edges it starts from.
+
+    ``title_pad``: the preset's room between a title and what it titles
+    (``axes.titlepad``, px).
+    """
 
     axes: tuple[AxesContent, ...]
     artists: tuple[FigureArtist, ...]
     canvas: Canvas
     margins: Sides
     last: Sides | None
+    title_pad: Px
 
 
 Reserves: TypeAlias = tuple[Edge, ...]
