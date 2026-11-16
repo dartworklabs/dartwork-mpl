@@ -75,6 +75,18 @@ def test_a_twin_pair_gets_one_legend_on_the_top_twin():
     assert [t.get_text() for t in legend.get_texts()] == ["Rain", "Temp"]
 
 
+@pytest.mark.parametrize("loc", ["best", "above"])
+def test_the_handles_and_labels_given_on_a_twin_pair_are_shown(loc):
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    (rain,) = ax.plot(np.arange(6), [5, 7, 6, 8, 7, 9], label="rain")
+    twin = ax.twinx()
+    (temp,) = twin.plot(np.arange(6), [20, 22, 25, 24, 21, 19], label="temp")
+    dm.place_legend(ax, loc=loc, handles=[temp, rain], labels=["Temp", "Rain"])
+    dm.simple_layout(fig)
+    legend = twin.get_legend()
+    assert [t.get_text() for t in legend.get_texts()] == ["Temp", "Rain"]
+
+
 def test_a_rebuilt_legend_keeps_its_title_and_follows_the_artists():
     fig, ax = _lines()
     ax.legend(title="Runs", frameon=False)

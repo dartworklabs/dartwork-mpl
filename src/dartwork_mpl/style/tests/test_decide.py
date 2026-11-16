@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.style import apply, decide
-from dartwork_mpl.style.model import Points, Steps, Weight, override_key
+from dartwork_mpl.edgecase import settle
+from dartwork_mpl.style import apply, decide, load_style_dict
+from dartwork_mpl.style.edges import EDGES
+from dartwork_mpl.style.model import Active, Points, Steps, Weight, override_key
 from dartwork_mpl.vocab import DefaultLocale, KoreanLocale
 
 REGISTRY = apply.REGISTRY
@@ -37,6 +39,72 @@ def test_a_list_applies_every_preset_layer_in_order():
 def test_offset_moves_the_base_by_whole_steps(base, n, size, expected):
     moved = decide.offset(Points(base), Steps(n), Points(size))
     assert moved.pt == pytest.approx(expected)
+
+
+STEPS = [Steps(n) for n in range(-10, 11)]
+
+
+def _preset(name):
+    """The preset's font size, line width, weight and step, as it sets them."""
+    presets = REGISTRY.parse(name)
+    rc = {"font.size": 10.0, "lines.linewidth": 1.0, "font.weight": "normal"}
+    for layer in decide.chain(presets).layers:
+        rc.update((k, v) for k, v in load_style_dict(layer).items() if k in rc)
+    active = Active(presets, in_force=True)
+    step = settle(active, decide.step(active), EDGES).plan
+    size, width = (
+        Points(float(rc["font.size"])),
+        Points(float(rc["lines.linewidth"])),
+    )
+    return size, width, Weight.parse(rc["font.weight"]), step
+
+
+@pytest.mark.parametrize("name", sorted(REGISTRY.presets))
+def test_every_step_is_a_size_width_and_weight_matplotlib_draws(name):
+    size, width, weight, step = _preset(name)
+    fs = [decide.smaller(size, n, step).pt for n in STEPS]
+    lw = [decide.thinner(width, n, step).pt for n in STEPS]
+    fw = [decide.bolder(weight, n).value for n in STEPS]
+    assert (fs[10], lw[10], fw[10]) == (size.pt, width.pt, weight.value)
+    assert all(v > 0 for v in fs + lw)
+    assert all(100 <= v <= 900 for v in fw)
+    assert fs == sorted(fs) and lw == sorted(lw) and fw == sorted(fw)
+    for n, f, w, b in zip(STEPS, fs, lw, fw, strict=True):
+        was_fs, was_lw = (decide.offset(v, n, step).pt for v in (size, width))
+        was_fw = weight.value + 100 * n.n
+        assert was_fs <= 0 or f == was_fs  # valid today: unchanged
+        assert n.n < 0 or w == pytest.approx(was_lw)
+        assert not 100 <= was_fw <= 900 or b == was_fw
+
+
+@pytest.mark.parametrize(
+    ("base", "size", "expected"),
+    [
+        (8.0, 1.0, [1.0, 1.0, 2.0]),
+        (7.5, 1.0, [0.5, 0.5, 1.5]),
+        (19.5, 2.6, [1.3, 1.3, 3.9]),
+    ],
+)
+def test_a_font_step_past_zero_stops_at_the_smallest_whole_step(
+    base, size, expected
+):
+    sizes = [
+        decide.smaller(Points(base), Steps(n), Points(size)).pt
+        for n in (-9, -8, -6)
+    ]
+    assert sizes == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    ("base", "size", "expected"),
+    [(1.0, 1.0, [0.125, 0.25, 0.5]), (1.5, 1.0, [0.125, 0.25, 0.5])],
+)
+def test_below_half_a_step_each_line_step_halves(base, size, expected):
+    widths = [
+        decide.thinner(Points(base), Steps(n), Points(size)).pt
+        for n in (-3, -2, -1)
+    ]
+    assert widths == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(

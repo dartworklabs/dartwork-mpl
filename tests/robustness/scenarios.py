@@ -914,12 +914,6 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="presentation_small_text", build=_build_presentation_small_text
     ),
-    RobustnessScenario(
-        name="source_note",
-        build=_build_source_note,
-        # dm.add_note sets the note at the canvas's left edge (x = 0), so the
-        # white-border check cannot hold; the layout reserves its row.
-        pixel_checks=(),
-    ),
+    RobustnessScenario(name="source_note", build=_build_source_note),
     RobustnessScenario(name="waterfall_report", build=_build_waterfall_report),
 ]

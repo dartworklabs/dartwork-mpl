@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import pytest
 
+from dartwork_mpl.check.decide import reads_as_years
 from dartwork_mpl.check.findings import Finding, Findings
-from dartwork_mpl.check.model import printed_value
+from dartwork_mpl.check.model import TickValues, printed_value
+from dartwork_mpl.vocab import Which, X, Y
 
 
 @pytest.mark.parametrize(
@@ -42,3 +44,22 @@ def test_report_lists_findings_fixes_and_what_did_not_run():
         "it yourself)",
     ]
     assert found.rules == ("OVERLAP",)
+
+
+@pytest.mark.parametrize(
+    ("values", "linear", "axis", "years"),
+    [
+        ((2019, 2020, 2021), True, X(), True),
+        ((1990, 2000, 2010, 2020, 2030), True, X(), True),
+        ((2019, 2019.5, 2020), True, X(), False),
+        ((1000, 1500, 2000), True, X(), False),
+        ((2019, 2020, 2021), False, X(), False),
+        ((2019, 2020, 2021), True, Y(), False),
+        ((), True, X(), False),
+    ],
+)
+def test_whole_x_ticks_within_the_years_read_as_years(
+    values: tuple[float, ...], linear: bool, axis: Which, years: bool
+):
+    ticks = TickValues(tuple(float(v) for v in values), linear)
+    assert reads_as_years(ticks, axis) is years

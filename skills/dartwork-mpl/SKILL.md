@@ -10,7 +10,7 @@ metadata:
 
 A thin layer over matplotlib. `Figure` and `Axes` stay native, so everything you know about matplotlib still works. The library owns typography, line weights, spines, colour and margins. You own the message.
 
-**This skill is for dartwork-mpl 0.8.0.** Check once per project: `uv run python -c "import dartwork_mpl as dm; print(dm.__version__)"` (no uv: `python -c ...`). If it prints another version, tell the user, because the calls below may not exist there. `uv run dartwork-mpl install` puts in the skill of the installed version; an older dartwork-mpl without that command needs `uv add dartwork-mpl@latest` first.
+**This skill is for dartwork-mpl 0.8.0.** Check once per project: `uv run python -c "import dartwork_mpl as dm; print(dm.__version__)"` (no uv: `python -c ...`). If it prints another version, tell the user, because the calls below may not exist there. `uv run dartwork-mpl install` puts in the skill of the installed version; an older dartwork-mpl without that command needs `uv add "dartwork-mpl>=0.8.0"` first.
 
 This is guidance, not a rulebook. Requests differ. Where it does not cover yours, do what serves the reader of the figure.
 
@@ -33,11 +33,11 @@ dm.save_formats(fig, "output/exports-v1", formats=("png", "pdf"))   # 4. then lo
 1. **Preset by where the figure goes.** `scientific` for a paper or thesis, `report` for a report, document or dashboard, `presentation` for slides. Also `poster`, `web`, `dark`, `minimal`. Korean text anywhere on the figure takes the `-kr` twin (`report-kr`), which carries the Korean fonts.
 2. **Size in physical units.** `dm.figsize("12cm", "wide")` takes a width and an aspect token, a ratio or a height. With no size in the request, `dm.figsize_for(n_points=, n_series=)` picks one from how dense the chart is. A figure made at its final size keeps its text at the preset's point size on the page.
 3. **`dm.simple_layout(fig)` after everything is drawn.** It measures the text and sets the margins, and wraps or turns labels that collide. Leave rotation and panel spacing to it unless the user asks.
-4. **`dm.save_formats`** keeps the canvas at the size you set.
+4. **`dm.save_formats`** keeps the canvas at the size you set. The stem and formats are the caller's choice: if the user or a calling script names a path or format, use exactly that, with no `output/`, no `-vN` and no extra PDF (`dm.save_formats(fig, "exports", formats=("png",))` writes one `exports.png`). The `output/<name>-v1` stem in the skeleton is only the default when nobody named one.
 
 `figsize=(6, 4)`, `plt.tight_layout()`, `plt.style.use(...)`, `bbox_inches="tight"` and a bare `fig.savefig()` all bypass the physical sizing, so the figure no longer prints at its stated size. Use them only when the user asks.
 
-Sizes written in code stay relative to the preset: `dm.fs(1)` is the preset font size plus one step, `dm.lw(1)` and `dm.fw(1)` the same for line width and weight. Colours are strings: `"dc.blue6"` (family, step 0 light to 9 dark). Leave `color=` out and the preset cycle applies.
+Sizes written in code stay relative to the preset: `dm.fs(1)` is the preset font size plus one step, `dm.lw(1)` and `dm.fw(1)` the same for line width and weight. Below the base, `dm.lw` takes off a step while half a step is left and halves the width after that, so `dm.lw(-1)` is a thinner line, never a missing one. Colours are strings: `"dc.blue6"` (family, step 0 light to 9 dark). Leave `color=` out and the preset cycle applies.
 
 ## What a good chart is
 
@@ -77,7 +77,7 @@ A figure is finished when you have looked at it, not when the script ran. Run th
 
 1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a place to look, with a line on what to try; act on the ones that are not what you meant. `NOT RUN` means a rule could not measure, so say so.
 2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
-3. Fix what you saw, save as the next version (`-v2`, keep v1) and say what changed. If you cannot view images, say the figure was not visually reviewed.
+3. Fix what you saw and say what changed. Revising with a user, save as the next version (`-v2`, keep v1); with a path the user or caller named, overwrite that path. If you cannot view images, say the figure was not visually reviewed.
 
 `dm.check` finds the mechanical defects. Whether the chart says anything is up to you.
 
@@ -93,7 +93,7 @@ The library says what it changed on its own: each automatic change (tick labels 
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
 | 만/억 on the ticks | `dm.format_axis_myriad(ax)` |
-| 12k on the ticks (from a million the axis prints `1M` by itself) | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter())` |
+| 12k on the ticks (from a million the axis prints `1M` by itself) | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter(sep=""))` |
 
 Call them before `dm.simple_layout`, which makes room for what they add.
 

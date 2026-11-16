@@ -89,20 +89,26 @@ def active_presets() -> tuple[str, ...]:
 
 def fs(n: float) -> float:
     """The preset's font size plus ``n`` steps: ``dm.fs(-1)`` for a note,
-    ``dm.fs(2)`` for a title. A step is 1 pt, 2.6 pt on slides."""
-    size = decide.offset(measure.font_size(), Steps(float(n)), _step())
+    ``dm.fs(2)`` for a title. A step is 1 pt, 2.6 pt on slides; a step
+    that would reach zero stops at the smallest whole step above it."""
+    size = decide.smaller(measure.font_size(), Steps(float(n)), _step())
     return size.pt
 
 
 def lw(n: float) -> float:
-    """The preset's line width plus ``n`` steps (1 pt, 2.6 pt on slides)."""
-    width = decide.offset(measure.line_width(), Steps(float(n)), _step())
+    """The preset's line width plus ``n`` steps (1 pt, 2.6 pt on slides).
+
+    Below the base a step takes off one step while half a step is left,
+    and halves the width after that: ``dm.lw(-1)`` is 0.5 pt on ``report``.
+    """
+    width = decide.thinner(measure.line_width(), Steps(float(n)), _step())
     return width.pt
 
 
 def fw(n: float) -> int:
-    """The preset's font weight plus ``100 * n``: ``dm.fw(1)`` one step
-    bolder. A weight name such as ``"light"`` counts as its number."""
+    """The preset's font weight plus ``100 * n``, held within 100-900:
+    ``dm.fw(1)`` one step bolder. A weight name such as ``"light"`` counts
+    as its number."""
     return decide.bolder(measure.font_weight(), Steps(float(n))).value
 
 
