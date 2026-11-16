@@ -5,6 +5,7 @@ lint:
 
 - :func:`skill_path` is the folder the skill and its pages are read from.
 - :func:`lint` (``dm.lint_code``) checks a script against the catalog.
+- :func:`lint_rules` (``dm.lint_rules``) lists the catalog's rules.
 - :func:`install_skill` (``dartwork-mpl install``) puts the skill into
   ``.claude/skills`` and ``.agents/skills``.
 """
@@ -27,6 +28,7 @@ __all__ = [
     "Warn",
     "install_skill",
     "lint",
+    "lint_rules",
     "skill_path",
 ]
 
@@ -42,3 +44,23 @@ def lint(code: str) -> list[Finding]:
     facts = LintFacts(Code.parse(code), measure.known())
     plan = decide.findings(facts, corpus.rules())
     return list(settle(facts, plan, EDGES).plan)
+
+
+def lint_rules() -> list[dict[str, str | None]]:
+    """The rules :func:`lint` checks a source against, in catalog order.
+
+    Each record has ``id``, ``severity`` (``critical``, ``warning`` or
+    ``info``), ``message`` and ``fix`` (None when the rule has none), the
+    same values a :class:`Finding` of that rule carries::
+
+        [r["id"] for r in dm.lint_rules() if r["severity"] == "critical"]
+    """
+    return [
+        {
+            "id": rule.id,
+            "severity": str(rule.severity),
+            "message": rule.message,
+            "fix": rule.fix,
+        }
+        for rule in corpus.rules().items
+    ]

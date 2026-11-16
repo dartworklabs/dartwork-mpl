@@ -56,6 +56,7 @@ from .compose.style import join as _join_style
 
 # Agent guidance: the skill and the anti-pattern lint
 from .guide import lint as lint_code
+from .guide import lint_rules
 
 # What the library changed on its own, printed
 from .hidden import quiet, verbose
@@ -126,6 +127,7 @@ __all__ = [  # noqa: RUF022
     # Agent guidance
     "guide",
     "lint_code",
+    "lint_rules",
     # Defects of a drawn figure
     "check",
     # What the library changed on its own
