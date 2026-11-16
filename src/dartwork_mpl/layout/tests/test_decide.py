@@ -49,7 +49,7 @@ def axes(plot: Box, *texts: Box) -> AxesContent:
         max(b.x1 for b in boxes),
         max(b.y1 for b in boxes),
     )
-    return AxesContent(pos, box)
+    return AxesContent(pos, box, Px(0.0), box)
 
 
 def text(x0: float, x1: float, y0: float, y1: float) -> Box:

@@ -99,7 +99,9 @@ stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
 when it is too small, and labels you rotate or break yourself are left as
 they are, so leave them out unless the user asks. Tick
 labels that still overlap are reported as `TICK_OVERLAP`, text over another
-panel's text as `CROSS_AXES_OVERLAP`.
+panel's text as `CROSS_AXES_OVERLAP`. A title wider than the canvas keeps
+its plot: it runs past both edges and `dm.check` reports `OVERFLOW`, so
+shorten it or break it with `"\n"`.
 
 - `margin="3mm"` (or `dm.mm(3)`) sets the buffer on every side; the default is `"1mm"`.
   `margin=0` puts the content flush with the canvas edge, for a figure that

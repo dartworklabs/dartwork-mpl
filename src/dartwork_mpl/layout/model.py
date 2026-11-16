@@ -157,10 +157,17 @@ def parse_margin(
 
 @dataclass(frozen=True)
 class AxesContent:
-    """An Axes' position (figure fractions) and its drawn content box."""
+    """An Axes' position (figure fractions) and its drawn content box.
+
+    ``widest``: its widest title or x name (px), text centred on the plot
+    whose width no plot width changes; ``narrow``: the content with those
+    texts one pixel wide, as matplotlib's own layouts count them.
+    """
 
     position: Sides
     box: Box
+    widest: Px
+    narrow: Box
 
 
 @dataclass(frozen=True)

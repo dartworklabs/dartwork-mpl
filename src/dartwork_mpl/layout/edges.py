@@ -1,7 +1,8 @@
 """The layout's named special cases, applied after the ``decide`` functions.
 
-``TEXT_EDGES`` fits the text that still collides once the margins hold;
-the loop fits the margins again after each round of those.
+``EDGES`` amends one step of the margin fit; ``TEXT_EDGES`` fits the text
+that still collides once the margins hold; the loop fits the margins again
+after each round of those.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from dataclasses import replace
 
 from ..edgecase import EdgeCase
 from ..vocab import Which
+from . import decide
 from .model import (
     ANGLES,
     MAX_NAME_LINES,
@@ -19,8 +21,11 @@ from .model import (
     MIN_CELL_EM,
     TOUCH_PX,
     ArtistId,
+    AxesContent,
     AxisName,
+    Box,
     Canvas,
+    ContentFacts,
     Count,
     Degrees,
     Gap,
@@ -36,6 +41,54 @@ from .model import (
     Width,
     tokens,
 )
+
+# -- the margin fit ------------------------------------------------------------
+
+
+def _room(facts: ContentFacts) -> Px:
+    """The width (px) between the margins and what figure artists keep."""
+    res, m = decide.reserved(facts, decide.reserves(facts)), facts.margins
+    share = 1.0 - res.left - res.right - m.left - m.right
+    return Px(share * facts.canvas.width)
+
+
+def _too_wide(axes: AxesContent, room: Px) -> bool:
+    return axes.widest > room
+
+
+def _has_text_wider_than_the_room(
+    facts: ContentFacts, counted: ContentFacts
+) -> bool:
+    room = _room(counted)
+    return any(_too_wide(a, room) for a in counted.axes)
+
+
+def _let_it_pass(facts: ContentFacts, counted: ContentFacts) -> ContentFacts:
+    """Count such an Axes' titles and x name one pixel wide: no plot width
+    takes them in, since they are centred on the plot."""
+    room = _room(counted)
+    axes = tuple(
+        replace(a, box=Box(a.narrow.x0, a.box.y0, a.narrow.x1, a.box.y1))
+        if _too_wide(a, room)
+        else a
+        for a in counted.axes
+    )
+    return replace(counted, axes=axes)
+
+
+#: What one step of the margin fit counts: each edge case amends the facts
+#: ``decide.solve`` reads.
+EDGES: tuple[EdgeCase[ContentFacts, ContentFacts], ...] = (
+    EdgeCase(
+        name="text-wider-than-the-room",
+        why="a title wider than the canvas shrank its plot by its excess "
+        "at every step until the plot was gone",
+        example="test_edges.py::test_text_wider_than_the_room_keeps_the_plot",
+        applies=_has_text_wider_than_the_room,
+        adjust=_let_it_pass,
+    ),
+)
+
 
 # -- text: pure helpers -------------------------------------------------------
 

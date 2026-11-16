@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.layout import decide
-from dartwork_mpl.layout.edges import TEXT_EDGES
+from dartwork_mpl.layout.edges import EDGES, TEXT_EDGES
 from dartwork_mpl.layout.model import (
     ArtistId,
+    AxesContent,
     AxisName,
     Box,
     Canvas,
+    ContentFacts,
     Count,
     Degrees,
     HSpace,
@@ -17,6 +19,7 @@ from dartwork_mpl.layout.model import (
     Px,
     Reach,
     Share,
+    Sides,
     Spacing,
     TextFacts,
     TickGroup,
@@ -28,6 +31,21 @@ from dartwork_mpl.vocab import Y
 PLOT = Box(100.0, 100.0, 900.0, 400.0)
 CANVAS = Canvas(Px(1000.0), Px(500.0))
 CLEAR = Box(10.0, 100.0, 30.0, 400.0)  # a y name on the canvas, alone
+
+
+def test_text_wider_than_the_room_keeps_the_plot() -> None:
+    # A 1300 px title centred on an 800 px plot of a 1000 px canvas.
+    plot = Box(100.0, 100.0, 900.0, 400.0)
+    titled = Box(-150.0, 100.0, 1150.0, 450.0)
+    axes = AxesContent(Sides(0.1, 0.9, 0.2, 0.8), titled, Px(1300.0), plot)
+    facts = ContentFacts((axes,), (), CANVAS, Sides(0.0, 0.0, 0.0, 0.0), None)
+    plain = decide.solve(facts, decide.reserves(facts))
+    settled = settle(facts, facts, EDGES)
+    assert settled.fired == ("text-wider-than-the-room",)
+    assert plain is not None and plain.edges.right - plain.edges.left < 0.6
+    step = decide.solve(settled.plan, decide.reserves(settled.plan))
+    assert step is not None
+    assert (step.edges.left, step.edges.right) == (0.0, 1.0)
 
 
 def text_plan(facts: TextFacts):

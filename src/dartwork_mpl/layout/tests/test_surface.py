@@ -122,6 +122,18 @@ def test_grid_with_colorbar_and_shared_axes() -> None:
     assert x1 <= fig.bbox.width + 0.5 and y1 <= fig.bbox.height + 0.5
 
 
+def test_a_title_wider_than_the_canvas_keeps_the_plot() -> None:
+    # #783: the plot shrank by the title's excess each step, to 0.001.
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize_for("matrix"))
+    ax.imshow(np.arange(25).reshape(5, 5))
+    ax.set_title("Stocks and REITs moved together most")
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    frame = ax.get_window_extent(fig.canvas.get_renderer())  # type: ignore[attr-defined]
+    assert min(frame.width, frame.height) / fig.dpi * 25.4 > 60.0
+
+
 def test_grid_rows_part_for_their_tick_labels_and_titles() -> None:
     # #787: a slide grid needs hspace 1.99; the rows stayed at 0.2.
     dm.style.use("presentation")

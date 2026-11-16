@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 
-from ..geometry import iter_figure_level_extents, projection
+from ..geometry import axes_titles, iter_figure_level_extents, projection
 from .model import (
     AxesContent,
     Box,
@@ -62,6 +62,26 @@ def content_box(ax: Axes, renderer: RendererBase) -> Box | None:
     return None if tight is None else box_of(tight)
 
 
+def widest_text(ax: Axes, renderer: RendererBase) -> Px:
+    """The widest of the titles and the x name of ``ax`` (px)."""
+    texts = [*axes_titles(ax).values(), ax.xaxis.label]
+    widths = [
+        float(t.get_window_extent(renderer).width)
+        for t in texts
+        if t.get_visible() and t.get_text()
+    ]
+    return Px(max(widths, default=0.0))
+
+
+def narrow_box(ax: Axes, renderer: RendererBase) -> Box | None:
+    """The content of ``ax`` with its titles and x name one pixel wide."""
+    try:
+        tight = ax.get_tightbbox(renderer, for_layout_only=True)
+    except TypeError:  # mpl_toolkits' host Axes, as matplotlib's own layouts
+        tight = ax.get_tightbbox(renderer)
+    return None if tight is None else box_of(tight)
+
+
 def _figure_artist(
     fig: Figure, art: Artist, ext: Bbox, given: Neighbours
 ) -> FigureArtist:
@@ -94,7 +114,9 @@ def content_facts(
         if box is not None:
             p = ax.get_position()
             position = Sides(float(p.x0), float(p.x1), float(p.y0), float(p.y1))
-            axes.append(AxesContent(position, box))
+            widest = widest_text(ax, renderer)
+            narrow = narrow_box(ax, renderer) or box
+            axes.append(AxesContent(position, box, widest, narrow))
     artists = tuple(
         _figure_artist(fig, art, ext, given)
         for art, ext in iter_figure_level_extents(
