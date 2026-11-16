@@ -230,7 +230,7 @@ wheels = [
 
 [[package]]
 name = "dartwork-mpl"
-version = "0.7.1"
+version = "0.8.0a1"
 source = { editable = "." }
 dependencies = [
     { name = "cycler" },
