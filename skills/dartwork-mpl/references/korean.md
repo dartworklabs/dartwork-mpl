@@ -30,7 +30,8 @@ plt.close(fig)
 - Apply the `-kr` preset before creating the figure; switching later leaves
   existing text in the old font.
 - Mixed Korean and English text in one label is fine.
-- `dm.style.context("report-kr")` scopes the preset to one block.
+- `dm.style.context("report-kr")` scopes the preset to one block; save the
+  figure inside it.
 - Do not set `font.family` by hand; the preset's family list holds the
   bundled math and symbol fallbacks.
 - Korean numbers: `dm.format_axis_myriad(ax)` counts the ticks in 만/억/조
