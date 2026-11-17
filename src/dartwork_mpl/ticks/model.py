@@ -17,6 +17,9 @@ from ..vocab import DefaultLocale, KoreanLocale, Locale
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
 
+TickCount = NewType("TickCount", int)
+"""A count of major ticks in view."""
+
 
 @dataclass(frozen=True)
 class Unit:

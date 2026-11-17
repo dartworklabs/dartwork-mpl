@@ -18,6 +18,7 @@ from matplotlib.axes import Axes
 import dartwork_mpl as dm
 
 EOK = [0, 0.9e8, 1.75e8]
+M = "\N{MINUS SIGN}"
 
 
 @dataclass(frozen=True)
@@ -137,4 +138,62 @@ def test_a_year_axis_keeps_ticks_someone_set(setting) -> None:
     dm.simple_layout(fig)
     fig.canvas.draw()
     assert "2019.5" in _x_ticks(ax)
+    plt.close(fig)
+
+
+def _y_ticks(ax: Axes) -> list[str]:
+    lo, hi = sorted(ax.get_ylim())
+    return [
+        t.get_text()
+        for t in ax.get_yticklabels()
+        if lo <= t.get_position()[1] <= hi
+    ]
+
+
+MONTHS = list(range(1, 13))
+SALES = [51, 53, 53, 51, 51, 49, 50, 55, 55, 54, 56, 58]
+
+
+@dataclass(frozen=True)
+class Whole:
+    """One small-panel chart and the x and y tick text it must show: whole
+    numbers where its data are whole, matplotlib's own where they are not."""
+
+    name: str
+    draw: Callable[[Axes], object]
+    x: tuple[str, ...]
+    y: tuple[str, ...]
+
+
+WHOLE = (
+    Whole("months", lambda ax: ax.plot(MONTHS, [s + 0.5 for s in SALES]),
+          ("2", "4", "6", "8", "10", "12"), ("50", "52", "54", "56", "58")),
+    Whole("count-bars", lambda ax: ax.barh(range(3), [1, 2, 1]),
+          ("0", "1", "2"), ("0", "1", "2")),
+    Whole("float-scatter", lambda ax: ax.scatter([4.1, 5.3, 6.8], [1.2, 2.7, 1.9]),
+          ("4.0", "4.5", "5.0", "5.5", "6.0", "6.5"), ("1.5", "2.0", "2.5")),
+    Whole("image", lambda ax: ax.imshow([[0, 1, 2]] * 3),  # pixel edges at .5
+          ("0", "1", "2"), (f"{M}0.5", "0.0", "0.5", "1.0", "1.5", "2.0", "2.5")),
+)  # fmt: skip
+
+
+@pytest.mark.parametrize("row", WHOLE, ids=lambda row: row.name)
+def test_whole_number_data_tick_at_whole_numbers(row: Whole) -> None:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("6cm", "standard"))
+    row.draw(ax)
+    dm.simple_layout(fig)
+    fig.canvas.draw()
+    assert (tuple(_x_ticks(ax)), tuple(_y_ticks(ax))) == (row.x, row.y)
+    plt.close(fig)
+
+
+def test_ticks_come_back_when_the_data_stop_being_whole() -> None:
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("6cm", "standard"))
+    ax.plot(MONTHS, SALES)
+    dm.simple_layout(fig)
+    ax.plot([2.5, 7.5], [50, 52])
+    dm.simple_layout(fig)
+    assert isinstance(ax.xaxis.get_major_locator(), ticker.AutoLocator)
     plt.close(fig)
