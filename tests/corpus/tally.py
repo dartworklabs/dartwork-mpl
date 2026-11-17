@@ -47,8 +47,15 @@ def scripts() -> list[Path]:
     ]
 
 
-def run(script: Path) -> tuple[list[object], str]:
-    """Run one script in an empty directory; its figures and any error."""
+def run(script: Path, render: Path | None) -> tuple[list[tuple[str, str]], str]:
+    """Run one script in an empty directory; what dm.check finds on each of
+    its figures (suffix, rules) and any error.
+
+    The figures are checked and rendered while the script's rcParams still
+    hold: matplotlib picks tick locations again on every draw, from the
+    rcParams of that moment, so a figure drawn after they are restored gets
+    other ticks than the ones its layout was fitted to.
+    """
     saved: list[object] = []
     original = getattr(dm, "save_formats", None)
 
@@ -66,21 +73,30 @@ def run(script: Path) -> tuple[list[object], str]:
         dm.save_formats = capture
         try:
             # rc_context: one script's rcParams never leak into the next.
-            with plt.rc_context(), contextlib.redirect_stdout(io.StringIO()):
-                runpy.run_path(str(script), run_name="__main__")
-        except Exception as exc:  # an old commit may lack what a script calls
-            last = traceback.extract_tb(exc.__traceback__)[-1]
-            error = f"{type(exc).__name__}: {exc} (line {last.lineno})"
+            with plt.rc_context():
+                try:
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        runpy.run_path(str(script), run_name="__main__")
+                except Exception as exc:  # an old commit may lack a call
+                    last = traceback.extract_tb(exc.__traceback__)[-1]
+                    error = f"{type(exc).__name__}: {exc} (line {last.lineno})"
+                figures = list(saved)
+                for num in sorted(set(plt.get_fignums()) - before):
+                    fig = plt.figure(num)
+                    if fig not in figures:
+                        figures.append(fig)
+                found: list[tuple[str, str]] = []
+                for i, fig in enumerate(figures):
+                    suffix = "" if len(figures) == 1 else f"_{i}"
+                    found.append((suffix, rules_of(fig)))
+                    if render is not None:
+                        stem = script.parent.name + "_" + script.stem
+                        fig.savefig(render / f"{stem}{suffix}.png", dpi=150)
         finally:
             if original is not None:
                 dm.save_formats = original
             os.chdir(cwd)
-    figures = list(saved)
-    for num in sorted(set(plt.get_fignums()) - before):
-        fig = plt.figure(num)
-        if fig not in figures:
-            figures.append(fig)
-    return figures, error
+    return found, error
 
 
 def rules_of(fig: object) -> str:
@@ -138,18 +154,13 @@ def main() -> None:
     fired: Counter[str] = Counter()
     for path in paths:
         name = f"{path.parent.name}/{path.stem}"
-        figures, error = run(path)
+        figures, error = run(path, args.render)
         if error:
             print(f"{name:42} ERROR {error}")
-        for i, fig in enumerate(figures):
-            found = rules_of(fig)
+        for suffix, found in figures:
             fired.update(r for r in found.split(", ") if r.isupper())
-            label = name if len(figures) == 1 else f"{name}[{i}]"
+            label = f"{name}[{suffix[1:]}]" if suffix else name
             print(f"{label:42} {found}")
-            if args.render:
-                stem = path.parent.name + "_" + path.stem
-                suffix = "" if len(figures) == 1 else f"_{i}"
-                fig.savefig(args.render / f"{stem}{suffix}.png", dpi=150)
         plt.close("all")
 
     print("\nrules fired, scripts:")
