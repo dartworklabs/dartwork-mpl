@@ -148,6 +148,21 @@ def test_a_title_wider_than_the_canvas_keeps_the_plot() -> None:
     assert min(frame.width, frame.height) / fig.dpi * 25.4 > 60.0
 
 
+def test_a_gap_that_cannot_part_the_titles_stays() -> None:
+    # #722: each wider gap narrowed the plots, the titles stood out further,
+    # and the row ended at 0.5 cm plots with the titles still overlapping.
+    dm.style.use("report")
+    fig, axes = plt.subplots(
+        1, 3, figsize=dm.figsize("12cm", "4cm"), sharey=True
+    )
+    for ax in axes:
+        ax.plot([0, 1], [0, 1])
+        ax.set_title("Quarterly revenue by region and channel")
+    dm.simple_layout(fig)
+    assert axes[0].get_gridspec().wspace is None
+    assert axes[0].get_position().width * 12.0 > 2.0  # cm
+
+
 def test_grid_rows_part_for_their_tick_labels_and_titles() -> None:
     # #787: a slide grid needs hspace 1.99; the rows stayed at 0.2.
     dm.style.use("presentation")

@@ -15,6 +15,7 @@ from dartwork_mpl.labels import (
     note_gap_pt,
     place_notes,
     report_bars,
+    report_panels,
     settle_bars,
     settle_panels,
     space_line_ends,
@@ -52,6 +53,7 @@ NEIGHBOURS = layout.Neighbours(
     note_gap_pt=note_gap_pt,
     report_bars=report_bars,
     report_legends=report_legends,
+    report_panels=report_panels,
 )
 
 

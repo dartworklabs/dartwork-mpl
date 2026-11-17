@@ -14,9 +14,9 @@ from typing import TYPE_CHECKING
 from ..edgecase import settle
 from ..geometry import get_renderer
 from . import apply, decide, measure, report, text
-from .edges import EDGES, TEXT_EDGES
+from .edges import EDGES, TEXT_EDGES, parts
 from .given import Neighbours
-from .model import FIT_ROUNDS, MAX_STEPS, Sides, Step
+from .model import FIT_ROUNDS, MAX_STEPS, Gap, Sides, Step
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -83,6 +83,7 @@ def run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
         report.changes(before, report.look(fig, gs))
     given.report_bars(fig)
     given.report_legends(fig)
+    given.report_panels(fig)
 
 
 def _run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
@@ -93,12 +94,23 @@ def _run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
     given.prepare_ticks(fig)
     given.place_notes(fig, margins.left, margins.bottom)
     step = fit(fig, gs, margins, given, None)
+    held: set[Gap] = set()
     for _round in range(FIT_ROUNDS):
         if step is None or not step.converged:
             return
-        facts, objects = text.text_facts(fig, gs, get_renderer(fig))
+        facts, objects = text.text_facts(fig, gs, get_renderer(fig), held)
         plan = settle(facts, decide.text_plan(facts), TEXT_EDGES).plan
         if plan.empty:
             return
         apply.text(gs, plan, objects)
         step = fit(fig, gs, margins, given, step.edges)
+        if step is None or not plan.spacing:
+            continue
+        # A wider gap is kept only if the panels then part.
+        now = text.spacings(fig, gs, get_renderer(fig), list(plan.spacing))
+        meet = [s.key for s in now if not parts(s)]
+        if meet:
+            for key in meet:
+                apply.unspace(gs, key)
+            held.update(meet)
+            step = fit(fig, gs, margins, given, step.edges)

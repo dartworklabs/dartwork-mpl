@@ -190,6 +190,17 @@ def _turn(axis: Axis, angle: Degrees) -> None:
     _TURNED[axis] = angle
 
 
+def unspace(gs: GridSpec, key: Gap) -> None:
+    """Give ``key`` back to the figure's spacing (``gs`` sets none)."""
+    match key:
+        case WSpace():
+            gs.update(wspace=None)
+        case HSpace():
+            gs.update(hspace=None)
+        case _:
+            assert_never(key)
+
+
 def _space(gs: GridSpec, key: Gap, value: Share) -> None:
     match key:
         case WSpace():

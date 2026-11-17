@@ -339,6 +339,11 @@ def _parted(space: Spacing) -> Share | None:
     return gap
 
 
+def parts(space: Spacing) -> bool:
+    """Whether no two facing panels' content meets across ``space``."""
+    return deepest_reach(space.reaches, space.gaps) <= 0
+
+
 def _has_colliding_panels(facts: TextFacts, plan: TextPlan) -> bool:
     """Not in a round that wraps a name: what stands on it has not moved."""
     return not plan.names and any(

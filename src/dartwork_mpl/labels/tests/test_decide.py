@@ -17,8 +17,10 @@ from dartwork_mpl.labels.bar_geometry import (
 )
 from dartwork_mpl.labels.model import (
     Column,
+    Inside,
     Panel,
     PanelsFacts,
+    Run,
     Title,
     Tries,
     Try,
@@ -104,38 +106,71 @@ def test_value_side_takes_the_first_free_side(pairs, side):
     assert decide.value_side(_tries(*pairs)).index == side
 
 
-def _panel(x: float, *, cell=None, ylabel=None, title=None, top=100.0) -> Panel:
+def _panel(
+    x: float,
+    *,
+    cell=None,
+    title=None,
+    top=100.0,
+    plot=200.0,
+    joined=None,
+    apart=None,
+) -> Panel:
     titles = () if title is None else (Title(title),)
     return Panel(
         corner=(x, 100.0),
         width=8.0,
+        height=10.0,
         descent=2.0,
+        size=10.0,
         cell=cell,
-        ylabel_x0=ylabel,
-        guess_x0=x - 30,
         titles=titles,
         top=top,
         decos=(),
+        plot_width=plot,
+        joined=joined,
+        apart=apart,
     )
 
 
-def test_letters_take_the_column_s_outer_name_and_the_title_baseline():
+@pytest.mark.parametrize(
+    ("runs", "where"),
+    [
+        # letter 8 + gap 5 + title: a run fits while it is no wider than
+        # its plot (200 px), in every panel.
+        (((None, None), (None, None)), Run()),
+        (((187.0, None), (100.0, None)), Run()),  # 8 + 5 + 187 = 200
+        (((100.0, None), (188.0, None)), Inside(1)),
+        (((100.0, 80.0), (None, None)), Run()),  # with a right title
+        (((120.0, 80.0), (None, None)), Inside(0)),
+    ],
+)
+def test_one_placement_for_the_figure(runs, where):
+    panels = tuple(
+        _panel(300.0 * i, joined=j, apart=a) for i, (j, a) in enumerate(runs)
+    )
+    assert decide.placement(PanelsFacts(panels, 1.0)) == where
+
+
+def test_a_run_starts_at_the_spine_on_the_title_baseline():
     panels = (
-        _panel(100, cell=((1, 0), (1, 0)), ylabel=70, title=112),
-        _panel(100, cell=((1, 1), (1, 0)), ylabel=60),
+        _panel(100, cell=((1, 0), (1, 0)), title=112, joined=60.0),
         _panel(300, cell=((1, 0), (1, 1))),
     )
     facts = PanelsFacts(panels, 1.0)
-    letters = decide.align_letters(facts, decide.letter_lefts(facts))
-    # A column takes its leftmost name; an unnamed panel keeps its row's
-    # spine distance; an untitled letter rises to its row's baseline.
-    assert letters.lefts == (60, 60, 260)
-    assert letters.baselines == (112, 104, 112)
+    letters = decide.place_letters(facts, Run())
+    assert letters.lefts == (100, 300)
+    # An untitled letter rises to its row's title baseline.
+    assert letters.baselines == (112, 112)
+    assert letters.titles == (100 + 8 + 5, None)
 
 
-def test_letters_without_any_name_go_where_a_name_would_be():
-    facts = PanelsFacts((_panel(100),), 1.0)
-    assert decide.letter_lefts(facts).lefts == (70,)
+def test_inside_letters_sit_in_from_the_plot_corner():
+    facts = PanelsFacts((_panel(100, title=112, joined=60.0),), 1.0)
+    letters = decide.place_letters(facts, Inside(0))
+    assert letters.lefts == (104,)
+    assert letters.baselines == (100 - 4 - 8,)
+    assert letters.titles == (None,)
 
 
 def test_spread_keeps_order_and_the_mean_of_a_crowded_group():

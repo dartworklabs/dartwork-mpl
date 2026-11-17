@@ -81,11 +81,14 @@ def label_axes(
 ) -> list[Text]:
     """Panel letters (a, b, c, ...) at the top-left of each panel.
 
-    Each letter's left edge sits on the outer edge of its panel's y-axis
-    name (a grid column takes its leftmost), its baseline on the panel's
-    title baseline (untitled: 4 pt above the top decoration, level with its
-    row). ``dm.simple_layout`` places them again at the size it settles on.
-    ``dm.fs(1)``; ``labels`` replaces the letters (``["(a)", "(b)"]``).
+    Each letter sits bold at the title size on its plot's left spine with
+    its title right after it, left-aligned (``a  North``). When one letter
+    and title are wider than their plot, every letter of the figure goes
+    inside its plot at the top left and the titles stay as they were.
+    ``dm.simple_layout`` places them again at the size it settles on, and
+    titles set after this call are read there; a title placed by hand
+    (``x=``, ``ha=``) stays. ``labels`` replaces the letters
+    (``["(a)", "(b)"]``).
     """
     return labels_slice.label_axes(axes, labels, preset=PRESET_TEXT)
 

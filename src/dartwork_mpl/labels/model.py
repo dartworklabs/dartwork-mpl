@@ -103,6 +103,25 @@ class Choice:
 
 # ------------------------------------------------------------ panel letters
 @dataclass(frozen=True)
+class Run:
+    """Each letter at its plot's left spine, its title right after it on
+    the same baseline, left-aligned: one run (``a  Open office``)."""
+
+
+@dataclass(frozen=True)
+class Inside:
+    """Each letter inside its plot at the top left, the titles as they
+    were: the run of ``panel`` (an index into the panels) was wider than
+    its plot."""
+
+    panel: int
+
+
+#: Where one figure's letters go: the same in every panel.
+Placement = Run | Inside
+
+
+@dataclass(frozen=True)
 class Title:
     """A shown title of a panel: its baseline (px)."""
 
@@ -113,26 +132,48 @@ class Title:
 class Panel:
     """What one panel draws around its top-left corner, in display pixels.
 
-    ``cell`` is the (row, column) key of its own grid cell. ``ylabel_x0``
-    is the outer edge of its left y-axis name, ``guess_x0`` where one would
-    be. ``top``: its top decoration; ``decos``: y name and tick boxes as
-    ``(x0, x1, y1)``.
+    ``width`` / ``height`` / ``descent``: its letter's box, ``size`` its
+    font size. ``cell`` is the (row, column) key of its own grid cell.
+    ``top``: its top decoration; ``decos``: y name and tick boxes as
+    ``(x0, x1, y1)``. ``plot_width``: its plot; ``joined``: the width of
+    the title that follows the letter in a run (the centre title, else a
+    left one); ``apart``: the width of a right title, which stays.
     """
 
     corner: tuple[float, float]
     width: float
+    height: float
     descent: float
+    size: float
     cell: tuple[tuple[int, int], tuple[int, int]] | None
-    ylabel_x0: float | None
-    guess_x0: float
     titles: tuple[Title, ...]
     top: float
     decos: tuple[tuple[float, float, float], ...]
+    plot_width: float
+    joined: float | None
+    apart: float | None
+
+    @property
+    def gap(self) -> float:
+        """Between the letter and its title in a run: half its size."""
+        return RUN_GAP_EM * self.size
+
+    @property
+    def run(self) -> float:
+        """The width of the letter and the titles on its line, in a run."""
+        return self.width + sum(
+            self.gap + w for w in (self.joined, self.apart) if w
+        )
+
+
+#: Letter to title in a run, and a letter inside a plot from its corner,
+#: in letter sizes; how far (px) a run may pass its plot and still fit.
+RUN_GAP_EM, INSET_EM, TOUCH_PX = 0.5, 0.4, 0.5
 
 
 @dataclass(frozen=True)
 class PanelsFacts:
-    """The panels of one ``label_axes`` call and its scale."""
+    """The panels of one figure's ``label_axes`` calls and its scale."""
 
     panels: tuple[Panel, ...]
     px_per_pt: float
@@ -145,18 +186,15 @@ class PanelsFacts:
                 out.setdefault(panel.cell[axis], []).append(i)
         return out
 
-    def mates(self, i: int, axis: int) -> list[int]:
-        """The panels in the row (0) or column (1) of panel ``i``, or itself."""
-        cell = self.panels[i].cell
-        return [i] if cell is None else self.groups(axis)[cell[axis]]
-
 
 @dataclass(frozen=True)
 class Letters:
-    """Each letter's left edge and baseline, display pixels."""
+    """Each letter's left edge and baseline, and where the title that
+    follows it starts (``None``: its titles stay), display pixels."""
 
     lefts: tuple[float, ...]
     baselines: tuple[float, ...]
+    titles: tuple[float | None, ...]
 
 
 # ------------------------------------------------------------ line ends

@@ -292,6 +292,19 @@ def value_label_on_data(facts: Facts, found: Findings) -> Findings:
     return found
 
 
+def letter_on_data(facts: Facts, found: Findings) -> Findings:
+    """Panel letters drawn on data, per letter."""
+    for on in facts.letters:
+        kinds = sorted({h.kind for h in on.covers})
+        found = found.flag(
+            "LETTER_ON_DATA",
+            f"Axes[{on.text.panel}]: the panel letter {on.text.short!r} sits "
+            f"on {', '.join(k + 's' for k in kinds)}",
+            [on.text],
+        )
+    return found
+
+
 def text_contrast(facts: Facts, found: Findings) -> Findings:
     """Texts the user placed, fainter than 3:1 on what is behind them."""
     panels: dict[int | None, list[Inked]] = {}

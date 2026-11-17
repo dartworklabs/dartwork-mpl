@@ -43,6 +43,7 @@ from . import roles
 from .ink import Ink, data_ink, legend_inks, words_box
 from .model import (
     AXES,
+    LETTER_CLEARANCE_PT,
     Box,
     Facts,
     Frame,
@@ -272,6 +273,28 @@ class Reader:
                 found.append(OnData(t, strokes))
         return tuple(found)
 
+    def letters_on_data(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
+        """Panel letters and the data they are drawn on (a letter inside
+        its plot)."""
+        found: list[OnData] = []
+        for t in texts:
+            ax = t.handle.axes if isinstance(t.handle, MplText) else None
+            if not (
+                isinstance(t.role, roles.PanelLetter) and isinstance(ax, Axes)
+            ):
+                continue
+            frame = ax.get_window_extent(self.renderer)
+            ink = data_ink(
+                same_position_axes(ax), frame, self.renderer, self.pt
+            )
+            box = Bbox.from_extents(t.box.x0, t.box.y0, t.box.x1, t.box.y1)
+            # A letter reads as part of data it nearly touches: it keeps
+            # LETTER_CLEARANCE_PT of air.
+            room = box.padded(LETTER_CLEARANCE_PT * self.pt)
+            if hits := ink.meets(room, 0.5 * self.pt):
+                found.append(OnData(t, tuple(hits)))
+        return tuple(found)
+
     def inks(self, texts: tuple[Text, ...]) -> tuple[Inked, ...]:
         """Texts the user placed in an Axes, against what is behind them."""
         found: list[Inked] = []
@@ -403,6 +426,9 @@ def measure(fig: Figure) -> Facts:
         legends=r.attempt(r.legends, (), "LEGEND_ON_DATA"),
         empty=r.empty(),
         values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
+        letters=r.attempt(
+            lambda: r.letters_on_data(texts), (), "LETTER_ON_DATA"
+        ),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         skipped=tuple(r.skipped),

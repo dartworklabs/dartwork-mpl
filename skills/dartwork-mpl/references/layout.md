@@ -93,8 +93,10 @@ drawing; call it again after a later change. Where text still collides it fits t
 runs into another panel or past the figure edge wraps at its spaces
 (the same name on the same axis of that grid then wraps the same way),
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
-(while each plot keeps two ems; a canvas too small for that is left as it
-is, so give it more room), and bottom tick labels that collide or sit closer
+(while each plot keeps two ems, and only when the wider gap does clear it:
+titles wider than their plots stand out further as the plots narrow, and
+such a gap goes back; a canvas too small for that is left as it is, so give
+it more room or shorter titles), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
 degrees. Nothing is shortened or made smaller. What you set
@@ -140,8 +142,15 @@ dm.simple_layout(fig)            # widens hspace / wspace where panels' text mee
 plt.close(fig)
 ```
 
-Each letter starts at its column's y-axis name and sits on its title's
-baseline, in points, so call `label_axes` before `simple_layout`.
+Each letter is set bold at the title size on its plot's left spine, and
+its title follows it on the same line, left-aligned: `a  North`. When one
+letter and title are wider than their plot, every letter of the figure goes
+inside its plot at the top left instead, the titles stay centred, and the
+layout says so; `dm.check` reports a letter that then sits on data
+(`LETTER_ON_DATA`): shorten the titles or widen the figure. Letters never
+widen the gaps. `simple_layout` places them again, so titles set after
+`label_axes` are read; a title you placed yourself (`x=`, `ha=`) is left
+where it is.
 Panels with both a title and an x label need no `hspace` of your own: the
 layout parts them. A spacing the user asks for goes in
 `gridspec_kw={"hspace": 0.5}` and then wins.
