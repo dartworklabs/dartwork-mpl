@@ -61,6 +61,7 @@ not, the `try` line names what usually helps.
 | `TEXT_CONTRAST` | a text you placed, under 3:1 against the bar, cell or background behind it |
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
+| `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
 | `EMPTY_AXES` | a framed panel that draws nothing, left over from a grid |

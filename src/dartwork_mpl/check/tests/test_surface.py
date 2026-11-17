@@ -131,6 +131,22 @@ def test_a_value_on_its_error_bar_is_found():
     assert "VALUE_LABEL_ON_DATA" in dm.check(fig).rules
 
 
+def test_a_letter_inside_its_plot_on_the_curve_is_found():
+    # Titles too long to follow their letters put the letters inside.
+    fig, axes = plt.subplots(1, 2, figsize=dm.figsize_for(nrows=1, ncols=2))
+    t = np.linspace(0, 10, 100)
+    axes[0].plot(t, t)
+    axes[1].plot(t, np.exp(-t / 3))
+    axes[0].set_title("Response to the dose across all subjects of the trial")
+    axes[1].set_title("Signal decay")
+    for ax in axes:
+        ax.set(xlabel="Time (s)", ylabel="Signal")
+    dm.label_axes(axes)
+    dm.simple_layout(fig)
+    (f,) = _of(dm.check(fig), "LETTER_ON_DATA")
+    assert f.panels == (1,)
+
+
 @pytest.mark.parametrize("image", [False, True])
 def test_white_text_on_a_pale_fill_is_found(image: bool):
     fig, ax = plt.subplots(figsize=dm.figsize("10cm", "standard"))

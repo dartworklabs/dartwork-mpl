@@ -19,7 +19,14 @@ from dartwork_mpl.check.model import (
     TickRow,
     TickValues,
 )
-from dartwork_mpl.check.roles import AxisLabel, FreeText, Role, TickLabel, Title
+from dartwork_mpl.check.roles import (
+    AxisLabel,
+    FreeText,
+    PanelLetter,
+    Role,
+    TickLabel,
+    Title,
+)
 from dartwork_mpl.colorspace import Hex, Ratio
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.vocab import X, Y
@@ -136,6 +143,14 @@ def test_VALUE_LABEL_ON_DATA():
     on = OnData(label, (Hit("line", ""),))
     (f,) = found(Facts(CANVAS, PT, texts=(label,), values=(on,)))
     assert f.rule == "VALUE_LABEL_ON_DATA" and f.artists == (label.handle,)
+
+
+def test_LETTER_ON_DATA():
+    letter = text("b", Box(100, 500, 120, 530), PanelLetter())
+    on = OnData(letter, (Hit("line", "Signal"),))
+    (f,) = found(Facts(CANVAS, PT, texts=(letter,), letters=(on,)))
+    assert f.rule == "LETTER_ON_DATA" and f.artists == (letter.handle,)
+    assert "'b' sits on lines" in f.message
 
 
 def test_TEXT_CONTRAST():

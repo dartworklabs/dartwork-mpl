@@ -40,8 +40,9 @@ class Neighbours:
     While measuring: ``figure_reserve`` the room a figure legend keeps
     from the panels, ``note_gap_pt`` the gap kept above a note line.
 
-    After the fit: ``report_bars`` and ``report_legends`` say what the
-    settling of bar labels and legends changed.
+    After the fit: ``report_bars``, ``report_legends`` and
+    ``report_panels`` say what the settling of bar labels, legends and
+    panel letters changed.
     """
 
     prepare_ticks: Callable[[Figure], None]
@@ -55,3 +56,4 @@ class Neighbours:
     note_gap_pt: Callable[[Artist], float | None]
     report_bars: Callable[[Figure], None]
     report_legends: Callable[[Figure], None]
+    report_panels: Callable[[Figure], None]

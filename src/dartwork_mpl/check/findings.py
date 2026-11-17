@@ -28,6 +28,10 @@ FIXES: dict[str, str] = {
     "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
     "the error bar (ax.bar_label(bars, padding=...)), or dm.annotate_value "
     "for a point on a line",
+    "LETTER_ON_DATA": "the letters went inside the plots because a letter "
+    "and its title were wider than the plot: shorten the titles or widen "
+    "the figure so each letter goes before its title; or leave room in "
+    "that corner (ax.set_ylim)",
     "TEXT_CONTRAST": "colour each label for what is behind it: "
     "color=dm.readable_text_color(bar_colour), or "
     "dm.ensure_contrast(colour, background)",

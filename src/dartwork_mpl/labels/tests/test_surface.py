@@ -151,21 +151,55 @@ def test_a_value_label_takes_the_first_free_side():
     assert peak.get_fontsize() == pytest.approx(dm.fs(-1))
 
 
-def test_panel_letters_sit_on_the_title_baseline_and_align_per_column():
-    dm.style.use("scientific")
-    fig, axes = plt.subplots(2, 2, figsize=dm.figsize(dm.col2, "standard"))
-    for ax in axes.flat:
+def _row(titles, letters_first=False):
+    fig, axes = plt.subplots(
+        1, 3, figsize=dm.figsize("17cm", "5cm"), sharey=True
+    )
+    if letters_first:
+        letters = dm.label_axes(axes)
+    for ax, title in zip(axes, titles, strict=True):
         ax.plot([0, 1], [0, 1])
-    axes[0, 0].set_title("Response")
-    axes[0, 0].set_ylabel("Amplitude (mV)")
-    letters = dm.label_axes(axes)
+        ax.set_title(title)
+    if not letters_first:
+        letters = dm.label_axes(axes)
     dm.simple_layout(fig)
-    assert [t.get_text() for t in letters] == ["a", "b", "c", "d"]
-    a, b, c, _d = _boxes(fig, letters)
-    title = _boxes(fig, [axes[0, 0].title])[0]
-    assert a.x0 == pytest.approx(c.x0)  # one column, one left edge
-    assert a.y0 == pytest.approx(b.y0)  # one row, one baseline
-    assert a.x1 < title.x0 or a.y0 >= title.y0 - 3
+    return fig, axes, letters
+
+
+@pytest.mark.parametrize("letters_first", [False, True])
+def test_letters_run_into_their_titles(letters_first):
+    fig, axes, letters = _row(["North", "South", "East"], letters_first)
+    renderer = fig.canvas.get_renderer()
+    for ax, letter, box in zip(
+        axes, letters, _boxes(fig, letters), strict=True
+    ):
+        frame = ax.get_window_extent(renderer)
+        title = ax.title.get_window_extent(renderer)
+        assert box.x0 == pytest.approx(frame.x0)  # on the spine
+        em = letter.get_fontsize() * fig.dpi / 72
+        assert box.x1 < title.x0 < box.x1 + em  # then the title
+        assert ax.title.get_horizontalalignment() == "left"
+    assert len({round(b.y0, 3) for b in _boxes(fig, letters)}) == 1
+
+
+def test_a_run_wider_than_its_plot_puts_every_letter_inside(caplog):
+    long = "Response to the dose across every subject of the whole trial"
+    with caplog.at_level("INFO", logger="dartwork_mpl.labels"):
+        fig, axes, letters = _row(["North", long, "East"])
+    renderer = fig.canvas.get_renderer()
+    for ax, box in zip(axes, _boxes(fig, letters), strict=True):
+        assert ax.get_window_extent(renderer).contains(box.x0, box.y0)
+        assert ax.title.get_horizontalalignment() == "center"
+    assert "inside their plots" in caplog.text
+
+
+def test_a_title_the_caller_placed_stays():
+    fig, ax = plt.subplots()
+    ax.set_title("Placed", x=0.3)
+    dm.label_axes([ax])
+    dm.simple_layout(fig)
+    assert ax.title.get_position()[0] == 0.3
+    assert ax.title.get_horizontalalignment() == "center"
 
 
 def test_line_end_names_replace_the_legend_and_stay_apart():

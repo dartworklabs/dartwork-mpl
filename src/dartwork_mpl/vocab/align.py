@@ -86,3 +86,11 @@ def parse_valign(name: str) -> VAlign:
         if name == align.mpl:
             return align
     raise ValueError(f"not a vertical alignment: {name!r}")
+
+
+def parse_halign(name: str) -> HAlign:
+    """``Text.get_horizontalalignment()``; ``ValueError`` for another name."""
+    for align in (AlignLeft(), AlignCentre(), AlignRight()):
+        if name == align.mpl:
+            return align
+    raise ValueError(f"not a horizontal alignment: {name!r}")

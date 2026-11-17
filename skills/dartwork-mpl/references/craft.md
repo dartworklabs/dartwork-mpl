@@ -243,7 +243,8 @@ One panel per group, on the same axes, so heights compare across panels.
   can instead be named at their ends in the last panel,
   `dm.label_line_ends(axes.flat[-1])`.
 - Panel letters (`dm.label_axes(axes)`) are for paper figures that the
-  caption refers to.
+  caption refers to. Each goes before its panel's title, `a  North`. A
+  slide usually needs none: its titles already name the panels.
 
 ```python
 months = np.arange(1, 13)

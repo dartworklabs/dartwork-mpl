@@ -19,6 +19,9 @@ from .roles import Role
 #: Contact up to this (points) is a touch, not a cover.
 TOUCH_PT = 0.5
 
+#: Air (pt) a panel letter inside its plot keeps from the data.
+LETTER_CLEARANCE_PT = 2.0
+
 #: Both axes, x first.
 AXES: tuple[Which, ...] = (X(), Y())
 
@@ -164,7 +167,7 @@ class Legend:
 
 @dataclass(frozen=True)
 class OnData:
-    """A value label and the lines, markers or error bars under it."""
+    """A value label or a panel letter and the data under it."""
 
     text: Text
     covers: tuple[Hit, ...]
@@ -211,6 +214,7 @@ class Facts:
     legends: tuple[Legend, ...] = ()
     empty: tuple[Panel, ...] = ()
     values: tuple[OnData, ...] = ()
+    letters: tuple[OnData, ...] = ()
     inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
     frames: tuple[Frame, ...] = ()

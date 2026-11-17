@@ -39,6 +39,11 @@ def has_values_on_data(facts: Facts, found: Findings) -> bool:
     return bool(facts.values)
 
 
+def has_letters_on_data(facts: Facts, found: Findings) -> bool:
+    """Any panel letter drawn on data."""
+    return bool(facts.letters)
+
+
 def has_ticks(facts: Facts, found: Findings) -> bool:
     """Any drawn tick labels."""
     return bool(facts.ticks)
@@ -111,6 +116,16 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_VALUE_LABEL_ON_DATA",
         applies=has_values_on_data,
         adjust=decide.value_label_on_data,
+    ),
+    EdgeCase(
+        name="LETTER_ON_DATA",
+        why=(
+            "titles too long to follow their letters put the letters inside "
+            "the plots, and letter b sat on the start of its curve"
+        ),
+        example="test_edges.py::test_LETTER_ON_DATA",
+        applies=has_letters_on_data,
+        adjust=decide.letter_on_data,
     ),
     EdgeCase(
         name="TEXT_CONTRAST",
