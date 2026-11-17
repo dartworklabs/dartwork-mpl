@@ -19,7 +19,7 @@ orphan: true
 | `color` | 색 이름과 값, 팔레트, 대비 |
 | `font` | 번들 폰트 등록과 선택 |
 | `layout` | 내용에 맞춘 결정적 여백(`simple_layout`) |
-| `ticks` | 큰 수의 기본 표기(천 단위 쉼표, 백만부터 `1M`, 한국어 preset에서는 `100만`), 연도 x축의 정수 눈금, 만·억 단위 눈금(`format_axis_myriad`), 값 라벨이 따라 쓸 축의 숫자 표기. 날짜와 그 밖의 눈금 글자는 preset 토큰(`date.autoformatter.*`)과 matplotlib이 쓴다 |
+| `ticks` | 큰 수의 기본 표기(천 단위 쉼표, 백만부터 `1M`, 한국어 preset에서는 `100만`), 데이터가 모두 정수인 축(월, 개수, 순위, 연도)의 정수 눈금, 만·억 단위 눈금(`format_axis_myriad`), 값 라벨이 따라 쓸 축의 숫자 표기. 날짜와 그 밖의 눈금 글자는 preset 토큰(`date.autoformatter.*`)과 matplotlib이 쓴다 |
 | `labels` | 값 라벨, 패널 문자, 주석 |
 | `legend` | 범례 배치 |
 | `check` | 그려진 그림의 결함 찾기(`dm.check`). 그림을 바꾸지 않는다 |
@@ -35,7 +35,7 @@ orphan: true
 | `compose/labels.py` | `style`의 `fs`·`fw`, `ticks`의 눈금 단위와 숫자 표기 | `dm.label_bars`, `dm.annotate_value`, `dm.label_axes`, `dm.add_note` |
 | `compose/layout.py` | `ticks`의 큰 수 표기(`style`의 preset locale에 맞춘 단위), `labels`·`legend`가 맞춘 크기에서 하는 일과 여백이 피해야 할 기록 | `dm.simple_layout` |
 
-`layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자, 그림 제목 아래의 그림 범례를 자리 잡게 한 뒤 여백을 잰다. 픽셀은 이 순서에 달려 있다. 재기 전에 한 번, 아무도 포맷을 정하지 않은 수 축에 큰 수 표기를 건다. 판단은 눈금 값이 1,000에 닿는지 하나다. 데이터를 읽는 판단은 하나뿐이다. 선과 점의 x 데이터가 모두 1800–2100 사이의 정수이면 연도로 보고, 아무도 눈금 위치와 포맷을 정하지 않은 그 x축의 눈금을 정수에만 둔다(`2019.5` 같은 반년 눈금은 어느 해도 가리키지 않는다).
+`layout`은 다른 slice가 할 일을 `Neighbours` 기록 하나로 받는다. 순서는 `layout`이 정한다. 한 단계마다 막대 라벨, 범례와 선 끝 이름, 패널 문자, 그림 제목 아래의 그림 범례를 자리 잡게 한 뒤 여백을 잰다. 픽셀은 이 순서에 달려 있다. 재기 전에 한 번, 아무도 포맷을 정하지 않은 수 축에 큰 수 표기를 건다. 판단은 눈금 값이 1,000에 닿는지 하나다. 데이터를 읽는 판단은 하나뿐이다. 한 축을 따라 데이터 단위로 그린 것(선과 점, 면과 메시의 꼭짓점, 이미지의 가장자리, 막대는 선 축에서 가운데와 값 축에서 두 끝)이 모두 정수이고 세 정수 이상에 걸치면, 아무도 눈금 위치·포맷·scale을 정하지 않은 그 축(x든 y든)의 눈금을 정수에만 둔다(`2.5`, `2019.5` 같은 눈금은 어느 달·개수·해도 가리키지 않는다). x축에서 네 글자 이상의 라벨(연도)은 matplotlib대로 두 눈금까지 허용하고, 그 밖에는 세 눈금을 남긴다. 이 slice가 둔 locator는 기억해 두고, 데이터가 더는 정수가 아니면 matplotlib의 locator로 되돌린다. 눈금이 실제로 바뀔 때만 한 줄로 알린다. 이미지(`imshow`)는 픽셀 가장자리가 `.5`에 있어 건드리지 않는다.
 
 `dm.style`은 slice `dartwork_mpl.style` 그 자체다. `style`은 preset을 적용한 뒤 그 locale을 넘겨줄 함수 하나(`Tint`)를 자리에 갖고 있고, `compose/style.py`의 `join()`이 그 자리에 `color`의 역할 색 바인딩을 넣는다. 루트가 import될 때 한 번 부른다. 폰트는 루트가 import 시점에 등록하므로 `style`이 다시 부르지 않는다.
 
