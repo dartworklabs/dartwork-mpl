@@ -63,8 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "rejudge":
         by_name = {c.name: c for c in harness.load_cases()}
         for path in sorted(args.run_dir.glob("*/*/result.json")):
-            case = by_name[path.parent.parent.name]
-            record = harness.rejudge(case, path.parent)
+            record = harness.rejudge(path.parent, by_name)
             print(f"{record['verdict']:9} {record['case']}/{record['arm']}")
     if args.command in ("report", "rejudge"):
         print(sheet.write_report(args.run_dir))

@@ -66,6 +66,16 @@ CASES = {
         ["mkdir -p scripts && cd scripts", "python plot.py ../data.csv"],
         (f"{P}/scripts/plot.py", ("../data.csv",), f"{P}/scripts"),
     ),
+    "a script beside the project": (
+        [
+            "mkdir -p ../scripts output 2>/dev/null; cat > /tmp/plot_outlook.py <<'EOF'\n"
+            f"{BODY}\nEOF\nuv run python /tmp/plot_outlook.py outlook.csv",
+            "cd ../scripts && python3 - <<'E'\n"
+            f"{BODY}\nE\ncd ../project && uv run python ../scripts/plot.py rep.csv output/rep-levels-v2 2>&1 | tail",
+            "mkdir -p output; uv run python ../scripts/plot_outlook.py outlook.csv",
+        ],
+        (f"{T}/scripts/plot_outlook.py", ("outlook.csv",), P),
+    ),
     "$TMPDIR and ~ are the run's own": (
         ["cd ~ && python3 $TMPDIR/s/plot.py"],
         ("/run/tmp/s/plot.py", (), "/run/home"),

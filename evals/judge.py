@@ -185,6 +185,27 @@ def reproduction(
     )
 
 
+def library_moved(ran: dict[str, Any], now: dict[str, Any]) -> str:
+    """What to add to a failed reproduction when the library is not the run's.
+
+    A figure drawn by another commit is not expected to come out the same
+    here; judging it again needs that commit checked out.
+    """
+
+    def name(lib: dict[str, Any]) -> str:
+        changed = " with uncommitted changes" if lib.get("dirty") else ""
+        return f"{lib.get('version')} at {str(lib.get('commit'))[:8]}{changed}"
+
+    if ran.get("commit") == now.get("commit") and not (
+        ran.get("dirty") or now.get("dirty")
+    ):
+        return ""
+    return (
+        f"; the run drew with dartwork-mpl {name(ran)}, this checkout "
+        f"is {name(now)}"
+    )
+
+
 @dataclass
 class Evidence:
     """Everything the verdict reads about one run."""

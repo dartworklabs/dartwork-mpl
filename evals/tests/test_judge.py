@@ -172,3 +172,13 @@ def test_reproduction_needs_one_re_render_equal_to_the_figure():
     assert "800x450 px, the figure is 800x600 px" in str(
         judge.reproduction((800, 600), [other])
     )
+
+
+def test_a_failed_reproduction_names_a_library_that_is_not_the_runs():
+    ran = {"version": "0.9.0", "commit": "a432cb6dd656", "dirty": False}
+    assert judge.library_moved(ran, dict(ran)) == ""
+    now = {"version": "0.9.0", "commit": "ffa9b0f8aaaa", "dirty": True}
+    assert judge.library_moved(ran, now) == (
+        "; the run drew with dartwork-mpl 0.9.0 at a432cb6d, this checkout "
+        "is 0.9.0 at ffa9b0f8 with uncommitted changes"
+    )

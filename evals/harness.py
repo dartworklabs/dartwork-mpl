@@ -67,7 +67,7 @@ dartwork-mpl = {{ path = "{wheel}" }}
 """
 PINNED = ("matplotlib", "numpy", "pandas", "pillow")
 # What of a run's root is not evidence: the installed library and skill, tool state.
-NOT_EVIDENCE = (".claude", ".agents", ".venv", "__pycache__")
+NOT_EVIDENCE = (".claude", ".agents", ".venv", "__pycache__", ".matplotlib")
 NOT_EVIDENCE += ("uv.lock", "claude-*", "uv-*.lock")
 
 
@@ -114,6 +114,15 @@ def said(*cmd: str) -> str:
     return done.stdout.strip() if done.returncode == 0 else ""
 
 
+def library_now() -> dict[str, Any]:
+    """The library this checkout holds: version, commit, uncommitted changes."""
+    return {
+        "version": installed("dartwork-mpl"),
+        "commit": said("git", "rev-parse", "HEAD"),
+        "dirty": bool(said("git", "status", "--porcelain")),
+    }
+
+
 def setup(folder: Path) -> Setup:
     """Build this checkout's wheel into ``folder`` and say what the sweep runs against."""
     build = ["uv", "build", "--wheel", "--out-dir", str(folder)]
@@ -124,9 +133,7 @@ def setup(folder: Path) -> Setup:
     )
     provenance = {
         "library": {
-            "version": installed("dartwork-mpl"),
-            "commit": said("git", "rev-parse", "HEAD"),
-            "dirty": bool(said("git", "status", "--porcelain")),
+            **library_now(),
             "wheel": wheel.name,
             "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
         },
@@ -265,17 +272,6 @@ def prepare(case: Case, arm: judge.Arm, project: Path, wheel: Path) -> None:
         )
 
 
-def newest(folder: Path, suffix: str, since: float) -> Path | None:
-    """The most recently written ``suffix`` file the agent left under ``folder``."""
-    files = [
-        p
-        for p in folder.rglob(f"*{suffix}")
-        if not set(NOT_EVIDENCE) & set(p.relative_to(folder).parts)
-        and p.stat().st_mtime >= since
-    ]
-    return max(files, key=lambda p: p.stat().st_mtime) if files else None
-
-
 HEREDOC = re.compile(r"python3?\s+-\s*<<-?\s*'?(\w+)'?\n(.*?)\n\1", re.S)
 
 
@@ -303,40 +299,109 @@ class Source:
     problem: str | None = None
 
 
-# One place of the run as the agent saw it, and its copy in the run's output.
-Places = list[tuple[str, Path]]
+@dataclass(frozen=True)
+class Place:
+    """One folder of the run: as the agent named it, its copy in the run's output, and where the re-run puts it."""
+
+    original: str
+    copy: Path
+    mirror: str
+
+
+Places = list[Place]
+
+
+def places_of(project: str, root: str | None, out: Path) -> Places:
+    """The run's folders, most specific first: project, temp dir, the rest of its root.
+
+    Agents also write beside the project (``../scripts/plot.py``): what is
+    in the root but in neither folder is kept under ``out/root``.
+    """
+    places = [Place(project, out / "project", "project")]
+    if root:
+        places.append(Place(f"{root}/tmp", out / "tmp", "tmp"))
+        places.append(Place(root, out / "root", "."))
+    return places
 
 
 def local(path: str, places: Places) -> Path | None:
     """The copy of a path the agent used, if it lies in one of the run's places."""
-    for original, copy in places:
-        if shelltrace.inside(path, original):
-            base = original.removeprefix("/private").rstrip("/")
-            return copy / path.removeprefix("/private")[len(base) :].lstrip("/")
+    for place in places:
+        if shelltrace.inside(path, place.original):
+            base = place.original.removeprefix("/private").rstrip("/")
+            rest = path.removeprefix("/private")[len(base) :].lstrip("/")
+            return place.copy / rest
     return None
 
 
+def evidence(places: Places, suffix: str) -> list[Path]:
+    """The ``suffix`` files among the copies, the installed library and tool state aside."""
+    return [
+        p
+        for place in places
+        if place.copy.is_dir()
+        for p in place.copy.rglob(f"*{suffix}")
+        if not set(NOT_EVIDENCE) & set(p.relative_to(place.copy).parts)
+    ]
+
+
+def latest(files: list[Path], since: float) -> list[Path]:
+    """The files the agent left since ``since``, most recently written first."""
+    recent = [p for p in files if p.stat().st_mtime >= since]
+    return sorted(recent, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+@dataclass(frozen=True)
+class Picks:
+    """What only the run's own moment can say: its last figure, and its scripts latest first.
+
+    File times say which was last, and a copied run directory has lost
+    them (``cp -R``, an archive, another machine). They are read once,
+    when the run ends, and ``result.json`` keeps the answer.
+    """
+
+    figure: Path | None
+    scripts: tuple[Path, ...]
+
+
+def pick_now(places: Places, since: float) -> Picks:
+    """The newest image in the project and the scripts anywhere, at the end of the run."""
+    figures = latest(evidence(places[:1], ".png"), since)
+    scripts = latest(evidence(places, ".py"), since)
+    return Picks(figures[0] if figures else None, tuple(scripts))
+
+
+def pick_recorded(out: Path, old: dict[str, Any], places: Places) -> Picks:
+    """What the run's ``result.json`` chose.
+
+    A run recorded before it said so is read by content: its figure is the
+    ``figure.png`` beside it, its script the file equal to ``source.py``.
+    """
+    figure = out / "figure.png" if old.get("image") else None
+    if old.get("figure_file"):
+        figure = out / str(old["figure_file"])
+    scripts = [out / str(f) for f in old.get("scripts") or []]
+    if "scripts" not in old and (out / "source.py").is_file():
+        same = (out / "source.py").read_bytes()
+        files = evidence(places, ".py")
+        scripts = [p for p in files if p.read_bytes() == same]
+    return Picks(figure, tuple(scripts))
+
+
 def find_source(
-    trace: judge.Trace, places: Places, variables: dict[str, str], since: float
+    trace: judge.Trace, places: Places, variables: dict[str, str], picks: Picks
 ) -> Source:
-    """The script that drew the figure: the last one run, else the newest, else a heredoc."""
-    project, copy = places[0]
+    """The script that drew the figure: the last one run, else the last one written, else a heredoc."""
+    project = places[0].original
     calls = [c for c in trace.calls if c.get("name") == "Bash"]
     commands = [str((c.get("input") or {}).get("command", "")) for c in calls]
     runs = shelltrace.runs(commands, project, variables)
     if runs:
         run = runs[-1]
         where = local(run.script, places)
-        if (
-            not run.resolved
-        ):  # $(mktemp -d)/plot.py: the newest file of that name
+        if not run.resolved:  # $(mktemp -d)/plot.py: the last script so named
             name = posixpath.basename(run.script)
-            found = [newest(c, name, since) for _, c in places if c.is_dir()]
-            where = max(
-                (p for p in found if p),
-                key=lambda p: p.stat().st_mtime,
-                default=None,
-            )
+            where = next((p for p in picks.scripts if p.name == name), None)
         known = Source(
             script=run.script,
             args=run.args,
@@ -348,8 +413,8 @@ def find_source(
             why = f"the script the agent ran ({run.script}) is not among its files"
             return replace(known, problem=why)
         return replace(known, text=where.read_text("utf-8"), where=where)
-    script = newest(copy, ".py", since) if copy.is_dir() else None
-    if script:
+    inside = (p for p in picks.scripts if p.is_relative_to(places[0].copy))
+    if script := next(inside, None):
         return Source(script.read_text(encoding="utf-8"), script, cwd=project)
     inline = inline_source(trace)
     if inline:
@@ -398,27 +463,35 @@ def probe(
     assert source.text is not None
     with tempfile.TemporaryDirectory(prefix="dmpl-eval-probe-") as tmp:
         mirror = Path(tmp).resolve()
-        for _, copy in places:
-            if copy.is_dir():
-                shutil.copytree(copy, mirror / copy.name, symlinks=True)
-            else:
-                (mirror / copy.name).mkdir()
+        for place in reversed(places):  # the root first, its folders into it
+            target = mirror / place.mirror
+            if place.copy.is_dir():
+                shutil.copytree(
+                    place.copy, target, symlinks=True, dirs_exist_ok=True
+                )
+            target.mkdir(exist_ok=True)
 
         def there(text: str) -> str:
-            for original, copy in places:
-                for old in (original, original.removeprefix("/private")):
-                    text = text.replace(old, str(mirror / copy.name))
+            for place in places:
+                for old in (
+                    place.original,
+                    place.original.removeprefix("/private"),
+                ):
+                    text = text.replace(
+                        old, str((mirror / place.mirror).resolve())
+                    )
             return text
 
-        script = mirror / (
-            source.where.relative_to(out)
-            if source.where
-            else Path(places[0][1].name) / "_eval_source.py"
-        )
+        script = mirror / "project" / "_eval_source.py"
+        for place in places:
+            if source.where and source.where.is_relative_to(place.copy):
+                rest = source.where.relative_to(place.copy)
+                script = mirror / place.mirror / rest
+                break
         script.write_text(there(source.text), encoding="utf-8")
-        cwd = Path(there(source.cwd or places[0][0]))
+        cwd = Path(there(source.cwd or places[0].original))
         if not (cwd.is_dir() and cwd.is_relative_to(mirror)):
-            cwd = mirror / places[0][1].name
+            cwd = mirror / "project"
         report_path = mirror / "_eval_probe.json"
         args = [there(a) for a in source.args]
         env = {
@@ -428,7 +501,7 @@ def probe(
         env.pop("MPLBACKEND", None)
         env |= {"PYTHONPATH": str(REPO)} | dict(source.env)
         cmd = [sys.executable, "-m", "evals.probe", str(script)]
-        if extra := added_packages(source, places[0][1]):
+        if extra := added_packages(source, places[0].copy):
             # What the agent added (uv run --with scipy, uv add) on top of ours.
             layer = [w for p in extra for w in ("--with", p)]
             uv = ["uv", "run", "--project", str(REPO), "--no-sync", *layer]
@@ -536,25 +609,34 @@ def strays(trace: judge.Trace, source: Source, root: str) -> list[str]:
 
 
 def assess(
-    case: Case, arm_name: str, out: Path, session: dict[str, Any]
+    case: Case,
+    arm_name: str,
+    out: Path,
+    session: dict[str, Any],
+    recorded: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Judge a finished session from its transcript and the copies in ``out``; write ``result.json``."""
+    """Judge a session from its transcript and the copies in ``out``; write ``result.json``.
+
+    ``recorded`` is the run's earlier ``result.json`` when it is judged
+    again: its figure and script stand, wherever the directory now lies.
+    """
     arm = judge.ARM_SPECS[arm_name]
     lines = (out / "stream.jsonl").read_text(errors="replace").splitlines()
     trace = judge.parse_stream(lines)
     project = str(session.get("project") or (trace.init or {}).get("cwd") or "")
     root = session.get("root")
-    places: Places = [(project, out / "project")]
+    places = places_of(project, root, out)
     variables: dict[str, str] = {}
     if root:
-        places.append((f"{root}/tmp", out / "tmp"))
         variables = {"HOME": f"{root}/home", "TMPDIR": f"{root}/tmp"}
-    since = float(session.get("started") or 0.0)
-    made = newest(out / "project", ".png", since)
-    figure_png = out / "figure.png" if made else None
-    if made and figure_png:
-        shutil.copy(made, figure_png)
-    source = find_source(trace, places, variables, since)
+    if recorded is None:
+        picks = pick_now(places, float(session.get("started") or 0.0))
+        if picks.figure:
+            shutil.copy(picks.figure, out / "figure.png")
+    else:
+        picks = pick_recorded(out, recorded, places)
+    figure_png = out / "figure.png" if picks.figure else None
+    source = find_source(trace, places, variables, picks)
     probed: dict[str, Any] = {}
     problem = source.problem
     if source.text is not None:
@@ -567,6 +649,9 @@ def assess(
             problem = judge.reproduction(
                 size, probed["renders"], probed.get("rerun_rms")
             )
+            ran = (session.get("provenance") or {}).get("library")
+            if problem and recorded is not None and ran:
+                problem += judge.library_moved(ran, library_now())
     found = lint(source.text) if source.text is not None else []
     figure = probed.get("figure")
     critical = [
@@ -599,6 +684,7 @@ def assess(
         "verdict": verdict,
         "reasons": reasons,
         "prompt": case.prompt,
+        "expect": case.expect,
         **session,
         "isolation": {k: (trace.init or {}).get(k) for k in INIT_KEYS},
         "tools": trace.tool_names,
@@ -607,7 +693,10 @@ def assess(
         "usage": result.get("usage"),
         "final_text": str(result.get("result") or ""),
         "image": "figure.png" if figure_png else None,
+        "figure_file": relative(picks.figure, out),
         "source": "source.py" if source.text is not None else None,
+        "source_file": relative(source.where, out),
+        "scripts": [r for p in picks.scripts if (r := relative(p, out))],
         "script": source.script,
         "script_cwd": source.cwd,
         "argv": list(source.args),
@@ -625,17 +714,35 @@ def assess(
     return record
 
 
+def relative(path: Path | None, out: Path) -> str | None:
+    """A file of the run as ``result.json`` names it: relative to the run's output."""
+    if path is None or not path.is_relative_to(out):
+        return None
+    return path.relative_to(out).as_posix()
+
+
 def keep(box: confine.Box, out: Path) -> None:
-    """Copy what the agent left in its project and temp dir into ``out``."""
+    """Copy what the agent left under its root into ``out``: project, temp dir, the rest."""
     ignore = shutil.ignore_patterns(*NOT_EVIDENCE)
-    for place in (box.project, box.tmp):
+
+    def copy(folder: Path, to: Path) -> None:
         shutil.copytree(
-            place,
-            out / place.name,
-            ignore=ignore,
-            symlinks=True,
-            dirs_exist_ok=True,
+            folder, to, ignore=ignore, symlinks=True, dirs_exist_ok=True
         )
+
+    copy(box.project, out / "project")
+    copy(box.tmp, out / "tmp")
+    ours = {box.project.name, box.tmp.name, box.cfg.name}
+    for entry in box.root.iterdir():
+        if entry.name in ours:
+            continue
+        (out / "root").mkdir(exist_ok=True)
+        if entry.is_dir():
+            copy(entry, out / "root" / entry.name)
+        else:
+            shutil.copy2(entry, out / "root" / entry.name)
+    if not any(p.is_file() for p in (out / "root").rglob("*")):
+        shutil.rmtree(out / "root", ignore_errors=True)
 
 
 def run_one(
@@ -666,8 +773,20 @@ def run_one(
         shutil.rmtree(box.root, ignore_errors=True)
 
 
-def rejudge(case: Case, out: Path) -> dict[str, Any]:
-    """Judge a recorded run again (transcript and the copies in ``out``), without ``claude``."""
+def rejudge(out: Path, cases: dict[str, Case]) -> dict[str, Any]:
+    """Judge a recorded run again (transcript and the copies in ``out``), without ``claude``.
+
+    The verdict does not depend on where the directory lies or on its file
+    times: the figure and the scripts are the ones the run recorded, and a
+    case this checkout does not have is judged by the facts recorded with it.
+    """
     old = json.loads((out / "result.json").read_text(encoding="utf-8"))
+    name = str(old["case"])
+    kept = Case(name, str(old.get("prompt", "")), {}, old.get("expect") or {})
+    if name not in cases and "expect" not in old:
+        raise SystemExit(
+            f"{out}: no case {name!r} in evals/cases and none recorded "
+            "with the run; restore the case file to judge it again"
+        )
     session = {k: old[k] for k in SESSION_KEYS if k in old}
-    return assess(case, old["arm"], out, session)
+    return assess(cases.get(name, kept), old["arm"], out, session, recorded=old)
