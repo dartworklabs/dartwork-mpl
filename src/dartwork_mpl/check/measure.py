@@ -38,15 +38,17 @@ from ..geometry import (
     same_position_axes,
     text_inks,
 )
-from ..vocab import X
+from ..vocab import X, Y
 from . import roles
 from .alignment_measure import alignment_samples
 from .axis_labels import minus_tick, tick_row
+from .canvas import content_box, shape_panel
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
     Box,
+    CanvasUse,
     Facts,
     Frame,
     Hit,
@@ -57,9 +59,11 @@ from .model import (
     Panel,
     PolarTheta,
     Text,
+    TickOcclusion,
     TickRow,
     ascii_minus_value,
 )
+from .occlusion import measure_occlusion
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
@@ -197,6 +201,25 @@ class Reader:
         )
         return tuple(labels)
 
+    def radial_occlusion(self) -> tuple[TickOcclusion, ...]:
+        """Visible radial tick labels and the fill drawn over them."""
+        found: list[TickOcclusion] = []
+        for i, ax in self.axes:
+            if not isinstance(ax, PolarAxes):
+                continue
+            labels = tuple(
+                t
+                for label in (
+                    *drawn_tick_labels(ax, Y()),
+                    *drawn_tick_labels(ax, Y(), minor=True),
+                )
+                if text_inks(label)
+                and (t := self.text(label, roles.TickLabel(), i)) is not None
+            )
+            if labels:
+                found.extend(measure_occlusion(ax, labels))
+        return tuple(found)
+
     def polar_theta(self) -> tuple[PolarTheta, ...]:
         """Angle labels and disc extents, for visible full-circle polar plots."""
         found: list[PolarTheta] = []
@@ -314,6 +337,28 @@ class Reader:
                     Inked(t, ink.hex(), paper.hex(), contrast(ink, paper))
                 )
         return tuple(found)
+
+    def canvas_use(self, texts: tuple[Text, ...]) -> CanvasUse | None:
+        """The body of one shape chart without a legend or other panel."""
+        if len(self.axes) != 1:
+            return None
+        [(i, ax)] = self.axes
+        if not shape_panel(ax) or self.drawn_legends():
+            return None
+        labels = tuple(
+            t
+            for t in texts
+            if t.role.free
+            and isinstance(t.handle, MplText)
+            and text_inks(t.handle)
+        )
+        body = content_box(ax, labels, self.renderer, self.pt)
+        if body is None:
+            return None
+        inside = Bbox.intersection(body, self.fig.bbox)
+        return (
+            None if inside is None else CanvasUse(Panel(ax, i), box_of(inside))
+        )
 
     def frames(self) -> tuple[Frame, ...]:
         """The plot areas a text of another Axes must keep off: Axes that
@@ -479,6 +524,21 @@ def measure(fig: Figure) -> Facts:
             lambda: alignment_samples(texts, r.renderer),
             (),
             "TEXT_MISALIGNMENT",
+        ),
+        occluded_ticks=r.attempt(r.radial_occlusion, (), "RADIAL_TICK_COVERED"),
+        edge_texts=r.attempt(
+            lambda: tuple(
+                t
+                for t in texts
+                if t.role.free
+                and isinstance(t.handle, MplText)
+                and text_inks(t.handle)
+            ),
+            (),
+            "TEXT_AT_EDGE",
+        ),
+        canvas_use=r.attempt(
+            lambda: r.canvas_use(texts), None, "UNDERUSED_CANVAS"
         ),
         skipped=tuple(r.skipped),
     )

@@ -64,6 +64,21 @@ def has_minus_labels(facts: Facts, found: Findings) -> bool:
     return bool(facts.minus_labels)
 
 
+def has_occluded_ticks(facts: Facts, found: Findings) -> bool:
+    """Any radial tick measured against a fill."""
+    return bool(facts.occluded_ticks)
+
+
+def has_edge_texts(facts: Facts, found: Findings) -> bool:
+    """Any visible, manually placed Axes text."""
+    return bool(facts.edge_texts)
+
+
+def has_canvas_use(facts: Facts, found: Findings) -> bool:
+    """The shape chart has a measured footprint."""
+    return facts.canvas_use is not None
+
+
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
     EdgeCase(
         name="OVERFLOW",
@@ -211,5 +226,26 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_MIXED_MINUS",
         applies=has_minus_labels,
         adjust=decide.mixed_minus,
+    ),
+    EdgeCase(
+        name="RADIAL_TICK_COVERED",
+        why="a polar band painted over the radial numbers, so part of a number vanished",
+        example="test_edges.py::test_RADIAL_TICK_COVERED",
+        applies=has_occluded_ticks,
+        adjust=decide.radial_tick_covered,
+    ),
+    EdgeCase(
+        name="TEXT_AT_EDGE",
+        why="a group heading drawn flush with the paper reads as cut off",
+        example="test_edges.py::test_TEXT_AT_EDGE",
+        applies=has_edge_texts,
+        adjust=decide.text_at_edge,
+    ),
+    EdgeCase(
+        name="UNDERUSED_CANVAS",
+        why="equal-aspect chart shapes sat in a narrow band of a much larger canvas",
+        example="test_edges.py::test_UNDERUSED_CANVAS",
+        applies=has_canvas_use,
+        adjust=decide.underused_canvas,
     ),
 )

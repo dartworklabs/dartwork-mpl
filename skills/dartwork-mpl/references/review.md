@@ -55,6 +55,7 @@ not, the `try` line names what usually helps.
 | rule | Means |
 |---|---|
 | `OVERFLOW` | text cut off by the canvas edge |
+| `TEXT_AT_EDGE` | manually placed plot text almost touching the canvas edge |
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, including an inset's axis label on its ticks; axis text running into another plot or across the parent frame |
 | `TEXT_TOO_CLOSE` | a text placed near another text on the same panel, with too little space to read them apart; aligned rows of a list are fine |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
@@ -66,9 +67,11 @@ not, the `try` line names what usually helps.
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
 | `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |
 | `POLAR_TICK_ON_PLOT` | angle tick labels cross into their polar plot |
+| `RADIAL_TICK_COVERED` | a polar fill paints over radial tick numbers |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
 | `EMPTY_AXES` | a framed panel left empty by the grid, or whose data draws no visible marks |
+| `UNDERUSED_CANVAS` | an axis-less equal-aspect plot leaves a wide blank band on the canvas |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
 
 An "only X" edit keeps the warnings the original already had: report them,

@@ -13,6 +13,8 @@ from .model import Text, panels_of
 FIXES: dict[str, str] = {
     "OVERFLOW": "dm.simple_layout(fig) makes room for axis text; move a "
     "fig.text or annotation placed past the plot inward",
+    "TEXT_AT_EDGE": "move the text inward by a millimetre or two, or give "
+    "its annotation an inward offset in points",
     "OVERLAP": "move or shorten one of them; dm.simple_layout(fig) spaces "
     "titles, axis labels and tick labels",
     "CROSS_AXES_OVERLAP": "dm.simple_layout(fig) spaces the panels; a "
@@ -38,6 +40,8 @@ FIXES: dict[str, str] = {
     "TEXT_CONTRAST": "colour each label for what is behind it: "
     "color=dm.readable_text_color(bar_colour), or "
     "dm.ensure_contrast(colour, background)",
+    "RADIAL_TICK_COVERED": "raise the radial labels above the fill with "
+    "ax.set_axisbelow(False), or move them to a clear angle with ax.set_rlabel_position(...)",
     "POLAR_TICK_ON_PLOT": "give the angle labels more room with "
     'ax.tick_params(axis="x", pad=...), or align them outward around the circle',
     "MIXED_MINUS": "format the numeric label with "
@@ -45,6 +49,8 @@ FIXES: dict[str, str] = {
     "TICK_OVERLAP": "dm.simple_layout(fig) wraps, then turns, crowded "
     "labels (drop a rotation you set); many long names: horizontal bars; "
     "a y axis: a taller canvas",
+    "UNDERUSED_CANVAS": "match the canvas to the content with dm.figsize(width, aspect), "
+    "or use ax.set_aspect('auto') if the shapes can stretch, then rerun dm.simple_layout(fig)",
     "SMALL_PANEL": "fewer panels per figure (one row, or split it into "
     'figures); a grid on a slide: dm.figsize_for("full_slide") and one '
     "axis name per row or column (sharex=True, sharey=True)",

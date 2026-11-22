@@ -493,3 +493,64 @@ def mixed_minus(facts: Facts, found: Findings) -> Findings:
             labels,
         )
     return found
+
+
+def radial_tick_covered(facts: Facts, found: Findings) -> Findings:
+    """A substantial portion of a radial tick is under visible fill."""
+    panels: dict[int | None, list[Text]] = {}
+    for covered in facts.occluded_ticks:
+        if covered.opacity >= 0.45:
+            label = covered.label
+            panels.setdefault(label.panel, []).append(label)
+    for panel, labels in panels.items():
+        found = found.flag(
+            "RADIAL_TICK_COVERED",
+            f"Axes[{panel}]: fill is drawn over radial tick labels "
+            f"({quote(t.short for t in labels)})",
+            labels,
+        )
+    return found
+
+
+def text_at_edge(facts: Facts, found: Findings) -> Findings:
+    """Manually placed Axes text within a quarter millimetre of the canvas."""
+    close_px = 0.25 * 72 / 25.4 * facts.px_per_pt
+    groups: dict[tuple[int | None, str], list[Text]] = {}
+    for t in facts.edge_texts:
+        side, room = min(
+            margins(t.box, facts.canvas).items(), key=lambda item: item[1]
+        )
+        if -CUT_PX <= room < close_px:
+            groups.setdefault((t.panel, side), []).append(t)
+    for (panel, side), labels in groups.items():
+        found = found.flag(
+            "TEXT_AT_EDGE",
+            f"Axes[{panel}]: text sits at the {side} canvas edge "
+            f"({quote(t.short for t in labels)})",
+            labels,
+        )
+    return found
+
+
+def underused_canvas(facts: Facts, found: Findings) -> Findings:
+    """An axis-less panel has a sizeable empty band along one dimension."""
+    use, canvas = facts.canvas_use, facts.canvas
+    if (
+        use is None
+        or min(canvas.width, canvas.height) < 80 * 72 / 25.4 * facts.px_per_pt
+    ):
+        return found
+    width, height = (
+        use.body.width / canvas.width,
+        use.body.height / canvas.height,
+    )
+    if max(width, height) < 0.75 or min(width, height) >= 2 / 3:
+        return found
+    dimension = "width" if width < height else "height"
+    return found.flag(
+        "UNDERUSED_CANVAS",
+        f"Axes[{use.panel.index}]: the shapes and their labels use "
+        f"{min(width, height):.0%} of the canvas {dimension}",
+        handles=(use.panel.handle,),
+        panels=(use.panel.index,),
+    )

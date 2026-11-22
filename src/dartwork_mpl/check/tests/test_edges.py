@@ -8,6 +8,7 @@ from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Box,
+    CanvasUse,
     Facts,
     Frame,
     Hit,
@@ -18,6 +19,7 @@ from dartwork_mpl.check.model import (
     Panel,
     PolarTheta,
     Text,
+    TickOcclusion,
     TickRow,
     TickValues,
 )
@@ -313,3 +315,44 @@ def test_bar_ends_are_not_a_column():
         dm.simple_layout(fig)
         assert "TEXT_MISALIGNMENT" not in dm.check(fig).rules
         plt.close(fig)
+
+
+def test_RADIAL_TICK_COVERED():
+    """Light veils clear the check, while a substantially painted box fires."""
+    label = text("20", INSIDE, TickLabel())
+    for opacity, expected in ((0.2, ()), (0.45, ("RADIAL_TICK_COVERED",))):
+        facts = Facts(
+            CANVAS, PT, occluded_ticks=(TickOcclusion(label, opacity),)
+        )
+        assert found(facts).rules == expected
+
+
+def test_TEXT_AT_EDGE():
+    """At ordinary layout margins the text clears, and clipping reports once."""
+    for left, expected in (
+        (0, ("TEXT_AT_EDGE",)),
+        (1, ("TEXT_AT_EDGE",)),
+        (12, ()),
+        (-10, ("OVERFLOW",)),
+    ):
+        label = text("Germany", Box(left, 100, 110, 140))
+        assert (
+            found(Facts(CANVAS, PT, texts=(label,), edge_texts=(label,))).rules
+            == expected
+        )
+
+
+def test_UNDERUSED_CANVAS():
+    """A strip within a big canvas flags, while a tile or balanced margins clear."""
+    big = Box(0, 0, 1500, 1200)
+    tile = Box(0, 0, 800, 600)
+    for canvas, body, expected in (
+        (big, Box(0, 300, 1360, 900), ("UNDERUSED_CANVAS",)),
+        (big, Box(150, 150, 1350, 1050), ()),
+        (big, Box(255, 210, 1245, 990), ()),
+        (tile, Box(20, 180, 780, 420), ()),
+    ):
+        facts = Facts(
+            canvas, PT, canvas_use=CanvasUse(Panel(object(), 0), body)
+        )
+        assert found(facts).rules == expected

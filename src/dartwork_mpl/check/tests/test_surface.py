@@ -313,3 +313,64 @@ def test_ascii_minus_on_values_beside_unicode_ticks():
     assert finding.panels == (0,)
     with matplotlib.rc_context({"axes.unicode_minus": False}):
         assert "MIXED_MINUS" not in dm.check(fig).rules
+
+
+def test_polar_radial_ticks_can_be_hidden_by_a_band():
+    """A higher fill obscures radial ticks until the axis is raised."""
+    fig = plt.figure(figsize=dm.figsize("10cm", "square"))
+    ax = fig.add_subplot(projection="polar")
+    theta = np.linspace(0, 2 * np.pi, 366)
+    mean = 12 - 13 * np.cos(theta)
+    ax.fill_between(theta, mean - 8, mean + 8, color="dc.blue2")
+    ax.plot(theta, mean)
+    ax.set_ylim(-18, 40)
+    ax.set_rlabel_position(188)
+    dm.simple_layout(fig)
+    assert "RADIAL_TICK_COVERED" in dm.check(fig).rules
+    ax.set_axisbelow(False)
+    assert "RADIAL_TICK_COVERED" not in dm.check(fig).rules
+
+
+def test_a_manually_placed_group_name_needs_room_at_the_canvas_edge():
+    """A flush group heading gets one warning while the layout note clears."""
+    from matplotlib.transforms import blended_transform_factory
+
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.barh(["Berlin", "Munich"], [6.1, 4.8])
+    ax.set(xlabel="Change in vacancy (percentage points)", ylim=(-0.6, 2))
+    heading = ax.text(
+        0,
+        1.6,
+        "Germany",
+        fontweight="bold",
+        ha="left",
+        transform=blended_transform_factory(fig.transFigure, ax.transData),
+    )
+    dm.add_note(fig, "Source: vacancy report")
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "TEXT_AT_EDGE")
+    assert finding.artists == (heading,) and finding.panels == (0,)
+    heading.set_x(-0.05)
+    result = dm.check(fig)
+    assert "OVERFLOW" in result.rules and "TEXT_AT_EDGE" not in result.rules
+
+
+def test_an_axisless_unit_chart_uses_more_room_on_a_shallower_canvas():
+    """An equal-aspect grid needs a canvas close to its proportions."""
+    from matplotlib.patches import Rectangle
+
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize("24cm", 0.6))
+    for row in range(5):
+        for col in range(22 - 4 * row):
+            ax.add_patch(Rectangle((col, row), 0.8, 0.8, color="dc.blue4"))
+    ax.set(xlim=(-0.1, 25), ylim=(-0.7, 7.2), aspect="equal")
+    ax.set_axis_off()
+    fig.suptitle("North America hosts 22 of the 58 startups")
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "UNDERUSED_CANVAS")
+    assert finding.artists == (ax,) and finding.panels == (0,)
+
+    fig.set_size_inches(*dm.figsize("24cm", 0.24))
+    dm.simple_layout(fig)
+    assert "UNDERUSED_CANVAS" not in dm.check(fig).rules
