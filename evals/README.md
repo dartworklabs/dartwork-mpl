@@ -13,8 +13,9 @@ uv run python -m evals rejudge evals/runs/<stamp> # judge recorded runs again, n
 
 Everything a run writes goes to `evals/runs/<stamp>/` (git-ignored): per case
 and arm the transcript (`stream.jsonl`), the final `figure.png`, the
-`source.py` that drew it, the agent's files (`project/`, and `tmp/` for what
-it put in its temp dir) and `result.json`; `run.json`, `summary.json` and the
+`source.py` that drew it, the agent's files (`project/`, `tmp/` for what
+it put in its temp dir, `root/` for what it wrote beside the project, such
+as `../scripts/plot.py`) and `result.json`; `run.json`, `summary.json` and the
 contact sheet `index.html` at the top. Open `index.html`: beauty is decided
 by looking at it.
 
@@ -25,6 +26,18 @@ Claude Code, Python and drawing-library versions, and whether the runs were
 confined. Together with the prompt, the data, `source.py` and the model
 that is what a one-shot result needs to be handed to the hub
 ([hub-contract.md](../docs/hub-contract.md)).
+
+A run directory can be copied, archived or moved to another machine and
+judged again there (`rejudge`) with the same result. Which image was the
+agent's last and which scripts it wrote last are read from the file times
+once, when the run ends, and kept in `result.json` (`figure_file`,
+`source_file`, `scripts`) with the case's `[expect]`; `rejudge` reads them
+there, not from the file times, which a plain `cp -R` resets. A run recorded
+before that is read by content (its `figure.png`, and the script equal to
+its `source.py`). What `rejudge` cannot carry across is the library: the
+re-render draws with this checkout, so a figure drawn by another commit
+does not reproduce, and the reason then names both commits. Check out the
+recorded commit to judge such a run again.
 
 ## Arms
 
