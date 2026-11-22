@@ -13,6 +13,9 @@ Entries before 0.8.0 are in the git history of this file.
 ### Fixed
 
 - Removed the Korean role-colour notice because it describes a preset convention (#806).
+- The skill writes a figure's title with `fig.suptitle`, one plot or several,
+  so it is centred on the canvas and no longer sits off to the right of long
+  category names; `ax.set_title` names a panel (#819).
 
 ## 0.9.0 — 2026-11-22
 

@@ -60,7 +60,7 @@ for name, values in regions.items():
     ax.plot(years, values, label=name,
             color=None if subject else "dc.gray4", zorder=3 if subject else 2)
 ax.set(xlabel="Year", ylabel="Revenue (USD m)")
-ax.set_title("South overtook every region after 2021")   # a report figure says its point
+fig.suptitle("South overtook every region after 2021")   # a report figure says its point
 dm.label_line_ends(ax)
 dm.annotate_value(ax, years[-1], regions["South"][-1], "63")
 dm.simple_layout(fig)
@@ -136,7 +136,8 @@ box = ax.boxplot([waits[k] for k in order], widths=0.5, showfliers=False)
 for part in ("boxes", "whiskers", "caps", "medians"):
     plt.setp(box[part], color="dc.gray8")
 ax.set_xticks(range(1, len(order) + 1), [f"{k}\nn={len(waits[k])}" for k in order])
-ax.set(ylabel="Wait time (min)", title="South has the shortest waits")
+ax.set_ylabel("Wait time (min)")
+fig.suptitle("South has the shortest waits")
 dm.add_note(fig, "Box: middle half; line: median; whiskers: furthest point within 1.5 × IQR.")
 dm.simple_layout(fig)
 print(dm.check(fig))
@@ -163,8 +164,8 @@ plt.close(fig)
   the scale. Otherwise one beside the matrix, named with the quantity and
   unit, `fig.colorbar(im, ax=ax, label="Anomaly (°C)")`, and `aspect="auto"`
   on `imshow` so the cells fill the axes and the bar matches their height.
-  Square cells with a side colorbar leave empty bands above and below, and a
-  long title can run under the bar: look at the PNG.
+  Square cells with a side colorbar leave empty bands above and below: look
+  at the PNG.
 - No frame or tick marks around the cells: `ax.spines[:].set_visible(False)`,
   `ax.tick_params(length=0)`.
 
@@ -187,7 +188,7 @@ for i in range(n - 1):
                 color=dm.readable_text_color(im.cmap(im.norm(v))))
 ax.spines[:].set_visible(False)
 ax.tick_params(length=0)
-ax.set_title("Stocks and REITs moved together most")
+fig.suptitle("Stocks and REITs moved together most")
 dm.simple_layout(fig)
 print(dm.check(fig))
 plt.close(fig)
@@ -197,7 +198,13 @@ plt.close(fig)
 
 - **Title.** A paper figure has none: the caption carries the message. A
   report or slide figure may state the point as a sentence. A title that
-  only names the variables repeats the axes and can go.
+  only names the variables repeats the axes and can go. Write it with
+  `fig.suptitle(...)`, one plot or several: it is centred on the canvas.
+  `ax.set_title` is centred on the plot, so beside long category names, a
+  colorbar or a legend on one side it sits off-centre and leaves a corner of
+  the figure empty; it is for naming a panel. Leave the title centred, as the
+  preset draws it: `loc="left"` starts it at the plot, a third edge next to
+  the names on its left and the note under it.
 - **Axis labels** name the quantity and its unit: `Revenue (USD m)`,
   `Temperature (°C)`. An axis whose ticks are self-evident (years, month
   names, category names) needs no label.
