@@ -270,9 +270,10 @@ plt.close(fig)
   or fit the canvas to the group. In a comparison where unequal areas
   encode the data, keep their common scale and balance the group around it.
 - A vertical colorbar can leave an empty strip on its outside even after
-  layout: its slot can be wider than the drawn scale. If it does, give the
-  scale a narrow column in the plot's GridSpec and pass its Axes as
-  `cax` to `fig.colorbar`; fit the plot and column together.
+  layout: its slot can be wider than the drawn scale. Reduce `fraction`
+  in `fig.colorbar` to fit the slot to the drawn scale, then lay out and
+  check again. For an exact width, give the scale a narrow column in the
+  plot's GridSpec and pass its Axes as `cax`.
 - For an inset or a label in open space, look for a region clear of the
   marks it could cover. Leave room around the whole element, including
   its text and any connectors. Within that region, give it an anchor the

@@ -108,6 +108,13 @@ def test_oversized_colorbar_slot_leaves_a_blank_band():
     assert [a.get_position().bounds for a in fig.axes] == positions
     plt.close(fig)
 
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.set(xlabel="Speed", ylabel="Torque")
+    fig.colorbar(ax.contourf(data), ax=ax, label="Rate", fraction=0.05)
+    dm.simple_layout(fig)
+    assert "UNDERUSED_CANVAS" not in dm.check(fig).rules
+    plt.close(fig)
+
     fig = plt.figure(figsize=dm.figsize("12cm", "standard"))
     grid = fig.add_gridspec(1, 2, width_ratios=[18, 1])
     ax, cax = fig.add_subplot(grid[0]), fig.add_subplot(grid[1])

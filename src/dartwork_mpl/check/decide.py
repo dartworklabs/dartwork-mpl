@@ -653,6 +653,7 @@ def blank_beside_colorbar(
         f"of the canvas blank on the {side}; the drawn scale is narrower than its slot",
         handles=(space.panel.handle, space.scale.handle),
         panels=(space.panel.index, space.scale.index),
-        fix="give the colorbar a narrow column in the plot's GridSpec and pass "
-        "that Axes as cax to fig.colorbar, then fit both with dm.simple_layout(fig)",
+        fix="reduce fraction= in fig.colorbar(..., ax=ax) to fit the scale's "
+        "slot to its drawn width, then rerun dm.simple_layout(fig); for an "
+        "exact width, give the scale its own GridSpec column with cax=",
     )
