@@ -217,11 +217,11 @@ def tick_overlap(facts: Facts, found: Findings) -> Findings:
 
 
 def empty_axes(facts: Facts, found: Findings) -> Findings:
-    """A framed Axes that draws nothing: a grid larger than the data."""
+    """A framed Axes with no data, or data that leaves no visible marks."""
     for p in facts.empty:
         found = found.flag(
             "EMPTY_AXES",
-            f"Axes[{p.index}] draws nothing: an empty frame",
+            f"Axes[{p.index}] has no visible data marks",
             handles=(p.handle,),
             panels=(p.index,),
         )

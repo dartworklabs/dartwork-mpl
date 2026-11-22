@@ -64,7 +64,7 @@ not, the `try` line names what usually helps.
 | `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
-| `EMPTY_AXES` | a framed panel that draws nothing, left over from a grid |
+| `EMPTY_AXES` | a framed panel left empty by the grid, or whose data draws no visible marks |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
 
 An "only X" edit keeps the warnings the original already had: report them,

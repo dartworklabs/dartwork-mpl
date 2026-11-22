@@ -23,8 +23,9 @@ FIXES: dict[str, str] = {
     "LEGEND_ON_DATA": "dm.place_legend(ax) picks the place that covers "
     'least; no free place: dm.place_legend(ax, loc="above"); panels '
     "sharing series: dm.figure_legend(fig)",
-    "EMPTY_AXES": "ax.remove() the panel the data does not fill, or make "
-    "the grid as large as the data",
+    "EMPTY_AXES": "check the view limits, colour and alpha; for a line, "
+    "give it a positive linewidth or a visible marker. An unused grid "
+    "cell can be removed with ax.remove()",
     "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
     "the error bar (ax.bar_label(bars, padding=...)), or dm.annotate_value "
     "for a point on a line",

@@ -177,3 +177,34 @@ def test_a_report_grid_on_slide_text_is_too_small_but_a_colorbar_is_not():
     xx, yy = np.meshgrid(grid, grid)
     surface.colorbar(ax3.plot_surface(xx, yy, xx * yy), shrink=0.4)
     assert "SMALL_PANEL" not in dm.check(surface).rules
+
+
+def test_lines_without_visible_marks_leave_an_empty_panel():
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    (line,) = ax.plot([1, 2, 3], [1, 3, 2], lw=0)
+    ax.set(xlabel="x (s)", ylabel="y (m)")
+    dm.simple_layout(fig)
+
+    def empty() -> bool:
+        findings = _of(dm.check(fig), "EMPTY_AXES")
+        return any(f.artists == (ax,) for f in findings)
+
+    assert empty()
+    line.set_marker("o")
+    assert not empty()
+    line.set_marker("None")
+    line.set_linewidth(dm.lw(0))
+    line.set_alpha(0)
+    assert empty()
+    line.set_alpha(1)
+    colour = line.get_color()
+    line.set_color(ax.get_facecolor())
+    assert empty()
+    line.set_color(colour)
+    ax.set_xlim(4, 5)
+    assert empty()
+    ax.set_xlim(1.5, 1.6)  # a segment crosses the view, with no vertex inside
+    assert not empty()
+    line.set_linewidth(0)
+    ax.fill_between([1, 2, 3], [1, 3, 2], 1)
+    assert not empty()

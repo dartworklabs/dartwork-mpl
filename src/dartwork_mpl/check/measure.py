@@ -40,7 +40,7 @@ from ..geometry import (
 )
 from ..vocab import Which
 from . import roles
-from .ink import Ink, data_ink, legend_inks, words_box
+from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
@@ -321,11 +321,21 @@ class Reader:
 
     def empty(self) -> tuple[Panel, ...]:
         """Framed Axes where nothing is drawn, nor in a twin sharing the box."""
-        return tuple(
-            Panel(ax, i)
-            for i, ax in self.panels
-            if ax.axison and not any(map(draws, same_position_axes(ax)))
-        )
+        found: list[Panel] = []
+        canvas = Bbox(self.fig.bbox.get_points())
+        for i, ax in self.panels:
+            if not ax.axison:
+                continue
+            owners = same_position_axes(ax)
+            if any(data_artists(owner) for owner in owners):
+                if not any(
+                    data_shows(owner, canvas, self.renderer, self.pt)
+                    for owner in owners
+                ):
+                    found.append(Panel(ax, i))
+            elif not any(map(draws, owners)):
+                found.append(Panel(ax, i))
+        return tuple(found)
 
 
 def named(ax: Axes, which: Which) -> bool:
@@ -424,7 +434,7 @@ def measure(fig: Figure) -> Facts:
         legend_texts=r.attempt(r.legend_texts, (), "OVERFLOW"),
         ticks=r.attempt(r.ticks, (), "TICK_OVERLAP"),
         legends=r.attempt(r.legends, (), "LEGEND_ON_DATA"),
-        empty=r.empty(),
+        empty=r.attempt(r.empty, (), "EMPTY_AXES"),
         values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
         letters=r.attempt(
             lambda: r.letters_on_data(texts), (), "LETTER_ON_DATA"
