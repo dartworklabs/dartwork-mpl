@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING
 from matplotlib.text import Text
 from matplotlib.transforms import Affine2D, Bbox
 
-from .renderer import canvas_renderer
+from ..geometry import canvas_renderer
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from matplotlib.artist import Artist
     from matplotlib.backend_bases import RendererBase
     from matplotlib.text import Annotation
 
@@ -28,6 +29,8 @@ class AlignedTextRow(Text):
         offsets: Callable[[RendererBase], tuple[float, ...]],
     ) -> None:
         """Carry the original styling and the new native runs."""
+        self.source = source
+        self.source_text = source.get_text()
         super().__init__(text=text)  # pyright: ignore[reportUnknownMemberType]
         self.update_from(source)
         self.set_zorder(source.get_zorder())
@@ -39,10 +42,32 @@ class AlignedTextRow(Text):
         self.origin = origin
         self.renderer: RendererBase | None = None
 
+    def get_text(self) -> str:
+        """Return a later source edit until the caller realigns the group."""
+        source = self.source.get_text()
+        return source if source != self.source_text else super().get_text()
+
+    def get_children(self) -> list[Artist]:
+        """Expose the constituent artists through Matplotlib inspection."""
+        if self.get_text() != self.planned_text:
+            return [self.edited]
+        return list(self.pieces)
+
+    def remove(self) -> None:
+        """Remove the aligned overlay and restore its still-attached source."""
+        axes = self.axes
+        super().remove()
+        if self.source.axes is axes:
+            self.source.set_visible(True)
+
     def place(self, renderer: RendererBase) -> tuple[Text, ...]:
         """Place the original runs, or one ordinary Text for edited content."""
         self.renderer = renderer
-        origin = Affine2D().translate(*self.origin(renderer))
+        x, y = self.origin(renderer)
+        dx, dy = self.get_unitless_position()
+        fig = self.get_figure(root=True)
+        pixels = fig.dpi / 72 if fig is not None else 1.0
+        origin = Affine2D().translate(x + dx * pixels, y + dy * pixels)
         if self.get_text() != self.planned_text:
             fig = self.get_figure(root=False)
             if fig is not None:

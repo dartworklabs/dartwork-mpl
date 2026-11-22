@@ -81,7 +81,7 @@ def test_proportional_decimal_stops(font, fmt, dpi, record_property):
             offsets = [
                 [
                     p.get_window_extent(event.renderer).x0 * k
-                    for p in row.pieces
+                    for p in row.get_children()
                     if p.get_text().startswith(".")
                 ]
                 for row in aligned
@@ -196,7 +196,7 @@ def inter_joints():
 @pytest.mark.parametrize("fmt", ["pdf", "svg", "png"])
 def test_numeric_joints_keep_original_spacing(build, fmt, record_property):
     """No rendered joint loses its authored whitespace at any tab stop."""
-    from dartwork_mpl.geometry import AlignedTextRow
+    from matplotlib.text import Text
 
     figure = build()
 
@@ -204,10 +204,15 @@ def test_numeric_joints_keep_original_spacing(build, fmt, record_property):
         renderer = event.renderer
         tight = {}
         for artist in figure.axes[0].texts:
-            if not isinstance(artist, AlignedTextRow):
+            pieces = [
+                child
+                for child in artist.get_children()
+                if isinstance(child, Text)
+            ]
+            if not pieces:
                 continue
             text = artist.get_text()
-            group = (len(artist.pieces), text.endswith("%"))
+            group = (len(pieces), text.endswith("%"))
             font = artist.get_fontproperties()
 
             def width(value, font=font):
@@ -220,7 +225,7 @@ def test_numeric_joints_keep_original_spacing(build, fmt, record_property):
 
             cursor = 0
             previous = None
-            for i, piece in enumerate(artist.pieces):
+            for i, piece in enumerate(pieces):
                 value = piece.get_text()
                 start = text.index(value, cursor)
                 current = piece.get_window_extent(renderer)
@@ -258,3 +263,29 @@ def test_numeric_joints_keep_original_spacing(build, fmt, record_property):
 
     during_save(figure, fmt, 200, read)
     plt.close(figure)
+
+
+@pytest.mark.parametrize("literal", ["", " ", "   ", "\xa0"])
+def test_authored_separator_advance_survives_a_vector_render(literal):
+    """The real SVG advances preserve missing, repeated and nonbreaking spaces."""
+    with dm.style.context("scientific"):
+        fig, ax = plt.subplots(figsize=dm.figsize("10cm", "4cm"))
+        value = f"1.1,{literal}[2.2%]"
+        labels = [
+            ax.text(1.03, y, value, transform=ax.transAxes) for y in (0.3, 0.7)
+        ]
+        row, _ = dm.align_texts(labels, "decimal")
+        dm.simple_layout(fig)
+
+        def read(event):
+            renderer = event.renderer
+            pieces = {t.get_text(): t for t in row.get_children()}
+            a = pieces[".1,"].get_window_extent(renderer)
+            b = pieces["[2"].get_window_extent(renderer)
+            width = renderer.get_text_width_height_descent(
+                literal, row.get_fontproperties(), False
+            )[0]
+            assert b.x0 - a.x1 == pytest.approx(width, abs=0.05)
+
+        during_save(fig, "svg", 72, read)
+        plt.close(fig)

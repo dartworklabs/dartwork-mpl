@@ -37,6 +37,34 @@ def columns(
     return result
 
 
+def numeric_body(rows: list[AlignmentSample]) -> list[AlignmentSample]:
+    """Ignore a heading or footer outside the continuous numeric body."""
+    start = next((i for i, row in enumerate(rows) if row.marks), len(rows))
+    end = next(
+        (i for i, row in enumerate(reversed(rows)) if row.marks), len(rows)
+    )
+    return rows[start : len(rows) - end]
+
+
+def decimal_spread(body: list[AlignmentSample]) -> float:
+    """Compare equal numeric shapes within the same typography.
+
+    A bold subtotal can be wider even when the body is already aligned.
+    """
+    counts = {len(row.marks) for row in body}
+    if len(body) < 3 or len(counts) != 1 or 0 in counts:
+        return 0.0
+    by_font = sorted(body, key=lambda row: row.font_key)
+    return max(
+        (
+            spread(stop)
+            for _, rows in groupby(by_font, key=lambda row: row.font_key)
+            for stop in zip(*(row.marks for row in rows), strict=True)
+        ),
+        default=0.0,
+    )
+
+
 def misalignment(facts: Facts, found: Findings) -> Findings:
     """An apparent column with noticeably ragged numeric stops or edges."""
     for samples in facts.alignment:
@@ -47,20 +75,11 @@ def misalignment(facts: Facts, found: Findings) -> Findings:
             em = median(t.text.em for t in rows)
             if any(b.y - a.y < 0.85 * em for a, b in pairwise(rows)):
                 continue
-            counts = {len(row.marks) for row in rows}
-            stops = (
-                [
-                    spread(stop)
-                    for stop in zip(*(row.marks for row in rows), strict=True)
-                ]
-                if len(counts) == 1 and 0 not in counts
-                else []
-            )
-            rough = max(stops, default=0.0)
+            body = numeric_body(rows)
+            rough = decimal_spread(body)
             edge = spread([row.x for row in rows])
-            if rough >= 0.2 * em and (
-                len(stops) > 1 or not rows[0].tidy_value_edge
-            ):
+            if rough >= 0.2 * em:
+                rows = body
                 gap = rough / em
                 detail = "decimal positions"
                 how = "decimal"

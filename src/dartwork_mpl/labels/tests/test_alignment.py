@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl.labels.alignment_layout import MeasuredRow, decimal_rows
-from dartwork_mpl.vocab.numeric_text import NumericText
 
 
 @pytest.mark.parametrize(
@@ -14,12 +12,17 @@ from dartwork_mpl.vocab.numeric_text import NumericText
 def test_edge_alignment_on_existing_artists(mode, point):
     fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
     ax.set(xlim=(0, 10), ylim=(0, 5))
+    coords = ax.get_yaxis_transform()
     texts = [
-        ax.text(2, 1, "Short"),
+        ax.text(0.2, 1, "Short", transform=coords),
         ax.annotate(
-            "Wider", (2.5, 2), xytext=(2, 0), textcoords="offset points"
+            "Wider",
+            (0.25, 2),
+            xytext=(2, 0),
+            xycoords=coords,
+            textcoords="offset points",
         ),
-        ax.text(4, 3, "The longest"),
+        ax.text(0.4, 3, "The longest", transform=coords),
     ]
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
@@ -55,50 +58,6 @@ def test_left_align_tick_labels_in_place():
     edge = [t.get_window_extent(renderer).x0 for t in texts]
     assert max(edge) - min(edge) < 0.01
     plt.close(fig)
-
-
-@pytest.mark.parametrize(
-    ("cells", "stops"),
-    [
-        (["1.1", "88.8"], [2]),
-        (["1.1 [-1.1, 9.9]", "88.8 [1.2, 9.1]"], [2, 8, 13]),
-        (["1.1", "88.8 (5%)"], []),
-    ],
-)
-def test_decimal_plan(cells, stops):
-    # Fixed mock widths make the tab-stop decisions readable as a table.
-    rows = decimal_rows(
-        [MeasuredRow(NumericText.parse(text), len) for text in cells]
-    )
-    for row in rows:
-        assert [
-            piece.offset for piece in row if piece.text.startswith(".")
-        ] == stops
-    assert bool(rows) == bool(stops)
-
-
-@pytest.mark.parametrize(
-    ("text", "left", "right", "gap"),
-    [
-        ("1.1, 2.2", ".1,", "2", 1),
-        ("1.1 [-2.2]", ".1", "[\u22122", 1),
-        ("1.1(2.2%", ".1", "(2", 0),
-        ("1.1,   2.2", ".1,", "2", 3),
-        ("1.1,\xa02.2", ".1,", "2", 2),
-    ],
-)
-def test_decimal_plan_keeps_literal_spacing(text, left, right, gap):
-    """A tab joint includes the font advance of every supplied separator."""
-
-    def advance(value):
-        return len(value) + value.count("\xa0")
-
-    (plan,) = decimal_rows([MeasuredRow(NumericText.parse(text), advance)])
-    trailing = next(piece for piece in plan if piece.text == left)
-    leading = next(piece for piece in plan if piece.text == right)
-    assert (
-        leading.offset - advance(right) - trailing.offset - advance(left) == gap
-    )
 
 
 @pytest.mark.parametrize("how", ["left", "center", "right", "decimal"])
@@ -153,7 +112,7 @@ def test_editing_returned_rows_updates_the_drawn_text():
     assert all(
         to_rgba(piece.get_color()) == to_rgba("red")
         and piece.get_fontweight() == "bold"
-        for piece in row.pieces
+        for piece in row.get_children()
     )
     row.set_text("Revised text, much wider than either number")
     fig.canvas.draw()

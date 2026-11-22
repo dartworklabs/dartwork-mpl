@@ -53,12 +53,11 @@ from .ink import (
 )
 from .model import CentreTitle, LeftTitle, RightTitle, TitleLoc
 from .renderer import BBOX_ERRORS, canvas_renderer, get_renderer
-from .text_rows import AlignedTextRow
+from .text_anchors import follows_mark
 
 __all__ = [
     "BBOX_ERRORS",
     "UNCLIPPED",
-    "AlignedTextRow",
     "CentreTitle",
     "DataInk",
     "LeftTitle",
@@ -82,6 +81,7 @@ __all__ = [
     "draws_axis",
     "figure_axes",
     "figure_legends",
+    "follows_mark",
     "get_renderer",
     "holders_shown",
     "in_view_tick_labels",

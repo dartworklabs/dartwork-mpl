@@ -37,3 +37,8 @@ class RightTitle:
 
 TitleLoc: TypeAlias = CentreTitle | LeftTitle | RightTitle
 """One of an Axes' three titles."""
+
+
+def coordinate_follows_data(coords: str) -> bool:
+    """The named coordinate frame whose horizontal position follows data."""
+    return coords == "data"

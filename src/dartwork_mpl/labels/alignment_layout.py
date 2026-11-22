@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from ..vocab import AlignLeft, AlignRight, HAlign, NumericText
+
+_MINUS = re.compile(r"(?<![^\s(\[{])-(?=\d|\.\d)")
+
+
+def numeric_minus(text: str) -> str:
+    """Use a mathematical minus for a leading number sign only."""
+    return _MINUS.sub("\u2212", text)
 
 
 @dataclass(frozen=True)
@@ -40,14 +48,15 @@ def decimal_rows(rows: Sequence[MeasuredRow]) -> tuple[tuple[Piece, ...], ...]:
     for runs in zip(*(row.text.numbers for row in rows), strict=True):
         measured = tuple(zip(runs, rows, plan, strict=True))
         cursor += max(row.width(run.space) for run, row, _ in measured)
-        mark = cursor + max(row.width(run.before) for run, row, _ in measured)
+        mark = cursor + max(
+            row.width(numeric_minus(run.before)) for run, row, _ in measured
+        )
         for run, _, pieces in measured:
             if run.before:
-                pieces.append(Piece(run.before, mark, AlignRight()))
+                pieces.append(
+                    Piece(numeric_minus(run.before), mark, AlignRight())
+                )
             if run.after:
                 pieces.append(Piece(run.after, mark, AlignLeft()))
         cursor = mark + max(row.width(run.after) for run, row, _ in measured)
-    for row, pieces in zip(rows, plan, strict=True):
-        if row.text.tail.strip():
-            pieces.append(Piece(row.text.tail, cursor, AlignLeft()))
     return tuple(tuple(pieces) for pieces in plan)

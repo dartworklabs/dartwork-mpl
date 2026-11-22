@@ -1,4 +1,4 @@
-"""Numeric runs and decimal boundaries in one line of display text."""
+"""Read unambiguous numeric runs without changing the source text."""
 
 from __future__ import annotations
 
@@ -6,9 +6,15 @@ import re
 from dataclasses import dataclass
 
 _NUMBER = re.compile(
-    r"[+\u2212-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)"
+    r"(?P<mantissa>[+\u2212-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)"
+    r"(?:\.\d+)?|\.\d+))(?P<exponent>[eE][+\u2212-]?\d+)?"
 )
-_CLOSING = re.compile(r"[^\s\[({]*")
+_OPEN = re.compile(r"\s*[\[({$€£¥]*")
+_ATTACHED = re.compile(r"[^\s\[({$€£¥]*")
+_UNIT = re.compile(
+    r"[\s,\])}%°‰†*]*(?:[^\W\d_]+(?:[/· ][^\W\d_]+)*[\s,\])}%°‰†*]*)?"
+)
+_CALENDAR = re.compile(r"\s*\d{2,4}년\s*\d{1,2}월(?:\s*\d{1,2}일)?\s*")
 _MATH_DELIMITER = re.compile(r"(?<!\\)\$")
 
 
@@ -20,7 +26,7 @@ def has_math(text: str) -> bool:
 
 @dataclass(frozen=True)
 class NumberRun:
-    """The space before a number and what sits on each side of its mark."""
+    """The authored space and text runs on either side of one decimal stop."""
 
     space: str
     prefix: str
@@ -31,42 +37,47 @@ class NumberRun:
 
 @dataclass(frozen=True)
 class NumericText:
-    """A whole cell and the runs it can use for decimal alignment."""
+    """A line of numbers, or an intact label with no unambiguous stops."""
 
     text: str
     numbers: tuple[NumberRun, ...]
-    tail: str
 
     @classmethod
     def parse(cls, text: str) -> NumericText:
-        """Keep mathtext intact and give numeric minus signs their glyph."""
-        matches = () if has_math(text) else tuple(_NUMBER.finditer(text))
+        """Keep dates, ranges, ratios, identifiers and math intact."""
+        if has_math(text) or _CALENDAR.fullmatch(text):
+            return cls(text, ())
+        matches = tuple(_NUMBER.finditer(text))
         at = 0
         runs: list[NumberRun] = []
-        whole: list[str] = []
         for i, match in enumerate(matches):
             prefix = text[at : match.start()]
-            limit = (
-                matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            )
-            closing = _CLOSING.match(text, match.end(), limit)
-            at = closing.end() if closing else match.end()
+            if not _OPEN.fullmatch(prefix) or (
+                i
+                and not prefix
+                and text[at - 1 : at] not in {",", ")", "]", "}"}
+            ):
+                return cls(text, ())
+            if i + 1 == len(matches):
+                at = len(text)
+            else:
+                between = _ATTACHED.match(
+                    text, match.end(), matches[i + 1].start()
+                )
+                assert between is not None
+                at = between.end()
             suffix = text[match.end() : at]
-            token = match.group()
-            if token.startswith("-"):
-                token = "\u2212" + token[1:]
-            whole.extend((prefix, token, suffix))
-            before, dot, fraction = token.partition(".")
+            if not _UNIT.fullmatch(suffix):
+                return cls(text, ())
+            whole, dot, fraction = match.group("mantissa").partition(".")
             lead = prefix.lstrip()
-            raw_before = match.group().partition(".")[0]
             runs.append(
                 NumberRun(
                     prefix[: len(prefix) - len(lead)],
-                    text[: match.start()] + raw_before,
+                    text[: match.start()] + whole,
                     dot,
-                    lead + before,
-                    dot + fraction + suffix,
+                    lead + whole,
+                    dot + fraction + (match.group("exponent") or "") + suffix,
                 )
             )
-        tail = text[at:]
-        return cls("".join((*whole, tail)), tuple(runs), tail)
+        return cls(text, tuple(runs))

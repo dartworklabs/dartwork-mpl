@@ -41,11 +41,6 @@ def margins(box: Box, outer: Box) -> dict[str, float]:
     }
 
 
-def data_coordinates(coords: object) -> bool:
-    """A Matplotlib annotation targets a data point."""
-    return isinstance(coords, str) and coords == "data"
-
-
 def printed_value(text: str) -> str | None:
     """The one number a short label prints (``19.4 TWh``, ``$3.5``); ``None``
     for prose, math or a token like ``Q1``."""
@@ -251,7 +246,7 @@ class AlignmentSample:
     x: float
     y: float
     marks: tuple[float, ...]
-    tidy_value_edge: bool
+    font_key: int
 
 
 @dataclass(frozen=True)

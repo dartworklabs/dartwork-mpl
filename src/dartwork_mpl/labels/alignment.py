@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from copy import copy
 from functools import lru_cache, partial
 from statistics import median_low
@@ -14,7 +15,7 @@ from matplotlib.text import Annotation, Text
 from matplotlib.textpath import text_to_path
 from matplotlib.transforms import Affine2D, IdentityTransform, Transform
 
-from ..geometry import AlignedTextRow, get_renderer
+from ..geometry import follows_mark, get_renderer
 from ..vocab import (
     AlignCentre,
     AlignLeft,
@@ -23,17 +24,21 @@ from ..vocab import (
     NumericText,
     has_math,
 )
-from .alignment_layout import MeasuredRow, Piece, decimal_rows
+from .aligned_rows import AlignedTextRow
+from .alignment_layout import MeasuredRow, Piece, decimal_rows, numeric_minus
 from .model import DecimalAlign, TextAlignment, text_alignment
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.figure import Figure
     from matplotlib.font_manager import FontProperties
     from matplotlib.transforms import Bbox
     from numpy.typing import ArrayLike
 
+
+LOG = logging.getLogger("dartwork_mpl.labels")
 
 _ALIGNED_ROWS: WeakKeyDictionary[Text, ref[AlignedTextRow]] = (
     WeakKeyDictionary()
@@ -92,21 +97,59 @@ class SnapX(Transform):
         return result
 
 
+def tick_side(
+    fig: Figure, texts: Sequence[Text]
+) -> AlignLeft | AlignRight | None:
+    """Find the outside edge of a selected group of vertical axis labels."""
+    selected = set(texts)
+    for ax in fig.axes:
+        ticks = (*ax.yaxis.get_major_ticks(), *ax.yaxis.get_minor_ticks())
+        if selected <= {tick.label1 for tick in ticks}:
+            return AlignLeft()
+        if selected <= {tick.label2 for tick in ticks}:
+            return AlignRight()
+    return None
+
+
 def snap_edges(
-    texts: Sequence[Text], how: HAlign, renderer: RendererBase
-) -> None:
-    """Use a median edge, minimizing total horizontal movement."""
-    edges = [feature(t.get_window_extent(renderer), how) for t in texts]
-    if max(edges) - min(edges) <= 1e-9 and all(
-        t.get_horizontalalignment() == how.mpl for t in texts
+    texts: Sequence[Text],
+    how: HAlign,
+    renderer: RendererBase,
+    outside: AlignLeft | AlignRight | None = None,
+) -> bool:
+    """Snap to the median edge (outermost for ticks), reporting movement."""
+    sources = [copy(t) for t in texts]
+    if outside is not None:
+        for source in sources:
+            transform = source.get_transform()
+            if isinstance(transform, SnapX):
+                source.set_transform(transform.original)
+            native = (
+                AlignRight() if isinstance(outside, AlignLeft) else AlignLeft()
+            )
+            source.set_horizontalalignment(native.mpl)
+    edges = [feature(t.get_window_extent(renderer), how) for t in sources]
+    if (
+        outside is None
+        and max(edges) - min(edges) <= 1e-9
+        and all(t.get_horizontalalignment() == how.mpl for t in texts)
     ):
-        return
-    index = edges.index(median_low(edges))
-    reference = copy(texts[index])
+        return False
+    match outside:
+        case AlignLeft():
+            target = min(edges)
+        case AlignRight():
+            target = max(edges)
+        case None:
+            target = median_low(edges)
+        case _:
+            assert_never(outside)
+    index = edges.index(target)
+    reference = sources[index]
     x0, _ = anchor(reference, renderer)
     fig = reference.get_figure(root=True)
     if fig is None:
-        return
+        return False
     dx = (edges[index] - x0) * 72 / fig.dpi
     axes = reference.axes
     frame = axes.transAxes if axes is not None else fig.transFigure
@@ -119,20 +162,24 @@ def snap_edges(
             x = position(reference)[0]
         return x + dx * fig.dpi / 72
 
-    for text in texts:
-        if isinstance(text, Annotation):
-            source = copy(text)
+    for text, source in zip(texts, sources, strict=True):
+        if isinstance(text, Annotation) and isinstance(source, Annotation):
 
             def coords(
-                renderer: RendererBase, source: Text = source
+                renderer: RendererBase,
+                source: Annotation = source,
+                live: Annotation = text,
             ) -> Affine2D:
+                source.xy = live.xy
                 return Affine2D().translate(x_at(), anchor(source, renderer)[1])
 
             text.set_anncoords(coords)
             text.xyann = (0, 0)
         else:
-            text.set_transform(SnapX(text.get_transform(), x_at))
+            text.set_transform(SnapX(source.get_transform(), x_at))
         text.set_horizontalalignment(how.mpl)
+
+    return True
 
 
 def width(font: FontProperties, text: str) -> float:
@@ -157,7 +204,7 @@ def run_width(
 def row_artist(
     ax: Axes,
     text: Text,
-    measured: MeasuredRow,
+    text_runs: NumericText,
     plan: tuple[Piece, ...],
     left: Callable[[RendererBase], float],
     offsets: Callable[[RendererBase], tuple[float, ...]],
@@ -195,31 +242,32 @@ def row_artist(
         piece.axes = ax
         pieces.append(piece)
     return AlignedTextRow(
-        text, measured.text.text, tuple(pieces), origin, offsets
+        text, numeric_minus(text_runs.text), tuple(pieces), origin, offsets
     )
 
 
-def align_decimals(texts: list[Text], renderer: RendererBase) -> list[Text]:
+def align_decimals(
+    texts: list[Text], axes: Axes, fig: Figure, renderer: RendererBase
+) -> list[Text]:
     """Keep one visible Text per row, with native runs for its stops."""
-    axes = texts[0].axes
-    fig = texts[0].get_figure(root=True)
-    if (
-        fig is None
-        or not isinstance(axes, Axes)
-        or any(
-            t.axes is not axes or t.get_bbox_patch() is not None for t in texts
+    rows = [NumericText.parse(t.get_text()) for t in texts]
+
+    @lru_cache(maxsize=2)
+    def plan_at(
+        renderer: RendererBase, fonts: tuple[FontProperties, ...]
+    ) -> tuple[tuple[Piece, ...], ...]:
+        return decimal_rows(
+            [
+                MeasuredRow(row, partial(run_width, renderer, fig.dpi, font))
+                for row, font in zip(rows, fonts, strict=True)
+            ]
         )
-    ):
-        return texts
-    rows = [
-        MeasuredRow(
-            NumericText.parse(t.get_text()),
-            partial(width, t.get_fontproperties()),
+
+    fonts = tuple(t.get_fontproperties().copy() for t in texts)
+    if not (plans := plan_at(renderer, fonts)):
+        return unchanged(
+            texts, "the rows need matching, unambiguous numeric runs"
         )
-        for t in texts
-    ]
-    if not (plans := decimal_rows(rows)):
-        return texts
     boxes = [float(t.get_window_extent(renderer).x0) for t in texts]
     index = boxes.index(median_low(boxes))
     reference = copy(texts[index])
@@ -229,19 +277,6 @@ def align_decimals(texts: list[Text], renderer: RendererBase) -> list[Text]:
         return anchor(reference, renderer)[0] + dx * fig.dpi / 72
 
     result: list[AlignedTextRow] = []
-
-    @lru_cache(maxsize=2)
-    def plan_at(
-        renderer: RendererBase, fonts: tuple[FontProperties, ...]
-    ) -> tuple[tuple[Piece, ...], ...]:
-        return decimal_rows(
-            [
-                MeasuredRow(
-                    row.text, partial(run_width, renderer, fig.dpi, font)
-                )
-                for row, font in zip(rows, fonts, strict=True)
-            ]
-        )
 
     def offsets(renderer: RendererBase, index: int) -> tuple[float, ...]:
         fonts = tuple(t.get_fontproperties().copy() for t in result)
@@ -259,6 +294,15 @@ def align_decimals(texts: list[Text], renderer: RendererBase) -> list[Text]:
         text.set_visible(False)
         _ALIGNED_ROWS[text] = ref(new)
         result.append(new)
+    signs = sum(
+        old.get_text() != new.get_text()
+        for old, new in zip(texts, result, strict=True)
+    )
+    LOG.info(
+        "aligned %d rows on decimal stops and normalised minus signs in %d rows",
+        len(result),
+        signs,
+    )
     return list(result)
 
 
@@ -267,48 +311,95 @@ def visible_row(text: Text) -> Text:
     if (
         (replacement := _ALIGNED_ROWS.get(text)) is not None
         and (row := replacement()) is not None
+        and isinstance(row.axes, Axes)
         and row.axes is text.axes
     ):
         return row
     return text
 
 
-def align_texts(texts: Iterable[Text], how: TextAlignment) -> list[Text]:
-    """Align existing text horizontally without changing its row or content.
+def unchanged(texts: list[Text], reason: str) -> list[Text]:
+    """Report a skipped alignment without changing the input artists."""
+    LOG.info("left %d texts in place because %s", len(texts), reason)
+    return texts
 
-    Left, right and center align the original artists, including tick labels.
-    Decimal aligns all numeric runs of a column of Axes texts. It hides the
-    inputs and returns the drawn rows, one Text per input. A decimal group
-    with no matching numeric shape is left as drawn. Supply visible,
-    unrotated single lines without annotation arrows. Changing a returned
-    row's text draws the edited value as one line at the same row position.
-    Colour and weight changes to an aligned row apply to its pieces.
+
+def align_texts(texts: Iterable[Text], how: TextAlignment) -> list[Text]:
+    """Align the edges or decimal stops of one horizontal group of texts.
+
+    Mark labels stay at their marks. Tick edge alignment uses the current
+    tick strings, so repeat it if a formatter or the ticks change. Decimal
+    alignment returns the visible rows for subsequent styling and leaves
+    other formats as drawn. Unsupported groups are reported and left alone.
     """
-    group = list(dict.fromkeys(visible_row(text) for text in texts))
     mode = text_alignment(how)
+    inputs = list(dict.fromkeys(texts))
+    group = [visible_row(text) for text in inputs]
     if len(group) < 2:
-        return group
+        return unchanged(group, "alignment needs at least two texts")
     fig = group[0].get_figure(root=True)
     if fig is None or any(t.get_figure(root=True) is not fig for t in group):
-        raise ValueError("Align texts drawn in the same figure")
+        return unchanged(
+            group, "the texts must still belong to the same figure"
+        )
+    if len({t.axes for t in group}) > 1:
+        return unchanged(group, "the texts belong to different Axes")
+    if any(follows_mark(t) for t in group):
+        return unchanged(
+            group, "their horizontal anchors follow individual marks"
+        )
+    outside = tick_side(fig, group)
+    if (
+        outside is None
+        and group[0].axes is None
+        and any(t not in fig.texts for t in group)
+    ):
+        return unchanged(
+            group, "select tick labels on one side of one vertical axis"
+        )
+    aligned = [text for text in group if isinstance(text, AlignedTextRow)]
+    if aligned:
+        if not isinstance(mode, DecimalAlign):
+            return unchanged(group, "some rows already have decimal stops")
+        if len(aligned) == len(group) and all(
+            t.source.get_text() == t.source_text for t in aligned
+        ):
+            return unchanged(
+                group, "the rows are already aligned on decimal stops"
+            )
+        originals = [
+            t.source if isinstance(t, AlignedTextRow) else t for t in group
+        ]
+        for row in aligned:
+            row.remove()
+        group = originals
     if any(
         not t.get_visible()
         or not t.get_text().strip()
         or t.get_rotation() != 0
         or len(t.get_text().splitlines()) != 1
-        or isinstance(t, AlignedTextRow)
+        or t.get_usetex()
+        or has_math(t.get_text())
         or (isinstance(t, Annotation) and t.arrow_patch is not None)
         for t in group
     ):
-        return group
+        return unchanged(
+            group,
+            "alignment needs visible, unrotated single-line text without math or arrows",
+        )
     renderer = get_renderer(fig)
     match mode:
         case DecimalAlign():
-            if any(t.get_usetex() or has_math(t.get_text()) for t in group):
-                return group
-            return align_decimals(group, renderer)
+            if not isinstance(axes := group[0].axes, Axes):
+                return unchanged(
+                    group, "decimal stops require rows placed on an Axes"
+                )
+            if any(t.get_bbox_patch() is not None for t in group):
+                return unchanged(group, "decimal stops do not split boxed text")
+            return align_decimals(group, axes, fig, renderer)
         case AlignLeft() | AlignRight() | AlignCentre():
-            snap_edges(group, mode, renderer)
+            if not snap_edges(group, mode, renderer, outside):
+                return unchanged(group, "they already share the requested edge")
             return group
         case _:
             assert_never(mode)

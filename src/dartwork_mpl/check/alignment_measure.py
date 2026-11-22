@@ -8,9 +8,9 @@ from matplotlib.axes import Axes
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
 
-from ..geometry import AlignedTextRow
-from ..vocab import AlignRight, NumericText, parse_halign
-from .model import AlignmentSample, data_coordinates, printed_value
+from ..geometry import follows_mark
+from ..vocab import NumericText, has_math, parse_halign
+from .model import AlignmentSample
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -28,26 +28,23 @@ def alignment_samples(
         if (
             not text.role.free
             or not isinstance(artist, MplText)
-            or isinstance(artist, AlignedTextRow)
+            or bool(artist.get_children())
             or artist.get_rotation() != 0
             or artist.get_usetex()
+            or has_math(text.text)
             or len(text.text.splitlines()) != 1
             or (
                 isinstance(artist, Annotation)
-                and (
-                    artist.arrow_patch is not None
-                    or data_coordinates(artist.xycoords)
-                )
+                and artist.arrow_patch is not None
             )
             or not isinstance(axes := artist.axes, Axes)
-            or artist.get_transform() is axes.transData
+            or follows_mark(artist)
         ):
             continue
         x, y = artist.get_transform().transform(artist.get_unitless_position())
         if (
-            axes.bbox.x0 <= x <= axes.bbox.x1
-            or not axes.bbox.y0 <= y <= axes.bbox.y1
-        ):
+            axes.axison and axes.bbox.x0 <= x <= axes.bbox.x1
+        ) or not axes.bbox.y0 <= y <= axes.bbox.y1:
             continue
 
         numeric = NumericText.parse(text.text)
@@ -71,18 +68,11 @@ def alignment_samples(
                 )
                 for run in numeric.numbers
             )
-            if len(numeric.numbers) > 1 or printed_value(text.text) is not None
+            if artist.get_bbox_patch() is None
             else ()
         )
         key = (axes, bool(x > axes.bbox.x1))
         groups.setdefault(key, []).append(
-            AlignmentSample(
-                text,
-                align,
-                float(x),
-                float(y),
-                marks,
-                isinstance(align, AlignRight),
-            )
+            AlignmentSample(text, align, float(x), float(y), marks, hash(font))
         )
     return tuple(tuple(group) for group in groups.values())

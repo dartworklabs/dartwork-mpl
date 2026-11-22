@@ -15,7 +15,6 @@ from typing import (
     Protocol,
     TypeAlias,
     TypeVar,
-    assert_never,
     runtime_checkable,
 )
 
@@ -284,10 +283,11 @@ class DecimalAlign:
 
 def text_alignment(how: TextAlignment) -> HAlign | DecimalAlign:
     """Parse the public alignment spelling."""
-    match how:
-        case "decimal":
-            return DecimalAlign()
-        case "left" | "right" | "center":
-            return parse_halign(how)
-        case _:
-            assert_never(how)
+    if how == "decimal":
+        return DecimalAlign()
+    try:
+        return parse_halign(how)
+    except ValueError:
+        raise ValueError(
+            "how must be one of: left, right, center, decimal"
+        ) from None

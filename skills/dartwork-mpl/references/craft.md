@@ -99,9 +99,10 @@ plt.close(fig)
 
 ## Text in columns
 
-Keep a bar's value next to its mark. Use columns for text that already reads as a table.
-Align the existing texts with `dm.align_texts`. In a forest plot, use `"decimal"`
-to align the estimate and both interval bounds, then run layout.
+For text that already forms a column, use `dm.align_texts(texts, how)`. Use
+`"left"`, `"right"`, or `"center"` for names, and `"decimal"` for numbers.
+Style the returned rows and then run `dm.simple_layout`. Keep values belonging
+to a mark at that mark.
 
 ```python
 import matplotlib.pyplot as plt
