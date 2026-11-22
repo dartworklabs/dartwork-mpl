@@ -31,3 +31,21 @@ def test_a_run_from_before_the_root_has_only_its_project():
         == OUT / "project/plot.py"
     )
     assert harness.local("/T/scripts/plot.py", places) is None
+
+
+def test_the_probe_stays_importable_when_the_agent_set_pythonpath():
+    # ``PYTHONPATH=. uv run python plot.py``: the agent's path once replaced
+    # the repository's, and ``python -m evals.probe`` was not found.
+    env = harness.probe_env(
+        {"PATH": "/bin", "CLAUDE_CODE": "1", "MPLBACKEND": "macosx"},
+        (("PYTHONPATH", f"{ROOT}/project"), ("MPLBACKEND", "Agg")),
+        lambda text: text.replace(ROOT, "/mirror"),
+    )
+    assert env["PYTHONPATH"].split(":") == [
+        str(harness.REPO),
+        "/mirror/project",
+    ]
+    assert env["MPLBACKEND"] == "Agg"
+    assert "CLAUDE_CODE" not in env
+    plain = harness.probe_env({"MPLBACKEND": "macosx"}, (), str)
+    assert plain == {"PYTHONPATH": str(harness.REPO)}

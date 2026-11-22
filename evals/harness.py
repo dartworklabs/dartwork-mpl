@@ -26,6 +26,7 @@ import sys
 import tempfile
 import time
 import tomllib
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from functools import cache
 from pathlib import Path
@@ -456,6 +457,27 @@ def compare(mirror: Path, since: float, figure: Path) -> dict[str, Any]:
     return {"figure_px": [want.shape[1], want.shape[0]], "renders": renders}
 
 
+def probe_env(
+    ours: Mapping[str, str],
+    agent: tuple[tuple[str, str], ...],
+    there: Callable[[str], str],
+) -> dict[str, str]:
+    """The re-run's environment: ours without Claude's variables, then the
+    agent's own assignments (``MPLBACKEND=Agg python plot.py``).
+
+    The backend stays as the agent's script found it (see probe.py). The
+    probe is this repository's module, so the repository leads
+    ``PYTHONPATH``; a path the agent set (``PYTHONPATH=. python plot.py``)
+    follows it, mapped into the mirror by ``there``.
+    """
+    env = {k: v for k, v in ours.items() if not k.startswith("CLAUDE")}
+    env.pop("MPLBACKEND", None)
+    env |= dict(agent)
+    theirs = dict(agent).get("PYTHONPATH")
+    path = [str(REPO), *([there(theirs)] if theirs else [])]
+    return env | {"PYTHONPATH": os.pathsep.join(path)}
+
+
 def probe(
     out: Path, places: Places, source: Source, figure: Path | None
 ) -> dict[str, Any]:
@@ -494,12 +516,7 @@ def probe(
             cwd = mirror / "project"
         report_path = mirror / "_eval_probe.json"
         args = [there(a) for a in source.args]
-        env = {
-            k: v for k, v in os.environ.items() if not k.startswith("CLAUDE")
-        }
-        # The backend stays as the agent's script found it (see probe.py).
-        env.pop("MPLBACKEND", None)
-        env |= {"PYTHONPATH": str(REPO)} | dict(source.env)
+        env = probe_env(os.environ, source.env, there)
         cmd = [sys.executable, "-m", "evals.probe", str(script)]
         if extra := added_packages(source, places[0].copy):
             # What the agent added (uv run --with scipy, uv add) on top of ours.
