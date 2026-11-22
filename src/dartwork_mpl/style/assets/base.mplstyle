@@ -102,8 +102,12 @@ ytick.major.size:    2     # major tick size in points
 ytick.minor.size:    1       # minor tick size in points
 ytick.major.width:   0.3     # major tick width in points
 ytick.minor.width:   0.20     # minor tick width in points
-ytick.major.pad:     1     # distance to major tick label in points
-ytick.minor.pad:     1     # distance to the minor tick label in points
+# 3 pt, wider than x: a y tick mark lies on the reading line at the height
+# of a hyphen, so at 1 pt a name read "sensors-" and a number "2,000-". 3 pt
+# is more than a word space at every preset's tick size (7 to 11 pt), and it
+# keeps a name off the cells when a heatmap drops its tick marks (#818).
+ytick.major.pad:     3     # distance to major tick label in points
+ytick.minor.pad:     3     # distance to the minor tick label in points
 #ytick.color:         black   # color of the ticks
 #ytick.labelcolor:    inherit # color of the tick labels or inherit from ytick.color
 ytick.labelsize:     7  # font size of the tick labels
