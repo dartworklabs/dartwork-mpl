@@ -1,0 +1,22 @@
+# cluster: range plot, one stem per category from lowest to highest with a coloured dot per group, ordered by one group; refs: 2956947d-125d-8082-a311-e9a2331afaab, 2956947d-125d-80f0-90c3-c36aeb284e78
+prompt = "ontime.csv: the share of shipments delivered on time from each of our distribution hubs, by transport mode (%). For each hub show the spread across modes: a thin vertical line from the lowest to the highest, and a coloured dot per mode on it. Order the hubs by air freight. Quarterly logistics report."
+
+[files]
+"ontime.csv" = """
+hub,Air,Road,Rail,Sea
+Rotterdam,86,82,77,58
+Singapore,81,79,66,49
+Dubai,77,71,62,51
+Memphis,72,70,57,44
+Santos,69,64,52,31
+Shenzhen,66,68,49,27
+Leipzig,61,56,43,33
+Melbourne,58,49,41,29
+Busan,55,47,36,24
+Felixstowe,52,50,38,22
+Durban,44,31,26,18
+"""
+
+[expect]
+panels = 1
+texts = ["Rotterdam", "Durban", "Air", "Sea"]
