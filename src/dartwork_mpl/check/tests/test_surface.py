@@ -353,3 +353,24 @@ def test_a_manually_placed_group_name_needs_room_at_the_canvas_edge():
     heading.set_x(-0.05)
     result = dm.check(fig)
     assert "OVERFLOW" in result.rules and "TEXT_AT_EDGE" not in result.rules
+
+
+def test_an_axisless_unit_chart_uses_more_room_on_a_shallower_canvas():
+    """An equal-aspect grid needs a canvas close to its proportions."""
+    from matplotlib.patches import Rectangle
+
+    dm.style.use("presentation")
+    fig, ax = plt.subplots(figsize=dm.figsize("24cm", 0.6))
+    for row in range(5):
+        for col in range(22 - 4 * row):
+            ax.add_patch(Rectangle((col, row), 0.8, 0.8, color="dc.blue4"))
+    ax.set(xlim=(-0.1, 25), ylim=(-0.7, 7.2), aspect="equal")
+    ax.set_axis_off()
+    fig.suptitle("North America hosts 22 of the 58 startups")
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "UNDERUSED_CANVAS")
+    assert finding.artists == (ax,) and finding.panels == (0,)
+
+    fig.set_size_inches(*dm.figsize("24cm", 0.24))
+    dm.simple_layout(fig)
+    assert "UNDERUSED_CANVAS" not in dm.check(fig).rules

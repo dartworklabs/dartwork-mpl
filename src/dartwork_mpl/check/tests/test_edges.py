@@ -8,6 +8,7 @@ from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Box,
+    CanvasUse,
     Facts,
     Frame,
     Hit,
@@ -339,3 +340,19 @@ def test_TEXT_AT_EDGE():
             found(Facts(CANVAS, PT, texts=(label,), edge_texts=(label,))).rules
             == expected
         )
+
+
+def test_UNDERUSED_CANVAS():
+    """A strip within a big canvas flags, while a tile or balanced margins clear."""
+    big = Box(0, 0, 1500, 1200)
+    tile = Box(0, 0, 800, 600)
+    for canvas, body, expected in (
+        (big, Box(0, 300, 1360, 900), ("UNDERUSED_CANVAS",)),
+        (big, Box(150, 150, 1350, 1050), ()),
+        (big, Box(255, 210, 1245, 990), ()),
+        (tile, Box(20, 180, 780, 420), ()),
+    ):
+        facts = Facts(
+            canvas, PT, canvas_use=CanvasUse(Panel(object(), 0), body)
+        )
+        assert found(facts).rules == expected

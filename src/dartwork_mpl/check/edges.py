@@ -74,6 +74,11 @@ def has_edge_texts(facts: Facts, found: Findings) -> bool:
     return bool(facts.edge_texts)
 
 
+def has_canvas_use(facts: Facts, found: Findings) -> bool:
+    """The shape chart has a measured footprint."""
+    return facts.canvas_use is not None
+
+
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
     EdgeCase(
         name="OVERFLOW",
@@ -235,5 +240,12 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_TEXT_AT_EDGE",
         applies=has_edge_texts,
         adjust=decide.text_at_edge,
+    ),
+    EdgeCase(
+        name="UNDERUSED_CANVAS",
+        why="equal-aspect chart shapes sat in a narrow band of a much larger canvas",
+        example="test_edges.py::test_UNDERUSED_CANVAS",
+        applies=has_canvas_use,
+        adjust=decide.underused_canvas,
     ),
 )

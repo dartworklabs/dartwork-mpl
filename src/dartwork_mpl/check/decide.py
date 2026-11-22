@@ -530,3 +530,27 @@ def text_at_edge(facts: Facts, found: Findings) -> Findings:
             labels,
         )
     return found
+
+
+def underused_canvas(facts: Facts, found: Findings) -> Findings:
+    """An axis-less panel has a sizeable empty band along one dimension."""
+    use, canvas = facts.canvas_use, facts.canvas
+    if (
+        use is None
+        or min(canvas.width, canvas.height) < 80 * 72 / 25.4 * facts.px_per_pt
+    ):
+        return found
+    width, height = (
+        use.body.width / canvas.width,
+        use.body.height / canvas.height,
+    )
+    if max(width, height) < 0.75 or min(width, height) >= 2 / 3:
+        return found
+    dimension = "width" if width < height else "height"
+    return found.flag(
+        "UNDERUSED_CANVAS",
+        f"Axes[{use.panel.index}]: the shapes and their labels use "
+        f"{min(width, height):.0%} of the canvas {dimension}",
+        handles=(use.panel.handle,),
+        panels=(use.panel.index,),
+    )

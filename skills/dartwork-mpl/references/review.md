@@ -71,6 +71,7 @@ not, the `try` line names what usually helps.
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
 | `EMPTY_AXES` | a framed panel left empty by the grid, or whose data draws no visible marks |
+| `UNDERUSED_CANVAS` | an axis-less equal-aspect plot leaves a wide blank band on the canvas |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
 
 An "only X" edit keeps the warnings the original already had: report them,

@@ -42,11 +42,13 @@ from ..vocab import X, Y
 from . import roles
 from .alignment_measure import alignment_samples
 from .axis_labels import minus_tick, tick_row
+from .canvas import content_box, shape_panel
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
     Box,
+    CanvasUse,
     Facts,
     Frame,
     Hit,
@@ -336,6 +338,28 @@ class Reader:
                 )
         return tuple(found)
 
+    def canvas_use(self, texts: tuple[Text, ...]) -> CanvasUse | None:
+        """The body of one shape chart without a legend or other panel."""
+        if len(self.axes) != 1:
+            return None
+        [(i, ax)] = self.axes
+        if not shape_panel(ax) or self.drawn_legends():
+            return None
+        labels = tuple(
+            t
+            for t in texts
+            if t.role.free
+            and isinstance(t.handle, MplText)
+            and text_inks(t.handle)
+        )
+        body = content_box(ax, labels, self.renderer, self.pt)
+        if body is None:
+            return None
+        inside = Bbox.intersection(body, self.fig.bbox)
+        return (
+            None if inside is None else CanvasUse(Panel(ax, i), box_of(inside))
+        )
+
     def frames(self) -> tuple[Frame, ...]:
         """The plot areas a text of another Axes must keep off: Axes that
         draw something or a frame."""
@@ -512,6 +536,9 @@ def measure(fig: Figure) -> Facts:
             ),
             (),
             "TEXT_AT_EDGE",
+        ),
+        canvas_use=r.attempt(
+            lambda: r.canvas_use(texts), None, "UNDERUSED_CANVAS"
         ),
         skipped=tuple(r.skipped),
     )
