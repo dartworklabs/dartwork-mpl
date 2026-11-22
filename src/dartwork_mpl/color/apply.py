@@ -71,14 +71,4 @@ def register(catalog: Catalog) -> None:
 
 def apply_semantic(tokens: Semantic) -> None:
     """Bind ``dc.pos``/``neg``/``ref``/``hl`` in matplotlib's named colours."""
-    named = mcolors.get_named_colors_mapping()
-    wanted = tokens.names()
-    moved = [k for k, v in wanted.items() if k in named and named[k] != v]
-    bind(wanted)
-    if moved:
-        LOG.info(
-            "rebound the role colours %s for the preset's locale (a Korean "
-            "preset shows gains in red and losses in blue); name a colour "
-            "such as dc.red5 instead of a role to keep one",
-            ", ".join(moved),
-        )
+    bind(tokens.names())

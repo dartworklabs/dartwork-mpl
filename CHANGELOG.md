@@ -4,6 +4,10 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Removed the Korean role-colour notice because it describes a preset convention (#806).
+
 ## 0.9.0 — 2026-11-22
 
 Fixes found while drawing with 0.8.0, plus three public catalogs. A minor
