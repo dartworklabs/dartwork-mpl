@@ -16,7 +16,6 @@ Entries before 0.8.0 are in the git history of this file.
   up from 1 pt, so a category name no longer reads as ending in a hyphen and
   no longer touches the cells of a heatmap drawn without tick marks (#818).
 
-
 ### Fixed
 
 - Removed the Korean role-colour notice because it describes a preset convention (#806).

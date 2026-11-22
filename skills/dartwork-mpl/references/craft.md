@@ -99,7 +99,7 @@ plt.close(fig)
 
 ## Text in columns
 
-Keep a bar's value next to its mark; use columns for text that already reads as a table.
+Keep a bar's value next to its mark. Use columns for text that already reads as a table.
 Align the existing texts with `dm.align_texts`. In a forest plot, use `"decimal"`
 to align the estimate and both interval bounds, then run layout.
 
@@ -116,8 +116,12 @@ labels = []
 for y, (effect, low, high) in enumerate(rows):
     ax.hlines(y, low, high)
     ax.plot(effect, y, marker="s", color="dc.blue6")
-    labels.append(ax.text(1.02, y, f"{effect:.1f} [{low:.1f}, {high:.1f}]",
-                          transform=ax.get_yaxis_transform(), va="center"))
+    labels.append(
+        ax.text(
+            1.02, y, f"{effect:.1f} [{low:.1f}, {high:.1f}]",
+            transform=ax.get_yaxis_transform(), va="center",
+        )
+    )
 dm.align_texts(labels, "decimal")
 dm.simple_layout(fig)
 print(dm.check(fig))
