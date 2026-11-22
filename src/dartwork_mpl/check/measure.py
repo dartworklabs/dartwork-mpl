@@ -6,7 +6,8 @@ artist is changed, hidden or moved.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from math import isclose
 from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
@@ -18,6 +19,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.dates import DateLocator
 from matplotlib.image import AxesImage
 from matplotlib.patches import Patch
+from matplotlib.projections.polar import PolarAxes
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
@@ -34,13 +36,15 @@ from ..geometry import (
     get_renderer,
     iter_figure_level_extents,
     panel_letters,
+    patch_inks,
     projection,
     same_position_axes,
     shared_axes,
+    text_inks,
 )
-from ..vocab import Which
+from ..vocab import Which, X
 from . import roles
-from .ink import Ink, data_ink, legend_inks, words_box
+from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
@@ -49,12 +53,16 @@ from .model import (
     Frame,
     Hit,
     Inked,
+    Inset,
     Legend,
     OnData,
     Panel,
+    PolarTheta,
     Text,
     TickRow,
     TickValues,
+    ascii_minus_value,
+    unicode_minus_tick,
 )
 from .overlap import tick_label_overlaps
 
@@ -83,9 +91,14 @@ class Reader:
         self.renderer: RendererBase = get_renderer(fig)
         self.pt = fig.dpi / 72.0
         self.skipped: list[str] = []
-        self.axes = [
-            (i, ax) for i, ax in enumerate(fig.axes) if drawn_in_tree(ax)
-        ]
+        indices = {ax: i for i, ax in enumerate(fig.axes)}
+        self.inset_parents: dict[Axes, Axes] = {}
+        for ax in fig.axes:
+            if drawn_in_tree(ax):
+                for parent, child in drawn_insets(ax):
+                    indices.setdefault(child, len(indices))
+                    self.inset_parents[child] = parent
+        self.axes = [(i, ax) for ax, i in indices.items() if drawn_in_tree(ax)]
         self.panels = [(i, ax) for i, ax in self.axes if projection(ax).flat]
         self.letters = {id(t) for _ax, t in panel_letters(fig)}
 
@@ -215,6 +228,65 @@ class Reader:
             if (row := self.tick_row(i, ax, which)) is not None
         )
 
+    def minus_labels(self, figure_texts: tuple[Text, ...]) -> tuple[Text, ...]:
+        """Drawn numeric annotations and figure texts with a hyphen-minus."""
+        labels = [
+            t
+            for t in figure_texts
+            if ascii_minus_value(t.text)
+            and isinstance(t.handle, MplText)
+            and text_inks(t.handle)
+        ]
+        labels.extend(
+            text
+            for i, ax in self.axes
+            for label in ax.texts
+            if ascii_minus_value(label.get_text())
+            and text_inks(label)
+            and (text := self.text(label, roles.FreeText(), i)) is not None
+        )
+        return tuple(labels)
+
+    def minus_tick(self) -> Text | None:
+        """A visible numeric tick with a Unicode minus, on any Axes."""
+        for i, ax in self.axes:
+            for which in AXES:
+                for label in (
+                    *drawn_tick_labels(ax, which),
+                    *drawn_tick_labels(ax, which, minor=True),
+                ):
+                    if (
+                        unicode_minus_tick(label.get_text())
+                        and text_inks(label)
+                        and (tick := self.text(label, roles.TickLabel(), i))
+                        is not None
+                    ):
+                        return tick
+        return None
+
+    def polar_theta(self) -> tuple[PolarTheta, ...]:
+        """Angle labels and disc extents, for visible full-circle polar plots."""
+        found: list[PolarTheta] = []
+        for i, ax in self.axes:
+            if not isinstance(ax, PolarAxes) or not isclose(
+                ax.get_thetamax() - ax.get_thetamin(), 360.0
+            ):
+                continue
+            drawn = (
+                *drawn_tick_labels(ax, X()),
+                *drawn_tick_labels(ax, X(), minor=True),
+            )
+            labels = tuple(
+                t
+                for label in drawn
+                if text_inks(label)
+                and (t := self.text(label, roles.TickLabel(), i)) is not None
+            )
+            disc = box_of(ax.patch.get_extents())
+            if labels and disc.area > 0:
+                found.append(PolarTheta(Panel(ax, i), disc, labels))
+        return tuple(found)
+
     def drawn_legends(self) -> list[tuple[int | None, MplLegend, list[Axes]]]:
         """Every drawn legend, its panel and the Axes whose data it explains:
         its own and their twins, every rectilinear one for a figure legend."""
@@ -319,13 +391,57 @@ class Reader:
             if draws(ax) or (ax.axison and ax.get_frame_on())
         )
 
+    def insets(self, texts: tuple[Text, ...]) -> tuple[Inset, ...]:
+        """Inset labels and the visible straight spines of their parents."""
+        indices = {ax: i for i, ax in self.axes}
+        found: list[Inset] = []
+        for child, parent in self.inset_parents.items():
+            i = indices[child]
+            labels = tuple(
+                t
+                for t in texts
+                if t.panel == i and isinstance(t.role, roles.AxisLabel)
+            )
+            if labels:
+                spines = tuple(
+                    box
+                    for spine in parent.spines.values()
+                    if parent.axison
+                    and spine.get_visible()
+                    and patch_inks(spine)
+                    and (box := box_of(spine.get_extents())).area == 0
+                    and max(box.width, box.height) > 0
+                )
+                found.append(
+                    Inset(Panel(parent, indices[parent]), i, labels, spines)
+                )
+        return tuple(found)
+
     def empty(self) -> tuple[Panel, ...]:
         """Framed Axes where nothing is drawn, nor in a twin sharing the box."""
-        return tuple(
-            Panel(ax, i)
-            for i, ax in self.panels
-            if ax.axison and not any(map(draws, same_position_axes(ax)))
-        )
+        found: list[Panel] = []
+        canvas = Bbox(self.fig.bbox.get_points())
+        for i, ax in self.panels:
+            if not ax.axison:
+                continue
+            owners = same_position_axes(ax)
+            if any(data_artists(owner) for owner in owners):
+                if not any(
+                    data_shows(owner, canvas, self.renderer, self.pt)
+                    for owner in owners
+                ):
+                    found.append(Panel(ax, i))
+            elif not any(map(draws, owners)):
+                found.append(Panel(ax, i))
+        return tuple(found)
+
+
+def drawn_insets(ax: Axes) -> Iterator[tuple[Axes, Axes]]:
+    """Drawn parent and child Axes pairs, including nested native insets."""
+    for child in ax.child_axes:
+        if isinstance(child, Axes) and drawn_in_tree(child):
+            yield ax, child
+            yield from drawn_insets(child)
 
 
 def named(ax: Axes, which: Which) -> bool:
@@ -407,7 +523,14 @@ def colour_at(a: Artist, x: float, y: float) -> tuple[float, ...] | None:
 
 def draws(ax: Axes) -> bool:
     """``ax`` draws data, a text or a legend."""
-    drawn = (*ax.lines, *ax.patches, *ax.collections, *ax.images, *ax.tables)
+    drawn = (
+        *ax.lines,
+        *ax.patches,
+        *ax.collections,
+        *ax.images,
+        *ax.tables,
+        *(child for child in ax.child_axes if isinstance(child, Axes)),
+    )
     texts = (t for t in ax.texts if t.get_text().strip())
     return any(a.get_visible() for a in (*drawn, *texts, ax.get_legend()) if a)
 
@@ -415,21 +538,33 @@ def draws(ax: Axes) -> bool:
 def measure(fig: Figure) -> Facts:
     """Every fact the rules read, from one draw of ``fig``."""
     r = Reader(fig)
-    texts = r.attempt(r.axes_texts, (), "OVERFLOW, OVERLAP, TEXT_CROWD")
+    texts = r.attempt(
+        r.axes_texts, (), "OVERFLOW, OVERLAP, TEXT_CROWD, TEXT_TOO_CLOSE"
+    )
+    figure_texts = r.attempt(r.figure_texts, (), "OVERFLOW, MIXED_MINUS")
+    minus_labels = r.attempt(
+        lambda: r.minus_labels(figure_texts), (), "MIXED_MINUS"
+    )
     return Facts(
         canvas=box_of(Bbox(fig.bbox.get_points())),
         px_per_pt=r.pt,
         texts=texts,
-        figure_texts=r.attempt(r.figure_texts, (), "OVERFLOW"),
+        figure_texts=figure_texts,
         legend_texts=r.attempt(r.legend_texts, (), "OVERFLOW"),
         ticks=r.attempt(r.ticks, (), "TICK_OVERLAP"),
         legends=r.attempt(r.legends, (), "LEGEND_ON_DATA"),
-        empty=r.empty(),
+        empty=r.attempt(r.empty, (), "EMPTY_AXES"),
         values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
         letters=r.attempt(
             lambda: r.letters_on_data(texts), (), "LETTER_ON_DATA"
         ),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
+        insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),
+        polar_theta=r.attempt(r.polar_theta, (), "POLAR_TICK_ON_PLOT"),
+        minus_labels=minus_labels,
+        minus_tick=r.attempt(r.minus_tick, None, "MIXED_MINUS")
+        if minus_labels
+        else None,
         skipped=tuple(r.skipped),
     )

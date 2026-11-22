@@ -35,6 +35,7 @@ from .figure import (
 )
 from .ink import (
     UNCLIPPED,
+    artist_shown,
     clip_path_px,
     clip_region,
     cut_to_clip,
@@ -62,6 +63,7 @@ __all__ = [
     "RightTitle",
     "TitleLoc",
     "ToPx",
+    "artist_shown",
     "axes_titles",
     "axis_of",
     "canvas_renderer",

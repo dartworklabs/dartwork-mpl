@@ -63,9 +63,19 @@ def printed_value(text: str) -> str | None:
     return found[0].group() if short else None
 
 
+def ascii_minus_value(text: str) -> bool:
+    """A standalone negative quantity printed with a hyphen-minus."""
+    return bool(re.match(r"^-\d", text.lstrip()) and printed_value(text))
+
+
+def unicode_minus_tick(text: str) -> bool:
+    """A Unicode minus before a digit, including in formatted tick mathtext."""
+    return bool(re.search(r"(?<!\w)\u2212(?=\d)", text))
+
+
 @dataclass(frozen=True)
 class Text:
-    """A drawn, non-blank text: its role, panel (``fig.axes`` index) and box."""
+    """A drawn, non-blank text: its role, panel index and box."""
 
     handle: object
     text: str
@@ -89,6 +99,13 @@ class Text:
         """A value label printing a whole number with decimals (``12.0``)."""
         n = printed_value(self.text) or ""
         return "." in n and "e" not in n.lower() and float(n).is_integer()
+
+
+@dataclass(frozen=True)
+class TextGap:
+    """Room between two aligned texts, in em of the smaller type size."""
+
+    em: float
 
 
 @dataclass(frozen=True)
@@ -185,7 +202,7 @@ class Inked:
 
 @dataclass(frozen=True)
 class Panel:
-    """A drawn Axes: its handle and ``fig.axes`` index."""
+    """A drawn Axes: its handle and index."""
 
     handle: object
     index: int
@@ -194,11 +211,30 @@ class Panel:
 @dataclass(frozen=True)
 class Frame:
     """The plot area of an Axes that fills it (a frame, an image, a
-    colorbar): its ``fig.axes`` index and box."""
+    colorbar): its index and box."""
 
     handle: object
     index: int
     box: Box
+
+
+@dataclass(frozen=True)
+class Inset:
+    """An inset's axis labels and the spines of the Axes it sits in."""
+
+    parent: Panel
+    index: int
+    labels: tuple[Text, ...]
+    spines: tuple[Box, ...]
+
+
+@dataclass(frozen=True)
+class PolarTheta:
+    """Drawn angle tick labels around the bounding box of a full polar disc."""
+
+    panel: Panel
+    disc: Box
+    labels: tuple[Text, ...]
 
 
 @dataclass(frozen=True)
@@ -218,6 +254,10 @@ class Facts:
     inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
     frames: tuple[Frame, ...] = ()
+    insets: tuple[Inset, ...] = ()
+    polar_theta: tuple[PolarTheta, ...] = ()
+    minus_labels: tuple[Text, ...] = ()
+    minus_tick: Text | None = None
 
     @property
     def touch(self) -> float:

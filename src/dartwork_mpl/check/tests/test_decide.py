@@ -6,7 +6,11 @@ import pytest
 
 from dartwork_mpl.check.decide import reads_as_years
 from dartwork_mpl.check.findings import Finding, Findings
-from dartwork_mpl.check.model import TickValues, printed_value
+from dartwork_mpl.check.model import (
+    TickValues,
+    ascii_minus_value,
+    printed_value,
+)
 from dartwork_mpl.vocab import Which, X, Y
 
 
@@ -63,3 +67,21 @@ def test_whole_x_ticks_within_the_years_read_as_years(
 ):
     ticks = TickValues(tuple(float(v) for v in values), linear)
     assert reads_as_years(ticks, axis) is years
+
+
+@pytest.mark.parametrize(
+    ("label", "uses_hyphen"),
+    [
+        ("-12.4%", True),
+        ("-389.5", True),
+        (" -1,200 GWh", True),
+        ("\u221212.4%", False),
+        ("2014-2024", False),
+        ("2024-01-01", False),
+        ("year-over-year", False),
+        ("$10^{-4}$", False),
+    ],
+)
+def test_numeric_hyphen_minus(label: str, uses_hyphen: bool):
+    """Only a hyphen used as a numeric sign is a candidate."""
+    assert ascii_minus_value(label) is uses_hyphen

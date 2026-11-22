@@ -177,3 +177,139 @@ def test_a_report_grid_on_slide_text_is_too_small_but_a_colorbar_is_not():
     xx, yy = np.meshgrid(grid, grid)
     surface.colorbar(ax3.plot_surface(xx, yy, xx * yy), shrink=0.4)
     assert "SMALL_PANEL" not in dm.check(surface).rules
+
+
+def test_lines_without_visible_marks_leave_an_empty_panel():
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    (line,) = ax.plot([1, 2, 3], [1, 3, 2], lw=0)
+    ax.set(xlabel="x (s)", ylabel="y (m)")
+    dm.simple_layout(fig)
+
+    def empty() -> bool:
+        findings = _of(dm.check(fig), "EMPTY_AXES")
+        return any(f.artists == (ax,) for f in findings)
+
+    assert empty()
+    line.set_marker("o")
+    assert not empty()
+    line.set_marker("None")
+    line.set_linewidth(dm.lw(0))
+    line.set_alpha(0)
+    assert empty()
+    line.set_alpha(1)
+    colour = line.get_color()
+    line.set_color(ax.get_facecolor())
+    assert empty()
+    line.set_color(colour)
+    ax.set_xlim(4, 5)
+    assert empty()
+    ax.set_xlim(1.5, 1.6)  # a segment crosses the view, with no vertex inside
+    assert not empty()
+    line.set_linewidth(0)
+    ax.fill_between([1, 2, 3], [1, 3, 2], 1)
+    assert not empty()
+
+
+def test_an_annotation_just_below_the_title_is_found():
+    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
+    ax.plot([0, 10], [0, 10])
+    ax.set(
+        xlabel="x (s)", ylabel="y (m)", title="A title that states the point"
+    )
+    note = ax.text(5, 10.6, "today", ha="center", va="bottom")
+    dm.simple_layout(fig)
+    result = dm.check(fig)
+    (f,) = _of(result, "TEXT_TOO_CLOSE")
+    assert f.panels == (0,) and f.artists == (ax.title, note)
+    assert "OVERLAP" not in result.rules
+
+
+def test_an_inset_axis_label_is_checked_against_ticks_and_parent_frame():
+    dm.style.use("report-kr")
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "wide"))
+    ax.plot(np.arange(365), 40 + np.random.default_rng(0).normal(0, 1, 365))
+    ax.set(xlabel="일 (day of year)", ylabel="일 최대 전력 (MW)")
+    inset = ax.inset_axes([0.04, 0.55, 0.36, 0.38])
+    inset.plot(np.arange(168), 48 + 3 * np.sin(np.arange(168) / 24 * 2 * np.pi))
+    inset.tick_params(axis="y", labelsize=dm.fs(-2))
+    label = inset.set_ylabel("시간당 (MW)", fontsize=dm.fs(-2))
+    dm.simple_layout(fig)
+    assert any(
+        set(f.artists) == {ax, label} and f.panels == (0, 1)
+        for f in _of(dm.check(fig), "CROSS_AXES_OVERLAP")
+    )
+
+    inset.set_ylabel(label.get_text(), labelpad=-8)
+    ticks = set(inset.get_yticklabels())
+    assert any(
+        label in f.artists
+        and ticks.intersection(f.artists)
+        and f.panels == (1,)
+        for f in _of(dm.check(fig), "OVERLAP")
+    )
+    ax.set_visible(False)
+    assert not dm.check(fig)
+
+
+def test_line_end_names_read_as_rows():
+    """The line-end helper's standard row spacing is clear."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    for i, name in enumerate(("fastframe (ours)", "polars", "dask")):
+        ax.plot([0, 10], [1, 9 + i * 0.01], label=name)
+    ax.set(xlabel="Rows", ylabel="Runtime (ms)")
+    dm.label_line_ends(ax)
+    dm.simple_layout(fig)
+    assert "TEXT_TOO_CLOSE" not in dm.check(fig).rules
+
+
+def test_long_theta_labels_cross_the_disc():
+    """Normal compass labels clear the disc that long radar labels cross."""
+    fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+    ax = fig.add_subplot(projection="polar")
+    ang = np.linspace(0, 2 * np.pi, 8, endpoint=False)
+    ax.plot(np.r_[ang, ang[0]], [9, 7, 8, 9, 8, 9, 6, 8, 9])
+    ax.set_xticks(ang, ["E", "NE", "N", "NW", "W", "SW", "S", "SE"])
+    dm.simple_layout(fig)
+    assert "POLAR_TICK_ON_PLOT" not in dm.check(fig).rules
+    ax.set_xticks(
+        ang,
+        [
+            "Customer support",
+            "NE",
+            "N",
+            "NW",
+            "Value for money",
+            "SW",
+            "S",
+            "SE",
+        ],
+    )
+    (finding,) = _of(dm.check(fig), "POLAR_TICK_ON_PLOT")
+    assert finding.panels == (0,)
+    assert set(finding.artists) == {
+        ax.get_xticklabels()[0],
+        ax.get_xticklabels()[4],
+    }
+
+
+def test_ascii_minus_on_values_beside_unicode_ticks():
+    """Only negative value labels using a different minus sign are flagged."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "5cm"))
+    ax.barh(["Construction", "Textiles", "Chemicals"], [-7.5, -9.6, -12.4])
+    values = {
+        ax.text(v / 2, i, f"{v:+.1f}%", ha="center", va="center", color="white")
+        for i, v in enumerate([-7.5, -9.6, -12.4])
+    }
+    ax.set_xlabel("Change from last year (%)")
+    ax.text(
+        0.1,
+        0.1,
+        r"Year-over-year 2014-2024, 2024-01-01, $10^{-4}$",
+        transform=ax.transAxes,
+    )
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "MIXED_MINUS")
+    assert set(finding.artists) == values
+    assert finding.panels == (0,)
+    with matplotlib.rc_context({"axes.unicode_minus": False}):
+        assert "MIXED_MINUS" not in dm.check(fig).rules

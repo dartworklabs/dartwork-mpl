@@ -12,9 +12,11 @@ from dartwork_mpl.check.model import (
     Frame,
     Hit,
     Inked,
+    Inset,
     Legend,
     OnData,
     Panel,
+    PolarTheta,
     Text,
     TickRow,
     TickValues,
@@ -89,6 +91,19 @@ def test_CROSS_AXES_OVERLAP_title_on_neighbour_ticks():
     assert "runs into the plot of axes[1]" in f.message and f.panels == (0, 1)
     twin = Frame(object(), 1, plot.box)
     assert not found(Facts(CANVAS, PT, texts=(wide,), frames=(plot, twin)))
+
+
+def test_an_inset_label_has_to_cross_the_parent_spine():
+    label = text("Load (MW)", Box(100, 200, 140, 300), AxisLabel(), panel=1)
+    parent = Panel(object(), 0)
+    for spine, expected in (
+        (Box(120, 100, 120, 400), ("CROSS_AXES_OVERLAP",)),
+        (Box(102, 100, 102, 400), ()),
+        (Box(120, 100, 120, 203), ()),
+    ):
+        inset = Inset(parent, 1, (label,), (spine,))
+        facts = Facts(CANVAS, PT, texts=(label,), insets=(inset,))
+        assert found(facts).rules == expected
 
 
 def test_TEXT_CROWD_value_beside_a_name():
@@ -192,3 +207,63 @@ def test_SMALL_PANEL():
     assert "SMALL_PANEL" not in found(largest).rules
     colorbar = Facts(CANVAS, PT, ticks=ticks(0, Y()), frames=(small,))
     assert not found(colorbar)
+
+
+def test_TEXT_TOO_CLOSE():
+    title = text("Temperature peaks at noon", INSIDE, Title())
+    for label, expected in (
+        (text("Today", Box(110, 70, 160, 94)), ("TEXT_TOO_CLOSE",)),
+        (text("Today", Box(110, 50, 160, 80)), ()),
+        (text("Today", Box(110, 80, 160, 110)), ("OVERLAP",)),
+        (text("Today", Box(304, 100, 360, 140)), ("TEXT_TOO_CLOSE",)),
+        (text("Today", Box(304, 70, 360, 94)), ()),
+        (text("Air temperature", Box(110, 70, 160, 94), AxisLabel()), ()),
+    ):
+        assert found(Facts(CANVAS, PT, texts=(title, label))).rules == expected
+
+    first = text("Wind", INSIDE)
+    for gap, expected in ((10, ("TEXT_TOO_CLOSE",)), (17, ())):
+        second = text("Hydro", Box(120, 140 + gap, 320, 175 + gap))
+        assert found(Facts(CANVAS, PT, texts=(first, second))).rules == expected
+
+    for aligned in (
+        Box(102, 144, 230, 184),  # left
+        Box(170, 144, 299, 184),  # right
+        Box(145, 144, 255, 184),  # centre
+    ):
+        second = text("Hydro", aligned)
+        assert not found(Facts(CANVAS, PT, texts=(first, second)))
+        larger = replace(second, em=44)
+        assert found(Facts(CANVAS, PT, texts=(first, larger))).rules == (
+            "TEXT_TOO_CLOSE",
+        )
+
+    value = text("19.4 TWh", INSIDE)
+    name = text("Solar", Box(306, 100, 400, 140))
+    assert found(Facts(CANVAS, PT, texts=(value, name))).rules == (
+        "TEXT_CROWD",
+    )
+
+
+def test_POLAR_TICK_ON_PLOT():
+    """A real intrusion counts, while a graze or an outside corner clears."""
+    disc = Box(100, 100, 300, 300)
+    for box, expected in (
+        (Box(280, 180, 330, 220), ("POLAR_TICK_ON_PLOT",)),
+        (Box(289, 180, 330, 220), ()),
+        (Box(280, 280, 330, 320), ()),
+    ):
+        label = text("Camera quality", box, TickLabel())
+        theta = PolarTheta(Panel(object(), 0), disc, (label,))
+        assert found(Facts(CANVAS, PT, polar_theta=(theta,))).rules == expected
+
+
+def test_MIXED_MINUS():
+    """A Unicode tick on any panel is evidence for the mixed-sign finding."""
+    label = text("-12.4%", INSIDE)
+    facts = Facts(CANVAS, PT, minus_labels=(label,))
+    assert not found(facts)
+    tick = text("\u221210", INSIDE, TickLabel(), panel=1)
+    (finding,) = found(replace(facts, minus_tick=tick))
+    assert finding.rule == "MIXED_MINUS"
+    assert finding.panels == (0,) and finding.artists == (label.handle,)

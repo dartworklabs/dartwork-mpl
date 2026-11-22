@@ -17,14 +17,17 @@ FIXES: dict[str, str] = {
     "titles, axis labels and tick labels",
     "CROSS_AXES_OVERLAP": "dm.simple_layout(fig) spaces the panels; a "
     "spacing you set (hspace, wspace): raise it",
+    "TEXT_TOO_CLOSE": "give the texts some air: move one, or use "
+    "ax.annotate(..., textcoords='offset points', xytext=(0, -8))",
     "TEXT_CROWD": "put the value on the other side of its point "
     "(dm.annotate_value picks a free side) or a line apart",
     "VALUE_LABEL_DECIMAL": 'print whole numbers whole: fmt="%d" or "{:,.0f}"',
     "LEGEND_ON_DATA": "dm.place_legend(ax) picks the place that covers "
     'least; no free place: dm.place_legend(ax, loc="above"); panels '
     "sharing series: dm.figure_legend(fig)",
-    "EMPTY_AXES": "ax.remove() the panel the data does not fill, or make "
-    "the grid as large as the data",
+    "EMPTY_AXES": "check the view limits, colour and alpha; for a line, "
+    "give it a positive linewidth or a visible marker. An unused grid "
+    "cell can be removed with ax.remove()",
     "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
     "the error bar (ax.bar_label(bars, padding=...)), or dm.annotate_value "
     "for a point on a line",
@@ -35,6 +38,10 @@ FIXES: dict[str, str] = {
     "TEXT_CONTRAST": "colour each label for what is behind it: "
     "color=dm.readable_text_color(bar_colour), or "
     "dm.ensure_contrast(colour, background)",
+    "POLAR_TICK_ON_PLOT": "give the angle labels more room with "
+    'ax.tick_params(axis="x", pad=...), or align them outward around the circle',
+    "MIXED_MINUS": "format the numeric label with "
+    'matplotlib.ticker.Formatter.fix_minus(...) or .replace("-", "\u2212")',
     "TICK_OVERLAP": "dm.simple_layout(fig) wraps, then turns, crowded "
     "labels (drop a rotation you set); many long names: horizontal bars; "
     "a y axis: a taller canvas",

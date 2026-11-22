@@ -8,10 +8,11 @@ names is ``findings.FIXES``). They are listed, named and ordered in
 from __future__ import annotations
 
 from itertools import combinations
+from math import hypot
 from typing import assert_never
 
 from ..colorspace import Ratio
-from ..vocab import Which, X, Y
+from ..vocab import Box, Which, X, Y
 from .findings import Findings
 from .model import (
     AXES,
@@ -19,8 +20,10 @@ from .model import (
     Frame,
     Hit,
     Inked,
+    Inset,
     OnData,
     Text,
+    TextGap,
     TickRow,
     TickValues,
     margins,
@@ -33,18 +36,26 @@ CUT_PX = 1.0
 COVER = 0.05
 #: A number and a name on one row closer than this (em) read as one phrase.
 PHRASE_GAP_EM = 1.0
+#: Separation of placed text from a title or other axis text.
+AXIS_TEXT_GAP_EM = 0.5
+#: Placed texts may read as a group, as in a stack of line-end names.
+FREE_TEXT_GAP_EM = 0.3
 #: Text fainter than this on what is behind it disappears (WCAG large text).
 MIN_CONTRAST = Ratio(3.0)
 #: Whole-number x ticks all within these years read as years, not a quantity.
 YEARS = (1800.0, 2100.0)
 #: A text this far (em) into another Axes' plot, both ways, is drawn on it.
 INTO_EM = 0.5
+#: A parent spine crossing this far into an inset label passes through it.
+SPINE_INTO_EM = 0.15
 #: A tick this close to a whole number is one (locator rounding).
 WHOLE = 1e-9
 #: A largest plot whose shorter side holds fewer tick labels (em) than this
 #: is too small for its text: the corpus' good charts hold 13.1 or more, a
 #: report grid moved to slide text 5.0.
 MIN_PANEL_EM = 7.0
+#: Ignore the edge of a text box just grazing the disc.
+THETA_INTO_EM = 0.4
 
 
 def overflow(facts: Facts, found: Findings) -> Findings:
@@ -68,6 +79,9 @@ def overflow(facts: Facts, found: Findings) -> Findings:
 
 def overlap(facts: Facts, found: Findings) -> Findings:
     """Texts of one Axes drawn over each other (tick pairs: TICK_OVERLAP)."""
+    inset_labels = {
+        id(t.handle) for inset in facts.insets for t in inset.labels
+    }
     for panel, texts in facts.by_panel.items():
         for a, b in combinations(texts, 2):
             if a.role.tick and b.role.tick:
@@ -79,6 +93,13 @@ def overlap(facts: Facts, found: Findings) -> Findings:
                     f"Axes[{panel}]: {a.role} {a.short!r} overlaps "
                     f"{b.role} {b.short!r} ({share:.0%} of the smaller)",
                     (a, b),
+                    fix=(
+                        "give the axis label more room with labelpad=..., "
+                        "or move it to the opposite side"
+                        if (a.role.tick and id(b.handle) in inset_labels)
+                        or (b.role.tick and id(a.handle) in inset_labels)
+                        else None
+                    ),
                 )
     return found
 
@@ -104,6 +125,29 @@ def cross_axes(facts: Facts, found: Findings) -> Findings:
                 f"axes[{two.panel}] {two.role} {two.short!r}",
                 (one, two),
             )
+    return across_parent_spines(facts.insets, found)
+
+
+def across_parent_spines(
+    insets: tuple[Inset, ...], found: Findings
+) -> Findings:
+    """An inset axis label crossing the frame of the plot that holds it."""
+    for inset in insets:
+        parent = inset.parent
+        for label in inset.labels:
+            inner = label.box.padded(-SPINE_INTO_EM * label.em)
+            # A straight spine has zero width or height, even inside the box.
+            if any(inner.gap(spine) <= 0 for spine in inset.spines):
+                found = found.flag(
+                    "CROSS_AXES_OVERLAP",
+                    f"Axes[{inset.index}]: inset axis label {label.short!r} "
+                    f"crosses a spine of Axes[{parent.index}]",
+                    (label,),
+                    handles=(parent.handle,),
+                    panels=(parent.index, inset.index),
+                    fix="move the inset inward or put its axis label on "
+                    "the opposite side with axis.set_label_position(...)",
+                )
     return found
 
 
@@ -150,7 +194,10 @@ def phrase(facts: Facts, found: Findings) -> Findings:
                 continue
             gap = max(a.box.x0, b.box.x0) - min(a.box.x1, b.box.x1)
             em = max(a.em, b.em)
-            if -facts.touch <= gap < PHRASE_GAP_EM * em:
+            if (
+                -facts.touch <= gap < PHRASE_GAP_EM * em
+                and a.box.cover(b.box) <= COVER
+            ):
                 found = found.flag(
                     "TEXT_CROWD",
                     f"Axes[{panel}]: {a.short!r} and {b.short!r} sit "
@@ -217,11 +264,11 @@ def tick_overlap(facts: Facts, found: Findings) -> Findings:
 
 
 def empty_axes(facts: Facts, found: Findings) -> Findings:
-    """A framed Axes that draws nothing: a grid larger than the data."""
+    """A framed Axes with no data, or data that leaves no visible marks."""
     for p in facts.empty:
         found = found.flag(
             "EMPTY_AXES",
-            f"Axes[{p.index}] draws nothing: an empty frame",
+            f"Axes[{p.index}] has no visible data marks",
             handles=(p.handle,),
             panels=(p.index,),
         )
@@ -349,5 +396,100 @@ def small_panel(facts: Facts, found: Findings) -> Findings:
             "takes the canvas",
             handles=(frame.handle,),
             panels=(frame.index,),
+        )
+    return found
+
+
+def list_rows(a: Text, b: Text) -> bool:
+    """Two free texts on separate rows of the same typographic column."""
+    if not (a.role.free and b.role.free):
+        return False
+    em = min(a.em, b.em)
+    left = a.box.x0 - b.box.x0
+    right = a.box.x1 - b.box.x1
+    pitch = abs(a.box.y0 + a.box.y1 - b.box.y0 - b.box.y1) / 2
+    return (
+        abs(a.em - b.em) <= 0.01 * em
+        and min(abs(left), abs(right), abs(left + right) / 2) <= 0.1 * em
+        and pitch >= 0.85 * em
+    )
+
+
+def close_gap(a: Text, b: Text) -> TextGap | None:
+    """A small gap between aligned texts, in em of the smaller one."""
+    if not (a.role.free or b.role.free):
+        return None
+    shared = a.box.overlap(b.box)
+    if shared.width >= 0.5 * min(a.box.width, b.box.width):
+        gap = -shared.height
+        if gap >= 0 and list_rows(a, b):
+            return None
+    elif shared.height >= 0.5 * min(a.box.height, b.box.height):
+        # The same-row value and name have a rule of their own. A short
+        # inline unit or suffix can also belong to the value.
+        if a.value or b.value:
+            return None
+        gap = -shared.width
+    else:
+        return None
+    em = min(a.em, b.em)
+    minimum = (
+        FREE_TEXT_GAP_EM if a.role.free and b.role.free else AXIS_TEXT_GAP_EM
+    )
+    return TextGap(gap / em) if 0 <= gap < minimum * em else None
+
+
+def text_too_close(facts: Facts, found: Findings) -> Findings:
+    """Independently placed text with too little air between the boxes."""
+    for panel, texts in facts.by_panel.items():
+        for a, b in combinations(texts, 2):
+            if (gap := close_gap(a, b)) is not None:
+                found = found.flag(
+                    "TEXT_TOO_CLOSE",
+                    f"Axes[{panel}]: {a.role} {a.short!r} and "
+                    f"{b.role} {b.short!r} sit {gap.em:.2f} em apart",
+                    (a, b),
+                )
+    return found
+
+
+def theta_intrudes(label: Text, disc: Box) -> bool:
+    """Whether the closest point of a label box sits well inside the disc."""
+    rx, ry = disc.width / 2, disc.height / 2
+    cx, cy = disc.x0 + rx, disc.y0 + ry
+    box = label.box
+    dx = max(box.x0 - cx, cx - box.x1, 0.0) / rx
+    dy = max(box.y0 - cy, cy - box.y1, 0.0) / ry
+    return (1 - hypot(dx, dy)) * min(rx, ry) > THETA_INTO_EM * label.em
+
+
+def polar_tick_on_plot(facts: Facts, found: Findings) -> Findings:
+    """Angle tick labels crossing their own polar plot's outer circle."""
+    for theta in facts.polar_theta:
+        labels = [t for t in theta.labels if theta_intrudes(t, theta.disc)]
+        if labels:
+            found = found.flag(
+                "POLAR_TICK_ON_PLOT",
+                f"Axes[{theta.panel.index}]: angle tick labels run into the "
+                f"polar plot ({quote((t.short for t in labels), most=6)})",
+                labels,
+            )
+    return found
+
+
+def mixed_minus(facts: Facts, found: Findings) -> Findings:
+    """A negative quantity using a hyphen while the tick labels use a minus."""
+    if facts.minus_tick is None:
+        return found
+    panels: dict[int | None, list[Text]] = {}
+    for label in facts.minus_labels:
+        panels.setdefault(label.panel, []).append(label)
+    for panel, labels in panels.items():
+        where = "Figure text" if panel is None else f"Axes[{panel}]"
+        found = found.flag(
+            "MIXED_MINUS",
+            f"{where}: {len(labels)} numeric label(s) use a hyphen-minus "
+            f"({quote(t.short for t in labels)}); ticks use the Unicode minus",
+            labels,
         )
     return found

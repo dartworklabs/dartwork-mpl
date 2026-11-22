@@ -104,7 +104,7 @@ bars". For another text, label with matplotlib instead:
 
 | Asked | Instead of `dm.label_bars` |
 |---|---|
-| a unit, fixed decimals, a plus on rises | `ax.bar_label(bars, fmt="{:+.1f} GWh", padding=3, fontsize=dm.fs(-1))` |
+| a unit, fixed decimals, a plus on rises | `ax.bar_label(bars, fmt=lambda v: f"{v:+.1f} GWh".replace("-", "−"), padding=3, fontsize=dm.fs(-1))` |
 | inside the bar | `ax.bar_label(bars, label_type="center", color="white", fontsize=dm.fs(-1))` |
 
 ```python
