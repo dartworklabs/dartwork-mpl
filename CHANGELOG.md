@@ -59,6 +59,10 @@ Entries before 0.8.0 are in the git history of this file.
   background colour) and the smaller goes on top, and a label moved away
   from its mark keeps a thin line to it. Ridgelines had been drawn as lines
   crossing each other and slope-chart labels left floating (#846).
+- The skill says text size encodes nothing: text of one kind (the values
+  in cells, the names of rows) has one size across the figure, and what does
+  not fit its mark goes beside it or is left out. A Marimekko had its
+  narrowest column's values in smaller type than the rest (#849).
 
 ## 0.9.0 — 2026-11-22
 
