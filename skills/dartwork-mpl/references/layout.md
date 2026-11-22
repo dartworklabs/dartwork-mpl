@@ -260,3 +260,25 @@ plt.close(fig)
   their host, so `dm.simple_layout` leaves such a figure as it was.
 - A twin pair may report `CROSS_AXES_OVERLAP` for its shared x ticks; that
   finding is a false positive for twins.
+
+## Balance the visible figure
+
+- On the saved image, compare the space on either side of the plot and
+  what belongs with it. Include the scale, side descriptions and direct
+  labels when judging the group. Empty data limits may make a plot with
+  fitted axes sit off-centre. Trim limits that only provide spare room,
+  or fit the canvas to the group. In a comparison where unequal areas
+  encode the data, keep their common scale and balance the group around it.
+- A vertical colorbar can leave an empty strip on its outside even after
+  layout: its slot can be wider than the drawn scale. If it does, give the
+  scale a narrow column in the plot's GridSpec and pass its Axes as
+  `cax` to `fig.colorbar`; fit the plot and column together.
+- For an inset or a label in open space, look for a region clear of the
+  marks it could cover. Leave room around the whole element, including
+  its text and any connectors. Within that region, give it an anchor the
+  reader can see, such as the point it explains or the middle of the
+  available space. Leave space between the element and the frame or the
+  edge of a shaded mark.
+- Treat a custom key and its heading as one block. Give the block a shared
+  edge or centre with the marks it explains, including when the plot
+  reserves extra space for row labels or totals.

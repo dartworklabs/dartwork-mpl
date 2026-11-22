@@ -15,6 +15,7 @@ from ..vocab import Box, Which, X, Y
 from .findings import Findings
 from .model import (
     AXES,
+    ColorbarSpace,
     Facts,
     Frame,
     Hit,
@@ -62,6 +63,9 @@ TITLE_WIDE = 0.5
 TITLE_ROOM_EM = 2.0
 #: Ignore the edge of a text box just grazing the disc.
 THETA_INTO_EM = 0.4
+#: Above the 90th percentile of horizontal margin differences in two
+#: independent 101-case sweeps (5.0 and 3.3 percentage points).
+COLORBAR_BLANK_WIDTH = 0.06
 
 
 def overflow(facts: Facts, found: Findings) -> Findings:
@@ -600,7 +604,9 @@ def title_at_edge(facts: Facts, found: Findings) -> Findings:
 
 
 def underused_canvas(facts: Facts, found: Findings) -> Findings:
-    """An axis-less panel has a sizeable empty band along one dimension."""
+    """An axis-less panel or an oversized scale slot leaves a blank band."""
+    if facts.colorbar_space is not None:
+        return blank_beside_colorbar(facts, facts.colorbar_space, found)
     use, canvas = facts.canvas_use, facts.canvas
     if (
         use is None
@@ -620,4 +626,33 @@ def underused_canvas(facts: Facts, found: Findings) -> Findings:
         f"{min(width, height):.0%} of the canvas {dimension}",
         handles=(use.panel.handle,),
         panels=(use.panel.index,),
+    )
+
+
+def blank_beside_colorbar(
+    facts: Facts, space: ColorbarSpace, found: Findings
+) -> Findings:
+    """A narrow vertical scale uses only part of its allocated column."""
+    canvas = facts.canvas
+    left = space.body.x0 - canvas.x0
+    right = canvas.x1 - space.body.x1
+    if space.bar.x0 >= space.plot.x1:
+        side, near, far = "right", right, left
+        unused = space.slot.x1 - space.bar.x1
+    elif space.bar.x1 <= space.plot.x0:
+        side, near, far = "left", left, right
+        unused = space.bar.x0 - space.slot.x0
+    else:
+        return found
+    blank = COLORBAR_BLANK_WIDTH * canvas.width
+    if far < -CUT_PX or near - far < blank or unused < blank:
+        return found
+    return found.flag(
+        "UNDERUSED_CANVAS",
+        f"Axes[{space.scale.index}]: the colorbar leaves {near / canvas.width:.0%} "
+        f"of the canvas blank on the {side}; the drawn scale is narrower than its slot",
+        handles=(space.panel.handle, space.scale.handle),
+        panels=(space.panel.index, space.scale.index),
+        fix="give the colorbar a narrow column in the plot's GridSpec and pass "
+        "that Axes as cax to fig.colorbar, then fit both with dm.simple_layout(fig)",
     )

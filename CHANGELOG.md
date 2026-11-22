@@ -6,6 +6,9 @@ Entries before 0.8.0 are in the git history of this file.
 
 ### Added
 
+- `dm.check` reports `UNDERUSED_CANVAS` when a vertical colorbar's
+  subplot slot leaves a large blank strip on one side of a plot. It
+  suggests fitting an explicit colorbar column with the plot (#858).
 - `dm.align_texts` aligns existing text edges or decimal positions without
   changing the chart's rows or tick labels. `dm.check` flags ragged columns
   beside a plot and suggests how to align them (#812).
@@ -53,6 +56,9 @@ Entries before 0.8.0 are in the git history of this file.
 
 ### Fixed
 
+- The skill's rendered-figure review compares the margins of the visible
+  group, looks for clearance around insets and annotations, and aligns a
+  custom key as a block with the marks it describes (#859, #860, #861).
 - Removed the Korean role-colour notice because it describes a preset convention (#806).
 - The skill says when a single plot's title belongs on the canvas: where long
   category names push the plot well off the figure's centre, `fig.suptitle`

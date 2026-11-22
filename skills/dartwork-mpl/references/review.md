@@ -74,6 +74,7 @@ not, the `try` line names what usually helps.
 | `EMPTY_AXES` | a framed panel left empty by the grid, or whose data draws no visible marks |
 | `UNDERUSED_CANVAS` | an axis-less equal-aspect plot leaves a wide blank band on the canvas |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
+| `UNDERUSED_CANVAS` | a large blank band around a frameless plot, or a one-sided blank strip where a colorbar's column is wider than its scale |
 
 An "only X" edit keeps the warnings the original already had: report them,
 do not fix them.

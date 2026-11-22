@@ -78,7 +78,7 @@ Text on the figure follows the document it goes into. Unknown: follow the langua
 A figure is finished when you have looked at it, not when the script ran. Run the script with `uv run python plot.py` in a uv project (one with `pyproject.toml` or `uv.lock`); elsewhere `uv run --with dartwork-mpl python plot.py` runs it without installing anything.
 
 1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a place to look, with a line on what to try; act on the ones that are not what you meant. `NOT RUN` means a rule could not measure, so say so.
-2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
+2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave? Check that the visible plot and its supporting elements sit together on the canvas, with room on both sides. For placement choices, see `references/layout.md`.
 3. Fix what you saw and say what changed. Revising with a user, save as the next version (`-v2`, keep v1); with a path the user or caller named, overwrite that path. If you cannot view images, say the figure was not visually reviewed.
 
 `dm.check` finds the mechanical defects. Whether the chart says anything is up to you.

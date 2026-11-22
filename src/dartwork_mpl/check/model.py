@@ -297,6 +297,18 @@ class CanvasUse:
 
 
 @dataclass(frozen=True)
+class ColorbarSpace:
+    """A plot and its colorbar, with the scale's full subplot slot."""
+
+    panel: Panel
+    scale: Panel
+    body: Box
+    plot: Box
+    bar: Box
+    slot: Box
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -324,6 +336,7 @@ class Facts:
     edge_texts: tuple[Text, ...] = ()
     edge_titles: tuple[Text, ...] = ()
     canvas_use: CanvasUse | None = None
+    colorbar_space: ColorbarSpace | None = None
 
     @property
     def touch(self) -> float:

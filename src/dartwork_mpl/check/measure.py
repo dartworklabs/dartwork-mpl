@@ -42,7 +42,7 @@ from ..vocab import AlignCentre, X, Y, parse_halign
 from . import roles
 from .alignment_measure import alignment_samples
 from .axis_labels import minus_tick, tick_row
-from .canvas import content_box, shape_panel
+from .canvas import content_box, scale_slot, shape_panel
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
@@ -50,6 +50,7 @@ from .model import (
     THROUGH_EM,
     Box,
     CanvasUse,
+    ColorbarSpace,
     Connected,
     Facts,
     Frame,
@@ -473,6 +474,31 @@ class Reader:
             None if inside is None else CanvasUse(Panel(ax, i), box_of(inside))
         )
 
+    def colorbar_space(self) -> ColorbarSpace | None:
+        """A single plot with an attached scale, measured as a group."""
+        if len(self.panels) != 2 or len(self.axes) != 2:
+            return None
+        (i, plot), (j, scale) = self.panels
+        slot = scale_slot(plot, scale, self.fig)
+        if slot is None:
+            return None
+        tight = [ax.get_tightbbox(self.renderer) for ax in (plot, scale)]
+        bounds = [box for box in tight if box is not None]
+        bounds.extend(
+            ext
+            for _artist, ext in iter_figure_level_extents(
+                self.fig, self.renderer
+            )
+        )
+        return ColorbarSpace(
+            Panel(plot, i),
+            Panel(scale, j),
+            box_of(Bbox.union(bounds)),
+            box_of(plot.bbox),
+            box_of(scale.bbox),
+            box_of(slot),
+        )
+
     def frames(self) -> tuple[Frame, ...]:
         """The plot areas a text of another Axes must keep off: Axes that
         draw something or a frame."""
@@ -605,5 +631,6 @@ def measure(fig: Figure) -> Facts:
         canvas_use=r.attempt(
             lambda: r.canvas_use(texts), None, "UNDERUSED_CANVAS"
         ),
+        colorbar_space=r.attempt(r.colorbar_space, None, "UNDERUSED_CANVAS"),
         skipped=tuple(r.skipped),
     )

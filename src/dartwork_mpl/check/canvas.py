@@ -1,4 +1,4 @@
-"""Measure the visible footprint of a single, frameless equal-aspect plot."""
+"""Measure footprints where a subplot slot can exceed its visible content."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib.collections import PathCollection
+from matplotlib.colorizer import ColorizingArtist
 from matplotlib.transforms import Bbox
 
 from ..geometry import (
@@ -24,8 +25,28 @@ from ..vocab import X, Y
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.figure import Figure
 
     from .model import Text
+
+
+def scale_slot(plot: Axes, scale: Axes, fig: Figure) -> Bbox | None:
+    """The space allocated to a plot's attached colorbar on their grid."""
+    if not any(
+        artist.colorbar is not None and artist.colorbar.ax is scale
+        for artist in plot.get_children()
+        if isinstance(artist, ColorizingArtist) and artist_shown(artist)
+    ):
+        return None
+    spec = scale.get_subplotspec()
+    plot_spec = plot.get_subplotspec()
+    if (
+        spec is None
+        or plot_spec is None
+        or spec.get_gridspec() is not plot_spec.get_gridspec()
+    ):
+        return None
+    return spec.get_position(fig).transformed(fig.transFigure)
 
 
 def shape_panel(ax: Axes) -> bool:
