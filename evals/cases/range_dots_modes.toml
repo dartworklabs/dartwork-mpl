@@ -4,19 +4,19 @@ prompt = "ontime.csv: the share of shipments delivered on time from each of our 
 [files]
 "ontime.csv" = """
 hub,Air,Road,Rail,Sea
-Rotterdam,86,82,77,58
-Singapore,81,79,66,49
-Dubai,77,71,62,51
-Memphis,72,70,57,44
-Santos,69,64,52,31
-Shenzhen,66,68,49,27
-Leipzig,61,56,43,33
-Melbourne,58,49,41,29
-Busan,55,47,36,24
-Felixstowe,52,50,38,22
-Durban,44,31,26,18
+Hub A,86,82,77,58
+Hub B,81,79,66,49
+Hub C,77,71,62,51
+Hub D,72,70,57,44
+Hub E,69,64,52,31
+Hub F,66,68,49,27
+Hub G,61,56,43,33
+Hub H,58,49,41,29
+Hub J,55,47,36,24
+Hub K,52,50,38,22
+Hub L,44,31,26,18
 """
 
 [expect]
 panels = 1
-texts = ["Rotterdam", "Durban", "Air", "Sea"]
+texts = ["Hub A", "Hub L", "Air", "Sea"]

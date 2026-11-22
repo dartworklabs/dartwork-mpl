@@ -8,13 +8,13 @@ import numpy as np
 
 sizes = ["1e3", "1e4", "1e5", "1e6", "1e7"]
 libs = {"fastframe (ours)": [0.8, 1.9, 9.5, 71, 640],
-        "pandas": [1.1, 4.2, 38, 410, 4300],
-        "polars": [0.9, 2.1, 11, 88, 790],
-        "dask": [14, 16, 29, 150, 1200]}
+        "tablekit": [1.1, 4.2, 38, 410, 4300],
+        "colframe": [0.9, 2.1, 11, 88, 790],
+        "lazygrid": [14, 16, 29, 150, 1200]}
 mem = {"fastframe (ours)": [3, 5, 21, 180, 1700],
-       "pandas": [4, 9, 62, 590, 5900],
-       "polars": [3, 6, 25, 210, 2000],
-       "dask": [40, 42, 60, 260, 2100]}
+       "tablekit": [4, 9, 62, 590, 5900],
+       "colframe": [3, 6, 25, 210, 2000],
+       "lazygrid": [40, 42, 60, 260, 2100]}
 
 plt.figure(figsize=(14, 4))
 plt.subplot(121)
@@ -37,4 +37,4 @@ plt.savefig("bench.png", dpi=72)
 
 [expect]
 panels = 2
-texts = ["fastframe", "pandas", "polars", "dask"]
+texts = ["fastframe", "tablekit", "colframe", "lazygrid"]
