@@ -122,5 +122,49 @@ def test_verdict_order_invalid_then_no_figure():
     )
     assert judge.verdict(judge.Evidence(harness_error="auth"))[0] == "INVALID"
     assert judge.verdict(judge.Evidence())[0] == "NO_FIGURE"
-    no_rerun = judge.Evidence(has_image=True, probe_error="boom")
-    assert judge.verdict(no_rerun)[0] == "DEFECT"
+
+
+def test_a_figure_whose_source_is_not_established_is_invalid_not_a_defect():
+    warned = FIGURE | {
+        "check": [{"rule": "OVERLAP", "severity": "WARNING", "message": "x"}]
+    }
+    outside = judge.Evidence(strays=["/tmp/s"], has_image=True, figure=warned)
+    assert judge.verdict(outside) == (
+        "INVALID",
+        ["worked outside its sandbox: /tmp/s"],
+    )
+    other = judge.Evidence(
+        has_image=True, figure=warned, source_problem="it does not reproduce"
+    )
+    assert judge.verdict(other) == (
+        "INVALID",
+        ["source: it does not reproduce"],
+    )
+    assert judge.verdict(judge.Evidence(has_image=True))[0] == "INVALID"
+
+
+ROOT = "/private/var/folders/nq/T/dmpl-eval-case-skill-abc"
+
+
+def test_strays_are_the_places_outside_the_runs_root():
+    paths = [f"{ROOT}/project/plot.py", "/tmp/work/plot.py"]
+    commands = [
+        "mkdir -p /tmp/s output && cat > /tmp/s/plot.py <<'E'\nx\nE",
+        f"python3 {ROOT.removeprefix('/private')}/tmp/s/plot.py > $TMPDIR/tmp/log",
+    ]
+    assert judge.strays(paths, commands, ROOT) == [
+        "/tmp/s",
+        "/tmp/work/plot.py",
+    ]
+
+
+def test_reproduction_needs_one_re_render_equal_to_the_figure():
+    same = {"size": [800, 600], "rms": 0.0}
+    moved = {"size": [800, 600], "rms": 14.2}
+    other = {"size": [800, 450], "rms": None}
+    assert judge.reproduction((800, 600), [other, moved, same]) is None
+    assert "wrote no image" in str(judge.reproduction((800, 600), []))
+    assert "RMS 14.20" in str(judge.reproduction((800, 600), [other, moved]))
+    assert "800x450 px, the figure is 800x600 px" in str(
+        judge.reproduction((800, 600), [other])
+    )
