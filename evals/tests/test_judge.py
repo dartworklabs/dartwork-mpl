@@ -165,6 +165,10 @@ def test_reproduction_needs_one_re_render_equal_to_the_figure():
     assert judge.reproduction((800, 600), [other, moved, same]) is None
     assert "wrote no image" in str(judge.reproduction((800, 600), []))
     assert "RMS 14.20" in str(judge.reproduction((800, 600), [other, moved]))
+    twice = str(judge.reproduction((800, 600), [moved], rerun_rms=9.5))
+    assert "does not draw the same figure twice" in twice
+    steady = str(judge.reproduction((800, 600), [moved], rerun_rms=0.0))
+    assert "closest re-render" in steady
     assert "800x450 px, the figure is 800x600 px" in str(
         judge.reproduction((800, 600), [other])
     )

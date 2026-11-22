@@ -81,6 +81,19 @@ rules:
     pattern: '(?:width\s*=\s*|\bdm\.figsize\s*\(\s*)["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
     message: Wider than a 17 cm page (dm.col2). Keep a width the user or the venue asked for.
 
+  - id: unseeded-rng
+    severity: warning
+    pattern: '\bdefault_rng\s*\(\s*\)'
+    message: default_rng() without a seed draws a different figure on every run.
+    fix: rng = np.random.default_rng(0)
+
+  - id: unseeded-global-random
+    severity: warning
+    # The module-level generators; a source that calls seed() is left alone.
+    pattern: '(?:\b(?:np|numpy)\.random|(?<![\w.])random)\.(?:rand|randn|randint|random|random_sample|sample|normal|standard_normal|lognormal|uniform|exponential|poisson|binomial|choice|choices|shuffle|permutation|gauss|normalvariate)\s*\('
+    message: The global random generator is not seeded, so the figure differs on every run.
+    fix: rng = np.random.default_rng(0), then rng.normal(...)
+
   - id: raw-hex-color
     severity: info
     pattern: '\b(?:color|c)\s*=\s*["'']#[0-9a-fA-F]{3,8}["'']'

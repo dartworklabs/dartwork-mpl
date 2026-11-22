@@ -434,9 +434,10 @@ def probe(
             uv = ["uv", "run", "--project", str(REPO), "--no-sync", *layer]
             cmd = [*uv, "python", *cmd[1:]]
         started = time.time()
+        run = [*cmd, str(report_path), *args]
         try:
             done = subprocess.run(
-                [*cmd, str(report_path), *args],
+                run,
                 cwd=cwd,
                 env=env,
                 capture_output=True,
@@ -449,8 +450,22 @@ def probe(
         if not report_path.exists():
             return {"error": f"probe crashed: {done.stderr[-800:]}"}
         report: dict[str, Any] = json.loads(report_path.read_text())
-        if figure is not None:
-            report |= compare(mirror, started, figure)
+        if figure is None:
+            return report
+        report |= compare(mirror, started, figure)
+        near = [r for r in report["renders"] if r["rms"] is not None]
+        if near and min(r["rms"] for r in near) > judge.SAME_PICTURE_RMS:
+            # Not the figure: is it this script, drawing differently each time?
+            first = mirror / min(near, key=lambda r: r["rms"])["path"]
+            kept = first.with_name("_eval_first.png")
+            shutil.copy(first, kept)
+            again = subprocess.run(
+                run, cwd=cwd, env=env, capture_output=True, check=False
+            )
+            if again.returncode == 0:
+                twice = compare(mirror, 0.0, kept)["renders"]
+                same = [r for r in twice if r["path"] == near[0]["path"]]
+                report["rerun_rms"] = same[0]["rms"] if same else None
         return report
 
 
@@ -549,7 +564,9 @@ def assess(
             problem = f"re-running it drew no figure ({probed.get('error')})"
         elif figure_png:
             size = tuple(probed["figure_px"])
-            problem = judge.reproduction(size, probed["renders"])
+            problem = judge.reproduction(
+                size, probed["renders"], probed.get("rerun_rms")
+            )
     found = lint(source.text) if source.text is not None else []
     figure = probed.get("figure")
     critical = [
@@ -598,6 +615,7 @@ def assess(
         "source_problem": problem,
         "figure_px": probed.get("figure_px"),
         "renders": probed.get("renders"),
+        "rerun_rms": probed.get("rerun_rms"),
         "probe_error": probed.get("error"),
         "figure": figure,
         "lint": found,

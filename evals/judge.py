@@ -149,12 +149,16 @@ def strays(paths: list[str], commands: list[str], root: str) -> list[str]:
 
 
 def reproduction(
-    size: tuple[int, int], renders: list[dict[str, Any]]
+    size: tuple[int, int],
+    renders: list[dict[str, Any]],
+    rerun_rms: float | None = None,
 ) -> str | None:
     """Why no re-rendered image is the agent's figure (``None``: one is).
 
     ``renders`` are the images the re-run wrote: ``size`` in pixels and
-    ``rms`` against the figure where the sizes agree.
+    ``rms`` against the figure where the sizes agree. ``rerun_rms`` is how
+    far a second re-run landed from the first, measured when neither is
+    the figure: apart, the script itself draws differently each time.
     """
     if not renders:
         return "re-running it wrote no image to compare with figure.png"
@@ -169,6 +173,12 @@ def reproduction(
         )
     if min(close) <= SAME_PICTURE_RMS:
         return None
+    if rerun_rms is not None and rerun_rms > SAME_PICTURE_RMS:
+        return (
+            "the script does not draw the same figure twice (two re-runs "
+            f"differ by RMS {rerun_rms:.2f}), so figure.png cannot be "
+            "reproduced: its randomness is not seeded"
+        )
     return (
         "it does not reproduce figure.png: the closest re-render "
         f"differs by RMS {min(close):.2f} (same picture: {SAME_PICTURE_RMS})"

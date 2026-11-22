@@ -210,8 +210,8 @@ class Code:
     """A source with what the lint needs to know about it.
 
     ``quoted`` holds the ``(start, end)`` spans of strings and comments: text
-    there is prose, not code. The literal names, the twin axes and the
-    registrations come from the syntax tree; a source that does not parse
+    there is prose, not code. The literal names, the twin axes, a ``seed(...)``
+    call and the registrations come from the syntax tree; a source that does not parse
     has none of them.
     """
 
@@ -219,6 +219,7 @@ class Code:
     quoted: tuple[tuple[int, int], ...]
     literals: tuple[Literal, ...] = ()
     twins: bool = False
+    seeds: bool = False
     colormaps: Registered = Registered()
     colors: Registered = Registered()
 
@@ -244,6 +245,7 @@ class Code:
             quoted=quoted,
             literals=tuple(_literals(calls, lines, starts)),
             twins=any(_called(c) in {"twinx", "twiny"} for c in calls),
+            seeds=any(_called(c) == "seed" for c in calls),
             colormaps=_colormap_registrations(calls),
             colors=_color_registrations(tree),
         )

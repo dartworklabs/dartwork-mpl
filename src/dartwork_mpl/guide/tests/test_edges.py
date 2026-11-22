@@ -58,3 +58,10 @@ def test_color_registered_in_source():
     )
     dynamic = 'get_named_colors_mapping().update(m)\nax.plot(x, color="x")\n'
     assert settled(dynamic) == ([], ("color-registered-in-source",))
+
+
+def test_global_random_seeded():
+    draw = "y = np.random.normal(size=9)\n"
+    assert settled(draw) == (["unseeded-global-random"], ())
+    seeded = "np.random.seed(0)\n" + draw + "rng = np.random.default_rng()\n"
+    assert settled(seeded) == (["unseeded-rng"], ("global-random-seeded",))
