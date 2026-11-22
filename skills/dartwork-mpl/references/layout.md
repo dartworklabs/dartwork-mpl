@@ -99,10 +99,12 @@ such a gap goes back; a canvas too small for that is left as it is, so give
 it more room or shorter titles), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
-degrees. Nothing is shortened or made smaller. What you set
+degrees, and the angle labels of a polar plot (a radar's category names, a
+wind rose's directions) that run into its circle are aligned away from it,
+each on the far side of its anchor. Nothing is shortened or made smaller. What you set
 stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
-when it is too small, and labels you rotate or break yourself are left as
-they are, so leave them out unless the user asks. Tick
+when it is too small, and labels you rotate, align or break yourself are
+left as they are, so leave them out unless the user asks. Tick
 labels that still overlap are reported as `TICK_OVERLAP`, text over another
 panel's text as `CROSS_AXES_OVERLAP`. A title wider than the canvas keeps
 its plot: it runs past both edges and `dm.check` reports `OVERFLOW`, so

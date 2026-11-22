@@ -44,8 +44,9 @@ FIXES: dict[str, str] = {
     "color=dm.readable_text_color(bar_colour)",
     "RADIAL_TICK_COVERED": "raise the radial labels above the fill with "
     "ax.set_axisbelow(False), or move them to a clear angle with ax.set_rlabel_position(...)",
-    "POLAR_TICK_ON_PLOT": "give the angle labels more room with "
-    'ax.tick_params(axis="x", pad=...), or align them outward around the circle',
+    "POLAR_TICK_ON_PLOT": "dm.simple_layout(fig) aligns centred angle "
+    "labels away from the plot; labels you aligned or turned yourself: "
+    'more room with ax.tick_params(axis="x", pad=...)',
     "MIXED_MINUS": "format the numeric label with "
     'matplotlib.ticker.Formatter.fix_minus(...) or .replace("-", "\u2212")',
     "TICK_OVERLAP": "dm.simple_layout(fig) wraps, then turns, crowded "

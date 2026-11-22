@@ -83,7 +83,7 @@ A figure is finished when you have looked at it, not when the script ran. Run th
 
 `dm.check` finds the mechanical defects. Whether the chart says anything is up to you.
 
-The library says what it changed on its own: each automatic change (tick labels turned, a name wrapped, a value label gone, a legend moved, `1M` on an axis, whole-number ticks on an axis of months or counts) prints one `dartwork-mpl:` line on stderr with what, on which Axes, why, and what to try. Read those lines after a run and tell the user what they say before you work around one. `dm.quiet()` turns them off.
+The library says what it changed on its own: each automatic change (tick labels turned, a name wrapped, a radar's names moved off its circle, a value label gone, a legend moved, `1M` on an axis, whole-number ticks on an axis of months or counts) prints one `dartwork-mpl:` line on stderr with what, on which Axes, why, and what to try. Read those lines after a run and tell the user what they say before you work around one. `dm.quiet()` turns them off.
 
 ## Tools for the craft
 

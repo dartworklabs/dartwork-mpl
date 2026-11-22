@@ -66,7 +66,7 @@ not, the `try` line names what usually helps.
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
 | `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |
-| `POLAR_TICK_ON_PLOT` | angle tick labels cross into their polar plot |
+| `POLAR_TICK_ON_PLOT` | angle tick labels cross into their polar plot (`dm.simple_layout` moves centred ones out; these were placed by hand, or the layout has not run) |
 | `RADIAL_TICK_COVERED` | a polar fill paints over radial tick numbers |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
