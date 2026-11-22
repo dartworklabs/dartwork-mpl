@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.inset import InsetIndicator
 from matplotlib.projections.polar import PolarAxes
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
@@ -25,6 +26,7 @@ from ..geometry import (
     axes_titles,
     draw,
     drawn_in_tree,
+    drawn_ink_meets,
     drawn_tick_labels,
     draws_axis,
     figure_legends,
@@ -48,6 +50,7 @@ from .model import (
     THROUGH_EM,
     Box,
     CanvasUse,
+    Connected,
     Facts,
     Frame,
     Hit,
@@ -364,6 +367,53 @@ class Reader:
                 found.append(OnData(t, lines))
         return tuple(found)
 
+    def connected(self, texts: tuple[Text, ...]) -> tuple[Connected, ...]:
+        """Inset tick and axis labels a zoom connector
+        (``ax.indicate_inset_zoom``) is drawn through, per inset. Measured
+        like a line through a name: inside the label's box, not at its edge."""
+        indices = {ax: i for i, ax in self.axes}
+        found: list[Connected] = []
+        for child, parent in self.inset_parents.items():
+            lines = [
+                (
+                    c.get_transform().transform_path(c.get_path()),
+                    float(c.get_linewidth()) * self.pt / 2,
+                )
+                for artist in parent.artists
+                if isinstance(artist, InsetIndicator) and artist.get_visible()
+                for c in artist.connectors or ()
+                if c.get_visible() and patch_inks(c)
+            ]
+            if not lines:
+                continue
+            i = indices[child]
+            ticks = [
+                self.text(label, roles.TickLabel(), i)
+                for axis in (X(), Y())
+                for label in drawn_tick_labels(child, axis)
+                if text_inks(label)
+            ]
+            names = [
+                t
+                for t in texts
+                if t.panel == i and isinstance(t.role, roles.AxisLabel)
+            ]
+            hit: list[Text] = []
+            for t in (*ticks, *names):
+                if t is None:
+                    continue
+                inner = t.box.padded(-THROUGH_EM * t.em)
+                if inner.width <= 0 or inner.height <= 0:
+                    continue
+                box = Bbox.from_extents(inner.x0, inner.y0, inner.x1, inner.y1)
+                if any(
+                    drawn_ink_meets(path, half, box) for path, half in lines
+                ):
+                    hit.append(t)
+            if hit:
+                found.append(Connected(i, tuple(hit)))
+        return tuple(found)
+
     def letters_on_data(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
         """Panel letters and the data they are drawn on (a letter inside
         its plot)."""
@@ -523,6 +573,7 @@ def measure(fig: Figure) -> Facts:
             lambda: r.letters_on_data(texts), (), "LETTER_ON_DATA"
         ),
         struck=r.attempt(lambda: r.struck(texts), (), "TEXT_ON_LINE"),
+        connected=r.attempt(lambda: r.connected(texts), (), "TEXT_ON_LINE"),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),

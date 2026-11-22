@@ -27,6 +27,10 @@ Entries before 0.8.0 are in the git history of this file.
   canvas edge with room past its other end: `ax.set_title` centres it on the
   plot, and long category names or a colorbar push the plot off the canvas
   centre. The hint names `fig.suptitle` and a line break (#855).
+- `dm.check`'s `TEXT_ON_LINE` also reports an inset's tick or axis labels
+  with a zoom connector (`ax.indicate_inset_zoom`) drawn through them: with
+  the inset above its zoom region every connector leaves on the side the
+  tick numbers are on (#854).
 
 ### Changed
 

@@ -628,3 +628,27 @@ def test_a_title_pushed_to_the_canvas_edge_is_found():
     )
     assert "right canvas edge" in finding.message
     assert not dm.check(chart(lambda fig, ax, s: fig.suptitle(s)))
+
+
+def _zoomed(*, ticks_on_top: bool):
+    """A flat trace with an inset above its zoom region, as an agent draws a
+    spike: matplotlib's connectors leave the inset's lower corners."""
+    t = np.linspace(0, 60, 600)
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", 0.7))
+    ax.plot(t, -65 + np.sin(t / 5))
+    ax.set(xlabel="Time (s)", ylabel="Voltage (mV)", ylim=(-80, 5))
+    axins = ax.inset_axes((0.35, 0.5, 0.4, 0.42))
+    axins.plot(t, -65 + np.sin(t / 5))
+    axins.set(xlim=(41.0, 42.0), ylim=(-70, -60), ylabel="mV")
+    if ticks_on_top:
+        axins.xaxis.tick_top()
+    ax.indicate_inset_zoom(axins)
+    dm.simple_layout(fig)
+    return fig
+
+
+def test_a_zoom_connector_through_the_inset_labels_is_found():
+    (finding,) = _of(dm.check(_zoomed(ticks_on_top=False)), "TEXT_ON_LINE")
+    assert "zoom connector" in finding.message and "'41.0'" in finding.message
+    # with the tick numbers on the inset's far side nothing is crossed
+    assert not _of(dm.check(_zoomed(ticks_on_top=True)), "TEXT_ON_LINE")

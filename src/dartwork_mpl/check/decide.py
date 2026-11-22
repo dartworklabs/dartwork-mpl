@@ -346,7 +346,8 @@ def value_label_on_data(facts: Facts, found: Findings) -> Findings:
 
 
 def text_on_line(facts: Facts, found: Findings) -> Findings:
-    """Names and notes with a line drawn through them, per Axes."""
+    """Names and notes with a line drawn through them, per Axes, and an
+    inset's labels with its zoom connector through them."""
     panels: dict[int | None, list[OnData]] = {}
     for on in facts.struck:
         panels.setdefault(on.text.panel, []).append(on)
@@ -356,6 +357,19 @@ def text_on_line(facts: Facts, found: Findings) -> Findings:
             f"Axes[{panel}]: a line runs through {len(on)} text(s) "
             f"({quote(v.text.short for v in on)})",
             [v.text for v in on],
+        )
+    for inset in facts.connected:
+        found = found.flag(
+            "TEXT_ON_LINE",
+            f"Axes[{inset.inset}]: the zoom connector runs through "
+            f"{len(inset.labels)} label(s) of the inset "
+            f"({quote(t.short for t in inset.labels)})",
+            inset.labels,
+            fix="the connectors leave the inset on the side its labels are "
+            "on: put those labels on the far side (axins.xaxis.tick_top(), "
+            'axins.xaxis.set_label_position("top")), move the inset, or keep '
+            "the box alone (ind = ax.indicate_inset_zoom(axins); "
+            "c.set_visible(False) for each of ind.connectors)",
         )
     return found
 

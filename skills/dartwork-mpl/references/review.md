@@ -65,7 +65,7 @@ not, the `try` line names what usually helps.
 | `MIXED_MINUS` | negative numeric labels use a hyphen while ticks on the figure use a Unicode minus |
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
-| `TEXT_ON_LINE` | a name or note you placed with a line drawn through it (a trend line through a point's name); a text on its own box, a leader ending at its label, or a name turned to run along its line is fine |
+| `TEXT_ON_LINE` | a name or note you placed with a line drawn through it (a trend line through a point's name); a text on its own box, a leader ending at its label, or a name turned to run along its line is fine; also an inset's tick or axis labels with its zoom connector (`ax.indicate_inset_zoom`) through them |
 | `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |
 | `POLAR_TICK_ON_PLOT` | angle tick labels cross into their polar plot (`dm.simple_layout` moves centred ones out; these were placed by hand, or the layout has not run) |
 | `RADIAL_TICK_COVERED` | a polar fill paints over radial tick numbers |
