@@ -1,16 +1,16 @@
-prompt = "I need a chart for a slide in tomorrow's talk: browser market share from share.csv."
+prompt = "I need a chart for a slide in tomorrow's talk: how our customers paid last year, from share.csv."
 
 [files]
 "share.csv" = """
-browser,share_pct
-Chrome,64.7
-Safari,18.6
-Edge,5.2
-Firefox,2.8
-Samsung Internet,2.4
+payment_method,share_pct
+Card,64.7
+Mobile wallet,18.6
+Bank transfer,5.2
+Cash on delivery,2.8
+Buy now pay later,2.4
 Other,6.3
 """
 
 [expect]
 panels = 1
-texts = ["Chrome", "Safari", "Edge", "Firefox", "Samsung Internet"]
+texts = ["Card", "Mobile wallet", "Bank transfer", "Cash on delivery", "Buy now pay later"]

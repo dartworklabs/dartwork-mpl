@@ -1,9 +1,9 @@
 # cluster: line chart whose legend is a table aligned to the line ends (name, then numeric change columns under a header); refs: 2936947d-125d-803e-a72e-ed292caf1128, 2936947d-125d-80ff-8df8-ceb0d1573c14, 19e6947d-125d-80d9-872f-d7468bdabf13, 2956947d-125d-806b-b165-df026c4f1234, 19e6947d-125d-806b-a180-de7f101fb735
-prompt = "trade.csv: each partner's share of our exports, 2017 to 2025 (%). A line chart, and to the right of it, instead of a legend, a table whose rows sit at the ends of the lines: the partner's name, then the change in share for 2017-21 and for 2021-25 in percentage points. Trade bulletin."
+prompt = "segments.csv: each customer segment's share of our revenue, 2017 to 2025 (%). A line chart, and to the right of it, instead of a legend, a table whose rows sit at the ends of the lines: the segment's name, then the change in share for 2017-21 and for 2021-25 in percentage points. Annual sales review."
 
 [files]
-"trade.csv" = """
-year,European Union,United States,China,ASEAN,Japan,India,Gulf states
+"segments.csv" = """
+year,Construction,Utilities,Mining,Agriculture,Marine,Rail,Aviation
 2017,24.1,17.8,21.6,11.2,6.9,3.1,4.4
 2018,23.8,18.1,22.4,11.5,6.6,3.3,4.2
 2019,23.9,18.9,21.1,12.3,6.4,3.6,4.3
@@ -17,5 +17,5 @@ year,European Union,United States,China,ASEAN,Japan,India,Gulf states
 
 [expect]
 marks = ["line"]
-texts = ["European Union", "Gulf states", "China", "2017", "2025"]
+texts = ["Construction", "Aviation", "Mining", "2017", "2025"]
 any_text = ["-6.2", "−6.2"]

@@ -1,4 +1,4 @@
-"""Browser share on a 16:9 slide with 22 and 30 pt text set by hand, hand-placed value labels and no x axis."""
+"""Payment-method share on a 16:9 slide with 22 and 30 pt text set by hand, hand-placed value labels and no x axis."""
 
 import matplotlib.pyplot as plt
 
@@ -6,7 +6,14 @@ import dartwork_mpl as dm
 
 dm.style.use("presentation")
 
-names = ["Chrome", "Safari", "Edge", "Firefox", "Samsung Internet", "Other"]
+names = [
+    "Card",
+    "Mobile wallet",
+    "Bank transfer",
+    "Cash on delivery",
+    "Buy now pay later",
+    "Other",
+]
 vals = [64.7, 18.6, 5.2, 2.8, 2.4, 6.3]
 
 fig, ax = plt.subplots(figsize=(13.33, 7.5))
@@ -21,7 +28,7 @@ for bar, v in zip(bars, vals[::-1], strict=True):
         fontsize=22,
     )
 ax.set_xlim(0, max(vals) * 1.15)
-ax.set_title("Browser market share", fontsize=30, loc="left", pad=20)
+ax.set_title("Payment method share", fontsize=30, loc="left", pad=20)
 ax.tick_params(axis="y", labelsize=22, length=0)
 ax.set_xticks([])
 for spine in ax.spines.values():

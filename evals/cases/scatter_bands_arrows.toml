@@ -1,39 +1,40 @@
 # cluster: scatter over shaded, named category bands of x, only a few points labelled, arrows from an earlier to the current position; refs: 2966947d-125d-809c-8ff4-cb5a46abeb15, 19e6947d-125d-80ff-a2ec-f5575be613ca, 1386947d-125d-80d7-8050-fb0931ea6eb2
-prompt = "`from energy import load` returns a table of 60 countries with HDI and energy use per person in 2023, and for five named countries their 2015 position too. Scatter for a policy brief: shade the HDI bands (low below 0.55, medium to 0.70, high to 0.80, very high above) and name them, label only the five named countries, and draw an arrow from where each was in 2015 to where it is now."
+prompt = "`from plants import load` returns a table of 60 plants with their automation maturity score and output per worker in 2023, and for five named plants their 2015 position too. Scatter for an operations brief: shade the maturity bands (basic below 0.55, developing to 0.70, advanced to 0.80, leading above) and name them, label only the five named plants, and draw an arrow from where each was in 2015 to where it is now."
 
 [files]
-"energy.py" = '''
-"""Energy use per person against the human development index, 60 countries."""
+"plants.py" = '''
+"""Output per worker against the automation maturity score, 60 plants."""
 
 import numpy as np
 import pandas as pd
 
 NAMED = {
-    # name: (hdi_2015, mwh_2015, hdi_2023, mwh_2023)
-    "Vietnam": (0.68, 7.9, 0.73, 12.6),
-    "Bangladesh": (0.59, 2.4, 0.67, 3.5),
-    "Kenya": (0.55, 1.6, 0.60, 2.0),
-    "Türkiye": (0.80, 18.9, 0.86, 22.4),
-    "Uruguay": (0.80, 16.1, 0.83, 18.8),
+    # name: (maturity_2015, output_2015, maturity_2023, output_2023)
+    "Harbour Works": (0.68, 7.9, 0.73, 12.6),
+    "Millbrook": (0.59, 2.4, 0.67, 3.5),
+    "Eastfield": (0.55, 1.6, 0.60, 2.0),
+    "Northgate": (0.80, 18.9, 0.86, 22.4),
+    "Riverside": (0.80, 16.1, 0.83, 18.8),
 }
 
 
 def load() -> pd.DataFrame:
-    """Columns: country, hdi_2023, mwh_2023, hdi_2015, mwh_2015 (NaN unless named)."""
+    """Columns: plant, maturity_2023, output_2023 (thousand units per worker),
+    maturity_2015, output_2015 (NaN unless named)."""
     rng = np.random.default_rng(12)
-    hdi = np.sort(rng.uniform(0.39, 0.96, 55)).round(3)
-    mwh = (0.6 * np.exp(5.2 * (hdi - 0.39)) * rng.lognormal(0, 0.28, 55)).round(1)
+    maturity = np.sort(rng.uniform(0.39, 0.96, 55)).round(3)
+    output = (0.6 * np.exp(5.2 * (maturity - 0.39)) * rng.lognormal(0, 0.28, 55)).round(1)
     rows = [
-        {"country": f"Country {i + 1:02d}", "hdi_2023": h, "mwh_2023": m}
-        for i, (h, m) in enumerate(zip(hdi, mwh))
+        {"plant": f"Plant {i + 1:02d}", "maturity_2023": m, "output_2023": o}
+        for i, (m, o) in enumerate(zip(maturity, output))
     ]
-    for name, (h0, m0, h1, m1) in NAMED.items():
-        rows.append({"country": name, "hdi_2023": h1, "mwh_2023": m1,
-                     "hdi_2015": h0, "mwh_2015": m0})
+    for name, (m0, o0, m1, o1) in NAMED.items():
+        rows.append({"plant": name, "maturity_2023": m1, "output_2023": o1,
+                     "maturity_2015": m0, "output_2015": o0})
     return pd.DataFrame(rows)
 '''
 
 [expect]
 panels = 1
 marks = ["scatter"]
-texts = ["Vietnam", "Bangladesh", "Uruguay", "Very high"]
+texts = ["Harbour Works", "Millbrook", "Riverside", "Leading"]
