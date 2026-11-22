@@ -71,6 +71,33 @@ class Expected:
     preset_weight: Weight
 
 
+@dataclass(frozen=True)
+class Candidate:
+    """One family of a text's list: its name, and whether its face has
+    every character the text holds outside ``$…$``."""
+
+    family: str
+    covers: bool
+
+
+@dataclass(frozen=True)
+class MathText:
+    """A mathtext string's families, in the order the text lists them.
+
+    Mathtext draws the text around ``$…$`` in one face, the first family's:
+    it has no per-glyph fallback, unlike plain text.
+    """
+
+    candidates: tuple[Candidate, ...]
+
+
+@dataclass(frozen=True)
+class Lead:
+    """The position, in a text's family list, of the family that leads."""
+
+    index: int
+
+
 def math_sets(fontset: str, fallback: str) -> set[str]:
     """The mathtext sets ``mathtext.fontset`` consults.
 

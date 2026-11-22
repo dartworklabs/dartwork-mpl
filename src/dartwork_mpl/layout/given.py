@@ -30,7 +30,8 @@ if TYPE_CHECKING:
 class Neighbours:
     """The other slices' steps and records, in the order the layout uses them.
 
-    Before the fit: ``prepare_ticks`` writes the preset's large numbers on
+    Before the fit: ``lead_faces`` gives a mathtext string a first font
+    family that has its text, ``prepare_ticks`` writes the preset's large numbers on
     axes nobody formatted, and ``place_notes`` puts note lines at the left
     and bottom margins (figure fractions). At each step, after a draw: ``settle_bars`` (bar value labels), then
     rounds of ``settle_legends`` and ``space_line_ends``, then
@@ -45,6 +46,7 @@ class Neighbours:
     panel letters changed.
     """
 
+    lead_faces: Callable[[Figure], None]
     prepare_ticks: Callable[[Figure], None]
     place_notes: Callable[[Figure, float, float], None]
     settle_bars: Settle

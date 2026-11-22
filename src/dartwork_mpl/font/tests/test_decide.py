@@ -2,8 +2,17 @@
 
 import pytest
 
-from dartwork_mpl.font.decide import is_expected, table_plan
-from dartwork_mpl.font.model import Expected, Face, Table, Weight, WeightMiss
+from dartwork_mpl.font.decide import is_expected, lead_plan, table_plan
+from dartwork_mpl.font.model import (
+    Candidate,
+    Expected,
+    Face,
+    Lead,
+    MathText,
+    Table,
+    Weight,
+    WeightMiss,
+)
 
 
 def test_the_ordinary_table_keeps_order_and_declared_weights():
@@ -45,3 +54,8 @@ EXPECTED = Expected(
 def test_weight_misses(family, weight, quiet):
     miss = WeightMiss(family, Weight(weight))
     assert is_expected(miss, EXPECTED) is quiet
+
+
+def test_a_mathtext_string_keeps_its_first_family():
+    text = MathText((Candidate("Inter", True), Candidate("Paperlogy", True)))
+    assert lead_plan(text) == Lead(0)

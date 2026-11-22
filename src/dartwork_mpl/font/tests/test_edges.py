@@ -10,9 +10,16 @@ from matplotlib.font_manager import FontProperties
 import dartwork_mpl as dm
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.font import apply, measure
-from dartwork_mpl.font.decide import table_plan
-from dartwork_mpl.font.edges import EDGES
-from dartwork_mpl.font.model import Face, Table, Weight
+from dartwork_mpl.font.decide import lead_plan, table_plan
+from dartwork_mpl.font.edges import EDGES, FACE_EDGES
+from dartwork_mpl.font.model import (
+    Candidate,
+    Face,
+    Lead,
+    MathText,
+    Table,
+    Weight,
+)
 
 SYSTEM = Face("Roboto-Regular.ttf", "Roboto", Weight(400), False)
 BUNDLED = Face("Roboto-Regular.ttf", "Roboto", Weight(400), True)
@@ -64,3 +71,17 @@ def test_system_font_tie_flips_a_primed_lookup(monkeypatch, tmp_path):
 def _settle_now():
     facts = measure.table()
     return settle(facts, table_plan(facts), EDGES).plan
+
+
+def test_mathtext_face_lacks_text_leads_with_the_family_that_has_it():
+    def lead(*covers):
+        text = MathText(
+            tuple(Candidate(f"f{i}", c) for i, c in enumerate(covers))
+        )
+        return settle(text, lead_plan(text), FACE_EDGES)
+
+    hangul_after_latin = lead(False, True, True)
+    assert hangul_after_latin.fired == ("mathtext-face-lacks-text",)
+    assert hangul_after_latin.plan == Lead(1)
+    assert lead(True, True).fired == ()  # the first family has it all
+    assert lead(False, False).fired == ()  # no family of the list has it
