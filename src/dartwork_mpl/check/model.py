@@ -200,6 +200,14 @@ class OnData:
 
 
 @dataclass(frozen=True)
+class Connected:
+    """An inset's tick or axis labels with a zoom connector through them."""
+
+    inset: int
+    labels: tuple[Text, ...]
+
+
+@dataclass(frozen=True)
 class Inked:
     """A text the user placed, and how much of its ink reads on what is
     drawn behind it, pixel by pixel."""
@@ -303,6 +311,7 @@ class Facts:
     values: tuple[OnData, ...] = ()
     letters: tuple[OnData, ...] = ()
     struck: tuple[OnData, ...] = ()
+    connected: tuple[Connected, ...] = ()
     inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
     frames: tuple[Frame, ...] = ()

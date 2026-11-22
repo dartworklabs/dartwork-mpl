@@ -9,6 +9,7 @@ from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Box,
     CanvasUse,
+    Connected,
     Facts,
     Frame,
     Hit,
@@ -168,6 +169,14 @@ def test_TEXT_ON_LINE():
     (f,) = found(Facts(CANVAS, PT, texts=(name,), struck=(on,)))
     assert f.rule == "TEXT_ON_LINE" and f.artists == (name.handle,)
     assert "'Apple A7'" in f.message
+
+
+def test_TEXT_ON_LINE_zoom_connector_through_inset_labels():
+    tick = text("41.0", INSIDE, TickLabel(), panel=1)
+    (f,) = found(Facts(CANVAS, PT, connected=(Connected(1, (tick,)),)))
+    assert f.rule == "TEXT_ON_LINE" and f.panels == (1,)
+    assert "zoom connector" in f.message and "'41.0'" in f.message
+    assert "tick_top" in f.fix
 
 
 def test_LETTER_ON_DATA():

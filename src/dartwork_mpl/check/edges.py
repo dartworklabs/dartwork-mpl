@@ -45,8 +45,9 @@ def has_values_on_data(facts: Facts, found: Findings) -> bool:
 
 
 def has_struck_texts(facts: Facts, found: Findings) -> bool:
-    """Any name or note with a line through it."""
-    return bool(facts.struck)
+    """Any name or note with a line through it, or inset label with a
+    zoom connector through it."""
+    return bool(facts.struck or facts.connected)
 
 
 def has_letters_on_data(facts: Facts, found: Findings) -> bool:
