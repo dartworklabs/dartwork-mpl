@@ -30,6 +30,7 @@ plt.close(fig)
 - Apply the `-kr` preset before creating the figure; switching later leaves
   existing text in the old font.
 - Mixed Korean and English text in one label is fine.
+- See [role colours](colors.md#named-colours) for the Korean gain and loss convention.
 - `dm.style.context("report-kr")` scopes the preset to one block; save the
   figure inside it.
 - Do not set `font.family` by hand; the preset's family list holds the
