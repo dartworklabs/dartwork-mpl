@@ -61,7 +61,7 @@ from .guide import lint_rules
 
 # What the library changed on its own, printed
 from .hidden import quiet, verbose
-from .labels import align_texts, label_line_ends
+from .labels import align_texts, label_line_ends, legible
 from .legend import figure_legend, place_legend
 from .length import Length, cm, col1, col2, inch, mm, pt
 
@@ -126,6 +126,7 @@ __all__ = [  # noqa: RUF022
     "label_bars",
     "align_texts",
     "label_line_ends",
+    "legible",
     "place_legend",
     "figure_legend",
     # Agent guidance

@@ -14,7 +14,7 @@ PR은 아래 게이트로 합격을 판정한다. 실행하지 않은 게이트�
 | 타입 | 정적 계약 | `uv run basedpyright` | 오류 0. strict 모드. 기존 오류는 `.basedpyright/baseline.json`에 있고 줄어들기만 한다 |
 | 전체 테스트 | 동작 | `uv run pytest -q -n auto --mpl` | 실패 0 |
 | 출하 색 해시 | 미감: 색 값 | 전체 테스트에 포함 (`tests/test_shipped_colors_hash.py`) | 통과. digest를 다시 만들어 통과시키지 않는다 |
-| 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 22개 각각 RMS ≤ 0.5 |
+| 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 24개 각각 RMS ≤ 0.5 |
 | slice 경계 | import 방향과 표면 | 전체 테스트에 포함 (`tests/architecture/test_boundaries.py`) | 위반 0 |
 | 순수 import | 순수 파일을 새 인터프리터에서 import했을 때 matplotlib이 없음 | 전체 테스트에 포함 (`tests/architecture/test_pure_imports.py`) | 위반 0 |
 | 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스의 이유와 예제 | 전체 테스트에 포함 (`test_domain_rules.py`, 예제 실행 중 작동 확인은 `tests/fixtures.py`) | 위반 0. baseline 없음 |
@@ -66,6 +66,6 @@ CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인�
 ## 알려진 공백
 
 - **기준 이미지에 결함이 박혀 있다.** 장면 20개 중 새로 추가한 6개는 당시 코드가 그리던 모양 그대로다. 축 이름이 캔버스 왼쪽에서 잘리는 한글 차트, 오른쪽에서 잘리는 선 끝 이름, 위쪽 가장자리에 붙은 그림 범례가 들어 있다. 고치면 기준 이미지를 다시 만들어야 하고, 소유자가 전후 그림을 본 뒤 한다.
-- **새 기준 이미지 6개는 macOS에서 만들었다.** Ubuntu CI에서 미세하게 달라 다시 만들어야 할 수 있다.
+- **새 기준 이미지 6개는 macOS에서 만들었다.** `legible_korean_note`와 `legible_contour_labels`도 그렇다. Ubuntu CI에서 미세하게 달라 다시 만들어야 할 수 있다.
 - **에이전트 평가는 누가 돌려야만 돈다.** CI에 없으므로, 고친 결함이 돌아와도 평가를 다시 돌리기 전에는 보이지 않는다.
 - **Python 3.11과 3.13에서는 테스트가 돌지 않는다.** CI는 3.12만 쓴다.

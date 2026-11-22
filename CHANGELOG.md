@@ -9,6 +9,17 @@ Entries before 0.8.0 are in the git history of this file.
 - `dm.align_texts` aligns existing text edges or decimal positions without
   changing the chart's rows or tick labels. `dm.check` flags ragged columns
   beside a plot and suggests how to align them (#812).
+- `dm.legible(texts)` makes the texts `dm.check` reports as `TEXT_CONTRAST`
+  read on what is drawn behind them: a note that runs over bars, contour
+  numbers on pale and dark bands. Called after `dm.simple_layout`, it reads
+  the drawn figure and gives each text the least that makes it read:
+  nothing to one that reads, the one colour among its own, the preset's
+  text colour and the Axes' face colour that reads on everything behind
+  it, or an outline in the colour of the background it reads best on. It
+  reads the figure again afterwards: a text nothing can mend (it is
+  translucent, or something is drawn over it) is left as it was and named,
+  and calling it twice is the same as calling it once (#810).
+
 ### Changed
 
 - `dm.check`'s `TEXT_CONTRAST` reads every pixel of a text's ink against

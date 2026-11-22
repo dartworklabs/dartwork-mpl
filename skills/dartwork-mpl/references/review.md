@@ -61,7 +61,7 @@ not, the `try` line names what usually helps.
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
 | `TEXT_MISALIGNMENT` | Text already forming a column has ragged decimal positions or edges. Select that column’s texts and use `dm.align_texts`. |
 | `LEGEND_ON_DATA` | a legend over data, a title or other text, or another legend |
-| `TEXT_CONTRAST` | a text you placed with ink under 3:1 on what is drawn behind it: all of it (white numbers on pale bars), or the part that runs from one background onto another (a note from the canvas onto a dark bar, half an em of it is enough) |
+| `TEXT_CONTRAST` | a text you placed with ink under 3:1 on what is drawn behind it: all of it (white numbers on pale bars), or the part that runs from one background onto another (a note from the canvas onto a dark bar, half an em of it is enough). Move it onto one background; where it must cross, `dm.legible(texts)` and check again |
 | `MIXED_MINUS` | negative numeric labels use a hyphen while ticks on the figure use a Unicode minus |
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |

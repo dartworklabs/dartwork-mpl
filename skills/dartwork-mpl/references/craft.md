@@ -34,7 +34,9 @@ panel with two y axes.
   a legend. A legend box is for many series or for marks that have no end.
 - **One annotation.** Mark the value, crossing or period the sentence names
   with `dm.annotate_value(ax, x, y, text)` or a shaded span (`ax.axvspan`).
-  One mark is read. Five are skipped.
+  One mark is read. Five are skipped. Keep it on one background: a note
+  that runs from the canvas onto a dark bar loses the letters on the bar
+  ("Text over the data" below).
 - **Order.** Categories go by value, largest first, unless they have their own
   order (time, age bands, a survey scale).
 - **Numbers on marks.** Every bar gets its number only when the exact values
@@ -222,6 +224,48 @@ ax.tick_params(length=0)
 ax.set_title("Stocks and REITs moved together most")
 dm.simple_layout(fig)
 print(dm.check(fig))
+plt.close(fig)
+```
+
+## Text over the data
+
+A text reads when its ink has contrast with what is behind every part of
+it. Black on a pale bar and white on a dark one both read; a note that
+crosses from one to the other, or grey contour numbers on bands from pale
+to dark, read in parts.
+
+- **First move it.** A note on one background needs nothing: beside the
+  bars, above the plot, in the title. A band or segment too thin for its
+  label gets the label outside it, with a short line to it.
+- **Where it must cross** (contour numbers, a label along a stacked bar, a
+  name on a cloud of points): draw it, lay the figure out, and read
+  `dm.check`. It reports a text with ink under 3:1 as `TEXT_CONTRAST`.
+- **Then, and only then, `dm.legible(texts)`** on the texts it named, and
+  check again. It reads the drawn figure and gives each text the least
+  that makes it read: nothing to one that reads, the one colour that
+  reads on everything behind it, or an outline in the colour of the
+  background it reads best on. It never moves a text, and prints what it
+  did to each. A text nothing can mend (it is translucent, or something
+  is drawn over it) is left as it was and named: fix that one by hand.
+- It takes the texts you placed in an Axes (`ax.text`, `ax.annotate`,
+  `ax.clabel`), not titles, tick labels or legend entries: those take
+  their colour from the preset.
+- A box hides more of the data but reads flattest:
+  `ax.text(..., bbox={"facecolor": "white", "edgecolor": "none"})`.
+
+```python
+T, P = np.meshgrid(np.linspace(10, 30, 60), np.linspace(20, 100, 60))
+cop = 7.2 - 0.12 * (T - 10) - 2.4 * ((P - 70) / 50) ** 2
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+bands = ax.contourf(T, P, cop, levels=8, cmap="dc.teal")
+lines = ax.contour(T, P, cop, levels=4, colors="dc.gray8", linewidths=dm.lw(-1))
+labels = ax.clabel(lines, fmt="%d")
+fig.colorbar(bands, ax=ax, label="COP")
+ax.set(xlabel="Wet-bulb (°C)", ylabel="Part load (%)")
+dm.simple_layout(fig)
+print(dm.check(fig))              # TEXT_CONTRAST: the numbers on the dark bands
+dm.legible(labels)                # mends those; the ones that read stay as they are
+print(dm.check(fig))              # again, after the fix
 plt.close(fig)
 ```
 

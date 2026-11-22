@@ -38,9 +38,10 @@ FIXES: dict[str, str] = {
     "the figure so each letter goes before its title; or leave room in "
     "that corner (ax.set_ylim)",
     "TEXT_CONTRAST": "move a text off a band too thin to hold it, or one "
-    "that runs over several backgrounds onto one; labels you colour "
-    "yourself: color=dm.readable_text_color(bar_colour), or "
-    "dm.ensure_contrast(colour, background)",
+    "that runs over several backgrounds onto one; else dm.legible(texts) "
+    "after dm.simple_layout(fig) gives each the colour that reads there, "
+    "an outline where no one colour does; labels you colour yourself: "
+    "color=dm.readable_text_color(bar_colour)",
     "RADIAL_TICK_COVERED": "raise the radial labels above the fill with "
     "ax.set_axisbelow(False), or move them to a clear angle with ax.set_rlabel_position(...)",
     "POLAR_TICK_ON_PLOT": "give the angle labels more room with "

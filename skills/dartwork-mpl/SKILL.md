@@ -95,10 +95,13 @@ The library says what it changed on its own: each automatic change (tick labels 
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
 | align an existing column of names or numbers | `dm.align_texts(texts, "left")` or `dm.align_texts(texts, "decimal")` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
+| texts `dm.check` reports as `TEXT_CONTRAST` and that cannot move onto one background (a note over bars, contour numbers) | `dm.legible(texts)`, after `dm.simple_layout(fig)`; then check again |
 | 만/억 on the ticks | `dm.format_axis_myriad(ax)` |
 | 12k on the ticks (from a million the axis prints `1M` by itself) | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter(sep=""))` |
 
-Call them before `dm.simple_layout`, which makes room for what they add.
+Call them before `dm.simple_layout`, which makes room for what they add;
+`dm.legible` alone goes after it and after `dm.check` has named the texts,
+because it reads the figure as drawn.
 
 ## Look things up
 

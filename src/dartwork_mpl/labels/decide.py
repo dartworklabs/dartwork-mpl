@@ -5,8 +5,9 @@ than the bar pitch less 1.5 pt is crowded (vertical bars turn their labels),
 and labels that still meet are hidden a position at a time from the last; an
 autoscaled value axis grows just enough for the labels beyond the bar ends.
 A point label takes the first free side, panel letters run into their
-titles (or sit inside their plots when a run does not fit), line-end names spread one line apart. Special cases are in
-``edges.py``.
+titles (or sit inside their plots when a run does not fit), line-end names spread one line apart. A text that
+does not read on what is behind it takes the one colour that does, or an
+outline where none does. Special cases are in ``edges.py``.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import math
 
 import numpy as np
 
+from ..colorspace import LEGIBLE, Rgb, contrast
 from ..vocab import Span
 from .bar_geometry import (
     BeyondEnd,
@@ -30,10 +32,18 @@ from .model import (
     TOUCH_PX,
     Choice,
     Column,
+    DrawnOver,
+    Halo,
+    InkFacts,
     Inside,
+    InTheWay,
+    Leave,
     Letters,
+    Mend,
+    OwnAlpha,
     PanelsFacts,
     Placement,
+    Recolour,
     Run,
     Tries,
 )
@@ -42,6 +52,25 @@ from .stacks import BarsFacts, BarsPlan, Planned
 # Above the top decoration of a panel without a title, and between a letter
 # and a y name or tick label rising above the panel, in points.
 TOP_GAP_PT, CLEARANCE_PT = 4.0, 2.0
+
+
+#: Ink at this contrast reads without effort (WCAG's floor for body text):
+#: ``dm.legible`` leaves such a text alone and aims for it when it mends.
+#: A colour reads on everything behind a text when less than this share of
+#: the ink is under the floor: antialiased edges and a crossing gridline.
+CLEAN = 0.02
+#: A colour with this much OKLCH chroma is an accent, not a grey.
+ACCENT = 0.05
+#: A text with this share of its ink under the floor is lost, not crossing.
+MOSTLY = 0.5
+#: A text this opaque or more paints its own colour.
+OPAQUE = 0.99
+#: A halo reaches this far beyond the glyphs (em of the text): far enough
+#: to close the gaps between the strokes of a Hangul syllable, so the
+#: glyphs stand on one plate. Half of it leaves a second outline between
+#: the strokes. And at least this many points, so a small text's outline
+#: does not thin to nothing.
+HALO_EM, HALO_MIN_PT = 0.14, 0.6
 
 
 # ------------------------------------------------------------ which bars
@@ -222,3 +251,68 @@ def spread(column: Column) -> Column:
             groups[-2:] = [(merged - (total - 1) * height / 2, total, merged)]
     out = [first + k * height for first, n, _ in groups for k in range(n)]
     return Column(tuple(out), height)
+
+
+# ------------------------------------------------------------ legible text
+def mend(facts: InkFacts) -> Mend:
+    """What makes a text read on what is drawn behind it, the least first.
+
+    A text that reads is left: its colour is the author's. Else, among its
+    own colour, the preset's text colour and the paper of its Axes, the
+    one that reads on everything behind it with the most contrast is
+    taken. Where no one colour reads everywhere, or the text is an accent
+    colour lost only where it crosses onto something, it is outlined
+    (:func:`plate`).
+    """
+    drawn, own = facts.drawn, facts.own
+    if drawn.reads:
+        return Leave()
+    # A coloured note that reads on most of its length and is lost where it
+    # runs onto something else keeps its colour: the colour says what it
+    # belongs to, and the part that is lost is outlined instead.
+    accent = own.colour.oklab().lch().C >= ACCENT
+    crossing = drawn.low < MOSTLY
+    clean = [
+        ink
+        for ink in facts.inks
+        if ink.reading.reads and ink.reading.low < CLEAN
+    ]
+    if clean and not (accent and crossing):
+        best = max(clean, key=lambda ink: ink.reading.lowest.value)
+        return Recolour(best.colour)
+    return Halo(plate(facts), max(HALO_EM * facts.size, HALO_MIN_PT))
+
+
+def after(facts: InkFacts, tried: Mend) -> Mend:
+    """What to try once ``tried`` was drawn and the text still did not
+    read: an outline after a colour, and after an outline nothing, the
+    text left as it was."""
+    match tried:
+        case Recolour():
+            return Halo(plate(facts), max(HALO_EM * facts.size, HALO_MIN_PT))
+        case Halo() | Leave():
+            return Leave()
+
+
+def in_the_way(facts: InkFacts) -> InTheWay:
+    """Why neither a colour nor an outline made a text read. An outline
+    always reads under opaque ink, so either the ink is not opaque or
+    something is drawn over the text."""
+    if facts.alpha < OPAQUE:
+        return OwnAlpha(facts.alpha)
+    return DrawnOver()
+
+
+def plate(facts: InkFacts) -> Rgb:
+    """The colour of a text's halo: that of the background it reads best
+    on, so the outline disappears there and carries that background onto
+    the others. When it reads on none (3:1), the colour furthest from its
+    own among the inks it may take, white and black."""
+    own = facts.own.colour
+    if contrast(own, facts.home).value >= LEGIBLE.value:
+        return facts.home
+    poles = (Rgb(1.0, 1.0, 1.0), Rgb(0.0, 0.0, 0.0))
+    return max(
+        (*(ink.colour for ink in facts.inks), *poles),
+        key=lambda colour: contrast(own, colour).value,
+    )
