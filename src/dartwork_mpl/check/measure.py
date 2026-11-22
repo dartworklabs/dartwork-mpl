@@ -502,5 +502,16 @@ def measure(fig: Figure) -> Facts:
             "TEXT_MISALIGNMENT",
         ),
         occluded_ticks=r.attempt(r.radial_occlusion, (), "RADIAL_TICK_COVERED"),
+        edge_texts=r.attempt(
+            lambda: tuple(
+                t
+                for t in texts
+                if t.role.free
+                and isinstance(t.handle, MplText)
+                and text_inks(t.handle)
+            ),
+            (),
+            "TEXT_AT_EDGE",
+        ),
         skipped=tuple(r.skipped),
     )

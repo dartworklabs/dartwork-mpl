@@ -280,6 +280,7 @@ class Facts:
     minus_tick: Text | None = None
     alignment: tuple[tuple[AlignmentSample, ...], ...] = ()
     occluded_ticks: tuple[TickOcclusion, ...] = ()
+    edge_texts: tuple[Text, ...] = ()
 
     @property
     def touch(self) -> float:

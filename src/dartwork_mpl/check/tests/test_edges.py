@@ -324,3 +324,18 @@ def test_RADIAL_TICK_COVERED():
             CANVAS, PT, occluded_ticks=(TickOcclusion(label, opacity),)
         )
         assert found(facts).rules == expected
+
+
+def test_TEXT_AT_EDGE():
+    """At ordinary layout margins the text clears, and clipping reports once."""
+    for left, expected in (
+        (0, ("TEXT_AT_EDGE",)),
+        (1, ("TEXT_AT_EDGE",)),
+        (12, ()),
+        (-10, ("OVERFLOW",)),
+    ):
+        label = text("Germany", Box(left, 100, 110, 140))
+        assert (
+            found(Facts(CANVAS, PT, texts=(label,), edge_texts=(label,))).rules
+            == expected
+        )

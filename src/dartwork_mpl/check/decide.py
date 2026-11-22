@@ -510,3 +510,23 @@ def radial_tick_covered(facts: Facts, found: Findings) -> Findings:
             labels,
         )
     return found
+
+
+def text_at_edge(facts: Facts, found: Findings) -> Findings:
+    """Manually placed Axes text within a quarter millimetre of the canvas."""
+    close_px = 0.25 * 72 / 25.4 * facts.px_per_pt
+    groups: dict[tuple[int | None, str], list[Text]] = {}
+    for t in facts.edge_texts:
+        side, room = min(
+            margins(t.box, facts.canvas).items(), key=lambda item: item[1]
+        )
+        if -CUT_PX <= room < close_px:
+            groups.setdefault((t.panel, side), []).append(t)
+    for (panel, side), labels in groups.items():
+        found = found.flag(
+            "TEXT_AT_EDGE",
+            f"Axes[{panel}]: text sits at the {side} canvas edge "
+            f"({quote(t.short for t in labels)})",
+            labels,
+        )
+    return found

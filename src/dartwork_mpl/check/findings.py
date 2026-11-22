@@ -13,6 +13,8 @@ from .model import Text, panels_of
 FIXES: dict[str, str] = {
     "OVERFLOW": "dm.simple_layout(fig) makes room for axis text; move a "
     "fig.text or annotation placed past the plot inward",
+    "TEXT_AT_EDGE": "move the text inward by a millimetre or two, or give "
+    "its annotation an inward offset in points",
     "OVERLAP": "move or shorten one of them; dm.simple_layout(fig) spaces "
     "titles, axis labels and tick labels",
     "CROSS_AXES_OVERLAP": "dm.simple_layout(fig) spaces the panels; a "

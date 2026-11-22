@@ -55,6 +55,7 @@ not, the `try` line names what usually helps.
 | rule | Means |
 |---|---|
 | `OVERFLOW` | text cut off by the canvas edge |
+| `TEXT_AT_EDGE` | manually placed plot text almost touching the canvas edge |
 | `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, including an inset's axis label on its ticks; axis text running into another plot or across the parent frame |
 | `TEXT_TOO_CLOSE` | a text placed near another text on the same panel, with too little space to read them apart; aligned rows of a list are fine |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |

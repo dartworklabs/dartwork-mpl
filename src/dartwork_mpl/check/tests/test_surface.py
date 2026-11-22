@@ -329,3 +329,27 @@ def test_polar_radial_ticks_can_be_hidden_by_a_band():
     assert "RADIAL_TICK_COVERED" in dm.check(fig).rules
     ax.set_axisbelow(False)
     assert "RADIAL_TICK_COVERED" not in dm.check(fig).rules
+
+
+def test_a_manually_placed_group_name_needs_room_at_the_canvas_edge():
+    """A flush group heading gets one warning while the layout note clears."""
+    from matplotlib.transforms import blended_transform_factory
+
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.barh(["Berlin", "Munich"], [6.1, 4.8])
+    ax.set(xlabel="Change in vacancy (percentage points)", ylim=(-0.6, 2))
+    heading = ax.text(
+        0,
+        1.6,
+        "Germany",
+        fontweight="bold",
+        ha="left",
+        transform=blended_transform_factory(fig.transFigure, ax.transData),
+    )
+    dm.add_note(fig, "Source: vacancy report")
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "TEXT_AT_EDGE")
+    assert finding.artists == (heading,) and finding.panels == (0,)
+    heading.set_x(-0.05)
+    result = dm.check(fig)
+    assert "OVERFLOW" in result.rules and "TEXT_AT_EDGE" not in result.rules
