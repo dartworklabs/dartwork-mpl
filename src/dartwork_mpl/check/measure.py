@@ -425,7 +425,9 @@ def draws(ax: Axes) -> bool:
 def measure(fig: Figure) -> Facts:
     """Every fact the rules read, from one draw of ``fig``."""
     r = Reader(fig)
-    texts = r.attempt(r.axes_texts, (), "OVERFLOW, OVERLAP, TEXT_CROWD")
+    texts = r.attempt(
+        r.axes_texts, (), "OVERFLOW, OVERLAP, TEXT_CROWD, TEXT_TOO_CLOSE"
+    )
     return Facts(
         canvas=box_of(Bbox(fig.bbox.get_points())),
         px_per_pt=r.pt,

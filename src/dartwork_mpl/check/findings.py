@@ -17,6 +17,8 @@ FIXES: dict[str, str] = {
     "titles, axis labels and tick labels",
     "CROSS_AXES_OVERLAP": "dm.simple_layout(fig) spaces the panels; a "
     "spacing you set (hspace, wspace): raise it",
+    "TEXT_TOO_CLOSE": "give the texts some air: move one, or use "
+    "ax.annotate(..., textcoords='offset points', xytext=(0, -8))",
     "TEXT_CROWD": "put the value on the other side of its point "
     "(dm.annotate_value picks a free side) or a line apart",
     "VALUE_LABEL_DECIMAL": 'print whole numbers whole: fmt="%d" or "{:,.0f}"',

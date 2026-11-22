@@ -174,4 +174,11 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         applies=has_frames,
         adjust=decide.small_panel,
     ),
+    EdgeCase(
+        name="TEXT_TOO_CLOSE",
+        why="a text placed just under the title read as part of the title",
+        example="test_edges.py::test_TEXT_TOO_CLOSE",
+        applies=has_panel_texts,
+        adjust=decide.text_too_close,
+    ),
 )

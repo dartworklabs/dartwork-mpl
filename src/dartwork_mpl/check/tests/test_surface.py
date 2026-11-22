@@ -208,3 +208,17 @@ def test_lines_without_visible_marks_leave_an_empty_panel():
     line.set_linewidth(0)
     ax.fill_between([1, 2, 3], [1, 3, 2], 1)
     assert not empty()
+
+
+def test_an_annotation_just_below_the_title_is_found():
+    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
+    ax.plot([0, 10], [0, 10])
+    ax.set(
+        xlabel="x (s)", ylabel="y (m)", title="A title that states the point"
+    )
+    note = ax.text(5, 10.6, "today", ha="center", va="bottom")
+    dm.simple_layout(fig)
+    result = dm.check(fig)
+    (f,) = _of(result, "TEXT_TOO_CLOSE")
+    assert f.panels == (0,) and f.artists == (ax.title, note)
+    assert "OVERLAP" not in result.rules

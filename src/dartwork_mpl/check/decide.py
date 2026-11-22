@@ -21,6 +21,7 @@ from .model import (
     Inked,
     OnData,
     Text,
+    TextGap,
     TickRow,
     TickValues,
     margins,
@@ -33,6 +34,10 @@ CUT_PX = 1.0
 COVER = 0.05
 #: A number and a name on one row closer than this (em) read as one phrase.
 PHRASE_GAP_EM = 1.0
+#: Separation of placed text from a title or other axis text.
+AXIS_TEXT_GAP_EM = 0.5
+#: Placed texts may read as a group, as in a stack of line-end names.
+FREE_TEXT_GAP_EM = 0.3
 #: Text fainter than this on what is behind it disappears (WCAG large text).
 MIN_CONTRAST = Ratio(3.0)
 #: Whole-number x ticks all within these years read as years, not a quantity.
@@ -150,7 +155,10 @@ def phrase(facts: Facts, found: Findings) -> Findings:
                 continue
             gap = max(a.box.x0, b.box.x0) - min(a.box.x1, b.box.x1)
             em = max(a.em, b.em)
-            if -facts.touch <= gap < PHRASE_GAP_EM * em:
+            if (
+                -facts.touch <= gap < PHRASE_GAP_EM * em
+                and a.box.cover(b.box) <= COVER
+            ):
                 found = found.flag(
                     "TEXT_CROWD",
                     f"Axes[{panel}]: {a.short!r} and {b.short!r} sit "
@@ -350,4 +358,40 @@ def small_panel(facts: Facts, found: Findings) -> Findings:
             handles=(frame.handle,),
             panels=(frame.index,),
         )
+    return found
+
+
+def close_gap(a: Text, b: Text) -> TextGap | None:
+    """A small gap between aligned texts, in em of the smaller one."""
+    if not (a.role.free or b.role.free):
+        return None
+    shared = a.box.overlap(b.box)
+    if shared.width >= 0.5 * min(a.box.width, b.box.width):
+        gap = -shared.height
+    elif shared.height >= 0.5 * min(a.box.height, b.box.height):
+        # The same-row value and name have a rule of their own. A short
+        # inline unit or suffix can also belong to the value.
+        if a.value or b.value:
+            return None
+        gap = -shared.width
+    else:
+        return None
+    em = min(a.em, b.em)
+    minimum = (
+        FREE_TEXT_GAP_EM if a.role.free and b.role.free else AXIS_TEXT_GAP_EM
+    )
+    return TextGap(gap / em) if 0 <= gap < minimum * em else None
+
+
+def text_too_close(facts: Facts, found: Findings) -> Findings:
+    """Independently placed text with too little air between the boxes."""
+    for panel, texts in facts.by_panel.items():
+        for a, b in combinations(texts, 2):
+            if (gap := close_gap(a, b)) is not None:
+                found = found.flag(
+                    "TEXT_TOO_CLOSE",
+                    f"Axes[{panel}]: {a.role} {a.short!r} and "
+                    f"{b.role} {b.short!r} sit {gap.em:.2f} em apart",
+                    (a, b),
+                )
     return found

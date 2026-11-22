@@ -92,6 +92,13 @@ class Text:
 
 
 @dataclass(frozen=True)
+class TextGap:
+    """Room between two aligned texts, in em of the smaller type size."""
+
+    em: float
+
+
+@dataclass(frozen=True)
 class TickValues:
     """Where an axis' drawn labels stand, in data units, and whether the
     axis maps them linearly (not log, symlog, logit ...)."""

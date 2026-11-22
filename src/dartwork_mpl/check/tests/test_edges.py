@@ -192,3 +192,27 @@ def test_SMALL_PANEL():
     assert "SMALL_PANEL" not in found(largest).rules
     colorbar = Facts(CANVAS, PT, ticks=ticks(0, Y()), frames=(small,))
     assert not found(colorbar)
+
+
+def test_TEXT_TOO_CLOSE():
+    title = text("Temperature peaks at noon", INSIDE, Title())
+    for label, expected in (
+        (text("Today", Box(110, 70, 160, 94)), ("TEXT_TOO_CLOSE",)),
+        (text("Today", Box(110, 50, 160, 80)), ()),
+        (text("Today", Box(110, 80, 160, 110)), ("OVERLAP",)),
+        (text("Today", Box(304, 100, 360, 140)), ("TEXT_TOO_CLOSE",)),
+        (text("Today", Box(304, 70, 360, 94)), ()),
+        (text("Air temperature", Box(110, 70, 160, 94), AxisLabel()), ()),
+    ):
+        assert found(Facts(CANVAS, PT, texts=(title, label))).rules == expected
+
+    first = text("Wind", INSIDE)
+    for gap, expected in ((10, ("TEXT_TOO_CLOSE",)), (17, ())):
+        second = text("Hydro", Box(100, 140 + gap, 300, 175 + gap))
+        assert found(Facts(CANVAS, PT, texts=(first, second))).rules == expected
+
+    value = text("19.4 TWh", INSIDE)
+    name = text("Solar", Box(306, 100, 400, 140))
+    assert found(Facts(CANVAS, PT, texts=(value, name))).rules == (
+        "TEXT_CROWD",
+    )
