@@ -493,3 +493,20 @@ def mixed_minus(facts: Facts, found: Findings) -> Findings:
             labels,
         )
     return found
+
+
+def radial_tick_covered(facts: Facts, found: Findings) -> Findings:
+    """A substantial portion of a radial tick is under visible fill."""
+    panels: dict[int | None, list[Text]] = {}
+    for covered in facts.occluded_ticks:
+        if covered.opacity >= 0.45:
+            label = covered.label
+            panels.setdefault(label.panel, []).append(label)
+    for panel, labels in panels.items():
+        found = found.flag(
+            "RADIAL_TICK_COVERED",
+            f"Axes[{panel}]: fill is drawn over radial tick labels "
+            f"({quote(t.short for t in labels)})",
+            labels,
+        )
+    return found

@@ -38,6 +38,8 @@ FIXES: dict[str, str] = {
     "TEXT_CONTRAST": "colour each label for what is behind it: "
     "color=dm.readable_text_color(bar_colour), or "
     "dm.ensure_contrast(colour, background)",
+    "RADIAL_TICK_COVERED": "raise the radial labels above the fill with "
+    "ax.set_axisbelow(False), or move them to a clear angle with ax.set_rlabel_position(...)",
     "POLAR_TICK_ON_PLOT": "give the angle labels more room with "
     'ax.tick_params(axis="x", pad=...), or align them outward around the circle',
     "MIXED_MINUS": "format the numeric label with "

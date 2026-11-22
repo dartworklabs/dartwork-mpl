@@ -38,7 +38,7 @@ from ..geometry import (
     same_position_axes,
     text_inks,
 )
-from ..vocab import X
+from ..vocab import X, Y
 from . import roles
 from .alignment_measure import alignment_samples
 from .axis_labels import minus_tick, tick_row
@@ -57,9 +57,11 @@ from .model import (
     Panel,
     PolarTheta,
     Text,
+    TickOcclusion,
     TickRow,
     ascii_minus_value,
 )
+from .occlusion import measure_occlusion
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
@@ -196,6 +198,25 @@ class Reader:
             and (text := self.text(label, roles.FreeText(), i)) is not None
         )
         return tuple(labels)
+
+    def radial_occlusion(self) -> tuple[TickOcclusion, ...]:
+        """Visible radial tick labels and the fill drawn over them."""
+        found: list[TickOcclusion] = []
+        for i, ax in self.axes:
+            if not isinstance(ax, PolarAxes):
+                continue
+            labels = tuple(
+                t
+                for label in (
+                    *drawn_tick_labels(ax, Y()),
+                    *drawn_tick_labels(ax, Y(), minor=True),
+                )
+                if text_inks(label)
+                and (t := self.text(label, roles.TickLabel(), i)) is not None
+            )
+            if labels:
+                found.extend(measure_occlusion(ax, labels))
+        return tuple(found)
 
     def polar_theta(self) -> tuple[PolarTheta, ...]:
         """Angle labels and disc extents, for visible full-circle polar plots."""
@@ -480,5 +501,6 @@ def measure(fig: Figure) -> Facts:
             (),
             "TEXT_MISALIGNMENT",
         ),
+        occluded_ticks=r.attempt(r.radial_occlusion, (), "RADIAL_TICK_COVERED"),
         skipped=tuple(r.skipped),
     )

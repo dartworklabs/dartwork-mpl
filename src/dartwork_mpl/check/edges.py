@@ -64,6 +64,11 @@ def has_minus_labels(facts: Facts, found: Findings) -> bool:
     return bool(facts.minus_labels)
 
 
+def has_occluded_ticks(facts: Facts, found: Findings) -> bool:
+    """Any radial tick measured against a fill."""
+    return bool(facts.occluded_ticks)
+
+
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
     EdgeCase(
         name="OVERFLOW",
@@ -211,5 +216,12 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_MIXED_MINUS",
         applies=has_minus_labels,
         adjust=decide.mixed_minus,
+    ),
+    EdgeCase(
+        name="RADIAL_TICK_COVERED",
+        why="a polar band painted over the radial numbers, so part of a number vanished",
+        example="test_edges.py::test_RADIAL_TICK_COVERED",
+        applies=has_occluded_ticks,
+        adjust=decide.radial_tick_covered,
     ),
 )

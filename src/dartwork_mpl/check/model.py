@@ -250,6 +250,14 @@ class AlignmentSample:
 
 
 @dataclass(frozen=True)
+class TickOcclusion:
+    """A drawn tick label and the mean opacity of the fill covering its box."""
+
+    label: Text
+    opacity: float
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -271,6 +279,7 @@ class Facts:
     minus_labels: tuple[Text, ...] = ()
     minus_tick: Text | None = None
     alignment: tuple[tuple[AlignmentSample, ...], ...] = ()
+    occluded_ticks: tuple[TickOcclusion, ...] = ()
 
     @property
     def touch(self) -> float:

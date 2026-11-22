@@ -313,3 +313,19 @@ def test_ascii_minus_on_values_beside_unicode_ticks():
     assert finding.panels == (0,)
     with matplotlib.rc_context({"axes.unicode_minus": False}):
         assert "MIXED_MINUS" not in dm.check(fig).rules
+
+
+def test_polar_radial_ticks_can_be_hidden_by_a_band():
+    """A higher fill obscures radial ticks until the axis is raised."""
+    fig = plt.figure(figsize=dm.figsize("10cm", "square"))
+    ax = fig.add_subplot(projection="polar")
+    theta = np.linspace(0, 2 * np.pi, 366)
+    mean = 12 - 13 * np.cos(theta)
+    ax.fill_between(theta, mean - 8, mean + 8, color="dc.blue2")
+    ax.plot(theta, mean)
+    ax.set_ylim(-18, 40)
+    ax.set_rlabel_position(188)
+    dm.simple_layout(fig)
+    assert "RADIAL_TICK_COVERED" in dm.check(fig).rules
+    ax.set_axisbelow(False)
+    assert "RADIAL_TICK_COVERED" not in dm.check(fig).rules

@@ -18,6 +18,7 @@ from dartwork_mpl.check.model import (
     Panel,
     PolarTheta,
     Text,
+    TickOcclusion,
     TickRow,
     TickValues,
 )
@@ -313,3 +314,13 @@ def test_bar_ends_are_not_a_column():
         dm.simple_layout(fig)
         assert "TEXT_MISALIGNMENT" not in dm.check(fig).rules
         plt.close(fig)
+
+
+def test_RADIAL_TICK_COVERED():
+    """Light veils clear the check, while a substantially painted box fires."""
+    label = text("20", INSIDE, TickLabel())
+    for opacity, expected in ((0.2, ()), (0.45, ("RADIAL_TICK_COVERED",))):
+        facts = Facts(
+            CANVAS, PT, occluded_ticks=(TickOcclusion(label, opacity),)
+        )
+        assert found(facts).rules == expected
