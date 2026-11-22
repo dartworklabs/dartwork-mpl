@@ -40,6 +40,11 @@ Entries before 0.8.0 are in the git history of this file.
 - The skill says when a single plot's title belongs on the canvas: where long
   category names push the plot well off the figure's centre, `fig.suptitle`
   sits better than `ax.set_title`, which stays the default (#819).
+- The skill names the width each preset's text is sized for (17 cm for
+  `report` and `scientific`, 25 cm for `poster` and `presentation`), lets
+  the height follow the content, and says a bigger medium takes its preset,
+  not more centimetres; a deck is slides. Agents had drawn posters at 40 cm
+  and a board deck at 24 cm in `report` text, which then read small (#844).
 
 ## 0.9.0 — 2026-11-22
 
