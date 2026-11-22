@@ -1,0 +1,27 @@
+prompt = "For a conference poster: transistor count against year of introduction from chips.csv, to show the Moore's-law trend. Label the chips by name."
+
+[files]
+"chips.csv" = """
+chip,year,transistors
+Intel 4004,1971,2300
+Intel 8080,1974,6000
+MOS 6502,1975,3510
+Intel 8086,1978,29000
+Motorola 68000,1979,68000
+Intel 80386,1985,275000
+Intel 80486,1989,1180000
+Pentium,1993,3100000
+Pentium II,1997,7500000
+Pentium 4,2000,42000000
+Core 2 Duo,2006,291000000
+Core i7 (Nehalem),2008,731000000
+Apple A7,2013,1000000000
+Apple A11 Bionic,2017,4300000000
+Apple M1,2020,16000000000
+Apple M2 Ultra,2023,134000000000
+"""
+
+[expect]
+panels = 1
+marks = ["scatter"]
+texts = ["4004", "M2 Ultra"]

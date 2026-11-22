@@ -1,0 +1,26 @@
+prompt = "I'm writing the README for my weather-station repo and want one of those ridgeline plots (the Joy Division album look) of the daily max temperature in each month of 2025. `from station import load` returns a dict of month name -> array of daily values in °C."
+
+[files]
+"station.py" = '''
+"""Daily maximum temperature (°C) of the rooftop station, 2025."""
+
+import numpy as np
+
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+MEAN = [1.8, 4.6, 10.9, 17.7, 23.4, 27.2, 29.1, 30.0, 25.8, 19.6, 11.4, 4.1]
+SPREAD = [4.2, 4.6, 5.1, 4.8, 4.0, 3.3, 2.9, 2.7, 3.4, 4.1, 4.9, 4.4]
+
+
+def load() -> dict[str, np.ndarray]:
+    rng = np.random.default_rng(2025)
+    return {
+        m: np.round(rng.normal(mu, sd, n), 1)
+        for m, n, mu, sd in zip(MONTHS, DAYS, MEAN, SPREAD)
+    }
+'''
+
+[expect]
+texts = ["Jan", "Jul", "Dec"]
+any_text = ["°C"]

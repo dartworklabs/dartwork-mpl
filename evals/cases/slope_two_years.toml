@@ -1,0 +1,20 @@
+prompt = "For a slide: a slope chart of the renewable share of electricity in 2014 vs 2024 for the countries in renewables.csv. Label every country at both ends with its value. Denmark is the story."
+
+[files]
+"renewables.csv" = """
+country,2014,2024
+Denmark,55.9,88.4
+Germany,26.2,59.0
+United Kingdom,19.1,50.8
+Spain,40.1,56.3
+Italy,43.4,49.0
+France,17.6,27.8
+Poland,12.5,29.4
+Netherlands,10.0,50.5
+Sweden,55.8,68.9
+"""
+
+[expect]
+panels = 1
+marks = ["line"]
+texts = ["Denmark", "Netherlands", "2014", "2024"]

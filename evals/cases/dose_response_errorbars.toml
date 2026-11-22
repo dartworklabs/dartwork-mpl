@@ -1,0 +1,23 @@
+prompt = "dose.csv: mean response (% of control) and SD at each concentration for two compounds, n = 4 wells each. The concentrations run from 0.1 nM to 10 µM. Dose-response figure for the paper, with error bars, both compounds on one axis."
+
+[files]
+"dose.csv" = """
+conc_nM,DX-101_mean,DX-101_sd,DX-204_mean,DX-204_sd
+0.1,99.1,3.8,101.4,4.4
+0.3,98.2,4.1,99.0,3.1
+1,95.4,5.2,100.2,5.0
+3,86.7,6.0,98.1,4.2
+10,68.3,7.4,96.5,3.9
+30,44.9,6.8,91.0,5.6
+100,24.1,5.1,79.8,6.9
+300,12.6,3.3,58.4,7.7
+1000,7.9,2.2,34.2,6.1
+3000,6.1,1.9,17.5,4.0
+10000,5.4,2.4,9.8,2.8
+"""
+
+[expect]
+panels = 1
+marks = ["line"]
+texts = ["DX-101", "DX-204"]
+any_text = ["nM", "µM", "μM", "M)"]

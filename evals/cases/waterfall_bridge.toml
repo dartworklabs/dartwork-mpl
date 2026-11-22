@@ -1,0 +1,20 @@
+prompt = "I need a waterfall chart for the board deck that walks from FY24 revenue down to net income using bridge.csv (USD millions). Increases in green, decreases in red, the totals in a neutral colour, the value on every bar, and thin connector lines between the bars."
+
+[files]
+"bridge.csv" = """
+item,amount,kind
+Revenue,842.0,total
+Cost of goods sold,-389.5,change
+Gross profit,452.5,total
+Research and development,-121.3,change
+Sales and marketing,-148.9,change
+General and administrative,-62.4,change
+Other income,9.6,change
+Income tax,-31.2,change
+Net income,98.3,total
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Revenue", "Gross profit", "Net income"]

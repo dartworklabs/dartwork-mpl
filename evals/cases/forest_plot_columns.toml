@@ -1,0 +1,21 @@
+# Text in columns (#812): names, n, HR [CI] and weight should each line up.
+prompt = "Forest plot for the meta-analysis in trials.csv, for the manuscript (full page width). Left: study name with year, then the number of patients as its own column. Middle: hazard ratio with 95% CI on a log axis, square size by weight, a diamond for the pooled estimate, dashed line at 1. Right: one column with HR [low, high] and one with weight %. Column headers on top."
+
+[files]
+"trials.csv" = """
+study,year,n,hr,ci_low,ci_high,weight_pct
+ARISE,2011,412,0.82,0.61,1.10,9.8
+BEACON-2,2013,1208,0.74,0.63,0.87,17.6
+Castellanos et al.,2014,96,1.31,0.58,2.96,1.9
+DELTA,2015,2954,0.91,0.83,1.00,22.4
+ENDURE,2016,640,0.66,0.49,0.89,10.1
+Fujimoto et al.,2018,188,0.42,0.21,0.84,2.7
+GALAXY-HF,2019,3730,0.88,0.80,0.97,22.9
+HORIZON,2021,305,1.06,0.72,1.56,6.2
+Ibrahim and Okafor,2023,517,0.79,0.57,1.09,6.4
+Pooled (random effects),,10050,0.84,0.77,0.92,100.0
+"""
+
+[expect]
+marks = ["line"]
+texts = ["BEACON-2", "Ibrahim and Okafor", "Pooled", "weight"]

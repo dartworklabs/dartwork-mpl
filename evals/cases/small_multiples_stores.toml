@@ -1,0 +1,18 @@
+prompt = "one small chart per store so I can compare the seasonality. stores.csv, monthly sales in k€"
+
+[files]
+"stores.csv" = """
+store,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
+Amsterdam Centraal,307,308,308,295,311,288,279,282,281,306,332,396
+Rotterdam Markthal,237,241,238,240,245,259,277,271,265,253,298,377
+Utrecht Hoog Catharijne,259,256,263,264,245,244,239,230,230,283,303,371
+Den Haag,179,178,188,175,174,181,169,167,188,185,192,224
+Eindhoven,144,146,144,153,160,160,165,170,164,159,191,245
+Groningen,113,118,117,118,124,114,113,115,120,118,151,188
+Maastricht,96,96,93,93,90,91,93,91,85,93,122,155
+Zandvoort aan Zee,59,58,60,72,104,152,195,200,154,102,80,81
+"""
+
+[expect]
+panels = 8
+texts = ["Amsterdam Centraal", "Zandvoort aan Zee", "Groningen"]
