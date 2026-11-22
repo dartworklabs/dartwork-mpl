@@ -14,7 +14,7 @@ PR은 아래 게이트로 합격을 판정한다. 실행하지 않은 게이트�
 | 타입 | 정적 계약 | `uv run basedpyright` | 오류 0. strict 모드. 기존 오류는 `.basedpyright/baseline.json`에 있고 줄어들기만 한다 |
 | 전체 테스트 | 동작 | `uv run pytest -q -n auto --mpl` | 실패 0 |
 | 출하 색 해시 | 미감: 색 값 | 전체 테스트에 포함 (`tests/test_shipped_colors_hash.py`) | 통과. digest를 다시 만들어 통과시키지 않는다 |
-| 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 22개 각각 RMS ≤ 0.5 |
+| 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 24개 각각 RMS ≤ 0.5 |
 | slice 경계 | import 방향과 표면 | 전체 테스트에 포함 (`tests/architecture/test_boundaries.py`) | 위반 0 |
 | 순수 import | 순수 파일을 새 인터프리터에서 import했을 때 matplotlib이 없음 | 전체 테스트에 포함 (`tests/architecture/test_pure_imports.py`) | 위반 0 |
 | 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스의 이유와 예제 | 전체 테스트에 포함 (`test_domain_rules.py`, 예제 실행 중 작동 확인은 `tests/fixtures.py`) | 위반 0. baseline 없음 |
@@ -59,11 +59,13 @@ CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인�
 
 **색 해시.** 출하하는 모든 색 값을 digest로 고정한다. 실패는 출하 색이 움직였다는 뜻이고, 소유자가 결정할 일이다. 색 표는 생성기 없이 `color/assets/`의 JSON으로 들고 있으므로 이 테스트가 유일한 방어선이다.
 
+**글자 대비 3:1, 반 em 구간의 절반** (`colorspace.LEGIBLE`, `FAINT_SHARE`). `TEXT_CONTRAST`는 사용자가 놓은 글자의 잉크 픽셀마다 칠한 색과 그 뒤에 그려진 색의 대비를 재고, 글자 방향 반 em 구간 하나라도 잉크의 절반 이상이 3:1 미만이면 보고한다. 구간은 글자를 따라 미끄러진다: 잉크 픽셀마다 거기서 시작하는 구간과 거기서 끝나는 구간을 모두 본다. 이 측정은 그림을 따로 더 그리지 않는다: `dm.check`가 원래 하던 한 번의 그리기에서 같이 읽는다. 3:1은 WCAG의 큰 글자 기준이다. 4.5:1로 올리면 코퍼스에서 걸리는 그림이 5개에서 10개가 된다. 코퍼스에서 이 규칙이 걸리는 그림의 목록은 `tests/corpus/test_corpus.py`의 `FAINT_TEXT`에 고정돼 있다. 목록에 이름을 더하는 것은 그 그림을 본 뒤에 한다.
+
 **fitness baseline** (`tests/architecture/fitness_baseline.json`). 고쳐서 수가 줄면 `--update`로 낮춘다. 올리는 것은 소유자만 한다.
 
 ## 알려진 공백
 
 - **기준 이미지에 결함이 박혀 있다.** 장면 20개 중 새로 추가한 6개는 당시 코드가 그리던 모양 그대로다. 축 이름이 캔버스 왼쪽에서 잘리는 한글 차트, 오른쪽에서 잘리는 선 끝 이름, 위쪽 가장자리에 붙은 그림 범례가 들어 있다. 고치면 기준 이미지를 다시 만들어야 하고, 소유자가 전후 그림을 본 뒤 한다.
-- **새 기준 이미지 6개는 macOS에서 만들었다.** Ubuntu CI에서 미세하게 달라 다시 만들어야 할 수 있다.
+- **새 기준 이미지 6개는 macOS에서 만들었다.** `legible_korean_note`와 `legible_contour_labels`도 그렇다. Ubuntu CI에서 미세하게 달라 다시 만들어야 할 수 있다.
 - **에이전트 평가는 누가 돌려야만 돈다.** CI에 없으므로, 고친 결함이 돌아와도 평가를 다시 돌리기 전에는 보이지 않는다.
 - **Python 3.11과 3.13에서는 테스트가 돌지 않는다.** CI는 3.12만 쓴다.

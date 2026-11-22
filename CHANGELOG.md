@@ -9,9 +9,27 @@ Entries before 0.8.0 are in the git history of this file.
 - `dm.align_texts` aligns existing text edges or decimal positions without
   changing the chart's rows or tick labels. `dm.check` flags ragged columns
   beside a plot and suggests how to align them (#812).
+- `dm.legible(texts)` makes the texts `dm.check` reports as `TEXT_CONTRAST`
+  read on what is drawn behind them: a note that runs over bars, contour
+  numbers on pale and dark bands. Called after `dm.simple_layout`, it reads
+  the drawn figure and gives each text the least that makes it read:
+  nothing to one that reads, the one colour among its own, the preset's
+  text colour and the Axes' face colour that reads on everything behind
+  it, or an outline in the colour of the background it reads best on. It
+  reads the figure again afterwards: a text nothing can mend (it is
+  translucent, or something is drawn over it) is left as it was and named,
+  and calling it twice is the same as calling it once (#810).
 
 ### Changed
 
+- `dm.check`'s `TEXT_CONTRAST` reads every pixel of a text's ink against
+  what is drawn behind it, where it compared the text with the one colour
+  behind the centre of its box. A note that runs from the canvas onto a dark
+  bar, a label over two contour bands, a word a thin dark band cuts through
+  and a text in a polar plot are found, and the finding says how much of
+  the ink is under 3:1 (#810). A number inside a scatter point or a marker
+  is read against the point, not the page behind it (#830). The check
+  still draws the figure once.
 - Y tick labels sit 3 pt from their tick marks (7.8 pt on `presentation`),
   up from 1 pt, so a category name no longer reads as ending in a hyphen and
   no longer touches the cells of a heatmap drawn without tick marks (#818).

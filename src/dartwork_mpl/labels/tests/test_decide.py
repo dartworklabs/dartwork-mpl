@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from dartwork_mpl.colorspace import Legibility, Ratio, Rgb
 from dartwork_mpl.labels import decide
 from dartwork_mpl.labels.bar_geometry import (
     BeyondEnd,
@@ -17,9 +18,16 @@ from dartwork_mpl.labels.bar_geometry import (
 )
 from dartwork_mpl.labels.model import (
     Column,
+    DrawnOver,
+    Halo,
+    Ink,
+    InkFacts,
     Inside,
+    Leave,
+    OwnAlpha,
     Panel,
     PanelsFacts,
+    Recolour,
     Run,
     Title,
     Tries,
@@ -176,3 +184,157 @@ def test_inside_letters_sit_in_from_the_plot_corner():
 def test_spread_keeps_order_and_the_mean_of_a_crowded_group():
     out = decide.spread(Column((10.0, 11.0, 40.0), 6.0)).centres
     assert out == pytest.approx((7.5, 13.5, 40.0))
+
+
+BLACK, WHITE, GREY = Rgb(0.0, 0.0, 0.0), Rgb(1.0, 1.0, 1.0), Rgb(0.3, 0.3, 0.3)
+NAVY, PALE = Rgb.from_hex("#0b2a5b"), Rgb.from_hex("#b4c4fe")
+RED = Rgb.from_hex("#fb5b5e")
+
+
+def _reads(lowest: float, low: float = 0.0, worst: float = 0.0) -> Legibility:
+    """A reading: its faintest ink at ``lowest``:1, ``low`` of the ink
+    under 3:1 and ``worst`` of it in the worst window."""
+    return Legibility(low, worst, Ratio(lowest), BLACK, WHITE)
+
+
+def _facts(
+    drawn: Legibility,
+    *inks: tuple[Rgb, Legibility],
+    home: Rgb = WHITE,
+    size: float = 8.0,
+    alpha: float = 1.0,
+) -> InkFacts:
+    """A text as it is painted, and how each ink it may take would read."""
+    return InkFacts(drawn, tuple(Ink(c, r) for c, r in inks), home, size, alpha)
+
+
+@pytest.mark.parametrize(
+    ("facts", "plan"),
+    [
+        # black on white: nothing to do
+        (
+            _facts(
+                _reads(15.0), (BLACK, _reads(15.0)), (WHITE, _reads(1.0, 1, 1))
+            ),
+            Leave(),
+        ),
+        # grey numbers on a mid band read (3.1:1): the author's colour,
+        # though black would read better
+        (
+            _facts(_reads(3.1), (GREY, _reads(3.1)), (BLACK, _reads(4.6))),
+            Leave(),
+        ),
+        # every part reads, though faint specks cross it
+        (
+            _facts(
+                _reads(2.5, 0.05, 0.3),
+                (BLACK, _reads(2.5, 0.05, 0.3)),
+                (WHITE, _reads(1.0, 0.6, 1)),
+            ),
+            Leave(),
+        ),
+        # all of it lost on a dark band: the paper colour reads
+        (
+            _facts(
+                _reads(1.3, 1, 1),
+                (GREY, _reads(1.3, 1, 1)),
+                (BLACK, _reads(2.0, 1, 1)),
+                (WHITE, _reads(9.0)),
+            ),
+            Recolour(WHITE),
+        ),
+        # a red note lost only where it crosses a dark wedge stays red
+        (
+            _facts(
+                _reads(1.9, 0.18, 1),
+                (RED, _reads(1.9, 0.18, 1)),
+                (BLACK, _reads(4.4)),
+            ),
+            Halo(WHITE, pytest.approx(1.12)),
+        ),
+        # ... a grey one takes the black that reads on both
+        (
+            _facts(
+                _reads(1.9, 0.18, 1),
+                (GREY, _reads(1.9, 0.18, 1)),
+                (BLACK, _reads(4.4)),
+            ),
+            Recolour(BLACK),
+        ),
+        # ... and a red one lost on all it stands on takes it too
+        (
+            _facts(
+                _reads(1.9, 0.9, 1),
+                (RED, _reads(1.9, 0.9, 1)),
+                (BLACK, _reads(4.4)),
+            ),
+            Recolour(BLACK),
+        ),
+        # across canvas and navy: no one colour, an outline of the canvas
+        (
+            _facts(
+                _reads(1.4, 0.45, 1),
+                (BLACK, _reads(1.4, 0.45, 1)),
+                (WHITE, _reads(1.0, 0.55, 1)),
+            ),
+            Halo(WHITE, pytest.approx(1.12)),
+        ),
+        # a colour that loses one whole window to a thin band is no answer,
+        # however little of the text that window is
+        (
+            _facts(
+                _reads(1.0, 0.01, 1),
+                (BLACK, _reads(1.0, 0.01, 1)),
+                (WHITE, _reads(1.0, 0.99, 1)),
+            ),
+            Halo(WHITE, pytest.approx(1.12)),
+        ),
+    ],
+)
+def test_a_text_takes_the_least_that_makes_it_read(
+    facts: InkFacts, plan: object
+):
+    """Nothing while it reads; else the one colour that reads everywhere;
+    else an outline."""
+    assert decide.mend(facts) == plan
+
+
+def test_a_halo_is_the_colour_the_text_reads_best_on_and_never_hairline():
+    """Black over pale, mid and dark segments is outlined in the pale one,
+    where it then disappears; grey that reads on nothing behind it takes
+    the colour furthest from it, white or black when its own inks are all
+    close. The outline is 0.14 em of the text, so it grows with it, and a
+    tiny text's is never under 0.6 pt."""
+    crossing = _reads(2.4, 0.46, 1.0)
+    black = _facts(
+        crossing, (BLACK, crossing), (WHITE, _reads(1.2, 0.5, 1)), home=PALE
+    )
+    assert decide.mend(black) == Halo(PALE, pytest.approx(1.12))
+    grey = _facts(crossing, (GREY, crossing), (BLACK, crossing), home=NAVY)
+    assert decide.plate(grey) == WHITE
+    big = _facts(crossing, *((i.colour, i.reading) for i in black.inks),
+                 home=PALE, size=20.0)  # fmt: skip
+    assert decide.mend(big) == Halo(PALE, pytest.approx(2.8))
+    tiny = _facts(crossing, *((i.colour, i.reading) for i in black.inks),
+                  home=PALE, size=3.0)  # fmt: skip
+    assert decide.mend(tiny) == Halo(PALE, 0.6)
+
+
+def test_what_did_not_read_once_drawn_gets_the_next_step_then_none():
+    """A colour that did not read on the drawn figure is followed by an
+    outline; after an outline the text is left as it was."""
+    lost = _reads(1.3, 1, 1)
+    facts = _facts(lost, (GREY, lost), (WHITE, _reads(9.0)))
+    assert decide.after(facts, Recolour(WHITE)) == Halo(
+        WHITE, pytest.approx(1.12)
+    )
+    assert decide.after(facts, Halo(WHITE, pytest.approx(1.12))) == Leave()
+
+
+def test_what_is_in_the_way_is_the_texts_alpha_or_something_over_it():
+    """An outline reads under any opaque ink, so a text nothing helps is
+    either translucent or drawn over."""
+    lost = _reads(1.3, 1, 1)
+    faint = _facts(lost, (GREY, lost), alpha=0.27)
+    assert decide.in_the_way(faint) == OwnAlpha(0.27)
+    assert decide.in_the_way(_facts(lost, (GREY, lost))) == DrawnOver()

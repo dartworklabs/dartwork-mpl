@@ -24,6 +24,11 @@ def has_panel_texts(facts: Facts, found: Findings) -> bool:
     return bool(facts.by_panel)
 
 
+def has_inks(facts: Facts, found: Findings) -> bool:
+    """Any text the user placed in an Axes, of any projection."""
+    return bool(facts.inks)
+
+
 def has_legends(facts: Facts, found: Findings) -> bool:
     """Any drawn legend."""
     return bool(facts.legends)
@@ -163,10 +168,11 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         name="TEXT_CONTRAST",
         why=(
             "white values centred in pale yellow bars read at 1.39:1 and "
-            "disappeared"
+            "disappeared; a note running from the canvas onto a navy bar "
+            "lost the letters on the bar"
         ),
         example="test_edges.py::test_TEXT_CONTRAST",
-        applies=has_panel_texts,
+        applies=has_inks,
         adjust=decide.text_contrast,
     ),
     EdgeCase(

@@ -10,6 +10,7 @@ uses lives in that slice.
 - :mod:`.axes`: an Axes' titles and drawn tick labels, its twins and shares;
 - :mod:`.ink`: what an artist actually draws, where its clip lets it;
 - :mod:`.data_ink`: a plot's data ink by key, and what a box meets.
+- :mod:`.backdrop`: what is drawn behind each pixel of a text's ink.
 """
 
 from .axes import (
@@ -23,6 +24,7 @@ from .axes import (
     same_position_axes,
     shared_axes,
 )
+from .backdrop import Backdrop, Drawn, backdrops, draw
 from .data_ink import DataInk, ToPx
 from .figure import (
     drawn_in_tree,
@@ -59,8 +61,10 @@ from .text_anchors import follows_mark
 __all__ = [
     "BBOX_ERRORS",
     "UNCLIPPED",
+    "Backdrop",
     "CentreTitle",
     "DataInk",
+    "Drawn",
     "LeftTitle",
     "RightTitle",
     "TitleLoc",
@@ -68,11 +72,13 @@ __all__ = [
     "artist_shown",
     "axes_titles",
     "axis_of",
+    "backdrops",
     "canvas_renderer",
     "clip_path_px",
     "clip_region",
     "cut_to_clip",
     "discs_meet",
+    "draw",
     "drawn_collection_outlines",
     "drawn_collection_paths",
     "drawn_in_tree",

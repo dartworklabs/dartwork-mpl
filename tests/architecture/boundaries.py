@@ -64,7 +64,8 @@ ENTRY_POINTS = frozenset(
 PLATFORM = frozenset(
     {
         # Colour values and their arithmetic: sRGB, OKLab, compositing,
-        # WCAG contrast (color and labels compute with them).
+        # WCAG contrast (color and labels compute with them), and how much
+        # of a text's ink reads on what is behind it (check and labels).
         "dartwork_mpl.colorspace",
         # A physical length and its units (size measures canvases in it,
         # layout margins).

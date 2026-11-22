@@ -20,7 +20,7 @@ orphan: true
 | `font` | 번들 폰트 등록과 선택 |
 | `layout` | 내용에 맞춘 결정적 여백(`simple_layout`) |
 | `ticks` | 큰 수의 기본 표기(천 단위 쉼표, 백만부터 `1M`, 한국어 preset에서는 `100만`), 데이터가 모두 정수인 축(월, 개수, 순위, 연도)의 정수 눈금, 만·억 단위 눈금(`format_axis_myriad`), 값 라벨이 따라 쓸 축의 숫자 표기. 날짜와 그 밖의 눈금 글자는 preset 토큰(`date.autoformatter.*`)과 matplotlib이 쓴다 |
-| `labels` | 값 라벨, 패널 문자, 주석 |
+| `labels` | 값 라벨, 패널 문자, 주석, 놓인 글자가 그 뒤에 그려진 것 위에서 읽히게 하기(`dm.legible`: 그대로 두기, 읽히는 한 색, 테두리. 고친 뒤 다시 재서 읽히지 않으면 원래대로 돌린다) |
 | `legend` | 범례 배치 |
 | `check` | 그려진 그림의 결함 찾기(`dm.check`). 그려진 흔적이 없는 패널과 서로 가깝게 놓인 글자(정렬된 목록의 줄은 제외)를 찾고, 부모 Axes에 붙은 인셋과 극좌표 원 안으로 들어온 각도 눈금과 채운 면에 가려진 반지름 눈금도 검사한다. 음수 값 라벨과 눈금의 부호가 다른 것도 찾는다. 직접 놓은 글자가 캔버스 가장자리에 닿는지와 축 없는 도형 그림의 큰 빈 띠도 잰다. 그림을 바꾸지 않는다 |
 | `save` | 여러 형식으로 저장 |
@@ -47,10 +47,10 @@ orphan: true
 | --- | --- | --- |
 | `vocab` | slice들이 함께 쓰는 낱말. 모듈 하나가 어휘 하나다: `axis`(x·y 축과 라벨이 놓이는 쪽), `align`(글자 정렬), `box`(픽셀 사각형 `Box`와 구간 `Span`), `edge`(상자의 네 변, figure 범례가 잡는 변), `projection`(평면, 3D, 그 밖), `number`(숫자가 찍히는 눈금 단위), `locale`(기본 관례와 한국 관례) | 모든 slice, geometry |
 | `length` | 물리 길이 `Length`와 단위(`dm.cm` 등) | size, layout, 루트 |
-| `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels |
+| `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비, 글자의 잉크가 그 뒤의 색 위에서 읽히는 정도(`Legibility`: 3:1 미만인 잉크의 몫과, 글자를 따라 어디서 시작하든 가장 나쁜 반 em 구간) | check, color, labels |
 | `edgecase` | 엣지 케이스 등록 장치. 로거를 받으면, 작동해서 계획을 바꾼 엣지 케이스마다 이름과 이유를 한 줄 보고한다 | 모든 slice |
 | `hidden` | 자동 동작의 보고. slice마다 `dartwork_mpl.<slice>` 로거에 INFO 한 줄을 쓰고, 그것이 기본으로 stderr에 `dartwork-mpl:`을 붙여 출력된다. `dm.quiet()`이 끄고 `dm.verbose()`가 다시 켠다. import 때의 등록은 DEBUG라 출력되지 않는다. Axes를 이름으로 부르는 `axes_name` | color, font, labels, layout, legend, save, size, style, ticks, 루트 |
-| `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨, 글자의 가로 앵커가 마크를 따르는지 판별 | check, labels, layout, legend, ticks |
+| `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨, 글자의 가로 앵커가 마크를 따르는지 판별, 글자의 잉크 픽셀마다 그 뒤에 그려진 색(`draw`, `backdrops`: 그림을 한 번 그리면서 glyph를 뺀 캔버스를 같이 칠한다. `draw_event`와 artist의 `draw`는 `fig.canvas.draw()`와 같은 횟수만 돌고, artist는 바꾸지 않는다) | check, labels, layout, legend, ticks |
 
 `geometry`, `edgecase`, `hidden` 밖의 platform은 모두 순수하다. 정본과 패키지마다의 이유는 `boundaries.py`의 `PLATFORM`이다.
 

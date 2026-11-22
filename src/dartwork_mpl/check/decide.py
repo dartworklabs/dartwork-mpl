@@ -11,7 +11,6 @@ from itertools import combinations
 from math import hypot
 from typing import assert_never
 
-from ..colorspace import Ratio
 from ..vocab import Box, Which, X, Y
 from .findings import Findings
 from .model import (
@@ -40,8 +39,8 @@ PHRASE_GAP_EM = 1.0
 AXIS_TEXT_GAP_EM = 0.5
 #: Placed texts may read as a group, as in a stack of line-end names.
 FREE_TEXT_GAP_EM = 0.3
-#: Text fainter than this on what is behind it disappears (WCAG large text).
-MIN_CONTRAST = Ratio(3.0)
+#: A text with this share of its ink under the floor is faint as a whole.
+ALL_OF_IT = 0.9
 #: Whole-number x ticks all within these years read as years, not a quantity.
 YEARS = (1800.0, 2100.0)
 #: A text this far (em) into another Axes' plot, both ways, is drawn on it.
@@ -353,18 +352,22 @@ def letter_on_data(facts: Facts, found: Findings) -> Findings:
 
 
 def text_contrast(facts: Facts, found: Findings) -> Findings:
-    """Texts the user placed, fainter than 3:1 on what is behind them."""
+    """Texts the user placed with ink under 3:1 on what is behind it: all
+    of a text, or the part of it that runs onto another background."""
     panels: dict[int | None, list[Inked]] = {}
     for c in facts.inks:
-        if c.ratio.value < MIN_CONTRAST.value:
+        if not c.reading.reads:
             panels.setdefault(c.text.panel, []).append(c)
     for panel, faint in panels.items():
-        w = min(faint, key=lambda c: c.ratio.value)
+        w = max(faint, key=lambda c: (c.reading.low, -c.ratio.value))
+        part = "all" if w.reading.low >= ALL_OF_IT else f"{w.reading.low:.0%}"
+        others = [c.text.short for c in faint if c is not w]
+        also = f"; also {quote(others)}" if others else ""
         found = found.flag(
             "TEXT_CONTRAST",
-            f"Axes[{panel}]: {len(faint)} text(s) under 3:1 on what is "
-            f"behind them, worst {w.ink} on {w.paper} at "
-            f"{w.ratio.value:.2f}:1 ({quote(c.text.short for c in faint)})",
+            f"Axes[{panel}]: {len(faint)} text(s) with ink under 3:1 on "
+            f"what is behind it, worst {w.text.short!r}: {part} of its ink, "
+            f"down to {w.ratio.value:.2f}:1 ({w.ink} on {w.paper}){also}",
             [c.text for c in faint],
         )
     return found
