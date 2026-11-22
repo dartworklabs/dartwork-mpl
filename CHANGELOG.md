@@ -9,6 +9,8 @@ Entries before 0.8.0 are in the git history of this file.
 - `dm.check` reports `UNDERUSED_CANVAS` when a vertical colorbar's
   subplot slot leaves a large blank strip on one side of a plot. It
   suggests a smaller colorbar `fraction` or an explicit column (#858).
+- `UNDERUSED_CANVAS` also measures the columns and descriptions in a single
+  plot with no x scale and points out a large one-sided blank band (#860).
 - `dm.align_texts` aligns existing text edges or decimal positions without
   changing the chart's rows or tick labels. `dm.check` flags ragged columns
   beside a plot and suggests how to align them (#812).

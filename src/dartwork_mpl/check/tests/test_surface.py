@@ -125,6 +125,24 @@ def test_oversized_colorbar_slot_leaves_a_blank_band():
     plt.close(fig)
 
 
+def test_column_space_counts_the_visible_descriptions():
+    fig, ax = plt.subplots(figsize=dm.figsize("14cm", "wide"))
+    ax.bar(0, 3, width=0.5)
+    ax.bar(0, 5, bottom=3, width=0.5)
+    ax.text(0.32, 1.5, "First group", va="center")
+    ax.text(0.32, 5.5, "Second group", va="center")
+    ax.set(xlim=(-0.35, 2), ylabel="Amount", xticks=[])
+    ax.spines[["bottom", "top", "right"]].set_visible(False)
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "UNDERUSED_CANVAS")
+    assert finding.artists == (ax,)
+
+    ax.text(2, 6.5, "Summary", va="center", ha="right")
+    dm.simple_layout(fig)
+    assert "UNDERUSED_CANVAS" not in dm.check(fig).rules
+    plt.close(fig)
+
+
 def test_a_value_against_a_line_end_name_is_crowded():
     from tests.visual.scenarios import all_scenarios
 

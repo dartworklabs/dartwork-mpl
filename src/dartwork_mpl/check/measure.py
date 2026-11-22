@@ -42,12 +42,18 @@ from ..vocab import AlignCentre, X, Y, parse_halign
 from . import roles
 from .alignment_measure import alignment_samples
 from .axis_labels import minus_tick, tick_row
-from .canvas import content_box, scale_slot, shape_panel
+from .canvas import (
+    bar_panel_without_x_scale,
+    content_box,
+    scale_slot,
+    shape_panel,
+)
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
     THROUGH_EM,
+    BarCanvasUse,
     Box,
     CanvasUse,
     ColorbarSpace,
@@ -452,12 +458,17 @@ class Reader:
                 found.append(Inked(fact, behind.read(LEGIBLE)))
         return tuple(found)
 
-    def canvas_use(self, texts: tuple[Text, ...]) -> CanvasUse | None:
-        """The body of one shape chart without a legend or other panel."""
+    def canvas_use(
+        self, texts: tuple[Text, ...]
+    ) -> CanvasUse | BarCanvasUse | None:
+        """The body of one chart with horizontal or equal-aspect layout space."""
         if len(self.axes) != 1:
             return None
         [(i, ax)] = self.axes
-        if not shape_panel(ax) or self.drawn_legends():
+        if self.drawn_legends():
+            return None
+        use = CanvasUse if shape_panel(ax) else BarCanvasUse
+        if use is BarCanvasUse and not bar_panel_without_x_scale(ax):
             return None
         labels = tuple(
             t
@@ -469,10 +480,34 @@ class Reader:
         body = content_box(ax, labels, self.renderer, self.pt)
         if body is None:
             return None
+        if use is BarCanvasUse:
+            body = self.column_body(ax, body)
         inside = Bbox.intersection(body, self.fig.bbox)
-        return (
-            None if inside is None else CanvasUse(Panel(ax, i), box_of(inside))
+        return None if inside is None else use(Panel(ax, i), box_of(inside))
+
+    def column_body(self, ax: Axes, marks: Bbox) -> Bbox:
+        """Also count spines, axis text and any figure text beside the bars."""
+        bounds = [marks]
+        bounds.extend(
+            text.get_window_extent(self.renderer)
+            for text in axes_titles(ax).values()
+            if text_inks(text)
         )
+        bounds.extend(
+            ext for _, ext in iter_figure_level_extents(self.fig, self.renderer)
+        )
+        if ax.axison:
+            if draws_axis(ax, ax.yaxis):
+                axis_text = ax.yaxis.get_tightbbox(self.renderer)
+                if axis_text is not None:
+                    bounds.append(axis_text)
+            if ax.get_frame_on():
+                bounds.extend(
+                    spine.get_window_extent(self.renderer)
+                    for spine in ax.spines.values()
+                    if spine.get_visible() and patch_inks(spine)
+                )
+        return Bbox.union(bounds)
 
     def colorbar_space(self) -> ColorbarSpace | None:
         """A single plot with an attached scale, measured as a group."""
