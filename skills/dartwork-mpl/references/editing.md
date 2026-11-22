@@ -73,7 +73,7 @@ request names, so the preset styles the rest.
 
 | Asked for | Call |
 |---|---|
-| a title | `fig.suptitle("…")`, centred on the figure; a panel's name `ax.set_title("…")` |
+| a title | `ax.set_title("…")`; over several panels `fig.suptitle("…")` |
 | gridlines | `ax.grid(True, axis="y")` |
 | a legend, or moving one | `dm.place_legend(ax)`; a named side `dm.place_legend(ax, loc="right")` |
 | line names instead of a legend | `dm.label_line_ends(ax)` |
