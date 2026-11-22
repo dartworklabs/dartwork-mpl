@@ -4,9 +4,18 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Y tick labels sit 3 pt from their tick marks (7.8 pt on `presentation`),
+  up from 1 pt, so a category name no longer reads as ending in a hyphen and
+  no longer touches the cells of a heatmap drawn without tick marks (#818).
+
 ### Fixed
 
 - Removed the Korean role-colour notice because it describes a preset convention (#806).
+- The skill writes a figure's title with `fig.suptitle`, one plot or several,
+  so it is centred on the canvas and no longer sits off to the right of long
+  category names; `ax.set_title` names a panel (#819).
 
 ## 0.9.0 — 2026-11-22
 

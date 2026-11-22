@@ -45,7 +45,7 @@ Sizes written in code stay relative to the preset: `dm.fs(1)` is the preset font
 
 **The point is visible without reading the axes.** Put the series that matters in colour and the rest in grey. Name lines at their ends when there are only a few. Mark the one value, crossing or period the reader must notice. Order categories by value unless they have an order of their own.
 
-**The medium decides where the words go.** A paper figure leaves its message to the caption, so it has no title. A report or slide figure may say its point in the title: "Exports passed the 2019 level in 2021", not "Exports by year". State only what the data shows.
+**The medium decides where the words go.** A paper figure leaves its message to the caption, so it has no title. A report or slide figure may say its point in the title: "Exports passed the 2019 level in 2021", not "Exports by year". That title is the figure's, `fig.suptitle(...)`, with one plot as with many: it is centred on the whole figure, where `ax.set_title` is centred on the plot and sits off to the right once long category names take the left. State only what the data shows.
 
 **Everything on it encodes something.** Colour means a category, a magnitude or emphasis, never decoration. Every number has a unit, in the axis label. Bars start at zero.
 

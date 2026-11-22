@@ -229,7 +229,7 @@ def test_an_inset_axis_label_is_checked_against_ticks_and_parent_frame():
     fig, ax = plt.subplots(figsize=dm.figsize("17cm", "wide"))
     ax.plot(np.arange(365), 40 + np.random.default_rng(0).normal(0, 1, 365))
     ax.set(xlabel="일 (day of year)", ylabel="일 최대 전력 (MW)")
-    inset = ax.inset_axes([0.04, 0.55, 0.36, 0.38])
+    inset = ax.inset_axes([0.045, 0.55, 0.36, 0.38])
     inset.plot(np.arange(168), 48 + 3 * np.sin(np.arange(168) / 24 * 2 * np.pi))
     inset.tick_params(axis="y", labelsize=dm.fs(-2))
     label = inset.set_ylabel("시간당 (MW)", fontsize=dm.fs(-2))
