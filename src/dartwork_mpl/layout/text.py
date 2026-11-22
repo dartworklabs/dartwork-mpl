@@ -6,6 +6,7 @@ spacing between panels nobody spaced, with the artists their ids name.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Collection
 from dataclasses import dataclass
 from itertools import pairwise
@@ -14,6 +15,7 @@ from typing import TYPE_CHECKING, assert_never
 import matplotlib as mpl
 from matplotlib.axis import Axis
 from matplotlib.gridspec import GridSpec
+from matplotlib.projections.polar import PolarAxes
 from matplotlib.text import Text
 
 from ..geometry import drawn_tick_labels, same_position_axes
@@ -29,14 +31,17 @@ from .measure import (
 )
 from .model import (
     CLEARANCE_EM,
+    AngleLabel,
     ArtistId,
     AxisName,
     Count,
+    Degrees,
     Gap,
     HSpace,
     Line,
     Px,
     Reach,
+    Rim,
     Share,
     Spacing,
     TextFacts,
@@ -110,10 +115,12 @@ def _row(
 
 @dataclass(frozen=True)
 class TextArtists:
-    """The artists the ids in text facts name: tick axes, axis labels."""
+    """The artists the ids in text facts name: tick axes, axis labels and
+    angle tick labels (``rims``: the polar plot of each)."""
 
     axes: dict[int, Axis]
     labels: dict[int, Text]
+    rims: dict[int, Axes]
 
 
 def _groups(
@@ -180,6 +187,53 @@ def _names(
             )
             names.append(name)
     return names
+
+
+def _rims(
+    fig: Figure, renderer: RendererBase, objects: TextArtists
+) -> list[Rim]:
+    """The angle labels of each visible polar plot that shows a full circle."""
+    rims: list[Rim] = []
+    for ax in fig.axes:
+        if (
+            not isinstance(ax, PolarAxes)
+            or not ax.get_visible()
+            or not math.isclose(ax.get_thetamax() - ax.get_thetamin(), 360.0)
+        ):
+            continue
+        disc = box_of(ax.patch.get_extents())
+        centre = (disc.x0 + disc.x1) / 2, (disc.y0 + disc.y1) / 2
+        drawn = [t for t in drawn_tick_labels(ax, X()) if t.get_text().strip()]
+        labels: list[AngleLabel] = []
+        for t in drawn:
+            at = t.get_transform().transform(t.get_position())
+            objects.labels[id(t)] = t
+            objects.rims[id(t)] = ax
+            labels.append(
+                AngleLabel(
+                    label=ArtistId(id(t)),
+                    box=box_of(t.get_window_extent(renderer)),
+                    angle=Degrees(
+                        math.degrees(
+                            math.atan2(
+                                float(at[1]) - centre[1],
+                                float(at[0]) - centre[0],
+                            )
+                        )
+                    ),
+                    em=Px(float(t.get_fontsize()) * fig.dpi / 72.0),
+                )
+            )
+        if not labels:
+            continue
+        placed = any(
+            float(t.get_rotation()) != 0.0
+            or not centred(t.get_horizontalalignment())
+            or not centred(t.get_verticalalignment())
+            for t in drawn
+        )
+        rims.append(Rim(disc, tuple(labels), placed))
+    return rims
 
 
 def spacing_of(gs: GridSpec, key: Gap) -> float | None:
@@ -286,7 +340,7 @@ def text_facts(
 ) -> tuple[TextFacts, TextArtists]:
     """What text fitting reads, and the artists its ids name; the spacings
     nobody set, but for those ``held`` where they are."""
-    objects = TextArtists({}, {})
+    objects = TextArtists({}, {}, {})
     free = [
         key
         for key in (WSpace(), HSpace())
@@ -297,5 +351,6 @@ def text_facts(
         tuple(_names(fig, renderer, objects)),
         tuple(spacings(fig, gs, renderer, free)),
         canvas(fig),
+        tuple(_rims(fig, renderer, objects)),
     )
     return facts, objects

@@ -33,6 +33,11 @@ Entries before 0.8.0 are in the git history of this file.
 - Y tick labels sit 3 pt from their tick marks (7.8 pt on `presentation`),
   up from 1 pt, so a category name no longer reads as ending in a hyphen and
   no longer touches the cells of a heatmap drawn without tick marks (#818).
+- `dm.simple_layout` aligns the angle labels of a polar plot away from its
+  circle when one of them runs into it: a radar's long category names and a
+  wind rose's directions then stand at one distance outside the plot. Short
+  labels that already clear the circle, and labels aligned or turned by
+  hand, stay as they are (#842).
 
 ### Fixed
 

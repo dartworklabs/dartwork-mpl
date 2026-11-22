@@ -235,3 +235,51 @@ def test_a_spine_hidden_after_the_layout_stays_hidden() -> None:
     twin.spines["right"].set_visible(False)
     dm.simple_layout(fig)
     assert not twin.spines["right"].get_visible()
+
+
+def test_long_radar_names_stand_outside_the_circle() -> None:
+    dm.style.use("report")
+    names = [
+        "Battery life",
+        "Camera quality",
+        "Display",
+        "Performance",
+        "Build quality",
+        "Customer support",
+        "Value for money",
+    ]
+    angles = np.linspace(0, 2 * np.pi, len(names), endpoint=False)
+    fig, ax = plt.subplots(
+        figsize=dm.figsize("12cm", "wide"), subplot_kw={"projection": "polar"}
+    )
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    ax.plot(np.r_[angles, angles[0]], [9, 7, 8, 9, 8, 9, 6, 9])
+    ax.set_xticks(angles, names)
+    assert "POLAR_TICK_ON_PLOT" in dm.check(fig).rules
+    dm.simple_layout(fig)
+    assert not dm.check(fig)
+    sides = {t.get_text(): t.get_ha() for t in ax.get_xticklabels()}
+    assert sides["Customer support"] == "right"  # left of the plot
+    assert sides["Camera quality"] == "left"
+    assert sides["Battery life"] == "center"
+    plt.close(fig)
+
+
+def test_short_and_placed_angle_labels_stay_as_they_are() -> None:
+    dm.style.use("report")
+    fig, (plain, placed) = plt.subplots(
+        1,
+        2,
+        figsize=dm.figsize("17cm", "8cm"),
+        subplot_kw={"projection": "polar"},
+    )
+    plain.plot(np.linspace(0, 2 * np.pi, 50), np.linspace(0, 1, 50))
+    names = ["Customer support", "Build quality", "Value for money"]
+    placed.set_xticks(np.linspace(0, 2 * np.pi, 3, endpoint=False), names)
+    for label in placed.get_xticklabels():
+        label.set_ha("left")  # the author's own placement
+    dm.simple_layout(fig)
+    assert {t.get_ha() for t in plain.get_xticklabels()} == {"center"}
+    assert {t.get_ha() for t in placed.get_xticklabels()} == {"left"}
+    plt.close(fig)
