@@ -22,6 +22,10 @@ TOUCH_PT = 0.5
 #: Air (pt) a panel letter inside its plot keeps from the data.
 LETTER_CLEARANCE_PT = 2.0
 
+#: A line this far (em) inside a name's box runs through the name; one that
+#: ends at the box (a leader to its label) only touches it.
+THROUGH_EM = 0.15
+
 #: Both axes, x first.
 AXES: tuple[Which, ...] = (X(), Y())
 
@@ -151,6 +155,11 @@ class Hit:
         """A line, an error bar or a marker: not a bar or an area's edge."""
         return self.kind in ("line", "marker")
 
+    @property
+    def line(self) -> bool:
+        """A line's stroke, not its markers."""
+        return self.kind == "line"
+
 
 @dataclass(frozen=True)
 class Legend:
@@ -184,7 +193,7 @@ class Legend:
 
 @dataclass(frozen=True)
 class OnData:
-    """A value label or a panel letter and the data under it."""
+    """A value label, a panel letter or a name and the data under it."""
 
     text: Text
     covers: tuple[Hit, ...]
@@ -293,6 +302,7 @@ class Facts:
     empty: tuple[Panel, ...] = ()
     values: tuple[OnData, ...] = ()
     letters: tuple[OnData, ...] = ()
+    struck: tuple[OnData, ...] = ()
     inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
     frames: tuple[Frame, ...] = ()

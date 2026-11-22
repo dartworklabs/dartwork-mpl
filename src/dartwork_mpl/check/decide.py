@@ -338,6 +338,21 @@ def value_label_on_data(facts: Facts, found: Findings) -> Findings:
     return found
 
 
+def text_on_line(facts: Facts, found: Findings) -> Findings:
+    """Names and notes with a line drawn through them, per Axes."""
+    panels: dict[int | None, list[OnData]] = {}
+    for on in facts.struck:
+        panels.setdefault(on.text.panel, []).append(on)
+    for panel, on in panels.items():
+        found = found.flag(
+            "TEXT_ON_LINE",
+            f"Axes[{panel}]: a line runs through {len(on)} text(s) "
+            f"({quote(v.text.short for v in on)})",
+            [v.text for v in on],
+        )
+    return found
+
+
 def letter_on_data(facts: Facts, found: Findings) -> Findings:
     """Panel letters drawn on data, per letter."""
     for on in facts.letters:

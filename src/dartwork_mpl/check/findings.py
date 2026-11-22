@@ -33,6 +33,10 @@ FIXES: dict[str, str] = {
     "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
     "the error bar (ax.bar_label(bars, padding=...)), or dm.annotate_value "
     "for a point on a line",
+    "TEXT_ON_LINE": "move the text off the line: the other side of its "
+    "point, or an offset in points (ax.annotate(..., xytext=(6, 6), "
+    "textcoords='offset points')); a text that names the line can sit at "
+    "its end",
     "LETTER_ON_DATA": "the letters went inside the plots because a letter "
     "and its title were wider than the plot: shorten the titles or widen "
     "the figure so each letter goes before its title; or leave room in "
