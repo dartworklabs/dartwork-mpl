@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import (
     ClassVar,
     Generic,
+    Literal,
     Protocol,
     TypeAlias,
     TypeVar,
@@ -26,6 +27,7 @@ from ..vocab import (
     HAlign,
     VAlign,
     VCentre,
+    parse_halign,
 )
 
 
@@ -268,3 +270,24 @@ def choose_bars(request: object, drawn: Sequence[D]) -> tuple[Chosen[D], ...]:
             raise TypeError(f"{BARS_TAKES}; got {type(item).__name__}")
         chosen.setdefault(id(container), (container, set()))[1].update(indices)
     return tuple(Chosen(c, frozenset(i)) for c, i in chosen.values())
+
+
+# ------------------------------------------------------------ text alignment
+TextAlignment = Literal["left", "right", "center", "decimal"]
+
+
+@dataclass(frozen=True)
+class DecimalAlign:
+    """Align each number at its own decimal stop."""
+
+
+def text_alignment(how: TextAlignment) -> HAlign | DecimalAlign:
+    """Parse the public alignment spelling."""
+    if how == "decimal":
+        return DecimalAlign()
+    try:
+        return parse_halign(how)
+    except ValueError:
+        raise ValueError(
+            "how must be one of: left, right, center, decimal"
+        ) from None

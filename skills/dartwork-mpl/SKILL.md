@@ -93,6 +93,7 @@ The library says what it changed on its own: each automatic change (tick labels 
 | a legend that avoids the data, or sits on a named side | `dm.place_legend(ax)`, `dm.place_legend(ax, loc="above")` |
 | one legend for panels that share series | `dm.figure_legend(fig)` |
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
+| align an existing column of names or numbers | `dm.align_texts(texts, "left")` or `dm.align_texts(texts, "decimal")` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
 | 만/억 on the ticks | `dm.format_axis_myriad(ax)` |
 | 12k on the ticks (from a million the axis prints `1M` by itself) | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter(sep=""))` |

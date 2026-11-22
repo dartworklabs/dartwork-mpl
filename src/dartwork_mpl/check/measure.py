@@ -13,17 +13,14 @@ from typing import TYPE_CHECKING, TypeVar
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import MouseEvent
-from matplotlib.category import StrCategoryFormatter
 from matplotlib.collections import Collection, PathCollection
 from matplotlib.colors import to_rgba
-from matplotlib.dates import DateLocator
 from matplotlib.image import AxesImage
 from matplotlib.patches import Patch
 from matplotlib.projections.polar import PolarAxes
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
-from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
-from matplotlib.transforms import Bbox, IdentityTransform
+from matplotlib.transforms import Bbox
 
 from ..colorspace import Rgb, Rgba, composite_over, contrast
 from ..geometry import (
@@ -39,11 +36,12 @@ from ..geometry import (
     patch_inks,
     projection,
     same_position_axes,
-    shared_axes,
     text_inks,
 )
-from ..vocab import Which, X
+from ..vocab import X
 from . import roles
+from .alignment_measure import alignment_samples
+from .axis_labels import minus_tick, tick_row
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
@@ -60,17 +58,13 @@ from .model import (
     PolarTheta,
     Text,
     TickRow,
-    TickValues,
     ascii_minus_value,
-    unicode_minus_tick,
 )
-from .overlap import tick_label_overlaps
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
-    from matplotlib.gridspec import SubplotSpec
     from matplotlib.legend import Legend as MplLegend
 
 T = TypeVar("T")
@@ -174,58 +168,14 @@ class Reader:
         ]
         return tuple(t for t in found if t is not None)
 
-    def tick_row(self, i: int, ax: Axes, which: Which) -> TickRow | None:
-        """One axis' drawn major labels and how many neighbours collide."""
-        drawn = drawn_tick_labels(ax, which)
-        labels = tuple(
-            x for x in (self.text(t, roles.TickLabel(), i) for t in drawn) if x
-        )
-        if not labels:
-            return None
-        pairs, deepest = tick_label_overlaps(ax, which, self.renderer)
-        axis = which.pick(ax.xaxis, ax.yaxis)
-        formatter, locator = (
-            axis.get_major_formatter(),
-            axis.get_major_locator(),
-        )
-        names = isinstance(
-            formatter, FixedFormatter | StrCategoryFormatter
-        ) or (
-            isinstance(formatter, FuncFormatter)
-            and isinstance(locator, FixedLocator)
-        )  # set_xticks(ticks, labels) prints names
-        numbers = not names and not isinstance(locator, DateLocator)
-        at = TickValues(
-            tuple(
-                float(loc)
-                for loc, tick in zip(
-                    axis.get_majorticklocs(),
-                    axis.get_major_ticks(),
-                    strict=False,
-                )
-                if tick.label1 in drawn or tick.label2 in drawn
-            ),
-            linear=isinstance(axis.get_transform(), IdentityTransform),
-        )
-        return TickRow(
-            ax,
-            i,
-            which,
-            labels,
-            pairs,
-            float(deepest),
-            numbers=numbers and any(t.value for t in labels),
-            named=named(ax, which),
-            at=at,
-        )
-
     def ticks(self) -> tuple[TickRow, ...]:
         """Tick rows of rectilinear Axes."""
         return tuple(
             row
             for i, ax in self.panels
             for which in AXES
-            if (row := self.tick_row(i, ax, which)) is not None
+            if (row := tick_row(i, ax, which, self.renderer, self.text))
+            is not None
         )
 
     def minus_labels(self, figure_texts: tuple[Text, ...]) -> tuple[Text, ...]:
@@ -246,23 +196,6 @@ class Reader:
             and (text := self.text(label, roles.FreeText(), i)) is not None
         )
         return tuple(labels)
-
-    def minus_tick(self) -> Text | None:
-        """A visible numeric tick with a Unicode minus, on any Axes."""
-        for i, ax in self.axes:
-            for which in AXES:
-                for label in (
-                    *drawn_tick_labels(ax, which),
-                    *drawn_tick_labels(ax, which, minor=True),
-                ):
-                    if (
-                        unicode_minus_tick(label.get_text())
-                        and text_inks(label)
-                        and (tick := self.text(label, roles.TickLabel(), i))
-                        is not None
-                    ):
-                        return tick
-        return None
 
     def polar_theta(self) -> tuple[PolarTheta, ...]:
         """Angle labels and disc extents, for visible full-circle polar plots."""
@@ -444,32 +377,6 @@ def drawn_insets(ax: Axes) -> Iterator[tuple[Axes, Axes]]:
             yield from drawn_insets(child)
 
 
-def named(ax: Axes, which: Which) -> bool:
-    """A label names ``ax``'s axis: its own, one of an Axes sharing it or
-    in its grid row (y) or column (x), or the figure's sup label."""
-    fig = ax.get_figure(root=False)
-    spec = ax.get_subplotspec()
-    if fig is None:
-        return False
-
-    def line(s: SubplotSpec) -> range:
-        return which.pick(s.colspan, s.rowspan)
-
-    grid = [
-        other
-        for other in fig.axes
-        if spec is not None
-        and (s := other.get_subplotspec()) is not None
-        and s.get_gridspec() is spec.get_gridspec()
-        and line(s) == line(spec)
-    ]
-    sup = which.pick(fig.get_supxlabel(), fig.get_supylabel())
-    return bool(sup.strip()) or any(
-        which.pick(o.xaxis, o.yaxis).label.get_text().strip()
-        for o in (*shared_axes(ax, which), *grid)
-    )
-
-
 def backdrop(text: MplText, x: float, y: float) -> Rgb:
     """The colour drawn behind ``(x, y)`` (px) under ``text``: the figure,
     its Axes, then every patch, filled collection and image cell below the
@@ -563,8 +470,15 @@ def measure(fig: Figure) -> Facts:
         insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),
         polar_theta=r.attempt(r.polar_theta, (), "POLAR_TICK_ON_PLOT"),
         minus_labels=minus_labels,
-        minus_tick=r.attempt(r.minus_tick, None, "MIXED_MINUS")
+        minus_tick=r.attempt(
+            lambda: minus_tick(r.axes, r.text), None, "MIXED_MINUS"
+        )
         if minus_labels
         else None,
+        alignment=r.attempt(
+            lambda: alignment_samples(texts, r.renderer),
+            (),
+            "TEXT_MISALIGNMENT",
+        ),
         skipped=tuple(r.skipped),
     )

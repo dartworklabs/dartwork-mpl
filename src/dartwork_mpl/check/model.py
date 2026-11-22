@@ -13,7 +13,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from ..colorspace import Hex, Ratio
-from ..vocab import Box, Which, X, Y
+from ..vocab import Box, HAlign, Which, X, Y
 from .roles import Role
 
 #: Contact up to this (points) is a touch, not a cover.
@@ -238,6 +238,18 @@ class PolarTheta:
 
 
 @dataclass(frozen=True)
+class AlignmentSample:
+    """One eligible column label and its measured horizontal positions."""
+
+    text: Text
+    align: HAlign
+    x: float
+    y: float
+    marks: tuple[float, ...]
+    font_key: int
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -258,6 +270,7 @@ class Facts:
     polar_theta: tuple[PolarTheta, ...] = ()
     minus_labels: tuple[Text, ...] = ()
     minus_tick: Text | None = None
+    alignment: tuple[tuple[AlignmentSample, ...], ...] = ()
 
     @property
     def touch(self) -> float:

@@ -9,7 +9,7 @@ ran. A new rule is one more entry here and a test that names it.
 from __future__ import annotations
 
 from ..edgecase import EdgeCase
-from . import decide
+from . import alignment, decide
 from .findings import Findings
 from .model import Facts
 
@@ -99,6 +99,13 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_TEXT_CROWD_value_beside_a_name",
         applies=has_panel_texts,
         adjust=decide.phrase,
+    ),
+    EdgeCase(
+        name="TEXT_MISALIGNMENT",
+        why="forest estimates stacked beside the plot had ragged decimal marks",
+        example="test_edges.py::test_TEXT_MISALIGNMENT_on_forest_values",
+        applies=has_panel_texts,
+        adjust=alignment.misalignment,
     ),
     EdgeCase(
         name="VALUE_LABEL_DECIMAL",

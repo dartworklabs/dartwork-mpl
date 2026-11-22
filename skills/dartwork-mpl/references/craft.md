@@ -97,6 +97,38 @@ print(dm.check(fig))
 plt.close(fig)
 ```
 
+## Text in columns
+
+For text that already forms a column, use `dm.align_texts(texts, how)`. Use
+`"left"`, `"right"`, or `"center"` for names, and `"decimal"` for numbers.
+Style the returned rows and then run `dm.simple_layout`. Keep values belonging
+to a mark at that mark.
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
+rows = [(0.8, -3.6, 5.2), (9.4, 2.4, 16.4), (-2.1, -5.8, 1.6)]
+ax.set_yticks(range(len(rows)), ["Study C", "Study B", "Study A"])
+ax.set_xlabel("Mean difference (mmHg)")
+labels = []
+for y, (effect, low, high) in enumerate(rows):
+    ax.hlines(y, low, high)
+    ax.plot(effect, y, marker="s", color="dc.blue6")
+    labels.append(
+        ax.text(
+            1.02, y, f"{effect:.1f} [{low:.1f}, {high:.1f}]",
+            transform=ax.get_yaxis_transform(), va="center",
+        )
+    )
+dm.align_texts(labels, "decimal")
+dm.simple_layout(fig)
+print(dm.check(fig))
+plt.close(fig)
+```
+
 ## Comparing distributions
 
 | Groups | Form |

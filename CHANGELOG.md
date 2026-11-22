@@ -4,6 +4,12 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+### Added
+
+- `dm.align_texts` aligns existing text edges or decimal positions without
+  changing the chart's rows or tick labels. `dm.check` flags ragged columns
+  beside a plot and suggests how to align them (#812).
+
 ### Changed
 
 - Y tick labels sit 3 pt from their tick marks (7.8 pt on `presentation`),

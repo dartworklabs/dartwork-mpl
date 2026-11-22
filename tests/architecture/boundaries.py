@@ -108,6 +108,9 @@ SHIMS: Mapping[str, str] = {}
 # tests/architecture/test_pure_imports.py checks that doing so loads no
 # matplotlib.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.check.alignment": (
+        "a ragged column is decided from measured anchors and tabs"
+    ),
     "dartwork_mpl.check.decide": (
         "what is wrong with a figure is decided from its measured facts alone"
     ),
@@ -147,6 +150,9 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.size.model": (
         "parsing user input into size types needs nothing outside it"
+    ),
+    "dartwork_mpl.labels.alignment_layout": (
+        "decimal stops are planned from parsed rows and measured advances"
     ),
     "dartwork_mpl.labels.decide": (
         "label placement is decided from measured boxes alone"

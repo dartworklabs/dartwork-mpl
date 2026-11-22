@@ -42,6 +42,7 @@ from .box import Box, Span
 from .edge import EDGES, Bottom, Edge, Left, Reserve, Right, Top, edge_of
 from .locale import DefaultLocale, KoreanLocale, Locale
 from .number import AffixedZero, BareZero, ScaleZero, TickScale
+from .numeric_text import NumericText, has_math
 from .projection import (
     Curved,
     Projection,
@@ -73,6 +74,7 @@ __all__ = [
     "Letters",
     "Locale",
     "Near",
+    "NumericText",
     "Projection",
     "Rectilinear",
     "Reserve",
@@ -90,6 +92,7 @@ __all__ = [
     "Y",
     "bars_along",
     "edge_of",
+    "has_math",
     "parse_axes",
     "parse_axis_side",
     "parse_halign",

@@ -14,7 +14,7 @@ PR은 아래 게이트로 합격을 판정한다. 실행하지 않은 게이트�
 | 타입 | 정적 계약 | `uv run basedpyright` | 오류 0. strict 모드. 기존 오류는 `.basedpyright/baseline.json`에 있고 줄어들기만 한다 |
 | 전체 테스트 | 동작 | `uv run pytest -q -n auto --mpl` | 실패 0 |
 | 출하 색 해시 | 미감: 색 값 | 전체 테스트에 포함 (`tests/test_shipped_colors_hash.py`) | 통과. digest를 다시 만들어 통과시키지 않는다 |
-| 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 20개 각각 RMS ≤ 0.5 |
+| 픽셀 baseline | 미감: 렌더 결과 | 전체 테스트에 포함 (`tests/visual`, `--mpl` 필요) | 장면 22개 각각 RMS ≤ 0.5 |
 | slice 경계 | import 방향과 표면 | 전체 테스트에 포함 (`tests/architecture/test_boundaries.py`) | 위반 0 |
 | 순수 import | 순수 파일을 새 인터프리터에서 import했을 때 matplotlib이 없음 | 전체 테스트에 포함 (`tests/architecture/test_pure_imports.py`) | 위반 0 |
 | 도메인 파일 규칙 | primitive 금지, 순수성, 엣지 케이스의 이유와 예제 | 전체 테스트에 포함 (`test_domain_rules.py`, 예제 실행 중 작동 확인은 `tests/fixtures.py`) | 위반 0. baseline 없음 |
