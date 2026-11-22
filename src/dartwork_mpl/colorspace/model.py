@@ -14,9 +14,10 @@ import colorsys
 import math
 import re
 from dataclasses import dataclass
-from typing import NewType, TypeVar
+from typing import NewType, TypeAlias, TypeVar
 
 import numpy as np
+import numpy.typing as npt
 
 T = TypeVar("T")
 
@@ -260,6 +261,50 @@ class Ratio:
     """A WCAG contrast ratio, at least 1 (1:1) and at most 21 (black on white)."""
 
     value: float
+
+
+#: Rows of encoded sRGB channels in ``[0, 1]``: one colour per pixel.
+Colours: TypeAlias = npt.NDArray[np.float64]
+
+#: One contrast ratio per pixel, as :class:`Ratio` holds one.
+Ratios: TypeAlias = npt.NDArray[np.float64]
+
+#: Which ink pixels of a text are under the floor ratio.
+Faint: TypeAlias = npt.NDArray[np.bool_]
+
+#: Where along a text each of its ink pixels lies, one row per pixel: how
+#: far along the direction it is written in, in windows (one window is
+#: 1.0), and the line it is on.
+Places: TypeAlias = npt.NDArray[np.float64]
+
+#: Ink under this ratio on what is behind it cannot be made out (WCAG's
+#: floor for large text). ``dm.check`` reports it and ``dm.legible`` mends it.
+LEGIBLE = Ratio(3.0)
+
+#: A window of a text with this share of its ink under the floor is lost.
+FAINT_SHARE = 0.5
+
+
+@dataclass(frozen=True)
+class Legibility:
+    """How much of a text's ink reads on what is drawn behind it.
+
+    ``low`` is the share of its ink pixels under the floor ratio, ``worst``
+    the largest such share in any one window of the text (half an em along
+    it, wherever the window starts), and ``lowest`` the ratio the faintest ink reaches, between the
+    colours ``ink`` and ``paper``. A text with no ink reads.
+    """
+
+    low: float
+    worst: float
+    lowest: Ratio
+    ink: Rgb
+    paper: Rgb
+
+    @property
+    def reads(self) -> bool:
+        """No window of the text has lost :data:`FAINT_SHARE` of its ink."""
+        return self.worst < FAINT_SHARE
 
 
 @dataclass(frozen=True)

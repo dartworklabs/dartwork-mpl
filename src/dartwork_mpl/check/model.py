@@ -12,7 +12,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from ..colorspace import Hex, Ratio
+from ..colorspace import Hex, Legibility, Ratio
 from ..vocab import Box, HAlign, Which, X, Y
 from .roles import Role
 
@@ -192,12 +192,26 @@ class OnData:
 
 @dataclass(frozen=True)
 class Inked:
-    """A text the user placed, its colour and what is drawn behind it."""
+    """A text the user placed, and how much of its ink reads on what is
+    drawn behind it, pixel by pixel."""
 
     text: Text
-    ink: Hex
-    paper: Hex
-    ratio: Ratio
+    reading: Legibility
+
+    @property
+    def ink(self) -> Hex:
+        """The colour of its faintest ink, as drawn."""
+        return self.reading.ink.hex()
+
+    @property
+    def paper(self) -> Hex:
+        """The colour behind that ink."""
+        return self.reading.paper.hex()
+
+    @property
+    def ratio(self) -> Ratio:
+        """The contrast its faintest ink reaches."""
+        return self.reading.lowest
 
 
 @dataclass(frozen=True)

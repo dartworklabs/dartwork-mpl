@@ -47,10 +47,10 @@ orphan: true
 | --- | --- | --- |
 | `vocab` | slice들이 함께 쓰는 낱말. 모듈 하나가 어휘 하나다: `axis`(x·y 축과 라벨이 놓이는 쪽), `align`(글자 정렬), `box`(픽셀 사각형 `Box`와 구간 `Span`), `edge`(상자의 네 변, figure 범례가 잡는 변), `projection`(평면, 3D, 그 밖), `number`(숫자가 찍히는 눈금 단위), `locale`(기본 관례와 한국 관례) | 모든 slice, geometry |
 | `length` | 물리 길이 `Length`와 단위(`dm.cm` 등) | size, layout, 루트 |
-| `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels |
+| `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비, 글자의 잉크가 그 뒤의 색 위에서 읽히는 정도(`Legibility`: 3:1 미만인 잉크의 몫과, 글자를 따라 어디서 시작하든 가장 나쁜 반 em 구간) | check, color, labels |
 | `edgecase` | 엣지 케이스 등록 장치. 로거를 받으면, 작동해서 계획을 바꾼 엣지 케이스마다 이름과 이유를 한 줄 보고한다 | 모든 slice |
 | `hidden` | 자동 동작의 보고. slice마다 `dartwork_mpl.<slice>` 로거에 INFO 한 줄을 쓰고, 그것이 기본으로 stderr에 `dartwork-mpl:`을 붙여 출력된다. `dm.quiet()`이 끄고 `dm.verbose()`가 다시 켠다. import 때의 등록은 DEBUG라 출력되지 않는다. Axes를 이름으로 부르는 `axes_name` | color, font, labels, layout, legend, save, size, style, ticks, 루트 |
-| `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨, 글자의 가로 앵커가 마크를 따르는지 판별 | check, labels, layout, legend, ticks |
+| `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨, 글자의 가로 앵커가 마크를 따르는지 판별, 글자의 잉크 픽셀마다 그 뒤에 그려진 색(`draw`, `backdrops`: 그림을 한 번 그리면서 glyph를 뺀 캔버스를 같이 칠한다. `draw_event`와 artist의 `draw`는 `fig.canvas.draw()`와 같은 횟수만 돌고, artist는 바꾸지 않는다) | check, labels, layout, legend, ticks |
 
 `geometry`, `edgecase`, `hidden` 밖의 platform은 모두 순수하다. 정본과 패키지마다의 이유는 `boundaries.py`의 `PLATFORM`이다.
 

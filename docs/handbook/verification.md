@@ -59,6 +59,8 @@ CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인�
 
 **색 해시.** 출하하는 모든 색 값을 digest로 고정한다. 실패는 출하 색이 움직였다는 뜻이고, 소유자가 결정할 일이다. 색 표는 생성기 없이 `color/assets/`의 JSON으로 들고 있으므로 이 테스트가 유일한 방어선이다.
 
+**글자 대비 3:1, 반 em 구간의 절반** (`colorspace.LEGIBLE`, `FAINT_SHARE`). `TEXT_CONTRAST`는 사용자가 놓은 글자의 잉크 픽셀마다 칠한 색과 그 뒤에 그려진 색의 대비를 재고, 글자 방향 반 em 구간 하나라도 잉크의 절반 이상이 3:1 미만이면 보고한다. 구간은 글자를 따라 미끄러진다: 잉크 픽셀마다 거기서 시작하는 구간과 거기서 끝나는 구간을 모두 본다. 이 측정은 그림을 따로 더 그리지 않는다: `dm.check`가 원래 하던 한 번의 그리기에서 같이 읽는다. 3:1은 WCAG의 큰 글자 기준이다. 4.5:1로 올리면 코퍼스에서 걸리는 그림이 5개에서 10개가 된다. 코퍼스에서 이 규칙이 걸리는 그림의 목록은 `tests/corpus/test_corpus.py`의 `FAINT_TEXT`에 고정돼 있다. 목록에 이름을 더하는 것은 그 그림을 본 뒤에 한다.
+
 **fitness baseline** (`tests/architecture/fitness_baseline.json`). 고쳐서 수가 줄면 `--update`로 낮춘다. 올리는 것은 소유자만 한다.
 
 ## 알려진 공백

@@ -42,3 +42,24 @@ TitleLoc: TypeAlias = CentreTitle | LeftTitle | RightTitle
 def coordinate_follows_data(coords: str) -> bool:
     """The named coordinate frame whose horizontal position follows data."""
     return coords == "data"
+
+
+@dataclass(frozen=True)
+class GlyphGroup:
+    """The renderer group matplotlib opens around a text: what is drawn
+    directly inside it is the text's glyphs."""
+
+
+@dataclass(frozen=True)
+class OtherGroup:
+    """Any other renderer group: a figure, an Axes, a patch, a line."""
+
+
+#: What a renderer is drawing, by the group its artist opened.
+Group = GlyphGroup | OtherGroup
+
+
+def parse_group(name: str) -> Group:
+    """Matplotlib's name for a renderer group (``"text"``, ``"patch"``,
+    ``"axes"`` ...) as a :data:`Group`."""
+    return GlyphGroup() if name == "text" else OtherGroup()

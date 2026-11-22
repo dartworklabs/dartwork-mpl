@@ -1,6 +1,7 @@
-"""Read the facts the rules judge from a figure: draw once, measure, touch nothing.
+"""Read the facts the rules judge from a figure: draw, measure, touch nothing.
 
-The figure is drawn on its own canvas so every position is current. No
+The figure is drawn once so every position is current, and that same draw
+keeps what is behind the texts the user placed (``geometry.draw``). No
 artist is changed, hidden or moved.
 """
 
@@ -12,20 +13,17 @@ from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.backend_bases import MouseEvent
-from matplotlib.collections import Collection, PathCollection
-from matplotlib.colors import to_rgba
-from matplotlib.image import AxesImage
-from matplotlib.patches import Patch
 from matplotlib.projections.polar import PolarAxes
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
 from matplotlib.transforms import Bbox
 
-from ..colorspace import Rgb, Rgba, composite_over, contrast
+from ..colorspace import LEGIBLE
 from ..geometry import (
     BBOX_ERRORS,
+    Backdrop,
     axes_titles,
+    draw,
     drawn_in_tree,
     drawn_tick_labels,
     draws_axis,
@@ -66,7 +64,6 @@ from .model import (
 from .occlusion import measure_occlusion
 
 if TYPE_CHECKING:
-    from matplotlib.artist import Artist
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.legend import Legend as MplLegend
@@ -83,11 +80,15 @@ class Reader:
     """One figure being measured: its renderer, scale and what failed."""
 
     def __init__(self, fig: Figure) -> None:
-        """Draw ``fig`` once so every position is current."""
+        """Draw ``fig`` once so every position is current, and read what
+        that draw put behind the texts the user placed.
+
+        A figure without such texts is drawn by ``fig.canvas.draw()``. One
+        with them is drawn by ``geometry.draw``, which keeps the paper
+        under the texts: either way its artists are drawn once and its
+        ``draw_event`` fires once.
+        """
         self.fig = fig
-        fig.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
-        self.renderer: RendererBase = get_renderer(fig)
-        self.pt = fig.dpi / 72.0
         self.skipped: list[str] = []
         indices = {ax: i for i, ax in enumerate(fig.axes)}
         self.inset_parents: dict[Axes, Axes] = {}
@@ -99,6 +100,24 @@ class Reader:
         self.axes = [(i, ax) for ax, i in indices.items() if drawn_in_tree(ax)]
         self.panels = [(i, ax) for i, ax in self.axes if projection(ax).flat]
         self.letters = {id(t) for _ax, t in panel_letters(fig)}
+        self.placed = [
+            (i, t)
+            for i, ax in self.axes
+            for t in ax.texts
+            if id(t) not in self.letters
+            and drawn_in_tree(t)
+            and t.get_text().strip()
+        ]
+        self.behind: list[Backdrop] = []
+        if texts := [t for _i, t in self.placed]:
+            drawn = draw(fig)
+            self.behind = self.attempt(
+                lambda: drawn.backdrops(texts), [], "TEXT_CONTRAST"
+            )
+        else:
+            fig.canvas.draw()  # pyright: ignore[reportUnknownMemberType]
+        self.renderer: RendererBase = get_renderer(fig)
+        self.pt = fig.dpi / 72.0
 
     def text(
         self, t: MplText, role: roles.Role, panel: int | None
@@ -324,18 +343,18 @@ class Reader:
         return tuple(found)
 
     def inks(self, texts: tuple[Text, ...]) -> tuple[Inked, ...]:
-        """Texts the user placed in an Axes, against what is behind them."""
+        """Texts the user placed in an Axes of any projection, each pixel
+        of their ink against what is drawn behind it."""
+        known = {id(t.handle): t for t in texts}
         found: list[Inked] = []
-        for t in texts:
-            h = t.handle
-            if t.role.free and isinstance(h, MplText):
-                b = t.box
-                paper = backdrop(h, (b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2)
-                rgba = to_rgba(h.get_color(), h.get_alpha())
-                ink = composite_over(Rgba.of(rgba), paper)
-                found.append(
-                    Inked(t, ink.hex(), paper.hex(), contrast(ink, paper))
-                )
+        for (panel, placed), behind in zip(
+            self.placed, self.behind, strict=False
+        ):
+            fact = known.get(id(placed)) or self.text(
+                placed, roles.FreeText(), panel
+            )
+            if fact is not None and len(behind.ink):
+                found.append(Inked(fact, behind.read(LEGIBLE)))
         return tuple(found)
 
     def canvas_use(self, texts: tuple[Text, ...]) -> CanvasUse | None:
@@ -420,57 +439,6 @@ def drawn_insets(ax: Axes) -> Iterator[tuple[Axes, Axes]]:
         if isinstance(child, Axes) and drawn_in_tree(child):
             yield ax, child
             yield from drawn_insets(child)
-
-
-def backdrop(text: MplText, x: float, y: float) -> Rgb:
-    """The colour drawn behind ``(x, y)`` (px) under ``text``: the figure,
-    its Axes, then every patch, filled collection and image cell below the
-    text in draw order, and the text's own box."""
-    fig, ax = text.get_figure(root=True), text.axes
-    layers: list[Artist] = [fig.patch] if fig else []
-    inside = ax is not None and ax.get_window_extent().contains(x, y)
-    if ax is not None and inside:
-        layers += [ax.patch] if ax.axison and ax.get_frame_on() else []
-        layers += sorted(
-            (
-                a
-                for a in (*ax.patches, *ax.collections, *ax.images)
-                if a.get_visible() and a.get_zorder() <= text.get_zorder()
-            ),
-            key=lambda a: a.get_zorder(),
-        )
-    layers += [b] if (b := text.get_bbox_patch()) else []
-    paper = Rgb(1.0, 1.0, 1.0)
-    for a in layers:
-        if (colour := colour_at(a, x, y)) is not None:
-            paper = composite_over(Rgba.of(colour), paper)
-    return paper
-
-
-def colour_at(a: Artist, x: float, y: float) -> tuple[float, ...] | None:
-    """The RGBA ``a`` paints at ``(x, y)`` px, ``None`` where it paints
-    nothing (a scatter's markers are not read)."""
-    if isinstance(a, Patch):
-        return to_rgba(a.get_facecolor()) if a.contains_point((x, y)) else None
-    if isinstance(a, AxesImage):
-        fig = a.get_figure(root=True)
-        event = MouseEvent("", fig.canvas, round(x), round(y)) if fig else None
-        value = a.get_cursor_data(event) if event else None
-        if value is None or np.ma.is_masked(value) or np.ndim(value):
-            return None
-        rgba = a.to_rgba(np.asarray(value), alpha=a.get_alpha())
-        return tuple(float(c) for c in np.ravel(rgba))
-    if isinstance(a, Collection) and not isinstance(a, PathCollection):
-        faces = np.asarray(a.get_facecolor(), dtype=float).reshape(-1, 4)
-        hit = [
-            i
-            for i, p in enumerate(a.get_paths())
-            if p.contains_point((x, y), transform=a.get_transform())
-        ]
-        return (
-            tuple(faces[hit[-1] % len(faces)]) if hit and len(faces) else None
-        )
-    return None
 
 
 def draws(ax: Axes) -> bool:

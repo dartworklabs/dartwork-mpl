@@ -31,7 +31,7 @@ from dartwork_mpl.check.roles import (
     TickLabel,
     Title,
 )
-from dartwork_mpl.colorspace import Hex, Ratio
+from dartwork_mpl.colorspace import Legibility, Ratio, Rgb
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.vocab import X, Y
 
@@ -171,13 +171,22 @@ def test_LETTER_ON_DATA():
 
 
 def test_TEXT_CONTRAST():
+    """A text is found when one window of it has lost half its ink: all of
+    a white value on pale yellow, or the part of a note on a navy bar."""
     label = text("4.6", INSIDE)
-    white, yellow = Hex("#ffffff"), Hex("#f9d969")
-    faint = Inked(label, white, yellow, Ratio(1.39))
+    white, yellow = Rgb(1.0, 1.0, 1.0), Rgb.from_hex("#f9d969")
+    faint = Inked(label, Legibility(1.0, 1.0, Ratio(1.39), white, yellow))
     (f,) = found(Facts(CANVAS, PT, texts=(label,), inks=(faint,)))
     assert f.rule == "TEXT_CONTRAST" and "1.39:1" in f.message
-    plain = Inked(label, Hex("#000000"), yellow, Ratio(3.2))
+    assert "all of its ink" in f.message and "#ffffff on #f9d969" in f.message
+    black, navy = Rgb(0.0, 0.0, 0.0), Rgb.from_hex("#0b2a5b")
+    partly = Inked(label, Legibility(0.45, 1.0, Ratio(1.43), black, navy))
+    (f,) = found(Facts(CANVAS, PT, texts=(label,), inks=(partly,)))
+    assert "45% of its ink" in f.message
+    plain = Inked(label, Legibility(0.0, 0.0, Ratio(3.2), black, yellow))
     assert not found(Facts(CANVAS, PT, texts=(label,), inks=(plain,)))
+    edge = Inked(label, Legibility(0.2, 0.49, Ratio(1.5), black, navy))
+    assert not found(Facts(CANVAS, PT, texts=(label,), inks=(edge,)))
 
 
 def test_VALUE_LABEL_DECIMAL():

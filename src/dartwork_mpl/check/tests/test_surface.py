@@ -163,6 +163,205 @@ def test_white_text_on_a_pale_fill_is_found(image: bool):
     assert "TEXT_CONTRAST" not in dm.check(fig).rules
 
 
+@pytest.mark.parametrize("name", ["wind_rose", "vertical_note", "korean_note"])
+def test_a_note_that_runs_onto_a_dark_background_is_found(name: str):
+    """The note reads on the canvas and is lost on the bars: the rule sees
+    the part, in a polar Axes too, and says how much of the ink it is."""
+    from tests.text_on_backgrounds import FAINT
+
+    fig, (note,) = FAINT[name]()
+    (f,) = _of(dm.check(fig), "TEXT_CONTRAST")
+    assert f.artists == (note,)
+    assert "% of its ink" in f.message and "all of its ink" not in f.message
+
+
+def test_contour_numbers_on_dark_bands_are_found_and_the_readable_left():
+    """Three of the five grey numbers sit on bands they cannot be read on."""
+    from tests.text_on_backgrounds import contour_labels
+
+    fig, labels = contour_labels()
+    (f,) = _of(dm.check(fig), "TEXT_CONTRAST")
+    assert {t.get_text() for t in f.artists} == {"5.0", "6.0", "7.0"}
+    assert len(labels) == 5
+
+
+def test_a_note_that_reads_over_a_point_cloud_is_not_found():
+    """Points break the note up but it reads on each (6:1): no contrast
+    finding, which would send the reader after the wrong defect."""
+    from tests.text_on_backgrounds import point_cloud
+
+    fig, _notes = point_cloud()
+    assert "TEXT_CONTRAST" not in dm.check(fig).rules
+
+
+@pytest.mark.parametrize("marks", ["scatter", "markers"])
+def test_a_number_inside_a_point_is_read_against_the_point(marks: str):
+    """White numbers in dark points read (#830: they were measured against
+    the page, 1.00:1); the same numbers in the points' own colour do not."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "5cm"))
+    xs, values = range(4), [81, 72, 66, 58]
+    if marks == "scatter":
+        ax.scatter(xs, [0] * 4, s=900, color="dc.blue8", lw=0, zorder=3)
+    else:
+        ax.plot(xs, [0] * 4, "o", ms=22, color="dc.blue8", zorder=3)
+    numbers = [
+        ax.text(x, 0, str(v), ha="center", va="center", color="white", zorder=4)
+        for x, v in zip(xs, values, strict=True)
+    ]
+    ax.set(xlim=(-0.6, 3.6), ylim=(-1, 1))
+    ax.axis("off")
+    dm.simple_layout(fig)
+    assert "TEXT_CONTRAST" not in dm.check(fig).rules
+    for number in numbers:
+        number.set_color("dc.blue9")
+    (f,) = _of(dm.check(fig), "TEXT_CONTRAST")
+    assert len(f.artists) == 4 and "all of its ink" in f.message
+
+
+def test_a_halo_or_a_box_behind_a_text_is_what_its_ink_is_read_against():
+    """White text on white paper is lost; with a dark outline or a dark box
+    behind the glyphs it reads, and the rule says so."""
+    from matplotlib import patheffects
+
+    fig, ax = plt.subplots(figsize=dm.figsize("8cm", "standard"))
+    ax.plot([0, 1], [0, 1])
+    note = ax.text(0.5, 0.5, "Peak", color="white", fontsize=dm.fs(4))
+    assert "TEXT_CONTRAST" in dm.check(fig).rules
+    note.set_path_effects(
+        [
+            patheffects.Stroke(linewidth=3, foreground="black"),
+            patheffects.Normal(),
+        ]
+    )
+    assert "TEXT_CONTRAST" not in dm.check(fig).rules
+    note.set_path_effects([])
+    note.set_bbox({"facecolor": "black", "edgecolor": "none"})
+    assert "TEXT_CONTRAST" not in dm.check(fig).rules
+
+
+def _word(**style):
+    """A bold word in the middle of a bare canvas."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "6cm"), dpi=120)
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.set_axis_off()
+    word = ax.text(
+        0.5, 0.5, "STATUS", ha="center", va="center", color="#151515",
+        fontsize=dm.fs(13), fontweight="bold", **style,
+    )  # fmt: skip
+    return fig, ax, word
+
+
+def test_a_band_that_wipes_out_part_of_a_word_is_found_wherever_it_sits():
+    """A dark band half an em wide takes a letter's worth of ink with it.
+    It is found at every position along the word, not only where it
+    happens to line up with a window counted from the word's start."""
+    fig, ax, word = _word()
+    fig.canvas.draw()
+    box = word.get_window_extent()
+    em = word.get_fontsize() * fig.dpi / 72
+    assert "TEXT_CONTRAST" not in dm.check(fig).rules
+    to_data = ax.transData.inverted()
+    for step in range(12):
+        left = box.x0 + em + step * em / 12
+        (x0, _), (x1, _) = to_data.transform([(left, 0), (left + 0.52 * em, 0)])
+        band = ax.axvspan(x0, x1, color="#151515", lw=0)
+        assert "TEXT_CONTRAST" in dm.check(fig).rules, step
+        band.remove()
+
+
+def test_a_text_drawn_only_as_strokes_is_read_like_any_other():
+    """``path_effects=[Stroke(...)]`` alone is how the text is painted: it
+    is found over a block of its colour, and reads on the bare canvas."""
+    from matplotlib import patheffects
+
+    stroke = patheffects.Stroke(linewidth=0.7, foreground="#151515")
+    fig, ax, _word_ = _word(path_effects=[stroke])
+    assert "TEXT_CONTRAST" not in dm.check(fig).rules
+    ax.axvspan(0.5, 1, color="#151515", lw=0)
+    assert "TEXT_CONTRAST" in dm.check(fig).rules
+
+
+def test_the_check_draws_the_figure_as_often_as_a_plain_draw():
+    """``dm.check`` draws the figure once, like ``fig.canvas.draw()``: an
+    artist of the user's own is drawn once more and a ``draw_event``
+    callback runs once more, also when texts are read against what is
+    behind them."""
+    from matplotlib.artist import Artist
+
+    from tests.text_on_backgrounds import korean_note
+
+    class Counted(Artist):
+        draws = 0
+
+        def draw(self, renderer: object) -> None:
+            self.draws += 1
+
+    fig, _texts = korean_note()
+    mine = Counted()
+    fig.axes[0].add_artist(mine)
+    events: list[object] = []
+    fig.canvas.mpl_connect("draw_event", events.append)
+    fig.canvas.draw()
+    assert (mine.draws, len(events)) == (1, 1)
+    assert "TEXT_CONTRAST" in dm.check(fig).rules
+    assert (mine.draws, len(events)) == (2, 2)
+
+
+@pytest.mark.parametrize(
+    "name", ["wind_rose", "vertical_note", "contour_labels", "korean_note"]
+)
+def test_reading_what_is_behind_a_text_leaves_every_artist_as_it_was(name: str):
+    """Reading what is behind the texts changes no colour, visibility,
+    path effect or box, leaves no text marked stale (an annotation
+    included: the wind rose's note), and the figure saves to the same
+    bytes."""
+    from tests.text_on_backgrounds import FAINT
+
+    fig, _texts = FAINT[name]()
+
+    def state() -> list[tuple[object, ...]]:
+        return [
+            (
+                t.get_color(),
+                t.get_alpha(),
+                t.get_visible(),
+                tuple(t.get_path_effects()),
+                t.get_bbox_patch(),
+                t.get_zorder(),
+                t.stale,
+            )
+            for ax in fig.axes
+            for t in ax.texts
+        ]
+
+    saved = _png(fig)  # a draw: nothing is stale after it
+    before = state()
+    assert "TEXT_CONTRAST" in dm.check(fig).rules
+    assert state() == before and _png(fig) == saved
+
+
+def test_a_text_rewritten_while_the_figure_is_drawn_is_not_judged():
+    """A ``draw_event`` callback that rewrites a note (a clock, a frame
+    counter) leaves the figure showing another text than the note now
+    holds. Its ink cannot be read against that drawing: the rule says it
+    did not run, and does not report ink that was never there."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 1])
+    note = ax.text(0.1, 0.8, "frame 0")
+    dm.simple_layout(fig)
+    assert "TEXT_CONTRAST" not in dm.check(fig).skipped
+    count: list[object] = []
+
+    def tick(event: object) -> None:
+        count.append(event)
+        note.set_text(f"a much longer frame {len(count)}")
+
+    fig.canvas.mpl_connect("draw_event", tick)
+    found = dm.check(fig)
+    assert "TEXT_CONTRAST" not in found.rules
+    assert "TEXT_CONTRAST" in found.skipped
+
+
 def test_a_report_grid_on_slide_text_is_too_small_but_a_colorbar_is_not():
     dm.style.use("presentation")
     fig, axes = plt.subplots(2, 2, figsize=dm.figsize_for(nrows=2, ncols=2))

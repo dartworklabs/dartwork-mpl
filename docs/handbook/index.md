@@ -40,6 +40,7 @@ orphan: true
 | `evals/` | 에이전트 평가. 라이브러리와 skill만 켠 에이전트에게 프롬프트를 주고 한 번에 그리게 한다. `cases/`는 프롬프트와 데이터, `runs/`는 결과(git 밖). 기본 개발 루프다 | philosophy(1절, 2절), verification |
 | `tests/architecture/` | 경계(`boundaries.py`), 조립 규칙(`composition.py`), 도메인 파일 규칙, 순수 import, fitness | architecture, verification |
 | `docs/adr/` | 결정 기록과 index | change-flow |
+| `docs/specs/` | 구현 전에 쓰는 설계 문서. 200줄을 넘지 않고, 구현을 판정할 기계 검사를 함께 적는다 | change-flow |
 | `docs/hub-contract.md` | 허브(`mpl.dartwork.io`)와 약속한 것. 허브에 넘기는 원샷 결과 | purpose, philosophy(2절) |
 | `docs/example-candidates.md` | 재구성하며 지운 기능의 기록과 원본을 읽는 커밋 | philosophy(3절) |
 | `.github/workflows/` | CI(`lint`, `test`)와 릴리스 | verification, change-flow |
