@@ -99,9 +99,12 @@ say anything about the figure.
   isolation broken, `claude` failed or timed out, the harness crashed, the
   run worked outside its root, or the source cannot be established (no
   script found, the script is not among the run's files, re-running it
-  failed, or it does not reproduce `figure.png`). The figure is still on the
-  contact sheet; a script that draws differently each time (unseeded random
-  numbers) ends here too.
+  failed, or it does not reproduce `figure.png`). The figure is still on
+  the contact sheet. When the re-render is not the figure, the script is
+  run once more: if the two re-runs differ from each other, the reason says
+  the script does not draw the same figure twice (its randomness is not
+  seeded), which is the script's defect, not a tracing failure. Nothing is
+  seeded or retried for the agent.
 - `NOTRUN`: the run did not execute. Never counted as passed.
 
 ## Cases

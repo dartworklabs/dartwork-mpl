@@ -69,6 +69,8 @@ The opposite failure is the empty chart: technically clean and saying nothing. S
 
 **The data is not yours to change.** Never drop, fill, sort, aggregate, clip or invent rows without saying so. A missing value stays a visible gap. Names in the data stay as written. Template numbers are placeholders, never results.
 
+**The script draws the same figure every time it runs.** Seed any randomness you bring in (jitter in a strip plot, a subsample of a large scatter, bootstrap bands, example data when the user gave none): `rng = np.random.default_rng(0)`, then draw from `rng`.
+
 Text on the figure follows the document it goes into. Unknown: follow the language of the request's own labels and data.
 
 ## Check, then look
