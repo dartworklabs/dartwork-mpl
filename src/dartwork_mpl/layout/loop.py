@@ -87,10 +87,11 @@ def run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
 
 
 def _run(fig: Figure, gs: GridSpec, margins: Sides, given: Neighbours) -> None:
-    """The spines its scales tick on, notes in the margin, margins, then
-    rounds of text fitting."""
+    """The spines its scales tick on, the faces of mathtext, notes in the
+    margin, margins, then rounds of text fitting."""
     apply.unturn(fig)
     apply.show_scale_spines(fig)
+    given.lead_faces(fig)
     given.prepare_ticks(fig)
     given.place_notes(fig, margins.left, margins.bottom)
     step = fit(fig, gs, margins, given, None)

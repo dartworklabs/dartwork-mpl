@@ -1,6 +1,7 @@
 """``dm.simple_layout``: the margin fit, with what the other slices settle.
 
-Large numbers on the ticks, bar labels, legends, line-end names and panel
+A mathtext string takes a font family that has its text; large numbers on
+the ticks, bar labels, legends, line-end names and panel
 letters settle at the size the layout fits, before it measures the margins;
 a figure legend and a note line hold room the margins keep clear. The
 layout slice runs them in its order from the functions given here.
@@ -10,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from dartwork_mpl import layout, ticks
+from dartwork_mpl import font, layout, ticks
 from dartwork_mpl.labels import (
     note_gap_pt,
     place_notes,
@@ -42,6 +43,7 @@ def prepare_ticks(fig: Figure) -> None:
 
 
 NEIGHBOURS = layout.Neighbours(
+    lead_faces=font.lead_math_faces,
     prepare_ticks=prepare_ticks,
     place_notes=place_notes,
     settle_bars=settle_bars,

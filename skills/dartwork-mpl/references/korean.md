@@ -11,8 +11,8 @@ language the figure already has.
 Pick a `-kr` preset when any label, title, legend, annotation or data value
 on the figure is Korean: `scientific-kr`, `report-kr`, `presentation-kr`,
 `minimal-kr`, `poster-kr`, `web-kr`, `dark-kr`. It keeps the base preset's
-sizes and adds bundled Korean fonts (Paperlogy first, Noto Sans CJK KR as
-fallback).
+sizes and draws Hangul in Paperlogy, numerals and Latin letters in Inter
+(both bundled).
 
 ```python
 import matplotlib.pyplot as plt
@@ -30,6 +30,10 @@ plt.close(fig)
 - Apply the `-kr` preset before creating the figure; switching later leaves
   existing text in the old font.
 - Mixed Korean and English text in one label is fine.
+- Write a unit's symbol itself next to Korean: `"면적 (m²)"`, `"효율 η (%)"`.
+  Mathtext draws a whole string in one font, so `dm.simple_layout` sets
+  `"면적 (m$^2$)"` in Paperlogy, numerals included, and says so; drawn
+  without `dm.simple_layout`, that label loses its Hangul.
 - See [role colours](colors.md#named-colours) for the Korean gain and loss convention.
 - `dm.style.context("report-kr")` scopes the preset to one block; save the
   figure inside it.

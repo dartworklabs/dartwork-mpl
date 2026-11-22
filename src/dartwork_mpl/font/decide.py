@@ -7,7 +7,7 @@ named cases in ``edges.py``.
 
 from __future__ import annotations
 
-from .model import Expected, Plan, Table, WeightMiss
+from .model import Expected, Lead, MathText, Plan, Table, WeightMiss
 
 
 def table_plan(table: Table) -> Plan:
@@ -31,3 +31,9 @@ def is_expected(miss: WeightMiss, expected: Expected) -> bool:
     return (
         miss.family in expected.math and miss.weight == expected.preset_weight
     )
+
+
+def lead_plan(text: MathText) -> Lead:
+    """A mathtext string keeps the family its list names first."""
+    del text
+    return Lead(0)

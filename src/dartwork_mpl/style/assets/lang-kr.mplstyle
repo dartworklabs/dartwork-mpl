@@ -1,9 +1,12 @@
-# Korean presets: Paperlogy leads the explicit family list so Hangul
-# renders in the KR face, with the bundled math/symbol faces appended for
-# per-glyph fallback (see base.mplstyle for why font.family must be
-# explicit, not the generic `sans-serif`). font.sans-serif is held
-# IDENTICAL to font.family — bundled families only, no machine-dependent
-# OS fonts — and its tail must stay equal to base's tail
-# (tests/docs/test_style_chain_parity.py).
-font.family: Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
-font.sans-serif: Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
+# Korean presets: Hangul in Paperlogy, numerals and Latin in Inter. Inter
+# leads the explicit family list and Paperlogy follows for per-glyph
+# fallback (see base.mplstyle for why font.family must be explicit, not the
+# generic `sans-serif`). Paperlogy led until #821, but its digits are
+# fixed-width (0.667 em) and unkerned, so "−15" read "−1 5"; Inter's
+# stems match Paperlogy's at the presets' weights (200, 400, 500, 700).
+# Mathtext draws the text around "$…$" in the first family only, and Inter
+# has no Hangul: dm.simple_layout gives such a text Paperlogy first
+# (font/mathface.py). font.sans-serif is held IDENTICAL to font.family:
+# bundled families only, no machine-dependent OS fonts.
+font.family: Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
+font.sans-serif: Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
