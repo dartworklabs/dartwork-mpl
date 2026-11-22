@@ -397,6 +397,21 @@ def small_panel(facts: Facts, found: Findings) -> Findings:
     return found
 
 
+def list_rows(a: Text, b: Text) -> bool:
+    """Two free texts on separate rows of the same typographic column."""
+    if not (a.role.free and b.role.free):
+        return False
+    em = min(a.em, b.em)
+    left = a.box.x0 - b.box.x0
+    right = a.box.x1 - b.box.x1
+    pitch = abs(a.box.y0 + a.box.y1 - b.box.y0 - b.box.y1) / 2
+    return (
+        abs(a.em - b.em) <= 0.01 * em
+        and min(abs(left), abs(right), abs(left + right) / 2) <= 0.1 * em
+        and pitch >= 0.85 * em
+    )
+
+
 def close_gap(a: Text, b: Text) -> TextGap | None:
     """A small gap between aligned texts, in em of the smaller one."""
     if not (a.role.free or b.role.free):
@@ -404,6 +419,8 @@ def close_gap(a: Text, b: Text) -> TextGap | None:
     shared = a.box.overlap(b.box)
     if shared.width >= 0.5 * min(a.box.width, b.box.width):
         gap = -shared.height
+        if gap >= 0 and list_rows(a, b):
+            return None
     elif shared.height >= 0.5 * min(a.box.height, b.box.height):
         # The same-row value and name have a rule of their own. A short
         # inline unit or suffix can also belong to the value.

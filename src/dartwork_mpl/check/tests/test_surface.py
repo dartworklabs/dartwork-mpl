@@ -249,3 +249,14 @@ def test_an_inset_axis_label_is_checked_against_ticks_and_parent_frame():
     )
     ax.set_visible(False)
     assert not dm.check(fig)
+
+
+def test_line_end_names_read_as_rows():
+    """The line-end helper's standard row spacing is clear."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    for i, name in enumerate(("fastframe (ours)", "polars", "dask")):
+        ax.plot([0, 10], [1, 9 + i * 0.01], label=name)
+    ax.set(xlabel="Rows", ylabel="Runtime (ms)")
+    dm.label_line_ends(ax)
+    dm.simple_layout(fig)
+    assert "TEXT_TOO_CLOSE" not in dm.check(fig).rules

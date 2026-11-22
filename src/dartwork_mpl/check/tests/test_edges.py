@@ -222,8 +222,20 @@ def test_TEXT_TOO_CLOSE():
 
     first = text("Wind", INSIDE)
     for gap, expected in ((10, ("TEXT_TOO_CLOSE",)), (17, ())):
-        second = text("Hydro", Box(100, 140 + gap, 300, 175 + gap))
+        second = text("Hydro", Box(120, 140 + gap, 320, 175 + gap))
         assert found(Facts(CANVAS, PT, texts=(first, second))).rules == expected
+
+    for aligned in (
+        Box(102, 144, 230, 184),  # left
+        Box(170, 144, 299, 184),  # right
+        Box(145, 144, 255, 184),  # centre
+    ):
+        second = text("Hydro", aligned)
+        assert not found(Facts(CANVAS, PT, texts=(first, second)))
+        larger = replace(second, em=44)
+        assert found(Facts(CANVAS, PT, texts=(first, larger))).rules == (
+            "TEXT_TOO_CLOSE",
+        )
 
     value = text("19.4 TWh", INSIDE)
     name = text("Solar", Box(306, 100, 400, 140))
