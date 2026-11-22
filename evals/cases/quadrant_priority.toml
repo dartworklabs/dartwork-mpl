@@ -1,0 +1,27 @@
+# cluster: 2x2 priority scatter with Low/High axis words instead of ticks, quadrant lines, the focus quadrant's items in bold and the rest quiet, colour by category; refs: 2956947d-125d-80b5-a881-dfee5e8070cc, f7c53775-83a4-49b0-9be6-5f6661123516, 2926947d-125d-80c0-a992-ccc6bc15cb01, 1176947d-125d-80d6-b190-e8832bc15d4d
+prompt = "initiatives.csv scores 16 initiatives on impact and on feasibility (0 to 10). A 2x2 for the steering committee: low and high on the axes rather than numbers, the initiatives that are high on both named in bold and the rest quieter, colour by workstream."
+
+[files]
+"initiatives.csv" = """
+initiative,workstream,feasibility,impact
+Self-service returns,Customer,8.4,7.9
+Unified customer profile,Customer,4.1,8.6
+Loyalty app redesign,Customer,6.9,5.2
+Chatbot for order status,Customer,8.8,4.1
+Dynamic pricing engine,Commercial,3.2,9.1
+Supplier scorecards,Commercial,7.7,6.8
+Private-label expansion,Commercial,5.8,7.4
+Promotions calendar cleanup,Commercial,9.1,3.3
+Warehouse slotting optimisation,Operations,7.2,8.3
+Route planning upgrade,Operations,6.4,6.1
+Predictive maintenance,Operations,3.9,5.7
+Paperless receiving,Operations,8.3,2.9
+Cloud migration of the ERP,Technology,2.6,7.2
+Single sign-on,Technology,8.9,5.6
+Data catalogue,Technology,5.1,3.8
+Legacy report retirement,Technology,7.4,2.2
+"""
+
+[expect]
+panels = 1
+texts = ["Self-service returns", "Warehouse slotting optimisation", "Impact", "Feasibility", "High"]

@@ -1,0 +1,31 @@
+# cluster: S-curves named in place, the projected one dashed, a labelled span arrow under each rise giving its duration; refs: 1386947d-125d-802d-8f05-e707407f3c14
+prompt = "`from adoption import load` gives the adoption curves (share of households, %) for three home technologies: central heating, condensing boilers, and our projection for heat pumps. One chart for the report: for each, mark how many years it took (or will take) to go from 10% to 90%, name the curves directly on the plot, and make it obvious that the heat pump curve is a projection."
+
+[files]
+"adoption.py" = '''
+"""Household adoption curves (share of households, %)."""
+
+import numpy as np
+
+
+def _curve(years: np.ndarray, midpoint: float, years_10_to_90: float) -> np.ndarray:
+    k = 2 * np.log(9) / years_10_to_90
+    return 100 / (1 + np.exp(-k * (years - midpoint)))
+
+
+def load() -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """name -> (years, share_pct). Heat pumps are a projection from 2026."""
+    y1 = np.arange(1950, 2046)
+    y2 = np.arange(1990, 2046)
+    y3 = np.arange(2015, 2046)
+    return {
+        "Central heating": (y1, _curve(y1, 1979, 34).round(1)),
+        "Condensing boilers": (y2, _curve(y2, 2011, 19).round(1)),
+        "Heat pumps (projection)": (y3, _curve(y3, 2034, 14).round(1)),
+    }
+'''
+
+[expect]
+marks = ["line"]
+texts = ["Central heating", "Condensing boilers", "Heat pumps"]
+any_text = ["34 y", "34 years", "34"]

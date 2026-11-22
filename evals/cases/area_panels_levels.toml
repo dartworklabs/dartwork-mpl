@@ -1,0 +1,21 @@
+# cluster: adjacent filled-area panels sharing y (one per ordered stage), stage names on the fills, years only on the first panel; refs: 6647fe9b-c22f-4dbc-b2a9-77563ebe5217, 1066947d-125d-80e9-838f-deec6416916b
+prompt = "rep.csv: women's share of roles at six levels, 2016 to 2025 (%). Six filled-area panels in one row, from entry level to the C-suite, sharing the y axis, so the staircase down the levels and the slow rise inside each one both show. Level names on the panels; years only where they are needed. For the DEI annual report."
+
+[files]
+"rep.csv" = """
+year,Entry level,Manager,Senior manager,Vice president,Senior vice president,C-suite
+2016,45,37,32,27,23,18
+2017,46,37,33,28,22,19
+2018,47,38,33,29,23,21
+2019,48,38,34,29,25,22
+2020,47,39,34,30,26,21
+2021,47,41,35,30,27,24
+2022,48,40,36,32,27,25
+2023,48,40,37,33,28,27
+2024,48,39,37,34,29,28
+2025,49,40,38,35,30,30
+"""
+
+[expect]
+panels = 6
+texts = ["Entry level", "C-suite", "Vice president", "2016", "2025"]

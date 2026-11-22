@@ -1,0 +1,17 @@
+# cluster: one stacked column with value and share in each segment and each segment's name and description beside it, top segment highlighted, total on top; refs: 12f6947d-125d-8092-8db0-f276b1fdd391, 1386947d-125d-800e-b123-d2b018a762a8
+prompt = "value.csv breaks our USD 480 bn estimate into four maturity tiers, each with a one-line description. One stacked column with the amount and its share in each segment, and each tier's name and description written beside its segment instead of a legend. Highlight the top tier. White paper figure."
+
+[files]
+"value.csv" = """
+tier,value_usd_bn,description
+Leading,205,Practices are embedded in how the company runs and managed proactively
+Scaling,85,Principles are integrated with robust processes and governance
+Developing,70,Structured processes exist with early integration into operations
+Starting,120,Initial awareness is established with the basic components in place
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Leading", "Starting", "205", "480", "embedded"]
+any_text = ["43%", "42.7"]

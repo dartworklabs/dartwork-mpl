@@ -1,0 +1,22 @@
+# cluster: range plot, one stem per category from lowest to highest with a coloured dot per group, ordered by one group; refs: 2956947d-125d-8082-a311-e9a2331afaab, 2956947d-125d-80f0-90c3-c36aeb284e78
+prompt = "treat.csv: the share of consumers in each country who plan to treat themselves this quarter, by generation (%). For each country show the spread across generations: a thin vertical line from the lowest to the highest, and a coloured dot per generation on it. Order the countries by Gen Z. Quarterly consumer pulse report."
+
+[files]
+"treat.csv" = """
+country,Gen Z,Millennials,Gen X,Boomers
+India,86,82,77,58
+Indonesia,81,79,66,49
+Saudi Arabia,77,71,62,51
+Mexico,72,70,57,44
+Brazil,69,64,52,31
+China,66,68,49,27
+United States,61,56,43,33
+Australia,58,49,41,29
+Germany,55,47,36,24
+United Kingdom,52,50,38,22
+Japan,44,31,26,18
+"""
+
+[expect]
+panels = 1
+texts = ["India", "Japan", "Gen Z", "Boomers"]

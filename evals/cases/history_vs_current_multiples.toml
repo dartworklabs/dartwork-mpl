@@ -1,0 +1,40 @@
+# cluster: wall of tiny panels, past periods as thin grey lines and the current one in red on top, almost no axes; refs: c59605f0-4ed9-48a5-bb17-a98c767cb34a
+prompt = "`from flu import load` gives weekly flu-like-illness rates for 12 regions over eight seasons. One small panel per region: past seasons as thin grey lines, the current season (2025/26, which has only reached week 22) in red on top. No axis clutter; it should read like a wall of sparklines. For the public-health bulletin."
+
+[files]
+"flu.py" = '''
+"""Weekly influenza-like-illness rate (% of visits) by region and season."""
+
+import numpy as np
+
+REGIONS = ["Northland", "Lakes", "Capital", "East Coast", "Highlands", "Midlands",
+           "Delta", "South Coast", "Islands", "Plateau", "West Bay", "Borders"]
+SEASONS = ["2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24",
+           "2024/25", "2025/26"]
+
+
+def load() -> dict[str, dict[str, np.ndarray]]:
+    """region -> season -> rate per week (week 1 = first week of October).
+
+    Past seasons have 30 weeks; the current one stops at week 22.
+    """
+    rng = np.random.default_rng(26)
+    weeks = np.arange(1, 31)
+    out: dict[str, dict[str, np.ndarray]] = {}
+    for r, region in enumerate(REGIONS):
+        out[region] = {}
+        for s, season in enumerate(SEASONS):
+            peak = rng.uniform(13, 21)
+            height = rng.uniform(2.5, 6.5) * (1.0 + 0.04 * r)
+            if season == "2025/26":
+                peak, height = 15.5 + rng.normal(0, 0.8), height * 1.45
+            rate = 0.9 + height * np.exp(-0.5 * ((weeks - peak) / 3.4) ** 2)
+            rate = (rate + rng.normal(0, 0.12, weeks.size)).clip(0.3).round(2)
+            out[region][season] = rate[:22] if season == "2025/26" else rate
+    return out
+'''
+
+[expect]
+panels = 12
+marks = ["line"]
+texts = ["Northland", "Borders", "Highlands"]

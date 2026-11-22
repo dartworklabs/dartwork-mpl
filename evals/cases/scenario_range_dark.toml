@@ -1,0 +1,30 @@
+# cluster: dark theme, actuals as a line then a scenario range band opening after the present, one bracketed note on the feature that matters; refs: 220056ed-6f55-4b31-9c6a-4a548180f3c9, 68f5219d-c629-409c-bf9e-2a15067cc0c7
+prompt = "For the dark-mode version of our energy dashboard: `from demand import load` gives actual gas demand for 1995 to 2025 and the low and high bounds of our scenario range out to 2050 (EJ). Show the actuals as a line, the range as a band that opens after 2025, and one note pointing at the plateau around 2030 to 2035."
+
+[files]
+"demand.py" = '''
+"""Global gas demand (EJ): actuals to 2025 and a scenario range to 2050."""
+
+import numpy as np
+
+
+def load() -> dict[str, np.ndarray]:
+    """Keys: year_actual, actual, year_scenario, low, high."""
+    rng = np.random.default_rng(8)
+    ya = np.arange(1995, 2026)
+    actual = 78 + 2.35 * (ya - 1995) + rng.normal(0, 1.6, ya.size)
+    actual[ya == 2009] -= 5.0
+    actual[ya == 2020] -= 6.5
+    ys = np.arange(2025, 2051)
+    t = ys - 2025
+    high = actual[-1] + 1.4 * t - 0.050 * t**2
+    low = actual[-1] + 0.9 * t - 0.125 * t**2
+    return {"year_actual": ya, "actual": actual.round(1),
+            "year_scenario": ys, "low": low.round(1), "high": high.round(1)}
+'''
+
+[expect]
+panels = 1
+marks = ["line"]
+texts = ["2050"]
+any_text = ["EJ"]

@@ -1,0 +1,15 @@
+# cluster: two 100% bars with long segment descriptions placed as headed text columns instead of a legend, and bracketed group totals in large numerals; refs: 2956947d-125d-8002-8a20-f83cac35c3d6, 2996947d-125d-8075-9eca-d48fd2a07407, 2976947d-125d-8078-b12f-f9859fa33f78
+prompt = "outlook.csv: in March and again in September we asked members which of four scenarios they think is most likely for next year. Two 100% bars, one per survey. The first two scenarios together are the 'expansion' camp and the last two the 'contraction' camp: show those two totals prominently for each survey, because they flipped and that's the headline. The scenario descriptions are long, so no ordinary legend; put each description where it explains its colour. Industry outlook report."
+
+[files]
+"outlook.csv" = """
+scenario,camp,description,march_pct,september_pct
+A,Expansion,"Orders grow across all regions and capacity has to be added",22,11
+B,Expansion,"Orders grow in some regions; existing capacity is enough",39,31
+C,Contraction,"Orders fall moderately; plants run short shifts for part of the year",31,44
+D,Contraction,"Orders fall sharply; at least one site is closed or mothballed",8,14
+"""
+
+[expect]
+marks = ["bar"]
+texts = ["Expansion", "Contraction", "61", "58", "March", "September"]

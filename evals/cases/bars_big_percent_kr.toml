@@ -1,0 +1,18 @@
+# cluster: axis-free horizontal bars, category name above each bar, large number at the bar end, one bar in colour; refs: 19c6947d-125d-803f-ac65-c782a4737d6b, 1066947d-125d-80de-9c8d-cf76ed108da1, d8c95b11-f8d7-46cc-a556-09b9d64219cd
+prompt = "plans.csv 는 내년 성장 전략 설문 결과야(복수 응답, %). 임원 보고 슬라이드에 넣을 건데, 축 없이 가로 막대만 두고 항목 이름은 막대 위에, 퍼센트는 막대 끝에 큼직하게 보여줘. 1위만 색으로 강조하고 나머지는 차분하게."
+
+[files]
+"plans.csv" = """
+전략,응답률
+신제품·서비스 출시,53
+전략적 제휴 및 지분 투자,43
+수익성 높은 제품군 집중,35
+국내 신규 지역 진출,34
+인수합병,31
+해외 시장 진출,18
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["신제품", "인수합병", "해외 시장 진출", "53"]

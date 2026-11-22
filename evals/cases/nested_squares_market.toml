@@ -1,0 +1,6 @@
+# cluster: area comparison with nested squares to scale (part inside whole), two periods, totals in big numerals, share under each; refs: 2c96947d-125d-80a2-8431-f4a8fa1a6416, 2c96947d-125d-80b4-950b-d086bb6eed9f, 95bec5fe-2cf9-4970-8618-d86a3c6b005d, ad4b5c04-e76e-4a86-bcb8-acc9b779c407
+prompt = "A simple area comparison for the investor newsletter: the market is USD 148 bn today, of which our segment is 22 bn; in 2032 it is forecast at 290 bn with our segment at 81 bn. Squares whose areas are to scale, the segment as a square inside the market one, both totals in big numbers, and the segment's share as a percentage under each."
+
+[expect]
+texts = ["148", "290", "2032"]
+any_text = ["15%", "14.9"]

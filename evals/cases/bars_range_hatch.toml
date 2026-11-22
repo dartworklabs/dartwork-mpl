@@ -1,0 +1,19 @@
+# cluster: paired horizontal bars ending in a hatched extension for the low-to-high range, the range written at the bar end, legend with a hatch sample; refs: 1386947d-125d-80df-a467-ee820ea7646d, 2976947d-125d-807a-b963-f113d7d538ae
+prompt = "heating.csv: emissions per unit of heat for six heating options, on today's grid and with 70% renewable power; each is a range from low to high (kg CO2e per GJ). Paired horizontal bars per option: solid up to the low end, a hatched extension up to the high end, and the range written at the end of each bar. Building decarbonisation report."
+
+[files]
+"heating.csv" = """
+option,today_low,today_high,renewable_low,renewable_high
+Ground-source heat pump,34,55,7,12
+Air-source heat pump,52,73,13,19
+Electric resistance,112,141,50,59
+District steam,93,122,84,100
+Oil boiler,104,125,104,125
+Gas boiler,91,114,77,86
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Ground-source heat pump", "Gas boiler"]
+any_text = ["34-55", "34–55", "34 to 55"]

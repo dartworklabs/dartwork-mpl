@@ -1,0 +1,15 @@
+# cluster: a grey baseline bar and a coloured subject bar with the uplift written in the gap between their tops; refs: 1386947d-125d-8091-90f7-f2b947dcc698, 1946947d-125d-8059-913b-d9846afb4762, 2976947d-125d-807a-b963-f113d7d538ae
+prompt = "Two little charts side by side for the impact report. pilots.csv has median first-year revenue and the repeat-purchase rate for stores without and with the loyalty pilot. In each chart a grey bar for 'without', a coloured bar for 'with', and the uplift shown in the gap between the two tops (+38% for revenue, +12 points for the rate) so the difference is the thing you read."
+
+[files]
+"pilots.csv" = """
+metric,unit,without_pilot,with_pilot
+Median first-year revenue,USD thousand,412,569
+Repeat-purchase rate,% of customers,31,43
+"""
+
+[expect]
+panels = 2
+marks = ["bar"]
+texts = ["38%"]
+any_text = ["+12", "12 p"]

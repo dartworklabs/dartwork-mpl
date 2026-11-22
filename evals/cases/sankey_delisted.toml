@@ -1,0 +1,22 @@
+# cluster: three-stage Sankey, dark node bars with counts and names, ribbons in the lighter source colour; refs: 2f8ccfb1-f895-4175-b7f1-67e21e133c55, be2886ed-93e0-4a8c-9f39-73d21633adf3, 9f1d2bd0-8efb-4acf-85d4-6f7de0a920c9, 2966947d-125d-8010-9a1e-f23eec98b9e8
+prompt = "delisted.csv: what happened to the 240 companies that left the exchange since 2018: who bought them, and what their status is today. A Sankey from 'Listed' to the buyer type to the current status, with the counts on the nodes. Capital markets review."
+
+[files]
+"delisted.csv" = """
+buyer_type,current_status,companies
+Private equity,Still with the same owner,96
+Private equity,Sold to another fund,21
+Private equity,Sold to a company,14
+Private equity,Relisted,5
+Private equity,Closed,3
+Corporate acquirer,Still with the same owner,58
+Corporate acquirer,Sold to a company,9
+Corporate acquirer,Closed,4
+Founder or family,Still with the same owner,24
+Founder or family,Sold to another fund,4
+Founder or family,Relisted,2
+"""
+
+[expect]
+texts = ["Private equity", "Corporate acquirer", "Founder or family", "Relisted", "240"]
+any_text = ["139"]

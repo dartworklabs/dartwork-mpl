@@ -1,0 +1,17 @@
+# cluster: two treemaps drawn to the same scale (two periods), totals in large numerals above, names and values in tiles; refs: 2c96947d-125d-80f0-aa77-e6a1cb477138, 1386947d-125d-80be-a688-cfe371350a90, 2c96947d-125d-80a2-8431-f4a8fa1a6416
+prompt = "emissions.csv has our emissions by source for 2024 and for the 2035 plan (kt CO2e). Two treemaps side by side, drawn to the same scale so the 2035 one is visibly smaller, with each total written large above it and the names and values inside the tiles. Sustainability report."
+
+[files]
+"emissions.csv" = """
+source,kt_2024,kt_2035_plan
+Purchased electricity,412,96
+Process heat,338,251
+Logistics,207,164
+Raw materials,186,171
+Business travel,41,22
+Waste,28,19
+"""
+
+[expect]
+texts = ["Purchased electricity", "Process heat", "2024", "2035"]
+any_text = ["1,212", "1212"]

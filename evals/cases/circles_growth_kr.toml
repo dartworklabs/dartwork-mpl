@@ -1,0 +1,14 @@
+# cluster: quantities as circles to scale across time points, joined by arrows carrying the growth rate, one row per segment; refs: c010429d-f732-4385-96a2-54838687cd40, caf95f55-8aaf-447b-9dd5-b9486ad707e1
+prompt = "segments.csv 는 모빌리티 사업 부문별 시장 규모(조 원)야. 2024, 2030, 2040 세 시점이 있어. 부문마다 한 줄씩, 시점별 규모를 원 크기로 보여주고 원 사이에는 연평균 성장률을 화살표와 함께 적어줘. 전략 발표 자료에 쓸 거야."
+
+[files]
+"segments.csv" = """
+부문,2024,2030,2040
+부품,12,14,13
+완성차 제조,21,25,31
+충전 인프라,3,9,24
+모빌리티 서비스,5,18,62
+"""
+
+[expect]
+texts = ["부품", "충전 인프라", "모빌리티 서비스", "2024", "2040", "62"]

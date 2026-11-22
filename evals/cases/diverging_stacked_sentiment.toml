@@ -1,0 +1,19 @@
+# cluster: diverging stacked columns around a better/worse line, two shades each side, values in segments, neutral omitted; refs: 2956947d-125d-8044-9434-e28ee82d322a, 2956947d-125d-8044-8d4a-fc89ea5eaea3, 3086947d-125d-806b-8b70-f560ca008416, 2956947d-125d-80ef-a2c0-c1665ebcf1dd
+prompt = "conditions.csv: each quarter's answers to 'how are conditions compared with six months ago': substantially better, moderately better, moderately worse, substantially worse (% of respondents; 'the same' is left out on purpose). For each of the six quarters stack the better answers above a zero line and the worse ones below it, with the values in the segments. Economic sentiment report."
+
+[files]
+"conditions.csv" = """
+quarter,substantially_better,moderately_better,moderately_worse,substantially_worse
+Q2 2024,2,29,36,6
+Q3 2024,3,34,31,4
+Q4 2024,4,41,23,2
+Q1 2025,6,39,24,3
+Q2 2025,3,27,38,9
+Q3 2025,5,33,30,5
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Q2 2024", "Q3 2025", "41", "38"]
+any_text = ["Better", "better"]

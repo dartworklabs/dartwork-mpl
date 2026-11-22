@@ -1,0 +1,20 @@
+# cluster: bubble chart with letters in the bubbles and the key listed at the right in two coloured groups, plus a bubble-size key; refs: 2996947d-125d-804d-a855-da9b6b04c94e, 3086947d-125d-80cf-9fb3-f9dc2e169ea4, 2936947d-125d-807e-a568-db5bf51d5eb9, 2996947d-125d-80e8-a480-e7febd5b275e
+prompt = "sectors.csv: for ten sectors, their share of all firms surveyed, their share of the top AI spenders, and the value at stake in USD bn (bubble size). The names are long, so letter the bubbles A to J and list the key at the right, split into the sectors that over-index on spending and those that under-index, in two colours. Include a key for the bubble size. Report exhibit."
+
+[files]
+"sectors.csv" = """
+sector,share_of_firms_pct,share_of_top_spenders_pct,value_at_stake_usd_bn
+Healthcare systems and services,11,29,310
+Software and internet platforms,17,24,460
+Media and telecommunications,6,13,180
+Advanced manufacturing,5,9,220
+Agriculture and food processing,2,4,70
+Banking and insurance,19,12,390
+Energy and basic materials,13,6,330
+Consumer goods and retail,11,5,520
+Engineering and construction,9,4,150
+Travel transport and logistics,7,3,240
+"""
+
+[expect]
+texts = ["Healthcare systems and services", "Travel transport and logistics", "Banking and insurance"]

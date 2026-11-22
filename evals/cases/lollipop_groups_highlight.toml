@@ -1,0 +1,25 @@
+# cluster: horizontal lollipops in hierarchical row groups, top item per group emphasised (band plus bold), a delta column at the right; refs: 2956947d-125d-807b-a6e6-e4cc10f8af22, 2956947d-125d-802f-b415-d3f5f57d4c8e, 2976947d-125d-8030-9618-f8e548786488, 2976947d-125d-8049-9707-cbe4f9a3f656
+prompt = "growth.csv: which ways of learning our senior engineers rate as very or extremely effective (%), in four groups, and how that differs from junior engineers (points). Horizontal lollipops listed under their group names, the top item in each group emphasised, and the difference versus juniors as a right-hand column. No x-axis clutter please; it's a report exhibit."
+
+[files]
+"growth.csv" = """
+group,way_of_learning,senior_pct,diff_vs_junior_points
+Doing the work,Owning a production service,88,21
+Doing the work,Incident reviews,79,9
+Doing the work,Rotations to another team,64,14
+Doing the work,Hack weeks,41,-12
+Structured,Architecture guild sessions,72,24
+Structured,Internal courses,53,-6
+Structured,Vendor certifications,38,-15
+People,Pair programming,76,-4
+People,A dedicated mentor,71,-11
+People,Design review feedback,69,17
+People,Conference attendance,47,3
+Self-study,Reading the codebase,67,12
+Self-study,Books and papers,52,8
+Self-study,Video tutorials,29,-23
+"""
+
+[expect]
+panels = 1
+texts = ["Owning a production service", "Architecture guild sessions", "Pair programming", "Video tutorials", "Self-study"]

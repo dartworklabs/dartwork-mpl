@@ -1,0 +1,18 @@
+# cluster: dumbbell rows (two dots joined), dots named once in place, sorted by gap, the gap as a right-hand column; refs: 19e6947d-125d-807c-a513-cc3a3acf8f97, 19e6947d-125d-802e-b52a-c041980c43cf, 1066947d-125d-8009-a1af-cd68c1925462
+prompt = "gap.csv: how managers and their teams each rate the same six things (share who agree, %). Dumbbell chart: one row per item, a dot for staff and a dot for managers joined by a line, sorted by the size of the gap, with the gap in points as a column on the right. No legend box; just name the two dots once on the chart. People analytics report."
+
+[files]
+"gap.csv" = """
+item,staff_pct,managers_pct
+We collaborate well across teams,49,76
+People are well connected to each other,62,88
+New ideas are welcomed here,47,71
+Mentorship is available to everyone,44,73
+There is time for skill development,45,77
+Decisions are explained openly,38,74
+"""
+
+[expect]
+panels = 1
+texts = ["New ideas are welcomed here", "Decisions are explained openly", "36"]
+any_text = ["Staff", "staff"]

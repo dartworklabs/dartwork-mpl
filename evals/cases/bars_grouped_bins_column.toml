@@ -1,0 +1,29 @@
+# cluster: grouped horizontal diverging bars (rotated group names, rule between groups), bar shade by a third variable in a few classes with a class legend, a signed number column at the right; refs: 25695b68-4468-4b94-8e57-67e755a5c4bb, 2976947d-125d-8000-a6a3-e488ff38189b
+prompt = "vacancy.csv: the change in office vacancy from 2019 to 2025 (percentage points) for cities in three countries, the change in vacant space (thousand m2), and each city's population. Horizontal bars grouped by country, positive to the right and negative to the left of zero, the bar shade by population in a few size classes, and the change in space as a signed number column on the right. Property market report."
+
+[files]
+"vacancy.csv" = """
+country,city,vacancy_change_pp,vacant_space_change_thousand_m2,population_million
+Germany,Berlin,6.1,412,3.7
+Germany,Munich,4.8,268,1.5
+Germany,Frankfurt,3.2,241,0.8
+Germany,Leipzig,-0.9,-14,0.6
+Germany,Dresden,-1.6,-21,0.6
+United Kingdom,London,5.4,1310,8.9
+United Kingdom,Manchester,2.7,96,0.6
+United Kingdom,Birmingham,3.9,118,1.1
+United Kingdom,Bristol,0.3,4,0.5
+United Kingdom,Glasgow,-2.2,-37,0.6
+United States,San Francisco,22.4,1640,0.8
+United States,Seattle,9.8,790,0.7
+United States,New York,7.6,3980,8.3
+United States,Chicago,6.3,1050,2.7
+United States,Boston,4.1,520,0.7
+United States,Charlotte,-1.4,-52,0.9
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Berlin", "San Francisco", "Charlotte", "Germany", "United States"]
+any_text = ["+1,640", "1,640", "1640"]

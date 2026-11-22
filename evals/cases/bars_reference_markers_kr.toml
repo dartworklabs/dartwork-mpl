@@ -1,0 +1,20 @@
+# cluster: columns against a dashed reference level with a per-bar comparison tick from a second series, both named in place, value inside the bar top; refs: 1066947d-125d-8098-8a57-fb3e7eb10f71, 1066947d-125d-802c-9831-ed04929f2f67
+prompt = "promo.csv: 연도별로 남성 100명이 승진할 때 여성은 몇 명 승진했는지야. 전체 여성과 기술직군 여성 두 가지가 있어. 기술직군을 막대로 그리고, 100 기준선은 점선으로, 전체 여성 수치는 각 막대 위치에 짧은 가로 표시로 겹쳐서 비교되게 해줘. 막대 안에 값도 적고. 다양성 보고서에 넣을 거야."
+
+[files]
+"promo.csv" = """
+연도,기술직군 여성,전체 여성
+2019,58,79
+2020,56,74
+2021,61,84
+2022,72,86
+2023,83,88
+2024,69,87
+2025,66,82
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["2019", "2025", "58", "83", "100"]
+any_text = ["전체 여성", "전체"]

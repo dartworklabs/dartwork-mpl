@@ -1,0 +1,22 @@
+# cluster: small multiples of two-bar change (start vs end) with the top edges linked and the change written in each panel; refs: 2926947d-125d-806e-92ab-ca71bdca9137, 2926947d-125d-8054-bca8-ebf1033c3c8d, 2956947d-125d-80cc-9991-e2384113b092, 19e6947d-125d-8074-8f3a-d29b2be80c4e
+prompt = "lanes.csv: freight volume on our ten busiest lanes in 2022 and 2025 (thousand TEU). One small panel per lane, two bars each, all on the same y scale so sizes compare, the two tops joined so the direction is obvious, and the change over the period as a percentage in each panel. I mainly want people to see which lanes shrank. Logistics review deck."
+
+[files]
+"lanes.csv" = """
+lane,teu_2022,teu_2025
+Shanghai to Rotterdam,612,548
+Shenzhen to Los Angeles,574,497
+Busan to Long Beach,318,351
+Ho Chi Minh to Los Angeles,241,336
+Singapore to Hamburg,297,288
+Mumbai to Antwerp,188,243
+Ningbo to Felixstowe,264,201
+Laem Chabang to Tokyo,156,171
+Santos to Rotterdam,143,149
+Durban to Singapore,97,121
+"""
+
+[expect]
+panels = 10
+marks = ["bar"]
+texts = ["Shanghai", "Durban", "2022", "2025"]
