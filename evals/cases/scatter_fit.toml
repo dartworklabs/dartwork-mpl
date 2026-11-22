@@ -1,8 +1,8 @@
-prompt = "Scatter plot of weight against height from people.csv, with a linear fit line. It goes in a report."
+prompt = "Scatter plot of mass against length for the steel bars in bars.csv, with a linear fit line. It goes in a report."
 
 [files]
-"people.csv" = """
-height_cm,weight_kg
+"bars.csv" = """
+length_cm,mass_kg
 152,48
 158,55
 160,53
@@ -22,4 +22,4 @@ height_cm,weight_kg
 [expect]
 panels = 1
 marks = ["scatter", "line"]
-texts = ["Height", "Weight"]
+texts = ["Length", "Mass"]

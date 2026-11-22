@@ -1,9 +1,9 @@
-# cluster: classification grid of text tiles coloured on a four-step headwind-to-tailwind scale, rows grouped by theme, one block per country; refs: 2966947d-125d-80c8-95bf-f383fedc1205, 2d26947d-125d-80ec-8690-cad3c2d536ae, 2936947d-125d-80f4-8842-e4f653db8f69
-prompt = "readiness.csv rates three markets on 12 enablers of the energy transition, each as strong headwind, headwind, tailwind or strong tailwind. A tile grid per market, with the enablers grouped under their four themes, tile colour by rating and the enabler's name in the tile. It's the country comparison page in a report."
+# cluster: classification grid of text tiles coloured on a four-step headwind-to-tailwind scale, rows grouped by theme, one block per territory; refs: 2966947d-125d-80c8-95bf-f383fedc1205, 2d26947d-125d-80ec-8690-cad3c2d536ae, 2936947d-125d-80f4-8842-e4f653db8f69
+prompt = "readiness.csv rates three sales territories on 12 enablers of the energy transition, each as strong headwind, headwind, tailwind or strong tailwind. A tile grid per territory, with the enablers grouped under their four themes, tile colour by rating and the enabler's name in the tile. It's the territory comparison page in a report."
 
 [files]
 "readiness.csv" = """
-theme,enabler,Chile,Kenya,Vietnam
+theme,enabler,North territory,Central territory,South territory
 Natural resources,Solar and wind potential,strong tailwind,tailwind,tailwind
 Natural resources,Critical minerals,strong tailwind,headwind,headwind
 Natural resources,Water availability,headwind,headwind,tailwind
@@ -19,5 +19,5 @@ Capital and skills,Technical workforce,tailwind,headwind,tailwind
 """
 
 [expect]
-texts = ["Chile", "Kenya", "Vietnam", "Critical minerals", "Infrastructure"]
+texts = ["North", "Central", "South", "Critical minerals", "Infrastructure"]
 any_text = ["headwind", "Headwind"]
