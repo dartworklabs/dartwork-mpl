@@ -26,7 +26,12 @@ class Piece:
 
 
 def decimal_rows(rows: Sequence[MeasuredRow]) -> tuple[tuple[Piece, ...], ...]:
-    """Pieces sharing stops, or no plan when the numeric shapes differ."""
+    """Reserve the trailing runs, literal separators and next leading runs.
+
+    A stop reserves the widest advance on each side of each joint, including
+    the widest authored whitespace. An opener belongs to the leading run.
+    Rows with different numeric shapes have no shared stops.
+    """
     counts = {len(row.text.numbers) for row in rows}
     if len(counts) != 1 or 0 in counts:
         return ()

@@ -25,6 +25,7 @@ class AlignedTextRow(Text):
         text: str,
         pieces: tuple[Annotation, ...],
         origin: Callable[[RendererBase], tuple[float, float]],
+        offsets: Callable[[RendererBase], tuple[float, ...]],
     ) -> None:
         """Carry the original styling and the new native runs."""
         super().__init__(text=text)  # pyright: ignore[reportUnknownMemberType]
@@ -32,24 +33,40 @@ class AlignedTextRow(Text):
         self.set_zorder(source.get_zorder())
         self.set_in_layout(source.get_in_layout())
         self.pieces = pieces
+        self.planned_text = text
+        self.offsets = offsets
+        self.edited = Text()  # pyright: ignore[reportUnknownMemberType]
         self.origin = origin
         self.renderer: RendererBase | None = None
 
-    def place(self, renderer: RendererBase) -> None:
-        """Put every piece on the same baseline for this renderer."""
+    def place(self, renderer: RendererBase) -> tuple[Text, ...]:
+        """Place the original runs, or one ordinary Text for edited content."""
         self.renderer = renderer
         origin = Affine2D().translate(*self.origin(renderer))
-        for piece in self.pieces:
+        if self.get_text() != self.planned_text:
+            fig = self.get_figure(root=False)
+            if fig is not None:
+                self.edited.set_figure(fig)
+            self.edited.update_from(self)
+            self.edited.set_text(self.get_text())
+            self.edited.set_horizontalalignment("left")
+            self.edited.set_verticalalignment("baseline")
+            self.edited.set_transform(origin)
+            return (self.edited,)
+        for piece, offset in zip(
+            self.pieces, self.offsets(renderer), strict=True
+        ):
+            piece.xyann = (offset, 0)
             piece.set_color(self.get_color())
             piece.set_alpha(self.get_alpha())
             piece.set_fontproperties(self.get_fontproperties())
             piece.xycoords = origin
+        return self.pieces
 
     def draw(self, renderer: RendererBase) -> None:
         """Draw each native annotation in this row."""
         if self.get_visible():
-            self.place(renderer)
-            for piece in self.pieces:
+            for piece in self.place(renderer):
                 piece.draw(renderer)
         self.stale = False
 
@@ -62,7 +79,9 @@ class AlignedTextRow(Text):
             renderer = canvas_renderer(fig) or self.renderer
         if not self.get_visible() or renderer is None:
             return super().get_window_extent(renderer, dpi)
-        self.place(renderer)
         return Bbox.union(
-            [piece.get_window_extent(renderer) for piece in self.pieces]
+            [
+                piece.get_window_extent(renderer)
+                for piece in self.place(renderer)
+            ]
         )

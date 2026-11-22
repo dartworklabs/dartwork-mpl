@@ -24,11 +24,27 @@ ROWS = [
 
 
 def during_save(fig, fmt, dpi, read):
-    signal = fig.canvas.mpl_connect("draw_event", read)
+    """Run renderer assertions outside Matplotlib's callback exception handler."""
+    failures = []
+    called = False
+
+    def capture(event):
+        """Keep a failing measurement for pytest to report."""
+        nonlocal called
+        called = True
+        try:
+            read(event)
+        except Exception as error:
+            failures.append(error)
+
+    signal = fig.canvas.mpl_connect("draw_event", capture)
     try:
         fig.savefig(BytesIO(), format=fmt, dpi=dpi)
     finally:
         fig.canvas.mpl_disconnect(signal)
+    assert called
+    if failures:
+        raise failures[0]
 
 
 @pytest.mark.parametrize(("fmt", "dpi"), BACKENDS)
@@ -151,3 +167,94 @@ def test_korean_alignment_passes_check():
     report = dm.check(fig)
     assert not report, str(report)
     plt.close(fig)
+
+
+def inter_joints():
+    """Four proportional-digit rows with three stops outside a log axis."""
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "5cm"))
+    ax.set(xscale="log", xlim=(1, 10), ylim=(-0.55, 3.55))
+    texts = [
+        ax.text(
+            1.04,
+            y,
+            s,
+            transform=ax.get_yaxis_transform(),
+            va="center",
+            fontproperties=FontProperties(family="Inter", size=10),
+        )
+        for y, s in enumerate(ROWS)
+    ]
+    dm.align_texts(texts, "decimal")
+    dm.simple_layout(fig)
+    return fig
+
+
+@pytest.mark.parametrize(
+    "build", [forest_alignment, inter_joints, korean_alignment]
+)
+@pytest.mark.parametrize("fmt", ["pdf", "svg", "png"])
+def test_numeric_joints_keep_original_spacing(build, fmt, record_property):
+    """No rendered joint loses its authored whitespace at any tab stop."""
+    from dartwork_mpl.geometry import AlignedTextRow
+
+    figure = build()
+
+    def read(event):
+        renderer = event.renderer
+        tight = {}
+        for artist in figure.axes[0].texts:
+            if not isinstance(artist, AlignedTextRow):
+                continue
+            text = artist.get_text()
+            group = (len(artist.pieces), text.endswith("%"))
+            font = artist.get_fontproperties()
+
+            def width(value, font=font):
+                """Read a native renderer advance, in display pixels."""
+                return float(
+                    renderer.get_text_width_height_descent(value, font, False)[
+                        0
+                    ]
+                )
+
+            cursor = 0
+            previous = None
+            for i, piece in enumerate(artist.pieces):
+                value = piece.get_text()
+                start = text.index(value, cursor)
+                current = piece.get_window_extent(renderer)
+                if previous is not None:
+                    gap = (current.x0 - previous.x1) * 72 / figure.dpi
+                    # This advance in the intact string includes the
+                    # renderer's kerning at both sides of the joint.
+                    expected = (
+                        (
+                            width(text[:start] + value[0])
+                            - width(value[0])
+                            - width(text[:cursor])
+                        )
+                        * 72
+                        / figure.dpi
+                    )
+                    if fmt == "png" and start > cursor:
+                        separation = text[cursor:start]
+                        advance, _, _ = (
+                            text_to_path.get_text_width_height_descent(
+                                separation, font, False
+                            )
+                        )
+                        assert gap >= advance - 0.05, (text, i, gap, advance)
+                    delta = float(gap - expected)
+                    assert delta >= -0.05, (text, fmt, i, gap, expected)
+                    key = (group, i)
+                    tight[key] = min(tight.get(key, float("inf")), abs(delta))
+                previous = current
+                cursor = start + len(value)
+        assert tight
+        record_property("max_tight_joint_error_pt", max(tight.values()))
+        if fmt != "png":
+            assert max(tight.values()) <= 0.05
+
+    during_save(figure, fmt, 200, read)
+    plt.close(figure)

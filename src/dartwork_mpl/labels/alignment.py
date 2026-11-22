@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from copy import copy
-from functools import partial
+from functools import lru_cache, partial
 from statistics import median_low
 from typing import TYPE_CHECKING, assert_never
+from weakref import WeakKeyDictionary, ref
 
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_agg import RendererAgg
 from matplotlib.text import Annotation, Text
 from matplotlib.textpath import text_to_path
 from matplotlib.transforms import Affine2D, IdentityTransform, Transform
@@ -31,6 +33,11 @@ if TYPE_CHECKING:
     from matplotlib.font_manager import FontProperties
     from matplotlib.transforms import Bbox
     from numpy.typing import ArrayLike
+
+
+_ALIGNED_ROWS: WeakKeyDictionary[Text, ref[AlignedTextRow]] = (
+    WeakKeyDictionary()
+)
 
 
 def position(text: Text) -> tuple[float, float]:
@@ -90,6 +97,10 @@ def snap_edges(
 ) -> None:
     """Use a median edge, minimizing total horizontal movement."""
     edges = [feature(t.get_window_extent(renderer), how) for t in texts]
+    if max(edges) - min(edges) <= 1e-9 and all(
+        t.get_horizontalalignment() == how.mpl for t in texts
+    ):
+        return
     index = edges.index(median_low(edges))
     reference = copy(texts[index])
     x0, _ = anchor(reference, renderer)
@@ -132,12 +143,24 @@ def width(font: FontProperties, text: str) -> float:
     return float(advance)
 
 
+def run_width(
+    renderer: RendererBase, dpi: float, font: FontProperties, text: str
+) -> float:
+    """Reserve authored spaces even when Agg hints surrounding glyphs wider."""
+    if not isinstance(renderer, RendererAgg) or not text:
+        return width(font, text)
+    advance, _, _ = renderer.get_text_width_height_descent(text, font, False)
+    rendered = float(advance) * 72 / dpi
+    return max(rendered, width(font, text)) if text.isspace() else rendered
+
+
 def row_artist(
     ax: Axes,
     text: Text,
     measured: MeasuredRow,
     plan: tuple[Piece, ...],
     left: Callable[[RendererBase], float],
+    offsets: Callable[[RendererBase], tuple[float, ...]],
 ) -> AlignedTextRow:
     """Copy the source's baseline and style into one measured row artist."""
     source = copy(text)
@@ -171,7 +194,9 @@ def row_artist(
         piece.set_figure(fig)
         piece.axes = ax
         pieces.append(piece)
-    return AlignedTextRow(text, measured.text.text, tuple(pieces), origin)
+    return AlignedTextRow(
+        text, measured.text.text, tuple(pieces), origin, offsets
+    )
 
 
 def align_decimals(texts: list[Text], renderer: RendererBase) -> list[Text]:
@@ -203,17 +228,49 @@ def align_decimals(texts: list[Text], renderer: RendererBase) -> list[Text]:
     def left(renderer: RendererBase) -> float:
         return anchor(reference, renderer)[0] + dx * fig.dpi / 72
 
-    result: list[Text] = []
-    for text, row, plan in zip(texts, rows, plans, strict=True):
-        new = row_artist(axes, text, row, plan, left)
+    result: list[AlignedTextRow] = []
+
+    @lru_cache(maxsize=2)
+    def plan_at(
+        renderer: RendererBase, fonts: tuple[FontProperties, ...]
+    ) -> tuple[tuple[Piece, ...], ...]:
+        return decimal_rows(
+            [
+                MeasuredRow(
+                    row.text, partial(run_width, renderer, fig.dpi, font)
+                )
+                for row, font in zip(rows, fonts, strict=True)
+            ]
+        )
+
+    def offsets(renderer: RendererBase, index: int) -> tuple[float, ...]:
+        fonts = tuple(t.get_fontproperties().copy() for t in result)
+        return tuple(piece.offset for piece in plan_at(renderer, fonts)[index])
+
+    for i, (text, row, plan) in enumerate(zip(texts, rows, plans, strict=True)):
+        new = row_artist(
+            axes, text, row, plan, left, lambda r, i=i: offsets(r, i)
+        )
         axes.add_artist(new)
         # add_artist supplies the Axes clip by default; an outside annotation
         # with no clip must still fit into the Axes' layout extents.
         new.update_from(text)
         new.set_transform(IdentityTransform())
         text.set_visible(False)
+        _ALIGNED_ROWS[text] = ref(new)
         result.append(new)
-    return result
+    return list(result)
+
+
+def visible_row(text: Text) -> Text:
+    """Return a source's live decimal replacement, when it is still attached."""
+    if (
+        (replacement := _ALIGNED_ROWS.get(text)) is not None
+        and (row := replacement()) is not None
+        and row.axes is text.axes
+    ):
+        return row
+    return text
 
 
 def align_texts(texts: Iterable[Text], how: TextAlignment) -> list[Text]:
@@ -223,9 +280,11 @@ def align_texts(texts: Iterable[Text], how: TextAlignment) -> list[Text]:
     Decimal aligns all numeric runs of a column of Axes texts. It hides the
     inputs and returns the drawn rows, one Text per input. A decimal group
     with no matching numeric shape is left as drawn. Supply visible,
-    unrotated single lines without annotation arrows.
+    unrotated single lines without annotation arrows. Changing a returned
+    row's text draws the edited value as one line at the same row position.
+    Colour and weight changes to an aligned row apply to its pieces.
     """
-    group = list(dict.fromkeys(texts))
+    group = list(dict.fromkeys(visible_row(text) for text in texts))
     mode = text_alignment(how)
     if len(group) < 2:
         return group
