@@ -53,10 +53,12 @@ from .ink import (
 )
 from .model import CentreTitle, LeftTitle, RightTitle, TitleLoc
 from .renderer import BBOX_ERRORS, canvas_renderer, get_renderer
+from .text_rows import AlignedTextRow
 
 __all__ = [
     "BBOX_ERRORS",
     "UNCLIPPED",
+    "AlignedTextRow",
     "CentreTitle",
     "DataInk",
     "LeftTitle",

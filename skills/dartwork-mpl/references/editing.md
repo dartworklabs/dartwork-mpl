@@ -79,6 +79,7 @@ request names, so the preset styles the rest.
 | line names instead of a legend | `dm.label_line_ends(ax)` |
 | a source or note | `dm.add_note(fig, "Source: …")` |
 | emphasis on one series | it keeps its colour, the others `set_color("dc.gray4")`, then `dm.place_legend(ax)` again for fresh handles |
+| align existing text beside the plot | `dm.align_texts(texts, "decimal")` |
 | values on bars or points | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
 | 12000 → 12k | `ax.yaxis.set_major_formatter(lambda v, _: f"{v / 1000:g}k")` |
 | 만/억 | `dm.format_axis_myriad(ax)` |

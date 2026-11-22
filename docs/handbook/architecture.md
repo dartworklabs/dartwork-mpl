@@ -50,7 +50,7 @@ orphan: true
 | `colorspace` | sRGB·OKLab 값과 산술, 합성, WCAG 대비 | color, labels |
 | `edgecase` | 엣지 케이스 등록 장치. 로거를 받으면, 작동해서 계획을 바꾼 엣지 케이스마다 이름과 이유를 한 줄 보고한다 | 모든 slice |
 | `hidden` | 자동 동작의 보고. slice마다 `dartwork_mpl.<slice>` 로거에 INFO 한 줄을 쓰고, 그것이 기본으로 stderr에 `dartwork-mpl:`을 붙여 출력된다. `dm.quiet()`이 끄고 `dm.verbose()`가 다시 켠다. import 때의 등록은 DEBUG라 출력되지 않는다. Axes를 이름으로 부르는 `axes_name` | color, font, labels, layout, legend, save, size, style, ticks, 루트 |
-| `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨 | check, labels, layout, legend, ticks |
+| `geometry` | figure 측정(matplotlib). 렌더러, 그려진 잉크, 제목과 눈금 라벨, 여러 조각이 이루는 한 글자 행 | check, labels, layout, legend, ticks |
 
 `geometry`, `edgecase`, `hidden` 밖의 platform은 모두 순수하다. 정본과 패키지마다의 이유는 `boundaries.py`의 `PLATFORM`이다.
 

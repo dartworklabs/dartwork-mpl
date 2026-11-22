@@ -44,6 +44,7 @@ from ..geometry import (
 )
 from ..vocab import Which, X
 from . import roles
+from .alignment_measure import alignment_samples
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
@@ -566,5 +567,10 @@ def measure(fig: Figure) -> Facts:
         minus_tick=r.attempt(r.minus_tick, None, "MIXED_MINUS")
         if minus_labels
         else None,
+        alignment=r.attempt(
+            lambda: alignment_samples(texts, r.renderer),
+            (),
+            "TEXT_MISALIGNMENT",
+        ),
         skipped=tuple(r.skipped),
     )

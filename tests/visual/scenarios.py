@@ -15,6 +15,8 @@ from matplotlib.figure import Figure
 
 import dartwork_mpl as dm
 
+from .alignment_scenes import forest_alignment, korean_alignment
+
 _TIMES = "\u00d7"
 _PLUS_MINUS = "\u00b1"
 _ARROW = "\u2192"
@@ -625,6 +627,16 @@ def _build_kr_myriad_dates() -> Figure:
 
 def all_scenarios() -> list[Scenario]:
     return [
+        Scenario(
+            "forest_alignment",
+            forest_alignment,
+            Expectations(min_lines=2, require_ylabel=False),
+        ),
+        Scenario(
+            "korean_alignment",
+            korean_alignment,
+            Expectations(min_patches=6, require_ylabel=False),
+        ),
         Scenario(
             "preset_report_line",
             _build_preset_report_line,

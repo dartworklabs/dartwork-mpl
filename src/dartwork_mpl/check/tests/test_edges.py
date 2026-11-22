@@ -267,3 +267,49 @@ def test_MIXED_MINUS():
     (finding,) = found(replace(facts, minus_tick=tick))
     assert finding.rule == "MIXED_MINUS"
     assert finding.panels == (0,) and finding.artists == (label.handle,)
+
+
+def test_TEXT_MISALIGNMENT_on_forest_values():
+    import matplotlib.pyplot as plt
+
+    import dartwork_mpl as dm
+
+    with dm.style.context("scientific"):
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
+        ax.scatter([2, 3, 4], [0, 1, 2])
+        ax.set(xlabel="Effect", yticks=[])
+        texts = [
+            ax.text(
+                1.03,
+                i,
+                text,
+                transform=ax.get_yaxis_transform(),
+                fontfamily="Inter",
+            )
+            for i, text in enumerate(
+                (" 1.1 [2.4, 16.4]", "88.8 [-3.6, 5.2]", "-111.1 [-5.8, 1.6]")
+            )
+        ]
+        dm.simple_layout(fig)
+        assert "TEXT_MISALIGNMENT" in dm.check(fig).rules
+        dm.align_texts(texts, "decimal")
+        dm.simple_layout(fig)
+        assert "TEXT_MISALIGNMENT" not in dm.check(fig).rules
+        plt.close(fig)
+
+
+def test_bar_ends_are_not_a_column():
+    import matplotlib.pyplot as plt
+
+    import dartwork_mpl as dm
+
+    with dm.style.context("report"):
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
+        bars = ax.barh(
+            ["North", "South", "East", "West"], [38.6, 82.7, 61.2, 25.3]
+        )
+        ax.bar_label(bars, fmt="%.1f", padding=4)
+        ax.set(xlabel="Revenue (USD m)", xlim=(0, 100))
+        dm.simple_layout(fig)
+        assert "TEXT_MISALIGNMENT" not in dm.check(fig).rules
+        plt.close(fig)
