@@ -1,0 +1,20 @@
+# cluster: dot matrix (rows x columns) with dot size and shade by score, value inside, a summary row set apart, a size legend of shrinking dots; refs: 3086947d-125d-80cf-9fb3-f9dc2e169ea4, 2976947d-125d-8092-86b0-eef299accf00, 078a8eae-f4e9-4402-9566-950e06f023be, 2996947d-125d-8075-9eca-d48fd2a07407
+prompt = "scores.csv: six kinds of region scored 1 to 100 on nine resident outcomes. A matrix of dots (rows are outcomes, columns are the kinds of region) where a bigger, darker dot means a better score, with the score printed inside, an 'Overall' row first and set apart from the rest, and a small size legend. Regional development report."
+
+[files]
+"scores.csv" = """
+outcome,Farming heartlands,Commuter belts,Growing towns,Factory towns,Mining districts,Remote uplands
+Overall,81,72,66,58,47,39
+Standard of living,84,69,71,55,49,36
+Financial stability,79,62,57,66,41,44
+Economic mobility,77,64,52,69,38,31
+Job opportunities,82,71,60,57,44,28
+Long and healthy lives,63,78,83,52,41,37
+Developing skills,74,49,43,67,52,33
+Secure housing,70,61,84,56,46,42
+Connectivity,58,76,45,88,53,24
+Community life,66,57,41,91,29,61
+"""
+
+[expect]
+texts = ["Overall", "Community life", "Farming heartlands", "Remote uplands", "91"]

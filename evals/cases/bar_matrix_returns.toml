@@ -1,0 +1,16 @@
+# cluster: table of mini bars (rows x columns on one scale) with value in every cell, negatives to the left, row groups in two colours with one group on a band; refs: 19e6947d-125d-80af-a385-dd553e1ba135, 2956947d-125d-80f2-b6ce-d57c492d96e1, 2996947d-125d-8070-af74-c3ecbc2e3345
+prompt = "returns.csv: annualised returns for five asset classes over 1, 3, 5, 10 and 20 years (%; a few are negative). Lay it out like a table, asset classes down and horizons across, with a small horizontal bar and its value in every cell, all on one scale so the cells compare. Private assets in one colour, public ones in another. Investment committee pack."
+
+[files]
+"returns.csv" = """
+asset_class,group,1 year,3 years,5 years,10 years,20 years
+Buyout,Private,7.9,5.8,14.9,13.6,12.8
+Venture capital,Private,2.1,-4.6,13.7,13.9,9.9
+Private credit,Private,10.4,8.2,8.9,8.1,9.3
+Global equities,Public,31.6,9.1,13.2,10.3,7.4
+Government bonds,Public,6.8,-2.9,-0.7,1.2,3.1
+"""
+
+[expect]
+marks = ["bar"]
+texts = ["Buyout", "Government bonds", "10 years", "31.6", "4.6"]

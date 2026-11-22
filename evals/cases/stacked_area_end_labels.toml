@@ -1,0 +1,17 @@
+# cluster: stacked area (wedges falling from zero), each band named at the right edge with its end value, no legend, the dominant band emphasised; refs: 1386947d-125d-801a-82f1-ffb35f9f3930, 19d6947d-125d-8087-9492-efdd0357719d
+prompt = "abatement.csv: cumulative emissions reduction against 2020 by lever, 2025 to 2050 (percentage points). A stacked area going downwards from zero, each lever named at the right edge next to its band with its 2050 contribution, no legend. Electrification is the big one and should look like it. Decarbonisation roadmap."
+
+[files]
+"abatement.csv" = """
+year,Electrification and clean power,Energy efficiency,Circular materials,Hydrogen,Bioenergy,Carbon capture
+2025,3,2,1,0,1,0
+2030,11,5,2,1,2,0
+2035,21,8,4,3,3,1
+2040,31,10,6,6,4,3
+2045,39,11,7,9,5,5
+2050,44,12,8,12,6,7
+"""
+
+[expect]
+panels = 1
+texts = ["Electrification", "Energy efficiency", "Carbon capture", "44", "2050"]

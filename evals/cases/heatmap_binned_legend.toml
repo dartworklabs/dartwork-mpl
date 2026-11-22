@@ -1,0 +1,18 @@
+# cluster: heatmap with a discrete five-class scale, the legend a row of swatches with ranges under them, totals as a bold row and column outside the grid; refs: 2d26947d-125d-80c0-a61e-ca6a4dfbf962, 2936947d-125d-80f4-8842-e4f653db8f69, 2d26947d-125d-80ec-8690-cad3c2d536ae, 1426947d-125d-808b-8eb2-c32038292e02
+prompt = "growth.csv: projected electricity demand growth 2025-2040 by region and sector (%). A heatmap, but binned: five classes (under 10, 10-19, 20-29, 30-39, 40 and over) rather than a continuous scale, with the legend as a row of swatches with the ranges written under them. Add the row and column totals (in the csv, in thousand TWh) as a bold row and column outside the grid. Energy outlook report."
+
+[files]
+"growth.csv" = """
+region,Buildings,Industry,Transport,Hydrogen production,Data centres,Total_thousand_TWh
+North America,14,22,31,18,47,5.4
+Europe,11,17,36,29,24,3.1
+China,19,43,28,34,21,9.2
+India,38,52,33,12,26,4.6
+Southeast Asia,34,41,22,8,31,2.2
+Africa,44,36,9,6,7,1.9
+Total_thousand_TWh,6.1,10.8,3.9,2.4,3.2,26.4
+"""
+
+[expect]
+texts = ["North America", "Africa", "Buildings", "Data centres", "Total", "26.4"]
+any_text = ["10-19", "10–19", "10 to 19"]

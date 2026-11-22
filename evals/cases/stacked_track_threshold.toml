@@ -1,0 +1,27 @@
+# cluster: stacked horizontal bars on a full-width grey track, rows in named groups with hairlines between, a dashed threshold with arrowed range labels either side; refs: 2976947d-125d-8000-a6a3-e488ff38189b, 2996947d-125d-8070-af74-c3ecbc2e3345
+prompt = "capability.csv: for 14 robot capabilities in four groups, how far classical methods, learned methods and foundation models get today on a 0-100 scale where 60 is human level (the three parts add up). Stacked horizontal bars on a full-width track, the capabilities listed under their group names, and a dashed line at human level with 'human-like' and 'beyond human' marked on either side. Technology report."
+
+[files]
+"capability.csv" = """
+group,capability,classical,learned,foundation_models
+Mobility,Walking and running,38,17,2
+Mobility,Balance,44,12,1
+Mobility,Arm movement,53,8,2
+Dexterity,Soft-object handling,21,18,4
+Dexterity,Rigid-object handling,31,19,5
+Dexterity,Tool use,17,14,9
+Perception,Vision,13,43,21
+Perception,Touch,11,29,3
+Perception,Proximity sensing,78,6,1
+Perception,Inertial sensing,84,5,0
+Interaction,Speech recognition,3,18,61
+Interaction,Gesture recognition,4,47,12
+Interaction,Following instructions,2,9,38
+Interaction,Safe stopping,81,7,0
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Walking and running", "Safe stopping", "Perception", "Interaction"]
+any_text = ["beyond human", "Beyond human"]

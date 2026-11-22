@@ -1,0 +1,15 @@
+# cluster: grouped columns where one bar dwarfs the rest, cut with an axis-break mark, values on bars, no value axis; refs: 2966947d-125d-805c-83c5-f70e66bb6cf9, 2966947d-125d-807d-bec1-cb43deceeb63, aedf6a05-4826-4475-8845-8b74f2721e33
+prompt = "demand.csv: projected extra electricity demand 2025-2030 by driver for four regions (TWh). Grouped columns per region with the value on each bar. East Asia's industry number (310) dwarfs everything and I don't want it to flatten the rest, so cut that one bar with a break mark and keep its number on it. Goes in the energy outlook report."
+
+[files]
+"demand.csv" = """
+region,Data centres,Electric vehicles,Heat pumps,Industry,Cooling
+East Asia,46,38,62,310,34
+South Asia,8,12,9,58,41
+North America,95,27,18,14,9
+Europe,24,31,29,7,3
+"""
+
+[expect]
+marks = ["bar"]
+texts = ["East Asia", "Europe", "Industry", "Cooling", "310"]

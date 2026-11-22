@@ -1,0 +1,23 @@
+# cluster: vertical lollipops with long category names kept horizontal (staggered or wrapped), value at the dot; refs: 061231e2-4088-440f-a0bb-59b4c12a0c74, 2976947d-125d-8004-bd44-fe277d21e253, 1b76947d-125d-80ac-8ac0-f9a539aa838d
+prompt = "formats.csv: the share of successful reskilling programmes that used each training format (%). Twelve formats, and the names are long. I'd like vertical stems with a dot on top (lollipops), sorted from most to least used, the value above each dot, and the names readable without tilting them. Slide for the L&D offsite."
+
+[files]
+"formats.csv" = """
+format,share_pct
+Digital self-paced learning,74
+Individual or team stretch assignments,61
+In-person or virtual workshops,52
+Expert coaching,49
+Peer learning teams,47
+Experience-led change programmes,41
+Sponsor or manager coaching,36
+Performance support tools,33
+Organisation-led change programmes,31
+Go-and-see field visits,28
+Individual skills diagnostics,27
+External certification courses,19
+"""
+
+[expect]
+panels = 1
+texts = ["Digital self-paced learning", "Expert coaching", "74", "19"]

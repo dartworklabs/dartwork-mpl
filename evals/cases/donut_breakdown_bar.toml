@@ -1,0 +1,14 @@
+# cluster: donut for one share with the number in the hole, linked to a single 100% bar that breaks that share down, segment names above the bar; refs: 2996947d-125d-80b5-be3a-ff10de59de91, 2956947d-125d-80d3-8990-d82aa2f469a4, fa7b9a76-5e8b-4d33-895a-bd45f922a749, 1386947d-125d-80d6-9bd2-fddca20e38f9
+prompt = "From our procurement survey: 42% of firms have formal quality benchmarks for their suppliers, and types.csv says which benchmark type those firms consider most important. A donut for the 42% with the number in the middle, linked to a single 100% bar that breaks those firms down by type, with the type names written over the segments. For the survey report."
+
+[files]
+"types.csv" = """
+benchmark_type,share_of_firms_with_benchmarks_pct
+Delivery reliability,38
+Defect rate,31
+Sustainability and ethics,19
+Other,12
+"""
+
+[expect]
+texts = ["42", "Delivery reliability", "Defect rate", "38", "31"]

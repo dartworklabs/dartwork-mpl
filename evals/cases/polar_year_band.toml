@@ -1,0 +1,29 @@
+# cluster: long daily series wrapped on a polar axis by day of year, mean line with a min-max band, months around the rim; refs: b8af5325-1556-406d-9609-065be1f8fa69
+prompt = "`from temps import load` returns 30 years of daily mean temperature for our station. I'd like it wrapped around a circle by day of year: the average for each day as a line and the min-max range as a band around it, with the months marked around the edge. Poster for the observatory's open day."
+
+[files]
+"temps.py" = '''
+"""Daily mean air temperature (°C), 1996-2025, one value per day (no leap days)."""
+
+import numpy as np
+
+
+def load() -> tuple[np.ndarray, np.ndarray]:
+    """Returns (years, temps) with temps shaped (30, 365)."""
+    rng = np.random.default_rng(1996)
+    years = np.arange(1996, 2026)
+    day = np.arange(365)
+    seasonal = 12.4 - 13.1 * np.cos(2 * np.pi * (day - 18) / 365)
+    temps = np.empty((years.size, 365))
+    for i in range(years.size):
+        noise = np.zeros(365)
+        for d in range(1, 365):
+            noise[d] = 0.82 * noise[d - 1] + rng.normal(0, 2.1)
+        temps[i] = seasonal + 0.035 * i + noise
+    return years, temps.round(1)
+'''
+
+[expect]
+panels = 1
+marks = ["line"]
+any_text = ["Jul", "July"]

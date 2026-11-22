@@ -1,0 +1,23 @@
+# cluster: butterfly chart (two opposing answers left and right of a centre axis), values on bars, sorted by net with the net as a right-hand column; refs: a02315dd-b879-412b-8310-ca1d5ab23309, 38b2c97a-6138-4745-bfe1-1c94d305b2cc
+prompt = "vendor.csv: IT 카테고리별로 공급업체를 '통합하겠다'와 '확대하겠다'고 답한 비율(%)이야. 가운데 축을 두고 통합은 왼쪽, 확대는 오른쪽 막대로 그리고, 순증감(확대 − 통합)을 오른쪽 열에 적어서 그 순서로 정렬해줘. IT 지출 전망 보고서에 넣을 거야."
+
+[files]
+"vendor.csv" = """
+카테고리,통합,확대
+생성형 AI 및 머신러닝,11,46
+데이터 분석,19,27
+보안 인프라,24,22
+애플리케이션 개발 도구,21,15
+클라우드 서비스,27,23
+전사적 자원 관리(ERP),18,9
+고객 관계 관리(CRM),25,10
+협업 도구,31,8
+네트워크 인프라,29,7
+서버 및 스토리지,37,9
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["생성형 AI", "서버 및 스토리지", "통합", "확대"]
+any_text = ["+35", "35"]

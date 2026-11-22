@@ -1,0 +1,18 @@
+# cluster: horizontal waterfall whose steps are ranges (floating bars labelled min-max), start and reachable-end totals; refs: 2996947d-125d-8042-afe8-efb56d77c672, 19e6947d-125d-8016-9130-f8678bf2e8d1, 2966947d-125d-80c4-998e-eb4159e608e0
+prompt = "levers.csv 에 수소 생산단가를 낮출 수 있는 방안별 절감 폭이 범위(최소~최대, 현재 단가 = 100 기준)로 들어 있어. 현재 100에서 시작해서 방안별로 얼마나 내려가는지 가로 워터폴로 그리고, 절감 폭은 범위 그대로 적어줘. 마지막에 도달 가능한 단가도 범위로. 기술 로드맵 보고서에 들어갈 그림이야."
+
+[files]
+"levers.csv" = """
+구분,최소,최대,종류
+현재 단가,100,100,기준
+전해조 대형화,8,12,절감
+재생에너지 직접 연계,10,18,절감
+스택 효율 개선,5,9,절감
+설비 가동률 향상,4,7,절감
+도달 가능 단가,54,73,결과
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["현재 단가", "전해조 대형화", "설비 가동률 향상", "도달 가능 단가"]

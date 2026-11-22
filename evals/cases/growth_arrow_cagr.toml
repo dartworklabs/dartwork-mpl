@@ -1,0 +1,18 @@
+# cluster: growing columns with bold values on top, forecast years marked, a CAGR arrow across the top; refs: 2596947d-125d-804e-ab27-c098c4f5175a, 2966947d-125d-800c-9108-d9d149c98fcb
+prompt = "market.csv is our market-size estimate in KRW trillion: 2023 is actual, 2024 to 2027 are forecasts. Simple column chart for the investor deck: the value on top of each bar, the forecast years marked as estimates, and an arrow across the top showing the CAGR from 2023 to 2027."
+
+[files]
+"market.csv" = """
+year,market_krw_trillion,kind
+2023,31.2,actual
+2024,36.9,forecast
+2025,44.1,forecast
+2026,52.0,forecast
+2027,62.4,forecast
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["2023", "2027", "62.4", "CAGR"]
+any_text = ["18.9", "19%", "19 %"]

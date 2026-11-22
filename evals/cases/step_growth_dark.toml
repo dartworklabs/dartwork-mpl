@@ -1,0 +1,18 @@
+# cluster: dark-theme outlined columns with the latest filled, period-on-period growth between neighbours, one bracket for the overall growth; refs: a7d5bcc0-17d5-471b-accd-d1cfb138108c, 10b6947d-125d-80b4-b1a0-e9a65c5ec032, 10b6947d-125d-80f7-a4af-de9c4dc80532, 822fbc62-c1f7-496f-ab67-39d66e178254
+prompt = "customers.csv: commercial customer count at the end of each of the last five quarters. For the earnings slides, which are dark-themed: outlined bars with the latest one filled, the count above each bar, the quarter-on-quarter growth written between neighbouring bars, and one bracket over the whole thing with the year-on-year growth."
+
+[files]
+"customers.csv" = """
+quarter,customers
+Q1 2025,312
+Q2 2025,341
+Q3 2025,377
+Q4 2025,430
+Q1 2026,498
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Q1 2025", "Q1 2026", "312", "498"]
+any_text = ["60%", "59.6"]

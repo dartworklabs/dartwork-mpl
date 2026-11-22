@@ -1,0 +1,16 @@
+# cluster: matrix of proportional circles (inner area = share inside a faint 100% disc), value inside, the top cell per column in a second colour, a summary column set apart; refs: 2956947d-125d-800b-8a69-dbf77ad433bf, 2956947d-125d-8074-be74-d2ea9becbec2, 2306947d-125d-80e2-b401-fcc59fd83acc, 2996947d-125d-807b-97c2-dc42014c2efc
+prompt = "risks.csv: the share of executives in each region naming each risk among their top three (%). Rows are risks, columns are regions. In every cell a circle whose area shows the percentage inside a faint full-size circle (the 100%), with the number in it, and the top risk of each region picked out in a second colour. Keep the Overall column a little apart. Global survey report."
+
+[files]
+"risks.csv" = """
+risk,Europe,Asia-Pacific,North America,Latin America,Middle East and Africa,Overall
+Supply chain disruption,47,52,31,28,36,41
+Cyber attacks,33,24,49,19,22,31
+Energy prices,51,29,18,34,27,32
+Skills shortages,29,31,38,22,41,32
+Regulatory change,26,18,27,43,25,26
+Extreme weather,12,27,14,31,29,21
+"""
+
+[expect]
+texts = ["Supply chain disruption", "Extreme weather", "Europe", "Overall", "52", "49"]

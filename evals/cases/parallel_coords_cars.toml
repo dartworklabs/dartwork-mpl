@@ -1,0 +1,38 @@
+# cluster: parallel coordinates, each axis on its own scale with its unit, lines by class with the subject class in colour over grey; refs: e8f20e19-8dbd-4efa-81a8-bae0dcff26b0
+prompt = "`from cars import load` gives 150 used-car listings with price, mileage, age, engine power and fuel economy, plus the body type. A parallel coordinates plot coloured by body type; SUVs are what my article is about. It's for our data blog."
+
+[files]
+"cars.py" = '''
+"""150 used-car listings."""
+
+import numpy as np
+import pandas as pd
+
+
+def load() -> pd.DataFrame:
+    """Columns: body_type, price_eur, mileage_km, age_years, power_kw, l_per_100km."""
+    rng = np.random.default_rng(150)
+    spec = {  # body type: (n, price, power, consumption)
+        "Hatchback": (60, 11500, 74, 5.4),
+        "Estate": (40, 15800, 103, 6.1),
+        "SUV": (50, 24600, 132, 7.6),
+    }
+    frames = []
+    for body, (n, price, power, cons) in spec.items():
+        age = rng.integers(1, 13, n)
+        mileage = (age * rng.normal(14500, 3500, n)).clip(4000)
+        frames.append(pd.DataFrame({
+            "body_type": body,
+            "price_eur": (price * np.exp(-0.085 * age) * rng.lognormal(0, 0.16, n)).round(-2),
+            "mileage_km": mileage.round(-2),
+            "age_years": age,
+            "power_kw": rng.normal(power, power * 0.16, n).round(0),
+            "l_per_100km": rng.normal(cons, 0.7, n).round(1),
+        }))
+    return pd.concat(frames, ignore_index=True)
+'''
+
+[expect]
+marks = ["line"]
+texts = ["SUV"]
+any_text = ["Price", "price"]

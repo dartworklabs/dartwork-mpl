@@ -1,0 +1,21 @@
+# cluster: one highlighted bar, grey context, side note with the earlier value and delta; refs: 2966947d-125d-801d-a954-c55086c1c3cd, 1386947d-125d-80b0-8578-e7d9c6e9fe8f
+prompt = "priorities.csv is from our member survey: the share of respondents who put each topic in their top three for 2025, plus the 2023 number. Horizontal bars for 2025. Climate adaptation is the story because it fell the most, so make that the one bar that stands out and put a short note next to it with the 2023 figure and the drop in points. Everything else can stay quiet. It's for the annual members' report."
+
+[files]
+"priorities.csv" = """
+topic,share_2025,share_2023
+Cost of living,58,54
+Housing,51,47
+Climate adaptation,37,46
+Public transport,33,31
+Local jobs,29,30
+Community safety,26,24
+Schools,22,23
+Digital services,9,8
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Climate adaptation", "Cost of living", "Digital services"]
+any_text = ["46"]

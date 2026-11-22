@@ -1,0 +1,20 @@
+# cluster: stacked columns over years with totals on top, the legend replaced by a table (swatch, name, two numeric columns, total row); refs: 2956947d-125d-80d1-b685-e1adeb4aeb4d, 19e6947d-125d-8090-886d-d23068d6bd63, 644f01a6-d39d-45b5-a954-87f4e5cfa15b, 1b76947d-125d-808c-a025-c4f4c6225813
+prompt = "installs.csv is solar capacity installed per year by segment, 2017 to 2025, in GW. Stacked columns with the total on top of each. Instead of a legend I want a small table: one row per segment with its colour swatch, the 2017-25 CAGR and the 2024-25 change in percent, plus a Total row. Annual market review."
+
+[files]
+"installs.csv" = """
+year,Utility scale,Commercial rooftop,Residential,Off-grid
+2017,58,21,14,2
+2018,61,24,16,3
+2019,66,29,19,3
+2020,79,31,25,4
+2021,96,40,34,5
+2022,131,58,49,6
+2023,214,91,68,8
+2024,287,112,74,9
+2025,318,131,69,11
+"""
+
+[expect]
+marks = ["bar"]
+texts = ["Utility scale", "Off-grid", "Total", "CAGR", "2017", "2025"]

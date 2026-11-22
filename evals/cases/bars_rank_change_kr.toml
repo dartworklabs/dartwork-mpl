@@ -1,0 +1,22 @@
+# cluster: sorted bars with the top few emphasised, beside them a change column and a rank-change column drawn with up/down arrows in two colours; refs: 14dfa2b8-966e-4a66-bf33-3ba0d00d3608, 38b2c97a-6138-4745-bfe1-1c94d305b2cc, aedf6a05-4826-4475-8845-8b74f2721e33
+prompt = "barriers.csv: 올해와 작년의 AI 도입 장애 요인별 응답률(%)과 순위야. 올해 응답률을 가로 막대로 그리고, 옆에 작년 대비 증감(%p)과 순위 변동을 화살표로 보여줘. 순위가 오른 건 초록, 내린 건 빨강으로. 상위 3개는 강조해줘. 설문 결과 보고서용."
+
+[files]
+"barriers.csv" = """
+장애 요인,올해 응답률,작년 응답률,올해 순위,작년 순위
+전문 인력 부족,43,34,1,3
+데이터 품질 문제,39,41,2,1
+법적·규제 불확실성,36,24,3,6
+투자 대비 효과 불명확,31,38,4,2
+기존 시스템과의 통합,27,29,5,4
+보안 및 개인정보 우려,25,27,6,5
+경영진의 이해 부족,18,22,7,7
+조직 내 저항,14,11,8,9
+예산 부족,11,17,9,8
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["전문 인력 부족", "예산 부족", "43"]
+any_text = ["▲", "↑", "+9"]

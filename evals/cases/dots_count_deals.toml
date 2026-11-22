@@ -1,0 +1,6 @@
+# cluster: counts shown as rows of dots, nested subsets (N, of which n, of which m), the number large beside its dots; refs: 99aede03-38ad-43e0-8bc6-8af8b8ad1c63, 5b6b16d3-fd5b-4af5-ae9b-274a83c7db6b
+prompt = "For the quarterly investor slides: this quarter we closed 64 deals worth at least $1m; 22 of those were worth at least $5m, and 8 of those at least $10m. Show the three numbers large, each with a row of dots you could count, so the 'of which' nesting is clear. Dark slide background."
+
+[expect]
+texts = ["64", "22", "8"]
+any_text = ["$5", "5m", "5 m"]

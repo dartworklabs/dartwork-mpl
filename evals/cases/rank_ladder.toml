@@ -1,0 +1,22 @@
+# cluster: rank ladder (bump chart as ranked columns with connectors), top three filled, one item traceable across columns; refs: 2956947d-125d-8063-92bd-e54d8995acd4, aedf6a05-4826-4475-8845-8b74f2721e33
+prompt = "drivers.csv ranks 12 team-health drivers by how much they explain three outcomes (efficiency, results, innovation). I want the three rankings next to each other as columns, with lines connecting each driver across them so you can see what moves, and the top three in each column highlighted. Trust is first twice and then drops to fourth, and that should be easy to spot. For the leadership offsite deck."
+
+[files]
+"drivers.csv" = """
+driver,efficiency_rank,results_rank,innovation_rank
+Trust,1,1,4
+Open communication,2,2,3
+Fresh thinking,3,3,1
+Useful feedback,4,9,5
+Handling conflict,5,7,10
+Clear roles,6,4,6
+Shared goals,7,10,12
+Commitment,8,6,9
+Sense of belonging,9,8,11
+Fast decisions,10,5,2
+Psychological safety,11,11,8
+Recognition,12,12,7
+"""
+
+[expect]
+texts = ["Trust", "Fast decisions", "Recognition", "Innovation"]

@@ -1,0 +1,20 @@
+# cluster: rectangles spanning ranges on two axes (a landscape chart), translucent so overlaps show, names inside, a star for flagged items; refs: 2966947d-125d-80eb-9be3-cd0b35f89a16
+prompt = "storage.csv lists eight energy-storage technologies with the range of project sizes (MW) and the range of discharge durations (hours) each one covers. Draw each as a rectangle spanning its two ranges on log axes, named inside, translucent so the overlaps show, and mark the three flagged as emerging. Technology landscape figure for a report."
+
+[files]
+"storage.csv" = """
+technology,power_min_mw,power_max_mw,duration_min_h,duration_max_h,emerging
+Lithium-ion battery,1,800,0.5,6,no
+Flow battery,5,200,4,12,no
+Pumped hydro,100,3000,6,24,no
+Compressed air,50,500,8,48,no
+Sodium-ion battery,1,100,1,6,yes
+Thermal storage,10,300,6,100,yes
+Iron-air battery,10,150,50,150,yes
+Hydrogen in salt caverns,200,2000,200,2000,no
+"""
+
+[expect]
+panels = 1
+texts = ["Lithium-ion", "Pumped hydro", "Iron-air", "Hydrogen"]
+any_text = ["MW"]

@@ -1,0 +1,17 @@
+# cluster: donut with one dominant slice in colour and the rest grey, total in the centre, slices called out outside with a large percentage and a small name, no legend; refs: 19c6947d-125d-80b6-b410-fcb14f99aa8f, 1946947d-125d-8093-88fc-c5c0a2211832, eaae5b30-bb77-4a9d-a06c-7a1d262e033a, 1b76947d-125d-8071-afe6-c4b8c96455b9
+prompt = "A donut for the opening page of the sustainability report: funding.csv has our green-bond proceeds by use (EUR m). I want the dominant slice in a strong green and the rest in greys, the total in the centre, and each slice called out outside the ring with a big percentage and a small name. No legend."
+
+[files]
+"funding.csv" = """
+use,eur_m
+Renewable energy,992
+Clean transport,386
+Green buildings,258
+Water and waste,129
+Other,75
+"""
+
+[expect]
+panels = 1
+texts = ["Renewable energy", "Clean transport", "Other", "54%"]
+any_text = ["1,840", "1.84", "1840"]
