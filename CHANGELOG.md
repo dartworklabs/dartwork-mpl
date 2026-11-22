@@ -54,6 +54,11 @@ Entries before 0.8.0 are in the git history of this file.
   the height follow the content, and says a bigger medium takes its preset,
   not more centimetres; a deck is slides. Agents had drawn posters at 40 cm
   and a board deck at 24 cm in `report` text, which then read small (#844).
+- The skill says what to do where things overlap: shapes are filled so the
+  one in front covers the one behind (a ridgeline's ridges take the
+  background colour) and the smaller goes on top, and a label moved away
+  from its mark keeps a thin line to it. Ridgelines had been drawn as lines
+  crossing each other and slope-chart labels left floating (#846).
 
 ## 0.9.0 — 2026-11-22
 
