@@ -4,7 +4,7 @@
 >
 > 재구성하면서 이 리포에서 지운 공개 함수, 인자, 자동 동작, 검사 규칙의 기록이다. 각 항목에 무엇을 했는지, 원본을 어디서 읽는지, 같은 일을 예시로 하려면 무엇을 보여줘야 하는지를 적었다. 허브가 예시 소재를 찾을 때 참고하는 기록이고, 만들어야 할 목록이 아니다. 허브와 약속된 것은 [hub-contract.md](hub-contract.md)에 있다.
 
-기준은 [handbook/philosophy.md](handbook/philosophy.md) 1절의 "무엇이 기능이 되는가"다. 첫 표들의 기준 커밋은 `3e50748d`(`refactor/foundation`)이고, 파일 경로와 줄 번호는 그 커밋의 것이다. 뒤쪽 절은 절마다 기준 커밋을 적었다.
+기준은 [handbook/philosophy.md](handbook/philosophy.md) 3절의 "무엇이 기능이 되는가"다. 첫 표들의 기준 커밋은 `3e50748d`(`refactor/foundation`)이고, 파일 경로와 줄 번호는 그 커밋의 것이다. 뒤쪽 절은 절마다 기준 커밋을 적었다.
 
 ## 순서
 

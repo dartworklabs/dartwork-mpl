@@ -10,6 +10,18 @@ A user turns on the skill, says "draw this", and a beautiful chart comes
 out. Code, tools, docs and tests exist only as far as
 they serve that. What does not is removed.
 
+Two principles follow from it (owner, 2026-11-22):
+
+- **A chart the user finds unpleasant or not pretty is a bug.** It is a
+  defect of the library or the skill with the same standing as a functional
+  bug: not a matter of taste, not the user's fault. File it and fix it.
+- **Agent-eval-based development is the default.** Generate chart prompts as
+  varied as you can, run them one-shot in an agent that has only the library
+  and the skill (`evals/`, the `skill` arm), look at every figure, and
+  resolve each defect or aesthetic flaw as an issue. The prompt stays in
+  `evals/cases/`. Prompts and their one-shot results count as examples; the
+  hub registers mainly those, in English.
+
 ## Read the Handbook first
 
 Before changing code, read only the topics you need from
@@ -19,8 +31,9 @@ decides what. When your change alters current state, update the matching
 Handbook topic in the same PR.
 
 [`docs/handbook/philosophy.md`](docs/handbook/philosophy.md) is the short version of
-how to work here: only real functionality lives in this repository (examples
-and galleries belong to the hub), code speaks in types (no strings, enums or
+how to work here: the two principles above and the eval loop, only real
+functionality lives in this repository (examples and galleries belong to the
+hub), code speaks in types (no strings, enums or
 status flags picking behaviour, nothing that silences the type checker),
 slices do not import each other, and a commit holds one finished thing.
 
