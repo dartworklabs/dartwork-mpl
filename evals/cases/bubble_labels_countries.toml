@@ -1,0 +1,29 @@
+prompt = "countries.csv has GDP per capita, life expectancy and population for 18 countries. Bubble chart with bubble size by population and every bubble labelled with its country. Report figure."
+
+[files]
+"countries.csv" = """
+country,gdp_per_capita_usd,life_expectancy,population_millions
+Nigeria,2160,54.6,223.8
+Ethiopia,1290,66.0,126.5
+India,2480,70.6,1428.6
+Bangladesh,2530,74.7,173.0
+Vietnam,4350,74.6,98.9
+Indonesia,4940,71.1,277.5
+Brazil,10040,75.8,216.4
+China,12610,78.2,1410.7
+Mexico,13930,75.1,128.5
+Poland,22110,78.6,36.7
+Spain,33090,83.7,48.4
+Korea,33120,83.5,51.7
+Japan,33830,84.7,124.5
+Italy,38370,83.7,58.8
+France,44460,83.3,68.2
+Germany,52750,81.4,84.5
+United States,81700,78.4,334.9
+Switzerland,99990,84.1,8.8
+"""
+
+[expect]
+panels = 1
+marks = ["scatter"]
+texts = ["India", "Nigeria", "Germany", "Switzerland"]

@@ -1,0 +1,40 @@
+# Broad edit of a sloppy script: the data spans four decades on a linear axis.
+prompt = "plot.py makes the benchmark figure for our repo's README but it looks amateurish. Clean it up: same data, same two panels."
+
+[files]
+"plot.py" = '''
+import matplotlib.pyplot as plt
+import numpy as np
+
+sizes = ["1e3", "1e4", "1e5", "1e6", "1e7"]
+libs = {"fastframe (ours)": [0.8, 1.9, 9.5, 71, 640],
+        "pandas": [1.1, 4.2, 38, 410, 4300],
+        "polars": [0.9, 2.1, 11, 88, 790],
+        "dask": [14, 16, 29, 150, 1200]}
+mem = {"fastframe (ours)": [3, 5, 21, 180, 1700],
+       "pandas": [4, 9, 62, 590, 5900],
+       "polars": [3, 6, 25, 210, 2000],
+       "dask": [40, 42, 60, 260, 2100]}
+
+plt.figure(figsize=(14, 4))
+plt.subplot(121)
+x = np.arange(len(sizes))
+cols = plt.cm.jet(np.linspace(0, 1, 4))
+for i, (k, v) in enumerate(libs.items()):
+    plt.bar(x + i * 0.2, v, 0.2, color=cols[i], edgecolor="black", label=k)
+plt.xticks(x + 0.3, sizes, rotation=90)
+plt.title("GROUPBY RUNTIME (ms) BY NUMBER OF ROWS", fontsize=18, fontweight="bold")
+plt.legend(loc="upper left", fontsize=12)
+plt.grid(True)
+plt.subplot(122)
+for i, (k, v) in enumerate(mem.items()):
+    plt.plot(sizes, v, "o--", color=cols[i], linewidth=3, markersize=12, label=k)
+plt.title("PEAK MEMORY (MB) BY NUMBER OF ROWS", fontsize=18, fontweight="bold")
+plt.legend(loc="upper left", fontsize=12)
+plt.grid(True)
+plt.savefig("bench.png", dpi=72)
+'''
+
+[expect]
+panels = 2
+texts = ["fastframe", "pandas", "polars", "dask"]
