@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.container import BarContainer
     from matplotlib.figure import Figure
+    from matplotlib.patches import Rectangle
     from matplotlib.text import Text
 
 __all__ = ["add_note", "annotate_value", "label_axes", "label_bars"]
@@ -33,7 +34,11 @@ TICK_TEXT = labels_slice.TickText(
 
 
 def label_bars(
-    ax: Axes, bars: BarContainer | Iterable[BarContainer] | None = None
+    ax: Axes,
+    bars: BarContainer
+    | Iterable[BarContainer]
+    | Iterable[Rectangle]
+    | None = None,
 ) -> list[Text]:
     """Label each bar with its value, printed like the axis's ticks.
 
@@ -51,9 +56,9 @@ def label_bars(
     whichever reads, and the stack's net beyond its end. ``dm.simple_layout``
     turns crowded labels vertical (vertical bars), hides those that still
     meet and segment labels their bar cannot hold, and grows an autoscaled
-    value axis to hold them. ``bars``: only these containers (what
-    ``ax.bar`` returns). A label you turn or hide yourself stays as you
-    left it.
+    value axis to hold them. ``bars``: only these: what ``ax.bar``
+    returns, a list of those, or some of its bars (``bars[:1]``). A label
+    you turn or hide yourself stays as you left it.
     """
     return labels_slice.label_bars(
         ax, bars, preset=PRESET_TEXT, ticks=TICK_TEXT
@@ -76,11 +81,14 @@ def label_axes(
 ) -> list[Text]:
     """Panel letters (a, b, c, ...) at the top-left of each panel.
 
-    Each letter's left edge sits on the outer edge of its panel's y-axis
-    name (a grid column takes its leftmost), its baseline on the panel's
-    title baseline (untitled: 4 pt above the top decoration, level with its
-    row). ``dm.simple_layout`` places them again at the size it settles on.
-    ``dm.fs(1)``; ``labels`` replaces the letters (``["(a)", "(b)"]``).
+    Each letter sits bold at the title size on its plot's left spine with
+    its title right after it, left-aligned (``a  North``). When one letter
+    and title are wider than their plot, every letter of the figure goes
+    inside its plot at the top left and the titles stay as they were.
+    ``dm.simple_layout`` places them again at the size it settles on, and
+    titles set after this call are read there; a title placed by hand
+    (``x=``, ``ha=``) stays. ``labels`` replaces the letters
+    (``["(a)", "(b)"]``).
     """
     return labels_slice.label_axes(axes, labels, preset=PRESET_TEXT)
 

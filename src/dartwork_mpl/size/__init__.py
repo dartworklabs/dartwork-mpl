@@ -17,14 +17,14 @@ from ..length import Length
 from . import decide, measure
 from .canvas import CanvasFacts, CanvasRequest, parse_canvas_kind, parse_names
 from .edges import EDGES
-from .model import STANDARD, Grid, parse_height
+from .model import ASPECTS, STANDARD, Grid, parse_height
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from .measure import LayerReader
 
-__all__ = ["figsize", "figsize_for"]
+__all__ = ["figsize", "figsize_for", "list_aspects"]
 
 LOG = logging.getLogger("dartwork_mpl.size")
 
@@ -43,6 +43,20 @@ def figsize(width: object, aspect: object = STANDARD) -> tuple[float, float]:
     """
     size = decide.figure_size(Length.parse(width), parse_height(aspect))
     return size.inches
+
+
+def list_aspects() -> list[dict[str, str | float]]:
+    """The aspect tokens :func:`figsize` accepts.
+
+    Each record has ``name`` and ``ratio``, the figure's height over its
+    width (``"standard"`` is 0.75, 4:3); ``dm.figsize(w, ratio)`` gives the
+    same size as the token::
+
+        {a["name"]: a["ratio"] for a in dm.list_aspects()}
+    """
+    return [
+        {"name": name, "ratio": found.ratio} for name, found in ASPECTS.items()
+    ]
 
 
 def figsize_for(

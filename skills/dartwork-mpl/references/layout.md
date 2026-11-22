@@ -12,7 +12,7 @@ canvas, so the same request gets the same size whoever draws it:
 |---|---|
 | `report`, `web`, `minimal`, `dark` | 9 / 12 / 14.5 / 17 cm |
 | `scientific` | one panel 9 cm (a column), grids and `dense`/`strip` 17 cm |
-| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title |
+| `presentation` | 11.4 / 15.4 / 23.4 × 10.5 cm under a 16:9 slide's title; a grid of two or more rows takes the whole slide, 25.4 × 14.29 cm |
 | `poster` | report widths × font size / 8 pt |
 
 Pass what you know and it picks from that table.
@@ -22,7 +22,7 @@ Pass what you know and it picks from that table.
 | `n_points=`, `n_series=` | sparse charts get the narrow canvas, dense ones the wide |
 | `labels=names` | wide enough for category names to stand flat |
 | `dual_axis=True` | room for a second y axis |
-| `nrows=`, `ncols=` | a grid of panels |
+| `nrows=`, `ncols=` | a grid of panels: each row a 4:3 cell, or, where that leaves plots under 3 cm once titles, ticks and names are spent (one row of three, or four columns), a 4:3 plot and 1.5 cm for that text per row |
 | kind `"barh"`, `"grouped"`, `"matrix"`, `"compact"`, `"dense"`, `"strip"` | horizontal bars, grouped bars, a square heatmap, a small figure, wide time series |
 | kind `"slide"`, `"full_slide"` | the body under a 16:9 slide's title (23.4 × 10.5 cm), the whole slide (25.4 × 14.29 cm) |
 
@@ -43,11 +43,14 @@ dm.figsize_for("grouped", n_points=9, n_series=3)  # 12 cm, like "default"
 dm.figsize_for(n_points=40, n_series=2, dual_axis=True)  # 14.5 cm
 dm.figsize_for("slide")  # 23.4 x 10.5 cm, under a slide title
 dm.figsize_for("full_slide")  # 25.4 x 14.29 cm, the whole 16:9 slide
+dm.figsize_for(nrows=2, ncols=2)  # 17 x 13 cm
 dm.figsize_for(nrows=2, ncols=3)  # 17 x 8.5 cm
+dm.figsize_for(nrows=1, ncols=3)  # 17 x 6 cm, a row carries its text alone
+dm.figsize_for(nrows=1, ncols=4)  # 17 x 4.5 cm, 3 cm plots
 dm.style.use("presentation")
 dm.figsize_for(n_points=len(quarters), n_series=series)  # 11.4 x 10.5 cm
 dm.figsize_for(nrows=1, ncols=3)  # 23.4 x 10.5 cm, one row under the title
-dm.figsize_for("full_slide")  # 25.4 x 14.29 cm: a grid of two rows
+dm.figsize_for(nrows=2, ncols=2)  # 25.4 x 14.29 cm, the whole slide
 ```
 
 A size the user names goes to `dm.figsize(width, second)`, which returns the
@@ -90,7 +93,10 @@ drawing; call it again after a later change. Where text still collides it fits t
 runs into another panel or past the figure edge wraps at its spaces
 (the same name on the same axis of that grid then wraps the same way),
 `wspace` / `hspace` nobody set grow until neighbouring panels' text clears
-(up to 1.5 cells), and bottom tick labels that collide or sit closer
+(while each plot keeps two ems, and only when the wider gap does clear it:
+titles wider than their plots stand out further as the plots narrow, and
+such a gap goes back; a canvas too small for that is left as it is, so give
+it more room or shorter titles), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
 degrees. Nothing is shortened or made smaller. What you set
@@ -98,9 +104,15 @@ stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
 when it is too small, and labels you rotate or break yourself are left as
 they are, so leave them out unless the user asks. Tick
 labels that still overlap are reported as `TICK_OVERLAP`, text over another
-panel's text as `CROSS_AXES_OVERLAP`.
+panel's text as `CROSS_AXES_OVERLAP`. A title wider than the canvas keeps
+its plot: it runs past both edges and `dm.check` reports `OVERFLOW`, so
+shorten it or break it with `"\n"`. A `fig.suptitle` keeps the
+title pad from the panel titles under it, and a `dm.figure_legend` above
+the panels sits between the two.
 
 - `margin="3mm"` (or `dm.mm(3)`) sets the buffer on every side; the default is `"1mm"`.
+  A `dm.add_note` line sits that buffer from the left and bottom edges,
+  with the plot above it, unless you moved it.
   `margin=0` puts the content flush with the canvas edge, for a figure that
   sits inside another document's frame.
 - It fits the GridSpec of the first Axes (nested `subgridspec` included).
@@ -109,11 +121,20 @@ panel's text as `CROSS_AXES_OVERLAP`.
 
 ## Equal grid with panel labels
 
+A grid shares its axes unless the panels measure different things:
+`sharex=True, sharey=True`, y named on the first column and x on the bottom
+row (`references/craft.md`, "Small multiples"). The default canvas is sized
+for that; a name on every panel takes the room of the plots, and on a slide
+grid `dm.check` reports `SMALL_PANEL`.
+
 ```python
-fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True)
+fig, axes = plt.subplots(
+    2, 2, figsize=dm.figsize_for(nrows=2, ncols=2), sharex=True, sharey=True
+)
 for i, ax in enumerate(axes.flat):
     ax.plot(x, np.sin(x + i))
-    ax.set_ylabel("Response")
+for ax in axes[:, 0]:
+    ax.set_ylabel("Response")    # one name per row
 for ax in axes[-1]:
     ax.set_xlabel("Time (s)")
 dm.label_axes(axes)              # a, b, c, d; labels=["(a)", ...] for others
@@ -121,8 +142,15 @@ dm.simple_layout(fig)            # widens hspace / wspace where panels' text mee
 plt.close(fig)
 ```
 
-Each letter starts at its column's y-axis name and sits on its title's
-baseline, in points, so call `label_axes` before `simple_layout`.
+Each letter is set bold at the title size on its plot's left spine, and
+its title follows it on the same line, left-aligned: `a  North`. When one
+letter and title are wider than their plot, every letter of the figure goes
+inside its plot at the top left instead, the titles stay centred, and the
+layout says so; `dm.check` reports a letter that then sits on data
+(`LETTER_ON_DATA`): shorten the titles or widen the figure. Letters never
+widen the gaps. `simple_layout` places them again, so titles set after
+`label_axes` are read; a title you placed yourself (`x=`, `ha=`) is left
+where it is.
 Panels with both a title and an x label need no `hspace` of your own: the
 layout parts them. A spacing the user asks for goes in
 `gridspec_kw={"hspace": 0.5}` and then wins.
@@ -179,6 +207,18 @@ ax2.set_ylabel("Temperature (°C)")
 dm.simple_layout(fig)
 plt.close(fig)
 
+fig, ax1 = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
+ax2, ax3 = ax1.twinx(), ax1.twinx()  # a third y axis: twinx twice
+ax3.spines["right"].set_position(("outward", 40))  # pt, past ax2's labels
+ax1.plot(range(6), [3, 4, 6, 5, 4, 2], color="dc.blue5")
+ax2.plot(range(6), [9, 12, 17, 21, 19, 14], color="dc.red5")
+ax3.plot(range(6), [0.8e6, 1.4e6, 1.1e6, 2.3e6, 1.9e6, 1.0e6], color="dc.green5")
+ax1.set(xlabel="Month", ylabel="Rain (mm)")
+ax2.set_ylabel("Temperature (°C)")
+ax3.set_ylabel("Visitors")
+dm.simple_layout(fig)
+plt.close(fig)
+
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 for i in range(3):
     ax.plot(x, np.sin(x + i), label=f"Run {i + 1}")
@@ -194,7 +234,8 @@ plt.close(fig)
 ```
 
 - One legend for panels that share their series: `dm.figure_legend(fig)`
-  (above the panels; `loc="below"` under everything), then
+  (above the panels, under a `fig.suptitle`; `loc="below"` puts it under
+  everything), then
   `dm.simple_layout(fig)`; it removes the panel legends it replaces.
 - Legend inside, away from the data: `dm.place_legend(ax)`.
   `dm.simple_layout(fig)` places it again at the laid-out size. When
@@ -212,5 +253,8 @@ plt.close(fig)
   never `ax.legend(h1 + h2, l1 + l2)`; it and `dm.label_bars(ax)` put the
   legend and the bar values on the top twin, so the other twin's data is
   never drawn over them.
+- A third y axis is `ax.twinx()` twice with the second twin's spine moved
+  out, as above. `mpl_toolkits`' `host_subplot` parasites do not move with
+  their host, so `dm.simple_layout` leaves such a figure as it was.
 - A twin pair may report `CROSS_AXES_OVERLAP` for its shared x ticks; that
   finding is a false positive for twins.

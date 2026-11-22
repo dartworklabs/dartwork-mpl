@@ -84,7 +84,9 @@ padding above fits these labels; render, look and adjust it for others.
 ## Presets side by side
 
 `dm.style.context(name)` scopes a preset to one block and restores the
-previous one on exit:
+previous one on exit. Lay out, check and save inside the block: after it
+exits matplotlib picks the ticks again under the restored rcParams, so labels
+the layout made room for change and can be cut off.
 
 ```python
 for preset in ("scientific", "report", "presentation"):

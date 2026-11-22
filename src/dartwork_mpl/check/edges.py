@@ -39,9 +39,19 @@ def has_values_on_data(facts: Facts, found: Findings) -> bool:
     return bool(facts.values)
 
 
+def has_letters_on_data(facts: Facts, found: Findings) -> bool:
+    """Any panel letter drawn on data."""
+    return bool(facts.letters)
+
+
 def has_ticks(facts: Facts, found: Findings) -> bool:
     """Any drawn tick labels."""
     return bool(facts.ticks)
+
+
+def has_frames(facts: Facts, found: Findings) -> bool:
+    """Any flat Axes with tick labels."""
+    return bool(facts.frames and facts.ticks)
 
 
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
@@ -108,6 +118,16 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         adjust=decide.value_label_on_data,
     ),
     EdgeCase(
+        name="LETTER_ON_DATA",
+        why=(
+            "titles too long to follow their letters put the letters inside "
+            "the plots, and letter b sat on the start of its curve"
+        ),
+        example="test_edges.py::test_LETTER_ON_DATA",
+        applies=has_letters_on_data,
+        adjust=decide.letter_on_data,
+    ),
+    EdgeCase(
         name="TEXT_CONTRAST",
         why=(
             "white values centred in pale yellow bars read at 1.39:1 and "
@@ -143,5 +163,15 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_MISSING_AXIS_LABEL",
         applies=has_ticks,
         adjust=decide.missing_axis_label,
+    ),
+    EdgeCase(
+        name="SMALL_PANEL",
+        why=(
+            "a report's 2 x 2 grid moved to slide text left each plot 5 "
+            "tick labels tall, and nothing else stood out"
+        ),
+        example="test_edges.py::test_SMALL_PANEL",
+        applies=has_frames,
+        adjust=decide.small_panel,
     ),
 )

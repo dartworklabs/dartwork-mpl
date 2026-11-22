@@ -21,7 +21,7 @@ from matplotlib.patches import Patch
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Bbox, IdentityTransform
 
 from ..colorspace import Rgb, Rgba, composite_over, contrast
 from ..geometry import (
@@ -43,8 +43,10 @@ from . import roles
 from .ink import Ink, data_ink, legend_inks, words_box
 from .model import (
     AXES,
+    LETTER_CLEARANCE_PT,
     Box,
     Facts,
+    Frame,
     Hit,
     Inked,
     Legend,
@@ -52,6 +54,7 @@ from .model import (
     Panel,
     Text,
     TickRow,
+    TickValues,
 )
 from .overlap import tick_label_overlaps
 
@@ -160,13 +163,9 @@ class Reader:
 
     def tick_row(self, i: int, ax: Axes, which: Which) -> TickRow | None:
         """One axis' drawn major labels and how many neighbours collide."""
+        drawn = drawn_tick_labels(ax, which)
         labels = tuple(
-            x
-            for x in (
-                self.text(t, roles.TickLabel(), i)
-                for t in drawn_tick_labels(ax, which)
-            )
-            if x
+            x for x in (self.text(t, roles.TickLabel(), i) for t in drawn) if x
         )
         if not labels:
             return None
@@ -183,6 +182,18 @@ class Reader:
             and isinstance(locator, FixedLocator)
         )  # set_xticks(ticks, labels) prints names
         numbers = not names and not isinstance(locator, DateLocator)
+        at = TickValues(
+            tuple(
+                float(loc)
+                for loc, tick in zip(
+                    axis.get_majorticklocs(),
+                    axis.get_major_ticks(),
+                    strict=False,
+                )
+                if tick.label1 in drawn or tick.label2 in drawn
+            ),
+            linear=isinstance(axis.get_transform(), IdentityTransform),
+        )
         return TickRow(
             ax,
             i,
@@ -192,6 +203,7 @@ class Reader:
             float(deepest),
             numbers=numbers and any(t.value for t in labels),
             named=named(ax, which),
+            at=at,
         )
 
     def ticks(self) -> tuple[TickRow, ...]:
@@ -261,6 +273,28 @@ class Reader:
                 found.append(OnData(t, strokes))
         return tuple(found)
 
+    def letters_on_data(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
+        """Panel letters and the data they are drawn on (a letter inside
+        its plot)."""
+        found: list[OnData] = []
+        for t in texts:
+            ax = t.handle.axes if isinstance(t.handle, MplText) else None
+            if not (
+                isinstance(t.role, roles.PanelLetter) and isinstance(ax, Axes)
+            ):
+                continue
+            frame = ax.get_window_extent(self.renderer)
+            ink = data_ink(
+                same_position_axes(ax), frame, self.renderer, self.pt
+            )
+            box = Bbox.from_extents(t.box.x0, t.box.y0, t.box.x1, t.box.y1)
+            # A letter reads as part of data it nearly touches: it keeps
+            # LETTER_CLEARANCE_PT of air.
+            room = box.padded(LETTER_CLEARANCE_PT * self.pt)
+            if hits := ink.meets(room, 0.5 * self.pt):
+                found.append(OnData(t, tuple(hits)))
+        return tuple(found)
+
     def inks(self, texts: tuple[Text, ...]) -> tuple[Inked, ...]:
         """Texts the user placed in an Axes, against what is behind them."""
         found: list[Inked] = []
@@ -275,6 +309,15 @@ class Reader:
                     Inked(t, ink.hex(), paper.hex(), contrast(ink, paper))
                 )
         return tuple(found)
+
+    def frames(self) -> tuple[Frame, ...]:
+        """The plot areas a text of another Axes must keep off: Axes that
+        draw something or a frame."""
+        return tuple(
+            Frame(ax, i, box_of(ax.get_window_extent(self.renderer)))
+            for i, ax in self.panels
+            if draws(ax) or (ax.axison and ax.get_frame_on())
+        )
 
     def empty(self) -> tuple[Panel, ...]:
         """Framed Axes where nothing is drawn, nor in a twin sharing the box."""
@@ -383,6 +426,10 @@ def measure(fig: Figure) -> Facts:
         legends=r.attempt(r.legends, (), "LEGEND_ON_DATA"),
         empty=r.empty(),
         values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
+        letters=r.attempt(
+            lambda: r.letters_on_data(texts), (), "LETTER_ON_DATA"
+        ),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
+        frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         skipped=tuple(r.skipped),
     )

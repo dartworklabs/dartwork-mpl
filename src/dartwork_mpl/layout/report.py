@@ -15,9 +15,8 @@ from typing import TYPE_CHECKING
 
 from ..hidden import axes_name
 from ..vocab import Which, X, Y
-from .apply import WrappedTickFormatter
+from .apply import WrappedTickFormatter, turned
 from .measure import cartesian, grid_axes
-from .model import turned_here
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -46,12 +45,7 @@ class Text:
 
 def _turn(ax: Axes) -> float:
     """The angle a layout turned ``ax``'s bottom tick labels to (0: none)."""
-    ticks = ax.xaxis.get_major_ticks()
-    if not ticks:
-        return 0.0
-    label = ticks[0].label1
-    rotation = float(label.get_rotation())
-    return rotation if turned_here(rotation, label.get_rotation_mode()) else 0.0
+    return turned(ax.xaxis) or 0.0
 
 
 def _wrap(ax: Axes) -> Mapping[str, str]:
@@ -150,3 +144,16 @@ def changes(before: Text, after: Text) -> None:
     _wraps(before, after)
     _names(before, after)
     _spacing(before, after)
+
+
+def unlisted_twins(hosts: list[Axes]) -> None:
+    """Say the layout left a figure with twins it cannot move alone."""
+    LOG.info(
+        "left the margins of the figure as they were: %s has twin axes the "
+        "figure does not list (mpl_toolkits host_subplot), which stay where "
+        "they were made while the layout moves the plot, so fitting would "
+        "squeeze it; use ax.twinx() instead, twice for a third y axis with "
+        'the second twin\'s spine moved out: spines["right"].set_position('
+        '("outward", 40))',
+        " and ".join(axes_name(ax) for ax in hosts),
+    )

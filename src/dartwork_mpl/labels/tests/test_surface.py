@@ -57,6 +57,47 @@ def test_negative_bars_and_barh_put_labels_past_the_end():
         assert box.x0 > bar.get_window_extent().x1
 
 
+def _labelled(fig, labels, bars, vertical):
+    """Which bars the labels sit on: the bar whose middle each one shares."""
+    middles = [
+        (b.x0 + b.x1) / 2 if vertical else (b.y0 + b.y1) / 2
+        for b in (bar.get_window_extent() for bar in bars)
+    ]
+    return [
+        min(
+            range(len(middles)),
+            key=lambda i: abs(
+                middles[i]
+                - ((t.x0 + t.x1) / 2 if vertical else (t.y0 + t.y1) / 2)
+            ),
+        )
+        for t in _boxes(fig, labels)
+    ]
+
+
+def test_a_slice_of_bars_labels_only_those():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    bars = ax.bar(list("abc"), [3, 5, 4])
+    labels = dm.label_bars(ax, bars=bars[:1])
+    dm.simple_layout(fig)
+    assert [t.get_text() for t in labels] == ["3"]
+    assert _labelled(fig, labels, bars, vertical=True) == [0]
+    with pytest.raises(TypeError, match="bars= takes"):
+        dm.label_bars(ax, bars=[bars[0], *ax.plot([0], [1])])
+
+
+def test_some_barh_bars_are_labelled_at_their_ends():
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    bars = ax.barh(list("abc"), [120, -35, 90])
+    labels = dm.label_bars(ax, bars=[bars[2], bars[1]])
+    dm.simple_layout(fig)
+    assert [t.get_text() for t in labels] == ["\N{MINUS SIGN}35", "90"]
+    assert _labelled(fig, labels, bars, vertical=False) == [1, 2]
+    neg, pos = _boxes(fig, labels)
+    assert neg.x1 < bars[1].get_window_extent().x0  # past the negative end
+    assert pos.x0 > bars[2].get_window_extent().x1
+
+
 @pytest.mark.parametrize(
     ("format_axis", "values", "texts"),
     [
@@ -110,21 +151,55 @@ def test_a_value_label_takes_the_first_free_side():
     assert peak.get_fontsize() == pytest.approx(dm.fs(-1))
 
 
-def test_panel_letters_sit_on_the_title_baseline_and_align_per_column():
-    dm.style.use("scientific")
-    fig, axes = plt.subplots(2, 2, figsize=dm.figsize(dm.col2, "standard"))
-    for ax in axes.flat:
+def _row(titles, letters_first=False):
+    fig, axes = plt.subplots(
+        1, 3, figsize=dm.figsize("17cm", "5cm"), sharey=True
+    )
+    if letters_first:
+        letters = dm.label_axes(axes)
+    for ax, title in zip(axes, titles, strict=True):
         ax.plot([0, 1], [0, 1])
-    axes[0, 0].set_title("Response")
-    axes[0, 0].set_ylabel("Amplitude (mV)")
-    letters = dm.label_axes(axes)
+        ax.set_title(title)
+    if not letters_first:
+        letters = dm.label_axes(axes)
     dm.simple_layout(fig)
-    assert [t.get_text() for t in letters] == ["a", "b", "c", "d"]
-    a, b, c, _d = _boxes(fig, letters)
-    title = _boxes(fig, [axes[0, 0].title])[0]
-    assert a.x0 == pytest.approx(c.x0)  # one column, one left edge
-    assert a.y0 == pytest.approx(b.y0)  # one row, one baseline
-    assert a.x1 < title.x0 or a.y0 >= title.y0 - 3
+    return fig, axes, letters
+
+
+@pytest.mark.parametrize("letters_first", [False, True])
+def test_letters_run_into_their_titles(letters_first):
+    fig, axes, letters = _row(["North", "South", "East"], letters_first)
+    renderer = fig.canvas.get_renderer()
+    for ax, letter, box in zip(
+        axes, letters, _boxes(fig, letters), strict=True
+    ):
+        frame = ax.get_window_extent(renderer)
+        title = ax.title.get_window_extent(renderer)
+        assert box.x0 == pytest.approx(frame.x0)  # on the spine
+        em = letter.get_fontsize() * fig.dpi / 72
+        assert box.x1 < title.x0 < box.x1 + em  # then the title
+        assert ax.title.get_horizontalalignment() == "left"
+    assert len({round(b.y0, 3) for b in _boxes(fig, letters)}) == 1
+
+
+def test_a_run_wider_than_its_plot_puts_every_letter_inside(caplog):
+    long = "Response to the dose across every subject of the whole trial"
+    with caplog.at_level("INFO", logger="dartwork_mpl.labels"):
+        fig, axes, letters = _row(["North", long, "East"])
+    renderer = fig.canvas.get_renderer()
+    for ax, box in zip(axes, _boxes(fig, letters), strict=True):
+        assert ax.get_window_extent(renderer).contains(box.x0, box.y0)
+        assert ax.title.get_horizontalalignment() == "center"
+    assert "inside their plots" in caplog.text
+
+
+def test_a_title_the_caller_placed_stays():
+    fig, ax = plt.subplots()
+    ax.set_title("Placed", x=0.3)
+    dm.label_axes([ax])
+    dm.simple_layout(fig)
+    assert ax.title.get_position()[0] == 0.3
+    assert ax.title.get_horizontalalignment() == "center"
 
 
 def test_line_end_names_replace_the_legend_and_stay_apart():
@@ -148,6 +223,30 @@ def test_a_note_sits_under_the_plot():
     (box,) = _boxes(fig, [note])
     assert box.y1 < ax.xaxis.get_tightbbox(fig.canvas.get_renderer()).y0
     assert note.get_fontsize() == pytest.approx(dm.fs(-1))
+
+
+@pytest.mark.parametrize("margin", ["1mm", "3mm"])
+def test_a_note_keeps_the_layout_margin_from_the_corner(margin):
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot([2019, 2020, 2021, 2022, 2023], [542, 512, 644, 684, 632])
+    ax.set(xlabel="Year", ylabel="Exports (USD bn)")
+    note = dm.add_note(fig, "Source: Statistics agency")
+    dm.simple_layout(fig, margin=margin)
+    (box,) = _boxes(fig, [note])
+    mm = 25.4 / fig.dpi
+    want = dm.Length.parse(margin).mm
+    assert box.x0 * mm == pytest.approx(want, abs=0.05)
+    assert box.y0 * mm == pytest.approx(want, abs=0.05)
+    assert box.y1 < ax.xaxis.get_tightbbox(fig.canvas.get_renderer()).y0
+
+
+def test_a_note_the_caller_moved_stays_where_they_put_it():
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [0, 1])
+    note = dm.add_note(fig, "Source: test")
+    note.set_position((0.3, 0.02))
+    dm.simple_layout(fig)
+    assert tuple(note.get_position()) == (0.3, 0.02)
 
 
 def test_a_value_label_the_caller_hid_or_turned_stays_so() -> None:
@@ -182,3 +281,14 @@ def test_a_line_name_the_caller_moved_stays_where_they_put_it() -> None:
     names[0].xyann = (20.0, -10.0)
     dm.simple_layout(fig)
     assert tuple(names[0].xyann) == (20.0, -10.0)
+
+
+def test_a_note_added_after_the_layout_sits_in_its_margin_and_says_so(capsys):
+    dm.verbose()
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+    ax.plot([0, 1], [0, 1])
+    dm.simple_layout(fig, margin="2mm")
+    note = dm.add_note(fig, "Source: test")
+    (box,) = _boxes(fig, [note])
+    assert box.x0 * 25.4 / fig.dpi == pytest.approx(2.0, abs=0.05)
+    assert "call dm.simple_layout(fig) again" in capsys.readouterr().err

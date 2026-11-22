@@ -19,7 +19,7 @@
 ## 허브가 이 리포에 기대해도 되는 것
 
 - **공개 API**: `import dartwork_mpl as dm`으로 쓰는 이름은 `dm.__all__`이 정본이다. 정식 릴리스 전까지는 예고 없이 바뀔 수 있다. 바뀐 내용은 릴리스 노트에 적는다.
-- **skill**: 리포의 `skills/dartwork-mpl/`이 플로팅 규칙의 정본이다. 설치는 `npx skills add dartworklabs/dartwork-mpl#v<버전>`이나 `uvx dartwork-mpl install`로 하고, 둘은 같은 폴더를 준다. `SKILL.md`의 `metadata.version`이 그 skill이 맞는 버전이다. 허브의 예시는 그 규칙대로 쓴다: preset을 고르고(`dm.style.use`), 크기를 정하고(`dm.figsize`), 다 그린 뒤 여백을 맞추고(`dm.simple_layout`), 저장한다(`dm.save_formats`).
+- **skill**: 리포의 `skills/dartwork-mpl/`이 플로팅 규칙의 정본이다. 설치는 `npx skills add dartworklabs/dartwork-mpl#v<버전> --skill dartwork-mpl`이나 `uvx dartwork-mpl install`로 하고, 둘은 같은 폴더를 준다. `SKILL.md`의 `metadata.version`이 그 skill이 맞는 버전이다. 허브의 예시는 그 규칙대로 쓴다: preset을 고르고(`dm.style.use`), 크기를 정하고(`dm.figsize`), 다 그린 뒤 여백을 맞추고(`dm.simple_layout`), 저장한다(`dm.save_formats`).
 - **검사 도구**: `dm.check(fig)`는 그려진 그림의 결함을 보고하고, `dm.lint_code(source)`는 스크립트의 안티패턴을 보고한다. 허브는 예시를 올리기 전에 둘을 돌려 볼 수 있다.
 - **개발용 코퍼스**: `tests/corpus/`의 스크립트는 허브가 가져다 예시의 출발점으로 써도 된다. 차트 종류별 현실적인 스크립트(`charts/`)와 일부러 대충 그린 것(`rough/`)이 있다. 뒤쪽은 결함 검사의 증거용이므로 갤러리에 그대로 올릴 것이 아니다.
 
@@ -29,8 +29,8 @@
 
 | 쓰는 것 | 허브의 의존성에 적는 것 | 언제 |
 | --- | --- | --- |
-| 정식 버전 | `dartwork-mpl==0.8.0` | 기본 |
-| 사전 버전 | `dartwork-mpl==0.9.0a1` | 정식 릴리스 전의 것을 먼저 쓸 때 |
+| 정식 버전 | `dartwork-mpl==0.9.0` | 기본 |
+| 사전 버전 | `dartwork-mpl==0.10.0a1` | 정식 릴리스 전의 것을 먼저 쓸 때 |
 | 임의의 커밋 | `dartwork-mpl @ git+https://github.com/dartworklabs/dartwork-mpl@<커밋 해시>` | 릴리스되지 않은 수정을 시험하거나, 어느 커밋에서 그림이 달라졌는지 찾을 때 |
 
 정식 버전과 사전 버전은 태그가 PyPI에 올린 것이다([handbook/change-flow.md](handbook/change-flow.md)). 커밋 설치는 이 리포의 어느 커밋에서나 동작한다. 패키지가 자기 자산을 모두 담고 있어 따로 받을 것이 없다. 브랜치 이름(`@develop`)으로도 설치되지만 날마다 다른 것이 깔리므로, 허브의 잠금 파일에는 해시를 적는다. 이 리포의 히스토리를 정리하면 그 전의 커밋 해시는 사라진다.
@@ -42,15 +42,16 @@
 - **검색**: 에이전트가 예시를 찾을 수 있는 검색을 둔다. 예시를 하나씩 지정해 연결하지 않는다. 검색이 준비되면 skill의 "Look things up"에 그 길을 한 줄 넣는다. 형태(웹 검색, API, MCP)는 허브가 준비될 때 함께 정한다.
 - **예시의 형태**: 예시는 혼자 실행되는 스크립트를 포함한다. `dm` 밖의 사설 헬퍼에 기대지 않는다. 에이전트가 읽고 자기 데이터에 맞게 고쳐 쓸 수 있어야 하기 때문이다.
 - **결함 신고**: 예시를 만들다 라이브러리가 그림을 망치는 경우(글자가 잘린다, 범례가 데이터를 덮는다, 여백이 틀린다)를 만나면 그 스크립트를 이 리포에 이슈로 올린다. 이 리포는 그것을 코퍼스에 넣고 고친다.
+- **필요한 것도 이슈로**: 허브가 이 리포에 필요로 하는 것(공개 API 요청, 고정할 ref, 설치 경로, 결함)은 이 리포의 이슈로 올린다. 제목 앞에 `[hub]`를 붙이고, 확인한 commit SHA, 최소 재현, 기대 동작, 허브가 지금 쓰는 임시 방편을 적는다. 이 리포는 공개이므로 허브의 비공개 코드·내부 주소·토큰·개인 정보는 넣지 않는다. 열린 요청은 이슈 검색(`is:issue is:open [hub] in:title`)이 정본이고, 문서에 목록을 복제하지 않는다.
 
 ## 이 리포가 하지 않는 것
 
 - 허브의 기능(공유, 저장, 사용자 관리, 검색 서버)을 라이브러리에 넣지 않는다.
-- 예시로 해결되는 요구를 기능으로 만들지 않는다. 허브에서 "이런 함수가 있으면 좋겠다"는 요구가 나오면, 먼저 matplotlib 몇 줄로 되는지 본다. 되면 예시로 남고, 그려진 결과를 재야 하거나 모든 그림이 같은 값을 써야 할 때만 기능이 된다.
+- matplotlib 몇 줄로 된다는 이유만으로 기능을 거절하거나 받지 않는다. 허브에서 "이런 함수가 있으면 좋겠다"는 요구가 나오면, 그것이 에이전트가 그리는 일에 대한 것인지 본다. 그렇다면 [philosophy.md](handbook/philosophy.md) 1절 "무엇이 기능이 되는가"의 세 질문으로 자리(없음, skill의 한 줄, skill의 레시피, 기능)를 정한다. 허브 페이지가 쓰는 조회 API는 그 기준으로 정하지 않는다.
 
 ## 지금 상태
 
-- 재구성한 라이브러리가 정식 버전 `0.8.0`으로 PyPI에 나갔다. 허브는 `dartwork-mpl==0.8.0`을 고정하고, skill은 `npx skills add dartworklabs/dartwork-mpl#v0.8.0` 또는 `uvx dartwork-mpl@0.8.0 install`로 받는다. 사전 버전 `0.8.0a1`–`a3`은 더 쓰지 않는다.
+- 재구성한 라이브러리가 정식 버전 `0.8.0`으로 PyPI에 나갔고, 그 뒤 수정과 공개 카탈로그를 담은 `0.9.0`이 나왔다. 허브는 `dartwork-mpl==0.9.0`을 고정하고, skill은 `npx skills add dartworklabs/dartwork-mpl#v0.9.0 --skill dartwork-mpl` 또는 `uvx dartwork-mpl@0.9.0 install`로 받는다. 사전 버전 `0.8.0a1`–`a3`은 더 쓰지 않는다.
 - `preview/foundation` 브랜치는 아래 기록의 `git show` 명령이 읽는 옛 커밋을 붙들고 있다. 허브 이전이 끝날 때까지만 둔다.
 - 재구성하면서 지운 공개 함수와 동작, 번들 템플릿 36개의 기록은 [example-candidates.md](example-candidates.md)에 있다. 허브가 예시 소재를 찾을 때 참고하는 기록이고, 만들어야 할 목록이 아니다.
 - 허브 담당자가 이 리포의 유산 가운데 쓸 만한 것을 허브로 옮긴다. 그 일이 끝나면 이 리포의 git 히스토리(약 610 MB)를 정리한다. 정리 뒤에는 `example-candidates.md`의 `git show <커밋>:...` 명령이 동작하지 않으므로, 필요한 원본은 그 전에 가져간다.

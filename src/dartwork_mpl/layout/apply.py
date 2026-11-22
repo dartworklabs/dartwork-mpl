@@ -26,7 +26,6 @@ from .model import (
     TextPlan,
     WSpace,
     tick_spine,
-    turned_here,
 )
 
 if TYPE_CHECKING:
@@ -42,6 +41,11 @@ LOG = logging.getLogger("dartwork_mpl.layout")
 #: The Axes whose scale spines a layout has seen to: shown once, they are
 #: the caller's to hide again.
 SPINES_SEEN: weakref.WeakSet[Axes] = weakref.WeakSet()
+
+#: The angle a layout last turned each x axis' bottom labels to, to tell its
+#: turn from the caller's. Kept per axis: matplotlib makes new ticks as the
+#: view changes, the axis stays.
+_TURNED: weakref.WeakKeyDictionary[Axis, Degrees] = weakref.WeakKeyDictionary()
 
 
 class WrappedTickFormatter(Formatter):
@@ -148,17 +152,32 @@ def show_scale_spines(fig: Figure) -> None:
                 )
 
 
+def turned(axis: Axis) -> Degrees | None:
+    """The angle a layout turned ``axis``' bottom labels to, while they still
+    read so (``None``: not turned, or turned since by the caller)."""
+    angle = _TURNED.get(axis)
+    ticks = axis.get_major_ticks()
+    if angle is None or not ticks:
+        return None
+    label = ticks[0].label1
+    if float(label.get_rotation()) != angle:
+        return None
+    return angle if label.get_rotation_mode() == TURN_MODE else None
+
+
 def unturn(fig: Figure) -> None:
     """Put back upright the tick labels a previous layout turned, so a
-    second call fits the labels as they read now."""
+    second call fits the labels as they read now. Labels the caller turned
+    stay as they are, at any angle and mode."""
     for ax in fig.axes:
-        for tick in ax.xaxis.get_major_ticks():
+        axis = ax.xaxis
+        angle = turned(axis)
+        _TURNED.pop(axis, None)
+        if angle is None:
+            continue
+        for tick in axis.get_major_ticks():
             label = tick.label1
-            rotation, mode = (
-                float(label.get_rotation()),
-                label.get_rotation_mode(),
-            )
-            if turned_here(rotation, mode):
+            if float(label.get_rotation()) == angle:
                 label.set_rotation(0.0)
                 label.set_rotation_mode("default")
 
@@ -168,6 +187,18 @@ def _turn(axis: Axis, angle: Degrees) -> None:
     for tick in axis.get_major_ticks():
         tick.label1.set_rotation(angle)
         tick.label1.set_rotation_mode(TURN_MODE)
+    _TURNED[axis] = angle
+
+
+def unspace(gs: GridSpec, key: Gap) -> None:
+    """Give ``key`` back to the figure's spacing (``gs`` sets none)."""
+    match key:
+        case WSpace():
+            gs.update(wspace=None)
+        case HSpace():
+            gs.update(hspace=None)
+        case _:
+            assert_never(key)
 
 
 def _space(gs: GridSpec, key: Gap, value: Share) -> None:

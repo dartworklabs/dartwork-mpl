@@ -37,15 +37,15 @@
 | `rotate_tick_labels` | 눈금 글자를 돌린다 | `ticks/__init__.py:404` | 0/0/0 | 돌린 글자의 정렬(`ha="right"`, `rotation_mode="anchor"`). 먼저 가로 막대로 바꾸는 것이 낫다는 점 |지움 |
 | `label_hline` | 가로 기준선에 이름을 붙인다 | `compose/labels.py:160` | 0/2/0 | 선에서 포인트 단위로 띄우기(`annotate`의 `textcoords="offset points"`), 선 위와 아래 |지움 |
 | `annotate_corner` | 축 구석에 설명 글을 쓴다 | `compose/labels.py:132` | 0/1/0 | `transAxes` 좌표와 포인트 단위 안쪽 여백. 데이터와 겹치면 다른 구석으로 옮기는 판단 |지움 |
-| `mix_colors` | 두 색을 OKLab에서 섞는다 | `color/__init__.py:142` | 0/0/0 | `dm.color(...)`의 OKLab 값으로 직접 섞기 |지움 |
+| `mix_colors` | 두 색을 OKLab에서 섞는다 | `color/__init__.py:142` | 0/0/0 | `dm.color(...)`의 OKLab 값으로 직접 섞기 |지움. 2026-11-17부터 skill의 레시피(`references/colors.md` "A ramp between two colours")가 같은 산술을 보여준다 |
 | `pseudo_alpha` | 투명도를 불투명 색으로 바꾼다 | `color/__init__.py:151` | 0/3/0 | 겹친 면이 진해지지 않게 불투명 색을 쓰는 이유와 계산 |지움 |
 | `make_palette` | Open Color 이름 `n`개를 돌려준다 | `color/__init__.py:338` | 0/0/0 | 범주, 순차, 발산 계열에 맞는 색 이름 고르기 |지움 |
-| `cspace` | 두 색 사이의 색 `n`개를 만든다 | `color/__init__.py:127` | 0/9/0 | 순서 있는 계열에 한 색상의 명도 단계를 쓰는 법 |지움 |
+| `cspace` | 두 색 사이의 색 `n`개를 만든다 | `color/__init__.py:127` | 0/9/0 | 순서 있는 계열에 한 색상의 명도 단계를 쓰는 법 |지움. 임의의 두 색 사이 램프는 이 기록이 다루지 않았다(#775). 2026-11-17부터 skill의 레시피(`references/colors.md` "A ramp between two colours")에 있다 |
 | `readable_text_color` | 배경에 맞는 흰색 또는 검은색을 고른다 | `color/__init__.py:185` | 0/2/0 | 히트맵 칸의 숫자 색 고르기 |남김 |
 | `ensure_contrast` | 대비가 모자란 색을 조정한다 | `color/__init__.py:164` | 0/10/0 | 색 위의 글자가 읽히는 대비(4.5:1) 확인과 보정 |남김 |
 | `list_colors` | `dc.*` 계열 목록을 돌려준다 | `color/__init__.py:288` | 2/0/0 | 예시가 아니라 허브의 색 표 페이지가 대신한다 |남김 |
 | `grid_shape` | 패널 `n`개의 행과 열 수를 정한다 | `size/__init__.py:78` | 2/2/0 | small multiples의 행과 열 고르기, 빈 칸 처리 |지움 |
-| `list_aspect_tokens` | 비율 이름 목록을 돌려준다 | `size/__init__.py:90` | 1/0/0 | 예시가 아니라 skill의 표가 대신한다 |지움 |
+| `list_aspect_tokens` | 비율 이름 목록을 돌려준다 | `size/__init__.py:90` | 1/0/0 | 허브가 skill 문장을 정규식으로 읽어야 했다(#736) |`dm.list_aspects`로 되살림 |
 
 남긴 것은 셋이다.
 

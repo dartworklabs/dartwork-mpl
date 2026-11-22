@@ -17,6 +17,9 @@ from ..vocab import DefaultLocale, KoreanLocale, Locale
 Decimals = NewType("Decimals", int)
 """A count of decimal places."""
 
+TickCount = NewType("TickCount", int)
+"""A count of major ticks in view."""
+
 
 @dataclass(frozen=True)
 class Unit:
@@ -178,6 +181,19 @@ class TickValues:
 
     @classmethod
     def of(cls, values: Sequence[float]) -> TickValues:
+        """The finite values, as floats."""
+        finite = tuple(float(v) for v in values if abs(float(v)) < float("inf"))
+        return cls(finite)
+
+
+@dataclass(frozen=True)
+class AxisData:
+    """Where an axis's lines and points sit along it, in data units."""
+
+    values: tuple[float, ...]
+
+    @classmethod
+    def of(cls, values: Sequence[float]) -> AxisData:
         """The finite values, as floats."""
         finite = tuple(float(v) for v in values if abs(float(v)) < float("inf"))
         return cls(finite)

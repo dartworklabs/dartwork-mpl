@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Box,
     Facts,
+    Frame,
     Hit,
     Inked,
     Legend,
@@ -14,11 +17,19 @@ from dartwork_mpl.check.model import (
     Panel,
     Text,
     TickRow,
+    TickValues,
 )
-from dartwork_mpl.check.roles import AxisLabel, FreeText, Role, TickLabel, Title
+from dartwork_mpl.check.roles import (
+    AxisLabel,
+    FreeText,
+    PanelLetter,
+    Role,
+    TickLabel,
+    Title,
+)
 from dartwork_mpl.colorspace import Hex, Ratio
 from dartwork_mpl.edgecase import settle
-from dartwork_mpl.vocab import X
+from dartwork_mpl.vocab import X, Y
 
 CANVAS = Box(0, 0, 1000, 600)
 PT = 300 / 72
@@ -66,6 +77,18 @@ def test_CROSS_AXES_OVERLAP_title_on_neighbour_ticks():
     title = text("Lower", Box(100, 60, 200, 90), Title(), panel=1)
     facts = Facts(CANVAS, PT, texts=(title,), ticks=(row("1", "2"),))
     assert "CROSS_AXES_OVERLAP" in found(facts).rules
+    wide = text("A title wider than its plot", Box(10, 500, 520, 540), Title())
+    plot, bar = (
+        Frame(object(), 0, Box(20, 50, 450, 480)),
+        Box(470, 30, 500, 560),
+    )
+    beside = Facts(
+        CANVAS, PT, texts=(wide,), frames=(plot, Frame(None, 1, bar))
+    )
+    (f,) = found(beside)
+    assert "runs into the plot of axes[1]" in f.message and f.panels == (0, 1)
+    twin = Frame(object(), 1, plot.box)
+    assert not found(Facts(CANVAS, PT, texts=(wide,), frames=(plot, twin)))
 
 
 def test_TEXT_CROWD_value_beside_a_name():
@@ -106,9 +129,10 @@ def test_EMPTY_AXES():
 
 def test_MISSING_AXIS_LABEL():
     numbers = row("1", "2", numbers=True)
-    assert found(Facts(CANVAS, PT, ticks=(numbers,))).rules == (
-        "MISSING_AXIS_LABEL",
-    )
+    (f,) = found(Facts(CANVAS, PT, ticks=(numbers,)))
+    assert f.rule == "MISSING_AXIS_LABEL" and "ax.set_xlabel(" in f.fix
+    years = replace(numbers, at=TickValues((2019.0, 2020.0), linear=True))
+    assert not found(Facts(CANVAS, PT, ticks=(years,)))
     assert not found(Facts(CANVAS, PT, ticks=(row("Mon", "Tue"),)))
     blank = Facts(CANVAS, PT, ticks=(numbers,), empty=(Panel(object(), 0),))
     assert found(blank).rules == ("EMPTY_AXES",)
@@ -119,6 +143,14 @@ def test_VALUE_LABEL_ON_DATA():
     on = OnData(label, (Hit("line", ""),))
     (f,) = found(Facts(CANVAS, PT, texts=(label,), values=(on,)))
     assert f.rule == "VALUE_LABEL_ON_DATA" and f.artists == (label.handle,)
+
+
+def test_LETTER_ON_DATA():
+    letter = text("b", Box(100, 500, 120, 530), PanelLetter())
+    on = OnData(letter, (Hit("line", "Signal"),))
+    (f,) = found(Facts(CANVAS, PT, texts=(letter,), letters=(on,)))
+    assert f.rule == "LETTER_ON_DATA" and f.artists == (letter.handle,)
+    assert "'b' sits on lines" in f.message
 
 
 def test_TEXT_CONTRAST():
@@ -141,3 +173,22 @@ def test_VALUE_LABEL_DECIMAL():
     )
     mixed = (counts[0], text("31.5", Box(300, 100, 350, 140)))
     assert not found(Facts(CANVAS, PT, texts=mixed))
+
+
+def test_SMALL_PANEL():
+    def ticks(panel: int, *axes: X | Y) -> tuple[TickRow, ...]:
+        label = (text("10", Box(0, 0, 20, 10), TickLabel(), panel),)
+        return tuple(
+            TickRow(object(), panel, w, label, 0, 0.0, True, True) for w in axes
+        )
+
+    # em 40 px: 7 tick labels are 280 px
+    small = Frame(object(), 0, Box(0, 0, 400, 200))
+    (f,) = found(Facts(CANVAS, PT, ticks=ticks(0, X(), Y()), frames=(small,)))
+    assert f.rule == "SMALL_PANEL" and f.panels == (0,)
+    roomy = Frame(object(), 1, Box(0, 0, 600, 300))
+    both = ticks(0, X(), Y()) + ticks(1, X(), Y())
+    largest = Facts(CANVAS, PT, ticks=both, frames=(small, roomy))
+    assert "SMALL_PANEL" not in found(largest).rules
+    colorbar = Facts(CANVAS, PT, ticks=ticks(0, Y()), frames=(small,))
+    assert not found(colorbar)

@@ -6,6 +6,7 @@ spacing between panels nobody spaced, with the artists their ids name.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import TYPE_CHECKING, assert_never
@@ -216,14 +217,15 @@ def _free(fig: Figure, gs: GridSpec, key: Gap) -> bool:
     return spacing_of(gs, key) is None and _figure_default(fig, key)
 
 
-def _spacings(
-    fig: Figure, gs: GridSpec, renderer: RendererBase
+def spacings(
+    fig: Figure, gs: GridSpec, renderer: RendererBase, keys: Collection[Gap]
 ) -> list[Spacing]:
+    """The spacings ``keys`` of ``gs`` as drawn now, set or not."""
     nrows, ncols = gs.get_geometry()
     free = [
         key
         for key, n in ((WSpace(), ncols), (HSpace(), nrows))
-        if n > 1 and _free(fig, gs, key)
+        if n > 1 and key in keys
     ]
     if not free:
         return []
@@ -280,14 +282,20 @@ def _spacings(
 
 
 def text_facts(
-    fig: Figure, gs: GridSpec, renderer: RendererBase
+    fig: Figure, gs: GridSpec, renderer: RendererBase, held: Collection[Gap]
 ) -> tuple[TextFacts, TextArtists]:
-    """What text fitting reads, and the artists its ids name."""
+    """What text fitting reads, and the artists its ids name; the spacings
+    nobody set, but for those ``held`` where they are."""
     objects = TextArtists({}, {})
+    free = [
+        key
+        for key in (WSpace(), HSpace())
+        if key not in held and _free(fig, gs, key)
+    ]
     facts = TextFacts(
         tuple(_groups(fig, renderer, objects)),
         tuple(_names(fig, renderer, objects)),
-        tuple(_spacings(fig, gs, renderer)),
+        tuple(spacings(fig, gs, renderer, free)),
         canvas(fig),
     )
     return facts, objects

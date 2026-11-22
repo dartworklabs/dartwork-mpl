@@ -26,22 +26,13 @@ from ..colorspace import (
     lifted,
     readable,
 )
-from ..geometry import (
-    BBOX_ERRORS,
-    axes_titles,
-    get_renderer,
-    label_side,
-    projection,
-)
+from ..geometry import BBOX_ERRORS, axes_titles, get_renderer, label_side
 from ..vocab import (
     AlignBottom,
     AlignTop,
     Baseline,
-    Curved,
     Far,
     Near,
-    Rectilinear,
-    ThreeD,
     VCentre,
     VCentreBaseline,
     X,
@@ -363,24 +354,24 @@ def baseline_px(text: Text, renderer: RendererBase) -> float:
     return float(text.get_window_extent(renderer).y0 + descent)
 
 
-def _guess_ylabel_x0(ax: Axes, renderer: RendererBase) -> float:
-    """Where the outer edge of a y-axis name of ``ax`` would be."""
-    x0 = float(ax.transAxes.transform((0.0, 1.0))[0])
-    if not _plain(ax):
-        return x0
-    ticks = _ytick_box(ax, renderer)
-    inner = min(x0, ticks.x0) if ticks is not None else x0
-    _w, height, _d = renderer.get_text_width_height_descent(
-        "Ag", ax.yaxis.label.get_fontproperties(), ismath=False
-    )
-    return inner - float(ax.yaxis.labelpad) * px_per_pt(ax) - float(height)
+def _width(text: Text | None, renderer: RendererBase) -> float | None:
+    if text is None or not _shown(text):
+        return None
+    return float(text.get_window_extent(renderer).width)
 
 
-def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
-    """What ``ax`` draws around its top-left corner, for its ``letter``."""
+def panel(
+    ax: Axes,
+    letter: Text,
+    renderer: RendererBase,
+    joined: Text | None,
+    apart: Text | None,
+) -> Panel:
+    """What ``ax`` draws around its top-left corner, for its ``letter``;
+    ``joined`` is the title that follows a letter in a run, ``apart`` one
+    that stays."""
     corner = tuple(map(float, ax.transAxes.transform((0.0, 1.0))))
     box = letter.get_window_extent(renderer)
-    ylabel = _ylabel_box(ax, renderer) if _plain(ax) else None
     ticks = _ytick_box(ax, renderer)
     titles = tuple(
         Title(baseline_px(t, renderer))
@@ -402,20 +393,14 @@ def panel(ax: Axes, letter: Text, renderer: RendererBase) -> Panel:
     return Panel(
         corner=(corner[0], corner[1]),
         width=float(box.width),
+        height=float(box.height),
         descent=baseline_px(letter, renderer) - float(box.y0),
+        size=float(letter.get_fontsize()) * px_per_pt(ax),
         cell=_cell(ax),
-        ylabel_x0=None if ylabel is None else float(ylabel.x0),
-        guess_x0=_guess_ylabel_x0(ax, renderer),
         titles=titles,
         top=top,
         decos=decos,
+        plot_width=float(ax.get_window_extent(renderer).width),
+        joined=_width(joined, renderer),
+        apart=_width(apart, renderer),
     )
-
-
-def _plain(ax: Axes) -> bool:
-    """Whether ``ax`` is matplotlib's plain 2D Axes."""
-    match projection(ax):
-        case Rectilinear():
-            return True
-        case ThreeD() | Curved():
-            return False

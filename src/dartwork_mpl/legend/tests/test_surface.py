@@ -7,6 +7,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.transforms import ScaledTranslation
 
 import dartwork_mpl as dm
 from dartwork_mpl.geometry import get_renderer
@@ -73,6 +74,18 @@ def test_a_twin_pair_gets_one_legend_on_the_top_twin():
     legend = dm.place_legend(ax)
     assert ax.get_legend() is None and twin.get_legend() is legend
     assert [t.get_text() for t in legend.get_texts()] == ["Rain", "Temp"]
+
+
+@pytest.mark.parametrize("loc", ["best", "above"])
+def test_the_handles_and_labels_given_on_a_twin_pair_are_shown(loc):
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    (rain,) = ax.plot(np.arange(6), [5, 7, 6, 8, 7, 9], label="rain")
+    twin = ax.twinx()
+    (temp,) = twin.plot(np.arange(6), [20, 22, 25, 24, 21, 19], label="temp")
+    dm.place_legend(ax, loc=loc, handles=[temp, rain], labels=["Temp", "Rain"])
+    dm.simple_layout(fig)
+    legend = twin.get_legend()
+    assert [t.get_text() for t in legend.get_texts()] == ["Temp", "Rain"]
 
 
 def test_a_rebuilt_legend_keeps_its_title_and_follows_the_artists():
@@ -144,3 +157,55 @@ def test_a_legend_the_caller_moved_stays_where_they_put_it() -> None:
     box, frame = legend.get_window_extent(), ax.get_window_extent()
     assert box.x0 - frame.x0 < frame.width / 4
     assert box.y0 - frame.y0 < frame.height / 4
+
+
+def test_an_outside_legend_the_caller_moved_stays_where_they_put_it() -> None:
+    # #749: a legend above moved with set_loc was rebuilt at the centre by
+    # the next layout at another size.
+    fig, ax = _lines(3)
+    dm.place_legend(ax, loc="above")
+    dm.simple_layout(fig)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend.set_loc("lower left")
+    fig.set_size_inches(4.0, 3.0)
+    dm.simple_layout(fig)
+    middle = (_box(fig, ax).x0 + _box(fig, ax).x1) / 2
+    assert ax.get_legend() is legend
+    assert _box(fig, legend).x0 > middle  # centred, it would straddle it
+
+
+def test_a_title_the_caller_moved_stays_where_they_put_it() -> None:
+    # #749: a title raised over a legend above and given another transform
+    # by the caller was raised again by the next layout.
+    fig, ax = _lines(3)
+    ax.set_title("Three series")
+    dm.place_legend(ax, loc="above")
+    dm.simple_layout(fig)
+    mine = ax.transAxes + ScaledTranslation(0.0, 4 / 72, fig.dpi_scale_trans)
+    ax.title.set_transform(mine)
+    dm.simple_layout(fig)
+    assert ax.title.get_transform() is mine
+
+
+def test_a_figure_title_a_legend_above_and_panel_titles_stack():
+    # #785: the legend was drawn on the suptitle, and below it the suptitle
+    # sat flush on the panel titles.
+    fig, axes = plt.subplots(2, 3, figsize=dm.figsize("17cm", "8.5cm"))
+    for ax, name in zip(axes.flat, "ABCDEF", strict=True):
+        ax.plot([1, 2, 3], [1, 3, 2], label="Actual")
+        ax.plot([1, 2, 3], [2, 2, 2], label="Plan")
+        ax.set_title(name)
+    title = fig.suptitle("Every region beat plan from July on")
+    legend = dm.figure_legend(fig)
+    dm.simple_layout(fig)
+    panels = max(_box(fig, ax.title).y1 for ax in axes[0])
+    assert _box(fig, title).y0 >= _box(fig, legend).y1
+    assert _box(fig, legend).y0 >= panels
+
+    below = dm.figure_legend(fig, loc="below")
+    dm.simple_layout(fig)
+    pad = plt.rcParams["axes.titlepad"] * fig.dpi / 72
+    assert below is not None
+    gap = _box(fig, title).y0 - max(_box(fig, ax.title).y1 for ax in axes[0])
+    assert gap >= pad  # the title pad, past the layout's margin

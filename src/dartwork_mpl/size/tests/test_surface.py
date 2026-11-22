@@ -36,6 +36,16 @@ class TestFigsize:
     ) -> None:
         assert _cm(dm.figsize("13cm", aspect)) == (13.0, height_cm)
 
+    def test_listed_aspects_are_the_tokens_figsize_reads(self) -> None:
+        listed = dm.list_aspects()
+        for aspect in listed:
+            assert dm.figsize("13cm", aspect["name"]) == dm.figsize(
+                "13cm", aspect["ratio"]
+            )
+        with pytest.raises(ValueError) as unknown:
+            dm.figsize("13cm", "nope")
+        assert all(repr(a["name"]) in str(unknown.value) for a in listed)
+
     @pytest.mark.parametrize("width", ["13cm", "130mm", dm.cm(13), " 13 cm "])
     def test_width_forms_agree(self, width: object) -> None:
         assert dm.figsize(width) == pytest.approx(dm.figsize("13cm"))
@@ -180,3 +190,41 @@ class TestFigsizeFor:
     def test_labels_need_an_axis_order(self, labels: object) -> None:
         with pytest.raises(TypeError, match="labels must be"):
             dm.figsize_for(labels=labels)
+
+
+@pytest.mark.parametrize(
+    ("preset", "nrows", "ncols"),
+    [("presentation", 2, 2), ("report", 1, 4), ("scientific", 1, 4)],
+)
+def test_a_default_grid_with_shared_axes_draws_clean(
+    preset: str, nrows: int, ncols: int
+) -> None:
+    """Titles, panel letters and one axis name per row and column fit the
+    default grid canvas with room for the plots."""
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    dm.style.use(preset)
+    fig, axes = plt.subplots(
+        nrows,
+        ncols,
+        figsize=dm.figsize_for(nrows=nrows, ncols=ncols),
+        squeeze=False,
+        sharex=True,
+        sharey=True,
+    )
+    months = np.arange(1, 13)
+    rng = np.random.default_rng(4)
+    for i, ax in enumerate(axes.flat):
+        ax.plot(months, 50 + np.cumsum(rng.normal(1, 3, months.size)))
+        ax.set_title(f"Region {i + 1}")
+    for ax in axes[-1]:
+        ax.set_xlabel("Month")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Sales (units)")
+    dm.label_axes(axes.flat)
+    dm.simple_layout(fig)
+    try:
+        assert dm.check(fig).rules == ()
+    finally:
+        plt.close(fig)

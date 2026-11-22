@@ -745,9 +745,9 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="triple_axis_parasite",
         build=_build_triple_axis_parasite,
-        # Parasite axes use absolute pixel offsets that simple_layout
-        # can't negotiate; the test only verifies "no crash + saveable",
-        # so we tolerate residual OVERFLOW and skip pixel border checks.
+        # Parasite axes do not move with their host, so simple_layout
+        # leaves this figure as it was (#750); the right axis stays cut
+        # as matplotlib draws it, so OVERFLOW and the borders are not checked.
         forbid_warnings=(),
         pixel_checks=(),
     ),
@@ -914,12 +914,6 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="presentation_small_text", build=_build_presentation_small_text
     ),
-    RobustnessScenario(
-        name="source_note",
-        build=_build_source_note,
-        # dm.add_note sets the note at the canvas's left edge (x = 0), so the
-        # white-border check cannot hold; the layout reserves its row.
-        pixel_checks=(),
-    ),
+    RobustnessScenario(name="source_note", build=_build_source_note),
     RobustnessScenario(name="waterfall_report", build=_build_waterfall_report),
 ]

@@ -19,6 +19,9 @@ from .roles import Role
 #: Contact up to this (points) is a touch, not a cover.
 TOUCH_PT = 0.5
 
+#: Air (pt) a panel letter inside its plot keeps from the data.
+LETTER_CLEARANCE_PT = 2.0
+
 #: Both axes, x first.
 AXES: tuple[Which, ...] = (X(), Y())
 
@@ -89,13 +92,23 @@ class Text:
 
 
 @dataclass(frozen=True)
+class TickValues:
+    """Where an axis' drawn labels stand, in data units, and whether the
+    axis maps them linearly (not log, symlog, logit ...)."""
+
+    values: tuple[float, ...]
+    linear: bool
+
+
+@dataclass(frozen=True)
 class TickRow:
     """The drawn labels of one axis and how many neighbours collide.
 
     ``overlaps`` the neighbour pairs that collide and ``deepest`` the worst
     overlap in px. ``numbers``: the labels print quantities (not names,
     categories or dates); ``named``: a label names the axis, on this panel,
-    one sharing the axis, its grid row (y) or column (x), or the figure.
+    one sharing the axis, its grid row (y) or column (x), or the figure;
+    ``at``: where the labels stand.
     """
 
     handle: object
@@ -106,6 +119,7 @@ class TickRow:
     deepest: float
     numbers: bool
     named: bool
+    at: TickValues = TickValues((), linear=True)
 
 
 @dataclass(frozen=True)
@@ -153,7 +167,7 @@ class Legend:
 
 @dataclass(frozen=True)
 class OnData:
-    """A value label and the lines, markers or error bars under it."""
+    """A value label or a panel letter and the data under it."""
 
     text: Text
     covers: tuple[Hit, ...]
@@ -178,6 +192,16 @@ class Panel:
 
 
 @dataclass(frozen=True)
+class Frame:
+    """The plot area of an Axes that fills it (a frame, an image, a
+    colorbar): its ``fig.axes`` index and box."""
+
+    handle: object
+    index: int
+    box: Box
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -190,8 +214,10 @@ class Facts:
     legends: tuple[Legend, ...] = ()
     empty: tuple[Panel, ...] = ()
     values: tuple[OnData, ...] = ()
+    letters: tuple[OnData, ...] = ()
     inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
+    frames: tuple[Frame, ...] = ()
 
     @property
     def touch(self) -> float:

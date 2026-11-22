@@ -4,8 +4,8 @@ A bar label prints its value like the ticks; a call whose labels are wider
 than the bar pitch less 1.5 pt is crowded (vertical bars turn their labels),
 and labels that still meet are hidden a position at a time from the last; an
 autoscaled value axis grows just enough for the labels beyond the bar ends.
-A point label takes the first free side, a panel letter sits on its title's
-baseline, line-end names spread one line apart. Special cases are in
+A point label takes the first free side, panel letters run into their
+titles (or sit inside their plots when a run does not fit), line-end names spread one line apart. Special cases are in
 ``edges.py``.
 """
 
@@ -25,7 +25,18 @@ from .bar_geometry import (
     Lower,
     Shown,
 )
-from .model import Choice, Column, Letters, PanelsFacts, Tries
+from .model import (
+    INSET_EM,
+    TOUCH_PX,
+    Choice,
+    Column,
+    Inside,
+    Letters,
+    PanelsFacts,
+    Placement,
+    Run,
+    Tries,
+)
 from .stacks import BarsFacts, BarsPlan, Planned
 
 # Above the top decoration of a panel without a title, and between a letter
@@ -130,65 +141,66 @@ def value_side(tries: Tries) -> Choice:
 
 
 # ------------------------------------------------------------ panel letters
-def letter_lefts(facts: PanelsFacts) -> Letters:
-    """Each letter's left edge before columns align.
+def placement(facts: PanelsFacts) -> Placement:
+    """A run in every panel while each run fits inside its plot; else every
+    letter inside its plot (the first panel whose run did not fit)."""
+    for i, p in enumerate(facts.panels):
+        if p.run > p.plot_width + TOUCH_PX:
+            return Inside(i)
+    return Run()
 
-    On the outer edge of the panel's y-axis name, a grid column taking its
-    leftmost; a panel with no name in its column keeps the spine distance
-    of the named panels (the largest in its row, else in the call); with no
-    name anywhere, where a name would be.
+
+def place_letters(facts: PanelsFacts, where: Placement) -> Letters:
+    """Each letter where ``where`` puts it.
+
+    A run: the letter on its spine, on its title's baseline (untitled: 4 pt
+    above the top decoration raised to its row's highest, and 2 pt clear of
+    a y name or tick label rising above the panel); the title starts half a
+    letter size after it. Inside: the letter's top-left corner 0.4 letter
+    sizes in from the plot's, a row on its lowest baseline.
     """
     panels = facts.panels
-    lefts: list[float | None] = [p.ylabel_x0 for p in panels]
-    for members in facts.groups(1).values():
-        known = [v for i in members if (v := lefts[i]) is not None]
-        if known:
-            for i in members:
-                lefts[i] = min(known)
-    reach = {
-        i: panels[i].corner[0] - v for i, v in enumerate(lefts) if v is not None
-    }
-    out: list[float] = []
-    for i, left in enumerate(lefts):
-        panel = panels[i]
-        if left is not None:
-            out.append(left)
-            continue
-        row = [reach[j] for j in facts.mates(i, 0) if j in reach]
-        if row or reach:
-            out.append(panel.corner[0] - max(row or list(reach.values())))
-        else:
-            out.append(panel.guess_x0)
-    return Letters(tuple(out), ())
-
-
-def align_letters(facts: PanelsFacts, letters: Letters) -> Letters:
-    """A column shares its leftmost edge; a letter sits on its title's
-    baseline, or (untitled) 4 pt above the top decoration raised to its
-    row's highest baseline, and 2 pt clear of a y name or tick label rising
-    above the panel under it."""
-    lefts = list(letters.lefts)
-    for members in facts.groups(1).values():
-        value = min(lefts[i] for i in members)
-        for i in members:
-            lefts[i] = value
+    match where:
+        case Inside():
+            inside = [
+                p.corner[1] - INSET_EM * p.size - (p.height - p.descent)
+                for p in panels
+            ]
+            for members in facts.groups(0).values():
+                value = min(inside[i] for i in members)
+                for i in members:
+                    inside[i] = value
+            return Letters(
+                tuple(p.corner[0] + INSET_EM * p.size for p in panels),
+                tuple(inside),
+                tuple(None for _ in panels),
+            )
+        case Run():
+            pass
     k = facts.px_per_pt
     baselines: list[float] = []
-    for panel, left in zip(facts.panels, lefts, strict=True):
-        if panel.titles:
-            base = max(t.baseline for t in panel.titles)
+    for p in panels:
+        left = p.corner[0]
+        if p.titles:
+            base = max(t.baseline for t in p.titles)
         else:
-            base = panel.top + TOP_GAP_PT * k
-        for x0, x1, y1 in panel.decos:
-            if x0 < left + panel.width and x1 > left:
-                base = max(base, y1 + CLEARANCE_PT * k + panel.descent)
+            base = p.top + TOP_GAP_PT * k
+        for x0, x1, y1 in p.decos:
+            if x0 < left + p.width and x1 > left:
+                base = max(base, y1 + CLEARANCE_PT * k + p.descent)
         baselines.append(base)
     for members in facts.groups(0).values():
         value = max(baselines[i] for i in members)
         for i in members:
-            if not facts.panels[i].titles:
+            if not panels[i].titles:
                 baselines[i] = value
-    return Letters(tuple(lefts), tuple(baselines))
+    return Letters(
+        tuple(p.corner[0] for p in panels),
+        tuple(baselines),
+        tuple(
+            p.corner[0] + p.width + p.gap if p.joined else None for p in panels
+        ),
+    )
 
 
 # ------------------------------------------------------------ line ends

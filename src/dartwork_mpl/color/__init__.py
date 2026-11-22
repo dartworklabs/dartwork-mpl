@@ -45,6 +45,7 @@ __all__ = [
     "colors",
     "ensure_contrast",
     "hex",
+    "list_color_libraries",
     "list_colors",
     "oklab",
     "oklch",
@@ -207,6 +208,19 @@ def list_colors(kind: str | None = None) -> list[dict[str, object]]:
         }
         for found in CATALOG.families.values()
         if wanted is None or found.kind == wanted
+    ]
+
+
+def list_color_libraries() -> list[dict[str, str]]:
+    """The colour libraries registered with matplotlib, ``dc.`` first.
+
+    Each record has ``prefix`` (``"oc."``), the start of every name the
+    library registers (``color="oc.red5"``), and ``label``, what it is
+    (``"OpenColor"``). :func:`list_colors` lists the ``dc.*`` families.
+    """
+    return [
+        {"prefix": library.prefix, "label": library.label}
+        for library in CATALOG.libraries
     ]
 
 

@@ -13,12 +13,19 @@ from typing import TYPE_CHECKING
 from dartwork_mpl import layout, ticks
 from dartwork_mpl.labels import (
     note_gap_pt,
+    place_notes,
     report_bars,
+    report_panels,
     settle_bars,
     settle_panels,
     space_line_ends,
 )
-from dartwork_mpl.legend import figure_reserve, report_legends, settle
+from dartwork_mpl.legend import (
+    figure_reserve,
+    report_legends,
+    settle,
+    stack_under_texts,
+)
 from dartwork_mpl.style import active_locale
 
 if TYPE_CHECKING:
@@ -36,14 +43,17 @@ def prepare_ticks(fig: Figure) -> None:
 
 NEIGHBOURS = layout.Neighbours(
     prepare_ticks=prepare_ticks,
+    place_notes=place_notes,
     settle_bars=settle_bars,
     settle_legends=settle,
     space_line_ends=space_line_ends,
     settle_panels=settle_panels,
+    stack_figure_legends=stack_under_texts,
     figure_reserve=figure_reserve,
     note_gap_pt=note_gap_pt,
     report_bars=report_bars,
     report_legends=report_legends,
+    report_panels=report_panels,
 )
 
 
@@ -57,7 +67,8 @@ def simple_layout(
     with the canvas edge are cut. ``margin=0`` puts the content flush with
     the edge, for a figure placed inside another document. Every Axes on the first Axes' GridSpec is
     placed; a suptitle, ``fig.text`` note or figure legend keeps its edge
-    clear.
+    clear. A ``dm.add_note`` line moves to ``margin`` from the left and
+    bottom edges, unless you moved it.
 
     ``dm.label_bars`` values, ``dm.place_legend`` legends,
     ``dm.label_line_ends`` names and ``dm.label_axes`` letters settle at the
@@ -71,6 +82,8 @@ def simple_layout(
     spacing you set, are left alone.
 
     A figure with no Axes is left alone; one without a GridSpec
-    (``fig.add_axes``) is left alone with a warning.
+    (``fig.add_axes``) is left alone with a warning, and one with
+    ``mpl_toolkits`` parasite axes (``host_subplot``), which do not move with
+    their host, is left alone and says so.
     """
     layout.simple_layout(fig, margin=margin, given=NEIGHBOURS)

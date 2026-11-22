@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.ticks.decide import axis_text
+from dartwork_mpl.ticks.decide import axis_text, fewest_whole_ticks, reads_whole
 from dartwork_mpl.ticks.model import (
     MYRIAD_LOCALES,
+    AxisData,
     NumberStyle,
     TextFacts,
     TickValues,
@@ -17,7 +18,7 @@ from dartwork_mpl.ticks.text import (
     number_text,
     value_label_decimals,
 )
-from dartwork_mpl.vocab import AffixedZero
+from dartwork_mpl.vocab import AffixedZero, X, Y
 
 M = "\N{MINUS SIGN}"
 KO = MYRIAD_LOCALES["ko"]
@@ -93,3 +94,38 @@ def test_fixed_decimals_write_each_value_alone(value, expected):
 def test_value_label_decimals():
     assert value_label_decimals([21.4, 18.0, 21.5]) == 1
     assert value_label_decimals([120, 135]) == 0
+
+
+@pytest.mark.parametrize(
+    ("data", "whole"),
+    [
+        (range(1, 13), True),  # months
+        (range(2019, 2024), True),  # years
+        ((0, 3, 7), True),  # counts: a bar's two ends
+        ((10.0, 20.0, 30.0), True),  # measured, and whole
+        ((1, 2, 3.0000000000000004), True),  # float noise on a whole 3
+        ((0, 1), False),  # a 0, 1 line: too few to say
+        ((1, 2, 2.5), False),
+        ((-0.5, 2.5), False),  # an image's edges around its pixels
+        ((2019.25, 2019.75), False),
+        ((), False),
+    ],
+)
+def test_data_on_whole_numbers_read_whole(data, whole):
+    assert reads_whole(AxisData.of(list(data))) is whole
+
+
+@pytest.mark.parametrize(
+    ("data", "which", "fewest"),
+    [
+        (range(1, 13), X(), 3),  # months: 2, 4 … 12, not 5, 10
+        (range(0, 101, 10), X(), 3),
+        (range(2015, 2025), X(), 2),  # years side by side need the room
+        ((-100, 0, 100), X(), 2),
+        (range(2015, 2025), Y(), 3),  # stacked up the side, any width
+    ],
+)
+def test_a_whole_axis_keeps_three_ticks_unless_wide_along_x(
+    data, which, fewest
+):
+    assert fewest_whole_ticks(AxisData.of(list(data)), which) == fewest

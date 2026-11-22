@@ -1,0 +1,20 @@
+# Does the agent interpolate in OKLab (#775)? [expect] cannot tell; read source.py.
+prompt = "scores.csv has customer satisfaction by region. Draw horizontal bars sorted by score, each bar coloured by its score on a ramp from our brand indigo #3b5bdb to our brand teal #38d9a9, for the quarterly report."
+
+[files]
+"scores.csv" = """
+region,score
+North,71
+South,64
+East,82
+West,58
+Central,77
+Coast,69
+Mountain,61
+Islands,86
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["North", "Islands", "Mountain"]

@@ -23,6 +23,7 @@ from .align import (
     VAlign,
     VCentre,
     VCentreBaseline,
+    parse_halign,
     parse_valign,
 )
 from .axis import (
@@ -91,6 +92,7 @@ __all__ = [
     "edge_of",
     "parse_axes",
     "parse_axis_side",
+    "parse_halign",
     "parse_projection",
     "parse_valign",
 ]
