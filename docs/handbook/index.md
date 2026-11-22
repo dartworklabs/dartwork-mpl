@@ -39,6 +39,7 @@ orphan: true
 | `tests/corpus/` | 개발용 코퍼스. 현실적인 차트 스크립트(`charts/`)와 대충 그린 것(`rough/`), 증거를 세는 `tally.py`. 기능을 지우거나 더할 때의 근거다 | philosophy(1절), verification |
 | `tests/architecture/` | 경계(`boundaries.py`), 조립 규칙(`composition.py`), 도메인 파일 규칙, 순수 import, fitness | architecture, verification |
 | `docs/adr/` | 결정 기록과 index | change-flow |
+| `docs/specs/` | 구현 전에 쓰는 설계 문서. 200줄을 넘지 않고, 구현을 판정할 기계 검사를 함께 적는다 | change-flow |
 | `docs/hub-contract.md` | 허브(`mpl.dartwork.io`)와 약속한 것 | purpose |
 | `docs/example-candidates.md` | 재구성하며 지운 기능의 기록과 원본을 읽는 커밋 | philosophy(1절) |
 | `.github/workflows/` | CI(`lint`, `test`)와 릴리스 | verification, change-flow |
