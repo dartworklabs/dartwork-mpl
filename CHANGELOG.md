@@ -21,8 +21,8 @@ Entries before 0.8.0 are in the git history of this file.
   and calling it twice is the same as calling it once (#810).
 - `dm.check` reports `TEXT_ON_LINE`: a name or note with a line drawn
   through it, as when a fitted trend line strikes out the names of the points
-  beside it. A text on a box of its own and a leader that ends at its label
-  are left alone (#852).
+  beside it. A text on a box of its own, a leader that ends at its label and
+  a name turned to run along its line are left alone (#852).
 
 ### Changed
 

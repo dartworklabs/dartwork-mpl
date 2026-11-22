@@ -323,8 +323,10 @@ class Reader:
 
     def struck(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
         """Names and notes (placed texts that print no value) and the lines
-        drawn through them. A text on a box of its own covers the line, and
-        a line that only reaches the text's edge is its leader."""
+        drawn through them. A text on a box of its own covers the line, a
+        line that only reaches the text's edge is its leader, and a text
+        turned to run along a line is that line's name: its upright box
+        would take in the line beside it."""
         found: list[OnData] = []
         inks: dict[int, Ink] = {}
         for t in texts:
@@ -334,6 +336,7 @@ class Reader:
                 not (t.role.free and not t.value and isinstance(ax, Axes))
                 or not isinstance(h, MplText)
                 or h.get_bbox_patch() is not None
+                or float(h.get_rotation()) % 90.0 != 0.0
             ):
                 continue
             if id(ax) not in inks:

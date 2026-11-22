@@ -588,10 +588,12 @@ def test_a_trend_line_through_a_point_name_is_found():
     boxed = ax.text(
         4.0, 8.0, "94 %", ha="center", va="center", bbox={"fc": "white"}
     )
+    along = ax.text(1.5, 3.4, "Trend", rotation=30, ha="center", va="center")
     dm.simple_layout(fig)
     (finding,) = _of(dm.check(fig), "TEXT_ON_LINE")
     assert finding.artists == (struck,) and "'Pentium'" in finding.message
     assert clear not in finding.artists and boxed not in finding.artists
+    assert along not in finding.artists  # the line's own name, set along it
 
 
 def test_a_leader_that_ends_at_its_label_is_not_a_line_through_it():
