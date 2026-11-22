@@ -34,6 +34,7 @@ CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인�
 
 - **CI 게이트가 아니다.** 모델 사용량을 쓰므로 CI에서 돌지 않고, PR 합격을 막지 않는다. 개발하는 쪽이 돌린다.
 - **기계 판정은 거르기만 한다.** `OK`는 그림이 있고 `dm.check`와 lint가 조용하며 케이스의 `[expect]`가 맞다는 뜻이다. 예쁘다는 뜻이 아니다. "예쁜가"는 `evals/runs/<시각>/index.html`의 그림을 보고 정한다.
+- **판정하는 source는 그 그림을 그린 스크립트다.** 하네스는 에이전트가 마지막으로 돌린 스크립트를 run 자신의 파일에서 읽어 다시 그리고, 그 결과가 `figure.png`와 같을 때만 `dm.check`·lint·`[expect]`로 판정한다. source를 확정할 수 없거나 run이 자기 root 밖에서 일했으면 `DEFECT`가 아니라 이유가 붙은 `INVALID`다. run마다 어떤 라이브러리 commit·wheel·skill로 돌았는지 `provenance`로 남는다.
 - **걸리는 것은 이슈가 된다.** `DEFECT`와 `NO_FIGURE`, 그리고 `OK`인데 예쁘지 않은 그림은 하나씩 GitHub 이슈로 올린다. 예쁘지 않은 것도 버그다(philosophy 1절).
 - **프롬프트는 케이스로 남는다.** 결함을 드러낸 프롬프트와 데이터를 `evals/cases/<이름>.toml`로 둔다. 고친 뒤 그 케이스를 다시 돌려 그림으로 확인한다.
 

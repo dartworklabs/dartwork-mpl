@@ -182,6 +182,7 @@ def write_report(
         or [a for a in ARMS if any(k[1] == a for k in results)]
     )
     data = summary(results, cases, arms)
+    data |= {k: meta[k] for k in ("model", "provenance") if k in meta}
     (run / "summary.json").write_text(json.dumps(data, indent=1))
     (run / "index.html").write_text(
         contact_sheet(run, cases, arms), encoding="utf-8"
