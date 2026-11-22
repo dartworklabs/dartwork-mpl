@@ -7,6 +7,7 @@ artist is changed, hidden or moved.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
+from math import isclose
 from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
@@ -18,6 +19,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.dates import DateLocator
 from matplotlib.image import AxesImage
 from matplotlib.patches import Patch
+from matplotlib.projections.polar import PolarAxes
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
 from matplotlib.ticker import FixedFormatter, FixedLocator, FuncFormatter
@@ -38,8 +40,9 @@ from ..geometry import (
     projection,
     same_position_axes,
     shared_axes,
+    text_inks,
 )
-from ..vocab import Which
+from ..vocab import Which, X
 from . import roles
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
@@ -54,6 +57,7 @@ from .model import (
     Legend,
     OnData,
     Panel,
+    PolarTheta,
     Text,
     TickRow,
     TickValues,
@@ -221,6 +225,29 @@ class Reader:
             for which in AXES
             if (row := self.tick_row(i, ax, which)) is not None
         )
+
+    def polar_theta(self) -> tuple[PolarTheta, ...]:
+        """Angle labels and disc extents, for visible full-circle polar plots."""
+        found: list[PolarTheta] = []
+        for i, ax in self.axes:
+            if not isinstance(ax, PolarAxes) or not isclose(
+                ax.get_thetamax() - ax.get_thetamin(), 360.0
+            ):
+                continue
+            drawn = (
+                *drawn_tick_labels(ax, X()),
+                *drawn_tick_labels(ax, X(), minor=True),
+            )
+            labels = tuple(
+                t
+                for label in drawn
+                if text_inks(label)
+                and (t := self.text(label, roles.TickLabel(), i)) is not None
+            )
+            disc = box_of(ax.patch.get_extents())
+            if labels and disc.area > 0:
+                found.append(PolarTheta(Panel(ax, i), disc, labels))
+        return tuple(found)
 
     def drawn_legends(self) -> list[tuple[int | None, MplLegend, list[Axes]]]:
         """Every drawn legend, its panel and the Axes whose data it explains:
@@ -492,5 +519,6 @@ def measure(fig: Figure) -> Facts:
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),
+        polar_theta=r.attempt(r.polar_theta, (), "POLAR_TICK_ON_PLOT"),
         skipped=tuple(r.skipped),
     )

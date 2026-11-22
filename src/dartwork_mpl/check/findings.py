@@ -38,6 +38,8 @@ FIXES: dict[str, str] = {
     "TEXT_CONTRAST": "colour each label for what is behind it: "
     "color=dm.readable_text_color(bar_colour), or "
     "dm.ensure_contrast(colour, background)",
+    "POLAR_TICK_ON_PLOT": "give the angle labels more room with "
+    'ax.tick_params(axis="x", pad=...), or align them outward around the circle',
     "TICK_OVERLAP": "dm.simple_layout(fig) wraps, then turns, crowded "
     "labels (drop a rotation you set); many long names: horizontal bars; "
     "a y axis: a taller canvas",

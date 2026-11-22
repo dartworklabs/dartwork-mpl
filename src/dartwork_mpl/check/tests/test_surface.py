@@ -260,3 +260,33 @@ def test_line_end_names_read_as_rows():
     dm.label_line_ends(ax)
     dm.simple_layout(fig)
     assert "TEXT_TOO_CLOSE" not in dm.check(fig).rules
+
+
+def test_long_theta_labels_cross_the_disc():
+    """Normal compass labels clear the disc that long radar labels cross."""
+    fig = plt.figure(figsize=dm.figsize("9cm", "square"))
+    ax = fig.add_subplot(projection="polar")
+    ang = np.linspace(0, 2 * np.pi, 8, endpoint=False)
+    ax.plot(np.r_[ang, ang[0]], [9, 7, 8, 9, 8, 9, 6, 8, 9])
+    ax.set_xticks(ang, ["E", "NE", "N", "NW", "W", "SW", "S", "SE"])
+    dm.simple_layout(fig)
+    assert "POLAR_TICK_ON_PLOT" not in dm.check(fig).rules
+    ax.set_xticks(
+        ang,
+        [
+            "Customer support",
+            "NE",
+            "N",
+            "NW",
+            "Value for money",
+            "SW",
+            "S",
+            "SE",
+        ],
+    )
+    (finding,) = _of(dm.check(fig), "POLAR_TICK_ON_PLOT")
+    assert finding.panels == (0,)
+    assert set(finding.artists) == {
+        ax.get_xticklabels()[0],
+        ax.get_xticklabels()[4],
+    }

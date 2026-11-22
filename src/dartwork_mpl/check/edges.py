@@ -54,6 +54,11 @@ def has_frames(facts: Facts, found: Findings) -> bool:
     return bool(facts.frames and facts.ticks)
 
 
+def has_polar_theta(facts: Facts, found: Findings) -> bool:
+    """Any drawn angle tick labels on a full polar disc."""
+    return bool(facts.polar_theta)
+
+
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
     EdgeCase(
         name="OVERFLOW",
@@ -180,5 +185,12 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_TEXT_TOO_CLOSE",
         applies=has_panel_texts,
         adjust=decide.text_too_close,
+    ),
+    EdgeCase(
+        name="POLAR_TICK_ON_PLOT",
+        why="long radar tick labels can cross the circle into the data",
+        example="test_edges.py::test_POLAR_TICK_ON_PLOT",
+        applies=has_polar_theta,
+        adjust=decide.polar_tick_on_plot,
     ),
 )

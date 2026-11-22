@@ -16,6 +16,7 @@ from dartwork_mpl.check.model import (
     Legend,
     OnData,
     Panel,
+    PolarTheta,
     Text,
     TickRow,
     TickValues,
@@ -242,3 +243,16 @@ def test_TEXT_TOO_CLOSE():
     assert found(Facts(CANVAS, PT, texts=(value, name))).rules == (
         "TEXT_CROWD",
     )
+
+
+def test_POLAR_TICK_ON_PLOT():
+    """A real intrusion counts, while a graze or an outside corner clears."""
+    disc = Box(100, 100, 300, 300)
+    for box, expected in (
+        (Box(280, 180, 330, 220), ("POLAR_TICK_ON_PLOT",)),
+        (Box(289, 180, 330, 220), ()),
+        (Box(280, 280, 330, 320), ()),
+    ):
+        label = text("Camera quality", box, TickLabel())
+        theta = PolarTheta(Panel(object(), 0), disc, (label,))
+        assert found(Facts(CANVAS, PT, polar_theta=(theta,))).rules == expected

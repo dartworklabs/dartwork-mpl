@@ -8,10 +8,11 @@ names is ``findings.FIXES``). They are listed, named and ordered in
 from __future__ import annotations
 
 from itertools import combinations
+from math import hypot
 from typing import assert_never
 
 from ..colorspace import Ratio
-from ..vocab import Which, X, Y
+from ..vocab import Box, Which, X, Y
 from .findings import Findings
 from .model import (
     AXES,
@@ -53,6 +54,8 @@ WHOLE = 1e-9
 #: is too small for its text: the corpus' good charts hold 13.1 or more, a
 #: report grid moved to slide text 5.0.
 MIN_PANEL_EM = 7.0
+#: Ignore the edge of a text box just grazing the disc.
+THETA_INTO_EM = 0.4
 
 
 def overflow(facts: Facts, found: Findings) -> Findings:
@@ -447,4 +450,28 @@ def text_too_close(facts: Facts, found: Findings) -> Findings:
                     f"{b.role} {b.short!r} sit {gap.em:.2f} em apart",
                     (a, b),
                 )
+    return found
+
+
+def theta_intrudes(label: Text, disc: Box) -> bool:
+    """Whether the closest point of a label box sits well inside the disc."""
+    rx, ry = disc.width / 2, disc.height / 2
+    cx, cy = disc.x0 + rx, disc.y0 + ry
+    box = label.box
+    dx = max(box.x0 - cx, cx - box.x1, 0.0) / rx
+    dy = max(box.y0 - cy, cy - box.y1, 0.0) / ry
+    return (1 - hypot(dx, dy)) * min(rx, ry) > THETA_INTO_EM * label.em
+
+
+def polar_tick_on_plot(facts: Facts, found: Findings) -> Findings:
+    """Angle tick labels crossing their own polar plot's outer circle."""
+    for theta in facts.polar_theta:
+        labels = [t for t in theta.labels if theta_intrudes(t, theta.disc)]
+        if labels:
+            found = found.flag(
+                "POLAR_TICK_ON_PLOT",
+                f"Axes[{theta.panel.index}]: angle tick labels run into the "
+                f"polar plot ({quote((t.short for t in labels), most=6)})",
+                labels,
+            )
     return found

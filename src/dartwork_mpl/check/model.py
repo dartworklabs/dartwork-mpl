@@ -219,6 +219,15 @@ class Inset:
 
 
 @dataclass(frozen=True)
+class PolarTheta:
+    """Drawn angle tick labels around the bounding box of a full polar disc."""
+
+    panel: Panel
+    disc: Box
+    labels: tuple[Text, ...]
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -236,6 +245,7 @@ class Facts:
     skipped: tuple[str, ...] = ()
     frames: tuple[Frame, ...] = ()
     insets: tuple[Inset, ...] = ()
+    polar_theta: tuple[PolarTheta, ...] = ()
 
     @property
     def touch(self) -> float:
