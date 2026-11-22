@@ -60,6 +60,7 @@ not, the `try` line names what usually helps.
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
 | `LEGEND_ON_DATA` | a legend over data, a title or other text, or another legend |
 | `TEXT_CONTRAST` | a text you placed, under 3:1 against the bar, cell or background behind it |
+| `MIXED_MINUS` | negative numeric labels use a hyphen while ticks on the figure use a Unicode minus |
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
 | `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
 | `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |

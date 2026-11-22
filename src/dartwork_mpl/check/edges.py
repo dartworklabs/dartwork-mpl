@@ -59,6 +59,11 @@ def has_polar_theta(facts: Facts, found: Findings) -> bool:
     return bool(facts.polar_theta)
 
 
+def has_minus_labels(facts: Facts, found: Findings) -> bool:
+    """Any numeric text using a hyphen-minus."""
+    return bool(facts.minus_labels)
+
+
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
     EdgeCase(
         name="OVERFLOW",
@@ -192,5 +197,12 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_POLAR_TICK_ON_PLOT",
         applies=has_polar_theta,
         adjust=decide.polar_tick_on_plot,
+    ),
+    EdgeCase(
+        name="MIXED_MINUS",
+        why="negative bar labels used a hyphen while the ticks printed a minus",
+        example="test_edges.py::test_MIXED_MINUS",
+        applies=has_minus_labels,
+        adjust=decide.mixed_minus,
     ),
 )

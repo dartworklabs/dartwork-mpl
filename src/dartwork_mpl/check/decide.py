@@ -475,3 +475,21 @@ def polar_tick_on_plot(facts: Facts, found: Findings) -> Findings:
                 labels,
             )
     return found
+
+
+def mixed_minus(facts: Facts, found: Findings) -> Findings:
+    """A negative quantity using a hyphen while the tick labels use a minus."""
+    if facts.minus_tick is None:
+        return found
+    panels: dict[int | None, list[Text]] = {}
+    for label in facts.minus_labels:
+        panels.setdefault(label.panel, []).append(label)
+    for panel, labels in panels.items():
+        where = "Figure text" if panel is None else f"Axes[{panel}]"
+        found = found.flag(
+            "MIXED_MINUS",
+            f"{where}: {len(labels)} numeric label(s) use a hyphen-minus "
+            f"({quote(t.short for t in labels)}); ticks use the Unicode minus",
+            labels,
+        )
+    return found

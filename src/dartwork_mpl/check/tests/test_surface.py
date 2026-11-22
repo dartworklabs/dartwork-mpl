@@ -290,3 +290,26 @@ def test_long_theta_labels_cross_the_disc():
         ax.get_xticklabels()[0],
         ax.get_xticklabels()[4],
     }
+
+
+def test_ascii_minus_on_values_beside_unicode_ticks():
+    """Only negative value labels using a different minus sign are flagged."""
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "5cm"))
+    ax.barh(["Construction", "Textiles", "Chemicals"], [-7.5, -9.6, -12.4])
+    values = {
+        ax.text(v / 2, i, f"{v:+.1f}%", ha="center", va="center", color="white")
+        for i, v in enumerate([-7.5, -9.6, -12.4])
+    }
+    ax.set_xlabel("Change from last year (%)")
+    ax.text(
+        0.1,
+        0.1,
+        r"Year-over-year 2014-2024, 2024-01-01, $10^{-4}$",
+        transform=ax.transAxes,
+    )
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "MIXED_MINUS")
+    assert set(finding.artists) == values
+    assert finding.panels == (0,)
+    with matplotlib.rc_context({"axes.unicode_minus": False}):
+        assert "MIXED_MINUS" not in dm.check(fig).rules

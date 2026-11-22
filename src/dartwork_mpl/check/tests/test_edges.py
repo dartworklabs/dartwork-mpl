@@ -256,3 +256,14 @@ def test_POLAR_TICK_ON_PLOT():
         label = text("Camera quality", box, TickLabel())
         theta = PolarTheta(Panel(object(), 0), disc, (label,))
         assert found(Facts(CANVAS, PT, polar_theta=(theta,))).rules == expected
+
+
+def test_MIXED_MINUS():
+    """A Unicode tick on any panel is evidence for the mixed-sign finding."""
+    label = text("-12.4%", INSIDE)
+    facts = Facts(CANVAS, PT, minus_labels=(label,))
+    assert not found(facts)
+    tick = text("\u221210", INSIDE, TickLabel(), panel=1)
+    (finding,) = found(replace(facts, minus_tick=tick))
+    assert finding.rule == "MIXED_MINUS"
+    assert finding.panels == (0,) and finding.artists == (label.handle,)

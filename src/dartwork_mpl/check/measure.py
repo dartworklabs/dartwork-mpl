@@ -61,6 +61,8 @@ from .model import (
     Text,
     TickRow,
     TickValues,
+    ascii_minus_value,
+    unicode_minus_tick,
 )
 from .overlap import tick_label_overlaps
 
@@ -225,6 +227,42 @@ class Reader:
             for which in AXES
             if (row := self.tick_row(i, ax, which)) is not None
         )
+
+    def minus_labels(self, figure_texts: tuple[Text, ...]) -> tuple[Text, ...]:
+        """Drawn numeric annotations and figure texts with a hyphen-minus."""
+        labels = [
+            t
+            for t in figure_texts
+            if ascii_minus_value(t.text)
+            and isinstance(t.handle, MplText)
+            and text_inks(t.handle)
+        ]
+        labels.extend(
+            text
+            for i, ax in self.axes
+            for label in ax.texts
+            if ascii_minus_value(label.get_text())
+            and text_inks(label)
+            and (text := self.text(label, roles.FreeText(), i)) is not None
+        )
+        return tuple(labels)
+
+    def minus_tick(self) -> Text | None:
+        """A visible numeric tick with a Unicode minus, on any Axes."""
+        for i, ax in self.axes:
+            for which in AXES:
+                for label in (
+                    *drawn_tick_labels(ax, which),
+                    *drawn_tick_labels(ax, which, minor=True),
+                ):
+                    if (
+                        unicode_minus_tick(label.get_text())
+                        and text_inks(label)
+                        and (tick := self.text(label, roles.TickLabel(), i))
+                        is not None
+                    ):
+                        return tick
+        return None
 
     def polar_theta(self) -> tuple[PolarTheta, ...]:
         """Angle labels and disc extents, for visible full-circle polar plots."""
@@ -503,11 +541,15 @@ def measure(fig: Figure) -> Facts:
     texts = r.attempt(
         r.axes_texts, (), "OVERFLOW, OVERLAP, TEXT_CROWD, TEXT_TOO_CLOSE"
     )
+    figure_texts = r.attempt(r.figure_texts, (), "OVERFLOW, MIXED_MINUS")
+    minus_labels = r.attempt(
+        lambda: r.minus_labels(figure_texts), (), "MIXED_MINUS"
+    )
     return Facts(
         canvas=box_of(Bbox(fig.bbox.get_points())),
         px_per_pt=r.pt,
         texts=texts,
-        figure_texts=r.attempt(r.figure_texts, (), "OVERFLOW"),
+        figure_texts=figure_texts,
         legend_texts=r.attempt(r.legend_texts, (), "OVERFLOW"),
         ticks=r.attempt(r.ticks, (), "TICK_OVERLAP"),
         legends=r.attempt(r.legends, (), "LEGEND_ON_DATA"),
@@ -520,5 +562,9 @@ def measure(fig: Figure) -> Facts:
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),
         polar_theta=r.attempt(r.polar_theta, (), "POLAR_TICK_ON_PLOT"),
+        minus_labels=minus_labels,
+        minus_tick=r.attempt(r.minus_tick, None, "MIXED_MINUS")
+        if minus_labels
+        else None,
         skipped=tuple(r.skipped),
     )

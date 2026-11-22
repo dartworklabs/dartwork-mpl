@@ -63,6 +63,16 @@ def printed_value(text: str) -> str | None:
     return found[0].group() if short else None
 
 
+def ascii_minus_value(text: str) -> bool:
+    """A standalone negative quantity printed with a hyphen-minus."""
+    return bool(re.match(r"^-\d", text.lstrip()) and printed_value(text))
+
+
+def unicode_minus_tick(text: str) -> bool:
+    """A Unicode minus before a digit, including in formatted tick mathtext."""
+    return bool(re.search(r"(?<!\w)\u2212(?=\d)", text))
+
+
 @dataclass(frozen=True)
 class Text:
     """A drawn, non-blank text: its role, panel index and box."""
@@ -246,6 +256,8 @@ class Facts:
     frames: tuple[Frame, ...] = ()
     insets: tuple[Inset, ...] = ()
     polar_theta: tuple[PolarTheta, ...] = ()
+    minus_labels: tuple[Text, ...] = ()
+    minus_tick: Text | None = None
 
     @property
     def touch(self) -> float:
