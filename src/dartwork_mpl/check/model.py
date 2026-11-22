@@ -65,7 +65,7 @@ def printed_value(text: str) -> str | None:
 
 @dataclass(frozen=True)
 class Text:
-    """A drawn, non-blank text: its role, panel (``fig.axes`` index) and box."""
+    """A drawn, non-blank text: its role, panel index and box."""
 
     handle: object
     text: str
@@ -192,7 +192,7 @@ class Inked:
 
 @dataclass(frozen=True)
 class Panel:
-    """A drawn Axes: its handle and ``fig.axes`` index."""
+    """A drawn Axes: its handle and index."""
 
     handle: object
     index: int
@@ -201,11 +201,21 @@ class Panel:
 @dataclass(frozen=True)
 class Frame:
     """The plot area of an Axes that fills it (a frame, an image, a
-    colorbar): its ``fig.axes`` index and box."""
+    colorbar): its index and box."""
 
     handle: object
     index: int
     box: Box
+
+
+@dataclass(frozen=True)
+class Inset:
+    """An inset's axis labels and the spines of the Axes it sits in."""
+
+    parent: Panel
+    index: int
+    labels: tuple[Text, ...]
+    spines: tuple[Box, ...]
 
 
 @dataclass(frozen=True)
@@ -225,6 +235,7 @@ class Facts:
     inks: tuple[Inked, ...] = ()
     skipped: tuple[str, ...] = ()
     frames: tuple[Frame, ...] = ()
+    insets: tuple[Inset, ...] = ()
 
     @property
     def touch(self) -> float:

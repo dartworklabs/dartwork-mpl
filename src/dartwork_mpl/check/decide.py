@@ -19,6 +19,7 @@ from .model import (
     Frame,
     Hit,
     Inked,
+    Inset,
     OnData,
     Text,
     TextGap,
@@ -44,6 +45,8 @@ MIN_CONTRAST = Ratio(3.0)
 YEARS = (1800.0, 2100.0)
 #: A text this far (em) into another Axes' plot, both ways, is drawn on it.
 INTO_EM = 0.5
+#: A parent spine crossing this far into an inset label passes through it.
+SPINE_INTO_EM = 0.15
 #: A tick this close to a whole number is one (locator rounding).
 WHOLE = 1e-9
 #: A largest plot whose shorter side holds fewer tick labels (em) than this
@@ -73,6 +76,9 @@ def overflow(facts: Facts, found: Findings) -> Findings:
 
 def overlap(facts: Facts, found: Findings) -> Findings:
     """Texts of one Axes drawn over each other (tick pairs: TICK_OVERLAP)."""
+    inset_labels = {
+        id(t.handle) for inset in facts.insets for t in inset.labels
+    }
     for panel, texts in facts.by_panel.items():
         for a, b in combinations(texts, 2):
             if a.role.tick and b.role.tick:
@@ -84,6 +90,13 @@ def overlap(facts: Facts, found: Findings) -> Findings:
                     f"Axes[{panel}]: {a.role} {a.short!r} overlaps "
                     f"{b.role} {b.short!r} ({share:.0%} of the smaller)",
                     (a, b),
+                    fix=(
+                        "give the axis label more room with labelpad=..., "
+                        "or move it to the opposite side"
+                        if (a.role.tick and id(b.handle) in inset_labels)
+                        or (b.role.tick and id(a.handle) in inset_labels)
+                        else None
+                    ),
                 )
     return found
 
@@ -109,6 +122,29 @@ def cross_axes(facts: Facts, found: Findings) -> Findings:
                 f"axes[{two.panel}] {two.role} {two.short!r}",
                 (one, two),
             )
+    return across_parent_spines(facts.insets, found)
+
+
+def across_parent_spines(
+    insets: tuple[Inset, ...], found: Findings
+) -> Findings:
+    """An inset axis label crossing the frame of the plot that holds it."""
+    for inset in insets:
+        parent = inset.parent
+        for label in inset.labels:
+            inner = label.box.padded(-SPINE_INTO_EM * label.em)
+            # A straight spine has zero width or height, even inside the box.
+            if any(inner.gap(spine) <= 0 for spine in inset.spines):
+                found = found.flag(
+                    "CROSS_AXES_OVERLAP",
+                    f"Axes[{inset.index}]: inset axis label {label.short!r} "
+                    f"crosses a spine of Axes[{parent.index}]",
+                    (label,),
+                    handles=(parent.handle,),
+                    panels=(parent.index, inset.index),
+                    fix="move the inset inward or put its axis label on "
+                    "the opposite side with axis.set_label_position(...)",
+                )
     return found
 
 

@@ -55,7 +55,7 @@ not, the `try` line names what usually helps.
 | rule | Means |
 |---|---|
 | `OVERFLOW` | text cut off by the canvas edge |
-| `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels; a title or axis text running into another panel's plot (a colorbar) |
+| `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, including an inset's axis label on its ticks; axis text running into another plot or across the parent frame |
 | `TEXT_TOO_CLOSE` | a text placed near another text on the same panel, with too little space to read them apart |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
 | `LEGEND_ON_DATA` | a legend over data, a title or other text, or another legend |

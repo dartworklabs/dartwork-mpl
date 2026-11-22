@@ -12,6 +12,7 @@ from dartwork_mpl.check.model import (
     Frame,
     Hit,
     Inked,
+    Inset,
     Legend,
     OnData,
     Panel,
@@ -89,6 +90,19 @@ def test_CROSS_AXES_OVERLAP_title_on_neighbour_ticks():
     assert "runs into the plot of axes[1]" in f.message and f.panels == (0, 1)
     twin = Frame(object(), 1, plot.box)
     assert not found(Facts(CANVAS, PT, texts=(wide,), frames=(plot, twin)))
+
+
+def test_an_inset_label_has_to_cross_the_parent_spine():
+    label = text("Load (MW)", Box(100, 200, 140, 300), AxisLabel(), panel=1)
+    parent = Panel(object(), 0)
+    for spine, expected in (
+        (Box(120, 100, 120, 400), ("CROSS_AXES_OVERLAP",)),
+        (Box(102, 100, 102, 400), ()),
+        (Box(120, 100, 120, 203), ()),
+    ):
+        inset = Inset(parent, 1, (label,), (spine,))
+        facts = Facts(CANVAS, PT, texts=(label,), insets=(inset,))
+        assert found(facts).rules == expected
 
 
 def test_TEXT_CROWD_value_beside_a_name():

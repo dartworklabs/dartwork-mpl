@@ -6,7 +6,7 @@ artist is changed, hidden or moved.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
@@ -34,6 +34,7 @@ from ..geometry import (
     get_renderer,
     iter_figure_level_extents,
     panel_letters,
+    patch_inks,
     projection,
     same_position_axes,
     shared_axes,
@@ -49,6 +50,7 @@ from .model import (
     Frame,
     Hit,
     Inked,
+    Inset,
     Legend,
     OnData,
     Panel,
@@ -83,9 +85,14 @@ class Reader:
         self.renderer: RendererBase = get_renderer(fig)
         self.pt = fig.dpi / 72.0
         self.skipped: list[str] = []
-        self.axes = [
-            (i, ax) for i, ax in enumerate(fig.axes) if drawn_in_tree(ax)
-        ]
+        indices = {ax: i for i, ax in enumerate(fig.axes)}
+        self.inset_parents: dict[Axes, Axes] = {}
+        for ax in fig.axes:
+            if drawn_in_tree(ax):
+                for parent, child in drawn_insets(ax):
+                    indices.setdefault(child, len(indices))
+                    self.inset_parents[child] = parent
+        self.axes = [(i, ax) for ax, i in indices.items() if drawn_in_tree(ax)]
         self.panels = [(i, ax) for i, ax in self.axes if projection(ax).flat]
         self.letters = {id(t) for _ax, t in panel_letters(fig)}
 
@@ -319,6 +326,32 @@ class Reader:
             if draws(ax) or (ax.axison and ax.get_frame_on())
         )
 
+    def insets(self, texts: tuple[Text, ...]) -> tuple[Inset, ...]:
+        """Inset labels and the visible straight spines of their parents."""
+        indices = {ax: i for i, ax in self.axes}
+        found: list[Inset] = []
+        for child, parent in self.inset_parents.items():
+            i = indices[child]
+            labels = tuple(
+                t
+                for t in texts
+                if t.panel == i and isinstance(t.role, roles.AxisLabel)
+            )
+            if labels:
+                spines = tuple(
+                    box
+                    for spine in parent.spines.values()
+                    if parent.axison
+                    and spine.get_visible()
+                    and patch_inks(spine)
+                    and (box := box_of(spine.get_extents())).area == 0
+                    and max(box.width, box.height) > 0
+                )
+                found.append(
+                    Inset(Panel(parent, indices[parent]), i, labels, spines)
+                )
+        return tuple(found)
+
     def empty(self) -> tuple[Panel, ...]:
         """Framed Axes where nothing is drawn, nor in a twin sharing the box."""
         found: list[Panel] = []
@@ -336,6 +369,14 @@ class Reader:
             elif not any(map(draws, owners)):
                 found.append(Panel(ax, i))
         return tuple(found)
+
+
+def drawn_insets(ax: Axes) -> Iterator[tuple[Axes, Axes]]:
+    """Drawn parent and child Axes pairs, including nested native insets."""
+    for child in ax.child_axes:
+        if isinstance(child, Axes) and drawn_in_tree(child):
+            yield ax, child
+            yield from drawn_insets(child)
 
 
 def named(ax: Axes, which: Which) -> bool:
@@ -417,7 +458,14 @@ def colour_at(a: Artist, x: float, y: float) -> tuple[float, ...] | None:
 
 def draws(ax: Axes) -> bool:
     """``ax`` draws data, a text or a legend."""
-    drawn = (*ax.lines, *ax.patches, *ax.collections, *ax.images, *ax.tables)
+    drawn = (
+        *ax.lines,
+        *ax.patches,
+        *ax.collections,
+        *ax.images,
+        *ax.tables,
+        *(child for child in ax.child_axes if isinstance(child, Axes)),
+    )
     texts = (t for t in ax.texts if t.get_text().strip())
     return any(a.get_visible() for a in (*drawn, *texts, ax.get_legend()) if a)
 
@@ -443,5 +491,6 @@ def measure(fig: Figure) -> Facts:
         ),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
+        insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),
         skipped=tuple(r.skipped),
     )
