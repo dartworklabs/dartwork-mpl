@@ -36,7 +36,7 @@ from ..geometry import (
     same_position_axes,
     text_inks,
 )
-from ..vocab import X, Y
+from ..vocab import AlignCentre, X, Y, parse_halign
 from . import roles
 from .alignment_measure import alignment_samples
 from .axis_labels import minus_tick, tick_row
@@ -148,6 +148,17 @@ class Reader:
         except BBOX_ERRORS:
             self.skipped.append(rules)
             return failed
+
+    def centred_titles(self) -> tuple[Text, ...]:
+        """Upright titles centred on their Axes, of any projection."""
+        return tuple(
+            t
+            for i, ax in self.axes
+            for title in axes_titles(ax).values()
+            if parse_halign(title.get_horizontalalignment()) == AlignCentre()
+            and float(title.get_rotation()) == 0.0
+            and (t := self.text(title, roles.Title(), i)) is not None
+        )
 
     def axes_texts(self) -> tuple[Text, ...]:
         """Titles, drawn axis labels and texts of every rectilinear Axes."""
@@ -539,6 +550,7 @@ def measure(fig: Figure) -> Facts:
             (),
             "TEXT_AT_EDGE",
         ),
+        edge_titles=r.attempt(r.centred_titles, (), "TEXT_AT_EDGE"),
         canvas_use=r.attempt(
             lambda: r.canvas_use(texts), None, "UNDERUSED_CANVAS"
         ),

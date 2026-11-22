@@ -80,8 +80,8 @@ def has_occluded_ticks(facts: Facts, found: Findings) -> bool:
 
 
 def has_edge_texts(facts: Facts, found: Findings) -> bool:
-    """Any visible, manually placed Axes text."""
-    return bool(facts.edge_texts)
+    """Any visible, manually placed Axes text or centred title."""
+    return bool(facts.edge_texts or facts.edge_titles)
 
 
 def has_canvas_use(facts: Facts, found: Findings) -> bool:

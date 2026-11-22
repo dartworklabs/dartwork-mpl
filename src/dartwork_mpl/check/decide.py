@@ -53,6 +53,13 @@ WHOLE = 1e-9
 #: is too small for its text: the corpus' good charts hold 13.1 or more, a
 #: report grid moved to slide text 5.0.
 MIN_PANEL_EM = 7.0
+#: A centred title this close (mm) to the canvas edge stands at the layout's
+#: margin: the layout keeps content 1 mm in.
+TITLE_EDGE_MM = 1.25
+#: A title at least this share of the canvas wide reads as the figure's.
+TITLE_WIDE = 0.5
+#: Room (em) on the title's other side that makes it visibly off-centre.
+TITLE_ROOM_EM = 2.0
 #: Ignore the edge of a text box just grazing the disc.
 THETA_INTO_EM = 0.4
 
@@ -531,7 +538,8 @@ def radial_tick_covered(facts: Facts, found: Findings) -> Findings:
 
 
 def text_at_edge(facts: Facts, found: Findings) -> Findings:
-    """Manually placed Axes text within a quarter millimetre of the canvas."""
+    """Manually placed Axes text within a quarter millimetre of the canvas,
+    and a title the layout stopped at one canvas edge."""
     close_px = 0.25 * 72 / 25.4 * facts.px_per_pt
     groups: dict[tuple[int | None, str], list[Text]] = {}
     for t in facts.edge_texts:
@@ -547,6 +555,33 @@ def text_at_edge(facts: Facts, found: Findings) -> Findings:
             f"({quote(t.short for t in labels)})",
             labels,
         )
+    return title_at_edge(facts, found)
+
+
+def title_at_edge(facts: Facts, found: Findings) -> Findings:
+    """A wide title centred on an off-centre plot: one end at the canvas
+    edge, room to spare past the other."""
+    mm = 72 / 25.4 * facts.px_per_pt
+    for t in facts.edge_titles:
+        rooms = margins(t.box, facts.canvas)
+        (side, near), (_other, far) = sorted(
+            ((s, rooms[s]) for s in ("left", "right")), key=lambda r: r[1]
+        )
+        if (
+            -CUT_PX <= near < TITLE_EDGE_MM * mm
+            and t.box.width >= TITLE_WIDE * facts.canvas.width
+            and far >= TITLE_ROOM_EM * t.em
+        ):
+            found = found.flag(
+                "TEXT_AT_EDGE",
+                f"Axes[{t.panel}]: the title ends at the {side} canvas edge "
+                f"with {far / mm:.0f} mm free past its other end: it is "
+                f"centred on a plot that sits off the canvas centre "
+                f"({t.short!r})",
+                (t,),
+                fix="centre it on the canvas with fig.suptitle(...), or "
+                'break it into two lines with "\\n"',
+            )
     return found
 
 

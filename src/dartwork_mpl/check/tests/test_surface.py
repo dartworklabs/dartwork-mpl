@@ -604,3 +604,27 @@ def test_a_leader_that_ends_at_its_label_is_not_a_line_through_it():
     ax.plot([2.0, 2.58], [2.0, 1.2], color="dc.gray5", lw=dm.lw(-1))
     dm.simple_layout(fig)
     assert not _of(dm.check(fig), "TEXT_ON_LINE"), label
+
+
+ITEMS = [
+    "I know what is expected of me in my role this year",
+    "My manager gives me feedback I can act on",
+    "I have the tools and equipment my work needs",
+    "Meetings I attend are a good use of my time",
+]
+
+
+def test_a_title_pushed_to_the_canvas_edge_is_found():
+    def chart(place):
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+        ax.barh(ITEMS, [87, 74, 63, 31])
+        ax.set_xlabel("Agree (%)")
+        place(fig, ax, "Role clarity scores highest and meetings lowest")
+        dm.simple_layout(fig)
+        return fig
+
+    (finding,) = _of(
+        dm.check(chart(lambda fig, ax, s: ax.set_title(s))), "TEXT_AT_EDGE"
+    )
+    assert "right canvas edge" in finding.message
+    assert not dm.check(chart(lambda fig, ax, s: fig.suptitle(s)))
