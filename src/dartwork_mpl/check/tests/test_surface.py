@@ -573,3 +573,32 @@ def test_an_axisless_unit_chart_uses_more_room_on_a_shallower_canvas():
     fig.set_size_inches(*dm.figsize("24cm", 0.24))
     dm.simple_layout(fig)
     assert "UNDERUSED_CANVAS" not in dm.check(fig).rules
+
+
+def test_a_trend_line_through_a_point_name_is_found():
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    x = np.array([1.0, 2.0, 3.0, 4.0])
+    ax.scatter(x, 2 * x)
+    ax.plot([0, 5], [0, 10], color="dc.gray5")  # the fit
+    ax.set(xlabel="Year", ylabel="Count")
+    struck = ax.text(2.5, 5.0, "Pentium", ha="center", va="center")
+    clear = ax.annotate(
+        "Core 2", (3.0, 6.0), textcoords="offset points", xytext=(6, -12)
+    )
+    boxed = ax.text(
+        4.0, 8.0, "94 %", ha="center", va="center", bbox={"fc": "white"}
+    )
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "TEXT_ON_LINE")
+    assert finding.artists == (struck,) and "'Pentium'" in finding.message
+    assert clear not in finding.artists and boxed not in finding.artists
+
+
+def test_a_leader_that_ends_at_its_label_is_not_a_line_through_it():
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.scatter([1, 2, 3], [1, 2, 3])
+    ax.set(xlabel="Year", ylabel="Count", xlim=(0, 4), ylim=(0, 4))
+    label = ax.text(2.6, 1.2, "Tool chest", ha="left", va="center")
+    ax.plot([2.0, 2.58], [2.0, 1.2], color="dc.gray5", lw=dm.lw(-1))
+    dm.simple_layout(fig)
+    assert not _of(dm.check(fig), "TEXT_ON_LINE"), label

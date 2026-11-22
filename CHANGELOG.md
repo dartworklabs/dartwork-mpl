@@ -19,6 +19,10 @@ Entries before 0.8.0 are in the git history of this file.
   reads the figure again afterwards: a text nothing can mend (it is
   translucent, or something is drawn over it) is left as it was and named,
   and calling it twice is the same as calling it once (#810).
+- `dm.check` reports `TEXT_ON_LINE`: a name or note with a line drawn
+  through it, as when a fitted trend line strikes out the names of the points
+  beside it. A text on a box of its own and a leader that ends at its label
+  are left alone (#852).
 
 ### Changed
 

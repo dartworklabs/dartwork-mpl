@@ -162,6 +162,14 @@ def test_VALUE_LABEL_ON_DATA():
     assert f.rule == "VALUE_LABEL_ON_DATA" and f.artists == (label.handle,)
 
 
+def test_TEXT_ON_LINE():
+    name = text("Apple A7", INSIDE)
+    on = OnData(name, (Hit("line", "trend"),))
+    (f,) = found(Facts(CANVAS, PT, texts=(name,), struck=(on,)))
+    assert f.rule == "TEXT_ON_LINE" and f.artists == (name.handle,)
+    assert "'Apple A7'" in f.message
+
+
 def test_LETTER_ON_DATA():
     letter = text("b", Box(100, 500, 120, 530), PanelLetter())
     on = OnData(letter, (Hit("line", "Signal"),))

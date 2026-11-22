@@ -45,6 +45,7 @@ from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
+    THROUGH_EM,
     Box,
     CanvasUse,
     Facts,
@@ -320,6 +321,35 @@ class Reader:
                 found.append(OnData(t, strokes))
         return tuple(found)
 
+    def struck(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
+        """Names and notes (placed texts that print no value) and the lines
+        drawn through them. A text on a box of its own covers the line, and
+        a line that only reaches the text's edge is its leader."""
+        found: list[OnData] = []
+        inks: dict[int, Ink] = {}
+        for t in texts:
+            h = t.handle
+            ax = h.axes if isinstance(h, MplText) else None
+            if (
+                not (t.role.free and not t.value and isinstance(ax, Axes))
+                or not isinstance(h, MplText)
+                or h.get_bbox_patch() is not None
+            ):
+                continue
+            if id(ax) not in inks:
+                frame = ax.get_window_extent(self.renderer)
+                inks[id(ax)] = data_ink(
+                    same_position_axes(ax), frame, self.renderer, self.pt
+                )
+            inner = t.box.padded(-THROUGH_EM * t.em)
+            if inner.width <= 0 or inner.height <= 0:
+                continue
+            box = Bbox.from_extents(inner.x0, inner.y0, inner.x1, inner.y1)
+            hits = inks[id(ax)].meets(box, 0.5 * self.pt)
+            if lines := tuple(h for h in hits if h.line):
+                found.append(OnData(t, lines))
+        return tuple(found)
+
     def letters_on_data(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
         """Panel letters and the data they are drawn on (a letter inside
         its plot)."""
@@ -478,6 +508,7 @@ def measure(fig: Figure) -> Facts:
         letters=r.attempt(
             lambda: r.letters_on_data(texts), (), "LETTER_ON_DATA"
         ),
+        struck=r.attempt(lambda: r.struck(texts), (), "TEXT_ON_LINE"),
         inks=r.attempt(lambda: r.inks(texts), (), "TEXT_CONTRAST"),
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),

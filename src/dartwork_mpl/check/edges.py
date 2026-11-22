@@ -44,6 +44,11 @@ def has_values_on_data(facts: Facts, found: Findings) -> bool:
     return bool(facts.values)
 
 
+def has_struck_texts(facts: Facts, found: Findings) -> bool:
+    """Any name or note with a line through it."""
+    return bool(facts.struck)
+
+
 def has_letters_on_data(facts: Facts, found: Findings) -> bool:
     """Any panel letter drawn on data."""
     return bool(facts.letters)
@@ -153,6 +158,16 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_VALUE_LABEL_ON_DATA",
         applies=has_values_on_data,
         adjust=decide.value_label_on_data,
+    ),
+    EdgeCase(
+        name="TEXT_ON_LINE",
+        why=(
+            "a fitted trend line ran through the names of the points beside "
+            "it, 'Apple A7' struck out"
+        ),
+        example="test_edges.py::test_TEXT_ON_LINE",
+        applies=has_struck_texts,
+        adjust=decide.text_on_line,
     ),
     EdgeCase(
         name="LETTER_ON_DATA",
