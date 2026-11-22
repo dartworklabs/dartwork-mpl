@@ -359,6 +359,29 @@ def test_TEXT_AT_EDGE():
         )
 
 
+def test_TEXT_AT_EDGE_title_of_an_off_centre_plot():
+    """CANVAS is 1000 px wide at 300 dpi: 1.25 mm is 15 px, an em 40."""
+    for box, expected in (
+        (Box(350, 500, 997, 540), ("TEXT_AT_EDGE",)),  # 3 px right, 350 left
+        (Box(3, 500, 650, 540), ("TEXT_AT_EDGE",)),  # the same at the left
+        (Box(350, 500, 980, 540), ()),  # 20 px (1.7 mm) of air: not at the edge
+        (Box(60, 500, 997, 540), ()),  # 60 px past it: nowhere to go
+        (Box(800, 500, 997, 540), ()),  # a narrow panel title
+        (Box(350, 500, 1010, 540), ("OVERFLOW",)),  # cut: the other rule
+    ):
+        title = text("Exports passed the 2019 level", box, Title())
+        facts = Facts(CANVAS, PT, texts=(title,), edge_titles=(title,))
+        assert found(facts).rules == expected
+    (f,) = found(
+        Facts(
+            CANVAS,
+            PT,
+            edge_titles=(text("T", Box(350, 500, 997, 540), Title()),),
+        )
+    )
+    assert "right canvas edge" in f.message and "fig.suptitle" in f.fix
+
+
 def test_UNDERUSED_CANVAS():
     """A strip within a big canvas flags, while a tile or balanced margins clear."""
     big = Box(0, 0, 1500, 1200)

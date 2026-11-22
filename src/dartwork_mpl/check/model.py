@@ -313,6 +313,7 @@ class Facts:
     alignment: tuple[tuple[AlignmentSample, ...], ...] = ()
     occluded_ticks: tuple[TickOcclusion, ...] = ()
     edge_texts: tuple[Text, ...] = ()
+    edge_titles: tuple[Text, ...] = ()
     canvas_use: CanvasUse | None = None
 
     @property

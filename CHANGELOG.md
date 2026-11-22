@@ -23,6 +23,10 @@ Entries before 0.8.0 are in the git history of this file.
   through it, as when a fitted trend line strikes out the names of the points
   beside it. A text on a box of its own, a leader that ends at its label and
   a name turned to run along its line are left alone (#852).
+- `dm.check`'s `TEXT_AT_EDGE` also reports a plot title that ends at one
+  canvas edge with room past its other end: `ax.set_title` centres it on the
+  plot, and long category names or a colorbar push the plot off the canvas
+  centre. The hint names `fig.suptitle` and a line break (#855).
 
 ### Changed
 
