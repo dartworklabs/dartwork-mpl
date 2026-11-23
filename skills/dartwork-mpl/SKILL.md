@@ -49,6 +49,8 @@ Sizes written in code stay relative to the preset: `dm.fs(1)` is the preset font
 
 **Everything on it encodes something.** Colour means a category, a magnitude or emphasis, never decoration. Every number has a unit, in the axis label. Bars start at zero. Text size encodes nothing: text of one kind (the values in cells, the names of rows) has one size across the figure, and what does not fit its mark goes beside it or is left out, not shrunk.
 
+**What belongs together stands together, and what should meet does meet.** A label is read with the mark it stands nearest, so a value sits at its own bar, nearer to it than to any other. Things meant to line up do so exactly: a band is centred on the row it marks, a connector ends on the visible corner it points at, touching segments are the same size, and an axis ends on a tick where the data leaves room for that (`references/craft.md`, "Edges and ends").
+
 ## Defaults to steer away from
 
 Generic output looks like this. When the request leaves a choice open, do not spend it here:
@@ -99,9 +101,7 @@ The library says what it changed on its own: each automatic change (tick labels 
 | 만/억 on the ticks | `dm.format_axis_myriad(ax)` |
 | 12k on the ticks (from a million the axis prints `1M` by itself) | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter(sep=""))` |
 
-Call them before `dm.simple_layout`, which makes room for what they add;
-`dm.legible` alone goes after it and after `dm.check` has named the texts,
-because it reads the figure as drawn.
+Call them before `dm.simple_layout`, which makes room for what they add; `dm.legible` alone goes after it and after `dm.check` has named the texts, because it reads the figure as drawn.
 
 ## Look things up
 
@@ -109,7 +109,7 @@ Read only the page the task needs. Without this folder, `uv run dartwork-mpl pat
 
 | Need | Read |
 |---|---|
-| choosing the form, emphasis, annotation, titles; numbers on bars, distributions, heatmaps, small multiples | `references/craft.md` |
+| choosing the form, emphasis, annotation, titles; numbers on bars, distributions, heatmaps, small multiples; outlines, connectors, bands, where an axis ends | `references/craft.md` |
 | canvas sizes, margins, grids, twin axes, legends outside, colorbars | `references/layout.md` |
 | changing an existing figure, value labels | `references/editing.md` |
 | colour names, palettes, colormaps, a ramp between two colours | `references/colors.md` |

@@ -7,15 +7,19 @@ from dataclasses import replace
 from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
+    Bar,
     Box,
+    Boxed,
     CanvasUse,
     Connected,
+    Dot,
     Facts,
     Frame,
     Hit,
     Inked,
     Inset,
     Legend,
+    LineEnd,
     OnData,
     Panel,
     PolarTheta,
@@ -405,3 +409,67 @@ def test_UNDERUSED_CANVAS():
             canvas, PT, canvas_use=CanvasUse(Panel(object(), 0), body)
         )
         assert found(facts).rules == expected
+
+
+def bar(box: Box, length: float = 0.0, outset: float = 0.0) -> Bar:
+    return Bar(object(), 0, box, (length, 1.0) if length else (), outset)
+
+
+def test_VALUE_LABEL_ADRIFT():
+    """A value far from its bar, right before the next cell's bar, flags;
+    the same value at its bar's end does not."""
+    own, other = (
+        bar(Box(100, 100, 150, 140), 2.1),
+        bar(Box(400, 100, 520, 140), 9.0),
+    )
+    far = text("2.1", Box(330, 105, 380, 135))
+    facts = Facts(CANVAS, PT, texts=(far,), bars=(own, other))
+    assert found(facts).rules == ("VALUE_LABEL_ADRIFT",)
+    near = text("2.1", Box(160, 105, 210, 135))
+    assert not found(replace(facts, texts=(near,)))
+    total = text("11.1", Box(330, 105, 380, 135))
+    assert not found(replace(facts, texts=(total,)))
+
+
+def test_BAND_OFF_CENTRE():
+    """A band that runs further past one side of its row of dots flags; a
+    centred one, and one that also holds a caption, do not."""
+    dots = tuple(Dot(object(), 0, Box(x, 300, x + 40, 340)) for x in (100, 300))
+    band = bar(Box(50, 270, 400, 400))
+    facts = Facts(CANVAS, PT, bars=(band,), dots=dots)
+    assert found(facts).rules == ("BAND_OFF_CENTRE",)
+    centred = bar(Box(50, 270, 400, 370))
+    assert not found(replace(facts, bars=(centred,)))
+    caption = text("Overall", Box(60, 350, 200, 390))
+    assert not found(replace(facts, texts=(caption,)))
+
+
+def test_UNEVEN_OUTLINE():
+    """An outlined segment touching a bare one flags; the same outline on
+    both, or bars apart, do not."""
+    left = bar(Box(100, 100, 200, 140), 4.0)
+    mid = bar(Box(200, 100, 300, 140), 38.0, outset=0.25)
+    assert found(Facts(CANVAS, PT, bars=(left, mid))).rules == (
+        "UNEVEN_OUTLINE",
+    )
+    even = replace(left, outset=0.25)
+    assert not found(Facts(CANVAS, PT, bars=(even, mid)))
+    apart = bar(Box(350, 100, 450, 140), 38.0, outset=0.25)
+    assert not found(Facts(CANVAS, PT, bars=(left, apart)))
+
+
+def test_TEXT_BOX_ON_DATA():
+    """A text whose own box covers a filled mark flags."""
+    label = text("Private equity 139", INSIDE)
+    facts = Facts(CANVAS, PT, boxed=(Boxed(label, (Hit("area", ""),)),))
+    assert found(facts).rules == ("TEXT_BOX_ON_DATA",)
+
+
+def test_CONNECTOR_SHORT():
+    """A line end on a corner under a 2 pt paper-coloured outline flags;
+    under a hairline it does not."""
+    end = LineEnd(object(), object(), short=1.0)
+    assert found(Facts(CANVAS, PT, line_ends=(end,))).rules == (
+        "CONNECTOR_SHORT",
+    )
+    assert not found(Facts(CANVAS, PT, line_ends=(replace(end, short=0.1),)))

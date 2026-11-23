@@ -58,6 +58,22 @@ FIXES: dict[str, str] = {
     "a y axis: a taller canvas",
     "UNDERUSED_CANVAS": "match the canvas to the content with dm.figsize(width, aspect), "
     "or use ax.set_aspect('auto') if the shapes can stretch, then rerun dm.simple_layout(fig)",
+    "VALUE_LABEL_ADRIFT": "a label belongs to the mark it stands nearest: "
+    "put each value at the end of its own bar (ax.bar_label(bars, "
+    "padding=3)), or leave more room between the cells than between a bar "
+    "and its value",
+    "BAND_OFF_CENTRE": "centre the band on the marks: the same distance "
+    "from their line to both of its edges (half the row pitch each way)",
+    "UNEVEN_OUTLINE": "give the bars that touch the same outline (the same "
+    "linewidth, each in its own colour: edgecolor=its facecolor), or drop "
+    "the outline (linewidth=0)",
+    "TEXT_BOX_ON_DATA": "a box hides the marks under it: draw the text "
+    "without the box and check again. A text that then does not read is "
+    "reported as TEXT_CONTRAST, and dm.legible(texts) gives it an outline, "
+    "which hides less; or move the text onto one background",
+    "CONNECTOR_SHORT": "draw the marks a line must meet without that "
+    "outline (linewidth=0, a gap in the data to separate them) or outlined "
+    "in their own colour (edgecolor=facecolor)",
     "SMALL_PANEL": "fewer panels per figure (one row, or split it into "
     'figures); a grid on a slide: dm.figsize_for("full_slide") and one '
     "axis name per row or column (sharex=True, sharey=True)",

@@ -9,7 +9,7 @@ ran. A new rule is one more entry here and a test that names it.
 from __future__ import annotations
 
 from ..edgecase import EdgeCase
-from . import alignment, decide
+from . import alignment, decide, marks
 from .findings import Findings
 from .model import Facts
 
@@ -88,6 +88,21 @@ def has_edge_texts(facts: Facts, found: Findings) -> bool:
 def has_canvas_use(facts: Facts, found: Findings) -> bool:
     """The shape chart or plot with a colorbar has a measured footprint."""
     return facts.canvas_use is not None or facts.colorbar_space is not None
+
+
+def has_marks(facts: Facts, found: Findings) -> bool:
+    """Any drawn bar or band."""
+    return bool(facts.bars)
+
+
+def has_boxed(facts: Facts, found: Findings) -> bool:
+    """Any text on a box of its own over filled marks."""
+    return bool(facts.boxed)
+
+
+def has_line_ends(facts: Facts, found: Findings) -> bool:
+    """Any line end on a corner with a paper-coloured outline."""
+    return bool(facts.line_ends)
 
 
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
@@ -269,5 +284,55 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_UNDERUSED_CANVAS",
         applies=has_canvas_use,
         adjust=decide.underused_canvas,
+    ),
+    EdgeCase(
+        name="VALUE_LABEL_ADRIFT",
+        why=(
+            "values set as a column at the far end of each cell of a bar "
+            "matrix stood next to the neighbouring cell's bars and read as theirs"
+        ),
+        example="test_edges.py::test_VALUE_LABEL_ADRIFT",
+        applies=has_marks,
+        adjust=marks.value_label_adrift,
+    ),
+    EdgeCase(
+        name="BAND_OFF_CENTRE",
+        why=(
+            "a highlight band behind the first row of a dot matrix ran "
+            "further below the dots than above, so they looked pushed up"
+        ),
+        example="test_edges.py::test_BAND_OFF_CENTRE",
+        applies=has_marks,
+        adjust=marks.band_off_centre,
+    ),
+    EdgeCase(
+        name="UNEVEN_OUTLINE",
+        why=(
+            "an outline on the white middle segment of a stacked bar drew "
+            "that segment larger than the coloured ones beside it"
+        ),
+        example="test_edges.py::test_UNEVEN_OUTLINE",
+        applies=has_marks,
+        adjust=marks.uneven_outline,
+    ),
+    EdgeCase(
+        name="TEXT_BOX_ON_DATA",
+        why=(
+            "node labels of a flow diagram stood on white boxes that hid "
+            "the flows, though the labels read without them"
+        ),
+        example="test_edges.py::test_TEXT_BOX_ON_DATA",
+        applies=has_boxed,
+        adjust=marks.text_box_on_data,
+    ),
+    EdgeCase(
+        name="CONNECTOR_SHORT",
+        why=(
+            "the lines from a donut wedge to its breakdown bar ended in "
+            "the air beside both, on corners a white outline had painted over"
+        ),
+        example="test_edges.py::test_CONNECTOR_SHORT",
+        applies=has_line_ends,
+        adjust=marks.connector_short,
     ),
 )
