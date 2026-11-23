@@ -10,7 +10,7 @@ from matplotlib.colorizer import ColorizingArtist
 from matplotlib.container import BarContainer
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Bbox, IdentityTransform
 
 from ..geometry import (
     artist_shown,
@@ -19,6 +19,7 @@ from ..geometry import (
     drawn_scatter_discs,
     drawn_tick_labels,
     draws_axis,
+    follows_mark,
     line_draws_markers,
     line_draws_stroke,
     projection,
@@ -135,7 +136,7 @@ def label_fit(
     coordinates would end at the plot's edges (``None``: no such label on
     that side, or the scale is not linear). A text keeps its size when the
     limits move, so the limit is solved, not read off."""
-    if ax.get_xscale() != "linear":
+    if not isinstance(ax.xaxis.get_transform(), IdentityTransform):
         return None, None
     low, high = ax.get_xlim()
     box = ax.bbox
@@ -145,17 +146,10 @@ def label_fit(
         text = label.handle
         if not isinstance(text, MplText) or text.axes is not ax:
             continue
-        if isinstance(text, Annotation):
-            # an offset from a data point: the point is what the limits move
-            if text.xycoords != "data" or text.get_anncoords() not in (
-                "offset points",
-                "offset pixels",
-                "offset fontsize",
-            ):
-                continue
-            x = float(text.xy[0])
-        elif text.get_transform() == ax.transData:
+        if text.get_transform().contains_branch_seperately(ax.transData)[0]:
             x = float(text.get_unitless_position()[0])
+        elif isinstance(text, Annotation) and follows_mark(text):
+            x = float(text.xy[0])  # set at an offset from a data point
         else:
             continue
         anchor = float(ax.transData.transform((x, 0.0))[0])
