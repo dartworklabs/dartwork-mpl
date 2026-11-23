@@ -729,3 +729,29 @@ def test_a_band_centred_on_its_row_of_dots_is_clean_and_a_lopsided_one_found():
         dm.simple_layout(fig)
         assert ("BAND_OFF_CENTRE" in dm.check(fig).rules) is expected
         plt.close(fig)
+
+
+def test_a_connector_to_a_white_outlined_box_and_a_boxed_label_on_it_are_found():
+    for edge, box, expected in (
+        ("white", {"facecolor": "white", "edgecolor": "none"}, True),
+        ("none", None, False),
+    ):
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+        ax.bar(
+            [3, 3],
+            [60, 40],
+            bottom=[0, 60],
+            color=["dc.blue6", "dc.blue3"],
+            edgecolor=edge,
+            linewidth=dm.lw(1),
+        )
+        ax.plot([0, 2.6], [50, 100], color="dc.gray5")
+        ax.text(3, 30, "Delivery", ha="center", va="center", bbox=box)
+        ax.set(
+            xlim=(-0.5, 3.6), ylim=(0, 110), xlabel="Step", ylabel="Share (%)"
+        )
+        dm.simple_layout(fig)
+        rules = dm.check(fig).rules
+        assert ("CONNECTOR_SHORT" in rules) is expected
+        assert ("TEXT_BOX_ON_DATA" in rules) is expected
+        plt.close(fig)

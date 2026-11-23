@@ -9,6 +9,7 @@ from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
     Bar,
     Box,
+    Boxed,
     CanvasUse,
     Connected,
     Dot,
@@ -18,6 +19,7 @@ from dartwork_mpl.check.model import (
     Inked,
     Inset,
     Legend,
+    LineEnd,
     OnData,
     Panel,
     PolarTheta,
@@ -454,3 +456,20 @@ def test_UNEVEN_OUTLINE():
     assert not found(Facts(CANVAS, PT, bars=(even, mid)))
     apart = bar(Box(350, 100, 450, 140), 38.0, outset=0.25)
     assert not found(Facts(CANVAS, PT, bars=(left, apart)))
+
+
+def test_TEXT_BOX_ON_DATA():
+    """A text whose own box covers a filled mark flags."""
+    label = text("Private equity 139", INSIDE)
+    facts = Facts(CANVAS, PT, boxed=(Boxed(label, (Hit("area", ""),)),))
+    assert found(facts).rules == ("TEXT_BOX_ON_DATA",)
+
+
+def test_CONNECTOR_SHORT():
+    """A line end on a corner under a 2 pt paper-coloured outline flags;
+    under a hairline it does not."""
+    end = LineEnd(object(), object(), short=1.0)
+    assert found(Facts(CANVAS, PT, line_ends=(end,))).rules == (
+        "CONNECTOR_SHORT",
+    )
+    assert not found(Facts(CANVAS, PT, line_ends=(replace(end, short=0.1),)))

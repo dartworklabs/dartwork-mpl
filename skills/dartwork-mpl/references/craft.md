@@ -251,8 +251,8 @@ to dark, read in parts.
   `ax.clabel`), not titles, tick labels or legend entries: those take
   their colour from the preset.
 - A text `dm.check` does not name already reads: leave it as it is. A box
-  behind a text hides the data under it, so it is the last resort for a
-  text nothing else mends, never a precaution.
+  behind a text hides the data under it (`TEXT_BOX_ON_DATA`), so it is the
+  last resort for a text nothing else mends, never a precaution.
 
 ```python
 T, P = np.meshgrid(np.linspace(10, 30, 60), np.linspace(20, 100, 60))
@@ -284,8 +284,8 @@ Small misfits read as carelessness before the reader has seen the data.
   (`UNEVEN_OUTLINE`). A paper-coloured outline used as a separator paints
   over the rim of every piece, so a line aimed at a piece's corner (the
   connector from a wedge to its breakdown, a bracket) stops short of the
-  ink. Pieces a line must meet take no outline; separate them with a gap in
-  the data, and look at the join in the image.
+  ink (`CONNECTOR_SHORT`). Pieces a line must meet take no outline, or one
+  in their own colour; a gap in the data separates them.
 - **A band is centred on what it marks.** The row or column sits in the
   middle of its highlight: the same distance to both edges
   (`BAND_OFF_CENTRE`).

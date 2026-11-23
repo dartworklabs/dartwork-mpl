@@ -95,6 +95,16 @@ def has_marks(facts: Facts, found: Findings) -> bool:
     return bool(facts.bars)
 
 
+def has_boxed(facts: Facts, found: Findings) -> bool:
+    """Any text on a box of its own over filled marks."""
+    return bool(facts.boxed)
+
+
+def has_line_ends(facts: Facts, found: Findings) -> bool:
+    """Any line end on a corner with a paper-coloured outline."""
+    return bool(facts.line_ends)
+
+
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
     EdgeCase(
         name="OVERFLOW",
@@ -304,5 +314,25 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_UNEVEN_OUTLINE",
         applies=has_marks,
         adjust=marks.uneven_outline,
+    ),
+    EdgeCase(
+        name="TEXT_BOX_ON_DATA",
+        why=(
+            "node labels of a flow diagram stood on white boxes that hid "
+            "the flows, though the labels read without them"
+        ),
+        example="test_edges.py::test_TEXT_BOX_ON_DATA",
+        applies=has_boxed,
+        adjust=marks.text_box_on_data,
+    ),
+    EdgeCase(
+        name="CONNECTOR_SHORT",
+        why=(
+            "the lines from a donut wedge to its breakdown bar ended in "
+            "the air beside both, on corners a white outline had painted over"
+        ),
+        example="test_edges.py::test_CONNECTOR_SHORT",
+        applies=has_line_ends,
+        adjust=marks.connector_short,
     ),
 )

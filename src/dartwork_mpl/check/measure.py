@@ -49,7 +49,7 @@ from .canvas import (
     shape_panel,
 )
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
-from .marks_measure import bars, dots
+from .marks_measure import bars, boxed, dots, line_ends
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
@@ -672,6 +672,12 @@ def measure(fig: Figure) -> Facts:
             lambda: tuple(b for i, ax in r.panels for b in bars(i, ax)),
             (),
             "VALUE_LABEL_ADRIFT, BAND_OFF_CENTRE, UNEVEN_OUTLINE",
+        ),
+        boxed=r.attempt(
+            lambda: boxed(texts, r.renderer, r.pt), (), "TEXT_BOX_ON_DATA"
+        ),
+        line_ends=r.attempt(
+            lambda: line_ends(fig, r.pt), (), "CONNECTOR_SHORT"
         ),
         dots=r.attempt(
             lambda: tuple(d for i, ax in r.panels for d in dots(i, ax, r.pt)),

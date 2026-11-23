@@ -317,6 +317,26 @@ class ColorbarSpace:
 
 
 @dataclass(frozen=True)
+class Boxed:
+    """A placed text on an opaque box of its own and the filled marks that
+    box covers."""
+
+    text: Text
+    covers: tuple[Hit, ...]
+
+
+@dataclass(frozen=True)
+class LineEnd:
+    """The end of a straight line on an outer corner of a mark whose
+    outline is the colour of the paper: ``short`` (pt), half that
+    outline's width, is how far the visible corner stands back from it."""
+
+    handle: object
+    mark: object
+    short: float
+
+
+@dataclass(frozen=True)
 class Dot:
     """A drawn scatter point: the box around its disc."""
 
@@ -384,6 +404,8 @@ class Facts:
     colorbar_space: ColorbarSpace | None = None
     bars: tuple[Bar, ...] = ()
     dots: tuple[Dot, ...] = ()
+    boxed: tuple[Boxed, ...] = ()
+    line_ends: tuple[LineEnd, ...] = ()
 
     @property
     def touch(self) -> float:

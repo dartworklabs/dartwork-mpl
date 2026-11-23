@@ -21,6 +21,8 @@ OFF_CENTRE_PT = 1.5
 OFF_CENTRE_SHARE = 0.04
 #: A text this far (em) off the row is not printed on its marks.
 ON_ROW_EM = 0.35
+#: A line end this far (pt) from the corner it points at visibly misses it.
+SHORT_PT = 0.5
 #: Outlines differing by this (pt) or more make one bar larger than the next.
 UNEVEN_PT = 0.2
 
@@ -225,4 +227,43 @@ def uneven_outline(facts: Facts, found: Findings) -> Findings:
                 handles=tuple(m.handle for m in larger.values()),
                 panels=(panel,),
             )
+    return found
+
+
+def text_box_on_data(facts: Facts, found: Findings) -> Findings:
+    """Texts whose own opaque box covers bars or filled areas, per Axes."""
+    panels: dict[int | None, list[Text]] = {}
+    kinds: dict[int | None, set[str]] = {}
+    for on in facts.boxed:
+        panels.setdefault(on.text.panel, []).append(on.text)
+        kinds.setdefault(on.text.panel, set()).update(
+            h.kind + "s" for h in on.covers
+        )
+    for panel, texts in panels.items():
+        n = len(texts)
+        found = found.flag(
+            "TEXT_BOX_ON_DATA",
+            f"Axes[{panel}]: {n} text{'s' * (n != 1)} on a box of "
+            f"{'their' if n != 1 else 'its'} own "
+            f"cover{'s' * (n == 1)} {' and '.join(sorted(kinds[panel]))}: "
+            f"{quote(t.short for t in texts)}",
+            texts,
+        )
+    return found
+
+
+def connector_short(facts: Facts, found: Findings) -> Findings:
+    """Line ends that stop on a corner a paper-coloured outline hides."""
+    short = [e for e in facts.line_ends if e.short >= SHORT_PT]
+    if short:
+        n = len({id(e.handle) for e in short})
+        gap = max(e.short for e in short)
+        found = found.flag(
+            "CONNECTOR_SHORT",
+            f"{n} line{'s end' if n != 1 else ' ends'} on the corner of a "
+            f"mark outlined in the colour of the paper: the outline covers "
+            f"the mark's rim, so the visible corner is {gap:.2g} pt away",
+            handles=tuple(dict.fromkeys(e.handle for e in short)),
+            panels=(),
+        )
     return found

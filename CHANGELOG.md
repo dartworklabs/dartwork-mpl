@@ -45,15 +45,22 @@ Entries before 0.8.0 are in the git history of this file.
   outlined middle segment stood past the segments beside it (#864).
 - `dm.check` reports `BAND_OFF_CENTRE`: a band drawn behind one row or
   column of marks whose middle is not that row's (#866).
+- `dm.check` reports `TEXT_BOX_ON_DATA`: a text on an opaque box of its
+  own that covers bars or filled areas, as when the node labels of a flow
+  diagram stood on white boxes though they read without them. The hint
+  names the order: without the box first, then `dm.legible` (#867).
+- `dm.check` reports `CONNECTOR_SHORT`: a straight line or
+  `ConnectionPatch` that ends on the corner of a bar or wedge outlined in
+  the colour of the paper. The outline covers the mark's rim, so the line
+  stopped half the outline's width from the visible corner (#865).
 
 ### Changed
 
 - The skill names four joins to get exact ("Edges and ends" in
   `references/craft.md`): a label at its own mark, the same outline on
-  touching marks and none on pieces a connector must meet (#865), a band
-  centred on its row, and an axis that ends on a tick when the data leaves
-  room (#868). It no longer prints a white-box call for text over data,
-  which agents pasted behind labels that already read (#867).
+  touching marks and none on pieces a connector must meet, a band centred
+  on its row, and an axis that ends on a tick when the data leaves room
+  (#868). It no longer prints a white-box call for text over data.
 - `dm.check`'s `TEXT_CONTRAST` reads every pixel of a text's ink against
   what is drawn behind it, where it compared the text with the one colour
   behind the centre of its box. A note that runs from the canvas onto a dark

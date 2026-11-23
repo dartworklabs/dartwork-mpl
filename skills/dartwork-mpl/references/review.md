@@ -69,6 +69,8 @@ not, the `try` line names what usually helps.
 | `VALUE_LABEL_ADRIFT` | a value label that stands between its own bar and another bar of the same row or column, nearer the other: it reads as the other's |
 | `UNEVEN_OUTLINE` | bars that touch a bar with a narrower outline or none: the outline is drawn half outside, so they stand past their neighbours |
 | `BAND_OFF_CENTRE` | a band (`ax.axhspan`, a rectangle) behind one row or column of marks, with that row off the band's middle |
+| `TEXT_BOX_ON_DATA` | a text on an opaque box of its own, the box over bars or filled areas: it hides them, and the text may read without it |
+| `CONNECTOR_SHORT` | a straight line or connector ending on the corner of a bar or wedge outlined in the colour of the paper: the outline covers the rim, so the line stops in the air beside the visible corner |
 | `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |
 | `POLAR_TICK_ON_PLOT` | angle tick labels cross into their polar plot (`dm.simple_layout` moves centred ones out; these were placed by hand, or the layout has not run) |
 | `RADIAL_TICK_COVERED` | a polar fill paints over radial tick numbers |

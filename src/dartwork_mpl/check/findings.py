@@ -67,6 +67,13 @@ FIXES: dict[str, str] = {
     "UNEVEN_OUTLINE": "give the bars that touch the same outline (the same "
     "linewidth, each in its own colour: edgecolor=its facecolor), or drop "
     "the outline (linewidth=0)",
+    "TEXT_BOX_ON_DATA": "a box hides the marks under it: draw the text "
+    "without the box and check again. A text that then does not read is "
+    "reported as TEXT_CONTRAST, and dm.legible(texts) gives it an outline, "
+    "which hides less; or move the text onto one background",
+    "CONNECTOR_SHORT": "draw the marks a line must meet without that "
+    "outline (linewidth=0, a gap in the data to separate them) or outlined "
+    "in their own colour (edgecolor=facecolor)",
     "SMALL_PANEL": "fewer panels per figure (one row, or split it into "
     'figures); a grid on a slide: dm.figsize_for("full_slide") and one '
     "axis name per row or column (sharex=True, sharey=True)",
