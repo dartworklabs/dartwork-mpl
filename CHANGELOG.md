@@ -4,6 +4,8 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+## 0.10.0 — 2026-11-23
+
 ### Added
 
 - `dm.check` reports `UNDERUSED_CANVAS` when a vertical colorbar's
