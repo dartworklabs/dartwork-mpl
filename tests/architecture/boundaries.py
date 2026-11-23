@@ -115,6 +115,10 @@ DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.check.decide": (
         "what is wrong with a figure is decided from its measured facts alone"
     ),
+    "dartwork_mpl.check.marks": (
+        "a stray value label, an off-centre band and an uneven outline are "
+        "decided from measured boxes"
+    ),
     "dartwork_mpl.check.model": (
         "the facts, findings and value-label test need nothing outside them"
     ),

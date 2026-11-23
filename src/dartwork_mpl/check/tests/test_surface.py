@@ -701,3 +701,31 @@ def test_a_zoom_connector_through_the_inset_labels_is_found():
     assert "zoom connector" in finding.message and "'41.0'" in finding.message
     # with the tick numbers on the inset's far side nothing is crossed
     assert not _of(dm.check(_zoomed(ticks_on_top=True)), "TEXT_ON_LINE")
+
+
+def test_a_stacked_row_with_one_outlined_segment_and_a_stray_value_are_found():
+    """Through the figure: bars, an ``axhspan`` band and placed values."""
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.barh([0, 1], [4, 9], color="dc.red6")
+    ax.barh([0, 1], [38, 52], left=[4, 9], color="none", edgecolor="dc.gray4")
+    ax.barh([0, 1], [20, 5], left=[80, 80], color="dc.blue6")
+    ax.text(76, 0, "38", ha="right", va="center")
+    ax.set_xlim(0, 100)
+    dm.simple_layout(fig)
+    rules = dm.check(fig).rules
+    assert "UNEVEN_OUTLINE" in rules
+    assert "VALUE_LABEL_ADRIFT" in rules
+    plt.close(fig)
+
+
+def test_a_band_centred_on_its_row_of_dots_is_clean_and_a_lopsided_one_found():
+    for edges, expected in (((-0.5, 0.5), False), ((-0.3, 0.9), True)):
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+        ax.scatter(range(5), [0] * 5, s=120)
+        ax.scatter(range(5), [1.5] * 5, s=120)
+        ax.axhspan(*edges, color="0.95", zorder=0, lw=0)
+        ax.set_ylim(2.2, -0.9)
+        ax.set(xlabel="Region", ylabel="Outcome")
+        dm.simple_layout(fig)
+        assert ("BAND_OFF_CENTRE" in dm.check(fig).rules) is expected
+        plt.close(fig)

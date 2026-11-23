@@ -250,8 +250,9 @@ to dark, read in parts.
 - It takes the texts you placed in an Axes (`ax.text`, `ax.annotate`,
   `ax.clabel`), not titles, tick labels or legend entries: those take
   their colour from the preset.
-- A box hides more of the data but reads flattest:
-  `ax.text(..., bbox={"facecolor": "white", "edgecolor": "none"})`.
+- A text `dm.check` does not name already reads: leave it as it is. A box
+  behind a text hides the data under it, so it is the last resort for a
+  text nothing else mends, never a precaution.
 
 ```python
 T, P = np.meshgrid(np.linspace(10, 30, 60), np.linspace(20, 100, 60))
@@ -268,6 +269,30 @@ dm.legible(labels)                # mends those; the ones that read stay as they
 print(dm.check(fig))              # again, after the fix
 plt.close(fig)
 ```
+
+## Edges and ends
+
+Small misfits read as carelessness before the reader has seen the data.
+
+- **A label stands at its own mark.** The eye pairs a text with the nearest
+  mark. A value far from its bar and next to another one reads as the other
+  one's. In a grid of small charts, leave more room between the cells than
+  between a mark and its label (`VALUE_LABEL_ADRIFT`).
+- **An outline is drawn half outside the shape and half inside it.** One
+  outlined segment in a stack therefore stands past its neighbours: give
+  touching marks the same outline, each in its own colour, or none
+  (`UNEVEN_OUTLINE`). A paper-coloured outline used as a separator paints
+  over the rim of every piece, so a line aimed at a piece's corner (the
+  connector from a wedge to its breakdown, a bracket) stops short of the
+  ink. Pieces a line must meet take no outline; separate them with a gap in
+  the data, and look at the join in the image.
+- **A band is centred on what it marks.** The row or column sits in the
+  middle of its highlight: the same distance to both edges
+  (`BAND_OFF_CENTRE`).
+- **An axis ends on a tick when the data leaves room.** A line that runs a
+  little past its last tick looks unfinished; a log axis that stops just
+  above a decade is the usual case. Set that limit to the tick. Do not
+  move a limit the data reaches, and bars keep their zero.
 
 ## Words on the figure
 

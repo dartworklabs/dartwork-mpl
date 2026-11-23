@@ -49,6 +49,7 @@ from .canvas import (
     shape_panel,
 )
 from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
+from .marks_measure import bars, dots
 from .model import (
     AXES,
     LETTER_CLEARANCE_PT,
@@ -667,5 +668,15 @@ def measure(fig: Figure) -> Facts:
             lambda: r.canvas_use(texts), None, "UNDERUSED_CANVAS"
         ),
         colorbar_space=r.attempt(r.colorbar_space, None, "UNDERUSED_CANVAS"),
+        bars=r.attempt(
+            lambda: tuple(b for i, ax in r.panels for b in bars(i, ax)),
+            (),
+            "VALUE_LABEL_ADRIFT, BAND_OFF_CENTRE, UNEVEN_OUTLINE",
+        ),
+        dots=r.attempt(
+            lambda: tuple(d for i, ax in r.panels for d in dots(i, ax, r.pt)),
+            (),
+            "BAND_OFF_CENTRE",
+        ),
         skipped=tuple(r.skipped),
     )

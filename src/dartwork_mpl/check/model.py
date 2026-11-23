@@ -317,6 +317,43 @@ class ColorbarSpace:
 
 
 @dataclass(frozen=True)
+class Dot:
+    """A drawn scatter point: the box around its disc."""
+
+    handle: object
+    panel: int
+    box: Box
+
+
+@dataclass(frozen=True)
+class Bar:
+    """A drawn upright rectangle of an Axes: its outline, where its clip
+    lets it draw.
+
+    ``lengths``: the width and height it spans in data units (none for a
+    rectangle placed in other coordinates, like ``ax.axhspan``).
+    ``outset``: how far (pt) its edge stroke reaches past the outline, half
+    the stroke's width.
+    """
+
+    handle: object
+    panel: int
+    box: Box
+    lengths: tuple[float, ...] = ()
+    outset: float = 0.0
+
+    def prints(self, text: Text, along: Which) -> bool:
+        """``text`` prints this bar's length along ``along``, as rounded as
+        the text shows it (``7.9`` for a bar 7.9 or -7.94 long)."""
+        number = printed_value(text.text)
+        if number is None or not self.lengths or "e" in number.lower():
+            return False
+        places = len(number.partition(".")[2])
+        length = abs(along.pick(*self.lengths))
+        return length > 0 and round(length, places) == abs(float(number))
+
+
+@dataclass(frozen=True)
 class Facts:
     """Everything the rules read from one drawn figure."""
 
@@ -345,6 +382,8 @@ class Facts:
     edge_titles: tuple[Text, ...] = ()
     canvas_use: CanvasUse | BarCanvasUse | None = None
     colorbar_space: ColorbarSpace | None = None
+    bars: tuple[Bar, ...] = ()
+    dots: tuple[Dot, ...] = ()
 
     @property
     def touch(self) -> float:
