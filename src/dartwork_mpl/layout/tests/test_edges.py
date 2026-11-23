@@ -6,8 +6,9 @@ from dataclasses import replace
 
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.layout import decide
-from dartwork_mpl.layout.edges import EDGES, TEXT_EDGES
+from dartwork_mpl.layout.edges import EDGES, TEXT_EDGES, away_from_centre
 from dartwork_mpl.layout.model import (
+    AngleLabel,
     ArtistId,
     AxesContent,
     AxisName,
@@ -21,6 +22,7 @@ from dartwork_mpl.layout.model import (
     Line,
     Px,
     Reach,
+    Rim,
     Share,
     Sides,
     Spacing,
@@ -29,7 +31,15 @@ from dartwork_mpl.layout.model import (
     WSpace,
 )
 from dartwork_mpl.layout.tests.test_decide import chars, row
-from dartwork_mpl.vocab import Y
+from dartwork_mpl.vocab import (
+    AlignBottom,
+    AlignCentre,
+    AlignLeft,
+    AlignRight,
+    AlignTop,
+    VCentre,
+    Y,
+)
 
 NO_MARGIN = Sides(0.0, 0.0, 0.0, 0.0)
 PLOT = Box(100.0, 100.0, 900.0, 400.0)
@@ -91,8 +101,10 @@ def text_plan(facts: TextFacts):
     return result.fired, result.plan
 
 
-def texts(groups=(), names=(), spacings=()) -> TextFacts:
-    return TextFacts(tuple(groups), tuple(names), tuple(spacings), CANVAS)
+def texts(groups=(), names=(), spacings=(), rims=()) -> TextFacts:
+    return TextFacts(
+        tuple(groups), tuple(names), tuple(spacings), CANVAS, tuple(rims)
+    )
 
 
 def name(
@@ -187,3 +199,42 @@ def test_crowded_ticks_rotate_when_they_cannot_wrap() -> None:
     assert fired == ("crowded-ticks-rotate",)
     assert plan.turns == {ArtistId(1): Degrees(45.0)}
     assert plan.wraps == {}
+
+
+DISC = Box(300.0, 100.0, 700.0, 500.0)  # centre (500, 300), radius 200
+
+
+def angle_label(label: int, box: Box, angle: float) -> AngleLabel:
+    return AngleLabel(ArtistId(label), box, Degrees(angle), Px(20.0))
+
+
+def test_angle_labels_in_the_plot_are_aligned_away_from_it() -> None:
+    # "Customer support", centred on its anchor left of the circle, reaches
+    # 50 px into it; the short name on top is clear.
+    long = angle_label(1, Box(150.0, 290.0, 350.0, 310.0), 180.0)
+    top = angle_label(2, Box(480.0, 510.0, 520.0, 530.0), 90.0)
+    fired, plan = text_plan(texts(rims=[Rim(DISC, (long, top), False)]))
+    assert fired == ("angle-labels-in-the-plot",)
+    # every label of that plot, so they stand at one distance from it
+    assert plan.away == {
+        ArtistId(1): (AlignRight(), VCentre()),
+        ArtistId(2): (AlignCentre(), AlignBottom()),
+    }
+    # labels somebody placed stay, and so does a rim of names that clear it
+    assert text_plan(texts(rims=[Rim(DISC, (long, top), True)]))[0] == ()
+    clear = angle_label(1, Box(80.0, 290.0, 280.0, 310.0), 180.0)
+    assert text_plan(texts(rims=[Rim(DISC, (clear, top), False)]))[0] == ()
+
+
+def test_a_label_is_aligned_on_the_far_side_of_its_anchor() -> None:
+    table = {
+        0.0: (AlignLeft(), VCentre()),
+        38.6: (AlignLeft(), AlignBottom()),  # a seven-axis radar
+        67.5: (AlignCentre(), AlignBottom()),  # NNE: beside the top name
+        90.0: (AlignCentre(), AlignBottom()),
+        141.4: (AlignRight(), AlignBottom()),
+        -90.0: (AlignCentre(), AlignTop()),
+        -115.7: (AlignRight(), AlignTop()),
+    }
+    for angle, expected in table.items():
+        assert away_from_centre(Degrees(angle)) == expected

@@ -34,7 +34,9 @@ panel with two y axes.
   a legend. A legend box is for many series or for marks that have no end.
 - **One annotation.** Mark the value, crossing or period the sentence names
   with `dm.annotate_value(ax, x, y, text)` or a shaded span (`ax.axvspan`).
-  One mark is read. Five are skipped.
+  One mark is read. Five are skipped. Keep it on one background: a note
+  that runs from the canvas onto a dark bar loses the letters on the bar
+  ("Text over the data" below).
 - **Order.** Categories go by value, largest first, unless they have their own
   order (time, age bands, a survey scale).
 - **Numbers on marks.** Every bar gets its number only when the exact values
@@ -92,6 +94,51 @@ dm.label_bars(ax)                         # the four values are the point
 ax.set_yticks([])                         # so the axis does not repeat them
 ax.spines["left"].set_visible(False)
 ax.set_ylabel("Revenue (USD m)")          # the unit stays
+dm.simple_layout(fig)
+print(dm.check(fig))
+plt.close(fig)
+```
+
+## Text in columns
+
+A column of names or numbers beside a plot is part of the plot. Write its
+texts on the plot's own Axes, each row at the height of the mark it belongs
+to, and hand them to `dm.place_columns(ax, column)`: it sets the column one
+text size from the plot's edge, the way tick labels sit by their axis, and
+each further column (`dm.place_columns(ax, revenue, share)`, left to right)
+a text size and a half after the one before. The x you wrote them at only says which
+side they are on. A heading goes in its column's list, on the edge the
+column is aligned on. The rows keep the distance to the plot, so a heading
+wider than its numbers runs on over the plot, above the first row: give it a
+line or two there, clear of the marks and the title. Do not widen the x limits or add an Axes to hold a
+column: `dm.simple_layout` makes the room. Rows that follow no marks (a
+table that stands in for a legend) are centred on the plot's height, as a
+legend on that side is. `dm.check` reports a column left floating
+(`TEXT_COLUMN_GAP`).
+
+Inside a column, `dm.align_texts(texts, how)` aligns edges (`"left"`,
+`"right"`, `"center"`) or decimal points (`"decimal"`); it returns the rows
+to style and to hand on. Keep values belonging to a mark at that mark.
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
+rows = [(0.8, -3.6, 5.2), (9.4, 2.4, 16.4), (-2.1, -5.8, 1.6), (4.3, 0.9, 7.7)]
+ax.set_yticks(range(len(rows)), ["Study D", "Study C", "Study B", "Study A"])
+ax.set_xlabel("Mean difference (mmHg)")
+beside = ax.get_yaxis_transform()        # x across the plot (1 = right edge), y in data
+labels = []
+for y, (effect, low, high) in enumerate(rows):
+    ax.hlines(y, low, high)
+    ax.plot(effect, y, marker="s", color="dc.blue6")
+    labels.append(
+        ax.text(1, y, f"{effect:.1f} [{low:.1f}, {high:.1f}]", transform=beside, va="center")
+    )
+head = ax.text(1, len(rows) - 0.4, "Mean [95% CI]", transform=beside, fontweight="bold")
+dm.place_columns(ax, [head, *dm.align_texts(labels, "decimal")])
 dm.simple_layout(fig)
 print(dm.check(fig))
 plt.close(fig)
@@ -193,11 +240,83 @@ print(dm.check(fig))
 plt.close(fig)
 ```
 
+## Text over the data
+
+A text reads when its ink has contrast with what is behind every part of
+it. Black on a pale bar and white on a dark one both read; a note that
+crosses from one to the other, or grey contour numbers on bands from pale
+to dark, read in parts.
+
+- **First move it.** A note on one background needs nothing: beside the
+  bars, above the plot, in the title. A band or segment too thin for its
+  label gets the label outside it, with a short line to it.
+- **Where it must cross** (contour numbers, a label along a stacked bar, a
+  name on a cloud of points): draw it, lay the figure out, and read
+  `dm.check`. It reports a text with ink under 3:1 as `TEXT_CONTRAST`.
+- **Then, and only then, `dm.legible(texts)`** on the texts it named, and
+  check again. It reads the drawn figure and gives each text the least
+  that makes it read: nothing to one that reads, the one colour that
+  reads on everything behind it, or an outline in the colour of the
+  background it reads best on. It never moves a text, and prints what it
+  did to each. A text nothing can mend (it is translucent, or something
+  is drawn over it) is left as it was and named: fix that one by hand.
+- It takes the texts you placed in an Axes (`ax.text`, `ax.annotate`,
+  `ax.clabel`), not titles, tick labels or legend entries: those take
+  their colour from the preset.
+- A text `dm.check` does not name already reads: leave it as it is. A box
+  behind a text hides the data under it (`TEXT_BOX_ON_DATA`), so it is the
+  last resort for a text nothing else mends, never a precaution.
+
+```python
+T, P = np.meshgrid(np.linspace(10, 30, 60), np.linspace(20, 100, 60))
+cop = 7.2 - 0.12 * (T - 10) - 2.4 * ((P - 70) / 50) ** 2
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+bands = ax.contourf(T, P, cop, levels=8, cmap="dc.teal")
+lines = ax.contour(T, P, cop, levels=4, colors="dc.gray8", linewidths=dm.lw(-1))
+labels = ax.clabel(lines, fmt="%d")
+fig.colorbar(bands, ax=ax, label="COP")
+ax.set(xlabel="Wet-bulb (°C)", ylabel="Part load (%)")
+dm.simple_layout(fig)
+print(dm.check(fig))              # TEXT_CONTRAST: the numbers on the dark bands
+dm.legible(labels)                # mends those; the ones that read stay as they are
+print(dm.check(fig))              # again, after the fix
+plt.close(fig)
+```
+
+## Edges and ends
+
+Small misfits read as carelessness before the reader has seen the data.
+
+- **A label stands at its own mark.** The eye pairs a text with the nearest
+  mark. A value far from its bar and next to another one reads as the other
+  one's. In a grid of small charts, leave more room between the cells than
+  between a mark and its label (`VALUE_LABEL_ADRIFT`).
+- **An outline is drawn half outside the shape and half inside it.** One
+  outlined segment in a stack therefore stands past its neighbours: give
+  touching marks the same outline, each in its own colour, or none
+  (`UNEVEN_OUTLINE`). A paper-coloured outline used as a separator paints
+  over the rim of every piece, so a line aimed at a piece's corner (the
+  connector from a wedge to its breakdown, a bracket) stops short of the
+  ink (`CONNECTOR_SHORT`). Pieces a line must meet take no outline, or one
+  in their own colour; a gap in the data separates them.
+- **A band is centred on what it marks.** The row or column sits in the
+  middle of its highlight: the same distance to both edges
+  (`BAND_OFF_CENTRE`).
+- **An axis ends on a tick when the data leaves room.** A line that runs a
+  little past its last tick looks unfinished; a log axis that stops just
+  above a decade is the usual case. Set that limit to the tick. Do not
+  move a limit the data reaches, and bars keep their zero.
+
 ## Words on the figure
 
 - **Title.** A paper figure has none: the caption carries the message. A
   report or slide figure may state the point as a sentence. A title that
-  only names the variables repeats the axes and can go.
+  only names the variables repeats the axes and can go. `ax.set_title`
+  centres it on the plot, and for most charts that is right. Look at the
+  PNG when category names take a third of the width or more: the plot then
+  sits well off the figure's centre and its title hangs against the far
+  edge over an empty corner, and `fig.suptitle(...)`, centred on the
+  canvas, reads better.
 - **Axis labels** name the quantity and its unit: `Revenue (USD m)`,
   `Temperature (°C)`. An axis whose ticks are self-evident (years, month
   names, category names) needs no label.

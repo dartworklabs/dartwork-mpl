@@ -1,0 +1,20 @@
+# cluster: 100% bars of a three-way answer with the neutral middle left uncoloured, answer names above the segments instead of a legend, a net column at the right; refs: 2956947d-125d-800a-b00e-e23ebcfe5d65, 2956947d-125d-804d-b54f-fce8c9d632a3, 2956947d-125d-8050-bd10-e997dd121953, 1b76947d-125d-80cf-8677-e62687ea8a50, 19c6947d-125d-80fb-acd2-cadc2ac685e4
+prompt = "budgets.csv: for eight spending lines, the share of finance chiefs who plan to spend less, the same, or more next year. 100% bars, one per line. 'The same' should recede (leave it uncoloured), less and more should carry the colour, numbers inside, and a net column (more minus less) at the right. Sort by net. CFO survey report; no legend box if you can avoid it."
+
+[files]
+"budgets.csv" = """
+spending_line,less,same,more
+Cybersecurity,4,38,58
+Data and analytics,7,47,46
+Automation,9,52,39
+Employee training,14,61,25
+Cloud infrastructure,18,55,27
+Marketing,27,49,24
+Business travel,39,48,13
+Office space,52,41,7
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Cybersecurity", "Office space", "Net", "54"]

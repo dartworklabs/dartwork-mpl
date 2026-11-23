@@ -1,0 +1,16 @@
+# cluster: two 100% stacked columns joined by bands per category, names at the side instead of a legend, the key change called out in points; refs: 2956947d-125d-80f2-af49-eda00e3495a7, 2306947d-125d-8087-b54d-e630e3d046e5, 1ab6947d-125d-8026-99ff-fbba82d663b0, 19e6947d-125d-8074-8f3a-d29b2be80c4e, 2976947d-125d-8054-a527-e243de6a9e60, 1386947d-125d-80b8-8adb-db5da246c3f8, 1946947d-125d-80c9-b597-e0f45afd8827
+prompt = "mix.csv: how our workforce splits between fully remote, hybrid and on-site in 2023 and in 2025. Two 100% columns with bands connecting the same category across them so the shift is visible, percentages inside, category names at the side instead of a legend, and call out the on-site change in points. For the HR board pack."
+
+[files]
+"mix.csv" = """
+working_model,share_2023,share_2025
+Fully remote,41,18
+Hybrid,24,15
+On-site,35,67
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Fully remote", "Hybrid", "On-site", "2023", "2025", "67"]
+any_text = ["+32", "32 p"]

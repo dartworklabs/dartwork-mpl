@@ -99,10 +99,12 @@ such a gap goes back; a canvas too small for that is left as it is, so give
 it more room or shorter titles), and bottom tick labels that collide or sit closer
 than half an em (two names that close read as one) wrap at their spaces
 (panels sharing x together) or, when they cannot, turn 30, 45 or 90
-degrees. Nothing is shortened or made smaller. What you set
+degrees, and the angle labels of a polar plot (a radar's category names, a
+wind rose's directions) that run into its circle are aligned away from it,
+each on the far side of its anchor. Nothing is shortened or made smaller. What you set
 stays: spacing you set (`gridspec_kw`, `fig.subplots_adjust`) wins, also
-when it is too small, and labels you rotate or break yourself are left as
-they are, so leave them out unless the user asks. Tick
+when it is too small, and labels you rotate, align or break yourself are
+left as they are, so leave them out unless the user asks. Tick
 labels that still overlap are reported as `TICK_OVERLAP`, text over another
 panel's text as `CROSS_AXES_OVERLAP`. A title wider than the canvas keeps
 its plot: it runs past both edges and `dm.check` reports `OVERFLOW`, so
@@ -258,3 +260,26 @@ plt.close(fig)
   their host, so `dm.simple_layout` leaves such a figure as it was.
 - A twin pair may report `CROSS_AXES_OVERLAP` for its shared x ticks; that
   finding is a false positive for twins.
+
+## Balance the visible figure
+
+- On the saved image, compare the space on either side of the plot and
+  what belongs with it. Include the scale, side descriptions and direct
+  labels when judging the group. Empty data limits may make a plot with
+  fitted axes sit off-centre. Trim limits that only provide spare room,
+  or fit the canvas to the group. In a comparison where unequal areas
+  encode the data, keep their common scale and balance the group around it.
+- A vertical colorbar can leave an empty strip on its outside even after
+  layout when its slot is wider than the drawn scale. Reduce `fraction`
+  in `fig.colorbar` to fit the slot to the drawn scale, then lay out and
+  check again. For an exact width, give the scale a narrow column in the
+  plot's GridSpec and pass its Axes as `cax`.
+- For an inset or a label in open space, look for a region clear of the
+  marks it could cover. Leave room around the whole element, including
+  its text and any connectors. Within that region, give it an anchor the
+  reader can see, such as the point it explains or the middle of the
+  available space. Leave space between the element and the frame or the
+  edge of a shaded mark.
+- Treat a custom key and its heading as one block. Give the block a shared
+  edge or centre with the marks it explains, including when the plot
+  reserves extra space for row labels or totals.

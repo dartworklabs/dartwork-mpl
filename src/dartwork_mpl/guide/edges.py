@@ -20,6 +20,7 @@ from .model import (
 )
 
 HAND_MERGE = "twin-legend-hand-merge"
+GLOBAL_RANDOM = "unseeded-global-random"
 
 
 def quotes_a_pattern(facts: LintFacts, plan: Findings) -> bool:
@@ -40,6 +41,16 @@ def merges_without_twin(facts: LintFacts, plan: Findings) -> bool:
 def drop_hand_merge(facts: LintFacts, plan: Findings) -> Findings:
     """Keep every finding but the hand-merge hint."""
     return tuple(f for f in plan if f.rule_id != HAND_MERGE)
+
+
+def draws_after_a_seed(facts: LintFacts, plan: Findings) -> bool:
+    """A draw from the global generator in a source that seeds it."""
+    return facts.code.seeds and any(f.rule_id == GLOBAL_RANDOM for f in plan)
+
+
+def drop_global_random(facts: LintFacts, plan: Findings) -> Findings:
+    """Keep every finding but the global-generator one."""
+    return tuple(f for f in plan if f.rule_id != GLOBAL_RANDOM)
 
 
 def _registered_by(code: Code, check: Check) -> Registered:
@@ -119,5 +130,13 @@ EDGES: tuple[EdgeCase[LintFacts, Findings], ...] = (
         example="test_edges.py::test_color_registered_in_source",
         applies=registers_a_color,
         adjust=drop_registered_colors,
+    ),
+    EdgeCase(
+        name="global-random-seeded",
+        why="a script that calls np.random.seed(0) first was told its "
+        "np.random.normal draws were unseeded",
+        example="test_edges.py::test_global_random_seeded",
+        applies=draws_after_a_seed,
+        adjust=drop_global_random,
     ),
 )

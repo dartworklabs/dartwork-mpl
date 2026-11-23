@@ -1,0 +1,16 @@
+# cluster: 'in numbers' tiles, one very large number with a one-line caption and a tiny proportion graphic each, two colours; refs: 2ca6947d-125d-80fc-b6df-edfcebd687b5, 2306947d-125d-80e2-951d-c0b1298908ad, 1426947d-125d-808d-a2e9-f3725e5b5fa3, 1426947d-125d-8031-a499-fc3c3abc0684, ba7e4e30-e48d-4850-999c-57c550ee50d1, 2976947d-125d-8078-b12f-f9859fa33f78
+prompt = "Make a 'year in numbers' graphic for the annual report from facts.csv: six facts, each a big number with its one-line caption and, where it helps, a tiny visual of the proportion (the csv says what kind each is: a share out of 100, a ratio against 1, or a plain count). Keep it to two colours."
+
+[files]
+"facts.csv" = """
+display,caption,kind,value
+38%,of orders now ship the same day,share,38
+4.2x,faster onboarding than in 2022,ratio,4.2
+1 in 8,customers use the mobile app every week,share,12.5
+71,new stores opened,count,71
+92%,of suppliers audited on site,share,92
+2.6x,growth in repair bookings,ratio,2.6
+"""
+
+[expect]
+texts = ["38%", "4.2x", "1 in 8", "71", "92%", "of suppliers audited on site"]

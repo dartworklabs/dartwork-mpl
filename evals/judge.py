@@ -7,13 +7,19 @@ of one run and the facts the probe measured; outputs are plain data.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
+
+from .shelltrace import inside
 
 SKILL = "dartwork-mpl"
 SCRIPT_TOOLS = ("Bash", "Read", "Write", "Edit")
 ARMS = ("bare", "skill")
 VERDICTS = ("OK", "DEFECT", "NO_FIGURE", "INVALID", "NOTRUN")
+# A re-render equals the agent's figure up to this RMS (0..255), as in tests/visual.
+SAME_PICTURE_RMS = 0.5
+SHARED_TEMP = re.compile(r"(?<![\w.$-])(?:/private)?/(?:var/)?tmp/[\w.+-]+")
 
 
 @dataclass(frozen=True)
@@ -127,42 +133,123 @@ def missing_facts(expect: dict[str, Any], figure: dict[str, Any]) -> list[str]:
     return missing
 
 
+def strays(paths: list[str], commands: list[str], root: str) -> list[str]:
+    """Places outside the run's root that the session worked in.
+
+    ``paths`` are the files it wrote or ran by absolute path; ``commands``
+    are searched for the shared temp folders (``/tmp/s``), where concurrent
+    runs overwrite each other.
+    """
+    found = {p for p in paths if p.startswith("/") and not inside(p, root)}
+    for command in commands:
+        found |= {
+            m for m in SHARED_TEMP.findall(command) if not inside(m, root)
+        }
+    return sorted(found)
+
+
+def reproduction(
+    size: tuple[int, int],
+    renders: list[dict[str, Any]],
+    rerun_rms: float | None = None,
+) -> str | None:
+    """Why no re-rendered image is the agent's figure (``None``: one is).
+
+    ``renders`` are the images the re-run wrote: ``size`` in pixels and
+    ``rms`` against the figure where the sizes agree. ``rerun_rms`` is how
+    far a second re-run landed from the first, measured when neither is
+    the figure: apart, the script itself draws differently each time.
+    """
+    if not renders:
+        return "re-running it wrote no image to compare with figure.png"
+    close = [r["rms"] for r in renders if r.get("rms") is not None]
+    if not close:
+        drawn = ", ".join(
+            sorted({"x".join(map(str, r["size"])) for r in renders})
+        )
+        return (
+            f"it does not reproduce figure.png: it draws {drawn} px, "
+            f"the figure is {size[0]}x{size[1]} px"
+        )
+    if min(close) <= SAME_PICTURE_RMS:
+        return None
+    if rerun_rms is not None and rerun_rms > SAME_PICTURE_RMS:
+        return (
+            "the script does not draw the same figure twice (two re-runs "
+            f"differ by RMS {rerun_rms:.2f}), so figure.png cannot be "
+            "reproduced: its randomness is not seeded"
+        )
+    return (
+        "it does not reproduce figure.png: the closest re-render "
+        f"differs by RMS {min(close):.2f} (same picture: {SAME_PICTURE_RMS})"
+    )
+
+
+def library_moved(ran: dict[str, Any], now: dict[str, Any]) -> str:
+    """What to add to a failed reproduction when the library is not the run's.
+
+    A figure drawn by another commit is not expected to come out the same
+    here; judging it again needs that commit checked out.
+    """
+
+    def name(lib: dict[str, Any]) -> str:
+        changed = " with uncommitted changes" if lib.get("dirty") else ""
+        return f"{lib.get('version')} at {str(lib.get('commit'))[:8]}{changed}"
+
+    if ran.get("commit") == now.get("commit") and not (
+        ran.get("dirty") or now.get("dirty")
+    ):
+        return ""
+    return (
+        f"; the run drew with dartwork-mpl {name(ran)}, this checkout "
+        f"is {name(now)}"
+    )
+
+
 @dataclass
 class Evidence:
     """Everything the verdict reads about one run."""
 
     isolation: list[str] = field(default_factory=list)
     harness_error: str | None = None
+    strays: list[str] = field(default_factory=list)
     has_image: bool = False
+    source_problem: str | None = None
     figure: dict[str, Any] | None = None
-    probe_error: str | None = None
     lint_critical: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
 
 
 def verdict(ev: Evidence) -> tuple[str, list[str]]:
-    """``OK``, ``DEFECT``, ``NO_FIGURE`` or ``INVALID``, with the reasons."""
+    """``OK``, ``DEFECT``, ``NO_FIGURE`` or ``INVALID``, with the reasons.
+
+    A run is ``INVALID`` when the harness cannot vouch for it: the session
+    was not isolated or failed, it worked outside its root, or the source
+    that drew the figure cannot be established. Only then do the checks on
+    the re-rendered figure say anything about the agent's figure.
+    """
     if ev.isolation:
         return "INVALID", [f"isolation: {p}" for p in ev.isolation]
     if ev.harness_error:
         return "INVALID", [ev.harness_error]
+    if ev.strays:
+        return "INVALID", [
+            f"worked outside its sandbox: {p}" for p in ev.strays
+        ]
     if not ev.has_image:
         return "NO_FIGURE", ["the agent left no figure image"]
-    reasons: list[str] = []
-    if ev.figure is None:
-        reasons.append(
-            "re-running the final source drew no figure"
-            + (f" ({ev.probe_error})" if ev.probe_error else "")
-        )
-    else:
-        reasons.extend(
-            f"check {f['severity']} {f['rule']}: {f['message']}"
-            for f in ev.figure.get("check") or []
-            if f.get("severity") == "WARNING"
-        )
-        reasons.extend(
-            f"check NOT RUN: {s}" for s in ev.figure.get("check_skipped") or []
-        )
+    if ev.source_problem or ev.figure is None:
+        return "INVALID", [
+            f"source: {ev.source_problem or 'no figure measured'}"
+        ]
+    reasons = [
+        f"check {f['severity']} {f['rule']}: {f['message']}"
+        for f in ev.figure.get("check") or []
+        if f.get("severity") == "WARNING"
+    ]
+    reasons.extend(
+        f"check NOT RUN: {s}" for s in ev.figure.get("check_skipped") or []
+    )
     reasons.extend(f"lint critical {r}" for r in ev.lint_critical)
     reasons.extend(ev.missing)
     return ("DEFECT" if reasons else "OK"), reasons

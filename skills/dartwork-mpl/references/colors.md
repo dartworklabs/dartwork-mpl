@@ -12,6 +12,8 @@ user are used exactly.
 - Other libraries by name: `oc.blue5` (OpenColor), `tw.blue500` (Tailwind),
   `md.red500` (Material), `ad.blue6` (Ant), `cu.teal500` (Chakra),
   `pr.blue5` (Primer).
+- `dc.pos` (gain) and `dc.neg` (loss) are green/red by default and red/blue under a `-kr` preset.
+  Use a fixed name such as `dc.red5` to keep the same colour across presets.
 - A misspelt name raises `ValueError` when drawn and is a critical lint
   finding (`dm.lint_code`). Check a name with
   `"dc.teal3" in matplotlib.colors.get_named_colors_mapping()`.

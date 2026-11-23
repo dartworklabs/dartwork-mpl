@@ -1,0 +1,21 @@
+# cluster: line chart whose legend is a table aligned to the line ends (name, then numeric change columns under a header); refs: 2936947d-125d-803e-a72e-ed292caf1128, 2936947d-125d-80ff-8df8-ceb0d1573c14, 19e6947d-125d-80d9-872f-d7468bdabf13, 2956947d-125d-806b-b165-df026c4f1234, 19e6947d-125d-806b-a180-de7f101fb735
+prompt = "segments.csv: each customer segment's share of our revenue, 2017 to 2025 (%). A line chart, and to the right of it, instead of a legend, a table whose rows sit at the ends of the lines: the segment's name, then the change in share for 2017-21 and for 2021-25 in percentage points. Annual sales review."
+
+[files]
+"segments.csv" = """
+year,Construction,Utilities,Mining,Agriculture,Marine,Rail,Aviation
+2017,24.1,17.8,21.6,11.2,6.9,3.1,4.4
+2018,23.8,18.1,22.4,11.5,6.6,3.3,4.2
+2019,23.9,18.9,21.1,12.3,6.4,3.6,4.3
+2020,23.2,19.6,22.8,12.9,6.1,3.4,3.8
+2021,22.7,20.4,21.9,13.8,5.8,3.9,4.1
+2022,22.9,21.7,19.6,14.9,5.5,4.4,4.6
+2023,22.4,22.8,17.9,15.6,5.3,4.9,4.9
+2024,22.1,23.5,16.8,16.4,5.0,5.5,5.2
+2025,21.8,24.3,15.7,17.1,4.8,6.2,5.4
+"""
+
+[expect]
+marks = ["line"]
+texts = ["Construction", "Aviation", "Mining", "2017", "2025"]
+any_text = ["-6.2", "−6.2"]

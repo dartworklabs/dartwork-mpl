@@ -14,6 +14,9 @@ import numpy as np
 from matplotlib.figure import Figure
 
 import dartwork_mpl as dm
+from tests import text_on_backgrounds
+
+from .alignment_scenes import forest_alignment, korean_alignment
 
 _TIMES = "\u00d7"
 _PLUS_MINUS = "\u00b1"
@@ -623,8 +626,30 @@ def _build_kr_myriad_dates() -> Figure:
     return fig
 
 
+def _build_legible_korean_note() -> Figure:
+    fig, notes = text_on_backgrounds.korean_note()
+    dm.legible(notes)
+    return fig
+
+
+def _build_legible_contour_labels() -> Figure:
+    fig, labels = text_on_backgrounds.contour_labels()
+    dm.legible(labels)
+    return fig
+
+
 def all_scenarios() -> list[Scenario]:
     return [
+        Scenario(
+            "forest_alignment",
+            forest_alignment,
+            Expectations(min_lines=2, require_ylabel=False),
+        ),
+        Scenario(
+            "korean_alignment",
+            korean_alignment,
+            Expectations(min_patches=6, require_ylabel=False),
+        ),
         Scenario(
             "preset_report_line",
             _build_preset_report_line,
@@ -757,5 +782,15 @@ def all_scenarios() -> list[Scenario]:
             "kr_myriad_dates",
             _build_kr_myriad_dates,
             Expectations(min_lines=1, texts_contain=("방문객 수",)),
+        ),
+        Scenario(
+            "legible_korean_note",
+            _build_legible_korean_note,
+            Expectations(min_patches=4, texts_contain=("3분기 매출 131억",)),
+        ),
+        Scenario(
+            "legible_contour_labels",
+            _build_legible_contour_labels,
+            Expectations(min_collections=2, texts_contain=("7.0", "3.0")),
         ),
     ]

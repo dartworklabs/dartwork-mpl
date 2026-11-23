@@ -79,6 +79,8 @@ request names, so the preset styles the rest.
 | line names instead of a legend | `dm.label_line_ends(ax)` |
 | a source or note | `dm.add_note(fig, "Source: …")` |
 | emphasis on one series | it keeps its colour, the others `set_color("dc.gray4")`, then `dm.place_legend(ax)` again for fresh handles |
+| a column of names or numbers beside the plot (a net, a share, a table that stands in for a legend) | write the texts on the plot's Axes, then `dm.place_columns(ax, column)`; several: `dm.place_columns(ax, first, second)` |
+| align the edges or decimal points inside a column | `dm.align_texts(texts, "left")` or `dm.align_texts(texts, "decimal")` |
 | values on bars or points | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
 | 12000 → 12k | `ax.yaxis.set_major_formatter(lambda v, _: f"{v / 1000:g}k")` |
 | 만/억 | `dm.format_axis_myriad(ax)` |
@@ -104,7 +106,7 @@ bars". For another text, label with matplotlib instead:
 
 | Asked | Instead of `dm.label_bars` |
 |---|---|
-| a unit, fixed decimals, a plus on rises | `ax.bar_label(bars, fmt="{:+.1f} GWh", padding=3, fontsize=dm.fs(-1))` |
+| a unit, fixed decimals, a plus on rises | `ax.bar_label(bars, fmt=lambda v: f"{v:+.1f} GWh".replace("-", "−"), padding=3, fontsize=dm.fs(-1))` |
 | inside the bar | `ax.bar_label(bars, label_type="center", color="white", fontsize=dm.fs(-1))` |
 
 ```python

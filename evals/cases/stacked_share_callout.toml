@@ -1,0 +1,17 @@
+prompt = "mix.csv is each country's electricity mix in percent. Make 100% stacked horizontal bars, one per country, write the percentage inside each segment, and add a callout on the chart saying that Norway runs almost entirely on hydro. For a policy report."
+
+[files]
+"mix.csv" = """
+country,Coal,Gas,Nuclear,Hydro,Wind and solar,Other
+Norway,0,1,0,89,9,1
+France,1,6,65,11,13,4
+Germany,26,15,1,4,43,11
+Poland,61,10,0,1,21,7
+Spain,2,20,20,10,41,7
+Sweden,0,0,29,40,26,5
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Norway", "Poland", "Hydro", "Nuclear"]

@@ -1,0 +1,21 @@
+# Text in columns beside bars (#812): are the two numeric columns aligned?
+prompt = "top_products.csv has last quarter's revenue by product line. Horizontal bars sorted by revenue, and to the right of the bars two columns like a table: revenue (as $1,284k) and share of total (as 31.2%), each with a column header. It's going into the quarterly report."
+
+[files]
+"top_products.csv" = """
+product_line,revenue_usd
+Industrial sensors,1284300
+Building automation,932750
+Calibration services,611200
+Replacement parts and consumables,408900
+Wireless gateways,377450
+Training and certification,96800
+Legacy controllers,58150
+Custom engineering,9400
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["Industrial sensors", "Custom engineering", "1,284k"]
+any_text = ["%"]

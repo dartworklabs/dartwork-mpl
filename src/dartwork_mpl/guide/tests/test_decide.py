@@ -39,6 +39,9 @@ BROKEN = [
     ("ax.plot(x, linewidth=2)", "linewidth-literal"),
     ('ax.imshow(z, cmap="jet")', "jet-cmap"),
     ('plt.subplots(figsize=dm.figsize("20cm"))', "oversize-width"),
+    ("rng = np.random.default_rng()", "unseeded-rng"),
+    ("y = np.random.normal(size=9)", "unseeded-global-random"),
+    ("y = random.gauss(0, 1)", "unseeded-global-random"),
     ('ax.plot(x, color="#235fa4")', "raw-hex-color"),
     ("plt.show()", "plt-show-only"),
     ("ax.legend(h1 + h2, l1 + l2)", "twin-legend-hand-merge"),
@@ -63,6 +66,7 @@ def test_every_catalog_rule_has_a_case():
         'ax.imshow(z, cmap="viridis_r")',
         "ax.set_title('t', fontsize=dm.fs(1))",
         'dm.label_bars(ax, color="series")',  # a dm helper's own word
+        "rng = np.random.default_rng(0)\ny = rng.normal(size=9) + rng.random()",
     ],
 )
 def test_the_preset_way_is_clean(source):

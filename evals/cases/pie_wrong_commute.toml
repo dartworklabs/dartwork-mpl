@@ -1,0 +1,90 @@
+# The user names the wrong chart: a pie cannot compare three distributions.
+prompt = "Can you make a pie chart showing how commute times differ between our three offices? The answers from the staff survey are in commute.csv. It's for the HR newsletter."
+
+[files]
+"commute.csv" = """
+office,minutes
+Riverside,19
+Riverside,29
+Riverside,27
+Riverside,10
+Riverside,21
+Riverside,33
+Riverside,22
+Riverside,27
+Riverside,21
+Riverside,27
+Riverside,31
+Riverside,34
+Riverside,16
+Riverside,22
+Riverside,24
+Riverside,20
+Riverside,21
+Riverside,27
+Riverside,24
+Riverside,23
+Riverside,19
+Riverside,21
+Riverside,19
+Riverside,27
+Riverside,27
+Riverside,31
+Downtown,56
+Downtown,32
+Downtown,42
+Downtown,58
+Downtown,25
+Downtown,25
+Downtown,37
+Downtown,22
+Downtown,50
+Downtown,41
+Downtown,30
+Downtown,54
+Downtown,46
+Downtown,33
+Downtown,43
+Downtown,26
+Downtown,61
+Downtown,6
+Downtown,42
+Downtown,41
+Downtown,50
+Downtown,34
+Downtown,42
+Downtown,38
+Downtown,42
+Downtown,49
+Downtown,62
+Downtown,48
+Downtown,46
+Downtown,25
+Downtown,63
+Airport Park,41
+Airport Park,71
+Airport Park,60
+Airport Park,31
+Airport Park,55
+Airport Park,48
+Airport Park,57
+Airport Park,70
+Airport Park,61
+Airport Park,46
+Airport Park,69
+Airport Park,52
+Airport Park,66
+Airport Park,67
+Airport Park,16
+Airport Park,59
+Airport Park,54
+Airport Park,69
+Airport Park,73
+Airport Park,56
+Airport Park,84
+Airport Park,40
+Airport Park,135
+"""
+
+[expect]
+texts = ["Riverside", "Downtown", "Airport Park"]

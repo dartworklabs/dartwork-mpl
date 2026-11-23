@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Literal, NewType, TypeAlias
 
 from ..length import Length, written_zero
-from ..vocab import Box, Edge, Which
+from ..vocab import Box, Edge, HAlign, VAlign, Which
 
 Px = NewType("Px", float)
 Degrees = NewType("Degrees", float)
@@ -43,6 +43,16 @@ ANGLES = (Degrees(30.0), Degrees(45.0), Degrees(90.0))
 MAX_TICK_LINES = 3
 MAX_NAME_LINES = 4
 FIT_ROUNDS = 3
+# An angle label whose box reaches this far (em) into its polar plot runs
+# into it; matplotlib's own pad keeps a short one (``90°``) clear.
+RIM_INTO_EM = 0.15
+# A label this share of the radius left or right of the centre starts or
+# ends at its anchor: nearer the top or bottom it stays centred, so the
+# names either side of the top one keep clear of their neighbours.
+RIM_ASIDE = 0.4
+# A label this share of the radius above or below the centre stands on or
+# hangs from its anchor.
+RIM_ABOVE = 0.2
 # Figure text centred in this outer band of the canvas reserves that edge.
 EDGE_BAND = 0.15
 EDGE_BAND_TOL = 1e-9
@@ -318,6 +328,31 @@ class Spacing:
 
 
 @dataclass(frozen=True)
+class AngleLabel:
+    """One angle tick label of a polar plot: its box, its size (``em``, px)
+    and where its anchor stands on the canvas (``angle``, anticlockwise from
+    east, whatever the plot's zero and direction)."""
+
+    label: ArtistId
+    box: Box
+    angle: Degrees
+    em: Px
+
+
+@dataclass(frozen=True)
+class Rim:
+    """The angle labels around one full polar plot (``disc``: its box).
+
+    ``authored``: a label is turned or not centred on its anchor, so
+    somebody placed them.
+    """
+
+    disc: Box
+    labels: tuple[AngleLabel, ...]
+    authored: bool
+
+
+@dataclass(frozen=True)
 class TextFacts:
     """What text fitting reads from the drawn figure."""
 
@@ -325,12 +360,13 @@ class TextFacts:
     names: tuple[AxisName, ...]
     spacings: tuple[Spacing, ...]
     canvas: Canvas
+    rims: tuple[Rim, ...] = ()
 
 
 @dataclass(frozen=True)
 class TextPlan:
     """What to change: wraps per shared x axis, turns per axis, wrapped
-    names, new spacing."""
+    names, new spacing, angle labels aligned away from their plot."""
 
     wraps: Mapping[ArtistId, Mapping[Line, Line]] = field(
         default_factory=dict[ArtistId, Mapping[Line, Line]]
@@ -340,8 +376,13 @@ class TextPlan:
     )
     names: Mapping[ArtistId, Line] = field(default_factory=dict[ArtistId, Line])
     spacing: Mapping[Gap, Share] = field(default_factory=dict[Gap, Share])
+    away: Mapping[ArtistId, tuple[HAlign, VAlign]] = field(
+        default_factory=dict[ArtistId, tuple[HAlign, VAlign]]
+    )
 
     @property
     def empty(self) -> bool:
         """Nothing to change."""
-        return not (self.wraps or self.turns or self.names or self.spacing)
+        return not (
+            self.wraps or self.turns or self.names or self.spacing or self.away
+        )

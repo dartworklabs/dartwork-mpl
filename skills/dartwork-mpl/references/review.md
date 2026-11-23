@@ -55,17 +55,32 @@ not, the `try` line names what usually helps.
 | rule | Means |
 |---|---|
 | `OVERFLOW` | text cut off by the canvas edge |
-| `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, in one panel or between panels; a title or axis text running into another panel's plot (a colorbar) |
-| `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
+| `TEXT_AT_EDGE` | manually placed plot text almost touching the canvas edge; a plot title that ends at one canvas edge with room past its other end (it is centred on a plot long names pushed off the canvas centre) |
+| `OVERLAP`, `CROSS_AXES_OVERLAP` | text on text, including an inset's axis label on its ticks; axis text running into another plot or across the parent frame |
+| `TEXT_TOO_CLOSE` | a text placed near another text on the same panel, with too little space to read them apart; aligned rows of a list are fine |
+| `TEXT_CROWD` | a value beside a name on one row reads as one phrase (a number inside its dot is part of the dot, not such a value) |
+| `TEXT_MISALIGNMENT` | Text already forming a column has ragged decimal positions or edges. Select that column’s texts and use `dm.align_texts`. |
+| `TEXT_COLUMN_GAP` | a column of names or numbers set beside a plot sits more than about a text size and a half from it, or from the column between them: it floats instead of belonging to its rows. The rows are measured, not a wider heading over them, and a column that continues a grid of numbered cells at the cells' spacing (totals beside a heatmap) is in its place. `dm.place_columns(ax, texts)` sets it one text size away; the `try` line also gives the distance to move it by hand |
 | `LEGEND_ON_DATA` | a legend over data, a title or other text, or another legend |
-| `TEXT_CONTRAST` | a text you placed, under 3:1 against the bar, cell or background behind it |
+| `TEXT_CONTRAST` | a text you placed with ink under 3:1 on what is drawn behind it: all of it (white numbers on pale bars), or the part that runs from one background onto another (a note from the canvas onto a dark bar, half an em of it is enough). Move it onto one background; where it must cross, `dm.legible(texts)` and check again |
+| `MIXED_MINUS` | negative numeric labels use a hyphen while ticks on the figure use a Unicode minus |
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
-| `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar |
+| `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar; a number centred in a dot that holds it is left alone |
+| `TEXT_ON_LINE` | a name or note you placed with a line drawn through it (a trend line through a point's name); a text on its own box, a leader ending at its label, or a name turned to run along its line is fine; also an inset's tick or axis labels with its zoom connector (`ax.indicate_inset_zoom`) through them |
+| `VALUE_LABEL_ADRIFT` | a value label that stands between its own bar and another bar of the same row or column, nearer the other: it reads as the other's |
+| `UNEVEN_OUTLINE` | bars that touch a bar with a narrower outline or none: the outline is drawn half outside, so they stand past their neighbours |
+| `BAND_OFF_CENTRE` | a band (`ax.axhspan`, a rectangle) behind one row or column of marks, with that row off the band's middle |
+| `TEXT_BOX_ON_DATA` | a text on an opaque box of its own, the box over bars or filled areas: it hides them, and the text may read without it |
+| `CONNECTOR_SHORT` | a straight line or connector ending on the corner of a bar or wedge outlined in the colour of the paper: the outline covers the rim, so the line stops in the air beside the visible corner |
 | `LETTER_ON_DATA` | a panel letter inside its plot (the titles were too long to follow it) drawn on data |
+| `POLAR_TICK_ON_PLOT` | angle tick labels cross into their polar plot (`dm.simple_layout` moves centred ones out; these were placed by hand, or the layout has not run) |
+| `RADIAL_TICK_COVERED` | a polar fill paints over radial tick numbers |
 | `TICK_OVERLAP` | neighbouring tick labels collide |
-| `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough) |
-| `EMPTY_AXES` | a framed panel that draws nothing, left over from a grid |
+| `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough, and an inset that zooms into its plot reads in the plot's units) |
+| `EMPTY_AXES` | a framed panel left empty by the grid, or whose data draws no visible marks |
+| `UNDERUSED_CANVAS` | an axis-less equal-aspect plot leaves a wide blank band on the canvas |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
+| `UNDERUSED_CANVAS` | a large blank band around a frameless plot, beside columns and their descriptions with no x scale, or beside a colorbar whose slot is wider than its scale |
 
 An "only X" edit keeps the warnings the original already had: report them,
 do not fix them.

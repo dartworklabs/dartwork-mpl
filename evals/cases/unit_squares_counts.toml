@@ -1,0 +1,15 @@
+# cluster: small counts as one square per unit in rows, two stages side by side, totals at the right in larger type; refs: 2976947d-125d-80d4-8cb2-fa4decb717a1, 1b76947d-125d-80d3-8a01-d20990c7ad42
+prompt = "projects.csv: our R&D projects by division and stage (lab stage or pilot plant). The counts are small, so show them as one square per project in rows rather than plain bars, with each division's total at the right in larger type and a Total line at the bottom. R&D portfolio slide."
+
+[files]
+"projects.csv" = """
+division,lab_stage,pilot_plant
+Materials,17,5
+Batteries,11,3
+Coatings,9,2
+Sensors and controls,6,1
+Recycling,4,0
+"""
+
+[expect]
+texts = ["Materials", "Sensors and controls", "Recycling", "22", "58"]

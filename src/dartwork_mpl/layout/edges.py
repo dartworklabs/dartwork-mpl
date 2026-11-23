@@ -12,13 +12,27 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
 from ..edgecase import EdgeCase
-from ..vocab import Top, Which
+from ..vocab import (
+    AlignBottom,
+    AlignCentre,
+    AlignLeft,
+    AlignRight,
+    AlignTop,
+    HAlign,
+    Top,
+    VAlign,
+    VCentre,
+    Which,
+)
 from . import decide
 from .model import (
     ANGLES,
     MAX_NAME_LINES,
     MAX_TICK_LINES,
     MIN_CELL_EM,
+    RIM_ABOVE,
+    RIM_ASIDE,
+    RIM_INTO_EM,
     TOUCH_PX,
     ArtistId,
     AxesContent,
@@ -33,6 +47,7 @@ from .model import (
     Line,
     Px,
     Reach,
+    Rim,
     Share,
     Spacing,
     TextFacts,
@@ -436,6 +451,62 @@ def _turn_ticks(facts: TextFacts, plan: TextPlan) -> TextPlan:
     return replace(plan, wraps=wraps, turns=turns)
 
 
+def reach_into(box: Box, disc: Box) -> Px:
+    """How far ``box`` reaches inside the circle ``disc`` bounds, measured
+    from its point nearest the centre (0: clear of the circle)."""
+    rx, ry = (disc.x1 - disc.x0) / 2, (disc.y1 - disc.y0) / 2
+    if rx <= 0 or ry <= 0:
+        return Px(0.0)
+    cx, cy = disc.x0 + rx, disc.y0 + ry
+    dx = max(box.x0 - cx, cx - box.x1, 0.0) / rx
+    dy = max(box.y0 - cy, cy - box.y1, 0.0) / ry
+    return Px(max(0.0, 1.0 - math.hypot(dx, dy)) * min(rx, ry))
+
+
+def away_from_centre(angle: Degrees) -> tuple[HAlign, VAlign]:
+    """The alignment that keeps a label on the far side of its anchor: one
+    right of the plot starts at it, one above stands on it."""
+    across = math.cos(math.radians(angle))
+    up = math.sin(math.radians(angle))
+    ha: HAlign = (
+        AlignLeft()
+        if across > RIM_ASIDE
+        else AlignRight()
+        if across < -RIM_ASIDE
+        else AlignCentre()
+    )
+    va: VAlign = (
+        AlignBottom()
+        if up > RIM_ABOVE
+        else AlignTop()
+        if up < -RIM_ABOVE
+        else VCentre()
+    )
+    return ha, va
+
+
+def _runs_in(rim: Rim) -> bool:
+    """Labels nobody placed, one of them inside the circle."""
+    return not rim.authored and any(
+        reach_into(label.box, rim.disc) > RIM_INTO_EM * label.em
+        for label in rim.labels
+    )
+
+
+def _has_angle_labels_in_the_plot(facts: TextFacts, plan: TextPlan) -> bool:
+    return any(_runs_in(rim) for rim in facts.rims)
+
+
+def _align_away(facts: TextFacts, plan: TextPlan) -> TextPlan:
+    """Every label of such a plot, so they stand at one distance from it."""
+    away: dict[ArtistId, tuple[HAlign, VAlign]] = dict(plan.away)
+    for rim in facts.rims:
+        if _runs_in(rim):
+            for label in rim.labels:
+                away[label.label] = away_from_centre(label.angle)
+    return replace(plan, away=away)
+
+
 TEXT_EDGES: tuple[EdgeCase[TextFacts, TextPlan], ...] = (
     EdgeCase(
         name="overlong-axis-name",
@@ -468,5 +539,15 @@ TEXT_EDGES: tuple[EdgeCase[TextFacts, TextPlan], ...] = (
         example="test_edges.py::test_crowded_ticks_rotate_when_they_cannot_wrap",
         applies=_has_unwrappable_ticks,
         adjust=_turn_ticks,
+    ),
+    EdgeCase(
+        name="angle-labels-in-the-plot",
+        why="a radar's long category names, centred on their anchors, ran "
+        "across the circle into the data, 'Customer support' over its own "
+        "vertex",
+        example="test_edges.py::"
+        "test_angle_labels_in_the_plot_are_aligned_away_from_it",
+        applies=_has_angle_labels_in_the_plot,
+        adjust=_align_away,
     ),
 )

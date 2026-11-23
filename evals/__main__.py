@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -17,11 +18,11 @@ RUNS = Path(__file__).resolve().parent / "runs"
 
 
 def run_safely(
-    case: harness.Case, arm: str, out: Path, model: str
+    case: harness.Case, arm: str, out: Path, model: str, shared: harness.Setup
 ) -> dict[str, Any]:
     """One run; a harness crash is recorded as INVALID, never lost."""
     try:
-        record = harness.run_one(case, arm, out, model)
+        record = harness.run_one(case, arm, out, model, shared)
     except Exception as exc:  # noqa: BLE001 - every run must leave a verdict
         out.mkdir(parents=True, exist_ok=True)
         record = {
@@ -30,6 +31,7 @@ def run_safely(
             "verdict": "INVALID",
             "reasons": [f"harness error: {type(exc).__name__}: {exc}"],
             "prompt": case.prompt,
+            "provenance": shared.provenance,
             "trace": traceback.format_exc(),
         }
         (out / "result.json").write_text(
@@ -61,8 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "rejudge":
         by_name = {c.name: c for c in harness.load_cases()}
         for path in sorted(args.run_dir.glob("*/*/result.json")):
-            case = by_name[path.parent.parent.name]
-            record = harness.rejudge(case, path.parent)
+            record = harness.rejudge(path.parent, by_name)
             print(f"{record['verdict']:9} {record['case']}/{record['arm']}")
     if args.command in ("report", "rejudge"):
         print(sheet.write_report(args.run_dir))
@@ -74,18 +75,21 @@ def main(argv: list[str] | None = None) -> int:
     out = RUNS / datetime.now().strftime("%Y%m%d-%H%M%S")
     out.mkdir(parents=True)
     names = [c.name for c in cases]
-    meta = {"cases": names, "arms": arms, "model": args.model}
-    (out / "run.json").write_text(json.dumps(meta, indent=1))
     jobs = [(c, a) for c in cases for a in arms]
-    with ThreadPoolExecutor(max_workers=max(args.jobs, 1)) as pool:
-        list(
-            pool.map(
-                lambda j: run_safely(
-                    j[0], j[1], out / j[0].name / j[1], args.model
-                ),
-                jobs,
+    with tempfile.TemporaryDirectory(prefix="dmpl-eval-wheel-") as dist:
+        shared = harness.setup(Path(dist))
+        meta = {"cases": names, "arms": arms, "model": args.model}
+        meta["provenance"] = shared.provenance
+        (out / "run.json").write_text(json.dumps(meta, indent=1))
+        with ThreadPoolExecutor(max_workers=max(args.jobs, 1)) as pool:
+            list(
+                pool.map(
+                    lambda j: run_safely(
+                        j[0], j[1], out / j[0].name / j[1], args.model, shared
+                    ),
+                    jobs,
+                )
             )
-        )
     print(sheet.write_report(out, names, arms))
     print(f"contact sheet: {out / 'index.html'}")
     return 0

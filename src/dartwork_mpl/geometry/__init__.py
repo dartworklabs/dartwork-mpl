@@ -10,6 +10,7 @@ uses lives in that slice.
 - :mod:`.axes`: an Axes' titles and drawn tick labels, its twins and shares;
 - :mod:`.ink`: what an artist actually draws, where its clip lets it;
 - :mod:`.data_ink`: a plot's data ink by key, and what a box meets.
+- :mod:`.backdrop`: what is drawn behind each pixel of a text's ink.
 """
 
 from .axes import (
@@ -23,7 +24,8 @@ from .axes import (
     same_position_axes,
     shared_axes,
 )
-from .data_ink import DataInk, ToPx
+from .backdrop import Backdrop, Drawn, backdrops, draw
+from .data_ink import DataInk, ToPx, in_data_coords, marks_ink
 from .figure import (
     drawn_in_tree,
     figure_axes,
@@ -35,14 +37,17 @@ from .figure import (
 )
 from .ink import (
     UNCLIPPED,
+    artist_shown,
     clip_path_px,
     clip_region,
     cut_to_clip,
     discs_meet,
     drawn_collection_outlines,
+    drawn_collection_paths,
     drawn_ink_meets,
     drawn_patch_box,
     drawn_scatter_discs,
+    edge_inks,
     line_draws_markers,
     line_draws_stroke,
     marker_radius_pt,
@@ -52,40 +57,51 @@ from .ink import (
 )
 from .model import CentreTitle, LeftTitle, RightTitle, TitleLoc
 from .renderer import BBOX_ERRORS, canvas_renderer, get_renderer
+from .text_anchors import follows_mark
 
 __all__ = [
     "BBOX_ERRORS",
     "UNCLIPPED",
+    "Backdrop",
     "CentreTitle",
     "DataInk",
+    "Drawn",
     "LeftTitle",
     "RightTitle",
     "TitleLoc",
     "ToPx",
+    "artist_shown",
     "axes_titles",
     "axis_of",
+    "backdrops",
     "canvas_renderer",
     "clip_path_px",
     "clip_region",
     "cut_to_clip",
     "discs_meet",
+    "draw",
     "drawn_collection_outlines",
+    "drawn_collection_paths",
     "drawn_in_tree",
     "drawn_ink_meets",
     "drawn_patch_box",
     "drawn_scatter_discs",
     "drawn_tick_labels",
     "draws_axis",
+    "edge_inks",
     "figure_axes",
     "figure_legends",
+    "follows_mark",
     "get_renderer",
     "holders_shown",
+    "in_data_coords",
     "in_view_tick_labels",
     "iter_figure_level_extents",
     "label_side",
     "line_draws_markers",
     "line_draws_stroke",
     "marker_radius_pt",
+    "marks_ink",
     "panel_letters",
     "patch_inks",
     "projection",

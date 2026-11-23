@@ -1,0 +1,21 @@
+# cluster: bars with values, then table columns of numbers where only notable cells are shaded (two colours for above and below the reference), three-class legend; refs: 2956947d-125d-8091-b195-dbbaf1453e0f, 2956947d-125d-80ba-8b4f-dbded11e458c, 19e6947d-125d-8046-9247-cdd99582d6a5, 1386947d-125d-805c-bdfd-de1c78465dd2, 2956947d-125d-804d-b54f-fce8c9d632a3
+prompt = "baskets.csv: the share of orders that contain each product category this season, overall and by sales channel (%). Bars for the overall share with the number, then one column per channel with the numbers as a table, shading a cell only when that channel is more than 3 points above or below overall (two colours, one for above and one for below). Sorted by overall. Seasonal retail report."
+
+[files]
+"baskets.csv" = """
+category,Overall,Mobile app,Website,Stores,Wholesale
+Gift cards,36,28,31,37,45
+Clothing,33,41,35,32,27
+Toys and games,26,18,34,29,19
+Books,22,19,20,22,27
+Electronics,21,29,24,19,13
+Beauty and personal care,19,27,21,16,12
+Home goods,17,11,19,18,17
+Food and drink hampers,15,9,12,16,22
+Travel accessories,12,16,15,11,6
+Jewellery,9,10,9,9,8
+"""
+
+[expect]
+marks = ["bar"]
+texts = ["Gift cards", "Jewellery", "Mobile app", "Wholesale", "45"]

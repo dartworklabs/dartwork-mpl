@@ -1,0 +1,29 @@
+# cluster: small line panels of a decline with the zero baseline at the top and the x axis there, curves named in place, a short explanatory heading per panel; refs: 2966947d-125d-805a-aa79-cc468458687c, 1b76947d-125d-80b0-a082-ea159bea51c9, 1b76947d-125d-8067-9c60-f86ae39b69c8
+prompt = "intensity.csv: the change in CO2 intensity of the power sector since each country's policy shift (%, year 0 = 0) over the following 20 years. Everything is negative, so put zero at the top and let the lines fall away from it. One panel per country on the same scale, with a few words under each country's name saying what the policy was (policies.csv). Energy transition report."
+
+[files]
+"intensity.csv" = """
+years_since_shift,Norland,Estavia,Meridia
+0,0,0,0
+2,-3,-6,-1
+4,-9,-11,-2
+6,-17,-14,-4
+8,-24,-19,-9
+10,-29,-27,-15
+12,-33,-36,-22
+14,-38,-41,-27
+16,-44,-45,-30
+18,-47,-52,-32
+20,-49,-58,-33
+"""
+"policies.csv" = """
+country,policy
+Norland,Nuclear build-out after the fuel crisis
+Estavia,Coal-to-gas switch and a carbon price floor
+Meridia,Renewables auctions and grid expansion
+"""
+
+[expect]
+panels = 3
+marks = ["line"]
+texts = ["Norland", "Estavia", "Meridia", "carbon price floor"]

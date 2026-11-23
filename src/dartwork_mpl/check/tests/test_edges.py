@@ -7,15 +7,24 @@ from dataclasses import replace
 from dartwork_mpl.check.edges import EDGES
 from dartwork_mpl.check.findings import Findings
 from dartwork_mpl.check.model import (
+    Bar,
     Box,
+    Boxed,
+    CanvasUse,
+    Connected,
+    Dot,
     Facts,
     Frame,
     Hit,
     Inked,
+    Inset,
     Legend,
+    LineEnd,
     OnData,
     Panel,
+    PolarTheta,
     Text,
+    TickOcclusion,
     TickRow,
     TickValues,
 )
@@ -27,7 +36,7 @@ from dartwork_mpl.check.roles import (
     TickLabel,
     Title,
 )
-from dartwork_mpl.colorspace import Hex, Ratio
+from dartwork_mpl.colorspace import Legibility, Ratio, Rgb
 from dartwork_mpl.edgecase import settle
 from dartwork_mpl.vocab import X, Y
 
@@ -91,6 +100,19 @@ def test_CROSS_AXES_OVERLAP_title_on_neighbour_ticks():
     assert not found(Facts(CANVAS, PT, texts=(wide,), frames=(plot, twin)))
 
 
+def test_an_inset_label_has_to_cross_the_parent_spine():
+    label = text("Load (MW)", Box(100, 200, 140, 300), AxisLabel(), panel=1)
+    parent = Panel(object(), 0)
+    for spine, expected in (
+        (Box(120, 100, 120, 400), ("CROSS_AXES_OVERLAP",)),
+        (Box(102, 100, 102, 400), ()),
+        (Box(120, 100, 120, 203), ()),
+    ):
+        inset = Inset(parent, 1, (label,), (spine,))
+        facts = Facts(CANVAS, PT, texts=(label,), insets=(inset,))
+        assert found(facts).rules == expected
+
+
 def test_TEXT_CROWD_value_beside_a_name():
     value = text("19.4 TWh", Box(700, 500, 860, 540))
     name = text("Solar", Box(889, 500, 980, 540))
@@ -145,6 +167,22 @@ def test_VALUE_LABEL_ON_DATA():
     assert f.rule == "VALUE_LABEL_ON_DATA" and f.artists == (label.handle,)
 
 
+def test_TEXT_ON_LINE():
+    name = text("Apple A7", INSIDE)
+    on = OnData(name, (Hit("line", "trend"),))
+    (f,) = found(Facts(CANVAS, PT, texts=(name,), struck=(on,)))
+    assert f.rule == "TEXT_ON_LINE" and f.artists == (name.handle,)
+    assert "'Apple A7'" in f.message
+
+
+def test_TEXT_ON_LINE_zoom_connector_through_inset_labels():
+    tick = text("41.0", INSIDE, TickLabel(), panel=1)
+    (f,) = found(Facts(CANVAS, PT, connected=(Connected(1, (tick,)),)))
+    assert f.rule == "TEXT_ON_LINE" and f.panels == (1,)
+    assert "zoom connector" in f.message and "'41.0'" in f.message
+    assert "tick_top" in f.fix
+
+
 def test_LETTER_ON_DATA():
     letter = text("b", Box(100, 500, 120, 530), PanelLetter())
     on = OnData(letter, (Hit("line", "Signal"),))
@@ -154,13 +192,22 @@ def test_LETTER_ON_DATA():
 
 
 def test_TEXT_CONTRAST():
+    """A text is found when one window of it has lost half its ink: all of
+    a white value on pale yellow, or the part of a note on a navy bar."""
     label = text("4.6", INSIDE)
-    white, yellow = Hex("#ffffff"), Hex("#f9d969")
-    faint = Inked(label, white, yellow, Ratio(1.39))
+    white, yellow = Rgb(1.0, 1.0, 1.0), Rgb.from_hex("#f9d969")
+    faint = Inked(label, Legibility(1.0, 1.0, Ratio(1.39), white, yellow))
     (f,) = found(Facts(CANVAS, PT, texts=(label,), inks=(faint,)))
     assert f.rule == "TEXT_CONTRAST" and "1.39:1" in f.message
-    plain = Inked(label, Hex("#000000"), yellow, Ratio(3.2))
+    assert "all of its ink" in f.message and "#ffffff on #f9d969" in f.message
+    black, navy = Rgb(0.0, 0.0, 0.0), Rgb.from_hex("#0b2a5b")
+    partly = Inked(label, Legibility(0.45, 1.0, Ratio(1.43), black, navy))
+    (f,) = found(Facts(CANVAS, PT, texts=(label,), inks=(partly,)))
+    assert "45% of its ink" in f.message
+    plain = Inked(label, Legibility(0.0, 0.0, Ratio(3.2), black, yellow))
     assert not found(Facts(CANVAS, PT, texts=(label,), inks=(plain,)))
+    edge = Inked(label, Legibility(0.2, 0.49, Ratio(1.5), black, navy))
+    assert not found(Facts(CANVAS, PT, texts=(label,), inks=(edge,)))
 
 
 def test_VALUE_LABEL_DECIMAL():
@@ -192,3 +239,273 @@ def test_SMALL_PANEL():
     assert "SMALL_PANEL" not in found(largest).rules
     colorbar = Facts(CANVAS, PT, ticks=ticks(0, Y()), frames=(small,))
     assert not found(colorbar)
+
+
+def test_TEXT_TOO_CLOSE():
+    title = text("Temperature peaks at noon", INSIDE, Title())
+    for label, expected in (
+        (text("Today", Box(110, 70, 160, 94)), ("TEXT_TOO_CLOSE",)),
+        (text("Today", Box(110, 50, 160, 80)), ()),
+        (text("Today", Box(110, 80, 160, 110)), ("OVERLAP",)),
+        (text("Today", Box(304, 100, 360, 140)), ("TEXT_TOO_CLOSE",)),
+        (text("Today", Box(304, 70, 360, 94)), ()),
+        (text("Air temperature", Box(110, 70, 160, 94), AxisLabel()), ()),
+    ):
+        assert found(Facts(CANVAS, PT, texts=(title, label))).rules == expected
+
+    first = text("Wind", INSIDE)
+    for gap, expected in ((10, ("TEXT_TOO_CLOSE",)), (17, ())):
+        second = text("Hydro", Box(120, 140 + gap, 320, 175 + gap))
+        assert found(Facts(CANVAS, PT, texts=(first, second))).rules == expected
+
+    for aligned in (
+        Box(102, 144, 230, 184),  # left
+        Box(170, 144, 299, 184),  # right
+        Box(145, 144, 255, 184),  # centre
+    ):
+        second = text("Hydro", aligned)
+        assert not found(Facts(CANVAS, PT, texts=(first, second)))
+        larger = replace(second, em=44)
+        assert found(Facts(CANVAS, PT, texts=(first, larger))).rules == (
+            "TEXT_TOO_CLOSE",
+        )
+
+    value = text("19.4 TWh", INSIDE)
+    name = text("Solar", Box(306, 100, 400, 140))
+    assert found(Facts(CANVAS, PT, texts=(value, name))).rules == (
+        "TEXT_CROWD",
+    )
+
+
+def test_POLAR_TICK_ON_PLOT():
+    """A real intrusion counts, while a graze or an outside corner clears."""
+    disc = Box(100, 100, 300, 300)
+    for box, expected in (
+        (Box(280, 180, 330, 220), ("POLAR_TICK_ON_PLOT",)),
+        (Box(289, 180, 330, 220), ()),
+        (Box(280, 280, 330, 320), ()),
+    ):
+        label = text("Camera quality", box, TickLabel())
+        theta = PolarTheta(Panel(object(), 0), disc, (label,))
+        assert found(Facts(CANVAS, PT, polar_theta=(theta,))).rules == expected
+
+
+def test_MIXED_MINUS():
+    """A Unicode tick on any panel is evidence for the mixed-sign finding."""
+    label = text("-12.4%", INSIDE)
+    facts = Facts(CANVAS, PT, minus_labels=(label,))
+    assert not found(facts)
+    tick = text("\u221210", INSIDE, TickLabel(), panel=1)
+    (finding,) = found(replace(facts, minus_tick=tick))
+    assert finding.rule == "MIXED_MINUS"
+    assert finding.panels == (0,) and finding.artists == (label.handle,)
+
+
+def test_TEXT_MISALIGNMENT_on_forest_values():
+    import matplotlib.pyplot as plt
+
+    import dartwork_mpl as dm
+
+    with dm.style.context("scientific"):
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
+        ax.scatter([2, 3, 4], [0, 1, 2])
+        ax.set(xlabel="Effect", yticks=[])
+        texts = [
+            ax.text(
+                1.03,
+                i,
+                text,
+                transform=ax.get_yaxis_transform(),
+                fontfamily="Inter",
+            )
+            for i, text in enumerate(
+                (" 1.1 [2.4, 16.4]", "88.8 [-3.6, 5.2]", "-111.1 [-5.8, 1.6]")
+            )
+        ]
+        dm.simple_layout(fig)
+        assert "TEXT_MISALIGNMENT" in dm.check(fig).rules
+        dm.align_texts(texts, "decimal")
+        dm.simple_layout(fig)
+        assert "TEXT_MISALIGNMENT" not in dm.check(fig).rules
+        plt.close(fig)
+
+
+def test_bar_ends_are_not_a_column():
+    import matplotlib.pyplot as plt
+
+    import dartwork_mpl as dm
+
+    with dm.style.context("report"):
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
+        bars = ax.barh(
+            ["North", "South", "East", "West"], [38.6, 82.7, 61.2, 25.3]
+        )
+        ax.bar_label(bars, fmt="%.1f", padding=4)
+        ax.set(xlabel="Revenue (USD m)", xlim=(0, 100))
+        dm.simple_layout(fig)
+        assert "TEXT_MISALIGNMENT" not in dm.check(fig).rules
+        plt.close(fig)
+
+
+def test_RADIAL_TICK_COVERED():
+    """Light veils clear the check, while a substantially painted box fires."""
+    label = text("20", INSIDE, TickLabel())
+    for opacity, expected in ((0.2, ()), (0.45, ("RADIAL_TICK_COVERED",))):
+        facts = Facts(
+            CANVAS, PT, occluded_ticks=(TickOcclusion(label, opacity),)
+        )
+        assert found(facts).rules == expected
+
+
+def test_TEXT_AT_EDGE():
+    """At ordinary layout margins the text clears, and clipping reports once."""
+    for left, expected in (
+        (0, ("TEXT_AT_EDGE",)),
+        (1, ("TEXT_AT_EDGE",)),
+        (12, ()),
+        (-10, ("OVERFLOW",)),
+    ):
+        label = text("Germany", Box(left, 100, 110, 140))
+        assert (
+            found(Facts(CANVAS, PT, texts=(label,), edge_texts=(label,))).rules
+            == expected
+        )
+
+
+def test_TEXT_AT_EDGE_title_of_an_off_centre_plot():
+    """CANVAS is 1000 px wide at 300 dpi: 1.25 mm is 15 px, an em 40."""
+    for box, expected in (
+        (Box(350, 500, 997, 540), ("TEXT_AT_EDGE",)),  # 3 px right, 350 left
+        (Box(3, 500, 650, 540), ("TEXT_AT_EDGE",)),  # the same at the left
+        (Box(350, 500, 980, 540), ()),  # 20 px (1.7 mm) of air: not at the edge
+        (Box(60, 500, 997, 540), ()),  # 60 px past it: nowhere to go
+        (Box(800, 500, 997, 540), ()),  # a narrow panel title
+        (Box(350, 500, 1010, 540), ("OVERFLOW",)),  # cut: the other rule
+    ):
+        title = text("Exports passed the 2019 level", box, Title())
+        facts = Facts(CANVAS, PT, texts=(title,), edge_titles=(title,))
+        assert found(facts).rules == expected
+    (f,) = found(
+        Facts(
+            CANVAS,
+            PT,
+            edge_titles=(text("T", Box(350, 500, 997, 540), Title()),),
+        )
+    )
+    assert "right canvas edge" in f.message and "fig.suptitle" in f.fix
+
+
+def test_UNDERUSED_CANVAS():
+    """A strip within a big canvas flags, while a tile or balanced margins clear."""
+    big = Box(0, 0, 1500, 1200)
+    tile = Box(0, 0, 800, 600)
+    for canvas, body, expected in (
+        (big, Box(0, 300, 1360, 900), ("UNDERUSED_CANVAS",)),
+        (big, Box(150, 150, 1350, 1050), ()),
+        (big, Box(255, 210, 1245, 990), ()),
+        (tile, Box(20, 180, 780, 420), ()),
+    ):
+        facts = Facts(
+            canvas, PT, canvas_use=CanvasUse(Panel(object(), 0), body)
+        )
+        assert found(facts).rules == expected
+
+
+def bar(box: Box, length: float = 0.0, outset: float = 0.0) -> Bar:
+    return Bar(object(), 0, box, (length, 1.0) if length else (), outset)
+
+
+def test_VALUE_LABEL_ADRIFT():
+    """A value far from its bar, right before the next cell's bar, flags;
+    the same value at its bar's end does not."""
+    own, other = (
+        bar(Box(100, 100, 150, 140), 2.1),
+        bar(Box(400, 100, 520, 140), 9.0),
+    )
+    far = text("2.1", Box(330, 105, 380, 135))
+    facts = Facts(CANVAS, PT, texts=(far,), bars=(own, other))
+    assert found(facts).rules == ("VALUE_LABEL_ADRIFT",)
+    near = text("2.1", Box(160, 105, 210, 135))
+    assert not found(replace(facts, texts=(near,)))
+    total = text("11.1", Box(330, 105, 380, 135))
+    assert not found(replace(facts, texts=(total,)))
+
+
+def test_BAND_OFF_CENTRE():
+    """A band that runs further past one side of its row of dots flags; a
+    centred one, and one that also holds a caption, do not."""
+    dots = tuple(Dot(object(), 0, Box(x, 300, x + 40, 340)) for x in (100, 300))
+    band = bar(Box(50, 270, 400, 400))
+    facts = Facts(CANVAS, PT, bars=(band,), dots=dots)
+    assert found(facts).rules == ("BAND_OFF_CENTRE",)
+    centred = bar(Box(50, 270, 400, 370))
+    assert not found(replace(facts, bars=(centred,)))
+    caption = text("Overall", Box(60, 350, 200, 390))
+    assert not found(replace(facts, texts=(caption,)))
+
+
+def test_UNEVEN_OUTLINE():
+    """An outlined segment touching a bare one flags; the same outline on
+    both, or bars apart, do not."""
+    left = bar(Box(100, 100, 200, 140), 4.0)
+    mid = bar(Box(200, 100, 300, 140), 38.0, outset=0.25)
+    assert found(Facts(CANVAS, PT, bars=(left, mid))).rules == (
+        "UNEVEN_OUTLINE",
+    )
+    even = replace(left, outset=0.25)
+    assert not found(Facts(CANVAS, PT, bars=(even, mid)))
+    apart = bar(Box(350, 100, 450, 140), 38.0, outset=0.25)
+    assert not found(Facts(CANVAS, PT, bars=(left, apart)))
+
+
+def test_TEXT_BOX_ON_DATA():
+    """A text whose own box covers a filled mark flags."""
+    label = text("Private equity 139", INSIDE)
+    facts = Facts(CANVAS, PT, boxed=(Boxed(label, (Hit("area", ""),)),))
+    assert found(facts).rules == ("TEXT_BOX_ON_DATA",)
+
+
+def test_CONNECTOR_SHORT():
+    """A line end on a corner under a 2 pt paper-coloured outline flags;
+    under a hairline it does not."""
+    end = LineEnd(object(), object(), short=1.0)
+    assert found(Facts(CANVAS, PT, line_ends=(end,))).rules == (
+        "CONNECTOR_SHORT",
+    )
+    assert not found(Facts(CANVAS, PT, line_ends=(replace(end, short=0.1),)))
+
+
+def test_TEXT_COLUMN_GAP_on_a_floating_column():
+    import matplotlib.pyplot as plt
+
+    import dartwork_mpl as dm
+
+    def chart(x: float) -> tuple[object, list[object]]:
+        fig, ax = plt.subplots(figsize=dm.figsize("14cm", 0.6))
+        shares = [58, 46, 39, 25, 13]
+        ax.barh(range(5), shares)
+        ax.set(xlim=(0, 60), xlabel="Share (%)")
+        ax.set_yticks(range(5), ["North", "South", "East", "West", "Centre"])
+        column = [
+            ax.text(
+                x,
+                y,
+                f"{net:+d}",
+                transform=ax.get_yaxis_transform(),
+                ha="right",
+                va="center",
+            )
+            for y, net in enumerate([54, 39, 30, -3, -26])
+        ]
+        dm.simple_layout(fig)
+        return fig, column
+
+    with dm.style.context("report"):
+        fig, column = chart(1.2)
+        (finding,) = [f for f in dm.check(fig) if f.rule == "TEXT_COLUMN_GAP"]
+        assert set(finding.artists) == set(column)
+        assert "to the left (the x they were given: 1.2 to 1.07)" in finding.fix
+        plt.close(fig)
+        fig, _ = chart(1.07)
+        assert "TEXT_COLUMN_GAP" not in dm.check(fig).rules
+        plt.close(fig)

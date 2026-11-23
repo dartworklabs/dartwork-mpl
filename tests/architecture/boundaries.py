@@ -64,7 +64,8 @@ ENTRY_POINTS = frozenset(
 PLATFORM = frozenset(
     {
         # Colour values and their arithmetic: sRGB, OKLab, compositing,
-        # WCAG contrast (color and labels compute with them).
+        # WCAG contrast (color and labels compute with them), and how much
+        # of a text's ink reads on what is behind it (check and labels).
         "dartwork_mpl.colorspace",
         # A physical length and its units (size measures canvases in it,
         # layout margins).
@@ -108,8 +109,15 @@ SHIMS: Mapping[str, str] = {}
 # tests/architecture/test_pure_imports.py checks that doing so loads no
 # matplotlib.
 DECISIONS: Mapping[str, str] = {
+    "dartwork_mpl.check.alignment": (
+        "a ragged column is decided from measured anchors and tabs"
+    ),
     "dartwork_mpl.check.decide": (
         "what is wrong with a figure is decided from its measured facts alone"
+    ),
+    "dartwork_mpl.check.marks": (
+        "a stray value label, an off-centre band and an uneven outline are "
+        "decided from measured boxes"
     ),
     "dartwork_mpl.check.model": (
         "the facts, findings and value-label test need nothing outside them"
@@ -147,6 +155,9 @@ DECISIONS: Mapping[str, str] = {
     ),
     "dartwork_mpl.size.model": (
         "parsing user input into size types needs nothing outside it"
+    ),
+    "dartwork_mpl.labels.alignment_layout": (
+        "decimal stops are planned from parsed rows and measured advances"
     ),
     "dartwork_mpl.labels.decide": (
         "label placement is decided from measured boxes alone"

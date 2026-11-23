@@ -290,7 +290,7 @@ def patch_inks(patch: Patch) -> bool:
         return False
     if patch.get_fill() and _alpha(patch.get_facecolor()) > 0:
         return True
-    if _edge_inks(patch):
+    if edge_inks(patch):
         return True
     return bool(
         patch.get_hatch()
@@ -299,7 +299,8 @@ def patch_inks(patch: Patch) -> bool:
     )
 
 
-def _edge_inks(patch: Patch) -> bool:
+def edge_inks(patch: Patch) -> bool:
+    """Whether a patch draws its edge: a width, a line style and a colour with alpha."""
     return bool(
         patch.get_linewidth() > 0
         and patch.get_linestyle() not in _NO_STROKE
@@ -415,7 +416,7 @@ def drawn_patch_box(patch: Patch, renderer: RendererBase) -> Bbox | None:
     if not patch_inks(patch):
         return None
     box = patch.get_extents()
-    if _edge_inks(patch):
+    if edge_inks(patch):
         box = box.padded(
             float(np.asarray(renderer.points_to_pixels(patch.get_linewidth())))
             / 2

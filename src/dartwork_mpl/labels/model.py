@@ -1,7 +1,8 @@
 """The labels' domain types outside the bars: a point label's sides and the
 tries among them, panel letters and line-end columns, as the layout measures
-them in display pixels or points, and the one place ``label_bars``'s
-``bars=`` is read. The bar types are in ``bar_geometry`` and ``stacks``.
+them in display pixels or points, a text's inks and how ``dm.legible``
+mends it, and the one place ``label_bars``'s ``bars=`` is read. The bar
+types are in ``bar_geometry`` and ``stacks``.
 """
 
 from __future__ import annotations
@@ -11,12 +12,14 @@ from dataclasses import dataclass
 from typing import (
     ClassVar,
     Generic,
+    Literal,
     Protocol,
     TypeAlias,
     TypeVar,
     runtime_checkable,
 )
 
+from ..colorspace import Legibility, Rgb
 from ..vocab import (
     AlignBottom,
     AlignCentre,
@@ -26,6 +29,7 @@ from ..vocab import (
     HAlign,
     VAlign,
     VCentre,
+    parse_halign,
 )
 
 
@@ -206,6 +210,83 @@ class Column:
     height: float
 
 
+# ------------------------------------------------------------ legible text
+@dataclass(frozen=True)
+class Ink:
+    """A colour a text could be drawn in, and how much of the text would
+    read in it on what is drawn behind it."""
+
+    colour: Rgb
+    reading: Legibility
+
+
+@dataclass(frozen=True)
+class InkFacts:
+    """One text against what is drawn behind it.
+
+    ``drawn``: how the colours it is painted in read, halo and box
+    included: what ``dm.check`` judges. ``inks``: the colours
+    ``dm.legible`` may draw it in, each read through the text's own alpha,
+    its own first, then the preset's text colour and the face colour of
+    its Axes. ``home``: the colour of the background its own ink reads
+    best on. ``size``: its font size (pt). ``alpha``: its own opacity.
+    """
+
+    drawn: Legibility
+    inks: tuple[Ink, ...]
+    home: Rgb
+    size: float
+    alpha: float = 1.0
+
+    @property
+    def own(self) -> Ink:
+        """The text's own colour."""
+        return self.inks[0]
+
+
+@dataclass(frozen=True)
+class Leave:
+    """The text is left as it is drawn."""
+
+
+@dataclass(frozen=True)
+class Recolour:
+    """One colour reads on everything behind the text: draw it in ``ink``."""
+
+    ink: Rgb
+
+
+@dataclass(frozen=True)
+class Halo:
+    """No one colour reads on every background the text crosses: outline
+    its glyphs in ``colour``, ``side`` points beyond them."""
+
+    colour: Rgb
+    side: float
+
+
+#: What ``dm.legible`` does to one text.
+Mend = Leave | Recolour | Halo
+
+
+@dataclass(frozen=True)
+class OwnAlpha:
+    """The text is translucent (``alpha``): what is behind it shows through
+    its ink in any colour."""
+
+    alpha: float
+
+
+@dataclass(frozen=True)
+class DrawnOver:
+    """Something is drawn over the text, so nothing done to the text
+    itself shows there."""
+
+
+#: Why nothing ``dm.legible`` can do makes a text read.
+InTheWay = OwnAlpha | DrawnOver
+
+
 # ------------------------------------------------------------ bars=
 BARS_TAKES = (
     "bars= takes what one ax.bar / ax.barh call returned (bars), a list of "
@@ -268,3 +349,24 @@ def choose_bars(request: object, drawn: Sequence[D]) -> tuple[Chosen[D], ...]:
             raise TypeError(f"{BARS_TAKES}; got {type(item).__name__}")
         chosen.setdefault(id(container), (container, set()))[1].update(indices)
     return tuple(Chosen(c, frozenset(i)) for c, i in chosen.values())
+
+
+# ------------------------------------------------------------ text alignment
+TextAlignment = Literal["left", "right", "center", "decimal"]
+
+
+@dataclass(frozen=True)
+class DecimalAlign:
+    """Align each number at its own decimal stop."""
+
+
+def text_alignment(how: TextAlignment) -> HAlign | DecimalAlign:
+    """Parse the public alignment spelling."""
+    if how == "decimal":
+        return DecimalAlign()
+    try:
+        return parse_halign(how)
+    except ValueError:
+        raise ValueError(
+            "how must be one of: left, right, center, decimal"
+        ) from None

@@ -1,0 +1,20 @@
+# Cell text over a colour scale spanning five decades (#810).
+prompt = "traffic.csv: sessions by country (rows) and acquisition channel (columns) for October. Heatmap with the number in every cell. The values run from a few dozen to almost two million, so make sure the small ones are not all one colour. For the monthly marketing report."
+
+[files]
+"traffic.csv" = """
+country,Organic search,Paid search,Direct,Social,Email,Referral
+United States,1912440,604310,871200,233900,98400,45120
+Germany,402150,88210,193400,41280,37950,9020
+Brazil,318700,152900,74300,121600,8140,3310
+Japan,271300,31950,160200,12400,22870,1840
+India,246800,19400,58100,97300,2960,6230
+France,188420,40110,91750,20980,14600,2970
+South Africa,22900,3120,9840,7410,612,188
+Iceland,3480,214,1905,460,97,38
+"""
+
+[expect]
+panels = 1
+marks = ["image"]
+texts = ["Organic search", "Referral", "Brazil", "Iceland"]

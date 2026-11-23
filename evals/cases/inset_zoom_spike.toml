@@ -1,0 +1,23 @@
+# An inset is a second panel (#809: inset axis name over its tick labels).
+prompt = "Paper figure, single column. `from recording import load` returns time (s) and voltage (mV) for a 60 s recording at 100 Hz. There is a spike around t = 41.3 s that lasts about 0.2 s. Show the whole recording with an inset zoomed in on the spike."
+
+[files]
+"recording.py" = '''
+"""Membrane potential recording, 60 s at 100 Hz."""
+
+import numpy as np
+
+
+def load() -> tuple[np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(41)
+    t = np.arange(0, 60, 0.01)
+    v = -64.0 + 1.6 * np.sin(2 * np.pi * t / 23) + rng.normal(0, 0.45, t.size)
+    v += 71.0 * np.exp(-0.5 * ((t - 41.3) / 0.035) ** 2)
+    v -= 9.0 * np.exp(-0.5 * ((t - 41.42) / 0.06) ** 2)
+    return t, v
+'''
+
+[expect]
+panels = 2
+marks = ["line"]
+any_text = ["mV"]

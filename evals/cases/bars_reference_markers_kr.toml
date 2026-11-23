@@ -1,0 +1,20 @@
+# cluster: columns against a dashed reference level with a per-bar comparison tick from a second series, both named in place, value inside the bar top; refs: 1066947d-125d-8098-8a57-fb3e7eb10f71, 1066947d-125d-802c-9831-ed04929f2f67
+prompt = "index.csv: 연도별로 기존 설비의 전력 사용량을 100으로 놓았을 때 신규 설비가 얼마나 쓰는지 나타낸 지수야. 신규 설비 전체와 냉동 창고 두 가지가 있어. 냉동 창고를 막대로 그리고, 100 기준선은 점선으로, 신규 설비 전체 수치는 각 막대 위치에 짧은 가로 표시로 겹쳐서 비교되게 해줘. 막대 안에 값도 적고. 에너지 절감 보고서에 넣을 거야."
+
+[files]
+"index.csv" = """
+연도,냉동 창고,신규 설비 전체
+2019,58,79
+2020,56,74
+2021,61,84
+2022,72,86
+2023,83,88
+2024,69,87
+2025,66,82
+"""
+
+[expect]
+panels = 1
+marks = ["bar"]
+texts = ["2019", "2025", "58", "83", "100"]
+any_text = ["신규 설비 전체", "전체"]

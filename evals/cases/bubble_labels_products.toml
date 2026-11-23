@@ -1,0 +1,29 @@
+prompt = "products.csv has the unit price, customer satisfaction score and units sold for 18 product lines. Bubble chart with bubble size by units sold and every bubble labelled with its product. Report figure."
+
+[files]
+"products.csv" = """
+product,unit_price_usd,satisfaction_score,units_sold_thousand
+Pocket torch,21.6,54.6,223.8
+Cable ties,12.9,66.0,126.5
+Work gloves,24.8,70.6,1428.6
+Tape measure,25.3,74.7,173.0
+Hand saw,43.5,74.6,98.9
+Utility knife,49.4,71.1,277.5
+Socket set,100.4,75.8,216.4
+Cordless drill,126.1,78.2,1410.7
+Tool chest,139.3,75.1,128.5
+Bench vice,221.1,78.6,36.7
+Laser level,330.9,83.7,48.4
+Orbital sander,331.2,83.5,51.7
+Jigsaw,338.3,84.7,124.5
+Mitre saw,383.7,83.7,58.8
+Air compressor,444.6,83.3,68.2
+Table saw,527.5,81.4,84.5
+Welding station,817,78.4,334.9
+Thickness planer,999.9,84.1,8.8
+"""
+
+[expect]
+panels = 1
+marks = ["scatter"]
+texts = ["Work gloves", "Pocket torch", "Table saw", "Thickness planer"]

@@ -1,4 +1,4 @@
-"""Weight against height with a fitted line whose whole equation sits in a long default legend."""
+"""Mass against length with a fitted line whose whole equation sits in a long default legend."""
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +15,7 @@ m, b = np.polyfit(x, y, 1)
 r2 = np.corrcoef(x, y)[0, 1] ** 2
 
 fig, ax = plt.subplots(figsize=(6, 4.5))
-ax.scatter(x, y, alpha=0.8, label=f"Individuals (n={len(x)})")
+ax.scatter(x, y, alpha=0.8, label=f"Bars (n={len(x)})")
 xs = np.linspace(x.min(), x.max(), 100)
 ax.plot(
     xs,
@@ -23,9 +23,9 @@ ax.plot(
     color="crimson",
     label=f"Linear fit: y = {m:.2f}x {b:+.1f} (R² = {r2:.2f})",
 )
-ax.set_xlabel("Height (cm)")
-ax.set_ylabel("Weight (kg)")
-ax.set_title("Weight vs. Height")
+ax.set_xlabel("Length (cm)")
+ax.set_ylabel("Mass (kg)")
+ax.set_title("Mass vs. Length")
 ax.grid(alpha=0.3)
 ax.legend()
 

@@ -120,3 +120,13 @@ def test_a_role_colour_follows_the_preset_after_it_was_looked_up():
     assert mcolors.to_hex("dc.pos") != gain  # Korean: gains are red
     dm.style.use("report")
     assert mcolors.to_hex("dc.pos") == gain
+
+
+def test_korean_preset_with_fixed_colours_stays_silent(capsys):
+    """The issue's fixed-colour chart emits no colour notice."""
+    with dm.style.context("report"):
+        dm.style.use("report-kr")
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
+        ax.plot([1, 2, 3], [3, 1, 2], color="dc.blue6")
+        dm.simple_layout(fig)
+    assert "dartwork-mpl: color:" not in capsys.readouterr().err

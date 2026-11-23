@@ -1,0 +1,21 @@
+prompt = "`from calib import load` gives the reference temperature and our sensor's reading (both °C) for about 5,000 samples; a few are glitches. For the paper I need a figure showing how well the sensor agrees with the reference: the 1:1 line, a linear fit and its equation on the plot."
+
+[files]
+"calib.py" = '''
+"""Sensor calibration run: reference thermometer against the sensor under test."""
+
+import numpy as np
+
+
+def load() -> tuple[np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(5)
+    ref = np.concatenate([rng.normal(21, 2.5, 3600), rng.uniform(-10, 45, 1400)])
+    sensor = 0.4 + 0.972 * ref + rng.normal(0, 0.6, ref.size)
+    glitch = rng.choice(ref.size, 30, replace=False)
+    sensor[glitch] += rng.choice([-1, 1], 30) * rng.uniform(8, 25, 30)
+    return ref, sensor
+'''
+
+[expect]
+marks = ["line"]
+any_text = ["°C"]

@@ -31,8 +31,8 @@ ytick.major.size:    5.2
 ytick.minor.size:    2.6
 ytick.major.width:   0.78
 ytick.minor.width:   0.52
-ytick.major.pad:     2.6
-ytick.minor.pad:     2.6
+ytick.major.pad:     7.8
+ytick.minor.pad:     7.8
 
 legend.fontsize:      16.9
 

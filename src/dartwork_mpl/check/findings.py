@@ -13,31 +13,67 @@ from .model import Text, panels_of
 FIXES: dict[str, str] = {
     "OVERFLOW": "dm.simple_layout(fig) makes room for axis text; move a "
     "fig.text or annotation placed past the plot inward",
+    "TEXT_AT_EDGE": "move the text inward by a millimetre or two, or give "
+    "its annotation an inward offset in points",
     "OVERLAP": "move or shorten one of them; dm.simple_layout(fig) spaces "
     "titles, axis labels and tick labels",
     "CROSS_AXES_OVERLAP": "dm.simple_layout(fig) spaces the panels; a "
     "spacing you set (hspace, wspace): raise it",
+    "TEXT_TOO_CLOSE": "give the texts some air: move one, or use "
+    "ax.annotate(..., textcoords='offset points', xytext=(0, -8))",
     "TEXT_CROWD": "put the value on the other side of its point "
     "(dm.annotate_value picks a free side) or a line apart",
     "VALUE_LABEL_DECIMAL": 'print whole numbers whole: fmt="%d" or "{:,.0f}"',
     "LEGEND_ON_DATA": "dm.place_legend(ax) picks the place that covers "
     'least; no free place: dm.place_legend(ax, loc="above"); panels '
     "sharing series: dm.figure_legend(fig)",
-    "EMPTY_AXES": "ax.remove() the panel the data does not fill, or make "
-    "the grid as large as the data",
+    "EMPTY_AXES": "check the view limits, colour and alpha; for a line, "
+    "give it a positive linewidth or a visible marker. An unused grid "
+    "cell can be removed with ax.remove()",
     "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
     "the error bar (ax.bar_label(bars, padding=...)), or dm.annotate_value "
     "for a point on a line",
+    "TEXT_ON_LINE": "move the text off the line: the other side of its "
+    "point, or an offset in points (ax.annotate(..., xytext=(6, 6), "
+    "textcoords='offset points')); a text that names the line can sit at "
+    "its end",
     "LETTER_ON_DATA": "the letters went inside the plots because a letter "
     "and its title were wider than the plot: shorten the titles or widen "
     "the figure so each letter goes before its title; or leave room in "
     "that corner (ax.set_ylim)",
-    "TEXT_CONTRAST": "colour each label for what is behind it: "
-    "color=dm.readable_text_color(bar_colour), or "
-    "dm.ensure_contrast(colour, background)",
+    "TEXT_CONTRAST": "move a text off a band too thin to hold it, or one "
+    "that runs over several backgrounds onto one; else dm.legible(texts) "
+    "after dm.simple_layout(fig) gives each the colour that reads there, "
+    "an outline where no one colour does; labels you colour yourself: "
+    "color=dm.readable_text_color(bar_colour)",
+    "RADIAL_TICK_COVERED": "raise the radial labels above the fill with "
+    "ax.set_axisbelow(False), or move them to a clear angle with ax.set_rlabel_position(...)",
+    "POLAR_TICK_ON_PLOT": "dm.simple_layout(fig) aligns centred angle "
+    "labels away from the plot; labels you aligned or turned yourself: "
+    'more room with ax.tick_params(axis="x", pad=...)',
+    "MIXED_MINUS": "format the numeric label with "
+    'matplotlib.ticker.Formatter.fix_minus(...) or .replace("-", "\u2212")',
     "TICK_OVERLAP": "dm.simple_layout(fig) wraps, then turns, crowded "
     "labels (drop a rotation you set); many long names: horizontal bars; "
     "a y axis: a taller canvas",
+    "UNDERUSED_CANVAS": "match the canvas to the content with dm.figsize(width, aspect), "
+    "or use ax.set_aspect('auto') if the shapes can stretch, then rerun dm.simple_layout(fig)",
+    "VALUE_LABEL_ADRIFT": "a label belongs to the mark it stands nearest: "
+    "put each value at the end of its own bar (ax.bar_label(bars, "
+    "padding=3)), or leave more room between the cells than between a bar "
+    "and its value",
+    "BAND_OFF_CENTRE": "centre the band on the marks: the same distance "
+    "from their line to both of its edges (half the row pitch each way)",
+    "UNEVEN_OUTLINE": "give the bars that touch the same outline (the same "
+    "linewidth, each in its own colour: edgecolor=its facecolor), or drop "
+    "the outline (linewidth=0)",
+    "TEXT_BOX_ON_DATA": "a box hides the marks under it: draw the text "
+    "without the box and check again. A text that then does not read is "
+    "reported as TEXT_CONTRAST, and dm.legible(texts) gives it an outline, "
+    "which hides less; or move the text onto one background",
+    "CONNECTOR_SHORT": "draw the marks a line must meet without that "
+    "outline (linewidth=0, a gap in the data to separate them) or outlined "
+    "in their own colour (edgecolor=facecolor)",
     "SMALL_PANEL": "fewer panels per figure (one row, or split it into "
     'figures); a grid on a slide: dm.figsize_for("full_slide") and one '
     "axis name per row or column (sharex=True, sharey=True)",

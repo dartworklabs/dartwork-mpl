@@ -1,0 +1,16 @@
+# cluster: marimekko, column width by group total, shares stacked inside, values in cells, widths labelled under the columns; refs: 2c96947d-125d-80de-992d-ef7f9f539498, 2956947d-125d-80a8-98bc-c3959a8f42a1, 1ab6947d-125d-803e-8b67-c31769f28353, 2976947d-125d-809c-9a88-e7e7bf29dadd
+prompt = "rev.csv: revenue by region and business line in USD bn. I'd like a Marimekko: column width by each region's total, split inside by business line share, numbers in the cells, and the region totals under the columns. For the strategy offsite deck."
+
+[files]
+"rev.csv" = """
+region,Hardware,Software,Services,Financing
+Americas,14.2,9.8,7.1,2.4
+Europe,8.6,4.1,6.3,1.1
+Asia-Pacific,11.9,2.7,3.2,0.6
+Middle East and Africa,2.3,0.5,1.4,0.2
+"""
+
+[expect]
+panels = 1
+texts = ["Americas", "Middle East and Africa", "Hardware", "Services"]
+any_text = ["33.5", "34"]

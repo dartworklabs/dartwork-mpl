@@ -1,0 +1,19 @@
+# cluster: one-dimensional bubble strip (a single value axis, bubble size by a second measure), names beside the bubbles, a dashed reference at the average; refs: 2936947d-125d-80bf-9749-f02b10a6c210
+prompt = "A compact one for the sales report: exports.csv has export sales as a share of revenue for our seven product lines, and their revenue. One horizontal axis, a bubble per product line sized by its revenue, the names next to the bubbles, and a dashed line at the company average of 58%."
+
+[files]
+"exports.csv" = """
+product_line,export_pct_of_revenue,revenue_usd_m
+Industrial pumps,25,292
+Seals and gaskets,34,22
+Compressors,37,187
+Valves,46,39
+Flow meters,64,36
+Control units,83,47
+Spare parts,96,5
+"""
+
+[expect]
+panels = 1
+texts = ["Industrial pumps", "Spare parts", "Control units"]
+any_text = ["Company average", "company average", "58"]

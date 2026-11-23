@@ -3,14 +3,14 @@ name: dartwork-mpl
 description: Static charts with matplotlib and dartwork-mpl (import dartwork_mpl as dm) - plot, chart, figure, graph, 그래프, 그림, 플롯, 차트. Use whenever Python code creates, edits, restyles, resizes, saves or reviews a figure for a paper, report, document, dashboard or slides in a project where dartwork-mpl is installed. Gives the four-call skeleton, what makes a chart good, and the draw, check, look loop. Not for interactive web charts (Plotly, D3, Altair).
 license: MIT
 metadata:
-  version: 0.9.0
+  version: 0.10.0
 ---
 
 # dartwork-mpl
 
 A thin layer over matplotlib. `Figure` and `Axes` stay native, so everything you know about matplotlib still works. The library owns typography, line weights, spines, colour and margins. You own the message.
 
-**This skill is for dartwork-mpl 0.9.0.** Check once per project: `uv run python -c "import dartwork_mpl as dm; print(dm.__version__)"` (no uv: `python -c ...`). If it prints another version, tell the user, because the calls below may not exist there. `uv run dartwork-mpl install` puts in the skill of the installed version; an older dartwork-mpl without that command needs `uv add "dartwork-mpl>=0.9.0"` first.
+**This skill is for dartwork-mpl 0.10.0.** Check once per project: `uv run python -c "import dartwork_mpl as dm; print(dm.__version__)"` (no uv: `python -c ...`). If it prints another version, tell the user, because the calls below may not exist there. `uv run dartwork-mpl install` puts in the skill of the installed version; an older dartwork-mpl without that command needs `uv add "dartwork-mpl>=0.10.0"` first.
 
 This is guidance, not a rulebook. Requests differ. Where it does not cover yours, do what serves the reader of the figure.
 
@@ -30,8 +30,8 @@ print(dm.check(fig))                                     # defects, each with it
 dm.save_formats(fig, "output/exports-v1", formats=("png", "pdf"))   # 4. then look at the PNG
 ```
 
-1. **Preset by where the figure goes.** `scientific` for a paper or thesis, `report` for a report, document or dashboard, `presentation` for slides. Also `poster`, `web`, `dark`, `minimal`. Korean text anywhere on the figure takes the `-kr` twin (`report-kr`), which carries the Korean fonts.
-2. **Size in physical units.** `dm.figsize("12cm", "wide")` takes a width and an aspect token, a ratio or a height. With no size in the request, `dm.figsize_for(n_points=, n_series=)` picks one from how dense the chart is. A figure made at its final size keeps its text at the preset's point size on the page.
+1. **Preset by where the figure goes.** `scientific` for a paper or thesis, `report` for a report, document or dashboard, `presentation` for slides or a deck. Also `poster`, `web`, `dark`, `minimal`. Korean text anywhere on the figure takes the `-kr` twin (`report-kr`), which carries the Korean fonts.
+2. **Size in physical units.** `dm.figsize("12cm", "wide")` takes a width and an aspect token, a ratio or a height. With no size in the request, `dm.figsize_for(n_points=, n_series=)` picks one from how dense the chart is. A width of your own stays within the width the preset's text is sized for: 17 cm for `report` and `scientific`, 25 cm for `poster` and `presentation`. The height follows the content. On a wider canvas the same text reads small: a bigger medium takes its preset, not more centimetres. A figure made at its final size keeps its text at the preset's point size on the page.
 3. **`dm.simple_layout(fig)` after everything is drawn.** It measures the text and sets the margins, and wraps or turns labels that collide. Leave rotation and panel spacing to it unless the user asks.
 4. **`dm.save_formats`** keeps the canvas at the size you set. The stem and formats are the caller's choice: if the user or a calling script names a path or format, use exactly that, with no `output/`, no `-vN` and no extra PDF (`dm.save_formats(fig, "exports", formats=("png",))` writes one `exports.png`). The `output/<name>-v1` stem in the skeleton is only the default when nobody named one.
 
@@ -43,11 +43,13 @@ Sizes written in code stay relative to the preset: `dm.fs(1)` is the preset font
 
 **It makes one point.** Before any plotting code, say in one sentence what the reader should take away: "Exports recovered faster than imports after 2021." That sentence picks the form. A change over time is a line, a ranking is sorted bars, a relationship is a scatter, parts of a whole are stacked bars. If you cannot write the sentence, plot the data plainly and say the figure has no single message yet.
 
-**The point is visible without reading the axes.** Put the series that matters in colour and the rest in grey. Name lines at their ends when there are only a few. Mark the one value, crossing or period the reader must notice. Order categories by value unless they have an order of their own.
+**The point is visible without reading the axes.** Put the series that matters in colour and the rest in grey. Name lines at their ends when there are only a few. Mark the one value, crossing or period the reader must notice. Order categories by value unless they have an order of their own. Nothing hides something else: shapes that overlap are filled, so the one in front covers the one behind it (the ridges of a ridgeline take the background colour), and the smaller goes on top; a label sits beside its mark, and one moved away to clear a neighbour keeps a thin line to it.
 
-**The medium decides where the words go.** A paper figure leaves its message to the caption, so it has no title. A report or slide figure may say its point in the title: "Exports passed the 2019 level in 2021", not "Exports by year". State only what the data shows.
+**The medium decides where the words go.** A paper figure leaves its message to the caption, so it has no title. A report or slide figure may say its point in the title: "Exports passed the 2019 level in 2021", not "Exports by year". `ax.set_title` centres it on the plot, which is where most charts want it; when long category names push the plot well off the figure's centre, the title ends up against the far edge, and `fig.suptitle(...)`, centred on the canvas, sits better. State only what the data shows.
 
-**Everything on it encodes something.** Colour means a category, a magnitude or emphasis, never decoration. Every number has a unit, in the axis label. Bars start at zero.
+**Everything on it encodes something.** Colour means a category, a magnitude or emphasis, never decoration. Every number has a unit, in the axis label. Bars start at zero. Text size encodes nothing: text of one kind (the values in cells, the names of rows) has one size across the figure, and what does not fit its mark goes beside it or is left out, not shrunk.
+
+**What belongs together stands together, and what should meet does meet.** A label is read with the mark it stands nearest, so a value sits at its own bar, nearer to it than to any other. Things meant to line up do so exactly: a band is centred on the row it marks, a connector ends on the visible corner it points at, touching segments are the same size, and an axis ends on a tick where the data leaves room for that (`references/craft.md`, "Edges and ends").
 
 ## Defaults to steer away from
 
@@ -69,6 +71,8 @@ The opposite failure is the empty chart: technically clean and saying nothing. S
 
 **The data is not yours to change.** Never drop, fill, sort, aggregate, clip or invent rows without saying so. A missing value stays a visible gap. Names in the data stay as written. Template numbers are placeholders, never results.
 
+**The script draws the same figure every time it runs.** Seed any randomness you bring in (jitter in a strip plot, a subsample of a large scatter, bootstrap bands, example data when the user gave none): `rng = np.random.default_rng(0)`, then draw from `rng`.
+
 Text on the figure follows the document it goes into. Unknown: follow the language of the request's own labels and data.
 
 ## Check, then look
@@ -76,12 +80,12 @@ Text on the figure follows the document it goes into. Unknown: follow the langua
 A figure is finished when you have looked at it, not when the script ran. Run the script with `uv run python plot.py` in a uv project (one with `pyproject.toml` or `uv.lock`); elsewhere `uv run --with dartwork-mpl python plot.py` runs it without installing anything.
 
 1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a place to look, with a line on what to try; act on the ones that are not what you meant. `NOT RUN` means a rule could not measure, so say so.
-2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave?
+2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave? Check that the visible plot and its supporting elements sit together on the canvas, with room on both sides. What you set in open space inside the plot (an inset, a note, a key) sits in the middle of that space with its own labels counted, not against the frame; a label for a band or region stays inside it or wholly beside it, not across its edge. For placement choices, see `references/layout.md`.
 3. Fix what you saw and say what changed. Revising with a user, save as the next version (`-v2`, keep v1); with a path the user or caller named, overwrite that path. If you cannot view images, say the figure was not visually reviewed.
 
 `dm.check` finds the mechanical defects. Whether the chart says anything is up to you.
 
-The library says what it changed on its own: each automatic change (tick labels turned, a name wrapped, a value label gone, a legend moved, `1M` on an axis, whole-number ticks on an axis of months or counts) prints one `dartwork-mpl:` line on stderr with what, on which Axes, why, and what to try. Read those lines after a run and tell the user what they say before you work around one. `dm.quiet()` turns them off.
+The library says what it changed on its own: each automatic change (tick labels turned, a name wrapped, a radar's names moved off its circle, a value label gone, a legend moved, `1M` on an axis, whole-number ticks on an axis of months or counts) prints one `dartwork-mpl:` line on stderr with what, on which Axes, why, and what to try. Read those lines after a run and tell the user what they say before you work around one. `dm.quiet()` turns them off.
 
 ## Tools for the craft
 
@@ -91,11 +95,14 @@ The library says what it changed on its own: each automatic change (tick labels 
 | a legend that avoids the data, or sits on a named side | `dm.place_legend(ax)`, `dm.place_legend(ax, loc="above")` |
 | one legend for panels that share series | `dm.figure_legend(fig)` |
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
+| a column of names or numbers beside the plot (a net, a share, a table that stands in for a legend) | write the texts on the plot's Axes, then `dm.place_columns(ax, column)`; several: `dm.place_columns(ax, first, second)` |
+| align the edges or decimal points inside a column | `dm.align_texts(texts, "left")` or `dm.align_texts(texts, "decimal")` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
+| texts `dm.check` reports as `TEXT_CONTRAST` and that cannot move onto one background (a note over bars, contour numbers) | `dm.legible(texts)`, after `dm.simple_layout(fig)`; then check again |
 | 만/억 on the ticks | `dm.format_axis_myriad(ax)` |
 | 12k on the ticks (from a million the axis prints `1M` by itself) | `ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter(sep=""))` |
 
-Call them before `dm.simple_layout`, which makes room for what they add.
+Call them before `dm.simple_layout`, which makes room for what they add; `dm.legible` alone goes after it and after `dm.check` has named the texts, because it reads the figure as drawn.
 
 ## Look things up
 
@@ -103,7 +110,7 @@ Read only the page the task needs. Without this folder, `uv run dartwork-mpl pat
 
 | Need | Read |
 |---|---|
-| choosing the form, emphasis, annotation, titles; numbers on bars, distributions, heatmaps, small multiples | `references/craft.md` |
+| choosing the form, emphasis, annotation, titles; numbers on bars, distributions, heatmaps, small multiples; outlines, connectors, bands, where an axis ends | `references/craft.md` |
 | canvas sizes, margins, grids, twin axes, legends outside, colorbars | `references/layout.md` |
 | changing an existing figure, value labels | `references/editing.md` |
 | colour names, palettes, colormaps, a ramp between two colours | `references/colors.md` |

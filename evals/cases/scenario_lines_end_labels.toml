@@ -1,0 +1,31 @@
+# cluster: history in a neutral colour, scenarios fanning out from the present, each named at its end with the end value, a right-hand column of large outcome numbers; refs: 2d26947d-125d-802b-9d16-fd32b22378ab, 2966947d-125d-80bd-9656-e5eab205c652, 2936947d-125d-8091-8e52-e399b3529a95, 2966947d-125d-800e-a858-eddae0eb3284
+prompt = "pathways.csv: historical emissions to 2024 and four scenarios out to 2050 (Gt CO2e per year). History in a neutral colour, the scenarios fanning out from 2024, each named at its end with its 2050 value instead of a legend, and to the right a column with the warming each scenario implies by 2100 (warming.csv). Climate outlook report."
+
+[files]
+"pathways.csv" = """
+year,Historical,Current policies,Announced pledges,Accelerated transition,Net zero 2050
+1990,37.1,,,,
+1995,38.6,,,,
+2000,40.9,,,,
+2005,45.8,,,,
+2010,49.7,,,,
+2015,52.4,,,,
+2020,51.0,,,,
+2024,55.3,55.3,55.3,55.3,55.3
+2030,,56.1,51.2,44.0,31.5
+2035,,55.0,46.3,34.8,19.6
+2040,,53.2,41.7,26.9,11.2
+2045,,51.4,37.5,20.3,5.1
+2050,,49.6,33.8,15.1,1.4
+"""
+"warming.csv" = """
+scenario,warming_2100_degC
+Current policies,2.8
+Announced pledges,2.3
+Accelerated transition,1.8
+Net zero 2050,1.5
+"""
+
+[expect]
+marks = ["line"]
+texts = ["Current policies", "Net zero 2050", "2.8", "1.5", "49.6"]

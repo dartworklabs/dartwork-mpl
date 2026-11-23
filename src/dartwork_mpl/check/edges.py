@@ -9,7 +9,7 @@ ran. A new rule is one more entry here and a test that names it.
 from __future__ import annotations
 
 from ..edgecase import EdgeCase
-from . import decide
+from . import alignment, column_gap, decide, marks
 from .findings import Findings
 from .model import Facts
 
@@ -22,6 +22,11 @@ def has_texts(facts: Facts, found: Findings) -> bool:
 def has_panel_texts(facts: Facts, found: Findings) -> bool:
     """Any text that belongs to an Axes."""
     return bool(facts.by_panel)
+
+
+def has_inks(facts: Facts, found: Findings) -> bool:
+    """Any text the user placed in an Axes, of any projection."""
+    return bool(facts.inks)
 
 
 def has_legends(facts: Facts, found: Findings) -> bool:
@@ -39,6 +44,12 @@ def has_values_on_data(facts: Facts, found: Findings) -> bool:
     return bool(facts.values)
 
 
+def has_struck_texts(facts: Facts, found: Findings) -> bool:
+    """Any name or note with a line through it, or inset label with a
+    zoom connector through it."""
+    return bool(facts.struck or facts.connected)
+
+
 def has_letters_on_data(facts: Facts, found: Findings) -> bool:
     """Any panel letter drawn on data."""
     return bool(facts.letters)
@@ -52,6 +63,51 @@ def has_ticks(facts: Facts, found: Findings) -> bool:
 def has_frames(facts: Facts, found: Findings) -> bool:
     """Any flat Axes with tick labels."""
     return bool(facts.frames and facts.ticks)
+
+
+def has_polar_theta(facts: Facts, found: Findings) -> bool:
+    """Any drawn angle tick labels on a full polar disc."""
+    return bool(facts.polar_theta)
+
+
+def has_minus_labels(facts: Facts, found: Findings) -> bool:
+    """Any numeric text using a hyphen-minus."""
+    return bool(facts.minus_labels)
+
+
+def has_beside(facts: Facts, found: Findings) -> bool:
+    """Any text set beside a plot."""
+    return bool(facts.beside)
+
+
+def has_occluded_ticks(facts: Facts, found: Findings) -> bool:
+    """Any radial tick measured against a fill."""
+    return bool(facts.occluded_ticks)
+
+
+def has_edge_texts(facts: Facts, found: Findings) -> bool:
+    """Any visible, manually placed Axes text or centred title."""
+    return bool(facts.edge_texts or facts.edge_titles)
+
+
+def has_canvas_use(facts: Facts, found: Findings) -> bool:
+    """The shape chart or plot with a colorbar has a measured footprint."""
+    return facts.canvas_use is not None or facts.colorbar_space is not None
+
+
+def has_marks(facts: Facts, found: Findings) -> bool:
+    """Any drawn bar or band."""
+    return bool(facts.bars)
+
+
+def has_boxed(facts: Facts, found: Findings) -> bool:
+    """Any text on a box of its own over filled marks."""
+    return bool(facts.boxed)
+
+
+def has_line_ends(facts: Facts, found: Findings) -> bool:
+    """Any line end on a corner with a paper-coloured outline."""
+    return bool(facts.line_ends)
 
 
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
@@ -91,6 +147,23 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         adjust=decide.phrase,
     ),
     EdgeCase(
+        name="TEXT_MISALIGNMENT",
+        why="forest estimates stacked beside the plot had ragged decimal marks",
+        example="test_edges.py::test_TEXT_MISALIGNMENT_on_forest_values",
+        applies=has_panel_texts,
+        adjust=alignment.misalignment,
+    ),
+    EdgeCase(
+        name="TEXT_COLUMN_GAP",
+        why=(
+            "a column of net values set at a guessed x floated several "
+            "text heights from the bars it belonged to"
+        ),
+        example="test_edges.py::test_TEXT_COLUMN_GAP_on_a_floating_column",
+        applies=has_beside,
+        adjust=column_gap.column_gap,
+    ),
+    EdgeCase(
         name="VALUE_LABEL_DECIMAL",
         why="respondent counts labelled '12.0, 31.0' carry decimals that say nothing",
         example="test_edges.py::test_VALUE_LABEL_DECIMAL",
@@ -118,6 +191,16 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         adjust=decide.value_label_on_data,
     ),
     EdgeCase(
+        name="TEXT_ON_LINE",
+        why=(
+            "a fitted trend line ran through the names of the points beside "
+            "it, 'Apple A7' struck out"
+        ),
+        example="test_edges.py::test_TEXT_ON_LINE",
+        applies=has_struck_texts,
+        adjust=decide.text_on_line,
+    ),
+    EdgeCase(
         name="LETTER_ON_DATA",
         why=(
             "titles too long to follow their letters put the letters inside "
@@ -131,10 +214,11 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         name="TEXT_CONTRAST",
         why=(
             "white values centred in pale yellow bars read at 1.39:1 and "
-            "disappeared"
+            "disappeared; a note running from the canvas onto a navy bar "
+            "lost the letters on the bar"
         ),
         example="test_edges.py::test_TEXT_CONTRAST",
-        applies=has_panel_texts,
+        applies=has_inks,
         adjust=decide.text_contrast,
     ),
     EdgeCase(
@@ -173,5 +257,97 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_SMALL_PANEL",
         applies=has_frames,
         adjust=decide.small_panel,
+    ),
+    EdgeCase(
+        name="TEXT_TOO_CLOSE",
+        why="a text placed just under the title read as part of the title",
+        example="test_edges.py::test_TEXT_TOO_CLOSE",
+        applies=has_panel_texts,
+        adjust=decide.text_too_close,
+    ),
+    EdgeCase(
+        name="POLAR_TICK_ON_PLOT",
+        why="long radar tick labels can cross the circle into the data",
+        example="test_edges.py::test_POLAR_TICK_ON_PLOT",
+        applies=has_polar_theta,
+        adjust=decide.polar_tick_on_plot,
+    ),
+    EdgeCase(
+        name="MIXED_MINUS",
+        why="negative bar labels used a hyphen while the ticks printed a minus",
+        example="test_edges.py::test_MIXED_MINUS",
+        applies=has_minus_labels,
+        adjust=decide.mixed_minus,
+    ),
+    EdgeCase(
+        name="RADIAL_TICK_COVERED",
+        why="a polar band painted over the radial numbers, so part of a number vanished",
+        example="test_edges.py::test_RADIAL_TICK_COVERED",
+        applies=has_occluded_ticks,
+        adjust=decide.radial_tick_covered,
+    ),
+    EdgeCase(
+        name="TEXT_AT_EDGE",
+        why="a group heading drawn flush with the paper reads as cut off",
+        example="test_edges.py::test_TEXT_AT_EDGE",
+        applies=has_edge_texts,
+        adjust=decide.text_at_edge,
+    ),
+    EdgeCase(
+        name="UNDERUSED_CANVAS",
+        why="equal-aspect chart shapes sat in a narrow band of a much larger canvas",
+        example="test_edges.py::test_UNDERUSED_CANVAS",
+        applies=has_canvas_use,
+        adjust=decide.underused_canvas,
+    ),
+    EdgeCase(
+        name="VALUE_LABEL_ADRIFT",
+        why=(
+            "values set as a column at the far end of each cell of a bar "
+            "matrix stood next to the neighbouring cell's bars and read as theirs"
+        ),
+        example="test_edges.py::test_VALUE_LABEL_ADRIFT",
+        applies=has_marks,
+        adjust=marks.value_label_adrift,
+    ),
+    EdgeCase(
+        name="BAND_OFF_CENTRE",
+        why=(
+            "a highlight band behind the first row of a dot matrix ran "
+            "further below the dots than above, so they looked pushed up"
+        ),
+        example="test_edges.py::test_BAND_OFF_CENTRE",
+        applies=has_marks,
+        adjust=marks.band_off_centre,
+    ),
+    EdgeCase(
+        name="UNEVEN_OUTLINE",
+        why=(
+            "an outline on the white middle segment of a stacked bar drew "
+            "that segment larger than the coloured ones beside it"
+        ),
+        example="test_edges.py::test_UNEVEN_OUTLINE",
+        applies=has_marks,
+        adjust=marks.uneven_outline,
+    ),
+    EdgeCase(
+        name="TEXT_BOX_ON_DATA",
+        why=(
+            "node labels of a flow diagram stood on white boxes that hid "
+            "the flows, though the labels read without them"
+        ),
+        example="test_edges.py::test_TEXT_BOX_ON_DATA",
+        applies=has_boxed,
+        adjust=marks.text_box_on_data,
+    ),
+    EdgeCase(
+        name="CONNECTOR_SHORT",
+        why=(
+            "the lines from a donut wedge to its breakdown bar ended in "
+            "the air beside both, on corners a white outline had painted over"
+        ),
+        example="test_edges.py::test_CONNECTOR_SHORT",
+        applies=has_line_ends,
+        adjust=marks.connector_short,
     ),
 )

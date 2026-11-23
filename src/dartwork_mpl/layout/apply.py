@@ -221,3 +221,23 @@ def text(gs: GridSpec, plan: TextPlan, objects: TextArtists) -> None:
         _wrap(objects.axes[k], lines)
     for k, angle in plan.turns.items():
         _turn(objects.axes[k], angle)
+    _align_away(plan, objects)
+
+
+def _align_away(plan: TextPlan, objects: TextArtists) -> None:
+    """Align angle labels on the far side of their anchors and say so, once
+    per polar plot."""
+    told: set[Axes] = set()
+    for k, (ha, va) in plan.away.items():
+        label = objects.labels[k]
+        label.set_horizontalalignment(ha.mpl)
+        label.set_verticalalignment(va.mpl)
+        ax = objects.rims[k]
+        if ax not in told:
+            told.add(ax)
+            LOG.info(
+                "aligned the angle labels of %s away from the plot: centred "
+                "on their anchors, the long ones ran into the circle; set "
+                "their ha and va yourself to place them your way",
+                axes_name(ax),
+            )

@@ -1,0 +1,27 @@
+# cluster: one horizontal bar distribution per group side by side sharing the answer bins as rows, the loss bin in a different colour, the group mean in the header; refs: 9381eb29-219b-4fa5-9566-b4006118e9a9, e4c9b4bc-b69c-46a8-99d0-bd9e8174706b, 7437af9a-1eae-4055-9639-1af932ae8cc8
+prompt = "roi.csv: AI 도입 성숙도 네 그룹별로 '향후 3년 예상 투자수익률' 응답 분포(%)야. 그룹마다 가로 막대 분포를 하나씩 나란히 놓고, 수익률 구간은 행으로 공유해줘. 손실 구간은 다른 색으로 구분하고, 그룹별 평균 수익률(means.csv)을 각 분포 위에 적어줘. 설문 보고서에 넣을 거야."
+
+[files]
+"roi.csv" = """
+수익률 구간,도입 안 함,초기,확산,선도
+손실,11,7,3,1
+0%,17,4,2,0
+0~5%,21,18,12,5
+5~10%,18,27,31,22
+10~20%,9,22,28,29
+20~30%,2,11,14,34
+30% 이상,3,6,8,9
+모르겠음,19,5,2,0
+"""
+"means.csv" = """
+그룹,평균 수익률,응답 수
+도입 안 함,5.8,52
+초기,11.9,127
+확산,14.2,94
+선도,18.6,41
+"""
+
+[expect]
+panels = 4
+marks = ["bar"]
+texts = ["도입 안 함", "선도", "손실", "모르겠음", "18.6"]

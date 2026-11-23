@@ -1,0 +1,28 @@
+# cluster: heatmap time series (day across, hour of day down) with no cell text, dark sequential map, months on x; refs: 4e8e1578-94d2-4d00-af91-2d38bd455922, 95bd2215-aead-47af-93a7-7b252c0b12c3
+prompt = "`from load_profile import load` gives hourly electricity load for 2025 (8,760 values, MW). A heatmap with the day of the year across and the hour of the day down, so that the daily and the seasonal patterns both show. A dark background is fine if it looks better. For the grid operator's annual review."
+
+[files]
+"load_profile.py" = '''
+"""Hourly system load (MW) for 2025."""
+
+import numpy as np
+
+
+def load() -> np.ndarray:
+    """8,760 values, hour 0 of 1 January first."""
+    rng = np.random.default_rng(2025)
+    hours = np.arange(8760)
+    day, hod = hours // 24, hours % 24
+    seasonal = 1 + 0.22 * np.cos(2 * np.pi * (day - 15) / 365)
+    summer = 0.16 * np.exp(-0.5 * ((day - 205) / 22) ** 2)
+    daily = (0.72 + 0.20 * np.exp(-0.5 * ((hod - 8.5) / 2.2) ** 2)
+             + 0.30 * np.exp(-0.5 * ((hod - 18.5) / 2.6) ** 2))
+    weekend = np.where((day % 7) >= 5, 0.90, 1.0)
+    load_mw = 5200 * (seasonal + summer * (hod > 11) * (hod < 19)) * daily * weekend
+    return (load_mw + rng.normal(0, 90, 8760)).round(0)
+'''
+
+[expect]
+panels = 1
+marks = ["image"]
+any_text = ["MW"]

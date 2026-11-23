@@ -1,0 +1,17 @@
+prompt = "Slide for the sales kickoff: a radar chart comparing our Aura X with the Nimbus 5 on the scores in scores.csv (1 to 10). Ours in the brand purple #7048e8, the competitor in grey."
+
+[files]
+"scores.csv" = """
+attribute,Aura X,Nimbus 5
+Battery life,9.1,6.8
+Camera quality,7.4,8.6
+Display,8.2,8.0
+Performance,8.8,7.1
+Build quality,7.9,7.6
+Customer support,9.4,5.2
+Value for money,6.3,8.1
+"""
+
+[expect]
+panels = 1
+texts = ["Battery life", "Customer support", "Value for money", "Aura X", "Nimbus 5"]
