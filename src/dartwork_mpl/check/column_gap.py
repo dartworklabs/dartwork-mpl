@@ -47,8 +47,23 @@ class Column:
 
     @property
     def adrift(self) -> bool:
-        """Further from every neighbour than that neighbour's room."""
-        return all(abs(r.gap) > r.room.far * self.em for r in self.reaches)
+        """Further from every neighbour than that neighbour's room, and
+        not the next column of a grid of numbered cells."""
+        return not self.in_step and all(
+            abs(r.gap) > r.room.far * self.em for r in self.reaches
+        )
+
+    @property
+    def in_step(self) -> bool:
+        """Every row continues the numbers on its marks at their spacing."""
+        return all(row.step is not None and row.step.kept for row in self.rows)
+
+    @property
+    def to_step(self) -> float | None:
+        """Signed px to where the rows would continue the numbers on their
+        marks (``None``: the marks carry none)."""
+        offs = [row.step.off for row in self.rows if row.step is not None]
+        return median(offs) if len(offs) == len(self.rows) else None
 
     def slack(self, reach: Reach) -> float:
         """Signed px between where the column is and where it would be set."""
@@ -145,18 +160,23 @@ def blocks(
 def measured(block: Block, owner: dict[int, Block]) -> Column:
     """The block with the gap to each thing it stands beside: block to
     block where that is another column (its heading to that column's
-    heading too), block to mark or text otherwise."""
+    heading too), block to text, and its rows to a mark or a plot's edge."""
     leftward = block.rows[0].reach < 0
+    rows_x0 = min(row.text.box.x0 for row in block.rows)
+    rows_x1 = max(row.text.box.x1 for row in block.rows)
     reaches: list[Reach] = []
     for row in block.rows:
         other = row.neighbour
         theirs = owner.get(id(other))
+        # Beside the plot the rows are measured: a heading wider than they
+        # are may run on over the plot, and does not bring them nearer.
+        x0, x1 = (rows_x0, rows_x1) if other is None else (block.x0, block.x1)
         if leftward:
-            inset = row.text.box.x0 - block.x0
+            inset = row.text.box.x0 - x0
             if other is not None and theirs is not None:
                 inset += theirs.x1 - other.box.x1
         else:
-            inset = block.x1 - row.text.box.x1
+            inset = x1 - row.text.box.x1
             if other is not None and theirs is not None:
                 inset += other.box.x0 - theirs.x0
         gap = max(abs(row.reach) - inset, 0.0)
@@ -214,10 +234,20 @@ def column_gap(facts: Facts, found: Findings) -> Findings:
         shift = move(column)
         side = "left" if shift < 0 else "right"
         xs = {row.placed for row in column.rows}
-        where = ""
-        if len(xs) == 1 and (placed := next(iter(xs))) is not None:
+        where = grid = ""
+        placed = next(iter(xs)) if len(xs) == 1 else None
+        if placed is not None:
             new = placed.x + shift / placed.px_per_unit
             where = f" (the x they were given: {placed.x:.3g} to {new:.3g})"
+        if (step := column.to_step) is not None:
+            grid = (
+                "; or set it as the next cell of the rows, at the spacing "
+                f"of the numbers in them: {abs(step) / facts.px_per_pt:.0f} "
+                f"pt to the {'left' if step < 0 else 'right'}"
+            )
+            if placed is not None:
+                at = placed.x + step / placed.px_per_unit
+                grid += f" (x {placed.x:.3g} to {at:.3g})"
         texts = [row.text for row in column.rows]
         found = found.flag(
             "TEXT_COLUMN_GAP",
@@ -229,6 +259,7 @@ def column_gap(facts: Facts, found: Findings) -> Findings:
             fix="dm.place_columns(ax, texts) sets a column (its heading "
             "with it) one text size from the plot ax; by "
             f"hand, move it {abs(shift) / facts.px_per_pt:.0f} pt to the "
-            f"{side}{where}",
+            f"{side}{where}"
+            f"{grid}",
         )
     return found

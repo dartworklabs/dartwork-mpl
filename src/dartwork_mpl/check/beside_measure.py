@@ -3,20 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from contextlib import suppress
 from copy import copy
 from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.collections import PolyCollection
 from matplotlib.text import Annotation
 from matplotlib.text import Text as MplText
 from matplotlib.transforms import Bbox
 
-from ..geometry import BBOX_ERRORS, DataInk, artist_shown, drawn_patch_box
-from .ink import in_data_coords
-from .model import Beside, Gap, Heading, Placed
+from ..geometry import DataInk, marks_ink
+from .model import Beside, Gap, Heading, Placed, Step
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -25,34 +22,6 @@ if TYPE_CHECKING:
 
 #: A neighbour's distance is found to this many px.
 RESOLUTION_PX = 0.5
-
-
-def figure_ink(
-    axes: list[Axes], renderer: RendererBase, px_per_pt: float
-) -> DataInk[object]:
-    """Every mark the figure's Axes draw in data coordinates (an
-    ``axvline`` runs past every row, so it is beside none of them)."""
-    drawn: DataInk[object] = DataInk()
-
-    def to_px(points: float) -> float:
-        return points * px_per_pt
-
-    for ax in axes:
-        for line in ax.lines:
-            if artist_shown(line) and in_data_coords(line, ax):
-                drawn.add_line(line, to_px, line, line)
-        for coll in ax.collections:
-            if artist_shown(coll):
-                filled = isinstance(coll, PolyCollection)
-                drawn.add_collection(coll, renderer, to_px, coll, filled=filled)
-        for patch in ax.patches:
-            if artist_shown(patch):
-                with suppress(*BBOX_ERRORS):
-                    drawn.add_box(patch, drawn_patch_box(patch, renderer))
-        for image in ax.images:
-            if artist_shown(image):
-                drawn.add_box(image, image.get_window_extent(renderer))
-    return drawn
 
 
 def ink_gap(
@@ -95,6 +64,46 @@ def placed(artist: MplText, renderer: RendererBase) -> Placed | None:
     return Placed(float(x), step) if np.isfinite(step) and step else None
 
 
+def centre(text: Text) -> float:
+    """The middle of a text, left to right."""
+    return (text.box.x0 + text.box.x1) / 2
+
+
+def among_marks(text: Text, ink: DataInk[object], canvas: Bbox) -> bool:
+    """The text is on a mark or has marks on both sides of it at its
+    height: the number of a cell, a segment or a dot."""
+    quarter = text.box.height / 4
+    y0, y1 = text.box.y0 + quarter, text.box.y1 - quarter
+    if ink.meets(Bbox.from_extents(text.box.x0, y0, text.box.x1, y1)):
+        return True
+    return bool(
+        ink.meets(Bbox.from_extents(canvas.x0, y0, text.box.x0, y1))
+        and ink.meets(Bbox.from_extents(text.box.x1, y0, canvas.x1, y1))
+    )
+
+
+def step(
+    text: Text,
+    level: list[Text],
+    ink: DataInk[object],
+    canvas: Bbox,
+    sign: float,
+) -> Step | None:
+    """How the text continues the numbers among the marks of its row: the
+    two nearest of them give the spacing."""
+    numbers = sorted(
+        (centre(t) for t in level if among_marks(t, ink, canvas)),
+        key=lambda x: abs(x - centre(text)),
+    )
+    if len(numbers) < 2:
+        return None
+    last, before = numbers[:2]
+    pitch = abs(last - before)
+    if pitch <= 0 or (last - centre(text)) * sign < 0:
+        return None
+    return Step(last - sign * pitch - centre(text), pitch)
+
+
 def beside(
     texts: tuple[Text, ...],
     others: tuple[Text, ...],
@@ -119,7 +128,7 @@ def beside(
     ]
     if not chosen:
         return (), ()
-    ink = figure_ink(axes, renderer, px_per_pt)
+    ink = marks_ink(axes, renderer, px_per_pt)
     frames = [ax.bbox for ax in axes if ax.axison]
     result: list[Beside] = []
     headings: list[Heading] = []
@@ -185,6 +194,12 @@ def beside(
             sign = 1.0
         gap, neighbour = min(found, key=lambda pair: pair[0])
         result.append(
-            Beside(text, sign * gap, neighbour, placed(artist, renderer))
+            Beside(
+                text,
+                sign * gap,
+                neighbour,
+                placed(artist, renderer),
+                step(text, level, ink, canvas, sign),
+            )
         )
     return tuple(result), tuple(headings)

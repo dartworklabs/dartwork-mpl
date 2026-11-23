@@ -16,6 +16,7 @@ from dartwork_mpl.check.model import (
     Gap,
     Heading,
     Placed,
+    Step,
     Text,
     TickValues,
     ascii_minus_value,
@@ -152,6 +153,24 @@ def test_column_gap_by_distance(reach: float, rows: int, moves: str | None):
     found = gaps(beside_column(700.0, reach, rows))
     assert found.rules == (("TEXT_COLUMN_GAP",) if moves else ())
     assert moves is None or moves in found.items[0].fix
+
+
+@pytest.mark.parametrize(
+    ("off", "hint"),
+    [
+        (10.0, None),  # 0.05 of the cells' spacing: the next cell
+        (-70.0, "next cell of the rows"),  # 0.35 off: neither close nor in step
+    ],
+)
+def test_column_in_step_with_a_grid_is_not_adrift(off: float, hint: str | None):
+    """A totals column a cell's spacing on from the numbers in the cells."""
+    rows = tuple(
+        replace(row, step=Step(off, 200.0))
+        for row in beside_column(700.0, -160.0)
+    )
+    found = gaps(rows)
+    assert found.rules == (("TEXT_COLUMN_GAP",) if hint else ())
+    assert hint is None or hint in found.items[0].fix
 
 
 def test_column_gap_follows_the_column_it_sits_beside():

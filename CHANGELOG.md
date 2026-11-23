@@ -97,6 +97,25 @@ Entries before 0.8.0 are in the git history of this file.
 
 ### Fixed
 
+- `dm.check`'s `VALUE_LABEL_ON_DATA` leaves a number centred in a dot that
+  holds it (a rank circle, a dot matrix): it is in its mark on purpose, as
+  a label inside its bar is. The lines that run under such a dot are not
+  counted either (#871, #830).
+- `dm.place_columns` keeps the distance to the plot by the rows of a
+  column, the texts at the heights of the plot's marks. A heading wider
+  than its numbers runs on over the plot instead of pushing them away, and
+  `TEXT_COLUMN_GAP` measures the rows the same way, so a wide heading no
+  longer hides a floating column (#874).
+- `TEXT_COLUMN_GAP` leaves a column that continues a grid of numbered cells
+  at the cells' own spacing (the totals beside a heatmap, within a tenth of
+  that spacing). A column that is neither close nor in step gets both
+  places in the hint (#875).
+- `UNDERUSED_CANVAS` beside columns and their descriptions names
+  `dm.place_columns`, which spends no x range on the text, instead of a
+  new x limit to guess (#876).
+- The skill's look-at-it step says where things set in open space go: in
+  the middle of that space, not against the frame, and a band's label
+  inside the band or wholly beside it (#877).
 - The skill's rendered-figure review compares the margins of the visible
   group, looks for clearance around insets and annotations, and aligns a
   custom key as a block with the marks it describes (#859, #860, #861).

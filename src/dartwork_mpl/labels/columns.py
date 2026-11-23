@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from matplotlib.transforms import Bbox
 
-from ..geometry import get_renderer
+from ..geometry import DataInk, get_renderer, marks_ink
 from ..vocab import BESIDE_PLOT, BESIDE_TEXT
 from .alignment import LOG, extent_anchor, pin_x, visible_row
 
@@ -45,6 +45,24 @@ def block(texts: list[Text], renderer: RendererBase) -> Bbox:
     return Bbox.union([t.get_window_extent(renderer) for t in texts])
 
 
+def rows_of(
+    ax: Axes, texts: list[Text], marks: DataInk[object], renderer: RendererBase
+) -> list[Text]:
+    """The texts of a column that stand at the height of a mark of the
+    plot: its rows. The others are its heading. A column no mark reaches
+    is all rows."""
+    rows: list[Text] = []
+    for text in texts:
+        box = text.get_window_extent(renderer)
+        quarter = box.height / 4
+        level = Bbox.from_extents(
+            ax.bbox.x0, box.y0 + quarter, ax.bbox.x1, box.y1 - quarter
+        )
+        if marks.meets(level):
+            rows.append(text)
+    return rows or texts
+
+
 def place_columns(ax: Axes, *columns: Iterable[Text]) -> None:
     """Set columns of texts beside ``ax``'s plot, one text size apart.
 
@@ -52,7 +70,10 @@ def place_columns(ax: Axes, *columns: Iterable[Text]) -> None:
     reading order from left to right. They go to the side of the plot they
     are on now: the nearest one text size from the plot's edge, each next a
     text size and a half after the text before it (tick labels on that
-    side count as the text before the first). A column moves
+    side count as the text before the first). The distance to the plot is
+    kept by the rows, the texts at the heights of the plot's marks: a
+    heading wider than its rows runs on over the plot, where no mark is.
+    A column moves
     as one block, so its rows keep their heights and the edge they share;
     from then on it follows the plot's edge when the layout moves it. Call
     it after ``dm.align_texts`` and before ``dm.simple_layout``, which
@@ -86,18 +107,26 @@ def place_columns(ax: Axes, *columns: Iterable[Text]) -> None:
     high = max(box.y1 for box in boxes)
     cursor = beyond(ax, renderer, outward, low, high) / px
     room = BESIDE_TEXT if cursor > 0 else BESIDE_PLOT
+    marks = marks_ink([ax], renderer, px)
     order = list(zip(groups, boxes, strict=True))
     for group, box in order if outward > 0 else reversed(order):
         cursor += room.near * median(
             t.get_fontproperties().get_size_in_points() for t in group
         )
-        near = box.x0 if outward > 0 else box.x1
+        # Beside the plot the rows keep the distance; beside a text the
+        # whole block does, so a heading never runs into that text.
+        lead = (
+            block(rows_of(ax, group, marks, renderer), renderer)
+            if room is BESIDE_PLOT
+            else box
+        )
+        near = lead.x0 if outward > 0 else lead.x1
         for text in group:
             offset = (
                 outward * cursor + (extent_anchor(text, renderer) - near) / px
             )
             pin_x(text, ax, outward, offset)
-        cursor += box.width / px
+        cursor += (box.x1 - near if outward > 0 else near - box.x0) / px
         room = BESIDE_TEXT
     LOG.info(
         "set %d column%s of text beside the plot",
