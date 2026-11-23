@@ -1,7 +1,7 @@
 """Value labels, panel letters and notes.
 
 Public: :func:`label_bars`, :func:`annotate_value`, :func:`label_axes`, :func:`label_line_ends`,
-:func:`add_note`, :func:`legible`. Each but ``label_line_ends`` takes the active preset's text
+:func:`add_note`, :func:`legible`, :func:`place_columns`. Each but ``label_line_ends`` takes the active preset's text
 (:class:`PresetText`), and ``label_bars`` how ticks print numbers
 (:class:`TickText`); ``compose.labels`` gives them, as ``dm`` exposes them. The layout's hooks (:func:`settle_bars`,
 :func:`space_line_ends`, `settle_panels`, :func:`place_notes`) settle them, and :func:`report_bars` / :func:`report_panels` say what that changed at the size ``dm.simple_layout`` fits;
@@ -13,6 +13,7 @@ from __future__ import annotations
 from .alignment import align_texts
 from .bar_layout import report_bars, settle_bars
 from .bars import label_bars
+from .columns import place_columns
 from .ends import label_line_ends, space_line_ends
 from .given import PresetText, TickText
 from .legibility import legible
@@ -30,6 +31,7 @@ __all__ = [
     "label_line_ends",
     "legible",
     "note_gap_pt",
+    "place_columns",
     "place_notes",
     "report_bars",
     "report_panels",

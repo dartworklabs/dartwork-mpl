@@ -26,6 +26,9 @@ LETTER_CLEARANCE_PT = 2.0
 #: ends at the box (a leader to its label) only touches it.
 THROUGH_EM = 0.15
 
+#: Fewer stacked texts than this are labels, not a column.
+COLUMN_ROWS = 4
+
 #: Both axes, x first.
 AXES: tuple[Which, ...] = (X(), Y())
 
@@ -92,6 +95,11 @@ class Text:
     def short(self) -> str:
         """The text cut for a message."""
         return " ".join(self.text.split())[:30]
+
+    @property
+    def words(self) -> bool:
+        """The text has a letter or a digit to read."""
+        return any(ch.isalnum() for ch in self.text)
 
     @property
     def value(self) -> bool:
@@ -281,6 +289,47 @@ class AlignmentSample:
 
 
 @dataclass(frozen=True)
+class Placed:
+    """The x a text was given, and the px one unit of it moves the text."""
+
+    x: float
+    px_per_unit: float
+
+
+@dataclass(frozen=True)
+class Beside:
+    """A text set beside a plot: marks on one side of it at its height.
+
+    ``reach`` is the px from the text to the nearest thing on that side (a
+    mark, a plot's edge or another text), negative when that side is its
+    left; ``neighbour`` is that thing when it is a text.
+    """
+
+    text: Text
+    reach: float
+    neighbour: Text | None
+    placed: Placed | None
+
+
+@dataclass(frozen=True)
+class Gap:
+    """The nearest text on one side of a text at its height, and the px to it."""
+
+    px: float
+    text: Text
+
+
+@dataclass(frozen=True)
+class Heading:
+    """A text the user set with marks on neither side of it at its height,
+    and the nearest text on its left and on its right."""
+
+    text: Text
+    left: Gap | None
+    right: Gap | None
+
+
+@dataclass(frozen=True)
 class TickOcclusion:
     """A drawn tick label and the mean opacity of the fill covering its box."""
 
@@ -397,6 +446,8 @@ class Facts:
     minus_labels: tuple[Text, ...] = ()
     minus_tick: Text | None = None
     alignment: tuple[tuple[AlignmentSample, ...], ...] = ()
+    beside: tuple[Beside, ...] = ()
+    headings: tuple[Heading, ...] = ()
     occluded_ticks: tuple[TickOcclusion, ...] = ()
     edge_texts: tuple[Text, ...] = ()
     edge_titles: tuple[Text, ...] = ()
