@@ -39,6 +39,21 @@ dm.save_formats(fig, "output/exports-v1", formats=("png", "pdf"))   # 4. then lo
 
 Sizes written in code stay relative to the preset: `dm.fs(1)` is the preset font size plus one step, `dm.lw(1)` and `dm.fw(1)` the same for line width and weight. Below the base, `dm.lw` takes off a step while half a step is left and halves the width after that, so `dm.lw(-1)` is a thinner line, never a missing one. Colours are strings: `"dc.blue6"` (family, step 0 light to 9 dark). Leave `color=` out and the preset cycle applies.
 
+## Find a visual reference
+
+When the user wants an inventive composition or leaves the form open, use the
+Dartwork Hub MCP tools if connected. Give `search_examples` the reader's
+question, the shape of the data and the intended medium. For example: “Which
+branches offer many programme types despite modest attendance? Six branches,
+two counts per branch, one report figure.” A short description is enough.
+
+Inspect the preview and data requirements. If a candidate fits, use
+`get_example` with its ID to see how the original maps values to marks.
+Adapt that idea to the user's data, labels and installed dartwork-mpl version.
+If the results miss the question or Hub is unavailable, choose a form using
+[chart craft](references/craft.md) and continue drawing. Check and inspect
+the rendered figure either way.
+
 ## What a good chart is
 
 **It makes one point.** Before any plotting code, say in one sentence what the reader should take away: "Exports recovered faster than imports after 2021." That sentence picks the form. A change over time is a line, a ranking is sorted bars, a relationship is a scatter, parts of a whole are stacked bars. If you cannot write the sentence, plot the data plainly and say the figure has no single message yet.
