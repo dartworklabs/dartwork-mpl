@@ -4,6 +4,21 @@ Read this when you are choosing what to draw, or when a chart is correct but
 says nothing. It is about charts in general; the `dm` calls are the short way
 to do each thing here.
 
+## Find a visual reference
+
+When the user wants an inventive composition or leaves the form open, use the
+Dartwork Hub MCP tools if connected. Give `search_examples` the reader's
+question, the shape of the data and the intended medium. For example: “Which
+branches offer many programme types despite modest attendance? Six branches,
+two counts per branch, one report figure.” A short description is enough.
+
+Inspect the preview and data requirements. If a candidate fits, use
+`get_example` with its ID to see how the original maps values to marks.
+Adapt that idea to the user's data, labels and installed dartwork-mpl version.
+If the results miss the question or Hub is unavailable, choose a form using
+the form table below and continue drawing. Check and inspect
+the rendered figure either way.
+
 ## From the point to the form
 
 Write the takeaway sentence first. Its verb picks the form.
