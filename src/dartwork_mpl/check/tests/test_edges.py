@@ -473,3 +473,39 @@ def test_CONNECTOR_SHORT():
         "CONNECTOR_SHORT",
     )
     assert not found(Facts(CANVAS, PT, line_ends=(replace(end, short=0.1),)))
+
+
+def test_TEXT_COLUMN_GAP_on_a_floating_column():
+    import matplotlib.pyplot as plt
+
+    import dartwork_mpl as dm
+
+    def chart(x: float) -> tuple[object, list[object]]:
+        fig, ax = plt.subplots(figsize=dm.figsize("14cm", 0.6))
+        shares = [58, 46, 39, 25, 13]
+        ax.barh(range(5), shares)
+        ax.set(xlim=(0, 60), xlabel="Share (%)")
+        ax.set_yticks(range(5), ["North", "South", "East", "West", "Centre"])
+        column = [
+            ax.text(
+                x,
+                y,
+                f"{net:+d}",
+                transform=ax.get_yaxis_transform(),
+                ha="right",
+                va="center",
+            )
+            for y, net in enumerate([54, 39, 30, -3, -26])
+        ]
+        dm.simple_layout(fig)
+        return fig, column
+
+    with dm.style.context("report"):
+        fig, column = chart(1.2)
+        (finding,) = [f for f in dm.check(fig) if f.rule == "TEXT_COLUMN_GAP"]
+        assert set(finding.artists) == set(column)
+        assert "to the left (the x they were given: 1.2 to 1.07)" in finding.fix
+        plt.close(fig)
+        fig, _ = chart(1.07)
+        assert "TEXT_COLUMN_GAP" not in dm.check(fig).rules
+        plt.close(fig)

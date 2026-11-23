@@ -42,6 +42,7 @@ from ..vocab import AlignCentre, X, Y, parse_halign
 from . import roles
 from .alignment_measure import alignment_samples
 from .axis_labels import minus_tick, tick_row
+from .beside_measure import beside
 from .canvas import (
     bar_panel_without_x_scale,
     content_box,
@@ -621,13 +622,32 @@ def measure(fig: Figure) -> Facts:
     minus_labels = r.attempt(
         lambda: r.minus_labels(figure_texts), (), "MIXED_MINUS"
     )
+    legend_texts = r.attempt(r.legend_texts, (), "OVERFLOW")
+    ticks = r.attempt(r.ticks, (), "TICK_OVERLAP")
+    others = (
+        *(label for row in ticks for label in row.labels),
+        *figure_texts,
+        *legend_texts,
+    )
+    rows, headings = r.attempt(
+        lambda: beside(
+            texts,
+            others,
+            [ax for _i, ax in r.axes],
+            r.renderer,
+            r.pt,
+            Bbox(fig.bbox.get_points()),
+        ),
+        ((), ()),
+        "TEXT_COLUMN_GAP",
+    )
     return Facts(
         canvas=box_of(Bbox(fig.bbox.get_points())),
         px_per_pt=r.pt,
         texts=texts,
         figure_texts=figure_texts,
-        legend_texts=r.attempt(r.legend_texts, (), "OVERFLOW"),
-        ticks=r.attempt(r.ticks, (), "TICK_OVERLAP"),
+        legend_texts=legend_texts,
+        ticks=ticks,
         legends=r.attempt(r.legends, (), "LEGEND_ON_DATA"),
         empty=r.attempt(r.empty, (), "EMPTY_AXES"),
         values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
@@ -651,6 +671,8 @@ def measure(fig: Figure) -> Facts:
             (),
             "TEXT_MISALIGNMENT",
         ),
+        beside=rows,
+        headings=headings,
         occluded_ticks=r.attempt(r.radial_occlusion, (), "RADIAL_TICK_COVERED"),
         edge_texts=r.attempt(
             lambda: tuple(

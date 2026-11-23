@@ -97,6 +97,49 @@ class SnapX(Transform):
         return result
 
 
+def snap(text: Text, source: Text, x: Callable[[], float]) -> None:
+    """Draw ``text`` with its anchor at display ``x``, at the height
+    ``source`` (a copy of it as it was) gives it."""
+    if isinstance(text, AlignedTextRow):
+        origin = text.origin
+
+        def moved(renderer: RendererBase) -> tuple[float, float]:
+            return x(), origin(renderer)[1]
+
+        text.origin = moved
+    elif isinstance(text, Annotation) and isinstance(source, Annotation):
+
+        def coords(renderer: RendererBase) -> Affine2D:
+            source.xy = text.xy
+            return Affine2D().translate(x(), anchor(source, renderer)[1])
+
+        text.set_anncoords(coords)
+        text.xyann = (0, 0)
+    else:
+        text.set_transform(SnapX(source.get_transform(), x))
+
+
+def extent_anchor(text: Text, renderer: RendererBase) -> float:
+    """The display x ``snap`` moves: a row of pieces starts there, any
+    other text has its anchor there."""
+    if isinstance(text, AlignedTextRow):
+        return text.origin(renderer)[0]
+    return anchor(text, renderer)[0]
+
+
+def pin_x(text: Text, ax: Axes, outward: float, offset: float) -> None:
+    """Keep the text's anchor ``offset`` points from the plot's right edge
+    (``outward`` positive) or its left edge, wherever the layout puts it."""
+    fig = ax.get_figure(root=True)
+    assert fig is not None
+
+    def x() -> float:
+        edge = ax.bbox.x1 if outward > 0 else ax.bbox.x0
+        return float(edge) + offset * fig.dpi / 72
+
+    snap(text, copy(text), x)
+
+
 def tick_side(
     fig: Figure, texts: Sequence[Text]
 ) -> AlignLeft | AlignRight | None:
@@ -163,20 +206,7 @@ def snap_edges(
         return x + dx * fig.dpi / 72
 
     for text, source in zip(texts, sources, strict=True):
-        if isinstance(text, Annotation) and isinstance(source, Annotation):
-
-            def coords(
-                renderer: RendererBase,
-                source: Annotation = source,
-                live: Annotation = text,
-            ) -> Affine2D:
-                source.xy = live.xy
-                return Affine2D().translate(x_at(), anchor(source, renderer)[1])
-
-            text.set_anncoords(coords)
-            text.xyann = (0, 0)
-        else:
-            text.set_transform(SnapX(source.get_transform(), x_at))
+        snap(text, source, x_at)
         text.set_horizontalalignment(how.mpl)
 
     return True

@@ -10,6 +10,7 @@ becomes one of these types here, once.
 ``projection``  An Axes' projection: plain 2D, 3D or curved.
 ``number``  The scale a number prints in: the factor, prefix and suffix of a tick.
 ``locale``  A figure's locale: the default convention or Korea's.
+``room``  The distance a column of text keeps from a plot and from another text.
 """
 
 from .align import (
@@ -50,8 +51,11 @@ from .projection import (
     ThreeD,
     parse_projection,
 )
+from .room import BESIDE_PLOT, BESIDE_TEXT, Room
 
 __all__ = [
+    "BESIDE_PLOT",
+    "BESIDE_TEXT",
     "EDGES",
     "AffixedZero",
     "AlignBottom",
@@ -79,6 +83,7 @@ __all__ = [
     "Rectilinear",
     "Reserve",
     "Right",
+    "Room",
     "ScaleZero",
     "Span",
     "ThreeD",

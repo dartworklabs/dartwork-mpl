@@ -9,7 +9,7 @@ ran. A new rule is one more entry here and a test that names it.
 from __future__ import annotations
 
 from ..edgecase import EdgeCase
-from . import alignment, decide, marks
+from . import alignment, column_gap, decide, marks
 from .findings import Findings
 from .model import Facts
 
@@ -73,6 +73,11 @@ def has_polar_theta(facts: Facts, found: Findings) -> bool:
 def has_minus_labels(facts: Facts, found: Findings) -> bool:
     """Any numeric text using a hyphen-minus."""
     return bool(facts.minus_labels)
+
+
+def has_beside(facts: Facts, found: Findings) -> bool:
+    """Any text set beside a plot."""
+    return bool(facts.beside)
 
 
 def has_occluded_ticks(facts: Facts, found: Findings) -> bool:
@@ -147,6 +152,16 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_TEXT_MISALIGNMENT_on_forest_values",
         applies=has_panel_texts,
         adjust=alignment.misalignment,
+    ),
+    EdgeCase(
+        name="TEXT_COLUMN_GAP",
+        why=(
+            "a column of net values set at a guessed x floated several "
+            "text heights from the bars it belonged to"
+        ),
+        example="test_edges.py::test_TEXT_COLUMN_GAP_on_a_floating_column",
+        applies=has_beside,
+        adjust=column_gap.column_gap,
     ),
     EdgeCase(
         name="VALUE_LABEL_DECIMAL",

@@ -101,10 +101,22 @@ plt.close(fig)
 
 ## Text in columns
 
-For text that already forms a column, use `dm.align_texts(texts, how)`. Use
-`"left"`, `"right"`, or `"center"` for names, and `"decimal"` for numbers.
-Style the returned rows and then run `dm.simple_layout`. Keep values belonging
-to a mark at that mark.
+A column of names or numbers beside a plot is part of the plot. Write its
+texts on the plot's own Axes, each row at the height of the mark it belongs
+to, and hand them to `dm.place_columns(ax, column)`: it sets the column one
+text size from the plot's edge, the way tick labels sit by their axis, and
+each further column (`dm.place_columns(ax, revenue, share)`, left to right)
+a text size and a half after the one before. The x you wrote them at only says which
+side they are on. A heading goes in its column's list, on the edge the
+column is aligned on. Do not widen the x limits or add an Axes to hold a
+column: `dm.simple_layout` makes the room. Rows that follow no marks (a
+table that stands in for a legend) are centred on the plot's height, as a
+legend on that side is. `dm.check` reports a column left floating
+(`TEXT_COLUMN_GAP`).
+
+Inside a column, `dm.align_texts(texts, how)` aligns edges (`"left"`,
+`"right"`, `"center"`) or decimal points (`"decimal"`); it returns the rows
+to style and to hand on. Keep values belonging to a mark at that mark.
 
 ```python
 import matplotlib.pyplot as plt
@@ -112,20 +124,19 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 fig, ax = plt.subplots(figsize=dm.figsize("12cm", "5cm"))
-rows = [(0.8, -3.6, 5.2), (9.4, 2.4, 16.4), (-2.1, -5.8, 1.6)]
-ax.set_yticks(range(len(rows)), ["Study C", "Study B", "Study A"])
+rows = [(0.8, -3.6, 5.2), (9.4, 2.4, 16.4), (-2.1, -5.8, 1.6), (4.3, 0.9, 7.7)]
+ax.set_yticks(range(len(rows)), ["Study D", "Study C", "Study B", "Study A"])
 ax.set_xlabel("Mean difference (mmHg)")
+beside = ax.get_yaxis_transform()        # x across the plot (1 = right edge), y in data
 labels = []
 for y, (effect, low, high) in enumerate(rows):
     ax.hlines(y, low, high)
     ax.plot(effect, y, marker="s", color="dc.blue6")
     labels.append(
-        ax.text(
-            1.02, y, f"{effect:.1f} [{low:.1f}, {high:.1f}]",
-            transform=ax.get_yaxis_transform(), va="center",
-        )
+        ax.text(1, y, f"{effect:.1f} [{low:.1f}, {high:.1f}]", transform=beside, va="center")
     )
-dm.align_texts(labels, "decimal")
+head = ax.text(1, len(rows) - 0.4, "Mean [95% CI]", transform=beside, fontweight="bold")
+dm.place_columns(ax, [head, *dm.align_texts(labels, "decimal")])
 dm.simple_layout(fig)
 print(dm.check(fig))
 plt.close(fig)

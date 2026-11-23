@@ -95,7 +95,8 @@ The library says what it changed on its own: each automatic change (tick labels 
 | a legend that avoids the data, or sits on a named side | `dm.place_legend(ax)`, `dm.place_legend(ax, loc="above")` |
 | one legend for panels that share series | `dm.figure_legend(fig)` |
 | values on bars; one value on a line or point | `dm.label_bars(ax)`; `dm.annotate_value(ax, x, y, text)` |
-| align an existing column of names or numbers | `dm.align_texts(texts, "left")` or `dm.align_texts(texts, "decimal")` |
+| a column of names or numbers beside the plot (a net, a share, a table that stands in for a legend) | write the texts on the plot's Axes, then `dm.place_columns(ax, column)`; several: `dm.place_columns(ax, first, second)` |
+| align the edges or decimal points inside a column | `dm.align_texts(texts, "left")` or `dm.align_texts(texts, "decimal")` |
 | panel letters; a source or note line | `dm.label_axes(axes)`; `dm.add_note(fig, text)` |
 | texts `dm.check` reports as `TEXT_CONTRAST` and that cannot move onto one background (a note over bars, contour numbers) | `dm.legible(texts)`, after `dm.simple_layout(fig)`; then check again |
 | 만/억 on the ticks | `dm.format_axis_myriad(ax)` |

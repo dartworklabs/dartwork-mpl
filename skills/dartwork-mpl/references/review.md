@@ -60,6 +60,7 @@ not, the `try` line names what usually helps.
 | `TEXT_TOO_CLOSE` | a text placed near another text on the same panel, with too little space to read them apart; aligned rows of a list are fine |
 | `TEXT_CROWD` | a value beside a name on one row reads as one phrase |
 | `TEXT_MISALIGNMENT` | Text already forming a column has ragged decimal positions or edges. Select that column’s texts and use `dm.align_texts`. |
+| `TEXT_COLUMN_GAP` | a column of names or numbers set beside a plot sits more than about a text size and a half from it, or from the column between them: it floats instead of belonging to its rows. `dm.place_columns(ax, texts)` sets it one text size away; the `try` line also gives the distance to move it by hand |
 | `LEGEND_ON_DATA` | a legend over data, a title or other text, or another legend |
 | `TEXT_CONTRAST` | a text you placed with ink under 3:1 on what is drawn behind it: all of it (white numbers on pale bars), or the part that runs from one background onto another (a note from the canvas onto a dark bar, half an em of it is enough). Move it onto one background; where it must cross, `dm.legible(texts)` and check again |
 | `MIXED_MINUS` | negative numeric labels use a hyphen while ticks on the figure use a Unicode minus |
