@@ -6,18 +6,21 @@ to do each thing here.
 
 ## Find a visual reference
 
-When the user wants an inventive composition or leaves the form open, use the
-Dartwork Hub MCP tools if connected. Give `search_examples` the reader's
-question, the shape of the data and the intended medium. For example: “Which
-branches offer many programme types despite modest attendance? Six branches,
-two counts per branch, one report figure.” A short description is enough.
+Agents reach for the obvious chart. When the user leaves the form open, or
+asks for something better than the obvious, and the dartwork-mpl reference
+library is connected (`search_references`), look before drawing:
 
-Inspect the preview and data requirements. If a candidate fits, use
-`get_example` with its ID to see how the original maps values to marks.
-Adapt that idea to the user's data, labels and installed dartwork-mpl version.
-If the results miss the question or Hub is unavailable, choose a form using
-the form table below and continue drawing. Check and inspect
-the rendered figure either way.
+1. Call `search_references` in English, whatever language the user wrote in.
+   Put the reader's question and the data in `query`, not a chart-type
+   guess alone, and add `purpose` / `data_shape` values when you can tell.
+2. Read two or three hits. Keep one only if its `needs` fits the user's
+   data. A `reference` hit links to the original work; a hit of kind
+   `example` has its Python source behind `get_example`.
+3. Borrow the technique, not the look: the user's data, labels, preset and
+   colours stay theirs. Say in one line which reference you drew on.
+
+If nothing fits, or the library is not connected, choose with the table
+below. Check and inspect the rendered figure either way.
 
 ## From the point to the form
 
