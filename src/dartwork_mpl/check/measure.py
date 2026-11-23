@@ -53,6 +53,7 @@ from .ink import Ink, data_artists, data_ink, data_shows, legend_inks, words_box
 from .marks_measure import bars, boxed, dots, line_ends
 from .model import (
     AXES,
+    HELD_EM,
     LETTER_CLEARANCE_PT,
     THROUGH_EM,
     BarCanvasUse,
@@ -326,7 +327,8 @@ class Reader:
 
     def values(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
         """Value labels and the lines, markers and error bars they cover (a
-        label inside its bar or area is on purpose)."""
+        label inside its bar or area is on purpose, and so is a number
+        centred in a dot sized to hold it: a rank circle, a dot matrix)."""
         found: list[OnData] = []
         inks: dict[int, Ink] = {}
         for t in texts:
@@ -339,6 +341,8 @@ class Reader:
                     same_position_axes(ax), frame, self.renderer, self.pt
                 )
             box = Bbox.from_extents(t.box.x0, t.box.y0, t.box.x1, t.box.y1)
+            if inks[id(ax)].holds(box, HELD_EM * t.em):
+                continue
             hits = inks[id(ax)].meets(box, 0.5 * self.pt)
             if strokes := tuple(h for h in hits if h.stroke):
                 found.append(OnData(t, strokes))

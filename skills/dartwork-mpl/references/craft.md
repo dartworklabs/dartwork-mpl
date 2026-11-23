@@ -108,8 +108,9 @@ text size from the plot's edge, the way tick labels sit by their axis, and
 each further column (`dm.place_columns(ax, revenue, share)`, left to right)
 a text size and a half after the one before. The x you wrote them at only says which
 side they are on. A heading goes in its column's list, on the edge the
-column is aligned on, and breaks into short lines: the column is as wide as
-its widest text, so a long heading pushes its numbers away from the plot. Do not widen the x limits or add an Axes to hold a
+column is aligned on. The rows keep the distance to the plot, so a heading
+wider than its numbers runs on over the plot, above the first row: give it a
+line or two there, clear of the marks and the title. Do not widen the x limits or add an Axes to hold a
 column: `dm.simple_layout` makes the room. Rows that follow no marks (a
 table that stands in for a legend) are centred on the plot's height, as a
 legend on that side is. `dm.check` reports a column left floating

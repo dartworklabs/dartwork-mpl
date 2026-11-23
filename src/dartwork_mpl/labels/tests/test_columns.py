@@ -88,3 +88,28 @@ def test_decimal_rows_and_a_heading_move_as_one_block():
         after = box(rows).x0 - head.get_window_extent().x0
         assert after == pytest.approx(before, abs=1)
         plt.close(fig)
+
+
+def test_a_heading_wider_than_its_rows_runs_on_over_the_plot():
+    with dm.style.context("report"):
+        fig, ax = bars()
+        ax.set_ylim(5.6, -1.4)
+        change = column(ax, 1.5, [f"{v - 30:+d}" for v in SHARES], "right")
+        head = ax.text(
+            1.5,
+            -0.9,
+            "Change since the last survey (points)",
+            transform=ax.get_yaxis_transform(),
+            ha="right",
+            va="center",
+        )
+        dm.place_columns(ax, [head, *change])
+        dm.simple_layout(fig)
+        em = dm.fs(0) * fig.dpi / 72
+        assert box(change).x0 - ax.bbox.x1 == pytest.approx(em, abs=1)
+        assert head.get_window_extent().x1 == pytest.approx(
+            box(change).x1, abs=1
+        )
+        assert head.get_window_extent().x0 < ax.bbox.x1
+        assert "TEXT_COLUMN_GAP" not in dm.check(fig).rules
+        plt.close(fig)

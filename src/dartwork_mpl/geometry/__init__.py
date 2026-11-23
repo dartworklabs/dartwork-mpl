@@ -25,7 +25,7 @@ from .axes import (
     shared_axes,
 )
 from .backdrop import Backdrop, Drawn, backdrops, draw
-from .data_ink import DataInk, ToPx
+from .data_ink import DataInk, ToPx, in_data_coords, marks_ink
 from .figure import (
     drawn_in_tree,
     figure_axes,
@@ -94,12 +94,14 @@ __all__ = [
     "follows_mark",
     "get_renderer",
     "holders_shown",
+    "in_data_coords",
     "in_view_tick_labels",
     "iter_figure_level_extents",
     "label_side",
     "line_draws_markers",
     "line_draws_stroke",
     "marker_radius_pt",
+    "marks_ink",
     "panel_letters",
     "patch_inks",
     "projection",

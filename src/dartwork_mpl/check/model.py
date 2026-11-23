@@ -26,8 +26,21 @@ LETTER_CLEARANCE_PT = 2.0
 #: ends at the box (a leader to its label) only touches it.
 THROUGH_EM = 0.15
 
+#: A number counts as centred in its dot when their middles are within a
+#: quarter of its type size. In the recorded sweeps every number set in a
+#: dot (dot matrices, rank circles) was at 0.0 em, and every value label
+#: reported on a marker stood at least 1.9 em off the marker's middle.
+HELD_EM = 0.25
+
 #: Fewer stacked texts than this are labels, not a column.
 COLUMN_ROWS = 4
+
+#: A column beside a grid of numbered cells continues the grid when it is
+#: within this share of the cells' spacing of where the next cell's number
+#: would be. In the sweeps of 2026-11-23 the totals columns set as one more
+#: cell were 0.05 of the spacing off; the ones that read as floating were
+#: 0.15 and 0.35 off.
+IN_STEP = 0.1
 
 #: Both axes, x first.
 AXES: tuple[Which, ...] = (X(), Y())
@@ -297,18 +310,36 @@ class Placed:
 
 
 @dataclass(frozen=True)
+class Step:
+    """Where a text stands against the texts on the marks of its row (the
+    numbers in a heatmap's cells): ``pitch`` is the px from one of them to
+    the next, ``off`` the signed px the text would move to stand one pitch
+    on from the last, as the next cell of the row would."""
+
+    off: float
+    pitch: float
+
+    @property
+    def kept(self) -> bool:
+        """The text continues the row at its own spacing."""
+        return abs(self.off) <= IN_STEP * self.pitch
+
+
+@dataclass(frozen=True)
 class Beside:
     """A text set beside a plot: marks on one side of it at its height.
 
     ``reach`` is the px from the text to the nearest thing on that side (a
     mark, a plot's edge or another text), negative when that side is its
-    left; ``neighbour`` is that thing when it is a text.
+    left; ``neighbour`` is that thing when it is a text. ``step`` is set
+    when the marks of its row carry texts at an even spacing.
     """
 
     text: Text
     reach: float
     neighbour: Text | None
     placed: Placed | None
+    step: Step | None = None
 
 
 @dataclass(frozen=True)

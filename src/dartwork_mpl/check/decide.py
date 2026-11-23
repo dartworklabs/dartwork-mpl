@@ -685,6 +685,9 @@ def blank_beside_columns(
         f"and {near / canvas.width:.0%} on the other side",
         handles=(use.panel.handle,),
         panels=(use.panel.index,),
-        fix="fit the x limits to the columns and their labels with "
-        "ax.set_xlim(...), or use a narrower canvas, then rerun dm.simple_layout(fig)",
+        fix="x range spent on the labels leaves this band: write them "
+        "beside the plot instead (ax.text(1, y, s, "
+        "transform=ax.get_yaxis_transform()), then dm.place_columns(ax, "
+        "texts)) and keep the x limits to the columns; or use a narrower "
+        "canvas. Then rerun dm.simple_layout(fig)",
     )

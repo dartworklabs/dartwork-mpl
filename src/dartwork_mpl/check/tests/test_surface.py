@@ -180,6 +180,20 @@ def test_a_value_on_its_error_bar_is_found():
     assert "VALUE_LABEL_ON_DATA" in dm.check(fig).rules
 
 
+def test_a_number_centred_in_its_dot_is_not_on_data():
+    # A rank ladder: the numbers sit in the dots, the lines run under them.
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "5cm"))
+    ax.plot(range(4), [0, 0, 0, 0], color="dc.gray5", zorder=1)
+    for x, v in enumerate([81, 72, 66, 58]):
+        ax.scatter(x, 0, s=400, color="dc.blue8", lw=0, zorder=3)
+        ax.text(x, 0, str(v), ha="center", va="center", color="white")
+    beside = ax.text(1.5, 0, "64", ha="center", va="center")
+    ax.set(xlim=(-0.6, 3.6), ylim=(-1, 1))
+    ax.axis("off")
+    (finding,) = _of(dm.check(fig), "VALUE_LABEL_ON_DATA")
+    assert finding.artists == (beside,)
+
+
 def test_a_letter_inside_its_plot_on_the_curve_is_found():
     # Titles too long to follow their letters put the letters inside.
     fig, axes = plt.subplots(1, 2, figsize=dm.figsize_for(nrows=1, ncols=2))

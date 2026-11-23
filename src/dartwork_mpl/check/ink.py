@@ -37,6 +37,7 @@ from ..geometry import (
     clip_region,
     cut_to_clip,
     drawn_patch_box,
+    in_data_coords,
     line_draws_markers,
     line_draws_stroke,
     patch_inks,
@@ -46,7 +47,6 @@ from ..geometry import (
 from .model import Hit
 
 if TYPE_CHECKING:
-    from matplotlib.artist import Artist
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
     from matplotlib.legend import Legend as MplLegend
@@ -67,15 +67,6 @@ def name_of(artist: Named, unnamed: str = "") -> str:
     return unnamed if not label or label.startswith("_") else label
 
 
-def in_data_coords(artist: Artist, ax: Axes) -> bool:
-    """Drawn in data coordinates on both axes (``axhline`` is a reference)."""
-    try:
-        both = artist.get_transform().contains_branch_seperately(ax.transData)
-    except BBOX_ERRORS:
-        return False
-    return bool(all(both))
-
-
 def cut(box: Bbox, frame: Bbox) -> Bbox | None:
     """``box`` cut to ``frame``; ``None`` when nothing is left."""
     x0, y0 = max(box.x0, frame.x0), max(box.y0, frame.y0)
@@ -94,6 +85,11 @@ class Ink:
         """What ``box`` covers by more than ``touch`` inside the plot box."""
         inner = cut(box.padded(-touch), self.frame)
         return [] if inner is None else self.drawn.meets(inner, touch)
+
+    def holds(self, box: Bbox, off: float) -> bool:
+        """Whether ``box`` sits centred (within ``off`` px) in one
+        marker or scatter point with its ink inside it."""
+        return self.drawn.holds(box, off)
 
 
 def _hit(coll: Collection) -> Hit | None:
