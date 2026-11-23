@@ -94,6 +94,55 @@ def test_a_title_under_its_colorbar_is_found():
     assert found and cbar.ax in found[0].artists
 
 
+def test_oversized_colorbar_slot_leaves_a_blank_band():
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    data = np.arange(36).reshape(6, 6)
+    ax.set(xlabel="Speed", ylabel="Torque")
+    scale = fig.colorbar(ax.contourf(data), ax=ax, label="Rate")
+    dm.simple_layout(fig)
+
+    positions = [a.get_position().bounds for a in fig.axes]
+    (finding,) = _of(dm.check(fig), "UNDERUSED_CANVAS")
+    assert finding.artists == (ax, scale.ax)
+    assert [a.get_position().bounds for a in fig.axes] == positions
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    ax.set(xlabel="Speed", ylabel="Torque")
+    fig.colorbar(ax.contourf(data), ax=ax, label="Rate", fraction=0.05)
+    dm.simple_layout(fig)
+    assert "UNDERUSED_CANVAS" not in dm.check(fig).rules
+    plt.close(fig)
+
+    fig = plt.figure(figsize=dm.figsize("12cm", "standard"))
+    grid = fig.add_gridspec(1, 2, width_ratios=[18, 1])
+    ax, cax = fig.add_subplot(grid[0]), fig.add_subplot(grid[1])
+    ax.set(xlabel="Speed", ylabel="Torque")
+    fig.colorbar(ax.contourf(data), cax=cax, label="Rate")
+    dm.simple_layout(fig)
+    assert "UNDERUSED_CANVAS" not in dm.check(fig).rules
+    plt.close(fig)
+
+
+def test_column_space_counts_the_visible_descriptions():
+    fig, ax = plt.subplots(figsize=dm.figsize("14cm", "wide"))
+    ax.bar(0, 3, width=0.5)
+    ax.bar(0, 5, bottom=3, width=0.5)
+    ax.text(0.32, 1.5, "First group", va="center")
+    ax.text(0.32, 5.5, "Second group", va="center")
+    ax.set(xlim=(-0.35, 2), ylabel="Amount", xticks=[])
+    ax.spines[["bottom", "top", "right"]].set_visible(False)
+    dm.simple_layout(fig)
+    (finding,) = _of(dm.check(fig), "UNDERUSED_CANVAS")
+    assert finding.artists == (ax,)
+
+    ax.text(2, 6.5, "Summary", va="center", ha="right")
+    dm.simple_layout(fig)
+    assert "UNDERUSED_CANVAS" not in dm.check(fig).rules
+    plt.close(fig)
+
+
 def test_a_value_against_a_line_end_name_is_crowded():
     from tests.visual.scenarios import all_scenarios
 

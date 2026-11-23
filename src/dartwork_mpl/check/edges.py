@@ -86,8 +86,8 @@ def has_edge_texts(facts: Facts, found: Findings) -> bool:
 
 
 def has_canvas_use(facts: Facts, found: Findings) -> bool:
-    """The shape chart has a measured footprint."""
-    return facts.canvas_use is not None
+    """The shape chart or plot with a colorbar has a measured footprint."""
+    return facts.canvas_use is not None or facts.colorbar_space is not None
 
 
 EDGES: tuple[EdgeCase[Facts, Findings], ...] = (

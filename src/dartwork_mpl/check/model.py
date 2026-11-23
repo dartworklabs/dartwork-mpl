@@ -290,10 +290,30 @@ class TickOcclusion:
 
 @dataclass(frozen=True)
 class CanvasUse:
-    """The body of one axis-less panel, clipped to the canvas."""
+    """The visible body of a panel, clipped to the canvas."""
 
     panel: Panel
     body: Box
+
+
+@dataclass(frozen=True)
+class BarCanvasUse:
+    """Columns and their text, where x is used for placement."""
+
+    panel: Panel
+    body: Box
+
+
+@dataclass(frozen=True)
+class ColorbarSpace:
+    """A plot and its colorbar, with the scale's full subplot slot."""
+
+    panel: Panel
+    scale: Panel
+    body: Box
+    plot: Box
+    bar: Box
+    slot: Box
 
 
 @dataclass(frozen=True)
@@ -323,7 +343,8 @@ class Facts:
     occluded_ticks: tuple[TickOcclusion, ...] = ()
     edge_texts: tuple[Text, ...] = ()
     edge_titles: tuple[Text, ...] = ()
-    canvas_use: CanvasUse | None = None
+    canvas_use: CanvasUse | BarCanvasUse | None = None
+    colorbar_space: ColorbarSpace | None = None
 
     @property
     def touch(self) -> float:

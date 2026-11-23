@@ -1,4 +1,4 @@
-"""Measure the visible footprint of a single, frameless equal-aspect plot."""
+"""Measure footprints where a subplot slot can exceed its visible content."""
 
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib.collections import PathCollection
+from matplotlib.colorizer import ColorizingArtist
+from matplotlib.container import BarContainer
 from matplotlib.transforms import Bbox
 
 from ..geometry import (
@@ -14,18 +16,39 @@ from ..geometry import (
     drawn_patch_box,
     drawn_scatter_discs,
     drawn_tick_labels,
+    draws_axis,
     line_draws_markers,
     line_draws_stroke,
     projection,
     text_inks,
 )
-from ..vocab import X, Y
+from ..vocab import X, Y, bars_along
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.figure import Figure
 
     from .model import Text
+
+
+def scale_slot(plot: Axes, scale: Axes, fig: Figure) -> Bbox | None:
+    """The space allocated to a plot's attached colorbar on their grid."""
+    if not any(
+        artist.colorbar is not None and artist.colorbar.ax is scale
+        for artist in plot.get_children()
+        if isinstance(artist, ColorizingArtist) and artist_shown(artist)
+    ):
+        return None
+    spec = scale.get_subplotspec()
+    plot_spec = plot.get_subplotspec()
+    if (
+        spec is None
+        or plot_spec is None
+        or spec.get_gridspec() is not plot_spec.get_gridspec()
+    ):
+        return None
+    return spec.get_position(fig).transformed(fig.transFigure)
 
 
 def shape_panel(ax: Axes) -> bool:
@@ -43,6 +66,25 @@ def shape_panel(ax: Axes) -> bool:
         not ax.get_frame_on()
         and not (drawn_tick_labels(ax, X()) or drawn_tick_labels(ax, Y()))
         and not (text_inks(ax.xaxis.label) or text_inks(ax.yaxis.label))
+    )
+
+
+def bar_panel_without_x_scale(ax: Axes) -> bool:
+    """Unlabelled horizontal space surrounds the marks of a column chart."""
+    return (
+        projection(ax).flat
+        and not (ax.images or ax.tables or ax.artists or ax.collections)
+        and bool(ax.containers)
+        and all(
+            isinstance(container, BarContainer)
+            and isinstance(bars_along(container.orientation), X)
+            for container in ax.containers
+        )
+        and not (
+            drawn_tick_labels(ax, X())
+            or drawn_tick_labels(ax, X(), minor=True)
+            or (draws_axis(ax, ax.xaxis) and text_inks(ax.xaxis.label))
+        )
     )
 
 

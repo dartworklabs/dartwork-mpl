@@ -26,6 +26,12 @@ orphan: true
 | `save` | 여러 형식으로 저장 |
 | `guide` | 에이전트 지침: skill, 템플릿, 안티패턴 lint |
 
+`check`의 `UNDERUSED_CANVAS`는 축 없는 도형의 빈 띠를 잰다.
+가로 눈금이 없는 세로 막대는 막대와 설명을 함께 재고, 한 플롯에 붙은
+세로 색 눈금은 실제 눈금보다 넓게 잡힌 열을 재서 한쪽 빈 띠를 찾는다.
+여러 패널의 배치나 데이터가 만드는 시각적 무게는 skill의 렌더 검토에서
+살핀다. 검사는 열의 크기와 Axes 위치를 읽어 배치 힌트를 준다.
+
 **slice는 다른 slice를 import하지 않는다.** 표면이든 내부 모듈이든 같다. slice가 import하는 것은 platform 패키지뿐이다. 한 기능이 다른 기능을 필요로 하면 `compose/<slice>.py`가 둘을 잇는다. 이름은 그 기능을 쓰는 slice를 따른다. 조립 함수는 slice의 표면을 순서대로 부르고, 한 slice의 함수를 다른 slice에 타입이 있는 인자로 넘길 뿐 아무것도 판단하지 않는다(분기, 반복, 클래스 없음). `compose`를 import하는 것은 패키지 루트뿐이다. 규칙은 [composition.py](../../tests/architecture/composition.py)의 C1..C5와 [boundaries.py](../../tests/architecture/boundaries.py)가 지킨다.
 
 | 조립 모듈 | 잇는 것 | 루트가 내보내는 이름 |

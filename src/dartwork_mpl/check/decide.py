@@ -15,6 +15,9 @@ from ..vocab import Box, Which, X, Y
 from .findings import Findings
 from .model import (
     AXES,
+    BarCanvasUse,
+    CanvasUse,
+    ColorbarSpace,
     Facts,
     Frame,
     Hit,
@@ -62,6 +65,9 @@ TITLE_WIDE = 0.5
 TITLE_ROOM_EM = 2.0
 #: Ignore the edge of a text box just grazing the disc.
 THETA_INTO_EM = 0.4
+#: Above the 90th percentile of horizontal margin differences in two
+#: independent 101-case sweeps (5.0 and 3.3 percentage points).
+CANVAS_BLANK_WIDTH = 0.06
 
 
 def overflow(facts: Facts, found: Findings) -> Findings:
@@ -600,12 +606,20 @@ def title_at_edge(facts: Facts, found: Findings) -> Findings:
 
 
 def underused_canvas(facts: Facts, found: Findings) -> Findings:
-    """An axis-less panel has a sizeable empty band along one dimension."""
+    """An axis-less panel or an oversized scale slot leaves a blank band."""
+    if facts.colorbar_space is not None:
+        return blank_beside_colorbar(facts, facts.colorbar_space, found)
     use, canvas = facts.canvas_use, facts.canvas
-    if (
-        use is None
-        or min(canvas.width, canvas.height) < 80 * 72 / 25.4 * facts.px_per_pt
-    ):
+    match use:
+        case BarCanvasUse():
+            return blank_beside_columns(facts, use, found)
+        case CanvasUse():
+            pass
+        case None:
+            return found
+        case _:
+            assert_never(use)
+    if min(canvas.width, canvas.height) < 80 * 72 / 25.4 * facts.px_per_pt:
         return found
     width, height = (
         use.body.width / canvas.width,
@@ -620,4 +634,57 @@ def underused_canvas(facts: Facts, found: Findings) -> Findings:
         f"{min(width, height):.0%} of the canvas {dimension}",
         handles=(use.panel.handle,),
         panels=(use.panel.index,),
+    )
+
+
+def blank_beside_colorbar(
+    facts: Facts, space: ColorbarSpace, found: Findings
+) -> Findings:
+    """A narrow vertical scale uses only part of its allocated column."""
+    canvas = facts.canvas
+    left = space.body.x0 - canvas.x0
+    right = canvas.x1 - space.body.x1
+    if space.bar.x0 >= space.plot.x1:
+        side, near, far = "right", right, left
+        unused = space.slot.x1 - space.bar.x1
+    elif space.bar.x1 <= space.plot.x0:
+        side, near, far = "left", left, right
+        unused = space.bar.x0 - space.slot.x0
+    else:
+        return found
+    blank = CANVAS_BLANK_WIDTH * canvas.width
+    if far < -CUT_PX or near - far < blank or unused < blank:
+        return found
+    return found.flag(
+        "UNDERUSED_CANVAS",
+        f"Axes[{space.scale.index}]: the colorbar leaves {near / canvas.width:.0%} "
+        f"of the canvas blank on the {side}; the drawn scale is narrower than its slot",
+        handles=(space.panel.handle, space.scale.handle),
+        panels=(space.panel.index, space.scale.index),
+        fix="reduce fraction= in fig.colorbar(..., ax=ax) to fit the scale's "
+        "slot to its drawn width, then rerun dm.simple_layout(fig). For an "
+        "exact width, give the scale its own GridSpec column with cax=",
+    )
+
+
+def blank_beside_columns(
+    facts: Facts, use: BarCanvasUse, found: Findings
+) -> Findings:
+    """One large blank strip beside the columns, their axis and descriptions."""
+    canvas = facts.canvas
+    left = use.body.x0 - canvas.x0
+    right = canvas.x1 - use.body.x1
+    near, far = sorted((left, right))
+    if far - near < CANVAS_BLANK_WIDTH * canvas.width or far < 2 * near:
+        return found
+    side = "right" if right > left else "left"
+    return found.flag(
+        "UNDERUSED_CANVAS",
+        f"Axes[{use.panel.index}]: the columns and their labels leave "
+        f"{far / canvas.width:.0%} of the canvas blank on the {side} "
+        f"and {near / canvas.width:.0%} on the other side",
+        handles=(use.panel.handle,),
+        panels=(use.panel.index,),
+        fix="fit the x limits to the columns and their labels with "
+        "ax.set_xlim(...), or use a narrower canvas, then rerun dm.simple_layout(fig)",
     )
