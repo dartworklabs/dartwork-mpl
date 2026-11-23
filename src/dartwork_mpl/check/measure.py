@@ -46,6 +46,7 @@ from .beside_measure import beside
 from .canvas import (
     bar_panel_without_x_scale,
     content_box,
+    label_fit,
     scale_slot,
     shape_panel,
 )
@@ -222,7 +223,16 @@ class Reader:
             row
             for i, ax in self.panels
             for which in AXES
-            if (row := tick_row(i, ax, which, self.renderer, self.text))
+            if (
+                row := tick_row(
+                    i,
+                    ax,
+                    which,
+                    self.renderer,
+                    self.text,
+                    self.inset_parents.get(ax),
+                )
+            )
             is not None
         )
 
@@ -325,11 +335,11 @@ class Reader:
             )
         return tuple(found)
 
-    def values(self, texts: tuple[Text, ...]) -> tuple[OnData, ...]:
-        """Value labels and the lines, markers and error bars they cover (a
-        label inside its bar or area is on purpose, and so is a number
-        centred in a dot sized to hold it: a rank circle, a dot matrix)."""
-        found: list[OnData] = []
+    def held(self, texts: tuple[Text, ...]) -> tuple[Text, ...]:
+        """Value labels centred in a marker or scatter point that holds
+        them: the number of a rank circle or of a dot matrix. Such a
+        number is part of its mark."""
+        found: list[Text] = []
         inks: dict[int, Ink] = {}
         for t in texts:
             ax = t.handle.axes if isinstance(t.handle, MplText) else None
@@ -342,7 +352,30 @@ class Reader:
                 )
             box = Bbox.from_extents(t.box.x0, t.box.y0, t.box.x1, t.box.y1)
             if inks[id(ax)].holds(box, HELD_EM * t.em):
+                found.append(t)
+        return tuple(found)
+
+    def values(
+        self, texts: tuple[Text, ...], held: tuple[Text, ...]
+    ) -> tuple[OnData, ...]:
+        """Value labels and the lines, markers and error bars they cover (a
+        label inside its bar or area is on purpose, and so is a number
+        centred in a dot sized to hold it)."""
+        found: list[OnData] = []
+        inks: dict[int, Ink] = {}
+        in_dots = {id(t.handle) for t in held}
+        for t in texts:
+            ax = t.handle.axes if isinstance(t.handle, MplText) else None
+            if not (t.role.free and t.value and isinstance(ax, Axes)):
                 continue
+            if id(t.handle) in in_dots:
+                continue
+            if id(ax) not in inks:
+                frame = ax.get_window_extent(self.renderer)
+                inks[id(ax)] = data_ink(
+                    same_position_axes(ax), frame, self.renderer, self.pt
+                )
+            box = Bbox.from_extents(t.box.x0, t.box.y0, t.box.x1, t.box.y1)
             hits = inks[id(ax)].meets(box, 0.5 * self.pt)
             if strokes := tuple(h for h in hits if h.stroke):
                 found.append(OnData(t, strokes))
@@ -490,7 +523,12 @@ class Reader:
         if use is BarCanvasUse:
             body = self.column_body(ax, body)
         inside = Bbox.intersection(body, self.fig.bbox)
-        return None if inside is None else use(Panel(ax, i), box_of(inside))
+        if inside is None:
+            return None
+        if use is BarCanvasUse:
+            fit = label_fit(ax, labels, self.renderer)
+            return BarCanvasUse(Panel(ax, i), box_of(inside), fit)
+        return CanvasUse(Panel(ax, i), box_of(inside))
 
     def column_body(self, ax: Axes, marks: Bbox) -> Bbox:
         """Also count spines, axis text and any figure text beside the bars."""
@@ -646,6 +684,9 @@ def measure(fig: Figure) -> Facts:
         ((), ()),
         "TEXT_COLUMN_GAP",
     )
+    held = r.attempt(
+        lambda: r.held(texts), (), "VALUE_LABEL_ON_DATA, TEXT_CROWD"
+    )
     return Facts(
         canvas=box_of(Bbox(fig.bbox.get_points())),
         px_per_pt=r.pt,
@@ -655,7 +696,10 @@ def measure(fig: Figure) -> Facts:
         ticks=ticks,
         legends=r.attempt(r.legends, (), "LEGEND_ON_DATA"),
         empty=r.attempt(r.empty, (), "EMPTY_AXES"),
-        values=r.attempt(lambda: r.values(texts), (), "VALUE_LABEL_ON_DATA"),
+        held=held,
+        values=r.attempt(
+            lambda: r.values(texts, held), (), "VALUE_LABEL_ON_DATA"
+        ),
         letters=r.attempt(
             lambda: r.letters_on_data(texts), (), "LETTER_ON_DATA"
         ),

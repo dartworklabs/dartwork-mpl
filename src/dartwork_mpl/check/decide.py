@@ -195,9 +195,11 @@ def into_plots(
 
 
 def phrase(facts: Facts, found: Findings) -> Findings:
-    """A value label beside a name on one row, near enough to read as one."""
+    """A value label beside a name on one row, near enough to read as one.
+    A number in its dot is part of the mark the name stands beside."""
+    in_dots = {id(t.handle) for t in facts.held}
     for panel, texts in facts.by_panel.items():
-        free = [t for t in texts if t.role.free]
+        free = [t for t in texts if t.role.free and id(t.handle) not in in_dots]
         for a, b in combinations(free, 2):
             if a.value == b.value:
                 continue
@@ -678,6 +680,14 @@ def blank_beside_columns(
     if far - near < CANVAS_BLANK_WIDTH * canvas.width or far < 2 * near:
         return found
     side = "right" if right > left else "left"
+    limit = use.fit[1] if right > left else use.fit[0]
+    fitted = (
+        "fit the x limits to the columns and their labels with ax.set_xlim(...)"
+        if limit is None
+        else f"the labels end at the plot's edge with ax.set_xlim({side}="
+        f"{limit:.3g}) (a text keeps its size when the limits move, so "
+        "this is solved for you)"
+    )
     return found.flag(
         "UNDERUSED_CANVAS",
         f"Axes[{use.panel.index}]: the columns and their labels leave "
@@ -685,9 +695,8 @@ def blank_beside_columns(
         f"and {near / canvas.width:.0%} on the other side",
         handles=(use.panel.handle,),
         panels=(use.panel.index,),
-        fix="x range spent on the labels leaves this band: write them "
-        "beside the plot instead (ax.text(1, y, s, "
-        "transform=ax.get_yaxis_transform()), then dm.place_columns(ax, "
-        "texts)) and keep the x limits to the columns; or use a narrower "
-        "canvas. Then rerun dm.simple_layout(fig)",
+        fix=f"{fitted}; or write the labels beside the plot (ax.text(1, y, "
+        "s, transform=ax.get_yaxis_transform()), then dm.place_columns(ax, "
+        "texts)) so no x range is spent on them; or use a narrower canvas. "
+        "Then rerun dm.simple_layout(fig)",
     )

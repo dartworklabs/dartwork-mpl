@@ -190,8 +190,11 @@ def test_a_number_centred_in_its_dot_is_not_on_data():
     beside = ax.text(1.5, 0, "64", ha="center", va="center")
     ax.set(xlim=(-0.6, 3.6), ylim=(-1, 1))
     ax.axis("off")
-    (finding,) = _of(dm.check(fig), "VALUE_LABEL_ON_DATA")
+    ax.text(0.25, 0, "North", va="center")  # the dot's name, close beside it
+    found = dm.check(fig)
+    (finding,) = _of(found, "VALUE_LABEL_ON_DATA")
     assert finding.artists == (beside,)
+    assert "TEXT_CROWD" not in found.rules
 
 
 def test_a_letter_inside_its_plot_on_the_curve_is_found():
@@ -715,6 +718,17 @@ def test_a_zoom_connector_through_the_inset_labels_is_found():
     assert "zoom connector" in finding.message and "'41.0'" in finding.message
     # with the tick numbers on the inset's far side nothing is crossed
     assert not _of(dm.check(_zoomed(ticks_on_top=True)), "TEXT_ON_LINE")
+
+
+def test_a_zoom_inset_reads_in_its_parents_units():
+    fig = _zoomed(ticks_on_top=True)
+    (inset,) = fig.axes[0].child_axes
+    inset.set_ylabel("")
+    assert "MISSING_AXIS_LABEL" not in dm.check(fig).rules
+    # another quantity (counts of something, off the parent's view) needs a name
+    inset.bar([120, 150, 180], [12, 30, 21], width=20)
+    inset.set(xlim=(100, 200), ylim=(0, 40))
+    assert "MISSING_AXIS_LABEL" in dm.check(fig).rules
 
 
 def test_a_stacked_row_with_one_outlined_segment_and_a_stray_value_are_found():

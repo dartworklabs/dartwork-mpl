@@ -8,6 +8,8 @@ import numpy as np
 from matplotlib.collections import PathCollection
 from matplotlib.colorizer import ColorizingArtist
 from matplotlib.container import BarContainer
+from matplotlib.text import Annotation
+from matplotlib.text import Text as MplText
 from matplotlib.transforms import Bbox
 
 from ..geometry import (
@@ -124,3 +126,43 @@ def content_box(
             ),
         ]
     )
+
+
+def label_fit(
+    ax: Axes, labels: tuple[Text, ...], renderer: RendererBase
+) -> tuple[float | None, float | None]:
+    """The left and right x limits at which the labels written in data
+    coordinates would end at the plot's edges (``None``: no such label on
+    that side, or the scale is not linear). A text keeps its size when the
+    limits move, so the limit is solved, not read off."""
+    if ax.get_xscale() != "linear":
+        return None, None
+    low, high = ax.get_xlim()
+    box = ax.bbox
+    lefts: list[float] = []
+    rights: list[float] = []
+    for label in labels:
+        text = label.handle
+        if not isinstance(text, MplText) or text.axes is not ax:
+            continue
+        if isinstance(text, Annotation):
+            # an offset from a data point: the point is what the limits move
+            if text.xycoords != "data" or text.get_anncoords() not in (
+                "offset points",
+                "offset pixels",
+                "offset fontsize",
+            ):
+                continue
+            x = float(text.xy[0])
+        elif text.get_transform() == ax.transData:
+            x = float(text.get_unitless_position()[0])
+        else:
+            continue
+        anchor = float(ax.transData.transform((x, 0.0))[0])
+        extent = MplText.get_window_extent(text, renderer)
+        before, after = anchor - extent.x0, extent.x1 - anchor
+        if 0 < after < box.width and low < x:
+            rights.append(low + (x - low) * box.width / (box.width - after))
+        if 0 < before < box.width and x < high:
+            lefts.append(high - (high - x) * box.width / (box.width - before))
+    return (min(lefts) if lefts else None, max(rights) if rights else None)

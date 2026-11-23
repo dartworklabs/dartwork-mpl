@@ -378,10 +378,13 @@ class CanvasUse:
 
 @dataclass(frozen=True)
 class BarCanvasUse:
-    """Columns and their text, where x is used for placement."""
+    """Columns and their text, where x is used for placement. ``fit`` is
+    the left and the right x limit at which the labels written in data
+    coordinates would end at the plot's edges."""
 
     panel: Panel
     body: Box
+    fit: tuple[float | None, float | None] = (None, None)
 
 
 @dataclass(frozen=True)
@@ -465,6 +468,7 @@ class Facts:
     ticks: tuple[TickRow, ...] = ()
     legends: tuple[Legend, ...] = ()
     empty: tuple[Panel, ...] = ()
+    held: tuple[Text, ...] = ()
     values: tuple[OnData, ...] = ()
     letters: tuple[OnData, ...] = ()
     struck: tuple[OnData, ...] = ()
