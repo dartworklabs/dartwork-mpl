@@ -14,9 +14,10 @@ Entries before 0.8.0 are in the git history of this file.
 - `dm.place_columns(ax, *columns)` sets columns of existing texts (a net,
   a share, a table that stands in for a legend) beside a plot: the nearest
   one text size from the plot's edge, each next a text size and a half
-  after the text before it (tick labels on that side count). A column moves as one block, heading
-  included, and then follows the plot's edge, so `dm.simple_layout` makes
-  room for it. Nothing is created or restyled (#869).
+  after the text before it (tick labels on that side count). A column
+  moves as one block, heading included, and then follows the plot's edge,
+  so `dm.simple_layout` makes room for it. Nothing is created or restyled
+  (#869).
 - `dm.check` reports `TEXT_COLUMN_GAP`: a column of names or numbers set
   beside a plot that sits more than 1.6 em from the marks or the plot's
   edge, or more than 2.5 em from the column between them, a wide heading
@@ -24,6 +25,9 @@ Entries before 0.8.0 are in the git history of this file.
   by hand. The skill's column guidance places columns with the function
   instead of at an axes fraction, and says where a side table and a
   heading go (#869, #870).
+- `dm.check`'s `TEXT_CONTRAST` leaves a text of shapes alone (a `■` in a
+  series colour as the key of a legend table) to its colour: it is a mark,
+  not words to read (#869).
 - `dm.align_texts` aligns existing text edges or decimal positions without
   changing the chart's rows or tick labels. `dm.check` flags ragged columns
   beside a plot and suggests how to align them (#812).

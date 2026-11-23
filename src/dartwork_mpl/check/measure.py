@@ -447,7 +447,8 @@ class Reader:
 
     def inks(self, texts: tuple[Text, ...]) -> tuple[Inked, ...]:
         """Texts the user placed in an Axes of any projection, each pixel
-        of their ink against what is drawn behind it."""
+        of their ink against what is drawn behind it. A text of shapes
+        alone (a square as a colour key) is a mark, not words to read."""
         known = {id(t.handle): t for t in texts}
         found: list[Inked] = []
         for (panel, placed), behind in zip(
@@ -456,7 +457,7 @@ class Reader:
             fact = known.get(id(placed)) or self.text(
                 placed, roles.FreeText(), panel
             )
-            if fact is not None and len(behind.ink):
+            if fact is not None and fact.words and len(behind.ink):
                 found.append(Inked(fact, behind.read(LEGIBLE)))
         return tuple(found)
 

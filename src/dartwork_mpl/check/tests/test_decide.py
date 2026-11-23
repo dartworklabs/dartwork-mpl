@@ -180,3 +180,12 @@ def test_a_heading_against_the_next_heading_holds_its_column_off():
     assert gaps(first, second, headings=held).rules == ()
     loose = (Heading(ours, Gap(20.0, head(0.0, 600.0)), None),)
     assert len(gaps(first, second, headings=loose)) == 1
+
+
+@pytest.mark.parametrize(
+    ("string", "words"),
+    [("■", False), ("▲ 2", True), ("+", False), ("n/a", True)],
+)
+def test_a_text_of_shapes_alone_has_no_words(string: str, words: bool):
+    box = Box(0.0, 0.0, 10.0, 10.0)
+    assert Text(object(), string, FreeText(), 0, box, em=10.0).words is words

@@ -97,6 +97,11 @@ class Text:
         return " ".join(self.text.split())[:30]
 
     @property
+    def words(self) -> bool:
+        """The text has a letter or a digit to read."""
+        return any(ch.isalnum() for ch in self.text)
+
+    @property
     def value(self) -> bool:
         """The text prints one number: a value label."""
         return printed_value(self.text) is not None
