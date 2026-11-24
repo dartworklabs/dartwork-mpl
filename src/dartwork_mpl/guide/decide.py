@@ -19,6 +19,7 @@ from .model import (
     Known,
     LintFacts,
     Literal,
+    MatplotlibColormap,
     Rule,
     Rules,
     Spot,
@@ -37,8 +38,26 @@ def broken(literal: Literal, known: Known) -> bool:
             return literal.value not in known.colormaps
         case ColorName():
             return not is_color(literal, known)
+        case MatplotlibColormap():
+            return False
         case _:
             assert_never(literal.check)
+
+
+def foreign(literal: Literal, known: Known) -> bool:
+    """Whether a colormap literal is one matplotlib ships, not a ``dc.`` map."""
+    return (
+        literal.check == ColormapName()
+        and literal.value in known.colormaps
+        and not literal.value.startswith("dc.")
+    )
+
+
+def breaks(rule: Rule, literal: Literal, known: Known) -> bool:
+    """Whether a literal breaks a check rule."""
+    if rule.check == MatplotlibColormap():
+        return foreign(literal, known)
+    return literal.check == rule.check and broken(literal, known)
 
 
 def finding(rule: Rule, facts: LintFacts, spot: Spot) -> Finding:
@@ -66,11 +85,18 @@ def findings(facts: LintFacts, rules: Rules) -> Findings:
             spots += [
                 (rule, Spot(m.start())) for m in rule.pattern.finditer(text)
             ]
-        else:
+    # A note on a name gives way to a pattern that already stands there
+    # (``jet-cmap`` says more about ``cmap="jet"`` than "use a dc. map").
+    taken = {spot.offset for _, spot in spots}
+    for rule in rules.items:
+        if rule.check is not None:
             spots += [
                 (rule, Spot(lit.offset, lit.value))
                 for lit in facts.code.literals
-                if lit.check == rule.check and broken(lit, facts.known)
+                if breaks(rule, lit, facts.known)
+                and not (
+                    rule.check == MatplotlibColormap() and lit.offset in taken
+                )
             ]
     found = (finding(rule, facts, spot) for rule, spot in spots)
     return tuple(sorted(found, key=lambda f: (f.offset, f.rule_id)))

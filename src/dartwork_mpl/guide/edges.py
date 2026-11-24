@@ -16,6 +16,7 @@ from .model import (
     ColorName,
     Findings,
     LintFacts,
+    MatplotlibColormap,
     Registered,
 )
 
@@ -55,7 +56,7 @@ def drop_global_random(facts: LintFacts, plan: Findings) -> Findings:
 
 def _registered_by(code: Code, check: Check) -> Registered:
     match check:
-        case ColormapName():
+        case ColormapName() | MatplotlibColormap():
             return code.colormaps
         case ColorName():
             return code.colors

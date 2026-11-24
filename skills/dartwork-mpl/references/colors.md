@@ -67,16 +67,19 @@ plt.close(fig)
 ```python
 z = np.outer(np.linspace(-1, 1, 30), np.linspace(-1, 1, 30))
 fig, (a, b) = plt.subplots(1, 2, figsize=dm.figsize("17cm", "7cm"))
-a.imshow(np.abs(z), cmap="viridis")                    # ordered values
+a.imshow(np.abs(z), cmap="dc.aurora")                  # ordered values
 b.imshow(z, cmap="dc.blue_red", vmin=-1, vmax=1)       # signed, centred on 0
 dm.simple_layout(fig)
 plt.close(fig)
 ```
 
-- Ordered values: `viridis`, `cividis`, `magma` or a family (`cmap="dc.blue"`,
-  `cmap="dc.aurora"`). Signed values around a centre: a diverging map
-  (`dm.list_colors("diverging")`) with symmetric limits.
-- `jet`, `rainbow` and `hsv` get a lint warning; keep them when the user asks.
+- Every kind of data has a `dc.` map; `dm.list_colors(kind)` lists them.
+  Ordered values: a multi-hue map (`dm.list_colors("multi-hue")`, as
+  `cmap="dc.aurora"`) or one family (`cmap="dc.blue"`). Signed values around
+  a centre: a diverging map (`dm.list_colors("diverging")`) with symmetric
+  limits. Angles, hours, seasons: a cyclic map (`cmap="dc.hue"`).
+- A matplotlib colormap (`viridis`, `RdBu`, ...) gets a lint note, `jet`,
+  `rainbow` and `hsv` a warning; keep one when the user asks for it.
 
 ## A ramp between two colours
 
