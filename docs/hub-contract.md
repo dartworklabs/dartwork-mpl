@@ -43,7 +43,7 @@
 
 | 쓰는 것 | 허브의 의존성에 적는 것 | 언제 |
 | --- | --- | --- |
-| 정식 버전 | `dartwork-mpl==0.10.1` | 기본 |
+| 정식 버전 | `dartwork-mpl==0.10.2` | 기본 |
 | 사전 버전 | `dartwork-mpl==0.10.0a1` | 정식 릴리스 전의 것을 먼저 쓸 때 |
 | 임의의 커밋 | `dartwork-mpl @ git+https://github.com/dartworklabs/dartwork-mpl@<커밋 해시>` | 릴리스되지 않은 수정을 시험하거나, 어느 커밋에서 그림이 달라졌는지 찾을 때 |
 
@@ -65,7 +65,7 @@
 
 ## 지금 상태
 
-- 재구성한 라이브러리가 정식 버전 `0.8.0`으로 PyPI에 나갔고, 그 뒤 수정과 공개 카탈로그를 담은 `0.9.0`, 에이전트 평가로 다듬은 `0.10.0`, 그 skill과 lint를 고친 `0.10.1`이 나왔다. 허브는 `dartwork-mpl==0.10.1`을 고정하고, skill은 `npx skills add dartworklabs/dartwork-mpl#v0.10.1 --skill dartwork-mpl` 또는 `uvx dartwork-mpl@0.10.1 install`로 받는다. 사전 버전 `0.8.0a1`–`a3`은 더 쓰지 않는다.
+- 재구성한 라이브러리가 정식 버전 `0.8.0`으로 PyPI에 나갔고, 그 뒤 수정과 공개 카탈로그를 담은 `0.9.0`, 에이전트 평가로 다듬은 `0.10.0`, 그 skill과 lint를 고친 `0.10.1`, 컬러맵 검사와 두 오탐을 고친 `0.10.2`가 나왔다. 허브는 `dartwork-mpl==0.10.2`를 고정하고, skill은 `npx skills add dartworklabs/dartwork-mpl#v0.10.2 --skill dartwork-mpl` 또는 `uvx dartwork-mpl@0.10.2 install`로 받는다. 사전 버전 `0.8.0a1`–`a3`은 더 쓰지 않는다.
 - `preview/foundation` 브랜치는 아래 기록의 `git show` 명령이 읽는 옛 커밋을 붙들고 있다. 허브 이전이 끝날 때까지만 둔다.
 - 재구성하면서 지운 공개 함수와 동작, 번들 템플릿 36개의 기록은 [example-candidates.md](example-candidates.md)에 있다. 허브가 예시 소재를 찾을 때 참고하는 기록이고, 만들어야 할 목록이 아니다.
 - 허브 담당자가 이 리포의 유산 가운데 쓸 만한 것을 허브로 옮긴다. 그 일이 끝나면 이 리포의 git 히스토리(약 610 MB)를 정리한다. 정리 뒤에는 `example-candidates.md`의 `git show <커밋>:...` 명령이 동작하지 않으므로, 필요한 원본은 그 전에 가져간다.

@@ -73,13 +73,15 @@ dm.simple_layout(fig)
 plt.close(fig)
 ```
 
-- Every kind of data has a `dc.` map; `dm.list_colors(kind)` lists them.
-  Ordered values: a multi-hue map (`dm.list_colors("multi-hue")`, as
-  `cmap="dc.aurora"`) or one family (`cmap="dc.blue"`). Signed values around
-  a centre: a diverging map (`dm.list_colors("diverging")`) with symmetric
-  limits. Angles, hours, seasons: a cyclic map (`cmap="dc.hue"`).
-- A matplotlib colormap (`viridis`, `RdBu`, ...) gets a lint note, `jet`,
-  `rainbow` and `hsv` a warning; keep one when the user asks for it.
+- Every kind of data has several `dc.` maps; list them with
+  `dm.list_colors(kind)` and pick one that suits the subject and the rest
+  of the figure, not the first one. Ordered values: one hue
+  (`"sequential"`, 20 families) or several (`"multi-hue"`, 9 maps). Signed
+  values around a centre: `"diverging"` (11 maps) with symmetric limits.
+  Angles, hours, seasons: `"cyclic"` (3 maps).
+- `dm.check` reports colour-mapped data on a matplotlib colormap (`viridis`,
+  `RdBu`, ...) as `MATPLOTLIB_COLORMAP`; `jet`, `rainbow` and `hsv` also get
+  a lint warning. Keep a matplotlib map only when the user asks for it.
 
 ## A ramp between two colours
 

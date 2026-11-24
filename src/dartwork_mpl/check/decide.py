@@ -289,6 +289,18 @@ def empty_axes(facts: Facts, found: Findings) -> Findings:
     return found
 
 
+def matplotlib_colormap(facts: Facts, found: Findings) -> Findings:
+    """Colour-mapped data on a colormap matplotlib ships, per artist."""
+    for c in facts.colormaps:
+        found = found.flag(
+            "MATPLOTLIB_COLORMAP",
+            f"Axes[{c.panel.index}]: {c.name!r} is a matplotlib colormap",
+            handles=(c.handle,),
+            panels=(c.panel.index,),
+        )
+    return found
+
+
 def reads_as_years(ticks: TickValues, axis: Which) -> bool:
     """A linear x axis whose ticks are all whole numbers within
     :data:`YEARS` (``2019, 2020, 2021``): its ticks name themselves.

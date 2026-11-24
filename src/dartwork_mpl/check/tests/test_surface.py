@@ -160,6 +160,17 @@ def test_an_empty_grid_cell_is_found_but_not_a_twin():
     assert [f.panels for f in found] == [(2,)]
 
 
+def test_a_matplotlib_colormap_is_found_but_not_a_dc_map_or_a_plain_scatter():
+    fig, axes = plt.subplots(1, 3, figsize=dm.figsize("15cm", "5cm"))
+    z = np.arange(12.0).reshape(3, 4)
+    axes[0].imshow(z, cmap="viridis")
+    axes[1].imshow(z, cmap="dc.aurora")
+    axes[2].scatter([0, 1], [0, 1])  # one colour: its default cmap maps nothing
+    found = _of(dm.check(fig), "MATPLOTLIB_COLORMAP")
+    assert [f.panels for f in found] == [(0,)]
+    assert "'viridis'" in found[0].message
+
+
 def test_an_axis_of_numbers_needs_a_name_but_not_dates_or_a_named_row():
     fig, axes = plt.subplots(1, 2, figsize=dm.figsize("15cm", "6cm"))
     days = np.arange("2026-01-01", "2026-03-01", dtype="datetime64[D]")
@@ -178,6 +189,19 @@ def test_a_value_on_its_error_bar_is_found():
     ax.bar_label(bars, fmt="%.1f")
     ax.set_ylabel("Yield (t/ha)")
     assert "VALUE_LABEL_ON_DATA" in dm.check(fig).rules
+
+
+def test_a_value_on_a_box_of_its_own_covers_its_line():
+    # A slopegraph: each value sits on its line, knocked out by a box.
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [40, 70])
+    ax.set_ylabel("Survival (%)")
+    for x, y in ((0, 40), (1, 70)):
+        ax.text(x, y, f"{y}", ha="center", va="center")
+    assert "VALUE_LABEL_ON_DATA" in dm.check(fig).rules
+    for t in ax.texts:
+        t.set_bbox({"facecolor": "white", "edgecolor": "none", "pad": 1})
+    assert "VALUE_LABEL_ON_DATA" not in dm.check(fig).rules
 
 
 def test_a_number_centred_in_its_dot_is_not_on_data():

@@ -34,6 +34,11 @@ def has_legends(facts: Facts, found: Findings) -> bool:
     return bool(facts.legends)
 
 
+def has_foreign_colormap(facts: Facts, found: Findings) -> bool:
+    """Any colour-mapped artist on a matplotlib colormap."""
+    return bool(facts.colormaps)
+
+
 def has_empty(facts: Facts, found: Findings) -> bool:
     """Any framed Axes that draws nothing."""
     return bool(facts.empty)
@@ -237,6 +242,16 @@ EDGES: tuple[EdgeCase[Facts, Findings], ...] = (
         example="test_edges.py::test_EMPTY_AXES",
         applies=has_empty,
         adjust=decide.empty_axes,
+    ),
+    EdgeCase(
+        name="MATPLOTLIB_COLORMAP",
+        why=(
+            "heatmaps and contour maps drawn with viridis, magma or Blues "
+            "left the style's own colormaps unused"
+        ),
+        example="test_edges.py::test_MATPLOTLIB_COLORMAP",
+        applies=has_foreign_colormap,
+        adjust=decide.matplotlib_colormap,
     ),
     EdgeCase(
         name="MISSING_AXIS_LABEL",

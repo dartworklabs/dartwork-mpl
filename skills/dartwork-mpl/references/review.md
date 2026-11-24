@@ -65,7 +65,7 @@ not, the `try` line names what usually helps.
 | `TEXT_CONTRAST` | a text you placed with ink under 3:1 on what is drawn behind it: all of it (white numbers on pale bars), or the part that runs from one background onto another (a note from the canvas onto a dark bar, half an em of it is enough). Move it onto one background; where it must cross, `dm.legible(texts)` and check again |
 | `MIXED_MINUS` | negative numeric labels use a hyphen while ticks on the figure use a Unicode minus |
 | `VALUE_LABEL_DECIMAL` | whole numbers printed as `12.0` |
-| `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar; a number centred in a dot that holds it is left alone |
+| `VALUE_LABEL_ON_DATA` | a value label on a line, a marker or an error bar; a number centred in a dot that holds it, or a label on a box of its own (a slopegraph's values knocked out of their lines), is left alone |
 | `TEXT_ON_LINE` | a name or note you placed with a line drawn through it (a trend line through a point's name); a text on its own box, a leader ending at its label, or a name turned to run along its line is fine; also an inset's tick or axis labels with its zoom connector (`ax.indicate_inset_zoom`) through them |
 | `VALUE_LABEL_ADRIFT` | a value label that stands between its own bar and another bar of the same row or column, nearer the other: it reads as the other's |
 | `UNEVEN_OUTLINE` | bars that touch a bar with a narrower outline or none: the outline is drawn half outside, so they stand past their neighbours |
@@ -78,6 +78,7 @@ not, the `try` line names what usually helps.
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough, and an inset that zooms into its plot reads in the plot's units) |
 | `EMPTY_AXES` | a framed panel left empty by the grid, or whose data draws no visible marks |
+| `MATPLOTLIB_COLORMAP` | colour-mapped data (an image, a contour fill, a scatter coloured by value) on a colormap matplotlib ships (`viridis`, `Blues`); pick a `dc.` map for that kind of data, any of the many `dm.list_colors(kind)` lists (one-hue or multi-hue for ordered values, diverging around a centre, cyclic). Keep the matplotlib one only when the user asked for it |
 | `UNDERUSED_CANVAS` | an axis-less equal-aspect plot leaves a wide blank band on the canvas |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
 | `UNDERUSED_CANVAS` | a large blank band around a frameless plot, beside columns and their descriptions with no x scale, or beside a colorbar whose slot is wider than its scale |
