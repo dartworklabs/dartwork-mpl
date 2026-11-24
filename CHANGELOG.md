@@ -6,6 +6,10 @@ Entries before 0.8.0 are in the git history of this file.
 
 ### Changed
 
+- The skill's reference-library steps describe the user's data on the Hub
+  search's five data axes, read the hits in order (the search now returns
+  more, later ones may fit loosely), and point a user without the library to
+  its connection guide, https://mpl.dartwork.io/docs/mcp.
 - `dm.lint_code` notes `matplotlib-cmap` (info): a literal colormap that
   matplotlib ships (`viridis`, `RdBu`, ...) where dartwork-mpl has a `dc.`
   map for every kind of data. The skill's colormap guidance named `viridis`,
