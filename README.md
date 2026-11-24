@@ -22,7 +22,7 @@ Then ask your agent for a chart.
 No project? `uvx dartwork-mpl install` copies the skill into the current
 folder. With pip: `pip install dartwork-mpl`, then `dartwork-mpl install`.
 `npx skills add` takes the skill from GitHub; pin it to your version with
-`dartworklabs/dartwork-mpl#v0.10.1`. `--skill dartwork-mpl` keeps it to this
+`dartworklabs/dartwork-mpl#v0.10.2`. `--skill dartwork-mpl` keeps it to this
 skill: the repository also holds its own development skill, which is not for
 you. The skill tells the agent when the two differ.
 
