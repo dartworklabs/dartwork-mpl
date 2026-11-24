@@ -191,6 +191,19 @@ def test_a_value_on_its_error_bar_is_found():
     assert "VALUE_LABEL_ON_DATA" in dm.check(fig).rules
 
 
+def test_a_value_on_a_box_of_its_own_covers_its_line():
+    # A slopegraph: each value sits on its line, knocked out by a box.
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [40, 70])
+    ax.set_ylabel("Survival (%)")
+    for x, y in ((0, 40), (1, 70)):
+        ax.text(x, y, f"{y}", ha="center", va="center")
+    assert "VALUE_LABEL_ON_DATA" in dm.check(fig).rules
+    for t in ax.texts:
+        t.set_bbox({"facecolor": "white", "edgecolor": "none", "pad": 1})
+    assert "VALUE_LABEL_ON_DATA" not in dm.check(fig).rules
+
+
 def test_a_number_centred_in_its_dot_is_not_on_data():
     # A rank ladder: the numbers sit in the dots, the lines run under them.
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "5cm"))

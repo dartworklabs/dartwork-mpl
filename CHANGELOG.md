@@ -20,6 +20,13 @@ Entries before 0.8.0 are in the git history of this file.
   it flagged were slides or posters. A width that leaves panels too small is
   measured by `dm.check` (`SMALL_PANEL`, `UNDERUSED_CANVAS`).
 
+### Fixed
+
+- `VALUE_LABEL_ON_DATA` leaves a value label on a box of its own alone, as
+  `TEXT_ON_LINE` already did for names: the box covers the line. A
+  slopegraph with its values knocked out of the lines and a Taylor
+  diagram's arc labels were refused for it.
+
 ## 0.10.1 — 2026-11-24
 
 ### Changed
