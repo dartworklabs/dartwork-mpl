@@ -11,6 +11,7 @@ from collections.abc import Callable, Iterator
 from math import isclose
 from typing import TYPE_CHECKING, TypeVar
 
+import matplotlib
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.inset import InsetIndicator
@@ -63,6 +64,7 @@ from .model import (
     ColorbarSpace,
     Connected,
     Facts,
+    ForeignColormap,
     Frame,
     Hit,
     Inked,
@@ -272,6 +274,18 @@ class Reader:
             )
             if labels:
                 found.extend(measure_occlusion(ax, labels))
+        return tuple(found)
+
+    def colormaps(self) -> tuple[ForeignColormap, ...]:
+        """Colour-mapped artists drawn with a colormap matplotlib ships."""
+        found: list[ForeignColormap] = []
+        for i, ax in self.axes:
+            for artist in (*ax.images, *ax.collections):
+                if artist.get_array() is None or not artist.get_visible():
+                    continue
+                name = artist.get_cmap().name
+                if name in matplotlib.colormaps and not name.startswith("dc."):
+                    found.append(ForeignColormap(Panel(ax, i), artist, name))
         return tuple(found)
 
     def polar_theta(self) -> tuple[PolarTheta, ...]:
@@ -709,6 +723,7 @@ def measure(fig: Figure) -> Facts:
         frames=r.attempt(r.frames, (), "CROSS_AXES_OVERLAP, SMALL_PANEL"),
         insets=r.attempt(lambda: r.insets(texts), (), "CROSS_AXES_OVERLAP"),
         polar_theta=r.attempt(r.polar_theta, (), "POLAR_TICK_ON_PLOT"),
+        colormaps=r.attempt(r.colormaps, (), "MATPLOTLIB_COLORMAP"),
         minus_labels=minus_labels,
         minus_tick=r.attempt(
             lambda: minus_tick(r.axes, r.text), None, "MIXED_MINUS"

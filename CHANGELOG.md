@@ -4,6 +4,15 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+### Added
+
+- `dm.check` reports `MATPLOTLIB_COLORMAP`: colour-mapped data (an image, a
+  contour fill, a scatter coloured by value) on a colormap matplotlib ships.
+  The lint rule `matplotlib-cmap` is an info note the agent never runs, so
+  0.10.1 agents still drew viridis, magma and Blues heatmaps; the check is in
+  the draw, check, fix loop. A matplotlib map the user asked for is kept and
+  named to the user.
+
 ## 0.10.1 — 2026-11-24
 
 ### Changed

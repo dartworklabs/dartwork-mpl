@@ -261,6 +261,15 @@ class Panel:
 
 
 @dataclass(frozen=True)
+class ForeignColormap:
+    """A colour-mapped artist on a colormap matplotlib ships, not a ``dc.`` map."""
+
+    panel: Panel
+    handle: object
+    name: str
+
+
+@dataclass(frozen=True)
 class Frame:
     """The plot area of an Axes that fills it (a frame, an image, a
     colorbar): its index and box."""
@@ -492,6 +501,7 @@ class Facts:
     dots: tuple[Dot, ...] = ()
     boxed: tuple[Boxed, ...] = ()
     line_ends: tuple[LineEnd, ...] = ()
+    colormaps: tuple[ForeignColormap, ...] = ()
 
     @property
     def touch(self) -> float:
