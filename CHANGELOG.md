@@ -13,6 +13,13 @@ Entries before 0.8.0 are in the git history of this file.
   the draw, check, fix loop. A matplotlib map the user asked for is kept and
   named to the user.
 
+### Changed
+
+- The `oversize-width` lint rule is an info note, not a warning: slides and
+  posters are wider than a 17 cm page on purpose, and most Hub examples
+  it flagged were slides or posters. A width that leaves panels too small is
+  measured by `dm.check` (`SMALL_PANEL`, `UNDERUSED_CANVAS`).
+
 ## 0.10.1 — 2026-11-24
 
 ### Changed
