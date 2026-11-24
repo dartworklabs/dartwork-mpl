@@ -4,6 +4,8 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+## 0.10.2 — 2026-11-24
+
 ### Added
 
 - `dm.check` reports `MATPLOTLIB_COLORMAP`: colour-mapped data (an image, a
