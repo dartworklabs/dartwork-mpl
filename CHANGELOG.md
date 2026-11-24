@@ -4,17 +4,31 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+## 0.10.1 — 2026-11-24
+
 ### Changed
 
+- The skill's check step treats each `dm.check` finding as a defect to fix
+  and run again; "it still reads" is not a reason to keep one, and one kept
+  because the figure needs it is named to the user. Agents had kept
+  `TEXT_ON_LINE` and `CONNECTOR_SHORT` findings the Hub's gallery gate then
+  refused (#886).
+- `CONNECTOR_SHORT` reports a line end 0.75 pt or more from the corner it
+  points at, not 0.5 pt: a 1 pt paper-coloured outline hides 0.5 pt, which
+  no reader sees; the 2 pt outline of the reported donut (1 pt) still flags
+  (#886).
+- The skill searches the Hub reference library (`search_references`) before
+  choosing a form the user left open, and adapts a fitting technique to the
+  user's data (#885).
 - The skill's reference-library steps describe the user's data on the Hub
   search's five data axes, read the hits in order (the search now returns
   more, later ones may fit loosely), and point a user without the library to
-  its connection guide, https://mpl.dartwork.io/docs/mcp.
+  its connection guide, https://mpl.dartwork.io/docs/mcp (#888).
 - `dm.lint_code` notes `matplotlib-cmap` (info): a literal colormap that
   matplotlib ships (`viridis`, `RdBu`, ...) where dartwork-mpl has a `dc.`
   map for every kind of data. The skill's colormap guidance named `viridis`,
   `cividis` and `magma` for ordered values; it now routes by kind to
-  `dm.list_colors(kind)`, and `jet-cmap`'s fix is `cmap="dc.aurora"`.
+  `dm.list_colors(kind)`, and `jet-cmap`'s fix is `cmap="dc.aurora"` (#887).
 
 ## 0.10.0 — 2026-11-23
 
