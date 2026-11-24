@@ -373,8 +373,9 @@ class Reader:
         self, texts: tuple[Text, ...], held: tuple[Text, ...]
     ) -> tuple[OnData, ...]:
         """Value labels and the lines, markers and error bars they cover (a
-        label inside its bar or area is on purpose, and so is a number
-        centred in a dot sized to hold it)."""
+        label inside its bar or area is on purpose, so is a number centred
+        in a dot sized to hold it, and a label on a box of its own covers
+        the line, as for :meth:`struck`)."""
         found: list[OnData] = []
         inks: dict[int, Ink] = {}
         in_dots = {id(t.handle) for t in held}
@@ -383,6 +384,8 @@ class Reader:
             if not (t.role.free and t.value and isinstance(ax, Axes)):
                 continue
             if id(t.handle) in in_dots:
+                continue
+            if isinstance(t.handle, MplText) and t.handle.get_bbox_patch():
                 continue
             if id(ax) not in inks:
                 frame = ax.get_window_extent(self.renderer)
