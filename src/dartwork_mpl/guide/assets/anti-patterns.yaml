@@ -84,9 +84,9 @@ rules:
     fix: a dc. map from dm.list_colors(kind) - "sequential" or "multi-hue" (ordered), "diverging" (signed), "cyclic"
 
   - id: oversize-width
-    severity: warning
+    severity: info
     pattern: '(?:width\s*=\s*|\bdm\.figsize\s*\(\s*)["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
-    message: Wider than a 17 cm page (dm.col2). Keep a width the user or the venue asked for.
+    message: Wider than a 17 cm page (dm.col2); fine for slides and posters and for a width the user or the venue asked for.
 
   - id: unseeded-rng
     severity: warning
