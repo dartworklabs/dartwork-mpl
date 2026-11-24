@@ -78,7 +78,7 @@ not, the `try` line names what usually helps.
 | `TICK_OVERLAP` | neighbouring tick labels collide |
 | `MISSING_AXIS_LABEL` | an axis or colorbar of numbers that nothing names (dates, an x axis of whole years and names need none; one label per grid row or column is enough, and an inset that zooms into its plot reads in the plot's units) |
 | `EMPTY_AXES` | a framed panel left empty by the grid, or whose data draws no visible marks |
-| `MATPLOTLIB_COLORMAP` | colour-mapped data (an image, a contour fill, a scatter coloured by value) on a colormap matplotlib ships (`viridis`, `Blues`); the `dc.` map for that kind of data fits the style. Keep the matplotlib one only when the user asked for it |
+| `MATPLOTLIB_COLORMAP` | colour-mapped data (an image, a contour fill, a scatter coloured by value) on a colormap matplotlib ships (`viridis`, `Blues`); pick a `dc.` map for that kind of data, any of the many `dm.list_colors(kind)` lists (one-hue or multi-hue for ordered values, diverging around a centre, cyclic). Keep the matplotlib one only when the user asked for it |
 | `UNDERUSED_CANVAS` | an axis-less equal-aspect plot leaves a wide blank band on the canvas |
 | `SMALL_PANEL` | the largest plot is under 7 tick labels on its shorter side: titles, ticks and axis names take the canvas (a grid moved to slide text) |
 | `UNDERUSED_CANVAS` | a large blank band around a frameless plot, beside columns and their descriptions with no x scale, or beside a colorbar whose slot is wider than its scale |
