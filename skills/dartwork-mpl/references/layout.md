@@ -229,7 +229,7 @@ dm.simple_layout(fig)            # makes room for the outside legend
 plt.close(fig)
 
 fig, ax = plt.subplots(figsize=dm.figsize("11cm", "square"))
-im = ax.imshow(np.outer(np.sin(x), np.cos(x)), cmap="viridis")
+im = ax.imshow(np.outer(np.sin(x), np.cos(x)), cmap="dc.blue_red")
 fig.colorbar(im, ax=ax, label="Value")
 dm.simple_layout(fig)
 plt.close(fig)

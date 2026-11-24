@@ -16,7 +16,7 @@ from dartwork_mpl.guide.model import (
 
 KNOWN = Known(
     colors=frozenset({"red", "dc.blue6", "tab:blue"}),
-    colormaps=frozenset({"viridis", "viridis_r", "dc.blue", "jet"}),
+    colormaps=frozenset({"viridis", "RdBu", "dc.blue", "dc.blue_r", "jet"}),
 )
 
 
@@ -42,6 +42,7 @@ BROKEN = [
     ("rng = np.random.default_rng()", "unseeded-rng"),
     ("y = np.random.normal(size=9)", "unseeded-global-random"),
     ("y = random.gauss(0, 1)", "unseeded-global-random"),
+    ('ax.imshow(z, cmap="RdBu")', "matplotlib-cmap"),
     ('ax.plot(x, color="#235fa4")', "raw-hex-color"),
     ("plt.show()", "plt-show-only"),
     ("ax.legend(h1 + h2, l1 + l2)", "twin-legend-hand-merge"),
@@ -63,7 +64,7 @@ def test_every_catalog_rule_has_a_case():
         'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))',
         "ax.plot(x, linewidth=0.3, lw=0)",  # hairline and no border
         'ax.plot(x, color="C0", mec="0.5", mfc="none", fc="#abcd")',
-        'ax.imshow(z, cmap="viridis_r")',
+        'ax.imshow(z, cmap="dc.blue_r")',
         "ax.set_title('t', fontsize=dm.fs(1))",
         'dm.label_bars(ax, color="series")',  # a dm helper's own word
         "rng = np.random.default_rng(0)\ny = rng.normal(size=9) + rng.random()",

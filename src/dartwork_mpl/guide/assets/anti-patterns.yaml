@@ -4,7 +4,8 @@
 # `message`, an optional one-line `fix`, and one detector:
 #   pattern   a Python regular expression (MULTILINE) over the source, or
 #   check     colormap-name | color-name: a literal checked against the names
-#             matplotlib has registered.
+#             matplotlib has registered; matplotlib-colormap: a registered
+#             colormap literal that is not a dc. map.
 # A match that starts inside a string or a comment is not code and is skipped.
 # Explicit user values win: a warning on a value the user asked for is
 # reported, not "fixed".
@@ -74,7 +75,13 @@ rules:
     severity: warning
     pattern: 'cmap\s*=\s*["''](?:jet|hsv|gist_rainbow|gist_ncar|nipy_spectral|rainbow)["'']'
     message: A rainbow colormap distorts the order of values. Keep it only when the user asked for it.
-    fix: cmap="viridis"
+    fix: cmap="dc.aurora"
+
+  - id: matplotlib-cmap
+    severity: info
+    check: matplotlib-colormap
+    message: dartwork-mpl has a colormap for every kind of data (dm.list_colors(kind)); keep a matplotlib one the user asked for.
+    fix: cmap="dc.aurora" (ordered), "dc.blue_red" (signed), "dc.hue" (cyclic)
 
   - id: oversize-width
     severity: warning

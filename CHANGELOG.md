@@ -4,6 +4,14 @@ Entries before 0.8.0 are in the git history of this file.
 
 ## [Unreleased]
 
+### Changed
+
+- `dm.lint_code` notes `matplotlib-cmap` (info): a literal colormap that
+  matplotlib ships (`viridis`, `RdBu`, ...) where dartwork-mpl has a `dc.`
+  map for every kind of data. The skill's colormap guidance named `viridis`,
+  `cividis` and `magma` for ordered values; it now routes by kind to
+  `dm.list_colors(kind)`, and `jet-cmap`'s fix is `cmap="dc.aurora"`.
+
 ## 0.10.0 — 2026-11-23
 
 ### Added
