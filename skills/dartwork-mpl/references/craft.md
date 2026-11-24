@@ -4,6 +4,24 @@ Read this when you are choosing what to draw, or when a chart is correct but
 says nothing. It is about charts in general; the `dm` calls are the short way
 to do each thing here.
 
+## Find a visual reference
+
+Agents reach for the obvious chart. When the user leaves the form open, or
+asks for something better than the obvious, and the dartwork-mpl reference
+library is connected (`search_references`), look before drawing:
+
+1. Call `search_references` in English, whatever language the user wrote in.
+   Put the reader's question and the data in `query`, not a chart-type
+   guess alone, and add `purpose` / `data_shape` values when you can tell.
+2. Read two or three hits. Keep one only if its `needs` fits the user's
+   data. A `reference` hit links to the original work; a hit of kind
+   `example` has its Python source behind `get_example`.
+3. Borrow the technique, not the look: the user's data, labels, preset and
+   colours stay theirs. Say in one line which reference you drew on.
+
+If nothing fits, or the library is not connected, choose with the table
+below. Check and inspect the rendered figure either way.
+
 ## From the point to the form
 
 Write the takeaway sentence first. Its verb picks the form.
