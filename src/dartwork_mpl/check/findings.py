@@ -30,6 +30,10 @@ FIXES: dict[str, str] = {
     "EMPTY_AXES": "check the view limits, colour and alpha; for a line, "
     "give it a positive linewidth or a visible marker. An unused grid "
     "cell can be removed with ax.remove()",
+    "MATPLOTLIB_COLORMAP": "use the dc. map for the kind of data: "
+    'cmap="dc.aurora" (ordered), "dc.blue_red" (signed around a centre), '
+    '"dc.hue" (cyclic); dm.list_colors(kind) lists them. Keep a matplotlib '
+    "map only when the user asked for it",
     "VALUE_LABEL_ON_DATA": "move the label off the line: a padding past "
     "the error bar (ax.bar_label(bars, padding=...)), or dm.annotate_value "
     "for a point on a line",

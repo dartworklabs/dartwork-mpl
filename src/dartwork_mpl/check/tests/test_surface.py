@@ -160,6 +160,17 @@ def test_an_empty_grid_cell_is_found_but_not_a_twin():
     assert [f.panels for f in found] == [(2,)]
 
 
+def test_a_matplotlib_colormap_is_found_but_not_a_dc_map_or_a_plain_scatter():
+    fig, axes = plt.subplots(1, 3, figsize=dm.figsize("15cm", "5cm"))
+    z = np.arange(12.0).reshape(3, 4)
+    axes[0].imshow(z, cmap="viridis")
+    axes[1].imshow(z, cmap="dc.aurora")
+    axes[2].scatter([0, 1], [0, 1])  # one colour: its default cmap maps nothing
+    found = _of(dm.check(fig), "MATPLOTLIB_COLORMAP")
+    assert [f.panels for f in found] == [(0,)]
+    assert "'viridis'" in found[0].message
+
+
 def test_an_axis_of_numbers_needs_a_name_but_not_dates_or_a_named_row():
     fig, axes = plt.subplots(1, 2, figsize=dm.figsize("15cm", "6cm"))
     days = np.arange("2026-01-01", "2026-03-01", dtype="datetime64[D]")

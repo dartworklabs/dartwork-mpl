@@ -14,6 +14,7 @@ from dartwork_mpl.check.model import (
     Connected,
     Dot,
     Facts,
+    ForeignColormap,
     Frame,
     Hit,
     Inked,
@@ -147,6 +148,13 @@ def test_TICK_OVERLAP():
 def test_EMPTY_AXES():
     (f,) = found(Facts(CANVAS, PT, empty=(Panel(object(), 5),)))
     assert f.rule == "EMPTY_AXES" and f.panels == (5,)
+
+
+def test_MATPLOTLIB_COLORMAP():
+    on = ForeignColormap(Panel(object(), 2), object(), "viridis")
+    (f,) = found(Facts(CANVAS, PT, colormaps=(on,)))
+    assert f.rule == "MATPLOTLIB_COLORMAP" and f.panels == (2,)
+    assert f.artists == (on.handle,) and "dc." in f.fix
 
 
 def test_MISSING_AXIS_LABEL():
