@@ -21,8 +21,10 @@ OFF_CENTRE_PT = 1.5
 OFF_CENTRE_SHARE = 0.04
 #: A text this far (em) off the row is not printed on its marks.
 ON_ROW_EM = 0.35
-#: A line end this far (pt) from the corner it points at visibly misses it.
-SHORT_PT = 0.5
+#: A line end this far (pt) from the corner it points at visibly misses it:
+#: the 2 pt outline of the reported donut hid 1 pt, a 1 pt outline hides
+#: 0.5 pt, which no reader sees.
+SHORT_PT = 0.75
 #: Outlines differing by this (pt) or more make one bar larger than the next.
 UNEVEN_PT = 0.2
 

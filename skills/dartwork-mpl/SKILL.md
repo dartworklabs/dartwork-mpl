@@ -3,14 +3,14 @@ name: dartwork-mpl
 description: Static charts with matplotlib and dartwork-mpl (import dartwork_mpl as dm) - plot, chart, figure, graph, 그래프, 그림, 플롯, 차트. Use whenever Python code creates, edits, restyles, resizes, saves or reviews a figure for a paper, report, document, dashboard or slides in a project where dartwork-mpl is installed. Gives the four-call skeleton, what makes a chart good, and the draw, check, look loop. Not for interactive web charts (Plotly, D3, Altair).
 license: MIT
 metadata:
-  version: 0.10.0
+  version: 0.10.1
 ---
 
 # dartwork-mpl
 
 A thin layer over matplotlib. `Figure` and `Axes` stay native, so everything you know about matplotlib still works. The library owns typography, line weights, spines, colour and margins. You own the message.
 
-**This skill is for dartwork-mpl 0.10.0.** Check once per project: `uv run python -c "import dartwork_mpl as dm; print(dm.__version__)"` (no uv: `python -c ...`). If it prints another version, tell the user, because the calls below may not exist there. `uv run dartwork-mpl install` puts in the skill of the installed version; an older dartwork-mpl without that command needs `uv add "dartwork-mpl>=0.10.0"` first.
+**This skill is for dartwork-mpl 0.10.1.** Check once per project: `uv run python -c "import dartwork_mpl as dm; print(dm.__version__)"` (no uv: `python -c ...`). If it prints another version, tell the user, because the calls below may not exist there. `uv run dartwork-mpl install` puts in the skill of the installed version; an older dartwork-mpl without that command needs `uv add "dartwork-mpl>=0.10.1"` first.
 
 This is guidance, not a rulebook. Requests differ. Where it does not cover yours, do what serves the reader of the figure.
 
@@ -79,7 +79,7 @@ Text on the figure follows the document it goes into. Unknown: follow the langua
 
 A figure is finished when you have looked at it, not when the script ran. Run the script with `uv run python plot.py` in a uv project (one with `pyproject.toml` or `uv.lock`); elsewhere `uv run --with dartwork-mpl python plot.py` runs it without installing anything.
 
-1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a place to look, with a line on what to try; act on the ones that are not what you meant. `NOT RUN` means a rule could not measure, so say so.
+1. `print(dm.check(fig))` measures the drawn figure: clipped text, overlapping text and tick labels, a legend on data. Each finding is a defect a reader will see, with a line on what to try: fix it and run again. That it still reads is not a reason to keep one; keep one only when the figure needs it that way, and tell the user which and why. `NOT RUN` means a rule could not measure, so say so.
 2. Open the PNG and read it as the reader would. Does the point land in five seconds? Is anything cut, crowded or empty? Is the data what the user gave? Check that the visible plot and its supporting elements sit together on the canvas, with room on both sides. What you set in open space inside the plot (an inset, a note, a key) sits in the middle of that space with its own labels counted, not against the frame; a label for a band or region stays inside it or wholly beside it, not across its edge. For placement choices, see `references/layout.md`.
 3. Fix what you saw and say what changed. Revising with a user, save as the next version (`-v2`, keep v1); with a path the user or caller named, overwrite that path. If you cannot view images, say the figure was not visually reviewed.
 
@@ -110,7 +110,7 @@ Read only the page the task needs. Without this folder, `uv run dartwork-mpl pat
 
 | Need | Read |
 |---|---|
-| choosing the form, emphasis, annotation, titles; numbers on bars, distributions, heatmaps, small multiples; outlines, connectors, bands, where an axis ends | `references/craft.md` |
+| finding a reference chart (`search_references`); choosing the form, emphasis, annotation, titles; numbers on bars, distributions, heatmaps, small multiples; outlines, connectors, bands, where an axis ends | `references/craft.md` |
 | canvas sizes, margins, grids, twin axes, legends outside, colorbars | `references/layout.md` |
 | changing an existing figure, value labels | `references/editing.md` |
 | colour names, palettes, colormaps, a ramp between two colours | `references/colors.md` |

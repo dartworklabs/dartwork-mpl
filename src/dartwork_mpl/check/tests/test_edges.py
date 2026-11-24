@@ -467,12 +467,12 @@ def test_TEXT_BOX_ON_DATA():
 
 def test_CONNECTOR_SHORT():
     """A line end on a corner under a 2 pt paper-coloured outline flags;
-    under a hairline it does not."""
+    under a 1 pt one it does not."""
     end = LineEnd(object(), object(), short=1.0)
     assert found(Facts(CANVAS, PT, line_ends=(end,))).rules == (
         "CONNECTOR_SHORT",
     )
-    assert not found(Facts(CANVAS, PT, line_ends=(replace(end, short=0.1),)))
+    assert not found(Facts(CANVAS, PT, line_ends=(replace(end, short=0.5),)))
 
 
 def test_TEXT_COLUMN_GAP_on_a_floating_column():

@@ -93,14 +93,23 @@ class ColorName:
     rule: ClassVar[str] = "invalid-color-name"
 
 
+@dataclass(frozen=True)
+class MatplotlibColormap:
+    """A literal colormap name (``cmap="..."``) that matplotlib ships, not a
+    ``dc.`` map: dartwork-mpl has one for every kind of data."""
+
+    value: ClassVar[str] = "matplotlib-colormap"
+    rule: ClassVar[str] = "matplotlib-cmap"
+
+
 #: A catalog rule detected from literal names instead of a pattern; ``rule``
 #: is the id of the catalog rule it backs.
-Check = ColormapName | ColorName
+Check = ColormapName | ColorName | MatplotlibColormap
 
 
 def parse_check(text: object) -> Check:
     """A catalog check; ``ValueError`` for anything else."""
-    for check in (ColormapName(), ColorName()):
+    for check in (ColormapName(), ColorName(), MatplotlibColormap()):
         if check.value == text:
             return check
     raise ValueError(f"{text!r} is not a check")
