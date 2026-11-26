@@ -17,6 +17,7 @@ orphan: true
 | 3 | `architecture` | [architecture.md](architecture.md) | slice 구조, compose와 platform, functional core 경계, 불변식, 채택한 리팩터 목표 | 모듈을 만들거나 옮길 때, 의존을 추가할 때, 불변식을 건드릴 때 |
 | 4 | `verification` | [verification.md](verification.md) | 게이트별 측정 대상·적용 조건·명령·합격 기준, 에이전트 평가 루프 | PR 합격 판정, 게이트 추가·완화, baseline 갱신 |
 | 5 | — | [change-flow.md](change-flow.md) | 결정 권한, 설계에서 머지까지의 흐름, 리포 잠금, 릴리스, 용어 | 결정이 누구 몫인지, 잠금·릴리스 절차가 필요할 때 |
+| 6 | — | [hub-work.md](hub-work.md) | 이 세션에서 허브 리포를 고칠 때의 순서: 허브 Handbook 읽기, worktree, 검증, 결정 권한, 배포, 두 리포를 함께 바꾸는 순서 | 허브(`dartwork-mpl-hub`)의 코드·문서·배포를 건드릴 때 |
 
 연속으로 읽을 때는 위 순서를 따른다.
 
