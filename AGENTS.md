@@ -60,6 +60,13 @@ decisions, and only the package root imports it: `dm.simple_layout`,
 `dm.figsize_for` and the label functions are composed there, and the role
 colours are joined into `dm.style`. `tests/architecture/` enforces all of this.
 
+## Working on the hub from here
+
+The owner also changes the hub (`dartworklabs/dartwork-mpl-hub`) from this
+repository's session. Before touching it, read
+[`docs/handbook/hub-work.md`](docs/handbook/hub-work.md) and then the hub's own
+Handbook: inside the hub its rules, not this file's, apply.
+
 ## Plotting rules live in the bundled skill
 
 Before writing or reviewing plotting code here (skill pages, tests),
