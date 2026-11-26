@@ -1,6 +1,7 @@
 name: Publish to PyPI
 
-# A v*.*.* tag (cut on main) builds and publishes. main only receives merges
+# A v*.*.* tag (cut on main) builds and publishes once the owner approves
+# the `pypi` environment. main only receives merges
 # from develop that already passed CI, so nothing is re-tested here.
 # PyPI trusted publishing: no token; the publisher is registered on PyPI for
 # this repository and this workflow file name.
@@ -16,6 +17,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-24.04
+    # The owner approves every upload here (ADR 0010). PyPI's trusted
+    # publisher is bound to this environment name.
+    environment: pypi
     permissions:
       id-token: write
       contents: write

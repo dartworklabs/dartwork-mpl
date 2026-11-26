@@ -19,6 +19,7 @@ Proposed relationships have no effect and are excluded from approved successors.
 | [ADR 0007](0007-python311-security-dependency-floor.md) | Python 3.11 minimum and security dependency floors | Apply the approved 0.6.0 Python 3.11+ support change and scoped security floors, retaining FastMCP 2.x/3.x. | Accepted — owner approved the support change on 2026-11-05. | No preceding freeze or lock changed | — |
 | [ADR 0008](0008-owner-priority-lock-reset.md) | 소유자 결정 우선과 기존 잠금 재설정 | Keep aesthetic locks (colour values, fonts, preset look); release other interface, MCP and eval locks; owner decisions supersede earlier locks via separate ADRs. | Accepted (2026-11-15) | 부분 대체: ADR 0005 결정 1 중 미감 외 항목, ADR 0001 A1 `mcp_discovery`, ADR 0003 닫힌 목록 | — |
 | [ADR 0009](0009-blueprint.md) | dartwork-mpl 청사진 결정 | Capability slices with functional core / imperative shell inside; aesthetic pixel and colour gates first; Handbook owns intent, invariants and gates. | Accepted (2026-11-15) | — | — |
+| [ADR 0010](0010-release-gates.md) | 사용자에게 닿는 문은 소유자 한 명이 연다 | `main` merges, `v*` tags and PyPI uploads are opened only by team `release-owners` (the owner), enforced by rulesets and the `pypi` environment; approval is the owner's explicit instruction | Accepted | moves `develop`/`main` branch protection to rulesets | — |
 
 ADR 0003의 원문 상태는 역사 기록 그대로다. 실제 구현 상태는 [artifact delivery 설계의 검증 기록](../superpowers/specs/2026-10-18-mcp-artifact-delivery-design.md)과 현재 코드를 확인한다. ADR 0004의 제안 관계는 미발효이며 승인된 후속 관계에 포함하지 않는다.
 
