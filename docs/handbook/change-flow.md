@@ -43,19 +43,35 @@ PyPI에 무엇이 있는지는 태그만 본다. `main`은 PyPI와 같지 않다
 
 **버전.** 1.0 전까지는 공개 이름이나 그림의 모습이 바뀌면 가운데 자리를, 고치기만 했으면 끝자리를 올린다.
 
-`develop`과 `main`에는 누구도 직접 push하지 않는다. 관리자도 예외가 아니다. force-push와 삭제도 막혀 있다. 이 규칙은 GitHub 브랜치 보호 설정이 강제한다. `main`으로 가는 PR의 출발 브랜치가 `develop`인지, 태그가 맞는 브랜치의 커밋에 달렸는지는 설정으로 강제되지 않는다. 사람이 지킨다.
+`develop`과 `main`에는 누구도 직접 push하지 않는다. 조직 소유자도 예외가 아니다. force-push와 삭제도 막혀 있다. 이 규칙은 아래 [리포 잠금](#리포-잠금)의 ruleset이 강제한다. `main`으로 가는 PR의 출발 브랜치가 `develop`인지, 태그가 맞는 브랜치의 커밋에 달렸는지는 설정으로 강제되지 않는다. 사람이 지킨다.
+
+**긴급 수정.** 이미 나간 정식 버전의 결함은 `main`에서 `hotfix/<이름>`을 따서 `main`으로 PR을 낸다. 끝자리를 올려 릴리스하고, 같은 커밋을 `develop`으로 되돌려 병합한다.
 
 허브가 이 리포의 어떤 버전을 쓰는지는 [../hub-contract.md](../hub-contract.md)에 있다.
 
 ## 리포 잠금
 
-지금은 잠금이 없다. 리팩터 기간에 소유자 계정만 쓰게 하던 ruleset 두 개는 소유자가 2026-11-16에 풀었다. `develop`과 `main`의 브랜치 보호(PR, CI 통과, force-push와 삭제 금지)는 그대로다.
+사용자에게 닿는 문은 셋이고, 여는 사람은 최종 검토자인 소유자(`Sangwon91`) 하나다([ADR 0010](../adr/0010-release-gates.md)). 에이전트는 소유자의 지시로 일하므로 소유자와 같은 계정을 쓴다. 그래서 세 문의 승인은 **소유자가 대화나 리뷰에서 내린 명시적 지시**("병합", "릴리스", "배포")다. 에이전트는 그 지시 없이 문을 열지 않는다. 아래 설정은 다른 사람과 사고를 막는 기술적 잠금이다.
 
-태그는 보호되지 않는다. 쓰기 권한이 있는 사람이 `v*.*.*` 태그를 push하면 PyPI에 올라가므로, 릴리스는 소유자가 정한다는 규칙을 사람이 지킨다.
+| 문 | 강제하는 설정 | 열 수 있는 사람 |
+| --- | --- | --- |
+| `main`으로 병합 | ruleset `release-gate`: `main`의 갱신을 막는다. 팀 `release-owners`만 PR로 우회한다 | `release-owners`(소유자 한 명) |
+| `v*` 태그 | ruleset `version-tags`: 태그 생성·변경·삭제를 막는다 | `release-owners` |
+| PyPI 업로드 | environment `pypi`: 필수 승인자 소유자, `v*` 태그에서만 돈다. PyPI trusted publisher가 이 environment에 묶여 있다 | 소유자 |
+
+ruleset `quality-gate`는 `develop`과 `main`에 PR, CI(`lint`, `test`) 통과, force-push·삭제 금지를 걸고 우회가 없다. 소유자도 CI를 건너뛸 수 없다. ruleset은 조직 소유자에게도 적용된다. 조직 소유자는 ruleset 자체를 고칠 수 있지만 고치면 조직 감사 로그에 남는다. 이 잠금은 1차 보호막이다.
 
 ## 릴리스
 
-`v*.*.*` 태그를 push하면 `.github/workflows/release.yml`이 실행된다. 이 workflow는 다음 순서로 진행한다.
+릴리스는 소유자의 지시로만 한다. 순서는 다음과 같다.
+
+1. `develop`에서 버전과 `CHANGELOG.md`를 맞춘 PR을 병합한다.
+2. `develop` → `main` PR을 소유자가 병합한다(사전 버전은 이 단계를 건너뛰고 `develop`의 커밋에 태그한다).
+3. 소유자가 태그를 push한다.
+4. `pypi` environment의 승인 요청을 소유자가 승인한다.
+5. 허브가 새 버전으로 고정을 올린다([../hub-contract.md](../hub-contract.md)). 허브는 PyPI에 없는 판을 운영에 싣지 않는다.
+
+`v*.*.*` 태그를 push하면 `.github/workflows/release.yml`이 실행된다. 이 workflow는 승인을 기다린 뒤 다음 순서로 진행한다.
 
 1. 태그가 `pyproject.toml`의 `version`과 같은지 확인한다.
 2. sdist와 wheel을 빌드한다.
@@ -64,7 +80,7 @@ PyPI에 무엇이 있는지는 태그만 본다. `main`은 PyPI와 같지 않다
 
 테스트는 다시 돌리지 않는다. `develop`과 `main`의 커밋은 모두 CI를 통과한 PR로 들어오기 때문이다. 태그 전에 `pyproject.toml`의 `version`, `skills/dartwork-mpl/SKILL.md`의 `metadata.version`과 첫 줄의 버전, `CHANGELOG.md`를 맞춘다. 앞의 둘이 다르면 `test_guidance.py`가 실패한다.
 
-배포 상태의 정본은 PyPI와 태그다. 이 라이브러리는 서버를 운영하지 않으므로 관찰·복구 절차는 릴리스 되돌리기뿐이다. PyPI는 같은 버전을 다시 올릴 수 없으므로 되돌리기는 다음 patch 릴리스로 한다.
+배포 상태의 정본은 PyPI와 태그다. 이 라이브러리는 서버를 운영하지 않으므로 관찰·복구 절차는 릴리스 되돌리기뿐이다. PyPI는 같은 버전을 다시 올릴 수 없으므로 되돌리기는 다음 patch 릴리스로 한다. 결함이 심하면 그 버전을 PyPI에서 yank해 새 설치가 고르지 않게 한다.
 
 ## 용어
 

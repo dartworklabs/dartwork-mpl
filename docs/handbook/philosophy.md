@@ -160,7 +160,7 @@ slice는 공용 패키지(platform)만 import한다. 한 기능이 다른 기능
 - **검사를 건너뛰지 않는다.** `--no-verify`나 규칙 완화로 통과시키지 않는다. 규칙이 틀렸으면 규칙을 고치는 커밋을 따로 만든다.
 - **`develop`과 `main`에는 PR로만 들어간다.** 작업 브랜치는 자유롭다. 절차는 [change-flow.md](change-flow.md)에 있다.
 
-지키는 장치: 브랜치 보호와 CI(`lint`, `test`), `test_repo_weight.py`. 커밋의 단위와 메시지는 리뷰가 지킨다.
+지키는 장치: ruleset `quality-gate`와 CI(`lint`, `test`), `test_repo_weight.py`. 커밋의 단위와 메시지는 리뷰가 지킨다.
 
 ## 9. 바꾸기보다 알려준다
 

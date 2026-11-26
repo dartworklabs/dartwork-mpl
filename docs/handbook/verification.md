@@ -22,7 +22,7 @@ PR은 아래 게이트로 합격을 판정한다. 실행하지 않은 게이트�
 | 리포 무게 | 바이너리는 폰트 자산과 픽셀 기준 이미지에만, 크기 상한 | 전체 테스트에 포함 (`test_repo_weight.py`) | 위반 0 |
 | 지침 | skill·템플릿의 코드가 실행되고, lint에 걸리지 않고, 거기 나오는 `dm.*` 이름이 존재 | 전체 테스트에 포함 (`guide/tests/test_guidance.py`) | 통과 |
 
-CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인을 돌린다. `test`는 Python 3.12에서 전체 테스트를 `--mpl`과 함께 돌린다. `develop`과 `main`의 브랜치 보호가 이 둘을 필수로 건다.
+CI는 job 두 개다. `lint`는 ruff, basedpyright, extras 없는 설치 확인을 돌린다. `test`는 Python 3.12에서 전체 테스트를 `--mpl`과 함께 돌린다. `develop`과 `main`의 ruleset `quality-gate`가 이 둘을 필수로 건다.
 
 > **주의**
 >
