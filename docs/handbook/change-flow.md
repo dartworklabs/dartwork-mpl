@@ -59,6 +59,8 @@ PyPI에 무엇이 있는지는 태그만 본다. `main`은 PyPI와 같지 않다
 | `v*` 태그 | ruleset `version-tags`: 태그 생성·변경·삭제를 막는다 | `release-owners` |
 | PyPI 업로드 | environment `pypi`: 필수 승인자 소유자, `v*` 태그에서만 돈다. PyPI trusted publisher가 이 environment에 묶여 있다 | 소유자 |
 
+`main` 병합은 일반 병합이 거부되므로 CI가 통과한 뒤 `gh pr merge <n> --admin`으로 한다. `--admin`은 `release-owners`의 우회이고, 우회가 없는 `quality-gate`는 건너뛰지 못한다. `develop` → `main`은 두 브랜치의 히스토리가 갈라지지 않게 merge commit(`--merge`)으로 넣는다.
+
 ruleset `quality-gate`는 `develop`과 `main`에 PR, CI(`lint`, `test`) 통과, force-push·삭제 금지를 걸고 우회가 없다. 소유자도 CI를 건너뛸 수 없다. ruleset은 조직 소유자에게도 적용된다. 조직 소유자는 ruleset 자체를 고칠 수 있지만 고치면 조직 감사 로그에 남는다. 이 잠금은 1차 보호막이다.
 
 ## 릴리스
